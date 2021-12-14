@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import math
 
+import numpy as np
 import pytest
 
 from smarts.core.default_map_factory import create_road_map
@@ -45,6 +46,7 @@ def test_sumo_map(scenario):
     assert lane.road.contains_point(point)
     assert lane.is_drivable
     assert len(lane.shape()) >= 2
+    assert lane.length == 55.6
 
     right_lane, direction = lane.lane_to_right
     assert not right_lane
@@ -93,6 +95,10 @@ def test_sumo_map(scenario):
     assert "edge-east-EW_0" in foe_set  # engering from east
     assert "edge-north-NS_0" in foe_set  # entering from north
     assert ":junction-intersection_5_0" in foe_set  # crossing from east-to-west
+
+    # Test the lane vector for a refline point outside lane
+    lane_heading_at_offset = lane.vector_at_offset(55.7)
+    assert np.array_equal(lane_heading_at_offset, np.array([0.0, -1.0, 0.0]))
 
     r1 = road_map.road_by_id("edge-north-NS")
     assert r1
