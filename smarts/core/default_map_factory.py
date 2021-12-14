@@ -66,9 +66,9 @@ def get_road_map(
             map_source, lanepoint_spacing, default_lane_width
         ):
             return _existing_map.obj, _existing_map.map_hash
-        # Try to only keep one map around at a time...
         import gc
 
+        # Try to only keep one map around at a time...
         del _existing_map
         _existing_map = None
         gc.collect()
@@ -92,7 +92,6 @@ def get_road_map(
     road_map_hash = file_md5_hash(road_map.source)
 
     if not no_cache:
-        print(f"STEVE {map_source} {lanepoint_spacing} {default_lane_width}")
         _existing_map = _RoadMapInfo(
             map_source, lanepoint_spacing, default_lane_width, road_map, road_map_hash
         )
