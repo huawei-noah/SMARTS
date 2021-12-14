@@ -181,6 +181,23 @@ class SumoRoadNetwork(RoadMap):
         """ This is the net.xml file that corresponds with our possibly-offset coordinates. """
         return self._net_file
 
+    def is_same_map(
+        self, net_file: str, lanepoint_spacing: float, default_lane_width: float
+    ) -> bool:
+        dlw = (
+            default_lane_width
+            if default_lane_width is not None
+            else SumoRoadNetwork.DEFAULT_LANE_WIDTH
+        )
+        return (
+            net_file == self._net_file
+            and (
+                (not lanepoint_spacing and not self._lanepoints)
+                or lanepoint_spacing == self._lanepoints.spacing
+            )
+            and dlw == self._default_lane_width
+        )
+
     @cached_property
     def bounding_box(self) -> BoundingBox:
         # maps are assumed to start at the origin

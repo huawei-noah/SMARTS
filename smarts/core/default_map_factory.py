@@ -19,10 +19,22 @@
 # THE SOFTWARE.
 
 import os
-from typing import Tuple
+from typing import NamedTuple, Tuple
 
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import file_md5_hash
+
+
+class _RoadMapInfo(NamedTuple):
+    source: str
+    lanepoint_spacing: float
+    default_lane_width: float
+    obj: RoadMap
+    map_hash: str
+
+
+_existing_map = None
+
 
 # The idea here is that anything in SMARTS that needs to use a RoadMap
 # can call this factory to get or create one of default type.
@@ -30,11 +42,6 @@ from smarts.core.utils.file import file_md5_hash
 # Downstream developers who want to extend SMARTS to support other
 # map formats (by extending the RoadMap base class) can replace this
 # file with their own version and shouldn't have to change much else.
-
-
-_road_map_cache = {}
-
-
 def get_road_map(
     map_source: str,
     lanepoint_spacing: float = None,
@@ -46,19 +53,25 @@ def get_road_map(
     should signify that the map is different enough
     that map-related caches should be reloaded.
 
-    The RoadMap object may be cached here and re-used
+    If possible, the RoadMap object may be cached here and re-used
     unless the no_cache parameter is True, in which case
     a new object will always be created.
     """
 
     assert map_source, "A road map source must be specified"
 
-    if not no_cache:
-        existing = _road_map_cache.get(
-            (map_source, lanepoint_spacing, default_lane_width)
-        )
-        if existing:
-            return existing[0], existing[1]
+    global _existing_map
+    if _existing_map:
+        if not no_cache and _existing_map.obj.is_same_map(
+            map_source, lanepoint_spacing, default_lane_width
+        ):
+            return _existing_map.obj, _existing_map.map_hash
+        # Try to only keep one map around at a time...
+        import gc
+
+        del _existing_map
+        _existing_map = None
+        gc.collect()
 
     map_path = map_source
     if not os.path.isfile(map_path):
@@ -79,9 +92,9 @@ def get_road_map(
     road_map_hash = file_md5_hash(road_map.source)
 
     if not no_cache:
-        _road_map_cache[(map_source, lanepoint_spacing, default_lane_width)] = (
-            road_map,
-            road_map_hash,
+        print(f"STEVE {map_source} {lanepoint_spacing} {default_lane_width}")
+        _existing_map = _RoadMapInfo(
+            map_source, lanepoint_spacing, default_lane_width, road_map, road_map_hash
         )
 
     return road_map, road_map_hash
