@@ -1,7 +1,16 @@
+"""
+This examples runs the human-keyboard Agent, which allows you to control and monitor input devices.
+
+NOTE: You will need to install [extras] to run this example. `pip install -e .[extras]`
+"""
+
 import logging
 
 import gym
-from pynput.keyboard import Key, Listener
+try:
+    from pynput.keyboard import Key, Listener
+except ImportError:
+    raise ImportError('pynput dependency is missing, please pip install -e .[extras]')
 
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType

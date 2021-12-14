@@ -95,6 +95,9 @@ setup(
         "waymo": [
             "waymo-open-dataset-tf-2-2-0",
         ],
+        "extras": [
+            "pynput>=1.7.4",  # Used by HumanKeyboardAgent
+        ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )
