@@ -327,6 +327,10 @@ class RandomRoute:
 
     id: str = field(default_factory=lambda: f"random-route-{gen_id()}")
 
+    map_spec: Optional[MapSpec] = None
+    """All routes are relative to a road map.  If not specified here,
+    the default map_spec for the scenario is used."""
+
 
 @dataclass(frozen=True)
 class Flow:
