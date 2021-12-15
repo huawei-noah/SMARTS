@@ -120,14 +120,14 @@ class TrafficGenerator:
         self._overwrite = overwrite
         self._duarouter = sh.Command(sumolib.checkBinary("duarouter"))
         self._scenario_map_spec = scenario_map_spec
-        if (
-            scenario_map_spec
-            and scenario_map_spec.source
-            and os.path.exists(scenario_map_spec.source)
-        ):
-            self._road_network_path = scenario_map_spec.source
-        else:
-            self._road_network_path = os.path.join(self._scenario, "map.net.xml")
+        self._road_network_path = os.path.join(self._scenario, "map.net.xml")
+        if scenario_map_spec and scenario_map_spec.source:
+            if os.path.isfile(scenario_map_spec.source):
+                self._road_network_path = scenario_map_spec.source
+            elif os.path.exists(scenario_map_spec.source):
+                self._road_network_path = os.path.join(
+                    scenario_map_spec.source, "map.net.xml"
+                )
         self._road_network = None
         self._random_route_generator = None
         self._log_dir = self._resolve_log_dir(log_dir)
