@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 import sqlite3
 from itertools import cycle
-from typing import NamedTuple, Set
+from typing import NamedTuple, Set, Optional
 
 import numpy as np
 
@@ -62,6 +62,11 @@ class TrafficHistoryProvider(Provider):
 
     def set_replaced_ids(self, vehicle_ids: list):
         self._replaced_vehicle_ids.update(vehicle_ids)
+
+    def get_history_id(self, vehicle_id: str) -> Optional[str]:
+        if vehicle_id in self._last_step_vehicles:
+            return self._vehicle_id_prefix + vehicle_id
+        return None
 
     def create_vehicle(self, provider_vehicle: VehicleState):
         pass
