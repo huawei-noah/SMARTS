@@ -262,8 +262,8 @@ class MapSpec:
     builder_fn: Optional[MapBuilder] = get_road_map
     """If specified, this should return an object derived from the RoadMap base class
     and a hash that uniquely identifies it (changes to the hash should signify
-    that the map is different enough that map-related caches should be reloaded.
-    The parameter is this Map object itself.
+    that the map is different enough that map-related caches should be reloaded).
+    The parameter is this MapSpec object itself.
     If not specified, this currently defaults to a function that creates
     SUMO road networks (get_road_map()) in smarts.core.default_map_builder."""
 

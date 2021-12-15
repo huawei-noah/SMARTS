@@ -133,8 +133,8 @@ def gen_scenario(
         )
 
 
-def gen_map(scenario: str, map_spec: types.MapSpec):
-    output_path = os.path.join(scenario, "map_spec.pkl")
+def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: str = None):
+    output_path = os.path.join(output_dir or scenario, "map_spec.pkl")
     with open(output_path, "wb") as f:
         # we use cloudpickle here instead of pickle because the
         # map_spec object may contain a reference to a map_builder callable

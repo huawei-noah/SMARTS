@@ -27,11 +27,6 @@ from smarts.core.utils.file import file_md5_hash
 _existing_map = None
 
 
-# This is an instance of a sstudio.types.MapBuilder Callable
-# which should return an object derived from the RoadMap base class
-# and a hash that uniquely identifies it (changes to the hash should signify
-# that the map is different enough that map-related caches should be reloaded).
-#
 # This function should be re-callable (although caching is up to the implementation).
 # The idea here is that anything in SMARTS that needs to use a RoadMap
 # can call this builder to get or create one of default type.
@@ -41,22 +36,20 @@ _existing_map = None
 # own version of this to reference from a MapSpec within their
 # scenario folder(s) and shouldn't have to change much else.
 # TODO:  update this when OpenDrive support is ready, to choose format based on file extension
-def get_road_map(map_spec, no_cache: bool = False) -> Tuple[RoadMap, str]:
+def get_road_map(map_spec) -> Tuple[RoadMap, str]:
     """@return a RoadMap object and a hash
     that uniquely identifies it. Changes to the hash
     should signify that the map is different enough
     that map-related caches should be reloaded.
-
-    If possible, the RoadMap object may be cached here and re-used
-    unless the no_cache parameter is True, in which case
-    a new object will always be created.
+    If possible, the RoadMap object may be cached here
+    and re-used.
     """
     assert map_spec, "A road map spec must be specified"
     assert map_spec.source, "A road map source must be specified"
 
     global _existing_map
     if _existing_map:
-        if not no_cache and _existing_map.obj.is_same_map(map_spec):
+        if _existing_map.obj.is_same_map(map_spec):
             return _existing_map.obj, _existing_map.map_hash
         import gc
 
@@ -85,14 +78,13 @@ def get_road_map(map_spec, no_cache: bool = False) -> Tuple[RoadMap, str]:
 
     road_map_hash = file_md5_hash(road_map.source)
 
-    if not no_cache:
-        from smarts.sstudio.types import MapSpec
+    from smarts.sstudio.types import MapSpec
 
-        class _RoadMapInfo(NamedTuple):
-            map_spec: MapSpec
-            obj: RoadMap
-            map_hash: str
+    class _RoadMapInfo(NamedTuple):
+        map_spec: MapSpec
+        obj: RoadMap
+        map_hash: str
 
-        _existing_map = _RoadMapInfo(map_spec, road_map, road_map_hash)
+    _existing_map = _RoadMapInfo(map_spec, road_map, road_map_hash)
 
     return road_map, road_map_hash
