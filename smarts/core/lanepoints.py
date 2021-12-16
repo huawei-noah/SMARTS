@@ -403,16 +403,20 @@ class LanePoints:
             newly_created_lanepoints.append(first_linked_lanepoint)
 
             for current_shape_lp in shape_lp.nexts:
-                next_shape_lp = LanePoints._process_interp_for_lane_lp(
-                    shape_lp,
-                    first_linked_lanepoint,
-                    current_shape_lp,
-                    spacing,
-                    newly_created_lanepoints,
-                )
-
-                shape_queue.put((current_shape_lp, next_shape_lp))
-
+                if (
+                    current_shape_lp.lp.lane.lane_id == shape_lp.lp.lane.lane_id
+                    or current_shape_lp.lp.lane in shape_lp.lp.lane.outgoing_lanes
+                ):
+                    next_shape_lp = LanePoints._process_interp_for_lane_lp(
+                        shape_lp,
+                        first_linked_lanepoint,
+                        current_shape_lp,
+                        spacing,
+                        newly_created_lanepoints,
+                    )
+                    shape_queue.put((current_shape_lp, next_shape_lp))
+                else:
+                    shape_queue.put((current_shape_lp, first_linked_lanepoint))
         return initial_lanepoint, newly_created_lanepoints
 
     @staticmethod
@@ -424,7 +428,6 @@ class LanePoints:
         newly_created_lanepoints: List[LinkedLanePoint],
     ) -> LinkedLanePoint:
         rmlane = shape_lp.lp.lane
-        lane_id = rmlane.lane_id
 
         curr_lanepoint = first_linked_lanepoint
 

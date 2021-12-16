@@ -131,6 +131,304 @@ def test_sumo_map(sumo_scenario):
             )
 
 
+def test_od_4lane():
+    root = path.join(Path(__file__).parent.absolute(), "maps")
+    road_map = OpenDriveRoadNetwork.from_file(
+        path.join(root, "4lane_map.xodr"), lanepoint_spacing=1.0, sumo_to_od=True
+    )
+    assert isinstance(road_map, OpenDriveRoadNetwork)
+
+    # Expected properties for all roads and lanes
+    for road_id, road in road_map._roads.items():
+        assert type(road_id) == str
+        assert road.is_junction is not None
+        assert road.length is not None
+        assert road.length >= 0
+        assert road.parallel_roads == []
+        for lane in road.lanes:
+            assert lane.in_junction is not None
+            assert lane.length is not None
+            assert lane.length >= 0
+            assert lane.speed_limit >= 0
+
+    # Road tests
+    r_0_R = road_map.road_by_id("57_0_R")
+    assert r_0_R
+    assert not r_0_R.is_junction
+    assert r_0_R.length == 115.6
+    assert len(r_0_R.lanes) == 2
+    assert r_0_R.lane_at_index(-1) is None
+    assert r_0_R.lane_at_index(1).road.road_id == "57_0_R"
+    assert len(r_0_R.shape().exterior.coords) == 5
+    assert set([r.road_id for r in r_0_R.incoming_roads]) == set()
+    assert set([r.road_id for r in r_0_R.outgoing_roads]) == {
+        "69_0_R",
+        "68_0_R",
+        "67_0_R",
+    }
+
+    r2_0_R = road_map.road_by_id("53_0_R")
+    assert r2_0_R
+    assert not r2_0_R.is_junction
+    assert r2_0_R.length == 55.6
+    assert len(r2_0_R.lanes) == 2
+    assert r2_0_R.lane_at_index(0).road.road_id == "53_0_R"
+    assert len(r2_0_R.shape().exterior.coords) == 5
+    assert set([r.road_id for r in r2_0_R.incoming_roads]) == {
+        "61_0_R",
+        "65_0_R",
+        "69_0_R",
+    }
+    assert set([r.road_id for r in r2_0_R.outgoing_roads]) == set()
+
+    r3_0_R = road_map.road_by_id("66_0_R")
+    assert r3_0_R
+    assert r3_0_R.is_junction
+    assert r3_0_R.length == 23.35459442
+    assert len(r3_0_R.lanes) == 1
+    assert r3_0_R.lane_at_index(-1) is None
+    assert r3_0_R.lane_at_index(0).road.road_id == "66_0_R"
+    assert set([r.road_id for r in r3_0_R.incoming_roads]) == {"55_0_R"}
+    assert set([r.road_id for r in r3_0_R.outgoing_roads]) == {"56_0_R"}
+
+    r4_0_R = road_map.road_by_id("59_0_R")
+    assert r4_0_R
+    assert r4_0_R.is_junction
+    assert r4_0_R.length == 28.8
+    assert len(r4_0_R.lanes) == 2
+    assert r4_0_R.lane_at_index(0).road.road_id == "59_0_R"
+    assert set([r.road_id for r in r4_0_R.incoming_roads]) == {"52_0_R"}
+    assert set([r.road_id for r in r4_0_R.outgoing_roads]) == {"54_0_R"}
+
+    # Lane tests
+    l1 = road_map.lane_by_id("52_0_R_-1")
+    assert l1
+    assert l1.road.road_id == "52_0_R"
+    # leftmost lane
+    assert l1.index == 1
+    assert len(l1.lanes_in_same_direction) == 1
+    assert l1.length == 55.6
+    assert l1.is_drivable
+    assert len(l1.shape().exterior.coords) == 5
+    assert l1.speed_limit == 16.67
+    assert [l.lane_id for l in l1.incoming_lanes] == []
+    assert [l.lane_id for l in l1.outgoing_lanes] == [
+        "58_0_R_-1",
+        "59_0_R_-1",
+        "60_0_R_-1",
+    ]
+
+    right_lane, direction = l1.lane_to_right
+    assert right_lane
+    assert direction
+    assert right_lane.lane_id == "52_0_R_-2"
+    assert right_lane.index == 0
+
+    further_right_lane, direction = right_lane.lane_to_right
+    assert not further_right_lane
+    assert direction
+
+    left_lane, direction = l1.lane_to_left
+    assert left_lane
+    assert not direction
+    assert left_lane.lane_id == "53_0_R_-1"
+    assert left_lane.index == 1
+
+    # point on lane
+    point = (148.0, -28.0, 0)
+    refline_pt = l1.to_lane_coord(point)
+    assert round(refline_pt.s, 2) == 38.0
+    assert round(refline_pt.t, 2) == -0.4
+
+    offset = refline_pt.s
+    assert l1.width_at_offset(offset) == 3.20
+    assert l1.curvature_radius_at_offset(offset) == math.inf
+    assert l1.contains_point(point)
+    assert l1.road.contains_point(point)
+    central_point = l1.center_at_point(point)
+    assert (round(central_point.x, 2), round(central_point.y, 2)) == (148.4, -28.0)
+
+    # oncoming lanes at this point
+    on_lanes = l1.oncoming_lanes_at_offset(offset)
+    assert on_lanes
+    assert len(on_lanes) == 1
+    assert on_lanes[0].lane_id == "53_0_R_-1"
+
+    # lane edges on point
+    left_edge, right_edge = l1.edges_at_point(point)
+    assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (150.0, -28.0)
+    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (146.8, -28.0)
+
+    # road edges on point
+    road_left_edge, road_right_edge = l1.road.edges_at_point(point)
+    assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (150.0, -28.0)
+    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (143.6, -28.0)
+
+    # check for locations (lane, offset tuples) within distance at this offset
+    candidates = l1.project_along(offset, 70)
+    assert (len(candidates)) == 6
+
+    # point not on lane but on road
+    point = (144.0, -28.0, 0)
+    refline_pt = l1.to_lane_coord(point)
+    assert round(refline_pt.s, 2) == 38.0
+    assert round(refline_pt.t, 2) == -4.4
+
+    offset = refline_pt.s
+    assert l1.width_at_offset(offset) == 3.20
+    assert l1.curvature_radius_at_offset(offset) == math.inf
+    assert not l1.contains_point(point)
+    assert l1.road.contains_point(point)
+
+    l2 = road_map.lane_by_id("63_0_R_-1")
+    assert l2
+    assert l2.road.road_id == "63_0_R"
+    assert l2.index == 0
+    assert l2.is_drivable
+    assert [l.lane_id for l in l2.incoming_lanes] == ["50_0_R_-1"]
+    assert [l.lane_id for l in l2.outgoing_lanes] == ["54_0_R_-1"]
+
+    l3 = road_map.lane_by_id("66_0_R_-1")
+    assert l3
+    assert l3.road.road_id == "66_0_R"
+    assert l3.index == 0
+    assert l3.is_drivable
+
+    foes = l3.foes
+    assert set(f.lane_id for f in foes) == {"58_0_R_-1", "62_0_R_-1"}
+
+    # road edges on point for a road with one lane
+    point = (148.52, -52.22, 0)
+    r5 = road_map.road_by_id("60_0_R")
+    road_left_edge, road_right_edge = r5.edges_at_point(point)
+    assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (150.79, -51.56)
+    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (
+        147.72,
+        -52.45,
+    )
+
+    # nearest lane for a point outside road
+    point = (164.0, -68.0, 0)
+    l4 = road_map.nearest_lane(point)
+    assert l4.lane_id == "64_0_R_-2"
+    assert l4.road.road_id == "64_0_R"
+    assert l4.index == 0
+    assert l4.speed_limit == 16.67
+    assert not l4.road.contains_point(point)
+    assert l4.is_drivable
+
+    # nearest lane for a point inside road
+    point = (151.0, -60.0, 0)
+    l5 = road_map.nearest_lane(point)
+    assert l5.lane_id == "65_0_R_-1"
+    assert l5.road.road_id == "65_0_R"
+    assert l5.index == 1
+    assert l5.road.contains_point(point)
+    assert l5.is_drivable
+
+    # Lanepoints
+    lanepoints = road_map._lanepoints
+
+    point = (148.0, -17.0, 0)
+    l1_lane_point = lanepoints.closest_lanepoint_on_lane_to_point(point, l1.lane_id)
+    assert (
+        round(l1_lane_point.pose.position[0], 2),
+        round(l1_lane_point.pose.position[1], 2),
+    ) == (148.4, -17.0)
+
+    point = (148.00, -47.00)
+    r5_linked_lane_point = lanepoints.closest_linked_lanepoint_on_road(
+        point, r5.road_id
+    )
+    assert r5_linked_lane_point.lp.lane.lane_id == "60_0_R_-1"
+    assert (
+        round(r5_linked_lane_point.lp.pose.position[0], 2),
+        round(r5_linked_lane_point.lp.pose.position[1], 2),
+    ) == (148.43, -46.88)
+
+    r5_lp_path = lanepoints.paths_starting_at_lanepoint(r5_linked_lane_point, 5, ())
+    assert len(r5_lp_path) == 1
+    assert [llp.lp.lane.lane_id for llp in r5_lp_path[0]].count("60_0_R_-1") == 6
+
+    # route generation
+    r_52_0_R = road_map.road_by_id("52_0_R")
+    r_58_0_R = road_map.road_by_id("58_0_R")
+    r_56_0_R = road_map.road_by_id("56_0_R")
+
+    route_52_to_56 = road_map.generate_routes(r_52_0_R, r_56_0_R)
+    assert [r.road_id for r in route_52_to_56[0].roads] == [
+        "52_0_R",
+        "58_0_R",
+        "56_0_R",
+    ]
+    assert (
+        route_52_to_56[0].road_length
+        == r_52_0_R.length + r_58_0_R.length + r_56_0_R.length
+    )
+
+    # waypoints generation along route
+    lp_52_0_R = road_map._lanepoints._lanepoints_by_lane_id["52_0_R_-1"]
+    lp_pose = lp_52_0_R[-1].lp.pose
+    waypoints_for_route = road_map.waypoint_paths(lp_pose, 170, route=route_52_to_56[0])
+    assert len(waypoints_for_route) == 8
+    assert len(waypoints_for_route[1]) == 165
+    lane_ids_under_wps = []
+    for wp in waypoints_for_route[0]:
+        if wp.lane_id not in lane_ids_under_wps:
+            lane_ids_under_wps.append(wp.lane_id)
+    assert lane_ids_under_wps == ["52_0_R_-1", "58_0_R_-1", "56_0_R_-1"]
+
+    # distance between points along route
+    start_point = Point(x=148.0, y=-28.0, z=0.0)
+    end_point = Point(x=116.0, y=-58.0, z=0.0)
+    assert round(route_52_to_56[0].distance_between(start_point, end_point), 2) == 60.55
+
+    # project along route
+    candidates = route_52_to_56[0].project_along(start_point, 100)
+    assert len(candidates) == 2
+
+    r_50_0_R = road_map.road_by_id("50_0_R")
+    r_63_0_R = road_map.road_by_id("63_0_R")
+    r_54_0_R = road_map.road_by_id("54_0_R")
+    route_50_to_54 = road_map.generate_routes(r_50_0_R, r_54_0_R)
+    assert [r.road_id for r in route_50_to_54[0].roads] == [
+        "50_0_R",
+        "63_0_R",
+        "54_0_R",
+    ]
+    assert (
+        route_50_to_54[0].road_length
+        == r_50_0_R.length + r_63_0_R.length + r_54_0_R.length
+    )
+
+    # waypoints generation along route
+    lp_50_0_R = road_map._lanepoints._lanepoints_by_lane_id["50_0_R_-1"]
+    lp_pose = lp_50_0_R[-1].lp.pose
+    waypoints_for_route = road_map.waypoint_paths(lp_pose, 110, route=route_50_to_54[0])
+    assert len(waypoints_for_route) == 2
+    assert len(waypoints_for_route[1]) == 105
+    lane_ids_under_wps = []
+    for wp in waypoints_for_route[0]:
+        if wp.lane_id not in lane_ids_under_wps:
+            lane_ids_under_wps.append(wp.lane_id)
+    assert lane_ids_under_wps == ["50_0_R_-1", "63_0_R_-1", "54_0_R_-1"]
+
+    # distance between points along route
+    start_point = Point(x=176.0, y=-58.0, z=0.0)
+    end_point = Point(x=148.0, y=-121.0, z=0.0)
+    assert round(route_50_to_54[0].distance_between(start_point, end_point), 2) == 81.55
+
+    # project along route
+    candidates = route_50_to_54[0].project_along(start_point, 100)
+    assert len(candidates) == 0
+
+    # Invalid route generation
+    invalid_route = road_map.generate_routes(
+        road_map.road_by_id("50_0_R"), road_map.road_by_id("55_0_R")
+    )
+    assert [r.road_id for r in invalid_route[0].roads] == []
+
+
 def test_od_map_junction():
     root = path.join(Path(__file__).parent.absolute(), "maps")
     road_map = OpenDriveRoadNetwork.from_file(
@@ -851,7 +1149,6 @@ def test_od_map_motorway():
         "18_0_L_2",
         "28_0_R_-1",
         "42_0_R_-1",
-        "3_2_R_-5",
         "43_0_R_-1",
         "5_0_R_-4",
     ]
@@ -913,7 +1210,7 @@ def test_od_map_motorway():
     waypoints_for_route = road_map.waypoint_paths(
         lp_pose, 1000, route=route_6_to_34_via_19[0]
     )
-    assert len(waypoints_for_route) == 4
+    assert len(waypoints_for_route) == 2
 
     assert len(max(waypoints_for_route, key=len)) == 1001
     lane_ids_under_wps = []
@@ -927,13 +1224,12 @@ def test_od_map_motorway():
         "11_0_R_-2",
         "19_2_L_1",
         "19_1_L_3",
-        "4_0_R_-6",
-        "4_0_R_-5",
-        "4_0_R_-4",
-        "4_0_R_-3",
-        "4_0_R_-2",
-        "19_1_L_1",
-        "19_1_L_2",
+        "9_0_L_2",
+        "9_0_L_3",
+        "9_0_L_4",
+        "9_0_L_6",
+        "9_0_L_7",
+        "19_0_L_2",
         "19_0_L_1",
         "27_0_R_-1",
         "17_0_R_-1",
@@ -1000,7 +1296,7 @@ def test_od_map_motorway():
     lp_34_0_L = road_map._lanepoints._lanepoints_by_lane_id["34_0_L_2"]
     lp_pose = lp_34_0_L[-1].lp.pose
     waypoints_for_route = road_map.waypoint_paths(lp_pose, 1000, route=route_34_to_6[0])
-    assert len(waypoints_for_route) == 12
+    assert len(waypoints_for_route) == 24
     assert len(waypoints_for_route[0]) == 1001
     lane_ids_under_wps = []
     for wp in waypoints_for_route[0]:
@@ -1008,8 +1304,7 @@ def test_od_map_motorway():
             lane_ids_under_wps.append(wp.lane_id)
     assert lane_ids_under_wps == [
         "34_0_L_2",
-        "38_0_R_-3",
-        "36_1_L_3",
+        "38_0_R_-2",
         "36_1_L_2",
         "36_0_L_2",
     ]
@@ -1084,7 +1379,7 @@ def visualize():
     fig, ax = plt.subplots()
 
     root = path.join(Path(__file__).parent.absolute(), "maps")
-    filename = "Ex_Simple-LaneOffset.xodr"
+    filename = "4lane_map.xodr"
     filepath = path.join(root, filename)
     road_map = OpenDriveRoadNetwork.from_file(filepath, lanepoint_spacing=0.5)
 
@@ -1112,18 +1407,18 @@ def visualize():
     # route_13_to_0 = road_map.generate_routes(r_13_0_L, r_0_0_R)
 
     # LaneOffset map route
-    start = road_map.road_by_id("1_0_R")
-    end = road_map.road_by_id("1_2_R")
-    route_lo = road_map.generate_routes(start, end)
-
-    lp_1_0_R = road_map._lanepoints._lanepoints_by_lane_id["1_0_R_-1"]
-    lp_pose = lp_1_0_R[0].lp.pose
+    # start = road_map.road_by_id("1_0_R")
+    # end = road_map.road_by_id("1_2_R")
+    # route_lo = road_map.generate_routes(start, end)
+    #
+    # lp_1_0_R = road_map._lanepoints._lanepoints_by_lane_id["1_0_R_-1"]
+    # lp_pose = lp_1_0_R[0].lp.pose
 
     # Plot waypoints on a given route
-    waypoints_for_route = road_map.waypoint_paths(lp_pose, 500, route=route_lo[0])
-    for waypoints in waypoints_for_route:
-        xwp, ywp = wp_points(waypoints)
-        plt.scatter(xwp, ywp, s=1, c="b")
+    # waypoints_for_route = road_map.waypoint_paths(lp_pose, 500, route=route_lo[0])
+    # for waypoints in waypoints_for_route:
+    #     xwp, ywp = wp_points(waypoints)
+    #     plt.scatter(xwp, ywp, s=1, c="b")
 
     # Plot waypoints on nearest lanes of road for a given lanepoint
     # waypoints_path = road_map.waypoint_paths(lp_pose, 100)
@@ -1132,13 +1427,13 @@ def visualize():
     #     plt.scatter(xwp, ywp, s=1, c="r")
 
     # Plot all lanepoints
-    # for road_id in roads:
-    #     road = roads[road_id]
-    #     for lane in road.lanes:
-    #         if lane.is_drivable:
-    #             linked_lps = road_map._lanepoints._lanepoints_by_lane_id[lane.lane_id]
-    #             xlp, ylp = lp_points(linked_lps)
-    #             plt.scatter(xlp, ylp, s=1, c="r")
+    for road_id in roads:
+        road = roads[road_id]
+        for lane in road.lanes:
+            if lane.is_drivable:
+                linked_lps = road_map._lanepoints._lanepoints_by_lane_id[lane.lane_id]
+                xlp, ylp = lp_points(linked_lps)
+                plt.scatter(xlp, ylp, s=1, c="r")
 
     ax.set_title(filename)
     ax.axis("equal")
