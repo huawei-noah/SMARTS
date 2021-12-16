@@ -260,9 +260,6 @@ class RoadMap:
         def width_at_offset(self, offset: float) -> float:
             raise NotImplementedError()
 
-        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
-            raise NotImplementedError()
-
         def project_along(
             self, start_offset: float, distance: float
         ) -> Set[Tuple[RoadMap.Lane, float]]:
@@ -286,20 +283,11 @@ class RoadMap:
                 path_stack = new_stack
             return result
 
+        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
+            raise NotImplementedError()
+
         ## The next 6 methods are "reference" implementations for convenience.
         ## Derived classes may want to extend as well as add a cache.
-
-        def vector_at_offset(self, start_offset: float) -> np.ndarray:
-            if start_offset >= self.length:
-                s_offset = self.length - 1
-                end_offset = self.length
-            else:
-                s_offset = start_offset
-                end_offset = start_offset + 1  # a little further down the lane
-            s_offset = max(s_offset, 0)
-            p1 = self.from_lane_coord(RefLinePoint(s=s_offset))
-            p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
-            return np.array(p2) - np.array(p1)
 
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
             s = self.offset_along_lane(world_point)
@@ -321,6 +309,18 @@ class RoadMap:
             left_edge = RefLinePoint(s=offset, t=width / 2)
             right_edge = RefLinePoint(s=offset, t=-width / 2)
             return self.from_lane_coord(left_edge), self.from_lane_coord(right_edge)
+
+        def vector_at_offset(self, start_offset: float) -> np.ndarray:
+            if start_offset >= self.length:
+                s_offset = self.length - 1
+                end_offset = self.length
+            else:
+                s_offset = start_offset
+                end_offset = start_offset + 1  # a little further down the lane
+            s_offset = max(s_offset, 0)
+            p1 = self.from_lane_coord(RefLinePoint(s=s_offset))
+            p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
+            return np.array(p2) - np.array(p1)
 
         def center_pose_at_point(self, point: Point) -> Pose:
             offset = self.offset_along_lane(point)

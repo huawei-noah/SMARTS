@@ -916,6 +916,7 @@ class SumoRoadNetwork(RoadMap):
         # Remove holes created at tight junctions due to crude map geometry
         self._snap_internal_holes(lane_to_poly)
         self._snap_external_holes(lane_to_poly)
+
         # Remove break in visible lane connections created when lane enters an intersection
         self._snap_internal_edges(lane_to_poly)
 
@@ -1057,10 +1058,11 @@ class SumoRoadNetwork(RoadMap):
         scene = trimesh.Scene()
         mesh = generate_mesh_from_polygons(polygons)
         # Attach additional information for rendering as metadata in the map glb
-        metadata = {"bounding_box": self._graph.getBoundary()}
+        metadata = {}
 
         # <2D-BOUNDING_BOX>: four floats separated by ',' (<FLOAT>,<FLOAT>,<FLOAT>,<FLOAT>),
         # which describe x-minimum, y-minimum, x-maximum, and y-maximum
+        metadata["bounding_box"] = self._graph.getBoundary()
 
         # lane markings information
         lane_dividers, edge_dividers = self._compute_traffic_dividers()

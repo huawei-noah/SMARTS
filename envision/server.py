@@ -40,6 +40,7 @@ import tornado.websocket
 from tornado.websocket import WebSocketClosedError
 
 import smarts.core.models
+from envision.types import State
 from envision.web import dist as web_dist
 from smarts.core.utils.file import path2hash
 

@@ -209,7 +209,6 @@ class OpenDriveRoadNetwork(RoadMap):
         sumo_to_od=False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._log.setLevel(logging.INFO)
         self._xodr_file = xodr_file
         self._default_lane_speed = (
             default_lane_speed

@@ -158,9 +158,11 @@ def build_all_scenarios(clean, allow_offset_maps, scenarios):
         # nargs=-1 in combination with a default value is not supported
         # if scenarios is not given, set /scenarios as default
         scenarios = ["scenarios"]
+
     builder_threads = {}
     for scenarios_path in scenarios:
         path = Path(scenarios_path)
+
         for p in path.rglob("*.xodr"):
             scenario = f"{scenarios_path}/{p.parent.relative_to(scenarios_path)}"
             builder_thread = Thread(
@@ -169,8 +171,6 @@ def build_all_scenarios(clean, allow_offset_maps, scenarios):
             builder_thread.start()
             builder_threads[p] = builder_thread
 
-    for scenarios_path in scenarios:
-        path = Path(scenarios_path)
         for p in path.rglob("*map.net.xml"):
             scenario = f"{scenarios_path}/{p.parent.relative_to(scenarios_path)}"
             if scenario == f"{scenarios_path}/waymo":

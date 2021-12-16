@@ -286,13 +286,13 @@ def offset_along_shape(point, shape) -> float:
 
 
 def position_at_shape_offset(shape, offset):
-    seenLength = 0
+    seen_length = 0
     curr = shape[0]
     for next_p in shape[1:]:
-        nextLength = euclidean_distance(curr, next_p)
-        if seenLength + nextLength > offset:
-            return position_at_offset(curr, next_p, offset - seenLength)
-        seenLength += nextLength
+        next_length = euclidean_distance(curr, next_p)
+        if seen_length + next_length > offset:
+            return position_at_offset(curr, next_p, offset - seen_length)
+        seen_length += next_length
         curr = next_p
     return shape[-1]
 
@@ -321,20 +321,20 @@ def polygon_offset_with_minimum_distance_to_point(point, polygon):
     p = point
     s = polygon
     seen = 0
-    minDist = 1e400
-    minOffset = -1
+    min_dist = 1e400
+    min_offset = -1
     for i in range(len(s) - 1):
         pos = line_offset_with_minimum_distance_to_point(p, s[i], s[i + 1])
         dist = (
-            minDist
+            min_dist
             if pos == -1
             else euclidean_distance(p, position_at_offset(s[i], s[i + 1], pos))
         )
-        if dist < minDist:
-            minDist = dist
-            minOffset = pos + seen
+        if dist < min_dist:
+            min_dist = dist
+            min_offset = pos + seen
         seen += euclidean_distance(s[i], s[i + 1])
-    return minOffset
+    return min_offset
 
 
 def distance_point_to_line(point, line_start, line_end, perpendicular=False):
@@ -357,17 +357,17 @@ def distance_point_to_polygon(point, polygon, perpendicular=False):
     """Return the minimum distance between point and polygon"""
     p = point
     s = polygon
-    minDist = None
+    min_dist = None
     for i in range(0, len(s) - 1):
         dist = distance_point_to_line(p, s[i], s[i + 1], perpendicular)
         if dist == -1 and perpendicular and i != 0:
             # distance to inner corner
             dist = euclidean_distance(point, s[i])
         if dist != -1:
-            if minDist is None or dist < minDist:
-                minDist = dist
-    if minDist is not None:
-        return minDist
+            if min_dist is None or dist < min_dist:
+                min_dist = dist
+    if min_dist is not None:
+        return min_dist
     else:
         return -1
 
