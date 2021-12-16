@@ -29,6 +29,7 @@ from panda3d.core import Thread as p3dThread  # pytype: disable=import-error
 from smarts.core.agent_interface import (
     ActionSpaceType,
     AgentInterface,
+    DoneCriteria,
     NeighborhoodVehicles,
 )
 from smarts.core.colors import SceneColors
@@ -40,19 +41,44 @@ from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.custom_exceptions import RendererException
 
 
-@pytest.fixture
-def smarts():
-    buddha = AgentInterface(
-        max_episode_steps=1000,
-        neighborhood_vehicles=NeighborhoodVehicles(radius=20),
-        action=ActionSpaceType.Lane,
-    )
-    agents = {"Agent-007": buddha}
-    smarts = SMARTS(
+def _smarts_with_agent(request, agent) -> SMARTS:
+    renderer_debug_mode = request.config.getoption("--renderer-debug-mode")
+    agents = {"Agent-007": agent}
+    return SMARTS(
         agents,
         traffic_sim=SumoTrafficSimulation(headless=True),
         envision=None,
+        config=SmartsConfig.from_dictionary(
+            {"renderer-debug-mode": renderer_debug_mode}
+        ),
     )
+
+
+@pytest.fixture
+def smarts(request):
+    buddha = AgentInterface(
+        debug=True,
+        done_criteria=DoneCriteria(collision=False, off_road=False, off_route=False),
+        rgb=True,
+        ogm=True,
+        drivable_area_grid_map=True,
+        neighborhood_vehicles=NeighborhoodVehicles(radius=20),
+        action=ActionSpaceType.Lane,
+    )
+    smarts = _smarts_with_agent(request, buddha)
+    yield smarts
+    smarts.destroy()
+
+
+@pytest.fixture
+def smarts_wo_renderer(request):
+    buddha = AgentInterface(
+        debug=True,
+        done_criteria=DoneCriteria(collision=False, off_road=False, off_route=False),
+        neighborhood_vehicles=NeighborhoodVehicles(radius=20),
+        action=ActionSpaceType.Lane,
+    )
+    smarts = _smarts_with_agent(request, buddha)
     yield smarts
     smarts.destroy()
 
@@ -115,16 +141,28 @@ def test_multiple_renderers(scenario):
         rt.join()
 
 
-def test_optional_renderer(smarts, scenario):
-    smarts.reset(scenario)
+def test_optional_renderer(smarts: SMARTS, scenario):
     assert not smarts.is_rendering
-    for _ in range(10):
-        smarts.step({})
-
     renderer = smarts.renderer
     if not renderer:
         raise RendererException.required_to("run test_renderer.py")
 
+    smarts._renderer = None
+    smarts.reset(scenario)
     assert smarts.is_rendering
+
+    smarts._renderer = None
     for _ in range(10):
-        smarts.step({})
+        smarts.step({"Agent-007": "keep_lane"})
+
+    assert not smarts.is_rendering
+
+
+def test_no_renderer(smarts_wo_renderer: SMARTS, scenario):
+    assert not smarts_wo_renderer.is_rendering
+    smarts_wo_renderer.reset(scenario)
+    assert not smarts_wo_renderer.is_rendering
+    for _ in range(10):
+        smarts_wo_renderer.step({"Agent-007": "keep_lane"})
+
+    assert not smarts_wo_renderer.is_rendering

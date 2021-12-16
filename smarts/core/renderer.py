@@ -25,6 +25,7 @@ from __future__ import annotations
 import importlib.resources as pkg_resources
 import logging
 import os
+from enum import IntEnum
 from threading import Lock
 from typing import NamedTuple
 
@@ -47,16 +48,47 @@ from .colors import SceneColors
 from .coordinates import Pose
 from .masks import RenderMasks
 from .scenario import Scenario
+from .utils.config import SmartsConfig
+
+
+def get_renderer(sim_id, config: SmartsConfig):
+    """Get the appropriate renderer given the simulation id and config.
+    Args:
+        sim_id (str): The id of a SMARTS simulation the renderer should be related to.
+        config (SmartsConfig): A configuration file determining extra configuration.
+
+    Returns:
+        Renderer: A new renderer based on the given configuration.
+    """
+    _renderer = Renderer(sim_id, config)
+    return _renderer
+
+
+class DEBUG_MODE(IntEnum):
+    SPAM = 1
+    DEBUG = 2
+    INFO = 3
+    WARNING = 4
+    ERROR = 5
 
 
 class _ShowBaseInstance(ShowBase):
     """ Wraps a singleton instance of ShowBase from Panda3D. """
 
+    _debug_mode = DEBUG_MODE.WARNING
+
     def __new__(cls):
         # Singleton pattern:  ensure only 1 ShowBase instance
         if "__it__" not in cls.__dict__:
+            if cls._debug_mode <= DEBUG_MODE.INFO:
+                loadPrcFileData("", "gl-debug #t")
             loadPrcFileData("", "load-display p3headlessgl")
-            loadPrcFileData("", "aux-display p3headlessgl")
+            loadPrcFileData("", "aux-display pandagl")
+            loadPrcFileData("", "aux-display pandadx9")
+            loadPrcFileData("", "aux-display pandagles")
+            loadPrcFileData("", "aux-display pandagles2")
+            loadPrcFileData("", "aux-display p3tinydisplay")
+
             # disable vsync otherwise we are limited to refresh-rate of screen
             loadPrcFileData("", "sync-video false")
             loadPrcFileData("", "model-path %s" % os.getcwd())
@@ -64,7 +96,7 @@ class _ShowBaseInstance(ShowBase):
             # loadPrcFileData("", "model-cache-dir %s/.panda3d_cache" % os.getcwd())
             loadPrcFileData("", "audio-library-name null")
             loadPrcFileData("", "gl-version 3 3")
-            loadPrcFileData("", "notify-level error")
+            loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
             loadPrcFileData("", "print-pipe-types false")
             # https://www.panda3d.org/manual/?title=Multithreaded_Render_Pipeline
             # loadPrcFileData('', 'threading-model Cull/Draw')
@@ -75,6 +107,10 @@ class _ShowBaseInstance(ShowBase):
             cls.__it__ = it = object.__new__(cls)
             it.init()
         return it
+
+    @classmethod
+    def set_rendering_mode(cls, debug_mode: DEBUG_MODE):
+        cls._debug_mode = debug_mode
 
     def __init__(self):
         pass  # singleton pattern, uses init() instead (don't call super().__init__() here!)
@@ -149,12 +185,18 @@ class Renderer:
         self._vehicle_nodes = {}
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
+        debug_mode = DEBUG_MODE[config.get("renderer-debug-mode", "warning").upper()]
+        _ShowBaseInstance.set_rendering_mode(debug_mode=debug_mode)
         self._showbase_instance = _ShowBaseInstance()
 
     @property
     def id(self):
         """The id of the simulation rendered."""
         return self._simid
+
+    @property
+    def is_setup(self):
+        return self._is_setup
 
     def setup(self, scenario: Scenario):
         """Initialize this renderer."""
