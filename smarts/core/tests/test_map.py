@@ -953,7 +953,9 @@ def test_od_map_lane_offset():
     assert direction
     assert further_right_lane.lane_id == "1_1_L_3"
     assert further_right_lane.is_drivable
-    assert set([lane.lane_id for lane in further_right_lane.outgoing_lanes]) == {"1_0_L_3"}
+    assert set([lane.lane_id for lane in further_right_lane.outgoing_lanes]) == {
+        "1_0_L_3"
+    }
     assert further_right_lane.index == 0
 
     l1 = road_map.lane_by_id("1_1_R_-1")
