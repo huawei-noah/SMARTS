@@ -34,8 +34,13 @@ def sumo_scenario():
 
 
 @pytest.fixture
-def opendrive_scenario():
+def opendrive_scenario_4lane():
     return Scenario(scenario_root="scenarios/od_4lane")
+
+
+@pytest.fixture
+def opendrive_scenario_merge():
+    return Scenario(scenario_root="scenarios/od_merge")
 
 
 def test_sumo_map(sumo_scenario):
@@ -129,8 +134,8 @@ def test_sumo_map(sumo_scenario):
             )
 
 
-def test_opendrive_map(opendrive_scenario):
-    road_map = opendrive_scenario.road_map
+def test_opendrive_map_4lane(opendrive_scenario_4lane):
+    road_map = opendrive_scenario_4lane.road_map
     assert isinstance(road_map, OpenDriveRoadNetwork)
 
     # Expected properties for all roads and lanes
@@ -422,3 +427,235 @@ def test_opendrive_map(opendrive_scenario):
         road_map.road_by_id("50_0_R"), road_map.road_by_id("55_0_R")
     )
     assert [r.road_id for r in invalid_route[0].roads] == []
+
+
+def test_opendrive_map_merge(opendrive_scenario_merge):
+    road_map = opendrive_scenario_merge.road_map
+    assert isinstance(road_map, OpenDriveRoadNetwork)
+    assert road_map.bounding_box.max_pt == Point(x=100.0, y=9.75, z=0)
+    assert road_map.bounding_box.min_pt == Point(x=0.0, y=-6.500000000000002, z=0)
+
+    # Expected properties for all roads and lanes
+    for road_id, road in road_map._roads.items():
+        assert type(road_id) == str
+        assert road.is_junction is not None
+        assert road.length is not None
+        assert road.length >= 0
+        assert road.parallel_roads == []
+        for lane in road.lanes:
+            assert lane.in_junction is not None
+            assert lane.length is not None
+            assert lane.length >= 0
+            assert lane.speed_limit == 16.67
+
+    # Nonexistent road/lane tests
+    assert road_map.road_by_id("") is None
+    assert road_map.lane_by_id("") is None
+
+    # Surface tests
+    surface = road_map.surface_by_id("1_1_R")
+    assert surface.surface_id == "1_1_R"
+
+    # Road tests
+    r_1_0_R = road_map.road_by_id("1_0_R")
+    assert r_1_0_R
+    assert len(r_1_0_R.lanes) == 2
+    assert not r_1_0_R.is_junction
+    assert set([r.road_id for r in r_1_0_R.incoming_roads]) == set()
+    assert set([r.road_id for r in r_1_0_R.outgoing_roads]) == {"1_1_R"}
+
+    r_1_0_L = road_map.road_by_id("1_0_L")
+    assert r_1_0_L
+    assert len(r_1_0_L.lanes) == 3
+    assert not r_1_0_L.is_junction
+    assert set([r.road_id for r in r_1_0_L.incoming_roads]) == {"1_1_L"}
+    assert set([r.road_id for r in r_1_0_L.outgoing_roads]) == set()
+
+    r_1_1_R = road_map.road_by_id("1_1_R")
+    assert r_1_1_R
+    assert len(r_1_1_R.lanes) == 3
+    assert not r_1_1_R.is_junction
+    assert set([r.road_id for r in r_1_1_R.incoming_roads]) == {"1_0_R"}
+    assert set([r.road_id for r in r_1_1_R.outgoing_roads]) == {"1_2_R"}
+    assert set([s.surface_id for s in r_1_1_R.entry_surfaces]) == {"1_0_R"}
+    assert set([s.surface_id for s in r_1_1_R.exit_surfaces]) == {"1_2_R"}
+
+    r_1_1_L = road_map.road_by_id("1_1_L")
+    assert r_1_1_L
+    assert len(r_1_1_L.lanes) == 3
+    assert not r_1_1_L.is_junction
+    assert set([r.road_id for r in r_1_1_L.incoming_roads]) == {"1_2_L"}
+    assert set([r.road_id for r in r_1_1_L.outgoing_roads]) == {"1_0_L"}
+    assert set([s.surface_id for s in r_1_1_L.entry_surfaces]) == {"1_2_L"}
+    assert set([s.surface_id for s in r_1_1_L.exit_surfaces]) == {"1_0_L"}
+
+    r_1_2_R = road_map.road_by_id("1_2_R")
+    assert r_1_2_R
+    assert len(r_1_2_R.lanes) == 3
+    assert not r_1_2_R.is_junction
+    assert set([r.road_id for r in r_1_2_R.incoming_roads]) == {"1_1_R"}
+    assert set([r.road_id for r in r_1_2_R.outgoing_roads]) == set()
+
+    r_1_2_L = road_map.road_by_id("1_2_L")
+    assert r_1_2_L
+    assert len(r_1_2_L.lanes) == 2
+    assert not r_1_2_L.is_junction
+    assert set([r.road_id for r in r_1_2_L.incoming_roads]) == set()
+    assert set([r.road_id for r in r_1_2_L.outgoing_roads]) == {"1_1_L"}
+
+    # Lane tests
+    l0 = road_map.lane_by_id("1_1_L_1")
+    assert l0
+    assert l0.road.road_id == "1_1_L"
+    assert l0.index == 2
+    assert l0.is_drivable
+
+    assert set([lane.lane_id for lane in l0.incoming_lanes]) == set()
+    assert set([lane.lane_id for lane in l0.outgoing_lanes]) == {"1_0_L_1"}
+    assert set([lane.lane_id for lane in l0.entry_surfaces]) == set()
+    assert set([lane.lane_id for lane in l0.exit_surfaces]) == {"1_0_L_1"}
+
+    right_lane, direction = l0.lane_to_right
+    assert right_lane
+    assert direction
+    assert right_lane.lane_id == "1_1_L_2"
+    assert right_lane.index == 1
+
+    left_lane, direction = l0.lane_to_left
+    assert left_lane
+    assert not direction
+    assert left_lane.lane_id == "1_1_R_-1"
+    assert left_lane.index == 2
+
+    further_right_lane, direction = right_lane.lane_to_right
+    assert further_right_lane
+    assert direction
+    assert further_right_lane.lane_id == "1_1_L_3"
+    assert further_right_lane.is_drivable
+    assert set([lane.lane_id for lane in further_right_lane.outgoing_lanes]) == {
+        "1_0_L_3"
+    }
+    assert further_right_lane.index == 0
+
+    l1 = road_map.lane_by_id("1_1_R_-1")
+    assert l1
+    assert l1.road.road_id == "1_1_R"
+    assert l1.index == 2
+    assert l1.is_drivable
+
+    left_lane, direction = l1.lane_to_left
+    assert left_lane
+    assert not direction
+    assert left_lane.lane_id == "1_1_L_1"
+    assert left_lane.index == 2
+
+    l2 = road_map.lane_by_id("1_1_R_-2")
+    assert [l.lane_id for l in l2.incoming_lanes] == []
+
+    # Test for lane vector when lane offset is outside lane
+    l0_vector = l0.vector_at_offset(50.01)
+    l0_vector = l0_vector.tolist()
+    assert l0_vector == [-0.9999973500028005, -0.0020437969740241257, 0.0]
+
+    # point on lane
+    point = (31.0, 2.0, 0)
+    refline_pt = l0.to_lane_coord(point)
+    assert round(refline_pt.s, 2) == 44.02
+    assert round(refline_pt.t, 2) == -0.31
+
+    offset = refline_pt.s
+    assert round(l0.width_at_offset(offset), 2) == 3.12
+    assert round(l0.curvature_radius_at_offset(offset), 2) == -291.53
+    assert l0.contains_point(point)
+    assert l0.road.contains_point(point)
+
+    # lane edges on point
+    left_edge, right_edge = l0.edges_at_point(point)
+    assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (31.08, 0.13)
+    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (31.0, 3.25)
+
+    # road edges on point
+    road_left_edge, road_right_edge = r_1_1_R.edges_at_point(point)
+    assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (31.08, 0.13)
+    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (31.0, -6.5)
+
+    # point not on lane but on road
+    point = (31.0, 4.5, 0)
+    refline_pt = l0.to_lane_coord(point)
+    assert round(refline_pt.s, 2) == 43.97
+    assert round(refline_pt.t, 2) == -2.81
+
+    offset = refline_pt.s
+    assert round(l0.width_at_offset(offset), 2) == 3.12
+    assert round(l0.curvature_radius_at_offset(offset), 2) == -292.24
+    assert not l0.contains_point(point)
+    assert l0.road.contains_point(point)
+
+    # check for locations (lane, offset tuples) within distance at this offset
+    candidates = l0.project_along(offset, 20)
+    assert (len(candidates)) == 3
+
+    # nearest lanes for a point in lane
+    point = (60.0, -2.38, 0)
+    l4 = road_map.nearest_lane(point)
+    assert l4.lane_id == "1_1_R_-2"
+    assert l4.road.road_id == "1_1_R"
+    assert l4.index == 1
+    assert l4.road.contains_point(point)
+    assert l4.is_drivable
+
+    # get the road for point containing it
+    point = (80.0, 1.3, 0)
+    r4 = road_map.road_with_point(point)
+    assert r4.road_id == "1_2_R"
+
+    # route generation
+    start = road_map.road_by_id("1_0_R")
+    end = road_map.road_by_id("1_2_R")
+    route = road_map.generate_routes(start, end)
+    assert [r.road_id for r in route[0].roads] == ["1_0_R", "1_1_R", "1_2_R"]
+
+    # waypoints generation along route
+    lp_1_0_R = road_map._lanepoints._lanepoints_by_lane_id["1_0_R_-1"]
+    lp_pose = lp_1_0_R[0].lp.pose
+    waypoints_for_route = road_map.waypoint_paths(lp_pose, 60, route=route[0])
+    assert len(waypoints_for_route) == 6
+    assert len(waypoints_for_route[0]) == 61
+    lane_ids_under_wps = frozenset(
+        [
+            frozenset([wp.lane_id for wp in waypoints_for_route[i]])
+            for i in range(len(waypoints_for_route))
+        ]
+    )
+    assert {"1_0_R_-1", "1_1_R_-1"} in lane_ids_under_wps
+    assert {"1_0_R_-2", "1_1_R_-3"} in lane_ids_under_wps
+
+    # distance between points along route
+    start_point = Point(x=17.56, y=-1.67, z=0.0)
+    end_point = Point(x=89.96, y=2.15, z=0.0)
+    assert round(route[0].distance_between(start_point, end_point), 2) == 72.4
+    # project along route
+    candidates = route[0].project_along(start_point, 70)
+    assert len(candidates) == 3
+
+    # Lanepoints
+    lanepoints = road_map._lanepoints
+
+    point = (48.39, 0.4, 0)
+    l1_lane_point = lanepoints.closest_lanepoint_on_lane_to_point(point, "1_1_R_-1")
+    assert (
+        round(l1_lane_point.pose.position[0], 2),
+        round(l1_lane_point.pose.position[1], 2),
+    ) == (48.5, -0.15)
+
+    point = (20.0, 1.3, 0)
+    r0_linked_lane_point = lanepoints.closest_linked_lanepoint_on_road(point, "1_0_L")
+    assert r0_linked_lane_point.lp.lane.lane_id == "1_0_L_1"
+    assert (
+        round(r0_linked_lane_point.lp.pose.position[0], 2),
+        round(r0_linked_lane_point.lp.pose.position[1], 2),
+    ) == (20.0, 1.62)
+
+    r0_lp_path = lanepoints.paths_starting_at_lanepoint(r0_linked_lane_point, 5, ())
+    assert len(r0_lp_path) == 1
+    assert [llp.lp.lane.lane_id for llp in r0_lp_path[0]].count("1_0_L_1") == 6
