@@ -15,7 +15,7 @@ import env.action as action
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
-from examples.argument_parser import default_argument_parser
+from argument_parser import default_argument_parser
 
 
 yaml = YAML(typ="safe")
@@ -98,14 +98,15 @@ def main(args):
             model, env, n_eval_episodes=10, deterministic=True
         )
         print(f"mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}")
-    else:
+    elif args.mode == "retrain":
+        model = PPO.load(args.logdir)
         env = create_env(config_env)
-        model = PPO("CnnPolicy", env, verbose=1)
 
         before_mean_reward, before_std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
-        model.learn(total_timesteps=1000000)
+        model.set_env(env)
+        model.learn(total_timesteps=100000)
         mean_reward, std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
@@ -118,7 +119,29 @@ def main(args):
         from datetime import datetime
 
         date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        save_path = pathlib.Path(__file__).absolute().parents[0] / "logs" / date_time
+        save_path = pathlib.Path(__file__).absolute().parent / "logs" / date_time
+        model.save(save_path)
+    else:
+        env = create_env(config_env)
+        model = PPO("CnnPolicy", env, verbose=1, use_sde=True)
+
+        before_mean_reward, before_std_reward = evaluate_policy(
+            model, env, n_eval_episodes=10, deterministic=True
+        )
+        model.learn(total_timesteps=100000)
+        mean_reward, std_reward = evaluate_policy(
+            model, env, n_eval_episodes=10, deterministic=True
+        )
+        print(
+            f"before_mean_reward:{before_mean_reward:.2f} +/- {before_std_reward:.2f}"
+        )
+        print(f"mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}")
+
+        # save trained model
+        from datetime import datetime
+
+        date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+        save_path = pathlib.Path(__file__).absolute().parent / "logs" / date_time
         model.save(save_path)
 
 
