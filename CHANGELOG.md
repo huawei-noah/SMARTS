@@ -55,6 +55,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
   for clarity since we are adding the ability to have variable time steps.
 ### Removed
+- Remove `ray_multi_instance` example when running `make sanity-test`
 
 ## [0.4.18] - 2021-07-22
 ### Added 

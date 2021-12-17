@@ -59,7 +59,7 @@ hyperlink==21.0.0
 idna==3.3
 ijson==3.1.4
 imageio==2.9.0
-importlib-metadata==4.8.2
+importlib-metadata==4.9.0
 importlib-resources==5.4.0
 incremental==21.3.0
 iniconfig==1.1.1
@@ -71,7 +71,7 @@ Jinja2==3.0.3
 joblib==1.1.0
 jsonpatch==1.32
 jsonpointer==2.2
-jsonschema==4.3.0
+jsonschema==4.3.1
 jupyter-client==6.1.12
 jupyter-core==4.9.1
 jupyter-server==1.13.1
