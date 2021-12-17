@@ -526,6 +526,11 @@ class OpenDriveRoadNetwork(RoadMap):
                 if road_predecessor and road_predecessor.elementType == "road":
                     road_id = road_predecessor.element_id
                     pred_road_elem = od.getRoad(road_id)
+                    if not pred_road_elem:
+                        self._log.warning(
+                            f"Predecessor road {road_id} does not exist for road {road_elem.id}"
+                        )
+                        return
                     section_id = (
                         pred_road_elem.lanes.getLastLaneSectionIdx()
                         if road_predecessor.contactPoint == "end"
@@ -563,6 +568,11 @@ class OpenDriveRoadNetwork(RoadMap):
                 if road_successor and road_successor.elementType == "road":
                     road_id = road_successor.element_id
                     succ_road_elem = od.getRoad(road_id)
+                    if not succ_road_elem:
+                        self._log.warning(
+                            f"Successor road {road_id} does not exist for road {road_elem.id}"
+                        )
+                        return
                     section_id = (
                         succ_road_elem.lanes.getLastLaneSectionIdx()
                         if road_successor.contactPoint == "end"

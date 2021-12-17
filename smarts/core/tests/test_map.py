@@ -429,6 +429,27 @@ def test_od_4lane():
     assert [r.road_id for r in invalid_route[0].roads] == []
 
 
+def test_od_newmarket():
+    root = path.join(Path(__file__).parent.absolute(), "maps")
+    road_map = OpenDriveRoadNetwork.from_file(
+        path.join(root, "od_newmarket.xodr"), lanepoint_spacing=1.0, sumo_to_od=True
+    )
+    assert isinstance(road_map, OpenDriveRoadNetwork)
+
+    # Expected properties for all roads and lanes
+    for road_id, road in road_map._roads.items():
+        assert type(road_id) == str
+        assert road.is_junction is not None
+        assert road.length is not None
+        assert road.length >= 0
+        assert road.parallel_roads == []
+        for lane in road.lanes:
+            assert lane.in_junction is not None
+            assert lane.length is not None
+            assert lane.length >= 0
+            assert lane.speed_limit >= 0
+
+
 def test_od_map_junction():
     root = path.join(Path(__file__).parent.absolute(), "maps")
     road_map = OpenDriveRoadNetwork.from_file(
