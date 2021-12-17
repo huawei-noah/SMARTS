@@ -134,7 +134,7 @@ def test_sumo_map(sumo_scenario):
 def test_od_4lane():
     root = path.join(Path(__file__).parent.absolute(), "maps")
     road_map = OpenDriveRoadNetwork.from_file(
-        path.join(root, "4lane_map.xodr"), lanepoint_spacing=1.0, sumo_to_od=True
+        path.join(root, "4lane_map.xodr"), lanepoint_spacing=1.0
     )
     assert isinstance(road_map, OpenDriveRoadNetwork)
 
