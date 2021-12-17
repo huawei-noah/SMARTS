@@ -49,7 +49,10 @@ def _smarts_with_agent(request, agent) -> SMARTS:
         traffic_sim=SumoTrafficSimulation(headless=True),
         envision=None,
         config=SmartsConfig.from_dictionary(
-            {"renderer-debug-mode": renderer_debug_mode}
+            {
+                "renderer-debug-mode": renderer_debug_mode,
+                # "renderer-p3d-backend": "p3tinydisplay",
+            }
         ),
     )
 

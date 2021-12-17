@@ -76,13 +76,15 @@ class _ShowBaseInstance(ShowBase):
     """ Wraps a singleton instance of ShowBase from Panda3D. """
 
     _debug_mode = DEBUG_MODE.WARNING
+    _rendering_backend = "p3headlessgl"
 
     def __new__(cls):
         # Singleton pattern:  ensure only 1 ShowBase instance
         if "__it__" not in cls.__dict__:
             if cls._debug_mode <= DEBUG_MODE.INFO:
                 loadPrcFileData("", "gl-debug #t")
-            loadPrcFileData("", "load-display p3headlessgl")
+            loadPrcFileData("", f"load-display {cls._rendering_backend}")
+            loadPrcFileData("", "aux-display p3headlessgl")
             loadPrcFileData("", "aux-display pandagl")
             loadPrcFileData("", "aux-display pandadx9")
             loadPrcFileData("", "aux-display pandagles")
@@ -112,6 +114,10 @@ class _ShowBaseInstance(ShowBase):
     @classmethod
     def set_rendering_mode(cls, debug_mode: DEBUG_MODE):
         cls._debug_mode = debug_mode
+
+    @classmethod
+    def set_rendering_backend(cls, backend: str):
+        cls._rendering_backend = backend
 
     def __init__(self):
         pass  # singleton pattern, uses init() instead (don't call super().__init__() here!)
@@ -188,6 +194,9 @@ class Renderer:
         # but all Renderer objects share the same ShowBaseInstance.
         debug_mode = DEBUG_MODE[config.get("renderer-debug-mode", "warning").upper()]
         _ShowBaseInstance.set_rendering_mode(debug_mode=debug_mode)
+        _ShowBaseInstance.set_rendering_backend(
+            backend=config.get("renderer-p3d-backend", "p3headlessgl")
+        )
         self._showbase_instance = _ShowBaseInstance()
 
     @property

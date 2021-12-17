@@ -1,7 +1,7 @@
 # Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
+# of this software and associated documentation files (the "Software,, to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
@@ -20,7 +20,23 @@
 from typing import Dict, Set
 
 _valid_configs: Dict[str, Set[str]] = {
-    "renderer-debug-mode": {"spam", "debug", "info", "warning", "error"}
+    "renderer-debug-mode": {
+        "spam",
+        "debug",
+        "info",
+        "warning",
+        "error",
+    },
+    # Exposing basic renderer logging configuration
+    "renderer-p3d-backend": {
+        "p3headlessgl",
+        "pandagl",
+        "pandadx9",
+        "pandagles",
+        "pandagles2",
+        "p3tinydisplay",
+    },
+    # See https://docs.panda3d.org/1.10/python/programming/configuration/configuring-panda3d
 }
 
 
