@@ -1,4 +1,4 @@
-name: SMARTS CI Format & Dependencies
+name: SMARTS CI Format
 
 on: [push, pull_request]
 
@@ -24,17 +24,3 @@ jobs:
           apt-get install -y nodejs
           black --check .
           npx prettier --check envision/web/src
-
-  check-requirements-change-linux:
-    runs-on: ubuntu-18.04
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.18-minimal
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Test pip packages
-        run: |
-          cd $GITHUB_WORKSPACE
-          . ./utils/setup/test_pip_packages.sh
-        continue-on-error: true
-

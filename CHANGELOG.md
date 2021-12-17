@@ -20,6 +20,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added Base CI and dependencies requirement tests for the "darwin" platform (MacOS).
 - Extended Imitation Learning codebase to allow importing traffic histories from the Waymo motion dataset and replay in a SMARTS simulation. See PR #1060.
 - Added `ros` extension rule to `setup.py`.
+- Added a script to allow users to hijack history vehicles dynamically through a trigger event. See PR #1088.
 - Added a `-y` option to `utils/setup/install_deps.sh` to accept installation by default. See issue #1081.
 - Added `ParallelEnv` class and a corresponding example to simulate multiple SMARTS environments in parallel, with synchronous or asynchronous episodes.
 - Added `smarts.core.utils.import_utils` to help with the dynamic import of modules.
@@ -38,10 +39,13 @@ Copy and pasting the git commit messages is __NOT__ enough.
     - Moved the definition of `Waypoint` from `smarts.core.mission_planner` to `smarts.core.road_map`.
     - Moved the definition of `Mission` and `Goal` classes from `smarts.core.scenario` to `smarts.core.plan`.
 - `smarts.sstudio.types.Scenario`'s attribute `social_agent_missions` renamed to `social_agents`.
-    - `social_agent` attribute modified to enforce actor to mission pairing.
+- `social_agent` attribute modified to enforce actor to mission pairing.
 - Social actor pairings to their missions are now explicit and no longer expanded into permutations. 
+- Changed the type hint for `EgoVehicleObservation`: it returns a numpy array (and always has).
+- Raised a warning message for building scenarios without `map.net.xml` file. See PR #1161.
 ### Fixed
-- Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992. 
+- Fix lane vector for the unique cases of lane offset >= lane's length. See PR #1173.
+- Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992.
 - Prevent `test_notebook.ipynb` cells from timing out by increasing time to unlimited using `/metadata/execution/timeout=-1` within the notebook for regular uses, and `pytest` call with `--nb-exec-timeout -1` option for tests. See for more details: "https://jupyterbook.org/content/execute.html#setting-execution-timeout" and "https://pytest-notebook.readthedocs.io/en/latest/user_guide/tutorial_intro.html#pytest-fixture".
 - Stop `multiprocessing.queues.Queue` from throwing an error by importing `multiprocessing.queues` in `envision/utils/multiprocessing_queue.py`.
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
@@ -50,11 +54,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Mapped Polygon object output of Route.geometry() to sequence of coordinates.
 - Updated deprecated Shapely functionality.
 - Logic fixes to reasonably define multiple social agents by explicitly matching social actors to missions.
+- Fixed the type of `position` (pose) fields emitted to envision to match the existing type hints of `tuple`.
+- Properly detect whether waypoint is present in mission route, while computing distance travelled by agents with missions in TripMeterSensor.
 ### Deprecated
 - The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
   for clarity since we are adding the ability to have variable time steps.
 - Deprecated `smarts.sstudio.gen_social_agent_missions(...)` in favor of `smarts.sstudio.gen_social_agents(...)` to enforce actor to mission pairings.
 ### Removed
+- Remove `ray_multi_instance` example when running `make sanity-test`
 
 ## [0.4.18] - 2021-07-22
 ### Added 
@@ -100,6 +107,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an args count error caused by `websocket.on_close()` sending a variable number of args.
 - Fixed the multi-instance display of `envision`. See Issue #784.
 - Caught abrupt terminate signals, in order to shutdown zoo manager and zoo workers.
+- Include tire model in package by moving `tire_parameters.yaml` from `./examples/tools` to `./smarts/core/models`. See Issue #1140
 ### Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 - Removed `supervisord.conf` and `supervisor` from dependencies and requirements. See Issue #802.

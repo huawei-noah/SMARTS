@@ -24,7 +24,7 @@ class ChaseViaPointsAgent(Agent):
     def act(self, obs: Observation):
         if (
             len(obs.via_data.near_via_points) < 1
-            or obs.ego_vehicle_state.edge_id != obs.via_data.near_via_points[0].edge_id
+            or obs.ego_vehicle_state.road_id != obs.via_data.near_via_points[0].road_id
         ):
             return (obs.waypoint_paths[0][0].speed_limit, 0)
 

@@ -178,7 +178,7 @@ class SumoRoadNetwork(RoadMap):
 
     @property
     def source(self) -> str:
-        """ This is the net.xml file that corresponds with our possibly-offset coordinates. """
+        """This is the net.xml file that corresponds with our possibly-offset coordinates."""
         return self._net_file
 
     @cached_property
@@ -195,7 +195,7 @@ class SumoRoadNetwork(RoadMap):
         return self._default_lane_width / SumoRoadNetwork.DEFAULT_LANE_WIDTH
 
     def to_glb(self, at_path):
-        """ build a glb file for camera rendering and envision """
+        """build a glb file for camera rendering and envision"""
         polys = self._compute_road_polygons()
         glb = self._make_glb_from_polys(polys)
         glb.write_glb(at_path)
@@ -325,10 +325,18 @@ class SumoRoadNetwork(RoadMap):
                 return result
             my_vect = self.vector_at_offset(offset)
             my_norm = np.linalg.norm(my_vect)
+            if my_norm == 0:
+                return result
             threshold = -0.995562  # cos(175*pi/180)
             for lane, _ in nearby_lanes:
-                lv = lane.vector_at_offset(offset)
-                lane_angle = np.dot(my_vect, lv) / (my_norm * np.linalg.norm(lv))
+                if lane == self:
+                    continue
+                lane_refline_pt = lane.to_lane_coord(pt)
+                lv = lane.vector_at_offset(lane_refline_pt.s)
+                lv_norm = np.linalg.norm(lv)
+                if lv_norm == 0:
+                    continue
+                lane_angle = np.dot(my_vect, lv) / (my_norm * lv_norm)
                 if lane_angle < threshold:
                     result.append(lane)
             return result

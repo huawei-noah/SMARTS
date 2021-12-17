@@ -54,7 +54,7 @@ class VehicleObservation(NamedTuple):
 
 class EgoVehicleObservation(NamedTuple):
     id: str
-    position: Tuple[float, float, float]
+    position: np.ndarray
     bounding_box: Dimensions
     heading: Heading
     speed: float
@@ -252,9 +252,9 @@ class Sensors:
 
         ego_vehicle_observation = EgoVehicleObservation(
             id=ego_vehicle_state.vehicle_id,
-            position=ego_vehicle_state.pose.position,
+            position=np.array(ego_vehicle_state.pose.position),
             bounding_box=ego_vehicle_state.dimensions,
-            heading=ego_vehicle_state.pose.heading,
+            heading=Heading(ego_vehicle_state.pose.heading),
             speed=ego_vehicle_state.speed,
             steering=ego_vehicle_state.steering,
             yaw_rate=ego_vehicle_state.yaw_rate,
@@ -818,7 +818,7 @@ class TripMeterSensor(Sensor):
             # if we do not have a fixed route, we count all waypoints we accumulate
             not self._plan.mission.has_fixed_route
             # if we have a route to follow, only count wps on route
-            or wp_road in self._plan.route.roads
+            or wp_road in [road.road_id for road in self._plan.route.roads]
         )
 
         if not self._wps_for_distance:
