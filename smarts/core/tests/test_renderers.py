@@ -97,15 +97,22 @@ def scenario():
 
 
 class RenderThread(threading.Thread):
-    def __init__(self, r, scenario, num_steps=3):
+    def __init__(self, r, scenario, renderer_debug_mode, num_steps=3):
         self._rid = "r{}".format(r)
         super().__init__(target=self.test_renderer, name=self._rid)
 
         try:
-            from smarts.core.renderer import Renderer
+            from smarts.core.renderer import get_renderer
 
-            self._rdr = Renderer(self._rid)
-        except Exception as e:
+            self._rdr = get_renderer(
+                self._rid,
+                SmartsConfig.from_dictionary(
+                    {"renderer-debug-mode": renderer_debug_mode}
+                ),
+            )
+        except ImportError as e:
+            raise e
+        except Exception:
             raise RendererException.required_to("run test_renderer.py")
 
         self._scenario = scenario
@@ -131,10 +138,11 @@ class RenderThread(threading.Thread):
         self._rdr.remove_vehicle_node(self._vid)
 
 
-def test_multiple_renderers(scenario):
+def test_multiple_renderers(scenario, request):
     assert p3dThread.isThreadingSupported()
+    renderer_debug_mode = request.config.getoption("--renderer-debug-mode")
     num_renderers = 3
-    rts = [RenderThread(r, scenario) for r in range(num_renderers)]
+    rts = [RenderThread(r, scenario, renderer_debug_mode) for r in range(num_renderers)]
     for rt in rts:
         rt.start()
     for rt in rts:
