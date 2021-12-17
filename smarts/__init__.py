@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 
-from importlib.metadata import version  
+from importlib_metadata import version
 
 # The full version, including alpha/beta/rc tags
 VERSION = version("smarts")
