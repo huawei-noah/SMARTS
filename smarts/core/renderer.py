@@ -98,6 +98,7 @@ class _ShowBaseInstance(ShowBase):
             loadPrcFileData("", "gl-version 3 3")
             loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
             loadPrcFileData("", "print-pipe-types false")
+            loadPrcFileData("", "basic-shaders-only #t")
             # https://www.panda3d.org/manual/?title=Multithreaded_Render_Pipeline
             # loadPrcFileData('', 'threading-model Cull/Draw')
             # have makeTextureBuffer create a visible window
