@@ -432,7 +432,7 @@ def test_od_4lane():
 def test_od_newmarket():
     root = path.join(Path(__file__).parent.absolute(), "maps")
     road_map = OpenDriveRoadNetwork.from_file(
-        path.join(root, "od_newmarket.xodr"), lanepoint_spacing=1.0, sumo_to_od=True
+        path.join(root, "od_newmarket.xodr"), lanepoint_spacing=1.0
     )
     assert isinstance(road_map, OpenDriveRoadNetwork)
 
