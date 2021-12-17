@@ -206,7 +206,6 @@ class OpenDriveRoadNetwork(RoadMap):
         default_lane_speed=None,
         default_lane_width=None,
         lanepoint_spacing=None,
-        sumo_to_od=False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._xodr_file = xodr_file
@@ -230,7 +229,7 @@ class OpenDriveRoadNetwork(RoadMap):
         # To preserve a specific order of lanes for building R tree
         self._all_lanes = []
 
-        self.load(sumo_to_od)
+        self.load()
         self._waypoints_cache = WaypointsCache()
         if lanepoint_spacing is not None:
             assert lanepoint_spacing > 0
@@ -244,13 +243,11 @@ class OpenDriveRoadNetwork(RoadMap):
         xodr_file,
         default_lane_width=None,
         lanepoint_spacing=None,
-        sumo_to_od=False,
     ):
         od_map = cls(
             xodr_file,
             default_lane_width=default_lane_width,
             lanepoint_spacing=lanepoint_spacing,
-            sumo_to_od=sumo_to_od,
         )
         return od_map
 
@@ -262,7 +259,7 @@ class OpenDriveRoadNetwork(RoadMap):
             assert type(elem) == LaneElement
             return f"{elem.parentRoad.id}_{elem.lane_section.idx}_{suffix}_{elem.id}"
 
-    def load(self, sumo_to_od):
+    def load(self):
         # Parse the xml definition into an initial representation
         start = time.time()
         with open(self._xodr_file, "r") as f:
@@ -474,35 +471,34 @@ class OpenDriveRoadNetwork(RoadMap):
                 lane.foes = list(set(result))
 
             # recompute lane to left using road geometry if the map was converted from SUMO to OpenDRIVE
-            if sumo_to_od:
-                curr_leftmost_lane = road.lane_at_index(road.total_lanes - 1)
-                if curr_leftmost_lane and curr_leftmost_lane.lane_to_left[0] is None:
-                    for other_road_id in self._roads:
-                        if other_road_id == road.road_id:
-                            continue
-                        other_road = self._roads[other_road_id]
-                        other_leftmost_lane = other_road.lane_at_index(
-                            other_road.total_lanes - 1
-                        )
-                        if other_leftmost_lane.lane_to_left[0] is not None:
-                            continue
-                        curr_leftmost_edge_shape, _ = road._shape(0)
-                        other_leftmost_edge_shape, _ = other_road._shape(0)
-                        edge_border_i = np.array(
-                            [curr_leftmost_edge_shape[0], curr_leftmost_edge_shape[-1]]
-                        )  # start and end position
-                        edge_border_j = np.array(
-                            [
-                                other_leftmost_edge_shape[-1],
-                                other_leftmost_edge_shape[0],
-                            ]
-                        )  # start and end position with reverse traffic direction
+            curr_leftmost_lane = road.lane_at_index(road.total_lanes - 1)
+            if curr_leftmost_lane and curr_leftmost_lane.lane_to_left[0] is None:
+                for other_road_id in self._roads:
+                    if other_road_id == road.road_id:
+                        continue
+                    other_road = self._roads[other_road_id]
+                    other_leftmost_lane = other_road.lane_at_index(
+                        other_road.total_lanes - 1
+                    )
+                    if other_leftmost_lane.lane_to_left[0] is not None:
+                        continue
+                    curr_leftmost_edge_shape, _ = road._shape(0)
+                    other_leftmost_edge_shape, _ = other_road._shape(0)
+                    edge_border_i = np.array(
+                        [curr_leftmost_edge_shape[0], curr_leftmost_edge_shape[-1]]
+                    )  # start and end position
+                    edge_border_j = np.array(
+                        [
+                            other_leftmost_edge_shape[-1],
+                            other_leftmost_edge_shape[0],
+                        ]
+                    )  # start and end position with reverse traffic direction
 
-                        # The edge borders of two lanes do not always overlap perfectly,
-                        # thus relax the tolerance threshold to 1
-                        if np.linalg.norm(edge_border_i - edge_border_j) < 1:
-                            curr_leftmost_lane.lane_to_left = other_leftmost_lane, False
-                            other_leftmost_lane.lane_to_left = curr_leftmost_lane, False
+                    # The edge borders of two lanes do not always overlap perfectly,
+                    # thus relax the tolerance threshold to 1
+                    if np.linalg.norm(edge_border_i - edge_border_j) < 1:
+                        curr_leftmost_lane.lane_to_left = other_leftmost_lane, False
+                        other_leftmost_lane.lane_to_left = curr_leftmost_lane, False
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)

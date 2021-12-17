@@ -134,7 +134,7 @@ def test_sumo_map(sumo_scenario):
 def test_od_4lane():
     root = path.join(Path(__file__).parent.absolute(), "maps")
     road_map = OpenDriveRoadNetwork.from_file(
-        path.join(root, "4lane_map.xodr"), lanepoint_spacing=1.0, sumo_to_od=True
+        path.join(root, "4lane_map.xodr"), lanepoint_spacing=1.0
     )
     assert isinstance(road_map, OpenDriveRoadNetwork)
 
@@ -870,12 +870,12 @@ def test_od_map_figure_eight():
 
 def test_od_map_lane_offset():
     root = path.join(Path(__file__).parent.absolute(), "maps")
-    file_path = path.join(root, "Ex_Simple-LaneOffset.xodr")
+    file_path = path.join(root, "lane_offset.xodr")
     road_map = OpenDriveRoadNetwork.from_file(file_path, lanepoint_spacing=0.5)
     assert isinstance(road_map, OpenDriveRoadNetwork)
     assert road_map.source == file_path
-    assert road_map.bounding_box.max_pt == Point(x=100.0, y=8.0, z=0)
-    assert road_map.bounding_box.min_pt == Point(x=0.0, y=-5.250000000000002, z=0)
+    assert road_map.bounding_box.max_pt == Point(x=100.0, y=9.75, z=0)
+    assert road_map.bounding_box.min_pt == Point(x=0.0, y=-6.500000000000002, z=0)
 
     # Expected properties for all roads and lanes
     for road_id, road in road_map._roads.items():
@@ -973,6 +973,10 @@ def test_od_map_lane_offset():
     assert further_right_lane
     assert direction
     assert further_right_lane.lane_id == "1_1_L_3"
+    assert further_right_lane.is_drivable
+    assert set([lane.lane_id for lane in further_right_lane.outgoing_lanes]) == {
+        "1_0_L_3"
+    }
     assert further_right_lane.index == 0
 
     l1 = road_map.lane_by_id("1_1_R_-1")
@@ -1015,7 +1019,7 @@ def test_od_map_lane_offset():
     # road edges on point
     road_left_edge, road_right_edge = r_1_1_R.edges_at_point(point)
     assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (31.08, 0.13)
-    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (31.0, -5.25)
+    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (31.0, -6.5)
 
     # point not on lane but on road
     point = (31.0, 4.5, 0)
@@ -1057,7 +1061,7 @@ def test_od_map_lane_offset():
     lp_1_0_R = road_map._lanepoints._lanepoints_by_lane_id["1_0_R_-1"]
     lp_pose = lp_1_0_R[0].lp.pose
     waypoints_for_route = road_map.waypoint_paths(lp_pose, 200, route=route[0])
-    assert len(waypoints_for_route) == 4
+    assert len(waypoints_for_route) == 18
     assert len(waypoints_for_route[0]) == 201
     lane_ids_under_wps = [
         set([wp.lane_id for wp in waypoints_for_route[i]])
