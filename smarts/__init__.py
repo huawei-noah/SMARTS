@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 
-import pkg_resources
+import importlib
 
 # The full version, including alpha/beta/rc tags
-# VERSION = pkg_resources.get_distribution("smarts").version
+VERSION = importlib.metadata.version("smarts")
