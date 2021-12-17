@@ -65,6 +65,7 @@ setup(
             "pytest-cov>=3.0.0",
             "pytest-notebook>=0.6.1",
             "pytest-xdist>=2.4.0",
+            "pylint>=2.12.2" # Used for checking if the public module/classes/methods contains docstrings
             "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
             "tensorflow>=2.4.0",  # For rllib tests
         ],
