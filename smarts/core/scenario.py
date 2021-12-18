@@ -105,6 +105,11 @@ class Scenario:
             self._traffic_history = None
             default_lane_width = None
 
+        # XXX: using a map builder_fn supplied by users is a security risk
+        # as SMARTS will be executing the code "as is".  We are currently
+        # trusting our users to not try to sabotage their own simulations.
+        # In the future, this may need to be revisited if SMARTS is ever
+        # shared in a multi-user mode.
         if not map_spec:
             map_spec = Scenario.discover_map(self._root, 1.0, default_lane_width)
         self._road_map, self._road_map_hash = map_spec.builder_fn(map_spec)
