@@ -83,7 +83,7 @@ setup(
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
-            "pylint>=2.12.2", # Used for checking if the public module/classes/methods contains docstrings
+            "pylint>=2.12.2",  # Used for checking if the public module/classes/methods contains docstrings
         ],
         "camera-obs": [
             "Panda3D==1.10.9",
