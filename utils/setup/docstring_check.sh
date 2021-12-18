@@ -10,7 +10,7 @@ function check_pylint_existance {
 function run_pylint {
     echo "Checking docstring existance for all files in the current directory and all sub-directories..."
     # Please check https://pylint.pycqa.org/en/latest/index.html for manual
-    pylint -d all -e missing-docstring -s n --msg-template='{path}: {msg_id}: line {line}: {msg} ({symbol})' --output=./utils/setup/docstring_check_result.txt *
+    pylint -d all -e missing-function-docstring -e missing-class-docstring -s n --ignore marl_benchmark,examples,scenarios,docs --msg-template='{path}: {msg_id}: line {line}: {msg} ({symbol})' --output=./utils/setup/docstring_check_result.txt *
     echo "Done."
 }
 
