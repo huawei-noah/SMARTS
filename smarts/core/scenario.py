@@ -407,6 +407,11 @@ class Scenario:
 
     @staticmethod
     def _build_map(scenario_root: str) -> Tuple[RoadMap, str]:
+        # XXX: using a map builder_fn supplied by users is a security risk
+        # as SMARTS will be executing the code "as is".  We are currently
+        # trusting our users to not try to sabotage their own simulations.
+        # In the future, this may need to be revisited if SMARTS is ever
+        # shared in a multi-user mode.
         map_spec = Scenario.discover_map(scenario_root)
         return map_spec.builder_fn(map_spec)
 
