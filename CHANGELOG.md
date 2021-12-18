@@ -106,6 +106,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Made Panda3D and its modules optional as a requirement/dependencies to setup SMARTS. See Issue #883.
 - Updated the `Tensorflow` version to `2.2.1` for rl-agent and bump up its version to `1.0`. See Issue #211.
 - Made `Ray` and its module `Ray[rllib]` optional as a requirement/dependency to setup SMARTS. See Issue #917.
+- Added an error if a `SMARTS` instance reaches program exit without a manual `del` of the instance or a call to `SMARTS.destroy()`.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
 - Fix a minor bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
@@ -118,6 +119,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed the multi-instance display of `envision`. See Issue #784.
 - Caught abrupt terminate signals, in order to shutdown zoo manager and zoo workers.
 - Include tire model in package by moving `tire_parameters.yaml` from `./examples/tools` to `./smarts/core/models`. See Issue #1140
+- Fixed an issue where `SMARTS.destroy()` would still cause `SMARTS.__del__()` to throw an error at program exit.
 ### Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 - Removed `supervisord.conf` and `supervisor` from dependencies and requirements. See Issue #802.

@@ -604,7 +604,7 @@ class SMARTS:
 
     def destroy(self):
         self.teardown()
-
+        self._vehicle_index = None
         if self._envision:
             self._envision.teardown()
 
@@ -625,7 +625,14 @@ class SMARTS:
             self._bullet_client = None
 
     def __del__(self):
-        self.destroy()
+        try:
+            self.destroy()
+        except (TypeError, AttributeError):
+            # This is a print statement because the logging module may be deleted at program exit.
+            print(
+                "ERROR: A SMARTS instance may have been deleted by gc before a call to destroy."
+                " Please call `SMARTS.destroy()` to make this error go away."
+            )
 
     def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
