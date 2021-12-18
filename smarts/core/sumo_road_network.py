@@ -185,7 +185,7 @@ class SumoRoadNetwork(RoadMap):
 
     def is_same_map(self, map_spec: MapSpec) -> bool:
         dlw = (
-            default_lane_width
+            map_spec.default_lane_width
             if map_spec.default_lane_width is not None
             else SumoRoadNetwork.DEFAULT_LANE_WIDTH
         )
