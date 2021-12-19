@@ -21,8 +21,10 @@ from .genscenario import (
     gen_bubbles,
     gen_friction_map,
     gen_group_laps,
+    gen_map,
     gen_missions,
     gen_scenario,
     gen_social_agent_missions,
     gen_traffic,
+    gen_traffic_histories,
 )

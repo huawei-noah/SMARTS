@@ -21,6 +21,7 @@ import logging
 import os
 import random
 import tempfile
+from dataclasses import replace
 
 import sh
 from yattag import Doc, indent
@@ -50,16 +51,13 @@ class RandomRouteGenerator:
         self._road_map = road_map
 
     @classmethod
-    def from_file(cls, net_file: str):
-        """Constructs a route generator from the given file
+    def from_spec(cls, map_spec: types.MapSpec):
+        """Constructs a route generator from the given map spec
 
         Args:
-            net_file: The path to a '\\*.net.xml' file (generally 'map.net.xml')
+            map_spec: An instance of types.MapSpec specifying a map location
         """
-        from smarts.core.default_map_factory import create_road_map
-
-        # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
-        road_map, _ = create_road_map(net_file, lanepoint_spacing=2.0)
+        road_map, _ = map_spec.builder_fn(map_spec)
         return cls(road_map)
 
     def __iter__(self):
@@ -108,6 +106,7 @@ class TrafficGenerator:
     def __init__(
         self,
         scenario_dir: str,
+        scenario_map_spec: types.MapSpec,
         log_dir: str = None,
         overwrite: bool = False,
     ):
@@ -120,7 +119,15 @@ class TrafficGenerator:
         self._scenario = scenario_dir
         self._overwrite = overwrite
         self._duarouter = sh.Command(sumolib.checkBinary("duarouter"))
+        self._scenario_map_spec = scenario_map_spec
         self._road_network_path = os.path.join(self._scenario, "map.net.xml")
+        if scenario_map_spec and scenario_map_spec.source:
+            if os.path.isfile(scenario_map_spec.source):
+                self._road_network_path = scenario_map_spec.source
+            elif os.path.exists(scenario_map_spec.source):
+                self._road_network_path = os.path.join(
+                    scenario_map_spec.source, "map.net.xml"
+                )
         self._road_network = None
         self._random_route_generator = None
         self._log_dir = self._resolve_log_dir(log_dir)
@@ -265,10 +272,20 @@ class TrafficGenerator:
             return route
 
         if not self._random_route_generator:
+            map_spec = route.map_spec
+            if not map_spec:
+                # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
+                lp_spacing = 2.0
+                if self._scenario_map_spec:
+                    map_spec = replace(
+                        self._scenario_map_spec, lanepoint_spacing=lp_spacing
+                    )
+                else:
+                    map_spec = types.MapSpec(
+                        self._road_network_path, lanepoint_spacing=lp_spacing
+                    )
             # Lazy-load to improve performance when not using random route generation.
-            self._random_route_generator = RandomRouteGenerator.from_file(
-                self._road_network_path
-            )
+            self._random_route_generator = RandomRouteGenerator.from_spec(map_spec)
 
         return next(self._random_route_generator)
 
