@@ -53,7 +53,7 @@ COPY . /src
 WORKDIR /src
 RUN pip install --no-cache-dir -e .[train,test,dev,camera-obs] && \
     cp -r /src/smarts.egg-info /media/smarts.egg-info
-RUN pip install --no-cache-dir stable-baselines3
+RUN pip install --no-cache-dir stable-baselines3[extra]
 RUN pip install --no-cache-dir ruamel.yaml==0.17.17 && \
 pip install --no-cache-dir ruamel.yaml.clib==0.2.6
 
