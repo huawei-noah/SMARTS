@@ -72,9 +72,7 @@ def get_road_map(map_spec) -> Tuple[RoadMap, str]:
                 map_path = new_map_path
                 break
             if i == len(supported_maps) - 1:
-                raise FileNotFoundError(
-                    f"Unable to find map in map_source={map_path}."
-                )
+                raise FileNotFoundError(f"Unable to find map in map_source={map_path}.")
 
     road_map = None
     if map_path.endswith("map.net.xml"):
