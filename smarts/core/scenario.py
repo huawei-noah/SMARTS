@@ -30,12 +30,13 @@ from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+import cloudpickle
 import numpy as np
 from cached_property import cached_property
 
 from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
 from smarts.core.data_model import SocialAgent
-from smarts.core.default_map_factory import create_road_map
+from smarts.core.default_map_builder import get_road_map
 from smarts.core.plan import (
     EndlessGoal,
     LapMission,
@@ -53,6 +54,7 @@ from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, pa
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.sstudio import types as sstudio_types
+from smarts.sstudio.types import MapSpec
 from smarts.sstudio.types import Via as SSVia
 
 
@@ -67,6 +69,11 @@ class Scenario:
             The social vehicle traffic spec.
         missions:
             agent_id to mission mapping.
+        map_spec:
+            If specified, allows specifying a MapSpec at run-time
+            to override any spec that may have been pre-specified
+            in the scenario folder (or the default if none were).
+            Also see comments around the sstudio.types.MapSpec defn.
     """
 
     def __init__(
@@ -78,6 +85,7 @@ class Scenario:
         log_dir: str = None,
         surface_patches: list = None,
         traffic_history: str = None,
+        map_spec: MapSpec = None,
     ):
 
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -97,9 +105,14 @@ class Scenario:
             self._traffic_history = None
             default_lane_width = None
 
-        self._road_map, self._road_map_hash = create_road_map(
-            self._root, 1.0, default_lane_width
-        )
+        # XXX: using a map builder_fn supplied by users is a security risk
+        # as SMARTS will be executing the code "as is".  We are currently
+        # trusting our users to not try to sabotage their own simulations.
+        # In the future, this may need to be revisited if SMARTS is ever
+        # shared in a multi-user mode.
+        if not map_spec:
+            map_spec = Scenario.discover_map(self._root, 1.0, default_lane_width)
+        self._road_map, self._road_map_hash = map_spec.builder_fn(map_spec)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
 
     def __repr__(self):
@@ -245,7 +258,7 @@ class Scenario:
         len(missions)`. In this case a list of one dictionary is returned.
         """
 
-        road_map, _ = create_road_map(scenario_root)
+        road_map, _ = Scenario._build_map(scenario_root)
 
         missions = []
         missions_file = os.path.join(scenario_root, "missions.pkl")
@@ -311,7 +324,7 @@ class Scenario:
         scenario_root = (
             scenario.root_filepath if isinstance(scenario, Scenario) else scenario
         )
-        road_map, _ = create_road_map(scenario_root)
+        road_map, _ = Scenario._build_map(scenario_root)
 
         social_agents_path = os.path.join(scenario_root, "social_agents")
         if not os.path.exists(social_agents_path):
@@ -391,6 +404,30 @@ class Scenario:
         ), f"No valid scenarios found in {scenario_or_scenarios_dir}"
 
         return discovered_scenarios
+
+    @staticmethod
+    def _build_map(scenario_root: str) -> Tuple[RoadMap, str]:
+        # XXX: using a map builder_fn supplied by users is a security risk
+        # as SMARTS will be executing the code "as is".  We are currently
+        # trusting our users to not try to sabotage their own simulations.
+        # In the future, this may need to be revisited if SMARTS is ever
+        # shared in a multi-user mode.
+        map_spec = Scenario.discover_map(scenario_root)
+        return map_spec.builder_fn(map_spec)
+
+    @staticmethod
+    def discover_map(
+        scenario_root: str,
+        lanepoint_spacing: float = None,
+        default_lane_width: float = None,
+    ) -> MapSpec:
+        path = os.path.join(scenario_root, "map_spec.pkl")
+        if not os.path.exists(path):
+            # Use our default map builder if none specified by scenario...
+            return MapSpec(scenario_root, lanepoint_spacing, default_lane_width)
+        with open(path, "rb") as f:
+            road_map = cloudpickle.load(f)
+            return road_map
 
     @staticmethod
     def discover_routes(scenario_root):
@@ -645,7 +682,7 @@ class Scenario:
         """
         # just make sure we can load the map
         try:
-            road_map, _ = create_road_map(scenario_root)
+            road_map, _ = Scenario._build_map(scenario_root)
         except FileNotFoundError:
             return False
         return road_map is not None

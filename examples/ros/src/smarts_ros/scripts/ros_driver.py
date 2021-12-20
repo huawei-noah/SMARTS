@@ -43,6 +43,7 @@ from smarts.core.utils.math import (
 )
 from smarts.core.utils.ros import log_everything_to_ROS
 from smarts.core.vehicle import VehicleState
+from smarts.sstudio.types import MapSpec
 from smarts.zoo import registry
 
 
@@ -578,6 +579,14 @@ class ROSDriver:
             self._agents_to_add = {}
             return actions
 
+    def _get_map_spec(self) -> MapSpec:
+        """SMARTS ROS nodes can extend from this ROSDriver base class
+        and implement this method to return an alternative MapSpec object
+        designating the map builder to use in the Scenario (returning None
+        indicates to use the default for the current Scenario).
+        self._scenario_path can be used to construct a MapSpec object."""
+        return None
+
     def _check_reset(self) -> Dict[str, Observation]:
         with self._reset_lock:
             if self._reset_msg:
@@ -588,7 +597,10 @@ class ROSDriver:
                 self._recent_state = deque(maxlen=3)
                 self._most_recent_state_sent = None
                 self._warned_about_freq = False
-                return self._smarts.reset(Scenario(self._scenario_path))
+                map_spec = self._get_map_spec()
+                return self._smarts.reset(
+                    Scenario(self._scenario_path, map_spec=map_spec)
+                )
         return None
 
     def run_forever(self):
