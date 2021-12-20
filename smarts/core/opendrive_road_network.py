@@ -54,6 +54,7 @@ from shapely.geometry import Polygon
 import rtree
 
 from smarts.core.road_map import RoadMap, Waypoint, WaypointsCache
+from smarts.sstudio.types import MapSpec
 from smarts.core.utils.math import (
     CubicPolynomial,
     constrain_angle,
@@ -603,6 +604,21 @@ class OpenDriveRoadNetwork(RoadMap):
     def source(self) -> str:
         """This is the .xodr file of the OpenDRIVE map."""
         return self._xodr_file
+
+    def is_same_map(self, map_spec: MapSpec) -> bool:
+        dlw = (
+            map_spec.default_lane_width
+            if map_spec.default_lane_width is not None
+            else OpenDriveRoadNetwork.DEFAULT_LANE_WIDTH
+        )
+        return (
+            map_spec.source == self._xodr_file
+            and (
+                (not map_spec.lanepoint_spacing and not self._lanepoints)
+                or map_spec.lanepoint_spacing == self._lanepoints.spacing
+            )
+            and dlw == self._default_lane_width
+        )
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
         return self._surfaces.get(surface_id)

@@ -67,12 +67,13 @@ def get_road_map(map_spec) -> Tuple[RoadMap, str]:
     map_path = map_spec.source
     if not os.path.isfile(map_path):
         for i, map_name in enumerate(supported_maps):
-            map_path = os.path.join(map_source, map_name)
-            if os.path.exists(map_path):
+            new_map_path = os.path.join(map_path, map_name)
+            if os.path.exists(new_map_path):
+                map_path = new_map_path
                 break
             if i == len(supported_maps) - 1:
                 raise FileNotFoundError(
-                    f"Unable to find map in map_source={map_source}."
+                    f"Unable to find map in map_source={map_path}."
                 )
 
     road_map = None

@@ -29,6 +29,7 @@ import numpy as np
 from shapely.geometry import Polygon
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
+from smarts.sstudio.types import MapSpec
 from .utils.math import (
     fast_quaternion_from_angle,
     min_angles_difference_signed,
@@ -58,6 +59,10 @@ class RoadMap:
     def scale_factor(self) -> float:
         # map units per meter
         return 1.0
+
+    def is_same_map(self, map_spec: MapSpec) -> bool:
+        """Check if the MapSpec Object source points to the same RoadMap instance as the current"""
+        raise NotImplementedError
 
     def to_glb(self, at_path):
         """build a glb file for camera rendering and envision"""
