@@ -1,8 +1,7 @@
 import os
 import random
 
-from smarts.sstudio import gen_missions, gen_social_agent_missions, gen_traffic
-from smarts.sstudio.genscenario import gen_social_agents
+from smarts.sstudio import gen_missions, gen_social_agents, gen_traffic
 from smarts.sstudio.types import (
     Distribution,
     EndlessMission,
