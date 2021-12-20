@@ -1,6 +1,9 @@
 import gym
+import os
 import pathlib
 import numpy as np
+import tensorflow as tf
+from shutil import copyfile
 from ruamel.yaml import YAML
 
 from smarts.core import agent as smarts_agent
@@ -81,32 +84,53 @@ def create_env(config):
 
 def main(args):
 
-    name = "smarts"
-    config_env = yaml.load(
-        (pathlib.Path(__file__).absolute().parent / "config.yaml").read_text()
-    )
-    config_env = config_env[name]
-    config_env["headless"] = not args.head
-    config_env["scenarios_dir"] = (
-        pathlib.Path(__file__).absolute().parents[0] / "scenarios"
-    )
-
+    # save trained model
+    from datetime import datetime
+    date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+    save_path = pathlib.Path(__file__).absolute().parent / "logs" / date_time
+    os.mkdir(str(save_path))
+    
     if args.mode == "evaluate":
-        model = PPO.load(args.logdir)
+
+        name = "smarts"
+        config_path = pathlib.Path(args.logdir) / "config.yaml"
+        config_env = yaml.load(
+            (config_path).read_text()
+        )
+        config_env = config_env[name]
+        config_env["headless"] = not args.head
+        config_env["scenarios_dir"] = (
+            pathlib.Path(__file__).absolute().parents[0] / "scenarios"
+        )
+
+        model = PPO.load(args.logdir + '/model.zip')
         env = create_env(config_env)
         mean_reward, std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
         print(f"mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}")
+        
     elif args.mode == "retrain":
-        model = PPO.load(args.logdir)
+
+        name = "smarts"
+        config_path = pathlib.Path(args.logdir) / "config.yaml"
+        config_env = yaml.load(
+            (config_path).read_text()
+        )
+        config_env = config_env[name]
+        config_env["headless"] = not args.head
+        config_env["scenarios_dir"] = (
+            pathlib.Path(__file__).absolute().parents[0] / "scenarios"
+        )
+
+        model = PPO.load(args.logdir + '/model.zip')
         env = create_env(config_env)
 
         before_mean_reward, before_std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
         model.set_env(env)
-        model.learn(total_timesteps=100000)
+        model.learn(total_timesteps=300000)
         mean_reward, std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
@@ -116,19 +140,29 @@ def main(args):
         print(f"mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}")
 
         # save trained model
-        from datetime import datetime
+        copyfile(config_path, str(save_path) + '/config.yaml')
+        model.save(save_path + '/model')
 
-        date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        save_path = pathlib.Path(__file__).absolute().parent / "logs" / date_time
-        model.save(save_path)
     else:
+
+        name = "smarts"
+        config_path = pathlib.Path(__file__).absolute().parent / "config.yaml"
+        config_env = yaml.load(
+            (config_path).read_text()
+        )
+        config_env = config_env[name]
+        config_env["headless"] = not args.head
+        config_env["scenarios_dir"] = (
+            pathlib.Path(__file__).absolute().parents[0] / "scenarios"
+        )
+
         env = create_env(config_env)
-        model = PPO("CnnPolicy", env, verbose=1, use_sde=True)
+        model = PPO("CnnPolicy", env, verbose=1, n_steps=1000, tensorboard_log= str(save_path) + '/tensorboard_log')
 
         before_mean_reward, before_std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
-        model.learn(total_timesteps=100000)
+        model.learn(total_timesteps=1000)
         mean_reward, std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
@@ -138,11 +172,8 @@ def main(args):
         print(f"mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}")
 
         # save trained model
-        from datetime import datetime
-
-        date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        save_path = pathlib.Path(__file__).absolute().parent / "logs" / date_time
-        model.save(save_path)
+        copyfile(config_path, str(save_path) + '/config.yaml')
+        model.save(str(save_path) + '/model')
 
 
 if __name__ == "__main__":
