@@ -26,7 +26,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `smarts.core.utils.import_utils` to help with the dynamic import of modules.
 - Added `single_agent` env wrapper and unit test. The wrapper converts a single-agent SMARTS environment's step and reset output to be compliant with gym spaces.
 - Added `rgb_image` env wrapper and unit test. The wrapper filters SMARTS environment observation and returns only top-down RGB image as observation.
-- Added `smarts.sstudio.gen_social_agents(...)` to enforce actor to agent paring.
+- Added `smarts.sstudio.gen_social_agents(...)` to enforce actor to agent pairing.
 ### Changed
 - `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.
 - Moved examples tests to `examples` and used relative imports to fix a module collision with `aiohttp`'s `examples` module.
@@ -39,8 +39,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
     - Moved the definition of `Waypoint` from `smarts.core.mission_planner` to `smarts.core.road_map`.
     - Moved the definition of `Mission` and `Goal` classes from `smarts.core.scenario` to `smarts.core.plan`.
 - `smarts.sstudio.types.Scenario`'s attribute `social_agent_missions` renamed to `social_agents`.
-- `social_agent` attribute modified to enforce actor to mission pairing.
-- Social actor pairings to their missions are now explicit and no longer expanded into permutations. 
+- Scenario Studio will no longer automatically permute missions with actors; it is assumed that users can do this via their own code if so desired. Instead, the `social_agent` attributed will enforce actor to mission pairing. 
+  - Social actor pairings to their missions are now explicit and no longer expanded into permutations. 
 - Changed the type hint for `EgoVehicleObservation`: it returns a numpy array (and always has).
 - Raised a warning message for building scenarios without `map.net.xml` file. See PR #1161.
 ### Fixed
