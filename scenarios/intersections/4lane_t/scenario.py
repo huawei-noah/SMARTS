@@ -59,14 +59,14 @@ reused_mission: Sequence[t.Mission] = t.Mission(
 )
 
 
-social_agents = {actor.name: [(actor, reused_mission)] for actor in actors}
+social_agents = {f"group-{actor.name}": [(actor, reused_mission)] for actor in actors}
 
 gen_scenario(
     scenario=t.Scenario(
         traffic={"basic": traffic},
         bubbles=bubbles,
         ego_missions=ego_missions,
-        social_agents=social_agents,
+        social_agent_groups=social_agents,
     ),
     output_dir=Path(__file__).parent,
 )

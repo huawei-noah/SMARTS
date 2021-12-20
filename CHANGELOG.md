@@ -38,7 +38,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
     - Removed the `AgentBehavior` class and the `agent_behavior` parameter to `AgentInterface`.
     - Moved the definition of `Waypoint` from `smarts.core.mission_planner` to `smarts.core.road_map`.
     - Moved the definition of `Mission` and `Goal` classes from `smarts.core.scenario` to `smarts.core.plan`.
-- `smarts.sstudio.types.Scenario`'s attribute `social_agent_missions` renamed to `social_agents`.
+- `smarts.sstudio.types.Scenario`'s attribute `social_agent_missions` renamed to `social_agent_groups`.
 - Scenario Studio will no longer automatically permute missions with actors; it is assumed that users can do this via their own code if so desired. Instead, the `social_agent` attributed will enforce actor to mission pairing. 
   - Social actor pairings to their missions are now explicit and no longer expanded into permutations. 
 - Changed the type hint for `EgoVehicleObservation`: it returns a numpy array (and always has).

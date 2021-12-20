@@ -90,8 +90,8 @@ def gen_scenario(
                 overwrite=overwrite,
             )
 
-    if scenario.social_agents:
-        for name, actor_mission_pairs in scenario.social_agents.items():
+    if scenario.social_agent_groups:
+        for name, actor_mission_pairs in scenario.social_agent_groups.items():
             if not (isinstance(actor_mission_pairs, collections.abc.Sequence)):
                 raise ValueError("Actor-mission pairs must be sequences")
 

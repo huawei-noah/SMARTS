@@ -69,7 +69,7 @@ static_bubbles = [
 gen_scenario(
     t.Scenario(
         traffic={"basic": traffic},
-        social_agents={
+        social_agent_groups={
             "all": [
                 (a, t.Mission(route=t.RandomRoute()))
                 for a in [laner_actor, open_agent_actor]

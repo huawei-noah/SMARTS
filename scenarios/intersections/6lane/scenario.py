@@ -46,6 +46,6 @@ for i in range(4):
     actor_mission_pair_groups[group] = actor_mission_pairs
 
 gen_scenario(
-    Scenario(social_agents=actor_mission_pair_groups),
+    Scenario(social_agent_groups=actor_mission_pair_groups),
     output_dir=Path(__file__).parent,
 )

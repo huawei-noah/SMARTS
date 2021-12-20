@@ -722,7 +722,7 @@ class Scenario:
     traffic: Optional[Dict[str, Traffic]] = None
     ego_missions: Optional[Sequence[Mission]] = None
     # e.g. { "turning_agents": ([actors], [missions]), ... }
-    social_agents: Optional[
+    social_agent_groups: Optional[
         Dict[str, Sequence[Tuple[SocialAgentActor, Mission]]]
     ] = None
     """Values in a dictionary item {group: actor_mission_pairs} get run simultaneously. If
