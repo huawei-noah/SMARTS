@@ -22,8 +22,9 @@ import argparse
 from smarts.core.sumo_road_network import SumoRoadNetwork
 
 
-def generate_glb_from_sumo_network(sumo_net_file, out_glb_file):
-    road_network = SumoRoadNetwork.from_file(net_file=sumo_net_file)
+def generate_glb_from_sumo_network(sumo_net_file, out_glb_file, road_network=None):
+    if road_network is None:
+        road_network = SumoRoadNetwork.from_file(net_file=sumo_net_file)
     road_network.to_glb(out_glb_file)
 
 

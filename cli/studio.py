@@ -72,16 +72,17 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     elif list(scenario_root.rglob("*.net.xml")):
         from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_network
 
+        sumo_road_network = None
         map_net = str(scenario_root / "map.net.xml")
         if not allow_offset_map or scenario.traffic_histories:
-            SumoRoadNetwork.from_file(map_net, shift_to_origin=True)
+            sumo_road_network = SumoRoadNetwork.from_file(map_net, shift_to_origin=True)
         elif os.path.isfile(SumoRoadNetwork.shifted_net_file_path(map_net)):
             click.echo(
                 "WARNING: {} already exists.  Remove it if you want to use unshifted/offset map.net.xml instead.".format(
                     SumoRoadNetwork.shifted_net_file_name
                 )
             )
-        generate_glb_from_sumo_network(map_net, str(map_glb))
+        generate_glb_from_sumo_network(map_net, str(map_glb), sumo_road_network)
     else:
         click.echo(
             "FILENOTFOUND: no reference to network file was found in {}.  "
