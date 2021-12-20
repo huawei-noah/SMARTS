@@ -761,10 +761,12 @@ class SMARTS:
 
                 self._renderer = get_renderer(self._sim_id, self._config)
             except ImportError as e:
-                self._log.warning("Import failed: " + repr(e))
+                self._log.warning(
+                    "Renderer import failed. Please install `[camera-obs]`"
+                )
                 raise e
             except Exception as e:
-                self._log.warning("unable to create Renderer:  " + repr(e))
+                self._log.warning("Unable to create Renderer")
                 self._renderer = None
                 raise e
         if self._renderer and not self._renderer.is_setup:
