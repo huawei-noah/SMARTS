@@ -171,9 +171,12 @@ def gen_social_agents(
     if not isinstance(social_actor_mission_pairs, collections.abc.Sequence):
         raise ValueError(f"{list(social_actor_mission_pairs)}")
 
-    ActorMissionPairs = Sequence[Tuple[types.SocialAgentActor, types.Mission]]
-    actors: ActorMissionPairs = [a for a, _ in social_actor_mission_pairs]
-    missions: Sequence[types.Mission] = [m for _, m in social_actor_mission_pairs]
+    actors: Sequence[types.SocialAgentActor] = []
+    missions: Sequence[types.Mission] = []
+    for a, m in social_actor_mission_pairs:
+        actors.append(a)
+        missions.append(m)
+
     # This doesn't support BoidAgentActor. Here we make that explicit
     if any(isinstance(actor, types.BoidAgentActor) for actor in actors):
         raise ValueError(
