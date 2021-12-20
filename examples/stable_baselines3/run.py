@@ -68,7 +68,7 @@ def create_env(config):
         headless=config["headless"],
         visdom=config["visdom"],
         seed=config["seed"],
-        sim_name="env",
+        sim_name="smarts",
     )
 
     # Wrap env with ActionWrapper
@@ -84,12 +84,14 @@ def create_env(config):
 
 def main(args):
 
-    # save trained model
-    from datetime import datetime
 
-    date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-    save_path = pathlib.Path(__file__).absolute().parent / "logs" / date_time
-    os.mkdir(str(save_path))
+    if args.mode != "colab":
+        # save trained model
+        from datetime import datetime
+
+        date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+        save_path = pathlib.Path(__file__).absolute().parent / "logs" / date_time
+        os.mkdir(str(save_path))
 
     if args.mode == "evaluate":
 
@@ -127,7 +129,7 @@ def main(args):
             model, env, n_eval_episodes=10, deterministic=True
         )
         model.set_env(env)
-        model.learn(total_timesteps=300000)
+        model.learn(total_timesteps=500000)
         mean_reward, std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
@@ -156,14 +158,13 @@ def main(args):
             "CnnPolicy",
             env,
             verbose=1,
-            n_steps=1000,
             tensorboard_log=str(save_path) + "/tensorboard_log",
         )
 
         before_mean_reward, before_std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
-        model.learn(total_timesteps=1000)
+        model.learn(total_timesteps=500000)
         mean_reward, std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
