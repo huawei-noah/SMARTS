@@ -1032,7 +1032,7 @@ class OpenDriveRoadNetwork(RoadMap):
             my_vect = self.vector_at_offset(offset)
             my_norm = np.linalg.norm(my_vect)
             if my_norm == 0:
-                return []
+                return result
             threshold = -0.995562  # cos(175*pi/180)
             for lane, _ in nearby_lanes:
                 if lane == self:
@@ -1041,7 +1041,7 @@ class OpenDriveRoadNetwork(RoadMap):
                 lv = lane.vector_at_offset(lane_refline_pt.s)
                 lv_norm = np.linalg.norm(lv)
                 if lv_norm == 0:
-                    return []
+                    continue
                 lane_angle = np.dot(my_vect, lv) / (my_norm * lv_norm)
                 if lane_angle < threshold:
                     result.append(lane)
