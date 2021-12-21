@@ -18,11 +18,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import collections.abc as collections_abc
+import hashlib
 import logging
+import pickle
 import random
+from ctypes import c_int64
 from dataclasses import dataclass, field
 from sys import maxsize
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from shapely.geometry import (
@@ -36,10 +39,18 @@ from shapely.ops import split, unary_union
 
 from smarts.core import gen_id
 from smarts.core.coordinates import RefLinePoint
+from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
-from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_around_point
+
+
+def _pickle_hash(obj) -> int:
+    pickle_bytes = pickle.dumps(obj, protocol=4)
+    hasher = hashlib.md5()
+    hasher.update(pickle_bytes)
+    val = int(hasher.hexdigest(), 16)
+    return c_int64(val).value
 
 
 class _SumoParams(collections_abc.Mapping):
@@ -147,7 +158,7 @@ class Actor:
     pass
 
 
-@dataclass(frozen=True, unsafe_hash=True)
+@dataclass(frozen=True)
 class TrafficActor(Actor):
     """Used as a description/spec for traffic actors (e.x. Vehicles, Pedestrians,
     etc). The defaults provided are for a car, but the name is not set to make it
@@ -182,6 +193,9 @@ class TrafficActor(Actor):
         default_factory=LaneChangingModel, hash=False
     )
     junction_model: JunctionModel = field(default_factory=JunctionModel, hash=False)
+
+    def __hash__(self) -> int:
+        return _pickle_hash(self)
 
     @property
     def id(self) -> str:
@@ -227,6 +241,33 @@ class BoidAgentActor(SocialAgentActor):
     """The capacity of the boid agent to take over vehicles."""
 
 
+# A MapBuilder should return an object derived from the RoadMap base class
+# and a hash that uniquely identifies it (changes to the hash should signify
+# that the map is different enough that map-related caches should be reloaded).
+#
+# This function should be re-callable (although caching is up to the implementation).
+# The idea here is that anything in SMARTS that needs to use a RoadMap
+# can call this builder to get or create one as necessary.
+MapBuilder = NewType("MapBuilder", Callable[[Any], Tuple[RoadMap, str]])
+
+
+@dataclass(frozen=True)
+class MapSpec:
+    source: str
+    """A path or URL or name uniquely designating the map source."""
+    lanepoint_spacing: Optional[float] = None
+    """If specified, the default distance between pre-generated Lane Points (Waypoints)."""
+    default_lane_width: Optional[float] = None
+    """If specified, the default width (in meters) of lanes on this map."""
+    builder_fn: Optional[MapBuilder] = get_road_map
+    """If specified, this should return an object derived from the RoadMap base class
+    and a hash that uniquely identifies it (changes to the hash should signify
+    that the map is different enough that map-related caches should be reloaded).
+    The parameter is this MapSpec object itself.
+    If not specified, this currently defaults to a function that creates
+    SUMO road networks (get_road_map()) in smarts.core.default_map_builder."""
+
+
 @dataclass(frozen=True)
 class Route:
     """A route is represented by begin and end road IDs, with an optional list of
@@ -261,12 +302,16 @@ class Route:
     via: Tuple[str, ...] = field(default_factory=tuple)
     """The ids of roads that must be included in the route between `begin` and `end`."""
 
+    map_spec: Optional[MapSpec] = None
+    """All routes are relative to a road map.  If not specified here,
+    the default map_spec for the scenario is used."""
+
     @property
     def id(self) -> str:
         return "route-{}-{}-{}-".format(
             "_".join(map(str, self.begin)),
             "_".join(map(str, self.end)),
-            hash(self),
+            _pickle_hash(self),
         )
 
     @property
@@ -281,6 +326,10 @@ class RandomRoute:
     """
 
     id: str = field(default_factory=lambda: f"random-route-{gen_id()}")
+
+    map_spec: Optional[MapSpec] = None
+    """All routes are relative to a road map.  If not specified here,
+    the default map_spec for the scenario is used."""
 
 
 @dataclass(frozen=True)
@@ -308,13 +357,14 @@ class Flow:
     @property
     def id(self) -> str:
         return "flow-{}-{}-".format(
-            self.route.id, str(hash(frozenset(self.actors.items())))
+            self.route.id,
+            str(_pickle_hash(sorted(self.actors.items(), key=lambda a: a[0].name))),
         )
 
     def __hash__(self):
         # Custom hash since self.actors is not hashable, here we first convert to a
         # frozenset.
-        return hash((self.route, self.rate, frozenset(self.actors.items())))
+        return _pickle_hash((self.route, self.rate, frozenset(self.actors.items())))
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
@@ -329,7 +379,7 @@ class JunctionEdgeIDResolver:
     end_edge_id: str
     end_lane_index: int
 
-    def to_edge(self, sumo_road_network: SumoRoadNetwork) -> str:
+    def to_edge(self, sumo_road_network) -> str:
         return sumo_road_network.get_edge_in_junction(
             self.start_edge_id,
             self.start_lane_index,
@@ -504,19 +554,19 @@ class MapZone(Zone):
                 return lane_shape
 
             # For simplicty, we only deal w/ the == 1 or 2 case
-            if len(lane_shape) not in {1, 2}:
+            if len(lane_shape.geoms) not in {1, 2}:
                 return None
 
-            if len(lane_shape) == 1:
-                return lane_shape[0]
+            if len(lane_shape.geoms) == 1:
+                return lane_shape.geoms[0]
 
             # We assume that there are only two splited shapes to choose from
             keep_index = 0
-            if lane_shape[1].minimum_rotated_rectangle.contains(expected_point):
+            if lane_shape.geoms[1].minimum_rotated_rectangle.contains(expected_point):
                 # 0 is the discard piece, keep the other
                 keep_index = 1
 
-            lane_shape = lane_shape[keep_index]
+            lane_shape = lane_shape.geoms[keep_index]
 
             return lane_shape
 
@@ -565,7 +615,7 @@ class MapZone(Zone):
             lane_offset += buffer_from_ends
 
             width = lane.width_at_offset(lane_offset)
-            lane_shape = lane.buffered_shape(width + 0.3)
+            lane_shape = lane.shape(width + 0.3)
 
             geom_length = max(geom_length - buffer_from_ends, buffer_from_ends)
             lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)
@@ -708,6 +758,7 @@ class _ActorAndMission:
 
 @dataclass(frozen=True)
 class Scenario:
+    map_spec: Optional[MapSpec] = None
     traffic: Optional[Dict[str, Traffic]] = None
     ego_missions: Optional[Sequence[Mission]] = None
     # e.g. { "turning_agents": ([actors], [missions]), ... }

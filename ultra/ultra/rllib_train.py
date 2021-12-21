@@ -19,39 +19,44 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, gym
+import datetime
+import os
+import timeit
+
+import gym
+
 import ultra.adapters as adapters
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.utils.ray import default_ray_kwargs
-import timeit, datetime
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
+import argparse
+import inspect
 import time
-import psutil, dill, torch, inspect
-import ray, torch, argparse
-import numpy as np
-from ray import tune
-from smarts.zoo.registry import make
-from ultra.env.rllib_ultra_env import RLlibUltraEnv
 
+import dill
+import numpy as np
+import psutil
+import ray
+import torch
+from ray import tune
 from ray.rllib.models import ModelCatalog
 
-from smarts.core.controllers import ActionSpaceType
-from smarts.core.agent_interface import (
-    AgentInterface,
-    OGM,
-    Waypoints,
-    NeighborhoodVehicles,
-)
-
-from ultra.baselines.rllib.models.fc_network import CustomFCModel
-from ultra.baselines.rllib.agent import RllibAgent
-from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
-
-from ultra.utils.episode import Callbacks
-from ultra.utils.episode import log_creator
+from smarts.core.agent_interface import (
+    OGM,
+    AgentInterface,
+    NeighborhoodVehicles,
+    Waypoints,
+)
+from smarts.core.controllers import ActionSpaceType
+from smarts.zoo.registry import make
+from ultra.baselines.common.yaml_loader import load_yaml
+from ultra.baselines.rllib.agent import RllibAgent
+from ultra.baselines.rllib.models.fc_network import CustomFCModel
+from ultra.env.rllib_ultra_env import RLlibUltraEnv
+from ultra.utils.episode import Callbacks, log_creator
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 

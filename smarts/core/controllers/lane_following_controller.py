@@ -81,6 +81,7 @@ class LaneFollowingController:
         wp_paths = sim.road_map.waypoint_paths(
             vehicle.pose, lookahead=16, route=sensor_state.plan.route
         )
+        assert wp_paths, "no waypoints found.  not near lane?"
         current_lane = LaneFollowingController.find_current_lane(
             wp_paths, vehicle.position
         )

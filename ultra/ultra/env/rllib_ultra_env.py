@@ -19,16 +19,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import glob
+import math
+import os
 from itertools import cycle
-import glob, yaml
+from sys import path
+
+import numpy as np
+import yaml
+from scipy.spatial import distance
+
+import ultra.adapters as adapters
 from smarts.core.scenario import Scenario
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
-import ultra.adapters as adapters
 from ultra.baselines.common.yaml_loader import load_yaml
-import numpy as np
-from scipy.spatial import distance
-import math, os
-from sys import path
 
 path.append("./ultra")
 

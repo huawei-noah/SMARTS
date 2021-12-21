@@ -32,6 +32,8 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Sequence, Tuple, Union
 
+import cloudpickle
+
 from . import types
 from .generators import TrafficGenerator
 
@@ -54,6 +56,12 @@ def gen_scenario(
 
     output_dir = str(output_dir)
 
+    if scenario.map_spec:
+        gen_map(output_dir, scenario.map_spec)
+        map_spec = scenario.map_spec
+    else:
+        map_spec = types.MapSpec(source=output_dir)
+
     if scenario.traffic:
         for name, traffic in scenario.traffic.items():
             gen_traffic(
@@ -62,6 +70,7 @@ def gen_scenario(
                 name=name,
                 seed=seed,
                 overwrite=overwrite,
+                map_spec=map_spec,
             )
 
     if scenario.ego_missions:
@@ -78,6 +87,7 @@ def gen_scenario(
                     num_laps=mission.num_laps,
                     seed=seed,
                     overwrite=overwrite,
+                    map_spec=map_spec,
                 )
             else:
                 missions.append(mission)
@@ -88,6 +98,7 @@ def gen_scenario(
                 missions=missions,
                 seed=seed,
                 overwrite=overwrite,
+                map_spec=map_spec,
             )
 
     if scenario.social_agent_missions:
@@ -103,6 +114,7 @@ def gen_scenario(
                 scenario=output_dir,
                 social_agent_actor=actors,
                 missions=missions,
+                map_spec=map_spec,
             )
 
     if scenario.bubbles:
@@ -121,6 +133,14 @@ def gen_scenario(
         )
 
 
+def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: str = None):
+    output_path = os.path.join(output_dir or scenario, "map_spec.pkl")
+    with open(output_path, "wb") as f:
+        # we use cloudpickle here instead of pickle because the
+        # map_spec object may contain a reference to a map_builder callable
+        cloudpickle.dump(map_spec, f)
+
+
 def gen_traffic(
     scenario: str,
     traffic: types.Traffic,
@@ -128,6 +148,7 @@ def gen_traffic(
     output_dir: str = None,
     seed: int = 42,
     overwrite: bool = False,
+    map_spec: types.MapSpec = None,
 ):
     """Generates the traffic routes for the given scenario. If the output directory is
     not provided, the scenario directory is used. If name is not provided the default is
@@ -138,7 +159,7 @@ def gen_traffic(
     output_dir = os.path.join(output_dir or scenario, "traffic")
     os.makedirs(output_dir, exist_ok=True)
 
-    generator = TrafficGenerator(scenario, overwrite=overwrite)
+    generator = TrafficGenerator(scenario, map_spec, overwrite=overwrite)
     saved_path = generator.plan_and_save(traffic, name, output_dir, seed=seed)
 
     if saved_path:
@@ -152,6 +173,7 @@ def gen_social_agent_missions(
     name: str,
     seed: int = 42,
     overwrite: bool = False,
+    map_spec: types.MapSpec = None,
 ):
     """Generates the social agent missions for the given scenario.
 
@@ -196,6 +218,7 @@ def gen_social_agent_missions(
         output_dir=output_dir,
         seed=seed,
         overwrite=overwrite,
+        map_spec=map_spec,
     )
 
     if saved:
@@ -207,6 +230,7 @@ def gen_missions(
     missions: Sequence,
     seed: int = 42,
     overwrite: bool = False,
+    map_spec: types.MapSpec = None,
 ):
     """Generates a route file to represent missions (a route per mission). Will create
     the output_dir if it doesn't exist already. The ouput file will be named `missions`.
@@ -230,6 +254,7 @@ def gen_missions(
         output_dir=scenario,
         seed=seed,
         overwrite=overwrite,
+        map_spec=map_spec,
     )
 
     if saved:
@@ -246,6 +271,7 @@ def gen_group_laps(
     num_laps: int = 3,
     seed: int = 42,
     overwrite: bool = False,
+    map_spec: types.MapSpec = None,
 ):
     """Generates missions that start with a grid offset at the startline and do a number
     of laps until finishing.
@@ -289,7 +315,11 @@ def gen_group_laps(
         )
 
     saved = gen_missions(
-        scenario=scenario, missions=missions, seed=seed, overwrite=overwrite
+        scenario=scenario,
+        missions=missions,
+        seed=seed,
+        overwrite=overwrite,
+        map_spec=map_spec,
     )
 
     if saved:
@@ -319,12 +349,13 @@ def _gen_missions(
     output_dir: str,
     seed: int = 42,
     overwrite: bool = False,
+    map_spec: types.MapSpec = None,
 ):
     """Generates a route file to represent missions (a route per mission). Will
     create the output_dir if it doesn't exist already.
     """
 
-    generator = TrafficGenerator(scenario)
+    generator = TrafficGenerator(scenario, map_spec)
 
     def resolve_mission(mission):
         route = getattr(mission, "route", None)
@@ -397,6 +428,18 @@ def _validate_entry_tactic(mission):
 
 
 def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
+    # For SUMO maps, we need to check if the map was shifted and translate the vehicle positions if so
+    xy_offset = None
+    road_network_path = os.path.join(scenario, "map.net.xml")
+    if os.path.exists(road_network_path):
+        from smarts.core.sumo_road_network import SumoRoadNetwork
+
+        road_network = SumoRoadNetwork.from_file(road_network_path)
+        if road_network._graph and getattr(
+            road_network._graph, "_shifted_by_smarts", False
+        ):
+            xy_offset = road_network._graph.getLocationOffset()
+
     genhistories_py = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
     )
@@ -417,6 +460,9 @@ def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
         th_file = f"{base}.shf"
         if overwrite:
             cmd += ["-f"]
+        if xy_offset:
+            cmd += ["--x_offset", str(xy_offset[0])]
+            cmd += ["--y_offset", str(xy_offset[1])]
         elif os.path.exists(os.path.join(scenario, th_file)):
             continue
         cmd += [th_file]

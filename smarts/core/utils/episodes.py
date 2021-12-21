@@ -17,11 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
-import sys
+
 import time
 from collections import defaultdict
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 
 import tableprint as tp
@@ -63,9 +61,21 @@ class EpisodeLog:
     def record_step(self, observations=None, rewards=None, dones=None, infos=None):
         self.steps += 1
 
+        if not isinstance(observations, dict):
+            observations, rewards, dones, infos = self._convert_to_dict(
+                observations, rewards, dones, infos
+            )
+
         if dones.get("__all__", False) and infos is not None:
             for agent, score in infos.items():
                 self.scores[agent] = score["score"]
+
+    def _convert_to_dict(self, observations, rewards, dones, infos):
+        observations, rewards, infos = [
+            {"SingleAgent": obj} for obj in [observations, rewards, infos]
+        ]
+        dones = {"SingleAgent": dones, "__all__": dones}
+        return observations, rewards, dones, infos
 
 
 def episodes(n):

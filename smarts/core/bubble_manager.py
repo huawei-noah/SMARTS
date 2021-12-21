@@ -375,11 +375,14 @@ class BubbleManager:
         )
         cursors = set()
         for _, vehicle in index_new.vehicleitems():
-            # XXX: Turns out Point(...) creation is very expensive (~0.02ms) which
+            active_bubbles = self._active_bubbles()
+            if not active_bubbles:
+                continue
+            # XXX: Turns out Shapely Point(...) creation is very expensive (~0.02ms) which
             #      when inside of a loop x large number of vehicles makes a big
             #      performance hit.
-            point = Point(vehicle.position)
-            for bubble in self._active_bubbles():
+            point = vehicle.pose.point.as_shapely
+            for bubble in active_bubbles:
                 cursors.add(
                     Cursor.from_pos(
                         pos=point,
@@ -496,20 +499,7 @@ class BubbleManager:
             recreate=False,
             agent_interface=agent_interface,
         )
-
-        for provider in sim.providers:
-            interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-            if interface.action_space in provider.action_spaces:
-                provider.create_vehicle(
-                    VehicleState(
-                        vehicle_id=vehicle_id,
-                        vehicle_config_type="passenger",
-                        pose=vehicle.pose,
-                        dimensions=vehicle.chassis.dimensions,
-                        speed=vehicle.speed,
-                        source="HIJACK",
-                    )
-                )
+        sim.create_vehicle_in_providers(vehicle, agent_id)
 
     def _relinquish_vehicle_to_traffic_sim(self, sim, vehicle_id: str, bubble: Bubble):
         agent_id = sim.vehicle_index.actor_id_from_vehicle_id(vehicle_id)

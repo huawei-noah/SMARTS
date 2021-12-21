@@ -88,6 +88,8 @@ ROS private node parameters if used via `rosrun`:
 
 - `_seed`:  Seed to use when initializing SMARTS' random number generator(s).  Defaults to `42`.
 
+- `_batch_mode`:  If `True`, the node will stay alive even if SMARTS crashes/dies, waiting for a new `SmartsReset` message on the `SMARTS/reset` topic.  Defaults to `False`.
+
 
 To specify these via the command line, use syntax like:
 ```bash
@@ -98,12 +100,12 @@ rosrun smarts_ros ros_driver.py _target_freq:=20
 ### Scenarios
 
 Then, when you want to initialize SMARTS on a scenario,
-have one of the nodes on the ROS network publish an appropriate `SmartsControl` messsage on the `SMARTS/control` topic,
+have one of the nodes on the ROS network publish an appropriate `SmartsReset` messsage on the `SMARTS/reset` topic,
 after which SMARTS will begin handling messages from the `SMARTS/entities_in` channel.
 
 Or you could manually reset SMARTS from the command line with:
 ```bash
-rostopic pub /SMARTS/control smarts_ros/SmartsControl '{ reset_with_scenario_path: /full/path/to/scenario }'
+rostopic pub /SMARTS/reset smarts_ros/SmartsReset '{ reset_with_scenario_path: /full/path/to/scenario }'
 ```
 
 
