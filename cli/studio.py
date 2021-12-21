@@ -75,7 +75,7 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     if not allow_offset_map or scenario.traffic_histories:
         from smarts.sstudio.types import MapSpec
 
-        map_spec = MapSpec(source=road_network_path)
+        map_spec = MapSpec(map_net)
         SumoRoadNetwork.from_spec(map_spec, shift_to_origin=True)
     elif os.path.isfile(SumoRoadNetwork.shifted_net_file_path(map_net)):
         click.echo(
