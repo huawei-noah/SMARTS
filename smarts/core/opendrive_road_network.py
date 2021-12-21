@@ -337,7 +337,17 @@ class OpenDriveRoadNetwork(RoadMap):
                         )
                         # Set road as drivable if it has at least one lane drivable
                         if not road.is_drivable:
-                            road.is_drivable = lane_elem.type == "driving"
+                            road.is_drivable = (
+                                lane_elem.type.lower()
+                                in [
+                                    "driving",
+                                    "exit",
+                                    "entry",
+                                    "offramp",
+                                    "onramp",
+                                    "connectingramp",
+                                ],
+                            )
 
                         self._lanes[lane_id] = lane
                         self._all_lanes.append(lane)
