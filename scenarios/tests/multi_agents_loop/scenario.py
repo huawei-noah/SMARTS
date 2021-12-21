@@ -21,9 +21,9 @@ traffic = t.Traffic(
     ]
 )
 
-buddha_agent = t.SocialAgentActor(
-    name="buddha-agent",
-    agent_locator="scenarios.tests.multi_agents_loop.agent_prefabs:buddha-agent-v0",
+laner_agent = t.SocialAgentActor(
+    name="keep-lane-actor",
+    agent_locator="zoo.policies:keep-lane-agent-v0",
 )
 
 laner_actor = t.SocialAgentActor(
@@ -36,23 +36,23 @@ gen_scenario(
         traffic={"basic": traffic},
         social_agent_missions={
             "group_1": (
-                [laner_actor, buddha_agent],
+                [laner_actor, laner_agent],
                 [t.Mission(route=t.RandomRoute())],
             ),
             "group_2": (
-                [laner_actor, buddha_agent],
+                [laner_actor, laner_agent],
                 [t.Mission(route=t.RandomRoute())],
             ),
             "group_3": (
-                [laner_actor, buddha_agent],
+                [laner_actor, laner_agent],
                 [t.Mission(route=t.RandomRoute())],
             ),
             "group_4": (
-                [laner_actor, buddha_agent],
+                [laner_actor, laner_agent],
                 [t.Mission(route=t.RandomRoute())],
             ),
             "group_5": (
-                [laner_actor, buddha_agent],
+                [laner_actor, laner_agent],
                 [t.Mission(route=t.RandomRoute())],
             ),
         },
