@@ -6,6 +6,24 @@ Ego agent earns rewards based on the distance travelled and is penalised for col
 ## Trained agent driving in traffic
 ![](./docs/_static/driving_in_traffic.gif)
 
+## Observation space
++ Topdown RGB image 
+    + pixel width: 64, pixel height: 64
+    + resolution: 1 meter/1 pixel
+```
+observation_space = gym.spaces.Dict({
+    gym.spaces.Box(low=0, high=255, shape=(64,64,3), dtype=np.uint8),
+})
+```
+
+## Action space
++ Throttle[0,1]
++ Brake[0,1]
++ Steering[-1,1]
+```
+action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
+```
+
 ## Setup
 ```bash
 $ git clone https://github.com/huawei-noah/SMARTS.git

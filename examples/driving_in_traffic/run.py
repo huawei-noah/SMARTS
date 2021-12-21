@@ -83,8 +83,13 @@ def main(args):
     )
     if config_env["mode"] == "train":
         # Setup logdir
-        time = datetime.now().strftime("%Y_%m_%d_%H_%M")
-        logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
+        if not config_env["logdir"]:
+            # Begin training from scratch
+            time = datetime.now().strftime("%Y_%m_%d_%H_%M")
+            logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
+        else:
+            # Begin training from a pretrained model
+            logdir = config_env["logdir"]
         config_dv2 = config_dv2.update(
             {
                 "logdir": logdir,
@@ -260,5 +265,8 @@ if __name__ == "__main__":
         "--head", help="Run the simulation with display.", action="store_true"
     )
     args = parser.parse_args()
+
+    if args.mode == "evaluate" and args.logdir is None:
+        raise Exception("When --mode=evaluate, --logdir option must be specified.")
 
     main(args)
