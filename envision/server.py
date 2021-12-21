@@ -233,7 +233,7 @@ class WebClientRunLoop:
                     self._seek = None
 
                 assert len(frames_to_send) > 0
-                print(type(frames_to_send))
+                print(type(frames_to_send[0]))
                 print(len(frames_to_send), "yayayayayayaayayayayayay")
                 closed = self._push_frames_to_web_client(frames_to_send)
                 if closed:
