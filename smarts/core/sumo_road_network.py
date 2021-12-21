@@ -139,7 +139,7 @@ class SumoRoadNetwork(RoadMap):
 
     @classmethod
     def from_spec(cls, map_spec: MapSpec, shift_to_origin: bool = False):
-        net_file = map_spec.source
+        net_file = SumoRoadNetwork._map_path(map_spec)
 
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
@@ -177,18 +177,17 @@ class SumoRoadNetwork(RoadMap):
             else SumoRoadNetwork.DEFAULT_LANE_WIDTH
         )
 
+    @staticmethod
+    def _map_path(map_spec: MapSpec) -> str:
+        if os.path.isdir(map_spec.source):
+            # map.net.xml is the default Sumo map name; try that:
+            return os.path.join(map_spec.source, "map.net.xml")
+        return map_spec.source
+
     def is_same_map(self, map_spec: MapSpec) -> bool:
         if map_spec.source != self._map_spec.source:
-            cur_source = (
-                map_spec.source
-                if os.path.isfile(map_spec.source)
-                else os.path.join(map_spec.source, "map.net.xml")
-            )
-            orig_source = (
-                self._map_spec.source
-                if os.path.isfile(self._map_spec.source)
-                else os.path.join(self._map_spec.source, "map.net.xml")
-            )
+            cur_source = SumoRoadNetwork._map_path(map_spec)
+            orig_source = SumoRoadNetwork._map_path(self._map_spec)
             if cur_source != orig_source:
                 return False
 
