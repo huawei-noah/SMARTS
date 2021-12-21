@@ -34,6 +34,8 @@ from shapely.geometry import Polygon
 from shapely.ops import nearest_points, snap, triangulate
 from trimesh.exchange import gltf
 
+from smarts.sstudio.types import MapSpec
+
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .road_map import RoadMap, Waypoint
 from .sumo_lanepoints import LinkedLanePoint, SumoLanePoints
@@ -180,6 +182,21 @@ class SumoRoadNetwork(RoadMap):
     def source(self) -> str:
         """This is the net.xml file that corresponds with our possibly-offset coordinates."""
         return self._net_file
+
+    def is_same_map(self, map_spec: MapSpec) -> bool:
+        dlw = (
+            map_spec.default_lane_width
+            if map_spec.default_lane_width is not None
+            else SumoRoadNetwork.DEFAULT_LANE_WIDTH
+        )
+        return (
+            map_spec.source == self._net_file
+            and (
+                (not map_spec.lanepoint_spacing and not self._lanepoints)
+                or map_spec.lanepoint_spacing == self._lanepoints.spacing
+            )
+            and dlw == self._default_lane_width
+        )
 
     @cached_property
     def bounding_box(self) -> BoundingBox:

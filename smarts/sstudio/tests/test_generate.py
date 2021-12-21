@@ -26,12 +26,14 @@ from xml.etree.ElementTree import ElementTree
 
 import pytest
 
-from smarts.sstudio import gen_missions, gen_traffic
+from smarts.core.scenario import Scenario
+from smarts.sstudio import gen_map, gen_missions, gen_traffic
 from smarts.sstudio.types import (
     Distribution,
     Flow,
     JunctionModel,
     LaneChangingModel,
+    MapSpec,
     Mission,
     Route,
     Traffic,
@@ -95,3 +97,33 @@ def test_generate_traffic(traffic: Traffic):
         print(sorted(items))
         print(sorted(generated_items))
         assert sorted(items) == sorted(generated_items)
+
+
+def _gen_map_from_spec(scenario_root: str, map_spec: MapSpec):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        gen_map(scenario_root, map_spec, output_dir=temp_dir)
+        found_map_spec = Scenario.discover_map(temp_dir)
+        assert found_map_spec
+        road_map = found_map_spec.builder_fn(found_map_spec)
+        assert road_map
+
+
+def test_generate_map():
+    scenario_root = "scenarios/intersections/4lane_t"
+    map_file = "map.net.xml"
+
+    map_path = os.path.join(scenario_root, map_file)
+    map_spec = MapSpec(map_path)
+    _gen_map_from_spec(scenario_root, map_spec)
+
+    lw = 5.2
+    lps = 3.14
+
+    def fake_map_builder(map_spec: MapSpec) -> bool:
+        assert map_spec.source == map_path
+        assert map_spec.default_lane_width == lw
+        assert map_spec.lanepoint_spacing == lps
+        return True
+
+    map_spec = MapSpec(map_path, lps, lw, fake_map_builder)
+    _gen_map_from_spec(scenario_root, map_spec)
