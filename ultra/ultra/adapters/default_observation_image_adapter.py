@@ -25,7 +25,6 @@ import numpy as np
 from smarts.core.agent_interface import RGB
 from smarts.core.sensors import Observation
 
-
 _WIDTH = 64
 _HEIGHT = 64
 _STACK = 4

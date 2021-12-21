@@ -17,17 +17,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import logging
 import warnings
 
 import numpy as np
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
-import logging
-from smarts.core.utils.logging import timeit
+
 import smarts
 from envision.client import Client as Envision
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.core.utils.logging import timeit
 
 
 class RLlibHiWayEnv(MultiAgentEnv):
@@ -66,7 +67,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
     def __init__(self, config):
         seed = int(config.get("seed", 42))
 
-        # See https://rllib.readthedocs.io/en/latest/rllib-env.html#configuring-environments
+        # See https://docs.ray.io/en/latest/rllib-env.html#configuring-environments
         # for context. We combine worker_index and vector_index through the Cantor pairing
         # function (https://en.wikipedia.org/wiki/Pairing_function) into a unique integer
         # and then add that to seed to both differentiate environment instances and

@@ -1,12 +1,11 @@
-from dataclasses import replace
 import logging
 import math
 import pickle
 import random
+from dataclasses import replace
 from typing import Sequence, Tuple
 
 from envision.client import Client as Envision
-from examples.argument_parser import default_argument_parser
 from smarts.core import seed as random_seed
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
@@ -15,6 +14,13 @@ from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
 from smarts.core.utils.math import rounder_for_dt
+
+# The following ugliness was made necessary because the `aiohttp` #
+# dependency has an "examples" module too.  (See PR #1120.)
+if __name__ == "__main__":
+    from argument_parser import default_argument_parser
+else:
+    from .argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
@@ -140,6 +146,7 @@ def main(
             agents = {}
             dones = {}
             ego_missions = {}
+            sample = {}
 
             sample = None
             if scenario.traffic_history.dataset_source == "Waymo":

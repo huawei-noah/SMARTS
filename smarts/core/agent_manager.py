@@ -18,8 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import cloudpickle
 import logging
+from typing import Dict, Set, Tuple
+
+import cloudpickle
+
 from envision.types import format_actor_id
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
@@ -29,7 +32,6 @@ from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState
 from smarts.zoo.registry import make as make_social_agent
-from typing import Dict, Set, Tuple
 
 
 class AgentManager:
@@ -327,9 +329,12 @@ class AgentManager:
         self.setup_social_agents(sim)
         self.start_keep_alive_boid_agents(sim)
 
-    def add_ego_agent(self, agent_id: str, agent_interface: AgentInterface):
+    def add_ego_agent(
+        self, agent_id: str, agent_interface: AgentInterface, for_trap: bool = True
+    ):
         # TODO: Remove `pending_agent_ids`
-        self.pending_agent_ids.add(agent_id)
+        if for_trap:
+            self.pending_agent_ids.add(agent_id)
         self._ego_agent_ids.add(agent_id)
         self.agent_interfaces[agent_id] = agent_interface
         # agent will now be given vehicle by trap manager when appropriate
@@ -430,7 +435,6 @@ class AgentManager:
             scenario.tire_parameters_filepath,
             trainable,
             scenario.surface_patches,
-            scenario.controller_parameters_filepath,
             agent_model.initial_speed,
             boid=boid,
         )

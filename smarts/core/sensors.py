@@ -60,7 +60,7 @@ class VehicleObservation(NamedTuple):
 
 class EgoVehicleObservation(NamedTuple):
     id: str
-    position: Tuple[float, float, float]
+    position: np.ndarray
     bounding_box: Dimensions
     heading: Heading
     speed: float
@@ -286,9 +286,9 @@ class Sensors:
 
         ego_vehicle_observation = EgoVehicleObservation(
             id=ego_vehicle_state.vehicle_id,
-            position=ego_vehicle_state.pose.position,
+            position=np.array(ego_vehicle_state.pose.position),
             bounding_box=ego_vehicle_state.dimensions,
-            heading=ego_vehicle_state.pose.heading,
+            heading=Heading(ego_vehicle_state.pose.heading),
             speed=ego_vehicle_state.speed,
             steering=ego_vehicle_state.steering,
             yaw_rate=ego_vehicle_state.yaw_rate,
@@ -319,7 +319,8 @@ class Sensors:
             hit_via_points=hit_via_points,
         )
 
-        vehicle.trip_meter_sensor.append_waypoint_if_new(waypoint_paths[0][0])
+        if waypoint_paths:
+            vehicle.trip_meter_sensor.append_waypoint_if_new(waypoint_paths[0][0])
         distance_travelled = vehicle.trip_meter_sensor(sim)
 
         vehicle.driven_path_sensor.track_latest_driven_path(sim)
@@ -834,23 +835,21 @@ class TripMeterSensor(Sensor):
         self._vehicle = vehicle
         self._sim = sim
         self._plan = plan
-
+        self._wps_for_distance = []
+        self._dist_travelled = 0.0
+        self._last_dist_travelled = 0.0
         waypoint_paths = sim.road_map.waypoint_paths(
             vehicle.pose,
             lookahead=1,
             within_radius=vehicle.length,
         )
-        starting_wp = waypoint_paths[0][0]
-        self._wps_for_distance = [starting_wp]
-
-        self._dist_travelled = 0.0
-        self._last_dist_travelled = 0.0
+        if waypoint_paths:
+            self._wps_for_distance.append(waypoint_paths[0][0])
 
     def append_waypoint_if_new(self, new_wp):
         # Distance calculation. Intention is the shortest trip travelled at the lane
         # level the agent has travelled. This is to prevent lateral movement from
         # increasing the total distance travelled.
-        most_recent_wp = self._wps_for_distance[-1]
         self._last_dist_travelled = self._dist_travelled
 
         wp_road = self._sim.road_map.lane_by_id(new_wp.lane_id).road.road_id
@@ -859,8 +858,14 @@ class TripMeterSensor(Sensor):
             # if we do not have a fixed route, we count all waypoints we accumulate
             not self._plan.mission.has_fixed_route
             # if we have a route to follow, only count wps on route
-            or wp_road in self._plan.route.roads
+            or wp_road in [road.road_id for road in self._plan.route.roads]
         )
+
+        if not self._wps_for_distance:
+            if should_count_wp:
+                self._wps_for_distance.append(new_wp)
+            return
+        most_recent_wp = self._wps_for_distance[-1]
 
         threshold_for_counting_wp = 0.5  # meters from last tracked waypoint
         if (

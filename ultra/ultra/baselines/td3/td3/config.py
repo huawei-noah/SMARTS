@@ -21,8 +21,9 @@
 # THE SOFTWARE.
 import numpy as np
 import torch
-from ultra.baselines.configs import Config
+
 from ultra.baselines.common.replay_buffer import ReplayBuffer
+from ultra.baselines.configs import Config
 
 
 class TD3Config(Config):

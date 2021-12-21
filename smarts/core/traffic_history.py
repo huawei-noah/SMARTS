@@ -21,14 +21,15 @@
 # to allow for typing to refer to class being defined (TrafficHistory)
 from __future__ import annotations
 
-from cached_property import cached_property
-from contextlib import nullcontext, closing
-from functools import lru_cache
 import logging
 import os
 import random
 import sqlite3
-from typing import Dict, Generator, NamedTuple, Set, Tuple, Type, TypeVar
+from contextlib import closing, nullcontext
+from functools import lru_cache
+from typing import Dict, Generator, NamedTuple, Set, Tuple, Type, TypeVar, List
+
+from cached_property import cached_property
 
 T = TypeVar("T")
 
@@ -93,6 +94,10 @@ class TrafficHistory:
     def target_speed(self) -> float:
         query = "SELECT value FROM Spec where key='speed_limit_mps'"
         return self._query_val(float, query)
+
+    def all_vehicle_ids(self) -> Generator[int, None, None]:
+        query = "SELECT id FROM Vehicle"
+        return (row[0] for row in self._query_list(query))
 
     @cached_property
     def ego_vehicle_id(self) -> int:
@@ -206,6 +211,21 @@ class TrafficHistory:
                    ORDER BY T.sim_time DESC"""
         rows = self._query_list(query, (start_time, end_time))
         return (TrafficHistory.TrafficLightRow(*row) for row in rows)
+     
+    class TrajectoryRow(NamedTuple):
+        position_x: float
+        position_y: float
+        heading_rad: float
+        speed: float
+
+    def vehicle_trajectory(
+        self, vehicle_id: str
+    ) -> Generator[TrafficHistory.TrajectoryRow, None, None]:
+        query = """SELECT T.position_x, T.position_y, T.heading_rad, T.speed
+                   FROM Trajectory AS T
+                   WHERE T.vehicle_id = ?"""
+        rows = self._query_list(query, (vehicle_id,))
+        return (TrafficHistory.TrajectoryRow(*row) for row in rows)
 
     def random_overlapping_sample(
         self, vehicle_start_times: Dict[str, float], k: int

@@ -11,15 +11,22 @@ import torch
 try:
     import ray
 except Exception as e:
-    from examples import RayException
+    from . import RayException
 
-    raise RayException.required_to("multi_instance.py")
+    raise RayException.required_to("ray_multi_instance.py")
 
 
-from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
+
+# The following ugliness was made necessary because the `aiohttp` #
+# dependency has an "examples" module too.  (See PR #1120.)
+if __name__ == "__main__":
+    from argument_parser import default_argument_parser
+else:
+    from .argument_parser import default_argument_parser
+
 
 logging.basicConfig(level=logging.INFO)
 

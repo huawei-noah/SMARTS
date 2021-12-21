@@ -19,11 +19,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import torch, gym
+import gym
+import torch
+from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFCNet
+from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from torch import nn
 from torch.distributions.normal import Normal
-from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
-from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFCNet
 
 
 class CustomFCModel(TorchModelV2, nn.Module):

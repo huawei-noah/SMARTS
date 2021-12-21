@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 # The author of this file is: https://github.com/mg2015started
 
-# The following test was modified from examples/multi_instance.py
+# The following test was modified from examples/ray_multi_instance.py
 
 import argparse
 import logging

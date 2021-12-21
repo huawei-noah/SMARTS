@@ -1,6 +1,13 @@
 import tempfile
-import importlib
+from pathlib import Path
+
 import pytest
+
+from smarts.core.utils import import_utils
+
+import_utils.import_module_from_file(
+    "examples", Path(__file__).parents[1] / "__init__.py"
+)
 
 
 @pytest.mark.parametrize(
@@ -9,7 +16,13 @@ import pytest
     # TODO: "ego_open_agent" and "human_in_the_loop" are causing aborts, fix later
 )
 def test_examples(example):
-    main = importlib.import_module(f"examples.{example}").main
+    if example == "egoless":
+        from examples import egoless as current_example
+    if example == "single_agent":
+        from examples import single_agent as current_example
+    if example == "multi_agent":
+        from examples import multi_agent as current_example
+    main = current_example.main
     main(
         scenarios=["scenarios/loop"],
         sim_name=None,
@@ -20,8 +33,10 @@ def test_examples(example):
     )
 
 
-def test_multi_instance_example():
-    main = importlib.import_module("examples.multi_instance").main
+def test_ray_multi_instance_example():
+    from examples import ray_multi_instance
+
+    main = ray_multi_instance.main
     main(
         training_scenarios=["scenarios/loop"],
         evaluation_scenarios=["scenarios/loop"],
@@ -33,7 +48,9 @@ def test_multi_instance_example():
 
 
 def test_rllib_example():
-    main = importlib.import_module("examples.rllib").main
+    from examples.rllib import rllib
+
+    main = rllib.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
         main(
             scenario="scenarios/loop",

@@ -25,21 +25,19 @@ import numpy as np
 import pytest
 
 import smarts.sstudio.types as t
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.trajectory_interpolation_provider import (
-    TrajectoryWithTime,
-    TrajectoryInterpolationProvider,
-)
 from smarts.core.provider import ProviderState
 from smarts.core.scenario import Scenario
-from smarts.core.tests.helpers.scenario import temp_scenario
-from smarts.sstudio import gen_scenario
-
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.agent import AgentSpec, Agent
-from smarts.core.agent_interface import AgentInterface, AgentType
-
+from smarts.core.tests.helpers.scenario import temp_scenario
+from smarts.core.trajectory_interpolation_provider import (
+    TrajectoryInterpolationProvider,
+    TrajectoryWithTime,
+)
+from smarts.sstudio import gen_scenario
 
 AGENT_ID = "Agent-007"
 

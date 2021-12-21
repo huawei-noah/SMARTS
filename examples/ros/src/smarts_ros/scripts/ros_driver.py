@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
-from collections import deque
-import os
 import json
+import logging
 import math
-import rospy
+import os
 import sys
 import time
+from collections import deque
 from threading import Lock
 from typing import Any, Dict, List, Sequence, Tuple
 
 import numpy as np
-
+import rospy
 from smarts_ros.msg import (
     AgentReport,
     AgentSpec,
@@ -20,18 +20,18 @@ from smarts_ros.msg import (
     EntityState,
     SmartsReset,
 )
-from smarts_ros.srv import SmartsInfo, SmartsInfoResponse, SmartsInfoRequest
+from smarts_ros.srv import SmartsInfo, SmartsInfoRequest, SmartsInfoResponse
 
 from envision.client import Client as Envision
 from smarts.core.agent import Agent
 from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.plan import (
-    default_entry_tactic,
     EndlessGoal,
     Mission,
     PositionalGoal,
     Start,
     VehicleSpec,
+    default_entry_tactic,
 )
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
@@ -41,7 +41,9 @@ from smarts.core.utils.math import (
     vec_to_radians,
     yaw_from_quaternion,
 )
+from smarts.core.utils.ros import log_everything_to_ROS
 from smarts.core.vehicle import VehicleState
+from smarts.sstudio.types import MapSpec
 from smarts.zoo import registry
 
 
@@ -65,6 +67,7 @@ class ROSDriver:
         self._state_publisher = None
         self._agents_publisher = None
         self._most_recent_state_sent = None
+        self._warned_about_freq = False
         with self._state_lock:
             self._recent_state = deque(maxlen=3)
         with self._reset_lock:
@@ -120,6 +123,8 @@ class ROSDriver:
         if target_freq:
             assert target_freq > 0.0
             self._target_freq = target_freq
+
+        log_everything_to_ROS(level=logging.WARNING)
 
     def setup_smarts(
         self, headless: bool = True, seed: int = 42, time_ratio: float = 1.0
@@ -574,6 +579,14 @@ class ROSDriver:
             self._agents_to_add = {}
             return actions
 
+    def _get_map_spec(self) -> MapSpec:
+        """SMARTS ROS nodes can extend from this ROSDriver base class
+        and implement this method to return an alternative MapSpec object
+        designating the map builder to use in the Scenario (returning None
+        indicates to use the default for the current Scenario).
+        self._scenario_path can be used to construct a MapSpec object."""
+        return None
+
     def _check_reset(self) -> Dict[str, Observation]:
         with self._reset_lock:
             if self._reset_msg:
@@ -581,7 +594,13 @@ class ROSDriver:
                 rospy.loginfo(f"resetting SMARTS w/ scenario={self._scenario_path}")
                 self._reset_msg = None
                 self._last_step_time = None
-                return self._smarts.reset(Scenario(self._scenario_path))
+                self._recent_state = deque(maxlen=3)
+                self._most_recent_state_sent = None
+                self._warned_about_freq = False
+                map_spec = self._get_map_spec()
+                return self._smarts.reset(
+                    Scenario(self._scenario_path, map_spec=map_spec)
+                )
         return None
 
     def run_forever(self):
@@ -613,20 +632,38 @@ class ROSDriver:
                 if obs is not None:
                     observations = obs
 
-                actions = self._do_agents(observations)
+                try:
+                    actions = self._do_agents(observations)
 
-                step_delta = self._update_smarts_state()
+                    step_delta = self._update_smarts_state()
 
-                observations, _, dones, _ = self._smarts.step(actions, step_delta)
+                    observations, _, dones, _ = self._smarts.step(actions, step_delta)
 
-                self._publish_state()
-                self._publish_agents(observations, dones)
+                    self._publish_state()
+                    self._publish_agents(observations, dones)
+                except Exception as e:
+                    if isinstance(e, rospy.ROSInterruptException):
+                        raise e
+                    batch_mode = rospy.get_param("~batch_mode", False)
+                    if not batch_mode:
+                        raise e
+                    import traceback
+
+                    rospy.logerr(f"SMARTS raised exception:  {e}")
+                    rospy.logerr(traceback.format_exc())
+                    rospy.logerr("Will wait for next reset...")
+                    self._smarts = None
+                    self.setup_smarts()
 
                 if self._target_freq:
                     if rate.remaining().to_sec() <= 0.0:
-                        rospy.logwarn(
-                            f"SMARTS unable to maintain requested target_freq of {self._target_freq} Hz."
-                        )
+                        msg = f"SMARTS unable to maintain requested target_freq of {self._target_freq} Hz."
+                        if self._warned_about_freq:
+                            rospy.loginfo(msg)
+                        else:
+                            rospy.logwarn(msg)
+                            self._warned_about_freq = True
+
                     rate.sleep()
 
         except rospy.ROSInterruptException:
