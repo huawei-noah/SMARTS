@@ -23,9 +23,9 @@ import math
 import os
 from typing import Sequence
 
-from cached_property import cached_property
 import numpy as np
 import yaml
+from cached_property import cached_property
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Point, Polygon
 from shapely.geometry import box as shapely_box
