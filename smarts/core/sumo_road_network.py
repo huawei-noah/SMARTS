@@ -185,23 +185,19 @@ class SumoRoadNetwork(RoadMap):
         return map_spec.source
 
     def is_same_map(self, map_spec: MapSpec) -> bool:
-        if map_spec.source != self._map_spec.source:
-            cur_source = SumoRoadNetwork._map_path(map_spec)
-            orig_source = SumoRoadNetwork._map_path(self._map_spec)
-            if cur_source != orig_source:
-                return False
-
-        if map_spec.lanepoint_spacing != self._map_spec.lanepoint_spacing:
-            return False
-
-        if (
-            map_spec.default_lane_width != self._map_spec.default_lane_width
-            and SumoRoadNetwork._spec_lane_width(map_spec)
-            != SumoRoadNetwork._spec_lane_width(self._map_spec)
-        ):
-            return False
-
-        return True
+        return (
+            (
+                map_spec.source == self._map_spec.source
+                or SumoRoadNetwork._map_path(map_spec)
+                == SumoRoadNetwork._map_path(self._map_spec)
+            )
+            and map_spec.lanepoint_spacing == self._map_spec.lanepoint_spacing
+            and (
+                map_spec.default_lane_width == self._map_spec.default_lane_width
+                or SumoRoadNetwork._spec_lane_width(map_spec)
+                == SumoRoadNetwork._spec_lane_width(self._map_spec)
+            )
+        )
 
     @cached_property
     def bounding_box(self) -> BoundingBox:
