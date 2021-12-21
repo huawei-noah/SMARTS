@@ -109,4 +109,3 @@ def test_smarts_framerate(smarts, scenarios):
         delta = step_end_time - step_start_time
         step_fps = round(1000 / delta, 2)
         assert step_fps >= 4.5
-
