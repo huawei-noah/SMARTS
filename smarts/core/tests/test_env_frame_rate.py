@@ -111,5 +111,5 @@ def test_env_frame_test(scenarios, seed):
         test_logger.info(
             f"Episode {episode_counter}, Minimum fps: {minimum_frame_rate}, Maximum fps: {maximum_frame_rate}, Average fps: {avg_frame_rate}."
         )
-        assert (minimum_frame_rate >= 2) and (20 <= avg_frame_rate)
+        assert (minimum_frame_rate >= 2) and (avg_frame_rate >= 10)
     env.close()
