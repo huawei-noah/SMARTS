@@ -21,15 +21,14 @@ traffic = t.Traffic(
     ]
 )
 
-non_interactive_agent_actor = t.SocialAgentActor(
-    name="name=non-interactive-agent-v0",
-    agent_locator="zoo.policies:non-interactive-agent-v0",
-    policy_kwargs={"speed": 30},
+buddha_agent = t.SocialAgentActor(
+    name="buddha-agent",
+    agent_locator="scenarios.tests.multi_agents_loop.agent_prefabs:buddha-agent-v0",
 )
 
 laner_actor = t.SocialAgentActor(
     name="keep-lane-agent",
-    agent_locator="zoo.policies:keep-lane-agent-v0",
+    agent_locator="scenarios.tests.multi_agents_loop.agent_prefabs:laner-agent-v0",
 )
 
 gen_scenario(
@@ -37,23 +36,23 @@ gen_scenario(
         traffic={"basic": traffic},
         social_agent_missions={
             "group_1": (
-                [laner_actor, non_interactive_agent_actor],
+                [laner_actor, buddha_agent],
                 [t.Mission(route=t.RandomRoute())],
             ),
             "group_2": (
-                [laner_actor, non_interactive_agent_actor],
+                [laner_actor, buddha_agent],
                 [t.Mission(route=t.RandomRoute())],
             ),
             "group_3": (
-                [laner_actor, non_interactive_agent_actor],
+                [laner_actor, buddha_agent],
                 [t.Mission(route=t.RandomRoute())],
             ),
             "group_4": (
-                [laner_actor, non_interactive_agent_actor],
+                [laner_actor, buddha_agent],
                 [t.Mission(route=t.RandomRoute())],
             ),
             "group_5": (
-                [laner_actor, non_interactive_agent_actor],
+                [laner_actor, buddha_agent],
                 [t.Mission(route=t.RandomRoute())],
             ),
         },
