@@ -87,7 +87,6 @@ def test_env_frame_test(scenarios, seed):
 
         maximum_frame_rate = 0
         minimum_frame_rate = float("inf")
-        avg_frame_rate = 0
         step_counter = 0
         fps_sum = 0
 
