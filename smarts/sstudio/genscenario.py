@@ -434,7 +434,8 @@ def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
     if os.path.exists(road_network_path):
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
-        road_network = SumoRoadNetwork.from_file(road_network_path)
+        map_spec = types.MapSpec(road_network_path)
+        road_network = SumoRoadNetwork.from_spec(map_spec)
         if road_network._graph and getattr(
             road_network._graph, "_shifted_by_smarts", False
         ):

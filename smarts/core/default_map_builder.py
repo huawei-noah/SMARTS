@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from dataclasses import replace
 import os
 from typing import NamedTuple, Tuple
 
@@ -58,23 +59,19 @@ def get_road_map(map_spec) -> Tuple[RoadMap, str]:
         _existing_map = None
         gc.collect()
 
-    map_path = map_spec.source
-    if not os.path.isfile(map_path):
+    if not os.path.isfile(map_spec.source):
         map_path = os.path.join(map_spec.source, "map.net.xml")
         if not os.path.exists(map_path):
             raise FileNotFoundError(
                 f"Unable to find map in map_source={map_spec.source}."
             )
+        map_spec = replace(map_spec, source=map_path)
 
     # Keep this a conditional import so Sumo does not have to be
     # imported if not necessary:
     from smarts.core.sumo_road_network import SumoRoadNetwork
 
-    road_map = SumoRoadNetwork.from_file(
-        map_path,
-        default_lane_width=map_spec.default_lane_width,
-        lanepoint_spacing=map_spec.lanepoint_spacing,
-    )
+    road_map = SumoRoadNetwork.from_spec(map_spec)
 
     road_map_hash = file_md5_hash(road_map.source)
 
