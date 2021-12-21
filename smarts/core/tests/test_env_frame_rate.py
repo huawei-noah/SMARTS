@@ -108,8 +108,7 @@ def test_env_frame_test(scenarios, seed):
 
             episode.record_step(observations, rewards, dones, infos)
             step_counter += 1
-        if step_counter != 0:
-            avg_frame_rate = fps_sum / step_counter
+        avg_frame_rate = fps_sum / (step_counter or 1)
         test_logger.info(
             f"Episode {episode_counter}, Minimum fps: {minimum_frame_rate}, Maximum fps: {maximum_frame_rate}, Average fps: {avg_frame_rate}."
         )
