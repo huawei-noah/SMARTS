@@ -216,6 +216,7 @@ class SumoTrafficSimulation(Provider):
         self._log.debug("Finished starting sumo process")
 
     def _base_sumo_load_params(self):
+
         load_params = [
             "--num-clients=%d" % self._num_clients,
             "--net-file=%s" % self._scenario.road_map.source,
