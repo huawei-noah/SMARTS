@@ -92,7 +92,7 @@ class Client:
             client_id = f"{sim_name}_{client_id}"
 
         if endpoint is None:
-            endpoint = "ws://127.0.0.1:8081"
+            endpoint = "ws://0.0.0.0:8081"
 
         self._logging_process = None
         if output_dir:
@@ -147,7 +147,7 @@ class Client:
     @staticmethod
     def read_and_send(
         path: str,
-        endpoint: str = "ws://127.0.0.1:8081",
+        endpoint: str = "ws://0.0.0.0:8081",
         fixed_timestep_sec: float = 0.1,
         wait_between_retries: float = 0.5,
     ):
