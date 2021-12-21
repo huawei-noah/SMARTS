@@ -25,7 +25,7 @@ import random
 from ctypes import c_int64
 from dataclasses import dataclass, field
 from sys import maxsize
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from shapely.geometry import (
@@ -39,6 +39,7 @@ from shapely.ops import split, unary_union
 
 from smarts.core import gen_id
 from smarts.core.coordinates import RefLinePoint
+from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_around_point
@@ -240,6 +241,33 @@ class BoidAgentActor(SocialAgentActor):
     """The capacity of the boid agent to take over vehicles."""
 
 
+# A MapBuilder should return an object derived from the RoadMap base class
+# and a hash that uniquely identifies it (changes to the hash should signify
+# that the map is different enough that map-related caches should be reloaded).
+#
+# This function should be re-callable (although caching is up to the implementation).
+# The idea here is that anything in SMARTS that needs to use a RoadMap
+# can call this builder to get or create one as necessary.
+MapBuilder = NewType("MapBuilder", Callable[[Any], Tuple[RoadMap, str]])
+
+
+@dataclass(frozen=True)
+class MapSpec:
+    source: str
+    """A path or URL or name uniquely designating the map source."""
+    lanepoint_spacing: Optional[float] = None
+    """If specified, the default distance between pre-generated Lane Points (Waypoints)."""
+    default_lane_width: Optional[float] = None
+    """If specified, the default width (in meters) of lanes on this map."""
+    builder_fn: Optional[MapBuilder] = get_road_map
+    """If specified, this should return an object derived from the RoadMap base class
+    and a hash that uniquely identifies it (changes to the hash should signify
+    that the map is different enough that map-related caches should be reloaded).
+    The parameter is this MapSpec object itself.
+    If not specified, this currently defaults to a function that creates
+    SUMO road networks (get_road_map()) in smarts.core.default_map_builder."""
+
+
 @dataclass(frozen=True)
 class Route:
     """A route is represented by begin and end road IDs, with an optional list of
@@ -274,6 +302,10 @@ class Route:
     via: Tuple[str, ...] = field(default_factory=tuple)
     """The ids of roads that must be included in the route between `begin` and `end`."""
 
+    map_spec: Optional[MapSpec] = None
+    """All routes are relative to a road map.  If not specified here,
+    the default map_spec for the scenario is used."""
+
     @property
     def id(self) -> str:
         return "route-{}-{}-{}-".format(
@@ -294,6 +326,10 @@ class RandomRoute:
     """
 
     id: str = field(default_factory=lambda: f"random-route-{gen_id()}")
+
+    map_spec: Optional[MapSpec] = None
+    """All routes are relative to a road map.  If not specified here,
+    the default map_spec for the scenario is used."""
 
 
 @dataclass(frozen=True)
@@ -722,6 +758,7 @@ class _ActorAndMission:
 
 @dataclass(frozen=True)
 class Scenario:
+    map_spec: Optional[MapSpec] = None
     traffic: Optional[Dict[str, Traffic]] = None
     ego_missions: Optional[Sequence[Mission]] = None
     # e.g. { "turning_agents": ([actors], [missions]), ... }

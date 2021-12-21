@@ -37,6 +37,7 @@ with warnings.catch_warnings():
 
 from smarts import VERSION
 from smarts.core.chassis import AckermannChassis, BoxChassis
+from smarts.core.plan import Plan
 
 from . import models
 from .agent_interface import AgentInterface
@@ -59,7 +60,7 @@ from .utils.id import Id
 from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
-from .vehicle import VehicleState
+from .vehicle import Vehicle, VehicleState
 from .vehicle_index import VehicleIndex
 
 logging.basicConfig(
@@ -391,6 +392,79 @@ class SMARTS:
             self._log.warning(
                 f"Unable to add entry trap for new agent '{agent_id}' with mission."
             )
+
+    def add_agent_and_switch_control(
+        self,
+        vehicle_id: str,
+        agent_id: str,
+        agent_interface: AgentInterface,
+        mission: Mission,
+    ) -> Vehicle:
+        self.agent_manager.add_ego_agent(agent_id, agent_interface, for_trap=False)
+        vehicle = self.switch_control_to_agent(
+            vehicle_id, agent_id, mission, recreate=False, is_hijacked=True
+        )
+        self.create_vehicle_in_providers(vehicle, agent_id)
+
+    def switch_control_to_agent(
+        self,
+        vehicle_id: str,
+        agent_id: str,
+        mission: Mission,
+        recreate: bool,
+        is_hijacked: bool,
+    ) -> Vehicle:
+        # Check if this is a history vehicle
+        history_veh_id = self._traffic_history_provider.get_history_id(vehicle_id)
+        canonical_veh_id = history_veh_id if history_veh_id else vehicle_id
+
+        assert not self.vehicle_index.vehicle_is_hijacked(
+            canonical_veh_id
+        ), f"Vehicle has already been hijacked: {canonical_veh_id}"
+        assert (
+            not canonical_veh_id in self.vehicle_index.agent_vehicle_ids()
+        ), f"Can't hijack vehicle that is already controlled by an agent: {canonical_veh_id}"
+
+        # Remove vehicle from traffic history provider
+        if history_veh_id:
+            self._traffic_history_provider.set_replaced_ids([vehicle_id])
+
+        # Switch control to agent
+        plan = Plan(self.road_map, mission)
+        interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
+        self.vehicle_index.start_agent_observation(
+            self, canonical_veh_id, agent_id, interface, plan
+        )
+        vehicle = self.vehicle_index.switch_control_to_agent(
+            self,
+            canonical_veh_id,
+            agent_id,
+            boid=False,
+            recreate=recreate,
+            hijacking=is_hijacked,
+            agent_interface=interface,
+        )
+
+        return vehicle
+
+    def create_vehicle_in_providers(
+        self,
+        vehicle: Vehicle,
+        agent_id: str,
+    ):
+        interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
+        for provider in self.providers:
+            if interface.action_space in provider.action_spaces:
+                provider.create_vehicle(
+                    VehicleState(
+                        vehicle_id=vehicle.id,
+                        vehicle_config_type="passenger",
+                        pose=vehicle.pose,
+                        dimensions=vehicle.chassis.dimensions,
+                        speed=vehicle.speed,
+                        source="HIJACK",
+                    )
+                )
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()

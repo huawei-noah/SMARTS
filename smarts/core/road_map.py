@@ -60,7 +60,7 @@ class RoadMap:
         return 1.0
 
     def to_glb(self, at_path):
-        """ build a glb file for camera rendering and envision """
+        """build a glb file for camera rendering and envision"""
         raise NotImplementedError()
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
@@ -93,7 +93,7 @@ class RoadMap:
         via: Sequence[RoadMap.Road] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
-        """ Routes will be returned in order of increasing length """
+        """Routes will be returned in order of increasing length"""
         raise NotImplementedError()
 
     def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
@@ -290,14 +290,19 @@ class RoadMap:
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
             offset = self.offset_along_lane(point)
             width = self.width_at_offset(offset)
-            left_edge = RefLanePoint(s=offset, t=width / 2)
-            right_edge = RefLanePoint(s=offset, t=-width / 2)
-            return (self.from_lane_coord(left_edge), self.from_lane_coord(right_edge))
+            left_edge = RefLinePoint(s=offset, t=width / 2)
+            right_edge = RefLinePoint(s=offset, t=-width / 2)
+            return self.from_lane_coord(left_edge), self.from_lane_coord(right_edge)
 
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
-            add_offset = 1  # a little further down the lane
-            end_offset = start_offset + add_offset
-            p1 = self.from_lane_coord(RefLinePoint(s=start_offset))
+            if start_offset >= self.length:
+                s_offset = self.length - 1
+                end_offset = self.length
+            else:
+                s_offset = start_offset
+                end_offset = start_offset + 1  # a little further down the lane
+            s_offset = max(s_offset, 0)
+            p1 = self.from_lane_coord(RefLinePoint(s=s_offset))
             p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
             return np.array(p2) - np.array(p1)
 
