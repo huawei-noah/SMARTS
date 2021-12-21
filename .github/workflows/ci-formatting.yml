@@ -37,4 +37,9 @@ jobs:
           cd $GITHUB_WORKSPACE
           pip install --upgrade pip
           pip install pylint
-          pylint -d all -e missing-function-docstring -e missing-class-docstring -s n --ignore marl_benchmark,examples,scenarios,docs --msg-template='{path}: {msg_id}: line {line}: {msg} ({symbol})' ./smarts ./envision
+          pylint -d all \
+          -e missing-function-docstring -e missing-class-docstring \
+          -s n \
+          --ignore marl_benchmark,examples,scenarios,docs \
+          --msg-template='{path}: {msg_id}: line {line}: {msg} ({symbol})' \
+          ./smarts ./envision
