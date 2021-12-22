@@ -197,7 +197,7 @@ def _joust(wkc: AckermannChassis, bkc: AckermannChassis, steps, throttle=1):
 
 
 def test_collision_joust(bullet_client: bc.BulletClient):
-    """ Run two agents at each other to test for clipping. """
+    """Run two agents at each other to test for clipping."""
     white_knight_chassis = AckermannChassis(
         Pose.from_center([10, 0, 0], Heading(math.pi * 0.5)), bullet_client
     )

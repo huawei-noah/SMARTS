@@ -32,9 +32,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import cloudpickle
 import numpy as np
-from cached_property import cached_property
 
-from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
+from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint, Point
 from smarts.core.data_model import SocialAgent
 from smarts.core.plan import (
     EndlessGoal,
@@ -49,7 +48,7 @@ from smarts.core.plan import (
 )
 from smarts.core.road_map import RoadMap
 from smarts.core.traffic_history import TrafficHistory
-from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
+from smarts.core.utils.file import make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.sstudio import types as sstudio_types
