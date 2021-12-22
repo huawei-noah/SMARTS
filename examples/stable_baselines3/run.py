@@ -16,6 +16,7 @@ import env.reward as reward
 import env.action as action
 
 from stable_baselines3 import PPO
+from stable_baselines3.common import monitor
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
 from argument_parser import default_argument_parser
@@ -69,6 +70,7 @@ def create_env(config):
         sim_name="smarts",
     )
 
+    
     # Wrap env with ActionWrapper
     env = action.Action(env=env)
     # Wrap env with RewardWrapper
@@ -77,6 +79,7 @@ def create_env(config):
     env = smarts_rgb_image.RGBImage(env=env, num_stack=1)
     # Wrap env with SingleAgent wrapper to be Gym compliant
     env = smarts_single_agent.SingleAgent(env=env)
+    env = monitor.Monitor(env=env)
     check_env(env, warn=True)
 
     return env

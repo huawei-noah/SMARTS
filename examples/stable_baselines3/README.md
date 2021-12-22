@@ -36,8 +36,8 @@ $ scl scenario build-all --clean ./scenarios/loop
 1. Build and train inside docker container
     ```bash
     $ cd <path>/SMARTS
-    $ docker build --file=<path>/SMARTS/examples/driving_in_traffic/Dockerfile --network=host --tag=driving_in_traffic <path>/SMARTS
-    $ docker run --rm -it --network=host --gpus=all driving_in_traffic
-    (container) $ cd /src/examples/driving_in_traffic
+    $ docker build --file=<path>/SMARTS/examples/stable_baselines3/Dockerfile --network=host --tag=sb3 <path>/SMARTS
+    $ docker run --rm -it --network=host --gpus=all sb3
+    (container) $ cd /src/examples/stable_baselines3
     (container) $ python3.7 run.py
     ```

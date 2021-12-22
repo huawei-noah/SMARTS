@@ -1,4 +1,4 @@
-FROM ubuntu:bionic
+FROM tensorflow/tensorflow:2.4.0-gpu
 
 ARG DEBIAN_FRONTEND=noninteractive
 
