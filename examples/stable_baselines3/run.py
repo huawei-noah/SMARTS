@@ -12,7 +12,7 @@ from smarts.core import controllers as smarts_controllers
 from smarts.env import hiway_env as smarts_hiway_env
 import env.rgb_image as smarts_rgb_image
 import env.single_agent as smarts_single_agent
-import env.adapter as adapter
+import env.reward as reward
 import env.action as action
 
 from stable_baselines3 import PPO
@@ -51,8 +51,6 @@ def create_env(config):
         agent_id: smarts_agent.AgentSpec(
             interface=vehicle_interface,
             agent_builder=None,
-            reward_adapter=adapter.reward_adapter,
-            info_adapter=adapter.info_adapter,
         )
         for agent_id in config["agent_ids"]
     }
@@ -73,6 +71,8 @@ def create_env(config):
 
     # Wrap env with ActionWrapper
     env = action.Action(env=env)
+    # Wrap env with RewardWrapper
+    env = reward.Reward(env=env)
     # Wrap env with RGBImage wrapper to only get rgb images in observation
     env = smarts_rgb_image.RGBImage(env=env, num_stack=1)
     # Wrap env with SingleAgent wrapper to be Gym compliant
@@ -159,6 +159,7 @@ def main(args):
             env,
             verbose=1,
             tensorboard_log=str(save_path) + "/tensorboard_log",
+            use_sde=True 
         )
 
         before_mean_reward, before_std_reward = evaluate_policy(
