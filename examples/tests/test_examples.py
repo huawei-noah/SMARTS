@@ -38,7 +38,6 @@ def test_ray_multi_instance_example():
     from examples import ray_multi_instance
 
     main = ray_multi_instance.main
-    # We should not need more than 10 cpus for this test.
     num_cpus = max(2, min(10, (psutil.cpu_count(logical=False) - 1)))
     main(
         training_scenarios=["scenarios/loop"],

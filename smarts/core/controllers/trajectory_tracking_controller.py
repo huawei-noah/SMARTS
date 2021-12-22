@@ -208,14 +208,39 @@ class TrajectoryTrackingController:
         lateral_gain = lerp(3, final_lateral_gain, normalized_speed)
         heading_gain = lerp(0.03, final_heading_gain, normalized_speed)
         steering_filter_constant = lerp(
-            2, final_steering_filter_constant, normalized_speed
+            12, final_steering_filter_constant, normalized_speed
         )
-        heading_error_derivative_gain = lerp(
+        heading_error_derivative_gain = 0 * lerp(
             1.5, final_heading_error_derivative_gain, normalized_speed
         )
-        lateral_error_derivative_gain = lerp(
+        lateral_error_derivative_gain = 0 * lerp(
             0.2, final_lateral_error_derivative_gain, normalized_speed
         )
+        lateral_gain = 0.61
+        heading_gain = 0.01
+
+        if abs(min_angles_difference_signed(trajectory[2][-1], trajectory[2][0])) > 2:
+            throttle_filter_constant = 2.5
+
+        lateral_error_derivative_gain = 0.15
+        heading_error_derivative_gain = 0.5
+        if (
+            abs(
+                TrajectoryTrackingController.curvature_calculation(
+                    trajectory, 0, num_points=3
+                )
+            )
+            < 150
+        ):
+            heading_gain = 0.05
+            # lateral_gain = 0.71
+            # velocity_gain *= 0.5
+            lateral_error_derivative_gain = 0.015
+            heading_error_derivative_gain = 0.05
+
+        if vehicle.speed > 70 / 3.6:
+            lateral_gain = 1.51
+            heading_error_derivative_gain = 0.1
 
         (
             heading_error,
@@ -326,7 +351,7 @@ class TrajectoryTrackingController:
         velocity_error = vehicle.speed - desired_speed
         velocity_error_damping_term = (velocity_error - state.velocity_error) / dt_sec
         raw_throttle = METER_PER_SECOND_TO_KM_PER_HR * (
-            -1 * velocity_gain * velocity_error
+            -0.5 * velocity_gain * velocity_error
             - velocity_integral_gain
             * (integral_velocity_error + windup_gain * state.integral_windup_error)
             - velocity_damping_gain * velocity_error_damping_term
