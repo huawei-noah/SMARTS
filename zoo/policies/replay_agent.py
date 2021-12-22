@@ -23,8 +23,6 @@ class ReplayAgent(Agent):
 
         self.save_directory = save_directory
         self._base_agent = internal_spec.build_agent()
-        self._file = None
-        self._read = False
         self._logger = logging.getLogger(self.__class__.__name__)
         global agent_index
         self.id = f"{id}_{agent_index}"
@@ -35,7 +33,15 @@ class ReplayAgent(Agent):
         file_mode = "wb" if not read else "rb"
         path = Path(f"{abs_path}/{self.id}")
         os.makedirs(abs_path, exist_ok=True)
-        self._file = path.open(mode=file_mode)
+        try:
+            self._file = path.open(mode=file_mode)
+        except FileNotFoundError as e:
+            assert self._read
+            self._logger.error(
+                f"The file which you are trying to be read does not exist. "
+                f"Make sure the {save_directory} directory passed is correct and has the agent file which is being read"
+            )
+            raise e
 
     def __del__(self):
         if self._file:
@@ -51,7 +57,9 @@ class ReplayAgent(Agent):
                 self._logger.debug("The Base Agent's action and new action don't match")
                 raise e
             except Exception as e:
-                self._logger.error("Comparing the new action with the base agent action raise an unknown error")
+                self._logger.error(
+                    "Comparing the new action with the base agent action raise an unknown error"
+                )
                 print(e)
                 action = base_action
 

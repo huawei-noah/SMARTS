@@ -68,7 +68,7 @@ def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write)
         wrapped_agent_locator="zoo.policies:keep-left-with-speed-agent-v0",
         wrapped_agent_params={"speed": speed},
     )
-    # copy the scenarios to the replay directory to make sure its not changed
+    # copy the scenarios to the replay directory to make sure it's not changed
     copy_scenarios(save_dir, scenarios)
 
     env = gym.make(
