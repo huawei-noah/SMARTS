@@ -22,7 +22,7 @@ RUN apt-get update --fix-missing && \
         python3.7 \
         python3.7-dev \
         python3.7-venv \
-        sumo \
+        sumo=1.10.0 \
         sumo-doc \
         sumo-tools \
         wget \
