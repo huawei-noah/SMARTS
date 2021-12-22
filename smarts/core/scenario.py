@@ -31,7 +31,8 @@ from typing import Any, Dict, Sequence, Tuple
 import cloudpickle
 import numpy as np
 
-from smarts.core.coordinates import Dimensions, Heading, RefLinePoint, Point
+
+from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint, Point
 from smarts.core.data_model import SocialAgent
 from smarts.core.plan import (
     EndlessGoal,
