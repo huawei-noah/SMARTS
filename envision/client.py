@@ -94,6 +94,8 @@ class Client:
         if endpoint is None:
             endpoint = "ws://localhost:8081"
 
+        endpoint = "ws://127.0.0.1:8081"    
+
         self._logging_process = None
         if output_dir:
             output_dir = Path(f"{output_dir}/{int(time.time())}")
@@ -152,6 +154,7 @@ class Client:
         wait_between_retries: float = 0.5,
     ):
         """Send a pre-recorded envision simulation to the envision server."""
+
         client = Client(
             endpoint=endpoint,
             wait_between_retries=wait_between_retries,
