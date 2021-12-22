@@ -130,6 +130,7 @@ def gen_scenario(
             scenario=output_dir,
             histories_datasets=scenario.traffic_histories,
             overwrite=overwrite,
+            map_spec=map_spec,
         )
 
 
@@ -427,14 +428,18 @@ def _validate_entry_tactic(mission):
             ), f"Zone edge `{z_edge}` is not the same edge as `types.Mission` route begin edge `{edge}`"
 
 
-def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
+def gen_traffic_histories(
+    scenario: str, histories_datasets, overwrite: bool, map_spec: types.MapSpec = None
+):
     # For SUMO maps, we need to check if the map was shifted and translate the vehicle positions if so
     xy_offset = None
-    road_network_path = os.path.join(scenario, "map.net.xml")
-    if os.path.exists(road_network_path):
+    if not map_spec:
+        road_network_path = os.path.join(scenario, "map.net.xml")
+        map_spec = types.MapSpec(road_network_path)
+    if os.path.exists(map_spec.source):
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
-        road_network = SumoRoadNetwork.from_file(road_network_path)
+        road_network = SumoRoadNetwork.from_spec(map_spec)
         if road_network._graph and getattr(
             road_network._graph, "_shifted_by_smarts", False
         ):

@@ -36,7 +36,6 @@ from cached_property import cached_property
 
 from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
 from smarts.core.data_model import SocialAgent
-from smarts.core.default_map_builder import get_road_map
 from smarts.core.plan import (
     EndlessGoal,
     LapMission,
