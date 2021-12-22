@@ -26,8 +26,7 @@ from threading import Thread
 
 import click
 
-from smarts.core.sumo_road_network import SumoRoadNetwork
-from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
+shifted_net_file_name = "shifted_map-AUTOGEN.net.xml"
 
 
 @click.group(name="scenario")
@@ -47,7 +46,7 @@ def scenario_cli():
     is_flag=True,
     default=False,
     help="Allows Sumo's road network (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(
-        SumoRoadNetwork.shifted_net_file_name
+        shifted_net_file_name
     ),
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
@@ -63,19 +62,28 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     scenario_root = Path(scenario)
     map_glb = scenario_root / "map.glb"
     if list(scenario_root.rglob("*.xodr")):
+        from smarts.sstudio.types import MapSpec
         from smarts.sstudio.od2mesh import generate_glb_from_opendrive_network
+        from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 
         map_xodr = str(scenario_root / "map.xodr")
-        od_road_network = OpenDriveRoadNetwork.from_file(map_xodr)
+        map_spec = MapSpec(map_xodr)
+        od_road_network = OpenDriveRoadNetwork.from_spec(map_spec)
         generate_glb_from_opendrive_network(map_xodr, str(map_glb), od_road_network)
 
     elif list(scenario_root.rglob("*.net.xml")):
         from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_network
+        from smarts.core.sumo_road_network import SumoRoadNetwork
 
         sumo_road_network = None
         map_net = str(scenario_root / "map.net.xml")
         if not allow_offset_map or scenario.traffic_histories:
-            sumo_road_network = SumoRoadNetwork.from_file(map_net, shift_to_origin=True)
+            from smarts.sstudio.types import MapSpec
+
+            map_spec = MapSpec(map_net)
+            sumo_road_network = SumoRoadNetwork.from_spec(
+                map_spec, shift_to_origin=True
+            )
         elif os.path.isfile(SumoRoadNetwork.shifted_net_file_path(map_net)):
             click.echo(
                 "WARNING: {} already exists.  Remove it if you want to use unshifted/offset map.net.xml instead.".format(
@@ -150,7 +158,7 @@ def _install_requirements(scenario_root):
     is_flag=True,
     default=False,
     help="Allows Sumo's road networks (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(
-        SumoRoadNetwork.shifted_net_file_name
+        shifted_net_file_name
     ),
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
@@ -197,7 +205,7 @@ def clean_scenario(scenario):
 def _clean(scenario):
     to_be_removed = [
         "map.glb",
-        SumoRoadNetwork.shifted_net_file_name,
+        shifted_net_file_name,
         "bubbles.pkl",
         "missions.pkl",
         "flamegraph-perf.log",

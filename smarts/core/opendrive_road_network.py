@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import heapq
+import os
 import logging
 import math
 import random
@@ -30,7 +31,6 @@ import trimesh.scene
 from trimesh.exchange import gltf
 import numpy as np
 from cached_property import cached_property
-from lxml import etree
 from opendrive2lanelet.opendriveparser.elements.geometry import Line as LineGeometry
 from opendrive2lanelet.opendriveparser.elements.opendrive import (
     OpenDrive as OpenDriveElement,
@@ -50,6 +50,7 @@ from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
     PlanView as PlanViewElement,
 )
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
+from lxml import etree
 from shapely.geometry import Polygon
 import rtree
 
@@ -204,9 +205,8 @@ class OpenDriveRoadNetwork(RoadMap):
     def __init__(
         self,
         xodr_file: str,
+        map_spec: MapSpec,
         default_lane_speed=None,
-        default_lane_width=None,
-        lanepoint_spacing=None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._xodr_file = xodr_file
@@ -215,11 +215,8 @@ class OpenDriveRoadNetwork(RoadMap):
             if default_lane_speed is not None
             else OpenDriveRoadNetwork.DEFAULT_LANE_SPEED
         )
-        self._default_lane_width = (
-            default_lane_width
-            if default_lane_width is not None
-            else OpenDriveRoadNetwork.DEFAULT_LANE_WIDTH
-        )
+        self._map_spec = map_spec
+        self._default_lane_width = OpenDriveRoadNetwork._spec_lane_width(map_spec)
         self._surfaces: Dict[str, OpenDriveRoadNetwork.Surface] = {}
         self._roads: Dict[str, OpenDriveRoadNetwork.Road] = {}
         self._lanes: Dict[str, OpenDriveRoadNetwork.Lane] = {}
@@ -232,25 +229,35 @@ class OpenDriveRoadNetwork(RoadMap):
 
         self.load()
         self._waypoints_cache = WaypointsCache()
-        if lanepoint_spacing is not None:
-            assert lanepoint_spacing > 0
+        if map_spec.lanepoint_spacing is not None:
+            assert map_spec.lanepoint_spacing > 0
             self._lanepoints = LanePoints.from_opendrive(
-                self, spacing=lanepoint_spacing
+                self, spacing=map_spec.lanepoint_spacing
             )
 
     @classmethod
-    def from_file(
+    def from_spec(
         cls,
-        xodr_file,
-        default_lane_width=None,
-        lanepoint_spacing=None,
+        map_spec: MapSpec,
     ):
-        od_map = cls(
-            xodr_file,
-            default_lane_width=default_lane_width,
-            lanepoint_spacing=lanepoint_spacing,
-        )
+        xodr_file = OpenDriveRoadNetwork._map_path(map_spec)
+        od_map = cls(xodr_file, map_spec)
         return od_map
+
+    @staticmethod
+    def _spec_lane_width(map_spec: MapSpec) -> float:
+        return (
+            map_spec.default_lane_width
+            if map_spec.default_lane_width is not None
+            else OpenDriveRoadNetwork.DEFAULT_LANE_WIDTH
+        )
+
+    @staticmethod
+    def _map_path(map_spec: MapSpec) -> str:
+        if os.path.isdir(map_spec.source):
+            # map.xodr is the default OpenDRIVE map name; try that:
+            return os.path.join(map_spec.source, "map.xodr")
+        return map_spec.source
 
     @staticmethod
     def _elem_id(elem, suffix):
@@ -616,18 +623,18 @@ class OpenDriveRoadNetwork(RoadMap):
         return self._xodr_file
 
     def is_same_map(self, map_spec: MapSpec) -> bool:
-        dlw = (
-            map_spec.default_lane_width
-            if map_spec.default_lane_width is not None
-            else OpenDriveRoadNetwork.DEFAULT_LANE_WIDTH
-        )
         return (
-            map_spec.source == self._xodr_file
-            and (
-                (not map_spec.lanepoint_spacing and not self._lanepoints)
-                or map_spec.lanepoint_spacing == self._lanepoints.spacing
+            (
+                map_spec.source == self._map_spec.source
+                or OpenDriveRoadNetwork._map_path(map_spec)
+                == OpenDriveRoadNetwork._map_path(self._map_spec)
             )
-            and dlw == self._default_lane_width
+            and map_spec.lanepoint_spacing == self._map_spec.lanepoint_spacing
+            and (
+                map_spec.default_lane_width == self._map_spec.default_lane_width
+                or OpenDriveRoadNetwork._spec_lane_width(map_spec)
+                == OpenDriveRoadNetwork._spec_lane_width(self._map_spec)
+            )
         )
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
@@ -1102,6 +1109,7 @@ class OpenDriveRoadNetwork(RoadMap):
         ) -> float:
             return super().curvature_radius_at_offset(offset, lookahead)
 
+        @lru_cache(maxsize=8)
         def width_at_offset(self, lane_point_s: float) -> float:
             if self._lane_elem_index < 0:
                 road_offset = lane_point_s + self.road.s_pos

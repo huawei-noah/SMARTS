@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from dataclasses import replace
 import os
 from typing import NamedTuple, Tuple
 
@@ -64,35 +65,27 @@ def get_road_map(map_spec) -> Tuple[RoadMap, str]:
         _existing_map = None
         gc.collect()
 
-    map_path = map_spec.source
-    if not os.path.isfile(map_path):
+    if not os.path.isfile(map_spec.source):
         for i, map_name in enumerate(supported_maps):
-            new_map_path = os.path.join(map_path, map_name)
-            if os.path.exists(new_map_path):
-                map_path = new_map_path
+            map_path = os.path.join(map_spec.source, map_name)
+            if os.path.exists(map_path):
+                map_spec = replace(map_spec, source=map_path)
                 break
             if i == len(supported_maps) - 1:
-                raise FileNotFoundError(f"Unable to find map in map_source={map_path}.")
+                raise FileNotFoundError(f"Unable to find map in map_source={map_spec.source}.")
 
     road_map = None
-    if map_path.endswith("map.net.xml"):
+    if map_spec.source.endswith("map.net.xml"):
         # Keep this a conditional import so Sumo does not have to be
         # imported if not necessary:
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
-        road_map = SumoRoadNetwork.from_file(
-            map_path,
-            default_lane_width=map_spec.default_lane_width,
-            lanepoint_spacing=map_spec.lanepoint_spacing,
-        )
-    elif map_path.endswith("map.xodr"):
+        road_map = SumoRoadNetwork.from_spec(map_spec)
+
+    elif map_spec.source.endswith("map.xodr"):
         from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 
-        road_map = OpenDriveRoadNetwork.from_file(
-            map_path,
-            default_lane_width=map_spec.default_lane_width,
-            lanepoint_spacing=map_spec.lanepoint_spacing,
-        )
+        road_map = OpenDriveRoadNetwork.from_spec(map_spec)
 
     road_map_hash = file_md5_hash(road_map.source)
 
