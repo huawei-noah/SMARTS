@@ -94,7 +94,9 @@ class SumoRoadNetwork(RoadMap):
         if map_spec.lanepoint_spacing is not None:
             assert map_spec.lanepoint_spacing > 0
             # XXX: this should be last here since LanePoints() calls road_network methods immediately
-            self._lanepoints = LanePoints.from_sumo(self, spacing=map_spec.lanepoint_spacing)
+            self._lanepoints = LanePoints.from_sumo(
+                self, spacing=map_spec.lanepoint_spacing
+            )
 
     @staticmethod
     def _check_net_origin(bbox):
