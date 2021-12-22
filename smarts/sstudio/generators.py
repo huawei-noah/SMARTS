@@ -260,7 +260,8 @@ class TrafficGenerator:
         if not self._road_network:
             from smarts.core.sumo_road_network import SumoRoadNetwork
 
-            self._road_network = SumoRoadNetwork.from_file(self._road_network_path)
+            map_spec = types.MapSpec(self._road_network_path)
+            self._road_network = SumoRoadNetwork.from_spec(map_spec)
 
     def resolve_edge_length(self, edge_id, lane_idx):
         self._cache_road_network()

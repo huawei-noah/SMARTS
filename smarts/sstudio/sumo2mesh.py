@@ -20,10 +20,12 @@
 import argparse
 
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.sstudio.types import MapSpec
 
 
 def generate_glb_from_sumo_network(sumo_net_file, out_glb_file):
-    road_network = SumoRoadNetwork.from_file(net_file=sumo_net_file)
+    map_spec = MapSpec(sumo_net_file)
+    road_network = SumoRoadNetwork.from_spec(map_spec)
     road_network.to_glb(out_glb_file)
 
 

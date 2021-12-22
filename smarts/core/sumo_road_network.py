@@ -81,26 +81,21 @@ class SumoRoadNetwork(RoadMap):
     # in North America (although US highway lanes are wider at ~3.7m).
     DEFAULT_LANE_WIDTH = 3.2
 
-    def __init__(
-        self, graph, net_file, default_lane_width=None, lanepoint_spacing=None
-    ):
+    def __init__(self, graph, net_file: str, map_spec: MapSpec):
         self._log = logging.getLogger(self.__class__.__name__)
         self._graph = graph
         self._net_file = net_file
-        self._default_lane_width = (
-            default_lane_width
-            if default_lane_width is not None
-            else SumoRoadNetwork.DEFAULT_LANE_WIDTH
-        )
+        self._map_spec = map_spec
+        self._default_lane_width = SumoRoadNetwork._spec_lane_width(map_spec)
         self._surfaces = {}
         self._lanes = {}
         self._roads = {}
         self._waypoints_cache = SumoRoadNetwork._WaypointsCache()
         self._lanepoints = None
-        if lanepoint_spacing is not None:
-            assert lanepoint_spacing > 0
+        if map_spec.lanepoint_spacing is not None:
+            assert map_spec.lanepoint_spacing > 0
             # XXX: this should be last here since SumoLanePoints() calls road_network methods immediately
-            self._lanepoints = SumoLanePoints(self, spacing=lanepoint_spacing)
+            self._lanepoints = SumoLanePoints(self, spacing=map_spec.lanepoint_spacing)
 
     @staticmethod
     def _check_net_origin(bbox):
@@ -143,13 +138,9 @@ class SumoRoadNetwork(RoadMap):
         return False
 
     @classmethod
-    def from_file(
-        cls,
-        net_file,
-        shift_to_origin=False,
-        default_lane_width=None,
-        lanepoint_spacing=None,
-    ):
+    def from_spec(cls, map_spec: MapSpec, shift_to_origin: bool = False):
+        net_file = SumoRoadNetwork._map_path(map_spec)
+
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
@@ -171,31 +162,41 @@ class SumoRoadNetwork(RoadMap):
                 # coordinates are relative to the origin).
                 G._shifted_by_smarts = True
 
-        return cls(
-            G,
-            net_file,
-            default_lane_width=default_lane_width,
-            lanepoint_spacing=lanepoint_spacing,
-        )
+        return cls(G, net_file, map_spec)
 
     @property
     def source(self) -> str:
         """This is the net.xml file that corresponds with our possibly-offset coordinates."""
         return self._net_file
 
-    def is_same_map(self, map_spec: MapSpec) -> bool:
-        dlw = (
+    @staticmethod
+    def _spec_lane_width(map_spec: MapSpec) -> float:
+        return (
             map_spec.default_lane_width
             if map_spec.default_lane_width is not None
             else SumoRoadNetwork.DEFAULT_LANE_WIDTH
         )
+
+    @staticmethod
+    def _map_path(map_spec: MapSpec) -> str:
+        if os.path.isdir(map_spec.source):
+            # map.net.xml is the default Sumo map name; try that:
+            return os.path.join(map_spec.source, "map.net.xml")
+        return map_spec.source
+
+    def is_same_map(self, map_spec: MapSpec) -> bool:
         return (
-            map_spec.source == self._net_file
-            and (
-                (not map_spec.lanepoint_spacing and not self._lanepoints)
-                or map_spec.lanepoint_spacing == self._lanepoints.spacing
+            (
+                map_spec.source == self._map_spec.source
+                or SumoRoadNetwork._map_path(map_spec)
+                == SumoRoadNetwork._map_path(self._map_spec)
             )
-            and dlw == self._default_lane_width
+            and map_spec.lanepoint_spacing == self._map_spec.lanepoint_spacing
+            and (
+                map_spec.default_lane_width == self._map_spec.default_lane_width
+                or SumoRoadNetwork._spec_lane_width(map_spec)
+                == SumoRoadNetwork._spec_lane_width(self._map_spec)
+            )
         )
 
     @cached_property
