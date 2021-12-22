@@ -84,7 +84,6 @@ def create_env(config):
 
 def main(args):
 
-
     if args.mode != "colab":
         # save trained model
         from datetime import datetime
@@ -159,7 +158,7 @@ def main(args):
             env,
             verbose=1,
             tensorboard_log=str(save_path) + "/tensorboard_log",
-            use_sde=True 
+            use_sde=True,
         )
 
         before_mean_reward, before_std_reward = evaluate_policy(
