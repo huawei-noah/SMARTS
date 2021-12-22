@@ -34,7 +34,7 @@ import cloudpickle
 import numpy as np
 from cached_property import cached_property
 
-from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
+from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
 from smarts.core.data_model import SocialAgent
 from smarts.core.plan import (
     EndlessGoal,

@@ -6,4 +6,4 @@ class KeepLeftWithSpeedAgent(Agent):
         self._speed = speed
 
     def act(self, obs):
-        return (self._speed, 0)
+        return self._speed, 0

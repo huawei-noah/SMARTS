@@ -41,28 +41,6 @@ laner_actor = t.SocialAgentActor(
     agent_locator="zoo.policies:keep-lane-agent-v0",
 )
 
-
-# Replace the above lines with the code below if you want to replay the agent actions and inputs
-# open_agent_actor = t.SocialAgentActor(
-#     name="open-agent",
-#     agent_locator="zoo.policies:replay-agent-v0",
-#     policy_kwargs={
-#         "save_directory": "./replay",
-#         "id": "agent_oa",
-#         "wrapped_agent_locator": "open_agent:open_agent-v0",
-#     },
-# )
-#
-# laner_actor = t.SocialAgentActor(
-#     name="keep-lane-agent",
-#     agent_locator="zoo.policies:replay-agent-v0",
-#     policy_kwargs={
-#         "save_directory": "./replay",
-#         "id": "agent_kla",
-#         "wrapped_agent_locator": "zoo.policies:keep-lane-agent-v0",
-#     },
-# )
-
 travelling_bubbles = [
     t.Bubble(
         zone=t.PositionalZone(pos=(50, 0), size=(10, 50)),

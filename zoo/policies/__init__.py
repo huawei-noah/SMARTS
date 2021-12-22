@@ -50,9 +50,11 @@ def replay_entrypoint(
     save_directory,
     id,
     wrapped_agent_locator,
-    wrapped_agent_params={},
+    wrapped_agent_params=None,
     read=False,
 ):
+    if wrapped_agent_params is None:
+        wrapped_agent_params = {}
     from .replay_agent import ReplayAgent
 
     internal_spec = make(wrapped_agent_locator, **wrapped_agent_params)

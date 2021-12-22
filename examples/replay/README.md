@@ -25,7 +25,6 @@ Checkout `examples/replay/replay_klws_agent.py` on an example on how you can wri
     )
     # copy the scenarios to the replay directory to make sure its not changed while replaying the agent actions
     copy_scenarios.copy_scenarios(save_dir, scenarios)
-
 ```
 You may also need to wrap the social agent used in the `scenario.py` file of the scenario on which you run your experiment.
 Like for `scenarios/loop`, you can wrap the `open_agent` and `keep_lane_agent` agents used like this, 
@@ -50,6 +49,28 @@ Like for `scenarios/loop`, you can wrap the `open_agent` and `keep_lane_agent` a
         },
     )
 ```
+Or for `scenarios/straight`, you can wrap the `trajectory_boid_agent` and `pose_boid_agent` agents used like this,
+```python
+    trajectory_boid_agent = t.SocialAgentActor(
+        name="trajectory-boid",
+        agent_locator="zoo.policies:replay-agent-v0",
+        policy_kwargs={
+            "save_directory": "./replay",
+            "id": "agent_oa",
+            "wrapped_agent_locator": "scenarios.straight.agent_prefabs:trajectory-boid-agent-v0",
+        },
+    )
+    
+    pose_boid_agent = t.SocialAgentActor(
+        name="pose-boid",
+        agent_locator="zoo.policies:replay-agent-v0",
+        policy_kwargs={
+            "save_directory": "./replay",
+            "id": "agent_kla",
+            "wrapped_agent_locator": "scenarios.straight.agent_prefabs:pose-boid-agent-v0",
+        },
+    )
+```
 ## Setup and Running:
 ### External dependencies:
 Ubuntu 18.04
@@ -64,7 +85,6 @@ python3.7 -m venv .venv
 . .venv/bin/activate
 pip install --upgrade pip
 pip install -e .
-pip install -r examples/replay/replay_requirements.txt
 
 # 2. Create a directory where your agent actions and inputs will be store
 mkdir ./klws_replay
@@ -76,18 +96,4 @@ python3.7 examples/replay/replay_klws_agent.py scenarios/loop --save-dir $CRASH_
 # 4. Now you can replay the agent's previous action by not using the --write to load the observations saved by the wrapper in CRASH_DIR directory:
 python3.7 examples/replay/replay_klws_agent.py scenarios/loop --save-dir $CRASH_DIR --speed 20 --headless
 
-```
-## Generating a new crash using the ReplayAgent wrapper:
-You can also use the `ReplayAgent` wrapper to find out where the crash of an agent is occurring by writing your own `crash_test.sh` script like the one in `bin/crash_test/crash_test.sh` (which for example runs multiple instances of `klws_agent` for different configurations of arguments to find where the crash is occurring) and use the `bin/crash/parallel_crash_test.sh` to run multiple `crash_test.sh` scripts in parallel.
-This will allow you to find the source of your crash much faster and let you replay the episode where the crash occurred.
-
-```bash
-CRASH_DIR=./crash_test
-# Run the parallel_crash_test.sh script like this:
-# parallel_crash_trial.sh <save_dir> <parallel_runs> <total_trials> <max_steps_per_trial>
-bash parallel_crash_trial.sh $CRASH_DIR 2 300 1500
-# Load the agent argument which caused the crash. (See bin/crash_test/crash_test.sh on how speed.txt was created).
-SPEED=$(cat "${CRASH_DIR}/speed.txt")
-# Replay the generated crash
-python examples/replay/replay_klws_agent.py scenarios/loop --save-dir $CRASH_DIR --speed $SPEED --headless
 ```

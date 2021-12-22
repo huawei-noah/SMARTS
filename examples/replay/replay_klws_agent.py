@@ -1,16 +1,53 @@
 import logging
 import sys
 import os
+import shutil
+import stat
 import gym
 
 from examples.argument_parser import default_argument_parser
 from smarts.core.utils.episodes import episodes
 from smarts.zoo.registry import make as zoo_make
-from examples.replay import copy_scenarios
 
 logging.basicConfig(level=logging.INFO)
 
 AGENT_ID = "Agent-007"
+
+
+def copytree(src, dst, symlinks=False, ignore=None):
+    if not os.path.exists(dst):
+        os.makedirs(dst)
+        shutil.copystat(src, dst)
+    lst = os.listdir(src)
+    if ignore:
+        excl = ignore(src, lst)
+        lst = [x for x in lst if x not in excl]
+    for item in lst:
+        s = os.path.join(src, item)
+        d = os.path.join(dst, item)
+        if symlinks and os.path.islink(s):
+            if os.path.lexists(d):
+                os.remove(d)
+            os.symlink(os.readlink(s), d)
+            try:
+                st = os.lstat(s)
+                mode = stat.S_IMODE(st.st_mode)
+                os.lchmod(d, mode)
+            except Exception as e:
+                print(e)
+                pass  # lchmod not available
+        elif os.path.isdir(s):
+            copytree(s, d, symlinks, ignore)
+        else:
+            shutil.copy2(s, d)
+
+
+def copy_scenarios(save_dir, scenarios):
+    for i in range(len(scenarios)):
+        new_scenario_location = os.path.join(save_dir, scenarios[i])
+        if not os.path.exists(new_scenario_location):
+            copytree(scenarios[i], new_scenario_location)
+        scenarios[i] = new_scenario_location
 
 
 def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write):
@@ -32,7 +69,7 @@ def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write)
         wrapped_agent_params={"speed": speed},
     )
     # copy the scenarios to the replay directory to make sure its not changed
-    copy_scenarios.copy_scenarios(save_dir, scenarios)
+    copy_scenarios(save_dir, scenarios)
 
     env = gym.make(
         "smarts.env:hiway-v0",
@@ -92,7 +129,7 @@ if __name__ == "__main__":
         default=1500,
     )
 
-    # Along with any additional arguments these two arguments need to be added  to pass the directory where the agent
+    # Along with any additional arguments these two arguments need to be added to pass the directory where the agent
     # inputs and actions will be store and whether to replay the agent or write out its action to the directory
     parser.add_argument(
         "--save-dir",

@@ -4,6 +4,7 @@ This file contains an agent used for replaying an agent.
 import os
 import pickle
 from pathlib import Path
+import logging
 
 from smarts.core.agent import Agent, AgentSpec
 
@@ -24,7 +25,7 @@ class ReplayAgent(Agent):
         self._base_agent = internal_spec.build_agent()
         self._file = None
         self._read = False
-
+        self._logger = logging.getLogger(self.__class__.__name__)
         global agent_index
         self.id = f"{id}_{agent_index}"
         agent_index += 1
@@ -41,15 +42,17 @@ class ReplayAgent(Agent):
             self._file.close()
 
     def act(self, obs):
-        action = None
         if self._read:
             base_action = self._base_agent.act(obs)
             try:
                 action = pickle.load(self._file)
                 assert action == base_action
             except AssertionError as e:
+                self._logger.debug("The Base Agent's action and new action don't match")
                 raise e
-            except Exception:
+            except Exception as e:
+                self._logger.error("Comparing the new action with the base agent action raise an unknown error")
+                print(e)
                 action = base_action
 
         else:
