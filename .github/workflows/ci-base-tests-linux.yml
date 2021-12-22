@@ -1,0 +1,57 @@
+name: SMARTS CI Base Tests Linux
+
+on:
+  push:
+    branches-ignore:
+      - ultra-**
+      - ultra_**
+      - ultra/**
+  pull_request:
+    branches-ignore:
+      - ultra-**
+      - ultra_**
+      - ultra/**
+
+env:
+  venv_dir: .venv
+
+jobs:
+  base-tests-linux:
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: huaweinoah/smarts:v0.4.18-minimal
+    strategy:
+      matrix:
+        tests:
+          - ./envision
+          - ./smarts/contrib
+          - ./smarts/core
+          - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
+          - ./smarts/env/tests/test_rllib_hiway_env.py
+          - ./smarts/sstudio
+          - ./examples/tests --ignore=./examples/tests/test_learning.py
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
+          pip install --upgrade pip
+          pip install --upgrade wheel
+          pip install -e .[train,test,camera-obs]
+      - name: Run smoke tests
+        run: |
+          . ${{env.venv_dir}}/bin/activate
+          make build-all-scenarios
+          PYTHONHASHSEED=42 pytest -v \
+            --doctest-modules \
+            --forked \
+            --dist=no \
+            -n auto \
+            --ignore-glob="**/ros.py" \
+            ${{matrix.tests}} \
+            --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
+            --ignore=./smarts/env/tests/test_benchmark.py \
+            --ignore=./examples/tests/test_learning.py \
+            -k 'not test_long_determinism'

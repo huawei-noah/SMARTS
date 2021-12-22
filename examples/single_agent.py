@@ -2,22 +2,29 @@ import logging
 
 import gym
 
-from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
+from smarts.env.wrappers.single_agent import SingleAgent
+
+# The following ugliness was made necessary because the `aiohttp` #
+# dependency has an "examples" module too.  (See PR #1120.)
+if __name__ == "__main__":
+    from argument_parser import default_argument_parser
+else:
+    from .argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
-AGENT_ID = "Agent-007"
+AGENT_ID = "SingleAgent"
 
 
 class ChaseViaPointsAgent(Agent):
     def act(self, obs: Observation):
         if (
             len(obs.via_data.near_via_points) < 1
-            or obs.ego_vehicle_state.edge_id != obs.via_data.near_via_points[0].edge_id
+            or obs.ego_vehicle_state.road_id != obs.via_data.near_via_points[0].road_id
         ):
             return (obs.waypoint_paths[0][0].speed_limit, 0)
 
@@ -46,24 +53,27 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         sim_name=sim_name,
         headless=headless,
         visdom=False,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
         # zoo_addrs=[("10.193.241.236", 7432)], # Sample server address (ip, port), to distribute social agents in remote server.
         # envision_record_data_replay_path="./data_replay",
     )
 
+    # Wrap a single-agent env with SingleAgent wrapper to make `step` and `reset`
+    # output compliant with gym spaces.
+    env = SingleAgent(env)
+
     for episode in episodes(n=num_episodes):
         agent = agent_spec.build_agent()
-        observations = env.reset()
+        observation = env.reset()
         episode.record_scenario(env.scenario_log)
 
-        dones = {"__all__": False}
-        while not dones["__all__"]:
-            agent_obs = observations[AGENT_ID]
-            agent_action = agent.act(agent_obs)
-            observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
-            episode.record_step(observations, rewards, dones, infos)
+        done = False
+        while not done:
+            agent_action = agent.act(observation)
+            observation, reward, done, info = env.step(agent_action)
+            episode.record_step(observation, reward, done, info)
 
     env.close()
 

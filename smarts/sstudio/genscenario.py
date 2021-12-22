@@ -32,6 +32,8 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Sequence, Tuple, Union
 
+import cloudpickle
+
 from . import types
 from .generators import TrafficGenerator
 
@@ -54,6 +56,12 @@ def gen_scenario(
 
     output_dir = str(output_dir)
 
+    if scenario.map_spec:
+        gen_map(output_dir, scenario.map_spec)
+        map_spec = scenario.map_spec
+    else:
+        map_spec = types.MapSpec(source=output_dir)
+
     if scenario.traffic:
         for name, traffic in scenario.traffic.items():
             gen_traffic(
@@ -62,6 +70,7 @@ def gen_scenario(
                 name=name,
                 seed=seed,
                 overwrite=overwrite,
+                map_spec=map_spec,
             )
 
     if scenario.ego_missions:
@@ -78,6 +87,7 @@ def gen_scenario(
                     num_laps=mission.num_laps,
                     seed=seed,
                     overwrite=overwrite,
+                    map_spec=map_spec,
                 )
             else:
                 missions.append(mission)
@@ -88,13 +98,14 @@ def gen_scenario(
                 missions=missions,
                 seed=seed,
                 overwrite=overwrite,
+                map_spec=map_spec,
             )
 
     if scenario.social_agent_missions:
         for name, (actors, missions) in scenario.social_agent_missions.items():
             if not (
-                isinstance(actors, collections.Sequence)
-                and isinstance(missions, collections.Sequence)
+                isinstance(actors, collections.abc.Sequence)
+                and isinstance(missions, collections.abc.Sequence)
             ):
                 raise ValueError("Actors and missions must be sequences")
 
@@ -103,6 +114,7 @@ def gen_scenario(
                 scenario=output_dir,
                 social_agent_actor=actors,
                 missions=missions,
+                map_spec=map_spec,
             )
 
     if scenario.bubbles:
@@ -112,11 +124,21 @@ def gen_scenario(
         gen_friction_map(scenario=output_dir, surface_patches=scenario.friction_maps)
 
     if scenario.traffic_histories:
+        # TODO:  pass in Sumo graph offset and use to offset history coordinates
+        #    if sumo_road_network._graph._shifted_by_smarts: sumo_road_network._graph.getLocationOffset()
         gen_traffic_histories(
             scenario=output_dir,
             histories_datasets=scenario.traffic_histories,
             overwrite=overwrite,
         )
+
+
+def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: str = None):
+    output_path = os.path.join(output_dir or scenario, "map_spec.pkl")
+    with open(output_path, "wb") as f:
+        # we use cloudpickle here instead of pickle because the
+        # map_spec object may contain a reference to a map_builder callable
+        cloudpickle.dump(map_spec, f)
 
 
 def gen_traffic(
@@ -126,6 +148,7 @@ def gen_traffic(
     output_dir: str = None,
     seed: int = 42,
     overwrite: bool = False,
+    map_spec: types.MapSpec = None,
 ):
     """Generates the traffic routes for the given scenario. If the output directory is
     not provided, the scenario directory is used. If name is not provided the default is
@@ -136,7 +159,7 @@ def gen_traffic(
     output_dir = os.path.join(output_dir or scenario, "traffic")
     os.makedirs(output_dir, exist_ok=True)
 
-    generator = TrafficGenerator(scenario, overwrite=overwrite)
+    generator = TrafficGenerator(scenario, map_spec, overwrite=overwrite)
     saved_path = generator.plan_and_save(traffic, name, output_dir, seed=seed)
 
     if saved_path:
@@ -150,6 +173,7 @@ def gen_social_agent_missions(
     name: str,
     seed: int = 42,
     overwrite: bool = False,
+    map_spec: types.MapSpec = None,
 ):
     """Generates the social agent missions for the given scenario.
 
@@ -171,7 +195,7 @@ def gen_social_agent_missions(
 
     # For backwards compatibility we support both a single value and a sequence
     actors = social_agent_actor
-    if not isinstance(actors, collections.Sequence):
+    if not isinstance(actors, collections.abc.Sequence):
         actors = [actors]
 
     # This doesn't support BoidAgentActor. Here we make that explicit
@@ -194,6 +218,7 @@ def gen_social_agent_missions(
         output_dir=output_dir,
         seed=seed,
         overwrite=overwrite,
+        map_spec=map_spec,
     )
 
     if saved:
@@ -205,6 +230,7 @@ def gen_missions(
     missions: Sequence,
     seed: int = 42,
     overwrite: bool = False,
+    map_spec: types.MapSpec = None,
 ):
     """Generates a route file to represent missions (a route per mission). Will create
     the output_dir if it doesn't exist already. The ouput file will be named `missions`.
@@ -228,6 +254,7 @@ def gen_missions(
         output_dir=scenario,
         seed=seed,
         overwrite=overwrite,
+        map_spec=map_spec,
     )
 
     if saved:
@@ -244,6 +271,7 @@ def gen_group_laps(
     num_laps: int = 3,
     seed: int = 42,
     overwrite: bool = False,
+    map_spec: types.MapSpec = None,
 ):
     """Generates missions that start with a grid offset at the startline and do a number
     of laps until finishing.
@@ -265,8 +293,8 @@ def gen_group_laps(
             The amount of laps before finishing
     """
 
-    start_edge_id, start_lane, start_offset = begin
-    end_edge_id, end_lane, end_offset = end
+    start_road_id, start_lane, start_offset = begin
+    end_road_id, end_lane, end_offset = end
 
     missions = []
     for i in range(vehicle_count):
@@ -275,11 +303,11 @@ def gen_group_laps(
             types.LapMission(
                 types.Route(
                     begin=(
-                        start_edge_id,
+                        start_road_id,
                         s_lane,
                         start_offset - grid_offset * i,
                     ),
-                    end=(end_edge_id, (end_lane + i) % used_lanes, end_offset),
+                    end=(end_road_id, (end_lane + i) % used_lanes, end_offset),
                 ),
                 num_laps=num_laps,
                 # route_length=route_length,
@@ -287,7 +315,11 @@ def gen_group_laps(
         )
 
     saved = gen_missions(
-        scenario=scenario, missions=missions, seed=seed, overwrite=overwrite
+        scenario=scenario,
+        missions=missions,
+        seed=seed,
+        overwrite=overwrite,
+        map_spec=map_spec,
     )
 
     if saved:
@@ -317,22 +349,19 @@ def _gen_missions(
     output_dir: str,
     seed: int = 42,
     overwrite: bool = False,
+    map_spec: types.MapSpec = None,
 ):
     """Generates a route file to represent missions (a route per mission). Will
     create the output_dir if it doesn't exist already.
     """
 
-    generator = TrafficGenerator(scenario)
+    generator = TrafficGenerator(scenario, map_spec)
 
     def resolve_mission(mission):
         route = getattr(mission, "route", None)
         kwargs = {}
         if route:
             kwargs["route"] = generator.resolve_route(route)
-
-        task = getattr(mission, "task", None)
-        if task:
-            kwargs["task"] = _resolve_task(task, generator=generator)
 
         via = getattr(mission, "via", ())
         if via is not ():
@@ -357,26 +386,15 @@ def _gen_missions(
     with open(output_path, "wb") as f:
         pickle.dump(missions, f)
 
-
-def _resolve_task(task, generator):
-    if isinstance(task, types.CutIn):
-        if isinstance(task.complete_on_edge_id, types.JunctionEdgeIDResolver):
-            task = replace(
-                task,
-                complete_on_edge_id=task.complete_on_edge_id.to_edge(
-                    generator.road_network
-                ),
-            )
-
-    return task
+    return True
 
 
 def _resolve_vias(via: Tuple[types.Via], generator):
     vias = [*via]
     for i in range(len(vias)):
         v = vias[i]
-        if isinstance(v.edge_id, types.JunctionEdgeIDResolver):
-            vias[i] = replace(v, edge_id=v.edge_id.to_edge(generator.road_network))
+        if isinstance(v.road_id, types.JunctionEdgeIDResolver):
+            vias[i] = replace(v, road_id=v.road_id.to_edge(generator.road_network))
     return tuple(vias)
 
 
@@ -410,6 +428,18 @@ def _validate_entry_tactic(mission):
 
 
 def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
+    # For SUMO maps, we need to check if the map was shifted and translate the vehicle positions if so
+    xy_offset = None
+    road_network_path = os.path.join(scenario, "map.net.xml")
+    if os.path.exists(road_network_path):
+        from smarts.core.sumo_road_network import SumoRoadNetwork
+
+        road_network = SumoRoadNetwork.from_file(road_network_path)
+        if road_network._graph and getattr(
+            road_network._graph, "_shifted_by_smarts", False
+        ):
+            xy_offset = road_network._graph.getLocationOffset()
+
     genhistories_py = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
     )
@@ -430,6 +460,9 @@ def gen_traffic_histories(scenario: str, histories_datasets, overwrite: bool):
         th_file = f"{base}.shf"
         if overwrite:
             cmd += ["-f"]
+        if xy_offset:
+            cmd += ["--x_offset", str(xy_offset[0])]
+            cmd += ["--y_offset", str(xy_offset[1])]
         elif os.path.exists(os.path.join(scenario, th_file)):
             continue
         cmd += [th_file]

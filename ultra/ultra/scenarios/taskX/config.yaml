@@ -1,0 +1,140 @@
+levels:
+  road-blocks:
+    train:
+      total: 10
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        3lane_t:
+           percent: 0.5
+           specs: [[50kmh,blocks,0.34],[70kmh,blocks,0.33],[100kmh,blocks,0.33]]
+           stops: [[south-SN,0,120]]
+           bubbles: null
+        4lane_t:
+           percent: 0.5
+           specs: [[50kmh,blocks,0.34],[70kmh,blocks,0.33],[100kmh,blocks,0.33]]
+           stops: [[south-SN,1,120],[south-SN,0,120]]
+           bubbles: null
+    test:
+      total: 10
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        3lane_c:
+           percent: 0.5
+           specs: [[50kmh,blocks,0.34],[70kmh,blocks,0.33],[100kmh,blocks,0.33]]
+           stops: [[south-SN,0,120]]
+           bubbles: null
+        4lane_c:
+           percent: 0.5
+           specs: [[50kmh,blocks,0.34],[70kmh,blocks,0.33],[100kmh,blocks,0.33]]
+           stops: [[south-SN,1,120],[south-SN,0,120]]
+           bubbles: null
+  # Running the 'bubbles' level requries <path-to-SMARTS>/zoo/policies/open-agent/ and
+  # <path-to-SMARTS>/zoo/ in your PYTHONPATH.
+  bubbles:
+    train:
+      total: 1
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        4lane_t:
+          percent: 1.0
+          specs: [[50kmh,high-density,1.0]]
+          stops: null
+          bubbles:
+          - location: [intersection,40,40]  # [location, length, width]
+            actor_name: "intersection-actor"
+            agent_locator: "open_agent:open_agent-v0"
+            agent_params: {}
+          - location: [south-SN,0,30,50,2]  # [lane, lane_index, offset, length, num_lanes]
+            actor_name: "lane-actor"
+            agent_locator: "policies.non_interactive_agent:non-interactive-agent-v0"
+            agent_params: {speed: 30}
+    test:
+      total: 1
+      ego_missions:
+      - start: south-SN
+        end:   west-EW
+      intersection_types:
+        4lane_t:
+          percent: 1.0
+          specs: [[50kmh,high-density,1.0]]
+          stops: null
+          bubbles:
+          - location: [intersection,40,40]  # [location, length, width]
+            actor_name: "intersection-actor"
+            agent_locator: "open_agent:open_agent-v0"
+            agent_params: {}
+          - location: [south-SN,0,30,50,2]  # [lane, lane_index, offset, length, num_lanes]
+            actor_name: "lane-actor"
+            agent_locator: "policies.non_interactive_agent:non-interactive-agent-v0"
+            agent_params: {speed: 30}
+  # ----------------------------------------- INTERSECTION LEVEL ------------------------------------------
+  # The intersection specific level contains 4 types of traffic distribution (i.e. no-traffic, low-interaction, 
+  # mid-interaction, high-interaction). The purpose of the below level is to debug agents on a niche traffic 
+  # distribution before implementing them into the primary levels (simple, easy, medium, hard).
+  intersection-specific:
+    train:
+      total: 100
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+        start_offset: [110, 120]
+        end_offset:   [10, 10]
+      intersection_types:
+        2lane_t:
+          percent: 0.2
+          specs: [[50kmh,no-traffic,0.14],[70kmh,no-traffic,0.13],[100kmh,no-traffic,0.13], #40%
+                  [50kmh,low-interaction,0.10],[70kmh,low-interaction,0.10],[100kmh,low-interaction,0.10], #30%,
+                  [50kmh,mid-interaction,0.07],[70kmh,mid-interaction,0.065],[100kmh,mid-interaction,0.065], #20% 
+                  [50kmh,high-interaction,0.04],[70kmh,high-interaction,0.03],[100kmh,high-interaction,0.03]] #10%
+          stops: null
+          bubbles: null
+        3lane_t:
+          percent: 0.4
+          specs: [[50kmh,no-traffic,0.14],[70kmh,no-traffic,0.13],[100kmh,no-traffic,0.13], #40%
+                  [50kmh,low-interaction,0.10],[70kmh,low-interaction,0.10],[100kmh,low-interaction,0.10], #30%,
+                  [50kmh,mid-interaction,0.07],[70kmh,mid-interaction,0.065],[100kmh,mid-interaction,0.065], #20% 
+                  [50kmh,high-interaction,0.04],[70kmh,high-interaction,0.03],[100kmh,high-interaction,0.03]] #10%
+          stops: null
+          bubbles: null
+        4lane_t:
+          percent: 0.4
+          specs: [[50kmh,no-traffic,0.14],[70kmh,no-traffic,0.13],[100kmh,no-traffic,0.13], #40%
+                  [50kmh,low-interaction,0.10],[70kmh,low-interaction,0.10],[100kmh,low-interaction,0.10], #30%,
+                  [50kmh,mid-interaction,0.07],[70kmh,mid-interaction,0.065],[100kmh,mid-interaction,0.065], #20% 
+                  [50kmh,high-interaction,0.04],[70kmh,high-interaction,0.03],[100kmh,high-interaction,0.03]] #10%
+          stops: null
+          bubbles: null
+    test:
+      total: 100
+      ego_missions:
+        # left turn from south to west
+      - start: south-SN
+        end:   west-EW
+        start_offset: [110, 120]
+        end_offset:   [10, 10]
+      intersection_types:
+        2lane_c:
+          percent: 0.2
+          specs: [[50kmh,no-traffic,0.14],[70kmh,no-traffic,0.13],[100kmh,no-traffic,0.13], #40%
+                  [50kmh,low-interaction,0.10],[70kmh,low-interaction,0.10],[100kmh,low-interaction,0.10], #30%,
+                  [50kmh,mid-interaction,0.07],[70kmh,mid-interaction,0.065],[100kmh,mid-interaction,0.065], #20% 
+                  [50kmh,high-interaction,0.04],[70kmh,high-interaction,0.03],[100kmh,high-interaction,0.03]] #10%
+          stops: null
+          bubbles: null
+        3lane_c:
+          percent: 0.4
+          specs: [[50kmh,no-traffic,0.14],[70kmh,no-traffic,0.13],[100kmh,no-traffic,0.13], #40%
+                  [50kmh,low-interaction,0.10],[70kmh,low-interaction,0.10],[100kmh,low-interaction,0.10], #30%,
+                  [50kmh,mid-interaction,0.07],[70kmh,mid-interaction,0.065],[100kmh,mid-interaction,0.065], #20% 
+                  [50kmh,high-interaction,0.04],[70kmh,high-interaction,0.03],[100kmh,high-interaction,0.03]] #10%
+          stops: null
+          bubbles: null

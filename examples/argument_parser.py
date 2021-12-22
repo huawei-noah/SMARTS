@@ -1,13 +1,18 @@
 import argparse
 
 
-def default_argument_parser(program: str):
+def default_argument_parser(program: str = None):
     """This factory method returns a vanilla `argparse.ArgumentParser` with the
     minimum subset of arguments that should be supported.
 
     You can extend it with more `parser.add_argument(...)` calls or obtain the
     arguments via `parser.parse_args()`.
     """
+    if not program:
+        from pathlib import Path
+
+        program = Path(__file__).stem
+
     parser = argparse.ArgumentParser(program)
     parser.add_argument(
         "scenarios",
@@ -15,7 +20,7 @@ def default_argument_parser(program: str):
         "(see scenarios/ for some samples you can use) OR a directory of scenarios "
         "to sample from.",
         type=str,
-        nargs="+",
+        nargs="*",
     )
     parser.add_argument(
         "--sim-name",

@@ -19,9 +19,8 @@
 # THE SOFTWARE.
 
 
-from __future__ import (  # to allow for typing to refer to class being defined (Renderer)
-    annotations,
-)
+# to allow for typing to refer to class being defined (Renderer)
+from __future__ import annotations
 
 import importlib.resources as pkg_resources
 import logging
@@ -56,6 +55,8 @@ class _ShowBaseInstance(ShowBase):
     def __new__(cls):
         # Singleton pattern:  ensure only 1 ShowBase instance
         if "__it__" not in cls.__dict__:
+            loadPrcFileData("", "load-display p3headlessgl")
+            loadPrcFileData("", "aux-display p3headlessgl")
             # disable vsync otherwise we are limited to refresh-rate of screen
             loadPrcFileData("", "sync-video false")
             loadPrcFileData("", "model-path %s" % os.getcwd())
@@ -91,13 +92,7 @@ class _ShowBaseInstance(ShowBase):
             self.setFrameRateMeter(False)
 
         except Exception as e:
-            # Known reasons for this failing:
-            raise Exception(
-                f"Error in initializing framework for opening graphical display and creating scene graph. "
-                "A typical reason is display not found. Try running with different configurations of "
-                "`export DISPLAY=` using `:0`, `:1`... . If this does not work please consult "
-                "the documentation.\nException was: {e}"
-            ) from e
+            raise e
 
     def destroy(self):
         super().destroy()
@@ -144,7 +139,7 @@ class Renderer:
         self._simid = simid
         self._root_np = None
         self._vehicles_np = None
-        self._road_network_np = None
+        self._road_map_np = None
         self._vehicle_nodes = {}
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
@@ -159,17 +154,17 @@ class Renderer:
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
 
         map_path = scenario.map_glb_filepath
-        if self._road_network_np:
+        if self._road_map_np:
             self._log.debug(
-                "road_network={} already exists. Removing and adding a new "
-                "one from glb_path={}".format(self._road_network_np, map_path)
+                "road_map={} already exists. Removing and adding a new "
+                "one from glb_path={}".format(self._road_map_np, map_path)
             )
         map_np = self._showbase_instance.loader.loadModel(map_path, noCache=True)
-        np = self._root_np.attachNewNode("road_network")
+        np = self._root_np.attachNewNode("road_map")
         map_np.reparent_to(np)
         np.hide(RenderMasks.OCCUPANCY_HIDE)
         np.setColor(SceneColors.Road.value)
-        self._road_network_np = np
+        self._road_map_np = np
 
         self._is_setup = True
 
@@ -187,7 +182,7 @@ class Renderer:
             self._root_np.removeNode()
             self._root_np = None
         self._vehicles_np = None
-        self._road_network_np = None
+        self._road_map_np = None
         self._is_setup = False
 
     def destroy(self):

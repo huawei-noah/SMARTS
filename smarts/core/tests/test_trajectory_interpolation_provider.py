@@ -25,21 +25,19 @@ import numpy as np
 import pytest
 
 import smarts.sstudio.types as t
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.trajectory_interpolation_provider import (
-    TrajectoryWithTime,
-    TrajectoryInterpolationProvider,
-)
 from smarts.core.provider import ProviderState
 from smarts.core.scenario import Scenario
-from smarts.core.tests.helpers.scenario import temp_scenario
-from smarts.sstudio import gen_scenario
-
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.agent import AgentSpec, Agent
-from smarts.core.agent_interface import AgentInterface, AgentType
-
+from smarts.core.tests.helpers.scenario import temp_scenario
+from smarts.core.trajectory_interpolation_provider import (
+    TrajectoryInterpolationProvider,
+    TrajectoryWithTime,
+)
+from smarts.sstudio import gen_scenario
 
 AGENT_ID = "Agent-007"
 
@@ -155,7 +153,7 @@ def scenario():
     with temp_scenario(name="map", map="maps/straight.net.xml") as scenario_root:
         mission = t.Mission(
             route=t.Route(
-                begin=("west", 1, 100),
+                begin=("west", 1, 99.9),
                 end=("east", 1, 10.0),
             )
         )
@@ -272,7 +270,7 @@ def smarts(agent_spec):
     smarts = SMARTS(
         agent_interfaces={AGENT_ID: agent_spec.interface},
         traffic_sim=SumoTrafficSimulation(),
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
     )
     yield smarts
     smarts.destroy()

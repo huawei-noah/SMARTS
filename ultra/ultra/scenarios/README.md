@@ -9,9 +9,15 @@
   - `social_vehicle_definitions.py`: Contains different social behaviors.
   - `visualization.py`: A tool for visualizing scenarios.
 - **pool/**: Contains different maps with various...
-  - number of lanes (2, 3, 4, 5, and 6),
-  - max speeds (50kmh, 70kmh, 100kmh), and
-  - shapes (c: cross-intersection, t: t-intersection).
+  - **analysis_pool/**: Contains different maps for analysis with various...
+    - number of lanes (2, 3, 4, 5, and 6),
+    - max speeds (50kmh, 70kmh, 100kmh), and
+    - shapes (c: cross-intersection, t: t-intersection).
+  - **experiment_pool/**: Contains different maps for experiments with various...
+    - number of lanes (2, 3, 4, 5, and 6),
+    - max speeds (50kmh, 70kmh, 100kmh), and
+    - shapes (c: cross-intersection, t: t-intersection).
+  > Note that the analysis pool and experiment pool contain the exact same maps except that the analysis pool has a side road on its maps that is used for analysis.
 - **task1/**: 
   - `config.yaml`: Defines the ego mission and traffic patterns for Task 1 (generalize over intersections by training on t-intersections, testing on cross-intersections).
 - **task2/**:
@@ -20,7 +26,7 @@
 ## Conducting Analysis:
 1. Generate maps:
     ```sh
-    $ scl scenario build-all ultra/scenarios/pool/
+    $ scl scenario build-all ultra/scenarios/pool/analysis_pool/
     ```
 2. Define or modify the task in your task's config.yaml:
     ```yaml
@@ -54,7 +60,11 @@
     ``` 
 3. Generate scenarios for training:
     ```sh
-    $ python ultra/scenarios/interface.py generate --task 1 --level easy
+    # Remove existing easy scenarios.
+    $ rm -rf ultra/scenarios/task1/t*_easy_*
+
+    # Generate the analysis scenarios from the analysis maps in the analysis pool.
+    $ python ultra/scenarios/interface.py generate --task 1 --level easy --pool-dir ultra/scenarios/pool/analysis_pool/
     ```
     Available parameters:
     - `--task`: Selects the task to generate (based on the task's config.yaml).
@@ -62,6 +72,7 @@
     - `--stopwatcher`: Include a stopwatcher (a vehicle that records the number of steps taken to do the left turn) in the scenarios.
     - `--save-dir`: The directory for saving the completed scenarios (completed scenarios will be put in the task directory if not specified).
     - `--root-dir`: The directory containing the task to be created (default is ultra/scenarios).
+    - `--pool-dir`: The directory containing the maps for the scenarios (default is ultra/scenarios/pool/experiment_pool).
     > Each scenario generates a `metadata.json` file to show the routes, number of vehicles, and types of vehicles that are used in that scenario.
 4. Do the analysis:
    - **Analyze scenarios**:

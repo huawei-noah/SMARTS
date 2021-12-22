@@ -31,8 +31,8 @@ BubbleGeometry = namedtuple(
 )
 
 
-def bubble_geometry(bubble, road_network):
-    bubble_geometry_ = bubble.zone.to_geometry(road_network)
+def bubble_geometry(bubble, road_map):
+    bubble_geometry_ = bubble.zone.to_geometry(road_map)
     airlock_geometry = bubble_geometry_.buffer(bubble.margin)
     split_x, split_y = airlock_geometry.centroid.coords[0]
     divider = LineString([(split_x, -999), (split_x, split_y + 999)])

@@ -19,38 +19,44 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os, gym
+import datetime
+import os
+import timeit
+
+import gym
+
+import ultra.adapters as adapters
+from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.utils.ray import default_ray_kwargs
-import timeit, datetime
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
+import argparse
+import inspect
 import time
-import psutil, dill, torch, inspect
-import ray, torch, argparse
-import numpy as np
-from ray import tune
-from smarts.zoo.registry import make
-from ultra.env.rllib_ultra_env import RLlibUltraEnv
 
+import dill
+import numpy as np
+import psutil
+import ray
+import torch
+from ray import tune
 from ray.rllib.models import ModelCatalog
 
-from smarts.core.controllers import ActionSpaceType
-from smarts.core.agent_interface import (
-    AgentInterface,
-    OGM,
-    Waypoints,
-    NeighborhoodVehicles,
-)
-
-from ultra.baselines.rllib.models.fc_network import CustomFCModel
-from ultra.baselines.rllib.agent import RllibAgent
-from ultra.baselines.common.yaml_loader import load_yaml
 from smarts.core.agent import AgentSpec
-from ultra.baselines.adapter import BaselineAdapter
-
-from ultra.utils.episode import Callbacks
-from ultra.utils.episode import log_creator
+from smarts.core.agent_interface import (
+    OGM,
+    AgentInterface,
+    NeighborhoodVehicles,
+    Waypoints,
+)
+from smarts.core.controllers import ActionSpaceType
+from smarts.zoo.registry import make
+from ultra.baselines.common.yaml_loader import load_yaml
+from ultra.baselines.rllib.agent import RllibAgent
+from ultra.baselines.rllib.models.fc_network import CustomFCModel
+from ultra.env.rllib_ultra_env import RLlibUltraEnv
+from ultra.utils.episode import Callbacks, log_creator
 
 num_gpus = 1 if torch.cuda.is_available() else 0
 
@@ -69,21 +75,70 @@ def train(
     sgd_minibatch_size,
     log_dir,
 ):
-
     agent_name = policy
-    adapter = BaselineAdapter(agent_name)
+    policy_params = load_yaml(f"ultra/baselines/{agent_name}/{agent_name}/params.yaml")
+
+    action_type = adapters.type_from_string(policy_params["action_type"])
+    observation_type = adapters.type_from_string(policy_params["observation_type"])
+    reward_type = adapters.type_from_string(policy_params["reward_type"])
+
+    if action_type != adapters.AdapterType.DefaultActionContinuous:
+        raise Exception(
+            f"RLlib training only supports the "
+            f"{adapters.AdapterType.DefaultActionContinuous} action type."
+        )
+    if observation_type != adapters.AdapterType.DefaultObservationVector:
+        # NOTE: The SMARTS observations adaptation that is done in ULTRA's Gym
+        #       environment is not done in ULTRA's RLlib environment. If other
+        #       observation adapters are used, they may raise an Exception.
+        raise Exception(
+            f"RLlib training only supports the "
+            f"{adapters.AdapterType.DefaultObservationVector} observation type."
+        )
+
+    action_space = adapters.space_from_type(adapter_type=action_type)
+    observation_space = adapters.space_from_type(adapter_type=observation_type)
+
+    action_adapter = adapters.adapter_from_type(adapter_type=action_type)
+    info_adapter = adapters.adapter_from_type(
+        adapter_type=adapters.AdapterType.DefaultInfo
+    )
+    observation_adapter = adapters.adapter_from_type(adapter_type=observation_type)
+    reward_adapter = adapters.adapter_from_type(adapter_type=reward_type)
+
+    params_seed = policy_params["seed"]
+    encoder_key = policy_params["social_vehicles"]["encoder_key"]
+    num_social_features = observation_space["social_vehicles"].shape[1]
+    social_capacity = observation_space["social_vehicles"].shape[0]
+    social_policy_hidden_units = int(
+        policy_params["social_vehicles"].get("social_policy_hidden_units", 0)
+    )
+    social_policy_init_std = int(
+        policy_params["social_vehicles"].get("social_policy_init_std", 0)
+    )
+    social_vehicle_config = get_social_vehicle_configs(
+        encoder_key=encoder_key,
+        num_social_features=num_social_features,
+        social_capacity=social_capacity,
+        seed=params_seed,
+        social_policy_hidden_units=social_policy_hidden_units,
+        social_policy_init_std=social_policy_init_std,
+    )
+
     ModelCatalog.register_custom_model("fc_model", CustomFCModel)
     config = RllibAgent.rllib_default_config(agent_name)
 
     rllib_policies = {
         "default_policy": (
             None,
-            adapter.observation_space,
-            adapter.action_space,
+            observation_space,
+            action_space,
             {
                 "model": {
                     "custom_model": "fc_model",
-                    "custom_model_config": {"adapter": adapter},
+                    "custom_model_config": {
+                        "social_vehicle_config": social_vehicle_config
+                    },
                 }
             },
         )
@@ -100,9 +155,10 @@ def train(
             ),
             agent_params={},
             agent_builder=None,
-            observation_adapter=adapter.observation_adapter,
-            reward_adapter=adapter.reward_adapter,
-            # action_adapter=adapter.action_adapter,
+            action_adapter=action_adapter,
+            info_adapter=info_adapter,
+            observation_adapter=observation_adapter,
+            reward_adapter=reward_adapter,
         )
     }
 

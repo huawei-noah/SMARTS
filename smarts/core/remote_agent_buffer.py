@@ -18,19 +18,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import atexit
 import logging
-import os
 import pathlib
 import random
+import signal
 import subprocess
 import sys
 import time
-import subprocess
-import pathlib
-import sys
 from concurrent import futures
-from typing import List, Tuple
+from typing import Optional, Tuple
 
 import grpc
 
@@ -40,19 +36,28 @@ from smarts.zoo import manager_pb2, manager_pb2_grpc
 
 
 class RemoteAgentBuffer:
-    def __init__(self, zoo_manager_addrs=None, buffer_size=3, max_workers=4):
-        """
+    def __init__(
+        self,
+        zoo_manager_addrs: Optional[Tuple[str, int]] = None,
+        buffer_size: int = 3,
+        max_workers: int = 4,
+        timeout: float = 10,
+    ):
+        """Creates a local manager (if `zoo_manager_addrs=None`) or connects to a remote manager, to create and manage workers
+        which execute agents.
+
         Args:
-            zoo_manager_addrs:
-                List of (ip, port) tuples for manager processes. Manager will instantiate
-                worker processes which run remote agents.
-            buffer_size:
-                Number of RemoteAgents to pre-initialize and keep running in the background,
-                must be non-zero (default: 3).
+            zoo_manager_addrs (Optional[Tuple[str,int]], optional): List of (ip, port) tuples for manager processes. If none
+                is provided, a manager is spawned in localhost. Defaults to None.
+            buffer_size (int, optional): Number of RemoteAgents to pre-initialize and keep running in the background, must be
+                non-zero. Defaults to 3.
+            max_workers (int, optional): Maximum number of threads used for creation of workers. Defaults to 4.
+            timeout (float, optional): Time (seconds) to wait for startup or response from server. Defaults to 10.
         """
         assert buffer_size > 0
 
         self._log = logging.getLogger(self.__class__.__name__)
+        self._timeout = timeout
 
         # self._zoo_manager_conns is a list of dictionaries.
         # Each dictionary provides connection info for a zoo manager.
@@ -87,13 +92,25 @@ class RemoteAgentBuffer:
 
         # Populate zoo manager connection with channel and stub details.
         for conn in self._zoo_manager_conns:
-            conn["channel"], conn["stub"] = get_manager_channel_stub(conn["address"])
+            conn["channel"], conn["stub"] = get_manager_channel_stub(
+                conn["address"], self._timeout
+            )
 
         self._buffer_size = buffer_size
         self._replenish_threadpool = futures.ThreadPoolExecutor(max_workers=max_workers)
         self._agent_buffer = [
             self._remote_agent_future() for _ in range(self._buffer_size)
         ]
+
+        # Catch abrupt terminate signals
+        signal.signal(signal.SIGTERM, self._stop_servers)
+
+    def _stop_servers(self, *args):
+        self.destroy()
+        self._log.debug(
+            f"Shutting down zoo manager and zoo workers due to abrupt process stop."
+        )
+        sys.exit(0)
 
     def destroy(self):
         # Teardown any remaining remote agents.
@@ -145,7 +162,7 @@ class RemoteAgentBuffer:
             self._build_remote_agent, self._zoo_manager_conns
         )
 
-    def _try_to_acquire_remote_agent(self):
+    def _try_to_acquire_remote_agent(self, timeout: float):
         assert len(self._agent_buffer) == self._buffer_size
 
         # Check if we have any done remote agent futures.
@@ -168,13 +185,32 @@ class RemoteAgentBuffer:
         # Schedule the next remote agent and add it to the buffer.
         self._agent_buffer.append(self._remote_agent_future())
 
-        remote_agent = future.result(timeout=10)
+        remote_agent = future.result(timeout=timeout)
         return remote_agent
 
-    def acquire_remote_agent(self, retries=3) -> RemoteAgent:
+    def acquire_remote_agent(
+        self, retries: int = 3, timeout: Optional[float] = None
+    ) -> RemoteAgent:
+        """Creates RemoteAgent objects.
+
+        Args:
+            retries (int, optional): Number of attempts in creating or connecting to an available
+                RemoteAgent. Defaults to 3.
+            timeout (Optional[float], optional): Time (seconds) to wait in acquiring a RemoteAgent.
+                Defaults to None, which does not timeout.
+
+        Raises:
+            RemoteAgentException: If fail to acquire a RemoteAgent.
+
+        Returns:
+            RemoteAgent: A new RemoteAgent object.
+        """
+        if timeout == None:
+            timeout = self._timeout
+
         for retry in range(retries):
             try:
-                return self._try_to_acquire_remote_agent()
+                return self._try_to_acquire_remote_agent(timeout)
             except Exception as e:
                 self._log.debug(
                     f"Failed {retry+1}/{retries} times in acquiring remote agent. {repr(e)}"
@@ -203,11 +239,23 @@ def spawn_local_zoo_manager(port):
     raise RuntimeError("Zoo manager subprocess is not running.")
 
 
-def get_manager_channel_stub(addr):
+def get_manager_channel_stub(addr: Tuple[str, int], timeout: float = 10):
+    """Connects to the gRPC server at `addr` and returns the channel and stub.
+
+    Args:
+        addr (Tuple[str,int]): gRPC server address.
+        timeout (float, optional): Time to wait for the gRPC server to be ready. Defaults to 10.
+
+    Raises:
+        RemoteAgentException: If timeout occurs while connecting to the gRPC server.
+
+    Returns:
+        grpc.Channel: Channel to the gRPC server.
+        manager_pb2_grpc.ManagerStub : gRPC stub.
+    """
     channel = grpc.insecure_channel(f"{addr[0]}:{addr[1]}")
     try:
-        # Wait until the grpc server is ready or timeout after 30 seconds
-        grpc.channel_ready_future(channel).result(timeout=30)
+        grpc.channel_ready_future(channel).result(timeout=timeout)
     except grpc.FutureTimeoutError:
         raise RemoteAgentException("Timeout in connecting to remote zoo manager.")
     stub = manager_pb2_grpc.ManagerStub(channel)

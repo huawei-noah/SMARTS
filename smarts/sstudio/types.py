@@ -18,22 +18,43 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import collections.abc as collections_abc
+import hashlib
 import logging
+import pickle
 import random
+from ctypes import c_int64
 from dataclasses import dataclass, field
 from sys import maxsize
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
 
-from shapely.geometry import GeometryCollection, MultiPolygon, Point, Polygon
-from shapely.ops import unary_union
+import numpy as np
+from shapely.geometry import (
+    GeometryCollection,
+    LineString,
+    MultiPolygon,
+    Point,
+    Polygon,
+)
+from shapely.ops import split, unary_union
 
 from smarts.core import gen_id
-from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.coordinates import RefLinePoint
+from smarts.core.default_map_builder import get_road_map
+from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
+from smarts.core.utils.math import rotate_around_point
+
+
+def _pickle_hash(obj) -> int:
+    pickle_bytes = pickle.dumps(obj, protocol=4)
+    hasher = hashlib.md5()
+    hasher.update(pickle_bytes)
+    val = int(hasher.hexdigest(), 16)
+    return c_int64(val).value
 
 
 class _SumoParams(collections_abc.Mapping):
-    """For some Sumo params (e.x. LaneChangingModel) the arguments are in title case
+    """For some Sumo params (e.g. LaneChangingModel) the arguments are in title case
     with a given prefix. Subclassing this class allows for an automatic way to map
     between PEP8-compatible naming and Sumo's.
     """
@@ -137,7 +158,7 @@ class Actor:
     pass
 
 
-@dataclass(frozen=True, unsafe_hash=True)
+@dataclass(frozen=True)
 class TrafficActor(Actor):
     """Used as a description/spec for traffic actors (e.x. Vehicles, Pedestrians,
     etc). The defaults provided are for a car, but the name is not set to make it
@@ -167,11 +188,14 @@ class TrafficActor(Actor):
     max_speed: float = 55.5
     """The vehicle's maximum velocity (in m/s), defaults 200 km/h for vehicles"""
     vehicle_type: str = "passenger"
-    """The type of vehicle this actor uses. ("passenger", "bus", "coach", "truck", "trailer")"""
+    """The configured vehicle type this actor will perform as. ("passenger", "bus", "coach", "truck", "trailer")"""
     lane_changing_model: LaneChangingModel = field(
         default_factory=LaneChangingModel, hash=False
     )
     junction_model: JunctionModel = field(default_factory=JunctionModel, hash=False)
+
+    def __hash__(self) -> int:
+        return _pickle_hash(self)
 
     @property
     def id(self) -> str:
@@ -217,50 +241,81 @@ class BoidAgentActor(SocialAgentActor):
     """The capacity of the boid agent to take over vehicles."""
 
 
+# A MapBuilder should return an object derived from the RoadMap base class
+# and a hash that uniquely identifies it (changes to the hash should signify
+# that the map is different enough that map-related caches should be reloaded).
+#
+# This function should be re-callable (although caching is up to the implementation).
+# The idea here is that anything in SMARTS that needs to use a RoadMap
+# can call this builder to get or create one as necessary.
+MapBuilder = NewType("MapBuilder", Callable[[Any], Tuple[RoadMap, str]])
+
+
+@dataclass(frozen=True)
+class MapSpec:
+    source: str
+    """A path or URL or name uniquely designating the map source."""
+    lanepoint_spacing: Optional[float] = None
+    """If specified, the default distance between pre-generated Lane Points (Waypoints)."""
+    default_lane_width: Optional[float] = None
+    """If specified, the default width (in meters) of lanes on this map."""
+    builder_fn: Optional[MapBuilder] = get_road_map
+    """If specified, this should return an object derived from the RoadMap base class
+    and a hash that uniquely identifies it (changes to the hash should signify
+    that the map is different enough that map-related caches should be reloaded).
+    The parameter is this MapSpec object itself.
+    If not specified, this currently defaults to a function that creates
+    SUMO road networks (get_road_map()) in smarts.core.default_map_builder."""
+
+
 @dataclass(frozen=True)
 class Route:
-    """A route is represented by begin and end edge IDs, with an optional list of
-    itermediary edge IDs. When an intermediary is not specified the router will
+    """A route is represented by begin and end road IDs, with an optional list of
+    itermediary road IDs. When an intermediary is not specified the router will
     decide what it should be.
     """
 
-    ## edge, lane index, offset
+    ## road, lane index, offset
     begin: Tuple[str, int, Any]
-    """The (edge, lane_index, offset) details of the start location for the route.
+    """The (road, lane_index, offset) details of the start location for the route.
 
-    edge:
-        The starting edge by name.
+    road:
+        The starting road by name.
     lane_index:
         The lane index from the rightmost lane.
     offset:
         The offset in metres into the lane. Also acceptable\\: "max", "random"
     """
-    ## edge, lane index, offset
+    ## road, lane index, offset
     end: Tuple[str, int, Any]
-    """The (edge, lane_index, offset) details of the end location for the route.
+    """The (road, lane_index, offset) details of the end location for the route.
 
-    edge:
-        The starting edge by name.
+    road:
+        The starting road by name.
     lane_index:
         The lane index from the rightmost lane.
     offset:
         The offset in metres into the lane. Also acceptable\\: "max", "random"
     """
 
-    # Edges we want to make sure this route includes
+    # Roads we want to make sure this route includes
     via: Tuple[str, ...] = field(default_factory=tuple)
-    """The ids of edges that must be included in the route between `begin` and `end`."""
+    """The ids of roads that must be included in the route between `begin` and `end`."""
+
+    map_spec: Optional[MapSpec] = None
+    """All routes are relative to a road map.  If not specified here,
+    the default map_spec for the scenario is used."""
 
     @property
     def id(self) -> str:
         return "route-{}-{}-{}-".format(
             "_".join(map(str, self.begin)),
             "_".join(map(str, self.end)),
-            hash(self),
+            _pickle_hash(self),
         )
 
     @property
-    def edges(self):
+    def roads(self):
         return (self.begin[0],) + self.via + (self.end[0],)
 
 
@@ -271,6 +326,10 @@ class RandomRoute:
     """
 
     id: str = field(default_factory=lambda: f"random-route-{gen_id()}")
+
+    map_spec: Optional[MapSpec] = None
+    """All routes are relative to a road map.  If not specified here,
+    the default map_spec for the scenario is used."""
 
 
 @dataclass(frozen=True)
@@ -298,13 +357,14 @@ class Flow:
     @property
     def id(self) -> str:
         return "flow-{}-{}-".format(
-            self.route.id, str(hash(frozenset(self.actors.items())))
+            self.route.id,
+            str(_pickle_hash(sorted(self.actors.items(), key=lambda a: a[0].name))),
         )
 
     def __hash__(self):
         # Custom hash since self.actors is not hashable, here we first convert to a
         # frozenset.
-        return hash((self.route, self.rate, frozenset(self.actors.items())))
+        return _pickle_hash((self.route, self.rate, frozenset(self.actors.items())))
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
@@ -319,7 +379,7 @@ class JunctionEdgeIDResolver:
     end_edge_id: str
     end_lane_index: int
 
-    def to_edge(self, sumo_road_network: SumoRoadNetwork):
+    def to_edge(self, sumo_road_network) -> str:
         return sumo_road_network.get_edge_in_junction(
             self.start_edge_id,
             self.start_lane_index,
@@ -330,10 +390,10 @@ class JunctionEdgeIDResolver:
 
 @dataclass
 class Via:
-    """A point on an edge that an actor must pass through"""
+    """A point on a road that an actor must pass through"""
 
-    edge_id: Union[str, JunctionEdgeIDResolver]
-    """The edge this via is on"""
+    road_id: Union[str, JunctionEdgeIDResolver]
+    """The road this via is on"""
     lane_index: int
     """The lane this via sits on"""
     lane_offset: int
@@ -372,32 +432,6 @@ class TrapEntryTactic(EntryTactic):
 
 
 @dataclass(frozen=True)
-class UTurn:
-    trigger_radius: int = 100
-    """This task will be triggered if any vehicles within this radius"""
-    initial_speed: float = None
-    """This is the initial speed for the vehicle before it starts u-turn maneuver"""
-    target_lane_index: int = 0
-
-    @property
-    def name(self):
-        return "uturn"
-
-
-@dataclass(frozen=True)
-class CutIn:
-    trigger_radius: int = 30
-    """This task will be triggered if any vehicles within this radius"""
-
-    complete_on_edge_id: Union[str, JunctionEdgeIDResolver] = None
-    """The edge this task will be completed on"""
-
-    @property
-    def name(self):
-        return "cut_in"
-
-
-@dataclass(frozen=True)
 class Mission:
     """The descriptor for an actor's mission."""
 
@@ -405,7 +439,7 @@ class Mission:
     """The route for the actor to attempt to follow."""
 
     via: Tuple[Via, ...] = ()
-    """Points on an edge that an actor must pass through"""
+    """Points on an road that an actor must pass through"""
 
     start_time: float = 0.1
     """The earliest simulation time that this mission starts but may start later in couple with
@@ -415,26 +449,23 @@ class Mission:
     entry_tactic: EntryTactic = None
     """A specific tactic the mission should employ to start the mission."""
 
-    task: Tuple[CutIn, UTurn] = None
-    """A task for the actor to accomplish."""
-
 
 @dataclass(frozen=True)
 class EndlessMission:
     """The descriptor for an actor's mission that has no end."""
 
     begin: Tuple[str, int, float]
-    """The (edge, lane_index, offset) details of the start location for the route.
+    """The (road, lane_index, offset) details of the start location for the route.
 
-    edge:
-        The starting edge by name.
+    road:
+        The starting road by name.
     lane_index:
         The lane index from the rightmost lane.
     offset:
         The offset in metres into the lane. Also acceptable\\: 'max', 'random'
     """
     via: Tuple[Via, ...] = ()
-    """Points on an edge that an actor must pass through"""
+    """Points on a road that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
     entry_tactic: EntryTactic = None
@@ -452,7 +483,7 @@ class LapMission:
     num_laps: int
     """The amount of times to repeat the mission"""
     via: Tuple[Via, ...] = ()
-    """Points on an edge that an actor must pass through"""
+    """Points on a road that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
     entry_tactic: EntryTactic = None
@@ -474,14 +505,14 @@ class GroupedLapMission:
     num_laps: int
     """The amount of times to repeat the mission"""
     via: Tuple[Via, ...] = ()
-    """Points on an edge that an actor must pass through"""
+    """Points on a road that an actor must pass through"""
 
 
 @dataclass(frozen=True)
 class Zone:
     """The base for a descriptor that defines a capture area."""
 
-    def to_geometry(self, road_network: SumoRoadNetwork) -> Polygon:
+    def to_geometry(self, road_map: RoadMap) -> Polygon:
         """Generates the geometry from this zone."""
         raise NotImplementedError
 
@@ -491,10 +522,10 @@ class MapZone(Zone):
     """A descriptor that defines a capture area."""
 
     start: Tuple[str, int, float]
-    """The (edge, lane_index, offset) details of the starting location.
+    """The (road_id, lane_index, offset) details of the starting location.
 
-    edge:
-        The starting edge by name.
+    road_id:
+        The starting road by name.
     lane_index:
         The lane index from the rightmost lane.
     offset:
@@ -505,7 +536,7 @@ class MapZone(Zone):
     n_lanes: 2
     """The number of lanes from right to left that this zone covers."""
 
-    def to_geometry(self, road_network: SumoRoadNetwork) -> Polygon:
+    def to_geometry(self, road_map: RoadMap) -> Polygon:
         def resolve_offset(offset, geometry_length, lane_length):
             if offset == "base":
                 return 0
@@ -517,52 +548,75 @@ class MapZone(Zone):
             else:
                 return float(offset)
 
-        def pick_remaining_shape_after_split(geometry_collection, expected_point, lane):
+        def pick_remaining_shape_after_split(geometry_collection, expected_point):
             lane_shape = geometry_collection
             if not isinstance(lane_shape, GeometryCollection):
                 return lane_shape
 
             # For simplicty, we only deal w/ the == 1 or 2 case
-            if len(lane_shape) not in {1, 2}:
+            if len(lane_shape.geoms) not in {1, 2}:
                 return None
 
-            if len(lane_shape) == 1:
-                return lane_shape[0]
+            if len(lane_shape.geoms) == 1:
+                return lane_shape.geoms[0]
 
             # We assume that there are only two splited shapes to choose from
             keep_index = 0
-            if lane_shape[1].minimum_rotated_rectangle.contains(expected_point):
+            if lane_shape.geoms[1].minimum_rotated_rectangle.contains(expected_point):
                 # 0 is the discard piece, keep the other
                 keep_index = 1
 
-            lane_shape = lane_shape[keep_index]
+            lane_shape = lane_shape.geoms[keep_index]
 
             return lane_shape
 
+        def split_lane_shape_at_offset(
+            lane_shape: Polygon, lane: RoadMap.Lane, offset: float
+        ):
+            # XXX: generalize to n-dim
+            width_2 = lane.width_at_offset(offset)
+            point = np.array(lane.from_lane_coord(RefLinePoint(offset)))[:2]
+            lane_vec = lane.vector_at_offset(offset)[:2]
+
+            perp_vec_right = rotate_around_point(lane_vec, np.pi / 2, origin=(0, 0))
+            perp_vec_right = (
+                perp_vec_right / max(np.linalg.norm(perp_vec_right), 1e-3) * width_2
+                + point
+            )
+
+            perp_vec_left = rotate_around_point(lane_vec, -np.pi / 2, origin=(0, 0))
+            perp_vec_left = (
+                perp_vec_left / max(np.linalg.norm(perp_vec_left), 1e-3) * width_2
+                + point
+            )
+
+            split_line = LineString([perp_vec_left, perp_vec_right])
+            return split(lane_shape, split_line)
+
         lane_shapes = []
-        edge_id, lane_idx, offset = self.start
-        edge = road_network.edge_by_id(edge_id)
+        road_id, lane_idx, offset = self.start
+        road = road_map.road_by_id(road_id)
         buffer_from_ends = 1e-6
         for lane_idx in range(lane_idx, lane_idx + self.n_lanes):
-            lane = edge.getLanes()[lane_idx]
-            lane_length = lane.getLength()
+            lane = road.lane_at_index(lane_idx)
+            lane_length = lane.length
             geom_length = self.length
 
             if geom_length > lane_length:
                 logging.debug(
                     f"Geometry is too long={geom_length} with offset={offset} for "
-                    f"lane={lane.getID()}, using length={lane_length} instead"
+                    f"lane={lane.lane_id}, using length={lane_length} instead"
                 )
                 geom_length = lane_length
 
             assert geom_length > 0  # Geom length is negative
 
-            lane_shape = SumoRoadNetwork._buffered_lane_or_edge(
-                lane, width=lane.getWidth() + 0.3
-            )
-
             lane_offset = resolve_offset(offset, geom_length, lane_length)
             lane_offset += buffer_from_ends
+
+            width = lane.width_at_offset(lane_offset)
+            lane_shape = lane.shape(width + 0.3)
+
             geom_length = max(geom_length - buffer_from_ends, buffer_from_ends)
             lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)
 
@@ -571,24 +625,20 @@ class MapZone(Zone):
             max_cut = min(min_cut + geom_length, lane_length)
 
             midpoint = Point(
-                road_network.world_coord_from_offset(
-                    lane, lane_offset + geom_length * 0.5
-                )
+                *lane.from_lane_coord(RefLinePoint(s=lane_offset + geom_length * 0.5))
             )
 
-            lane_shape = road_network.split_lane_shape_at_offset(
-                lane_shape, lane, min_cut
-            )
-            lane_shape = pick_remaining_shape_after_split(lane_shape, midpoint, lane)
+            lane_shape = split_lane_shape_at_offset(lane_shape, lane, min_cut)
+            lane_shape = pick_remaining_shape_after_split(lane_shape, midpoint)
             if lane_shape is None:
                 continue
 
-            lane_shape = road_network.split_lane_shape_at_offset(
+            lane_shape = split_lane_shape_at_offset(
                 lane_shape,
                 lane,
                 max_cut,
             )
-            lane_shape = pick_remaining_shape_after_split(lane_shape, midpoint, lane)
+            lane_shape = pick_remaining_shape_after_split(lane_shape, midpoint)
             if lane_shape is None:
                 continue
 
@@ -608,7 +658,7 @@ class PositionalZone(Zone):
     size: Tuple[float, float]
     """The (length, width) dimensions of the zone."""
 
-    def to_geometry(self, road_network: SumoRoadNetwork = None) -> Polygon:
+    def to_geometry(self, road_map: RoadMap = None) -> Polygon:
         w, h = self.size
         p0 = (self.pos[0] - w / 2, self.pos[1] - h / 2)  # min
         p1 = (self.pos[0] + w / 2, self.pos[1] + h / 2)  # max
@@ -708,6 +758,7 @@ class _ActorAndMission:
 
 @dataclass(frozen=True)
 class Scenario:
+    map_spec: Optional[MapSpec] = None
     traffic: Optional[Dict[str, Traffic]] = None
     ego_missions: Optional[Sequence[Mission]] = None
     # e.g. { "turning_agents": ([actors], [missions]), ... }

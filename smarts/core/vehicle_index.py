@@ -27,6 +27,7 @@ import numpy as np
 import tableprint as tp
 
 from smarts.core import gen_id
+from smarts.core.utils import resources
 from smarts.core.utils.cache import cache, clear_cache
 from smarts.core.utils.string import truncate
 
@@ -86,6 +87,9 @@ class VehicleIndex:
 
         # {vehicle_id (fixed-length): <SensorState>}
         self._sensor_states = {}
+
+        # Loaded from yaml file on scenario reset
+        self._controller_params = {}
 
     @classmethod
     def identity(cls):
@@ -323,21 +327,19 @@ class VehicleIndex:
 
     @clear_cache
     def start_agent_observation(
-        self, sim, vehicle_id, agent_id, agent_interface, mission_planner, boid=False
+        self, sim, vehicle_id, agent_id, agent_interface, plan, boid=False
     ):
         original_agent_id = agent_id
         vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
 
         vehicle = self._vehicles[vehicle_id]
-        Vehicle.attach_sensors_to_vehicle(
-            sim, vehicle, agent_interface, mission_planner
-        )
+        Vehicle.attach_sensors_to_vehicle(sim, vehicle, agent_interface, plan)
 
         self._2id_to_id[agent_id] = original_agent_id
 
         self._sensor_states[vehicle_id] = SensorState(
             agent_interface.max_episode_steps,
-            mission_planner=mission_planner,
+            plan=plan,
         )
 
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
@@ -455,18 +457,14 @@ class VehicleIndex:
         return vehicle
 
     @clear_cache
-    def attach_sensors_to_vehicle(
-        self, sim, vehicle_id, agent_interface, mission_planner
-    ):
+    def attach_sensors_to_vehicle(self, sim, vehicle_id, agent_interface, plan):
         vehicle_id = _2id(vehicle_id)
 
         vehicle = self._vehicles[vehicle_id]
-        Vehicle.attach_sensors_to_vehicle(
-            sim, vehicle, agent_interface, mission_planner
-        )
+        Vehicle.attach_sensors_to_vehicle(sim, vehicle, agent_interface, plan)
         self._sensor_states[vehicle_id] = SensorState(
             agent_interface.max_episode_steps,
-            mission_planner=mission_planner,
+            plan=plan,
         )
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
             agent_interface.action_space, vehicle.pose, sim
@@ -493,21 +491,20 @@ class VehicleIndex:
         vehicle = self._vehicles[vehicle_id]
         sensor_state = self._sensor_states[vehicle_id]
         controller_state = self._controller_states[vehicle_id]
-        mission_planner = sensor_state.mission_planner
+        plan = sensor_state.plan
 
         # Create a new vehicle to replace the old one
         new_vehicle = Vehicle.build_agent_vehicle(
             sim,
             vehicle.id,
             agent_interface,
-            mission_planner,
+            plan,
             sim.scenario.vehicle_filepath,
             sim.scenario.tire_parameters_filepath,
             # BUG: Both the TrapManager and BubbleManager call into this method but the
             #      trainable field below always assumes trainable=True
             True,
             sim.scenario.surface_patches,
-            sim.scenario.controller_parameters_filepath,
         )
 
         # Apply the physical values from the old vehicle chassis to the new one
@@ -542,12 +539,11 @@ class VehicleIndex:
         sim,
         agent_id,
         agent_interface,
-        mission_planner,
+        plan,
         filepath,
         tire_filepath,
         trainable,
         surface_patches,
-        controller_filepath,
         initial_speed=None,
         boid=False,
     ):
@@ -556,18 +552,17 @@ class VehicleIndex:
             sim,
             vehicle_id,
             agent_interface,
-            mission_planner,
+            plan,
             filepath,
             tire_filepath,
             trainable,
             surface_patches,
-            controller_filepath,
             initial_speed,
         )
 
         sensor_state = SensorState(
             agent_interface.max_episode_steps,
-            mission_planner=mission_planner,
+            plan=plan,
         )
 
         controller_state = ControllerState.from_action_space(
@@ -603,7 +598,7 @@ class VehicleIndex:
         original_agent_id = agent_id
 
         Vehicle.attach_sensors_to_vehicle(
-            sim, vehicle, agent_interface, sensor_state.mission_planner
+            sim, vehicle, agent_interface, sensor_state.plan
         )
         if sim.is_rendering:
             vehicle.create_renderer_node(sim.renderer)
@@ -631,13 +626,13 @@ class VehicleIndex:
 
     @clear_cache
     def build_social_vehicle(
-        self, sim, vehicle_state, actor_id, vehicle_type, vehicle_id=None
-    ):
+        self, sim, vehicle_state, actor_id, vehicle_config_type, vehicle_id=None
+    ) -> Vehicle:
         if vehicle_id is None:
             vehicle_id = gen_id()
 
         vehicle = Vehicle.build_social_vehicle(
-            sim, vehicle_id, vehicle_state, vehicle_type
+            sim, vehicle_id, vehicle_state, vehicle_config_type
         )
 
         vehicle_id, actor_id = _2id(vehicle_id), _2id(actor_id)
@@ -671,6 +666,10 @@ class VehicleIndex:
     def sensor_states_items(self):
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._sensor_states.items())
 
+    def check_vehicle_id_has_sensor_state(self, vehicle_id: str) -> bool:
+        v_id = _2id(vehicle_id)
+        return v_id in self._sensor_states
+
     def sensor_state_for_vehicle_id(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)
         return self._sensor_states[vehicle_id]
@@ -678,6 +677,13 @@ class VehicleIndex:
     def controller_state_for_vehicle_id(self, vehicle_id):
         vehicle_id = _2id(vehicle_id)
         return self._controller_states[vehicle_id]
+
+    def load_controller_params(self, controller_filepath: str):
+        self._controller_params = resources.load_controller_params(controller_filepath)
+
+    def controller_params_for_vehicle_type(self, vehicle_type: str):
+        assert self._controller_params, "Controller params have not been loaded"
+        return self._controller_params[vehicle_type]
 
     @staticmethod
     def _build_empty_controlled_by():

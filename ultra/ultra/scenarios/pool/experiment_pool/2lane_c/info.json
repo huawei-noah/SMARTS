@@ -1,0 +1,4 @@
+{
+  "routes" : [["north-NS", "south-NS"],["north-NS", "east-WE"],["north-NS", "west-EW"], ["south-SN", "west-EW"], ["south-SN", "east-WE"], ["south-SN", "north-SN"], ["east-EW","west-EW"], ["east-EW","south-NS"], ["east-EW", "north-SN"], ["west-WE","east-WE"],["west-WE","north-SN"],["west-WE","south-NS"] ],
+  "num_lanes": {"north-NS":1, "south-NS":1, "east-WE":1, "west-EW":1, "south-NS":1, "south-SN":1, "north-SN":1, "east-EW":1, "west-WE":1}
+}

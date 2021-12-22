@@ -17,13 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import numpy as np
 import sqlite3
 from itertools import cycle
-from typing import NamedTuple, Set
+from typing import NamedTuple, Set, Optional
+
+import numpy as np
 
 from .controllers import ActionSpaceType
-from .coordinates import BoundingBox, Heading, Pose
+from .coordinates import Dimensions, Heading, Pose
 from .provider import Provider, ProviderState
 from .utils.math import rounder_for_dt
 from .vehicle import VEHICLE_CONFIGS, VehicleState
@@ -33,7 +34,6 @@ class TrafficHistoryProvider(Provider):
     def __init__(self):
         self._histories = None
         self._is_setup = False
-        self._map_location_offset = None
         self._replaced_vehicle_ids = set()
         self._last_step_vehicles = set()
         self._this_step_dones = set()
@@ -57,12 +57,16 @@ class TrafficHistoryProvider(Provider):
         self._histories = scenario.traffic_history
         if self._histories:
             self._histories.connect_for_multiple_queries()
-        self._map_location_offset = scenario.road_network.net_offset
         self._is_setup = True
         return ProviderState()
 
     def set_replaced_ids(self, vehicle_ids: list):
         self._replaced_vehicle_ids.update(vehicle_ids)
+
+    def get_history_id(self, vehicle_id: str) -> Optional[str]:
+        if vehicle_id in self._last_step_vehicles:
+            return self._vehicle_id_prefix + vehicle_id
+        return None
 
     def create_vehicle(self, provider_vehicle: VehicleState):
         pass
@@ -101,24 +105,20 @@ class TrafficHistoryProvider(Provider):
             if v_id in vehicle_ids or v_id in self._replaced_vehicle_ids:
                 continue
             vehicle_ids.add(v_id)
-            vehicle_type = self._histories.decode_vehicle_type(hr.vehicle_type)
-            default_dims = VEHICLE_CONFIGS[vehicle_type].dimensions
-            pos_x = hr.position_x + self._map_location_offset[0]
-            pos_y = hr.position_y + self._map_location_offset[1]
+            vehicle_config_type = self._histories.decode_vehicle_type(hr.vehicle_type)
             vehicles.append(
                 VehicleState(
                     vehicle_id=self._vehicle_id_prefix + v_id,
-                    vehicle_type=vehicle_type,
-                    pose=Pose.from_center((pos_x, pos_y, 0), Heading(hr.heading_rad)),
-                    dimensions=BoundingBox(
-                        length=hr.vehicle_length
-                        if hr.vehicle_length is not None
-                        else default_dims.length,
-                        width=hr.vehicle_width
-                        if hr.vehicle_width is not None
-                        else default_dims.width,
-                        # Note: Neither NGSIM nor INTERACTION provide the vehicle height
-                        height=default_dims.height,
+                    vehicle_config_type=vehicle_config_type,
+                    pose=Pose.from_center(
+                        (hr.position_x, hr.position_y, 0), Heading(hr.heading_rad)
+                    ),
+                    # Note: Neither NGSIM nor INTERACTION provide the vehicle height
+                    dimensions=Dimensions.init_with_defaults(
+                        hr.vehicle_length,
+                        hr.vehicle_width,
+                        hr.vehicle_height,
+                        defaults=VEHICLE_CONFIGS[vehicle_config_type].dimensions,
                     ),
                     speed=hr.speed,
                     source="HISTORY",

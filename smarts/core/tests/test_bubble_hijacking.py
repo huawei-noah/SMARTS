@@ -112,7 +112,7 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles):
     smarts.reset(scenario)
 
     index = smarts.vehicle_index
-    geometries = [bubble_geometry(b, smarts.road_network) for b in bubbles]
+    geometries = [bubble_geometry(b, smarts.road_map) for b in bubbles]
 
     # bubble: vehicle: steps per zone
     steps_driven_in_zones = {b.id: defaultdict(lambda: ZoneSteps()) for b in bubbles}

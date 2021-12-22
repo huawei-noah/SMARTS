@@ -1,19 +1,14 @@
-import math
-import random
 from pathlib import Path
-from unittest import mock
-import multiprocessing as mp
 
 import numpy as np
 
+from smarts.core.chassis import BoxChassis
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
-from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
-from smarts.core.chassis import BoxChassis
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-
+from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
 
 TIMESTEP_SEC = 1 / 240
 INITIAL_KINEMATICS_VEHICLES = 50
@@ -95,7 +90,7 @@ def run(
         for pose, i in zip(injected_poses, range(len(injected_poses))):
             converted_to_provider = VehicleState(
                 vehicle_id=f"EGO{i}",
-                vehicle_type="passenger",
+                vehicle_config_type="passenger",
                 pose=pose,
                 dimensions=passenger_dimen,
                 speed=0,
@@ -112,9 +107,7 @@ def run(
             pose = Pose.from_center([0, 0, 0], Heading(0))
             vehicles[v] = Vehicle(
                 id=v_id,
-                pose=pose,
                 chassis=BoxChassis(
-                    pose=pose,
                     speed=0,
                     dimensions=vehicle_config.dimensions,
                     bullet_client=client,

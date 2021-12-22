@@ -88,7 +88,7 @@ def env(agent_spec):
         agent_specs={AGENT_ID: agent_spec},
         headless=True,
         visdom=False,
-        timestep_sec=0.01,
+        fixed_timestep_sec=0.01,
     )
 
     yield env

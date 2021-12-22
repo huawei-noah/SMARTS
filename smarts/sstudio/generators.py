@@ -21,13 +21,13 @@ import logging
 import os
 import random
 import tempfile
+from dataclasses import replace
 
 import sh
 from yattag import Doc, indent
 
-from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
-from smarts.core.utils.sumo import sumolib
 
 from . import types
 
@@ -39,27 +39,26 @@ class InvalidRoute(Exception):
 
 
 class RandomRouteGenerator:
-    """Generates a random route out of the routes available in the road network.
+    """Generates a random route out of the routes available in the road map.
 
     Args:
-        road_network:
+        road_map:
             A network of routes defined for vehicles of different kinds to travel on.
     """
 
-    def __init__(self, road_network: SumoRoadNetwork):
+    def __init__(self, road_map: RoadMap):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._road_network = road_network
+        self._road_map = road_map
 
     @classmethod
-    def from_file(cls, net_file: str):
-        """Constructs a route generator from the given file
+    def from_spec(cls, map_spec: types.MapSpec):
+        """Constructs a route generator from the given map spec
 
         Args:
-            net_file: The path to a '\\*.net.xml' file (generally 'map.net.xml')
+            map_spec: An instance of types.MapSpec specifying a map location
         """
-        # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
-        road_network = SumoRoadNetwork.from_file(net_file, lanepoint_spacing=2.0)
-        return cls(road_network)
+        road_map, _ = map_spec.builder_fn(map_spec)
+        return cls(road_map)
 
     def __iter__(self):
         return self
@@ -67,39 +66,39 @@ class RandomRouteGenerator:
     def __next__(self):
         """Provides the next random route."""
 
-        def random_lane_index(edge_id):
-            lanes = self._road_network.edge_by_id(edge_id).getLanes()
+        def random_lane_index(road_id: str) -> int:
+            lanes = self._road_map.road_by_id(road_id).lanes
             return random.randint(0, len(lanes) - 1)
 
-        def random_lane_offset(edge_id, lane_idx):
-            lane = self._road_network.edge_by_id(edge_id).getLanes()[lane_idx]
-            return random.uniform(0, lane.getLength())
+        def random_lane_offset(road_id: str, lane_idx: int) -> float:
+            lane = self._road_map.road_by_id(road_id).lanes[lane_idx]
+            return random.uniform(0, lane.length)
 
         # HACK: loop + continue is a temporary solution so we more likely return a valid
         #       route. In future we need to be able to handle random routes that are just
-        #       a single edge long.
+        #       a single road long.
         for _ in range(100):
-            edges = self._road_network.random_route(max_route_len=10)
-            if len(edges) < 2:
+            route = self._road_map.random_route(max_route_len=10)
+            if len(route.roads) < 2:
                 continue
 
-            start_edge_id = edges[0]
-            start_lane_index = random_lane_index(start_edge_id)
-            start_lane_offset = random_lane_offset(start_edge_id, start_lane_index)
+            start_road_id = route.roads[0].road_id
+            start_lane_index = random_lane_index(start_road_id)
+            start_lane_offset = random_lane_offset(start_road_id, start_lane_index)
 
-            end_edge_id = edges[-1]
-            end_lane_index = random_lane_index(end_edge_id)
-            end_lane_offset = random_lane_offset(end_edge_id, end_lane_index)
+            end_road_id = route.roads[-1].road_id
+            end_lane_index = random_lane_index(end_road_id)
+            end_lane_offset = random_lane_offset(end_road_id, end_lane_index)
 
             return types.Route(
-                begin=(start_edge_id, start_lane_index, start_lane_offset),
-                via=tuple(edges[1:-1]),
-                end=(end_edge_id, end_lane_index, end_lane_offset),
+                begin=(start_road_id, start_lane_index, start_lane_offset),
+                via=tuple(road.road_id for road in route.roads[1:-1]),
+                end=(end_road_id, end_lane_index, end_lane_offset),
             )
 
         raise InvalidRoute(
             "Unable to generate a valid random route that contains \
-            at least two edges."
+            at least two roads."
         )
 
 
@@ -107,17 +106,28 @@ class TrafficGenerator:
     def __init__(
         self,
         scenario_dir: str,
+        scenario_map_spec: types.MapSpec,
         log_dir: str = None,
         overwrite: bool = False,
     ):
         """
         scenario: The path to the scenario directory
         """
+        from smarts.core.utils.sumo import sumolib
+
         self._log = logging.getLogger(self.__class__.__name__)
         self._scenario = scenario_dir
         self._overwrite = overwrite
         self._duarouter = sh.Command(sumolib.checkBinary("duarouter"))
+        self._scenario_map_spec = scenario_map_spec
         self._road_network_path = os.path.join(self._scenario, "map.net.xml")
+        if scenario_map_spec and scenario_map_spec.source:
+            if os.path.isfile(scenario_map_spec.source):
+                self._road_network_path = scenario_map_spec.source
+            elif os.path.exists(scenario_map_spec.source):
+                self._road_network_path = os.path.join(
+                    scenario_map_spec.source, "map.net.xml"
+                )
         self._road_network = None
         self._random_route_generator = None
         self._log_dir = self._resolve_log_dir(log_dir)
@@ -157,7 +167,7 @@ class TrafficGenerator:
             # Validates, and runs route planner
             self._duarouter(
                 unsorted_input=True,
-                net_file=self.road_network.net_file,
+                net_file=self.road_network.source,
                 route_files=trips_path,
                 output_file=route_path,
                 seed=seed,
@@ -213,7 +223,7 @@ class TrafficGenerator:
                 resolved_routes[route] = self.resolve_route(route)
 
             for route in set(resolved_routes.values()):
-                doc.stag("route", id=route.id, edges=" ".join(route.edges))
+                doc.stag("route", id=route.id, edges=" ".join(route.roads))
 
             # We don't de-dup flows since defining the same flow multiple times should
             # create multiple traffic flows. Since IDs can't be reused, we also unique
@@ -248,22 +258,34 @@ class TrafficGenerator:
 
     def _cache_road_network(self):
         if not self._road_network:
+            from smarts.core.sumo_road_network import SumoRoadNetwork
+
             self._road_network = SumoRoadNetwork.from_file(self._road_network_path)
 
-    def resolve_edge_length(self, edge_id, lane_id):
+    def resolve_edge_length(self, edge_id, lane_idx):
         self._cache_road_network()
-        lane = self._road_network.edge_by_id(edge_id).getLanes()[lane_id]
-        return lane.getLength()
+        lane = self._road_network.edge_by_id(edge_id).lanes[lane_idx]
+        return lane.length
 
     def resolve_route(self, route):
         if not isinstance(route, types.RandomRoute):
             return route
 
         if not self._random_route_generator:
+            map_spec = route.map_spec
+            if not map_spec:
+                # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
+                lp_spacing = 2.0
+                if self._scenario_map_spec:
+                    map_spec = replace(
+                        self._scenario_map_spec, lanepoint_spacing=lp_spacing
+                    )
+                else:
+                    map_spec = types.MapSpec(
+                        self._road_network_path, lanepoint_spacing=lp_spacing
+                    )
             # Lazy-load to improve performance when not using random route generation.
-            self._random_route_generator = RandomRouteGenerator.from_file(
-                self._road_network_path
-            )
+            self._random_route_generator = RandomRouteGenerator.from_spec(map_spec)
 
         return next(self._random_route_generator)
 

@@ -1,6 +1,17 @@
 include sac/checkpoint/checkpoint
 include ultra/agent_pool.json
 include config.yaml
+
+include ultra/baselines/dqn/dqn/params.yaml
+include ultra/baselines/bdqn/bdqn/params.yaml
+include ultra/baselines/sac/sac/params.yaml
+include ultra/baselines/ppo/ppo/params.yaml
+include ultra/baselines/td3/td3/params.yaml
+
+include ultra/env/envision_bash.sh
+
 include ultra/scenarios/task1/config.yaml
 include ultra/scenarios/task2/config.yaml
-recursive-include ultra/scenarios/pool
+include ultra/scenarios/taskX/config.yaml
+
+recursive-include ultra/scenarios/pool *

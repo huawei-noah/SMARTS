@@ -55,7 +55,7 @@ def env(agent_specs):
         agent_specs=agent_specs,
         headless=True,
         seed=2008,
-        timestep_sec=0.01,
+        fixed_timestep_sec=0.01,
     )
     env.reset()
     yield env

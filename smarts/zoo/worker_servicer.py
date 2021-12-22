@@ -1,4 +1,6 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +27,6 @@ import time
 import cloudpickle
 import grpc
 
-from smarts.zoo import worker as zoo_worker
 from smarts.zoo import worker_pb2, worker_pb2_grpc
 
 logging.basicConfig(level=logging.INFO)

@@ -67,6 +67,9 @@ class MotionPlannerProvider(Provider):
         assert self._is_setup
         self._update_membership(target_poses_at_t)
 
+        if not self._vehicle_id_to_index:
+            return ProviderState()
+
         target_poses_at_t = np.array(
             [
                 self._normalize_target_pose(v_index, target_poses_at_t, dt)
@@ -82,18 +85,18 @@ class MotionPlannerProvider(Provider):
         speeds = first_point_of_traj[:, 3]
         poses = first_point_of_traj[:, :3]
         self._poses[indices] = poses
-        vehicle_type = "passenger"  # TODO: allow for multiple vehicle types
+        vehicle_config_type = "passenger"  # TODO: allow for multiple vehicle types
 
         return ProviderState(
             vehicles=[
                 VehicleState(
                     vehicle_id=v_id,
-                    vehicle_type=vehicle_type,
+                    vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_center(
                         [*poses[idx][:2], 0],
                         Heading(poses[idx][2]),
                     ),
-                    dimensions=VEHICLE_CONFIGS[vehicle_type].dimensions,
+                    dimensions=VEHICLE_CONFIGS[vehicle_config_type].dimensions,
                     speed=speeds[idx],
                     source="BEZIER",
                 )

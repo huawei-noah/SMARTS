@@ -76,18 +76,18 @@ class Controllers:
             )
         elif action_space == ActionSpaceType.ActuatorDynamic:
             ActuatorDynamicController.perform_action(
-                vehicle, action, controller_state, dt_sec=sim.timestep_sec
+                vehicle, action, controller_state, dt_sec=sim.last_dt
             )
         elif action_space == ActionSpaceType.Trajectory:
             TrajectoryTrackingController.perform_trajectory_tracking_PD(
                 action,
                 vehicle,
                 controller_state,
-                dt_sec=sim.timestep_sec,
+                dt_sec=sim.last_dt,
             )
         elif action_space == ActionSpaceType.MPC:
             TrajectoryTrackingController.perform_trajectory_tracking_MPC(
-                action, vehicle, controller_state, sim.timestep_sec
+                action, vehicle, controller_state, sim.last_dt
             )
         elif action_space == ActionSpaceType.LaneWithContinuousSpeed:
             LaneFollowingController.perform_lane_following(
@@ -120,13 +120,17 @@ class Controllers:
             elif action == "change_lane_right":
                 perform_lane_following(target_speed=12.5, lane_change=-1)
         elif action_space == ActionSpaceType.Imitation:
-            ImitationController.perform_action(sim.timestep_sec, vehicle, action)
+            ImitationController.perform_action(sim.last_dt, vehicle, action)
         else:
             # Note: TargetPose and MultiTargetPose use a MotionPlannerProvider directly
             raise ValueError(
                 f"perform_action(action_space={action_space}, ...) has failed "
                 "inside controller"
             )
+
+
+class ControllerOutOfLaneException(Exception):
+    pass
 
 
 class ControllerState:
@@ -136,11 +140,14 @@ class ControllerState:
             ActionSpaceType.Lane,
             ActionSpaceType.LaneWithContinuousSpeed,
         ):
-            # TAI: we should probably be fetching these waypoint through the mission planner
-            target_lane_id = sim.road_network.lanepoints.closest_lanepoint(
-                vehicle_pose, filter_from_count=4
-            ).lane_id
-            return LaneFollowingControllerState(target_lane_id)
+            target_lane = sim.road_map.nearest_lane(vehicle_pose.point)
+            if not target_lane:
+                # This likely means this is a traffic history vehicle that is out-of-lane.
+                # If not, maybe increase radius in nearest_lane call?
+                raise ControllerOutOfLaneException(
+                    "Controller has failed because actor is too far from lane for lane-following."
+                )
+            return LaneFollowingControllerState(target_lane.lane_id)
 
         if action_space == ActionSpaceType.ActuatorDynamic:
             return ActuatorDynamicControllerState()

@@ -9,7 +9,7 @@ ULTRA supports multi-agent experiments for independently learning agents.
 The following steps will show how to create a multi-agent task with 4 agents.
 1. Generate the maps used by the ULTRA scenarios (if this has not been done already):
    ```sh
-   $ scl scenario build-all ultra/scenarios/pool/
+   $ scl scenario build-all ultra/scenarios/pool/experiment_pool/
    ```
 2. Create a multi-agent task:
    ```sh
@@ -44,7 +44,7 @@ The following steps will show how to create a multi-agent task with 4 agents.
              percent: 1.0  # 100% of these scenarios will be 2 lane, c-intersections.
              specs: [[50kmh,low-density,0.34],[70kmh,low-density,0.33],[100kmh,low-density,0.33]]
    ```
-   > This will create a task consisting of 12 scenarios (10 training, 2 testing). Each scenario supports 4 agents, and missions are shuffled so that agents do different missions in different training scenarios. Each agent will be tested separately, attempting to perform a left-turn from the South lane to the West lane in low-density traffic of various speeds.
+   > This will create a task consisting of 12 scenarios (10 training, 2 testing). Each scenario supports 4 agents, and missions are shuffled by default so that agents do different missions in different training scenarios. To not shuffle the missions, include the `--no-mission-shuffle` flag when generating the scenarios. Each agent will be tested separately, attempting to perform a left-turn from the South lane to the West lane in low-density traffic of various speeds.
 3. Add your task to `ultra/config.yaml`:
    ```yaml
      task0-4agents:  # The name of the task.

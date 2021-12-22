@@ -104,10 +104,10 @@ shifted_map-AUTOGEN.net.xml
 *flamegraph-perf.log
 *flamegraph.svg
 *flamegraph.html
-bubbles.pkl
-missions.pkl
-traffic_histories.pkl
 **/social_agents/*
+*.pkl
+*.shf
+*.tfrecord*
 
 # Manually generated sumo route files
 !zoo/evaluation/scenarios/**/traffic/*.rou.xml
@@ -132,3 +132,12 @@ OpEn_build/
 
 # Ignore generated ULTRA tasks
 ultra/ultra/scenarios/task*/*/
+
+# Singularity
+*.sif
+
+# folder containing Observations collected .pkl files for imitation learning
+collected_observations/
+
+# vim swap files
+*.swp

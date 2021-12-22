@@ -21,15 +21,16 @@ import React, { useState } from "react";
 import { Tree } from "antd";
 
 export const attrs = Object.freeze({
-  score: 0,
-  speed: 1,
-  position: 2,
-  heading: 3,
-  laneID: 4,
+  scenarioName: 0,
+  score: 1,
+  speed: 2,
+  position: 3,
+  heading: 4,
+  laneID: 5,
 });
 
 export const agentModes = Object.freeze({
-  egoObs: "5",
+  egoObs: "6",
   socialObs: 6,
 });
 
@@ -42,6 +43,10 @@ const treeData = [
         title: "Ego Agent Observation",
         key: agentModes.egoObs,
         children: [
+          {
+            title: "scenario name",
+            key: attrs.scenarioName,
+          },
           {
             title: "score",
             key: attrs.score,

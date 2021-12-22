@@ -1,19 +1,19 @@
 import math
 from pathlib import Path
 from unittest import mock
-import numpy as np
-import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
+import numpy as np
+
+from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
     ActuatorDynamicControllerState,
 )
-from smarts.core.coordinates import Pose, Heading
-from smarts.core.vehicle import Vehicle
-from smarts.core.chassis import AckermannChassis
+from smarts.core.coordinates import Heading, Pose
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
-
+from smarts.core.vehicle import Vehicle
 
 TIMESTEP_SEC = 1 / 240
 # TIMESTEP_SEC=0.0005
@@ -248,11 +248,10 @@ if __name__ == "__main__":
             pose = pose = Pose.from_center((0, 0, 0), Heading(0))
             vehicle = Vehicle(
                 "hello",
-                pose=pose,
                 chassis=AckermannChassis(
                     pose=pose,
                     bullet_client=client,
-                    tire_parameters_filepath="/home/kyber/MainProjectSMARTS/SMARTS/tools/tire_parameters.yaml",
+                    tire_parameters_filepath="../../smarts/core/models/tire_parameters.yaml",
                 ),
             )
 

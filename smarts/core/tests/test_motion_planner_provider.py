@@ -26,8 +26,9 @@ import pytest
 
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.motion_planner_provider import MotionPlannerProvider
+from smarts.core.plan import EndlessGoal, Mission, Start
 from smarts.core.provider import ProviderState
-from smarts.core.scenario import EndlessGoal, Mission, Scenario, Start
+from smarts.core.scenario import Scenario
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
@@ -58,7 +59,7 @@ def test_we_reach_target_pose_at_given_time(motion_planner_provider, loop_scenar
     motion_planner_provider.create_vehicle(
         VehicleState(
             vehicle_id="EGO",
-            vehicle_type="passenger",
+            vehicle_config_type="passenger",
             pose=Pose.from_center([0, 0, 0.5], heading=Heading(0)),
             dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
             speed=0,

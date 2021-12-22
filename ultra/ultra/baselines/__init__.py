@@ -19,42 +19,35 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from smarts.zoo.registry import register
-from .sac.sac.policy import SACPolicy
-from .ppo.ppo.policy import PPOPolicy
-from .dqn.dqn.policy import DQNPolicy
-from .td3.td3.policy import TD3Policy
-from .bdqn.bdqn.policy import BehavioralDQNPolicy
 from smarts.core.controllers import ActionSpaceType
+from smarts.zoo.registry import register
 from ultra.baselines.agent_spec import BaselineAgentSpec
+
+from .bdqn.bdqn.policy import BehavioralDQNPolicy
+from .dqn.dqn.policy import DQNPolicy
+from .ppo.ppo.policy import PPOPolicy
+from .sac.sac.policy import SACPolicy
+from .td3.td3.policy import TD3Policy
 
 register(
     locator="sac-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Continuous, policy_class=SACPolicy, **kwargs
-    ),
+    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=SACPolicy, **kwargs),
 )
 register(
     locator="ppo-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Continuous, policy_class=PPOPolicy, **kwargs
-    ),
+    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=PPOPolicy, **kwargs),
 )
 register(
     locator="td3-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Continuous, policy_class=TD3Policy, **kwargs
-    ),
+    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=TD3Policy, **kwargs),
 )
 register(
     locator="dqn-v0",
-    entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Continuous, policy_class=DQNPolicy, **kwargs
-    ),
+    entry_point=lambda **kwargs: BaselineAgentSpec(policy_class=DQNPolicy, **kwargs),
 )
 register(
     locator="bdqn-v0",
     entry_point=lambda **kwargs: BaselineAgentSpec(
-        action_type=ActionSpaceType.Lane, policy_class=BehavioralDQNPolicy, **kwargs
+        policy_class=BehavioralDQNPolicy, **kwargs
     ),
 )

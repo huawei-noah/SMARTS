@@ -15,7 +15,7 @@ of the steps is shown below
 
 1) To generated maps used by the ULTRA scenarios, run the following command: 
   ```sh
-  $ scl scenario build-all ultra/scenarios/pool
+  $ scl scenario build-all ultra/scenarios/pool/experiment_pool/
   ```
 2) For building scenarios from specified task configurations, run the following command
   ```sh

@@ -33,7 +33,7 @@ def basic_vehicle_initial_distribution(probability, min_step=100000, extra_args=
     return count
 
 
-def basic_begin_time_init_func(num_lanes, num_vehicle, **params):
+def basic_begin_time_init_func(num_lanes, num_vehicle, traffic_params, **params):
     begin_times = [[] for _ in range(num_lanes)]
     for j in range(num_lanes):
         [
@@ -48,11 +48,16 @@ def basic_begin_time_init_func(num_lanes, num_vehicle, **params):
 def burst_begin_time_init_func(
     num_lanes,
     num_vehicle,
+    traffic_params,
     vehicle_cluster_size=(4, 5),
-    time_between_cluster=(12, 25),
-    time_for_each_cluster=5,
+    time_between_cluster=(20, 30),
+    time_for_each_cluster=3,
+    speed_offset=5,
 ):
     begin_times = []
+    speed = traffic_params["speed"]
+    density = traffic_params["traffic_density"]
+
     for j in range(num_lanes):
         vehicle_left = num_vehicle
         _begin_times = []
@@ -71,16 +76,39 @@ def burst_begin_time_init_func(
             vehicle_spawn_time += time_so_far
             _begin_times.extend(vehicle_spawn_time)
 
-            time_to_next_cluster = np.random.uniform(*time_between_cluster)
-            time_so_far += time_to_next_cluster
+            speed = "".join(filter(lambda i: i.isdigit(), speed))
+            if density == "high-density":
+                if int(speed) == 50:
+                    variable_time_between_cluster = (
+                        time_between_cluster[0] + speed_offset + (num_lanes / 2),
+                        time_between_cluster[1] + speed_offset + (num_lanes / 2),
+                    )
+                elif int(speed) == 70:
+                    variable_time_between_cluster = (
+                        time_between_cluster[0],
+                        time_between_cluster[1],
+                    )
+                elif int(speed) == 100:
+                    variable_time_between_cluster = (
+                        time_between_cluster[0] - speed_offset - (num_lanes / 2),
+                        time_between_cluster[1] - speed_offset - (num_lanes / 2),
+                    )
+                else:
+                    raise ValueError(f"Unsupported speed: {speed}.")
 
+                time_to_next_cluster = np.random.uniform(*variable_time_between_cluster)
+            else:
+                time_to_next_cluster = np.random.uniform(*time_between_cluster)
+
+            time_so_far += time_to_next_cluster
             vehicle_left -= num_vehicle_in_cluster
 
         begin_times.append(_begin_times)
+
     return begin_times
 
 
-def poisson_init(num_lanes, num_vehicle, temperature=10):
+def poisson_init(num_lanes, num_vehicle, traffic_params, temperature=8):
     vehicle_spawn_time = np.random.exponential(
         temperature, size=(num_lanes, num_vehicle)
     )

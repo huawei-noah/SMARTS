@@ -1,18 +1,15 @@
 import math
 from pathlib import Path
-from unittest import mock
 
+from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
     ActuatorDynamicControllerState,
 )
-
+from smarts.core.coordinates import Heading, Pose
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
-from smarts.core.coordinates import Pose, Heading
 from smarts.core.vehicle import Vehicle
-from smarts.core.chassis import AckermannChassis
-
 
 TIMESTEP_SEC = 1 / 240
 
@@ -136,7 +133,6 @@ if __name__ == "__main__":
         pose = pose = Pose.from_center((0, 0, 0), Heading(0))
         vehicle = Vehicle(
             id="vehicle",
-            pose=pose,
             chassis=AckermannChassis(
                 pose=pose,
                 bullet_client=client,

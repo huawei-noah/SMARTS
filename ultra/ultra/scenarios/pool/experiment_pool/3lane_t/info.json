@@ -1,0 +1,2 @@
+{"routes":[["east-EW", "west-EW"],["east-EW", "south-NS"],["west-WE", "east-WE"],["west-WE", "south-NS"],["south-SN", "east-WE"],["south-SN", "west-EW"]],
+"num_lanes":{"east-EW":1, "west-EW":1, "west-WE":2, "east-WE":2, "south-NS":1, "south-SN":1}}

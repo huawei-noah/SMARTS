@@ -61,13 +61,13 @@ def vehicle_controller_file(request):
 
 
 @pytest.fixture
-def bullet_client(timestep_sec=time_step):
+def bullet_client(fixed_timestep_sec=time_step):
     client = bc.BulletClient(pybullet.DIRECT)
     client.resetSimulation()
     client.setGravity(0, 0, -9.8)
     client.setPhysicsEngineParameter(
-        fixedTimeStep=timestep_sec,
-        numSubSteps=int(timestep_sec / (1 / 240)),
+        fixedTimeStep=fixed_timestep_sec,
+        numSubSteps=int(fixed_timestep_sec / (1 / 240)),
     )
     path = Path(__file__).parent / "../models/plane.urdf"
     path = str(path.absolute())
@@ -77,11 +77,10 @@ def bullet_client(timestep_sec=time_step):
 
 
 @pytest.fixture
-def vehicle(bullet_client, vehicle_controller_file, timestep_sec=time_step):
+def vehicle(bullet_client, vehicle_controller_file, fixed_timestep_sec=time_step):
     pose = Pose.from_center((0, 0, 0), Heading(0))
     vehicle1 = Vehicle(
         id="vehicle",
-        pose=pose,
         chassis=AckermannChassis(
             pose=pose,
             bullet_client=bullet_client,
@@ -105,29 +104,29 @@ def omega(request):
 
 
 # We use circular trajectory with different radius and yaw rate
-def build_trajectory(radius, omega, step_num, timestep_sec=time_step):
+def build_trajectory(radius, omega, step_num, fixed_timestep_sec=time_step):
     num_trajectory_points = 15
     R = radius
     omega_1 = omega
     omega_2 = omega
-    if step_num > 3.14 / (timestep_sec * omega_1):
+    if step_num > 3.14 / (fixed_timestep_sec * omega_1):
         Omega = omega_2
-        alph = ((omega_1 - omega_2) / omega_2) * 3.14 / (timestep_sec * omega_1)
+        alph = ((omega_1 - omega_2) / omega_2) * 3.14 / (fixed_timestep_sec * omega_1)
     else:
         Omega = omega_1
         alph = 0
-    desheadi = step_num * Omega * timestep_sec
+    desheadi = step_num * Omega * fixed_timestep_sec
     trajectory = [
         [
-            -(R - R * math.cos((step_num + i + alph) * Omega * timestep_sec))
+            -(R - R * math.cos((step_num + i + alph) * Omega * fixed_timestep_sec))
             for i in range(num_trajectory_points)
         ],
         [
-            R * math.sin((step_num + i + alph) * Omega * timestep_sec)
+            R * math.sin((step_num + i + alph) * Omega * fixed_timestep_sec)
             for i in range(num_trajectory_points)
         ],
         [
-            (step_num + i + alph) * Omega * timestep_sec
+            (step_num + i + alph) * Omega * fixed_timestep_sec
             for i in range(num_trajectory_points)
         ],
         [R * Omega for i in range(num_trajectory_points)],
@@ -136,11 +135,11 @@ def build_trajectory(radius, omega, step_num, timestep_sec=time_step):
 
 
 def step_with_vehicle_commands(
-    bullet_client, vehicle, radius, omega, timestep_sec=time_step
+    bullet_client, vehicle, radius, omega, fixed_timestep_sec=time_step
 ):
     prev_friction_sum = None
     # Proceed till the end of half of the circle.
-    n_steps = int(0.5 * 3.14 / (omega * timestep_sec))
+    n_steps = int(0.5 * 3.14 / (omega * fixed_timestep_sec))
 
     desired_trajectory = []
     controller_state = TrajectoryTrackingControllerState()
@@ -151,7 +150,7 @@ def step_with_vehicle_commands(
             desired_trajectory,
             vehicle,
             controller_state,
-            dt_sec=timestep_sec,
+            dt_sec=fixed_timestep_sec,
         )
 
         bullet_client.stepSimulation()

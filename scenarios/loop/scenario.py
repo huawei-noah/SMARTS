@@ -1,4 +1,3 @@
-import random
 from pathlib import Path
 
 from smarts.core import seed

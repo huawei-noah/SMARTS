@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 from os import path
+
 from setuptools import find_packages, setup
 
 this_dir = path.abspath(path.dirname(__file__))
@@ -45,7 +46,6 @@ setup(
         "setuptools>=41.0.0,!=50.0",
         "dill",
         "black==20.8b1",
-        "ray[rllib]==1.0.1.post1",
         "opencv-python",
         "gym",
     ],

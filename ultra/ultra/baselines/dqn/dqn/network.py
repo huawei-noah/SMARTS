@@ -34,7 +34,6 @@ class DQNCNN(nn.Module):
         self,
         n_in_channels,
         image_dim,
-        state_size,
         num_actions,
         hidden_dim=128,
         activation=nn.ReLU,
@@ -56,7 +55,7 @@ class DQNCNN(nn.Module):
         self.q_outs = nn.ModuleList()
         for num_action in num_actions:
             q_out = nn.Sequential(
-                nn.Linear(im_feature_size + state_size, hidden_dim),
+                nn.Linear(im_feature_size, hidden_dim),
                 nn.ReLU(),
                 nn.Linear(hidden_dim, num_action),
             )
@@ -69,11 +68,15 @@ class DQNCNN(nn.Module):
             # nn.init.normal_(q_out[-1].weight.data, 0.0, 1e-2)
             nn.init.constant_(q_out[-1].bias.data, 0.0)
 
-    def forward(self, image, state_size):
-        im_feature = self.im_feature(image)
-        x = torch.cat([im_feature, state_size], dim=-1)
+    def forward(self, state, training=False):
+        x = self.im_feature(state)
         x = [e(x) for e in self.q_outs]
-        return x
+
+        if training:
+            aux_losses = {}
+            return x, aux_losses
+        else:
+            return x
 
 
 class DQNFC(nn.Module):

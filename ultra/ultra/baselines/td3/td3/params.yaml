@@ -1,4 +1,3 @@
-action_size: 2
 update_rate: 5
 policy_delay: 2
 noise_clip: 0.5
@@ -16,7 +15,6 @@ batch_size: 128
 sigma: 0.3
 theta: 0.15
 dt: 1e-2
-observation_num_lookahead: 20
 replay_buffer:
     buffer_size: 1e6
     batch_size: 128
@@ -24,6 +22,6 @@ social_vehicles:
     encoder_key: no_encoder
     social_policy_hidden_units: 128
     social_policy_init_std: 0.5
-    social_capacity: 10
-    num_social_features: 4
-    seed: 2
+action_type: default_action_continuous
+observation_type: default_observation_vector
+reward_type: default_reward

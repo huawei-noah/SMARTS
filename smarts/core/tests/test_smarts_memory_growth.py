@@ -102,7 +102,7 @@ def env_and_spec(
         agent_specs={agent_id: agent_spec},
         headless=True,
         visdom=False,
-        timestep_sec=TIMESTEP_SEC,
+        fixed_timestep_sec=TIMESTEP_SEC,
         sumo_headless=True,
         seed=seed,
     )

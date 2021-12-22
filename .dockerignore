@@ -7,9 +7,10 @@
 **/.coverage.*
 **/coverage.xml
 **/develop-eggs/
-**/downloads/
+**/.dockerignore
 **/docs/_build/
 **/docs/api
+**/downloads/
 **/.DS_Store
 **/eggs/
 **/.eggs/
@@ -41,6 +42,7 @@
 **/.python-version
 **/*.rou.alt.xml
 **/*.rou.xml
+**/*.sif
 **/*.so
 **/social_agents/*
 **/*.spec

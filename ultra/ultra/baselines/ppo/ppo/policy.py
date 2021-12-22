@@ -20,21 +20,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # some parts of this implementation is inspired by https://github.com/Khrylx/PyTorch-RL
-import torch, os, yaml
-import numpy as np
-from ultra.baselines.ppo.ppo.network import PPONetwork
-from smarts.core.agent import Agent
-import pathlib
 import os
+import pathlib
+
+import numpy as np
+import torch
+import yaml
+
+import ultra.adapters as adapters
+from smarts.core.agent import Agent
+from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
+from ultra.baselines.common.yaml_loader import load_yaml
+from ultra.baselines.ppo.ppo.network import PPONetwork
 from ultra.utils.common import (
     compute_sum_aux_losses,
     normalize_im,
-    to_3d_action,
     to_2d_action,
+    to_3d_action,
 )
-from ultra.baselines.common.yaml_loader import load_yaml
-from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
-from ultra.baselines.common.baseline_state_preprocessor import BaselineStatePreprocessor
 
 
 class PPOPolicy(Agent):
@@ -66,38 +69,46 @@ class PPOPolicy(Agent):
         self.actions = []
         self.states = []
         self.terminals = []
-        self.action_size = int(policy_params["action_size"])
+        self.action_size = 2
         self.prev_action = np.zeros(self.action_size)
+        self.action_type = adapters.type_from_string(policy_params["action_type"])
+        self.observation_type = adapters.type_from_string(
+            policy_params["observation_type"]
+        )
+        self.reward_type = adapters.type_from_string(policy_params["reward_type"])
 
-        # state preprocessing
+        if self.action_type != adapters.AdapterType.DefaultActionContinuous:
+            raise Exception(
+                f"PPO baseline only supports the "
+                f"{adapters.AdapterType.DefaultActionContinuous} action type."
+            )
+        if self.observation_type != adapters.AdapterType.DefaultObservationVector:
+            raise Exception(
+                f"PPO baseline only supports the "
+                f"{adapters.AdapterType.DefaultObservationVector} observation type."
+            )
+
+        self.observation_space = adapters.space_from_type(self.observation_type)
+        self.low_dim_states_size = self.observation_space["low_dim_states"].shape[0]
+        self.social_capacity = self.observation_space["social_vehicles"].shape[0]
+        self.num_social_features = self.observation_space["social_vehicles"].shape[1]
+
+        self.encoder_key = policy_params["social_vehicles"]["encoder_key"]
         self.social_policy_hidden_units = int(
             policy_params["social_vehicles"].get("social_policy_hidden_units", 0)
-        )
-        self.social_capacity = int(
-            policy_params["social_vehicles"].get("social_capacity", 0)
-        )
-        self.observation_num_lookahead = int(
-            policy_params.get("observation_num_lookahead", 0)
         )
         self.social_policy_init_std = int(
             policy_params["social_vehicles"].get("social_policy_init_std", 0)
         )
-        self.num_social_features = int(
-            policy_params["social_vehicles"].get("num_social_features", 0)
-        )
         self.social_vehicle_config = get_social_vehicle_configs(
-            **policy_params["social_vehicles"]
+            encoder_key=self.encoder_key,
+            num_social_features=self.num_social_features,
+            social_capacity=self.social_capacity,
+            seed=self.seed,
+            social_policy_hidden_units=self.social_policy_hidden_units,
+            social_policy_init_std=self.social_policy_init_std,
         )
-
         self.social_vehicle_encoder = self.social_vehicle_config["encoder"]
-        self.state_description = BaselineStatePreprocessor.get_state_description(
-            policy_params["social_vehicles"],
-            policy_params["observation_num_lookahead"],
-            self.action_size,
-        )
-        # self.state_preprocessor = StatePreprocessor(
-        #     preprocess_state, to_2d_action, self.state_description
-        # )
         self.social_feature_encoder_class = self.social_vehicle_encoder[
             "social_feature_encoder_class"
         ]
@@ -131,7 +142,7 @@ class PPOPolicy(Agent):
     @property
     def state_size(self):
         # Adjusting state_size based on number of features (ego+social)
-        size = sum(self.state_description["low_dim_states"].values())
+        size = self.low_dim_states_size
         if self.social_feature_encoder_class:
             size += self.social_feature_encoder_class(
                 **self.social_feature_encoder_params
