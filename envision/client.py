@@ -80,6 +80,7 @@ class Client:
         sim_name: Optional[str] = None,
         headless: bool = False,
     ):
+        sim_name = "buyahahahahahahahhahaha"
         self._log = logging.getLogger(self.__class__.__name__)
         self._headless = headless
 
