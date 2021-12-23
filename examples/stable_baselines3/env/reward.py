@@ -37,7 +37,7 @@ class Reward(gym.Wrapper):
             return float(reward)
 
         # Penalty for stopping
-        if obs.ego_vehicle_observation.speed < 1:
+        if obs.ego_vehicle_state.speed < 1:
             reward -= 1
             return float(reward)
 
