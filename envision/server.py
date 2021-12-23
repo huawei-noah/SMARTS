@@ -220,6 +220,7 @@ class WebClientRunLoop:
                     self._seek = None
 
                 assert len(frames_to_send) > 0
+                print(len(frames_to_send), "len of frames to send .... ")
                 closed = self._push_frames_to_web_client(frames_to_send)
                 if closed:
                     self._log.debug("Socket closed, exiting")
@@ -489,8 +490,8 @@ def on_shutdown():
 def run(scenario_dirs, max_capacity_mb=500, port=8081):
     """Create and run an envision web server."""
     app = make_app(scenario_dirs, max_capacity_mb)
-    app.listen(port=port, address="0.0.0.0")
-    # app.listen(port)
+    # app.listen(port=port, address="0.0.0.0")
+    app.listen(port)
     logging.debug(f"Envision listening on port={port}")
 
     ioloop = tornado.ioloop.IOLoop.current()
