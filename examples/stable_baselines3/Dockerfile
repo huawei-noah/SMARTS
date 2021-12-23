@@ -22,16 +22,10 @@ RUN apt-get update --fix-missing && \
         python3.7 \
         python3.7-dev \
         python3.7-venv \
-        sumo=1.10.0 \
-        sumo-doc \
-        sumo-tools \
         wget \
         xorg && \
     apt-get autoremove && \
     rm -rf /var/lib/apt/lists/*
-
-# Setup SUMO
-ENV SUMO_HOME /usr/share/sumo
 
 # Update default python version
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
@@ -43,6 +37,10 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \
     python get-pip.py && \
     pip install --upgrade pip
+
+# Setup SUMO
+RUN pip install eclipse-sumo==1.10.0
+ENV SUMO_HOME $VIRTUAL_ENV/lib64/python3.7/site-packages/sumo
 
 # Install requirements.txt
 COPY ./requirements.txt /tmp/requirements.txt
