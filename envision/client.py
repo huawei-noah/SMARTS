@@ -84,7 +84,7 @@ class Client:
         envision_state_filter: Optional[EnvisionStateFilter] = None,
         data_formatter_args: Optional[EnvisionDataFormatterArgs] = None,
     ):
-        sim_name = "buyahahahahahahahhahaha"
+        sim_name = "bwahahahahahahahhahaha"
         self._log = logging.getLogger(self.__class__.__name__)
         self._headless = headless
 
