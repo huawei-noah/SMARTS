@@ -81,6 +81,7 @@ setup(
             "black==20.8b1",
             "grpcio-tools==1.32.0",
             "isort==5.7.0",
+            "pytype>=2021.12.15",
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
