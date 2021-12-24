@@ -18,9 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import glob
-import json
 import logging
-import math
 import os
 import pickle
 import random
@@ -28,12 +26,12 @@ import uuid
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import cloudpickle
 import numpy as np
 
-from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint, Point
+from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
 from smarts.core.data_model import SocialAgent
 from smarts.core.plan import (
     EndlessGoal,

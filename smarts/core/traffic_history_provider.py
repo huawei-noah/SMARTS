@@ -17,9 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import sqlite3
-from itertools import cycle
-from typing import NamedTuple, Set, Optional
+
+from typing import Optional, Set
 
 import numpy as np
 

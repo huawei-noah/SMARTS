@@ -27,7 +27,7 @@ import random
 import sqlite3
 from contextlib import closing, nullcontext
 from functools import lru_cache
-from typing import Dict, Generator, NamedTuple, Set, Tuple, Type, TypeVar, List
+from typing import Dict, Generator, NamedTuple, Set, Tuple, Type, TypeVar
 
 from cached_property import cached_property
 

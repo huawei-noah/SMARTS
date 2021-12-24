@@ -20,15 +20,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import pytest
 import time
-from smarts.sstudio import gen_scenario
-from smarts.sstudio import types as t
+
+import pytest
 from helpers.scenario import temp_scenario
+
+from smarts.core.agent_interface import ActionSpaceType, AgentInterface
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.agent_interface import ActionSpaceType, AgentInterface
+from smarts.sstudio import gen_scenario
+from smarts.sstudio import types as t
 
 AGENT_1 = "Agent_007"
 

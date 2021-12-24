@@ -1,5 +1,6 @@
 import argparse
-from typing import Optional 
+from typing import Optional
+
 
 def default_argument_parser(program: Optional[str] = None):
     """This factory method returns a vanilla `argparse.ArgumentParser` with the

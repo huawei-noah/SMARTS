@@ -134,7 +134,11 @@ class TrafficGenerator:
         self._log_dir = self._resolve_log_dir(log_dir)
 
     def plan_and_save(
-        self, traffic: types.Traffic, name: str, output_dir: Optional[str] = None, seed: int = 42
+        self,
+        traffic: types.Traffic,
+        name: str,
+        output_dir: Optional[str] = None,
+        seed: int = 42,
     ):
         """Writes a traffic spec to a route file in the given output_dir.
 
