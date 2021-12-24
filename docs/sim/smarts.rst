@@ -37,15 +37,24 @@ The SMARTS simulator has the explict requirement to call `destroy()` before dele
 
 .. code-block:: python
 
+  from smarts.core.smarts import SMARTSDestroyedError
   smarts = SMARTS()
-  # del smarts # Asserts
+  try:
+    del smarts # Raises
+  except SMARTSDestroyedError as e:
+    print(e)
+
+  smarts = SMARTS()
   ## Manual call to clean up SMARTS resources
   smarts.destroy()
   ## Now works
   del smarts
 
-  smart = SMARTS()
-  exit() # Asserts
+  smarts = SMARTS()
+  try:
+    exit() # Raises
+  except SMARTSDestroyedError as e:
+    print(e)
 
   smarts = SMARTS()
   # Program end # Asserts
