@@ -30,7 +30,7 @@ import subprocess
 import sys
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Sequence, Tuple, Union
+from typing import Any, Optional, Sequence, Tuple, Union
 
 import cloudpickle
 
@@ -134,7 +134,7 @@ def gen_scenario(
         )
 
 
-def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: str = None):
+def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None):
     output_path = os.path.join(output_dir or scenario, "map_spec.pkl")
     with open(output_path, "wb") as f:
         # we use cloudpickle here instead of pickle because the
@@ -145,8 +145,8 @@ def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: str = None):
 def gen_traffic(
     scenario: str,
     traffic: types.Traffic,
-    name: str = None,
-    output_dir: str = None,
+    name: Optional[str] = None,
+    output_dir: Optional[str] = None,
     seed: int = 42,
     overwrite: bool = False,
     map_spec: types.MapSpec = None,

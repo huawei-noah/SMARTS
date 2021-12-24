@@ -697,7 +697,7 @@ class Bubble:
     exclusion_prefixes: Tuple[str, ...] = field(default_factory=tuple)
     """Used to exclude social actors from capture."""
     id: str = field(default_factory=lambda: f"bubble-{gen_id()}")
-    follow_actor_id: str = None
+    follow_actor_id: Optional[str] = None
     """Actor ID of agent we want to pin to. Doing so makes this a "travelling bubble"
     which means it moves to follow the `follow_actor_id`'s vehicle. Offset is from the
     vehicle's center position to the bubble's center position.

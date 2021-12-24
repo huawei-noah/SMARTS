@@ -23,7 +23,7 @@ import os
 import random
 from functools import lru_cache
 from subprocess import check_output
-from typing import List, Sequence, Set, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import trimesh
@@ -630,7 +630,7 @@ class SumoRoadNetwork(RoadMap):
 
     @lru_cache(maxsize=16)
     def nearest_lanes(
-        self, point: Point, radius: float = None, include_junctions=True
+        self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> List[Tuple[RoadMap.Lane, float]]:
         if radius is None:
             radius = max(10, 2 * self._default_lane_width)

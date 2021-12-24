@@ -86,7 +86,7 @@ class PositionalGoal(Goal):
         road_id: str,
         road_map: RoadMap,
         lane_index: int = 0,
-        lane_offset: float = None,
+        lane_offset: Optional[float] = None,
         radius: float = 1,
     ):
         road = road_map.road_by_id(road_id)
@@ -152,7 +152,7 @@ class TraverseGoal(Goal):
         return abs(heading_err) < math.pi / 6
 
 
-def default_entry_tactic(default_entry_speed: float = None) -> EntryTactic:
+def default_entry_tactic(default_entry_speed: Optional[float] = None) -> EntryTactic:
     return TrapEntryTactic(
         wait_to_hijack_limit_s=0,
         exclusion_prefixes=tuple(),

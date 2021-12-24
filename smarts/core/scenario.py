@@ -77,12 +77,12 @@ class Scenario:
     def __init__(
         self,
         scenario_root: str,
-        route: str = None,
+        route: Optional[str] = None,
         missions: Dict[str, Mission] = None,
         social_agents: Dict[str, SocialAgent] = None,
-        log_dir: str = None,
+        log_dir: Optional[str] = None,
         surface_patches: list = None,
-        traffic_history: str = None,
+        traffic_history: Optional[str] = None,
         map_spec: MapSpec = None,
     ):
 
@@ -416,8 +416,8 @@ class Scenario:
     @staticmethod
     def discover_map(
         scenario_root: str,
-        lanepoint_spacing: float = None,
-        default_lane_width: float = None,
+        lanepoint_spacing: Optional[float] = None,
+        default_lane_width: Optional[float] = None,
     ) -> MapSpec:
         path = os.path.join(scenario_root, "map_spec.pkl")
         if not os.path.exists(path):
