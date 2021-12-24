@@ -78,12 +78,12 @@ class Scenario:
         self,
         scenario_root: str,
         route: Optional[str] = None,
-        missions: Dict[str, Mission] = None,
-        social_agents: Dict[str, SocialAgent] = None,
+        missions: Optional[Dict[str, Mission]] = None,
+        social_agents: Optional[Dict[str, SocialAgent]] = None,
         log_dir: Optional[str] = None,
         surface_patches: list = None,
         traffic_history: Optional[str] = None,
-        map_spec: MapSpec = None,
+        map_spec: Optional[MapSpec] = None,
     ):
 
         self._logger = logging.getLogger(self.__class__.__name__)

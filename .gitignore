@@ -140,6 +140,3 @@ collected_observations/
 
 # vim swap files
 *.swp
-
-# Pytype files
-.pytype/

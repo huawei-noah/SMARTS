@@ -81,10 +81,9 @@ setup(
             "black==20.8b1",
             "grpcio-tools==1.32.0",
             "isort==5.7.0",
-            "pytype>=2021.12.15",
-            "sphinx>=4.3.2",
-            "sphinx-rtd-theme>=1.0.0",
-            "sphinxcontrib-apidoc>=0.3.0",
+            "sphinx",
+            "sphinx-rtd-theme",
+            "sphinxcontrib-apidoc",
         ],
         "camera-obs": [
             "Panda3D==1.10.9",
