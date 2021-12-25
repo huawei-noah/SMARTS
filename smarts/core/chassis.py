@@ -150,8 +150,8 @@ class Chassis:
         self,
         dt: float,
         force_pose: Pose,
-        linear_velocity: np.ndarray = None,
-        angular_velocity: np.ndarray = None,
+        linear_velocity: Optional[np.ndarray] = None,
+        angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
         and may have unintended behavioural or performance consequences."""
@@ -267,7 +267,7 @@ class BoxChassis(Chassis):
         return None
 
     @property
-    def yaw_rate(self) -> float:
+    def yaw_rate(self) -> Optional[float]:
         # in rad/s
         if self._last_dt and self._last_dt > 0:
             delta = min_angles_difference_signed(self._pose.heading, self._last_heading)

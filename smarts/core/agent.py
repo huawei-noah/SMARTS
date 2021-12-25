@@ -94,15 +94,15 @@ class AgentSpec:
 
     # This is optional because sometimes when building re-useable specs,
     # you don't know the agent interface ahead of time.
-    interface: AgentInterface = None
+    interface: Optional[AgentInterface] = None
     """the adaptor used to wrap agent observation and action flow (default None)"""
 
-    agent_builder: Callable[..., Agent] = None
+    agent_builder: Optional[Callable[..., Agent]] = None
     """A callable to build an `smarts.core.agent.Agent` given `AgentSpec.agent_params` (default None)"""
     agent_params: Optional[Any] = None
     """Parameters to be given to `AgentSpec.agent_builder` (default None)"""
 
-    policy_builder: Callable[..., Agent] = None
+    policy_builder: Optional[Callable[..., Agent]] = None
     """[DEPRECATED] see `AgentSpec.agent_builder` (default None)"""
     policy_params: Optional[Any] = None
     """[DEPRECATED] see `AgentSpec.agent_params` (default None)"""

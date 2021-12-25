@@ -68,7 +68,7 @@ class TrapManager:
 
     def __init__(self, scenario):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._traps: Dict[Trap] = defaultdict(None)
+        self._traps: Dict[str, Trap] = defaultdict(Trap)
         self.init_traps(scenario.road_map, scenario.missions)
 
     def init_traps(self, road_map, missions):

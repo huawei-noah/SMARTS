@@ -766,7 +766,10 @@ class DrivenPathSensor(Sensor):
         pass
 
     def distance_travelled(
-        self, sim, last_n_seconds: Optional[float] = None, last_n_steps: int = None
+        self,
+        sim,
+        last_n_seconds: Optional[float] = None,
+        last_n_steps: Optional[int] = None,
     ):
         if last_n_seconds is None and last_n_steps is None:
             raise ValueError("Either last N seconds or last N steps must be provided")

@@ -45,7 +45,7 @@ class FrameStack(gym.Wrapper):
         }
 
     def _get_observations(
-        self, frame: sensors.Observation
+        self, frame: Dict[str, sensors.Observation]
     ) -> Dict[str, List[sensors.Observation]]:
         """Update and return frames stack with given latest single frame."""
 

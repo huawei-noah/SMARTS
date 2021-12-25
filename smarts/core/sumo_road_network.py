@@ -394,7 +394,7 @@ class SumoRoadNetwork(RoadMap):
             self,
             point: Sequence,
             lookahead: int,
-            filter_road_ids: Sequence[str] = None,
+            filter_road_ids: Optional[Sequence[str]] = None,
         ) -> List[List[Waypoint]]:
             closest_linked_lp = (
                 self._map._lanepoints.closest_linked_lanepoint_on_lane_to_point(
@@ -668,7 +668,7 @@ class SumoRoadNetwork(RoadMap):
         self,
         start_road: RoadMap.Road,
         end_road: RoadMap.Road,
-        via: Sequence[RoadMap.Road] = None,
+        via: Optional[Sequence[RoadMap.Road]] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
         assert max_to_gen == 1, "multiple route generation not yet supported for Sumo"
@@ -912,7 +912,7 @@ class SumoRoadNetwork(RoadMap):
         @lru_cache(maxsize=8)
         def project_along(
             self, start: Point, distance: float
-        ) -> Set[Tuple[RoadMap.Lane, float]]:
+        ) -> Optional[Set[Tuple[RoadMap.Lane, float]]]:
             route_roads = set(self._roads)
             for cand_start_lane, _ in self._map.nearest_lanes(start, 30.0, False):
                 if cand_start_lane.road in route_roads:
@@ -1255,7 +1255,7 @@ class SumoRoadNetwork(RoadMap):
             point: Tuple[float, float, float],
             filter_road_ids: tuple,
             llp: LinkedLanePoint,
-        ) -> List[List[Waypoint]]:
+        ) -> Optional[List[List[Waypoint]]]:
             if self._match(lookahead, point, filter_road_ids):
                 hit = self._starts.get(llp.lp.lane.index, None)
                 if hit:
