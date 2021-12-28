@@ -223,7 +223,6 @@ class SumoTrafficSimulation(Provider):
             "--num-clients=%d" % self._num_clients,
             "--net-file=%s" % self._scenario.road_map.source,
             "--quit-on-end",
-            "--ignore-route-errors",
             "--log=%s" % self._log_file,
             "--error-log=%s" % self._log_file,
             "--no-step-log",

@@ -551,7 +551,7 @@ class Scenario:
 
         def resolve_offset(offset, lane_length):
             # epsilon to ensure we are within this edge and not the subsequent one
-            epsilon = 2 if lane_length > 2 else 1e-6
+            epsilon = 1e-6
             lane_length -= epsilon
             if offset == "base":
                 return epsilon

@@ -178,7 +178,9 @@ def main(
     seed,
     num_cpus=None,
 ):
-    num_cpus = num_cpus or max(2, psutil.cpu_count(logical=False) - 1)
+    num_cpus = max(
+        2, num_cpus or psutil.cpu_count(logical=False) or (psutil.cpu_count() / 2)
+    )
     ray.init(num_cpus=max(num_cpus, 1))
     ray.wait(
         [
