@@ -79,7 +79,7 @@ class Scenario:
         missions: Optional[Dict[str, Mission]] = None,
         social_agents: Optional[Dict[str, SocialAgent]] = None,
         log_dir: Optional[str] = None,
-        surface_patches: list = None,
+        surface_patches: Optional[Sequence[Dict[str, Any]]] = None,
         traffic_history: Optional[str] = None,
         map_spec: Optional[MapSpec] = None,
     ):
