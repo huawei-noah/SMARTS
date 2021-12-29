@@ -18,8 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from dataclasses import replace
 import os
+from dataclasses import replace
 from typing import NamedTuple, Tuple
 
 from smarts.core.road_map import RoadMap

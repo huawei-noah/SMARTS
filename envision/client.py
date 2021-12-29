@@ -28,7 +28,7 @@ import time
 import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 import websocket
@@ -72,10 +72,10 @@ class Client:
 
     def __init__(
         self,
-        endpoint: str = None,
+        endpoint: Optional[str] = None,
         wait_between_retries: float = 0.5,
-        output_dir: str = None,
-        sim_name: str = None,
+        output_dir: Optional[str] = None,
+        sim_name: Optional[str] = None,
         headless: bool = False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)

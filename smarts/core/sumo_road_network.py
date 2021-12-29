@@ -18,10 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import math
 import os
 import random
 from functools import lru_cache
-from typing import List, Sequence, Set, Tuple
+from subprocess import check_output
+from typing import List, Optional, Sequence, Set, Tuple
+
 import numpy as np
 import trimesh
 import trimesh.scene
@@ -395,7 +398,7 @@ class SumoRoadNetwork(RoadMap):
             self,
             point: Sequence,
             lookahead: int,
-            filter_road_ids: Sequence[str] = None,
+            filter_road_ids: Optional[Sequence[str]] = None,
         ) -> List[List[Waypoint]]:
             closest_linked_lp = (
                 self._map._lanepoints.closest_linked_lanepoint_on_lane_to_point(
@@ -613,7 +616,7 @@ class SumoRoadNetwork(RoadMap):
 
     @lru_cache(maxsize=16)
     def nearest_lanes(
-        self, point: Point, radius: float = None, include_junctions=True
+        self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> List[Tuple[RoadMap.Lane, float]]:
         if radius is None:
             radius = max(10, 2 * self._default_lane_width)
@@ -651,7 +654,7 @@ class SumoRoadNetwork(RoadMap):
         self,
         start_road: RoadMap.Road,
         end_road: RoadMap.Road,
-        via: Sequence[RoadMap.Road] = None,
+        via: Optional[Sequence[RoadMap.Road]] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
         assert max_to_gen == 1, "multiple route generation not yet supported for Sumo"
@@ -895,7 +898,7 @@ class SumoRoadNetwork(RoadMap):
         @lru_cache(maxsize=8)
         def project_along(
             self, start: Point, distance: float
-        ) -> Set[Tuple[RoadMap.Lane, float]]:
+        ) -> Optional[Set[Tuple[RoadMap.Lane, float]]]:
             route_roads = set(self._roads)
             for cand_start_lane, _ in self._map.nearest_lanes(start, 30.0, False):
                 if cand_start_lane.road in route_roads:

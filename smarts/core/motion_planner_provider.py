@@ -29,6 +29,8 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class MotionPlannerProvider(Provider):
+    _poses: np.ndarray
+
     def __init__(self):
         self._is_setup = False
 

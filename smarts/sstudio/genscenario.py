@@ -30,7 +30,7 @@ import subprocess
 import sys
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Sequence, Tuple, Union
+from typing import Any, Optional, Sequence, Tuple, Union
 
 import cloudpickle
 
@@ -134,7 +134,7 @@ def gen_scenario(
         )
 
 
-def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: str = None):
+def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None):
     output_path = os.path.join(output_dir or scenario, "map_spec.pkl")
     with open(output_path, "wb") as f:
         # we use cloudpickle here instead of pickle because the
@@ -145,11 +145,11 @@ def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: str = None):
 def gen_traffic(
     scenario: str,
     traffic: types.Traffic,
-    name: str = None,
-    output_dir: str = None,
+    name: Optional[str] = None,
+    output_dir: Optional[str] = None,
     seed: int = 42,
     overwrite: bool = False,
-    map_spec: types.MapSpec = None,
+    map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates the traffic routes for the given scenario. If the output directory is
     not provided, the scenario directory is used. If name is not provided the default is
@@ -174,7 +174,7 @@ def gen_social_agent_missions(
     name: str,
     seed: int = 42,
     overwrite: bool = False,
-    map_spec: types.MapSpec = None,
+    map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates the social agent missions for the given scenario.
 
@@ -231,7 +231,7 @@ def gen_missions(
     missions: Sequence,
     seed: int = 42,
     overwrite: bool = False,
-    map_spec: types.MapSpec = None,
+    map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates a route file to represent missions (a route per mission). Will create
     the output_dir if it doesn't exist already. The ouput file will be named `missions`.
@@ -272,7 +272,7 @@ def gen_group_laps(
     num_laps: int = 3,
     seed: int = 42,
     overwrite: bool = False,
-    map_spec: types.MapSpec = None,
+    map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates missions that start with a grid offset at the startline and do a number
     of laps until finishing.
@@ -350,7 +350,7 @@ def _gen_missions(
     output_dir: str,
     seed: int = 42,
     overwrite: bool = False,
-    map_spec: types.MapSpec = None,
+    map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates a route file to represent missions (a route per mission). Will
     create the output_dir if it doesn't exist already.
@@ -429,7 +429,10 @@ def _validate_entry_tactic(mission):
 
 
 def gen_traffic_histories(
-    scenario: str, histories_datasets, overwrite: bool, map_spec: types.MapSpec = None
+    scenario: str,
+    histories_datasets,
+    overwrite: bool,
+    map_spec: Optional[types.MapSpec] = None,
 ):
     # For SUMO maps, we need to check if the map was shifted and translate the vehicle positions if so
     xy_offset = None
