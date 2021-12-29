@@ -23,7 +23,7 @@ import math
 import os
 import warnings
 from collections import defaultdict
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
 import numpy as np
 
@@ -153,7 +153,7 @@ class SMARTS:
         self._ground_bullet_id = None
         self._map_bb = None
 
-    def step(self, agent_actions, time_delta_since_last_step: float = None):
+    def step(self, agent_actions, time_delta_since_last_step: Optional[float] = None):
         """Note the time_delta_since_last_step param is in (nominal) seconds."""
         if not self._is_setup:
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
@@ -183,7 +183,7 @@ class SMARTS:
                     f"Attempted to perform actions on non-existing agent, {agent_id} "
                 )
 
-    def _step(self, agent_actions, time_delta_since_last_step: float = None):
+    def _step(self, agent_actions, time_delta_since_last_step: Optional[float] = None):
         """Steps through the simulation while applying the given agent actions.
         Returns the observations, rewards, and done signals.
         """

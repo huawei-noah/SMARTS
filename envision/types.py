@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from enum import Enum
-from typing import Dict, NamedTuple, Sequence, Tuple
+from typing import Dict, NamedTuple, Optional, Sequence, Tuple
 
 from smarts.core.events import Events
 
@@ -44,7 +44,7 @@ class TrafficActorState(NamedTuple):
     heading: float
     speed: float
     name: str = ""
-    actor_id: str = None
+    actor_id: Optional[str] = None
     events: Events = None
     waypoint_paths: Sequence = []
     driven_path: Sequence = []
