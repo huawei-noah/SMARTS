@@ -23,7 +23,7 @@ import math
 import os
 import warnings
 from collections import defaultdict
-from typing import List, Optional, Set
+from typing import Iterable, List, Optional
 
 import numpy as np
 
@@ -652,7 +652,7 @@ class SMARTS:
     def version(self) -> str:
         return VERSION
 
-    def teardown_agents_without_vehicles(self, agent_ids: Set[str]):
+    def teardown_agents_without_vehicles(self, agent_ids: Iterable[str]):
         """
         Teardown agents in the given list that have no vehicles registered as
         controlled-by or shadowed-by
