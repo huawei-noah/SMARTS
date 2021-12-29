@@ -58,7 +58,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         # envision_record_data_replay_path="./data_replay",
     )
 
-    # Wrap a opendrive-agent env with SingleAgent wrapper to make `step` and `reset`
+    # Wrap an opendrive single agent env with SingleAgent wrapper to make `step` and `reset`
     # output compliant with gym spaces.
     env = SingleAgent(env)
 
