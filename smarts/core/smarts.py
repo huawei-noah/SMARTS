@@ -23,7 +23,7 @@ import math
 import os
 import warnings
 from collections import defaultdict
-from typing import List, Optional, Sequence
+from typing import Iterable, List, Optional
 
 import numpy as np
 
@@ -81,8 +81,8 @@ class SMARTS:
         self,
         agent_interfaces,
         traffic_sim,  # SumoTrafficSimulation
-        envision: EnvisionClient = None,
-        visdom: VisdomClient = None,
+        envision: Optional[EnvisionClient] = None,
+        visdom: Optional[VisdomClient] = None,
         fixed_timestep_sec: float = 0.1,
         reset_agents_only: bool = False,
         zoo_addrs=None,
@@ -91,10 +91,10 @@ class SMARTS:
         self._log = logging.getLogger(self.__class__.__name__)
         self._sim_id = Id.new("smarts")
         self._is_setup = False
-        self._scenario: Scenario = None
+        self._scenario: Optional[Scenario] = None
         self._renderer = None
-        self._envision: EnvisionClient = envision
-        self._visdom: VisdomClient = visdom
+        self._envision: Optional[EnvisionClient] = envision
+        self._visdom: Optional[VisdomClient] = visdom
         self._traffic_sim = traffic_sim
         self._external_provider = None
 
@@ -148,7 +148,7 @@ class SMARTS:
         self._vehicle_states = []
 
         self._bubble_manager = None
-        self._trap_manager: TrapManager = None
+        self._trap_manager: Optional[TrapManager] = None
 
         self._ground_bullet_id = None
         self._map_bb = None
@@ -320,6 +320,7 @@ class SMARTS:
                 ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
                 vehicle_ids_to_teardown.extend(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
+            assert self._trap_manager
             self._trap_manager.init_traps(scenario.road_map, scenario.missions)
             self._agent_manager.init_ego_agents(self)
             if self._renderer:
@@ -399,7 +400,7 @@ class SMARTS:
         agent_id: str,
         agent_interface: AgentInterface,
         mission: Mission,
-    ) -> Vehicle:
+    ):
         self.agent_manager.add_ego_agent(agent_id, agent_interface, for_trap=False)
         vehicle = self.switch_control_to_agent(
             vehicle_id, agent_id, mission, recreate=False, is_hijacked=True
@@ -651,7 +652,7 @@ class SMARTS:
     def version(self) -> str:
         return VERSION
 
-    def teardown_agents_without_vehicles(self, agent_ids: Sequence):
+    def teardown_agents_without_vehicles(self, agent_ids: Iterable[str]):
         """
         Teardown agents in the given list that have no vehicles registered as
         controlled-by or shadowed-by
@@ -816,7 +817,7 @@ class SMARTS:
         for provider in self.providers:
             provider.reset()
 
-    def _step_providers(self, actions) -> List[VehicleState]:
+    def _step_providers(self, actions) -> ProviderState:
         accumulated_provider_state = ProviderState()
 
         def agent_controls_vehicles(agent_id):
@@ -1073,7 +1074,7 @@ class SMARTS:
             )
             self._setup_pybullet_ground_plane(self._bullet_client)
 
-    def _try_emit_envision_state(self, provider_state, obs, scores):
+    def _try_emit_envision_state(self, provider_state: ProviderState, obs, scores):
         if not self._envision:
             return
 
