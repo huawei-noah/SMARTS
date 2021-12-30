@@ -210,20 +210,24 @@ class TrajectoryTrackingController:
         steering_filter_constant = lerp(
             12, final_steering_filter_constant, normalized_speed
         )
-        heading_error_derivative_gain = 0 * lerp(
-            1.5, final_heading_error_derivative_gain, normalized_speed
-        )
-        lateral_error_derivative_gain = 0 * lerp(
-            0.2, final_lateral_error_derivative_gain, normalized_speed
-        )
+        adjust_error_gains_for_speed = False  # XXX: not using model config here
+        lateral_error_derivative_gain = 0.15
+        heading_error_derivative_gain = 0.5
+        if adjust_error_gains_for_speed:
+            # XXX: note that these values may be further adjusted below based on curvature
+            # XXX: we might want to combine the computation of these into a single fn
+            heading_error_derivative_gain = lerp(
+                1.5, final_heading_error_derivative_gain, normalized_speed
+            )
+            lateral_error_derivative_gain = lerp(
+                0.2, final_lateral_error_derivative_gain, normalized_speed
+            )
         lateral_gain = 0.61
         heading_gain = 0.01
 
         if abs(min_angles_difference_signed(trajectory[2][-1], trajectory[2][0])) > 2:
             throttle_filter_constant = 2.5
 
-        lateral_error_derivative_gain = 0.15
-        heading_error_derivative_gain = 0.5
         if (
             abs(
                 TrajectoryTrackingController.curvature_calculation(
