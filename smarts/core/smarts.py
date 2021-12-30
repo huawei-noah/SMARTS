@@ -827,7 +827,12 @@ class SMARTS:
     def _setup_providers(self, scenario) -> ProviderState:
         provider_state = ProviderState()
         for provider in self.providers:
-            provider_state.merge(provider.setup(scenario))
+            try:
+                new_provider_state = provider.setup(scenario)
+            except Exception as provider_error:
+                self._handle_provider(provider, provider_error)
+                new_provider_state = ProviderState()
+            provider_state.merge(new_provider_state)
         return provider_state
 
     def _teardown_providers(self):
