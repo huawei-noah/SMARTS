@@ -1330,7 +1330,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
     @lru_cache(maxsize=16)
     def nearest_lanes(
-        self, point: Point, radius: float = None, include_junctions=False
+        self, point: Point, radius: float = None, include_junctions=True
     ) -> List[Tuple[RoadMap.Lane, float]]:
         if radius is None:
             radius = max(10, 2 * self._default_lane_width)
@@ -1339,7 +1339,7 @@ class OpenDriveRoadNetwork(RoadMap):
         return candidate_lanes
 
     def nearest_lane(
-        self, point: Point, radius: float = None, include_junctions=False
+        self, point: Point, radius: float = None, include_junctions=True
     ) -> RoadMap.Lane:
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
         for lane, dist in nearest_lanes:
