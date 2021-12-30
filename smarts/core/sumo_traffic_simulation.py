@@ -34,7 +34,6 @@ from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.provider import (
-    EmptyProvider,
     Provider,
     ProviderRecoveryFlags,
     ProviderState,
@@ -281,20 +280,16 @@ class SumoTrafficSimulation(Provider):
         ), "SumoTrafficSimulation requires a SumoRoadNetwork"
         self._log_file = next_scenario.unique_sumo_log_file()
 
-        try:
-            if restart_sumo:
-                self._initialize_traci_conn()
-            elif self._allow_reload:
-                self._traci_conn.load(self._base_sumo_load_params())
+        if restart_sumo:
+            self._initialize_traci_conn()
+        elif self._allow_reload:
+            self._traci_conn.load(self._base_sumo_load_params())
 
-            assert self._traci_conn is not None, "No active traci conn"
+        assert self._traci_conn is not None, "No active traci conn"
 
-            self._traci_conn.simulation.subscribe(
-                [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
-            )
-        except self._traci_exceptions as e:
-            self._handle_traci_disconnect(e)
-            return ProviderState()
+        self._traci_conn.simulation.subscribe(
+            [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
+        )
 
         # XXX: SUMO caches the previous subscription results. Calling `simulationStep`
         #      effectively flushes the results. We need to use epsilon instead of zero
@@ -339,10 +334,11 @@ class SumoTrafficSimulation(Provider):
 
         assert self._is_setup
 
-        try:
-            self._remove_vehicles()
-        except self._traci_exceptions as e:
-            self._handle_traci_disconnect(e)
+        if self.connected:
+            try:
+                self._remove_vehicles()
+            except self._traci_exceptions as e:
+                self._handle_traci_disconnect(e)
 
         if self._allow_reload:
             self._cumulative_sim_seconds = 0
@@ -381,7 +377,7 @@ class SumoTrafficSimulation(Provider):
             ProviderState representing the state of the SUMO simulation
         """
         if not self.connected:
-            return
+            return ProviderState()
         return self._step(dt)
 
     def _step(self, dt):
