@@ -27,6 +27,8 @@ def generate_glb_from_sumo_network(sumo_net_file, out_glb_file, road_network=Non
     if road_network is None:
         map_spec = MapSpec(sumo_net_file)
         road_network = SumoRoadNetwork.from_spec(map_spec)
+    else:
+        assert isinstance(road_network, SumoRoadNetwork)
     road_network.to_glb(out_glb_file)
 
 

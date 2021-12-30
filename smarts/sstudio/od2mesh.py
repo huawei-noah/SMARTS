@@ -27,6 +27,8 @@ def generate_glb_from_opendrive_network(od_xodr_file, out_glb_file, road_network
     if not road_network:
         map_spec = MapSpec(od_xodr_file)
         road_network = OpenDriveRoadNetwork.from_spec(map_spec)
+    else:
+        assert isinstance(road_network, OpenDriveRoadNetwork)
     road_network.to_glb(out_glb_file)
 
 
