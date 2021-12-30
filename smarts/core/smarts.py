@@ -847,7 +847,10 @@ class SMARTS:
 
     def _reset_providers(self):
         for provider in self.providers:
-            provider.reset()
+            try:
+                provider.reset()
+            except Exception as provider_error:
+                self._handle_provider(provider, provider_error)
 
     def _handle_provider(self, provider: Provider, provider_error):
         provider_problem = bool(provider_error or not provider.connected)
@@ -859,13 +862,21 @@ class SMARTS:
         )
         recovered = False
         if recovery_flags & ProviderRecoveryFlags.ATTEMPT_RECOVERY:
-            recovered = provider.recover(self._scenario, self.elapsed_sim_time)
+            recovered = provider.recover(
+                self._scenario, self.elapsed_sim_time, provider_error
+            )
 
-        if not recovered:
-            if recovery_flags & ProviderRecoveryFlags.EPISODE_REQUIRED:
-                self._reset_required = True
-            elif recovery_flags & ProviderRecoveryFlags.EXPERIMENT_REQUIRED:
-                raise provider_error
+        if recovered:
+            return
+
+        if recovery_flags & ProviderRecoveryFlags.EPISODE_REQUIRED:
+            self._reset_required = True
+            return
+        elif recovery_flags & ProviderRecoveryFlags.EXPERIMENT_REQUIRED:
+            raise provider_error
+
+        # default to re-raise error
+        raise provider_error
 
     def _step_providers(self, actions) -> ProviderState:
         accumulated_provider_state = ProviderState()
