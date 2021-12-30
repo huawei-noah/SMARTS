@@ -123,7 +123,6 @@ class SumoTrafficSimulation(Provider):
         # /TODO
 
         self._traci_exceptions = (TraCIException, FatalTraCIError)
-        self._empty_provider = EmptyProvider()
 
     def __repr__(self):
         return f"""SumoTrafficSim(
@@ -295,7 +294,7 @@ class SumoTrafficSimulation(Provider):
             )
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
-            return self._empty_provider.setup(next_scenario)
+            return ProviderState()
 
         # XXX: SUMO caches the previous subscription results. Calling `simulationStep`
         #      effectively flushes the results. We need to use epsilon instead of zero
@@ -382,7 +381,7 @@ class SumoTrafficSimulation(Provider):
             ProviderState representing the state of the SUMO simulation
         """
         if not self.connected:
-            return self._empty_provider.step(provider_actions, dt, elapsed_sim_time)
+            return
         return self._step(dt)
 
     def _step(self, dt):
@@ -394,7 +393,7 @@ class SumoTrafficSimulation(Provider):
 
     def sync(self, provider_state: ProviderState):
         if not self.connected:
-            return self._empty_provider.sync(provider_state)
+            return
         return self._sync(provider_state)
 
     def _sync(self, provider_state: ProviderState):

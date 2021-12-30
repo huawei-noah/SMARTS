@@ -110,31 +110,3 @@ class Provider:
             bool: The connection state of the provider.
         """
         return True
-
-
-class EmptyProvider(Provider):
-    @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
-        return {}
-
-    def setup(self, scenario: Scenario) -> ProviderState:
-        return ProviderState([])
-
-    def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
-        return ProviderState([])
-
-    def sync(self, provider_state: ProviderState):
-        return
-
-    def create_vehicle(self, provider_vehicle: VehicleState):
-        return
-
-    def reset(self):
-        return
-
-    def teardown(self):
-        return
-
-    @property
-    def connected(self) -> bool:
-        return False
