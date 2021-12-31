@@ -130,34 +130,31 @@ class HiWayEnv(gym.Env):
             visdom_client = VisdomClient()
 
         is_opendrive = HiWayEnv.check_scenario_versions(scenarios)
+        traffic_sim = None
+        zoo_addrs = None
         if is_opendrive:
             # We currently don't support the Native SUMO Traffic Provider or Social Agents for OpenDRIVE maps
-            self._smarts = SMARTS(
-                agent_interfaces=agent_interfaces,
-                traffic_sim=None,
-                envision=envision_client,
-                visdom=visdom_client,
-                fixed_timestep_sec=fixed_timestep_sec,
-            )
-
+            pass
         else:
             from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-
-            self._smarts = SMARTS(
-                agent_interfaces=agent_interfaces,
-                traffic_sim=SumoTrafficSimulation(
-                    headless=sumo_headless,
-                    time_resolution=fixed_timestep_sec,
-                    num_external_sumo_clients=num_external_sumo_clients,
-                    sumo_port=sumo_port,
-                    auto_start=sumo_auto_start,
-                    endless_traffic=endless_traffic,
-                ),
-                envision=envision_client,
-                visdom=visdom_client,
-                fixed_timestep_sec=fixed_timestep_sec,
-                zoo_addrs=zoo_addrs,
+            traffic_sim = SumoTrafficSimulation(
+                headless=sumo_headless,
+                time_resolution=fixed_timestep_sec,
+                num_external_sumo_clients=num_external_sumo_clients,
+                sumo_port=sumo_port,
+                auto_start=sumo_auto_start,
+                endless_traffic=endless_traffic,
             )
+            zoo_addrs = zoo_addrs
+
+        self._smarts = SMARTS(
+            agent_interfaces=agent_interfaces,
+            traffic_sim=traffic_sim,
+            envision=envision_client,
+            visdom=visdom_client,
+            fixed_timestep_sec=fixed_timestep_sec,
+            zoo_addrs=zoo_addrs,
+        )
 
     @staticmethod
     def check_scenario_versions(scenarios):
