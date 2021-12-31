@@ -166,8 +166,8 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert r_0_R.lane_at_index(-1) is None
     assert r_0_R.lane_at_index(1).road.road_id == "57_0_R"
     assert len(r_0_R.shape().exterior.coords) == 5
-    assert set([r.road_id for r in r_0_R.incoming_roads]) == set()
-    assert set([r.road_id for r in r_0_R.outgoing_roads]) == {
+    assert set(r.road_id for r in r_0_R.incoming_roads) == set()
+    assert set(r.road_id for r in r_0_R.outgoing_roads) == {
         "69_0_R",
         "68_0_R",
         "67_0_R",
@@ -180,12 +180,12 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert len(r2_0_R.lanes) == 2
     assert r2_0_R.lane_at_index(0).road.road_id == "53_0_R"
     assert len(r2_0_R.shape().exterior.coords) == 5
-    assert set([r.road_id for r in r2_0_R.incoming_roads]) == {
+    assert set(r.road_id for r in r2_0_R.incoming_roads) == {
         "61_0_R",
         "65_0_R",
         "69_0_R",
     }
-    assert set([r.road_id for r in r2_0_R.outgoing_roads]) == set()
+    assert set(r.road_id for r in r2_0_R.outgoing_roads) == set()
 
     r3_0_R = road_map.road_by_id("66_0_R")
     assert r3_0_R
@@ -194,8 +194,8 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert len(r3_0_R.lanes) == 1
     assert r3_0_R.lane_at_index(-1) is None
     assert r3_0_R.lane_at_index(0).road.road_id == "66_0_R"
-    assert set([r.road_id for r in r3_0_R.incoming_roads]) == {"55_0_R"}
-    assert set([r.road_id for r in r3_0_R.outgoing_roads]) == {"56_0_R"}
+    assert set(r.road_id for r in r3_0_R.incoming_roads) == {"55_0_R"}
+    assert set(r.road_id for r in r3_0_R.outgoing_roads) == {"56_0_R"}
 
     r4_0_R = road_map.road_by_id("59_0_R")
     assert r4_0_R
@@ -203,8 +203,8 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert r4_0_R.length == 28.8
     assert len(r4_0_R.lanes) == 2
     assert r4_0_R.lane_at_index(0).road.road_id == "59_0_R"
-    assert set([r.road_id for r in r4_0_R.incoming_roads]) == {"52_0_R"}
-    assert set([r.road_id for r in r4_0_R.outgoing_roads]) == {"54_0_R"}
+    assert set(r.road_id for r in r4_0_R.incoming_roads) == {"52_0_R"}
+    assert set(r.road_id for r in r4_0_R.outgoing_roads) == {"54_0_R"}
 
     # Lane tests
     l1 = road_map.lane_by_id("52_0_R_-1")
@@ -217,12 +217,12 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert l1.is_drivable
     assert len(l1.shape().exterior.coords) == 5
     assert l1.speed_limit == 16.67
-    assert [l.lane_id for l in l1.incoming_lanes] == []
-    assert [l.lane_id for l in l1.outgoing_lanes] == [
+    assert set(l.lane_id for l in l1.incoming_lanes) == set()
+    assert set(l.lane_id for l in l1.outgoing_lanes) == {
         "58_0_R_-1",
         "59_0_R_-1",
         "60_0_R_-1",
-    ]
+    }
 
     right_lane, direction = l1.lane_to_right
     assert right_lane
@@ -467,47 +467,47 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
     assert r_1_0_R
     assert len(r_1_0_R.lanes) == 2
     assert not r_1_0_R.is_junction
-    assert set([r.road_id for r in r_1_0_R.incoming_roads]) == set()
-    assert set([r.road_id for r in r_1_0_R.outgoing_roads]) == {"1_1_R"}
+    assert set(r.road_id for r in r_1_0_R.incoming_roads) == set()
+    assert set(r.road_id for r in r_1_0_R.outgoing_roads) == {"1_1_R"}
 
     r_1_0_L = road_map.road_by_id("1_0_L")
     assert r_1_0_L
     assert len(r_1_0_L.lanes) == 3
     assert not r_1_0_L.is_junction
-    assert set([r.road_id for r in r_1_0_L.incoming_roads]) == {"1_1_L"}
-    assert set([r.road_id for r in r_1_0_L.outgoing_roads]) == set()
+    assert set(r.road_id for r in r_1_0_L.incoming_roads) == {"1_1_L"}
+    assert set(r.road_id for r in r_1_0_L.outgoing_roads) == set()
 
     r_1_1_R = road_map.road_by_id("1_1_R")
     assert r_1_1_R
     assert len(r_1_1_R.lanes) == 3
     assert not r_1_1_R.is_junction
-    assert set([r.road_id for r in r_1_1_R.incoming_roads]) == {"1_0_R"}
-    assert set([r.road_id for r in r_1_1_R.outgoing_roads]) == {"1_2_R"}
-    assert set([s.surface_id for s in r_1_1_R.entry_surfaces]) == {"1_0_R"}
-    assert set([s.surface_id for s in r_1_1_R.exit_surfaces]) == {"1_2_R"}
+    assert set(r.road_id for r in r_1_1_R.incoming_roads) == {"1_0_R"}
+    assert set(r.road_id for r in r_1_1_R.outgoing_roads) == {"1_2_R"}
+    assert set(s.surface_id for s in r_1_1_R.entry_surfaces) == {"1_0_R"}
+    assert set(s.surface_id for s in r_1_1_R.exit_surfaces) == {"1_2_R"}
 
     r_1_1_L = road_map.road_by_id("1_1_L")
     assert r_1_1_L
     assert len(r_1_1_L.lanes) == 3
     assert not r_1_1_L.is_junction
-    assert set([r.road_id for r in r_1_1_L.incoming_roads]) == {"1_2_L"}
-    assert set([r.road_id for r in r_1_1_L.outgoing_roads]) == {"1_0_L"}
-    assert set([s.surface_id for s in r_1_1_L.entry_surfaces]) == {"1_2_L"}
-    assert set([s.surface_id for s in r_1_1_L.exit_surfaces]) == {"1_0_L"}
+    assert set(r.road_id for r in r_1_1_L.incoming_roads) == {"1_2_L"}
+    assert set(r.road_id for r in r_1_1_L.outgoing_roads) == {"1_0_L"}
+    assert set(s.surface_id for s in r_1_1_L.entry_surfaces) == {"1_2_L"}
+    assert set(s.surface_id for s in r_1_1_L.exit_surfaces) == {"1_0_L"}
 
     r_1_2_R = road_map.road_by_id("1_2_R")
     assert r_1_2_R
     assert len(r_1_2_R.lanes) == 3
     assert not r_1_2_R.is_junction
-    assert set([r.road_id for r in r_1_2_R.incoming_roads]) == {"1_1_R"}
-    assert set([r.road_id for r in r_1_2_R.outgoing_roads]) == set()
+    assert set(r.road_id for r in r_1_2_R.incoming_roads) == {"1_1_R"}
+    assert set(r.road_id for r in r_1_2_R.outgoing_roads) == set()
 
     r_1_2_L = road_map.road_by_id("1_2_L")
     assert r_1_2_L
     assert len(r_1_2_L.lanes) == 2
     assert not r_1_2_L.is_junction
-    assert set([r.road_id for r in r_1_2_L.incoming_roads]) == set()
-    assert set([r.road_id for r in r_1_2_L.outgoing_roads]) == {"1_1_L"}
+    assert set(r.road_id for r in r_1_2_L.incoming_roads) == set()
+    assert set(r.road_id for r in r_1_2_L.outgoing_roads) == {"1_1_L"}
 
     # Lane tests
     l0 = road_map.lane_by_id("1_1_L_1")
@@ -516,10 +516,10 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
     assert l0.index == 2
     assert l0.is_drivable
 
-    assert set([lane.lane_id for lane in l0.incoming_lanes]) == set()
-    assert set([lane.lane_id for lane in l0.outgoing_lanes]) == {"1_0_L_1"}
-    assert set([lane.lane_id for lane in l0.entry_surfaces]) == set()
-    assert set([lane.lane_id for lane in l0.exit_surfaces]) == {"1_0_L_1"}
+    assert set(lane.lane_id for lane in l0.incoming_lanes) == set()
+    assert set(lane.lane_id for lane in l0.outgoing_lanes) == {"1_0_L_1"}
+    assert set(lane.lane_id for lane in l0.entry_surfaces) == set()
+    assert set(lane.lane_id for lane in l0.exit_surfaces) == {"1_0_L_1"}
 
     right_lane, direction = l0.lane_to_right
     assert right_lane
@@ -538,7 +538,7 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
     assert direction
     assert further_right_lane.lane_id == "1_1_L_3"
     assert further_right_lane.is_drivable
-    assert set([lane.lane_id for lane in further_right_lane.outgoing_lanes]) == {
+    assert set(lane.lane_id for lane in further_right_lane.outgoing_lanes) == {
         "1_0_L_3"
     }
     assert further_right_lane.index == 0

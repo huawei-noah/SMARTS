@@ -324,15 +324,15 @@ def polygon_offset_with_minimum_distance_to_point(point, polygon):
     min_dist = 1e400
     min_offset = -1
     for i in range(len(s) - 1):
-        pos = line_offset_with_minimum_distance_to_point(p, s[i], s[i + 1])
+        p_offset = line_offset_with_minimum_distance_to_point(p, s[i], s[i + 1])
         dist = (
             min_dist
-            if pos == -1
-            else euclidean_distance(p, position_at_offset(s[i], s[i + 1], pos))
+            if p_offset == -1
+            else euclidean_distance(p, position_at_offset(s[i], s[i + 1], p_offset))
         )
         if dist < min_dist:
             min_dist = dist
-            min_offset = pos + seen
+            min_offset = p_offset + seen
         seen += euclidean_distance(s[i], s[i + 1])
     return min_offset
 
@@ -358,7 +358,7 @@ def distance_point_to_polygon(point, polygon, perpendicular=False):
     p = point
     s = polygon
     min_dist = None
-    for i in range(0, len(s) - 1):
+    for i in range(len(s) - 1):
         dist = distance_point_to_line(p, s[i], s[i + 1], perpendicular)
         if dist == -1 and perpendicular and i != 0:
             # distance to inner corner
