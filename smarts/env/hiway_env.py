@@ -23,13 +23,13 @@ import warnings
 from typing import Dict, Sequence
 
 import gym
+import os
 
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
 from smarts.core.agent import AgentSpec
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.visdom_client import VisdomClient
 
@@ -129,21 +129,60 @@ class HiWayEnv(gym.Env):
         if visdom:
             visdom_client = VisdomClient()
 
-        self._smarts = SMARTS(
-            agent_interfaces=agent_interfaces,
-            traffic_sim=SumoTrafficSimulation(
-                headless=sumo_headless,
-                time_resolution=fixed_timestep_sec,
-                num_external_sumo_clients=num_external_sumo_clients,
-                sumo_port=sumo_port,
-                auto_start=sumo_auto_start,
-                endless_traffic=endless_traffic,
-            ),
-            envision=envision_client,
-            visdom=visdom_client,
-            fixed_timestep_sec=fixed_timestep_sec,
-            zoo_addrs=zoo_addrs,
-        )
+        is_opendrive = HiWayEnv.check_scenario_versions(scenarios)
+        if is_opendrive:
+            self._smarts = SMARTS(
+                agent_interfaces=agent_interfaces,
+                traffic_sim=None,
+                envision=envision_client,
+                visdom=visdom_client,
+                fixed_timestep_sec=fixed_timestep_sec,
+            )
+
+        else:
+            from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
+            self._smarts = SMARTS(
+                agent_interfaces=agent_interfaces,
+                traffic_sim=SumoTrafficSimulation(
+                    headless=sumo_headless,
+                    time_resolution=fixed_timestep_sec,
+                    num_external_sumo_clients=num_external_sumo_clients,
+                    sumo_port=sumo_port,
+                    auto_start=sumo_auto_start,
+                    endless_traffic=endless_traffic,
+                ),
+                envision=envision_client,
+                visdom=visdom_client,
+                fixed_timestep_sec=fixed_timestep_sec,
+                zoo_addrs=zoo_addrs,
+            )
+
+    @staticmethod
+    def check_scenario_versions(scenarios):
+        num_sumo = 0
+        num_opendrive = 0
+        scenario_list = Scenario.get_scenario_list(scenarios)
+        for scenario_root in scenario_list:
+            if os.path.exists(os.path.join(scenario_root, "map.net.xml")):
+                num_sumo += 1
+            elif os.path.exists(os.path.join(scenario_root, "map.net.xml")):
+                num_opendrive += 1
+            else:
+                raise FileNotFoundError(
+                    f"Unable to find map in map_source={scenario_root}."
+                )
+
+        try:
+            assert (num_sumo == 0 and num_opendrive == len(scenarios)) or (
+                num_sumo == len(scenarios) and num_opendrive == 0
+            )
+        except AssertionError:
+            raise AssertionError(
+                "All scenarios passed as a parameters for the gym environment need to be of the same version (OpenDRIVE or SUMO)."
+            )
+
+        return num_opendrive == len(scenarios)
 
     @property
     def agent_specs(self):
@@ -173,7 +212,7 @@ class HiWayEnv(gym.Env):
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 
-    def seed(self, seed: int) -> int:
+    def seed(self, seed=None) -> int:
         smarts_seed(seed)
         return seed
 
