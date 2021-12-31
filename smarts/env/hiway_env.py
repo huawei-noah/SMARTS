@@ -131,9 +131,11 @@ class HiWayEnv(gym.Env):
 
         is_opendrive = HiWayEnv.check_scenario_versions(scenarios)
         traffic_sim = None
-        zoo_addrs = None
         if is_opendrive:
             # We currently don't support the Native SUMO Traffic Provider or Social Agents for OpenDRIVE maps
+            if zoo_addrs:
+                warnings.warn("`zoo_addrs` should not be used with OpenDRIVE scenarios")
+                zoo_addrs = None
             pass
         else:
             from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -210,7 +212,7 @@ class HiWayEnv(gym.Env):
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 
-    def seed(self, seed=None) -> int:
+    def seed(self, seed: int) -> int:
         smarts_seed(seed)
         return seed
 
