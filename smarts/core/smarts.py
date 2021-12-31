@@ -97,6 +97,7 @@ class SMARTS:
         self._visdom: Optional[VisdomClient] = visdom
         self._traffic_sim = traffic_sim
         self._external_provider = None
+        self._resetting = False
         self._reset_required = False
 
         assert fixed_timestep_sec is None or fixed_timestep_sec > 0
@@ -326,7 +327,26 @@ class SMARTS:
         self._teardown_vehicles(vehicles_to_teardown)
 
     def reset(self, scenario: Scenario):
-        if scenario == self._scenario and self._reset_agents_only:
+        tries = 2
+        first_exception = None
+        for _ in range(tries):
+            try:
+                self._resetting = True
+                return self._reset(scenario)
+            except Exception as e:
+                if not first_exception:
+                    first_exception = e
+            finally:
+                self._resetting = False
+        self._log.error(f"Failed to successfully reset after {tries} times.")
+        raise first_exception
+
+    def _reset(self, scenario: Scenario):
+        if (
+            scenario == self._scenario
+            and self._reset_agents_only
+            and not self._reset_required
+        ):
             vehicle_ids_to_teardown = []
             agent_ids = self._agent_manager.teardown_ego_agents()
             for agent_id in agent_ids:
@@ -876,6 +896,11 @@ class SMARTS:
 
         if recovery_flags & ProviderRecoveryFlags.EPISODE_REQUIRED:
             self._reset_required = True
+            if self._resetting:
+                self._log.error(
+                    f"`Provider {provider.__class__.__name__} has crashed during reset`"
+                )
+                raise provider_error
             return
         elif recovery_flags & ProviderRecoveryFlags.EXPERIMENT_REQUIRED:
             raise provider_error
