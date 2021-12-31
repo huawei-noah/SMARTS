@@ -135,6 +135,8 @@ class OpenDriveEnv(gym.Env):
                     The timestep of the simulation.
                 scenario_map:
                     The name of the current scenario.
+                scenario_routes:
+                    The routes in the map.
                 mission_hash:
                     The hash identifier for the current scenario.
         """
@@ -143,6 +145,7 @@ class OpenDriveEnv(gym.Env):
         return {
             "fixed_timestep_sec": self._smarts.fixed_timestep_sec,
             "scenario_map": scenario.name,
+            "scenario_routes": scenario.route or "",
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 
