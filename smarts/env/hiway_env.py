@@ -166,7 +166,7 @@ class HiWayEnv(gym.Env):
         for scenario_root in scenario_list:
             if os.path.exists(os.path.join(scenario_root, "map.net.xml")):
                 num_sumo += 1
-            elif os.path.exists(os.path.join(scenario_root, "map.net.xml")):
+            elif os.path.exists(os.path.join(scenario_root, "map.xodr")):
                 num_opendrive += 1
             else:
                 raise FileNotFoundError(
