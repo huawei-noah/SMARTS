@@ -42,7 +42,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
     - Added `MapSpec` to the SStudio DSL types and introduced a simple builder pattern for creating `RoadMap` objects.
 - Changed the type hint for `EgoVehicleObservation`: it returns a numpy array (and always has).
 - Raised a warning message for building scenarios without `map.net.xml` file. See PR #1161.
-- Updated `smarts/env/hiway_env.py` to  support OpenDRIVE so that SMARTS object is instantiated without the SUMO traffic provider and social agents. See PR #1215.
+- Updated `smarts/env/hiway_env.py` to support `OpenDRIVE` maps so that `SMARTs` object is instantiated without the `SUMO` traffic provider and social agents. See PR #1215.
 ### Fixed
 - Fix lane vector for the unique cases of lane offset >= lane's length. See PR #1173.
 - Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992.
