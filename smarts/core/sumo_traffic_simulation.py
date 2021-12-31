@@ -362,10 +362,12 @@ class SumoTrafficSimulation(Provider):
         # Unify interfaces with other providers
         pass
 
-    def recover(self, scenario, elapsed_sim_time: float, error: Exception) -> bool:
+    def recover(
+        self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
+    ) -> bool:
         if isinstance(error, (TraCIException, FatalTraCIError)):
             self._handle_traci_disconnect(error)
-        elif isinstance(error, BaseException):
+        elif isinstance(error, Exception):
             raise error
         return False
 
