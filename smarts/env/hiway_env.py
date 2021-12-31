@@ -131,6 +131,7 @@ class HiWayEnv(gym.Env):
 
         is_opendrive = HiWayEnv.check_scenario_versions(scenarios)
         if is_opendrive:
+            # We currently don't support the Native SUMO Traffic Provider or Social Agents for OpenDRIVE maps
             self._smarts = SMARTS(
                 agent_interfaces=agent_interfaces,
                 traffic_sim=None,

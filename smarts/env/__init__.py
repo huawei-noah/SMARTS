@@ -23,8 +23,3 @@ register(
     id="hiway-v0",
     entry_point="smarts.env.hiway_env:HiWayEnv",
 )
-
-register(
-    id="open_drive_set-v0",
-    entry_point="smarts.env.opendrive_env:OpenDriveEnv",
-)
