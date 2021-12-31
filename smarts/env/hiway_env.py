@@ -139,6 +139,7 @@ class HiWayEnv(gym.Env):
             pass
         else:
             from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
             traffic_sim = SumoTrafficSimulation(
                 headless=sumo_headless,
                 time_resolution=fixed_timestep_sec,
