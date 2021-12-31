@@ -212,7 +212,7 @@ class HiWayEnv(gym.Env):
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 
-    def seed(self, seed: int) -> int:
+    def seed(self, seed: int = None) -> int:
         smarts_seed(seed)
         return seed
 
