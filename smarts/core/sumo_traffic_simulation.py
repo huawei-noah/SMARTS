@@ -23,7 +23,7 @@ import os
 import random
 import subprocess
 import time
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
