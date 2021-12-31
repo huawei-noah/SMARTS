@@ -508,6 +508,7 @@ class AgentManager:
         for agent_id in ids_:
             self._agent_interfaces.pop(agent_id, None)
 
+        self._pending_agent_ids = self._pending_agent_ids - ids_
         return ids_
 
     def reset_agents(self, observations):
