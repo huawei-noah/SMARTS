@@ -92,7 +92,8 @@ class Provider:
     def recover(
         self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
     ) -> bool:
-        """Attempt to reconnect the provider.
+        """Attempt to reconnect the provider if an error or disconnection occured.
+        Implementations may choose to e-raise the passed in exception.
         Args:
             scenario (Scenario): The scenario of the current episode.
             elapsed_sim_time (float): The current elapsed simulation time.
@@ -100,6 +101,8 @@ class Provider:
         Returns:
             bool: The success/failure of the attempt to reconnect.
         """
+        if error:
+            raise error
         return False
 
     @property
