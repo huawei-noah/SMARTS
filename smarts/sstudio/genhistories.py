@@ -26,7 +26,7 @@ import os
 import sqlite3
 import struct
 import sys
-from typing import Dict, Generator, Union
+from typing import Any, Dict, Generator, Iterable, Optional, Tuple, Union
 
 import ijson
 import numpy as np
@@ -47,7 +47,7 @@ DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
 
 
 class _TrajectoryDataset:
-    def __init__(self, dataset_spec, output):
+    def __init__(self, dataset_spec: Dict[str, Any], output: str):
         self._log = logging.getLogger(self.__class__.__name__)
         self.check_dataset_spec(dataset_spec)
         self._output = output
@@ -61,17 +61,17 @@ class _TrajectoryDataset:
         self._swap_xy = dataset_spec.get("swap_xy", False)
 
     @property
-    def scale(self):
+    def scale(self) -> float:
         return self._scale
 
     @property
-    def rows(self):
+    def rows(self) -> Iterable:
         raise NotImplementedError
 
-    def column_val_in_row(self, row, col_name):
+    def column_val_in_row(self, row, col_name: str) -> Any:
         raise NotImplementedError
 
-    def check_dataset_spec(self, dataset_spec):
+    def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
         errmsg = None
         if "input_path" not in dataset_spec:
             errmsg = "'input_path' field is required in dataset yaml."
@@ -85,7 +85,7 @@ class _TrajectoryDataset:
             raise ValueError(errmsg)
         self._dataset_spec = dataset_spec
 
-    def _write_dict(self, curdict, insert_sql, cursor, curkey=""):
+    def _write_dict(self, curdict: Dict, insert_sql: str, cursor, curkey: str = ""):
         for key, value in curdict.items():
             newkey = f"{curkey}.{key}" if curkey else key
             if isinstance(value, dict):
@@ -127,7 +127,7 @@ class _TrajectoryDataset:
         dbconxn.commit()
         ccur.close()
 
-    def create_output(self, time_precision=3):
+    def create_output(self, time_precision: int = 3):
         """ time_precision is limit for digits after decimal for sim_time (3 is milisecond precision) """
         dbconxn = sqlite3.connect(self._output)
 
@@ -215,7 +215,7 @@ class _TrajectoryDataset:
 
 
 class Interaction(_TrajectoryDataset):
-    def __init__(self, dataset_spec, output):
+    def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
         assert not self._flip_y
         self._next_row = None
@@ -230,7 +230,7 @@ class Interaction(_TrajectoryDataset):
         }
 
     @property
-    def rows(self):
+    def rows(self) -> Generator[Dict, None, None]:
         with open(self._path, newline="") as csvfile:
             reader = csv.DictReader(csvfile)
             last_row = None
@@ -239,7 +239,8 @@ class Interaction(_TrajectoryDataset):
                     yield last_row
                 last_row = self._next_row
             self._next_row = None
-            yield last_row
+            if last_row:
+                yield last_row
 
     def _lookup_agent_type(self, agent_type: str) -> int:
         # Try to match the NGSIM types...
@@ -254,7 +255,7 @@ class Interaction(_TrajectoryDataset):
         self._log.warning(f"unknown agent_type:  {agent_type}.")
         return 0
 
-    def column_val_in_row(self, row, col_name: str):
+    def column_val_in_row(self, row, col_name: str) -> Any:
         row_name = self._col_map.get(col_name)
         if row_name:
             return row[row_name]
@@ -287,11 +288,11 @@ class Interaction(_TrajectoryDataset):
 
 
 class NGSIM(_TrajectoryDataset):
-    def __init__(self, dataset_spec, output):
+    def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
         self._prev_heading = -math.pi / 2
 
-    def _cal_heading(self, window):
+    def _cal_heading(self, window) -> float:
         c = window[1, :2]
         n = window[2, :2]
         if any(np.isnan(c)) or any(np.isnan(n)):
@@ -304,7 +305,7 @@ class NGSIM(_TrajectoryDataset):
         self._prev_heading = (r - math.pi / 2) % (2 * math.pi)
         return self._prev_heading
 
-    def _cal_speed(self, window):
+    def _cal_speed(self, window) -> Optional[float]:
         c = window[1, :2]
         n = window[2, :2]
         badc = any(np.isnan(c))
@@ -414,11 +415,11 @@ class NGSIM(_TrajectoryDataset):
         return df
 
     @property
-    def rows(self):
+    def rows(self) -> Generator[Dict, None, None]:
         for t in self._transform_all_data().itertuples():
             yield t
 
-    def column_val_in_row(self, row, col_name):
+    def column_val_in_row(self, row, col_name: str) -> Any:
         if col_name == "speed":
             return row.speed_discrete if row.speed_discrete else row.speed
         return getattr(row, col_name, None)
@@ -430,7 +431,7 @@ class OldJSON(_TrajectoryDataset):
     history files to the new .shf format."""
 
     @property
-    def rows(self):
+    def rows(self) -> Generator[Tuple, None, None]:
         with open(self._dataset_spec["input_path"], "rb") as inf:
             for t, states in ijson.kvitems(inf, "", use_float=True):
                 for state in states.values():
@@ -451,7 +452,7 @@ class OldJSON(_TrajectoryDataset):
         self._log.warning(f"unknown agent_type:  {agent_type}.")
         return 0
 
-    def column_val_in_row(self, row, col_name):
+    def column_val_in_row(self, row: Tuple, col_name: str) -> Any:
         assert len(row) == 2
         if col_name == "sim_time":
             return float(row[0]) * 1000
@@ -476,7 +477,7 @@ class OldJSON(_TrajectoryDataset):
 
 
 class Waymo(_TrajectoryDataset):
-    def __init__(self, dataset_spec: Dict, output: str):
+    def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
 
     @staticmethod
@@ -498,10 +499,10 @@ class Waymo(_TrajectoryDataset):
 
     @property
     def rows(self) -> Generator[Dict, None, None]:
-        def lerp(a, b, t):
+        def lerp(a: float, b: float, t: float) -> float:
             return t * (b - a) + a
 
-        def constrain_angle(angle):
+        def constrain_angle(angle: float) -> float:
             """Constrain to [-pi, pi]"""
             angle = angle % (2 * math.pi)
             if angle > math.pi:
@@ -524,7 +525,7 @@ class Waymo(_TrajectoryDataset):
                 scenario = parsed_scenario
                 break
 
-        if scenario == None:
+        if not scenario:
             errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
             self._log.error(errmsg)
             raise ValueError(errmsg)
@@ -645,11 +646,11 @@ class Waymo(_TrajectoryDataset):
         else:
             return 0  # other
 
-    def column_val_in_row(self, row: Dict, col_name: str):
+    def column_val_in_row(self, row, col_name: str) -> Any:
         return row[col_name]
 
 
-def _check_args(args):
+def _check_args(args) -> bool:
     if not args.force and os.path.exists(args.output):
         print("output file already exists\n")
         return False
