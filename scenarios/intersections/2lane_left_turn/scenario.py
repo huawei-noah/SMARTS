@@ -67,10 +67,10 @@ for name, routes in {
         flows=[
             Flow(
                 route=Route(
-                    begin=(f"edge-{r[0]}", 0, 0),
+                    begin=(f"edge-{r[0]}", 0, "random"),
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
-                rate=30,
+                rate=60 * 15,
                 actors={impatient_car: 0.5, patient_car: 0.5},
             )
             for r in routes

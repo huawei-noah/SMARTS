@@ -29,6 +29,14 @@ from smarts.env.hiway_env import HiWayEnv
 class IntersectionEnv(HiWayEnv):
     """An intersection environment where the agent needs to make an unprotected
     left turn in the presence of traffic.
+
+    Episode termination:
+        If any of the DoneCriteria is met or if the max steps per episode is
+        reached.
+
+    Solved requirements:
+        Considered solved when the average return is greater than or equal to
+        200.0 over 100 consecutive trials.
     """
 
     def __init__(
