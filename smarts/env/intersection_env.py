@@ -18,9 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import os
 import pathlib
-import subprocess
-from typing import Dict
+from typing import Dict, Optional
 
 from smarts.core.agent import AgentSpec
 from smarts.env.hiway_env import HiWayEnv
@@ -34,35 +34,39 @@ class IntersectionEnv(HiWayEnv):
     def __init__(
         self,
         agent_specs: Dict[str, AgentSpec],
-        sim_name=None,
-        headless=False,
-        visdom=False,
-        seed=42,
-        envision_record_data_replay_path=None,
+        sim_name: Optional[str] = None,
+        headless: bool = False,
+        visdom: bool = False,
+        seed: int = 42,
+        envision_record_data_replay_path: Optional[str] = None,
     ):
         """
         Args:
-            agent_specs (Dict[str, AgentSpec]): Specification of the agents 
+            agent_specs (Dict[str, AgentSpec]): Specification of the agents
                 that will run in the environment.
-            sim_name ([str], optional): Simulaion name. Defaults to None.
-            headless (bool, optional): If True, disables visualization in 
+            sim_name (Optional[str], optional): Simulation name. Defaults to
+                None.
+            headless (bool, optional): If True, disables visualization in
                 Envision. Defaults to False.
             visdom (bool, optional): If True, enables visualization of observed
                 RGB images in Visdom. Defaults to False.
             seed (int, optional): Random number generator seed. Defaults to 42.
-            envision_record_data_replay_path ([str], optional): Envision's data
-                replay output directory. Defaults to None.
+            envision_record_data_replay_path (Optional[str], optional):
+                Envision's data replay output directory. Defaults to None.
         """
 
-        scenario = str(pathlib.Path(__file__).absolute().parents[2] / "scenarios" / "intersections" / "2lane_left_turn")
-        subprocess.run(
-                args=["scl", "scenario", "build", "--clean", scenario],
-                capture_output=True
-            )
+        scenario = str(
+            pathlib.Path(__file__).absolute().parents[2]
+            / "scenarios"
+            / "intersections"
+            / "2lane_left_turn"
+        )
+        build_scenario = f"scl scenario build {scenario}"
+        os.system(build_scenario)
 
         super(IntersectionEnv, self).__init__(
-            scenarios = scenario,
-            agent_specs= agent_specs,
+            scenarios=[scenario],
+            agent_specs=agent_specs,
             sim_name=sim_name,
             headless=headless,
             visdom=visdom,

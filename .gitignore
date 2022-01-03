@@ -140,3 +140,6 @@ collected_observations/
 
 # vim swap files
 *.swp
+
+# Static type check
+.pytype
