@@ -178,10 +178,10 @@ class _TrajectoryDataset:
                     float(self.column_val_in_row(row, "sim_time")) / 1000,
                     time_precision,
                 ),
-                float(self.column_val_in_row(row, "position_x") + x_offset)
-                * self.scale,
-                float(self.column_val_in_row(row, "position_y") + y_offset)
-                * self.scale,
+                float(self.column_val_in_row(row, "position_x"))
+                + x_offset * self.scale,
+                float(self.column_val_in_row(row, "position_y"))
+                + y_offset * self.scale,
                 float(self.column_val_in_row(row, "heading_rad")),
                 float(self.column_val_in_row(row, "speed")) * self.scale,
                 self.column_val_in_row(row, "lane_id"),
@@ -218,6 +218,8 @@ class Interaction(_TrajectoryDataset):
     def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
         assert not self._flip_y
+        self._max_angular_velocity = dataset_spec.get("max_angular_velocity", None)
+        self._prev_heading = -math.pi / 2
         self._next_row = None
         # See: https://interaction-dataset.com/details-and-format
         # position and length/width are in meters.
@@ -280,9 +282,22 @@ class Interaction(_TrajectoryDataset):
                 dm = np.linalg.norm((dx, dy))
                 if dm > 0.0:
                     r = math.atan2(dy / dm, dx / dm)
-                    return (r - math.pi / 2) % (2 * math.pi)
+                    new_heading = (r - math.pi / 2) % (2 * math.pi)
+                    if self._max_angular_velocity:
+                        # XXX: could try to divide by sim_time delta here instead of assuming .1s
+                        angular_velocity = (new_heading - self._prev_heading) / 0.1
+                        if abs(angular_velocity) > self._max_angular_velocity:
+                            new_heading = (
+                                self._prev_heading
+                                + np.sign(angular_velocity)
+                                * self._max_angular_velocity
+                                * 0.1
+                            )
+                    self._prev_heading = new_heading
+                    return new_heading
             # Note: pedestrian track files won't have this
-            return float(row.get("psi_rad", 0.0)) - math.pi / 2
+            self._prev_heading = float(row.get("psi_rad", 0.0)) - math.pi / 2
+            return self._prev_heading
         # XXX: should probably check for and handle x_offset_px here too like in NGSIM
         return None
 
@@ -291,6 +306,7 @@ class NGSIM(_TrajectoryDataset):
     def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
         self._prev_heading = -math.pi / 2
+        self._max_angular_velocity = dataset_spec.get("max_angular_velocity", None)
 
     def _cal_heading(self, window) -> float:
         c = window[1, :2]
@@ -302,7 +318,16 @@ class NGSIM(_TrajectoryDataset):
             return self._prev_heading
         vhat = (n - c) / s
         r = math.atan2(vhat[1], vhat[0])
-        self._prev_heading = (r - math.pi / 2) % (2 * math.pi)
+        new_heading = (r - math.pi / 2) % (2 * math.pi)
+        if self._max_angular_velocity:
+            # XXX: could try to divide by sim_time delta here instead of assuming .1s
+            angular_velocity = (new_heading - self._prev_heading) / 0.1
+            if abs(angular_velocity) > self._max_angular_velocity:
+                new_heading = (
+                    self._prev_heading
+                    + np.sign(angular_velocity) * self._max_angular_velocity * 0.1
+                )
+        self._prev_heading = new_heading
         return self._prev_heading
 
     def _cal_speed(self, window) -> Optional[float]:
