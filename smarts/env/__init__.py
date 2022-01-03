@@ -23,3 +23,8 @@ register(
     id="hiway-v0",
     entry_point="smarts.env.hiway_env:HiWayEnv",
 )
+
+register(
+    id="intersection-v0",
+    entry_point="smarts.env.intersection_env:IntersectionEnv",
+)
