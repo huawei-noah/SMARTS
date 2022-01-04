@@ -255,7 +255,9 @@ def euclidean_distance(p1: Tuple[float], p2: Tuple[float]) -> float:
     return math.sqrt(dx * dx + dy * dy)
 
 
-def position_at_offset(p1: Tuple[float], p2: Tuple[float], offset: float) -> Optional[Tuple[float]]:
+def position_at_offset(
+    p1: Tuple[float], p2: Tuple[float], offset: float
+) -> Optional[Tuple[float]]:
     if is_close(offset, 0.0):  # for pathological cases with dist == 0 and offset == 0
         return p1
 

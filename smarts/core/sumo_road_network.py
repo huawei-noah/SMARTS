@@ -1180,19 +1180,19 @@ class SumoRoadNetwork(RoadMap):
         # TODO: probably need to add vehicle_id to the key somehow (or just make it bigger)
         def _match(self, lookahead, point, filter_road_ids) -> bool:
             return (
-                    lookahead <= self.lookahead
-                    and point[0] == self.point[0]
-                    and point[1] == self.point[1]
-                    and filter_road_ids == self.filter_road_ids
+                lookahead <= self.lookahead
+                and point[0] == self.point[0]
+                and point[1] == self.point[1]
+                and filter_road_ids == self.filter_road_ids
             )
 
         def update(
-                self,
-                lookahead: int,
-                point: Tuple[float, float, float],
-                filter_road_ids: tuple,
-                llp,
-                paths: List[List[Waypoint]],
+            self,
+            lookahead: int,
+            point: Tuple[float, float, float],
+            filter_road_ids: tuple,
+            llp,
+            paths: List[List[Waypoint]],
         ):
             if not self._match(lookahead, point, filter_road_ids):
                 self.lookahead = lookahead
@@ -1202,11 +1202,11 @@ class SumoRoadNetwork(RoadMap):
             self._starts[llp.lp.lane.index] = paths
 
         def query(
-                self,
-                lookahead: int,
-                point: Tuple[float, float, float],
-                filter_road_ids: tuple,
-                llp,
+            self,
+            lookahead: int,
+            point: Tuple[float, float, float],
+            filter_road_ids: tuple,
+            llp,
         ) -> List[List[Waypoint]]:
             if self._match(lookahead, point, filter_road_ids):
                 hit = self._starts.get(llp.lp.lane.index, None)
