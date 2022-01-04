@@ -37,7 +37,7 @@ class IntersectionEnv(HiWayEnv):
         termination step.
 
     Episode termination:
-        Episode is terminated if any of the following is fullfilled. 
+        Episode is terminated if any of the following is fulfilled. 
         Steps per episode exceed 800.
         Agent collides, drives off road, or drives off route.
 
