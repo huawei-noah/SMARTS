@@ -26,19 +26,19 @@ class ChaseViaPointsAgent(Agent):
             len(obs.via_data.near_via_points) < 1
             or obs.ego_vehicle_state.road_id != obs.via_data.near_via_points[0].road_id
         ):
-            return (obs.waypoint_paths[0][0].speed_limit, 0)
+            return (obs.waypoint_paths[0][0].speed_limit/10, 0)
 
         nearest = obs.via_data.near_via_points[0]
         if nearest.lane_index == obs.ego_vehicle_state.lane_index:
-            return (nearest.required_speed, 0)
+            return (nearest.required_speed/10, 0)
 
         return (
-            nearest.required_speed,
+            nearest.required_speed/10,
             1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
         )
 
 
-def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
+def main(sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
             AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
@@ -47,17 +47,9 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
     )
 
     env = gym.make(
-        "smarts.env:hiway-v0",
-        scenarios=scenarios,
-        agent_specs={AGENT_ID: agent_spec},
-        sim_name=sim_name,
+        "smarts.env:intersection-v0",
         headless=headless,
         visdom=False,
-        fixed_timestep_sec=0.1,
-        sumo_headless=True,
-        seed=seed,
-        # zoo_addrs=[("10.193.241.236", 7432)], # Sample server address (ip, port), to distribute social agents in remote server.
-        # envision_record_data_replay_path="./data_replay",
     )
 
     # Wrap a single-agent env with SingleAgent wrapper to make `step` and `reset`
@@ -83,9 +75,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(
-        scenarios=args.scenarios,
         sim_name=args.sim_name,
         headless=args.headless,
-        num_episodes=args.episodes,
+        num_episodes=200,  # args.episodes,
         seed=args.seed,
     )
