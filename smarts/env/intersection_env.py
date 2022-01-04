@@ -20,9 +20,11 @@
 
 import os
 import pathlib
+from dataclasses import replace
 from typing import Dict, Optional
 
 from smarts.core.agent import AgentSpec
+from smarts.core.agent_interface import DoneCriteria
 from smarts.env.hiway_env import HiWayEnv
 
 
@@ -30,11 +32,16 @@ class IntersectionEnv(HiWayEnv):
     """An intersection environment where the agent needs to make an unprotected
     left turn in the presence of traffic.
 
-    Episode termination:
-        If any of the DoneCriteria is met or if the max steps per episode is
-        reached.
+    Reward:
+        Reward is distance travelled (in meters) in each step, including the
+        termination step.
 
-    Solved requirements:
+    Episode termination:
+        Episode is terminated if any of the following is fullfilled. 
+        Steps per episode exceed 800.
+        Agent collides, drives off road, or drives off route.
+
+    Solved requirement:
         Considered solved when the average return is greater than or equal to
         200.0 over 100 consecutive trials.
     """
@@ -71,6 +78,27 @@ class IntersectionEnv(HiWayEnv):
         )
         build_scenario = f"scl scenario build {scenario}"
         os.system(build_scenario)
+
+        done_criteria = DoneCriteria(
+            collision=True,
+            off_road=True,
+            off_route=True,
+            on_shoulder=False,
+            wrong_way=False,
+            not_moving=False,
+            agents_alive=None,
+        )
+        max_episode_steps = 800
+        agent_specs = {
+            agent: AgentSpec(
+                interface=replace(
+                    spec.interface,
+                    done_criteria=done_criteria,
+                    max_episode_steps=max_episode_steps,
+                )
+            )
+            for agent, spec in agent_specs.items()
+        }
 
         super(IntersectionEnv, self).__init__(
             scenarios=[scenario],

@@ -70,7 +70,7 @@ for name, routes in {
                     begin=(f"edge-{r[0]}", 0, "random"),
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
-                rate=60 * 15,
+                rate=60 * 6,
                 actors={impatient_car: 0.5, patient_car: 0.5},
             )
             for r in routes
