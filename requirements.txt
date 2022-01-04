@@ -114,7 +114,7 @@ pluggy==1.0.0
 prometheus-client==0.12.0
 prompt-toolkit==3.0.24
 protobuf==3.19.1
-psutil==5.8.0
+psutil==5.9.0
 ptyprocess==0.7.0
 py==1.11.0
 py-cpuinfo==8.0.0
@@ -124,7 +124,7 @@ pyasn1-modules==0.2.8
 pybullet==3.0.6
 pycparser==2.21
 pyglet==1.5.15
-Pygments==2.10.0
+Pygments==2.11.0
 pynput==1.7.5
 pyparsing==3.0.6
 pyrsistent==0.18.0
@@ -190,5 +190,5 @@ Werkzeug==2.0.2
 wrapt==1.13.3
 yarl==1.7.2
 yattag==1.14.0
-zipp==3.6.0
+zipp==3.7.0
 zope.interface==5.4.0

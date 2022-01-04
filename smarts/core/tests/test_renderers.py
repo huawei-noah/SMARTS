@@ -23,6 +23,7 @@ import math
 import threading
 
 import pytest
+from panda3d.core import Thread as p3dThread
 
 from smarts.core.agent_interface import (
     ActionSpaceType,
@@ -104,6 +105,7 @@ class RenderThread(threading.Thread):
 
 
 def test_multiple_renderers(scenario):
+    assert p3dThread.isThreadingSupported()
     num_renderers = 3
     rts = [RenderThread(r, scenario) for r in range(num_renderers)]
     for rt in rts:
