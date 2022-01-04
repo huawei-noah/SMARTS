@@ -77,14 +77,14 @@ def get_road_map(map_spec) -> Tuple[RoadMap, str]:
             )
 
     road_map = None
-    if map_spec.source.endswith("map.net.xml"):
+    if map_spec.source.endswith(".net.xml"):
         # Keep this a conditional import so Sumo does not have to be
         # imported if not necessary:
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
         road_map = SumoRoadNetwork.from_spec(map_spec)
 
-    elif map_spec.source.endswith("map.xodr"):
+    elif map_spec.source.endswith(".xodr"):
         from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 
         road_map = OpenDriveRoadNetwork.from_spec(map_spec)

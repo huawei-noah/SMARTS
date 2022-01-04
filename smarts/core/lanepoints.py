@@ -28,7 +28,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import List, NamedTuple, Sequence, Tuple
-
 import numpy as np
 
 with warnings.catch_warnings():
@@ -40,7 +39,7 @@ with warnings.catch_warnings():
         # aggressive
         from sklearn.neighbors import KDTree
 
-from smarts.core.coordinates import Heading, Pose
+from smarts.core.coordinates import Heading, Pose, Point
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
     fast_quaternion_from_angle,
@@ -55,6 +54,7 @@ from smarts.core.utils.math import (
 class LanePoint:
     lane: RoadMap.Lane
     pose: Pose
+    lane_width: float
 
 
 class LinkedLanePoint(NamedTuple):
@@ -145,6 +145,7 @@ class LanePoints:
                     lp=LanePoint(
                         lane=road_map.lane_by_id(lane.getID()),
                         pose=Pose(position=lane_shape[0], orientation=orientation),
+                        lane_width=road_map.lane_by_id(lane.getID()).width_at_offset(0),
                     ),
                     nexts=[],
                     is_inferred=False,
@@ -168,6 +169,9 @@ class LanePoints:
                         lp=LanePoint(
                             lane=road_map.lane_by_id(lane.getID()),
                             pose=Pose(position=p1, orientation=orientation_),
+                            lane_width=road_map.lane_by_id(
+                                lane.getID()
+                            ).width_at_offset(0),
                         ),
                         nexts=[],
                         is_inferred=False,
@@ -185,6 +189,7 @@ class LanePoints:
                             position=lane_shape[-1],
                             orientation=curr_lanepoint.lp.pose.orientation,
                         ),
+                        lane_width=curr_lanepoint.lp.lane.width_at_offset(0),
                     ),
                     nexts=[],
                     is_inferred=False,
@@ -260,10 +265,15 @@ class LanePoints:
                 heading = Heading(heading)
                 orientation = fast_quaternion_from_angle(heading)
 
+                first_lane_coord = curr_lane.to_lane_coord(
+                    Point(x=lane_shape[0][0], y=lane_shape[0][1], z=0.0)
+                )
+
                 first_lanepoint = LinkedLanePoint(
                     lp=LanePoint(
                         lane=curr_lane,
                         pose=Pose(position=lane_shape[0], orientation=orientation),
+                        lane_width=curr_lane.width_at_offset(first_lane_coord.s),
                     ),
                     nexts=[],
                     is_inferred=False,
@@ -283,10 +293,14 @@ class LanePoints:
                     heading_ = vec_to_radians(p2 - p1)
                     heading_ = Heading(heading_)
                     orientation_ = fast_quaternion_from_angle(heading_)
+                    lp_lane_coord = curr_lane.to_lane_coord(
+                        Point(x=p1[0], y=p1[1], z=0.0)
+                    )
                     linked_lanepoint = LinkedLanePoint(
                         lp=LanePoint(
-                            lane=road_map.lane_by_id(curr_lane.lane_id),
+                            lane=curr_lane,
                             pose=Pose(position=p1, orientation=orientation_),
+                            lane_width=curr_lane.width_at_offset(lp_lane_coord.s),
                         ),
                         nexts=[],
                         is_inferred=False,
@@ -297,12 +311,18 @@ class LanePoints:
                     curr_lanepoint = linked_lanepoint
 
                 # Add a lanepoint for the last point of the current lane
+                last_lane_coord = curr_lanepoint.lp.lane.to_lane_coord(
+                    Point(x=lane_shape[-1][0], y=lane_shape[-1][1], z=0.0)
+                )
                 last_linked_lanepoint = LinkedLanePoint(
                     lp=LanePoint(
                         lane=curr_lanepoint.lp.lane,
                         pose=Pose(
                             position=lane_shape[-1],
                             orientation=curr_lanepoint.lp.pose.orientation,
+                        ),
+                        lane_width=curr_lanepoint.lp.lane.width_at_offset(
+                            last_lane_coord.s
                         ),
                     ),
                     nexts=[],
@@ -469,10 +489,12 @@ class LanePoints:
             heading = vec_to_radians(lane_seg_vec)
             orientation = fast_quaternion_from_angle(heading)
 
+            rmlane_coord = rmlane.to_lane_coord(Point(x=pos[0], y=pos[1], z=0.0))
             linked_lanepoint = LinkedLanePoint(
                 lp=LanePoint(
                     lane=rmlane,
                     pose=Pose(position=pos, orientation=orientation),
+                    lane_width=rmlane.width_at_offset(rmlane_coord.s),
                 ),
                 nexts=[],
                 is_inferred=True,
@@ -626,7 +648,7 @@ class LanePoints:
                     new_path = path + [next_lp]
                     branching_paths.append(new_path)
 
-                if len(branching_paths) == 0:
+                if not branching_paths:
                     branching_paths = [path]
 
                 next_lanepoint_paths += branching_paths
