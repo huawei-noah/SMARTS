@@ -2,10 +2,7 @@ from pathlib import Path
 
 from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
-    Distribution,
     Flow,
-    JunctionModel,
-    LaneChangingModel,
     Mission,
     Route,
     Scenario,
@@ -15,65 +12,54 @@ from smarts.sstudio.types import (
 
 scnr_path = str(Path(__file__).parent)
 
-impatient_car = TrafficActor(
+intersection_car = TrafficActor(
     name="car",
-    speed=Distribution(sigma=0.2, mean=1.0),
-    lane_changing_model=LaneChangingModel(impatience=1, cooperative=0.25),
-    junction_model=JunctionModel(
-        drive_after_red_time=1.5, drive_after_yellow_time=1.0, impatience=1.0
-    ),
-)
-
-patient_car = TrafficActor(
-    name="car",
-    speed=Distribution(sigma=0.2, mean=0.8),
-    lane_changing_model=LaneChangingModel(impatience=0, cooperative=0.5),
-    junction_model=JunctionModel(drive_after_yellow_time=1.0, impatience=0.5),
 )
 
 vertical_routes = [
-    ("north-NS", "south-NS"),
-    ("south-SN", "north-SN"),
+    ("north-NS", "south-NS", 0),
+    ("south-SN", "north-SN", 0),
 ]
 
 horizontal_routes = [
-    ("west-WE", "east-WE"),
-    ("east-EW", "west-EW"),
+    ("west-WE", "east-WE", "random"),
+    ("east-EW", "west-EW", 0),
 ]
 
 turn_left_routes = [
-    ("south-SN", "west-EW"),
-    ("west-WE", "north-SN"),
-    ("north-NS", "east-WE"),
-    ("east-EW", "south-NS"),
+    ("south-SN", "west-EW", 0),
+    ("west-WE", "north-SN", "random"),
+    ("north-NS", "east-WE", 0),
+    ("east-EW", "south-NS", 0),
 ]
 
 turn_right_routes = [
-    ("south-SN", "east-WE"),
-    ("west-WE", "south-NS"),
-    ("north-NS", "west-EW"),
-    ("east-EW", "north-SN"),
+    ("south-SN", "east-WE", 0),
+    ("west-WE", "south-NS", "random"),
+    ("north-NS", "west-EW", 0),
+    ("east-EW", "north-SN", 0),
 ]
 
 traffic = {}
 for name, routes in {
     "vertical": vertical_routes,
-    "horizontal": horizontal_routes,
-    "unprotected_left": turn_left_routes,
-    "turns": turn_left_routes + turn_right_routes,
-    "all": vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes,
+    # "horizontal": horizontal_routes,
+    # "unprotected_left": turn_left_routes,
+    # "turns": turn_left_routes + turn_right_routes,
+    # "all": vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes,
 }.items():
     traffic[name] = Traffic(
         flows=[
             Flow(
                 route=Route(
-                    begin=(f"edge-{r[0]}", 0, "random"),
+                    begin=(f"edge-{r[0]}", 0, r[2]),
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
-                rate=60 * 6,
-                actors={impatient_car: 0.5, patient_car: 0.5},
+                rate=60 * 3,
+                begin=i*2,
+                actors={intersection_car:1},
             )
-            for r in routes
+            for i, r in enumerate(routes)
         ]
     )
 
