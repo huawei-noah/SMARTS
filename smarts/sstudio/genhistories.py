@@ -254,7 +254,7 @@ class Interaction(_TrajectoryDataset):
         self._log.warning(f"unknown agent_type:  {agent_type}.")
         return 0
 
-    def column_val_in_row(self, row, col_name):
+    def column_val_in_row(self, row, col_name: str):
         row_name = self._col_map.get(col_name)
         if row_name:
             return row[row_name]

@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import List, NamedTuple, Sequence, Set, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 from shapely.geometry import Polygon
@@ -73,12 +73,12 @@ class RoadMap:
         raise NotImplementedError()
 
     def nearest_lanes(
-        self, point: Point, radius: float = None, include_junctions=True
+        self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> List[Tuple[RoadMap.Lane, float]]:
         raise NotImplementedError()
 
     def nearest_lane(
-        self, point: Point, radius: float = None, include_junctions=True
+        self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> RoadMap.Lane:
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
         return nearest_lanes[0][0] if nearest_lanes else None
@@ -90,7 +90,7 @@ class RoadMap:
         self,
         start_road: RoadMap.Road,
         end_road: RoadMap.Road,
-        via: Sequence[RoadMap.Road] = None,
+        via: Optional[Sequence[RoadMap.Road]] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
         """Routes will be returned in order of increasing length"""

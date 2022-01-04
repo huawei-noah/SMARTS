@@ -27,7 +27,7 @@ import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import List, NamedTuple, Sequence
+from typing import List, NamedTuple, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -436,7 +436,7 @@ class SumoLanePoints:
         self,
         poses: Sequence[Pose],
         within_radius: float = 10,
-        on_lane_id: str = None,
+        on_lane_id: Optional[str] = None,
         maximum_count: int = 10,
     ) -> List[LanePoint]:
         if on_lane_id is None:

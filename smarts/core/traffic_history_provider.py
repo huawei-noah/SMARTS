@@ -17,9 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import sqlite3
-from itertools import cycle
-from typing import NamedTuple, Set, Optional
+
+from typing import Iterable, Optional, Set
 
 import numpy as np
 
@@ -60,7 +59,7 @@ class TrafficHistoryProvider(Provider):
         self._is_setup = True
         return ProviderState()
 
-    def set_replaced_ids(self, vehicle_ids: list):
+    def set_replaced_ids(self, vehicle_ids: Iterable[str]):
         self._replaced_vehicle_ids.update(vehicle_ids)
 
     def get_history_id(self, vehicle_id: str) -> Optional[str]:

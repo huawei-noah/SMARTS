@@ -18,9 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import glob
-import json
 import logging
-import math
 import os
 import pickle
 import random
@@ -28,15 +26,13 @@ import uuid
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import cloudpickle
 import numpy as np
-from cached_property import cached_property
 
-from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
+from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
 from smarts.core.data_model import SocialAgent
-from smarts.core.default_map_builder import get_road_map
 from smarts.core.plan import (
     EndlessGoal,
     LapMission,
@@ -50,7 +46,7 @@ from smarts.core.plan import (
 )
 from smarts.core.road_map import RoadMap
 from smarts.core.traffic_history import TrafficHistory
-from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
+from smarts.core.utils.file import make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.sstudio import types as sstudio_types
@@ -79,13 +75,13 @@ class Scenario:
     def __init__(
         self,
         scenario_root: str,
-        route: str = None,
-        missions: Dict[str, Mission] = None,
-        social_agents: Dict[str, SocialAgent] = None,
-        log_dir: str = None,
-        surface_patches: list = None,
-        traffic_history: str = None,
-        map_spec: MapSpec = None,
+        route: Optional[str] = None,
+        missions: Optional[Dict[str, Mission]] = None,
+        social_agents: Optional[Dict[str, SocialAgent]] = None,
+        log_dir: Optional[str] = None,
+        surface_patches: Optional[Sequence[Dict[str, Any]]] = None,
+        traffic_history: Optional[str] = None,
+        map_spec: Optional[MapSpec] = None,
     ):
 
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -418,8 +414,8 @@ class Scenario:
     @staticmethod
     def discover_map(
         scenario_root: str,
-        lanepoint_spacing: float = None,
-        default_lane_width: float = None,
+        lanepoint_spacing: Optional[float] = None,
+        default_lane_width: Optional[float] = None,
     ) -> MapSpec:
         path = os.path.join(scenario_root, "map_spec.pkl")
         if not os.path.exists(path):
