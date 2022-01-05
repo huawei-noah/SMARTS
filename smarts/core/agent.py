@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import inspect
 import logging
 import warnings
 from dataclasses import dataclass, replace
@@ -202,7 +203,16 @@ AgentSpec(
             return self.agent_builder(*self.agent_params)
         elif isinstance(self.agent_params, dict):
             # dictionaries, as keyword arguments
-            return self.agent_builder(**self.agent_params)
+            fas = inspect.getfullargspec(self.agent_builder)
+            if fas[2] is not None:
+                return self.agent_builder(**self.agent_params)
+            else:
+                return self.agent_builder(
+                    **{
+                        k: self.agent_params[k]
+                        for k in self.agent_params.keys() & set(fas[0])
+                    }
+                )
         else:
             # otherwise, the agent params are sent as is to the builder
             return self.agent_builder(self.agent_params)

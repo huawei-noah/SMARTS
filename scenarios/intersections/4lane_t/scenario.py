@@ -23,22 +23,49 @@ traffic = t.Traffic(
 )
 
 agent_prefabs = "scenarios.intersections.4lane_t.agent_prefabs"
+
+motion_planner_actor = t.SocialAgentActor(
+    name="motion-planner-agent",
+    agent_locator=f"{agent_prefabs}:motion-planner-agent-v0",
+)
+
+zoo_agent_actor = t.SocialAgentActor(
+    name="zoo-agent",
+    agent_locator=f"{agent_prefabs}:zoo-agent-v0",
+)
+# Replace the above lines with the code below if you want to replay the agent actions and inputs
+# zoo_agent_actor = t.SocialAgentActor(
+#     name="zoo-agent",
+#     agent_locator="zoo.policies:replay-agent-v0",
+#     policy_kwargs={
+#         "save_directory": "./replay",
+#         "id": "agent_za",
+#         "wrapped_agent_locator": f"{agent_prefabs}:zoo-agent-v0",
+#     },
+# )
+
+
+# motion_planner_actor = t.SocialAgentActor(
+#     name="motion-planner-agent",
+#     agent_locator="zoo.policies:replay-agent-v0",
+#     policy_kwargs={
+#         "save_directory": "./replay",
+#         "id": "agent_mp",
+#         "wrapped_agent_locator": f"{agent_prefabs}:motion-planner-agent-v0",
+#     },
+# )
+
+
 bubbles = [
     t.Bubble(
         zone=t.MapZone(start=("edge-west-WE", 0, 50), length=10, n_lanes=1),
         margin=2,
-        actor=t.SocialAgentActor(
-            name="zoo-agent",
-            agent_locator=f"{agent_prefabs}:zoo-agent-v0",
-        ),
+        actor=zoo_agent_actor,
     ),
     t.Bubble(
         zone=t.PositionalZone(pos=(100, 100), size=(20, 20)),
         margin=2,
-        actor=t.SocialAgentActor(
-            name="motion-planner-agent",
-            agent_locator=f"{agent_prefabs}:motion-planner-agent-v0",
-        ),
+        actor=motion_planner_actor,
     ),
 ]
 
