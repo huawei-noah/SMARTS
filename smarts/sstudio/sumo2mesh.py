@@ -29,7 +29,9 @@ def generate_glb_from_sumo_file(sumo_net_file: str, out_glb_file: str):
     road_network.to_glb(out_glb_file)
 
 
-def generate_glb_from_sumo_network(sumo_road_network: SumoRoadNetwork, out_glb_file: str):
+def generate_glb_from_sumo_network(
+    sumo_road_network: SumoRoadNetwork, out_glb_file: str
+):
     sumo_road_network.to_glb(out_glb_file)
 
 

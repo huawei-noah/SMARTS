@@ -85,9 +85,7 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
             from smarts.sstudio.types import MapSpec
 
             map_spec = MapSpec(map_net)
-            SumoRoadNetwork.from_spec(
-                map_spec, shift_to_origin=True
-            )
+            SumoRoadNetwork.from_spec(map_spec, shift_to_origin=True)
         elif os.path.isfile(SumoRoadNetwork.shifted_net_file_path(map_net)):
             click.echo(
                 "WARNING: {} already exists.  Remove it if you want to use unshifted/offset map.net.xml instead.".format(
