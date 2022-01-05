@@ -448,7 +448,7 @@ class OpenDriveRoadNetwork(RoadMap):
                         foe_in_roads = set(il.road for il in foe.incoming_lanes)
                         if not bool(in_roads & foe_in_roads):
                             result.append(foe)
-                lane.foes = list(set(result))
+                lane._foes = list(set(result))
 
             # recompute lane to left using road geometry if the map was converted from SUMO to OpenDRIVE
             curr_leftmost_lane = road.lane_at_index(len(road.lanes) - 1)
@@ -477,8 +477,8 @@ class OpenDriveRoadNetwork(RoadMap):
                     # The edge borders of two lanes do not always overlap perfectly,
                     # thus relax the tolerance threshold to 1
                     if np.linalg.norm(edge_border_i - edge_border_j) < 1:
-                        curr_leftmost_lane.lane_to_left = other_leftmost_lane, False
-                        other_leftmost_lane.lane_to_left = curr_leftmost_lane, False
+                        curr_leftmost_lane._lane_to_left = other_leftmost_lane, False
+                        other_leftmost_lane._lane_to_left = curr_leftmost_lane, False
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
@@ -837,10 +837,6 @@ class OpenDriveRoadNetwork(RoadMap):
         @property
         def foes(self) -> List[RoadMap.Lane]:
             return self._foes
-
-        @foes.setter
-        def foes(self, value):
-            self._foes = value
 
         @property
         def lane_polygon(self) -> List[Tuple[float, float]]:
@@ -1312,6 +1308,9 @@ class OpenDriveRoadNetwork(RoadMap):
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
         for lane, dist in nearest_lanes:
             if lane.contains_point(point):
+                # Since OpenDRIVE has lanes of varying width, a point can be closer to a lane it does not lie in
+                # when compared to the lane it does if it is closer to the outer lane's central line,
+                # than the lane it lies in.
                 return lane
         return nearest_lanes[0][0] if nearest_lanes else None
 

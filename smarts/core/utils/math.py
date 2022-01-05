@@ -245,7 +245,7 @@ def vec_to_radians(v) -> float:
     return (r - 0.5 * math.pi) % (2 * math.pi)  # quad 1
 
 
-def is_close(a: float, b: float, rel_tol: float = 1e-09, abs_tol: float = 0.0):
+def is_close(a: float, b: float, rel_tol: float = 1e-09, abs_tol: float = 0.0) -> bool:
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
@@ -285,7 +285,9 @@ def offset_along_shape(point: Tuple[float], shape: List[Tuple[float]]) -> float:
     return offset
 
 
-def position_at_shape_offset(shape: List[Tuple[float]], offset: float):
+def position_at_shape_offset(
+    shape: List[Tuple[float]], offset: float
+) -> Optional[Tuple[float]]:
     seen_length = 0
     curr = shape[0]
     for next_p in shape[1:]:
@@ -302,7 +304,7 @@ def line_offset_with_minimum_distance_to_point(
     line_start: Tuple[float],
     line_end: Tuple[float],
     perpendicular: bool = False,
-):
+) -> float:
     """Return the offset from line (line_start, line_end) where the distance to
     point is minimal"""
     p = point
@@ -321,7 +323,7 @@ def line_offset_with_minimum_distance_to_point(
 
 def polygon_offset_with_minimum_distance_to_point(
     point: Tuple[float], polygon: List[Tuple[float]]
-):
+) -> float:
     """Return the offset and the distance from the polygon start where the distance to the point is minimal"""
     p = point
     s = polygon
@@ -347,7 +349,7 @@ def distance_point_to_line(
     line_start: Tuple[float],
     line_end: Tuple[float],
     perpendicular: bool = False,
-):
+) -> float:
     """Return the minimum distance between point and the line (line_start, line_end)"""
     p1 = line_start
     p2 = line_end
@@ -365,7 +367,7 @@ def distance_point_to_line(
 
 def distance_point_to_polygon(
     point: Tuple[float], polygon: List[Tuple[float]], perpendicular: bool = False
-):
+) -> float:
     """Return the minimum distance between point and polygon"""
     p = point
     s = polygon
