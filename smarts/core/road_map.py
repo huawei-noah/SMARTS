@@ -63,7 +63,7 @@ class RoadMap:
         """Check if the MapSpec Object source points to the same RoadMap instance as the current"""
         raise NotImplementedError
 
-    def to_glb(self, at_path):
+    def to_glb(self, at_path: str):
         """build a glb file for camera rendering and envision"""
         raise NotImplementedError()
 
@@ -148,7 +148,9 @@ class RoadMap:
             raise NotImplementedError()
 
         def shape(self, width: float, buffer_width: float = 0.0) -> Polygon:
-            """Returns a convex polygon, buffered by width + buffered_width (which must be non-negative), around this surface."""
+            """Returns a convex polygon, buffered by width + buffered_width (which must be non-negative),
+            where buffer_width is the change in width around this surface (like 0.3 + width).
+            If you want to keep the width to original, pass original width and set buffer_width as 0"""
             raise NotImplementedError()
 
         def contains_point(self, point: Point) -> bool:
@@ -208,7 +210,7 @@ class RoadMap:
         @property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: left is defined as 90 degrees clockwise relative to the lane heading.
-            (I.e., positive `t` in the Refline coordinate system.)
+            (I.e., positive `t` in the RefLine coordinate system.)
             Second result is True if lane is in the same direction as this one
             In junctions, diverging lanes should not be included."""
             raise NotImplementedError()
@@ -216,7 +218,7 @@ class RoadMap:
         @property
         def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
-            (I.e., negative `t` in the Refline coordinate system.)
+            (I.e., negative `t` in the RefLine coordinate system.)
             Second result is True if lane is in the same direction as this one.
             In junctions, diverging lanes should not be included."""
             raise NotImplementedError()
@@ -403,15 +405,7 @@ class RoadMap:
         def oncoming_roads_at_point(self, point: Point) -> List[RoadMap.Road]:
             """Returns a list of nearby roads to point that are (roughly)
             parallel to this one but have lanes that go in the opposite direction."""
-            result = []
-            for lane in self.lanes:
-                offset = lane.to_lane_coord(point).s
-                result += [
-                    ol.road
-                    for ol in lane.oncoming_lanes_at_offset(offset)
-                    if ol.road != self
-                ]
-            return result
+            raise NotImplementedError()
 
         @property
         def parallel_roads(self) -> List[RoadMap.Road]:

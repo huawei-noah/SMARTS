@@ -26,8 +26,6 @@ from threading import Thread
 
 import click
 
-shifted_net_file_name = "shifted_map-AUTOGEN.net.xml"
-
 
 @click.group(name="scenario")
 def scenario_cli():
@@ -45,9 +43,7 @@ def scenario_cli():
     "--allow-offset-map",
     is_flag=True,
     default=False,
-    help="Allows Sumo's road network (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(
-        shifted_net_file_name
-    ),
+    help="Allows Sumo's road network (map.net.xml) to be offset from the origin. if not specified, creates a network file that ends with AUTOGEN.net.xml if necessary.",
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
 def build_scenario(clean, allow_offset_map, scenario):
@@ -157,9 +153,7 @@ def _install_requirements(scenario_root):
     "--allow-offset-maps",
     is_flag=True,
     default=False,
-    help="Allows Sumo's road networks (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(
-        shifted_net_file_name
-    ),
+    help="Allows Sumo's road networks (map.net.xml) to be offset from the origin. if not specified, creates creates a network file that ends with AUTOGEN.net.xml' if necessary.",
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
 def build_all_scenarios(clean, allow_offset_maps, scenarios):
@@ -205,7 +199,6 @@ def clean_scenario(scenario):
 def _clean(scenario):
     to_be_removed = [
         "map.glb",
-        shifted_net_file_name,
         "bubbles.pkl",
         "missions.pkl",
         "flamegraph-perf.log",

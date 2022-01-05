@@ -19,9 +19,8 @@
 # THE SOFTWARE.
 import math
 from math import factorial
-from typing import Callable
+from typing import Callable, List, Tuple, Optional
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass(frozen=True)
@@ -44,7 +43,7 @@ class CubicPolynomial:
         return self.a + self.b * ds + self.c * ds * ds + self.d * ds * ds * ds
 
 
-def constrain_angle(angle):
+def constrain_angle(angle: float) -> float:
     """Constrain to [-pi, pi]"""
     angle %= 2 * math.pi
     if angle > math.pi:
@@ -133,13 +132,12 @@ def clip(val, min_val, max_val):
     return min_val if val < min_val else max_val if val > max_val else val
 
 
-def get_linear_segments_for_range(s_start: float, s_end: float, segment_size: float):
+def get_linear_segments_for_range(
+    s_start: float, s_end: float, segment_size: float
+) -> List[float]:
     """Given a range from s_start to s_end, give a linear segment of size segment_size"""
-    s_vals = []
     num_segments = int((s_end - s_start) / segment_size) + 1
-    for seg in range(num_segments):
-        s_vals.append(s_start + seg * segment_size)
-    return s_vals
+    return [s_start + seg * segment_size for seg in range(num_segments)]
 
 
 def squared_dist(a, b) -> float:
@@ -247,17 +245,19 @@ def vec_to_radians(v) -> float:
     return (r - 0.5 * math.pi) % (2 * math.pi)  # quad 1
 
 
-def is_close(a, b, rel_tol=1e-09, abs_tol=0.0):
+def is_close(a: float, b: float, rel_tol: float = 1e-09, abs_tol: float = 0.0) -> bool:
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
-def euclidean_distance(p1, p2):
+def euclidean_distance(p1: Tuple[float], p2: Tuple[float]) -> float:
     dx = p1[0] - p2[0]
     dy = p1[1] - p2[1]
     return math.sqrt(dx * dx + dy * dy)
 
 
-def position_at_offset(p1, p2, offset):
+def position_at_offset(
+    p1: Tuple[float], p2: Tuple[float], offset: float
+) -> Optional[Tuple[float]]:
     if is_close(offset, 0.0):  # for pathological cases with dist == 0 and offset == 0
         return p1
 
@@ -274,7 +274,7 @@ def position_at_offset(p1, p2, offset):
     )
 
 
-def offset_along_shape(point, shape) -> float:
+def offset_along_shape(point: Tuple[float], shape: List[Tuple[float]]) -> float:
     if point not in shape:
         return polygon_offset_with_minimum_distance_to_point(point, shape)
     offset = 0
@@ -285,7 +285,9 @@ def offset_along_shape(point, shape) -> float:
     return offset
 
 
-def position_at_shape_offset(shape, offset):
+def position_at_shape_offset(
+    shape: List[Tuple[float]], offset: float
+) -> Optional[Tuple[float]]:
     seen_length = 0
     curr = shape[0]
     for next_p in shape[1:]:
@@ -298,8 +300,11 @@ def position_at_shape_offset(shape, offset):
 
 
 def line_offset_with_minimum_distance_to_point(
-    point, line_start, line_end, perpendicular=False
-):
+    point: Tuple[float],
+    line_start: Tuple[float],
+    line_end: Tuple[float],
+    perpendicular: bool = False,
+) -> float:
     """Return the offset from line (line_start, line_end) where the distance to
     point is minimal"""
     p = point
@@ -316,7 +321,9 @@ def line_offset_with_minimum_distance_to_point(
     return u / d
 
 
-def polygon_offset_with_minimum_distance_to_point(point, polygon):
+def polygon_offset_with_minimum_distance_to_point(
+    point: Tuple[float], polygon: List[Tuple[float]]
+) -> float:
     """Return the offset and the distance from the polygon start where the distance to the point is minimal"""
     p = point
     s = polygon
@@ -337,7 +344,12 @@ def polygon_offset_with_minimum_distance_to_point(point, polygon):
     return min_offset
 
 
-def distance_point_to_line(point, line_start, line_end, perpendicular=False):
+def distance_point_to_line(
+    point: Tuple[float],
+    line_start: Tuple[float],
+    line_end: Tuple[float],
+    perpendicular: bool = False,
+) -> float:
     """Return the minimum distance between point and the line (line_start, line_end)"""
     p1 = line_start
     p2 = line_end
@@ -353,7 +365,9 @@ def distance_point_to_line(point, line_start, line_end, perpendicular=False):
     return euclidean_distance(point, intersection)
 
 
-def distance_point_to_polygon(point, polygon, perpendicular=False):
+def distance_point_to_polygon(
+    point: Tuple[float], polygon: List[Tuple[float]], perpendicular: bool = False
+) -> float:
     """Return the minimum distance between point and polygon"""
     p = point
     s = polygon

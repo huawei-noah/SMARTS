@@ -18,11 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-import math
 import os
 import random
 from functools import lru_cache
-from subprocess import check_output
 from typing import List, Optional, Sequence, Set, Tuple
 
 import numpy as np
@@ -39,7 +37,7 @@ from subprocess import check_output
 from smarts.sstudio.types import MapSpec
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
-from .road_map import RoadMap, Waypoint, WaypointsCache
+from .road_map import RoadMap, Waypoint
 from .lanepoints import LinkedLanePoint, LanePoints
 from .utils.geometry import buffered_shape, generate_mesh_from_polygons
 from .utils.math import inplace_unwrap, radians_to_vec, vec_2d
@@ -92,7 +90,7 @@ class SumoRoadNetwork(RoadMap):
         self._surfaces = {}
         self._lanes = {}
         self._roads = {}
-        self._waypoints_cache = WaypointsCache()
+        self._waypoints_cache = SumoRoadNetwork._WaypointsCache()
         self._lanepoints = None
         if map_spec.lanepoint_spacing is not None:
             assert map_spec.lanepoint_spacing > 0
@@ -548,7 +546,15 @@ class SumoRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=16)
         def oncoming_roads_at_point(self, point: Point) -> List[RoadMap.Road]:
-            return super().oncoming_roads_at_point(point)
+            result = []
+            for lane in self.lanes:
+                offset = lane.to_lane_coord(point).s
+                result += [
+                    ol.road
+                    for ol in lane.oncoming_lanes_at_offset(offset)
+                    if ol.road != self
+                ]
+            return result
 
         @cached_property
         def parallel_roads(self) -> List[RoadMap.Road]:
@@ -1161,6 +1167,53 @@ class SumoRoadNetwork(RoadMap):
         connection_lane = self._graph.getLane(connection_lane_id)
 
         return connection_lane.getEdge().getID()
+
+    class _WaypointsCache:
+        def __init__(self):
+            self.lookahead = 0
+            self.point = (0, 0, 0)
+            self.filter_road_ids = ()
+            self._starts = {}
+
+        # XXX:  all vehicles share this cache now (as opposed to before
+        # when it was in Plan.py and each vehicle had its own cache).
+        # TODO: probably need to add vehicle_id to the key somehow (or just make it bigger)
+        def _match(self, lookahead, point, filter_road_ids) -> bool:
+            return (
+                lookahead <= self.lookahead
+                and point[0] == self.point[0]
+                and point[1] == self.point[1]
+                and filter_road_ids == self.filter_road_ids
+            )
+
+        def update(
+            self,
+            lookahead: int,
+            point: Tuple[float, float, float],
+            filter_road_ids: tuple,
+            llp,
+            paths: List[List[Waypoint]],
+        ):
+            if not self._match(lookahead, point, filter_road_ids):
+                self.lookahead = lookahead
+                self.point = point
+                self.filter_road_ids = filter_road_ids
+                self._starts = {}
+            self._starts[llp.lp.lane.index] = paths
+
+        def query(
+            self,
+            lookahead: int,
+            point: Tuple[float, float, float],
+            filter_road_ids: tuple,
+            llp,
+        ) -> List[List[Waypoint]]:
+            if self._match(lookahead, point, filter_road_ids):
+                hit = self._starts.get(llp.lp.lane.index, None)
+                if hit:
+                    # consider just returning all of them (not slicing)?
+                    return [path[: (lookahead + 1)] for path in hit]
+                return None
 
     def _waypoints_starting_at_lanepoint(
         self,

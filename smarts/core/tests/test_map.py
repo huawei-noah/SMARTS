@@ -438,8 +438,8 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
 def test_opendrive_map_merge(opendrive_scenario_merge):
     road_map = opendrive_scenario_merge.road_map
     assert isinstance(road_map, OpenDriveRoadNetwork)
-    assert road_map.bounding_box.max_pt == Point(x=100.0, y=9.75, z=0)
-    assert road_map.bounding_box.min_pt == Point(x=0.0, y=-6.500000000000002, z=0)
+    assert road_map.bounding_box.max_pt == Point(x=100.0, y=9.750000000000002, z=0)
+    assert road_map.bounding_box.min_pt == Point(x=0.0, y=-6.5, z=0)
 
     # Expected properties for all roads and lanes
     for road_id, road in road_map._roads.items():
