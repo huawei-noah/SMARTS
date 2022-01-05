@@ -24,7 +24,7 @@ class KeyWrapper:
         self.it = iterable
         self.key = key
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: int):
         return self.key(self.it[i])
 
     def __len__(self):
