@@ -174,11 +174,9 @@ class HiWayEnv(gym.Env):
                     f"Unable to find map in map_source={scenario_root}."
                 )
 
-        try:
-            assert (num_sumo == 0 and num_opendrive == len(scenarios)) or (
-                num_sumo == len(scenarios) and num_opendrive == 0
-            )
-        except AssertionError:
+        if (num_sumo > 0 and num_opendrive > 0) or (
+            num_sumo + num_opendrive != len(scenarios)
+        ):
             raise AssertionError(
                 "All scenarios passed as a parameters for the gym environment need to be of the same version (OpenDRIVE or SUMO)."
             )
@@ -213,7 +211,7 @@ class HiWayEnv(gym.Env):
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 
-    def seed(self, seed: int = None) -> int:
+    def seed(self, seed: int) -> int:
         smarts_seed(seed)
         return seed
 
