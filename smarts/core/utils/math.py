@@ -384,20 +384,6 @@ def distance_point_to_polygon(
         return -1
 
 
-def bisect(lst: list, value: float, key_func=None) -> int:
-    if key_func is None:
-        key_func = lambda x: x
-    left = 0
-    right = len(lst)
-    while left < right:
-        mid = (left + right) // 2
-        if key_func(lst[mid]) <= value:
-            left = mid + 1
-        else:
-            right = mid
-    return left - 1
-
-
 def rotate_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
     """Rotate a point around a given origin."""
     x, y = point

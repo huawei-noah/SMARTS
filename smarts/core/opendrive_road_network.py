@@ -53,6 +53,7 @@ from opendrive2lanelet.opendriveparser.parser import parse_opendrive
 from lxml import etree
 from shapely.geometry import Polygon
 import rtree
+from bisect import bisect
 
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.sstudio.types import MapSpec
@@ -66,12 +67,12 @@ from smarts.core.utils.math import (
     vec_2d,
     inplace_unwrap,
     radians_to_vec,
-    bisect,
 )
 
 from .lanepoints import LinkedLanePoint, LanePoints
 from .coordinates import BoundingBox, Point, Pose, RefLinePoint, Heading
 from smarts.core.utils.geometry import generate_mesh_from_polygons
+from smarts.core.utils.key_wrapper import KeyWrapper
 
 
 def _convert_camera(camera):
@@ -131,7 +132,7 @@ class LaneBoundary:
             return 0
         if s < self.lane_offsets[0].start_pos:
             return 0
-        i = bisect(self.lane_offsets, s, key_func=lambda x: x.start_pos)
+        i = bisect((KeyWrapper(self.lane_offsets, key=lambda x: x.start_pos)), s) - 1
 
         poly = CubicPolynomial.from_list(self.lane_offsets[i].polynomial_coefficients)
         ds = s - self.lane_offsets[i].start_pos
@@ -139,7 +140,7 @@ class LaneBoundary:
         return offset
 
     def lane_width_at_offset(self, offset: float) -> LaneWidthElement:
-        i = bisect(self.lane_widths, offset, key_func=lambda x: x.start_offset)
+        i = bisect((KeyWrapper(self.lane_widths, key=lambda x: x.start_offset)), offset) - 1
         return self.lane_widths[i]
 
     def calc_t(self, s: float, section_s_start: float, lane_idx: int) -> float:
