@@ -148,7 +148,9 @@ class RoadMap:
             raise NotImplementedError()
 
         def shape(self, width: float, buffer_width: float = 0.0) -> Polygon:
-            """Returns a convex polygon, buffered by width + buffered_width (which must be non-negative), around this surface."""
+            """Returns a convex polygon, buffered by width + buffered_width (which must be non-negative),
+            where buffer_width is the change in width around this surface (like 0.3 + width).
+            If you want to keep the width to original, pass original width and set buffer_width as 0"""
             raise NotImplementedError()
 
         def contains_point(self, point: Point) -> bool:
