@@ -17,49 +17,49 @@ intersection_car = TrafficActor(
 )
 
 vertical_routes = [
-    ("north-NS", "south-NS", 0),
-    ("south-SN", "north-SN", 0),
+    ("north-NS", "south-NS"),
+    ("south-SN", "north-SN"),
 ]
 
 horizontal_routes = [
-    ("west-WE", "east-WE", "random"),
-    ("east-EW", "west-EW", 0),
+    ("west-WE", "east-WE"),
+    ("east-EW", "west-EW"),
 ]
 
 turn_left_routes = [
-    ("south-SN", "west-EW", 0),
-    ("west-WE", "north-SN", "random"),
-    ("north-NS", "east-WE", 0),
-    ("east-EW", "south-NS", 0),
+    ("south-SN", "west-EW"),
+    ("west-WE", "north-SN"),
+    ("north-NS", "east-WE"),
+    ("east-EW", "south-NS"),
 ]
 
 turn_right_routes = [
-    ("south-SN", "east-WE", 0),
-    ("west-WE", "south-NS", "random"),
-    ("north-NS", "west-EW", 0),
-    ("east-EW", "north-SN", 0),
+    ("south-SN", "east-WE"),
+    ("west-WE", "south-NS"),
+    ("north-NS", "west-EW"),
+    ("east-EW", "north-SN"),
 ]
 
 traffic = {}
 for name, routes in {
-    # "vertical": vertical_routes,
+    "vertical": vertical_routes,
     "horizontal": horizontal_routes,
-    # "turn_left": turn_left_routes,
-    # "turn_right": turn_right_routes,
-    # "turns": turn_left_routes + turn_right_routes,
-    # "all": vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes,
+    "turn_left": turn_left_routes,
+    "turn_right": turn_right_routes,
+    "turns": turn_left_routes + turn_right_routes,
+    "all": vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes,
 }.items():
     traffic[name] = Traffic(
         flows=[
             Flow(
                 route=Route(
-                    begin=(f"edge-{r[0]}", 0, r[2]),
+                    begin=(f"edge-{r[0]}", 0, "random"),
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
-                rate=60 * 3,
+                rate=60 * 4,
                 actors={intersection_car:1},
             )
-            for i, r in enumerate(routes)
+            for r in routes
         ]
     )
 

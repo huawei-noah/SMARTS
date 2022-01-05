@@ -65,7 +65,7 @@ class IntersectionEnv(HiWayEnv):
 
     Solved requirement:
         Considered solved when the average return is greater than or equal to
-        180.0 over 100 consecutive trials.
+        90.0 over 100 consecutive trials.
     """
 
     def __init__(
