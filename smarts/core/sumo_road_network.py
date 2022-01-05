@@ -859,7 +859,7 @@ class SumoRoadNetwork(RoadMap):
             ]
 
         @lru_cache(maxsize=8)
-        def distance_between(self, start: Point, end: Point) -> float:
+        def distance_between(self, start: Point, end: Point) -> Optional[float]:
             for cand_start_lane, _ in self._map.nearest_lanes(start, 30.0, False):
                 try:
                     sind = self._roads.index(cand_start_lane.road)
@@ -1207,7 +1207,7 @@ class SumoRoadNetwork(RoadMap):
             point: Tuple[float, float, float],
             filter_road_ids: tuple,
             llp,
-        ) -> List[List[Waypoint]]:
+        ) -> Optional[List[List[Waypoint]]]:
             if self._match(lookahead, point, filter_road_ids):
                 hit = self._starts.get(llp.lp.lane.index, None)
                 if hit:

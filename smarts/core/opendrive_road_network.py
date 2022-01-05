@@ -25,7 +25,7 @@ import random
 import time
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Dict, List, Sequence, Set, Tuple
+from typing import Dict, List, Sequence, Set, Tuple, Optional
 import trimesh
 import trimesh.scene
 from trimesh.exchange import gltf
@@ -106,7 +106,7 @@ class _GLBData:
 @dataclass
 class LaneBoundary:
     refline: PlanViewElement
-    inner: "LaneBoundary"
+    inner: Optional["LaneBoundary"]
     lane_widths: List[LaneWidthElement]
     lane_offsets: List[LaneOffsetElement]
     segment_size: float = 0.5
@@ -957,7 +957,7 @@ class OpenDriveRoadNetwork(RoadMap):
             self,
             point: Sequence,
             lookahead: int,
-            filter_road_ids: Sequence[str] = None,
+            filter_road_ids: Optional[Sequence[str]] = None,
         ) -> List[List[Waypoint]]:
             if not self.is_drivable:
                 return []
@@ -1282,7 +1282,9 @@ class OpenDriveRoadNetwork(RoadMap):
             result.add(idx, bounding_box)
         return result
 
-    def _get_neighboring_lanes(self, x, y, r=0.1):
+    def _get_neighboring_lanes(
+        self, x: float, y: float, r: float = 0.1
+    ) -> List[Tuple[RoadMap.Lane, float]]:
         neighboring_lanes = []
         all_lanes = list(self._lanes.values())
         if self._lane_rtree is None:
@@ -1297,7 +1299,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
     @lru_cache(maxsize=16)
     def nearest_lanes(
-        self, point: Point, radius: float = None, include_junctions=False
+        self, point: Point, radius: Optional[float] = None, include_junctions=False
     ) -> List[Tuple[RoadMap.Lane, float]]:
         if radius is None:
             radius = max(10, 2 * self._default_lane_width)
@@ -1307,7 +1309,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
     def nearest_lane(
         self, point: Point, radius: float = None, include_junctions=False
-    ) -> RoadMap.Lane:
+    ) -> Optional[RoadMap.Lane]:
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
         for lane, dist in nearest_lanes:
             if lane.contains_point(point):
@@ -1348,7 +1350,7 @@ class OpenDriveRoadNetwork(RoadMap):
             return [list(road.shape(0.0, 1.0).exterior.coords) for road in self.roads]
 
         @lru_cache(maxsize=8)
-        def distance_between(self, start: Point, end: Point) -> float:
+        def distance_between(self, start: Point, end: Point) -> Optional[float]:
             radius = 30
             for cand_start_lane, _ in self._map.nearest_lanes(
                 start, radius, include_junctions=False
@@ -1398,7 +1400,7 @@ class OpenDriveRoadNetwork(RoadMap):
         @lru_cache(maxsize=8)
         def project_along(
             self, start: Point, distance: float
-        ) -> Set[Tuple[RoadMap.Lane, float]]:
+        ) -> Optional[Set[Tuple[RoadMap.Lane, float]]]:
             radius = 30.0
             route_roads = set(self._roads)
             for cand_start_lane, _ in self._map.nearest_lanes(
@@ -1465,7 +1467,7 @@ class OpenDriveRoadNetwork(RoadMap):
         self,
         start_road: RoadMap.Road,
         end_road: RoadMap.Road,
-        via: Sequence[RoadMap.Road] = None,
+        via: Optional[Sequence[RoadMap.Road]] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
         assert (
@@ -1550,7 +1552,7 @@ class OpenDriveRoadNetwork(RoadMap):
             point: Tuple[float, float, float],
             filter_road_ids: tuple,
             llp,
-        ) -> List[List[Waypoint]]:
+        ) -> Optional[List[List[Waypoint]]]:
             if self._match(lookahead, point, filter_road_ids):
                 hit = self._starts.get(llp.lp.lane.index, None)
                 if hit:

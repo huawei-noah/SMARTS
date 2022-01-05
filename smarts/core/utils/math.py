@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 import math
 from math import factorial
-from typing import Callable, List, Tuple, Optional
+from typing import Callable, List, Tuple, Optional, Union
 from dataclasses import dataclass
 
 
@@ -274,7 +274,9 @@ def position_at_offset(
     )
 
 
-def offset_along_shape(point: Tuple[float], shape: List[Tuple[float]]) -> float:
+def offset_along_shape(
+    point: Tuple[float], shape: List[Tuple[float]]
+) -> Union[float, int]:
     if point not in shape:
         return polygon_offset_with_minimum_distance_to_point(point, shape)
     offset = 0
@@ -304,7 +306,7 @@ def line_offset_with_minimum_distance_to_point(
     line_start: Tuple[float],
     line_end: Tuple[float],
     perpendicular: bool = False,
-) -> float:
+) -> Union[float, int]:
     """Return the offset from line (line_start, line_end) where the distance to
     point is minimal"""
     p = point
@@ -323,7 +325,7 @@ def line_offset_with_minimum_distance_to_point(
 
 def polygon_offset_with_minimum_distance_to_point(
     point: Tuple[float], polygon: List[Tuple[float]]
-) -> float:
+) -> Union[float, int]:
     """Return the offset and the distance from the polygon start where the distance to the point is minimal"""
     p = point
     s = polygon
@@ -349,7 +351,7 @@ def distance_point_to_line(
     line_start: Tuple[float],
     line_end: Tuple[float],
     perpendicular: bool = False,
-) -> float:
+) -> Union[float, int]:
     """Return the minimum distance between point and the line (line_start, line_end)"""
     p1 = line_start
     p2 = line_end
@@ -367,7 +369,7 @@ def distance_point_to_line(
 
 def distance_point_to_polygon(
     point: Tuple[float], polygon: List[Tuple[float]], perpendicular: bool = False
-) -> float:
+) -> Union[float, int]:
     """Return the minimum distance between point and polygon"""
     p = point
     s = polygon
