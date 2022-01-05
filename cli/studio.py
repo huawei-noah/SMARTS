@@ -57,22 +57,31 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
 
     scenario_root = Path(scenario)
     map_glb = scenario_root / "map.glb"
-    if list(scenario_root.rglob("*.xodr")):
+    od_map_paths = list(scenario_root.rglob("*.xodr"))
+    sumo_map_paths = list(scenario_root.rglob("*.net.xml"))
+    if od_map_paths:
         from smarts.sstudio.types import MapSpec
         from smarts.sstudio.od2mesh import generate_glb_from_opendrive_network
         from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 
-        map_xodr = str(scenario_root / "map.xodr")
+        assert len(od_map_paths) == 1
+        map_xodr = str(od_map_paths[0])
         map_spec = MapSpec(map_xodr)
         od_road_network = OpenDriveRoadNetwork.from_spec(map_spec)
         generate_glb_from_opendrive_network(map_xodr, str(map_glb), od_road_network)
 
-    elif list(scenario_root.rglob("*.net.xml")):
+    elif sumo_map_paths:
         from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_network
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
         sumo_road_network = None
-        map_net = str(scenario_root / "map.net.xml")
+        map_net = None
+        for map_path in sumo_map_paths:
+            if not str(map_path).endswith("AUTOGEN.net.xml"):
+                map_net = str(map_path)
+                break
+
+        assert map_net is not None
         if not allow_offset_map or scenario.traffic_histories:
             from smarts.sstudio.types import MapSpec
 
