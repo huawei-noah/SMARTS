@@ -31,5 +31,5 @@ class KeyWrapper:
         return len(self.it)
 
     def insert(self, index, item):
-        print('asked to insert %s at index%d' % (item, index))
+        print("asked to insert %s at index%d" % (item, index))
         self.it.insert(index, {"time": item})

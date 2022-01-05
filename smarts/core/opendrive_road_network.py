@@ -140,7 +140,10 @@ class LaneBoundary:
         return offset
 
     def lane_width_at_offset(self, offset: float) -> LaneWidthElement:
-        i = bisect((KeyWrapper(self.lane_widths, key=lambda x: x.start_offset)), offset) - 1
+        i = (
+            bisect((KeyWrapper(self.lane_widths, key=lambda x: x.start_offset)), offset)
+            - 1
+        )
         return self.lane_widths[i]
 
     def calc_t(self, s: float, section_s_start: float, lane_idx: int) -> float:
