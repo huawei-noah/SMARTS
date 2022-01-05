@@ -1237,7 +1237,9 @@ class SumoRoadNetwork(RoadMap):
             lanepoint, lookahead, filter_road_ids
         )
         result = [
-            SumoRoadNetwork._equally_spaced_path(path, point, self._lanepoints.spacing)
+            SumoRoadNetwork._equally_spaced_path(
+                path, point, self._map_spec.lanepoint_spacing
+            )
             for path in lanepoint_paths
         ]
 

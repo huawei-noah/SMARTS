@@ -1817,7 +1817,10 @@ class OpenDriveRoadNetwork(RoadMap):
         )
         result = [
             self._equally_spaced_path(
-                path, point, self._lanepoints.spacing, self._default_lane_width / 2
+                path,
+                point,
+                self._map_spec.lanepoint_spacing,
+                self._default_lane_width / 2,
             )
             for path in lanepoint_paths
         ]
