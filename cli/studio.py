@@ -61,14 +61,13 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     sumo_map_paths = list(scenario_root.rglob("*.net.xml"))
     if od_map_paths:
         from smarts.sstudio.types import MapSpec
-        from smarts.sstudio.od2mesh import generate_glb_from_opendrive_network
         from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 
         assert len(od_map_paths) == 1
         map_xodr = str(od_map_paths[0])
         map_spec = MapSpec(map_xodr)
         od_road_network = OpenDriveRoadNetwork.from_spec(map_spec)
-        generate_glb_from_opendrive_network(map_xodr, str(map_glb), od_road_network)
+        od_road_network.to_glb(str(map_glb))
 
     elif sumo_map_paths:
         from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_network
@@ -86,7 +85,7 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
             from smarts.sstudio.types import MapSpec
 
             map_spec = MapSpec(map_net)
-            sumo_road_network = SumoRoadNetwork.from_spec(
+            SumoRoadNetwork.from_spec(
                 map_spec, shift_to_origin=True
             )
         elif os.path.isfile(SumoRoadNetwork.shifted_net_file_path(map_net)):
@@ -95,7 +94,7 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
                     SumoRoadNetwork.shifted_net_file_name
                 )
             )
-        generate_glb_from_sumo_network(map_net, str(map_glb), sumo_road_network)
+        generate_glb_from_sumo_network(map_net, str(map_glb))
     else:
         click.echo(
             "FILENOTFOUND: no reference to network file was found in {}.  "

@@ -83,6 +83,7 @@ def get_road_map(map_spec) -> Tuple[RoadMap, str]:
                 break
             else:
                 continue
+
         if not path_found:
             raise FileNotFoundError(
                 f"Unable to find map in map_source={map_spec.source}."

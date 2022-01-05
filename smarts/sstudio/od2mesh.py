@@ -23,12 +23,9 @@ from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 from smarts.sstudio.types import MapSpec
 
 
-def generate_glb_from_opendrive_network(od_xodr_file, out_glb_file, road_network=None):
-    if not road_network:
-        map_spec = MapSpec(od_xodr_file)
-        road_network = OpenDriveRoadNetwork.from_spec(map_spec)
-    else:
-        assert isinstance(road_network, OpenDriveRoadNetwork)
+def generate_glb_from_opendrive_network(od_xodr_file: str, out_glb_file: str):
+    map_spec = MapSpec(od_xodr_file)
+    road_network = OpenDriveRoadNetwork.from_spec(map_spec)
     road_network.to_glb(out_glb_file)
 
 
