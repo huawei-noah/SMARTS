@@ -384,8 +384,7 @@ def distance_point_to_polygon(
                 min_dist = dist
     if min_dist is not None:
         return min_dist
-    else:
-        return -1
+    return -1
 
 
 def rotate_around_point(point, radians, origin=(0, 0)) -> np.ndarray:

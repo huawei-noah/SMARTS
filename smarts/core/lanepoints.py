@@ -80,8 +80,6 @@ class LanePoints:
         self._linked_lanepoints = LanePoints._interpolate_shape_lanepoints(
             shape_lps, spacing
         )
-        self.spacing = spacing
-
         self._lanepoints_kd_tree = LanePoints._build_kd_tree(self._linked_lanepoints)
 
         self._lanepoints_by_lane_id = defaultdict(list)
