@@ -26,14 +26,14 @@ class ChaseViaPointsAgent(Agent):
             len(obs.via_data.near_via_points) < 1
             or obs.ego_vehicle_state.road_id != obs.via_data.near_via_points[0].road_id
         ):
-            return (obs.waypoint_paths[0][0].speed_limit/2, 0)
+            return (obs.waypoint_paths[0][0].speed_limit / 2, 0)
 
         nearest = obs.via_data.near_via_points[0]
         if nearest.lane_index == obs.ego_vehicle_state.lane_index:
-            return (nearest.required_speed/2, 0)
+            return (nearest.required_speed / 2, 0)
 
         return (
-            nearest.required_speed/2,
+            nearest.required_speed / 2,
             1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
         )
 
@@ -54,7 +54,7 @@ def main(sim_name, headless, num_episodes, seed, max_episode_steps=None):
 
     # Wrap a single-agent env with SingleAgent wrapper to make `step` and `reset`
     # output compliant with gym spaces.
-    env = SingleAgent(env)
+    # env = SingleAgent(env)
 
     for episode in episodes(n=num_episodes):
         agent = agent_spec.build_agent()

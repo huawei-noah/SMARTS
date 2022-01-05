@@ -1,14 +1,7 @@
 from pathlib import Path
 
 from smarts.sstudio.genscenario import gen_scenario
-from smarts.sstudio.types import (
-    Flow,
-    Mission,
-    Route,
-    Scenario,
-    Traffic,
-    TrafficActor,
-)
+from smarts.sstudio.types import Flow, Mission, Route, Scenario, Traffic, TrafficActor
 
 scnr_path = str(Path(__file__).parent)
 
@@ -57,7 +50,7 @@ for name, routes in {
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
                 rate=60 * 4,
-                actors={intersection_car:1},
+                actors={intersection_car: 1},
             )
             for r in routes
         ]
