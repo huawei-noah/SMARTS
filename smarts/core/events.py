@@ -1,4 +1,4 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,16 +17,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import NamedTuple, Sequence
 
+from typing import NamedTuple, Optional, List
+from dataclasses import dataclass
+
+@dataclass
+class Collision:
+    collidee_id: str
 
 class Events(NamedTuple):
-    collisions: Sequence  # Sequence[Collision]
+    agents_alive_done: bool
+    collisions: List[Optional[Collision]]
+    not_moving: bool
     off_road: bool
     off_route: bool
     on_shoulder: bool
-    wrong_way: bool
-    not_moving: bool
     reached_goal: bool
     reached_max_episode_steps: bool
-    agents_alive_done: bool
+    wrong_way: bool

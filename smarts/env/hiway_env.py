@@ -47,7 +47,7 @@ class HiWayEnv(gym.Env):
         agent_specs: Dict[str, AgentSpec],
         sim_name: Optional[str] = None,
         shuffle_scenarios: bool = True,
-        headless: bool = False,
+        headless: bool = True,
         visdom: bool = False,
         fixed_timestep_sec: Optional[float] = None,
         seed: int = 42,

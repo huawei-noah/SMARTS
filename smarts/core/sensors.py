@@ -125,34 +125,28 @@ class Vias:
 
 @dataclass
 class Observation:
-    # dt is the amount of sim_time the last step took .
-    # step_count is the number of steps take by SMARTS so far.
-    # elapsed_sim_time is the amout of simulation time that's passed so far.
-    # note: to get the average step_time, elapsed_sim_time can be divided by step_count
     dt: float
+    """Amount of simulation time the last step took."""
     step_count: int
+    """Number of steps taken by SMARTS thus far."""
     elapsed_sim_time: float
-    events: Events
-    ego_vehicle_state: EgoVehicleObservation
-    neighborhood_vehicle_states: List[VehicleObservation]
-    waypoint_paths: List[List[Waypoint]]
-    distance_travelled: float
+    """Amout of simulation time elapsed."""
 
+    distance_travelled: float
+    drivable_area_grid_map: DrivableAreaGridMap
+    ego_vehicle_state: EgoVehicleObservation
+    events: Events
     # TODO: Convert to `namedtuple` or only return point cloud
     # [points], [hits], [(ray_origin, ray_directino)]
     lidar_point_cloud: Tuple[
         List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
     ]
-    drivable_area_grid_map: DrivableAreaGridMap
+    neighborhood_vehicle_states: List[VehicleObservation]
     occupancy_grid_map: OccupancyGridMap
+    road_waypoints: RoadWaypoints
     top_down_rgb: TopDownRGB
-    road_waypoints: RoadWaypoints = None
-    via_data: Vias = None
-
-
-@dataclass
-class Collision:
-    collidee_id: str
+    via_data: Vias
+    waypoint_paths: List[List[Waypoint]]
 
 
 class Sensors:

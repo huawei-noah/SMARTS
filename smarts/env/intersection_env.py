@@ -40,9 +40,9 @@ from smarts.env.wrappers.standard_obs import StandardObs
 
 
 def intersection_env(
-    headless: bool = False,
+    headless: bool = True,
     visdom: bool = False,
-    sumo_headless: bool = False,
+    sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
 ):
     """An intersection environment where a single agent needs to make an
@@ -50,16 +50,16 @@ def intersection_env(
     lights. Traffic vehicles stop before entering the junction.
 
     Observation:
-        Key                      Value
-        top_down_rgb             Top down color image (256 x 256)
-        occupancy_grid_map       Top down binary occupancy grid map (256 x 256)
-        driveable_area_grid_map  Top down binary driveable are grid map (256 x 256)
-        road_waypoints
-        waypoint_paths
-        events
+        Key                             Value
+        drivable_area_grid_map          Top down binary driveable are grid map
         ego_vehicle_state
-        neighborhood_vehicle_states  
+        events
         lidar_point_cloud
+        neighborhood_vehicle_states
+        occupancy_grid_map              Top down binary occupancy grid map
+        road_waypoints
+        top_down_rgb                    Top down color image
+        waypoint_paths
 
     Actions:
         Type: gym.spaces.Box(
@@ -159,15 +159,7 @@ def intersection_env(
         sumo_headless=sumo_headless,
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
-    # env = StandardObs(env=env)
+    env = StandardObs(env=env)
     env = SingleAgent(env=env)
 
     return env
-
-
-#     Observation:
-#         Type: gym.spaces.Dict({
-#             gym.spaces.Box(low=0, high=255, shape=(256,256,3), dtype=np.uint8),
-#             gym.spaces.Box(low=0, high=1, shape=(256,256,1), dtype=np.uint8),
-#             gym.spaces.Box(low=0, high=1, shape=(256,256,1), dtype=np.uint8),
-#         })
