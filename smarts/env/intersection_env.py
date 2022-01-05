@@ -49,7 +49,7 @@ class IntersectionEnv(HiWayEnv):
             low=-1.0, high=1.0, shape=(3,), dtype=np.float32
         )
 
-        Action     Value
+        Action     Value range
         Throttle   [ 0, 1]
         Brake      [ 0, 1]
         Steering   [-1, 1]  
@@ -72,6 +72,7 @@ class IntersectionEnv(HiWayEnv):
         self,
         headless: bool = False,
         visdom: bool = False,
+        sumo_headless: bool = False,
         envision_record_data_replay_path: Optional[str] = None,
     ):
         """
@@ -80,6 +81,8 @@ class IntersectionEnv(HiWayEnv):
                 Envision. Defaults to False.
             visdom (bool, optional): If True, enables visualization of observed
                 RGB images in Visdom. Defaults to False.
+            sumo_headless (bool, optional): If True, disables visualization in
+                SUMO GUI. Defaults to True.
             envision_record_data_replay_path (Optional[str], optional):
                 Envision's data replay output directory. Defaults to None.
         """
@@ -102,8 +105,8 @@ class IntersectionEnv(HiWayEnv):
             not_moving=False,
             agents_alive=None,
         )
-        max_episode_steps = 1000
-        img_meters = 100
+        max_episode_steps = 3000
+        img_meters = 64
         img_pixels = 256
         agent_specs = {
             "intersection": AgentSpec(
@@ -128,7 +131,7 @@ class IntersectionEnv(HiWayEnv):
                         resolution=img_meters / img_pixels,
                     ),
                     neighborhood_vehicles=NeighborhoodVehicles(img_meters),
-                    waypoints=Waypoints(lookahead=32),
+                    waypoints=Waypoints(lookahead=40),
                     road_waypoints=RoadWaypoints(horizon=40),
                     accelerometer=True,
                     lidar = True,
@@ -139,9 +142,10 @@ class IntersectionEnv(HiWayEnv):
         super(IntersectionEnv, self).__init__(
             scenarios=[scenario],
             agent_specs=agent_specs,
-            sim_name="Intersection Left Turn",
+            sim_name="LeftTurn",
             headless=headless,
             visdom=visdom,
+            sumo_headless=False,
             envision_record_data_replay_path=envision_record_data_replay_path,
         )
 

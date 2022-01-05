@@ -42,9 +42,10 @@ turn_right_routes = [
 
 traffic = {}
 for name, routes in {
-    "vertical": vertical_routes,
-    # "horizontal": horizontal_routes,
-    # "unprotected_left": turn_left_routes,
+    # "vertical": vertical_routes,
+    "horizontal": horizontal_routes,
+    # "turn_left": turn_left_routes,
+    # "turn_right": turn_right_routes,
     # "turns": turn_left_routes + turn_right_routes,
     # "all": vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes,
 }.items():
@@ -56,7 +57,6 @@ for name, routes in {
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
                 rate=60 * 3,
-                begin=i*2,
                 actors={intersection_car:1},
             )
             for i, r in enumerate(routes)
@@ -65,7 +65,7 @@ for name, routes in {
 
 ego_missions = [
     Mission(
-        route=Route(begin=("edge-west-WE", 0, 10), end=("edge-north-SN", 0, "max")),
+        route=Route(begin=("edge-west-WE", 0, 40), end=("edge-north-SN", 0, 30)),
     ),
 ]
 
