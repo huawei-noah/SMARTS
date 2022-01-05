@@ -656,8 +656,6 @@ class OGMSensor(CameraSensor):
         grid = np.frombuffer(mem_view, np.uint8)
         grid.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 1)
         grid = np.flipud(grid)
-        grid = grid.clip(min=0, max=1).astype(np.int8)
-        grid *= 100  # full confidence on known cells
 
         metadata = GridMapMetadata(
             created_at=int(time.time()),
