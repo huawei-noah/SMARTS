@@ -254,7 +254,7 @@ class Scenario:
         len(missions)`. In this case a list of one dictionary is returned.
         """
 
-        road_map, _ = Scenario._build_map(scenario_root)
+        road_map, _ = Scenario.build_map(scenario_root)
 
         missions = []
         missions_file = os.path.join(scenario_root, "missions.pkl")
@@ -320,7 +320,7 @@ class Scenario:
         scenario_root = (
             scenario.root_filepath if isinstance(scenario, Scenario) else scenario
         )
-        road_map, _ = Scenario._build_map(scenario_root)
+        road_map, _ = Scenario.build_map(scenario_root)
 
         social_agents_path = os.path.join(scenario_root, "social_agents")
         if not os.path.exists(social_agents_path):
@@ -402,7 +402,7 @@ class Scenario:
         return discovered_scenarios
 
     @staticmethod
-    def _build_map(scenario_root: str) -> Tuple[RoadMap, str]:
+    def build_map(scenario_root: str) -> Tuple[RoadMap, str]:
         # XXX: using a map builder_fn supplied by users is a security risk
         # as SMARTS will be executing the code "as is".  We are currently
         # trusting our users to not try to sabotage their own simulations.
@@ -678,7 +678,7 @@ class Scenario:
         """
         # just make sure we can load the map
         try:
-            road_map, _ = Scenario._build_map(scenario_root)
+            road_map, _ = Scenario.build_map(scenario_root)
         except FileNotFoundError:
             return False
         return road_map is not None

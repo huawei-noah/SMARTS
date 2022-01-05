@@ -129,13 +129,17 @@ class HiWayEnv(gym.Env):
         if visdom:
             visdom_client = VisdomClient()
 
-        is_opendrive = HiWayEnv.check_scenario_versions(scenarios)
+        all_sumo = HiWayEnv.check_scenario_versions(scenarios)
         traffic_sim = None
-        if is_opendrive:
-            # We currently don't support the Native SUMO Traffic Provider or Social Agents for OpenDRIVE maps
+        if not all_sumo:
+            # We currently only support the Native SUMO Traffic Provider and Social Agents for SUMO maps
             if zoo_addrs:
-                warnings.warn("`zoo_addrs` should not be used with OpenDRIVE scenarios")
+                warnings.warn("`zoo_addrs` can only be used with SUMO scenarios")
                 zoo_addrs = None
+            warnings.warn(
+                "We currently only support the Native SUMO Traffic Provider and Social Agents for SUMO maps."
+                "All scenarios passed need to be of SUMO, to enable SUMO Traffic Simulation and Social Agents."
+            )
             pass
         else:
             from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -162,26 +166,18 @@ class HiWayEnv(gym.Env):
     @staticmethod
     def check_scenario_versions(scenarios):
         num_sumo = 0
-        num_opendrive = 0
         scenario_list = Scenario.get_scenario_list(scenarios)
         for scenario_root in scenario_list:
-            if os.path.exists(os.path.join(scenario_root, "map.net.xml")):
-                num_sumo += 1
-            elif os.path.exists(os.path.join(scenario_root, "map.xodr")):
-                num_opendrive += 1
-            else:
+            try:
+                road_map, _ = Scenario.build_map(scenario_root)
+            except FileNotFoundError:
                 raise FileNotFoundError(
-                    f"Unable to find map in map_source={scenario_root}."
+                    f"Unable to find network file in map_source={scenario_root}."
                 )
+            if road_map.source.endswith(".net.xml"):
+                num_sumo += 1
 
-        if (num_sumo > 0 and num_opendrive > 0) or (
-            num_sumo + num_opendrive != len(scenarios)
-        ):
-            raise AssertionError(
-                "All scenarios passed as a parameters for the gym environment need to be of the same version (OpenDRIVE or SUMO)."
-            )
-
-        return num_opendrive == len(scenarios)
+        return num_sumo == len(scenario_list)
 
     @property
     def agent_specs(self):
