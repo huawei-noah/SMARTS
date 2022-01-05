@@ -23,7 +23,7 @@ from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 from smarts.sstudio.types import MapSpec
 
 
-def generate_glb_from_opendrive_network(od_xodr_file: str, out_glb_file: str):
+def generate_glb_from_opendrive_file(od_xodr_file: str, out_glb_file: str):
     map_spec = MapSpec(od_xodr_file)
     road_network = OpenDriveRoadNetwork.from_spec(map_spec)
     road_network.to_glb(out_glb_file)
@@ -38,4 +38,4 @@ if __name__ == "__main__":
     parser.add_argument("output_path", help="where to write the mesh file", type=str)
     args = parser.parse_args()
 
-    generate_glb_from_opendrive_network(args.xodr, args.output_path)
+    generate_glb_from_opendrive_file(args.xodr, args.output_path)
