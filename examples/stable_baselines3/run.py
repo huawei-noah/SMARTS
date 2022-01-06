@@ -10,8 +10,8 @@ from smarts.core import agent as smarts_agent
 from smarts.core import agent_interface as smarts_agent_interface
 from smarts.core import controllers as smarts_controllers
 from smarts.env import hiway_env as smarts_hiway_env
-import env.rgb_image as smarts_rgb_image
-import env.single_agent as smarts_single_agent
+import smarts.env.wrappers.rgb_image as smarts_rgb_image
+import smarts.env.wrappers.single_agent as smarts_single_agent
 import env.reward as reward
 import env.action as action
 
