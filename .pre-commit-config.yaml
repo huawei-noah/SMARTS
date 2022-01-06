@@ -3,15 +3,12 @@ repos:
     rev: 19.3b0
     hooks:
     -   id: black
-        args: 
-          - --check
 
 -   repo: https://github.com/pycqa/isort
     rev: 5.5.4
     hooks:
     -   id: isort
         args:
-          - --check-only
           - --profile black
 
 -   repo: local
