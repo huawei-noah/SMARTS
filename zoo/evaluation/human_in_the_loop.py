@@ -22,7 +22,7 @@ from smarts.core.utils.episodes import episodes
 if __name__ == "__main__":
     from argument_parser import default_argument_parser
 else:
-    from .argument_parser import default_argument_parser
+    from examples.argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
@@ -90,49 +90,3 @@ class HumanKeyboardAgent(Agent):
         # send the action
         self.action = [self.throttle, self.brake, self.steering_angle]
         return self.action
-
-
-def main(scenarios, sim_name, headless, num_episodes, seed):
-    agent_spec = AgentSpec(
-        interface=AgentInterface.from_type(
-            AgentType.StandardWithAbsoluteSteering, max_episode_steps=3000
-        ),
-        agent_builder=HumanKeyboardAgent,
-    )
-
-    env = gym.make(
-        "smarts.env:hiway-v0",
-        scenarios=scenarios,
-        agent_specs={AGENT_ID: agent_spec},
-        sim_name=sim_name,
-        headless=headless,
-        fixed_timestep_sec=0.1,
-        seed=seed,
-    )
-
-    for episode in episodes(n=num_episodes):
-        agent = agent_spec.build_agent()
-        observations = env.reset()
-        episode.record_scenario(env.scenario_log)
-
-        dones = {"__all__": False}
-        while not dones["__all__"]:
-            agent_obs = observations[AGENT_ID]
-            agent_action = agent.act(agent_obs)
-            observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
-            episode.record_step(observations, rewards, dones, infos)
-
-    env.close()
-
-
-if __name__ == "__main__":
-    parser = default_argument_parser("human-in-the-loop-example")
-    args = parser.parse_args()
-
-    main(
-        scenarios=args.scenarios,
-        sim_name=args.sim_name,
-        headless=args.headless,
-        num_episodes=args.episodes,
-        seed=args.seed,
-    )
