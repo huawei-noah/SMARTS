@@ -22,8 +22,6 @@ RUN apt-get update --fix-missing && \
         python3.7 \
         python3.7-dev \
         python3.7-venv \
-        git \
-        vim \
         wget \
         xorg && \
     apt-get autoremove && \
