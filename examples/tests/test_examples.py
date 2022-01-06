@@ -1,6 +1,7 @@
 import tempfile
 from pathlib import Path
 
+import psutil
 import pytest
 
 from smarts.core.utils import import_utils
@@ -37,6 +38,7 @@ def test_ray_multi_instance_example():
     from examples import ray_multi_instance
 
     main = ray_multi_instance.main
+    num_cpus = max(2, min(10, (psutil.cpu_count(logical=False) - 1)))
     main(
         training_scenarios=["scenarios/loop"],
         evaluation_scenarios=["scenarios/loop"],
@@ -44,6 +46,7 @@ def test_ray_multi_instance_example():
         headless=True,
         num_episodes=1,
         seed=42,
+        num_cpus=num_cpus,
     )
 
 

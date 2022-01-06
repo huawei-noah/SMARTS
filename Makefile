@@ -7,7 +7,7 @@ test: build-all-scenarios
 		--doctest-modules \
 		--forked \
 		--dist=loadscope \
-		-n `nproc --ignore 2` \
+		-n `expr \( \`nproc\` \/ 2 \& \`nproc\` \> 3 \) \| 2` \
 		--nb-exec-timeout 65536 \
 		./examples/tests ./smarts/env ./envision ./smarts/contrib ./smarts/core ./smarts/sstudio ./tests \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
@@ -26,7 +26,7 @@ sanity-test: build-all-scenarios
 		--forked \
 		--dist=loadscope \
 		--junitxml="sanity_test_result.xml" \
-		-n `nproc --ignore 2` \
+		-n `expr \( \`nproc\` \/ 2 \& \`nproc\` \> 3 \) \| 2` \
 		./smarts/core/tests/test_python_version.py::test_python_version \
 		./smarts/core/tests/test_sumo_version.py::test_sumo_version \
 		./smarts/core/tests/test_dynamics_backend.py::test_set_pose \
@@ -51,7 +51,7 @@ test-memory-growth: build-all-scenarios
 	rm -f .coverage*
 
 .PHONY: test-long-determinism
-test-long-determinism: 
+test-long-determinism:
 	scl scenario build --clean scenarios/minicity
 	PYTHONHASHSEED=42 pytest -v \
 		--forked \
@@ -158,3 +158,4 @@ rm-pycache:
 rm-cov:
 	find . -type f -name ".coverage.*" -delete
 	find . -type f -name ".coverage*" -delete
+
