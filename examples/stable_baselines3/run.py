@@ -142,7 +142,7 @@ def main(args):
 
         # save trained model
         copyfile(config_path, str(save_path) + "/config.yaml")
-        model.save(save_path + "/model")
+        model.save(str(save_path) + "/model")
 
     else:
 
