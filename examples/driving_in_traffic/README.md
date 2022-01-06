@@ -1,7 +1,7 @@
 # Driving in Traffic
-This example illustrates the training of an ego agent to drive, as fast and as far as possible, in traffic using DreamerV2 (https://github.com/danijar/dreamerv2) reinforcement-learning algorithm.
+This example illustrates the training of an ego agent to drive, as fast and as far as possible, in traffic using the DreamerV2 (https://github.com/danijar/dreamerv2) reinforcement-learning algorithm.
 
-Ego agent earns rewards based on the distance travelled and is penalised for colliding with other vehicles and for going off-road.
+The ego agent earns reward for the distance travelled per-step and is penalised for colliding with other vehicles and for going off-road.
 
 ## Trained agent driving in traffic
 ![](./docs/_static/driving_in_traffic.gif)
@@ -32,7 +32,6 @@ $ python3.7 -m venv ./.venv
 $ source ./.venv/bin/activate
 $ pip install --upgrade pip
 $ pip install -e .
-$ scl scenario build-all --clean ./scenarios/loop
 ```
 
 ## Train
@@ -41,7 +40,7 @@ $ scl scenario build-all --clean ./scenarios/loop
     $ cd <path>/SMARTS/examples/driving_in_traffic
     $ python3.7 run.py 
     ```
-1. Trained model is saved into `<path>/SMARTS/examples/driving_in_traffic/logs/<folder_name>` folder.
+1. The trained model is saved into `<path>/SMARTS/examples/driving_in_traffic/logs/<folder_name>` folder.
 
 ## Evaluate
 1. Evaluate
@@ -53,7 +52,7 @@ $ scl scenario build-all --clean ./scenarios/loop
 1. Go to `localhost:8081` to view the simulation in Envision.
 
 ## Docker
-1. Build and train inside docker container
+1. Train a model inside docker
     ```bash
     $ cd <path>/SMARTS
     $ docker build --file=<path>/SMARTS/examples/driving_in_traffic/Dockerfile --network=host --tag=driving_in_traffic <path>/SMARTS

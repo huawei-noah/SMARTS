@@ -6,6 +6,13 @@ smarts:
   max_episode_steps: 300 # 30 seconds. Maximum steps per episode.
   action_space_type: "Continuous"
   agent_ids: 
-    - Tiger1
+    - Driver1
   scenarios: 
     - loop
+
+dreamerv2:
+  log_every: 1e4
+  eval_every: 1e5
+  prefill: 1e4
+  replay: {minlen: 20, maxlen: 20}
+  dataset: {length: 20}

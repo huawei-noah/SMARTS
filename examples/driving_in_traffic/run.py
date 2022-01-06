@@ -1,9 +1,12 @@
-# This reinforcement learning example uses code from DreamerV2 (https://github.com/danijar/dreamerv2) .
+# This reinforcement learning example uses code from DreamerV2 (https://github.com/danijar/dreamerv2).
+
+import os
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # Silence the TF logs
 
 import argparse
 import collections
 import logging
-import os
 import pathlib
 import re
 import warnings
@@ -16,12 +19,13 @@ from driving_in_traffic import seed
 from driving_in_traffic.env import single_agent
 from ruamel.yaml import YAML
 
+warnings.simplefilter("ignore", category=DeprecationWarning)
+warnings.simplefilter("ignore", category=PendingDeprecationWarning)
 import dreamerv2 as dv2  # isort: skip
 import dreamerv2.api as api  # isort:skip
 import dreamerv2.agent as agent  # isort:skip
 import dreamerv2.common as common  # isort:skip
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # Silence the TF logs
 logging.getLogger().setLevel("ERROR")
 warnings.filterwarnings("ignore", ".*box bound precision lowered.*")
 rich.traceback.install()
@@ -30,33 +34,39 @@ seed(42)
 
 
 def main(args):
-    # Load SMARTS env config
-    name = "smarts"
-    config_env = yaml.load(
+    # Build scenario.
+    _build_scenario()
+
+    # Load config file.
+    config_file = yaml.load(
         (pathlib.Path(__file__).absolute().parent / "config.yaml").read_text()
     )
-    config_env = config_env[name]
+
+    # Load SMARTS env config.
+    config_env = config_file["smarts"]
     config_env["mode"] = args.mode
     config_env["logdir"] = args.logdir
     config_env["headless"] = not args.head
+    config_env["scenarios_dir"] = (
+        pathlib.Path(__file__).absolute().parents[0] / "scenarios"
+    )
 
-    # Load dreamerv2 config
+    # Load dreamerv2 config.
     config_dv2 = dv2.api.defaults
+    config_dv2 = config_dv2.update(config_file["dreamerv2"])
 
-    # Setup tensorflow
+    # Setup tensorflow.
     tf.config.run_functions_eagerly(not config_dv2.jit)
 
-    # Setup GPU
+    # Setup GPU.
     gpus = tf.config.list_physical_devices("GPU")
     if gpus:
         try:
-            # Currently, memory growth needs to be the same across GPUs
             for gpu in gpus:
                 tf.config.experimental.set_memory_growth(gpu, True)
             logical_gpus = tf.config.list_logical_devices("GPU")
             print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
         except RuntimeError as e:
-            # Memory growth must be set before GPUs have been initialized
             print(e)
     else:
         warnings.warn(
@@ -64,31 +74,14 @@ def main(args):
             ResourceWarning,
         )
 
-    # Create SMARTS env
-    config_env["scenarios_dir"] = (
-        pathlib.Path(__file__).absolute().parents[0] / "scenarios"
-    )
-    gen_env = single_agent.gen_env(config_env, config_env["seed"])
-
-    # Train or evaluate
-    config_dv2 = config_dv2.update(
-        {
-            "log_every": 1e4,
-            "eval_every": 1e5,
-            "prefill": 10000,
-            "replay.minlen": 20,
-            "replay.maxlen": 20,
-            "dataset.length": 20,
-        }
-    )
+    # Train or evaluate.
     if config_env["mode"] == "train":
-        # Setup logdir
         if not config_env["logdir"]:
-            # Begin training from scratch
+            # Begin training from scratch.
             time = datetime.now().strftime("%Y_%m_%d_%H_%M")
             logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
         else:
-            # Begin training from a pretrained model
+            # Begin training from a pretrained model.
             logdir = config_env["logdir"]
         config_dv2 = config_dv2.update(
             {
@@ -107,11 +100,20 @@ def main(args):
             f'Expected \'train\' or \'evaluate\', but got {config_env["mode"]}.'
         )
 
-    # Train or evaluate dreamerv2 with env
+    # Create SMARTS env.
+    gen_env = single_agent.gen_env(config_env, config_env["seed"])
+
+    # Run training or evaluation.
     run(config_dv2, gen_env, config_env["mode"])
 
 
-def wrap_env(env, config):
+def _build_scenario():
+    scenario = str(pathlib.Path(__file__).absolute().parent / "scenarios" / "loop")
+    build_scenario = f"scl scenario build-all --clean {scenario}"
+    os.system(build_scenario)
+
+
+def _wrap_env(env, config):
     env = dv2.common.GymWrapper(env)
     env = dv2.common.ResizeImage(env)
     if hasattr(env.act_space["action"], "n"):
@@ -122,7 +124,7 @@ def wrap_env(env, config):
     return env
 
 
-def run(config, gen_env, mode):
+def run(config, gen_env, mode: str):
     logdir = pathlib.Path(config.logdir).expanduser()
     logdir.mkdir(parents=True, exist_ok=True)
     config.save(logdir / "config.yaml")
@@ -176,13 +178,13 @@ def run(config, gen_env, mode):
     print("Create envs.")
     train_envs = []
     if mode == "train":
-        train_envs = [wrap_env(next(gen_env)(env_name="train"), config)]
+        train_envs = [_wrap_env(next(gen_env)(env_name="train"), config)]
         train_driver = dv2.common.Driver(train_envs)
         train_driver.on_episode(lambda ep: per_episode(ep, mode="train"))
         train_driver.on_step(lambda tran, worker: step.increment())
         train_driver.on_step(train_replay.add_step)
         train_driver.on_reset(train_replay.add_step)
-    eval_envs = [wrap_env(next(gen_env)(env_name="eval"), config)]
+    eval_envs = [_wrap_env(next(gen_env)(env_name="eval"), config)]
     act_space = eval_envs[0].act_space
     obs_space = eval_envs[0].obs_space
     eval_driver = dv2.common.Driver(eval_envs)
