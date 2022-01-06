@@ -92,7 +92,7 @@ class Point(NamedTuple):
         return spt
 
     def __del__(self):
-        if self in _shapely_points:
+        if _shapely_points and self in _shapely_points:
             del _shapely_points[self]
 
 
