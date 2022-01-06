@@ -59,6 +59,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
   for clarity since we are adding the ability to have variable time steps.
 ### Removed
 - Remove `ray_multi_instance` example when running `make sanity-test`
+- Removed deprecated fields from `AgentSpec`:  `policy_builder`, `policy_params`, and `perform_self_test`.
+- Removed deprecated class `AgentPolicy` from `agent.py`.
 
 ## [0.4.18] - 2021-07-22
 ### Added 
