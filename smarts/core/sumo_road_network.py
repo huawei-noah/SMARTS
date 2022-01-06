@@ -23,7 +23,7 @@ import os
 import random
 from functools import lru_cache
 from subprocess import check_output
-from typing import List, Sequence, Set, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import trimesh
@@ -81,26 +81,21 @@ class SumoRoadNetwork(RoadMap):
     # in North America (although US highway lanes are wider at ~3.7m).
     DEFAULT_LANE_WIDTH = 3.2
 
-    def __init__(
-        self, graph, net_file, default_lane_width=None, lanepoint_spacing=None
-    ):
+    def __init__(self, graph, net_file: str, map_spec: MapSpec):
         self._log = logging.getLogger(self.__class__.__name__)
         self._graph = graph
         self._net_file = net_file
-        self._default_lane_width = (
-            default_lane_width
-            if default_lane_width is not None
-            else SumoRoadNetwork.DEFAULT_LANE_WIDTH
-        )
+        self._map_spec = map_spec
+        self._default_lane_width = SumoRoadNetwork._spec_lane_width(map_spec)
         self._surfaces = {}
         self._lanes = {}
         self._roads = {}
         self._waypoints_cache = SumoRoadNetwork._WaypointsCache()
         self._lanepoints = None
-        if lanepoint_spacing is not None:
-            assert lanepoint_spacing > 0
+        if map_spec.lanepoint_spacing is not None:
+            assert map_spec.lanepoint_spacing > 0
             # XXX: this should be last here since SumoLanePoints() calls road_network methods immediately
-            self._lanepoints = SumoLanePoints(self, spacing=lanepoint_spacing)
+            self._lanepoints = SumoLanePoints(self, spacing=map_spec.lanepoint_spacing)
 
     @staticmethod
     def _check_net_origin(bbox):
@@ -143,13 +138,9 @@ class SumoRoadNetwork(RoadMap):
         return False
 
     @classmethod
-    def from_file(
-        cls,
-        net_file,
-        shift_to_origin=False,
-        default_lane_width=None,
-        lanepoint_spacing=None,
-    ):
+    def from_spec(cls, map_spec: MapSpec, shift_to_origin: bool = False):
+        net_file = SumoRoadNetwork._map_path(map_spec)
+
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
@@ -171,31 +162,41 @@ class SumoRoadNetwork(RoadMap):
                 # coordinates are relative to the origin).
                 G._shifted_by_smarts = True
 
-        return cls(
-            G,
-            net_file,
-            default_lane_width=default_lane_width,
-            lanepoint_spacing=lanepoint_spacing,
-        )
+        return cls(G, net_file, map_spec)
 
     @property
     def source(self) -> str:
         """This is the net.xml file that corresponds with our possibly-offset coordinates."""
         return self._net_file
 
-    def is_same_map(self, map_spec: MapSpec) -> bool:
-        dlw = (
+    @staticmethod
+    def _spec_lane_width(map_spec: MapSpec) -> float:
+        return (
             map_spec.default_lane_width
             if map_spec.default_lane_width is not None
             else SumoRoadNetwork.DEFAULT_LANE_WIDTH
         )
+
+    @staticmethod
+    def _map_path(map_spec: MapSpec) -> str:
+        if os.path.isdir(map_spec.source):
+            # map.net.xml is the default Sumo map name; try that:
+            return os.path.join(map_spec.source, "map.net.xml")
+        return map_spec.source
+
+    def is_same_map(self, map_spec: MapSpec) -> bool:
         return (
-            map_spec.source == self._net_file
-            and (
-                (not map_spec.lanepoint_spacing and not self._lanepoints)
-                or map_spec.lanepoint_spacing == self._lanepoints.spacing
+            (
+                map_spec.source == self._map_spec.source
+                or SumoRoadNetwork._map_path(map_spec)
+                == SumoRoadNetwork._map_path(self._map_spec)
             )
-            and dlw == self._default_lane_width
+            and map_spec.lanepoint_spacing == self._map_spec.lanepoint_spacing
+            and (
+                map_spec.default_lane_width == self._map_spec.default_lane_width
+                or SumoRoadNetwork._spec_lane_width(map_spec)
+                == SumoRoadNetwork._spec_lane_width(self._map_spec)
+            )
         )
 
     @cached_property
@@ -393,7 +394,7 @@ class SumoRoadNetwork(RoadMap):
             self,
             point: Sequence,
             lookahead: int,
-            filter_road_ids: Sequence[str] = None,
+            filter_road_ids: Optional[Sequence[str]] = None,
         ) -> List[List[Waypoint]]:
             closest_linked_lp = (
                 self._map._lanepoints.closest_linked_lanepoint_on_lane_to_point(
@@ -629,7 +630,7 @@ class SumoRoadNetwork(RoadMap):
 
     @lru_cache(maxsize=16)
     def nearest_lanes(
-        self, point: Point, radius: float = None, include_junctions=True
+        self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> List[Tuple[RoadMap.Lane, float]]:
         if radius is None:
             radius = max(10, 2 * self._default_lane_width)
@@ -667,7 +668,7 @@ class SumoRoadNetwork(RoadMap):
         self,
         start_road: RoadMap.Road,
         end_road: RoadMap.Road,
-        via: Sequence[RoadMap.Road] = None,
+        via: Optional[Sequence[RoadMap.Road]] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
         assert max_to_gen == 1, "multiple route generation not yet supported for Sumo"
@@ -911,7 +912,7 @@ class SumoRoadNetwork(RoadMap):
         @lru_cache(maxsize=8)
         def project_along(
             self, start: Point, distance: float
-        ) -> Set[Tuple[RoadMap.Lane, float]]:
+        ) -> Optional[Set[Tuple[RoadMap.Lane, float]]]:
             route_roads = set(self._roads)
             for cand_start_lane, _ in self._map.nearest_lanes(start, 30.0, False):
                 if cand_start_lane.road in route_roads:
@@ -1254,7 +1255,7 @@ class SumoRoadNetwork(RoadMap):
             point: Tuple[float, float, float],
             filter_road_ids: tuple,
             llp: LinkedLanePoint,
-        ) -> List[List[Waypoint]]:
+        ) -> Optional[List[List[Waypoint]]]:
             if self._match(lookahead, point, filter_road_ids):
                 hit = self._starts.get(llp.lp.lane.index, None)
                 if hit:

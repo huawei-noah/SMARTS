@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from sys import maxsize
-from typing import Dict, FrozenSet, Sequence, Set, Tuple
+from typing import Dict, FrozenSet, Optional, Sequence, Set
 
 from shapely.affinity import rotate, translate
 from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
@@ -34,7 +34,7 @@ from smarts.core.plan import Mission, Plan, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.string import truncate
-from smarts.core.vehicle import Vehicle, VehicleState
+from smarts.core.vehicle import Vehicle
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.sstudio.types import BoidAgentActor
 from smarts.sstudio.types import Bubble as SSBubble
@@ -246,9 +246,9 @@ class Cursor:
     # We would always want to have the vehicle go through the airlock zone. This may
     # not be the case if we spawn a vehicle in a bubble, but that wouldn't be ideal.
     vehicle_id: str
-    state: BubbleState = None
-    transition: BubbleTransition = None
-    bubble: Bubble = None
+    state: Optional[BubbleState] = None
+    transition: Optional[BubbleTransition] = None
+    bubble: Optional[Bubble] = None
 
     @classmethod
     def from_pos(

@@ -11,6 +11,7 @@ test: build-all-scenarios
 		--nb-exec-timeout -1 \
 		./envision ./smarts/contrib ./smarts/core ./smarts/env ./smarts/sstudio ./tests ./examples/tests \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
+		--ignore=./smarts/core/tests/test_env_frame_rate.py \
 		--ignore=./smarts/env/tests/test_benchmark.py \
 		--ignore=./examples/tests/test_learning.py \
 		-k 'not test_long_determinism'

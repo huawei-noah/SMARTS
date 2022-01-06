@@ -22,6 +22,7 @@ import os
 import random
 import tempfile
 from dataclasses import replace
+from typing import Optional
 
 import sh
 from yattag import Doc, indent
@@ -107,7 +108,7 @@ class TrafficGenerator:
         self,
         scenario_dir: str,
         scenario_map_spec: types.MapSpec,
-        log_dir: str = None,
+        log_dir: Optional[str] = None,
         overwrite: bool = False,
     ):
         """
@@ -133,7 +134,11 @@ class TrafficGenerator:
         self._log_dir = self._resolve_log_dir(log_dir)
 
     def plan_and_save(
-        self, traffic: types.Traffic, name: str, output_dir: str = None, seed: int = 42
+        self,
+        traffic: types.Traffic,
+        name: str,
+        output_dir: Optional[str] = None,
+        seed: int = 42,
     ):
         """Writes a traffic spec to a route file in the given output_dir.
 
@@ -260,7 +265,8 @@ class TrafficGenerator:
         if not self._road_network:
             from smarts.core.sumo_road_network import SumoRoadNetwork
 
-            self._road_network = SumoRoadNetwork.from_file(self._road_network_path)
+            map_spec = types.MapSpec(self._road_network_path)
+            self._road_network = SumoRoadNetwork.from_spec(map_spec)
 
     def resolve_edge_length(self, edge_id, lane_idx):
         self._cache_road_network()

@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass, field
-from typing import List, Set
+from typing import List, Optional, Set
 
 from .controllers import ActionSpaceType
 from .scenario import Scenario
@@ -28,7 +28,7 @@ from .vehicle import VehicleState
 @dataclass
 class ProviderState:
     vehicles: List[VehicleState] = field(default_factory=list)
-    dt: float = None  # most Providers can leave this blank
+    dt: Optional[float] = None  # most Providers can leave this blank
 
     def merge(self, other: "ProviderState"):
         our_vehicles = {v.vehicle_id for v in self.vehicles}

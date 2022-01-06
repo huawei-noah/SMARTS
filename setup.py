@@ -29,7 +29,6 @@ setup(
         "pandas>=1.3.4",
         "psutil>=5.8.0",
         "pybullet==3.0.6",
-        "pynput>=1.7.4",  # Used by HumanKeyboardAgent
         "rich>=10.13.0",
         "rtree>=0.9.7",  # Used by sumolib
         "sh>=1.14.2",
@@ -85,17 +84,10 @@ setup(
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
         ],
-        "camera-obs": [
-            "Panda3D==1.10.9",
-            "panda3d-gltf==0.13",
-        ],
-        "ros": [
-            "catkin_pkg",
-            "rospkg",
-        ],
-        "waymo": [
-            "waymo-open-dataset-tf-2-2-0",
-        ],
+        "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
+        "ros": ["catkin_pkg", "rospkg"],
+        "waymo": ["waymo-open-dataset-tf-2-2-0"],
+        "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )

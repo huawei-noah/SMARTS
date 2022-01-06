@@ -26,7 +26,7 @@ import gym
 import pytest
 from pympler import muppy, summary, tracker
 
-from smarts.core.agent import AgentPolicy, AgentSpec
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 
 SMARTS_MEMORY_GROWTH_LIMIT = 2e5
@@ -86,7 +86,7 @@ def agent_type():
 def env_and_spec(
     action, agent_type, max_episode_steps, scenarios, seed=42, agent_id="Agent-006"
 ):
-    class Policy(AgentPolicy):
+    class Policy(Agent):
         def act(self, obs):
             return action
 
@@ -94,7 +94,7 @@ def env_and_spec(
         interface=AgentInterface.from_type(
             agent_type, max_episode_steps=max_episode_steps
         ),
-        policy_builder=Policy,
+        agent_builder=Policy,
     )
     env = gym.make(
         "smarts.env:hiway-v0",

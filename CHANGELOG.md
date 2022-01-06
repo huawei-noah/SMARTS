@@ -10,6 +10,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Added Minimum FrameRate tests to measure the fps for `smart.step()` method. See Issue #455.
 - Added a ROS wrapper/driver example to wrap SMARTS in a ROS (v1) node.
 - Added the ability to pass an optional `time_delta_since_last_step` to SMARTS' `step()` function
   to support variable timesteps for co-simulation.
@@ -26,6 +27,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `smarts.core.utils.import_utils` to help with the dynamic import of modules.
 - Added `single_agent` env wrapper and unit test. The wrapper converts a single-agent SMARTS environment's step and reset output to be compliant with gym spaces.
 - Added `rgb_image` env wrapper and unit test. The wrapper filters SMARTS environment observation and returns only top-down RGB image as observation.
+- Added a "ReplayAgent" wrapper to allow users to rerun an agent previously run by saving its configurations and inputs. See Issue #971.
 ### Changed
 - `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.
 - Moved examples tests to `examples` and used relative imports to fix a module collision with `aiohttp`'s `examples` module.
@@ -57,6 +59,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
   for clarity since we are adding the ability to have variable time steps.
 ### Removed
 - Remove `ray_multi_instance` example when running `make sanity-test`
+- Removed deprecated fields from `AgentSpec`:  `policy_builder`, `policy_params`, and `perform_self_test`.
+- Removed deprecated class `AgentPolicy` from `agent.py`.
 
 ## [0.4.18] - 2021-07-22
 ### Added 
@@ -79,7 +83,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added a new utility experiment file `cli/run.py` to replace the context given by `supervisord.conf`. See PR #911.
 - Added `scl zoo install` command to install zoo policy agents at the specified paths. See Issue #603.
 - Added a `FrameStack` wrapper which returns stacked observations for each agent.
-
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space. See Issue #844.
 - Updated and removed some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266. 
