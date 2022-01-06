@@ -28,6 +28,17 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `single_agent` env wrapper and unit test. The wrapper converts a single-agent SMARTS environment's step and reset output to be compliant with gym spaces.
 - Added `rgb_image` env wrapper and unit test. The wrapper filters SMARTS environment observation and returns only top-down RGB image as observation.
 - Added a "ReplayAgent" wrapper to allow users to rerun an agent previously run by saving its configurations and inputs. See Issue #971.
+- Added `smarts.core.provider.ProviderRecoveryFlags` as flags to determine how `SMARTS` should handle failures in providers. They are as follows:
+  - `NOT_REQUIRED`: Not needed for the current step. Error causes skip of provider if it should recover but cannot or should not recover.
+  - `EPISODE_REQUIRED`: Needed for the current episode. Results in episode ending if it should recover but cannot or should not recover.
+  - `EXPERIMENT_REQUIRED`: Needed for the experiment. Results in exception if it should recover but cannot or should not recover.
+  - `ATTEMPT_RECOVERY`: Provider should attempt to recover from the exception or disconnection.
+- Added recovery options for providers in `smarts.core.provider.Provider`. These include:
+  - Add `recover()` method to providers to attempt to recover from errors and disconnection.
+  - Add `connected` property to providers to check if the provider is still connected.
+- Added recovery options to `smarts.core.smarts.SMARTS.add_provider()`
+  - Add `recovery_flags` argument to configure the recovery options if the provider disconnects or throws an exception.
+
 ### Changed
 - `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.
 - Moved examples tests to `examples` and used relative imports to fix a module collision with `aiohttp`'s `examples` module.
@@ -44,8 +55,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Raised a warning message for building scenarios without `map.net.xml` file. See PR #1161.
 ### Fixed
 - Fix lane vector for the unique cases of lane offset >= lane's length. See PR #1173.
-- Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992.
-- Prevent `test_notebook.ipynb` cells from timing out by increasing time to unlimited using `/metadata/execution/timeout=-1` within the notebook for regular uses, and `pytest` call with `--nb-exec-timeout -1` option for tests. See for more details: "https://jupyterbook.org/content/execute.html#setting-execution-timeout" and "https://pytest-notebook.readthedocs.io/en/latest/user_guide/tutorial_intro.html#pytest-fixture".
+- Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992. 
+- Prevent `test_notebook.ipynb` cells from timing out by increasing time to unlimited using `/metadata/execution/timeout=65536` within the notebook for regular uses, and `pytest` call with `--nb-exec-timeout 65536` option for tests. See for more details: "https://jupyterbook.org/content/execute.html#setting-execution-timeout" and "https://pytest-notebook.readthedocs.io/en/latest/user_guide/tutorial_intro.html#pytest-fixture".
 - Stop `multiprocessing.queues.Queue` from throwing an error by importing `multiprocessing.queues` in `envision/utils/multiprocessing_queue.py`.
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
 - Prevent `TrapManager`from trapping vehicles in Bubble airlocks.  See Issue #1064.
@@ -54,6 +65,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Updated deprecated Shapely functionality.
 - Fixed the type of `position` (pose) fields emitted to envision to match the existing type hints of `tuple`.
 - Properly detect whether waypoint is present in mission route, while computing distance travelled by agents with missions in TripMeterSensor.
+- Fixed `test_notebook` timeout by setting `pytest --nb-exec-timeout 65536`. 
 ### Deprecated
 - The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
   for clarity since we are adding the ability to have variable time steps.

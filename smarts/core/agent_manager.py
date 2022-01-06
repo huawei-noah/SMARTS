@@ -213,6 +213,10 @@ class AgentManager:
                 rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
                 scores[agent_id] = vehicle.trip_meter_sensor()
 
+        if sim.should_reset:
+            dones = {agent_id: True for agent_id in self.agent_ids}
+            dones["__sim__"] = True
+
         return observations, rewards, scores, dones
 
     def _vehicle_reward(self, vehicle_id, sim):
@@ -504,6 +508,7 @@ class AgentManager:
         for agent_id in ids_:
             self._agent_interfaces.pop(agent_id, None)
 
+        self._pending_agent_ids = self._pending_agent_ids - ids_
         return ids_
 
     def reset_agents(self, observations):
