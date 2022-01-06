@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 from dataclasses import dataclass, field
 from enum import IntFlag
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 from .controllers import ActionSpaceType
 from .scenario import Scenario
@@ -27,6 +27,8 @@ from .vehicle import VehicleState
 
 
 class ProviderRecoveryFlags(IntFlag):
+    """This describes actions to be taken with a provider should it fail."""
+
     NOT_REQUIRED = 0x00000000
     """Not needed for the current step. Error causes skip."""
     EPISODE_REQUIRED = 0x00000010
@@ -91,7 +93,7 @@ class Provider:
 
     def recover(
         self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
-    ) -> bool:
+    ) -> Tuple[ProviderState, bool]:
         """Attempt to reconnect the provider if an error or disconnection occured.
         Implementations may choose to e-raise the passed in exception.
         Args:
@@ -103,7 +105,7 @@ class Provider:
         """
         if error:
             raise error
-        return False
+        return ProviderState(), False
 
     @property
     def connected(self) -> bool:

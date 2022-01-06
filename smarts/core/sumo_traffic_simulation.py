@@ -369,7 +369,7 @@ class SumoTrafficSimulation(Provider):
             self._handle_traci_disconnect(error)
         elif isinstance(error, Exception):
             raise error
-        return False
+        return ProviderState(), False
 
     def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
         """
