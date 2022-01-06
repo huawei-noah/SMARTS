@@ -46,12 +46,12 @@ from .bubble_manager import BubbleManager
 from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
 from .coordinates import BoundingBox, Point
+from .events import Collision
 from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
 from .provider import Provider, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
-from .events import Collision
 from .traffic_history_provider import TrafficHistoryProvider
 from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .trap_manager import TrapManager

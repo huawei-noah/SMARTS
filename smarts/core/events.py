@@ -18,12 +18,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from typing import NamedTuple, Optional, List
 from dataclasses import dataclass
+from typing import List, NamedTuple, Optional
+
 
 @dataclass
 class Collision:
     collidee_id: str
+
 
 class Events(NamedTuple):
     agents_alive_done: bool

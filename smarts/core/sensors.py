@@ -131,7 +131,6 @@ class Observation:
     """Number of steps taken by SMARTS thus far."""
     elapsed_sim_time: float
     """Amout of simulation time elapsed."""
-
     distance_travelled: float
     drivable_area_grid_map: DrivableAreaGridMap
     ego_vehicle_state: EgoVehicleObservation
