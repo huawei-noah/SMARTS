@@ -27,7 +27,7 @@ import random
 import sqlite3
 from contextlib import closing, nullcontext
 from functools import lru_cache
-from typing import Dict, Generator, NamedTuple, Set, Tuple, Type, TypeVar
+from typing import Dict, Generator, NamedTuple, Optional, Set, Tuple, Type, TypeVar
 
 from cached_property import cached_property
 
@@ -57,7 +57,9 @@ class TrafficHistory:
             self._db_cnxn.close()
             self._db_cnxn = None
 
-    def _query_val(self, result_type: Type[T], query: str, params: Tuple = ()) -> T:
+    def _query_val(
+        self, result_type: Type[T], query: str, params: Tuple = ()
+    ) -> Optional[T]:
         with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
             sqlite3.connect(self._db)
         ) as dbcnxn:
@@ -160,7 +162,7 @@ class TrafficHistory:
 
     def vehicle_pose_at_time(
         self, vehicle_id: str, sim_time: float
-    ) -> Tuple[float, float, float]:
+    ) -> Tuple[float, float, float, float]:
         query = """SELECT position_x, position_y, heading_rad, speed
                    FROM Trajectory
                    WHERE vehicle_id = ? and sim_time = ?"""

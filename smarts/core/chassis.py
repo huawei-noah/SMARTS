@@ -21,13 +21,13 @@ import importlib.resources as pkg_resources
 import logging
 import math
 import os
-from typing import Sequence
+from typing import Optional, Sequence
 
 import numpy as np
 import yaml
 from cached_property import cached_property
 from shapely.affinity import rotate as shapely_rotate
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
 from smarts.core import models
@@ -150,8 +150,8 @@ class Chassis:
         self,
         dt: float,
         force_pose: Pose,
-        linear_velocity: np.ndarray = None,
-        angular_velocity: np.ndarray = None,
+        linear_velocity: Optional[np.ndarray] = None,
+        angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
         and may have unintended behavioural or performance consequences."""
@@ -198,8 +198,8 @@ class BoxChassis(Chassis):
         self,
         dt: float,
         force_pose: Pose,
-        linear_velocity: np.ndarray = None,
-        angular_velocity: np.ndarray = None,
+        linear_velocity: Optional[np.ndarray] = None,
+        angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
         and may have unintended behavioural or performance consequences."""
@@ -255,7 +255,7 @@ class BoxChassis(Chassis):
         return (linear_velocity, angular_velocity)
 
     @speed.setter
-    def speed(self, speed: float = None):
+    def speed(self, speed: Optional[float] = None):
         self._speed = speed
 
     @property
@@ -267,7 +267,7 @@ class BoxChassis(Chassis):
         return None
 
     @property
-    def yaw_rate(self) -> float:
+    def yaw_rate(self) -> Optional[float]:
         # in rad/s
         if self._last_dt and self._last_dt > 0:
             delta = min_angles_difference_signed(self._pose.heading, self._last_heading)
@@ -509,7 +509,7 @@ class AckermannChassis(Chassis):
         return (np.array(self.longitudinal_lateral_speed + (0,)), angular_velocity)
 
     @speed.setter
-    def speed(self, speed: float = None):
+    def speed(self, speed: Optional[float] = None):
         # TODO: Temporary, figure out the required joint velocities to achieve the
         #       requested speed
         if not speed or self.speed < speed:
@@ -681,8 +681,8 @@ class AckermannChassis(Chassis):
         self,
         dt: float,
         force_pose: Pose,
-        linear_velocity: np.ndarray = None,
-        angular_velocity: np.ndarray = None,
+        linear_velocity: Optional[np.ndarray] = None,
+        angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
         and may have unintended behavioural or performance consequences."""

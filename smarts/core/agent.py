@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import inspect
 import logging
 import warnings
 from dataclasses import dataclass, replace
@@ -94,15 +95,15 @@ class AgentSpec:
 
     # This is optional because sometimes when building re-useable specs,
     # you don't know the agent interface ahead of time.
-    interface: AgentInterface = None
+    interface: Optional[AgentInterface] = None
     """the adaptor used to wrap agent observation and action flow (default None)"""
 
-    agent_builder: Callable[..., Agent] = None
+    agent_builder: Optional[Callable[..., Agent]] = None
     """A callable to build an `smarts.core.agent.Agent` given `AgentSpec.agent_params` (default None)"""
     agent_params: Optional[Any] = None
     """Parameters to be given to `AgentSpec.agent_builder` (default None)"""
 
-    policy_builder: Callable[..., Agent] = None
+    policy_builder: Optional[Callable[..., Agent]] = None
     """[DEPRECATED] see `AgentSpec.agent_builder` (default None)"""
     policy_params: Optional[Any] = None
     """[DEPRECATED] see `AgentSpec.agent_params` (default None)"""
@@ -202,7 +203,16 @@ AgentSpec(
             return self.agent_builder(*self.agent_params)
         elif isinstance(self.agent_params, dict):
             # dictionaries, as keyword arguments
-            return self.agent_builder(**self.agent_params)
+            fas = inspect.getfullargspec(self.agent_builder)
+            if fas[2] is not None:
+                return self.agent_builder(**self.agent_params)
+            else:
+                return self.agent_builder(
+                    **{
+                        k: self.agent_params[k]
+                        for k in self.agent_params.keys() & set(fas[0])
+                    }
+                )
         else:
             # otherwise, the agent params are sent as is to the builder
             return self.agent_builder(self.agent_params)

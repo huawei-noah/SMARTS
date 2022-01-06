@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 """A helper to ensure consistent naming of IDs within SMARTS Platform."""
 import uuid
+from typing import Optional
 
 
 class Id(str):
@@ -65,6 +66,6 @@ class SocialAgentId(Id):
     DTYPE = "social-agent"
 
     @classmethod
-    def new(cls, name: str, group: str = None):
+    def new(cls, name: str, group: Optional[str] = None):
         identifier = "-".join([group, name]) if group is not None else name
         return cls(dtype=SocialAgentId.DTYPE, identifier=identifier)

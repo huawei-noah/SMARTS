@@ -259,7 +259,7 @@ class MapSpec:
     """If specified, the default distance between pre-generated Lane Points (Waypoints)."""
     default_lane_width: Optional[float] = None
     """If specified, the default width (in meters) of lanes on this map."""
-    builder_fn: Optional[MapBuilder] = get_road_map
+    builder_fn: MapBuilder = get_road_map
     """If specified, this should return an object derived from the RoadMap base class
     and a hash that uniquely identifies it (changes to the hash should signify
     that the map is different enough that map-related caches should be reloaded).
@@ -336,7 +336,7 @@ class RandomRoute:
 class Flow:
     """A route with an actor type emitted at a given rate."""
 
-    route: Route
+    route: Union[RandomRoute, Route]
     """The route for the actor to attempt to follow."""
     rate: float
     """Vehicles per hour."""
@@ -435,7 +435,7 @@ class TrapEntryTactic(EntryTactic):
 class Mission:
     """The descriptor for an actor's mission."""
 
-    route: Route
+    route: Union[RandomRoute, Route]
     """The route for the actor to attempt to follow."""
 
     via: Tuple[Via, ...] = ()
@@ -658,7 +658,7 @@ class PositionalZone(Zone):
     size: Tuple[float, float]
     """The (length, width) dimensions of the zone."""
 
-    def to_geometry(self, road_map: RoadMap = None) -> Polygon:
+    def to_geometry(self, road_map: Optional[RoadMap] = None) -> Polygon:
         w, h = self.size
         p0 = (self.pos[0] - w / 2, self.pos[1] - h / 2)  # min
         p1 = (self.pos[0] + w / 2, self.pos[1] + h / 2)  # max
@@ -692,17 +692,17 @@ class Bubble:
     # If limit != None it will only allow that specified number of vehicles to be
     # hijacked. N.B. when actor = BoidAgentActor the lesser of the actor capacity
     # and bubble limit will be used.
-    limit: BubbleLimits = None
+    limit: Optional[BubbleLimits] = None
     """The maximum number of actors that could be captured."""
     exclusion_prefixes: Tuple[str, ...] = field(default_factory=tuple)
     """Used to exclude social actors from capture."""
     id: str = field(default_factory=lambda: f"bubble-{gen_id()}")
-    follow_actor_id: str = None
+    follow_actor_id: Optional[str] = None
     """Actor ID of agent we want to pin to. Doing so makes this a "travelling bubble"
     which means it moves to follow the `follow_actor_id`'s vehicle. Offset is from the
     vehicle's center position to the bubble's center position.
     """
-    follow_offset: Tuple[float, float] = None
+    follow_offset: Optional[Tuple[float, float]] = None
     """Maintained offset to place the travelling bubble relative to the follow
     vehicle if it were facing north.
     """

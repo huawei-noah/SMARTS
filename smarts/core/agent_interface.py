@@ -94,7 +94,7 @@ class RoadWaypoints:
 @dataclass
 class NeighborhoodVehicles:
     # `None` means no radius filtering
-    radius: float = None
+    radius: Optional[float] = None
 
 
 @dataclass
