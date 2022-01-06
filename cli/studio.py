@@ -73,7 +73,6 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
         from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_file
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
-        sumo_road_network = None
         map_net = None
         for map_path in sumo_map_paths:
             if not str(map_path).endswith("AUTOGEN.net.xml"):
