@@ -1,3 +1,4 @@
+import argparse
 import gym
 import os
 import pathlib
@@ -19,7 +20,6 @@ from stable_baselines3 import PPO
 from stable_baselines3.common import monitor
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
-from argument_parser import default_argument_parser
 
 
 yaml = YAML(typ="safe")
@@ -131,7 +131,7 @@ def main(args):
             model, env, n_eval_episodes=10, deterministic=True
         )
         model.set_env(env)
-        model.learn(total_timesteps=500000)
+        model.learn(total_timesteps=args.num_steps)
         mean_reward, std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
@@ -167,7 +167,7 @@ def main(args):
         before_mean_reward, before_std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
-        model.learn(total_timesteps=500000)
+        model.learn(total_timesteps=args.num_steps)
         mean_reward, std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
@@ -183,7 +183,11 @@ def main(args):
 
 if __name__ == "__main__":
 
-    parser = default_argument_parser("stable-baselines-3")
+    
+    from pathlib import Path
+    program = Path(__file__).stem
+    parser = argparse.ArgumentParser(program)
+
     parser.add_argument(
         "--mode",
         help="`train` or `evaluate`. Default is `train`.",
@@ -199,6 +203,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--head", help="Run the simulation with display.", action="store_true"
     )
+    parser.add_argument("--num-steps", type=int, default=1000000)
+
     args = parser.parse_args()
 
     main(args)
