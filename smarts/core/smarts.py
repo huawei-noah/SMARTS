@@ -66,7 +66,7 @@ from .vehicle_index import VehicleIndex
 logging.basicConfig(
     format="%(asctime)s.%(msecs)03d %(levelname)s: {%(module)s} %(message)s",
     datefmt="%Y-%m-%d,%H:%M:%S",
-    level=logging.INFO,
+    level=logging.ERROR,
 )
 
 MAX_PYBULLET_FREQ = 240
@@ -415,8 +415,7 @@ class SMARTS:
         recovery_flags: ProviderRecoveryFlags = ProviderRecoveryFlags.EXPERIMENT_REQUIRED,
     ):
         assert isinstance(provider, Provider)
-        self._providers.append(provider)
-        self._provider_recovery_flags[provider] = recovery_flags
+        self._insert_provider(len(self._providers), provider, recovery_flags)
 
     def _insert_provider(
         self,
@@ -850,8 +849,7 @@ class SMARTS:
             try:
                 new_provider_state = provider.setup(scenario)
             except Exception as provider_error:
-                self._handle_provider(provider, provider_error)
-                new_provider_state = ProviderState()
+                new_provider_state = self._handle_provider(provider, provider_error)
             provider_state.merge(new_provider_state)
         return provider_state
 
@@ -877,7 +875,7 @@ class SMARTS:
             except Exception as provider_error:
                 self._handle_provider(provider, provider_error)
 
-    def _handle_provider(self, provider: Provider, provider_error):
+    def _handle_provider(self, provider: Provider, provider_error) -> ProviderState:
         provider_problem = bool(provider_error or not provider.connected)
         if not provider_problem:
             return
@@ -887,12 +885,13 @@ class SMARTS:
         )
         recovered = False
         if recovery_flags & ProviderRecoveryFlags.ATTEMPT_RECOVERY:
-            recovered = provider.recover(
+            provider_state, recovered = provider.recover(
                 self._scenario, self.elapsed_sim_time, provider_error
             )
 
+        provider_state = provider_state or ProviderState()
         if recovered:
-            return
+            return provider_state
 
         if recovery_flags & ProviderRecoveryFlags.EPISODE_REQUIRED:
             self._reset_required = True
@@ -901,7 +900,7 @@ class SMARTS:
                     f"`Provider {provider.__class__.__name__} has crashed during reset`"
                 )
                 raise provider_error
-            return
+            return provider_state
         elif recovery_flags & ProviderRecoveryFlags.EXPERIMENT_REQUIRED:
             raise provider_error
 
@@ -961,8 +960,7 @@ class SMARTS:
             try:
                 provider_state = self._step_provider(provider, actions)
             except Exception as provider_error:
-                self._handle_provider(provider, provider_error)
-                provider_state = ProviderState()
+                provider_state = self._handle_provider(provider, provider_error)
 
             if provider == self._traffic_sim:
                 # Remove agent vehicles from provider vehicles
