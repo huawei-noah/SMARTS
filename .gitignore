@@ -75,6 +75,7 @@ celerybeat-schedule
 # Environments
 .venv
 venv
+.bugtest
 
 # Spyder project settings
 .spyderproject
@@ -135,7 +136,7 @@ ultra/ultra/scenarios/task*/*/
 # Singularity
 *.sif
 
-# folder containing Observations collected .pkl files for imitation learning
+# Folder containing observations collected .pkl files for imitation learning
 collected_observations/
 
 # vim swap files
