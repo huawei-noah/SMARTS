@@ -34,8 +34,12 @@ from smarts.core.sensors import (
 
 
 class StandardObs(gym.ObservationWrapper):
-    """Filters SMARTS environment observation and returns standard observations
-    only.
+    """Preprocesses SMARTS environment observation and returns only gym 
+    compliant observations. The actual set of observation returned depends on 
+    the features enabled via AgentInterface.
+
+    The full set of standardized observation that could be returned is as 
+    follows.
 
     Observations
 

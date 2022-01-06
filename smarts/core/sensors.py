@@ -78,18 +78,18 @@ class RoadWaypoints(NamedTuple):
 
 
 class GridMapMetadata(NamedTuple):
-    # time at which the map was loaded
     created_at: int
-    # map resolution in world-space-distance/cell
+    """Time at which the map was loaded."""
     resolution: float
-    # map width in # of cells
+    """Map resolution in world-space-distance/cells."""
     width: int
-    # map height in # of cells
+    """Map width in cells."""
     height: int
-    # camera position when project onto the map
+    """Map height in cells."""
     camera_pos: Tuple[float, float, float]
-    # camera rotation angle along z-axis when project onto the map
+    """Camera position when projected onto the map."""
     camera_heading_in_degrees: float
+    """Camera rotation angle along z-axis when projected onto the map."""
 
 
 class TopDownRGB(NamedTuple):
