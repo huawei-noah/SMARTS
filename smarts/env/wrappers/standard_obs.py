@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 import math
-from typing import Any, DefaultDict, Dict, Union
+from typing import Any, Dict, List, Union
 
 import gym
 import numpy as np
@@ -91,7 +91,7 @@ class StandardObs(gym.ObservationWrapper):
                     "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
                     "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(1,), dtype=np.float32),
                     "yaw_rate": gym.spaces.Box(low=0, high=2*math.pi, shape=(1,), dtype=np.float32),
-                    "lane_index": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
+                    "lane_index": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.uint8),
                     "linear_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
                     "angular_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
                     "linear_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
@@ -109,6 +109,13 @@ class StandardObs(gym.ObservationWrapper):
                     "reached_goal": gym.spaces.MultiBinary(1),
                     "reached_max_episode_steps": gym.spaces.MultiBinary(1),
                     "wrong_way": gym.spaces.MultiBinary(1),
+                }),
+                "neighborhood_vehicle_states": gym.spaces.Dict({
+                    "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),    
+                    "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+                    "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(1,), dtype=np.float32),
+                    "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
+                    "lane_index": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.uint8),
                 }),
                 "occupancy_grid_map":gym.spaces.Box(low=0, high=255,shape=(self.agent_specs[agent_id].interface.ogm.width, self.agent_specs[agent_id].interface.ogm.height, 1), dtype=np.uint8),
                 "top_down_rgb":gym.spaces.Box(low=0, high=255,shape=(self.agent_specs[agent_id].interface.rgb.width, self.agent_specs[agent_id].interface.rgb.height, 3), dtype=np.uint8),
@@ -157,7 +164,7 @@ def _std_ego_vehicle_state(
         "speed": np.float32(val.speed),
         "steering": np.float32(val.steering),
         "yaw_rate": np.float32(val.yaw_rate),
-        "lane_index": int(val.lane_index),
+        "lane_index": np.uint8(val.lane_index),
         "linear_velocity": val.linear_velocity.astype(np.float32),
         "angular_velocity": val.angular_acceleration.astype(np.float32),
         "linear_acceleration": val.linear_acceleration.astype(np.float32),
@@ -185,8 +192,24 @@ def _std_lidar_point_cloud(val):
     return val
 
 
-def _std_neighborhood_vehicle_states(val):
-    return val
+def _std_neighborhood_vehicle_states(val)->List[Dict[str,Union[np.float32, np.ndarray]]]:
+    des_len = 10
+    new_val = [{
+        "position":np.array(nghb.position).astype(np.float32),
+        "bounding_box":np.array(val.bounding_box.as_lwh).astype(np.float32),
+        "heading":np.float32(val.heading),
+        "speed":np.float32(val.speed),
+        "lane_index":np.uint8(val.lane_index),
+    } for nghb in val[:des_len]]
+    new_val += [{
+        "position":np.array([0,0,0]),
+        "bounding_box":np.array([0,0,0]),
+        "heading": np.float32(0),
+        "speed": np.float32(0),
+        "lane_index": np.uint8(0),
+    } for _ in range(des_len-len(val))]
+
+    return new_val
 
 
 def _std_occupancy_grid_map(val: OccupancyGridMap) -> np.ndarray:
