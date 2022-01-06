@@ -70,7 +70,7 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
         od_road_network.to_glb(str(map_glb))
 
     elif sumo_map_paths:
-        from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_network
+        from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_file
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
         sumo_road_network = None
@@ -92,7 +92,7 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
                     SumoRoadNetwork.shifted_net_file_name
                 )
             )
-        generate_glb_from_sumo_network(map_net, str(map_glb))
+        generate_glb_from_sumo_file(map_net, str(map_glb))
     else:
         click.echo(
             "FILENOTFOUND: no reference to network file was found in {}.  "
