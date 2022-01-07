@@ -495,7 +495,7 @@ class Scenario:
             start, speed = self.get_vehicle_start_at_time(v_id, start_time)
             entry_tactic = default_entry_tactic(speed)
             veh_config_type = self._traffic_history.vehicle_config_type(v_id)
-            veh_dims = self._traffic_history.vehicle_size(v_id)
+            veh_dims = self._traffic_history.vehicle_dims(v_id)
             vehicle_missions[v_id] = Mission(
                 start=start,
                 entry_tactic=entry_tactic,
@@ -513,14 +513,14 @@ class Scenario:
         self, veh_id: str, trigger_time: float, positional_radius: int
     ) -> Tuple[Mission, Mission]:
         start, speed = self.get_vehicle_start_at_time(veh_id, trigger_time)
-        goal = self._get_vehicle_goal(veh_id)
+        veh_goal = self._get_vehicle_goal(veh_id)
         entry_tactic = default_entry_tactic(speed)
         # create a positional mission and a traverse mission
         positional_mission = Mission(
             start=start,
             entry_tactic=entry_tactic,
             start_time=0,
-            goal=PositionalGoal(goal, radius=positional_radius),
+            goal=PositionalGoal(veh_goal, radius=positional_radius),
         )
         traverse_mission = Mission(
             start=start,
