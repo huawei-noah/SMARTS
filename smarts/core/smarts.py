@@ -650,11 +650,15 @@ class SMARTS:
             )
 
     def __del__(self):
-        if not self._is_destroyed:
+        try:
+            self.destroy()
+        except (TypeError, AttributeError) as e:
             # This is a print statement because the logging module may be deleted at program exit.
-            print(
+            raise SMARTSDestroyedError(
                 "ERROR: A SMARTS instance may have been deleted by gc before a call to destroy."
-                " Please call `SMARTS.destroy()` to make this error go away."
+                " Please explicitly call `del obj` or `SMARTS.destroy()` to make this error"
+                " go away.",
+                e,
             )
 
     def _teardown_vehicles(self, vehicle_ids):
