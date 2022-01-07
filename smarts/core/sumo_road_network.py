@@ -603,10 +603,9 @@ class SumoRoadNetwork(RoadMap):
         def shape(
             self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
-            if default_width is None:
-                new_width = buffer_width
-            else:
-                new_width = default_width + buffer_width
+            new_width = buffer_width
+            if default_width:
+                new_width += default_width
             assert new_width >= 0.0
             if new_width > 0:
                 return buffered_shape(self._sumo_edge.getShape(), new_width)
