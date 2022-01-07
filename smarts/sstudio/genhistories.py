@@ -179,10 +179,10 @@ class _TrajectoryDataset:
                     float(self.column_val_in_row(row, "sim_time")) / 1000,
                     time_precision,
                 ),
-                float(self.column_val_in_row(row, "position_x"))
-                + x_offset * self.scale,
-                float(self.column_val_in_row(row, "position_y"))
-                + y_offset * self.scale,
+                (float(self.column_val_in_row(row, "position_x")) + x_offset)
+                * self.scale,
+                (float(self.column_val_in_row(row, "position_y")) + y_offset)
+                * self.scale,
                 float(self.column_val_in_row(row, "heading_rad")),
                 float(self.column_val_in_row(row, "speed")) * self.scale,
                 self.column_val_in_row(row, "lane_id"),
@@ -237,7 +237,7 @@ class Interaction(_TrajectoryDataset):
         super().check_dataset_spec(dataset_spec)
         hiw = dataset_spec.get("heading_inference_window", 2)
         if hiw != 2:
-            # Adding support fot this would require changing the rows() generator
+            # Adding support for this would require changing the rows() generator
             # (since we're not using Pandas here like we are for NGSIM).
             # So wait until if/when users request it...
             raise ValueError(
@@ -293,9 +293,7 @@ class Interaction(_TrajectoryDataset):
                 dx = float(self._next_row["x"]) - float(row["x"])
                 dy = float(self._next_row["y"]) - float(row["y"])
                 dm = np.linalg.norm((dx, dy))
-                if dm != 0.0 and (
-                    self._heading_min_speed is None or dm > self._heading_min_speed
-                ):
+                if dm != 0.0 and dm > self._heading_min_speed:
                     r = math.atan2(dy / dm, dx / dm)
                     new_heading = (r - math.pi / 2) % (2 * math.pi)
                     if self._max_angular_velocity:
