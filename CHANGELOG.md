@@ -73,6 +73,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Remove `ray_multi_instance` example when running `make sanity-test`
 - Removed deprecated fields from `AgentSpec`:  `policy_builder`, `policy_params`, and `perform_self_test`.
 - Removed deprecated class `AgentPolicy` from `agent.py`.
+- Removed `route_waypoints` attribute from `smarts.core.sensors.RoadWaypoints`.
 
 ## [0.4.18] - 2021-07-22
 ### Added 
