@@ -135,11 +135,11 @@ class Observation:
     drivable_area_grid_map: DrivableAreaGridMap
     ego_vehicle_state: EgoVehicleObservation
     events: Events
-    # TODO: Convert to `namedtuple` or only return point cloud
-    # [points], [hits], [(ray_origin, ray_directino)]
+    # TODO: Convert to `NamedTuple` or only return point cloud.
     lidar_point_cloud: Tuple[
         List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
     ]
+    """Lidar point cloud consists of [points, hits, (ray_origin, ray_vector)]."""
     neighborhood_vehicle_states: List[VehicleObservation]
     occupancy_grid_map: OccupancyGridMap
     road_waypoints: RoadWaypoints

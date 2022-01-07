@@ -1,10 +1,10 @@
 """
 This file contains an agent used for replaying an agent.
 """
+import logging
 import os
 import pickle
 from pathlib import Path
-import logging
 
 from smarts.core.agent import Agent, AgentSpec
 

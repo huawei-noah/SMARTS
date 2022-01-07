@@ -30,18 +30,18 @@ from smarts.core.sensors import (
     EgoVehicleObservation,
     OccupancyGridMap,
     TopDownRGB,
+    VehicleObservation,
 )
 
 
 class StandardObs(gym.ObservationWrapper):
-    """Preprocesses SMARTS environment observation and returns only gym 
-    compliant observations. The actual set of observation returned depends on 
+    """Preprocesses SMARTS environment observation and returns only gym
+    compliant observations. The actual set of observation returned depends on
     the features enabled via AgentInterface.
 
-    The full set of standardized observation that could be returned is as 
-    follows.
+    The complete set of available standardized observation is as follows.
 
-    Observations
+    Observation
 
 
     """
@@ -87,7 +87,7 @@ class StandardObs(gym.ObservationWrapper):
         self.observation_space = gym.spaces.Dict({
             agent_id: gym.spaces.Dict({
                 "distance_travelled": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
-                "drivable_area_grid_map": gym.spaces.Box(low=0, high=255,shape=(self.agent_specs[agent_id].interface.drivable_area_grid_map.width, self.agent_specs[agent_id].interface.drivable_area_grid_map.height, 1), dtype=np.uint8),
+                "drivable_area_grid_map": gym.spaces.Box(low=0, high=255, shape=(self.agent_specs[agent_id].interface.drivable_area_grid_map.width, self.agent_specs[agent_id].interface.drivable_area_grid_map.height, 1), dtype=np.uint8),
                 "ego_vehicle_state": gym.spaces.Dict({
                     "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
                     "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
@@ -103,6 +103,12 @@ class StandardObs(gym.ObservationWrapper):
                     "linear_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
                     "angular_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
                 }), 
+                "lidar_point_cloud": gym.spaces.Dict({
+                    "hit": gym.spaces.MultiBinary(300),
+                    "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(300,3), dtype=np.float32),
+                    "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(300,3), dtype=np.float32),
+                    "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(300,3), dtype=np.float32),
+                }),
                 "events": gym.spaces.Dict({
                     "agents_alive_done": gym.spaces.MultiBinary(1),
                     "collisions": gym.spaces.MultiBinary(1),
@@ -192,26 +198,61 @@ def _std_events(val: Events) -> Dict[str, int]:
     }
 
 
-def _std_lidar_point_cloud(val):
-    return val
+def _std_lidar_point_cloud(val) -> Dict[str, np.ndarray]:
+    des_len = 300
+    hit = np.array(val[1], dtype=np.uint8)
+    point_cloud = np.array(val[0], dtype=np.float32)
+    point_cloud = np.nan_to_num(
+        point_cloud,
+        copy=False,
+        nan=np.float32(0),
+        posinf=np.float32(0),
+        neginf=np.float32(0),
+    )
+    ray_origin, ray_vector = zip(*(val[2]))
+    ray_origin = np.array(ray_origin, np.float32)
+    ray_vector = np.array(ray_vector, np.float32)
+
+    try:
+        assert hit.shape == (des_len,)
+        assert point_cloud.shape == (des_len, 3)
+        assert ray_origin.shape == (des_len, 3)
+        assert ray_vector.shape == (des_len, 3)
+    except:
+        raise Exception("Internal Error: Mismatched lidar point cloud shape.")
+
+    return {
+        "hit": hit,
+        "point_cloud": point_cloud,
+        "ray_origin": ray_origin,
+        "ray_vector": ray_vector,
+    }
 
 
-def _std_neighborhood_vehicle_states(val)->List[Dict[str,Union[np.float32, np.ndarray]]]:
+def _std_neighborhood_vehicle_states(
+    val: List[VehicleObservation],
+) -> List[Dict[str, Union[np.float32, np.ndarray]]]:
     des_len = 10
-    new_val = [{
-        "position":np.array(nghb.position).astype(np.float32),
-        "bounding_box":np.array(val.bounding_box.as_lwh).astype(np.float32),
-        "heading":np.float32(val.heading),
-        "speed":np.float32(val.speed),
-        "lane_index":np.uint8(val.lane_index),
-    } for nghb in val[:des_len]]
-    new_val += [{
-        "position":np.array([0,0,0]),
-        "bounding_box":np.array([0,0,0]),
-        "heading": np.float32(0),
-        "speed": np.float32(0),
-        "lane_index": np.uint8(0),
-    } for _ in range(des_len-len(val))]
+    new_val = [
+        {
+            "position": np.array(nghb.position).astype(np.float32),
+            "bounding_box": np.array(nghb.bounding_box.as_lwh).astype(np.float32),
+            "heading": np.float32(nghb.heading),
+            "speed": np.float32(nghb.speed),
+            "lane_index": np.uint8(nghb.lane_index),
+        }
+        for nghb in val[:des_len]
+    ]
+    new_val += [
+        {
+            "position": np.array([0, 0, 0]),
+            "bounding_box": np.array([0, 0, 0]),
+            "heading": np.float32(0),
+            "speed": np.float32(0),
+            "lane_index": np.uint8(0),
+        }
+        for _ in range(des_len - len(val))
+    ]
 
     return new_val
 
