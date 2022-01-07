@@ -20,6 +20,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Allow specifying "-latest" as a version suffix for zoo locator strings.
 - Added Base CI and dependencies requirement tests for the "darwin" platform (MacOS).
 - Extended Imitation Learning codebase to allow importing traffic histories from the Waymo motion dataset and replay in a SMARTS simulation. See PR #1060.
+- Added options for dealing with noise when inferring headings while importing traffic history data.  See PR #1219.
 - Added `ros` extension rule to `setup.py`.
 - Added a script to allow users to hijack history vehicles dynamically through a trigger event. See PR #1088.
 - Added a `-y` option to `utils/setup/install_deps.sh` to accept installation by default. See issue #1081.
