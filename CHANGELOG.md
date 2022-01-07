@@ -40,6 +40,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added recovery options to `smarts.core.smarts.SMARTS.add_provider()`
   - Add `recovery_flags` argument to configure the recovery options if the provider disconnects or throws an exception.
 - Added `driving_in_traffic` reinforcement learning example. An ego agent is trained using DreamerV2 to drive as far and as fast as possible in heavy traffic, without colliding or going off-road.
+- Added `smarts.core.smarts.SMARTSDestroyedError` which describes use of a destroyed `SMARTS` instance. 
 ### Changed
 - `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.
 - Moved examples tests to `examples` and used relative imports to fix a module collision with `aiohttp`'s `examples` module.
@@ -55,6 +56,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Changed the type hint for `EgoVehicleObservation`: it returns a numpy array (and always has).
 - Raised a warning message for building scenarios without `map.net.xml` file. See PR #1161.
 - Updated `smarts/env/hiway_env.py` to support `OpenDRIVE` maps so that `SMARTs` object is instantiated without the `SUMO` traffic provider and social agents. See PR #1215.
+- Public `SMARTS` methods will throw `smarts.core.smarts.SMARTSDestroyedError` if `SMARTS.destroy()` has previously been called on the `SMARTS` instance.
 ### Fixed
 - Fix lane vector for the unique cases of lane offset >= lane's length. See PR #1173.
 - Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992. 
@@ -108,6 +110,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Made Panda3D and its modules optional as a requirement/dependencies to setup SMARTS. See Issue #883.
 - Updated the `Tensorflow` version to `2.2.1` for rl-agent and bump up its version to `1.0`. See Issue #211.
 - Made `Ray` and its module `Ray[rllib]` optional as a requirement/dependency to setup SMARTS. See Issue #917.
+- Added an error if a `SMARTS` instance reaches program exit without a manual `del` of the instance or a call to `SMARTS.destroy()`.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
 - Fix a minor bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
@@ -120,6 +123,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed the multi-instance display of `envision`. See Issue #784.
 - Caught abrupt terminate signals, in order to shutdown zoo manager and zoo workers.
 - Include tire model in package by moving `tire_parameters.yaml` from `./examples/tools` to `./smarts/core/models`. See Issue #1140
+- Fixed an issue where `SMARTS.destroy()` would still cause `SMARTS.__del__()` to throw an error at program exit.
 ### Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 - Removed `supervisord.conf` and `supervisor` from dependencies and requirements. See Issue #802.
