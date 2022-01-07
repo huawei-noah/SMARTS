@@ -98,6 +98,7 @@ class PyMARLHiWayEnv:
         self._observations = None
         self._state = None
         self._steps = 0
+        self._dones_registered = 0
 
         seed = self._config.get("seed", 42)
         smarts.core.seed(seed)
@@ -193,6 +194,10 @@ class PyMARLHiWayEnv:
         infos["rewards_list"] = rewards
 
         self._steps += 1
+        for done in dones.values():
+            self._dones_registered += 1 if done else 0
+
+        dones["__all__"] = self._dones_registered >= self.n_agents
         infos["dones_list"] = np.array(list(dones.values()))
         dones = infos["dones_list"]
         if self._steps >= self.episode_limit:
@@ -203,7 +208,7 @@ class PyMARLHiWayEnv:
 
     def reset(self):
         self._steps = 0
-
+        self._dones_registered = 0
         scenario = next(self._scenarios_iterator)
         observations = self._smarts.reset(scenario)
         self._observations = np.asarray(

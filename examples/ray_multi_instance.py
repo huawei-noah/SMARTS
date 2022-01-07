@@ -3,6 +3,7 @@ import tempfile
 
 import gym
 import numpy as np
+import psutil
 import torch
 
 # ray[rllib] is not the part of main dependency of the SMARTS package. It needs to be installed separately
@@ -175,8 +176,12 @@ def main(
     headless,
     num_episodes,
     seed,
+    num_cpus=None,
 ):
-    ray.init()
+    num_cpus = max(
+        2, num_cpus or psutil.cpu_count(logical=False) or (psutil.cpu_count() / 2)
+    )
+    ray.init(num_cpus=max(num_cpus, 1))
     ray.wait(
         [
             train.remote(

@@ -43,7 +43,7 @@ frozenlist==1.2.0
 future==0.18.2
 gast==0.4.0
 gitdb==4.0.9
-GitPython==3.1.24
+GitPython==3.1.25
 google==3.0.0
 google-api-core==2.3.2
 google-auth==2.3.3
@@ -124,7 +124,7 @@ pyasn1-modules==0.2.8
 pybullet==3.0.6
 pycparser==2.21
 pyglet==1.5.15
-Pygments==2.11.1
+Pygments==2.11.2
 pyparsing==3.0.6
 pyrsistent==0.18.0
 pytest==6.2.5
@@ -159,7 +159,7 @@ tableprint==0.9.1
 tabulate==0.8.9
 tensorboard==2.7.0
 tensorboard-data-server==0.6.1
-tensorboard-plugin-wit==1.8.0
+tensorboard-plugin-wit==1.8.1
 tensorboardX==2.4.1
 tensorflow==2.7.0
 tensorflow-estimator==2.7.0
