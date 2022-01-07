@@ -118,7 +118,7 @@ class RLlibUltraEnv(RLlibHiWayEnv):
         for done in agent_dones.values():
             self._dones_registered += 1 if done else 0
 
-        agent_dones["__all__"] = self._dones_registered == len(self._agent_specs)
+        agent_dones["__all__"] = self._dones_registered >= len(self._agent_specs)
 
         return observations, rewards, agent_dones, infos
 

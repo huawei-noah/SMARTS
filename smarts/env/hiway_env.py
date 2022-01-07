@@ -182,11 +182,9 @@ class HiWayEnv(gym.Env):
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
         }
-        observations, rewards, agent_dones, extras = None, None, None, None
+        observations, rewards, dones, extras = None, None, None, None
         with timeit("SMARTS Simulation/Scenario Step", self._log):
-            observations, rewards, agent_dones, extras = self._smarts.step(
-                agent_actions
-            )
+            observations, rewards, dones, extras = self._smarts.step(agent_actions)
 
         infos = {
             agent_id: {"score": value, "env_obs": observations[agent_id]}
@@ -203,12 +201,12 @@ class HiWayEnv(gym.Env):
             observations[agent_id] = agent_spec.observation_adapter(observation)
             infos[agent_id] = agent_spec.info_adapter(observation, reward, info)
 
-        for done in agent_dones.values():
+        for done in dones.values():
             self._dones_registered += 1 if done else 0
 
-        agent_dones["__all__"] = self._dones_registered == len(self._agent_specs)
+        dones["__all__"] = self._dones_registered >= len(self._agent_specs)
 
-        return observations, rewards, agent_dones, infos
+        return observations, rewards, dones, infos
 
     def reset(self):
         scenario = next(self._scenarios_iterator)

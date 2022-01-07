@@ -121,8 +121,8 @@ class BaseAnalysis:
             config = get_agent_config_by_type(policy)
             agent_spec = AgentSpec(
                 interface=config["interface"],
-                policy_params=dict(config["policy"], checkpoint_dir=ego_model),
-                policy_builder=config["policy_class"],
+                agent_params=dict(config["policy"], checkpoint_dir=ego_model),
+                agent_builder=config["policy_class"],
             )
             agent_spec.interface.max_episode_steps = max_episode_steps
             observation_adapter = IntersectionAdapter(

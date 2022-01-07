@@ -34,9 +34,6 @@ seed(42)
 
 
 def main(args):
-    # Build scenario.
-    _build_scenario()
-
     # Load config file.
     config_file = yaml.load(
         (pathlib.Path(__file__).absolute().parent / "config.yaml").read_text()
@@ -50,6 +47,7 @@ def main(args):
     config_env["scenarios_dir"] = (
         pathlib.Path(__file__).absolute().parents[0] / "scenarios"
     )
+    _build_scenario()
 
     # Load dreamerv2 config.
     config_dv2 = dv2.api.defaults
@@ -108,7 +106,7 @@ def main(args):
 
 
 def _build_scenario():
-    scenario = str(pathlib.Path(__file__).absolute().parent / "scenarios" / "loop")
+    scenario = str(pathlib.Path(__file__).absolute().parent / "scenarios")
     build_scenario = f"scl scenario build-all --clean {scenario}"
     os.system(build_scenario)
 
