@@ -20,6 +20,8 @@ setup(
         "setuptools>=41.0.0,!=50.0",
         "smarts[camera-obs] @ git+https://git@github.com/huawei-noah/SMARTS@develop",
         "stable-baselines3==1.3.0",
-        "tensorflow==2.2.1"
+        "tensorflow==2.4.0",
+        "ruamel.yaml==0.17.17",
+        "ruamel.yaml.clib==0.2.6",
     ],
 )
