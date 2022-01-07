@@ -411,8 +411,13 @@ class SumoRoadNetwork(RoadMap):
             )
 
         @lru_cache(maxsize=4)
-        def shape(self, width: float = 0.0, buffer_width: float = 0.0) -> Polygon:
-            new_width = width + buffer_width
+        def shape(
+            self, buffer_width: float = 0.0, default_width: Optional[float] = None
+        ) -> Polygon:
+            if default_width is None:
+                new_width = self._width + buffer_width
+            else:
+                new_width = default_width + buffer_width
             assert new_width >= 0.0
             if new_width > 0:
                 return buffered_shape(self._sumo_lane.getShape(), new_width)
@@ -595,8 +600,13 @@ class SumoRoadNetwork(RoadMap):
             return left_edge, right_edge
 
         @lru_cache(maxsize=4)
-        def shape(self, width: float = 0.0, buffer_width: float = 0.0) -> Polygon:
-            new_width = width + buffer_width
+        def shape(
+            self, buffer_width: float = 0.0, default_width: Optional[float] = None
+        ) -> Polygon:
+            if default_width is None:
+                new_width = buffer_width
+            else:
+                new_width = default_width + buffer_width
             assert new_width >= 0.0
             if new_width > 0:
                 return buffered_shape(self._sumo_edge.getShape(), new_width)
@@ -852,7 +862,7 @@ class SumoRoadNetwork(RoadMap):
             return [
                 list(
                     road.shape(
-                        sum([lane._width for lane in road.lanes]), 0.0
+                        0.0, sum([lane._width for lane in road.lanes])
                     ).exterior.coords
                 )
                 for road in self.roads

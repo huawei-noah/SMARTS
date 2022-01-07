@@ -55,7 +55,7 @@ def test_sumo_map(sumo_scenario):
     assert lane.index == 0
     assert lane.road.contains_point(point)
     assert lane.is_drivable
-    assert len(lane.shape()) >= 2
+    assert len(lane.shape().exterior.coords) >= 2
     assert lane.length == 55.6
 
     right_lane, direction = lane.lane_to_right

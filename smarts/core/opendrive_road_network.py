@@ -1088,7 +1088,9 @@ class OpenDriveRoadNetwork(RoadMap):
             return abs(t_outer - t_inner)
 
         @lru_cache(maxsize=4)
-        def shape(self, width: float = 0.0, buffer_width: float = 0.0) -> Polygon:
+        def shape(
+            self, buffer_width: float = 0.0, default_width: Optional[float] = None
+        ) -> Polygon:
             if buffer_width == 0.0:
                 return Polygon(self._lane_polygon)
             buffered_polygon = self._compute_lane_polygon(buffer_width / 2)
@@ -1243,7 +1245,9 @@ class OpenDriveRoadNetwork(RoadMap):
             return leftmost_edge_shape, rightmost_edge_shape
 
         @lru_cache(maxsize=4)
-        def shape(self, width: float = 0.0, buffer_width: float = 0.0) -> Polygon:
+        def shape(
+            self, buffer_width: float = 0.0, default_width: Optional[float] = None
+        ) -> Polygon:
             leftmost_edge_shape, rightmost_edge_shape = self._shape(buffer_width)
             road_polygon = (
                 leftmost_edge_shape + rightmost_edge_shape + [leftmost_edge_shape[0]]
@@ -1347,7 +1351,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
-            return [list(road.shape(0.0, 1.0).exterior.coords) for road in self.roads]
+            return [list(road.shape(1.0).exterior.coords) for road in self.roads]
 
         @lru_cache(maxsize=8)
         def distance_between(self, start: Point, end: Point) -> Optional[float]:

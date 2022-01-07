@@ -146,10 +146,13 @@ class RoadMap:
         def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
             raise NotImplementedError()
 
-        def shape(self, width: float, buffer_width: float = 0.0) -> Polygon:
-            """Returns a convex polygon, buffered by width + buffered_width (which must be non-negative),
-            where buffer_width is the change in width around this surface (like 0.3 + width).
-            If you want to keep the width to original, pass original width and set buffer_width as 0"""
+        def shape(
+            self, buffer_width: float = 0.0, default_width: Optional[float] = None
+        ) -> Polygon:
+            """Returns a convex polygon representing this surface, buffered by buffered_width (which must be non-negative),
+            where buffer_width is a buffer around the perimeter of the polygon.  In some situations, it may be desirable to
+            also specify a `default_width`, in which case the returned polygon should have a convex shape where the
+            distance across it is no less than buffered_width + default_width at any point."""
             raise NotImplementedError()
 
         def contains_point(self, point: Point) -> bool:
@@ -530,51 +533,3 @@ class Waypoint:
     def dist_to(self, p) -> float:
         """Calculates straight line distance to the given 2D point"""
         return np.linalg.norm(self.pos - p[: len(self.pos)])
-
-
-class WaypointsCache:
-    def __init__(self):
-        self.lookahead = 0
-        self.point = (0, 0, 0)
-        self.filter_road_ids = ()
-        self._starts = {}
-
-    # XXX:  all vehicles share this cache now (as opposed to before
-    # when it was in Plan.py and each vehicle had its own cache).
-    # TODO: probably need to add vehicle_id to the key somehow (or just make it bigger)
-    def _match(self, lookahead, point, filter_road_ids) -> bool:
-        return (
-            lookahead <= self.lookahead
-            and point[0] == self.point[0]
-            and point[1] == self.point[1]
-            and filter_road_ids == self.filter_road_ids
-        )
-
-    def update(
-        self,
-        lookahead: int,
-        point: Tuple[float, float, float],
-        filter_road_ids: tuple,
-        llp,
-        paths: List[List[Waypoint]],
-    ):
-        if not self._match(lookahead, point, filter_road_ids):
-            self.lookahead = lookahead
-            self.point = point
-            self.filter_road_ids = filter_road_ids
-            self._starts = {}
-        self._starts[llp.lp.lane.index] = paths
-
-    def query(
-        self,
-        lookahead: int,
-        point: Tuple[float, float, float],
-        filter_road_ids: tuple,
-        llp,
-    ) -> List[List[Waypoint]]:
-        if self._match(lookahead, point, filter_road_ids):
-            hit = self._starts.get(llp.lp.lane.index, None)
-            if hit:
-                # consider just returning all of them (not slicing)?
-                return [path[: (lookahead + 1)] for path in hit]
-            return None
