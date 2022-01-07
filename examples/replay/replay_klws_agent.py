@@ -1,8 +1,9 @@
 import logging
-import sys
 import os
 import shutil
 import stat
+import sys
+
 import gym
 
 from examples.argument_parser import default_argument_parser

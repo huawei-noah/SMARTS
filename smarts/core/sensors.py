@@ -74,7 +74,6 @@ class EgoVehicleObservation(NamedTuple):
 
 class RoadWaypoints(NamedTuple):
     lanes: Dict[str, List[List[Waypoint]]]
-    route_waypoints: List[List[Waypoint]]
 
 
 class GridMapMetadata(NamedTuple):
@@ -901,11 +900,11 @@ class RoadWaypointsSensor(Sensor):
         self._plan = plan
         self._horizon = horizon
 
-    def __call__(self):
+    def __call__(self) -> RoadWaypoints:
         veh_pt = self._vehicle.pose.point
         lane = self._road_map.nearest_lane(veh_pt)
         if not lane:
-            return RoadWaypoints(lanes={}, route_waypoints=[])
+            return RoadWaypoints(lanes={})
         road = lane.road
         lane_paths = {}
         for croad in (
@@ -914,16 +913,7 @@ class RoadWaypointsSensor(Sensor):
             for lane in croad.lanes:
                 lane_paths[lane.lane_id] = self.paths_for_lane(lane)
 
-        route_waypoints = self.route_waypoints()
-
-        return RoadWaypoints(lanes=lane_paths, route_waypoints=route_waypoints)
-
-    def route_waypoints(self):
-        return self._road_map.waypoint_paths(
-            self._vehicle.pose,
-            lookahead=self._horizon,
-            route=self._plan.route,
-        )
+        return RoadWaypoints(lanes=lane_paths)
 
     def paths_for_lane(self, lane, overflow_offset=None):
         # XXX: the following assumes waypoint spacing is 1m

@@ -76,6 +76,10 @@ class SMARTSNotSetupError(Exception):
     pass
 
 
+class SMARTSDestroyedError(Exception):
+    pass
+
+
 class SMARTS:
     def __init__(
         self,
@@ -91,6 +95,7 @@ class SMARTS:
         self._log = logging.getLogger(self.__class__.__name__)
         self._sim_id = Id.new("smarts")
         self._is_setup = False
+        self._is_destroyed = False
         self._scenario: Optional[Scenario] = None
         self._renderer = None
         self._envision: Optional[EnvisionClient] = envision
@@ -171,6 +176,7 @@ class SMARTS:
         """Note the time_delta_since_last_step param is in (nominal) seconds."""
         if not self._is_setup:
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
+        self._check_valid()
         assert not (
             self._fixed_timestep_sec and time_delta_since_last_step
         ), "cannot switch from fixed- to variable-time steps mid-simulation"
@@ -342,6 +348,7 @@ class SMARTS:
         raise first_exception
 
     def _reset(self, scenario: Scenario):
+        self._check_valid()
         if (
             scenario == self._scenario
             and self._reset_agents_only
@@ -390,6 +397,7 @@ class SMARTS:
         return observations_for_ego
 
     def setup(self, scenario: Scenario):
+        self._check_valid()
         self._scenario = scenario
 
         self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
@@ -414,6 +422,7 @@ class SMARTS:
         provider: Provider,
         recovery_flags: ProviderRecoveryFlags = ProviderRecoveryFlags.EXPERIMENT_REQUIRED,
     ):
+        self._check_valid()
         assert isinstance(provider, Provider)
         self._insert_provider(len(self._providers), provider, recovery_flags)
 
@@ -428,12 +437,14 @@ class SMARTS:
         self._provider_recovery_flags[provider] = recovery_flags
 
     def switch_ego_agents(self, agent_interfaces):
+        self._check_valid()
         self._agent_manager.switch_initial_agents(agent_interfaces)
         self._is_setup = False
 
     def add_agent_with_mission(
         self, agent_id: str, agent_interface: AgentInterface, mission: Mission
     ):
+        self._check_valid()
         # TODO:  check that agent_id isn't already used...
         if self._trap_manager.add_trap_for_agent(agent_id, mission, self.road_map):
             self._agent_manager.add_ego_agent(agent_id, agent_interface)
@@ -448,7 +459,8 @@ class SMARTS:
         agent_id: str,
         agent_interface: AgentInterface,
         mission: Mission,
-    ):
+    ) -> Vehicle:
+        self._check_valid()
         self.agent_manager.add_ego_agent(agent_id, agent_interface, for_trap=False)
         vehicle = self.switch_control_to_agent(
             vehicle_id, agent_id, mission, recreate=False, is_hijacked=True
@@ -463,6 +475,7 @@ class SMARTS:
         recreate: bool,
         is_hijacked: bool,
     ) -> Vehicle:
+        self._check_valid()
         # Check if this is a history vehicle
         history_veh_id = self._traffic_history_provider.get_history_id(vehicle_id)
         canonical_veh_id = history_veh_id if history_veh_id else vehicle_id
@@ -501,6 +514,7 @@ class SMARTS:
         vehicle: Vehicle,
         agent_id: str,
     ):
+        self._check_valid()
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         for provider in self.providers:
             if interface.action_space in provider.action_spaces:
@@ -603,6 +617,8 @@ class SMARTS:
         self._is_setup = False
 
     def destroy(self):
+        if self._is_destroyed:
+            return
         self.teardown()
 
         if self._envision:
@@ -614,6 +630,8 @@ class SMARTS:
         if self._agent_manager is not None:
             self._agent_manager.destroy()
             self._agent_manager = None
+        if self._vehicle_index is not None:
+            self._vehicle_index = None
         if self._traffic_sim is not None:
             self._traffic_sim.destroy()
             self._traffic_sim = None
@@ -623,20 +641,38 @@ class SMARTS:
         if self._bullet_client is not None:
             self._bullet_client.disconnect()
             self._bullet_client = None
+        self._is_destroyed = True
+
+    def _check_valid(self):
+        if self._is_destroyed:
+            raise SMARTSDestroyedError(
+                "The current SMARTS instance has already been destroyed."
+            )
 
     def __del__(self):
-        self.destroy()
+        try:
+            self.destroy()
+        except (TypeError, AttributeError) as e:
+            # This is a print statement because the logging module may be deleted at program exit.
+            raise SMARTSDestroyedError(
+                "ERROR: A SMARTS instance may have been deleted by gc before a call to destroy."
+                " Please explicitly call `del obj` or `SMARTS.destroy()` to make this error"
+                " go away.",
+                e,
+            )
 
     def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
         self._clear_collisions(vehicle_ids)
 
     def attach_sensors_to_vehicles(self, agent_spec, vehicle_ids):
+        self._check_valid()
         self._agent_manager.attach_sensors_to_vehicles(
             self, agent_spec.interface, vehicle_ids
         )
 
     def observe_from(self, vehicle_ids):
+        self._check_valid()
         return self._agent_manager.observe_from(
             self, vehicle_ids, self._traffic_history_provider.done_this_step
         )
@@ -707,6 +743,7 @@ class SMARTS:
         Params:
             agent_ids: Sequence of agent ids
         """
+        self._check_valid()
         agents_to_teardown = {
             agent_id
             for agent_id in agent_ids
@@ -839,6 +876,7 @@ class SMARTS:
         return self._providers
 
     def get_provider_by_type(self, requested_type):
+        self._check_valid()
         for provider in self._providers:
             if isinstance(provider, requested_type):
                 return provider
@@ -1040,6 +1078,7 @@ class SMARTS:
         return self._last_dt
 
     def neighborhood_vehicles_around_vehicle(self, vehicle, radius=None):
+        self._check_valid()
         other_states = [v for v in self._vehicle_states if v.vehicle_id != vehicle.id]
         if radius is None:
             return other_states
@@ -1055,12 +1094,14 @@ class SMARTS:
         return [other_states[i] for i in indices]
 
     def vehicle_did_collide(self, vehicle_id):
+        self._check_valid()
         for c in self._vehicle_collisions[vehicle_id]:
             if c.collidee_id != self._ground_bullet_id:
                 return True
         return False
 
     def vehicle_collisions(self, vehicle_id):
+        self._check_valid()
         return [
             c
             for c in self._vehicle_collisions[vehicle_id]

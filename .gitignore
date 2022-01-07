@@ -118,6 +118,7 @@ shifted_map-AUTOGEN.net.xml
 *.blend1
 
 # run logs
+**/examples/**/logs
 _run_logs
 results
 supervisord.log
@@ -141,3 +142,6 @@ collected_observations/
 
 # vim swap files
 *.swp
+
+# Static type check
+.pytype

@@ -20,8 +20,6 @@
 
 from typing import Iterable, Optional, Set
 
-import numpy as np
-
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Pose
 from .provider import Provider, ProviderState
