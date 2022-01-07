@@ -129,7 +129,7 @@ class HiWayEnv(gym.Env):
         if visdom:
             visdom_client = VisdomClient()
 
-        all_sumo = HiWayEnv.check_scenario_versions(scenarios)
+        all_sumo = Scenario.check_scenario_versions(scenarios)
         traffic_sim = None
         if not all_sumo:
             # We currently only support the Native SUMO Traffic Provider and Social Agents for SUMO maps
@@ -162,24 +162,6 @@ class HiWayEnv(gym.Env):
             fixed_timestep_sec=fixed_timestep_sec,
             zoo_addrs=zoo_addrs,
         )
-
-    @staticmethod
-    def check_scenario_versions(scenarios):
-        from smarts.core.sumo_road_network import SumoRoadNetwork
-
-        num_sumo = 0
-        scenario_list = Scenario.get_scenario_list(scenarios)
-        for scenario_root in scenario_list:
-            try:
-                road_map, _ = Scenario.build_map(scenario_root)
-            except FileNotFoundError:
-                raise FileNotFoundError(
-                    f"Unable to find network file in map_source={scenario_root}."
-                )
-            if isinstance(road_map, SumoRoadNetwork):
-                num_sumo += 1
-
-        return num_sumo == len(scenario_list)
 
     @property
     def agent_specs(self):

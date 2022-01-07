@@ -412,6 +412,24 @@ class Scenario:
         return map_spec.builder_fn(map_spec)
 
     @staticmethod
+    def check_scenario_versions(scenarios):
+        from smarts.core.sumo_road_network import SumoRoadNetwork
+
+        num_sumo = 0
+        scenario_list = Scenario.get_scenario_list(scenarios)
+        for scenario_root in scenario_list:
+            try:
+                road_map, _ = Scenario.build_map(scenario_root)
+            except FileNotFoundError:
+                raise FileNotFoundError(
+                    f"Unable to find network file in map_source={scenario_root}."
+                )
+            if isinstance(road_map, SumoRoadNetwork):
+                num_sumo += 1
+
+        return num_sumo == len(scenario_list)
+
+    @staticmethod
     def discover_map(
         scenario_root: str,
         lanepoint_spacing: Optional[float] = None,
