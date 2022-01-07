@@ -1,5 +1,6 @@
 from os import path
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 this_dir = path.abspath(path.dirname(__file__))
 with open(
@@ -81,6 +82,8 @@ setup(
             "black==20.8b1",
             "grpcio-tools==1.32.0",
             "isort==5.7.0",
+            "pre-commit==2.16.0",
+            "pylint==2.12.2",
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
@@ -88,7 +91,10 @@ setup(
         "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
         "ros": ["catkin_pkg", "rospkg"],
         "waymo": ["waymo-open-dataset-tf-2-2-0"],
+<<<<<<< ceb6d9ba0c322f682b79c38d6d8f4f6555f8e8cf
         "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
+=======
+>>>>>>> move pre-commit and pylint dependencies into [dev] option
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )

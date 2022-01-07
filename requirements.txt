@@ -115,7 +115,6 @@ pexpect==4.8.0
 pickleshare==0.7.5
 Pillow==8.2.0
 pluggy==1.0.0
-pre-commit==2.16.0
 prometheus-client==0.12.0
 prompt-toolkit==3.0.24
 protobuf==3.19.3
@@ -133,7 +132,6 @@ pyglet==1.5.15
 Pygments==2.11.2
 =======
 Pygments==2.11.0
-pylint==2.12.2
 pynput==1.7.5
 >>>>>>> add pylint to hooks
 pyparsing==3.0.6
