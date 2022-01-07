@@ -35,6 +35,8 @@ import yaml
 from numpy.lib.stride_tricks import as_strided as stride
 from numpy.lib.stride_tricks import sliding_window_view
 
+from smarts.core.utils.math import vec_to_radians
+
 try:
     from waymo_open_dataset.protos import scenario_pb2
 except ImportError:
@@ -221,7 +223,7 @@ class Interaction(_TrajectoryDataset):
         assert not self._flip_y
         self._max_angular_velocity = dataset_spec.get("max_angular_velocity", None)
         self._heading_min_speed = dataset_spec.get("heading_inference_min_speed", 0.22)
-        self._prev_heading = 3 * math.pi / 2
+        self._prev_heading = None
         self._next_row = None
         # See: https://interaction-dataset.com/details-and-format
         # position and length/width are in meters.
@@ -294,9 +296,8 @@ class Interaction(_TrajectoryDataset):
                 dy = float(self._next_row["y"]) - float(row["y"])
                 dm = np.linalg.norm((dx, dy))
                 if dm != 0.0 and dm > self._heading_min_speed:
-                    r = math.atan2(dy / dm, dx / dm)
-                    new_heading = (r - math.pi / 2) % (2 * math.pi)
-                    if self._max_angular_velocity:
+                    new_heading = vec_to_radians((dx, dy))
+                    if self._max_angular_velocity and self._prev_heading is not None:
                         # XXX: could try to divide by sim_time delta here instead of assuming .1s
                         angular_velocity = (new_heading - self._prev_heading) / 0.1
                         if abs(angular_velocity) > self._max_angular_velocity:
@@ -328,11 +329,11 @@ class NGSIM(_TrajectoryDataset):
         super().check_dataset_spec(dataset_spec)
         hiw = dataset_spec.get("heading_inference_window", 2)
         # 11 is a semi-arbitrary max just to keep things "sane".
-        if hiw < 2 or hiw > 11:
+        if not 2 <= hiw <= 11:
             raise ValueError("heading_inference_window must be between 2 and 11")
 
-    def _cal_heading(self, window) -> float:
-        window = window[0]
+    def _cal_heading(self, window_param) -> float:
+        window = window_param[0]
         new_heading = 0
         prev_heading = None
         den = 0
@@ -355,8 +356,7 @@ class NGSIM(_TrajectoryDataset):
                     den += 1
                 continue
             vhat = (n - c) / s
-            r = math.atan2(vhat[1], vhat[0])
-            inst_heading = (r - math.pi / 2) % (2 * math.pi)
+            inst_heading = vec_to_radians(vhat)
             if prev_heading is not None:
                 if inst_heading == 0 and prev_heading > math.pi:
                     inst_heading = 2 * math.pi
@@ -508,6 +508,16 @@ class OldJSON(_TrajectoryDataset):
     """This exists because SMARTS used to use JSON files for traffic histories.
     We provide this to help people convert these previously-created .json
     history files to the new .shf format."""
+
+    def __init__(self, dataset_spec: Dict[str, Any], output: str):
+        from warnings import warn
+
+        warn(
+            f"The {self.__class__.__name__} class has been deprecated.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(dataset_spec, output)
 
     @property
     def rows(self) -> Generator[Tuple, None, None]:
