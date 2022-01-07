@@ -22,9 +22,9 @@ import hashlib
 import logging
 import pickle
 import random
-from enum import IntEnum
 from ctypes import c_int64
 from dataclasses import dataclass, field
+from enum import IntEnum
 from sys import maxsize
 from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
 

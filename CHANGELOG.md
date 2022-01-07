@@ -38,7 +38,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
   - Add `connected` property to providers to check if the provider is still connected.
 - Added recovery options to `smarts.core.smarts.SMARTS.add_provider()`
   - Add `recovery_flags` argument to configure the recovery options if the provider disconnects or throws an exception.
-
+- Added `driving_in_traffic` reinforcement learning example. An ego agent is trained using DreamerV2 to drive as far and as fast as possible in heavy traffic, without colliding or going off-road.
 ### Changed
 - `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.
 - Moved examples tests to `examples` and used relative imports to fix a module collision with `aiohttp`'s `examples` module.
