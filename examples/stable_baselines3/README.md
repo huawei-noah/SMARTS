@@ -9,10 +9,11 @@ Ego agent earns rewards based on the distance travelled and is penalised for col
 ## Setup
 ```bash
 $ git clone https://github.com/huawei-noah/SMARTS.git
-$ follow the SMARTS repository setup, including [camera-obs]
 $ cd <path>/SMARTS/examples/stable_baselines3
-$ pip install stable-baselines3
-$ scl scenario build-all --clean ./scenarios/loop
+$ python3.7 -m venv ./venv
+$ source ./.venv/bin/activate
+$ pip install --upgrade pip
+$ pip install -e .
 ```
 
 ## Train
