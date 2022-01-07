@@ -28,6 +28,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `smarts.core.utils.import_utils` to help with the dynamic import of modules.
 - Added `single_agent` env wrapper and unit test. The wrapper converts a single-agent SMARTS environment's step and reset output to be compliant with gym spaces.
 - Added `rgb_image` env wrapper and unit test. The wrapper filters SMARTS environment observation and returns only top-down RGB image as observation.
+- Extended the `RoadMap` API to support `OpenDRIVE` map format in `smarts/core/opendrive_road_network.py`. Added 3 new scenarios with `OpenDRIVE` maps. See PR #1186.  
 - Added a "ReplayAgent" wrapper to allow users to rerun an agent previously run by saving its configurations and inputs. See Issue #971.
 - Added `smarts.core.provider.ProviderRecoveryFlags` as flags to determine how `SMARTS` should handle failures in providers. They are as follows:
   - `NOT_REQUIRED`: Not needed for the current step. Error causes skip of provider if it should recover but cannot or should not recover.
@@ -55,6 +56,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
     - Added `MapSpec` to the SStudio DSL types and introduced a simple builder pattern for creating `RoadMap` objects.
 - Changed the type hint for `EgoVehicleObservation`: it returns a numpy array (and always has).
 - Raised a warning message for building scenarios without `map.net.xml` file. See PR #1161.
+- Updated `smarts/env/hiway_env.py` to support `OpenDRIVE` maps so that the `SMARTS` object is instantiated without the `SUMO` traffic provider and social agents. See PR #1215.
 - Public `SMARTS` methods will throw `smarts.core.smarts.SMARTSDestroyedError` if `SMARTS.destroy()` has previously been called on the `SMARTS` instance.
 ### Fixed
 - Fix lane vector for the unique cases of lane offset >= lane's length. See PR #1173.

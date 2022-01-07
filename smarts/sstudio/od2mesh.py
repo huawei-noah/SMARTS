@@ -1,6 +1,4 @@
-# MIT License
-#
-# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,24 +17,25 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import shutil
-import tempfile
-from contextlib import contextmanager
-from pathlib import Path
+import argparse
 
-from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_file
+from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
+from smarts.sstudio.types import MapSpec
 
 
-@contextmanager
-def temp_scenario(name: str, map: str):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        scenario = Path(temp_dir) / name
-        scenario.mkdir()
+def generate_glb_from_opendrive_file(od_xodr_file: str, out_glb_file: str):
+    map_spec = MapSpec(od_xodr_file)
+    road_network = OpenDriveRoadNetwork.from_spec(map_spec)
+    road_network.to_glb(out_glb_file)
 
-        test_maps_dir = Path(__file__).parent.parent
-        shutil.copyfile(test_maps_dir / map, scenario / "map.net.xml")
-        generate_glb_from_sumo_file(
-            str(scenario / "map.net.xml"), str(scenario / "map.glb")
-        )
 
-        yield scenario
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        "od2mesh.py",
+        description="Utility to export opendrive road networks to mesh files.",
+    )
+    parser.add_argument("xodr", help="openDRIVE xodr file (*.xodr) path", type=str)
+    parser.add_argument("output_path", help="where to write the mesh file", type=str)
+    args = parser.parse_args()
+
+    generate_glb_from_opendrive_file(args.xodr, args.output_path)

@@ -18,25 +18,18 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-import shutil
-import tempfile
-from contextlib import contextmanager
-from pathlib import Path
+# THE SOFTWARE
+class KeyWrapper:
+    def __init__(self, iterable, key):
+        self.it = iterable
+        self.key = key
 
-from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_file
+    def __getitem__(self, i: int):
+        return self.key(self.it[i])
 
+    def __len__(self):
+        return len(self.it)
 
-@contextmanager
-def temp_scenario(name: str, map: str):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        scenario = Path(temp_dir) / name
-        scenario.mkdir()
-
-        test_maps_dir = Path(__file__).parent.parent
-        shutil.copyfile(test_maps_dir / map, scenario / "map.net.xml")
-        generate_glb_from_sumo_file(
-            str(scenario / "map.net.xml"), str(scenario / "map.glb")
-        )
-
-        yield scenario
+    def insert(self, index: int, item):
+        print("asked to insert %s at index%d" % (item, index))
+        self.it.insert(index, {"time": item})
