@@ -900,7 +900,7 @@ class RoadWaypointsSensor(Sensor):
         self._plan = plan
         self._horizon = horizon
 
-    def __call__(self)->RoadWaypoints:
+    def __call__(self) -> RoadWaypoints:
         veh_pt = self._vehicle.pose.point
         lane = self._road_map.nearest_lane(veh_pt)
         if not lane:
@@ -914,7 +914,6 @@ class RoadWaypointsSensor(Sensor):
                 lane_paths[lane.lane_id] = self.paths_for_lane(lane)
 
         return RoadWaypoints(lanes=lane_paths)
-
 
     def paths_for_lane(self, lane, overflow_offset=None):
         # XXX: the following assumes waypoint spacing is 1m
