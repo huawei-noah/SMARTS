@@ -129,7 +129,7 @@ class HiWayEnv(gym.Env):
         if visdom:
             visdom_client = VisdomClient()
 
-        all_sumo = Scenario.check_scenario_versions(scenarios)
+        all_sumo = Scenario.supports_traffic_simulation(scenarios)
         traffic_sim = None
         if not all_sumo:
             # We currently only support the Native SUMO Traffic Provider and Social Agents for SUMO maps

@@ -412,7 +412,7 @@ class Scenario:
         return map_spec.builder_fn(map_spec)
 
     @staticmethod
-    def check_scenario_versions(scenarios):
+    def supports_traffic_simulation(scenarios):
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
         num_sumo = 0
