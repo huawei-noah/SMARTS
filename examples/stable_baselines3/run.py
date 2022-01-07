@@ -29,7 +29,7 @@ def main(args):
 
         date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
         save_path = pathlib.Path(__file__).absolute().parent / "logs" / date_time
-        os.mkdir(str(save_path))
+        pathlib.Path(str(save_path)).mkdir(parents=True, exist_ok=True)
 
     if args.mode == "evaluate":
 
