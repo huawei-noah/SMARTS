@@ -78,7 +78,7 @@ class StandardObs(gym.ObservationWrapper):
             "lidar_point_cloud",
             "neighborhood_vehicle_states",
             "occupancy_grid_map",
-            "road_waypoints",
+            # "road_waypoints",
             "top_down_rgb",
             "waypoint_paths",
         }
@@ -270,4 +270,31 @@ def _std_top_down_rgb(val: TopDownRGB) -> np.ndarray:
 
 
 def _std_waypoint_paths(val):
-    return val
+    des_shp = (4,10)
+    print("---------------------------")
+    # print(val)
+    print(type(val), len(val))
+    print(val[0], len(val[0]))
+    # print(val[0][0])
+
+    def func(elem):
+        np.array(waypoint.pos
+        waypoint.heading
+        waypoint.lane_width
+        waypoint.speed_limit
+        waypoint.lane_index
+
+    for lane in val:
+
+        map(func, elem)
+
+
+    print("---------------------------")
+
+    import sys
+    sys.exit(2)
+
+
+    return {
+        
+    }

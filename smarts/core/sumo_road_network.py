@@ -1274,7 +1274,7 @@ class SumoRoadNetwork(RoadMap):
         up to lookahead waypoints ahead, constrained to filter_road_ids if specified."""
 
         # The following acts sort of like lru_cache(1), but it allows
-        # for lookahead to be <= to the cached value...
+        # for lookahead to be <= to the cached value.
         cache_paths = self._waypoints_cache.query(
             lookahead, point, filter_road_ids, lanepoint
         )
@@ -1301,7 +1301,7 @@ class SumoRoadNetwork(RoadMap):
         point: Tuple[float, float, float],
         lp_spacing: float,
     ) -> List[Waypoint]:
-        """given a list of LanePoints starting near point, that may not be evenly spaced,
+        """Given a list of LanePoints starting near point, that may not be evenly spaced,
         returns the same number of Waypoints that are evenly spaced and start at point."""
 
         continuous_variables = [

@@ -243,7 +243,7 @@ class Sensors:
                 )
             )
 
-        ego_vehicle_observation = EgoVehicleObservation(
+        ego_vehicle = EgoVehicleObservation(
             id=ego_vehicle_state.vehicle_id,
             position=np.array(ego_vehicle_state.pose.position),
             bounding_box=ego_vehicle_state.dimensions,
@@ -313,7 +313,7 @@ class Sensors:
                 step_count=sim.step_count,
                 elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
-                ego_vehicle_state=ego_vehicle_observation,
+                ego_vehicle_state=ego_vehicle,
                 neighborhood_vehicle_states=neighborhood_vehicles,
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,

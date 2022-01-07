@@ -98,14 +98,7 @@ def intersection_env(
         A single-agent unprotected left turn intersection environment.
     """
 
-    scenario = str(
-        pathlib.Path(__file__).absolute().parents[2]
-        / "scenarios"
-        / "intersections"
-        / "2lane_left_turn"
-    )
-    build_scenario = f"scl scenario build --clean {scenario}"
-    os.system(build_scenario)
+    scenario = _build_scenario()
 
     done_criteria = DoneCriteria(
         collision=False,
@@ -142,8 +135,8 @@ def intersection_env(
                     resolution=img_meters / img_pixels,
                 ),
                 neighborhood_vehicles=NeighborhoodVehicles(img_meters),
-                waypoints=Waypoints(lookahead=40),
-                road_waypoints=RoadWaypoints(horizon=40),
+                waypoints=Waypoints(lookahead=30),
+                road_waypoints=False, #RoadWaypoints(horizon=30),
                 accelerometer=True,
                 lidar=True,
             ),
@@ -163,3 +156,15 @@ def intersection_env(
     env = SingleAgent(env=env)
 
     return env
+
+
+def _build_scenario()-> str:
+    scenario = str(
+        pathlib.Path(__file__).absolute().parents[2]
+        / "scenarios"
+        / "intersections"
+        / "2lane_left_turn"
+    )
+    build_scenario = f"scl scenario build-all --clean {scenario}"
+    os.system(build_scenario)
+    return scenario
