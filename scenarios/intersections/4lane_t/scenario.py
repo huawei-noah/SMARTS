@@ -79,9 +79,9 @@ social_agent_missions = {
     "all": (
         [
             t.SocialAgentActor(
-                name="open-agent", agent_locator="open_agent:open_agent-v0"
+                name="keep-lane-agent-v0",
+                agent_locator="zoo.policies:keep-lane-agent-v0",
             ),
-            t.SocialAgentActor(name="rl-agent", agent_locator="rl_agent:rl-agent-v1"),
         ],
         [
             t.Mission(

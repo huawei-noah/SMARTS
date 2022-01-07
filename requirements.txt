@@ -31,7 +31,7 @@ constantly==15.1.0
 coverage==6.2
 cycler==0.11.0
 debugpy==1.5.1
-decorator==5.1.0
+decorator==5.1.1
 defusedxml==0.7.1
 dm-tree==0.1.6
 entrypoints==0.3
@@ -43,7 +43,7 @@ frozenlist==1.2.0
 future==0.18.2
 gast==0.4.0
 gitdb==4.0.9
-GitPython==3.1.24
+GitPython==3.1.25
 google==3.0.0
 google-api-core==2.3.2
 google-auth==2.3.3
@@ -179,7 +179,7 @@ traitlets==5.1.1
 trimesh==3.9.29
 Twisted==21.7.0
 typing_extensions==4.0.1
-urllib3==1.26.7
+urllib3==1.26.8
 visdom==0.1.8.9
 wcwidth==0.2.5
 webencodings==0.5.1

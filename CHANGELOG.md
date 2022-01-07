@@ -28,7 +28,20 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `single_agent` env wrapper and unit test. The wrapper converts a single-agent SMARTS environment's step and reset output to be compliant with gym spaces.
 - Added `rgb_image` env wrapper and unit test. The wrapper filters SMARTS environment observation and returns only top-down RGB image as observation.
 - Added a "ReplayAgent" wrapper to allow users to rerun an agent previously run by saving its configurations and inputs. See Issue #971.
-- Added standard intersection environment, `intersection-v0`, where agents have to make a left turn in the presence of traffic.
+- Added `smarts.core.provider.ProviderRecoveryFlags` as flags to determine how `SMARTS` should handle failures in providers. They are as follows:
+  - `NOT_REQUIRED`: Not needed for the current step. Error causes skip of provider if it should recover but cannot or should not recover.
+  - `EPISODE_REQUIRED`: Needed for the current episode. Results in episode ending if it should recover but cannot or should not recover.
+  - `EXPERIMENT_REQUIRED`: Needed for the experiment. Results in exception if it should recover but cannot or should not recover.
+  - `ATTEMPT_RECOVERY`: Provider should attempt to recover from the exception or disconnection.
+- Added recovery options for providers in `smarts.core.provider.Provider`. These include:
+  - Add `recover()` method to providers to attempt to recover from errors and disconnection.
+  - Add `connected` property to providers to check if the provider is still connected.
+- Added recovery options to `smarts.core.smarts.SMARTS.add_provider()`
+  - Add `recovery_flags` argument to configure the recovery options if the provider disconnects or throws an exception.
+- Added `driving_in_traffic` reinforcement learning example. An ego agent is trained using DreamerV2 to drive as far and as fast as possible in heavy traffic, without colliding or going off-road.
+- Added `smarts.core.smarts.SMARTSDestroyedError` which describes use of a destroyed `SMARTS` instance. 
+- Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make a left turn in the presence of traffic.
+- Added `StandardObs` wrapper which preprocesses SMARTS observations and only returns standardized gym-compliant observations.
 ### Changed
 - `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.
 - Moved examples tests to `examples` and used relative imports to fix a module collision with `aiohttp`'s `examples` module.
@@ -43,10 +56,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
     - Added `MapSpec` to the SStudio DSL types and introduced a simple builder pattern for creating `RoadMap` objects.
 - Changed the type hint for `EgoVehicleObservation`: it returns a numpy array (and always has).
 - Raised a warning message for building scenarios without `map.net.xml` file. See PR #1161.
+- Public `SMARTS` methods will throw `smarts.core.smarts.SMARTSDestroyedError` if `SMARTS.destroy()` has previously been called on the `SMARTS` instance.
 ### Fixed
 - Fix lane vector for the unique cases of lane offset >= lane's length. See PR #1173.
-- Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992.
-- Prevent `test_notebook.ipynb` cells from timing out by increasing time to unlimited using `/metadata/execution/timeout=-1` within the notebook for regular uses, and `pytest` call with `--nb-exec-timeout -1` option for tests. See for more details: "https://jupyterbook.org/content/execute.html#setting-execution-timeout" and "https://pytest-notebook.readthedocs.io/en/latest/user_guide/tutorial_intro.html#pytest-fixture".
+- Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992. 
+- Prevent `test_notebook.ipynb` cells from timing out by increasing time to unlimited using `/metadata/execution/timeout=65536` within the notebook for regular uses, and `pytest` call with `--nb-exec-timeout 65536` option for tests. See for more details: "https://jupyterbook.org/content/execute.html#setting-execution-timeout" and "https://pytest-notebook.readthedocs.io/en/latest/user_guide/tutorial_intro.html#pytest-fixture".
 - Stop `multiprocessing.queues.Queue` from throwing an error by importing `multiprocessing.queues` in `envision/utils/multiprocessing_queue.py`.
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
 - Prevent `TrapManager`from trapping vehicles in Bubble airlocks.  See Issue #1064.
@@ -55,6 +69,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Updated deprecated Shapely functionality.
 - Fixed the type of `position` (pose) fields emitted to envision to match the existing type hints of `tuple`.
 - Properly detect whether waypoint is present in mission route, while computing distance travelled by agents with missions in TripMeterSensor.
+- Fixed `test_notebook` timeout by setting `pytest --nb-exec-timeout 65536`. 
 ### Deprecated
 - The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
   for clarity since we are adding the ability to have variable time steps.
@@ -62,6 +77,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Remove `ray_multi_instance` example when running `make sanity-test`
 - Removed deprecated fields from `AgentSpec`:  `policy_builder`, `policy_params`, and `perform_self_test`.
 - Removed deprecated class `AgentPolicy` from `agent.py`.
+- Removed `route_waypoints` attribute from `smarts.core.sensors.RoadWaypoints`.
 
 ## [0.4.18] - 2021-07-22
 ### Added 
@@ -95,6 +111,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Made Panda3D and its modules optional as a requirement/dependencies to setup SMARTS. See Issue #883.
 - Updated the `Tensorflow` version to `2.2.1` for rl-agent and bump up its version to `1.0`. See Issue #211.
 - Made `Ray` and its module `Ray[rllib]` optional as a requirement/dependency to setup SMARTS. See Issue #917.
+- Added an error if a `SMARTS` instance reaches program exit without a manual `del` of the instance or a call to `SMARTS.destroy()`.
 ### Fixed
 - Allow for non-dynamic action spaces to have action controllers.  See PR #854.
 - Fix a minor bug in `sensors.py` which triggered `wrong_way` event when the vehicle goes into an intersection. See Issue #846.
@@ -107,6 +124,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed the multi-instance display of `envision`. See Issue #784.
 - Caught abrupt terminate signals, in order to shutdown zoo manager and zoo workers.
 - Include tire model in package by moving `tire_parameters.yaml` from `./examples/tools` to `./smarts/core/models`. See Issue #1140
+- Fixed an issue where `SMARTS.destroy()` would still cause `SMARTS.__del__()` to throw an error at program exit.
 ### Removed
 - Removed `pview` from `make` as it refers to `.egg` file artifacts that we no longer keep around.
 - Removed `supervisord.conf` and `supervisor` from dependencies and requirements. See Issue #802.

@@ -18,13 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-from typing import Dict, Sequence, Set
+from typing import Dict, Set
 
 import numpy as np
 
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.provider import ProviderState
+from smarts.core.provider import Provider, ProviderState
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
@@ -36,7 +36,7 @@ class TrajectoryWithTime:
     VEL_INDEX = 4
 
 
-class TrajectoryInterpolationProvider:
+class TrajectoryInterpolationProvider(Provider):
     def __init__(self):
         self._is_setup = False
 
