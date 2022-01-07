@@ -23,13 +23,13 @@ import warnings
 from typing import Dict, Sequence
 
 import gym
+import os
 
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
 from smarts.core.agent import AgentSpec
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.visdom_client import VisdomClient
 
@@ -129,16 +129,34 @@ class HiWayEnv(gym.Env):
         if visdom:
             visdom_client = VisdomClient()
 
-        self._smarts = SMARTS(
-            agent_interfaces=agent_interfaces,
-            traffic_sim=SumoTrafficSimulation(
+        all_sumo = Scenario.supports_traffic_simulation(scenarios)
+        traffic_sim = None
+        if not all_sumo:
+            # We currently only support the Native SUMO Traffic Provider and Social Agents for SUMO maps
+            if zoo_addrs:
+                warnings.warn("`zoo_addrs` can only be used with SUMO scenarios")
+                zoo_addrs = None
+            warnings.warn(
+                "We currently only support the Native SUMO Traffic Provider and Social Agents for SUMO maps."
+                "All scenarios passed need to be of SUMO, to enable SUMO Traffic Simulation and Social Agents."
+            )
+            pass
+        else:
+            from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
+            traffic_sim = SumoTrafficSimulation(
                 headless=sumo_headless,
                 time_resolution=fixed_timestep_sec,
                 num_external_sumo_clients=num_external_sumo_clients,
                 sumo_port=sumo_port,
                 auto_start=sumo_auto_start,
                 endless_traffic=endless_traffic,
-            ),
+            )
+            zoo_addrs = zoo_addrs
+
+        self._smarts = SMARTS(
+            agent_interfaces=agent_interfaces,
+            traffic_sim=traffic_sim,
             envision=envision_client,
             visdom=visdom_client,
             fixed_timestep_sec=fixed_timestep_sec,

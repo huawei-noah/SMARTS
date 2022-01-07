@@ -38,7 +38,6 @@ from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
-
 from smarts.core.utils.sumo import SUMO_PATH, traci  # isort:skip
 from traci.exceptions import FatalTraCIError, TraCIException  # isort:skip
 import traci.constants as tc  # isort:skip
@@ -47,8 +46,6 @@ import traci.constants as tc  # isort:skip
 class SumoTrafficSimulation(Provider):
     """
     Args:
-        net_file:
-            path to sumo .net.xml file
         headless:
             False to run with `sumo-gui`. True to run with `sumo`
         time_resolution:
@@ -223,6 +220,7 @@ class SumoTrafficSimulation(Provider):
         self._log.debug("Finished starting sumo process")
 
     def _base_sumo_load_params(self):
+
         load_params = [
             "--num-clients=%d" % self._num_clients,
             "--net-file=%s" % self._scenario.road_map.source,
