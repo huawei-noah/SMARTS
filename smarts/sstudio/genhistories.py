@@ -237,6 +237,9 @@ class Interaction(_TrajectoryDataset):
         super().check_dataset_spec(dataset_spec)
         hiw = dataset_spec.get("heading_inference_window", 2)
         if hiw != 2:
+            # Adding support fot this would require changing the rows() generator
+            # (since we're not using Pandas here like we are for NGSIM).
+            # So wait until if/when users request it...
             raise ValueError(
                 "heading_inference_window not yet supported for Interaction datasets."
             )
@@ -326,6 +329,7 @@ class NGSIM(_TrajectoryDataset):
     def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
         super().check_dataset_spec(dataset_spec)
         hiw = dataset_spec.get("heading_inference_window", 2)
+        # 11 is a semi-arbitrary max just to keep things "sane".
         if hiw < 2 or hiw > 11:
             raise ValueError("heading_inference_window must be between 2 and 11")
 
