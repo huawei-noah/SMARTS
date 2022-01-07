@@ -38,6 +38,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
   - Add `connected` property to providers to check if the provider is still connected.
 - Added recovery options to `smarts.core.smarts.SMARTS.add_provider()`
   - Add `recovery_flags` argument to configure the recovery options if the provider disconnects or throws an exception.
+- Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 
 ### Changed
 - `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.

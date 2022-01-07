@@ -455,20 +455,26 @@ class Scenario:
         self._missions = ego_missions
 
     def get_vehicle_start_at_time(
-        vehicle_id: str, start_time: float
+        self, vehicle_id: str, start_time: float
     ) -> Tuple[Start, float]:
+        """Returns a Start object that can be used to create a Mission for
+        a vehicle from a traffic history dataset starting at its location
+        at start_time.  Also returns its speed at that time."""
         pphs = self._traffic_history.vehicle_pose_at_time(vehicle_id, start_time)
         assert pphs
         pos_x, pos_y, heading, speed = pphs
         # missions start from front bumper, but pos is center of vehicle
         veh_dims = self._traffic_history.vehicle_dims(vehicle_id)
         hhx, hhy = radians_to_vec(heading) * (0.5 * veh_dims.length)
-        return Start(
-            (pos_x + hhx, pos_y + hhy),
-            Heading(heading),
+        return (
+            Start(
+                (pos_x + hhx, pos_y + hhy),
+                Heading(heading),
+            ),
+            speed,
         )
 
-    def _get_vehicle_goal(vehicle_id: str) -> Point:
+    def _get_vehicle_goal(self, vehicle_id: str) -> Point:
         final_exit_time = self._traffic_history.vehicle_final_exit_time(vehicle_id)
         final_pose = self._traffic_history.vehicle_pose_at_time(
             vehicle_id, final_exit_time
