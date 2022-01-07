@@ -33,6 +33,7 @@ import numpy as np
 import pandas as pd
 import yaml
 from numpy.lib.stride_tricks import as_strided as stride
+from numpy.lib.stride_tricks import sliding_window_view
 
 try:
     from waymo_open_dataset.protos import scenario_pb2
@@ -219,7 +220,8 @@ class Interaction(_TrajectoryDataset):
         super().__init__(dataset_spec, output)
         assert not self._flip_y
         self._max_angular_velocity = dataset_spec.get("max_angular_velocity", None)
-        self._prev_heading = -math.pi / 2
+        self._heading_min_speed = dataset_spec.get("heading_inference_min_speed", 0.22)
+        self._prev_heading = 3 * math.pi / 2
         self._next_row = None
         # See: https://interaction-dataset.com/details-and-format
         # position and length/width are in meters.
@@ -230,6 +232,14 @@ class Interaction(_TrajectoryDataset):
             "position_x": "y" if self._swap_xy else "x",
             "position_y": "x" if self._swap_xy else "y",
         }
+
+    def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
+        super().check_dataset_spec(dataset_spec)
+        hiw = dataset_spec.get("heading_inference_window", 2)
+        if hiw != 2:
+            raise ValueError(
+                "heading_inference_window not yet supported for Interaction datasets."
+            )
 
     @property
     def rows(self) -> Generator[Dict, None, None]:
@@ -280,7 +290,9 @@ class Interaction(_TrajectoryDataset):
                 dx = float(self._next_row["x"]) - float(row["x"])
                 dy = float(self._next_row["y"]) - float(row["y"])
                 dm = np.linalg.norm((dx, dy))
-                if dm > 0.0:
+                if dm != 0.0 and (
+                    self._heading_min_speed is None or dm > self._heading_min_speed
+                ):
                     r = math.atan2(dy / dm, dx / dm)
                     new_heading = (r - math.pi / 2) % (2 * math.pi)
                     if self._max_angular_velocity:
@@ -305,30 +317,66 @@ class Interaction(_TrajectoryDataset):
 class NGSIM(_TrajectoryDataset):
     def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
-        self._prev_heading = -math.pi / 2
+        self._prev_heading = 3 * math.pi / 2
         self._max_angular_velocity = dataset_spec.get("max_angular_velocity", None)
+        self._heading_window = dataset_spec.get("heading_inference_window", 2)
+        # .22 corresponds to roughly 5mph.
+        self._heading_min_speed = dataset_spec.get("heading_inference_min_speed", 0.22)
+
+    def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
+        super().check_dataset_spec(dataset_spec)
+        hiw = dataset_spec.get("heading_inference_window", 2)
+        if hiw < 2 or hiw > 11:
+            raise ValueError("heading_inference_window must be between 2 and 11")
 
     def _cal_heading(self, window) -> float:
-        c = window[1, :2]
-        n = window[2, :2]
-        if any(np.isnan(c)) or any(np.isnan(n)):
-            return self._prev_heading
-        s = np.linalg.norm(n - c)
-        if s == 0.0:
-            return self._prev_heading
-        vhat = (n - c) / s
-        r = math.atan2(vhat[1], vhat[0])
-        new_heading = (r - math.pi / 2) % (2 * math.pi)
-        if self._max_angular_velocity:
-            # XXX: could try to divide by sim_time delta here instead of assuming .1s
-            angular_velocity = (new_heading - self._prev_heading) / 0.1
-            if abs(angular_velocity) > self._max_angular_velocity:
-                new_heading = (
-                    self._prev_heading
-                    + np.sign(angular_velocity) * self._max_angular_velocity * 0.1
-                )
+        window = window[0]
+        new_heading = 0
+        prev_heading = None
+        den = 0
+        for w in range(self._heading_window - 1):
+            c = window[w, :2]
+            n = window[w + 1, :2]
+            if any(np.isnan(c)) or any(np.isnan(n)):
+                if prev_heading is not None:
+                    new_heading += prev_heading
+                    den += 1
+                continue
+            s = np.linalg.norm(n - c)
+            ispeed = window[w, 2]
+            if s == 0.0 or (
+                self._heading_min_speed is not None
+                and (s < self._heading_min_speed or ispeed < self._heading_min_speed)
+            ):
+                if prev_heading is not None:
+                    new_heading += prev_heading
+                    den += 1
+                continue
+            vhat = (n - c) / s
+            r = math.atan2(vhat[1], vhat[0])
+            inst_heading = (r - math.pi / 2) % (2 * math.pi)
+            if prev_heading is not None:
+                if inst_heading == 0 and prev_heading > math.pi:
+                    inst_heading = 2 * math.pi
+                if self._max_angular_velocity:
+                    # XXX: could try to divide by sim_time delta here instead of assuming .1s
+                    angular_velocity = (inst_heading - prev_heading) / 0.1
+                    if abs(angular_velocity) > self._max_angular_velocity:
+                        inst_heading = (
+                            prev_heading
+                            + np.sign(angular_velocity)
+                            * self._max_angular_velocity
+                            * 0.1
+                        )
+            den += 1
+            new_heading += inst_heading
+            prev_heading = inst_heading
+        if den > 0:
+            new_heading /= den
+        else:
+            new_heading = self._prev_heading
         self._prev_heading = new_heading
-        return self._prev_heading
+        return new_heading % (2 * math.pi)
 
     def _cal_speed(self, window) -> Optional[float]:
         c = window[1, :2]
@@ -413,17 +461,21 @@ class NGSIM(_TrajectoryDataset):
                 .values
             )
             # and compute heading with (smaller) rolling window (=3) too..
-            v = df.loc[same_car, ["position_x", "position_y"]].shift(1).values
-            d0, d1 = v.shape
-            s0, s1 = v.strides
+            shift = int(self._heading_window / 2)
+            pad = self._heading_window - shift - 1
+            v = df.loc[same_car, ["position_x", "position_y", "speed"]].values
+            v = np.insert(v, 0, [[np.nan, np.nan, np.nan]] * shift, axis=0)
             headings = [
                 self._cal_heading(values)
-                for values in stride(v, (d0 - 2, 3, d1), (s0, s0, s1))
+                for values in sliding_window_view(v, (self._heading_window, 3))
             ]
-            df.loc[same_car, "heading_rad"] = headings + [headings[-1], headings[-1]]
+            df.loc[same_car, "heading_rad"] = headings + [headings[-1]] * pad
             # ... and new speeds (based on these smoothed positions)
             # (This also overcomes problem that NGSIM speeds are "instantaneous"
             # and so don't match with dPos/dt, which can affect some models.)
+            v = df.loc[same_car, ["position_x", "position_y"]].shift(1).values
+            d0, d1 = v.shape
+            s0, s1 = v.strides
             speeds = [
                 self._cal_speed(values)
                 for values in stride(v, (d0 - 2, 3, d1), (s0, s0, s1))
