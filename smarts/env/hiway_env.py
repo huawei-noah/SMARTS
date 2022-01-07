@@ -166,6 +166,7 @@ class HiWayEnv(gym.Env):
     @staticmethod
     def check_scenario_versions(scenarios):
         from smarts.core.sumo_road_network import SumoRoadNetwork
+
         num_sumo = 0
         scenario_list = Scenario.get_scenario_list(scenarios)
         for scenario_root in scenario_list:
