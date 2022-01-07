@@ -12,12 +12,15 @@ from env.create_env import create_env
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 
+
 def _build_scenario():
     scenario = str(pathlib.Path(__file__).absolute().parent / "scenarios" / "loop")
     build_scenario = f"scl scenario build-all --clean {scenario}"
     os.system(build_scenario)
 
+
 yaml = YAML(typ="safe")
+
 
 def main(args):
 
@@ -119,8 +122,8 @@ def main(args):
 
 if __name__ == "__main__":
 
-    
     from pathlib import Path
+
     program = Path(__file__).stem
     parser = argparse.ArgumentParser(program)
 

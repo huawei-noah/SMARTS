@@ -10,6 +10,7 @@ import env.action as action
 from stable_baselines3.common import monitor
 from stable_baselines3.common.env_checker import check_env
 
+
 def create_env(config):
 
     vehicle_interface = smarts_agent_interface.AgentInterface(
@@ -55,7 +56,6 @@ def create_env(config):
         sim_name="smarts",
     )
 
-    
     # Wrap env with ActionWrapper
     env = action.Action(env=env)
     # Wrap env with RewardWrapper
