@@ -22,7 +22,7 @@ is a Python `NamedTuple` with the following fields:
 * `ego_vehicle_state` - a `VehicleObservation` `NamedTuple` for the ego vehicle with the following fields:
     * `id` - a string identifier for this vehicle
     * `position` - A 3D numpy array (x, y, z) of the center of the vehicle bounding box's bottom plane
-    * `bounding_box` - `BoundingBox` data class for the `length`, `width`, `height` of the vehicle
+    * `bounding_box` - `Dimensions` data class for the `length`, `width`, `height` of the vehicle
     * `heading` - vehicle heading in radians
     * `speed` - agent speed in m/s
     * `steering` - angle of front wheels in radians

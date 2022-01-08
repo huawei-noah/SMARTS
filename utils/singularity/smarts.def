@@ -20,10 +20,7 @@ From: ubuntu:bionic
         add-apt-repository -y ppa:sumo/stable && \
         apt-get update && \
         apt-get install -y \
-            libsm6 \
             libspatialindex-dev \
-            libxext6 \
-            libxrender-dev \
             python3.7 \
             python3.7-dev \
             python3.7-venv \
@@ -38,22 +35,26 @@ From: ubuntu:bionic
     # Update default python version
     update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
 
-    # Install pip
-    wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \
-    python get-pip.py && \
+    # Setup virtual environment and install pip
+    export VIRTUAL_ENV=/opt/.venv
+    python3.7 -m venv $VIRTUAL_ENV
+    export PATH="$VIRTUAL_ENV/bin:$PATH"
+    wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py
+    python get-pip.py
     pip install --upgrade pip
 
     # Install requirements.txt
-    pip install --no-cache-dir -r ${SINGULARITY_CONTAINER}/src/requirements.txt
+    pip install --no-cache-dir -r /src/requirements.txt
 
     # Copy source files and install SMARTS
-    cd ${SINGULARITY_CONTAINER}/src
+    cd /src
     pip install --no-cache-dir -e .[train,test,dev,camera-obs]
-    cp -r ${SINGULARITY_CONTAINER}/src/smarts.egg-info ${SINGULARITY_CONTAINER}/media/smarts.egg-info
+    cp -r /src/smarts.egg-info /media/smarts.egg-info
 
 %environment
     export SUMO_HOME=/usr/share/sumo
-    export PYTHONPATH=/src
+    VIRTUAL_ENV=/opt/.venv
+    export PATH="$VIRTUAL_ENV/bin:$PATH"
     . /src/utils/singularity/setup.sh
 
 %startscript

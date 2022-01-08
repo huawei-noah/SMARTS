@@ -23,6 +23,7 @@ import math
 import threading
 
 import pytest
+from panda3d.core import Thread as p3dThread
 
 from smarts.core.agent_interface import (
     ActionSpaceType,
@@ -31,10 +32,11 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.renderer import Renderer
-from smarts.core.scenario import EndlessGoal, Mission, Scenario, Start
+from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.core.vehicle import RendererException
 
 
 @pytest.fixture
@@ -71,7 +73,14 @@ class RenderThread(threading.Thread):
     def __init__(self, r, scenario, num_steps=3):
         self._rid = "r{}".format(r)
         super().__init__(target=self.test_renderer, name=self._rid)
-        self._rdr = Renderer(self._rid)
+
+        try:
+            from smarts.core.renderer import Renderer
+
+            self._rdr = Renderer(self._rid)
+        except Exception as e:
+            raise RendererException.required_to("run test_renderer.py")
+
         self._scenario = scenario
         self._num_steps = num_steps
         self._vid = "r{}_car".format(r)
@@ -96,6 +105,7 @@ class RenderThread(threading.Thread):
 
 
 def test_multiple_renderers(scenario):
+    assert p3dThread.isThreadingSupported()
     num_renderers = 3
     rts = [RenderThread(r, scenario) for r in range(num_renderers)]
     for rt in rts:
@@ -109,7 +119,11 @@ def test_optional_renderer(smarts, scenario):
     assert not smarts.is_rendering
     for _ in range(10):
         smarts.step({})
+
     renderer = smarts.renderer
+    if not renderer:
+        raise RendererException.required_to("run test_renderer.py")
+
     assert smarts.is_rendering
     for _ in range(10):
         smarts.step({})

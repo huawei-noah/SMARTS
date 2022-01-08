@@ -91,7 +91,7 @@ info = {
         "dist_center": ...,  # A float, the distance in meters from the center of the lane of the closest waypoint.
         "start": ...,  # A smarts.core.scenario.Start, the start of the ego evhicle's mission.
         "goal": ...,  # A smarts.core.scenario.PositionalGoal, the goal of the ego vehicle's mission.
-        "closest_wp": ...,  # A smarts.core.waypoints.Waypoint, the closest waypoint to the ego vehicle.
+        "closest_wp": ...,  # A smarts.core.road_map.Waypoint, the closest waypoint to the ego vehicle.
         "events": ...,  # A smarts.core.events.Events, the events of the ego vehicle.
         "ego_num_violations": ...,  # An int, the number of violations committed by the ego vehicle (see ultra.utils.common.ego_social_safety).
         "social_num_violations": ...,  # An int, the number of violations committed by social vehicles (see ultra.utils.common.ego_social_safety).

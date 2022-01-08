@@ -12,9 +12,9 @@ env:
   venv_dir: .venv
 
 jobs:
-  test_learning:
+  test_long_determinism:
     runs-on: ubuntu-18.04
-    container: huaweinoah/smarts:v0.4.13-minimal
+    container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -22,18 +22,10 @@ jobs:
           ref: develop
       - name: Setup package
         run: |
-          /usr/bin/Xorg \
-            -noreset \
-            +extension GLX \
-            +extension RANDR \
-            +extension RENDER \
-            -logfile ./xdummy.log \
-            -config /etc/X11/xorg.conf :1 &
           cd $GITHUB_WORKSPACE
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
-          pip install -r requirements.txt
           pip install -e .[train,test,camera-obs]
       - name: Verify long determinism
         run: |

@@ -19,23 +19,24 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from collections import deque
 import copy
 import glob
+import inspect
 import math
 import os
+from collections import deque
 from itertools import cycle
 from sys import path
 from typing import Dict
 
 import numpy as np
-import yaml, inspect
+import yaml
 from scipy.spatial import distance
 
+import ultra.adapters as adapters
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation, TopDownRGB
 from smarts.env.hiway_env import HiWayEnv
-import ultra.adapters as adapters
 from ultra.baselines.common.yaml_loader import load_yaml
 
 path.append("./ultra")
@@ -122,7 +123,7 @@ class UltraEnv(HiWayEnv):
         for done in agent_dones.values():
             self._dones_registered += 1 if done else 0
 
-        agent_dones["__all__"] = self._dones_registered == len(self._agent_specs)
+        agent_dones["__all__"] = self._dones_registered >= len(self._agent_specs)
 
         return observations, rewards, agent_dones, infos
 

@@ -25,12 +25,10 @@ import logging
 import multiprocessing
 import re
 import time
-import uuid
 import warnings
 from datetime import datetime
 from pathlib import Path
-from queue import Queue
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 import websocket
@@ -74,10 +72,10 @@ class Client:
 
     def __init__(
         self,
-        endpoint: str = None,
+        endpoint: Optional[str] = None,
         wait_between_retries: float = 0.5,
-        output_dir: str = None,
-        sim_name: str = None,
+        output_dir: Optional[str] = None,
+        sim_name: Optional[str] = None,
         headless: bool = False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -145,7 +143,7 @@ class Client:
     def read_and_send(
         path: str,
         endpoint: str = "ws://localhost:8081",
-        timestep_sec: float = 0.1,
+        fixed_timestep_sec: float = 0.1,
         wait_between_retries: float = 0.5,
     ):
         client = Client(
@@ -155,7 +153,7 @@ class Client:
         with open(path, "r") as f:
             for line in f:
                 line = line.rstrip("\n")
-                time.sleep(timestep_sec)
+                time.sleep(fixed_timestep_sec)
                 client._send_raw(line)
 
             client.teardown()

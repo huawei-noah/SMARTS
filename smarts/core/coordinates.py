@@ -20,9 +20,11 @@
 import enum
 import math
 from dataclasses import dataclass
-from typing import Optional, Sequence, SupportsFloat, Type, Union
+from typing import NamedTuple, Optional, Sequence, SupportsFloat, Type, Union
 
 import numpy as np
+from cached_property import cached_property
+from shapely.geometry import Point as SPoint
 from typing_extensions import SupportsIndex
 
 from smarts.core.utils.math import (
@@ -33,14 +35,103 @@ from smarts.core.utils.math import (
 
 
 @dataclass(frozen=True)
-class BoundingBox:
+class Dimensions:
     length: float
     width: float
     height: float
 
+    @classmethod
+    def init_with_defaults(cls, length: float, width: float, height: float, defaults):
+        if not length or length == -1:
+            length = defaults.length
+        if not width or width == -1:
+            width = defaults.width
+        if not height or height == -1:
+            height = defaults.height
+        return cls(length, width, height)
+
+    @classmethod
+    def copy_with_defaults(cls, dims, defaults):
+        return cls.init_with_defaults(dims.length, dims.width, dims.height, defaults)
+
     @property
     def as_lwh(self):
         return (self.length, self.width, self.height)
+
+    def equal_if_defined(self, length: float, width: float, height: float) -> bool:
+        return (
+            (not self.length or self.length == -1 or self.length == length)
+            and (not self.width or self.width == -1 or self.width == width)
+            and (not self.height or self.height == -1 or self.height == height)
+        )
+
+
+_shapely_points = {}
+
+
+class Point(NamedTuple):
+    x: float
+    y: float
+    z: Optional[float] = 0
+
+    @property
+    def as_shapely(self) -> SPoint:
+        # Shapley Point construction is expensive!
+        # Note that before python3.8, @cached_property was not thread safe,
+        # nor can it be used in a NamedTuple (which doesn't have a __dict__).
+        # (Points can be used by multi-threaded client code, even when
+        # SMARTS is still single-threaded, so we want to be safe here.)
+        # So we use the private global _shapely_points as a cache instead.
+        # Here we are relying on CPython's implementation of dict
+        # to be thread-safe.
+        cached = _shapely_points.get(self)
+        if cached:
+            return cached
+        spt = SPoint((self.x, self.y, self.z))
+        _shapely_points[self] = spt
+        return spt
+
+    def __del__(self):
+        if _shapely_points and self in _shapely_points:
+            del _shapely_points[self]
+
+
+class RefLinePoint(NamedTuple):
+    # See the Reference Line coordinate system in OpenDRIVE here:
+    #   https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems
+    s: float  # offset along lane from start of lane
+    t: Optional[float] = 0  # horizontal displacement from center of lane
+    h: Optional[float] = 0  # vertical displacement from surface of lane
+
+
+@dataclass(frozen=True)
+class BoundingBox:
+    min_pt: Point
+    max_pt: Point
+
+    @property
+    def length(self):
+        return self.max_pt.x - self.min_pt.x
+
+    @property
+    def width(self):
+        return self.max_pt.y - self.min_pt.y
+
+    @property
+    def height(self):
+        return self.max_pt.z - self.min_pt.z
+
+    @property
+    def center(self):
+        return Point(
+            x=(self.min_pt.x + self.max_pt.x) / 2,
+            y=(self.min_pt.y + self.max_pt.y) / 2,
+            z=(self.min_pt.z + self.max_pt.z) / 2,
+        )
+
+    @property
+    def as_dimensions(self) -> Dimensions:
+        return Dimensions(length=self.length, width=self.width, height=self.height)
 
 
 class Heading(float):
@@ -131,6 +222,34 @@ class Pose:
     position: Sequence  # [x, y, z]
     orientation: Sequence  # [a, b, c, d] -> a + bi + cj + dk = 0
     heading_: Optional[Heading] = None  # cached heading to avoid recomputing
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Pose):
+            return False
+        return (self.position == other.position).all() and (
+            self.orientation == other.orientation
+        ).all()
+
+    def __hash__(self):
+        return hash((*self.position, *self.orientation))
+
+    def reset_with(self, position, heading: Heading):
+        if self.position.dtype is not np.dtype(np.float64):
+            # The slice assignment below doesn't change self.position's dtype,
+            # which can be a problem if it was initialized with ints and
+            # now we are assigning it floats, so we just cast it...
+            self.position = np.float64(self.position)
+        self.position[:] = position
+        if "point" in self.__dict__:
+            # clear the cached_property
+            del self.__dict__["point"]
+        if heading != self.heading_:
+            self.orientation = fast_quaternion_from_angle(heading)
+            self.heading_ = heading
+
+    @cached_property
+    def point(self) -> Point:
+        return Point(*self.position)
 
     @classmethod
     def from_front_bumper(cls, front_bumper_position, heading, length):

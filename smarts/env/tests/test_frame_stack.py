@@ -23,8 +23,9 @@
 import gym
 import numpy as np
 import pytest
+
 from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, RGB
+from smarts.core.agent_interface import RGB, AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.wrappers.frame_stack import FrameStack
 
@@ -56,7 +57,7 @@ def env(agent_specs):
         agent_specs=agent_specs,
         headless=True,
         visdom=False,
-        timestep_sec=0.01,
+        fixed_timestep_sec=0.01,
     )
 
     yield env

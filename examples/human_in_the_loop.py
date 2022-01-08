@@ -1,13 +1,28 @@
-import argparse
+"""
+This examples runs the human-keyboard Agent, which allows you to control and monitor input devices.
+
+NOTE: You will need to install [extras] to run this example. `pip install -e .[extras]`
+"""
+
 import logging
 
 import gym
-from pynput.keyboard import Key, Listener
 
-from examples.argument_parser import default_argument_parser
+try:
+    from pynput.keyboard import Key, Listener
+except ImportError:
+    raise ImportError("pynput dependency is missing, please pip install -e .[extras]")
+
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
+
+# The following ugliness was made necessary because the `aiohttp` #
+# dependency has an "examples" module too.  (See PR #1120.)
+if __name__ == "__main__":
+    from argument_parser import default_argument_parser
+else:
+    from .argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
@@ -77,13 +92,7 @@ class HumanKeyboardAgent(Agent):
         return self.action
 
 
-def main(
-    scenarios,
-    sim_name,
-    headless,
-    num_episodes,
-    seed,
-):
+def main(scenarios, sim_name, headless, num_episodes, seed):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
             AgentType.StandardWithAbsoluteSteering, max_episode_steps=3000
@@ -97,7 +106,7 @@ def main(
         agent_specs={AGENT_ID: agent_spec},
         sim_name=sim_name,
         headless=headless,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         seed=seed,
     )
 

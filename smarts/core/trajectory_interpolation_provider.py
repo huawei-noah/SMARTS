@@ -17,14 +17,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Sequence, Set, Dict
 import math
+from typing import Dict, Set
+
 import numpy as np
 
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.provider import ProviderState
-from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 from smarts.core.coordinates import Heading, Pose
+from smarts.core.provider import Provider, ProviderState
+from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class TrajectoryWithTime:
@@ -35,7 +36,7 @@ class TrajectoryWithTime:
     VEL_INDEX = 4
 
 
-class TrajectoryInterpolationProvider:
+class TrajectoryInterpolationProvider(Provider):
     def __init__(self):
         self._is_setup = False
 
@@ -73,7 +74,7 @@ class TrajectoryInterpolationProvider:
             provider_state.vehicles.append(
                 VehicleState(
                     vehicle_id=vehicle_id,
-                    vehicle_type="passenger",
+                    vehicle_config_type="passenger",
                     pose=pose,
                     dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
                     speed=speed,

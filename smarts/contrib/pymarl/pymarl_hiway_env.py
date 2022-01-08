@@ -65,7 +65,7 @@ class PyMARLHiWayEnv:
             true|false for sumo|sumo-gui (default False)
         sumo_port:
             used to specify a specific sumo port (default None)
-        timestep_sec:
+        fixed_timestep_sec:
             the step length for all components of the simulation (default 0.1)
     """
 
@@ -94,10 +94,11 @@ class PyMARLHiWayEnv:
         self._state_adapter = config.get("state_adapter", default_state_adapter)
 
         self._headless = config.get("headless", False)
-        self._timestep_sec = config.get("timestep_sec", 0.01)
+        self._fixed_timestep_sec = config.get("fixed_timestep_sec", 0.01)
         self._observations = None
         self._state = None
         self._steps = 0
+        self._dones_registered = 0
 
         seed = self._config.get("seed", 42)
         smarts.core.seed(seed)
@@ -125,9 +126,9 @@ class PyMARLHiWayEnv:
 
         self._smarts = SMARTS(
             agent_interfaces=agent_interfaces,
-            traffic_sim=SumoTrafficSimulation(time_resolution=self._timestep_sec),
+            traffic_sim=SumoTrafficSimulation(time_resolution=self._fixed_timestep_sec),
             envision=envision,
-            timestep_sec=self._timestep_sec,
+            fixed_timestep_sec=self._fixed_timestep_sec,
         )
 
     def get_obs(self):
@@ -193,6 +194,10 @@ class PyMARLHiWayEnv:
         infos["rewards_list"] = rewards
 
         self._steps += 1
+        for done in dones.values():
+            self._dones_registered += 1 if done else 0
+
+        dones["__all__"] = self._dones_registered >= self.n_agents
         infos["dones_list"] = np.array(list(dones.values()))
         dones = infos["dones_list"]
         if self._steps >= self.episode_limit:
@@ -203,7 +208,7 @@ class PyMARLHiWayEnv:
 
     def reset(self):
         self._steps = 0
-
+        self._dones_registered = 0
         scenario = next(self._scenarios_iterator)
         observations = self._smarts.reset(scenario)
         self._observations = np.asarray(

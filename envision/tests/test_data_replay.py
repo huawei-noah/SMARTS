@@ -28,6 +28,7 @@ import pytest
 import websocket
 
 from envision.client import Client as Envision
+from envision.utils.multiprocessing_queue import Queue
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
@@ -68,7 +69,7 @@ def scenarios_iterator():
 
 def fake_websocket_app_class():
     # Using a closure instead of a class field to give isolation between tests.
-    sent = multiprocessing.Queue()
+    sent = Queue(ctx=multiprocessing.get_context())
 
     class FakeWebSocketApp:
         """Mocks out the websockets.WebSocketApp to intercept send(...) calls and just
@@ -90,7 +91,7 @@ def fake_websocket_app_class():
         def close(self):
             pass
 
-    return (FakeWebSocketApp, sent)
+    return FakeWebSocketApp, sent
 
 
 def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypatch):
@@ -125,7 +126,7 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
         agent_interfaces={AGENT_ID: agent_spec.interface},
         traffic_sim=SumoTrafficSimulation(time_resolution=TIMESTEP_SEC),
         envision=envision,
-        timestep_sec=TIMESTEP_SEC,
+        fixed_timestep_sec=TIMESTEP_SEC,
     )
     step_through_episodes(agent_spec, smarts, scenarios_iterator)
     smarts.destroy()
@@ -146,7 +147,7 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
     assert new_sent_data.qsize() == 0
 
     # Now read data replay
-    Envision.read_and_send(jsonl_paths[0], timestep_sec=TIMESTEP_SEC)
+    Envision.read_and_send(jsonl_paths[0], fixed_timestep_sec=TIMESTEP_SEC)
 
     # Verify the new data matches the original data
     assert original_sent_data.qsize() == new_sent_data.qsize()

@@ -26,10 +26,10 @@ from typing import Dict, Sequence
 import numpy as np
 from shapely.geometry import Point, Polygon
 
-from smarts.core.mission_planner import Mission, MissionPlanner
-from smarts.core.scenario import Start, default_entry_tactic
+from smarts.core.coordinates import Point as MapPoint
+from smarts.core.plan import Mission, Plan, Start, default_entry_tactic
 from smarts.core.utils.math import clip, squared_dist
-from smarts.core.vehicle import VehicleState
+from smarts.core.vehicle import Vehicle, VehicleState
 from smarts.sstudio.types import MapZone, TrapEntryTactic
 
 
@@ -68,33 +68,31 @@ class TrapManager:
 
     def __init__(self, scenario):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._traps: Dict[Trap] = defaultdict(None)
-        self.init_traps(scenario.road_network, scenario.missions)
+        self._traps: Dict[str, Trap] = defaultdict(Trap)
+        self.init_traps(scenario.road_map, scenario.missions)
 
-    def init_traps(self, road_network, missions):
+    def init_traps(self, road_map, missions):
         self._traps.clear()
-
         for agent_id, mission in missions.items():
-            mission_planner = MissionPlanner(road_network)
-            if mission is None:
-                mission = mission_planner.random_endless_mission()
+            self.add_trap_for_agent(agent_id, mission, road_map)
 
-            if not mission.entry_tactic:
-                mission = replace(mission, entry_tactic=default_entry_tactic())
+    def add_trap_for_agent(self, agent_id: str, mission: Mission, road_map) -> bool:
+        if mission is None:
+            mission = Mission.random_endless_mission(road_map)
 
-            if (
-                not isinstance(mission.entry_tactic, TrapEntryTactic)
-                and mission.entry_tactic
-            ):
-                continue
+        if not mission.entry_tactic:
+            mission = replace(mission, entry_tactic=default_entry_tactic())
 
-            mission = mission_planner.plan(mission)
+        if (
+            not isinstance(mission.entry_tactic, TrapEntryTactic)
+            and mission.entry_tactic
+        ):
+            return False
 
-            trap = self._mission2trap(road_network, mission)
-            self.add_trap_for_agent_id(agent_id, trap)
-
-    def add_trap_for_agent_id(self, agent_id, trap: Trap):
+        plan = Plan(road_map, mission)
+        trap = self._mission2trap(road_map, plan.mission)
         self._traps[agent_id] = trap
+        return True
 
     def reset_traps(self, used_traps):
         for agent_id, _ in used_traps:
@@ -107,22 +105,21 @@ class TrapManager:
         if not sim.agent_manager.pending_agent_ids:
             return
 
-        social_vehicle_ids = sim.vehicle_index.social_vehicle_ids()
+        social_vehicle_ids = [
+            v_id
+            for v_id in sim.vehicle_index.social_vehicle_ids()
+            if not sim.vehicle_index.vehicle_is_shadowed(v_id)
+        ]
         vehicles = {
             v_id: sim.vehicle_index.vehicle_by_id(v_id) for v_id in social_vehicle_ids
         }
 
-        existing_agent_vehicles = (
-            sim.vehicle_index.vehicle_by_id(v_id)
-            for v_id in sim.vehicle_index.agent_vehicle_ids()
-        )
-
         def largest_vehicle_plane_dimension(vehicle):
             return max(*vehicle.chassis.dimensions.as_lwh[:2])
 
-        agent_vehicle_comp = [
+        vehicle_comp = [
             (v.position[:2], largest_vehicle_plane_dimension(v), v)
-            for v in existing_agent_vehicles
+            for v in vehicles.values()
         ]
 
         for agent_id in sim.agent_manager.pending_agent_ids:
@@ -131,7 +128,7 @@ class TrapManager:
             if trap is None:
                 continue
 
-            trap.step_trigger(sim.timestep_sec)
+            trap.step_trigger(sim.last_dt)
 
             if not trap.ready:
                 continue
@@ -140,7 +137,7 @@ class TrapManager:
             sorted_vehicle_ids = sorted(
                 list(social_vehicle_ids),
                 key=lambda v: squared_dist(
-                    vehicles[v].position[:2], trap.mission.start.position
+                    vehicles[v].position[:2], trap.mission.start.position[:2]
                 ),
             )
             for v_id in sorted_vehicle_ids:
@@ -148,11 +145,11 @@ class TrapManager:
                 if sim.scenario.traffic_history is not None:
                     break
 
-                vehicle = vehicles[v_id]
-                point = Point(vehicle.position)
-
-                if any(v_id.startswith(prefix) for prefix in trap.exclusion_prefixes):
+                if not trap.includes(v_id):
                     continue
+
+                vehicle = vehicles[v_id]
+                point = vehicle.pose.point.as_shapely
 
                 if not point.within(trap.geometry):
                     continue
@@ -188,50 +185,36 @@ class TrapManager:
             vehicle = None
             if len(captures) > 0:
                 vehicle_id, trap, mission = rand.choice(captures)
-                vehicle = TrapManager._hijack_vehicle(
-                    sim, vehicle_id, agent_id, mission
+                vehicle = sim.switch_control_to_agent(
+                    vehicle_id, agent_id, mission, recreate=True, is_hijacked=False
                 )
             elif trap.patience_expired:
+                # Make sure there is not a vehicle in the same location
                 mission = trap.mission
-                if len(agent_vehicle_comp) > 0:
-                    agent_vehicle_comp.sort(
-                        key=lambda v: squared_dist(v[0], mission.start.position)
-                    )
-
-                    # Make sure there is not an agent vehicle in the same location
-                    pos, largest_dimension, _ = agent_vehicle_comp[0]
-                    if squared_dist(pos, mission.start.position) < largest_dimension:
-                        continue
+                nv_dims = Vehicle.agent_vehicle_dims(mission)
+                new_veh_maxd = max(nv_dims.as_lwh[:2])
+                overlapping = False
+                for pos, largest_dimension, _ in vehicle_comp:
+                    if (
+                        squared_dist(pos, mission.start.position[:2])
+                        <= (0.5 * (largest_dimension + new_veh_maxd)) ** 2
+                    ):
+                        overlapping = True
+                        break
+                if overlapping:
+                    continue
 
                 vehicle = TrapManager._make_vehicle(
-                    sim, agent_id, trap.mission, trap.default_entry_speed
+                    sim, agent_id, mission, trap.default_entry_speed
                 )
             else:
                 continue
-
             if vehicle == None:
                 continue
-
+            sim.create_vehicle_in_providers(vehicle, agent_id)
             agents_given_vehicle.add(agent_id)
             used_traps.append((agent_id, trap))
 
-            for provider in sim.providers:
-                if (
-                    sim.agent_manager.agent_interface_for_agent_id(
-                        agent_id
-                    ).action_space
-                    in provider.action_spaces
-                ):
-                    provider.create_vehicle(
-                        VehicleState(
-                            vehicle_id=vehicle.id,
-                            vehicle_type="passenger",
-                            pose=vehicle.pose,
-                            dimensions=vehicle.chassis.dimensions,
-                            speed=vehicle.speed,
-                            source="EGO-HIJACK",
-                        )
-                    )
         if len(agents_given_vehicle) > 0:
             self.reset_traps(used_traps)
             sim.agent_manager.remove_pending_agent_ids(agents_given_vehicle)
@@ -241,48 +224,19 @@ class TrapManager:
         return self._traps
 
     @staticmethod
-    def _hijack_vehicle(sim, vehicle_id, agent_id, mission):
-        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        planner = MissionPlanner(
-            sim.scenario.road_network,
-            agent_interface.agent_behavior,
-        )
-        planner.plan(mission=mission)
-
-        # Apply agent vehicle association.
-        sim.vehicle_index.start_agent_observation(
-            sim, vehicle_id, agent_id, agent_interface, planner
-        )
-        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        vehicle = sim.vehicle_index.switch_control_to_agent(
-            sim,
-            vehicle_id,
-            agent_id,
-            recreate=True,
-            hijacking=False,
-            agent_interface=agent_interface,
-        )
-        return vehicle
-
-    @staticmethod
     def _make_vehicle(sim, agent_id, mission, initial_speed):
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        planner = MissionPlanner(
-            sim.scenario.road_network,
-            agent_interface.agent_behavior,
-        )
-        planner.plan(mission=mission)
+        plan = Plan(sim.road_map, mission)
         # 3. Apply agent vehicle association.
         vehicle = sim.vehicle_index.build_agent_vehicle(
             sim,
             agent_id,
             agent_interface,
-            planner,
+            plan,
             sim.scenario.vehicle_filepath,
             sim.scenario.tire_parameters_filepath,
             True,
             sim.scenario.surface_patches,
-            sim.scenario.controller_parameters_filepath,
             initial_speed=initial_speed,
             boid=False,
         )
@@ -295,7 +249,7 @@ class TrapManager:
         self.reset()
         self._traps.clear()
 
-    def _mission2trap(self, road_network, mission, default_zone_dist=6):
+    def _mission2trap(self, road_map, mission, default_zone_dist=6):
         if not (hasattr(mission, "start") and hasattr(mission, "goal")):
             raise ValueError(f"Value {mission} is not a mission!")
 
@@ -306,18 +260,20 @@ class TrapManager:
         n_lane = None
 
         if default_entry_speed is None:
-            n_lane = road_network.nearest_lane(mission.start.position)
-            default_entry_speed = n_lane.getSpeed()
+            n_lane = road_map.nearest_lane(mission.start.point)
+            assert n_lane, "mission must start in a lane"
+            default_entry_speed = n_lane.speed_limit
 
         if zone is None:
-            n_lane = n_lane or road_network.nearest_lane(mission.start.position)
-            lane_speed = n_lane.getSpeed()
-            start_edge_id = n_lane.getEdge().getID()
-            start_lane = n_lane.getIndex()
-            lane_length = n_lane.getLength()
+            n_lane = n_lane or road_map.nearest_lane(mission.start.point)
+            assert n_lane, "mission must start in a lane"
+            lane_speed = n_lane.speed_limit
+            start_road_id = n_lane.road.road_id
+            start_lane = n_lane.index
+            lane_length = n_lane.length
             start_pos = mission.start.position
-            vehicle_offset_into_lane = road_network.offset_into_lane(
-                n_lane, (start_pos[0], start_pos[1])
+            vehicle_offset_into_lane = n_lane.offset_along_lane(
+                MapPoint(x=start_pos[0], y=start_pos[1])
             )
             vehicle_offset_into_lane = clip(
                 vehicle_offset_into_lane, 1e-6, lane_length - 1e-6
@@ -330,13 +286,13 @@ class TrapManager:
             length = max(1e-6, vehicle_offset_into_lane - start_offset_in_lane)
 
             zone = MapZone(
-                start=(start_edge_id, start_lane, start_offset_in_lane),
+                start=(start_road_id, start_lane, start_offset_in_lane),
                 length=length,
                 n_lanes=1,
             )
 
         trap = Trap(
-            geometry=zone.to_geometry(road_network),
+            geometry=zone.to_geometry(road_map),
             remaining_time_to_activation=activation_delay,
             patience=patience,
             mission=mission,

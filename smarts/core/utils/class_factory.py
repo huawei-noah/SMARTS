@@ -25,7 +25,7 @@ import re
 from urllib.parse import urlparse
 
 # Taken from OpenAI gym's name constraints
-NAME_CONSTRAINT_REGEX = re.compile(r"^(?:[\w:-]+\/)?([\w:.-]+)-v(\d+)$")
+NAME_CONSTRAINT_REGEX = re.compile(r"^(?:[\w:-]+\/)?([\w:.-]+)-(v(\d+)|latest)$")
 
 
 def is_valid_locator(locator: str):

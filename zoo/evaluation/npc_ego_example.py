@@ -39,7 +39,7 @@ if __name__ == "__main__":
         agent_specs=agent_specs,
         headless=args.headless,
         visdom=False,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
         sumo_headless=False,
         sumo_auto_start=False,
         endless_traffic=False,

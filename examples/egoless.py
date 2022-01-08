@@ -2,8 +2,14 @@ import logging
 
 import gym
 
-from examples.argument_parser import default_argument_parser
 from smarts.core.utils.episodes import episodes
+
+# The following ugliness was made necessary because the `aiohttp` #
+# dependency has an "examples" module too.  (See PR #1120.)
+if __name__ == "__main__":
+    from argument_parser import default_argument_parser
+else:
+    from .argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,7 +24,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         sumo_headless=True,
         visdom=False,
         seed=seed,
-        timestep_sec=0.1,
+        fixed_timestep_sec=0.1,
     )
 
     if max_episode_steps is None:

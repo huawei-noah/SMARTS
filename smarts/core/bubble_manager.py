@@ -24,18 +24,17 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from sys import maxsize
-from typing import Dict, FrozenSet, Sequence, Set, Tuple
+from typing import Dict, FrozenSet, Optional, Sequence, Set
 
 from shapely.affinity import rotate, translate
 from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
 
 from smarts.core.data_model import SocialAgent
-from smarts.core.mission_planner import Mission, MissionPlanner, Start
-from smarts.core.scenario import PositionalGoal
-from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.plan import EndlessGoal, Mission, Plan, PositionalGoal, Start
+from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.string import truncate
-from smarts.core.vehicle import Vehicle, VehicleState
+from smarts.core.vehicle import Vehicle
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.sstudio.types import BoidAgentActor
 from smarts.sstudio.types import Bubble as SSBubble
@@ -61,8 +60,8 @@ class Bubble:
     internal Bubble-related business logic).
     """
 
-    def __init__(self, bubble: SSBubble, sumo_road_network: SumoRoadNetwork):
-        geometry = bubble.zone.to_geometry(sumo_road_network)
+    def __init__(self, bubble: SSBubble, road_map: RoadMap):
+        geometry = bubble.zone.to_geometry(road_map)
 
         bubble_limit = (
             bubble.limit or BubbleLimits()
@@ -247,9 +246,9 @@ class Cursor:
     # We would always want to have the vehicle go through the airlock zone. This may
     # not be the case if we spawn a vehicle in a bubble, but that wouldn't be ideal.
     vehicle_id: str
-    state: BubbleState = None
-    transition: BubbleTransition = None
-    bubble: Bubble = None
+    state: Optional[BubbleState] = None
+    transition: Optional[BubbleTransition] = None
+    bubble: Optional[Bubble] = None
 
     @classmethod
     def from_pos(
@@ -306,11 +305,11 @@ class Cursor:
 
 
 class BubbleManager:
-    def __init__(self, bubbles: Sequence[SSBubble], road_network: SumoRoadNetwork):
+    def __init__(self, bubbles: Sequence[SSBubble], road_map: RoadMap):
         self._log = logging.getLogger(self.__class__.__name__)
         self._cursors = set()
         self._last_vehicle_index = VehicleIndex.identity()
-        self._bubbles = [Bubble(b, road_network) for b in bubbles]
+        self._bubbles = [Bubble(b, road_map) for b in bubbles]
 
     @property
     def bubbles(self) -> Sequence[Bubble]:
@@ -376,11 +375,14 @@ class BubbleManager:
         )
         cursors = set()
         for _, vehicle in index_new.vehicleitems():
-            # XXX: Turns out Point(...) creation is very expensive (~0.02ms) which
+            active_bubbles = self._active_bubbles()
+            if not active_bubbles:
+                continue
+            # XXX: Turns out Shapely Point(...) creation is very expensive (~0.02ms) which
             #      when inside of a loop x large number of vehicles makes a big
             #      performance hit.
-            point = Point(vehicle.position)
-            for bubble in self._active_bubbles():
+            point = vehicle.pose.point.as_shapely
+            for bubble in active_bubbles:
                 cursors.add(
                     Cursor.from_pos(
                         pos=point,
@@ -497,20 +499,7 @@ class BubbleManager:
             recreate=False,
             agent_interface=agent_interface,
         )
-
-        for provider in sim.providers:
-            interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-            if interface.action_space in provider.action_spaces:
-                provider.create_vehicle(
-                    VehicleState(
-                        vehicle_id=vehicle_id,
-                        vehicle_type="passenger",
-                        pose=vehicle.pose,
-                        dimensions=vehicle.chassis.dimensions,
-                        speed=vehicle.speed,
-                        source="HIJACK",
-                    )
-                )
+        sim.create_vehicle_in_providers(vehicle, agent_id)
 
     def _relinquish_vehicle_to_traffic_sim(self, sim, vehicle_id: str, bubble: Bubble):
         agent_id = sim.vehicle_index.actor_id_from_vehicle_id(vehicle_id)
@@ -548,23 +537,25 @@ class BubbleManager:
     def _prepare_sensors_for_agent_control(
         self, sim, vehicle_id, agent_id, agent_interface, bubble
     ):
-        mission_planner = MissionPlanner(sim.scenario.road_network)
+        plan = Plan(sim.road_map, None, find_route=False)
         vehicle = sim.vehicle_index.start_agent_observation(
             sim,
             vehicle_id,
             agent_id,
             agent_interface,
-            mission_planner,
+            plan,
             boid=bubble.is_boid,
         )
 
         # Setup mission (also used for observations)
+        # XXX: this is not quite right.  route may not be what the agent wants to take.
         route = sim.traffic_sim.vehicle_route(vehicle_id=vehicle.id)
-        mission = Mission(
-            start=Start(vehicle.position[:2], vehicle.heading),
-            goal=PositionalGoal.fromedge(route[-1], sim.scenario.road_network),
-        )
-        mission_planner.plan(mission=mission)
+        if len(route) > 0:
+            goal = PositionalGoal.from_road(route[-1], sim.scenario.road_map)
+        else:
+            goal = EndlessGoal()
+        mission = Mission(start=Start(vehicle.position[:2], vehicle.heading), goal=goal)
+        plan.create_route(mission)
 
     def _start_social_agent(
         self, sim, agent_id, social_agent, social_agent_actor, bubble

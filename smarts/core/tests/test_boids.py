@@ -100,7 +100,7 @@ def test_boids(smarts, scenarios, bubble):
     smarts.reset(scenario)
 
     index = smarts.vehicle_index
-    geometry = bubble_geometry(bubble, smarts.road_network)
+    geometry = bubble_geometry(bubble, smarts.road_map)
 
     triggered_multiple_vehicles_in_bubble = False
     triggered_multiple_vehicles_airlocked = False
