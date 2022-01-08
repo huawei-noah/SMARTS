@@ -136,7 +136,7 @@ def intersection_env(
                 ),
                 neighborhood_vehicles=NeighborhoodVehicles(img_meters),
                 waypoints=Waypoints(lookahead=30),
-                road_waypoints=False, #RoadWaypoints(horizon=30),
+                road_waypoints=False,  # RoadWaypoints(horizon=30),
                 accelerometer=True,
                 lidar=True,
             ),
@@ -158,7 +158,7 @@ def intersection_env(
     return env
 
 
-def _build_scenario()-> str:
+def _build_scenario() -> str:
     scenario = str(
         pathlib.Path(__file__).absolute().parents[2]
         / "scenarios"

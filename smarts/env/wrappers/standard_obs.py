@@ -25,6 +25,7 @@ import gym
 import numpy as np
 
 from smarts.core.events import Events
+from smarts.core.road_map import Waypoint
 from smarts.core.sensors import (
     DrivableAreaGridMap,
     EgoVehicleObservation,
@@ -58,11 +59,11 @@ class StandardObs(gym.ObservationWrapper):
         for intrfc in {
             "accelerometer",
             "drivable_area_grid_map",
-            "rgb",
             "lidar",
             "neighborhood_vehicles",
             "ogm",
-            "road_waypoints",
+            # "road_waypoints",
+            "rgb",
             "waypoints",
         }:
             val = getattr(self.agent_specs[agent_id].interface, intrfc)
@@ -95,7 +96,7 @@ class StandardObs(gym.ObservationWrapper):
                     "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
                     "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(1,), dtype=np.float32),
                     "yaw_rate": gym.spaces.Box(low=0, high=2*math.pi, shape=(1,), dtype=np.float32),
-                    "lane_index": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.uint8),
+                    "lane_index": gym.spaces.Box(low=0, high=255, shape=(1,), dtype=np.uint8),
                     "linear_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
                     "angular_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
                     "linear_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
@@ -125,10 +126,17 @@ class StandardObs(gym.ObservationWrapper):
                     "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
                     "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(1,), dtype=np.float32),
                     "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
-                    "lane_index": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.uint8),
+                    "lane_index": gym.spaces.Box(low=0, high=255, shape=(1,), dtype=np.uint8),
                 }),
-                "occupancy_grid_map":gym.spaces.Box(low=0, high=255,shape=(self.agent_specs[agent_id].interface.ogm.width, self.agent_specs[agent_id].interface.ogm.height, 1), dtype=np.uint8),
-                "top_down_rgb":gym.spaces.Box(low=0, high=255,shape=(self.agent_specs[agent_id].interface.rgb.width, self.agent_specs[agent_id].interface.rgb.height, 3), dtype=np.uint8),
+                "occupancy_grid_map": gym.spaces.Box(low=0, high=255,shape=(self.agent_specs[agent_id].interface.ogm.width, self.agent_specs[agent_id].interface.ogm.height, 1), dtype=np.uint8),
+                "top_down_rgb": gym.spaces.Box(low=0, high=255, shape=(self.agent_specs[agent_id].interface.rgb.width, self.agent_specs[agent_id].interface.rgb.height, 3), dtype=np.uint8),
+                "waypoint_paths": gym.spaces.Dict({
+                    "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(4,20), dtype=np.float32),
+                    "lane_index": gym.spaces.Box(low=0, high=255, shape=(4,20), dtype=np.uint8),
+                    "lane_width": gym.spaces.Box(low=0, high=1e10, shape=(4,20), dtype=np.float32),
+                    "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(4,20,3), dtype=np.float32),
+                    "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=(4,20), dtype=np.float32),
+                }),
             })
             for agent_id in self.agent_specs.keys()
         })
@@ -269,32 +277,43 @@ def _std_top_down_rgb(val: TopDownRGB) -> np.ndarray:
     return val.data.astype(np.uint8)
 
 
-def _std_waypoint_paths(val):
-    des_shp = (4,10)
-    print("---------------------------")
-    # print(val)
-    print(type(val), len(val))
-    print(val[0], len(val[0]))
-    # print(val[0][0])
+def _std_waypoint_paths(paths: List[List[Waypoint]]) -> Dict[str, np.ndarray]:
+    des_shp = (4, 20)
+    rcv_shp = (len(paths), len(paths[0]))
+    pad_shp = [0 if des - rcv < 0 else des - rcv for des, rcv in zip(des_shp, rcv_shp)]
 
-    def func(elem):
-        np.array(waypoint.pos
-        waypoint.heading
-        waypoint.lane_width
-        waypoint.speed_limit
-        waypoint.lane_index
+    def extract_elem(waypoint):
+        return (
+            waypoint.heading,
+            waypoint.lane_index,
+            waypoint.lane_width,
+            waypoint.pos,
+            waypoint.speed_limit,
+        )
 
-    for lane in val:
+    paths = [map(extract_elem, path[: des_shp[1]]) for path in paths[: des_shp[0]]]
+    heading, lane_index, lane_width, pos, speed_limit = zip(
+        *[zip(*path) for path in paths]
+    )
 
-        map(func, elem)
+    heading = np.array(heading, dtype=np.float32)
+    lane_index = np.array(lane_index, dtype=np.uint8)
+    lane_width = np.array(lane_width, dtype=np.float32)
+    pos = np.array(pos, dtype=np.float32)
+    speed_limit = np.array(speed_limit, dtype=np.float32)
 
-
-    print("---------------------------")
-
-    import sys
-    sys.exit(2)
-
+    # fmt: off
+    heading = np.pad(heading, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+    lane_index = np.pad(lane_index, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+    lane_width = np.pad(lane_width, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+    pos = np.pad(pos, ((0,pad_shp[0]),(0,pad_shp[1]),(0,1)), mode='constant', constant_values=0)
+    speed_limit = np.pad(speed_limit, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+    # fmt: on
 
     return {
-        
+        "heading": heading,
+        "lane_index": lane_index,
+        "lane_width": lane_width,
+        "pos": pos,
+        "speed_limit": speed_limit,
     }
