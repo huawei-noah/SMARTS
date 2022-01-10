@@ -12,7 +12,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.4.18",
+    version="0.5.0",
     packages=find_packages(exclude=("tests", "examples")),
     include_package_data=True,
     zip_safe=True,
@@ -54,6 +54,7 @@ setup(
         "protobuf>=3.19.1",
         "PyYAML>=6.0",
         "twisted>=21.7.0",
+        "opendrive2lanelet",
     ],
     extras_require={
         "test": [

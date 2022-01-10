@@ -10,6 +10,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [0.5.0] - 2022-01-07
+### Added
 - Added Minimum FrameRate tests to measure the fps for `smart.step()` method. See Issue #455.
 - Added a ROS wrapper/driver example to wrap SMARTS in a ROS (v1) node.
 - Added the ability to pass an optional `time_delta_since_last_step` to SMARTS' `step()` function
@@ -20,6 +28,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Allow specifying "-latest" as a version suffix for zoo locator strings.
 - Added Base CI and dependencies requirement tests for the "darwin" platform (MacOS).
 - Extended Imitation Learning codebase to allow importing traffic histories from the Waymo motion dataset and replay in a SMARTS simulation. See PR #1060.
+- Added options for dealing with noise when inferring headings while importing traffic history data.  See PR #1219.
 - Added `ros` extension rule to `setup.py`.
 - Added a script to allow users to hijack history vehicles dynamically through a trigger event. See PR #1088.
 - Added a `-y` option to `utils/setup/install_deps.sh` to accept installation by default. See issue #1081.
@@ -27,6 +36,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `smarts.core.utils.import_utils` to help with the dynamic import of modules.
 - Added `single_agent` env wrapper and unit test. The wrapper converts a single-agent SMARTS environment's step and reset output to be compliant with gym spaces.
 - Added `rgb_image` env wrapper and unit test. The wrapper filters SMARTS environment observation and returns only top-down RGB image as observation.
+- Extended the `RoadMap` API to support `OpenDRIVE` map format in `smarts/core/opendrive_road_network.py`. Added 3 new scenarios with `OpenDRIVE` maps. See PR #1186.  
 - Added a "ReplayAgent" wrapper to allow users to rerun an agent previously run by saving its configurations and inputs. See Issue #971.
 - Added `smarts.core.provider.ProviderRecoveryFlags` as flags to determine how `SMARTS` should handle failures in providers. They are as follows:
   - `NOT_REQUIRED`: Not needed for the current step. Error causes skip of provider if it should recover but cannot or should not recover.
@@ -56,6 +66,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
     - Added `MapSpec` to the SStudio DSL types and introduced a simple builder pattern for creating `RoadMap` objects.
 - Changed the type hint for `EgoVehicleObservation`: it returns a numpy array (and always has).
 - Raised a warning message for building scenarios without `map.net.xml` file. See PR #1161.
+- Updated `smarts/env/hiway_env.py` to support `OpenDRIVE` maps so that the `SMARTS` object is instantiated without the `SUMO` traffic provider and social agents. See PR #1215.
 - Public `SMARTS` methods will throw `smarts.core.smarts.SMARTSDestroyedError` if `SMARTS.destroy()` has previously been called on the `SMARTS` instance.
 ### Fixed
 - Fix lane vector for the unique cases of lane offset >= lane's length. See PR #1173.

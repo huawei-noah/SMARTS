@@ -270,7 +270,7 @@ class TrafficGenerator:
 
     def resolve_edge_length(self, edge_id, lane_idx):
         self._cache_road_network()
-        lane = self._road_network.edge_by_id(edge_id).lanes[lane_idx]
+        lane = self._road_network.road_by_id(edge_id).lanes[lane_idx]
         return lane.length
 
     def resolve_route(self, route):
