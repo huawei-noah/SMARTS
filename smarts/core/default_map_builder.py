@@ -23,7 +23,7 @@ from dataclasses import replace
 from typing import NamedTuple, Tuple
 from pathlib import Path
 from smarts.core.road_map import RoadMap
-from smarts.core.utils.file import file_md5_hash
+from smarts.core.utils.file import file_md5_hash, path2hash
 
 
 _existing_map = None
@@ -113,7 +113,7 @@ def get_road_map(map_spec) -> Tuple[RoadMap, str]:
         clazz = SumoRoadNetwork
 
     elif map_type == _OPENDRIVE_MAP:
-        from smarts.core.sumo_road_network import OpenDriveRoadNetwork
+        from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 
         clazz = OpenDriveRoadNetwork
 
@@ -128,7 +128,10 @@ def get_road_map(map_spec) -> Tuple[RoadMap, str]:
         _clear_cache()
 
     road_map = clazz.from_spec(map_spec)
-    road_map_hash = file_md5_hash(road_map.source)
+    if os.path.isfile(road_map.source):
+        road_map_hash = file_md5_hash(road_map.source)
+    else:
+        road_map_hash = path2hash(road_map.source)
     _cache_result(map_spec, road_map, road_map_hash)
 
     return road_map, road_map_hash
