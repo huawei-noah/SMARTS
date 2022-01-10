@@ -25,7 +25,57 @@ from pathlib import Path
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import file_md5_hash
 
+
 _existing_map = None
+
+
+def _cache_result(map_spec, road_map, road_map_hash: str):
+    global _existing_map
+    from smarts.sstudio.types import MapSpec
+
+    class _RoadMapInfo(NamedTuple):
+        map_spec: MapSpec
+        obj: RoadMap
+        map_hash: str
+
+    _existing_map = _RoadMapInfo(map_spec, road_map, road_map_hash)
+
+
+def _clear_cache():
+    global _existing_map
+    if _existing_map:
+        import gc
+
+        # Try to only keep one map around at a time...
+        del _existing_map
+        _existing_map = None
+        gc.collect
+
+
+_UNKNOWN_MAP = 0
+_SUMO_MAP = 1
+_OPENDRIVE_MAP = 2
+
+
+def _find_mapfile_in_dir(map_dir: str) -> Tuple[int, str]:
+    map_filename_type = {
+        "map.net.xml": _SUMO_MAP,
+        "shifted_map-AUTOGEN.net.xml": _SUMO_MAP,
+        "map.xodr": _OPENDRIVE_MAP,
+    }
+    map_type = _UNKNOWN_MAP
+    map_path = map_dir
+    for f in os.listdir(map_dir):
+        cand_map_type = map_filename_type.get(f)
+        if cand_map_type is not None:
+            return cand_map_type, os.path.join(map_dir, f)
+        if f.endswith(".net.xml"):
+            map_type = _SUMO_MAP
+            map_path = os.path.join(map_dir, f)
+        if f.endswith(".xodr"):
+            map_type = _OPENDRIVE_MAP
+            map_path = os.path.join(map_dir, f)
+    return map_type, map_path
 
 
 # This function should be re-callable (although caching is up to the implementation).
@@ -36,13 +86,6 @@ _existing_map = None
 # map formats (by extending the RoadMap base class) can create their
 # own version of this to reference from a MapSpec within their
 # scenario folder(s) and shouldn't have to change much else.
-
-supported_maps = [
-    "*.net.xml",  # SUMO
-    "*.xodr",  # OpenDRIVE
-]
-
-
 def get_road_map(map_spec) -> Tuple[RoadMap, str]:
     """@return a RoadMap object and a hash
     that uniquely identifies it. Changes to the hash
@@ -54,63 +97,38 @@ def get_road_map(map_spec) -> Tuple[RoadMap, str]:
     assert map_spec, "A road map spec must be specified"
     assert map_spec.source, "A road map source must be specified"
 
-    global _existing_map
-    if _existing_map:
-        if _existing_map.obj.is_same_map(map_spec):
-            return _existing_map.obj, _existing_map.map_hash
-        import gc
+    if os.path.isdir(map_spec.source):
+        map_type, map_source = _find_mapfile_in_dir(map_spec.source)
+    else:
+        map_type = _UNKNOWN_MAP
+        map_source = map_spec.source
+        if map_source.endswith(".net.xml"):
+            map_type = _SUMO_MAP
+        elif map_source.endswith(".xodr"):
+            map_type = _OPENDRIVE_MAP
 
-        # Try to only keep one map around at a time...
-        del _existing_map
-        _existing_map = None
-        gc.collect()
-
-    if not os.path.isfile(map_spec.source):
-        scenario_root = Path(map_spec.source)
-        path_found = False
-        for i, map_name in enumerate(supported_maps):
-            map_paths = list(scenario_root.rglob(map_name))
-            if len(map_paths) == 1:
-                map_spec = replace(map_spec, source=str(map_paths[0]))
-                path_found = True
-                break
-            elif len(map_paths) > 1:
-                for map_path in map_paths:
-                    if not str(map_path).endswith("AUTOGEN.net.xml"):
-                        map_spec = replace(map_spec, source=str(map_path))
-                        path_found = True
-                        break
-                break
-            else:
-                continue
-
-        if not path_found:
-            raise FileNotFoundError(
-                f"Unable to find map in map_source={map_spec.source}."
-            )
-
-    road_map = None
-    if map_spec.source.endswith(".net.xml"):
-        # Keep this a conditional import so Sumo does not have to be
-        # imported if not necessary:
+    if map_type == _SUMO_MAP:
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
-        road_map = SumoRoadNetwork.from_spec(map_spec)
+        clazz = SumoRoadNetwork
 
-    elif map_spec.source.endswith(".xodr"):
-        from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
+    elif map_type == _OPENDRIVE_MAP:
+        from smarts.core.sumo_road_network import OpenDriveRoadNetwork
 
-        road_map = OpenDriveRoadNetwork.from_spec(map_spec)
+        clazz = OpenDriveRoadNetwork
 
+    else:
+        return None, None
+
+    if _existing_map:
+        if isinstance(_existing_map.obj, clazz) and _existing_map.obj.is_same_map(
+            map_spec
+        ):
+            return _existing_map.obj, _existing_map.map_hash
+        _clear_cache()
+
+    road_map = clazz.from_spec(map_spec)
     road_map_hash = file_md5_hash(road_map.source)
-
-    from smarts.sstudio.types import MapSpec
-
-    class _RoadMapInfo(NamedTuple):
-        map_spec: MapSpec
-        obj: RoadMap
-        map_hash: str
-
-    _existing_map = _RoadMapInfo(map_spec, road_map, road_map_hash)
+    _cache_result(map_spec, road_map, road_map_hash)
 
     return road_map, road_map_hash
