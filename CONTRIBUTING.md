@@ -18,7 +18,7 @@ We encourage all forms of contributions to SMARTS, not limited to:
 
 ## Setting up your dev environment
 
-In addition to following the setup steps in the README, you'll need to install the [dev] dependencies and install the pre-commit hooks.
+In addition to following the setup steps in the README, you'll need to install the [dev] dependencies.
 
 ```bash
 pip install -e .[dev]
@@ -43,8 +43,9 @@ Please take care in using good commit messages as they're useful for debugging, 
 
 ## Pre-Push Checklist
 
-1. Do your best to see that your code compiles locally.
-2. Do not push to `master`. Instead make a branch and a [pull request](#Pull-Requests)
+1. Make sure the pre-commit hooks are installed `pre-commit install`
+2. Do your best to see that your code compiles locally.
+3. Do not push to `master`. Instead make a branch and a [pull request](#Pull-Requests)
 
 ## Submission of a Pull Request
 
@@ -92,6 +93,8 @@ Tag the issue as a feature request using `enhancement` and if it takes more than
 
 The project follows a strict format requirement for python code. We made a decision early on in the project to use [Black](https://github.com/psf/black). This makes formatting consistent while eliminating [bike shedding](http://bikeshed.com/).
 If you do not already have it please install it via `pip install black`.
+
+Formatting guarantees that your code will pass the CI formatting test case.
 
 ### Documentation(Format)
 - Use [Markdown](https://daringfireball.net/projects/markdown/) liberally for in-repository documentation
