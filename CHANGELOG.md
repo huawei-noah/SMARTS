@@ -10,6 +10,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 ### Changed
 ### Deprecated
 ### Fixed
@@ -48,7 +49,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
   - Add `connected` property to providers to check if the provider is still connected.
 - Added recovery options to `smarts.core.smarts.SMARTS.add_provider()`
   - Add `recovery_flags` argument to configure the recovery options if the provider disconnects or throws an exception.
-- Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 - Added `driving_in_traffic` reinforcement learning example. An ego agent is trained using DreamerV2 to drive as far and as fast as possible in heavy traffic, without colliding or going off-road.
 - Added `smarts.core.smarts.SMARTSDestroyedError` which describes use of a destroyed `SMARTS` instance. 
 ### Changed
