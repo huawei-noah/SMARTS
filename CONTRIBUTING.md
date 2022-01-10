@@ -18,10 +18,11 @@ We encourage all forms of contributions to SMARTS, not limited to:
 
 ## Setting up your dev environment
 
-In addition to following the setup steps in the README, you'll need to install the [dev] dependencies.
+In addition to following the setup steps in the README, you'll need to install the [dev] dependencies and install the pre-commit hooks.
 
 ```bash
 pip install -e .[dev]
+pre-commit install
 ```
 
 Once done, you're all set to make your first contribution!
