@@ -42,7 +42,7 @@ setup(
     zip_safe=True,
     python_requires=">=3.7",
     install_requires=[
-        "smarts[train]==0.4.18",
+        "smarts[train]==0.5.0",
         "ray[rllib]==1.0.1.post1",
         "trimesh==3.9.29",
         "setuptools>=41.0.0,!=50.0",
