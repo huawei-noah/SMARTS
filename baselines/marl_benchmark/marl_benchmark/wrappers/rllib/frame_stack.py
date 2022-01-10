@@ -76,7 +76,7 @@ class TupleStackingPreprocessor(Preprocessor):
 
 
 class FrameStack(Wrapper):
-    """ By default, this wrapper will stack 3 consecutive frames as an agent observation"""
+    """By default, this wrapper will stack 3 consecutive frames as an agent observation"""
 
     def __init__(self, config):
         super(FrameStack, self).__init__(config)
