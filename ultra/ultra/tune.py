@@ -95,7 +95,7 @@ def tune_train(
     agent_specs = {
         agent_id: make(
             locator=policy_class,
-            policy_params=config,
+            agent_params=config,
             max_episode_steps=max_episode_steps,
         )
         for agent_id, policy_class in agent_classes.items()

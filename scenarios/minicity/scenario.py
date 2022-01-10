@@ -32,10 +32,6 @@ traffic = t.Traffic(
     ]
 )
 
-open_agent_actor = t.SocialAgentActor(
-    name="open-agent", agent_locator="open_agent:open_agent-v0"
-)
-
 laner_actor = t.SocialAgentActor(
     name="keep-lane-agent",
     agent_locator="zoo.policies:keep-lane-agent-v0",
@@ -45,7 +41,7 @@ travelling_bubbles = [
     t.Bubble(
         zone=t.PositionalZone(pos=(50, 0), size=(10, 50)),
         margin=5,
-        actor=open_agent_actor,
+        actor=laner_actor,
         follow_actor_id=t.Bubble.to_actor_id(laner_actor, mission_group="all"),
         follow_offset=(-7, 10),
     )
@@ -62,7 +58,7 @@ static_bubbles = [
     t.Bubble(
         zone=t.PositionalZone(pos=(1012.19, 1084.20), size=(30, 30)),
         margin=5,
-        actor=open_agent_actor,
+        actor=laner_actor,
     )
 ]
 
@@ -70,7 +66,7 @@ gen_scenario(
     t.Scenario(
         traffic={"basic": traffic},
         social_agent_missions={
-            "all": ([laner_actor, open_agent_actor], [t.Mission(route=t.RandomRoute())])
+            "all": ([laner_actor], [t.Mission(route=t.RandomRoute())])
         },
         bubbles=[*travelling_bubbles, *static_bubbles],
     ),

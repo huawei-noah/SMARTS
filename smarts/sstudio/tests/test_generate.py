@@ -108,7 +108,7 @@ def _gen_map_from_spec(scenario_root: str, map_spec: MapSpec):
         assert road_map
 
 
-def test_generate_map():
+def test_generate_sumo_map():
     scenario_root = "scenarios/intersections/4lane_t"
     map_file = "map.net.xml"
 
@@ -118,6 +118,27 @@ def test_generate_map():
 
     lw = 5.2
     lps = 3.14
+
+    def fake_map_builder(map_spec: MapSpec) -> bool:
+        assert map_spec.source == map_path
+        assert map_spec.default_lane_width == lw
+        assert map_spec.lanepoint_spacing == lps
+        return True
+
+    map_spec = MapSpec(map_path, lps, lw, fake_map_builder)
+    _gen_map_from_spec(scenario_root, map_spec)
+
+
+def test_generate_od_map():
+    scenario_root = "scenarios/od_4lane"
+    map_file = "map.xodr"
+
+    map_path = os.path.join(scenario_root, map_file)
+    map_spec = MapSpec(map_path)
+    _gen_map_from_spec(scenario_root, map_spec)
+
+    lw = 3.7
+    lps = 1.0
 
     def fake_map_builder(map_spec: MapSpec) -> bool:
         assert map_spec.source == map_path

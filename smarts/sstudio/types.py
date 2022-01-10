@@ -24,6 +24,7 @@ import pickle
 import random
 from ctypes import c_int64
 from dataclasses import dataclass, field
+from enum import IntEnum
 from sys import maxsize
 from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
 
@@ -45,6 +46,11 @@ from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_around_point
 
 
+class _SUMO_PARAMS_MODE(IntEnum):
+    TITLE_CASE = 0
+    KEEP_SNAKE_CASE = 1
+
+
 def _pickle_hash(obj) -> int:
     pickle_bytes = pickle.dumps(obj, protocol=4)
     hasher = hashlib.md5()
@@ -59,16 +65,28 @@ class _SumoParams(collections_abc.Mapping):
     between PEP8-compatible naming and Sumo's.
     """
 
-    def __init__(self, prefix, whitelist=[], **kwargs):
+    def __init__(
+        self, prefix, whitelist=[], mode=_SUMO_PARAMS_MODE.TITLE_CASE, **kwargs
+    ):
         def snake_to_title(word):
             return "".join(x.capitalize() or "_" for x in word.split("_"))
+
+        def keep_snake_case(word: str):
+            w = word[0].upper() + word[1:]
+            return "".join(x or "_" for x in w.split("_"))
+
+        func: function = snake_to_title
+        if mode == _SUMO_PARAMS_MODE.TITLE_CASE:
+            pass
+        elif mode == _SUMO_PARAMS_MODE.KEEP_SNAKE_CASE:
+            func = keep_snake_case
 
         # XXX: On rare occasions sumo doesn't respect their own conventions
         #      (e.x. junction model's impatience).
         self._params = {key: kwargs.pop(key) for key in whitelist if key in kwargs}
 
         for key, value in kwargs.items():
-            self._params[f"{prefix}{snake_to_title(key)}"] = value
+            self._params[f"{prefix}{func(key)}"] = value
 
     def __iter__(self):
         return iter(self._params)
@@ -90,7 +108,7 @@ class LaneChangingModel(_SumoParams):
     """Models how the actor acts with respect to lane changes."""
 
     def __init__(self, **kwargs):
-        super().__init__("lc", **kwargs)
+        super().__init__("lc", mode=_SUMO_PARAMS_MODE.KEEP_SNAKE_CASE, **kwargs)
 
 
 class JunctionModel(_SumoParams):
@@ -372,7 +390,7 @@ class Flow:
 
 @dataclass(frozen=True)
 class JunctionEdgeIDResolver:
-    """ A utility for resolving a junction connection edge """
+    """A utility for resolving a junction connection edge"""
 
     start_edge_id: str
     start_lane_index: int
@@ -613,9 +631,8 @@ class MapZone(Zone):
 
             lane_offset = resolve_offset(offset, geom_length, lane_length)
             lane_offset += buffer_from_ends
-
             width = lane.width_at_offset(lane_offset)
-            lane_shape = lane.shape(width + 0.3)
+            lane_shape = lane.shape(0.3, width)
 
             geom_length = max(geom_length - buffer_from_ends, buffer_from_ends)
             lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)

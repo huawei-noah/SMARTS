@@ -21,7 +21,7 @@ jobs:
           - ./examples/tests --ignore=./examples/tests/test_learning.py
           - ./smarts/sstudio
           - ./smarts/env/tests/test_rllib_hiway_env.py
-          - ./smarts/core
+          - ./smarts/core --nb-exec-timeout 65536
           - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
     steps:
       - name: Checkout

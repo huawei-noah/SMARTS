@@ -30,7 +30,7 @@ from shapely.affinity import rotate, translate
 from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
 
 from smarts.core.data_model import SocialAgent
-from smarts.core.plan import Mission, Plan, PositionalGoal, Start
+from smarts.core.plan import EndlessGoal, Mission, Plan, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.string import truncate
@@ -550,10 +550,11 @@ class BubbleManager:
         # Setup mission (also used for observations)
         # XXX: this is not quite right.  route may not be what the agent wants to take.
         route = sim.traffic_sim.vehicle_route(vehicle_id=vehicle.id)
-        mission = Mission(
-            start=Start(vehicle.position[:2], vehicle.heading),
-            goal=PositionalGoal.from_road(route[-1], sim.scenario.road_map),
-        )
+        if len(route) > 0:
+            goal = PositionalGoal.from_road(route[-1], sim.scenario.road_map)
+        else:
+            goal = EndlessGoal()
+        mission = Mission(start=Start(vehicle.position[:2], vehicle.heading), goal=goal)
         plan.create_route(mission)
 
     def _start_social_agent(

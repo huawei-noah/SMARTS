@@ -25,7 +25,7 @@ jobs:
         tests:
           - ./envision
           - ./smarts/contrib
-          - ./smarts/core
+          - ./smarts/core --nb-exec-timeout 65536
           - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
           - ./smarts/env/tests/test_rllib_hiway_env.py
           - ./smarts/sstudio
