@@ -1,10 +1,28 @@
 # SMARTS Stable Baselines3 Example
-This example illustrates the training of an ego agent to drive, as fast and as far as possible, in traffic using the Stable Baselines3 (https://github.com/DLR-RM/stable-baselines3) reinforcement-learning algorithms.
+This example illustrates the training of an ego agent to drive, as fast and as far as possible, in traffic using the Stable Baselines3 PPO (https://github.com/DLR-RM/stable-baselines3) reinforcement-learning algorithm.
 
 Ego agent earns rewards based on the distance travelled and is penalised for colliding with other vehicles and for going off-road.
 
 ## Trained agent driving in traffic
 ![](./docs/_static/driving_in_traffic.gif)
+
+## Observation space
++ Topdown RGB image
+    + size (width x height): 64 pixels x 64 pixels
+    + resolution: 1 meter/pixel
+```
+observation_space = gym.spaces.Dict({
+    gym.spaces.Box(low=0, high=255, shape=(64,64,3), dtype=np.uint8),
+})
+```
+
+## Action space:
++ Throttle: [0,1]
++ Brake: [0,1]
++ Steering: [-1, 1]
+```
+action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
+```
 
 ## Setup
 ```bash
