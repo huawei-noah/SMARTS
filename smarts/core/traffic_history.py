@@ -31,6 +31,9 @@ from typing import Dict, Generator, NamedTuple, Optional, Set, Tuple, Type, Type
 
 from cached_property import cached_property
 
+from smarts.core.coordinates import Dimensions
+
+
 T = TypeVar("T")
 
 
@@ -130,12 +133,14 @@ class TrafficHistory:
             )
         return "passenger"
 
+    @lru_cache(maxsize=32)
     def vehicle_config_type(self, vehicle_id: str) -> str:
         query = "SELECT type FROM Vehicle WHERE id = ?"
         veh_type = self._query_val(int, query, params=(vehicle_id,))
         return self.decode_vehicle_type(veh_type)
 
-    def vehicle_size(self, vehicle_id: str) -> Tuple[float, float, float]:
+    @lru_cache(maxsize=32)
+    def vehicle_dims(self, vehicle_id: str) -> Dimensions:
         # do import here to break circular dependency chain
         from smarts.core.vehicle import VEHICLE_CONFIGS
 
@@ -150,7 +155,7 @@ class TrafficHistory:
             width = default_dims.width
         if not height:
             height = default_dims.height
-        return length, width, height
+        return Dimensions(length, width, height)
 
     def first_seen_times(self) -> Generator[Tuple[str, float], None, None]:
         # XXX: For now, limit agent missions to just cars (V.type = 2)
