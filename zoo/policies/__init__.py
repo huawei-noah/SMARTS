@@ -5,7 +5,6 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import make, register
 
-
 from .keep_lane_agent import KeepLaneAgent
 from .non_interactive_agent import NonInteractiveAgent
 
@@ -77,3 +76,18 @@ def replay_entrypoint(
 
 
 register(locator="replay-agent-v0", entry_point=replay_entrypoint)
+
+
+def human_keyboard_entrypoint(*arg, **kwargs):
+    from .human_in_the_loop import HumanKeyboardAgent
+
+    spec = AgentSpec(
+        interface=AgentInterface.from_type(
+            AgentType.StandardWithAbsoluteSteering, max_episode_steps=3000
+        ),
+        agent_builder=HumanKeyboardAgent,
+    )
+    return spec
+
+
+register(locator="human-in-the-loop-v0", entry_point=human_keyboard_entrypoint)
