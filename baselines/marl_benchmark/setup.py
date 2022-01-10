@@ -50,6 +50,6 @@ setup(
         "black==20.8b1",
         "opencv-python",
         "gym==0.18.3",
-        "numpy==1.18.5",
+        "numpy==1.19.5",
     ],
 )
