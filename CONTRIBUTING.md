@@ -43,7 +43,7 @@ Please take care in using good commit messages as they're useful for debugging, 
 
 ## Pre-Push Checklist
 
-1. Make sure the pre-commit hooks are installed via `pre-commit install`
+1. Make sure the pre-commit hooks are installed via `pre-commit install`.
 2. Do your best to see that your code compiles locally.
 3. Do not push to `master`. Instead make a branch and a [pull request](#Pull-Requests)
 
