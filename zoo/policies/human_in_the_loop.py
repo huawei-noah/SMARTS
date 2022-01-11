@@ -4,10 +4,6 @@ This examples runs the human-keyboard Agent, which allows you to control and mon
 NOTE: You will need to install [extras] to run this example. `pip install -e .[extras]`
 """
 
-import logging
-
-import gym
-
 try:
     from pynput.keyboard import Key, Listener
 except ImportError:
@@ -15,11 +11,6 @@ except ImportError:
 
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.utils.episodes import episodes
-
-logging.basicConfig(level=logging.INFO)
-
-AGENT_ID = "Agent-007"
 
 
 class HumanKeyboardAgent(Agent):
