@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Union
 
 import gym
 import numpy as np
@@ -40,7 +40,7 @@ def scan_for_vehicle(
     activation_dist_squared,
     self_vehicle_state,
     other_vehicle_state,
-):
+) -> Union[Heading, bool]:
     if target_prefix and not other_vehicle_state.id.startswith(target_prefix):
         return False
 
@@ -102,9 +102,9 @@ _LANE_TTC_OBSERVATION_SPACE = gym.spaces.Dict(
 )
 
 
-def _lane_ttc_observation_adapter(env_observation):
-    ego = env_observation.ego_vehicle_state
-    waypoint_paths = env_observation.waypoint_paths
+def lane_ttc(obs):
+    ego = obs.ego_vehicle_state
+    waypoint_paths = obs.waypoint_paths
     wps = [path[0] for path in waypoint_paths]
 
     # distance of vehicle from center of lane
@@ -113,7 +113,7 @@ def _lane_ttc_observation_adapter(env_observation):
     lane_hwidth = closest_wp.lane_width * 0.5
     norm_dist_from_center = signed_dist_from_center / lane_hwidth
 
-    ego_ttc, ego_lane_dist = _ego_ttc_lane_dist(env_observation, closest_wp.lane_index)
+    ego_ttc, ego_lane_dist = _ego_ttc_lane_dist(obs, closest_wp.lane_index)
 
     return {
         "distance_from_center": np.array([norm_dist_from_center]),
@@ -126,7 +126,7 @@ def _lane_ttc_observation_adapter(env_observation):
 
 
 lane_ttc_observation_adapter = Adapter(
-    space=_LANE_TTC_OBSERVATION_SPACE, transform=_lane_ttc_observation_adapter
+    space=_LANE_TTC_OBSERVATION_SPACE, transform=lane_ttc
 )
 
 

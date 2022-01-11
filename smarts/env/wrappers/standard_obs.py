@@ -33,6 +33,7 @@ from smarts.core.sensors import (
     TopDownRGB,
     VehicleObservation,
 )
+from smarts.env.custom_observations import lane_ttc
 
 
 class StandardObs(gym.ObservationWrapper):
@@ -81,6 +82,7 @@ class StandardObs(gym.ObservationWrapper):
             "occupancy_grid_map",
             # "road_waypoints",
             "top_down_rgb",
+            "ttc",
             "waypoint_paths",
         }
 
@@ -130,6 +132,12 @@ class StandardObs(gym.ObservationWrapper):
                 }),
                 "occupancy_grid_map": gym.spaces.Box(low=0, high=255,shape=(self.agent_specs[agent_id].interface.ogm.width, self.agent_specs[agent_id].interface.ogm.height, 1), dtype=np.uint8),
                 "top_down_rgb": gym.spaces.Box(low=0, high=255, shape=(self.agent_specs[agent_id].interface.rgb.width, self.agent_specs[agent_id].interface.rgb.height, 3), dtype=np.uint8),
+                "ttc": gym.spaces.Dict({
+                    "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,), dtype=np.float32),
+                    "distance_from_center": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,), dtype=np.float32),
+                    "ego_lane_dist": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+                    "ego_ttc": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+                }),
                 "waypoint_paths": gym.spaces.Dict({
                     "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(4,20), dtype=np.float32),
                     "lane_index": gym.spaces.Box(low=0, high=255, shape=(4,20), dtype=np.uint8),
@@ -150,6 +158,8 @@ class StandardObs(gym.ObservationWrapper):
         f"AgentInterface.{intrfc} attribute."
 
     def observation(self, obs: Dict[str, Any]):
+        ttc = lane_ttc(obs)
+
         from collections import defaultdict
 
         wrapped_obs = defaultdict(Dict)
@@ -275,6 +285,15 @@ def _std_road_waypoints(val):
 
 def _std_top_down_rgb(val: TopDownRGB) -> np.ndarray:
     return val.data.astype(np.uint8)
+
+
+def _std_ttc(val: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    return {
+        "angle_error": np.array(val["angle_error"], dtype=np.float32),
+        "distance_from_center": np.array(val["distance_from_center"], dtype=np.float32),
+        "ego_lane_dist": np.array(val["ego_lane_dist"], dtype=np.float32),
+        "ego_ttc": np.array(val["ego_ttc"], dtype=np.float32),
+    }
 
 
 def _std_waypoint_paths(paths: List[List[Waypoint]]) -> Dict[str, np.ndarray]:
