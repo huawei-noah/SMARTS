@@ -295,14 +295,24 @@ class SumoTrafficSimulation(Provider):
         return self._compute_provider_state()
 
     def _close_traci_and_pipes(self):
+        """We should expect this method to always work without throwing"""
+
+        def __safe_close(conn):
+            try:
+                conn.close()
+            except:
+                pass
+
         if self._sumo_proc:
-            self._sumo_proc.stdin.close()
-            self._sumo_proc.stdout.close()
-            self._sumo_proc.stderr.close()
+            __safe_close(self._sumo_proc.stdin)
+            __safe_close(self._sumo_proc.stdout)
+            __safe_close(self._sumo_proc.stderr)
 
         if self._traci_conn:
-            self._traci_conn.close()
-            self._traci_conn = None
+            __safe_close(self._traci_conn__)
+
+        self._sumo_proc = None
+        self._traci_conn = None
 
     def _handle_traci_disconnect(self, e):
         logging.error(f"TraCI has disconnected with: {e}")
