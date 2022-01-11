@@ -278,8 +278,8 @@ class MapSpec:
     default_lane_width: Optional[float] = None
     """If specified, the default width (in meters) of lanes on this map."""
     shift_to_origin: bool = False
-    """If True, a map whose bounding-box does not intersect with the origin point (0,0)
-    whill be shifted such that it does upon creation."""
+    """If True, upon creation a map whose bounding-box does not intersect with
+    the origin point (0,0) will be shifted such that it does."""
     builder_fn: MapBuilder = get_road_map
     """If specified, this should return an object derived from the RoadMap base class
     and a hash that uniquely identifies it (changes to the hash should signify

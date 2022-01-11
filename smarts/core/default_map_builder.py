@@ -49,7 +49,7 @@ def _clear_cache():
         # Try to only keep one map around at a time...
         del _existing_map
         _existing_map = None
-        gc.collect
+        gc.collect()
 
 
 _UNKNOWN_MAP = 0
