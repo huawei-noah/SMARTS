@@ -309,7 +309,7 @@ class SumoTrafficSimulation(Provider):
             __safe_close(self._sumo_proc.stderr)
 
         if self._traci_conn:
-            __safe_close(self._traci_conn__)
+            __safe_close(self._traci_conn)
 
         self._sumo_proc = None
         self._traci_conn = None
