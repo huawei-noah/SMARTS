@@ -51,6 +51,7 @@ def parse_args():
         "--headless", default=True, action="store_true", help="Turn on headless mode"
     )
     parser.add_argument("--config_files", "-f", type=str, nargs="+", required=True)
+    parser.add_argument("--checkpoint", type=str, default=None)
     parser.add_argument("--log_dir", type=str, default="./log/results")
     parser.add_argument("--plot", action="store_true")
     return parser.parse_args()
@@ -64,6 +65,7 @@ def main(
     num_episodes=10,
     paradigm="decentralized",
     headless=False,
+    checkpoint=None,
     show_plots=False,
 ):
 
@@ -90,9 +92,14 @@ def main(
             trainer_config.update({"model": tune_config["model"]})
 
         trainer = trainer_cls(env=tune_config["env"], config=trainer_config)
-        trainer_config['evaluation_interval'] = True
+        trainer_config["evaluation_interval"] = True
         trainer.setup(trainer_config)
-        trainer.restore(config["checkpoint"])
+
+        if not checkpoint:
+            trainer.restore(config["checkpoint"])
+        else:
+            trainer.restore(checkpoint)
+
         metrics_handler.set_log(
             algorithm=config_file.split("/")[-2], num_episodes=num_episodes
         )
@@ -108,10 +115,11 @@ if __name__ == "__main__":
     main(
         scenario=args.scenario,
         config_files=args.config_files,
+        log_dir=args.log_dir,
         num_steps=args.num_steps,
         num_episodes=args.num_runs,
         paradigm=args.paradigm,
         headless=args.headless,
+        checkpoint=args.checkpoint,
         show_plots=args.plot,
-        log_dir=args.log_dir,
     )

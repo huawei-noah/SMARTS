@@ -45,3 +45,6 @@ run:
     learning_starts: 1024
     # buffer_size: 1024
     train_batch_size: 1024
+
+checkpoint:
+  ./log/results/run/4lane-4/MADDPG_EarlyDone_0_2021-01-25_17-03-39ssr7i8t5/checkpoint_4/checkpoint-4

@@ -47,12 +47,20 @@ $ python3.7 run.py <scenario> -f <config_file>
 # E.x. python3.7 run.py scenarios/intersections/4lane -f agents/ppo/baseline-lane-control.yaml --headless
 ```
 
-To run the evaluation procedure for multiple algorithms,
+To run the evaluation procedure for multiple algorithms, first modify the checkpoint parameter at
+agents/{agent_used_for_training}/baseline-lane-control.yaml to the filepath where the parameter was stored,
+```yaml
+checkpoint:
+  ./log/results/run/4lane-4/PPO_FrameStack_0_2021-01-25_17-03-39ssr7i8t5/checkpoint_4/checkpoint-4
+```
 
+Then, you can run the evaluation as below, (Optionally you can pass the --checkpoint parameter below to override the 
+checkpoint filepath name)
 ```bash
 # from baselines/marl_benchmark/marl_benchmark/
 $ python evaluate.py <scenario> -f <config_files>
 # E.x. python3.7  evaluate.py scenarios/intersections/4lane \
 #          -f agents/ppo/baseline-lane-control.yaml \
-#          --checkpoint ./log/results/run/4lane-4/PPO_Simple_977c1_00000_0_2020-10-14_00-06-10 --headless
+#          --checkpoint ./log/results/run/4lane-4/PPO_Simple_977c1_00000_0_2020-10-14_00-06-10/checkpoint_4/checkpoint-4 \
+#          --headless
 ```

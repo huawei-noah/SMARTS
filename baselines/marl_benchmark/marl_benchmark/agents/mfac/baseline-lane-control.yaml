@@ -53,3 +53,6 @@ run:
     num_gpus: 0
     horizon: 1000
     # learning
+
+checkpoint:
+  ./log/results/run/4lane-4/MFAC_FrameStack_0_2021-01-25_17-03-39ssr7i8t5/checkpoint_4/checkpoint-4

@@ -45,3 +45,6 @@ run:
     rollout_fragment_length: 10
     lr: 1e-4
     min_iter_time_s: 5
+
+checkpoint:
+  ./log/results/run/4lane-4/NetworkedPG_EarlyDone_0_2021-01-25_17-03-39ssr7i8t5/checkpoint_4/checkpoint-4

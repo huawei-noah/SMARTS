@@ -52,3 +52,7 @@ run:
     num_sgd_iter: 10
     sgd_minibatch_size: 1024
     train_batch_size: 30720
+
+
+checkpoint:
+  ./log/results/run/4lane-4/PPO_Simple_0_2021-01-25_17-03-39ssr7i8t5/checkpoint_4/checkpoint-4

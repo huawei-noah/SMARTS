@@ -56,3 +56,6 @@ run:
     sgd_minibatch_size: 32
     lr: 1e-4
     lambda: 0
+
+checkpoint:
+  ./log/results/run/4lane-4/PPO_FrameStack_0_2021-01-25_17-03-39ssr7i8t5/checkpoint_4/checkpoint-4

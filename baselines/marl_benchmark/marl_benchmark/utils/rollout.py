@@ -32,7 +32,9 @@ from ray.rllib.utils.spaces.space_utils import flatten_to_single_ndarray
 def rollout(trainer, env_name, metrics_handler, num_steps, num_episodes, log_dir):
     """Reference: https://github.com/ray-project/ray/blob/master/rllib/rollout.py"""
     policy_agent_mapping = default_policy_agent_mapping
-    assert hasattr(trainer, "evaluation_workers") and isinstance(trainer.evaluation_workers, WorkerSet)
+    assert hasattr(trainer, "evaluation_workers") and isinstance(
+        trainer.evaluation_workers, WorkerSet
+    )
     env = trainer.evaluation_workers.local_worker().env
     multiagent = isinstance(env, MultiAgentEnv)
     if trainer.evaluation_workers.local_worker().multiagent:
