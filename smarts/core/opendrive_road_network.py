@@ -226,6 +226,11 @@ class OpenDriveRoadNetwork(RoadMap):
         cls,
         map_spec: MapSpec,
     ):
+        if map_spec.shift_to_origin:
+            logger = logging.getLogger(cls.__name__)
+            logger.warning(
+                "OpenDrive road networks do not yet support the 'shift_to_origin' option."
+            )
         xodr_file = OpenDriveRoadNetwork._map_path(map_spec)
         od_map = cls(xodr_file, map_spec)
         return od_map
@@ -600,6 +605,7 @@ class OpenDriveRoadNetwork(RoadMap):
                 or OpenDriveRoadNetwork._spec_lane_width(map_spec)
                 == OpenDriveRoadNetwork._spec_lane_width(self._map_spec)
             )
+            and map_spec.shift_to_origin == self._map_spec.shift_to_origin
         )
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:

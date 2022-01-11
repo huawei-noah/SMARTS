@@ -72,7 +72,7 @@ def _find_mapfile_in_dir(map_dir: str) -> Tuple[int, str]:
         if f.endswith(".net.xml"):
             map_type = _SUMO_MAP
             map_path = os.path.join(map_dir, f)
-        if f.endswith(".xodr"):
+        elif f.endswith(".xodr"):
             map_type = _OPENDRIVE_MAP
             map_path = os.path.join(map_dir, f)
     return map_type, map_path
@@ -110,24 +110,24 @@ def get_road_map(map_spec) -> Tuple[RoadMap, str]:
     if map_type == _SUMO_MAP:
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
-        clazz = SumoRoadNetwork
+        map_class = SumoRoadNetwork
 
     elif map_type == _OPENDRIVE_MAP:
         from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 
-        clazz = OpenDriveRoadNetwork
+        map_class = OpenDriveRoadNetwork
 
     else:
         return None, None
 
     if _existing_map:
-        if isinstance(_existing_map.obj, clazz) and _existing_map.obj.is_same_map(
+        if isinstance(_existing_map.obj, map_class) and _existing_map.obj.is_same_map(
             map_spec
         ):
             return _existing_map.obj, _existing_map.map_hash
         _clear_cache()
 
-    road_map = clazz.from_spec(map_spec)
+    road_map = map_class.from_spec(map_spec)
     if os.path.isfile(road_map.source):
         road_map_hash = file_md5_hash(road_map.source)
     else:
