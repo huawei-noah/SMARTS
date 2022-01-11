@@ -24,6 +24,10 @@ import shutil
 from contextlib import contextmanager
 
 
+def file_in_folder(filename: str, path: str) -> bool:
+    return os.path.exists(os.path.join(path, filename))
+
+
 # https://stackoverflow.com/a/2166841
 def isnamedtupleinstance(x):
     t = type(x)

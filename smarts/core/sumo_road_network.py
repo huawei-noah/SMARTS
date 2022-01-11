@@ -140,7 +140,7 @@ class SumoRoadNetwork(RoadMap):
         return False
 
     @classmethod
-    def from_spec(cls, map_spec: MapSpec, shift_to_origin: bool = False):
+    def from_spec(cls, map_spec: MapSpec):
         net_file = SumoRoadNetwork._map_path(map_spec)
 
         # Connections to internal lanes are implicit. If `withInternal=True` is
@@ -151,7 +151,8 @@ class SumoRoadNetwork(RoadMap):
         if not cls._check_net_origin(G.getBoundary()):
             shifted_net_file = cls.shifted_net_file_path(net_file)
             if os.path.isfile(shifted_net_file) or (
-                shift_to_origin and cls._shift_coordinates(net_file, shifted_net_file)
+                map_spec.shift_to_origin
+                and cls._shift_coordinates(net_file, shifted_net_file)
             ):
                 G = sumolib.net.readNet(shifted_net_file, withInternal=True)
                 assert cls._check_net_origin(G.getBoundary())
@@ -198,6 +199,10 @@ class SumoRoadNetwork(RoadMap):
                 map_spec.default_lane_width == self._map_spec.default_lane_width
                 or SumoRoadNetwork._spec_lane_width(map_spec)
                 == SumoRoadNetwork._spec_lane_width(self._map_spec)
+            )
+            and (
+                map_spec.shift_to_origin == self._map_spec.shift_to_origin
+                or (not map_spec.shift_to_origin and not self._graph._shifted_by_smarts)
             )
         )
 

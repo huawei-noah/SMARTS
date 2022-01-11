@@ -434,11 +434,17 @@ class Scenario:
         scenario_root: str,
         lanepoint_spacing: Optional[float] = None,
         default_lane_width: Optional[float] = None,
+        shift_to_origin: bool = False,
     ) -> MapSpec:
         path = os.path.join(scenario_root, "map_spec.pkl")
         if not os.path.exists(path):
             # Use our default map builder if none specified by scenario...
-            return MapSpec(scenario_root, lanepoint_spacing, default_lane_width)
+            return MapSpec(
+                scenario_root,
+                lanepoint_spacing,
+                default_lane_width,
+                shift_to_origin,
+            )
         with open(path, "rb") as f:
             road_map = cloudpickle.load(f)
             return road_map
