@@ -44,7 +44,7 @@ def agent_info_adapter(env_obs, shaped_reward: float, raw_info: dict):
     ego_2d_pos = env_obs.ego_vehicle_state.position[:2]
     goal_pos = getattr(goal, "position", ego_2d_pos)
 
-    info["distance_to_goal"] = distance.euclidean(ego_2d_pos, goal_pos)
+    info["distance_to_goal"] = distance.euclidean(ego_2d_pos, goal_pos[:2])
     info["distance_to_center"] = CalObs.cal_distance_to_center(env_obs, "")
 
     return info

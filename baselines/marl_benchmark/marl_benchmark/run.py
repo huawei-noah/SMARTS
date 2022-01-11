@@ -106,7 +106,7 @@ def parse_args():
         help="Algorithm paradigm, decentralized (default) or centralized",
     )
     parser.add_argument(
-        "--headless", default=True, action="store_true", help="Turn on headless mode"
+        "--headless", default=False, action="store_true", help="Turn on headless mode"
     )
     parser.add_argument(
         "--log_dir",
