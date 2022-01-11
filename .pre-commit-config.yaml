@@ -5,11 +5,12 @@ repos:
         name: black
         entry: black
         language: system
-        exclude_types: [yaml]
+        types: [python]
     -   id: isort
         name: isort
         entry: isort
         language: system
+        types: [python]
         args: ["--profile", "black"]
     -   id: pylint
         name: pylint
