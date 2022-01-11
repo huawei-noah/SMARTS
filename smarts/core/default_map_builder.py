@@ -20,7 +20,7 @@
 
 import os
 from dataclasses import replace
-from typing import NamedTuple, Tuple
+from typing import NamedTuple, Optional, Tuple
 from pathlib import Path
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import file_md5_hash, path2hash
@@ -86,7 +86,7 @@ def _find_mapfile_in_dir(map_dir: str) -> Tuple[int, str]:
 # map formats (by extending the RoadMap base class) can create their
 # own version of this to reference from a MapSpec within their
 # scenario folder(s) and shouldn't have to change much else.
-def get_road_map(map_spec) -> Tuple[RoadMap, str]:
+def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
     """@return a RoadMap object and a hash
     that uniquely identifies it. Changes to the hash
     should signify that the map is different enough

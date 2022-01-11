@@ -21,6 +21,7 @@ import multiprocessing
 import os
 import subprocess
 import sys
+from typing import Sequence
 from pathlib import Path
 from threading import Thread
 
@@ -46,16 +47,17 @@ def scenario_cli():
     help="Allows road network to be offset from the origin. If not specified, creates a new network file if necessary.",
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def build_scenario(clean, allow_offset_map, scenario):
+def build_scenario(clean: bool, allow_offset_map: bool, scenario: str):
     _build_single_scenario(clean, allow_offset_map, scenario)
 
 
-def _build_single_scenario(clean, allow_offset_map, scenario):
+def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
     click.echo(f"build-scenario {scenario}")
     if clean:
         _clean(scenario)
 
     scenario_root = Path(scenario)
+    scenario_root_str = str(scenario_root)
 
     scenario_py = scenario_root / "scenario.py"
     if scenario_py.exists():
@@ -64,16 +66,16 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
 
     from smarts.core.scenario import Scenario
 
-    traffic_histories = Scenario.discover_traffic_histories(scenario_root)
+    traffic_histories = Scenario.discover_traffic_histories(scenario_root_str)
     shift_to_origin = not allow_offset_map or bool(traffic_histories)
 
-    map_spec = Scenario.discover_map(scenario_root, shift_to_origin=shift_to_origin)
+    map_spec = Scenario.discover_map(scenario_root_str, shift_to_origin=shift_to_origin)
     road_map, _ = map_spec.builder_fn(map_spec)
     if not road_map:
         click.echo(
             "No reference to a RoadNetwork file was found in {}, or one could not be created. "
             "Please make sure the path passed is a valid Scenario with RoadNetwork file required "
-            "(or a way to create one) for scenario building.".format(str(scenario_root))
+            "(or a way to create one) for scenario building.".format(scenario_root_str)
         )
         return
 
@@ -147,7 +149,7 @@ def _is_scenario_folder_to_build(path: str) -> bool:
     help="Allows road networks (maps) to be offset from the origin. If not specified, creates creates a new network file if necessary.",
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def build_all_scenarios(clean, allow_offset_maps, scenarios):
+def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
     if not scenarios:
         # nargs=-1 in combination with a default value is not supported
         # if scenarios is not given, set /scenarios as default
@@ -173,11 +175,11 @@ def build_all_scenarios(clean, allow_offset_maps, scenarios):
 
 @scenario_cli.command(name="clean")
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def clean_scenario(scenario):
+def clean_scenario(scenario: str):
     _clean(scenario)
 
 
-def _clean(scenario):
+def _clean(scenario: str):
     to_be_removed = [
         "map.glb",
         "bubbles.pkl",
@@ -204,7 +206,7 @@ def _clean(scenario):
 @click.option("-d", "--directory", multiple=True)
 @click.option("-t", "--timestep", default=0.01, help="Timestep in seconds")
 @click.option("--endpoint", default="ws://localhost:8081")
-def replay(directory, timestep, endpoint):
+def replay(directory: Sequence[str], timestep: float, endpoint: str):
     from envision.client import Client as Envision
 
     for path in directory:
