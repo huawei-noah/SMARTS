@@ -90,7 +90,8 @@ def main(
             trainer_config.update({"model": tune_config["model"]})
 
         trainer = trainer_cls(env=tune_config["env"], config=trainer_config)
-
+        trainer_config['evaluation_interval'] = True
+        trainer.setup(trainer_config)
         trainer.restore(config["checkpoint"])
         metrics_handler.set_log(
             algorithm=config_file.split("/")[-2], num_episodes=num_episodes
