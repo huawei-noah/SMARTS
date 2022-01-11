@@ -81,10 +81,8 @@ ros = ['catkin_pkg','rospkg']
 waymo = ['waymo-open-dataset-tf-2-2-0']
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["setuptools","poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 scl = "cli.cli:scl"
-
-#TODO: include_package_data, zip_safe, entry_points
