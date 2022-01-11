@@ -105,7 +105,7 @@ class StandardObs(gym.ObservationWrapper):
                     "angular_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
                     "linear_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
                     "angular_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-                }), 
+                }),
                 "lidar_point_cloud": gym.spaces.Dict({
                     "hit": gym.spaces.MultiBinary(300),
                     "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(300,3), dtype=np.float32),
