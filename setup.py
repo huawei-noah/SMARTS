@@ -91,10 +91,7 @@ setup(
         "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
         "ros": ["catkin_pkg", "rospkg"],
         "waymo": ["waymo-open-dataset-tf-2-2-0"],
-<<<<<<< ceb6d9ba0c322f682b79c38d6d8f4f6555f8e8cf
         "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
-=======
->>>>>>> move pre-commit and pylint dependencies into [dev] option
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )
