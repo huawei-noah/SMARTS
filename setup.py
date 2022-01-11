@@ -84,6 +84,7 @@ setup(
             "isort==5.7.0",
             "pre-commit==2.16.0",
             "pylint==2.12.2",
+            "pytype",
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
