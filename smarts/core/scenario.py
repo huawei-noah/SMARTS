@@ -472,31 +472,57 @@ class Scenario:
     def set_ego_missions(self, ego_missions: dict):
         self._missions = ego_missions
 
+    def get_vehicle_start_at_time(
+        self, vehicle_id: str, start_time: float
+    ) -> Tuple[Start, float]:
+        """Returns a Start object that can be used to create a Mission for
+        a vehicle from a traffic history dataset starting at its location
+        at start_time.  Also returns its speed at that time."""
+        pphs = self._traffic_history.vehicle_pose_at_time(vehicle_id, start_time)
+        assert pphs
+        pos_x, pos_y, heading, speed = pphs
+        # missions start from front bumper, but pos is center of vehicle
+        veh_dims = self._traffic_history.vehicle_dims(vehicle_id)
+        hhx, hhy = radians_to_vec(heading) * (0.5 * veh_dims.length)
+        return (
+            Start(
+                (pos_x + hhx, pos_y + hhy),
+                Heading(heading),
+            ),
+            speed,
+        )
+
+    def _get_vehicle_goal(self, vehicle_id: str) -> Point:
+        final_exit_time = self._traffic_history.vehicle_final_exit_time(vehicle_id)
+        final_pose = self._traffic_history.vehicle_pose_at_time(
+            vehicle_id, final_exit_time
+        )
+        assert final_pose
+        final_pos_x, final_pos_y, final_heading, _ = final_pose
+        # missions start from front bumper, but pos is center of vehicle
+        veh_dims = self._traffic_history.vehicle_dims(veh_id)
+        hhx, hhy = radians_to_vec(heading) * (0.5 * veh_dims.length)
+        final_hhx, final_hhy = radians_to_vec(final_heading) * (0.5 * veh_dims.length)
+        return Point(final_pos_x + final_hhx, final_pos_y + final_hhy)
+
     def discover_missions_of_traffic_histories(self) -> Dict[str, Mission]:
         vehicle_missions = {}
         for row in self._traffic_history.first_seen_times():
-            start_time = float(row[1])
-            pphs = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
-            assert pphs
-            pos_x, pos_y, heading, speed = pphs
-            entry_tactic = default_entry_tactic(speed)
             v_id = str(row[0])
+            start_time = float(row[1])
+            start, speed = self.get_vehicle_start_at_time(v_id, start_time)
+            entry_tactic = default_entry_tactic(speed)
             veh_config_type = self._traffic_history.vehicle_config_type(v_id)
-            veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(v_id)
-            # missions start from front bumper, but pos is center of vehicle
-            hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
+            veh_dims = self._traffic_history.vehicle_dims(v_id)
             vehicle_missions[v_id] = Mission(
-                start=Start(
-                    (pos_x + hhx, pos_y + hhy),
-                    Heading(heading),
-                ),
+                start=start,
                 entry_tactic=entry_tactic,
                 goal=TraverseGoal(self.road_map),
                 start_time=start_time,
                 vehicle_spec=VehicleSpec(
                     veh_id=v_id,
                     veh_config_type=veh_config_type,
-                    dimensions=Dimensions(veh_length, veh_width, veh_height),
+                    dimensions=veh_dims,
                 ),
             )
         return vehicle_missions
@@ -504,42 +530,15 @@ class Scenario:
     def create_dynamic_traffic_history_mission(
         self, veh_id: str, trigger_time: float, positional_radius: int
     ) -> Tuple[Mission, Mission]:
-        pose_at_trigger = self._traffic_history.vehicle_pose_at_time(
-            veh_id, trigger_time
-        )
-        assert pose_at_trigger
-        pos_x, pos_y, heading, speed = pose_at_trigger
-
-        final_exit_time = self._traffic_history.vehicle_final_exit_time(veh_id)
-        final_pose = self._traffic_history.vehicle_pose_at_time(veh_id, final_exit_time)
-        assert final_pose
-        final_pos_x, final_pos_y, final_heading, _ = final_pose
-
+        start, speed = self.get_vehicle_start_at_time(veh_id, trigger_time)
+        veh_goal = self._get_vehicle_goal(veh_id)
         entry_tactic = default_entry_tactic(speed)
-        veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(veh_id)
-
-        # missions start from front bumper, but pos is center of vehicle
-        hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
-
-        # final pos from center of vehicle
-        final_hhx, final_hhy = radians_to_vec(final_heading) * (0.5 * veh_length)
-
         # create a positional mission and a traverse mission
-        start = Start(
-            (pos_x + hhx, pos_y + hhy),
-            Heading(heading),
-        )
         positional_mission = Mission(
             start=start,
             entry_tactic=entry_tactic,
             start_time=0,
-            goal=PositionalGoal(
-                Point(
-                    final_pos_x + final_hhx,
-                    final_pos_y + final_hhy,
-                ),
-                radius=positional_radius,
-            ),
+            goal=PositionalGoal(veh_goal, radius=positional_radius),
         )
         traverse_mission = Mission(
             start=start,

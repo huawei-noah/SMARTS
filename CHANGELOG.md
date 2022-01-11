@@ -10,6 +10,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 ### Changed
 ### Deprecated
 ### Fixed
