@@ -95,7 +95,7 @@ def main(
         trainer_config["evaluation_interval"] = True
         trainer.setup(trainer_config)
 
-        if not checkpoint:
+        if checkpoint is None:
             trainer.restore(config["checkpoint"])
         else:
             trainer.restore(checkpoint)
