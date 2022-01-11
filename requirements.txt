@@ -128,12 +128,7 @@ pyasn1-modules==0.2.8
 pybullet==3.0.6
 pycparser==2.21
 pyglet==1.5.15
-<<<<<<< d0c3a13f07bb175a59ae042c2249c0193e69eb7d
 Pygments==2.11.2
-=======
-Pygments==2.11.0
-pynput==1.7.5
->>>>>>> add pylint to hooks
 pyparsing==3.0.6
 pyproj==3.2.1
 pyrsistent==0.18.0
