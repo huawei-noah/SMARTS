@@ -81,7 +81,7 @@ ros = ['catkin_pkg','rospkg']
 waymo = ['waymo-open-dataset-tf-2-2-0']
 
 [build-system]
-requires = ["setuptools","poetry-core>=1.0.0"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.poetry.scripts]
