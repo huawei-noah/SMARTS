@@ -21,7 +21,6 @@
 # THE SOFTWARE.
 import copy
 
-from ray.rllib.agents.dqn import DQNTrainer
 from ray.rllib.env.constants import GROUP_INFO, GROUP_REWARDS
 from ray.rllib.env.group_agents_wrapper import _GroupAgentsWrapper
 

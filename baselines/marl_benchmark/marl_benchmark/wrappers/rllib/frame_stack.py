@@ -25,6 +25,7 @@ from typing import Sequence
 import gym
 import numpy as np
 from ray import logger
+from ray.rllib.models import ModelCatalog
 from ray.rllib.models import Preprocessor
 from ray.rllib.models.preprocessors import get_preprocessor
 from ray.rllib.utils.annotations import override
@@ -144,7 +145,8 @@ class FrameStack(Wrapper):
 
     @staticmethod
     def get_preprocessor():
-        return TupleStackingPreprocessor
+        ModelCatalog.register_custom_preprocessor("my_prep", TupleStackingPreprocessor)
+        return "my_prep"
 
     def _get_observations(self, raw_frames):
         """Update frame stack with given single frames,
