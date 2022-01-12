@@ -17,9 +17,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import inspect
 import logging
 import warnings
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 import cloudpickle
@@ -59,16 +60,6 @@ class Agent:
         raise NotImplementedError
 
 
-# Remain backwards compatible with existing Agent's
-class AgentPolicy(Agent):
-    # we cannot use debtcollector here to signal deprecation because the wrapper object is
-    # not pickleable, instead we simply print.
-    def __init__(self):
-        logger.warning(
-            "[DEPRECATED] AgentPolicy has been replaced with `smarts.core.agent.Agent`"
-        )
-
-
 @dataclass
 class AgentSpec:
     """A configuration that is used by SMARTS environments.
@@ -78,7 +69,7 @@ class AgentSpec:
         agent_spec = AgentSpec(
             interface=AgentInterface.from_type(AgentType.Laner),
             agent_params={"agent_function": lambda _: "keep_lane"},
-            agent_builder=AgentPolicy.from_function,
+            agent_builder=Agent.from_function,
         )
 
         env = gym.make(
@@ -94,18 +85,14 @@ class AgentSpec:
 
     # This is optional because sometimes when building re-useable specs,
     # you don't know the agent interface ahead of time.
-    interface: AgentInterface = None
+    interface: Optional[AgentInterface] = None
     """the adaptor used to wrap agent observation and action flow (default None)"""
 
-    agent_builder: Callable[..., Agent] = None
+    agent_builder: Optional[Callable[..., Agent]] = None
     """A callable to build an `smarts.core.agent.Agent` given `AgentSpec.agent_params` (default None)"""
     agent_params: Optional[Any] = None
     """Parameters to be given to `AgentSpec.agent_builder` (default None)"""
 
-    policy_builder: Callable[..., Agent] = None
-    """[DEPRECATED] see `AgentSpec.agent_builder` (default None)"""
-    policy_params: Optional[Any] = None
-    """[DEPRECATED] see `AgentSpec.agent_params` (default None)"""
     observation_adapter: Callable = lambda obs: obs
     """An adaptor that allows shaping of the observations (default lambda obs: obs)"""
     action_adapter: Callable = lambda act: act
@@ -114,68 +101,10 @@ class AgentSpec:
     """An adaptor that allows shaping of the reward (default lambda obs, reward: reward)"""
     info_adapter: Callable = lambda obs, reward, info: info
     """An adaptor that allows shaping of info (default lambda obs, reward, info: info)"""
-    perform_self_test: bool = False
-    """[DEPRECATED] this parameter is not used anymore"""
 
     def __post_init__(self):
         # make sure we can pickle ourselves
         cloudpickle.dumps(self)
-
-        if self.perform_self_test:
-            logger.warning(
-                f"[DEPRECATED] `perform_self_test` has been deprecated: {self}"
-            )
-
-        if self.policy_builder:
-            logger.warning(
-                f"[DEPRECATED] Please use AgentSpec(agent_builder=<...>) instead of AgentSpec(policy_builder=<..>):\n {self}"
-                "policy_builder will overwrite agent_builder"
-            )
-            self.agent_builder = self.policy_builder
-
-        if self.policy_params:
-            logger.warning(
-                f"[DEPRECATED] Please use AgentSpec(agent_params=<...>) instead of AgentSpec(policy_params=<..>):\n {self}"
-                "policy_builder will overwrite agent_builder"
-            )
-            self.agent_params = self.policy_params
-
-        self.policy_params = self.agent_params
-        self.policy_builder = self.agent_builder
-
-    def replace(self, **kwargs) -> "AgentSpec":
-        """Return a copy of this AgentSpec with the given fields updated."""
-
-        replacements = [
-            ("policy_builder", "agent_builder"),
-            ("policy_params", "agent_params"),
-            ("perform_self_test", None),
-        ]
-
-        assert (
-            None not in kwargs
-        ), f"Error: kwargs input to replace() function contains invalid key `None`: {kwargs}"
-
-        kwargs_copy = kwargs.copy()
-        for deprecated, current in replacements:
-            if deprecated in kwargs:
-                if current:
-                    logger.warning(
-                        f"[DEPRECATED] Please use AgentSpec.replace({current}=<...>) instead of AgentSpec.replace({deprecated}=<...>)\n"
-                    )
-                else:
-                    logger.warning(
-                        f"[DEPRECATED] Attribute {deprecated} no longer has effect."
-                    )
-                assert (
-                    current not in kwargs
-                ), f"Mixed current ({current}) and deprecated ({deprecated}) values in replace"
-                moved = kwargs[deprecated]
-                del kwargs_copy[deprecated]
-                if current:
-                    kwargs_copy[current] = moved
-
-        return replace(self, **kwargs_copy)
 
     def build_agent(self) -> Agent:
         """Construct an Agent from the AgentSpec configuration."""
@@ -202,7 +131,16 @@ AgentSpec(
             return self.agent_builder(*self.agent_params)
         elif isinstance(self.agent_params, dict):
             # dictionaries, as keyword arguments
-            return self.agent_builder(**self.agent_params)
+            fas = inspect.getfullargspec(self.agent_builder)
+            if fas[2] is not None:
+                return self.agent_builder(**self.agent_params)
+            else:
+                return self.agent_builder(
+                    **{
+                        k: self.agent_params[k]
+                        for k in self.agent_params.keys() & set(fas[0])
+                    }
+                )
         else:
             # otherwise, the agent params are sent as is to the builder
             return self.agent_builder(self.agent_params)

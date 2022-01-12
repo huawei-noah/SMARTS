@@ -1,5 +1,6 @@
 from os import path
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 this_dir = path.abspath(path.dirname(__file__))
 with open(
@@ -12,7 +13,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.4.18",
+    version="0.5.0",
     packages=find_packages(exclude=("tests", "examples")),
     include_package_data=True,
     zip_safe=True,
@@ -29,7 +30,6 @@ setup(
         "pandas>=1.3.4",
         "psutil>=5.8.0",
         "pybullet==3.0.6",
-        "pynput>=1.7.4",  # Used by HumanKeyboardAgent
         "rich>=10.13.0",
         "rtree>=0.9.7",  # Used by sumolib
         "sh>=1.14.2",
@@ -55,6 +55,7 @@ setup(
         "protobuf>=3.19.1",
         "PyYAML>=6.0",
         "twisted>=21.7.0",
+        "opendrive2lanelet",
     ],
     extras_require={
         "test": [
@@ -81,21 +82,16 @@ setup(
             "black==20.8b1",
             "grpcio-tools==1.32.0",
             "isort==5.7.0",
+            "pre-commit==2.16.0",
+            "pylint==2.12.2",
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
         ],
-        "camera-obs": [
-            "Panda3D==1.10.9",
-            "panda3d-gltf==0.13",
-        ],
-        "ros": [
-            "catkin_pkg",
-            "rospkg",
-        ],
-        "waymo": [
-            "waymo-open-dataset-tf-2-2-0",
-        ],
+        "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
+        "ros": ["catkin_pkg", "rospkg"],
+        "waymo": ["waymo-open-dataset-tf-2-2-0"],
+        "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )

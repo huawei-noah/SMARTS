@@ -23,13 +23,13 @@ import warnings
 from typing import Dict, Sequence
 
 import gym
+import os
 
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
 from smarts.core.agent import AgentSpec
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.visdom_client import VisdomClient
 
@@ -129,16 +129,34 @@ class HiWayEnv(gym.Env):
         if visdom:
             visdom_client = VisdomClient()
 
-        self._smarts = SMARTS(
-            agent_interfaces=agent_interfaces,
-            traffic_sim=SumoTrafficSimulation(
+        all_sumo = Scenario.supports_traffic_simulation(scenarios)
+        traffic_sim = None
+        if not all_sumo:
+            # We currently only support the Native SUMO Traffic Provider and Social Agents for SUMO maps
+            if zoo_addrs:
+                warnings.warn("`zoo_addrs` can only be used with SUMO scenarios")
+                zoo_addrs = None
+            warnings.warn(
+                "We currently only support the Native SUMO Traffic Provider and Social Agents for SUMO maps."
+                "All scenarios passed need to be of SUMO, to enable SUMO Traffic Simulation and Social Agents."
+            )
+            pass
+        else:
+            from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
+            traffic_sim = SumoTrafficSimulation(
                 headless=sumo_headless,
                 time_resolution=fixed_timestep_sec,
                 num_external_sumo_clients=num_external_sumo_clients,
                 sumo_port=sumo_port,
                 auto_start=sumo_auto_start,
                 endless_traffic=endless_traffic,
-            ),
+            )
+            zoo_addrs = zoo_addrs
+
+        self._smarts = SMARTS(
+            agent_interfaces=agent_interfaces,
+            traffic_sim=traffic_sim,
             envision=envision_client,
             visdom=visdom_client,
             fixed_timestep_sec=fixed_timestep_sec,
@@ -182,11 +200,9 @@ class HiWayEnv(gym.Env):
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
         }
-        observations, rewards, agent_dones, extras = None, None, None, None
+        observations, rewards, dones, extras = None, None, None, None
         with timeit("SMARTS Simulation/Scenario Step", self._log):
-            observations, rewards, agent_dones, extras = self._smarts.step(
-                agent_actions
-            )
+            observations, rewards, dones, extras = self._smarts.step(agent_actions)
 
         infos = {
             agent_id: {"score": value, "env_obs": observations[agent_id]}
@@ -203,12 +219,12 @@ class HiWayEnv(gym.Env):
             observations[agent_id] = agent_spec.observation_adapter(observation)
             infos[agent_id] = agent_spec.info_adapter(observation, reward, info)
 
-        for done in agent_dones.values():
+        for done in dones.values():
             self._dones_registered += 1 if done else 0
 
-        agent_dones["__all__"] = self._dones_registered == len(self._agent_specs)
+        dones["__all__"] = self._dones_registered >= len(self._agent_specs)
 
-        return observations, rewards, agent_dones, infos
+        return observations, rewards, dones, infos
 
     def reset(self):
         scenario = next(self._scenarios_iterator)

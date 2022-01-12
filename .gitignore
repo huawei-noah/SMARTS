@@ -75,6 +75,7 @@ celerybeat-schedule
 # Environments
 .venv
 venv
+.bugtest
 
 # Spyder project settings
 .spyderproject
@@ -117,6 +118,7 @@ shifted_map-AUTOGEN.net.xml
 *.blend1
 
 # run logs
+**/examples/**/logs
 _run_logs
 results
 supervisord.log
@@ -135,8 +137,11 @@ ultra/ultra/scenarios/task*/*/
 # Singularity
 *.sif
 
-# folder containing Observations collected .pkl files for imitation learning
+# Folder containing observations collected .pkl files for imitation learning
 collected_observations/
 
 # vim swap files
 *.swp
+
+# Static type check
+.pytype

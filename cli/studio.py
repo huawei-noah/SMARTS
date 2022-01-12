@@ -21,12 +21,11 @@ import multiprocessing
 import os
 import subprocess
 import sys
+from typing import Sequence
 from pathlib import Path
 from threading import Thread
 
 import click
-
-from smarts.core.sumo_road_network import SumoRoadNetwork
 
 
 @click.group(name="scenario")
@@ -45,43 +44,46 @@ def scenario_cli():
     "--allow-offset-map",
     is_flag=True,
     default=False,
-    help="Allows Sumo's road network (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(
-        SumoRoadNetwork.shifted_net_file_name
-    ),
+    help="Allows road network to be offset from the origin. If not specified, creates a new network file if necessary.",
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def build_scenario(clean, allow_offset_map, scenario):
+def build_scenario(clean: bool, allow_offset_map: bool, scenario: str):
     _build_single_scenario(clean, allow_offset_map, scenario)
 
 
-def _build_single_scenario(clean, allow_offset_map, scenario):
-    import importlib.resources as pkg_resources
-
-    from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_network
-
+def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
     click.echo(f"build-scenario {scenario}")
     if clean:
         _clean(scenario)
 
     scenario_root = Path(scenario)
-    map_net = str(scenario_root / "map.net.xml")
-    if not os.path.isfile(map_net):
+    scenario_root_str = str(scenario_root)
+
+    scenario_py = scenario_root / "scenario.py"
+    if scenario_py.exists():
+        _install_requirements(scenario_root)
+        subprocess.check_call([sys.executable, scenario_py])
+
+    from smarts.core.scenario import Scenario
+
+    traffic_histories = Scenario.discover_traffic_histories(scenario_root_str)
+    shift_to_origin = not allow_offset_map or bool(traffic_histories)
+
+    map_spec = Scenario.discover_map(scenario_root_str, shift_to_origin=shift_to_origin)
+    road_map, _ = map_spec.builder_fn(map_spec)
+    if not road_map:
         click.echo(
-            "FILENOTFOUND: no reference to map.net.xml was found in {}.  "
-            "Please make sure the path passed is a valid SUMO scenario with SUMO network file (map.net.xml) required "
-            "for scenario building.".format(str(scenario_root))
+            "No reference to a RoadNetwork file was found in {}, or one could not be created. "
+            "Please make sure the path passed is a valid Scenario with RoadNetwork file required "
+            "(or a way to create one) for scenario building.".format(scenario_root_str)
         )
         return
-    if not allow_offset_map or scenario.traffic_histories:
-        SumoRoadNetwork.from_file(map_net, shift_to_origin=True)
-    elif os.path.isfile(SumoRoadNetwork.shifted_net_file_path(map_net)):
-        click.echo(
-            "WARNING: {} already exists.  Remove it if you want to use unshifted/offset map.net.xml instead.".format(
-                SumoRoadNetwork.shifted_net_file_name
-            )
-        )
-    map_glb = scenario_root / "map.glb"
-    generate_glb_from_sumo_network(map_net, str(map_glb))
+
+    road_map.to_glb(os.path.join(scenario_root, "map.glb"))
+
+
+def _install_requirements(scenario_root):
+    import importlib.resources as pkg_resources
 
     requirements_txt = scenario_root / "requirements.txt"
     if requirements_txt.exists():
@@ -116,9 +118,18 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
                 pip_index_proc.terminate()
                 pip_index_proc.wait()
 
-    scenario_py = scenario_root / "scenario.py"
-    if scenario_py.exists():
-        subprocess.check_call([sys.executable, scenario_py])
+
+def _is_scenario_folder_to_build(path: str) -> bool:
+    if os.path.exists(os.path.join(path, "waymo.yaml")):
+        # for now, don't try to build Waymo scenarios...
+        return False
+    if os.path.exists(os.path.join(path, "scenario.py")):
+        return True
+    from smarts.sstudio.types import MapSpec
+
+    map_spec = MapSpec(path)
+    road_map, _ = map_spec.builder_fn(map_spec)
+    return road_map is not None
 
 
 @scenario_cli.command(
@@ -135,30 +146,27 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     "--allow-offset-maps",
     is_flag=True,
     default=False,
-    help="Allows Sumo's road networks (map.net.xml) to be offset from the origin. if not specified, creates '{}' if necessary.".format(
-        SumoRoadNetwork.shifted_net_file_name
-    ),
+    help="Allows road networks (maps) to be offset from the origin. If not specified, creates creates a new network file if necessary.",
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def build_all_scenarios(clean, allow_offset_maps, scenarios):
+def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
     if not scenarios:
         # nargs=-1 in combination with a default value is not supported
         # if scenarios is not given, set /scenarios as default
         scenarios = ["scenarios"]
+
     builder_threads = {}
     for scenarios_path in scenarios:
-        path = Path(scenarios_path)
-        # We search along directories having reference to file map.net.xml and not .net.xml to prevent calling build
-        # command on files having the offset-map network file but not the original file
-        for p in path.rglob("*map.net.xml"):
-            scenario = f"{scenarios_path}/{p.parent.relative_to(scenarios_path)}"
-            if scenario == f"{scenarios_path}/waymo":
-                continue
-            builder_thread = Thread(
-                target=_build_single_scenario, args=(clean, allow_offset_maps, scenario)
-            )
-            builder_thread.start()
-            builder_threads[p] = builder_thread
+        for subdir, _, _ in os.walk(scenarios_path):
+            if _is_scenario_folder_to_build(subdir):
+                p = Path(subdir)
+                scenario = f"{scenarios_path}/{p.relative_to(scenarios_path)}"
+                builder_thread = Thread(
+                    target=_build_single_scenario,
+                    args=(clean, allow_offset_maps, scenario),
+                )
+                builder_threads[p] = builder_thread
+                builder_thread.start()
 
     for scenario_path, builder_thread in builder_threads.items():
         click.echo(f"Waiting on {scenario_path} ...")
@@ -167,14 +175,13 @@ def build_all_scenarios(clean, allow_offset_maps, scenarios):
 
 @scenario_cli.command(name="clean")
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def clean_scenario(scenario):
+def clean_scenario(scenario: str):
     _clean(scenario)
 
 
-def _clean(scenario):
+def _clean(scenario: str):
     to_be_removed = [
         "map.glb",
-        SumoRoadNetwork.shifted_net_file_name,
         "bubbles.pkl",
         "missions.pkl",
         "flamegraph-perf.log",
@@ -199,7 +206,7 @@ def _clean(scenario):
 @click.option("-d", "--directory", multiple=True)
 @click.option("-t", "--timestep", default=0.01, help="Timestep in seconds")
 @click.option("--endpoint", default="ws://localhost:8081")
-def replay(directory, timestep, endpoint):
+def replay(directory: Sequence[str], timestep: float, endpoint: str):
     from envision.client import Client as Envision
 
     for path in directory:
