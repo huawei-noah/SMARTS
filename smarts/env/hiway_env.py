@@ -165,6 +165,11 @@ class HiWayEnv(gym.Env):
 
     @property
     def agent_specs(self):
+        """Agent specs currently in use for this simulation.
+
+        Returns:
+            A list of AgentSpec.
+        """
         return self._agent_specs
 
     @property

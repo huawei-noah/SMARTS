@@ -109,6 +109,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         self._log = logging.getLogger(self.__class__.__name__)
 
     def step(self, agent_actions):
+        """Environment step"""
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
@@ -167,6 +168,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         return observations, rewards, dones, infos
 
     def reset(self):
+        """Environment Reset"""
         scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
@@ -184,6 +186,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         return observations
 
     def close(self):
+        """Environment Close"""
         if self._smarts is not None:
             self._smarts.destroy()
 

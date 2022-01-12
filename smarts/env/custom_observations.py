@@ -29,18 +29,41 @@ from smarts.core.utils.math import squared_dist, vec_2d, vec_to_radians
 
 @dataclass
 class Adapter:
+    """An adapter for pairing a action/observation transformation method with its gym
+    space representation.
+    """
+
     space: gym.Space
     transform: Callable
 
 
 def scan_for_vehicle(
-    target_prefix,
-    angle_a,
-    angle_b,
-    activation_dist_squared,
+    target_prefix: str,
+    angle_a: float,
+    angle_b: float,
+    activation_dist_squared: float,
     self_vehicle_state,
     other_vehicle_state,
 ):
+    """Sense test for another vehicle within a semi-circle radius of a vehicle.
+
+    Args:
+        target_prefix:
+            The whitelist of vehicles with vehicle_ids starting with this prefix for quick elimination.
+        angle_a:
+            The minimum sweep angle between -pi and pi.
+        angle_b:
+            The maximum sweep angle between -pi and pi.
+        activation_dist_squared:
+            The distance to check for the target.
+        self_vehicle_state:
+            The vehicle state of the vehicle that is scaning.
+        other_vehicle_state:
+            The vehicle to test for.
+    Returns:
+        If the tested for vehicle is within the semi-circle range of the base vehicle.
+
+    """
     if target_prefix and not other_vehicle_state.id.startswith(target_prefix):
         return False
 
@@ -66,6 +89,25 @@ def scan_for_vehicles(
     other_vehicle_states,
     short_circuit: bool = False,
 ):
+    """Sense test for vehicles within a semi-circle radius of a vehicle.
+
+    Args:
+        target_prefix:
+            The whitelist of vehicles with vehicle_ids starting with this prefix for quick elimination.
+        angle_a:
+            The minimum sweep angle between -pi and pi.
+        angle_b:
+            The maximum sweep angle between -pi and pi.
+        activation_dist_squared:
+            The distance to check for the target.
+        self_vehicle_state:
+            The vehicle state of the vehicle that is scaning.
+        other_vehicle_states:
+            The set of vehicles to test for.
+    Returns:
+        If the tested for vehicle is within the semi-circle range of the base vehicle.
+
+    """
     if target_prefix:
         other_vehicle_states = filter(
             lambda v: v.id.startswith(target_prefix), other_vehicle_states

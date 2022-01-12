@@ -65,16 +65,22 @@ class _TrajectoryDataset:
 
     @property
     def scale(self) -> float:
+        """The base scale based on the ratio of map lane size to real lane size."""
         return self._scale
 
     @property
     def rows(self) -> Iterable:
+        """The iterable rows of the dataset."""
         raise NotImplementedError
 
     def column_val_in_row(self, row, col_name: str) -> Any:
+        """Access the value of a dataset row which intersects with the given column name."""
+        # XXX: this public method is improper because this requires a dataset row but that is
+        # implementation specific.
         raise NotImplementedError
 
     def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
+        """Validate the form of the datatset specification."""
         errmsg = None
         if "input_path" not in dataset_spec:
             errmsg = "'input_path' field is required in dataset yaml."
@@ -131,7 +137,12 @@ class _TrajectoryDataset:
         ccur.close()
 
     def create_output(self, time_precision: int = 3):
-        """ time_precision is limit for digits after decimal for sim_time (3 is milisecond precision) """
+        """Convert the dataset into the output database file.
+
+        Args:
+            time_precision: A limit for digits after decimal for each processed sim_time.
+                (3 is milisecond precision)
+        """
         dbconxn = sqlite3.connect(self._output)
 
         self._log.debug("creating tables...")
@@ -218,6 +229,8 @@ class _TrajectoryDataset:
 
 
 class Interaction(_TrajectoryDataset):
+    """A tool to convert a dataset to a database for use in SMARTS."""
+
     def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
         assert not self._flip_y
@@ -317,6 +330,8 @@ class Interaction(_TrajectoryDataset):
 
 
 class NGSIM(_TrajectoryDataset):
+    """A tool for conversion of a NGSIM dataset for use within SMARTS."""
+
     def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
         self._prev_heading = 3 * math.pi / 2
@@ -566,6 +581,8 @@ class OldJSON(_TrajectoryDataset):
 
 
 class Waymo(_TrajectoryDataset):
+    """A tool for conversion of a Waymo dataset for use within SMARTS."""
+
     def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
 
