@@ -36,6 +36,8 @@ from smarts.zoo import manager_pb2, manager_pb2_grpc
 
 
 class RemoteAgentBuffer:
+    """A buffer that manages social agents."""
+
     def __init__(
         self,
         zoo_manager_addrs: Optional[Tuple[str, int]] = None,
@@ -113,7 +115,7 @@ class RemoteAgentBuffer:
         sys.exit(0)
 
     def destroy(self):
-        # Teardown any remaining remote agents.
+        """Teardown any remaining remote agents and the local zoo manager (if it exists.)"""
         for remote_agent_future in self._agent_buffer:
             try:
                 remote_agent = remote_agent_future.result()
@@ -221,6 +223,7 @@ class RemoteAgentBuffer:
 
 
 def spawn_local_zoo_manager(port):
+    """Generates a local manager subprocess."""
     cmd = [
         sys.executable,  # Path to the current Python binary.
         str(

@@ -134,6 +134,7 @@ class BulletBoxShape:
         )
 
     def teardown(self):
+        """Cleans up bullet resource handles."""
         self._client.removeBody(self._bullet_id)
         self._bullet_id = None
 

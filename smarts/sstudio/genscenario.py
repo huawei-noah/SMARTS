@@ -135,6 +135,7 @@ def gen_scenario(
 
 
 def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None):
+    """Saves a map spec to file."""
     output_path = os.path.join(output_dir or scenario, "map_spec.pkl")
     with open(output_path, "wb") as f:
         # we use cloudpickle here instead of pickle because the
