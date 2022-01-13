@@ -12,7 +12,7 @@ function install_python_3_7 {
     echo "Installing python3.7"
     sudo apt-get install $1 software-properties-common
     sudo add-apt-repository $1 ppa:deadsnakes/ppa
-    sudo apt-get install $1 python3.7 python3.7-dev python3.7-tk python3.7-venv
+    sudo apt-get install $1 python3.7 python3.7-tk python3.7-venv
 }
 
 function set_SUMO_HOME {
