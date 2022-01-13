@@ -146,6 +146,7 @@ class UniformDistribution:
             self.a, self.b = self.b, self.a
 
     def sample(self):
+        """Get the next sample."""
         return random.uniform(self.a, self.b)
 
 
@@ -164,6 +165,7 @@ class TruncatedDistribution:
             self.a, self.b = self.b, self.a
 
     def sample(self):
+        """Get the next sample"""
         from scipy.stats import truncnorm
 
         return truncnorm.rvs(self.a, self.b, loc=self.loc, scale=self.scale)
@@ -273,6 +275,8 @@ MapBuilder = NewType(
 
 @dataclass(frozen=True)
 class MapSpec:
+    """A map specification that describes how to generate a roadmap."""
+
     source: str
     """A path or URL or name uniquely designating the map source."""
     lanepoint_spacing: Optional[float] = None
@@ -331,6 +335,7 @@ class Route:
 
     @property
     def id(self) -> str:
+        """The unique id of this route."""
         return "route-{}-{}-{}-".format(
             "_".join(map(str, self.begin)),
             "_".join(map(str, self.end)),
@@ -339,6 +344,7 @@ class Route:
 
     @property
     def roads(self):
+        """All roads that are used within this route."""
         return (self.begin[0],) + self.via + (self.end[0],)
 
 
@@ -379,6 +385,7 @@ class Flow:
 
     @property
     def id(self) -> str:
+        """The unique id of this flow."""
         return "flow-{}-{}-".format(
             self.route.id,
             str(_pickle_hash(sorted(self.actors.items(), key=lambda a: a[0].name))),
@@ -403,6 +410,9 @@ class JunctionEdgeIDResolver:
     end_lane_index: int
 
     def to_edge(self, sumo_road_network) -> str:
+        """Queries the road network to see if there is a junction edge between the two
+        given edges.
+        """
         return sumo_road_network.get_edge_in_junction(
             self.start_edge_id,
             self.start_lane_index,
@@ -437,21 +447,23 @@ class Traffic:
 
 @dataclass(frozen=True)
 class EntryTactic:
+    """The tactic that the simulation should use to acquire a vehicle for an actor."""
+
     pass
 
 
 @dataclass(frozen=True)
 class TrapEntryTactic(EntryTactic):
-    """An entry tactic that hijacks a vehicle to start the mission."""
+    """An entry tactic that repurposes a pre-existing vehicle for an actor."""
 
     wait_to_hijack_limit_s: float
-    """The amount of seconds a hijack will wait to get a vehicle before just emitting"""
+    """The amount of seconds a hijack will wait to get a vehicle before defaulting to a new vehicle"""
     zone: "MapZone" = None
     """The zone of the hijack area"""
     exclusion_prefixes: Tuple[str, ...] = tuple()
     """The prefixes of vehicles to avoid hijacking"""
     default_entry_speed: Optional[float] = None
-    """The speed that the vehicle starts at when defaulting to emitting"""
+    """The speed that the vehicle starts at when the hijack limit expiry emits a new vehicle"""
 
 
 @dataclass(frozen=True)
@@ -560,6 +572,8 @@ class MapZone(Zone):
     """The number of lanes from right to left that this zone covers."""
 
     def to_geometry(self, road_map: RoadMap) -> Polygon:
+        """Generates a map zone over a stretch of the given lanes."""
+
         def resolve_offset(offset, geometry_length, lane_length):
             if offset == "base":
                 return 0
@@ -681,6 +695,7 @@ class PositionalZone(Zone):
     """The (length, width) dimensions of the zone."""
 
     def to_geometry(self, road_map: Optional[RoadMap] = None) -> Polygon:
+        """Generates a box zone at the given position."""
         w, h = self.size
         p0 = (self.pos[0] - w / 2, self.pos[1] - h / 2)  # min
         p1 = (self.pos[0] + w / 2, self.pos[1] + h / 2)  # max
@@ -689,6 +704,8 @@ class PositionalZone(Zone):
 
 @dataclass(frozen=True)
 class BubbleLimits:
+    """Defines the capture limits of a bubble."""
+
     hijack_limit: int = maxsize
     """The maximum number of vehicles the bubble can hijack"""
     shadow_limit: int = maxsize
@@ -751,10 +768,12 @@ class Bubble:
 
     @staticmethod
     def to_actor_id(actor, mission_group):
+        """Mashes the actor id and mission group to create what needs to be a unique id."""
         return SocialAgentId.new(actor.name, group=mission_group)
 
     @property
     def is_boid(self):
+        """Tests if the actor is to control multiple vehicles."""
         return isinstance(self.actor, BoidAgentActor)
 
 
@@ -780,6 +799,8 @@ class _ActorAndMission:
 
 @dataclass(frozen=True)
 class Scenario:
+    """The sstudio scenario representation."""
+
     map_spec: Optional[MapSpec] = None
     traffic: Optional[Dict[str, Traffic]] = None
     ego_missions: Optional[Sequence[Mission]] = None

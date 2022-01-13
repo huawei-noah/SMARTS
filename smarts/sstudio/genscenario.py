@@ -192,6 +192,8 @@ def gen_social_agent_missions(
             The random seed to use when generating behaviour
         overwrite:
             If to forcefully write over the previous existing output file
+        map_spec:
+            An optional map specification that takes precidence over scenario directory information.
     """
 
     # For backwards compatibility we support both a single value and a sequence
@@ -245,6 +247,8 @@ def gen_missions(
             The random seed to use when generating behaviour
         overwrite:
             If to forcefully write over the previous existing output file
+        map_spec:
+            An optional map specification that takes precidence over scenario directory information.
     """
 
     saved = _gen_missions(
@@ -328,6 +332,13 @@ def gen_group_laps(
 
 
 def gen_bubbles(scenario: str, bubbles: Sequence[types.Bubble]):
+    """Generates 'bubbles' in the scenario that capture vehicles for actors.
+    Args:
+        scenario:
+            The scenario directory
+        bubbles:
+            The bubbles to add to the scenario.
+    """
     output_path = os.path.join(scenario, "bubbles.pkl")
     with open(output_path, "wb") as f:
         pickle.dump(bubbles, f)
@@ -430,10 +441,21 @@ def _validate_entry_tactic(mission):
 
 def gen_traffic_histories(
     scenario: str,
-    histories_datasets,
+    histories_datasets: Sequence[str],
     overwrite: bool,
     map_spec: Optional[types.MapSpec] = None,
 ):
+    """Converts traffic history to a format that SMARTS can use.
+    Args:
+        scenario:
+            The scenario directory
+        histories_datasets:
+            A sequence of traffic history files.
+        overwrite:
+            If to forcefully write over the previous existing output file
+        map_spec:
+            An optional map specification that takes precidence over scenario directory information.
+    """
     # For SUMO maps, we need to check if the map was shifted and translate the vehicle positions if so
     xy_offset = None
     if not map_spec:

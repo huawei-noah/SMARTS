@@ -78,12 +78,19 @@ class BulletClient:
 
 
 class ContactPoint(NamedTuple):
+    """Contact result between a shape and another shape."""
+
     bullet_id: str
+    """The id of the other shape."""
     contact_point: Tuple[float, float, float]
+    """The contact point of the query shape."""
     contact_point_other: Tuple[float, float, float]
+    """The contact point of the collided shape."""
 
 
 class JointInfo(NamedTuple):
+    """Details about a bullet joint."""
+
     index: int
     type_: int
     lower_limit: float
@@ -93,11 +100,15 @@ class JointInfo(NamedTuple):
 
 
 class JointState(NamedTuple):
+    """Physics state information about a joint."""
+
     position: Tuple[float, ...]
     velocity: Tuple[float, ...]
 
 
 class BulletBoxShape:
+    """A bullet box."""
+
     def __init__(self, bbox, bullet_client):
         self._client = bullet_client
 
@@ -112,7 +123,9 @@ class BulletBoxShape:
         self._bullet_id = self._client.createMultiBody(1, collision_box)
 
     def reset_pose(self, pose: Pose):
-        """Only call this before it needs to do anything physics-wise"""
+        """Resets the box to the given pose. Only call this before it needs to do anything
+        physics-wise
+        """
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self._bullet_id,
@@ -126,6 +139,10 @@ class BulletBoxShape:
 
 
 class BulletPositionConstraint:
+    """A "half"-spring constraint that pulls the attached shape to a pose. This allows motion
+    through forces rather than disrupting the simumlation by moving the shape without forces.
+    """
+
     def __init__(self, bullet_shape, bullet_client):
         self._client = bullet_client
 
@@ -149,6 +166,7 @@ class BulletPositionConstraint:
         )
 
     def move_to(self, pose: Pose):
+        """Moves the constraint to the given pose. The attached shape will attempt to follow."""
         if not self._bullet_cid:
             self._make_constraint(pose)
         position, orientation = pose.as_bullet()
@@ -158,6 +176,7 @@ class BulletPositionConstraint:
         self._client.changeConstraint(self._bullet_cid, ground_position, orientation)
 
     def teardown(self):
+        """Clean up unmanaged resources."""
         if self._bullet_cid is not None:
             self._client.removeConstraint(self._bullet_cid)
         self._bullet_cid = None

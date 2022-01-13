@@ -104,15 +104,25 @@ class RandomRouteGenerator:
 
 
 class TrafficGenerator:
+    """Generates traffic from scenario information."""
+
     def __init__(
         self,
         scenario_dir: str,
-        scenario_map_spec: types.MapSpec,
+        scenario_map_spec: Optional[types.MapSpec],
         log_dir: Optional[str] = None,
         overwrite: bool = False,
     ):
         """
-        scenario: The path to the scenario directory
+        Args:
+            scenario:
+                The path to the scenario directory.
+            scenario_map_spec:
+                The map spec information.
+            log_dir:
+                Where logging information about traffic planning should be written to.
+            overwrite:
+                Whether to overwrite existing traffic information.
         """
         from smarts.core.utils.sumo import sumolib
 
@@ -269,11 +279,25 @@ class TrafficGenerator:
             self._road_network = SumoRoadNetwork.from_spec(map_spec)
 
     def resolve_edge_length(self, edge_id, lane_idx):
+        """Determine the length of the given lane on an edge.
+        Args:
+            edge_id: The edge id of the road segment.
+            lane_idx: The index of a lane.
+        Returns:
+            The length of the lane (same as the length of the edge.)
+        """
         self._cache_road_network()
         lane = self._road_network.road_by_id(edge_id).lanes[lane_idx]
         return lane.length
 
     def resolve_route(self, route):
+        """Attempts to fill in the route between the begining and end specified in the initial
+         route.
+        Args:
+            route: An incomplete route.
+        Returns:
+            A complete route listing all road segments it passes through.
+        """
         if not isinstance(route, types.RandomRoute):
             return route
 
@@ -297,6 +321,7 @@ class TrafficGenerator:
 
     @property
     def road_network(self):
+        """Retrieves the road network this generator is associated with."""
         self._cache_road_network()
         return self._road_network
 
