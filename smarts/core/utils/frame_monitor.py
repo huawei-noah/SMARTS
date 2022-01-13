@@ -31,6 +31,13 @@ class FramerateException(Exception):
 
     @classmethod
     def below_threshold(cls, desired_fps, delta):
+        """Generate a framerate exception.
+        Args:
+            desired_fps: The intended fps.
+            delta: The frame time taken.
+        Returns:
+            A new framerate exception.
+        """
         return cls(
             f"The frame rate decreased, lower than the desired threshold, \
                 desired: {desired_fps} fps, actual: {round(1000 / delta, 2)} fps."
@@ -38,6 +45,8 @@ class FramerateException(Exception):
 
 
 class FrameMonitor:
+    """A tool for requiring a minimum frame rate."""
+
     def __init__(self, desired_fps=10):
         self._desired_fps = int(desired_fps)
         self._maximum_frame_time_ms = round(1 / self._desired_fps, 3) * 1000
@@ -53,9 +62,13 @@ class FrameMonitor:
         return int(time.time() * 1000)
 
     def start(self):
+        """Starts timing the frame."""
         self._start_time_ms = self._time_now()
 
     def stop(self):
+        """Ends timing the frame. Throws an exception if the frame duration is greater than
+        desired fps.
+        """
         if self._start_time_ms is None:
             print("The monitor has not started yet.")
             return -1

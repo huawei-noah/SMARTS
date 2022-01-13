@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from multiprocessing import Pipe, Process
+from multiprocessing.connection import Connection
 from typing import NamedTuple, Tuple
 
 import numpy as np
@@ -61,7 +62,12 @@ class BulletClient:
         return wrapper
 
     @staticmethod
-    def consume(bullet_connect_mode, connection):
+    def consume(bullet_connect_mode, connection: Connection):
+        """Builds a child pybullet process.
+        Args:
+            bullet_connect_mode: The type of bullet process.
+            connection: The child end of a pipe.
+        """
         # runs in sep. process
         client = bc.BulletClient(bullet_connect_mode)
 
