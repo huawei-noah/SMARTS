@@ -23,6 +23,7 @@ from .observation_adapter import default_obs_adapter
 
 
 def default_reward_adapter(env_obs, env_reward):
+    """The default pymarl reward adaptor."""
     obs = default_obs_adapter(env_obs)
     center_penalty = -np.abs(obs["distance_from_center"])
 
