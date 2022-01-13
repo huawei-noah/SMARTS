@@ -25,6 +25,8 @@ from typing import Optional
 
 
 class Id(str):
+    """An id utility."""
+
     def __init__(self, dtype: str, identifier: str):
         self._dtype = dtype
         self._identifier = identifier
@@ -37,11 +39,12 @@ class Id(str):
 
     @classmethod
     def new(cls, dtype: str):
-        """E.g. boid-93572825"""
+        """Creates a new unique id: E.g. 'boid'->'boid-93572825'"""
         return cls(dtype=dtype, identifier=str(uuid.uuid4())[:8])
 
     @classmethod
     def parse(cls, id_: str):
+        """Parses the id from a string."""
         split = -8 - 1  # should be "-"
         if id_[split] != "-":
             raise ValueError(
@@ -52,6 +55,7 @@ class Id(str):
 
     @property
     def dtype(self):
+        """The type of the id."""
         return self._dtype
 
 

@@ -28,6 +28,7 @@ from typing import List
 
 
 def buffered_shape(shape, width: float = 1.0) -> Polygon:
+    """Generates a shape with a buffer of `width` around the original shape."""
     ls = LineString(shape).buffer(
         width / 2,
         1,
@@ -44,6 +45,8 @@ def buffered_shape(shape, width: float = 1.0) -> Polygon:
 
 
 def triangulate_polygon(polygon: Polygon):
+    """Attempts to convert a polygon into triangles."""
+    # XXX: shapely.ops.triangulate current creates a convex fill of triangles.
     return [
         tri_face
         for tri_face in triangulate(polygon)
@@ -52,6 +55,7 @@ def triangulate_polygon(polygon: Polygon):
 
 
 def generate_mesh_from_polygons(polygons: List[Polygon]) -> trimesh.Trimesh:
+    """Creates a mesh out of a list of polygons."""
     vertices, faces = [], []
     point_dict = dict()
     current_point_index = 0

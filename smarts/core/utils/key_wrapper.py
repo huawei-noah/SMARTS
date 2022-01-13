@@ -20,6 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE
 class KeyWrapper:
+    """A sequence that transforms the selected in an underlying sequence using the given
+    tranformation key."""
+
     def __init__(self, iterable, key):
         self.it = iterable
         self.key = key
@@ -31,5 +34,7 @@ class KeyWrapper:
         return len(self.it)
 
     def insert(self, index: int, item):
+        """Insert an item into the sequence."""
         print("asked to insert %s at index%d" % (item, index))
+        # XXX: What this is inserting seems overly specific for a general utility.
         self.it.insert(index, {"time": item})

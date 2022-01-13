@@ -81,6 +81,7 @@ log = logging.getLogger(f"worker.py - pid({os.getpid()})")
 
 
 def serve(port):
+    """Start an agent worker server."""
     ip = "[::]"
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
     worker_pb2_grpc.add_WorkerServicer_to_server(
