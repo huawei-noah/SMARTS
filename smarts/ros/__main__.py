@@ -22,13 +22,31 @@ import os
 import subprocess
 import sys
 
+
+def _usage_error(msg: str = None):
+    if msg:
+        print(f"ERROR:  {msg}")
+    print("usage:  python -m smarts.ros setup_node [install_path]")
+    print("    where install_path is an optional existing folder into which to put the node")
+    sys.exit(-1)
+
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2 or sys.argv[1] != "setup_node":
-        print("the smarts.ros module only supports the 'setup_node' command.")
-        sys.exit(-1)
+    if not 2 <= len(sys.argv) <= 3 or sys.argv[1] != "setup_node":
+        _usage_error()
 
     # Note:  use of this script may require installing the SMARTS package with the "[ros]" extensions.
+
     mod_path = os.path.dirname(__file__)
+
+    install_arg = ""
+    install_path = f"{mod_path}/install"
+    if len(sys.argv) >= 3:
+        install_path = sys.argv[2]
+        if not os.path.isdir(install_path):
+            _usage_error(f"install_path ({install_path}) does not exist.")
+        install_arg = f"-DCMAKE_INSTALL_PREFIX={install_path}"
+       
     source_ros = ""
     if (
         os.environ.get("ROS_VERSION", 0) != 1
@@ -50,9 +68,9 @@ if __name__ == "__main__":
     # but catkin_make for ROS v1 distro should be done with python=python2 not python3.
     default_path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     subprocess.check_call(
-        f"{source_ros}catkin_make install",
+        f"{source_ros}catkin_make {install_arg} install",
         shell=True,
         cwd=mod_path,
         env={"PATH": default_path},
     )
-    print(f"\nnow run:  source {mod_path}/install/setup.bash")
+    print(f"\nnow run:  source {install_path}/setup.bash")
