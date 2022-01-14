@@ -23,7 +23,7 @@ import logging
 import rospy
 
 
-# Note:  these may require installing the SMARTS package with the "[ros]" extensions.
+# Note:  these ROS logging utils will require installing the SMARTS package with the "[ros]" extensions.
 
 
 class LogToROSHandler(logging.Handler):
