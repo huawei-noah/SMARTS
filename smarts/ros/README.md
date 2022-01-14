@@ -19,18 +19,18 @@ But among other things, you may need to do the following (after the "normal" SMA
 source .venv/bin/activate
 pip3 install rospkg catkin_pkg
 ```
+This is included now by default if you pip install the Smarts package with the "[ros]" extensions.
 
 ## Setup
 
-Setup your environment:
+First run the following to build the node:
 ```bash
-source /opt/ros/kinetic/setup.bash
+python -m smarts.ros setup_node
 ```
+
+Upon successful completion, it will instruct you to source another file.  Do so.  For example, it might be:
 ```bash
-cd smarts/ros
-catkin_make
-catkin_make install
-source install/setup.bash
+source smarts/ros/install/setup.bash
 ```
 
 
