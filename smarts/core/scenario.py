@@ -506,8 +506,7 @@ class Scenario:
         assert final_pose
         final_pos_x, final_pos_y, final_heading, _ = final_pose
         # missions start from front bumper, but pos is center of vehicle
-        veh_dims = self._traffic_history.vehicle_dims(veh_id)
-        hhx, hhy = radians_to_vec(heading) * (0.5 * veh_dims.length)
+        veh_dims = self._traffic_history.vehicle_dims(vehicle_id)
         final_hhx, final_hhy = radians_to_vec(final_heading) * (0.5 * veh_dims.length)
         return Point(final_pos_x + final_hhx, final_pos_y + final_hhy)
 
