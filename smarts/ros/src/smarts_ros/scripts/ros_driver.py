@@ -291,6 +291,7 @@ class ROSDriver:
         task_params = json.loads(task.params_json) if task.params_json else {}
         task_version = task.task_ver or "latest"
         agent_locator = f"{self._zoo_module}:{task.task_ref}-{task_version}"
+        agent_spec = None
         try:
             agent_spec = registry.make(agent_locator, **task_params)
         except ImportError as ie:
