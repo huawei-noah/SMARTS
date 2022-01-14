@@ -1,5 +1,3 @@
-# MIT License
-#
 # Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,11 +18,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+
 import logging
+import os
 
 import rospy
 
-# Note:  use of these utilities may require installing the SMARTS package with the "[ros]" extentions.
+# Note:  use of this module may require installing the SMARTS package with the "[ros]" extensions.
+
+_ros_pkg_path = os.environ.get("ROS_PACKAGE_PATH")
+if _ros_pkg_path and "smarts" in _ros_pkg_path:
+    from .src.smarts_ros.scripts.ros_driver import ROSDriver
 
 
 class LogToROSHandler(logging.Handler):

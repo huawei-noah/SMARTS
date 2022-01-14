@@ -41,8 +41,8 @@ from smarts.core.utils.math import (
     vec_to_radians,
     yaw_from_quaternion,
 )
-from smarts.core.utils.ros import log_everything_to_ROS
 from smarts.core.vehicle import VehicleState
+from smarts.ros import log_everything_to_ROS
 from smarts.sstudio.types import MapSpec
 from smarts.zoo import registry
 
