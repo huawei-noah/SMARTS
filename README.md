@@ -73,6 +73,8 @@ source .venv/bin/activate
 # upgrade pip, a recent version of pip is needed for the version of tensorflow we depend on
 pip install --upgrade pip
 
+# for the following `pip install -e .[*]` commands, if you are a zsh user,
+# please add quotation marks ouside the square brackets and dot. e.g., `pip install -e '.[*]'`
 # install [train] version of python package with the rllib dependencies
 pip install -e .[train]
 
