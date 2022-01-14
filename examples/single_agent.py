@@ -50,6 +50,8 @@ def main(sim_name, headless, num_episodes, seed, max_episode_steps=None):
         "smarts.env:intersection-v0",
         headless=headless,
         visdom=False,
+        sumo_headless=True,
+        envision_record_data_replay_path=None,
     )
 
     # Wrap a single-agent env with SingleAgent wrapper to make `step` and `reset`
