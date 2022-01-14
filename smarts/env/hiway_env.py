@@ -19,11 +19,11 @@
 # THE SOFTWARE.
 
 import logging
+import os
 import warnings
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 import gym
-import os
 
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed

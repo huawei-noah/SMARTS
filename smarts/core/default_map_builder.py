@@ -20,8 +20,9 @@
 
 import os
 from dataclasses import replace
-from typing import NamedTuple, Tuple
 from pathlib import Path
+from typing import NamedTuple, Tuple
+
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import file_md5_hash
 

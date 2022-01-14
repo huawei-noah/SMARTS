@@ -19,7 +19,8 @@
 # THE SOFTWARE.
 
 import math
-from typing import Any, Dict, List, Union
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Union
 
 import gym
 import numpy as np
@@ -29,11 +30,27 @@ from smarts.core.road_map import Waypoint
 from smarts.core.sensors import (
     DrivableAreaGridMap,
     EgoVehicleObservation,
+    Observation,
     OccupancyGridMap,
     TopDownRGB,
     VehicleObservation,
 )
 from smarts.env.custom_observations import lane_ttc
+
+
+@dataclass(frozen=True)
+class StdObs:
+    distance_travelled: np.float32
+    ego_vehicle_state: Dict[str, Union[np.float32, np.ndarray]]
+    events: Dict[str, int]
+
+    drivable_area_grid_map: Optional[np.ndarray] = None
+    lidar_point_cloud: Optional[Dict[str, np.ndarray]] = None
+    neighborhood_vehicle_states: Optional[List[VehicleObservation]] = None
+    occupancy_grid_map: Optional[np.ndarray] = None
+    top_down_rgb: Optional[np.ndarray] = None
+    ttc: Optional[Dict[str, np.ndarray]] = None
+    waypoint_paths: Optional[Dict[str, np.ndarray]] = None
 
 
 class StandardObs(gym.ObservationWrapper):
@@ -45,6 +62,7 @@ class StandardObs(gym.ObservationWrapper):
 
     Observation
 
+    ttc not enabled if neighborhood_vehicles oe waypoints is disabled
 
     """
 
@@ -63,7 +81,6 @@ class StandardObs(gym.ObservationWrapper):
             "lidar",
             "neighborhood_vehicles",
             "ogm",
-            # "road_waypoints",
             "rgb",
             "waypoints",
         }:
@@ -80,7 +97,6 @@ class StandardObs(gym.ObservationWrapper):
             "lidar_point_cloud",
             "neighborhood_vehicle_states",
             "occupancy_grid_map",
-            # "road_waypoints",
             "top_down_rgb",
             "ttc",
             "waypoint_paths",
@@ -124,11 +140,11 @@ class StandardObs(gym.ObservationWrapper):
                     "wrong_way": gym.spaces.MultiBinary(1),
                 }),
                 "neighborhood_vehicle_states": gym.spaces.Dict({
-                    "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),    
-                    "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-                    "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(1,), dtype=np.float32),
-                    "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
-                    "lane_index": gym.spaces.Box(low=0, high=255, shape=(1,), dtype=np.uint8),
+                    "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(10,3), dtype=np.float32),
+                    "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(10,), dtype=np.float32),
+                    "lane_index": gym.spaces.Box(low=0, high=255, shape=(10,), dtype=np.uint8),
+                    "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(10,3), dtype=np.float32),    
+                    "speed": gym.spaces.Box(low=0, high=1e10, shape=(10,), dtype=np.float32),
                 }),
                 "occupancy_grid_map": gym.spaces.Box(low=0, high=255,shape=(self.agent_specs[agent_id].interface.ogm.width, self.agent_specs[agent_id].interface.ogm.height, 1), dtype=np.uint8),
                 "top_down_rgb": gym.spaces.Box(low=0, high=255, shape=(self.agent_specs[agent_id].interface.rgb.width, self.agent_specs[agent_id].interface.rgb.height, 3), dtype=np.uint8),
@@ -158,27 +174,34 @@ class StandardObs(gym.ObservationWrapper):
         f"AgentInterface.{intrfc} attribute."
 
     def observation(self, obs: Dict[str, Any]):
-        ttc = lane_ttc(obs)
-
-        from collections import defaultdict
-
-        wrapped_obs = defaultdict(Dict)
+        wrapped_obs = {}
         for agent_id, agent_obs in obs.items():
+            wrapped_ob = {}
             for std_ob in self.std_obs:
                 func = globals()[f"_std_{std_ob}"]
-                func(getattr(agent_obs, std_ob))
+                if std_ob == "ttc":
+                    val = func(obs[agent_id])
+                else:
+                    val = func(getattr(agent_obs, std_ob))
+                wrapped_ob.update({std_ob: val})
+            wrapped_obs.update({agent_id: StdObs(**wrapped_ob)})
+
+        # print(wrapped_obs["intersection"].__dataclass_fields__.keys())
+        # print(wrapped_obs["intersection"].lidar_point_cloud)
+        # print()
 
         return obs
-
-
-# def _make_std():
 
 
 def _std_distance_travelled(val: float) -> float:
     return np.float32(val)
 
 
-def _std_drivable_area_grid_map(val: DrivableAreaGridMap) -> np.ndarray:
+def _std_drivable_area_grid_map(
+    val: Optional[DrivableAreaGridMap],
+) -> Optional[np.ndarray]:
+    if not val:
+        return None
     return val.data.astype(np.uint8)
 
 
@@ -216,7 +239,10 @@ def _std_events(val: Events) -> Dict[str, int]:
     }
 
 
-def _std_lidar_point_cloud(val) -> Dict[str, np.ndarray]:
+def _std_lidar_point_cloud(val) -> Optional[Dict[str, np.ndarray]]:
+    if not val:
+        return None
+
     des_len = 300
     hit = np.array(val[1], dtype=np.uint8)
     point_cloud = np.array(val[0], dtype=np.float32)
@@ -248,46 +274,67 @@ def _std_lidar_point_cloud(val) -> Dict[str, np.ndarray]:
 
 
 def _std_neighborhood_vehicle_states(
-    val: List[VehicleObservation],
-) -> List[Dict[str, Union[np.float32, np.ndarray]]]:
-    des_len = 10
-    new_val = [
-        {
-            "position": np.array(nghb.position).astype(np.float32),
-            "bounding_box": np.array(nghb.bounding_box.as_lwh).astype(np.float32),
-            "heading": np.float32(nghb.heading),
-            "speed": np.float32(nghb.speed),
-            "lane_index": np.uint8(nghb.lane_index),
-        }
-        for nghb in val[:des_len]
+    nghbs: Optional[List[VehicleObservation]],
+) -> Optional[Dict[str, np.ndarray]]:
+    if not nghbs:
+        return None
+
+    des_shp = 10
+    rcv_shp = len(nghbs)
+    pad_shp = 0 if des_shp - rcv_shp < 0 else des_shp - rcv_shp
+
+    nghbs = [
+        (
+            nghb.bounding_box.as_lwh,
+            nghb.heading,
+            nghb.lane_index,
+            nghb.position,
+            nghb.speed,
+        )
+        for nghb in nghbs[:des_shp]
     ]
-    new_val += [
-        {
-            "position": np.array([0, 0, 0]),
-            "bounding_box": np.array([0, 0, 0]),
-            "heading": np.float32(0),
-            "speed": np.float32(0),
-            "lane_index": np.uint8(0),
-        }
-        for _ in range(des_len - len(val))
-    ]
+    bounding_box, heading, lane_index, position, speed = zip(*nghbs)
 
-    return new_val
+    bounding_box = np.array(bounding_box, dtype=np.float32)
+    heading = np.array(heading, dtype=np.float32)
+    lane_index = np.array(lane_index, dtype=np.uint8)
+    position = np.array(position, dtype=np.float32)
+    speed = np.array(speed, dtype=np.float32)
+
+    # fmt: off
+    bounding_box = np.pad(bounding_box, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
+    heading = np.pad(heading, ((0,pad_shp)), mode='constant', constant_values=0)
+    lane_index = np.pad(lane_index, ((0,pad_shp)), mode='constant', constant_values=0)
+    position = np.pad(position, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
+    speed = np.pad(speed, ((0,pad_shp)), mode='constant', constant_values=0)
+    # fmt: on
+
+    return {
+        "bounding_box": bounding_box,
+        "heading": heading,
+        "lane_index": lane_index,
+        "position": position,
+        "speed": speed,
+    }
 
 
-def _std_occupancy_grid_map(val: OccupancyGridMap) -> np.ndarray:
+def _std_occupancy_grid_map(val: Optional[OccupancyGridMap]) -> Optional[np.ndarray]:
+    if not val:
+        return None
     return val.data.astype(np.uint8)
 
 
-def _std_road_waypoints(val):
-    return val
-
-
-def _std_top_down_rgb(val: TopDownRGB) -> np.ndarray:
+def _std_top_down_rgb(val: Optional[TopDownRGB]) -> Optional[np.ndarray]:
+    if not val:
+        return None
     return val.data.astype(np.uint8)
 
 
-def _std_ttc(val: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+def _std_ttc(obs: Observation) -> Optional[Dict[str, np.ndarray]]:
+    if not obs.neighborhood_vehicle_states or not obs.waypoint_paths:
+        return None
+
+    val = lane_ttc(obs)
     return {
         "angle_error": np.array(val["angle_error"], dtype=np.float32),
         "distance_from_center": np.array(val["distance_from_center"], dtype=np.float32),
@@ -296,7 +343,12 @@ def _std_ttc(val: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
     }
 
 
-def _std_waypoint_paths(paths: List[List[Waypoint]]) -> Dict[str, np.ndarray]:
+def _std_waypoint_paths(
+    paths: Optional[List[List[Waypoint]]],
+) -> Optional[Dict[str, np.ndarray]]:
+    if not paths:
+        return None
+
     des_shp = (4, 20)
     rcv_shp = (len(paths), len(paths[0]))
     pad_shp = [0 if des - rcv < 0 else des - rcv for des, rcv in zip(des_shp, rcv_shp)]

@@ -60,8 +60,8 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
     od_map_paths = list(scenario_root.rglob("*.xodr"))
     sumo_map_paths = list(scenario_root.rglob("*.net.xml"))
     if od_map_paths:
-        from smarts.sstudio.types import MapSpec
         from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
+        from smarts.sstudio.types import MapSpec
 
         assert len(od_map_paths) == 1
         map_xodr = str(od_map_paths[0])
@@ -70,8 +70,8 @@ def _build_single_scenario(clean, allow_offset_map, scenario):
         od_road_network.to_glb(str(map_glb))
 
     elif sumo_map_paths:
-        from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_file
         from smarts.core.sumo_road_network import SumoRoadNetwork
+        from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_file
 
         map_net = None
         for map_path in sumo_map_paths:

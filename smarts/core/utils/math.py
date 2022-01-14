@@ -18,9 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-from math import factorial
-from typing import Callable, List, Tuple, Optional, Union
 from dataclasses import dataclass
+from math import factorial
+from typing import Callable, List, Optional, Tuple, Union
 
 
 @dataclass(frozen=True)
