@@ -27,7 +27,9 @@ def _usage_error(msg: str = None):
     if msg:
         print(f"ERROR:  {msg}")
     print("usage:  python -m smarts.ros setup_node [install_path]")
-    print("    where install_path is an optional existing folder into which to put the node")
+    print(
+        "\twhere install_path is an optional existing folder into which to put the node"
+    )
     sys.exit(-1)
 
 
@@ -46,7 +48,7 @@ if __name__ == "__main__":
         if not os.path.isdir(install_path):
             _usage_error(f"install_path ({install_path}) does not exist.")
         install_arg = f"-DCMAKE_INSTALL_PREFIX={install_path}"
-       
+
     source_ros = ""
     if (
         os.environ.get("ROS_VERSION", 0) != 1
