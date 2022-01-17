@@ -32,7 +32,7 @@ class ChaseWaypointsAgent(Agent):
         )
 
 
-def main(scenarios, headless, num_episodes, max_episode_steps=100):
+def main(scenarios, headless, num_episodes, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
             AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
@@ -45,9 +45,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=100):
         scenarios=scenarios,
         agent_specs={"SingleAgent": agent_spec},
         headless=headless,
-        visdom=False,
         sumo_headless=True,
-        envision_record_data_replay_path=None,
     )
 
     # Convert SMARTS observations to standardized gym-compliant observations.
