@@ -67,65 +67,125 @@ class StandardObs(gym.ObservationWrapper):
 
     The complete set of available observation per agent is as follows.
 
-    ttc not enabled if neighborhood_vehicles oe waypoints is disabled
-
-    "distance_travelled": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
-    "drivable_area_grid_map": gym.spaces.Box(low=0, high=255, shape=(self.agent_specs[agent_id].interface.drivable_area_grid_map.width, self.agent_specs[agent_id].interface.drivable_area_grid_map.height, 1), dtype=np.uint8),
-    "ego_vehicle_state":
-        "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-        "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-        "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(1,), dtype=np.float32),
-        "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
-        "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(1,), dtype=np.float32),
-        "yaw_rate": gym.spaces.Box(low=0, high=2*math.pi, shape=(1,), dtype=np.float32),
-        "lane_index": gym.spaces.Box(low=0, high=255, shape=(1,), dtype=np.uint8),
-        "linear_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-        "angular_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-        "linear_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-        "angular_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-        "linear_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-        "angular_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-    }),
-    "lidar_point_cloud": gym.spaces.Dict({
-        "hit": gym.spaces.MultiBinary(300),
-        "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(300,3), dtype=np.float32),
-        "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(300,3), dtype=np.float32),
-        "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(300,3), dtype=np.float32),
-    }),
-    "events": gym.spaces.Dict({
-        "agents_alive_done": gym.spaces.MultiBinary(1),
-        "collisions": gym.spaces.MultiBinary(1),
-        "not_moving": gym.spaces.MultiBinary(1),
-        "off_road": gym.spaces.MultiBinary(1),
-        "off_route": gym.spaces.MultiBinary(1),
-        "on_shoulder": gym.spaces.MultiBinary(1),
-        "reached_goal": gym.spaces.MultiBinary(1),
-        "reached_max_episode_steps": gym.spaces.MultiBinary(1),
-        "wrong_way": gym.spaces.MultiBinary(1),
-    }),
-    "neighborhood_vehicle_states": gym.spaces.Dict({
-        "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(10,3), dtype=np.float32),
-        "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(10,), dtype=np.float32),
-        "lane_index": gym.spaces.Box(low=0, high=255, shape=(10,), dtype=np.uint8),
-        "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(10,3), dtype=np.float32),
-        "speed": gym.spaces.Box(low=0, high=1e10, shape=(10,), dtype=np.float32),
-    }),
-    "occupancy_grid_map": gym.spaces.Box(low=0, high=255,shape=(self.agent_specs[agent_id].interface.ogm.width, self.agent_specs[agent_id].interface.ogm.height, 1), dtype=np.uint8),
-    "top_down_rgb": gym.spaces.Box(low=0, high=255, shape=(self.agent_specs[agent_id].interface.rgb.width, self.agent_specs[agent_id].interface.rgb.height, 3), dtype=np.uint8),
-    "ttc": gym.spaces.Dict({
-        "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,), dtype=np.float32),
-        "distance_from_center": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,), dtype=np.float32),
-        "ego_lane_dist": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-        "ego_ttc": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-    }),
-    "waypoint_paths": gym.spaces.Dict({
-        "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(4,20), dtype=np.float32),
-        "lane_index": gym.spaces.Box(low=0, high=255, shape=(4,20), dtype=np.uint8),
-        "lane_width": gym.spaces.Box(low=0, high=1e10, shape=(4,20), dtype=np.float32),
-        "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(4,20,3), dtype=np.float32),
-        "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=(4,20), dtype=np.float32),
-    }),
-
+    1. "distance_travelled"
+        Total distance travelled in meters. dtype=np.float32.
+    2. "drivable_area_grid_map"
+        Binary map. 255 if a cell contains a road, else 0. dtype=np.uint8.
+    3. "ego_vehicle_state"
+        a. "angular_acceleration"
+            Angular acceleration vector. Requires `accelerometer` attribute
+            enabled in AgentInterface. shape=(3,). dtype=np.float32.
+        b. "angular_jerk"
+            Angular jerk vector. Requires `accelerometer` attribute enabled in
+            AgentInterface. shape=(3,). dtype=np.float32.
+        c. "angular_velocity"
+            Angular velocity vector. shape=(3,). dtype=np.float32).
+        d. "bounding_box"
+            Length, width, and height of the vehicle bounding box. shape=(3,).
+            dtype=np.float32.
+        e. "heading"
+            Vehicle heading in radians [-pi, pi]. dtype=np.float32.
+        f. "lane_index"
+            Vehicle's lane number. Rightmost lane has index 0 and increases
+            towards left. dtype=np.int8.
+        g. "linear_acceleration"
+            Vehicle acceleration in x, y, and z axes. Requires `accelerometer`
+            attribute enabled in AgentInterface. shape=(3,). dtype=np.float32.
+        h. "linear_jerk"
+            Linear jerk vector. Requires `accelerometer` attribute enabled in
+            AgentInterface. shape=(3,). dtype=np.float32.
+        i. "linear_velocity"
+            Vehicle velocity in x, y, and z axes. shape=(3,). dtype=np.float32.
+        j. "position"
+            Coordinate of the center of the vehicle bounding box's bottom
+            plane. shape=(3,). dtype=np.float32.
+        k. "speed"
+            Vehicle speed in m/s. dtype=np.float32.
+        l. "steering"
+            Angle of front wheels in radians [-pi, pi]. dtype=np.float32.
+        m. "yaw_rate"
+            Rotation speed around vertical axis in rad/s [0, 2pi].
+            dtype=np.float32.
+    4. "lidar_point_cloud"
+        a. "hit"
+            Binary array. 1 if an object is hit, else 0. shape(300,).
+        b. "point_cloud"
+            Coordinates of point cloud. shape=(300,3). dtype=np.float32.
+        c. "ray_origin"
+            Ray origin coordinates. shape=(300,3). dtype=np.float32.
+        d. "ray_vector"
+            Ray vectors. shape=(300,3). dtype=np.float32.
+    5. "events"
+        a. "agents_alive_done"
+            1 if `DoneCriteria.agents_alive` is triggered, else 0.
+        b. "collisions"
+            1 if any collisions occurred with ego vehicle, else 0.
+        c. "not_moving"
+            1 if `DoneCriteria.not_moving` is triggered, else 0.
+        d. "off_road"
+            1 if ego vehicle drives off road, else 0.
+        e. "off_route"
+            1 if ego vehicle drives off mission route, else 0.
+        f. "on_shoulder"
+            1 if ego vehicle drives on road shoulder, else 0.
+        g. "reached_goal"
+            1 if ego vehicle reaches its goal, else 0.
+        h. "reached_max_episode_steps"
+            1 if maximum episode steps reached, else 0.
+        i. "wrong_way"
+            1 if ego vehicle drives in the wrong traffic direction, else 0.
+    6. "neighborhood_vehicle_states"
+        Feature array of 10 nearest neighbor vehicles. If nearest neighbor
+        vehicles are insufficient, default feature values are padded.
+        a. "bounding_box"
+            Bounding box of neighbor vehicles. Defaults to np.array([0,0,0])
+            per vehicle. shape=(10,3). dtype=np.float32.
+        b. "heading"
+            Heading of neighbor vehicles in radians [-pi, pi]. Defaults to
+            np.array([0]). shape=(10,). dtype=np.float32.
+        c. "lane_index"
+            Lane number of neighbor vehicles. Defaults to np.array([0]) per
+            vehicle. shape=(10,). dtype=np.int8.
+        d. "position"
+            Coordinate of the center of neighbor vehicles' bounding box's
+            bottom plane. Defaults to np.array([0,0,0]) per vehicle.
+            shape=(10,3). dtype=np.float32.
+        e. "speed"
+            Speed of neighbor vehicles in m/s. Defaults to np.array([0]) per
+            vehicle. shape=(10,). dtype=np.float32.
+    7. "occupancy_grid_map"
+        Binary map. 255 if a cell is occupied, else 0. dtype=np.uint8.
+    8. "top_down_rgb"
+        RGB image, from the top, with ego vehicle at the center.
+        shape=(height, width, 3). dtype=np.uint8.
+    9. "ttc"
+        Time to collision. Enabled only if both `neighborhood_vehicles` and
+        `waypoints` attributes are enabled in AgentInterface.
+        a. "angle_error"
+            Angular error in radians [-pi, pi]. shape=(1,). dtype=np.float32.
+        b. "distance_from_center"
+            shape=(1,). dtype=np.float32.
+        c. "ego_lane_dist"
+            shape=(3,). dtype=np.float32.
+        d. "ego_ttc"
+            Time to collision. shape=(3,). dtype=np.float32.
+    10."waypoint_paths"
+        Array of 20 waypoints ahead or in the mission route, from the nearest 4
+        lanes. If lanes or waypoints ahead are insufficient, default values are
+        padded.
+        a. "heading"
+            Heading angle of lane at this waypoint in radians [-pi, pi].
+            shape=(4,20). dtype=np.float32.
+        b. "lane_index"
+            Lane number of this waypoint neighbor vehicles. Defaults to np.array([0]) per
+            vehicle. shape=(10,). dtype=np.int8.
+            gym.spaces.Box(low=0, high=255, shape=(4,20), dtype=np.uint8),
+        c. "lane_width"
+            gym.spaces.Box(low=0, high=1e10, shape=(4,20), dtype=np.float32),
+        d. "pos"
+            gym.spaces.Box(low=-1e10, high=1e10, shape=(4,20,3), dtype=np.float32),
+        e. "speed_limit"
+            gym.spaces.Box(low=0, high=1e10, shape=(4,20), dtype=np.float32),
     """
 
     def __init__(self, env: gym.Env):
@@ -239,7 +299,7 @@ def _make_space(intrfcs: Dict[str, Any]) -> gym.spaces:
     }
 
     opt_space = {
-        "drivable_area_grid_map": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.width, val.height, 1), dtype=np.uint8),
+        "drivable_area_grid_map": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
         "lidar_point_cloud": lambda _: gym.spaces.Dict({
             "hit": gym.spaces.MultiBinary(_LIDAR_SHP),
             "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float32),
@@ -253,8 +313,8 @@ def _make_space(intrfcs: Dict[str, Any]) -> gym.spaces:
             "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),    
             "speed": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
         }),
-        "occupancy_grid_map": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.width, val.height, 1), dtype=np.uint8),
-        "top_down_rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.width, val.height, 3), dtype=np.uint8),
+        "occupancy_grid_map": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
+        "top_down_rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
         "ttc": lambda _: gym.spaces.Dict({
             "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,), dtype=np.float32),
             "distance_from_center": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,), dtype=np.float32),
@@ -298,19 +358,19 @@ def _std_ego_vehicle_state(
     val: EgoVehicleObservation,
 ) -> Dict[str, Union[np.float32, np.ndarray]]:
     return {
-        "position": val.position.astype(np.float32),
+        "angular_acceleration": val.angular_acceleration.astype(np.float32),
+        "angular_jerk": val.angular_jerk.astype(np.float32),
+        "angular_velocity": val.angular_acceleration.astype(np.float32),
         "bounding_box": np.array(val.bounding_box.as_lwh).astype(np.float32),
         "heading": np.float32(val.heading),
+        "lane_index": np.int8(val.lane_index),
+        "linear_acceleration": val.linear_acceleration.astype(np.float32),
+        "linear_jerk": val.linear_jerk.astype(np.float32),
+        "linear_velocity": val.linear_velocity.astype(np.float32),
+        "position": val.position.astype(np.float32),
         "speed": np.float32(val.speed),
         "steering": np.float32(val.steering),
         "yaw_rate": np.float32(val.yaw_rate),
-        "lane_index": np.int8(val.lane_index),
-        "linear_velocity": val.linear_velocity.astype(np.float32),
-        "angular_velocity": val.angular_acceleration.astype(np.float32),
-        "linear_acceleration": val.linear_acceleration.astype(np.float32),
-        "angular_acceleration": val.angular_acceleration.astype(np.float32),
-        "linear_jerk": val.linear_jerk.astype(np.float32),
-        "angular_jerk": val.angular_jerk.astype(np.float32),
     }
 
 
