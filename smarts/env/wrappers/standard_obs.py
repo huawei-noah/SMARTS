@@ -159,34 +159,39 @@ class StandardObs(gym.ObservationWrapper):
         RGB image, from the top, with ego vehicle at the center.
         shape=(height, width, 3). dtype=np.uint8.
     9. "ttc"
-        Time to collision. Enabled only if both `neighborhood_vehicles` and
-        `waypoints` attributes are enabled in AgentInterface.
+        Time and distance to collision. Enabled only if both `waypoints` and
+        `neighborhood_vehicles` attributes are enabled in AgentInterface.
         a. "angle_error"
             Angular error in radians [-pi, pi]. shape=(1,). dtype=np.float32.
         b. "distance_from_center"
-            shape=(1,). dtype=np.float32.
+            Distance of vehicle from lane center in meters. shape=(1,).
+            dtype=np.float32.
         c. "ego_lane_dist"
-            shape=(3,). dtype=np.float32.
+            Distance to collision on the right lane, current lane, and left
+            lane. If no lane is available, to the right or to the left, default
+            value of 0 is padded. shape=(3,). dtype=np.float32.
         d. "ego_ttc"
-            Time to collision. shape=(3,). dtype=np.float32.
+            Time to collision on the right lane, current lane, and left lane.
+            If no lane is available, to the right or to the left, default value
+            of 0 is padded. shape=(3,). dtype=np.float32.
     10."waypoint_paths"
         Array of 20 waypoints ahead or in the mission route, from the nearest 4
         lanes. If lanes or waypoints ahead are insufficient, default values are
         padded.
         a. "heading"
-            Lane heading angle at a waypoint in radians [-pi, pi]. Defaults to 
+            Lane heading angle at a waypoint in radians [-pi, pi]. Defaults to
             np.array([0]) per waypoint. shape=(4,20). dtype=np.float32.
         b. "lane_index"
             Lane number at a waypoint. Defaults to np.array([0]) per waypoint.
             shape=(4,20). dtype=np.int8.
         c. "lane_width"
-            Lane width at a waypoint in meters. Defaults to np.array([0]) per 
+            Lane width at a waypoint in meters. Defaults to np.array([0]) per
             waypoint. shape=(4,20). dtype=np.float32.
         d. "pos"
-            Coordinate of a waypoint. Defaults to np.array([0,0,0]). 
+            Coordinate of a waypoint. Defaults to np.array([0,0,0]).
             shape=(4,20,3). dtype=np.float32.
         e. "speed_limit"
-            Lane speed limit at a waypoint in m/s. shape=(4,20). 
+            Lane speed limit at a waypoint in m/s. shape=(4,20).
             dtype=np.float32.
     """
 
