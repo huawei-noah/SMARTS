@@ -142,7 +142,7 @@ class StandardObs(gym.ObservationWrapper):
             per vehicle. shape=(10,3). dtype=np.float32.
         b. "heading"
             Heading of neighbor vehicles in radians [-pi, pi]. Defaults to
-            np.array([0]). shape=(10,). dtype=np.float32.
+            np.array([0]) per vehicle. shape=(10,). dtype=np.float32.
         c. "lane_index"
             Lane number of neighbor vehicles. Defaults to np.array([0]) per
             vehicle. shape=(10,). dtype=np.int8.
@@ -174,18 +174,20 @@ class StandardObs(gym.ObservationWrapper):
         lanes. If lanes or waypoints ahead are insufficient, default values are
         padded.
         a. "heading"
-            Heading angle of lane at this waypoint in radians [-pi, pi].
-            shape=(4,20). dtype=np.float32.
+            Lane heading angle at a waypoint in radians [-pi, pi]. Defaults to 
+            np.array([0]) per waypoint. shape=(4,20). dtype=np.float32.
         b. "lane_index"
-            Lane number of this waypoint neighbor vehicles. Defaults to np.array([0]) per
-            vehicle. shape=(10,). dtype=np.int8.
-            gym.spaces.Box(low=0, high=255, shape=(4,20), dtype=np.uint8),
+            Lane number at a waypoint. Defaults to np.array([0]) per waypoint.
+            shape=(4,20). dtype=np.int8.
         c. "lane_width"
-            gym.spaces.Box(low=0, high=1e10, shape=(4,20), dtype=np.float32),
+            Lane width at a waypoint in meters. Defaults to np.array([0]) per 
+            waypoint. shape=(4,20). dtype=np.float32.
         d. "pos"
-            gym.spaces.Box(low=-1e10, high=1e10, shape=(4,20,3), dtype=np.float32),
+            Coordinate of a waypoint. Defaults to np.array([0,0,0]). 
+            shape=(4,20,3). dtype=np.float32.
         e. "speed_limit"
-            gym.spaces.Box(low=0, high=1e10, shape=(4,20), dtype=np.float32),
+            Lane speed limit at a waypoint in m/s. shape=(4,20). 
+            dtype=np.float32.
     """
 
     def __init__(self, env: gym.Env):
