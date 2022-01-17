@@ -31,6 +31,8 @@ warnings.simplefilter("once")
 
 logger = logging.getLogger(__name__)
 
+def adapter(adaptee):
+    return adaptee, gym.space
 
 class Agent:
     """The base class for agents"""
@@ -93,9 +95,9 @@ class AgentSpec:
     agent_params: Optional[Any] = None
     """Parameters to be given to `AgentSpec.agent_builder` (default None)"""
 
-    observation_adapter: Callable = lambda obs: obs
+    observation_adapter: Callable = adapter
     """An adaptor that allows shaping of the observations (default lambda obs: obs)"""
-    action_adapter: Callable = lambda act: act
+    action_adapter: Callable = adapter
     """An adaptor that allows shaping of the action (default lambda act: act)"""
     reward_adapter: Callable = lambda obs, reward: reward
     """An adaptor that allows shaping of the reward (default lambda obs, reward: reward)"""
