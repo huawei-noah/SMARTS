@@ -40,7 +40,7 @@ def scan_for_vehicle(
     activation_dist_squared,
     self_vehicle_state,
     other_vehicle_state,
-) -> Union[Heading, bool]:
+) -> bool:
     if target_prefix and not other_vehicle_state.id.startswith(target_prefix):
         return False
 
