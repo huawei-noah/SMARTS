@@ -32,9 +32,9 @@ class ChaseWaypointsAgent(Agent):
         )
 
 
-def main(scenarios, headless, num_episodes):
+def main(scenarios, headless, num_episodes, max_episode_steps=100):
     agent_spec = AgentSpec(
-        interface=AgentInterface.from_type(AgentType.LanerWithSpeed),
+        interface=AgentInterface.from_type(AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps),
         agent_builder=ChaseWaypointsAgent,
     )
 
@@ -83,7 +83,6 @@ if __name__ == "__main__":
             str(pathlib.Path(__file__).absolute().parents[1] / "scenarios" / "loop")
         ]
 
-    # Build scenario
     _build_scenario(args.scenarios)
 
     main(

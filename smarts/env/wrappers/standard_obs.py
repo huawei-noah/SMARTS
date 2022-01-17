@@ -58,16 +58,14 @@ class StdObs:
 
 
 class StandardObs(gym.ObservationWrapper):
-    """Processes SMARTS environment observations and returns standardized
-    gym-compliant observations. The observation set returned depends on the
-    features enabled via AgentInterface.
+    """Converts SMARTS observations to standardized gym-compliant observations.
+    The observation set returned depends on the features enabled via 
+    AgentInterface.
 
     Note: To use StandardObs wrapper, all agents must have the same
     AgentInterface attributes.
 
-    The complete set of available observation is as follows.
-
-    Observation:
+    The complete set of available observation per agent is as follows.
 
     ttc not enabled if neighborhood_vehicles oe waypoints is disabled
 
