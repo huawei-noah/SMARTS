@@ -37,6 +37,10 @@ from smarts.core.sensors import (
 )
 from smarts.env.custom_observations import lane_ttc
 
+_LIDAR_SHP = 300
+_NEIGHBOR_SHP = 10
+_WAYPOINT_SHP = (4, 20)
+
 
 @dataclass(frozen=True)
 class StdObs:
@@ -46,7 +50,7 @@ class StdObs:
 
     drivable_area_grid_map: Optional[np.ndarray] = None
     lidar_point_cloud: Optional[Dict[str, np.ndarray]] = None
-    neighborhood_vehicle_states: Optional[List[VehicleObservation]] = None
+    neighborhood_vehicle_states: Optional[Dict[str, np.ndarray]] = None
     occupancy_grid_map: Optional[np.ndarray] = None
     top_down_rgb: Optional[np.ndarray] = None
     ttc: Optional[Dict[str, np.ndarray]] = None
@@ -162,9 +166,46 @@ class StandardObs(gym.ObservationWrapper):
                     "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=(4,20), dtype=np.float32),
                 }),
             })
-            for agent_id in self.agent_specs.keys()
-        })
-        # fmt: on
+    def __init__(self, env: gym.Env):
+        """
+        Args:
+            env (gym.Env): SMARTS environment to be wrapped.
+        """
+        super().__init__(env)
+
+        agent_id = next(iter(self.agent_specs.keys()))
+        intrfcs = {}
+        for intrfc in {
+            "accelerometer",
+            "drivable_area_grid_map",
+            "lidar",
+            "neighborhood_vehicles",
+            "ogm",
+            "rgb",
+            "waypoints",
+        }:
+            val = getattr(self.agent_specs[agent_id].interface, intrfc)
+            if val:
+                self._comp_intrfc(intrfc, val)
+                intrfcs.update({intrfc: val})
+
+        self.obs = {
+            "distance_travelled",
+            "drivable_area_grid_map",
+            "ego_vehicle_state",
+            "events",
+            "lidar_point_cloud",
+            "neighborhood_vehicle_states",
+            "occupancy_grid_map",
+            "top_down_rgb",
+            "ttc",
+            "waypoint_paths",
+        }
+
+        space = _make_space(intrfcs)
+        self.observation_space = gym.spaces.Dict(
+            {agent_id: gym.spaces.Dict(space) for agent_id in self.agent_specs.keys()}
+        )
 
     def _comp_intrfc(self, intrfc: str, val: Any):
         assert all(
@@ -173,24 +214,110 @@ class StandardObs(gym.ObservationWrapper):
         ), f"To use StandardObs wrapper, all agents must have the same "
         f"AgentInterface.{intrfc} attribute."
 
-    def observation(self, obs: Dict[str, Any]):
+    def observation(self, obs: Dict[str, Any]) -> Dict[str, StdObs]:
+        """Converts SMARTS observations to standardized gym-compliant
+        observations.
+
+        Note: Users should not directly call this method.
+        """
         wrapped_obs = {}
         for agent_id, agent_obs in obs.items():
             wrapped_ob = {}
-            for std_ob in self.std_obs:
-                func = globals()[f"_std_{std_ob}"]
-                if std_ob == "ttc":
+            for ob in self.obs:
+                func = globals()[f"_std_{ob}"]
+                if ob == "ttc":
                     val = func(obs[agent_id])
                 else:
-                    val = func(getattr(agent_obs, std_ob))
-                wrapped_ob.update({std_ob: val})
+                    val = func(getattr(agent_obs, ob))
+                wrapped_ob.update({ob: val})
             wrapped_obs.update({agent_id: StdObs(**wrapped_ob)})
 
-        # print(wrapped_obs["intersection"].__dataclass_fields__.keys())
-        # print(wrapped_obs["intersection"].lidar_point_cloud)
-        # print()
-
         return obs
+
+
+def _make_space(intrfcs: Dict[str, Any]) -> gym.spaces:
+    intrfc_to_obs = {
+        "drivable_area_grid_map": "drivable_area_grid_map",
+        "lidar": "lidar_point_cloud",
+        "neighborhood_vehicles": "neighborhood_vehicle_states",
+        "ogm": "occupancy_grid_map",
+        "rgb": "top_down_rgb",
+        "waypoints": "waypoint_paths",
+    }
+
+    # fmt: off
+    space = {
+        "distance_travelled": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
+        "ego_vehicle_state": gym.spaces.Dict({
+            "angular_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+            "angular_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+            "angular_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+            "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(1,), dtype=np.float32),
+            "lane_index": gym.spaces.Box(low=0, high=255, shape=(1,), dtype=np.uint8),
+            "linear_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+            "linear_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+            "linear_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+            "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+            "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
+            "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(1,), dtype=np.float32),
+            "yaw_rate": gym.spaces.Box(low=0, high=2*math.pi, shape=(1,), dtype=np.float32),
+        }),
+        "events": gym.spaces.Dict({
+            "agents_alive_done": gym.spaces.MultiBinary(1),
+            "collisions": gym.spaces.MultiBinary(1),
+            "not_moving": gym.spaces.MultiBinary(1),
+            "off_road": gym.spaces.MultiBinary(1),
+            "off_route": gym.spaces.MultiBinary(1),
+            "on_shoulder": gym.spaces.MultiBinary(1),
+            "reached_goal": gym.spaces.MultiBinary(1),
+            "reached_max_episode_steps": gym.spaces.MultiBinary(1),
+            "wrong_way": gym.spaces.MultiBinary(1),
+        }),
+    }
+
+    opt_space = {
+        "drivable_area_grid_map": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.width, val.height, 1), dtype=np.uint8),
+        "lidar_point_cloud": lambda _: gym.spaces.Dict({
+            "hit": gym.spaces.MultiBinary(_LIDAR_SHP),
+            "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float32),
+            "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float32),
+            "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float32),
+        }),
+        "neighborhood_vehicle_states": lambda _: gym.spaces.Dict({
+            "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),
+            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
+            "lane_index": gym.spaces.Box(low=0, high=255, shape=(_NEIGHBOR_SHP,), dtype=np.uint8),
+            "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),    
+            "speed": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
+        }),
+        "occupancy_grid_map": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.width, val.height, 1), dtype=np.uint8),
+        "top_down_rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.width, val.height, 3), dtype=np.uint8),
+        "ttc": lambda _: gym.spaces.Dict({
+            "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,), dtype=np.float32),
+            "distance_from_center": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,), dtype=np.float32),
+            "ego_lane_dist": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+            "ego_ttc": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+        }),
+        "waypoint_paths": lambda _: gym.spaces.Dict({
+            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=_WAYPOINT_SHP, dtype=np.float32),
+            "lane_index": gym.spaces.Box(low=0, high=255, shape=_WAYPOINT_SHP, dtype=np.uint8),
+            "lane_width": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
+            "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=_WAYPOINT_SHP + (3,), dtype=np.float32),
+            "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
+        }),
+    }
+    # fmt: on
+
+    for intrfc, val in intrfcs.items():
+        opt_ob = intrfc_to_obs.get(intrfc, None)
+        if opt_ob:
+            space.update({opt_ob: opt_space[opt_ob](val)})
+
+    if "waypoints" in intrfcs.keys() and "neighborhood_vehicles" in intrfcs.keys():
+        space.update({"ttc": opt_space["ttc"](None)})
+
+    return space
 
 
 def _std_distance_travelled(val: float) -> float:
@@ -243,7 +370,7 @@ def _std_lidar_point_cloud(val) -> Optional[Dict[str, np.ndarray]]:
     if not val:
         return None
 
-    des_len = 300
+    des_shp = _LIDAR_SHP
     hit = np.array(val[1], dtype=np.uint8)
     point_cloud = np.array(val[0], dtype=np.float32)
     point_cloud = np.nan_to_num(
@@ -258,10 +385,10 @@ def _std_lidar_point_cloud(val) -> Optional[Dict[str, np.ndarray]]:
     ray_vector = np.array(ray_vector, np.float32)
 
     try:
-        assert hit.shape == (des_len,)
-        assert point_cloud.shape == (des_len, 3)
-        assert ray_origin.shape == (des_len, 3)
-        assert ray_vector.shape == (des_len, 3)
+        assert hit.shape == (des_shp,)
+        assert point_cloud.shape == (des_shp, 3)
+        assert ray_origin.shape == (des_shp, 3)
+        assert ray_vector.shape == (des_shp, 3)
     except:
         raise Exception("Internal Error: Mismatched lidar point cloud shape.")
 
@@ -279,7 +406,7 @@ def _std_neighborhood_vehicle_states(
     if not nghbs:
         return None
 
-    des_shp = 10
+    des_shp = _NEIGHBOR_SHP
     rcv_shp = len(nghbs)
     pad_shp = 0 if des_shp - rcv_shp < 0 else des_shp - rcv_shp
 
@@ -349,7 +476,7 @@ def _std_waypoint_paths(
     if not paths:
         return None
 
-    des_shp = (4, 20)
+    des_shp = _WAYPOINT_SHP
     rcv_shp = (len(paths), len(paths[0]))
     pad_shp = [0 if des - rcv < 0 else des - rcv for des, rcv in zip(des_shp, rcv_shp)]
 
