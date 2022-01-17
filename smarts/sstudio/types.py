@@ -75,7 +75,7 @@ class _SumoParams(collections_abc.Mapping):
             w = word[0].upper() + word[1:]
             return "".join(x or "_" for x in w.split("_"))
 
-        func: function = snake_to_title
+        func: Callable[[str], str] = snake_to_title
         if mode == _SUMO_PARAMS_MODE.TITLE_CASE:
             pass
         elif mode == _SUMO_PARAMS_MODE.KEEP_SNAKE_CASE:
@@ -241,7 +241,7 @@ class SocialAgentActor(Actor):
     """Additional keyword arguments to be passed to the constructed class overriding the
     existing registered arguments.
     """
-    initial_speed: float = None
+    initial_speed: Optional[float] = None
     """Set the initial speed, defaults to 0."""
 
 
@@ -266,7 +266,9 @@ class BoidAgentActor(SocialAgentActor):
 # This function should be re-callable (although caching is up to the implementation).
 # The idea here is that anything in SMARTS that needs to use a RoadMap
 # can call this builder to get or create one as necessary.
-MapBuilder = NewType("MapBuilder", Callable[[Any], Tuple[RoadMap, str]])
+MapBuilder = NewType(
+    "MapBuilder", Callable[[Any], Tuple[Optional[RoadMap], Optional[str]]]
+)
 
 
 @dataclass(frozen=True)
@@ -277,6 +279,9 @@ class MapSpec:
     """If specified, the default distance between pre-generated Lane Points (Waypoints)."""
     default_lane_width: Optional[float] = None
     """If specified, the default width (in meters) of lanes on this map."""
+    shift_to_origin: bool = False
+    """If True, upon creation a map whose bounding-box does not intersect with
+    the origin point (0,0) will be shifted such that it does."""
     builder_fn: MapBuilder = get_road_map
     """If specified, this should return an object derived from the RoadMap base class
     and a hash that uniquely identifies it (changes to the hash should signify
@@ -445,7 +450,7 @@ class TrapEntryTactic(EntryTactic):
     """The zone of the hijack area"""
     exclusion_prefixes: Tuple[str, ...] = tuple()
     """The prefixes of vehicles to avoid hijacking"""
-    default_entry_speed: float = None
+    default_entry_speed: Optional[float] = None
     """The speed that the vehicle starts at when defaulting to emitting"""
 
 
@@ -464,7 +469,7 @@ class Mission:
     `entry_tactic`.
     """
 
-    entry_tactic: EntryTactic = None
+    entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission."""
 
 
@@ -486,7 +491,7 @@ class EndlessMission:
     """Points on a road that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
-    entry_tactic: EntryTactic = None
+    entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
 
 
@@ -504,7 +509,7 @@ class LapMission:
     """Points on a road that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
-    entry_tactic: EntryTactic = None
+    entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
 
 
@@ -551,7 +556,7 @@ class MapZone(Zone):
     """
     length: float
     """The length of the geometry along the center of the lane. Also acceptable\\: 'max'"""
-    n_lanes: 2
+    n_lanes: int = 2
     """The number of lanes from right to left that this zone covers."""
 
     def to_geometry(self, road_map: RoadMap) -> Polygon:

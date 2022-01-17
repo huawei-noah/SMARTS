@@ -1,19 +1,23 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-This changelog is to adhere to the format given at [keepachangelog](keepachangelog.com/en/1.0.0/) 
+This changelog is to adhere to the format given at [keepachangelog](keepachangelog.com/en/1.0.0/)
 and should maintain [semantic versioning](semver.org).
 
-All text added must be human-readable. 
+All text added must be human-readable.
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
+- Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make a left turn in the presence of traffic.
+- Added `StandardObs` wrapper which preprocesses SMARTS observations and only returns standardized gym-compliant observations.
 ### Changed
+- If more than one qualifying map file exists in a the `map_spec.source` folder, `get_road_map()` in `default_map_builder.py` will prefer to return the default files (`map.net.xml` or `map.xodr`) if they exist.
 ### Deprecated
 ### Fixed
+- Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error. 
 ### Removed
 ### Security
 
@@ -37,7 +41,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `smarts.core.utils.import_utils` to help with the dynamic import of modules.
 - Added `single_agent` env wrapper and unit test. The wrapper converts a single-agent SMARTS environment's step and reset output to be compliant with gym spaces.
 - Added `rgb_image` env wrapper and unit test. The wrapper filters SMARTS environment observation and returns only top-down RGB image as observation.
-- Extended the `RoadMap` API to support `OpenDRIVE` map format in `smarts/core/opendrive_road_network.py`. Added 3 new scenarios with `OpenDRIVE` maps. See PR #1186.  
+- Extended the `RoadMap` API to support `OpenDRIVE` map format in `smarts/core/opendrive_road_network.py`. Added 3 new scenarios with `OpenDRIVE` maps. See PR #1186.
 - Added a "ReplayAgent" wrapper to allow users to rerun an agent previously run by saving its configurations and inputs. See Issue #971.
 - Added `smarts.core.provider.ProviderRecoveryFlags` as flags to determine how `SMARTS` should handle failures in providers. They are as follows:
   - `NOT_REQUIRED`: Not needed for the current step. Error causes skip of provider if it should recover but cannot or should not recover.
@@ -50,14 +54,12 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added recovery options to `smarts.core.smarts.SMARTS.add_provider()`
   - Add `recovery_flags` argument to configure the recovery options if the provider disconnects or throws an exception.
 - Added `driving_in_traffic` reinforcement learning example. An ego agent is trained using DreamerV2 to drive as far and as fast as possible in heavy traffic, without colliding or going off-road.
-- Added `smarts.core.smarts.SMARTSDestroyedError` which describes use of a destroyed `SMARTS` instance. 
-- Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make a left turn in the presence of traffic.
-- Added `StandardObs` wrapper which preprocesses SMARTS observations and only returns standardized gym-compliant observations.
+- Added `smarts.core.smarts.SMARTSDestroyedError` which describes use of a destroyed `SMARTS` instance.
 ### Changed
 - `test-requirements` github action job renamed to `check-requirements-change` and only checks for requirements changes without failing.
 - Moved examples tests to `examples` and used relative imports to fix a module collision with `aiohttp`'s `examples` module.
 - Made changes to log sections of the scenario step in `smarts.py` to help evaluate smarts performance problems. See Issue #661.
-- Introducted `RoadMap` class to abstract away from `SumoRoadNetwork` 
+- Introducted `RoadMap` class to abstract away from `SumoRoadNetwork`
   and allow for (eventually) supporting other map formats.  See Issue #830 and PR #1048.
   This had multiple cascading ripple effects (especially on Waypoint generation and caching,
   Missions/Plans/Routes and road/lane-related sensors).  These include:
@@ -71,7 +73,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Public `SMARTS` methods will throw `smarts.core.smarts.SMARTSDestroyedError` if `SMARTS.destroy()` has previously been called on the `SMARTS` instance.
 ### Fixed
 - Fix lane vector for the unique cases of lane offset >= lane's length. See PR #1173.
-- Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992. 
+- Logic fixes to the `_snap_internal_holes` and `_snap_external_holes` methods in `smarts.core.sumo_road_network.py` for crude geometry holes of sumo road map. Re-adjusted the entry position of vehicles in `smarts.sstudio.genhistories.py` to avoid false positive events. See PR #992.
 - Prevent `test_notebook.ipynb` cells from timing out by increasing time to unlimited using `/metadata/execution/timeout=65536` within the notebook for regular uses, and `pytest` call with `--nb-exec-timeout 65536` option for tests. See for more details: "https://jupyterbook.org/content/execute.html#setting-execution-timeout" and "https://pytest-notebook.readthedocs.io/en/latest/user_guide/tutorial_intro.html#pytest-fixture".
 - Stop `multiprocessing.queues.Queue` from throwing an error by importing `multiprocessing.queues` in `envision/utils/multiprocessing_queue.py`.
 - Prevent vehicle insertion on top of ignored social vehicles when the `TrapManager` defaults to emitting a vehicle for the ego to control. See PR #1043
@@ -81,7 +83,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Updated deprecated Shapely functionality.
 - Fixed the type of `position` (pose) fields emitted to envision to match the existing type hints of `tuple`.
 - Properly detect whether waypoint is present in mission route, while computing distance travelled by agents with missions in TripMeterSensor.
-- Fixed `test_notebook` timeout by setting `pytest --nb-exec-timeout 65536`. 
+- Fixed `test_notebook` timeout by setting `pytest --nb-exec-timeout 65536`.
 ### Deprecated
 - The `timestep_sec` property of SMARTS is being deprecated in favor of `fixed_timesep_sec`
   for clarity since we are adding the ability to have variable time steps.
@@ -92,7 +94,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Removed `route_waypoints` attribute from `smarts.core.sensors.RoadWaypoints`.
 
 ## [0.4.18] - 2021-07-22
-### Added 
+### Added
 - Dockerfile for headless machines.
 - Singularity definition file and instructions to build/run singularity containers.
 - Support multiple outgoing edges from SUMO maps.
@@ -105,16 +107,16 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fix case where multiple outgoing edges could cause non-determinism.
 
 ## [0.4.17] - 2021-07-02
-### Added 
+### Added
 - Added `ActionSpace.Imitation` and a controller to support it.  See Issue #844.
 - Added a `TraverseGoal` goal for imitation learning agents.  See Issue #848.
-- Added `README_pypi.md` to update to the general user installation PyPI instructions. See Issue #828. 
+- Added `README_pypi.md` to update to the general user installation PyPI instructions. See Issue #828.
 - Added a new utility experiment file `cli/run.py` to replace the context given by `supervisord.conf`. See PR #911.
 - Added `scl zoo install` command to install zoo policy agents at the specified paths. See Issue #603.
 - Added a `FrameStack` wrapper which returns stacked observations for each agent.
 ### Changed
 - `history_vehicles_replacement_for_imitation_learning.py` now uses new Imitation action space. See Issue #844.
-- Updated and removed some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266. 
+- Updated and removed some package versions to ensure that Python3.8 is supported by SMARTS. See issue #266.
 - Refactored `Waypoints` into `LanePoints` (static, map-based) and `Waypoints` (dynamic). See Issue #829.
 - Vehicles with a `BoxChassis` can now use an `AccelerometerSensor` too.
 - When importing NGSIM history data, vehicle speeds are recomputed.
@@ -142,7 +144,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Removed `supervisord.conf` and `supervisor` from dependencies and requirements. See Issue #802.
 
 ## [0.4.16] - 2021-05-11
-### Added 
+### Added
 - Added `sanity-test` script and asked new users to run `sanity-test` instead of `make test` to ease the setup
 process
 - Added `on_shoulder` as part of events in observation returned from each step of simulation
@@ -170,9 +172,9 @@ process
 ### Added
 - This CHANGELOG as a change log to help keep track of changes in the SMARTS project that can get easily lost.
 - Hosted Documentation on `readthedocs` and pointed to the smarts paper and useful parts of the documentation in the README.
-- Running imitation learning will now create a cached `history_mission.pkl` file in scenario folder that stores 
+- Running imitation learning will now create a cached `history_mission.pkl` file in scenario folder that stores
 the missions for all agents.
-- Added ijson as a dependency. 
+- Added ijson as a dependency.
 - Added `cached-property` as a dependency.
 ### Changed
 - Lowered CPU cost of waypoint generation. This will result in a small increase in memory usage.
@@ -189,9 +191,9 @@ the missions for all agents.
 - Fix envision error 15 by cleanly shutting down the envision worker process.
 
 ## [Format] - 2021-03-12
-### Added 
+### Added
 – Describe any new features that have been added since the last version was released.
-### Changed 
+### Changed
 – Note any changes to the software’s existing functionality.
 ### Deprecated
 – Note any features that were once stable but are no longer and have thus been removed.

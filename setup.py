@@ -1,5 +1,6 @@
 from os import path
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 this_dir = path.abspath(path.dirname(__file__))
 with open(
@@ -81,6 +82,8 @@ setup(
             "black==20.8b1",
             "grpcio-tools==1.32.0",
             "isort==5.7.0",
+            "pre-commit==2.16.0",
+            "pylint==2.12.2",
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",

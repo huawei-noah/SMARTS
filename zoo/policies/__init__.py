@@ -76,3 +76,18 @@ def replay_entrypoint(
 
 
 register(locator="replay-agent-v0", entry_point=replay_entrypoint)
+
+
+def human_keyboard_entrypoint(*arg, **kwargs):
+    from .human_in_the_loop import HumanKeyboardAgent
+
+    spec = AgentSpec(
+        interface=AgentInterface.from_type(
+            AgentType.StandardWithAbsoluteSteering, max_episode_steps=3000
+        ),
+        agent_builder=HumanKeyboardAgent,
+    )
+    return spec
+
+
+register(locator="human-in-the-loop-v0", entry_point=human_keyboard_entrypoint)
