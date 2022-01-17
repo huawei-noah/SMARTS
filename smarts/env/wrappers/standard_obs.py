@@ -167,13 +167,16 @@ class StandardObs(gym.ObservationWrapper):
             Distance of vehicle from lane center in meters. shape=(1,).
             dtype=np.float32.
         c. "ego_lane_dist"
-            Distance to collision on the right lane, current lane, and left
-            lane. If no lane is available, to the right or to the left, default
-            value of 0 is padded. shape=(3,). dtype=np.float32.
+            Distance to collision on the right lane (`ego_lane_dist[0]`),
+            current lane (`ego_lane_dist[1]`), and left lane
+            (`ego_lane_dist[2]`). If no lane is available, to the right or to
+            the left, default value of 0 is padded. shape=(3,).
+            dtype=np.float32.
         d. "ego_ttc"
-            Time to collision on the right lane, current lane, and left lane.
-            If no lane is available, to the right or to the left, default value
-            of 0 is padded. shape=(3,). dtype=np.float32.
+            Time to collision on the right lane (`ego_ttc[0]`), current lane
+            (`ego_ttc[1]`), and left lane (`ego_ttc[2]`). If no lane is
+            available, to the right or to the left, default value of 0 is
+            padded. shape=(3,). dtype=np.float32.
     10."waypoint_paths"
         Array of 20 waypoints ahead or in the mission route, from the nearest 4
         lanes. If lanes or waypoints ahead are insufficient, default values are
@@ -218,7 +221,7 @@ class StandardObs(gym.ObservationWrapper):
                 self._comp_intrfc(intrfc, val)
                 intrfcs.update({intrfc: val})
 
-        self.obs = {
+        self._obs = {
             "distance_travelled",
             "drivable_area_grid_map",
             "ego_vehicle_state",
@@ -252,7 +255,7 @@ class StandardObs(gym.ObservationWrapper):
         wrapped_obs = {}
         for agent_id, agent_obs in obs.items():
             wrapped_ob = {}
-            for ob in self.obs:
+            for ob in self._obs:
                 func = globals()[f"_std_{ob}"]
                 if ob == "ttc":
                     val = func(obs[agent_id])
