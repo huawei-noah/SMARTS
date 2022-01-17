@@ -59,7 +59,7 @@ class StdObs:
 
 class StandardObs(gym.ObservationWrapper):
     """Converts SMARTS observations to standardized gym-compliant observations.
-    The observation set returned depends on the features enabled via 
+    The observation set returned depends on the features enabled via
     AgentInterface.
 
     Note: To use StandardObs wrapper, all agents must have the same
