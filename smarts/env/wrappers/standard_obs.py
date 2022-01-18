@@ -37,9 +37,9 @@ from smarts.core.sensors import (
 )
 from smarts.env.custom_observations import lane_ttc
 
-LIDAR_SHP = 300
-NEIGHBOR_SHP = 10
-WAYPOINT_SHP = (4, 20)
+_LIDAR_SHP = 300
+_NEIGHBOR_SHP = 10
+_WAYPOINT_SHP = (4, 20)
 
 
 @dataclass(frozen=True)
@@ -68,8 +68,8 @@ class StandardObs(gym.ObservationWrapper):
     The complete set of available observation per agent is as follows.
 
     1. "dagm"
-        Drivable area binary grid map. 255 if a cell contains a road, else 0.
-        dtype=np.uint8.
+        Drivable area grid map. Map is binary, with 255 if a cell contains a
+        road, else 0. dtype=np.uint8.
     2. "dist"
         Total distance travelled in meters. dtype=np.float32.
     3. "ego"
@@ -157,8 +157,8 @@ class StandardObs(gym.ObservationWrapper):
             Speed of neighbor vehicles in m/s. Defaults to np.array([0]) per
             vehicle. shape=(10,). dtype=np.float32.
     7. "ogm"
-        Occupancy binary grid map. 255 if a cell is occupied, else 0.
-        dtype=np.uint8.
+        Occupancy grid map. Map is binary, with 255 if a cell is occupied, else
+        0. dtype=np.uint8.
     8. "rgb"
         RGB image, from the top view, with ego vehicle at the center.
         shape=(height, width, 3). dtype=np.uint8.
@@ -225,23 +225,23 @@ class StandardObs(gym.ObservationWrapper):
                 self._comp_intrfc(intrfc, val)
                 intrfcs.update({intrfc: val})
 
-        self._obs = {
-            "dagm",
-            "dist",
-            "ego",
-            "events",
-            "lidar",
-            "neighbors",
-            "ogm",
-            "rgb",
-            "ttc",
-            "waypoints",
-        }
-
         space = _make_space(intrfcs)
         self.observation_space = gym.spaces.Dict(
             {agent_id: gym.spaces.Dict(space) for agent_id in self.agent_specs.keys()}
         )
+
+        self._obs = {
+            "dagm": "drivable_area_grid_map",
+            "dist": "distance_travelled",
+            "ego": "ego_vehicle_state",
+            "events": "events",
+            "lidar": "lidar_point_cloud",
+            "neighbors": "neighborhood_vehicle_states",
+            "ogm": "occupancy_grid_map",
+            "rgb": "top_down_rgb",
+            "ttc": "ttc",
+            "waypoints": "waypoint_paths",
+        }
 
     def _comp_intrfc(self, intrfc: str, val: Any):
         assert all(
@@ -259,19 +259,19 @@ class StandardObs(gym.ObservationWrapper):
         wrapped_obs = {}
         for agent_id, agent_obs in obs.items():
             wrapped_ob = {}
-            for ob in self._obs:
-                func = globals()[f"_std_{ob}"]
-                if ob == "ttc":
+            for stdob, ob in self._obs.items():
+                func = globals()[f"_std_{stdob}"]
+                if stdob == "ttc":
                     val = func(obs[agent_id])
                 else:
                     val = func(getattr(agent_obs, ob))
-                wrapped_ob.update({ob: val})
+                wrapped_ob.update({stdob: val})
             wrapped_obs.update({agent_id: StdObs(**wrapped_ob)})
 
         return wrapped_obs
 
 
-def get_intrfc_to_obs():
+def intrfc_to_stdobs(key: str) -> str:
     return {
         "drivable_area_grid_map": "dagm",
         "lidar": "lidar",
@@ -279,7 +279,7 @@ def get_intrfc_to_obs():
         "ogm": "ogm",
         "rgb": "rgb",
         "waypoints": "waypoints",
-    }
+    }.get(key, None)
 
 
 def get_spaces():
@@ -317,17 +317,17 @@ def get_spaces():
     opt_space = {
         "dagm": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
         "lidar": lambda _: gym.spaces.Dict({
-            "hit": gym.spaces.MultiBinary(LIDAR_SHP),
-            "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(LIDAR_SHP,3), dtype=np.float32),
-            "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(LIDAR_SHP,3), dtype=np.float32),
-            "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(LIDAR_SHP,3), dtype=np.float32),
+            "hit": gym.spaces.MultiBinary(_LIDAR_SHP),
+            "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float32),
+            "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float32),
+            "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float32),
         }),
         "neighbors": lambda _: gym.spaces.Dict({
-            "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(NEIGHBOR_SHP,3), dtype=np.float32),
-            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(NEIGHBOR_SHP,), dtype=np.float32),
-            "lane_index": gym.spaces.Box(low=0, high=127, shape=(NEIGHBOR_SHP,), dtype=np.int8),
-            "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(NEIGHBOR_SHP,3), dtype=np.float32),    
-            "speed": gym.spaces.Box(low=0, high=1e10, shape=(NEIGHBOR_SHP,), dtype=np.float32),
+            "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),
+            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
+            "lane_index": gym.spaces.Box(low=0, high=127, shape=(_NEIGHBOR_SHP,), dtype=np.int8),
+            "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),    
+            "speed": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
         }),
         "ogm": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
         "rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
@@ -338,11 +338,11 @@ def get_spaces():
             "ego_ttc": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
         }),
         "waypoints": lambda _: gym.spaces.Dict({
-            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=WAYPOINT_SHP, dtype=np.float32),
-            "lane_index": gym.spaces.Box(low=0, high=127, shape=WAYPOINT_SHP, dtype=np.int8),
-            "lane_width": gym.spaces.Box(low=0, high=1e10, shape=WAYPOINT_SHP, dtype=np.float32),
-            "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=WAYPOINT_SHP + (3,), dtype=np.float32),
-            "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=WAYPOINT_SHP, dtype=np.float32),
+            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=_WAYPOINT_SHP, dtype=np.float32),
+            "lane_index": gym.spaces.Box(low=0, high=127, shape=_WAYPOINT_SHP, dtype=np.int8),
+            "lane_width": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
+            "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=_WAYPOINT_SHP + (3,), dtype=np.float32),
+            "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
         }),
     }
     # fmt: on
@@ -351,11 +351,10 @@ def get_spaces():
 
 
 def _make_space(intrfcs: Dict[str, Any]) -> gym.spaces:
-    intrfc_to_obs = get_intrfc_to_obs()
     space, opt_space = get_spaces()
 
     for intrfc, val in intrfcs.items():
-        opt_ob = intrfc_to_obs.get(intrfc, None)
+        opt_ob = intrfc_to_stdobs(intrfc)
         if opt_ob:
             space.update({opt_ob: opt_space[opt_ob](val)})
 
@@ -415,7 +414,7 @@ def _std_lidar(val) -> Optional[Dict[str, np.ndarray]]:
     if not val:
         return None
 
-    des_shp = LIDAR_SHP
+    des_shp = _LIDAR_SHP
     hit = np.array(val[1], dtype=np.uint8)
     point_cloud = np.array(val[0], dtype=np.float32)
     point_cloud = np.nan_to_num(
@@ -451,7 +450,7 @@ def _std_neighbors(
     if not nghbs:
         return None
 
-    des_shp = NEIGHBOR_SHP
+    des_shp = _NEIGHBOR_SHP
     rcv_shp = len(nghbs)
     pad_shp = 0 if des_shp - rcv_shp < 0 else des_shp - rcv_shp
 
@@ -521,7 +520,7 @@ def _std_waypoints(
     if not paths:
         return None
 
-    des_shp = WAYPOINT_SHP
+    des_shp = _WAYPOINT_SHP
     rcv_shp = (len(paths), len(paths[0]))
     pad_shp = [0 if des - rcv < 0 else des - rcv for des, rcv in zip(des_shp, rcv_shp)]
 
