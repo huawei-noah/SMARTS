@@ -42,6 +42,8 @@ logger = logging.getLogger(__name__)
 
 
 class VehicleObservation(NamedTuple):
+    """Vehicle"""
+
     id: str
     position: Tuple[float, float, float]
     bounding_box: Dimensions

@@ -98,13 +98,16 @@ class _GLBData:
     def __init__(self, bytes_):
         self._bytes = bytes_
 
-    def write_glb(self, output_path):
+    def write_glb(self, output_path: str):
+        """Generate a geometry file."""
         with open(output_path, "wb") as f:
             f.write(self._bytes)
 
 
 @dataclass
 class LaneBoundary:
+    """Describes a lane boundry."""
+
     refline: PlanViewElement
     inner: Optional["LaneBoundary"]
     lane_widths: List[LaneWidthElement]
@@ -128,6 +131,7 @@ class LaneBoundary:
         return [s for s in s_vals if s_start <= s <= s_end]
 
     def get_lane_offset(self, s: float) -> float:
+        """Get the lane offset in this boundry."""
         if len(self.lane_offsets) == 0:
             return 0
         if s < self.lane_offsets[0].start_pos:
@@ -140,6 +144,7 @@ class LaneBoundary:
         return offset
 
     def lane_width_at_offset(self, offset: float) -> LaneWidthElement:
+        """Get the lane width at the given offset."""
         i = (
             bisect((KeyWrapper(self.lane_widths, key=lambda x: x.start_offset)), offset)
             - 1
@@ -160,7 +165,8 @@ class LaneBoundary:
             s, section_s_start, lane_idx
         )
 
-    def to_linear_segments(self, s_start: float, s_end: float):
+    def to_linear_segments(self, s_start: float, s_end: float) -> List[float]:
+        """Convert from lane boundry shape to linear segments."""
         if self.inner:
             inner_s_vals = self.inner.to_linear_segments(s_start, s_end)
         else:
@@ -168,7 +174,7 @@ class LaneBoundary:
                 return get_linear_segments_for_range(s_start, s_end, self.segment_size)
             return self.refline_to_linear_segments(s_start, s_end)
 
-        outer_s_vals = []
+        outer_s_vals: List[float] = []
         curr_s_start = s_start
         for width in self.lane_widths:
             poly = CubicPolynomial.from_list(width.polynomial_coefficients)
@@ -226,6 +232,7 @@ class OpenDriveRoadNetwork(RoadMap):
         cls,
         map_spec: MapSpec,
     ):
+        """Generate a road network from the given specification."""
         if map_spec.shift_to_origin:
             logger = logging.getLogger(cls.__name__)
             logger.warning(
@@ -593,6 +600,7 @@ class OpenDriveRoadNetwork(RoadMap):
         return self._xodr_file
 
     def is_same_map(self, map_spec: MapSpec) -> bool:
+        """Check if this road network is the same as described by a specification."""
         return (
             (
                 map_spec.source == self._map_spec.source
@@ -609,10 +617,12 @@ class OpenDriveRoadNetwork(RoadMap):
         )
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
+        """Get a surface by the given id."""
         return self._surfaces.get(surface_id)
 
     @cached_property
     def bounding_box(self) -> BoundingBox:
+        """Return a bounding box that encapulates the map."""
         x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
         for road_id in self._roads:
             road = self._roads[road_id]

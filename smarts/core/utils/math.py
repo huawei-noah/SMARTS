@@ -48,7 +48,7 @@ class CubicPolynomial:
         )
 
     def eval(self, ds: float) -> float:
-        """ Evaluate to the polynomial. """
+        """ Evaluate a point along the polynomial."""
         return self.a + self.b * ds + self.c * ds * ds + self.d * ds * ds * ds
 
 
