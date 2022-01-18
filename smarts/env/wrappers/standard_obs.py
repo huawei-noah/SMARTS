@@ -45,161 +45,153 @@ _WAYPOINT_SHP = (4, 20)
 @dataclass(frozen=True)
 class StdObs:
     dist: np.float32
+    """Total distance travelled in meters. dtype=np.float32."""
     ego: Dict[str, Union[np.float32, np.ndarray]]
+    """Ego vehicle state, with the following attributes.
+    a. "angular_acceleration"
+        Angular acceleration vector. Requires `accelerometer` attribute enabled
+        in AgentInterface. shape=(3,). dtype=np.float32.
+    b. "angular_jerk"
+        Angular jerk vector. Requires `accelerometer` attribute enabled in
+        AgentInterface. shape=(3,). dtype=np.float32.
+    c. "angular_velocity"
+        Angular velocity vector. shape=(3,). dtype=np.float32).
+    d. "bounding_box"
+        Length, width, and height of the vehicle bounding box. shape=(3,).
+        dtype=np.float32.
+    e. "heading"
+        Vehicle heading in radians [-pi, pi]. dtype=np.float32.
+    f. "lane_index"
+        Vehicle's lane number. Rightmost lane has index 0 and increases towards
+        left. dtype=np.int8.
+    g. "linear_acceleration"
+        Vehicle acceleration in x, y, and z axes. Requires `accelerometer`
+        attribute enabled in AgentInterface. shape=(3,). dtype=np.float32.
+    h. "linear_jerk"
+        Linear jerk vector. Requires `accelerometer` attribute enabled in
+        AgentInterface. shape=(3,). dtype=np.float32.
+    i. "linear_velocity"
+        Vehicle velocity in x, y, and z axes. shape=(3,). dtype=np.float32.
+    j. "position"
+        Coordinate of the center of the vehicle bounding box's bottom plane.
+        shape=(3,). dtype=np.float32.
+    k. "speed"
+        Vehicle speed in m/s. dtype=np.float32.
+    l. "steering"
+        Angle of front wheels in radians [-pi, pi]. dtype=np.float32.
+    m. "yaw_rate"
+        Rotation speed around vertical axis in rad/s [0, 2pi]. 
+        dtype=np.float32.
+    """
     events: Dict[str, int]
-
+    """ A dictionary of event markers.
+    a. "agents_alive_done"
+        1 if `DoneCriteria.agents_alive` is triggered, else 0.
+    b. "collisions"
+        1 if any collisions occurred with ego vehicle, else 0.
+    c. "not_moving"
+        1 if `DoneCriteria.not_moving` is triggered, else 0.
+    d. "off_road"
+        1 if ego vehicle drives off road, else 0.
+    e. "off_route"
+        1 if ego vehicle drives off mission route, else 0.
+    f. "on_shoulder"
+        1 if ego vehicle drives on road shoulder, else 0.
+    g. "reached_goal"
+        1 if ego vehicle reaches its goal, else 0.
+    h. "reached_max_episode_steps"
+        1 if maximum episode steps reached, else 0.
+    i. "wrong_way"
+        1 if ego vehicle drives in the wrong traffic direction, else 0.
+    """
     dagm: Optional[np.ndarray] = None
+    """Drivable area grid map. Map is binary, with 255 if a cell contains a
+    road, else 0. dtype=np.uint8.
+    """
     lidar: Optional[Dict[str, np.ndarray]] = None
+    """Lidar point cloud, with the following attributes.
+    a. "hit"
+        Binary array. 1 if an object is hit, else 0. shape(300,).
+    b. "point_cloud"
+        Coordinates of lidar point cloud. shape=(300,3). dtype=np.float32.
+    c. "ray_origin"
+        Ray origin coordinates. shape=(300,3). dtype=np.float32.
+    d. "ray_vector"
+        Ray vectors. shape=(300,3). dtype=np.float32.
+    """
     neighbors: Optional[Dict[str, np.ndarray]] = None
+    """Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
+    vehicles are insufficient, default feature values are padded.
+    a. "bounding_box"
+        Bounding box of neighbor vehicles. Defaults to np.array([0,0,0]) per 
+        vehicle. shape=(10,3). dtype=np.float32.
+    b. "heading"
+        Heading of neighbor vehicles in radians [-pi, pi]. Defaults to 
+        np.array([0]) per vehicle. shape=(10,). dtype=np.float32.
+    c. "lane_index"
+        Lane number of neighbor vehicles. Defaults to np.array([0]) per 
+        vehicle. shape=(10,). dtype=np.int8.
+    d. "position"
+        Coordinate of the center of neighbor vehicles' bounding box's bottom 
+        plane. Defaults to np.array([0,0,0]) per vehicle. shape=(10,3). 
+        dtype=np.float32.
+    e. "speed"
+        Speed of neighbor vehicles in m/s. Defaults to np.array([0]) per
+        vehicle. shape=(10,). dtype=np.float32.
+    """
     ogm: Optional[np.ndarray] = None
+    """Occupancy grid map. Map is binary, with 255 if a cell is occupied, else
+    0. dtype=np.uint8."""
     rgb: Optional[np.ndarray] = None
+    """RGB image, from the top view, with ego vehicle at the center.
+    shape=(height, width, 3). dtype=np.uint8."""
     ttc: Optional[Dict[str, np.ndarray]] = None
+    """Time and distance to collision. Enabled only if both `waypoints` and
+    `neighborhood_vehicles` attributes are enabled in AgentInterface.
+    a. "angle_error"
+        Angular error in radians [-pi, pi]. shape=(1,). dtype=np.float32.
+    b. "distance_from_center"
+        Distance of vehicle from lane center in meters. shape=(1,). 
+        dtype=np.float32.
+    c. "ego_lane_dist"
+        Distance to collision on the right lane (`ego_lane_dist[0]`), current 
+        lane (`ego_lane_dist[1]`), and left lane (`ego_lane_dist[2]`). If no 
+        lane is available, to the right or to the left, default value of 0 is 
+        padded. shape=(3,). dtype=np.float32.
+    d. "ego_ttc"
+        Time to collision on the right lane (`ego_ttc[0]`), current lane
+        (`ego_ttc[1]`), and left lane (`ego_ttc[2]`). If no lane is available,
+        to the right or to the left, default value of 0 is padded. shape=(3,).
+        dtype=np.float32.
+    """
     waypoints: Optional[Dict[str, np.ndarray]] = None
+    """Feature array of 20 waypoints ahead or in the mission route, from the 
+    nearest 4 lanes. If lanes or waypoints ahead are insufficient, default 
+    values are padded.
+    a. "heading"
+        Lane heading angle at a waypoint in radians [-pi, pi]. Defaults to
+        np.array([0]) per waypoint. shape=(4,20). dtype=np.float32.
+    b. "lane_index"
+        Lane number at a waypoint. Defaults to np.array([0]) per waypoint.
+        shape=(4,20). dtype=np.int8.
+    c. "lane_width"
+        Lane width at a waypoint in meters. Defaults to np.array([0]) per
+        waypoint. shape=(4,20). dtype=np.float32.
+    d. "pos"
+        Coordinate of a waypoint. Defaults to np.array([0,0,0]). 
+        shape=(4,20,3). dtype=np.float32.
+    e. "speed_limit"
+        Lane speed limit at a waypoint in m/s. shape=(4,20). dtype=np.float32.
+    """
 
 
 class StandardObs(gym.ObservationWrapper):
-    """Converts SMARTS observations to standardized gym-compliant observations.
-    The observation set returned depends on the features enabled via
-    AgentInterface.
+    """Converts SMARTS observations to standardized gym-compliant observations
+    and returns `StdObs`. The observation set returned depends on the features
+    enabled via AgentInterface.
 
     Note: To use StandardObs wrapper, all agents must have the same
     AgentInterface attributes.
-
-    The complete set of available observation per agent is as follows.
-
-    1. "dagm"
-        Drivable area grid map. Map is binary, with 255 if a cell contains a
-        road, else 0. dtype=np.uint8.
-    2. "dist"
-        Total distance travelled in meters. dtype=np.float32.
-    3. "ego"
-        Ego vehicle state.
-        a. "angular_acceleration"
-            Angular acceleration vector. Requires `accelerometer` attribute
-            enabled in AgentInterface. shape=(3,). dtype=np.float32.
-        b. "angular_jerk"
-            Angular jerk vector. Requires `accelerometer` attribute enabled in
-            AgentInterface. shape=(3,). dtype=np.float32.
-        c. "angular_velocity"
-            Angular velocity vector. shape=(3,). dtype=np.float32).
-        d. "bounding_box"
-            Length, width, and height of the vehicle bounding box. shape=(3,).
-            dtype=np.float32.
-        e. "heading"
-            Vehicle heading in radians [-pi, pi]. dtype=np.float32.
-        f. "lane_index"
-            Vehicle's lane number. Rightmost lane has index 0 and increases
-            towards left. dtype=np.int8.
-        g. "linear_acceleration"
-            Vehicle acceleration in x, y, and z axes. Requires `accelerometer`
-            attribute enabled in AgentInterface. shape=(3,). dtype=np.float32.
-        h. "linear_jerk"
-            Linear jerk vector. Requires `accelerometer` attribute enabled in
-            AgentInterface. shape=(3,). dtype=np.float32.
-        i. "linear_velocity"
-            Vehicle velocity in x, y, and z axes. shape=(3,). dtype=np.float32.
-        j. "position"
-            Coordinate of the center of the vehicle bounding box's bottom
-            plane. shape=(3,). dtype=np.float32.
-        k. "speed"
-            Vehicle speed in m/s. dtype=np.float32.
-        l. "steering"
-            Angle of front wheels in radians [-pi, pi]. dtype=np.float32.
-        m. "yaw_rate"
-            Rotation speed around vertical axis in rad/s [0, 2pi].
-            dtype=np.float32.
-    4. "events"
-        a. "agents_alive_done"
-            1 if `DoneCriteria.agents_alive` is triggered, else 0.
-        b. "collisions"
-            1 if any collisions occurred with ego vehicle, else 0.
-        c. "not_moving"
-            1 if `DoneCriteria.not_moving` is triggered, else 0.
-        d. "off_road"
-            1 if ego vehicle drives off road, else 0.
-        e. "off_route"
-            1 if ego vehicle drives off mission route, else 0.
-        f. "on_shoulder"
-            1 if ego vehicle drives on road shoulder, else 0.
-        g. "reached_goal"
-            1 if ego vehicle reaches its goal, else 0.
-        h. "reached_max_episode_steps"
-            1 if maximum episode steps reached, else 0.
-        i. "wrong_way"
-            1 if ego vehicle drives in the wrong traffic direction, else 0.
-    5. "lidar"
-        Lidar point cloud.
-        a. "hit"
-            Binary array. 1 if an object is hit, else 0. shape(300,).
-        b. "point_cloud"
-            Coordinates of lidar point cloud. shape=(300,3). dtype=np.float32.
-        c. "ray_origin"
-            Ray origin coordinates. shape=(300,3). dtype=np.float32.
-        d. "ray_vector"
-            Ray vectors. shape=(300,3). dtype=np.float32.
-    6. "neighbors"
-        Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
-        vehicles are insufficient, default feature values are padded.
-        a. "bounding_box"
-            Bounding box of neighbor vehicles. Defaults to np.array([0,0,0])
-            per vehicle. shape=(10,3). dtype=np.float32.
-        b. "heading"
-            Heading of neighbor vehicles in radians [-pi, pi]. Defaults to
-            np.array([0]) per vehicle. shape=(10,). dtype=np.float32.
-        c. "lane_index"
-            Lane number of neighbor vehicles. Defaults to np.array([0]) per
-            vehicle. shape=(10,). dtype=np.int8.
-        d. "position"
-            Coordinate of the center of neighbor vehicles' bounding box's
-            bottom plane. Defaults to np.array([0,0,0]) per vehicle.
-            shape=(10,3). dtype=np.float32.
-        e. "speed"
-            Speed of neighbor vehicles in m/s. Defaults to np.array([0]) per
-            vehicle. shape=(10,). dtype=np.float32.
-    7. "ogm"
-        Occupancy grid map. Map is binary, with 255 if a cell is occupied, else
-        0. dtype=np.uint8.
-    8. "rgb"
-        RGB image, from the top view, with ego vehicle at the center.
-        shape=(height, width, 3). dtype=np.uint8.
-    9. "ttc"
-        Time and distance to collision. Enabled only if both `waypoints` and
-        `neighborhood_vehicles` attributes are enabled in AgentInterface.
-        a. "angle_error"
-            Angular error in radians [-pi, pi]. shape=(1,). dtype=np.float32.
-        b. "distance_from_center"
-            Distance of vehicle from lane center in meters. shape=(1,).
-            dtype=np.float32.
-        c. "ego_lane_dist"
-            Distance to collision on the right lane (`ego_lane_dist[0]`),
-            current lane (`ego_lane_dist[1]`), and left lane
-            (`ego_lane_dist[2]`). If no lane is available, to the right or to
-            the left, default value of 0 is padded. shape=(3,).
-            dtype=np.float32.
-        d. "ego_ttc"
-            Time to collision on the right lane (`ego_ttc[0]`), current lane
-            (`ego_ttc[1]`), and left lane (`ego_ttc[2]`). If no lane is
-            available, to the right or to the left, default value of 0 is
-            padded. shape=(3,). dtype=np.float32.
-    10."waypoints"
-        Array of 20 waypoints ahead or in the mission route, from the nearest 4
-        lanes. If lanes or waypoints ahead are insufficient, default values are
-        padded.
-        a. "heading"
-            Lane heading angle at a waypoint in radians [-pi, pi]. Defaults to
-            np.array([0]) per waypoint. shape=(4,20). dtype=np.float32.
-        b. "lane_index"
-            Lane number at a waypoint. Defaults to np.array([0]) per waypoint.
-            shape=(4,20). dtype=np.int8.
-        c. "lane_width"
-            Lane width at a waypoint in meters. Defaults to np.array([0]) per
-            waypoint. shape=(4,20). dtype=np.float32.
-        d. "pos"
-            Coordinate of a waypoint. Defaults to np.array([0,0,0]).
-            shape=(4,20,3). dtype=np.float32.
-        e. "speed_limit"
-            Lane speed limit at a waypoint in m/s. shape=(4,20).
-            dtype=np.float32.
     """
 
     def __init__(self, env: gym.Env):

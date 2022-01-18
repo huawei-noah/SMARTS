@@ -27,7 +27,7 @@ import pytest
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, Waypoints
 from smarts.core.controllers import ActionSpaceType
-from smarts.env.wrappers.standard_obs import StandardObs, StdObs
+from smarts.env.wrappers.standard_obs import StandardObs, StdObs, get_spaces
 
 
 def _intrfcs():
@@ -50,8 +50,8 @@ def _intrfcs():
         (dataclasses.replace(base_intrfc,neighborhood_vehicles=True), dataclasses.replace(base_intrfc,neighborhood_vehicles=True)),
         (dataclasses.replace(base_intrfc,ogm=True), dataclasses.replace(base_intrfc,ogm=True)),
         (dataclasses.replace(base_intrfc,rgb=True), dataclasses.replace(base_intrfc,rgb=True)),
-        (dataclasses.replace(base_intrfc,waypoints=Waypoints(lookahead=70)), dataclasses.replace(base_intrfc,waypoints=Waypoints(lookahead=70))),
-        (dataclasses.replace(base_intrfc,waypoints=Waypoints(lookahead=3)), dataclasses.replace(base_intrfc,waypoints=Waypoints(lookahead=3))),
+        (dataclasses.replace(base_intrfc,waypoints=Waypoints(lookahead=60)), dataclasses.replace(base_intrfc,waypoints=Waypoints(lookahead=60))),
+        (dataclasses.replace(base_intrfc,waypoints=Waypoints(lookahead=1)), dataclasses.replace(base_intrfc,waypoints=Waypoints(lookahead=1))),
     ]
     # fmt: on
 
@@ -94,8 +94,13 @@ def base_env(request):
     env.close()
 
 
+@pytest.fixture(scope="module")
+def spaces():
+    return get_spaces()
+
+
 @pytest.mark.parametrize("base_env", _intrfcs(), indirect=True)
-def test_init(base_env):
+def test_init(base_env, spaces):
     agent_ids = list(base_env.agent_specs.keys())
     intrfcs = {
         agent_id: base_env.agent_specs[agent_id].interface for agent_id in agent_ids
