@@ -20,7 +20,7 @@
 
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import gym
 import numpy as np
@@ -263,7 +263,7 @@ class StandardObs(gym.ObservationWrapper):
         return wrapped_obs
 
 
-def intrfc_to_stdobs(key: str) -> str:
+def intrfc_to_stdobs(key: str) -> Optional[str]:
     return {
         "drivable_area_grid_map": "dagm",
         "lidar": "lidar",
@@ -274,7 +274,9 @@ def intrfc_to_stdobs(key: str) -> str:
     }.get(key, None)
 
 
-def get_spaces():
+def get_spaces() -> Tuple[
+    Dict[str, gym.spaces], Dict[str, Callable[[Any], gym.spaces]]
+]:
     # fmt: off
     space = {
         "dist": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
