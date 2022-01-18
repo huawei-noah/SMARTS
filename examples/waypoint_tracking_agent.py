@@ -22,44 +22,55 @@ AGENT_ID = "WaypointTrackingAgent"
 
 class WaypointTrackingAgent(Agent):
     def act(self, obs: Observation):
-        
+
         lane_index = obs.ego_vehicle_state.lane_index
         num_lane_waypoints = []
         lateral_error = []
-        
         goal_position = obs.ego_vehicle_state.mission.goal.position
 
         for idx in range(len(obs.waypoint_paths)):
             num_waypoints = len(obs.waypoint_paths[idx])
             num_lane_waypoints.append(num_waypoints)
-            lateral_error.append(abs(obs.waypoint_paths[idx][num_waypoints - 1].signed_lateral_error(goal_position)))
+            lateral_error.append(
+                abs(
+                    obs.waypoint_paths[idx][num_waypoints - 1].signed_lateral_error(
+                        goal_position
+                    )
+                )
+            )
 
         # if number of waypoints are the same, choose the lane with the shortest distance to the goal
         if max(num_lane_waypoints) == min(num_lane_waypoints):
-            choose_lane = obs.waypoint_paths[lateral_error.index(min(lateral_error))][len(obs.waypoint_paths[idx]) - 1].lane_index
-            
-            print(lane_index, choose_lane)
+            choose_lane = obs.waypoint_paths[lateral_error.index(min(lateral_error))][
+                len(obs.waypoint_paths[idx]) - 1
+            ].lane_index
+
+            print("from agent curr:", lane_index, "from agent target:", choose_lane)
 
             if choose_lane == lane_index:
                 return "keep_lane"
             elif choose_lane < lane_index:
+                # return "change_lane_left"
                 return "change_lane_right"
             else:
                 return "change_lane_left"
+                # return "change_lane_right"
         else:
             choose_lane = num_lane_waypoints.index(max(num_lane_waypoints))
 
             if choose_lane == lane_index:
                 return "keep_lane"
 
-            return "change_lane_left" if choose_lane > lane_index else "change_lane_right"        
-
+            return (
+                "change_lane_left" if choose_lane > lane_index else "change_lane_right"
+            )
 
 
 def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
-            AgentType.Laner, max_episode_steps=max_episode_steps
+            AgentType.Laner,
+            max_episode_steps=max_episode_steps
             # AgentType.StandardWithAbsoluteSteering, max_episode_steps=max_episode_steps
         ),
         agent_builder=WaypointTrackingAgent,
