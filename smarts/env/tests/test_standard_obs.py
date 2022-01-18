@@ -68,6 +68,7 @@ def _make_agent_specs(intrfcs):
         for agent_id, intrfc in zip(["001", "002"], intrfcs)
     }
 
+
 def _make_gym_spec(intrfcs):
     return {
         "AGENT_"
@@ -77,6 +78,7 @@ def _make_gym_spec(intrfcs):
         )
         for agent_id, intrfc in zip(["001", "002"], intrfcs)
     }
+
 
 @pytest.fixture
 def base_env(request):
@@ -108,10 +110,8 @@ def test_init(base_env):
     else:
         env = StandardObs(env=base_env)
 
-    # Test observation space of wrapped env 
+    # Test observation space of wrapped env
     obs_space = env.observation_space
-
-    
 
     # # Test wrapping an env with and without RGB functionality
     # agent_id = next(iter(base_env.agent_specs.keys()))

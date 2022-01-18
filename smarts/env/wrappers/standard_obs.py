@@ -68,7 +68,7 @@ class StandardObs(gym.ObservationWrapper):
     The complete set of available observation per agent is as follows.
 
     1. "dagm"
-        Drivable area binary grid map. 255 if a cell contains a road, else 0. 
+        Drivable area binary grid map. 255 if a cell contains a road, else 0.
         dtype=np.uint8.
     2. "dist"
         Total distance travelled in meters. dtype=np.float32.
@@ -136,7 +136,7 @@ class StandardObs(gym.ObservationWrapper):
         c. "ray_origin"
             Ray origin coordinates. shape=(300,3). dtype=np.float32.
         d. "ray_vector"
-            Ray vectors. shape=(300,3). dtype=np.float32.            
+            Ray vectors. shape=(300,3). dtype=np.float32.
     6. "neighbors"
         Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
         vehicles are insufficient, default feature values are padded.
@@ -157,7 +157,7 @@ class StandardObs(gym.ObservationWrapper):
             Speed of neighbor vehicles in m/s. Defaults to np.array([0]) per
             vehicle. shape=(10,). dtype=np.float32.
     7. "ogm"
-        Occupancy binary grid map. 255 if a cell is occupied, else 0. 
+        Occupancy binary grid map. 255 if a cell is occupied, else 0.
         dtype=np.uint8.
     8. "rgb"
         RGB image, from the top view, with ego vehicle at the center.
@@ -270,6 +270,7 @@ class StandardObs(gym.ObservationWrapper):
 
         return wrapped_obs
 
+
 def get_intrfc_to_obs():
     return {
         "drivable_area_grid_map": "dagm",
@@ -279,6 +280,7 @@ def get_intrfc_to_obs():
         "rgb": "rgb",
         "waypoints": "waypoints",
     }
+
 
 def get_spaces():
     # fmt: off
@@ -346,6 +348,7 @@ def get_spaces():
     # fmt: on
 
     return space, opt_space
+
 
 def _make_space(intrfcs: Dict[str, Any]) -> gym.spaces:
     intrfc_to_obs = get_intrfc_to_obs()
