@@ -44,17 +44,17 @@ WAYPOINT_SHP = (4, 20)
 
 @dataclass(frozen=True)
 class StdObs:
-    distance_travelled: np.float32
-    ego_vehicle_state: Dict[str, Union[np.float32, np.ndarray]]
+    dist: np.float32
+    ego: Dict[str, Union[np.float32, np.ndarray]]
     events: Dict[str, int]
 
-    drivable_area_grid_map: Optional[np.ndarray] = None
-    lidar_point_cloud: Optional[Dict[str, np.ndarray]] = None
-    neighborhood_vehicle_states: Optional[Dict[str, np.ndarray]] = None
-    occupancy_grid_map: Optional[np.ndarray] = None
-    top_down_rgb: Optional[np.ndarray] = None
+    dagm: Optional[np.ndarray] = None
+    lidar: Optional[Dict[str, np.ndarray]] = None
+    neighbors: Optional[Dict[str, np.ndarray]] = None
+    ogm: Optional[np.ndarray] = None
+    rgb: Optional[np.ndarray] = None
     ttc: Optional[Dict[str, np.ndarray]] = None
-    waypoint_paths: Optional[Dict[str, np.ndarray]] = None
+    waypoints: Optional[Dict[str, np.ndarray]] = None
 
 
 class StandardObs(gym.ObservationWrapper):
@@ -67,11 +67,13 @@ class StandardObs(gym.ObservationWrapper):
 
     The complete set of available observation per agent is as follows.
 
-    1. "distance_travelled"
+    1. "dagm"
+        Drivable area binary grid map. 255 if a cell contains a road, else 0. 
+        dtype=np.uint8.
+    2. "dist"
         Total distance travelled in meters. dtype=np.float32.
-    2. "drivable_area_grid_map"
-        Binary map. 255 if a cell contains a road, else 0. dtype=np.uint8.
-    3. "ego_vehicle_state"
+    3. "ego"
+        Ego vehicle state.
         a. "angular_acceleration"
             Angular acceleration vector. Requires `accelerometer` attribute
             enabled in AgentInterface. shape=(3,). dtype=np.float32.
@@ -106,16 +108,7 @@ class StandardObs(gym.ObservationWrapper):
         m. "yaw_rate"
             Rotation speed around vertical axis in rad/s [0, 2pi].
             dtype=np.float32.
-    4. "lidar_point_cloud"
-        a. "hit"
-            Binary array. 1 if an object is hit, else 0. shape(300,).
-        b. "point_cloud"
-            Coordinates of point cloud. shape=(300,3). dtype=np.float32.
-        c. "ray_origin"
-            Ray origin coordinates. shape=(300,3). dtype=np.float32.
-        d. "ray_vector"
-            Ray vectors. shape=(300,3). dtype=np.float32.
-    5. "events"
+    4. "events"
         a. "agents_alive_done"
             1 if `DoneCriteria.agents_alive` is triggered, else 0.
         b. "collisions"
@@ -134,8 +127,18 @@ class StandardObs(gym.ObservationWrapper):
             1 if maximum episode steps reached, else 0.
         i. "wrong_way"
             1 if ego vehicle drives in the wrong traffic direction, else 0.
-    6. "neighborhood_vehicle_states"
-        Feature array of 10 nearest neighbor vehicles. If nearest neighbor
+    5. "lidar"
+        Lidar point cloud.
+        a. "hit"
+            Binary array. 1 if an object is hit, else 0. shape(300,).
+        b. "point_cloud"
+            Coordinates of lidar point cloud. shape=(300,3). dtype=np.float32.
+        c. "ray_origin"
+            Ray origin coordinates. shape=(300,3). dtype=np.float32.
+        d. "ray_vector"
+            Ray vectors. shape=(300,3). dtype=np.float32.            
+    6. "neighbors"
+        Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
         vehicles are insufficient, default feature values are padded.
         a. "bounding_box"
             Bounding box of neighbor vehicles. Defaults to np.array([0,0,0])
@@ -153,10 +156,11 @@ class StandardObs(gym.ObservationWrapper):
         e. "speed"
             Speed of neighbor vehicles in m/s. Defaults to np.array([0]) per
             vehicle. shape=(10,). dtype=np.float32.
-    7. "occupancy_grid_map"
-        Binary map. 255 if a cell is occupied, else 0. dtype=np.uint8.
-    8. "top_down_rgb"
-        RGB image, from the top, with ego vehicle at the center.
+    7. "ogm"
+        Occupancy binary grid map. 255 if a cell is occupied, else 0. 
+        dtype=np.uint8.
+    8. "rgb"
+        RGB image, from the top view, with ego vehicle at the center.
         shape=(height, width, 3). dtype=np.uint8.
     9. "ttc"
         Time and distance to collision. Enabled only if both `waypoints` and
@@ -177,7 +181,7 @@ class StandardObs(gym.ObservationWrapper):
             (`ego_ttc[1]`), and left lane (`ego_ttc[2]`). If no lane is
             available, to the right or to the left, default value of 0 is
             padded. shape=(3,). dtype=np.float32.
-    10."waypoint_paths"
+    10."waypoints"
         Array of 20 waypoints ahead or in the mission route, from the nearest 4
         lanes. If lanes or waypoints ahead are insufficient, default values are
         padded.
@@ -222,16 +226,16 @@ class StandardObs(gym.ObservationWrapper):
                 intrfcs.update({intrfc: val})
 
         self._obs = {
-            "distance_travelled",
-            "drivable_area_grid_map",
-            "ego_vehicle_state",
+            "dist",
+            "dagm",
+            "ego",
             "events",
-            "lidar_point_cloud",
-            "neighborhood_vehicle_states",
-            "occupancy_grid_map",
-            "top_down_rgb",
+            "lidar",
+            "neighbors",
+            "ogm",
+            "rgb",
             "ttc",
-            "waypoint_paths",
+            "waypoints",
         }
 
         space = _make_space(intrfcs)
@@ -266,11 +270,21 @@ class StandardObs(gym.ObservationWrapper):
 
         return wrapped_obs
 
+def get_intrfc_to_obs():
+    return {
+        "drivable_area_grid_map": "dagm",
+        "lidar": "lidar",
+        "neighborhood_vehicles": "neighbors",
+        "ogm": "ogm",
+        "rgb": "rgb",
+        "waypoints": "waypoints",
+    }
+
 def get_spaces():
     # fmt: off
     space = {
-        "distance_travelled": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
-        "ego_vehicle_state": gym.spaces.Dict({
+        "dist": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
+        "ego": gym.spaces.Dict({
             "angular_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
             "angular_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
             "angular_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
@@ -299,29 +313,29 @@ def get_spaces():
     }
 
     opt_space = {
-        "drivable_area_grid_map": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
-        "lidar_point_cloud": lambda _: gym.spaces.Dict({
+        "dagm": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
+        "lidar": lambda _: gym.spaces.Dict({
             "hit": gym.spaces.MultiBinary(LIDAR_SHP),
             "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(LIDAR_SHP,3), dtype=np.float32),
             "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(LIDAR_SHP,3), dtype=np.float32),
             "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(LIDAR_SHP,3), dtype=np.float32),
         }),
-        "neighborhood_vehicle_states": lambda _: gym.spaces.Dict({
+        "neighbors": lambda _: gym.spaces.Dict({
             "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(NEIGHBOR_SHP,3), dtype=np.float32),
             "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(NEIGHBOR_SHP,), dtype=np.float32),
             "lane_index": gym.spaces.Box(low=0, high=127, shape=(NEIGHBOR_SHP,), dtype=np.int8),
             "position": gym.spaces.Box(low=-1e10, high=1e10, shape=(NEIGHBOR_SHP,3), dtype=np.float32),    
             "speed": gym.spaces.Box(low=0, high=1e10, shape=(NEIGHBOR_SHP,), dtype=np.float32),
         }),
-        "occupancy_grid_map": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
-        "top_down_rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
+        "ogm": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
+        "rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
         "ttc": lambda _: gym.spaces.Dict({
             "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,), dtype=np.float32),
             "distance_from_center": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,), dtype=np.float32),
             "ego_lane_dist": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
             "ego_ttc": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
         }),
-        "waypoint_paths": lambda _: gym.spaces.Dict({
+        "waypoints": lambda _: gym.spaces.Dict({
             "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=WAYPOINT_SHP, dtype=np.float32),
             "lane_index": gym.spaces.Box(low=0, high=127, shape=WAYPOINT_SHP, dtype=np.int8),
             "lane_width": gym.spaces.Box(low=0, high=1e10, shape=WAYPOINT_SHP, dtype=np.float32),
@@ -334,15 +348,7 @@ def get_spaces():
     return space, opt_space
 
 def _make_space(intrfcs: Dict[str, Any]) -> gym.spaces:
-    intrfc_to_obs = {
-        "drivable_area_grid_map": "drivable_area_grid_map",
-        "lidar": "lidar_point_cloud",
-        "neighborhood_vehicles": "neighborhood_vehicle_states",
-        "ogm": "occupancy_grid_map",
-        "rgb": "top_down_rgb",
-        "waypoints": "waypoint_paths",
-    }
-
+    intrfc_to_obs = get_intrfc_to_obs()
     space, opt_space = get_spaces()
 
     for intrfc, val in intrfcs.items():
