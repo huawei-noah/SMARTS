@@ -361,7 +361,7 @@ def get_spaces() -> Tuple[Dict[str, gym.Space], Dict[str, Callable[[Any], gym.Sp
     return basic, opt
 
 
-def _make_space(intrfcs: Dict[str, Any]) -> gym.spaces:
+def _make_space(intrfcs: Dict[str, Any]) -> gym.Space:
     space, opt_space = get_spaces()
 
     for intrfc, val in intrfcs.items():

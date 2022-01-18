@@ -35,19 +35,61 @@ from smarts.env.wrappers.standard_obs import (
 )
 
 
-def _intrfcs():
+def _intrfcs_init():
     # fmt: off
     intrfcs = [
         ({"accelerometer":True}, {"accelerometer":False}),
-        ({"accelerometer":True}, {"accelerometer":True}),
         ({"drivable_area_grid_map":True}, {"drivable_area_grid_map":True}),
         ({"lidar":True}, {"lidar":True}),
         ({"neighborhood_vehicles":True}, {"neighborhood_vehicles":True}),
         ({"ogm":True}, {"ogm":True}),
         ({"rgb":True}, {"rgb":True}),
-        ({"waypoints":Waypoints(lookahead=60)}, {"waypoints":Waypoints(lookahead=60)}),
         ({"waypoints":Waypoints(lookahead=1)}, {"waypoints":Waypoints(lookahead=1)}),
+        ({"neighborhood_vehicles":True, "waypoints":Waypoints(lookahead=1)}, {"neighborhood_vehicles":True, "waypoints":Waypoints(lookahead=1)}),
     ]
+    # fmt: on
+
+    return intrfcs
+
+
+def _intrfcs_obs():
+    # fmt: off
+    intrfcs = [
+        ({
+            "accelerometer":True, 
+            "drivable_area_grid_map":True, 
+            "lidar":True,
+            "neighborhood_vehicles":True, 
+            "ogm":True, 
+            "rgb":True, 
+            "waypoints":Waypoints(lookahead=60),
+        }, 
+        {   
+            "accelerometer":True,
+            "drivable_area_grid_map":True,
+            "lidar":True,
+            "neighborhood_vehicles":True,
+            "ogm":True,
+            "rgb":True,
+            "waypoints":Waypoints(lookahead=60),
+        }),
+        ({
+            "accelerometer":True,
+            "drivable_area_grid_map":True,
+            "lidar":True,
+            "neighborhood_vehicles":True,
+            "ogm":True,
+            "rgb":True,
+            "waypoints":Waypoints(lookahead=1),
+        }, 
+        {"accelerometer":True,
+        "drivable_area_grid_map":True,
+        "lidar":True,
+        "neighborhood_vehicles":True,
+        "ogm":True,
+        "rgb":True,
+        "waypoints":Waypoints(lookahead=1),
+        }),    ]
     # fmt: on
 
     return intrfcs
@@ -94,16 +136,15 @@ def spaces():
     return get_spaces()
 
 
-@pytest.mark.parametrize("make_env", _intrfcs(), indirect=True)
+@pytest.mark.parametrize("make_env", _intrfcs_init(), indirect=True)
 def test_init(make_env, spaces):
-    base_env, base_intrfcs = make_env
+    base_env, cur_intrfcs = make_env
 
     # Test wrapping an env with non-identical agent interfaces
-    agent_ids = list(base_env.agent_specs.keys())
-    intrfcs = {
-        agent_id: base_env.agent_specs[agent_id].interface for agent_id in agent_ids
-    }
-    if not all(intrfc == intrfcs[agent_ids[0]] for intrfc in intrfcs.values()):
+    base_intrfcs = [
+        agent_spec.interface for agent_spec in base_env.agent_specs.values()
+    ]
+    if not all(intrfc == base_intrfcs[0] for intrfc in base_intrfcs):
         with pytest.raises(AssertionError):
             env = StandardObs(env=base_env)
             env.close()
@@ -112,56 +153,43 @@ def test_init(make_env, spaces):
         env = StandardObs(env=base_env)
 
     # Test observation space of wrapped env
+    agent_id = next(iter(base_env.agent_specs.keys()))
     rcv_space = env.observation_space
+    rcv_space_keys = set([key for key in rcv_space[agent_id]])
 
-    # des_space, opt_space = spaces
-    # base_intrfc = base_intrfcs[0]
-
-    # for key, val in base_intrfc.items()]
-    # print(base_intrfcs[0])
-    # des_space
-
-    # space = spaces[0]
-    # opt_space = spaces[1]
-    # opt_space[]
-    # assert rcv_space == des_space
-
-    # # Test wrapping an env with and without RGB functionality
-    # agent_id = next(iter(base_env.agent_specs.keys()))
-    # if base_env.agent_specs[agent_id].interface.rgb == False:
-    #     with pytest.raises(AssertionError):
-    #         env = RGBImage(base_env, num_stack)
-    #         env.close()
-    #     return
-    # else:
-    #     env = RGBImage(base_env, num_stack)
-
-    # # Test wrapped env observation space
-    # assert isinstance(env.observation_space, gym.spaces.Dict)
-    # for agent_id in base_env.agent_specs.keys():
-    #     rgb = base_env.agent_specs[agent_id].interface.rgb
-    #     assert env.observation_space[agent_id].shape == (
-    #         rgb.width,
-    #         rgb.height,
-    #         3 * num_stack,
-    #     )
-    #     assert env.observation_space[agent_id].dtype == np.uint8
+    basic, _ = spaces
+    des_space_keys = set(basic.keys())
+    opt_space_keys = [
+        intrfc_to_stdobs(intrfc)
+        for intrfc, val in cur_intrfcs[0].items()
+        if val and intrfc_to_stdobs(intrfc)
+    ]
+    des_space_keys.update(opt_space_keys)
+    if "waypoints" in opt_space_keys and "neighbors" in opt_space_keys:
+        des_space_keys.update(["ttc"])
+    assert rcv_space_keys == des_space_keys
 
     env.close()
 
 
-# def _check_observation(base_env, obs, num_stack):
+# def _check_observation(
+#     base_env,
+#     obs,
+# ):
 #     for agent_id in base_env.agent_specs.keys():
 #         rgb = base_env.agent_specs[agent_id].interface.rgb
 #         assert obs[agent_id].shape == (rgb.width, rgb.height, 3 * num_stack)
 #         assert obs[agent_id].dtype == np.uint8
 
 
-# @pytest.mark.parametrize("num_stack", [1, 2])
-# @pytest.mark.parametrize("base_env", ["rgb"], indirect=True)
-# def test_observation(base_env, num_stack):
-#     base_env = _frame_stack(base_env, num_stack)
-#     env = RGBImage(base_env, num_stack)
+# @pytest.mark.parametrize("make_env", _intrfcs(), indirect=True)
+# def test_observation(make_env, num_stack):
+#     base_env, cur_intrfcs = make_env
+
+#     env = StandardObs(env=base_env)
+#     rcv_space = env.observation_space
+
+#     obs = env.reset()
 
 #     # Test resetting the env
 #     obs = env.reset()
