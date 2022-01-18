@@ -226,8 +226,8 @@ class StandardObs(gym.ObservationWrapper):
                 intrfcs.update({intrfc: val})
 
         self._obs = {
-            "dist",
             "dagm",
+            "dist",
             "ego",
             "events",
             "lidar",
@@ -365,11 +365,7 @@ def _make_space(intrfcs: Dict[str, Any]) -> gym.spaces:
     return space
 
 
-def _std_distance_travelled(val: float) -> float:
-    return np.float32(val)
-
-
-def _std_drivable_area_grid_map(
+def _std_dagm(
     val: Optional[DrivableAreaGridMap],
 ) -> Optional[np.ndarray]:
     if not val:
@@ -377,7 +373,11 @@ def _std_drivable_area_grid_map(
     return val.data.astype(np.uint8)
 
 
-def _std_ego_vehicle_state(
+def _std_dist(val: float) -> float:
+    return np.float32(val)
+
+
+def _std_ego(
     val: EgoVehicleObservation,
 ) -> Dict[str, Union[np.float32, np.ndarray]]:
     return {
@@ -411,7 +411,7 @@ def _std_events(val: Events) -> Dict[str, int]:
     }
 
 
-def _std_lidar_point_cloud(val) -> Optional[Dict[str, np.ndarray]]:
+def _std_lidar(val) -> Optional[Dict[str, np.ndarray]]:
     if not val:
         return None
 
@@ -445,7 +445,7 @@ def _std_lidar_point_cloud(val) -> Optional[Dict[str, np.ndarray]]:
     }
 
 
-def _std_neighborhood_vehicle_states(
+def _std_neighbors(
     nghbs: Optional[List[VehicleObservation]],
 ) -> Optional[Dict[str, np.ndarray]]:
     if not nghbs:
@@ -490,13 +490,13 @@ def _std_neighborhood_vehicle_states(
     }
 
 
-def _std_occupancy_grid_map(val: Optional[OccupancyGridMap]) -> Optional[np.ndarray]:
+def _std_ogm(val: Optional[OccupancyGridMap]) -> Optional[np.ndarray]:
     if not val:
         return None
     return val.data.astype(np.uint8)
 
 
-def _std_top_down_rgb(val: Optional[TopDownRGB]) -> Optional[np.ndarray]:
+def _std_rgb(val: Optional[TopDownRGB]) -> Optional[np.ndarray]:
     if not val:
         return None
     return val.data.astype(np.uint8)
@@ -515,7 +515,7 @@ def _std_ttc(obs: Observation) -> Optional[Dict[str, np.ndarray]]:
     }
 
 
-def _std_waypoint_paths(
+def _std_waypoints(
     paths: Optional[List[List[Waypoint]]],
 ) -> Optional[Dict[str, np.ndarray]]:
     if not paths:

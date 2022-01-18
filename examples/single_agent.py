@@ -23,11 +23,11 @@ logging.basicConfig(level=logging.INFO)
 
 class ChaseWaypointsAgent(Agent):
     def act(self, obs: StdObs):
-        cur_lane_index = obs.ego_vehicle_state["lane_index"]
-        next_lane_index = obs.waypoint_paths["lane_index"][0, 0]
+        cur_lane_index = obs.ego["lane_index"]
+        next_lane_index = obs.waypoints["lane_index"][0, 0]
 
         return (
-            obs.waypoint_paths["speed_limit"][0, 0] / 2,
+            obs.waypoints["speed_limit"][0, 0] / 2,
             np.sign(next_lane_index - cur_lane_index),
         )
 
