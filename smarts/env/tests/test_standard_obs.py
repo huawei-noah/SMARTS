@@ -172,32 +172,30 @@ def test_init(make_env, spaces):
     env.close()
 
 
-# def _check_observation(
-#     base_env,
-#     obs,
-# ):
-#     for agent_id in base_env.agent_specs.keys():
-#         rgb = base_env.agent_specs[agent_id].interface.rgb
-#         assert obs[agent_id].shape == (rgb.width, rgb.height, 3 * num_stack)
-#         assert obs[agent_id].dtype == np.uint8
+def _check_observation(
+    rcv_space,
+    obs,
+):
+    # for agent_id in base_env.agent_specs.keys():
+    #     rgb = base_env.agent_specs[agent_id].interface.rgb
+    #     assert obs[agent_id].shape == (rgb.width, rgb.height, 3 * num_stack)
+    #     assert obs[agent_id].dtype == np.uint8
+    return
 
 
-# @pytest.mark.parametrize("make_env", _intrfcs(), indirect=True)
-# def test_observation(make_env, num_stack):
-#     base_env, cur_intrfcs = make_env
+@pytest.mark.parametrize("make_env", _intrfcs_obs(), indirect=True)
+def test_observation(make_env):
+    base_env, _ = make_env
+    env = StandardObs(env=base_env)
+    rcv_space = env.observation_space
 
-#     env = StandardObs(env=base_env)
-#     rcv_space = env.observation_space
+    # Test resetting the env
+    obs = env.reset()
+    _check_observation(rcv_space, obs)
 
-#     obs = env.reset()
+    # Test stepping the env
+    action = {agent_id: "keep_lane" for agent_id in base_env.agent_specs.keys()}
+    obs, _, _, _ = env.step(action)
+    _check_observation(rcv_space, obs)
 
-#     # Test resetting the env
-#     obs = env.reset()
-#     _check_observation(base_env, obs, num_stack)
-
-#     # Test stepping the env
-#     action = {agent_id: "keep_lane" for agent_id in base_env.agent_specs.keys()}
-#     obs, _, _, _ = env.step(action)
-#     _check_observation(base_env, obs, num_stack)
-
-#     env.close()
+    env.close()
