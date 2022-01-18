@@ -18,61 +18,55 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import dataclasses
+
 import gym
 import numpy as np
 import pytest
 
 from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import RGB, AgentInterface
+from smarts.core.agent_interface import AgentInterface, Waypoints
 from smarts.core.controllers import ActionSpaceType
-from smarts.env.wrappers.frame_stack import FrameStack
-from smarts.env.wrappers.rgb_image import RGBImage
 from smarts.env.wrappers.standard_obs import StandardObs, StdObs
 
 
-def _make_agent_specs(intrfc):
-    accelerometer = False
-    drivable_area_grid_map = False
-    lidar = False
-    neighborhood_vehicles=False
-    ogm=False
-    rgb=False
-    waypoints=False
+def _intrfcs():
+    base_intrfc = AgentInterface(
+        action=ActionSpaceType.Lane,
+        accelerometer=False,
+        drivable_area_grid_map=False,
+        lidar=False,
+        neighborhood_vehicles=False,
+        ogm=False,
+        rgb=False,
+        waypoints=False,
+    )
+    # fmt: off
+    intrfcs = [
+        (dataclasses.replace(base_intrfc,accelerometer=True), dataclasses.replace(base_intrfc,accelerometer=False)),
+        (dataclasses.replace(base_intrfc,accelerometer=True), dataclasses.replace(base_intrfc,accelerometer=True)),
+        (dataclasses.replace(base_intrfc,drivable_area_grid_map=True), dataclasses.replace(base_intrfc,drivable_area_grid_map=True)),
+        (dataclasses.replace(base_intrfc,lidar=True), dataclasses.replace(base_intrfc,lidar=True)),
+        (dataclasses.replace(base_intrfc,neighborhood_vehicles=True), dataclasses.replace(base_intrfc,neighborhood_vehicles=True)),
+        (dataclasses.replace(base_intrfc,ogm=True), dataclasses.replace(base_intrfc,ogm=True)),
+        (dataclasses.replace(base_intrfc,rgb=True), dataclasses.replace(base_intrfc,rgb=True)),
+        (dataclasses.replace(base_intrfc,waypoints=Waypoints(lookahead=70)), dataclasses.replace(base_intrfc,waypoints=Waypoints(lookahead=70))),
+        (dataclasses.replace(base_intrfc,waypoints=Waypoints(lookahead=3)), dataclasses.replace(base_intrfc,waypoints=Waypoints(lookahead=3))),
+    ]
+    # fmt: on
 
-    if topdown_rgb == "rgb":
-        rgb = RGB()
-    elif topdown_rgb == "false":
-        rgb = False
+    return intrfcs
 
+
+def _make_agent_specs(intrfcs):
     return {
         "AGENT_"
         + agent_id: AgentSpec(
-            interface=AgentInterface(
-                action=ActionSpaceType.Lane,
-                accelerometer=accelerometer,
-                drivable_area_grid_map=drivable_area_grid_map,
-                lidar=lidar,
-                neighborhood_vehicles=neighborhood_vehicles,
-                ogm=ogm,
-                rgb=rgb,
-                waypoints=waypoints,
-            ),
+            interface=intrfc,
             agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
         )
-        for agent_id in ["001", "002"]
+        for agent_id, intrfc in zip(["001", "002"], intrfcs)
     }
-
-def _intrfc():
-    return (
-        "accelerometer",
-        "drivable_area_grid_map",
-        "lidar",
-        "neighborhood_vehicles",
-        "ogm",
-        "rgb",
-        "waypoints",
-
-    )
 
 
 @pytest.fixture
@@ -95,15 +89,24 @@ def base_env(request):
 #     return FrameStack(env, num_stack)
 
 
-@pytest.mark.parametrize("base_env", _intrfc(), indirect=True)
+@pytest.mark.parametrize("base_env", _intrfcs(), indirect=True)
 def test_init(base_env):
-    env = StandardObs(env=base_env)
+    agent_ids = list(base_env.agent_specs.keys())
+    intrfcs = {
+        agent_id: base_env.agent_specs[agent_id].interface for agent_id in agent_ids
+    }
 
+    # Test wrapping an env with non-identical agent interfaces
+    if not all(intrfc == intrfcs[agent_ids[0]] for intrfc in intrfcs.values()):
+        with pytest.raises(AssertionError):
+            env = StandardObs(env=base_env)
+            env.close()
+        return
+    else:
+        env = StandardObs(env=base_env)
 
-    # check for different agent interfaces between different agents
-
-
-    # check self.observation  space for different interfaces
+    # Test observation space of wrapped env 
+    
 
 
 
