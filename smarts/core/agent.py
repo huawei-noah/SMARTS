@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional, Union
 
 import cloudpickle
+import gym
 
 from .agent_interface import AgentInterface
 
@@ -31,10 +32,13 @@ warnings.simplefilter("once")
 
 logger = logging.getLogger(__name__)
 
+
 class Adapter:
-    space: Union[gym.spaces.Box, gym.spaces.Dict, gym.spaces.Discrete] = None
-    def __call__(adaptee):
+    space: gym.spaces
+
+    def __call__(self, adaptee):
         return adaptee
+
 
 class Agent:
     """The base class for agents"""
@@ -96,9 +100,9 @@ class AgentSpec:
     """A callable to build an `smarts.core.agent.Agent` given `AgentSpec.agent_params` (default None)"""
     agent_params: Optional[Any] = None
     """Parameters to be given to `AgentSpec.agent_builder` (default None)"""
-    observation_adapter: Adapter
+    observation_adapter: Optional[Adapter] = lambda obs: obs
     """An adaptor that allows shaping of the observations (default lambda obs: obs)"""
-    action_adapter: Adapter
+    action_adapter: Optional[Adapter] = lambda act: act
     """An adaptor that allows shaping of the action (default lambda act: act)"""
     reward_adapter: Callable = lambda obs, reward: reward
     """An adaptor that allows shaping of the reward (default lambda obs, reward: reward)"""
