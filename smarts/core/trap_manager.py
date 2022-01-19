@@ -237,7 +237,7 @@ class TrapManager:
             used_traps.append((agent_id, trap))
 
         if len(agents_given_vehicle) > 0:
-            self.reset_traps(used_traps)
+            self.remove_traps(used_traps)
             sim.agent_manager.remove_pending_agent_ids(agents_given_vehicle)
 
     @property

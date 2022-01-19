@@ -115,6 +115,7 @@ class LaneBoundary:
     segment_size: float = 0.5
 
     def refline_to_linear_segments(self, s_start: float, s_end: float) -> List[float]:
+        """Get segment offsets between the give offsets."""
         s_vals = []
         geom_start = 0
         for geom in self.refline._geometries:
@@ -152,6 +153,7 @@ class LaneBoundary:
         return self.lane_widths[i]
 
     def calc_t(self, s: float, section_s_start: float, lane_idx: int) -> float:
+        """Used to evaluate lane boundry shape."""
         # Find the lateral shift of lane reference line with road reference line (known as laneOffset in OpenDRIVE)
         lane_offset = self.get_lane_offset(s)
 
@@ -193,6 +195,8 @@ class LaneBoundary:
 
 
 class OpenDriveRoadNetwork(RoadMap):
+    """A road map for an OpenDRIVE source."""
+
     DEFAULT_LANE_WIDTH = 3.7
     DEFAULT_LANE_SPEED = 16.67  # in m/s
 
@@ -727,6 +731,8 @@ class OpenDriveRoadNetwork(RoadMap):
         return lane_dividers, road_dividers
 
     class Surface(RoadMap.Surface):
+        """Describes a surface."""
+
         def __init__(self, surface_id: str):
             self._surface_id = surface_id
 
@@ -740,6 +746,8 @@ class OpenDriveRoadNetwork(RoadMap):
             raise NotImplementedError
 
     class Lane(RoadMap.Lane, Surface):
+        """Describes a lane."""
+
         def __init__(
             self,
             road_map,
@@ -859,15 +867,19 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @property
         def lane_polygon(self) -> List[Tuple[float, float]]:
+            """A list of polygons that describe the shape of the lane."""
             return self._lane_polygon
 
         # Central Reference line of the lane, (For vector and heading computation)
         @property
         def centerline_points(self) -> List[Tuple[float, float]]:
+            """A list of points that shape centerline that runs through the center of the lane."""
             return self._centerline_points
 
         @cached_property
         def bounding_box(self) -> List[Tuple[float, float]]:
+            """Get the minimal axis aligned bounding box that contains all geometry in this lane."""
+            # XXX: This signature is wrong. It should return Optional[BoundingBox]
             x_coordinates, y_coordinates = zip(*self.lane_polygon)
             self._bounding_box = [
                 (min(x_coordinates), min(y_coordinates)),
@@ -1190,6 +1202,8 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @property
         def bounding_box(self) -> List[Tuple[float, float]]:
+            """Get the minimal axis aligned bounding box that contains all road geometry."""
+            # XXX: The return here should be Optional[BoundingBox]
             return self._bounding_box
 
         @bounding_box.setter
@@ -1367,6 +1381,7 @@ class OpenDriveRoadNetwork(RoadMap):
             return self._length
 
         def add_road(self, road: RoadMap.Road):
+            """Add a road to this route."""
             self._length += road.length
             self._roads.append(road)
 
@@ -1564,6 +1579,7 @@ class OpenDriveRoadNetwork(RoadMap):
             llp,
             paths: List[List[Waypoint]],
         ):
+            """Update the current cache if not already cached."""
             if not self._match(lookahead, point, filter_road_ids):
                 self.lookahead = lookahead
                 self.point = point
@@ -1578,6 +1594,7 @@ class OpenDriveRoadNetwork(RoadMap):
             filter_road_ids: tuple,
             llp,
         ) -> Optional[List[List[Waypoint]]]:
+            """Attempt to find previously cached waypoints"""
             if self._match(lookahead, point, filter_road_ids):
                 hit = self._starts.get(llp.lp.lane.index, None)
                 if hit:

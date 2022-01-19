@@ -76,7 +76,7 @@ class _GLBData:
 
 
 class SumoRoadNetwork(RoadMap):
-    """A road network generated from a SUMO source."""
+    """A road network for a SUMO source."""
 
     DEFAULT_LANE_WIDTH = 3.2
     """3.2 is the default Sumo road network lane width if it's not specified

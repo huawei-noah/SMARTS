@@ -150,6 +150,8 @@ class RoadMap:
         raise NotImplementedError()
 
     class Surface:
+        """Describes a surface."""
+
         @property
         def surface_id(self) -> str:
             """The unique identifier for a surface."""
@@ -193,6 +195,8 @@ class RoadMap:
             raise NotImplementedError()
 
     class Lane(Surface):
+        """Describes a lane surface."""
+
         @property
         def lane_id(self) -> str:
             """Unique identifier for this Lane."""
@@ -496,6 +500,8 @@ class RoadMap:
             raise NotImplementedError()
 
     class Feature:
+        """Describes a map feature."""
+
         @property
         def feature_id(self) -> str:
             """The identifier for this feature."""
