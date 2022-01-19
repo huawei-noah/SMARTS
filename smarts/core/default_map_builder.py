@@ -20,6 +20,7 @@
 
 import os
 from dataclasses import replace
+from pathlib import Path
 from typing import NamedTuple, Optional, Tuple
 
 from smarts.core.road_map import RoadMap
