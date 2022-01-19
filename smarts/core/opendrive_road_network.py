@@ -1121,6 +1121,9 @@ class OpenDriveRoadNetwork(RoadMap):
         return lane
 
     class Road(RoadMap.Road, Surface):
+        """This is akin to a 'road segment' in real life.
+        Many of these might correspond to a single named road in reality."""
+
         def __init__(
             self,
             road_id: str,
@@ -1348,6 +1351,8 @@ class OpenDriveRoadNetwork(RoadMap):
         return None
 
     class Route(RoadMap.Route):
+        """Describes a route between two roads."""
+
         def __init__(self, road_map):
             self._roads = []
             self._length = 0

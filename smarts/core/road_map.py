@@ -517,6 +517,8 @@ class RoadMap:
             raise NotImplementedError()
 
     class Route:
+        """Describes a route between two roads."""
+
         @property
         def roads(self) -> List[RoadMap.Road]:
             """A possibly-unordered list of roads that this route covers"""

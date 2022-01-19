@@ -70,6 +70,7 @@ class _GLBData:
         self._bytes = bytes_
 
     def write_glb(self, output_path):
+        """Generate a `.glb` geometry file."""
         with open(output_path, "wb") as f:
             f.write(self._bytes)
 
@@ -547,6 +548,9 @@ class SumoRoadNetwork(RoadMap):
         return lane
 
     class Road(RoadMap.Road, Surface):
+        """This is akin to a 'road segment' in real life.
+        Many of these might correspond to a single named road in reality."""
+
         def __init__(self, road_id: str, sumo_edge: Edge, road_map):
             super().__init__(road_id, road_map)
             self._road_id = road_id
@@ -878,6 +882,8 @@ class SumoRoadNetwork(RoadMap):
         return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
 
     class Route(RoadMap.Route):
+        """Describes a route between two roads."""
+
         def __init__(self, road_map):
             self._roads = []
             self._length = 0
@@ -892,6 +898,7 @@ class SumoRoadNetwork(RoadMap):
             return self._length
 
         def add_road(self, road: RoadMap.Road):
+            """Add a road to this route."""
             self._length += road.length
             self._roads.append(road)
 
@@ -1200,6 +1207,9 @@ class SumoRoadNetwork(RoadMap):
     def get_edge_in_junction(
         self, start_edge_id, start_lane_index, end_edge_id, end_lane_index
     ) -> str:
+        """Returns the id of the edge between the start and end edge. Can be used for any edge but
+        is mainly useful for junctions.
+        """
         start_edge = self._graph.getEdge(start_edge_id)
         start_lane = start_edge.getLane(start_lane_index)
         end_edge = self._graph.getEdge(end_edge_id)
@@ -1242,6 +1252,7 @@ class SumoRoadNetwork(RoadMap):
             llp,
             paths: List[List[Waypoint]],
         ):
+            """Update the current cache if not already cached."""
             if not self._match(lookahead, point, filter_road_ids):
                 self.lookahead = lookahead
                 self.point = point
@@ -1256,6 +1267,7 @@ class SumoRoadNetwork(RoadMap):
             filter_road_ids: tuple,
             llp,
         ) -> Optional[List[List[Waypoint]]]:
+            """Attempt to find previously cached waypoints"""
             if self._match(lookahead, point, filter_road_ids):
                 hit = self._starts.get(llp.lp.lane.index, None)
                 if hit:
