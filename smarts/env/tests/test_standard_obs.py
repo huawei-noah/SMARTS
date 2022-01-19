@@ -132,6 +132,7 @@ def test_init(make_env, spaces):
     des_space_keys.update(opt_space_keys)
     if "waypoints" in opt_space_keys and "neighbors" in opt_space_keys:
         des_space_keys.update(["ttc"])
+
     assert rcv_space_keys == des_space_keys
 
     env.close()
@@ -141,10 +142,18 @@ def _check_observation(
     rcv_space,
     obs,
 ):
-    # for agent_id in base_env.agent_specs.keys():
-    #     rgb = base_env.agent_specs[agent_id].interface.rgb
-    #     assert obs[agent_id].shape == (rgb.width, rgb.height, 3 * num_stack)
-    #     assert obs[agent_id].dtype == np.uint8
+    for field1 in obs.__dataclass_fields__:
+        val1 = getattr(obs, field1)
+        if isinstance(val1, dict):
+            for field2, val2 in val1.items():
+                assert val2.dtype == rcv_space[field1][field2].dtype
+                # if type(val2)==np.int8 and rcv_space[field1][field2].shape==(1,):
+                #     continue
+                # assert val2.shape == rcv_space[field1][field2].shape
+        else:
+            assert val1.shape == rcv_space[field1].shape
+            assert val1.dtype == rcv_space[field1].dtype
+
     return
 
 
@@ -154,13 +163,9 @@ def test_observation(make_env):
     env = StandardObs(env=base_env)
     rcv_space = env.observation_space
 
-    # Test resetting the env
+    # Test whether returned observation matches observation space
     obs = env.reset()
-    _check_observation(rcv_space, obs)
-
-    # Test stepping the env
-    action = {agent_id: "keep_lane" for agent_id in base_env.agent_specs.keys()}
-    obs, _, _, _ = env.step(action)
-    _check_observation(rcv_space, obs)
+    for agent_id, ob in obs.items():
+        _check_observation(rcv_space[agent_id], ob)
 
     env.close()

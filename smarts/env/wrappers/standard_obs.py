@@ -56,7 +56,7 @@ class StdObs:
         AgentInterface. shape=(3,). dtype=np.float32.
     c. "angular_velocity"
         Angular velocity vector. shape=(3,). dtype=np.float32).
-    d. "bounding_box"
+    d. "box"
         Length, width, and height of the vehicle bounding box. shape=(3,).
         dtype=np.float32.
     e. "heading"
@@ -122,7 +122,7 @@ class StdObs:
     neighbors: Optional[Dict[str, np.ndarray]] = None
     """Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
     vehicles are insufficient, default feature values are padded.
-    a. "bounding_box"
+    a. "box"
         Bounding box of neighbor vehicles. Defaults to np.array([0,0,0]) per 
         vehicle. shape=(10,3). dtype=np.float32.
     b. "heading"
@@ -296,21 +296,21 @@ def get_spaces() -> Tuple[Dict[str, gym.Space], Dict[str, Callable[[Any], gym.Sp
     """
     # fmt: off
     basic = {
-        "dist": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
+        "dist": gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
         "ego": gym.spaces.Dict({
             "angular_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
             "angular_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
             "angular_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-            "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(1,), dtype=np.float32),
-            "lane_index": gym.spaces.Box(low=0, high=127, shape=(1,), dtype=np.int8),
+            "box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
+            "lane_index": gym.spaces.Box(low=0, high=127, shape=(), dtype=np.int8),
             "linear_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
             "linear_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
             "linear_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
             "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "speed": gym.spaces.Box(low=0, high=1e10, shape=(1,), dtype=np.float32),
-            "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(1,), dtype=np.float32),
-            "yaw_rate": gym.spaces.Box(low=0, high=2*math.pi, shape=(1,), dtype=np.float32),
+            "speed": gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
+            "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
+            "yaw_rate": gym.spaces.Box(low=0, high=2*math.pi, shape=(), dtype=np.float32),
         }),
         "events": gym.spaces.Dict({
             "agents_alive_done": gym.spaces.MultiBinary(1),
@@ -334,7 +334,7 @@ def get_spaces() -> Tuple[Dict[str, gym.Space], Dict[str, Callable[[Any], gym.Sp
             "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float32),
         }),
         "neighbors": lambda _: gym.spaces.Dict({
-            "bounding_box": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),
+            "box": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),
             "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
             "lane_index": gym.spaces.Box(low=0, high=127, shape=(_NEIGHBOR_SHP,), dtype=np.int8),
             "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),    
@@ -394,7 +394,7 @@ def _std_ego(
         "angular_acceleration": val.angular_acceleration.astype(np.float32),
         "angular_jerk": val.angular_jerk.astype(np.float32),
         "angular_velocity": val.angular_acceleration.astype(np.float32),
-        "bounding_box": np.array(val.bounding_box.as_lwh).astype(np.float32),
+        "box": np.array(val.bounding_box.as_lwh).astype(np.float32),
         "heading": np.float32(val.heading),
         "lane_index": np.int8(val.lane_index),
         "linear_acceleration": val.linear_acceleration.astype(np.float32),
@@ -409,15 +409,15 @@ def _std_ego(
 
 def _std_events(val: Events) -> Dict[str, int]:
     return {
-        "agents_alive_done": int(val.agents_alive_done),
-        "collisions": int(len(val.collisions) > 0),
-        "not_moving": int(val.not_moving),
-        "off_road": int(val.off_road),
-        "off_route": int(val.off_route),
-        "on_shoulder": int(val.on_shoulder),
-        "reached_goal": int(val.reached_goal),
-        "reached_max_episode_steps": int(val.reached_max_episode_steps),
-        "wrong_way": int(val.wrong_way),
+        "agents_alive_done": np.int8(val.agents_alive_done),
+        "collisions": np.int8(len(val.collisions) > 0),
+        "not_moving": np.int8(val.not_moving),
+        "off_road": np.int8(val.off_road),
+        "off_route": np.int8(val.off_route),
+        "on_shoulder": np.int8(val.on_shoulder),
+        "reached_goal": np.int8(val.reached_goal),
+        "reached_max_episode_steps": np.int8(val.reached_max_episode_steps),
+        "wrong_way": np.int8(val.wrong_way),
     }
 
 
@@ -426,7 +426,7 @@ def _std_lidar(val) -> Optional[Dict[str, np.ndarray]]:
         return None
 
     des_shp = _LIDAR_SHP
-    hit = np.array(val[1], dtype=np.uint8)
+    hit = np.array(val[1], dtype=np.int8)
     point_cloud = np.array(val[0], dtype=np.float32)
     point_cloud = np.nan_to_num(
         point_cloud,
@@ -475,16 +475,16 @@ def _std_neighbors(
         )
         for nghb in nghbs[:des_shp]
     ]
-    bounding_box, heading, lane_index, pos, speed = zip(*nghbs)
+    box, heading, lane_index, pos, speed = zip(*nghbs)
 
-    bounding_box = np.array(bounding_box, dtype=np.float32)
+    box = np.array(box, dtype=np.float32)
     heading = np.array(heading, dtype=np.float32)
     lane_index = np.array(lane_index, dtype=np.int8)
     pos = np.array(pos, dtype=np.float32)
     speed = np.array(speed, dtype=np.float32)
 
     # fmt: off
-    bounding_box = np.pad(bounding_box, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
+    box = np.pad(box, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
     heading = np.pad(heading, ((0,pad_shp)), mode='constant', constant_values=0)
     lane_index = np.pad(lane_index, ((0,pad_shp)), mode='constant', constant_values=0)
     pos = np.pad(pos, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
@@ -492,7 +492,7 @@ def _std_neighbors(
     # fmt: on
 
     return {
-        "bounding_box": bounding_box,
+        "box": box,
         "heading": heading,
         "lane_index": lane_index,
         "pos": pos,
