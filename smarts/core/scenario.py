@@ -92,7 +92,6 @@ class Scenario:
         self._social_agents = social_agents or {}
         self._surface_patches = surface_patches
         self._log_dir = self._resolve_log_dir(log_dir)
-        self._validate_assets_exist()
 
         if traffic_history:
             self._traffic_history = TrafficHistory(traffic_history)
@@ -110,6 +109,8 @@ class Scenario:
             map_spec = Scenario.discover_map(self._root, 1.0, default_lane_width)
         self._road_map, self._road_map_hash = map_spec.builder_fn(map_spec)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
+
+        os.makedirs(self._log_dir, exist_ok=True)
 
     def __repr__(self):
         return f"""Scenario(
@@ -794,10 +795,6 @@ class Scenario:
             log_dir = make_dir_in_smarts_log_dir("_sumo_run_logs")
 
         return os.path.abspath(log_dir)
-
-    def _validate_assets_exist(self):
-        assert Scenario.is_valid_scenario(self._root)
-        os.makedirs(self._log_dir, exist_ok=True)
 
     @property
     def traffic_history(self):
