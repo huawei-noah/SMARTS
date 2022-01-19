@@ -18,12 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass
-from typing import Callable, Union
+from typing import Callable
 
 import gym
 import numpy as np
 
 from smarts.core.coordinates import Heading
+from smarts.core.sensors import Observation
 from smarts.core.utils.math import squared_dist, vec_2d, vec_to_radians
 
 
@@ -102,7 +103,7 @@ _LANE_TTC_OBSERVATION_SPACE = gym.spaces.Dict(
 )
 
 
-def lane_ttc(obs):
+def lane_ttc(obs: Observation):
     ego = obs.ego_vehicle_state
     waypoint_paths = obs.waypoint_paths
     wps = [path[0] for path in waypoint_paths]
@@ -130,16 +131,16 @@ lane_ttc_observation_adapter = Adapter(
 )
 
 
-def _ego_ttc_lane_dist(env_observation, ego_lane_index):
-    ttc_by_p, lane_dist_by_p = _ttc_by_path(env_observation)
+def _ego_ttc_lane_dist(obs: Observation, ego_lane_index: int):
+    ttc_by_p, lane_dist_by_p = _ttc_by_path(obs)
 
     return _ego_ttc_calc(ego_lane_index, ttc_by_p, lane_dist_by_p)
 
 
-def _ttc_by_path(env_observation):
-    ego = env_observation.ego_vehicle_state
-    waypoint_paths = env_observation.waypoint_paths
-    neighborhood_vehicle_states = env_observation.neighborhood_vehicle_states
+def _ttc_by_path(obs: Observation):
+    ego = obs.ego_vehicle_state
+    waypoint_paths = obs.waypoint_paths
+    neighborhood_vehicle_states = obs.neighborhood_vehicle_states
 
     # first sum up the distance between waypoints along a path
     # ie. [(wp1, path1, 0),
@@ -200,7 +201,7 @@ def _ttc_by_path(env_observation):
     return ttc_by_path_index, lane_dist_by_path_index
 
 
-def _ego_ttc_calc(ego_lane_index, ttc_by_path, lane_dist_by_path):
+def _ego_ttc_calc(ego_lane_index: int, ttc_by_path, lane_dist_by_path):
     ego_ttc = [0] * 3
     ego_lane_dist = [0] * 3
 

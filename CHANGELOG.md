@@ -11,8 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Added
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
-- Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make a left turn in the presence of traffic.
-- Added `StandardObs` wrapper which preprocesses SMARTS observations and only returns standardized gym-compliant observations.
+- Added `StandardObs` wrapper which converts SMARTS observations to standardized gym-compliant RL-friendly observations and returns `StdObs`.
 ### Changed
 - If more than one qualifying map file exists in a the `map_spec.source` folder, `get_road_map()` in `default_map_builder.py` will prefer to return the default files (`map.net.xml` or `map.xodr`) if they exist.
 ### Deprecated
