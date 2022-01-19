@@ -146,10 +146,8 @@ def _check_observation(
         val1 = getattr(obs, field1)
         if isinstance(val1, dict):
             for field2, val2 in val1.items():
+                assert val2.shape == rcv_space[field1][field2].shape
                 assert val2.dtype == rcv_space[field1][field2].dtype
-                # if type(val2)==np.int8 and rcv_space[field1][field2].shape==(1,):
-                #     continue
-                # assert val2.shape == rcv_space[field1][field2].shape
         else:
             assert val1.shape == rcv_space[field1].shape
             assert val1.dtype == rcv_space[field1].dtype
