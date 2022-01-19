@@ -21,7 +21,7 @@ import inspect
 import logging
 import warnings
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional
 
 import cloudpickle
 import gym
@@ -33,11 +33,13 @@ warnings.simplefilter("once")
 logger = logging.getLogger(__name__)
 
 
+@dataclass
 class Adapter:
     space: gym.spaces
+    func: Callable = lambda x: x
 
     def __call__(self, adaptee):
-        return adaptee
+        return self.func(adaptee)
 
 
 class Agent:
