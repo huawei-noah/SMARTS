@@ -83,7 +83,7 @@ class StdObs:
         Rotation speed around vertical axis in rad/s [0, 2pi]. 
         dtype=np.float32.
     """
-    events: Dict[str, int]
+    events: Dict[str, np.int8]
     """ A dictionary of event markers.
     a. "agents_alive_done"
         1 if `DoneCriteria.agents_alive` is triggered, else 0.
@@ -421,7 +421,11 @@ def _std_events(val: Events) -> Dict[str, int]:
     }
 
 
-def _std_lidar(val) -> Optional[Dict[str, np.ndarray]]:
+def _std_lidar(
+    val: Optional[
+        Tuple[List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]]
+    ]
+) -> Optional[Dict[str, np.ndarray]]:
     if not val:
         return None
 
