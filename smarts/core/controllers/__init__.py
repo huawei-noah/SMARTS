@@ -159,6 +159,8 @@ class ControllerOutOfLaneException(Exception):
 
 
 class ControllerState:
+    """Controller state"""
+
     @staticmethod
     def from_action_space(action_space, vehicle_pose, sim):
         """Generate the appropriate controller state given an action space."""

@@ -48,6 +48,8 @@ from .utils.math import rotate_around_point
 
 @dataclass
 class VehicleState:
+    """Vehicle state information."""
+
     vehicle_id: str
     pose: Pose
     dimensions: Dimensions
@@ -70,11 +72,14 @@ class VehicleState:
 
     @property
     def privileged(self) -> bool:
+        """If the vehicle state is privilaged over the internal simulation state."""
         return self._privileged
 
 
 @dataclass(frozen=True)
 class VehicleConfig:
+    """Vehicle configuration"""
+
     vehicle_type: str
     color: tuple
     dimensions: Dimensions
@@ -130,18 +135,13 @@ VEHICLE_CONFIGS = {
     ),
 }
 
-# TODO: Replace VehicleConfigs w/ the VehicleGeometry class
-class VehicleGeometry:
-    @classmethod
-    def fromfile(cls, path, color):
-        pass
-
 
 class RendererException(Exception):
     """An exception raised if a renderer is required but not available."""
 
     @classmethod
-    def required_to(cls, thing):
+    def required_to(cls, thing: str) -> "RendererException":
+        """Generate a `RenderException` requiring a render to do `thing`."""
         return cls(
             f"""A renderer is required to {thing}. You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. Install them first using the command `pip install -e .[camera-obs]` at the source directory."""
         )

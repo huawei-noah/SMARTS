@@ -332,7 +332,7 @@ class VehicleIndex:
 
     @clear_cache
     def sync(self):
-        """Update the internal state of the index."""
+        """Update the state of the index."""
         for vehicle_id, vehicle in self._vehicles.items():
             v_index = self._controlled_by["vehicle_id"] == vehicle_id
             entity = _ControlEntity(*self._controlled_by[v_index][0])
