@@ -4,13 +4,17 @@ import pathlib
 
 import gym
 import numpy as np
-from argument_parser import default_argument_parser
 
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
 from smarts.env.wrappers.single_agent import SingleAgent
 from smarts.env.wrappers.standard_obs import StandardObs, StdObs
+
+if __name__ == "__main__":
+    from argument_parser import default_argument_parser
+else:
+    from .argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
