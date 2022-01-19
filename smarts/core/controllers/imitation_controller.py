@@ -18,7 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-from dataclasses import dataclass
 
 import numpy as np
 
@@ -26,15 +25,16 @@ from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.coordinates import Pose
 from smarts.core.utils.math import (
     fast_quaternion_from_angle,
-    min_angles_difference_signed,
     radians_to_vec,
-    vec_to_radians,
 )
 
 
 class ImitationController:
+    """A controller that is useful for imitation learning."""
+
     @classmethod
     def perform_action(cls, dt, vehicle, action):
+        """Performs an action adapting to the underlying chassis."""
         chassis = vehicle.chassis
         if isinstance(action, (int, float)):
             # special case:  setting the initial speed
