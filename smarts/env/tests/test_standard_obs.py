@@ -27,72 +27,37 @@ import pytest
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, Waypoints
 from smarts.core.controllers import ActionSpaceType
-from smarts.env.wrappers.standard_obs import (
-    StandardObs,
-    StdObs,
-    get_spaces,
-    intrfc_to_stdobs,
-)
+from smarts.env.wrappers.standard_obs import StandardObs, get_spaces, intrfc_to_stdobs
 
 
 def _intrfcs_init():
-    # fmt: off
-    intrfcs = [
-        ({"accelerometer":True}, {"accelerometer":False}),
-        ({"drivable_area_grid_map":True}, {"drivable_area_grid_map":True}),
-        ({"lidar":True}, {"lidar":True}),
-        ({"neighborhood_vehicles":True}, {"neighborhood_vehicles":True}),
-        ({"ogm":True}, {"ogm":True}),
-        ({"rgb":True}, {"rgb":True}),
-        ({"waypoints":Waypoints(lookahead=1)}, {"waypoints":Waypoints(lookahead=1)}),
-        ({"neighborhood_vehicles":True, "waypoints":Waypoints(lookahead=1)}, {"neighborhood_vehicles":True, "waypoints":Waypoints(lookahead=1)}),
+    return [
+        [{"accelerometer": True}, {"accelerometer": False}],
+        [{"drivable_area_grid_map": True}] * 2,
+        [{"lidar": True}] * 2,
+        [{"neighborhood_vehicles": True}] * 2,
+        [{"ogm": True}] * 2,
+        [{"rgb": True}] * 2,
+        [{"waypoints": Waypoints(lookahead=1)}] * 2,
+        [{"neighborhood_vehicles": True, "waypoints": Waypoints(lookahead=1)}] * 2,
     ]
-    # fmt: on
-
-    return intrfcs
 
 
 def _intrfcs_obs():
-    # fmt: off
-    intrfcs = [
-        ({
-            "accelerometer":True, 
-            "drivable_area_grid_map":True, 
-            "lidar":True,
-            "neighborhood_vehicles":True, 
-            "ogm":True, 
-            "rgb":True, 
-            "waypoints":Waypoints(lookahead=60),
-        }, 
-        {   
-            "accelerometer":True,
-            "drivable_area_grid_map":True,
-            "lidar":True,
-            "neighborhood_vehicles":True,
-            "ogm":True,
-            "rgb":True,
-            "waypoints":Waypoints(lookahead=60),
-        }),
-        ({
-            "accelerometer":True,
-            "drivable_area_grid_map":True,
-            "lidar":True,
-            "neighborhood_vehicles":True,
-            "ogm":True,
-            "rgb":True,
-            "waypoints":Waypoints(lookahead=1),
-        }, 
-        {"accelerometer":True,
-        "drivable_area_grid_map":True,
-        "lidar":True,
-        "neighborhood_vehicles":True,
-        "ogm":True,
-        "rgb":True,
-        "waypoints":Waypoints(lookahead=1),
-        }),    ]
-    # fmt: on
+    base_intrfc = {
+        "accelerometer": True,
+        "drivable_area_grid_map": True,
+        "lidar": True,
+        "neighborhood_vehicles": True,
+        "ogm": True,
+        "rgb": True,
+        "waypoints": Waypoints(lookahead=1),
+    }
 
-    return intrfcs
+    return [
+        [base_intrfc] * 2,
+        [dict(base_intrfc, **{"waypoints": Waypoints(lookahead=50)})] * 2,
+    ]
 
 
 def _make_agent_specs(intrfcs):
