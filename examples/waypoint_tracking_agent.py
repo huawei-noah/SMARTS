@@ -77,48 +77,77 @@ class WaypointTrackingAgent(Agent):
         self.num_waypoint_paths = 0
         self.waypoint_path_index = 0
         self.prev_lane_index = 0
+        self.path = []
 
     def act(self, obs):
 
         current_lane = obs.ego_vehicle_state.lane_index
 
-        if (
-            len(obs.waypoint_paths) != self.num_waypoint_paths
-            or current_lane != self.prev_lane_index
-        ):
-            self.num_waypoint_paths = len(obs.waypoint_paths)
+        if len(obs.waypoint_paths) == 9:
 
-            valid_waypoint_paths = [self.waypoint_path_index]
+            goal_position = obs.ego_vehicle_state.mission.goal.position
+            min_lateral_error = 100
+            for idx in range(len(obs.waypoint_paths)):
+                num_waypoints = len(obs.waypoint_paths[idx])
 
+                # choose waypoint paths that start on the same lane
+                if obs.waypoint_paths[idx][0].lane_index == current_lane:
+
+                    lateral_error = obs.waypoint_paths[idx][num_waypoints - 1].signed_lateral_error(goal_position)
+
+                    # choose waypoint path with end closest to the goal
+                    if abs(lateral_error) < min_lateral_error:
+                        min_lateral_error = abs(lateral_error)
+                        self.waypoint_path_index = idx
+
+            self.path = obs.waypoint_paths[self.waypoint_path_index]
+            
+        else:
             for i in range(len(obs.waypoint_paths)):
-                num_wp = len(obs.waypoint_paths[i]) - 1
-                if obs.waypoint_paths[i][num_wp].lane_index != current_lane:
-                    valid_waypoint_paths.append(i)
+                if obs.waypoint_paths[i][0].lane_index == current_lane:
+                    self.waypoint_path_index = i
+                    break
 
-            self.waypoint_path_index = random.choice(valid_waypoint_paths)
-            self.prev_lane_index = obs.waypoint_paths[self.waypoint_path_index][
-                0
-            ].lane_index
-
-        num_trajectory_points = min([len(obs.waypoint_paths[self.waypoint_path_index])])
+        num_trajectory_points = min([5, len(obs.waypoint_paths[self.waypoint_path_index])])
         # Desired speed is in m/s
         desired_speed = 10
 
-        trajectory = [
-            [
-                obs.waypoint_paths[self.waypoint_path_index][i].pos[0]
-                for i in range(num_trajectory_points)
-            ],
-            [
-                obs.waypoint_paths[self.waypoint_path_index][i].pos[1]
-                for i in range(num_trajectory_points)
-            ],
-            [
-                obs.waypoint_paths[self.waypoint_path_index][i].heading
-                for i in range(num_trajectory_points)
-            ],
-            [desired_speed for i in range(num_trajectory_points)],
-        ]
+        if self.path:
+
+            num_trajectory_points = min([5, len(self.path)])
+            trajectory = [
+                [
+                    self.path[i].pos[0]
+                    for i in range(num_trajectory_points)
+                ],
+                [
+                    self.path[i].pos[1]
+                    for i in range(num_trajectory_points)
+                ],
+                [
+                    self.path[i].heading
+                    for i in range(num_trajectory_points)
+                ],
+                [desired_speed for i in range(num_trajectory_points)],
+            ]
+            self.path.pop(0)
+        else:
+
+            trajectory = [
+                [
+                    obs.waypoint_paths[self.waypoint_path_index][i].pos[0]
+                    for i in range(num_trajectory_points)
+                ],
+                [
+                    obs.waypoint_paths[self.waypoint_path_index][i].pos[1]
+                    for i in range(num_trajectory_points)
+                ],
+                [
+                    obs.waypoint_paths[self.waypoint_path_index][i].heading
+                    for i in range(num_trajectory_points)
+                ],
+                [desired_speed for i in range(num_trajectory_points)],
+            ]
         return trajectory
 
 
@@ -155,7 +184,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
     # output compliant with gym spaces.
     env = SingleAgent(env)
 
-    for episode in episodes(n=num_episodes):
+    for episode in episodes(n=1):
         agent = agent_spec.build_agent()
         observation = env.reset()
         episode.record_scenario(env.scenario_log)
