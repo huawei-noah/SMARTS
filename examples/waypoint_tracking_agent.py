@@ -30,6 +30,7 @@ class WaypointTrackingAgent(Agent):
         current_lane = obs.ego_vehicle_state.lane_index
         # Desired speed is in m/s
         desired_speed = 10
+        wp_index = 0
 
         if len(obs.waypoint_paths) == 9:
 
