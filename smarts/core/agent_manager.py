@@ -213,6 +213,10 @@ class AgentManager:
                 rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
                 scores[agent_id] = vehicle.trip_meter_sensor()
 
+        if sim.should_reset:
+            dones = {agent_id: True for agent_id in self.agent_ids}
+            dones["__sim__"] = True
+
         return observations, rewards, scores, dones
 
     def _vehicle_reward(self, vehicle_id, sim):
@@ -329,9 +333,12 @@ class AgentManager:
         self.setup_social_agents(sim)
         self.start_keep_alive_boid_agents(sim)
 
-    def add_ego_agent(self, agent_id: str, agent_interface: AgentInterface):
+    def add_ego_agent(
+        self, agent_id: str, agent_interface: AgentInterface, for_trap: bool = True
+    ):
         # TODO: Remove `pending_agent_ids`
-        self.pending_agent_ids.add(agent_id)
+        if for_trap:
+            self.pending_agent_ids.add(agent_id)
         self._ego_agent_ids.add(agent_id)
         self.agent_interfaces[agent_id] = agent_interface
         # agent will now be given vehicle by trap manager when appropriate
@@ -501,6 +508,7 @@ class AgentManager:
         for agent_id in ids_:
             self._agent_interfaces.pop(agent_id, None)
 
+        self._pending_agent_ids = self._pending_agent_ids - ids_
         return ids_
 
     def reset_agents(self, observations):

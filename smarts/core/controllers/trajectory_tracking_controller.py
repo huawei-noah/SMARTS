@@ -193,35 +193,68 @@ class TrajectoryTrackingController:
         velocity_damping_gain = params["velocity_damping_gain"]
         windup_gain = params["windup_gain"]
 
-        curvature_radius = TrajectoryTrackingController.curvature_calculation(
-            trajectory
-        )
-        # The gains are varying according to the desired velocity along
+        # XXX: note that these values may be further adjusted below based on speed and curvature
+        # XXX: we might want to combine the computation of these into a single fn
+        lateral_gain = 0.61
+        heading_gain = 0.01
+        lateral_error_derivative_gain = 0.15
+        heading_error_derivative_gain = 0.5
+
+        # The gains can vary according to the desired velocity along
         # the trajectory. To achieve this, the desired speed is normalized
         # between 20 (km/hr) to 80 (km/hr) and the respective gains are
         # calculated using interpolation. 3, 0.03, 1.5, 0.2 are the
         # controller gains for lateral error, heading error and their
-        #  derivatives at the desired speed 20 (km/hr).
+        # derivatives at the desired speed 20 (km/hr).
         normalized_speed = np.clip(
             (METER_PER_SECOND_TO_KM_PER_HR * trajectory[3][0] - 20) / (80 - 20), 0, 1
         )
-        lateral_gain = lerp(3, final_lateral_gain, normalized_speed)
-        heading_gain = lerp(0.03, final_heading_gain, normalized_speed)
+        adjust_gains_for_normalized_speed = False  # XXX: not using model config here
+        if adjust_gains_for_normalized_speed:
+            lateral_gain = lerp(3, final_lateral_gain, normalized_speed)
+            lateral_error_derivative_gain = lerp(
+                0.2, final_lateral_error_derivative_gain, normalized_speed
+            )
+            heading_gain = lerp(0.03, final_heading_gain, normalized_speed)
+            heading_error_derivative_gain = lerp(
+                1.5, final_heading_error_derivative_gain, normalized_speed
+            )
+            steering_filter_constant = lerp(
+                12, final_steering_filter_constant, normalized_speed
+            )
+        elif vehicle.speed > 70 / METER_PER_SECOND_TO_KM_PER_HR:
+            lateral_gain = 1.51
+            heading_error_derivative_gain = 0.1
+
+        # XXX: This should be handled like the other gains above...
         steering_filter_constant = lerp(
-            2, final_steering_filter_constant, normalized_speed
+            12, final_steering_filter_constant, normalized_speed
         )
-        heading_error_derivative_gain = lerp(
-            1.5, final_heading_error_derivative_gain, normalized_speed
-        )
-        lateral_error_derivative_gain = lerp(
-            0.2, final_lateral_error_derivative_gain, normalized_speed
-        )
+
+        if abs(min_angles_difference_signed(trajectory[2][-1], trajectory[2][0])) > 2:
+            throttle_filter_constant = 2.5
+
+        if (
+            abs(
+                TrajectoryTrackingController.curvature_calculation(
+                    trajectory, 0, num_points=3
+                )
+            )
+            < 150
+        ):
+            heading_gain = 0.05
+            lateral_error_derivative_gain = 0.015
+            heading_error_derivative_gain = 0.05
 
         (
             heading_error,
             lateral_error,
         ) = TrajectoryTrackingController.calulate_heading_lateral_error(
             vehicle, trajectory, initial_look_ahead_distant, speed_reduction_activation
+        )
+
+        curvature_radius = TrajectoryTrackingController.curvature_calculation(
+            trajectory
         )
 
         # Derivative terms of the controller (use with caution for large time steps>=0.1).
@@ -326,7 +359,7 @@ class TrajectoryTrackingController:
         velocity_error = vehicle.speed - desired_speed
         velocity_error_damping_term = (velocity_error - state.velocity_error) / dt_sec
         raw_throttle = METER_PER_SECOND_TO_KM_PER_HR * (
-            -1 * velocity_gain * velocity_error
+            -0.5 * velocity_gain * velocity_error
             - velocity_integral_gain
             * (integral_velocity_error + windup_gain * state.integral_windup_error)
             - velocity_damping_gain * velocity_error_damping_term

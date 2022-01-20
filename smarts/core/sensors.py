@@ -22,7 +22,7 @@ import time
 from collections import deque, namedtuple
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
+from typing import Dict, Iterable, List, NamedTuple, Optional, Set, Tuple
 
 import numpy as np
 
@@ -54,7 +54,7 @@ class VehicleObservation(NamedTuple):
 
 class EgoVehicleObservation(NamedTuple):
     id: str
-    position: Tuple[float, float, float]
+    position: np.ndarray
     bounding_box: Dimensions
     heading: Heading
     speed: float
@@ -74,7 +74,6 @@ class EgoVehicleObservation(NamedTuple):
 
 class RoadWaypoints(NamedTuple):
     lanes: Dict[str, List[List[Waypoint]]]
-    route_waypoints: List[List[Waypoint]]
 
 
 class GridMapMetadata(NamedTuple):
@@ -252,9 +251,9 @@ class Sensors:
 
         ego_vehicle_observation = EgoVehicleObservation(
             id=ego_vehicle_state.vehicle_id,
-            position=ego_vehicle_state.pose.position,
+            position=np.array(ego_vehicle_state.pose.position),
             bounding_box=ego_vehicle_state.dimensions,
-            heading=ego_vehicle_state.pose.heading,
+            heading=Heading(ego_vehicle_state.pose.heading),
             speed=ego_vehicle_state.speed,
             steering=ego_vehicle_state.steering,
             yaw_rate=ego_vehicle_state.yaw_rate,
@@ -766,7 +765,10 @@ class DrivenPathSensor(Sensor):
         pass
 
     def distance_travelled(
-        self, sim, last_n_seconds: float = None, last_n_steps: int = None
+        self,
+        sim,
+        last_n_seconds: Optional[float] = None,
+        last_n_steps: Optional[int] = None,
     ):
         if last_n_seconds is None and last_n_steps is None:
             raise ValueError("Either last N seconds or last N steps must be provided")
@@ -818,7 +820,7 @@ class TripMeterSensor(Sensor):
             # if we do not have a fixed route, we count all waypoints we accumulate
             not self._plan.mission.has_fixed_route
             # if we have a route to follow, only count wps on route
-            or wp_road in self._plan.route.roads
+            or wp_road in [road.road_id for road in self._plan.route.roads]
         )
 
         if not self._wps_for_distance:
@@ -898,11 +900,11 @@ class RoadWaypointsSensor(Sensor):
         self._plan = plan
         self._horizon = horizon
 
-    def __call__(self):
+    def __call__(self) -> RoadWaypoints:
         veh_pt = self._vehicle.pose.point
         lane = self._road_map.nearest_lane(veh_pt)
         if not lane:
-            return RoadWaypoints(lanes={}, route_waypoints=[])
+            return RoadWaypoints(lanes={})
         road = lane.road
         lane_paths = {}
         for croad in (
@@ -911,16 +913,7 @@ class RoadWaypointsSensor(Sensor):
             for lane in croad.lanes:
                 lane_paths[lane.lane_id] = self.paths_for_lane(lane)
 
-        route_waypoints = self.route_waypoints()
-
-        return RoadWaypoints(lanes=lane_paths, route_waypoints=route_waypoints)
-
-    def route_waypoints(self):
-        return self._road_map.waypoint_paths(
-            self._vehicle.pose,
-            lookahead=self._horizon,
-            route=self._plan.route,
-        )
+        return RoadWaypoints(lanes=lane_paths)
 
     def paths_for_lane(self, lane, overflow_offset=None):
         # XXX: the following assumes waypoint spacing is 1m

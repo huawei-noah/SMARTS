@@ -68,7 +68,7 @@ class TrapManager:
 
     def __init__(self, scenario):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._traps: Dict[Trap] = defaultdict(None)
+        self._traps: Dict[str, Trap] = defaultdict(Trap)
         self.init_traps(scenario.road_map, scenario.missions)
 
     def init_traps(self, road_map, missions):
@@ -149,7 +149,7 @@ class TrapManager:
                     continue
 
                 vehicle = vehicles[v_id]
-                point = Point(vehicle.position)
+                point = vehicle.pose.point.as_shapely
 
                 if not point.within(trap.geometry):
                     continue
@@ -185,8 +185,8 @@ class TrapManager:
             vehicle = None
             if len(captures) > 0:
                 vehicle_id, trap, mission = rand.choice(captures)
-                vehicle = TrapManager._hijack_vehicle(
-                    sim, vehicle_id, agent_id, mission
+                vehicle = sim.switch_control_to_agent(
+                    vehicle_id, agent_id, mission, recreate=True, is_hijacked=False
                 )
             elif trap.patience_expired:
                 # Make sure there is not a vehicle in the same location
@@ -209,30 +209,12 @@ class TrapManager:
                 )
             else:
                 continue
-
             if vehicle == None:
                 continue
-
+            sim.create_vehicle_in_providers(vehicle, agent_id)
             agents_given_vehicle.add(agent_id)
             used_traps.append((agent_id, trap))
 
-            for provider in sim.providers:
-                if (
-                    sim.agent_manager.agent_interface_for_agent_id(
-                        agent_id
-                    ).action_space
-                    in provider.action_spaces
-                ):
-                    provider.create_vehicle(
-                        VehicleState(
-                            vehicle_id=vehicle.id,
-                            vehicle_config_type="passenger",
-                            pose=vehicle.pose,
-                            dimensions=vehicle.chassis.dimensions,
-                            speed=vehicle.speed,
-                            source="EGO-HIJACK",
-                        )
-                    )
         if len(agents_given_vehicle) > 0:
             self.reset_traps(used_traps)
             sim.agent_manager.remove_pending_agent_ids(agents_given_vehicle)
@@ -240,26 +222,6 @@ class TrapManager:
     @property
     def traps(self):
         return self._traps
-
-    @staticmethod
-    def _hijack_vehicle(sim, vehicle_id, agent_id, mission):
-        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        plan = Plan(sim.road_map, mission)
-
-        # Apply agent vehicle association.
-        sim.vehicle_index.start_agent_observation(
-            sim, vehicle_id, agent_id, agent_interface, plan
-        )
-        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        vehicle = sim.vehicle_index.switch_control_to_agent(
-            sim,
-            vehicle_id,
-            agent_id,
-            recreate=True,
-            hijacking=False,
-            agent_interface=agent_interface,
-        )
-        return vehicle
 
     @staticmethod
     def _make_vehicle(sim, agent_id, mission, initial_speed):

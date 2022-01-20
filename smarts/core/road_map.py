@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import List, NamedTuple, Sequence, Set, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 from shapely.geometry import Polygon
@@ -38,8 +38,7 @@ from .utils.math import (
 
 # TODO:
 # - also consider Esri, QGIS and Google Maps formats
-# - look at how OpenDrive encodes lane direction
-#    -https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09
+# -https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09
 
 
 class RoadMap:
@@ -59,8 +58,12 @@ class RoadMap:
         # map units per meter
         return 1.0
 
-    def to_glb(self, at_path):
-        """ build a glb file for camera rendering and envision """
+    def is_same_map(self, map_spec) -> bool:
+        """Check if the MapSpec Object source points to the same RoadMap instance as the current"""
+        raise NotImplementedError
+
+    def to_glb(self, at_path: str):
+        """build a glb file for camera rendering and envision"""
         raise NotImplementedError()
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
@@ -73,12 +76,12 @@ class RoadMap:
         raise NotImplementedError()
 
     def nearest_lanes(
-        self, point: Point, radius: float = None, include_junctions=True
+        self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> List[Tuple[RoadMap.Lane, float]]:
         raise NotImplementedError()
 
     def nearest_lane(
-        self, point: Point, radius: float = None, include_junctions=True
+        self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> RoadMap.Lane:
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
         return nearest_lanes[0][0] if nearest_lanes else None
@@ -90,10 +93,10 @@ class RoadMap:
         self,
         start_road: RoadMap.Road,
         end_road: RoadMap.Road,
-        via: Sequence[RoadMap.Road] = None,
+        via: Optional[Sequence[RoadMap.Road]] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
-        """ Routes will be returned in order of increasing length """
+        """Routes will be returned in order of increasing length"""
         raise NotImplementedError()
 
     def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
@@ -143,8 +146,13 @@ class RoadMap:
         def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
             raise NotImplementedError()
 
-        def shape(self, buffer_width: float = 0.0) -> Polygon:
-            """Returns a convex polygon, buffered by width (which must be non-negative), around this surface."""
+        def shape(
+            self, buffer_width: float = 0.0, default_width: Optional[float] = None
+        ) -> Polygon:
+            """Returns a convex polygon representing this surface, buffered by buffered_width (which must be non-negative),
+            where buffer_width is a buffer around the perimeter of the polygon.  In some situations, it may be desirable to
+            also specify a `default_width`, in which case the returned polygon should have a convex shape where the
+            distance across it is no less than buffered_width + default_width at any point."""
             raise NotImplementedError()
 
         def contains_point(self, point: Point) -> bool:
@@ -204,7 +212,7 @@ class RoadMap:
         @property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: left is defined as 90 degrees clockwise relative to the lane heading.
-            (I.e., positive `t` in the RefLane coordinate system.)
+            (I.e., positive `t` in the RefLine coordinate system.)
             Second result is True if lane is in the same direction as this one
             In junctions, diverging lanes should not be included."""
             raise NotImplementedError()
@@ -212,7 +220,7 @@ class RoadMap:
         @property
         def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
             """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
-            (I.e., negative `t` in the RefLane coordinate system.)
+            (I.e., negative `t` in the RefLine coordinate system.)
             Second result is True if lane is in the same direction as this one.
             In junctions, diverging lanes should not be included."""
             raise NotImplementedError()
@@ -265,7 +273,23 @@ class RoadMap:
         ) -> Set[Tuple[RoadMap.Lane, float]]:
             """Starting at start_offset along the lane, project locations (lane, offset tuples)
             reachable within distance, not including lane changes."""
-            raise NotImplementedError()
+            result = set()
+            path_stack = {(self, self.length - start_offset)}
+            for lane in self.lanes_in_same_direction:
+                path_stack.add((lane, lane.length - start_offset))
+            while len(path_stack):
+                new_stack = set()
+                for lane, dist in path_stack:
+                    if dist > distance:
+                        offset = lane.length + (distance - dist)
+                        result.add((lane, offset))
+                        continue
+                    for out_lane in lane.outgoing_lanes:
+                        new_stack.add((out_lane, dist + out_lane.length))
+                        for adj_lane in out_lane.lanes_in_same_direction:
+                            new_stack.add((adj_lane, dist + adj_lane.length))
+                path_stack = new_stack
+            return result
 
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             raise NotImplementedError()
@@ -290,14 +314,19 @@ class RoadMap:
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
             offset = self.offset_along_lane(point)
             width = self.width_at_offset(offset)
-            left_edge = RefLanePoint(s=offset, t=width / 2)
-            right_edge = RefLanePoint(s=offset, t=-width / 2)
-            return (self.from_lane_coord(left_edge), self.from_lane_coord(right_edge))
+            left_edge = RefLinePoint(s=offset, t=width / 2)
+            right_edge = RefLinePoint(s=offset, t=-width / 2)
+            return self.from_lane_coord(left_edge), self.from_lane_coord(right_edge)
 
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
-            add_offset = 1  # a little further down the lane
-            end_offset = start_offset + add_offset
-            p1 = self.from_lane_coord(RefLinePoint(s=start_offset))
+            if start_offset >= self.length:
+                s_offset = self.length - 1
+                end_offset = self.length
+            else:
+                s_offset = start_offset
+                end_offset = start_offset + 1  # a little further down the lane
+            s_offset = max(s_offset, 0)
+            p1 = self.from_lane_coord(RefLinePoint(s=s_offset))
             p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
             return np.array(p2) - np.array(p1)
 

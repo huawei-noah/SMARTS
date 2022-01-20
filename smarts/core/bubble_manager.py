@@ -24,17 +24,17 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from sys import maxsize
-from typing import Dict, FrozenSet, Sequence, Set, Tuple
+from typing import Dict, FrozenSet, Optional, Sequence, Set
 
 from shapely.affinity import rotate, translate
 from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
 
 from smarts.core.data_model import SocialAgent
-from smarts.core.plan import Mission, Plan, PositionalGoal, Start
+from smarts.core.plan import EndlessGoal, Mission, Plan, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.string import truncate
-from smarts.core.vehicle import Vehicle, VehicleState
+from smarts.core.vehicle import Vehicle
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.sstudio.types import BoidAgentActor
 from smarts.sstudio.types import Bubble as SSBubble
@@ -246,9 +246,9 @@ class Cursor:
     # We would always want to have the vehicle go through the airlock zone. This may
     # not be the case if we spawn a vehicle in a bubble, but that wouldn't be ideal.
     vehicle_id: str
-    state: BubbleState = None
-    transition: BubbleTransition = None
-    bubble: Bubble = None
+    state: Optional[BubbleState] = None
+    transition: Optional[BubbleTransition] = None
+    bubble: Optional[Bubble] = None
 
     @classmethod
     def from_pos(
@@ -378,10 +378,10 @@ class BubbleManager:
             active_bubbles = self._active_bubbles()
             if not active_bubbles:
                 continue
-            # XXX: Turns out Point(...) creation is very expensive (~0.02ms) which
+            # XXX: Turns out Shapely Point(...) creation is very expensive (~0.02ms) which
             #      when inside of a loop x large number of vehicles makes a big
             #      performance hit.
-            point = Point(vehicle.position)
+            point = vehicle.pose.point.as_shapely
             for bubble in active_bubbles:
                 cursors.add(
                     Cursor.from_pos(
@@ -499,20 +499,7 @@ class BubbleManager:
             recreate=False,
             agent_interface=agent_interface,
         )
-
-        for provider in sim.providers:
-            interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-            if interface.action_space in provider.action_spaces:
-                provider.create_vehicle(
-                    VehicleState(
-                        vehicle_id=vehicle_id,
-                        vehicle_config_type="passenger",
-                        pose=vehicle.pose,
-                        dimensions=vehicle.chassis.dimensions,
-                        speed=vehicle.speed,
-                        source="HIJACK",
-                    )
-                )
+        sim.create_vehicle_in_providers(vehicle, agent_id)
 
     def _relinquish_vehicle_to_traffic_sim(self, sim, vehicle_id: str, bubble: Bubble):
         agent_id = sim.vehicle_index.actor_id_from_vehicle_id(vehicle_id)
@@ -563,10 +550,11 @@ class BubbleManager:
         # Setup mission (also used for observations)
         # XXX: this is not quite right.  route may not be what the agent wants to take.
         route = sim.traffic_sim.vehicle_route(vehicle_id=vehicle.id)
-        mission = Mission(
-            start=Start(vehicle.position[:2], vehicle.heading),
-            goal=PositionalGoal.from_road(route[-1], sim.scenario.road_map),
-        )
+        if len(route) > 0:
+            goal = PositionalGoal.from_road(route[-1], sim.scenario.road_map)
+        else:
+            goal = EndlessGoal()
+        mission = Mission(start=Start(vehicle.position[:2], vehicle.heading), goal=goal)
         plan.create_route(mission)
 
     def _start_social_agent(

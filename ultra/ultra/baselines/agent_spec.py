@@ -72,7 +72,7 @@ class BaselineAgentSpec(AgentSpec):
                         policy_params=spec.agent_params["policy_params"],
                         checkpoint_dir=checkpoint_dir,
                     ),
-                    agent_builder=spec.policy_builder,
+                    agent_builder=spec.agent_builder,
                     observation_adapter=spec.observation_adapter,
                     reward_adapter=spec.reward_adapter,
                     info_adapter=spec.info_adapter,

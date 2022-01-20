@@ -21,12 +21,13 @@ import importlib.resources as pkg_resources
 import logging
 import math
 import os
-from typing import Sequence
+from typing import Optional, Sequence
 
 import numpy as np
 import yaml
+from cached_property import cached_property
 from shapely.affinity import rotate as shapely_rotate
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
 from smarts.core import models
@@ -149,8 +150,8 @@ class Chassis:
         self,
         dt: float,
         force_pose: Pose,
-        linear_velocity: np.ndarray = None,
-        angular_velocity: np.ndarray = None,
+        linear_velocity: Optional[np.ndarray] = None,
+        angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
         and may have unintended behavioural or performance consequences."""
@@ -197,8 +198,8 @@ class BoxChassis(Chassis):
         self,
         dt: float,
         force_pose: Pose,
-        linear_velocity: np.ndarray = None,
-        angular_velocity: np.ndarray = None,
+        linear_velocity: Optional[np.ndarray] = None,
+        angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
         and may have unintended behavioural or performance consequences."""
@@ -254,7 +255,7 @@ class BoxChassis(Chassis):
         return (linear_velocity, angular_velocity)
 
     @speed.setter
-    def speed(self, speed: float = None):
+    def speed(self, speed: Optional[float] = None):
         self._speed = speed
 
     @property
@@ -266,7 +267,7 @@ class BoxChassis(Chassis):
         return None
 
     @property
-    def yaw_rate(self) -> float:
+    def yaw_rate(self) -> Optional[float]:
         # in rad/s
         if self._last_dt and self._last_dt > 0:
             delta = min_angles_difference_signed(self._pose.heading, self._last_heading)
@@ -440,26 +441,43 @@ class AckermannChassis(Chassis):
         if initial_speed is not None:
             self._initialize_speed(initial_speed)
 
-    @property
+    @cached_property
+    def _cached_props(self):
+        return {
+            a
+            for a, v in self.__class__.__dict__.items()
+            if isinstance(v, cached_property)
+        }
+
+    def _clear_step_cache(self):
+        cached_props = self._cached_props
+        self.__dict__ = {
+            a: v
+            for a, v in self.__dict__.items()
+            if a not in cached_props or a == "_cached_props"
+        }
+
+    @cached_property
     def pose(self) -> Pose:
         pos, orn = self._client.getBasePositionAndOrientation(self._bullet_id)
         heading = Heading(yaw_from_quaternion(orn))
-
-        pose = Pose.from_explicit_offset(
+        # NOTE: we're inefficiently creating a new Pose object on every call here,
+        # but it's too risky to change this because our clients now rely on this behavior.
+        return Pose.from_explicit_offset(
             [0, 0, 0],
             np.array(pos),
             heading,
             local_heading=Heading(0),
         )
-        return pose
 
     def set_pose(self, pose: Pose):
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self._bullet_id, position, orientation
         )
+        self._clear_step_cache()
 
-    @property
+    @cached_property
     def steering(self):
         """Current steering value in radians."""
         steering_radians = np.mean(
@@ -480,10 +498,9 @@ class AckermannChassis(Chassis):
     def speed(self) -> float:
         """Returns speed in m/s."""
         velocity, _ = np.array(self._client.getBaseVelocity(self._bullet_id))
-        speed = math.sqrt(velocity.dot(velocity))
-        return speed
+        return math.sqrt(velocity.dot(velocity))
 
-    @property
+    @cached_property
     def velocity_vectors(self):
         """Linear velocity vector is in m/s and Angular veclocity is in Rad/sec"""
         linear_velocity, angular_velocity = np.array(
@@ -492,7 +509,7 @@ class AckermannChassis(Chassis):
         return (np.array(self.longitudinal_lateral_speed + (0,)), angular_velocity)
 
     @speed.setter
-    def speed(self, speed: float = None):
+    def speed(self, speed: Optional[float] = None):
         # TODO: Temporary, figure out the required joint velocities to achieve the
         #       requested speed
         if not speed or self.speed < speed:
@@ -500,13 +517,13 @@ class AckermannChassis(Chassis):
         elif self.speed > speed:
             self.control(throttle=1)
 
-    @property
+    @cached_property
     def yaw_rate(self) -> float:
         """Returns 2-D rotational speed in rad/sec."""
         _, velocity_rotational = np.array(self._client.getBaseVelocity(self._bullet_id))
         return vec_to_radians(velocity_rotational[:2])
 
-    @property
+    @cached_property
     def longitudinal_lateral_speed(self):
         """Returns speed in m/s."""
         velocity, _ = np.array(self._client.getBaseVelocity(self._bullet_id))
@@ -531,7 +548,7 @@ class AckermannChassis(Chassis):
         """This is the scientifically discovered maximum speed of this vehicle model"""
         return 95
 
-    @property
+    @cached_property
     def contact_points(self):
         ## 0 is the chassis link index (which means ground won't be included)
         contact_points = _query_bullet_contact_points(self._client, self._bullet_id, 0)
@@ -540,7 +557,7 @@ class AckermannChassis(Chassis):
             for p in contact_points
         ]
 
-    @property
+    @cached_property
     def mass_and_inertia(self):
         return (
             self._client.getDynamicsInfo(self._bullet_id, 0)[0],
@@ -598,6 +615,7 @@ class AckermannChassis(Chassis):
     def step(self, current_simulation_time):
         if self._friction_map != None:
             self._set_road_friction(current_simulation_time)
+        self._clear_step_cache()
 
     def inherit_physical_values(self, other: BoxChassis):
         self.set_pose(other.pose)
@@ -611,6 +629,7 @@ class AckermannChassis(Chassis):
     def teardown(self):
         self._client.removeBody(self._bullet_id)
         self._bullet_id = None
+        self._clear_step_cache()
 
     def control(self, throttle=0, brake=0, steering=0):
         """Apply throttle [0, 1], brake [0, 1], and steering [-1, 1] values for this
@@ -629,20 +648,30 @@ class AckermannChassis(Chassis):
         assert 0 <= brake <= 1, f"brake ({brake}) must be in [0, 1]"
         assert -1 <= steering <= 1, f"steering ({steering}) must be in [-1, 1]"
 
+        # If we apply brake at low speed using reverse torque
+        # the vehicle starts to roll back. we need to apply a condition
+        # on brake such that, the reverse torque is only applied after
+        # a threshold is passed for vehicle velocity.
+        # Thus, brake is applied if: vehicle speed > 1/36 (m/s)
+        if brake > 0 and self.longitudinal_lateral_speed[0] < 1 / 36:
+            brake = 0
+
         self._apply_steering(steering)
+
         # If the tire parameters yaml file exists, then the throttle and
         # brake forces are applied according to the requested tire model.
         # Otherwise, it uses bullet to calculate the reaction forces.
-
         if self._tire_model != None:
             self._lat_forces, self._lon_forces = self._tire_model.apply_tire_forces(
                 self,
                 self.bullet_client,
                 [(1 / self._max_torque) * np.array(throttle_list), brake, steering],
             )
+            self._clear_step_cache()
             return
         self._apply_throttle(throttle_list)
         self._apply_brake(brake)
+        self._clear_step_cache()
 
     def reapply_last_control(self):
         assert self._last_control
@@ -652,8 +681,8 @@ class AckermannChassis(Chassis):
         self,
         dt: float,
         force_pose: Pose,
-        linear_velocity: np.ndarray = None,
-        angular_velocity: np.ndarray = None,
+        linear_velocity: Optional[np.ndarray] = None,
+        angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
         and may have unintended behavioural or performance consequences."""
@@ -666,6 +695,7 @@ class AckermannChassis(Chassis):
                 linearVelocity=linear_velocity,
                 angularVelocity=angular_velocity,
             )
+        self._clear_step_cache()
 
     def _apply_throttle(self, throttle_list):
         self._client.setJointMotorControlArray(
@@ -684,14 +714,6 @@ class AckermannChassis(Chassis):
         )
 
     def _apply_brake(self, brake):
-        # If we apply brake at low speed using reverse torque
-        # the vehicle strats to rollback, we need to apply a condition
-        # on brake such that, the reverse torque is only applied after
-        # a threshold is passed for vehicle velocity.
-        #
-        # Thus, brake is applied if: vehicle speed > 1/36 (m/s)
-        if self.longitudinal_lateral_speed[0] < 1 / 36:
-            brake = 0
         self._client.setJointMotorControlArray(
             self._bullet_id,
             [
@@ -780,15 +802,14 @@ class AckermannChassis(Chassis):
             pybullet.TORQUE_CONTROL,
             forces=[0] * 4,
         )
+        self._clear_step_cache()
 
     def _set_road_friction(self, current_simulation_time):
         """Sets the road friction coefficient if fricition map
         exists and the vehicle is located in the defined regions
         in scenario file.
         """
-        pos = Point(
-            self.pose.as_panda3d()[0]
-        )  # TODO: does this need to be "as_panda3d"?
+        pos = self.pose.point.as_shapely
         # A check to see if we are in a surface patch.
         for surface_patch in self._friction_map:
             if pos.within(surface_patch["zone"].to_geometry()) and (
@@ -838,3 +859,4 @@ class AckermannChassis(Chassis):
                 lateralFriction=tire_model_parameters
                 / self._road_wheel_frictions["road_friction"],
             )
+        self._clear_step_cache()

@@ -18,9 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import glob
-import json
 import logging
-import math
 import os
 import pickle
 import random
@@ -30,12 +28,11 @@ from itertools import cycle, product
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence, Tuple
 
+import cloudpickle
 import numpy as np
-from cached_property import cached_property
 
-from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
+from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
 from smarts.core.data_model import SocialAgent
-from smarts.core.default_map_factory import create_road_map
 from smarts.core.plan import (
     EndlessGoal,
     LapMission,
@@ -49,10 +46,11 @@ from smarts.core.plan import (
 )
 from smarts.core.road_map import RoadMap
 from smarts.core.traffic_history import TrafficHistory
-from smarts.core.utils.file import file_md5_hash, make_dir_in_smarts_log_dir, path2hash
+from smarts.core.utils.file import make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.sstudio import types as sstudio_types
+from smarts.sstudio.types import MapSpec
 from smarts.sstudio.types import Via as SSVia
 
 
@@ -67,17 +65,23 @@ class Scenario:
             The social vehicle traffic spec.
         missions:
             agent_id to mission mapping.
+        map_spec:
+            If specified, allows specifying a MapSpec at run-time
+            to override any spec that may have been pre-specified
+            in the scenario folder (or the default if none were).
+            Also see comments around the sstudio.types.MapSpec defn.
     """
 
     def __init__(
         self,
         scenario_root: str,
-        route: str = None,
-        missions: Dict[str, Mission] = None,
-        social_agents: Dict[str, SocialAgent] = None,
-        log_dir: str = None,
-        surface_patches: list = None,
-        traffic_history: str = None,
+        route: Optional[str] = None,
+        missions: Optional[Dict[str, Mission]] = None,
+        social_agents: Optional[Dict[str, SocialAgent]] = None,
+        log_dir: Optional[str] = None,
+        surface_patches: Optional[Sequence[Dict[str, Any]]] = None,
+        traffic_history: Optional[str] = None,
+        map_spec: Optional[MapSpec] = None,
     ):
 
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -88,7 +92,6 @@ class Scenario:
         self._social_agents = social_agents or {}
         self._surface_patches = surface_patches
         self._log_dir = self._resolve_log_dir(log_dir)
-        self._validate_assets_exist()
 
         if traffic_history:
             self._traffic_history = TrafficHistory(traffic_history)
@@ -97,10 +100,17 @@ class Scenario:
             self._traffic_history = None
             default_lane_width = None
 
-        self._road_map, self._road_map_hash = create_road_map(
-            self._root, 1.0, default_lane_width
-        )
+        # XXX: using a map builder_fn supplied by users is a security risk
+        # as SMARTS will be executing the code "as is".  We are currently
+        # trusting our users to not try to sabotage their own simulations.
+        # In the future, this may need to be revisited if SMARTS is ever
+        # shared in a multi-user mode.
+        if not map_spec:
+            map_spec = Scenario.discover_map(self._root, 1.0, default_lane_width)
+        self._road_map, self._road_map_hash = map_spec.builder_fn(map_spec)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
+
+        os.makedirs(self._log_dir, exist_ok=True)
 
     def __repr__(self):
         return f"""Scenario(
@@ -245,7 +255,7 @@ class Scenario:
         len(missions)`. In this case a list of one dictionary is returned.
         """
 
-        road_map, _ = create_road_map(scenario_root)
+        road_map, _ = Scenario.build_map(scenario_root)
 
         missions = []
         missions_file = os.path.join(scenario_root, "missions.pkl")
@@ -311,7 +321,7 @@ class Scenario:
         scenario_root = (
             scenario.root_filepath if isinstance(scenario, Scenario) else scenario
         )
-        road_map, _ = create_road_map(scenario_root)
+        road_map, _ = Scenario.build_map(scenario_root)
 
         social_agents_path = os.path.join(scenario_root, "social_agents")
         if not os.path.exists(social_agents_path):
@@ -393,6 +403,54 @@ class Scenario:
         return discovered_scenarios
 
     @staticmethod
+    def build_map(scenario_root: str) -> Tuple[RoadMap, str]:
+        # XXX: using a map builder_fn supplied by users is a security risk
+        # as SMARTS will be executing the code "as is".  We are currently
+        # trusting our users to not try to sabotage their own simulations.
+        # In the future, this may need to be revisited if SMARTS is ever
+        # shared in a multi-user mode.
+        map_spec = Scenario.discover_map(scenario_root)
+        return map_spec.builder_fn(map_spec)
+
+    @staticmethod
+    def supports_traffic_simulation(scenarios):
+        from smarts.core.sumo_road_network import SumoRoadNetwork
+
+        num_sumo = 0
+        scenario_list = Scenario.get_scenario_list(scenarios)
+        for scenario_root in scenario_list:
+            try:
+                road_map, _ = Scenario.build_map(scenario_root)
+            except FileNotFoundError:
+                raise FileNotFoundError(
+                    f"Unable to find network file in map_source={scenario_root}."
+                )
+            if isinstance(road_map, SumoRoadNetwork):
+                num_sumo += 1
+
+        return num_sumo == len(scenario_list)
+
+    @staticmethod
+    def discover_map(
+        scenario_root: str,
+        lanepoint_spacing: Optional[float] = None,
+        default_lane_width: Optional[float] = None,
+        shift_to_origin: bool = False,
+    ) -> MapSpec:
+        path = os.path.join(scenario_root, "map_spec.pkl")
+        if not os.path.exists(path):
+            # Use our default map builder if none specified by scenario...
+            return MapSpec(
+                scenario_root,
+                lanepoint_spacing,
+                default_lane_width,
+                shift_to_origin,
+            )
+        with open(path, "rb") as f:
+            road_map = cloudpickle.load(f)
+            return road_map
+
+    @staticmethod
     def discover_routes(scenario_root):
         """Discover the route files in the given scenario.
 
@@ -421,34 +479,81 @@ class Scenario:
     def set_ego_missions(self, ego_missions: dict):
         self._missions = ego_missions
 
+    def get_vehicle_start_at_time(
+        self, vehicle_id: str, start_time: float
+    ) -> Tuple[Start, float]:
+        """Returns a Start object that can be used to create a Mission for
+        a vehicle from a traffic history dataset starting at its location
+        at start_time.  Also returns its speed at that time."""
+        pphs = self._traffic_history.vehicle_pose_at_time(vehicle_id, start_time)
+        assert pphs
+        pos_x, pos_y, heading, speed = pphs
+        # missions start from front bumper, but pos is center of vehicle
+        veh_dims = self._traffic_history.vehicle_dims(vehicle_id)
+        hhx, hhy = radians_to_vec(heading) * (0.5 * veh_dims.length)
+        return (
+            Start(
+                (pos_x + hhx, pos_y + hhy),
+                Heading(heading),
+            ),
+            speed,
+        )
+
+    def _get_vehicle_goal(self, vehicle_id: str) -> Point:
+        final_exit_time = self._traffic_history.vehicle_final_exit_time(vehicle_id)
+        final_pose = self._traffic_history.vehicle_pose_at_time(
+            vehicle_id, final_exit_time
+        )
+        assert final_pose
+        final_pos_x, final_pos_y, final_heading, _ = final_pose
+        # missions start from front bumper, but pos is center of vehicle
+        veh_dims = self._traffic_history.vehicle_dims(veh_id)
+        hhx, hhy = radians_to_vec(heading) * (0.5 * veh_dims.length)
+        final_hhx, final_hhy = radians_to_vec(final_heading) * (0.5 * veh_dims.length)
+        return Point(final_pos_x + final_hhx, final_pos_y + final_hhy)
+
     def discover_missions_of_traffic_histories(self) -> Dict[str, Mission]:
         vehicle_missions = {}
         for row in self._traffic_history.first_seen_times():
-            start_time = float(row[1])
-            pphs = self._traffic_history.vehicle_pose_at_time(row[0], start_time)
-            assert pphs
-            pos_x, pos_y, heading, speed = pphs
-            entry_tactic = default_entry_tactic(speed)
             v_id = str(row[0])
+            start_time = float(row[1])
+            start, speed = self.get_vehicle_start_at_time(v_id, start_time)
+            entry_tactic = default_entry_tactic(speed)
             veh_config_type = self._traffic_history.vehicle_config_type(v_id)
-            veh_length, veh_width, veh_height = self._traffic_history.vehicle_size(v_id)
-            # missions start from front bumper, but pos is center of vehicle
-            hhx, hhy = radians_to_vec(heading) * (0.5 * veh_length)
+            veh_dims = self._traffic_history.vehicle_dims(v_id)
             vehicle_missions[v_id] = Mission(
-                start=Start(
-                    (pos_x + hhx, pos_y + hhy),
-                    Heading(heading),
-                ),
+                start=start,
                 entry_tactic=entry_tactic,
                 goal=TraverseGoal(self.road_map),
                 start_time=start_time,
                 vehicle_spec=VehicleSpec(
                     veh_id=v_id,
                     veh_config_type=veh_config_type,
-                    dimensions=Dimensions(veh_length, veh_width, veh_height),
+                    dimensions=veh_dims,
                 ),
             )
         return vehicle_missions
+
+    def create_dynamic_traffic_history_mission(
+        self, veh_id: str, trigger_time: float, positional_radius: int
+    ) -> Tuple[Mission, Mission]:
+        start, speed = self.get_vehicle_start_at_time(veh_id, trigger_time)
+        veh_goal = self._get_vehicle_goal(veh_id)
+        entry_tactic = default_entry_tactic(speed)
+        # create a positional mission and a traverse mission
+        positional_mission = Mission(
+            start=start,
+            entry_tactic=entry_tactic,
+            start_time=0,
+            goal=PositionalGoal(veh_goal, radius=positional_radius),
+        )
+        traverse_mission = Mission(
+            start=start,
+            entry_tactic=entry_tactic,
+            start_time=0,
+            goal=TraverseGoal(self._road_map),
+        )
+        return positional_mission, traverse_mission
 
     @staticmethod
     def discover_traffic_histories(scenario_root: str):
@@ -504,7 +609,7 @@ class Scenario:
                         lane_id=lane.lane_id,
                         lane_index=via.lane_index,
                         road_id=via.road_id,
-                        position=tuple(via_position),
+                        position=tuple(via_position[:2]),
                         hit_distance=hit_distance,
                         required_speed=via.required_speed,
                     )
@@ -597,8 +702,8 @@ class Scenario:
         """
         # just make sure we can load the map
         try:
-            road_map, _ = create_road_map(scenario_root)
-        except:
+            road_map, _ = Scenario.build_map(scenario_root)
+        except FileNotFoundError:
             return False
         return road_map is not None
 
@@ -690,10 +795,6 @@ class Scenario:
             log_dir = make_dir_in_smarts_log_dir("_sumo_run_logs")
 
         return os.path.abspath(log_dir)
-
-    def _validate_assets_exist(self):
-        assert Scenario.is_valid_scenario(self._root)
-        os.makedirs(self._log_dir, exist_ok=True)
 
     @property
     def traffic_history(self):
