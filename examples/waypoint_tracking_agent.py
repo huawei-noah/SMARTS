@@ -23,14 +23,13 @@ AGENT_ID = "WaypointTrackingAgent"
 
 class WaypointTrackingAgent(Agent):
     def __init__(self):
-        self.num_waypoint_paths = 0
-        self.waypoint_path_index = 0
-        self.prev_lane_index = 0
         self.path = []
 
     def act(self, obs):
 
         current_lane = obs.ego_vehicle_state.lane_index
+        # Desired speed is in m/s
+        desired_speed = 10
 
         if len(obs.waypoint_paths) == 9:
 
@@ -49,21 +48,15 @@ class WaypointTrackingAgent(Agent):
                     # choose waypoint path with end closest to the goal
                     if abs(lateral_error) < min_lateral_error:
                         min_lateral_error = abs(lateral_error)
-                        self.waypoint_path_index = idx
+                        wp_index = idx
 
-            self.path = obs.waypoint_paths[self.waypoint_path_index]
+            self.path = obs.waypoint_paths[wp_index]
 
         else:
             for i in range(len(obs.waypoint_paths)):
                 if obs.waypoint_paths[i][0].lane_index == current_lane:
-                    self.waypoint_path_index = i
+                    wp_index = i
                     break
-
-        num_trajectory_points = min(
-            [5, len(obs.waypoint_paths[self.waypoint_path_index])]
-        )
-        # Desired speed is in m/s
-        desired_speed = 10
 
         if self.path:
 
@@ -75,19 +68,22 @@ class WaypointTrackingAgent(Agent):
                 [desired_speed for i in range(num_trajectory_points)],
             ]
             self.path.pop(0)
+
         else:
+
+            num_trajectory_points = min([5, len(obs.waypoint_paths[wp_index])])
 
             trajectory = [
                 [
-                    obs.waypoint_paths[self.waypoint_path_index][i].pos[0]
+                    obs.waypoint_paths[wp_index][i].pos[0]
                     for i in range(num_trajectory_points)
                 ],
                 [
-                    obs.waypoint_paths[self.waypoint_path_index][i].pos[1]
+                    obs.waypoint_paths[wp_index][i].pos[1]
                     for i in range(num_trajectory_points)
                 ],
                 [
-                    obs.waypoint_paths[self.waypoint_path_index][i].heading
+                    obs.waypoint_paths[wp_index][i].heading
                     for i in range(num_trajectory_points)
                 ],
                 [desired_speed for i in range(num_trajectory_points)],
