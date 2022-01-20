@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+from typing import Tuple, Union
 
 import numpy as np
 
@@ -27,14 +28,28 @@ from smarts.core.utils.math import (
     fast_quaternion_from_angle,
     radians_to_vec,
 )
+from smarts.core.vehicle import Vehicle
 
 
 class ImitationController:
     """A controller that is useful for imitation learning."""
 
     @classmethod
-    def perform_action(cls, dt, vehicle, action):
-        """Performs an action adapting to the underlying chassis."""
+    def perform_action(
+        cls,
+        dt: float,
+        vehicle: Vehicle,
+        action: Union[float, Tuple[Tuple[float, float], float]],
+    ):
+        """Performs an action adapting to the underlying chassis.
+        Args:
+            dt:
+                A delta time value.
+            vehicle:
+                The vehicle to control.
+            action:
+                (speed) XOR (acceleration, angular_velocity)
+        """
         chassis = vehicle.chassis
         if isinstance(action, (int, float)):
             # special case:  setting the initial speed

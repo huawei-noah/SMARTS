@@ -26,7 +26,7 @@ import uuid
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Generator, Optional, Sequence, Tuple
+from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple
 
 import cloudpickle
 import numpy as np
@@ -302,7 +302,7 @@ class Scenario:
         return missions
 
     @staticmethod
-    def discover_friction_map(scenario_root):
+    def discover_friction_map(scenario_root) -> List[Dict[str, Any]]:
         """Returns the list of surface patches parameters defined in
         scenario file. Each element of the list contains the
         parameters of the specifiec surface patch.
