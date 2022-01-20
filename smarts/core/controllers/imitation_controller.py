@@ -28,7 +28,6 @@ from smarts.core.utils.math import (
     fast_quaternion_from_angle,
     radians_to_vec,
 )
-from smarts.core.vehicle import Vehicle
 
 
 class ImitationController:
@@ -38,7 +37,6 @@ class ImitationController:
     def perform_action(
         cls,
         dt: float,
-        vehicle: Vehicle,
         action: Union[float, Tuple[Tuple[float, float], float]],
     ):
         """Performs an action adapting to the underlying chassis.

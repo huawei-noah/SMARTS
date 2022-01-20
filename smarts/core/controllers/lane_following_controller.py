@@ -26,13 +26,11 @@ from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers.trajectory_tracking_controller import (
     TrajectoryTrackingController,
 )
-from smarts.core.sensors import SensorState
 from smarts.core.utils.math import (
     lerp,
     low_pass_filter,
     min_angles_difference_signed,
 )
-from smarts.core.vehicle import Vehicle
 
 METER_PER_SECOND_TO_KM_PER_HR = 3.6
 
@@ -71,9 +69,9 @@ class LaneFollowingController:
         cls,
         sim,
         agent_id: str,
-        vehicle: Vehicle,
+        vehicle,
         controller_state: LaneFollowingControllerState,
-        sensor_state: SensorState,
+        sensor_state,
         target_speed: float = 12.5,
         lane_change: int = 0,
     ):
