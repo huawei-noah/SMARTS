@@ -1,41 +1,41 @@
 import argparse
 import os
 import pathlib
+from datetime import datetime
 from shutil import copyfile
 
-from sb3.env.make_env import make_env
 from ruamel.yaml import YAML
+from sb3.env.make_env import make_env
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
-
-
-def _build_scenario():
-    scenario = str(pathlib.Path(__file__).absolute().parent / "scenarios" / "loop")
-    build_scenario = f"scl scenario build-all --clean {scenario}"
-    os.system(build_scenario)
-
 
 yaml = YAML(typ="safe")
 
 
-def main(args):
+def _build_scenario():
+    scenario = str(pathlib.Path(__file__).absolute().parent / "scenarios")
+    build_scenario = f"scl scenario build-all --clean {scenario}"
+    os.system(build_scenario)
 
+
+def main(args):
+    # Load config file.
+    config_file = yaml.load(
+        (pathlib.Path(__file__).absolute().parent / "config.yaml").read_text()
+    )
     _build_scenario()
 
     if args.mode != "colab":
-        # save trained model
-        from datetime import datetime
-
-        date_time = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        save_path = pathlib.Path(__file__).absolute().parent / "logs" / date_time
+        # Save trained model.
+        time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        save_path = pathlib.Path(__file__).absolute().parent / "logs" / time
         pathlib.Path(str(save_path)).mkdir(parents=True, exist_ok=True)
 
     if args.mode == "evaluate":
 
-        name = "smarts"
         config_path = pathlib.Path(args.logdir) / "config.yaml"
         config_env = yaml.load((config_path).read_text())
-        config_env = config_env[name]
+        config_env = config_env["smarts"]
         config_env["headless"] = not args.head
         config_env["scenarios_dir"] = (
             pathlib.Path(__file__).absolute().parents[0] / "scenarios"
@@ -50,10 +50,9 @@ def main(args):
 
     elif args.mode == "retrain":
 
-        name = "smarts"
         config_path = pathlib.Path(args.logdir) / "config.yaml"
         config_env = yaml.load((config_path).read_text())
-        config_env = config_env[name]
+        config_env = config_env["smarts"]
         config_env["headless"] = not args.head
         config_env["scenarios_dir"] = (
             pathlib.Path(__file__).absolute().parents[0] / "scenarios"
@@ -75,16 +74,14 @@ def main(args):
         )
         print(f"mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}")
 
-        # save trained model
+        # Save trained model.
         copyfile(config_path, str(save_path) + "/config.yaml")
         model.save(str(save_path) + "/model")
 
     else:
-
-        name = "smarts"
         config_path = pathlib.Path(__file__).absolute().parent / "config.yaml"
         config_env = yaml.load((config_path).read_text())
-        config_env = config_env[name]
+        config_env = config_env["smarts"]
         config_env["headless"] = not args.head
         config_env["scenarios_dir"] = (
             pathlib.Path(__file__).absolute().parents[0] / "scenarios"
@@ -111,16 +108,13 @@ def main(args):
         )
         print(f"mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}")
 
-        # save trained model
+        # Save trained model.
         copyfile(config_path, str(save_path) + "/config.yaml")
         model.save(str(save_path) + "/model")
 
 
 if __name__ == "__main__":
-
-    from pathlib import Path
-
-    program = Path(__file__).stem
+    program = pathlib.Path(__file__).stem
     parser = argparse.ArgumentParser(program)
 
     parser.add_argument(
@@ -141,5 +135,8 @@ if __name__ == "__main__":
     parser.add_argument("--num-steps", type=int, default=1000000)
 
     args = parser.parse_args()
+
+    if args.mode == "evaluate" and args.logdir is None:
+        raise Exception("When --mode=evaluate, --logdir option must be specified.")
 
     main(args)
