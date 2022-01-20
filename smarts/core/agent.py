@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Adapter:
-    space: gym.spaces
+    space: gym.Space
     func: Callable = lambda x: x
 
     def __call__(self, adaptee):
