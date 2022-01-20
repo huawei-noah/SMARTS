@@ -1,9 +1,4 @@
-def info_adapter(obs, reward, info):
-    return info
-
-
 import gym
-import numpy as np
 
 
 class Reward(gym.Wrapper):

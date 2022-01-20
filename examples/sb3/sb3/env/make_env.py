@@ -1,17 +1,17 @@
+import env.action as action
+import env.reward as reward
+from stable_baselines3.common import monitor
+from stable_baselines3.common.env_checker import check_env
+
+import smarts.env.wrappers.rgb_image as smarts_rgb_image
+import smarts.env.wrappers.single_agent as smarts_single_agent
 from smarts.core import agent as smarts_agent
 from smarts.core import agent_interface as smarts_agent_interface
 from smarts.core import controllers as smarts_controllers
 from smarts.env import hiway_env as smarts_hiway_env
-import smarts.env.wrappers.rgb_image as smarts_rgb_image
-import smarts.env.wrappers.single_agent as smarts_single_agent
-import env.reward as reward
-import env.action as action
-
-from stable_baselines3.common import monitor
-from stable_baselines3.common.env_checker import check_env
 
 
-def create_env(config):
+def make_env(config):
 
     vehicle_interface = smarts_agent_interface.AgentInterface(
         max_episode_steps=config["max_episode_steps"],
@@ -53,7 +53,7 @@ def create_env(config):
         headless=config["headless"],
         visdom=config["visdom"],
         seed=config["seed"],
-        sim_name="smarts",
+        sim_name="SB3",
     )
 
     # Wrap env with ActionWrapper

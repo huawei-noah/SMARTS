@@ -1,14 +1,10 @@
 import argparse
-import gym
 import os
 import pathlib
-import numpy as np
-import tensorflow as tf
 from shutil import copyfile
+
+from sb3.env.make_env import make_env
 from ruamel.yaml import YAML
-
-from env.create_env import create_env
-
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 
@@ -46,7 +42,7 @@ def main(args):
         )
 
         model = PPO.load(args.logdir + "/model.zip")
-        env = create_env(config_env)
+        env = make_env(config_env)
         mean_reward, std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
@@ -64,7 +60,7 @@ def main(args):
         )
 
         model = PPO.load(args.logdir + "/model.zip")
-        env = create_env(config_env)
+        env = make_env(config_env)
 
         before_mean_reward, before_std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
@@ -94,7 +90,7 @@ def main(args):
             pathlib.Path(__file__).absolute().parents[0] / "scenarios"
         )
 
-        env = create_env(config_env)
+        env = make_env(config_env)
         model = PPO(
             "CnnPolicy",
             env,

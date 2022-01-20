@@ -21,9 +21,9 @@ import multiprocessing
 import os
 import subprocess
 import sys
-from typing import Sequence
 from pathlib import Path
 from threading import Thread
+from typing import Sequence
 
 import click
 

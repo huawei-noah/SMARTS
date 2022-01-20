@@ -23,7 +23,6 @@ import warnings
 from typing import Dict, Sequence
 
 import gym
-import os
 
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
