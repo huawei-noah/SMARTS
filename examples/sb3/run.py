@@ -20,12 +20,6 @@ from stable_baselines3.common.evaluation import evaluate_policy
 yaml = YAML(typ="safe")
 
 
-def _build_scenario():
-    scenario = str(pathlib.Path(__file__).absolute().parent / "scenarios")
-    build_scenario = f"scl scenario build-all --clean {scenario}"
-    os.system(build_scenario)
-
-
 def main(args):
     # Load config file.
     config_file = yaml.load(
@@ -60,19 +54,30 @@ def main(args):
     logdir.mkdir(parents=True, exist_ok=True)
     print("Logdir:", logdir)
 
-    if args.mode == "evaluate":
+    # Run training or evaluation.
+    run(config_env, logdir)
+
+
+def _build_scenario():
+    scenario = str(pathlib.Path(__file__).absolute().parent / "scenarios")
+    build_scenario = f"scl scenario build-all --clean {scenario}"
+    os.system(build_scenario)
+
+
+def run(config, logdir):
+    if config["mode"] == "evaluate":
         print("Start evaluation.")
         model = PPO.load(logdir / "model.zip")
-        env = make_env(config_env)
+        env = make_env(config)
         mean_reward, std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
         )
         print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
 
-    elif args.mode == "train" and args.logdir:
+    elif config["mode"] == "train" and args.logdir:
         print("Start training from existing model.")
         model = PPO.load(logdir / "model.zip")
-        env = make_env(config_env)
+        env = make_env(config)
 
         initial_mean_reward, initial_std_reward = evaluate_policy(
             model, env, n_eval_episodes=10, deterministic=True
@@ -92,9 +97,9 @@ def main(args):
         model.save(logdir / "model")
         env.close()
 
-    elif args.mode == "train" and not args.logdir:
+    elif config["mode"] == "train" and not args.logdir:
         print("Start training.")
-        env = make_env(config_env)
+        env = make_env(config)
         model = PPO(
             "CnnPolicy",
             env,
@@ -121,9 +126,7 @@ def main(args):
         env.close()
 
     else:
-        raise KeyError(
-            f'Expected \'train\' or \'evaluate\', but got {config_env["mode"]}.'
-        )
+        raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
 
 
 if __name__ == "__main__":
