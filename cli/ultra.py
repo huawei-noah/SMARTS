@@ -60,7 +60,7 @@ Policy built successfully and is available at,
 
 \t[bold]{wheel_path}[/bold]
 
-You can now add it to the policy ultra if you want to make it available to scenarios.
+You can now add it to the policy ultra if you want to make it available to scenarios.0 
 """
     )
 
