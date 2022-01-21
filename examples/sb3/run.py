@@ -13,8 +13,9 @@ from sb3.env.make_env import make_env
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=ImportWarning)
+warnings.simplefilter("ignore", category=DeprecationWarning)
+warnings.simplefilter("ignore", category=ImportWarning)
+warnings.simplefilter("ignore", category=ResourceWarning)
 yaml = YAML(typ="safe")
 
 
@@ -28,6 +29,7 @@ def main(args):
     config_env = config_file["smarts"]
     config_env["mode"] = args.mode
     config_env["headless"] = not args.head
+    config_env["train_steps"] = args.train_steps
     config_env["scenarios_dir"] = (
         pathlib.Path(__file__).absolute().parents[0] / "scenarios"
     )
@@ -41,13 +43,11 @@ def main(args):
         config_env["mode"] == "evaluate"
     ):
         # Train from a pretrained model or evaluate.
-        logdir = args.logdir
+        logdir = pathlib.Path(args.logdir)
     else:
         raise KeyError(
             f'Expected \'train\' or \'evaluate\', but got {config_env["mode"]}.'
         )
-    config_env["logdir"] = args.logdir
-    logdir = pathlib.Path(logdir).expanduser()
     logdir.mkdir(parents=True, exist_ok=True)
     print("Logdir:", logdir)
 
@@ -72,7 +72,7 @@ def run(config, logdir):
         model = PPO.load(logdir / "model.zip")
         model.set_env(env)
         model.learn(total_timesteps=config["train_steps"])
-    elif config["mode"] == "train" and not args.logdir:
+    else:
         print("Start training.")
         model = PPO(
             "CnnPolicy",
@@ -86,10 +86,11 @@ def run(config, logdir):
     mean_reward, std_reward = evaluate_policy(
         model, env, n_eval_episodes=config["eval_eps"], deterministic=True
     )
-    print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
+    print(f"Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
 
-    # copyfile(config_path, logdir / "config.yaml")
-    model.save(logdir / "model")
+    if config["mode"] == "train":
+        # copyfile(config_path, logdir / "config.yaml")
+        model.save(logdir / "model")
     env.close()
 
 
@@ -113,7 +114,7 @@ if __name__ == "__main__":
     )
     # parser.add_argument("--train-steps", type=int, default=1e6)
     parser.add_argument(
-        "--train-steps", help="Number of training steps.", type=int, default=100
+        "--train-steps", help="Number of training steps.", type=int, default=10
     )
 
     args = parser.parse_args()
