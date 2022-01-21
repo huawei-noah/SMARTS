@@ -392,6 +392,36 @@ class Flow:
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
 
+@dataclass
+class SingleVehicle:
+    """A single vehicle that can be interchanged with flow."""
+    route: Union[RandomRoute, Route]
+    """The route that the vehicle will use."""
+
+    actors: Dict[TrafficActor, float] = field(default_factory=dict)
+    """An actor to weight mapping associated as\\: { actor: weight }
+    actor:
+        The traffic actors that are provided.
+    weight:
+        The chance of this actor appearing as a ratio over total weight.
+    """
+
+@dataclass
+class Rerouter:
+    """A route changing pad that will change the end route of an actor."""
+    begin: Tuple[str, int, Any]
+    """The rerouter location."""
+    ends: Dict[Tuple[str, int, Any], float] = field(default_factory=dict)
+    """The end locations that actors will be rerouted to."""
+    time_threshold: float = 0
+    """The time offset from the start of the simulation until this rerouter becomes active."""
+    probability: float = 1
+    """The probability [0:1] that this rerouter will reroute an actor."""
+    vehicle_types: Sequence[str] = field(default=set)
+    """The actor types that this rerouter affects. Empty definition affects everything."""
+    off: bool = False
+    """Deactivate."""
+
 
 @dataclass(frozen=True)
 class JunctionEdgeIDResolver:
