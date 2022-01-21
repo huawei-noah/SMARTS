@@ -102,9 +102,9 @@ class AgentSpec:
     """A callable to build an `smarts.core.agent.Agent` given `AgentSpec.agent_params` (default None)"""
     agent_params: Optional[Any] = None
     """Parameters to be given to `AgentSpec.agent_builder` (default None)"""
-    observation_adapter: Optional[Adapter] = lambda obs: obs
+    observation_adapter: Optional[Adapter] = None
     """An adaptor that allows shaping of the observations (default lambda obs: obs)"""
-    action_adapter: Optional[Adapter] = lambda act: act
+    action_adapter: Optional[Adapter] = None
     """An adaptor that allows shaping of the action (default lambda act: act)"""
     reward_adapter: Callable = lambda obs, reward: reward
     """An adaptor that allows shaping of the reward (default lambda obs, reward: reward)"""
