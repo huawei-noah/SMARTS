@@ -35,14 +35,15 @@ def main(args: argparse.Namespace):
     )
     _build_scenario()
 
+    # Train or evaluate.
     if config_env["mode"] == "train" and not args.logdir:
-        # Train from scratch.
+        # Begin training from scratch.
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
     elif (config_env["mode"] == "train" and args.logdir) or (
         config_env["mode"] == "evaluate"
     ):
-        # Train from a pretrained model or evaluate.
+        # Begin training from a pretrained model.
         logdir = pathlib.Path(args.logdir)
     else:
         raise KeyError(

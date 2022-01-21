@@ -1,11 +1,9 @@
 import gym
 import numpy as np
 
-from smarts.core.sensors import Observation
-
 
 class Reward(gym.Wrapper):
-    def __init__(self, env: gym.Env):
+    def __init__(self, env):
         super().__init__(env)
 
     def reset(self, **kwargs):
@@ -21,7 +19,7 @@ class Reward(gym.Wrapper):
 
         return obs, wrapped_reward, done, info
 
-    def _reward(self, obs: Observation, env_reward: np.float64) -> np.float32:
+    def _reward(self, obs, env_reward):
         reward = 0
 
         # Penalty for driving off road

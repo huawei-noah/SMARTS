@@ -41,7 +41,7 @@ WORKDIR /src
 RUN pip install --no-cache-dir -e ./examples/driving_in_traffic
 
 # Build scenarios and maps.
-RUN scl scenario build-all --clean ./examples/driving_in_traffic/scenarios
+RUN scl scenario build-all --clean ./examples/driving_in_traffic/scenarios/loop
 
 # For Envision.
 EXPOSE 8081
@@ -50,6 +50,6 @@ EXPOSE 8081
 ENV TF_XLA_FLAGS="--tf_xla_enable_xla_devices --tf_xla_auto_jit=2"
 
 # Suppress message of missing /dev/input folder.
-RUN echo "mkdir -p /dev/input" >> ~/.bashrc
+RUN echo "mkdir -p /dev/input\n" >> ~/.bashrc
 
 SHELL ["/bin/bash", "-c", "-l"]
