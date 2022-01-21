@@ -50,6 +50,6 @@ EXPOSE 8081
 ENV TF_XLA_FLAGS="--tf_xla_enable_xla_devices --tf_xla_auto_jit=2"
 
 # Suppress message of missing /dev/input folder.
-RUN echo "mkdir -p /dev/input\n" >> ~/.bashrc
+RUN echo "mkdir -p /dev/input" >> ~/.bashrc
 
 SHELL ["/bin/bash", "-c", "-l"]

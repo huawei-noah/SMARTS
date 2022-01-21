@@ -1,3 +1,6 @@
+from typing import Any, Dict
+
+import gym
 from sb3.env import action, reward
 from stable_baselines3.common import monitor
 from stable_baselines3.common.env_checker import check_env
@@ -10,7 +13,7 @@ from smarts.core import controllers as smarts_controllers
 from smarts.env import hiway_env as smarts_hiway_env
 
 
-def make_env(config):
+def make_env(config: Dict[str, Any]) -> gym.Env:
 
     vehicle_interface = smarts_agent_interface.AgentInterface(
         max_episode_steps=config["max_episode_steps"],

@@ -46,6 +46,6 @@ RUN scl scenario build-all --clean ./examples/sb3/scenarios
 EXPOSE 8081
 
 # Suppress message of missing /dev/input folder.
-RUN echo "mkdir -p /dev/input\n" >> ~/.bashrc
+RUN echo "mkdir -p /dev/input" >> ~/.bashrc
 
 SHELL ["/bin/bash", "-c", "-l"]

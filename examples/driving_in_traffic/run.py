@@ -11,7 +11,9 @@ import pathlib
 import re
 import warnings
 from datetime import datetime
+from typing import Callable, Generator
 
+import gym
 import numpy as np
 import rich.traceback
 import tensorflow as tf
@@ -105,7 +107,7 @@ def _setup_gpu():
         )
 
 
-def _wrap_env(env, config):
+def _wrap_env(env: gym.Env, config: common.config.Config):
     env = dv2.common.GymWrapper(env)
     env = dv2.common.ResizeImage(env)
     if hasattr(env.act_space["action"], "n"):
@@ -116,7 +118,11 @@ def _wrap_env(env, config):
     return env
 
 
-def run(config, gen_env, mode: str):
+def run(
+    config: common.config.Config,
+    gen_env: Generator[Callable[[str], gym.Env], None, None],
+    mode: str,
+):
     logdir = pathlib.Path(config.logdir).expanduser()
     logdir.mkdir(parents=True, exist_ok=True)
     config.save(logdir / "config.yaml")

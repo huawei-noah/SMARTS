@@ -6,8 +6,7 @@ import argparse
 import pathlib
 import warnings
 from datetime import datetime
-from shutil import copyfile
-from typing import Dict
+from typing import Any, Dict
 
 from ruamel.yaml import YAML
 from sb3.env.make_env import make_env
@@ -26,7 +25,7 @@ def main(args: argparse.Namespace):
         (pathlib.Path(__file__).absolute().parent / "config.yaml").read_text()
     )
 
-    # Load SMARTS env config.
+    # Load env config.
     config_env = config_file["smarts"]
     config_env["mode"] = args.mode
     config_env["headless"] = not args.head
@@ -62,7 +61,7 @@ def _build_scenario():
     os.system(build_scenario)
 
 
-def run(config: Dict, logdir: pathlib.PosixPath):
+def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
     env = make_env(config)
 
     if config["mode"] == "evaluate":
@@ -90,8 +89,8 @@ def run(config: Dict, logdir: pathlib.PosixPath):
     print(f"Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
 
     if config["mode"] == "train":
-        # copyfile(config_path, logdir / "config.yaml")
         model.save(logdir / "model")
+
     env.close()
 
 
@@ -113,9 +112,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--head", help="Run the simulation with display.", action="store_true"
     )
-    # parser.add_argument("--train-steps", type=int, default=1e6)
     parser.add_argument(
-        "--train-steps", help="Number of training steps.", type=int, default=10
+        "--train-steps", help="Number of training steps.", type=int, default=1e6
     )
 
     args = parser.parse_args()
