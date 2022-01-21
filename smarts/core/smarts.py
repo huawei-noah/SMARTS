@@ -511,6 +511,8 @@ class SMARTS:
         )
         self.create_vehicle_in_providers(vehicle, agent_id)
 
+        return vehicle
+
     def switch_control_to_agent(
         self,
         vehicle_id: str,
@@ -716,13 +718,13 @@ class SMARTS:
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
         self._clear_collisions(vehicle_ids)
 
-    def attach_sensors_to_vehicles(self, agent_spec, vehicle_ids):
+    def attach_sensors_to_vehicles(self, agent_interface, vehicle_ids):
         """Set the specified vehicles with the sensors needed to satisfy the specified agent
         interface.
         """
         self._check_valid()
         self._agent_manager.attach_sensors_to_vehicles(
-            self, agent_spec.interface, vehicle_ids
+            self, agent_interface, vehicle_ids
         )
 
     def observe_from(
