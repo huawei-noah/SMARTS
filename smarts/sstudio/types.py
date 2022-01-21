@@ -392,9 +392,11 @@ class Flow:
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
 
+
 @dataclass
 class SingleVehicle:
     """A single vehicle that can be interchanged with flow."""
+
     route: Union[RandomRoute, Route]
     """The route that the vehicle will use."""
 
@@ -406,9 +408,11 @@ class SingleVehicle:
         The chance of this actor appearing as a ratio over total weight.
     """
 
+
 @dataclass
 class Rerouter:
     """A route changing pad that will change the end route of an actor."""
+
     begin: Tuple[str, int, Any]
     """The rerouter location."""
     ends: Dict[Tuple[str, int, Any], float] = field(default_factory=dict)
