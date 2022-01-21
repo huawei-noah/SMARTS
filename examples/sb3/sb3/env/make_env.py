@@ -1,5 +1,4 @@
-import env.action as action
-import env.reward as reward
+from sb3.env import action, reward
 from stable_baselines3.common import monitor
 from stable_baselines3.common.env_checker import check_env
 

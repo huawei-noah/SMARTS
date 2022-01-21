@@ -25,7 +25,7 @@ action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
 ```bash
 $ git clone https://github.com/huawei-noah/SMARTS.git
 $ cd <path>/SMARTS/examples/sb3
-$ python3.7 -m venv ./venv
+$ python3.7 -m venv ./.venv
 $ source ./.venv/bin/activate
 $ pip install --upgrade pip
 $ pip install -e .
