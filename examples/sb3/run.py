@@ -7,6 +7,7 @@ import pathlib
 import warnings
 from datetime import datetime
 from shutil import copyfile
+from typing import Dict
 
 from ruamel.yaml import YAML
 from sb3.env.make_env import make_env
@@ -19,7 +20,7 @@ warnings.simplefilter("ignore", category=ResourceWarning)
 yaml = YAML(typ="safe")
 
 
-def main(args):
+def main(args: argparse.Namespace):
     # Load config file.
     config_file = yaml.load(
         (pathlib.Path(__file__).absolute().parent / "config.yaml").read_text()
@@ -61,7 +62,7 @@ def _build_scenario():
     os.system(build_scenario)
 
 
-def run(config, logdir):
+def run(config: Dict, logdir: pathlib.PosixPath):
     env = make_env(config)
 
     if config["mode"] == "evaluate":
@@ -78,7 +79,7 @@ def run(config, logdir):
             "CnnPolicy",
             env,
             verbose=1,
-            tensorboard_log=logdir / "tensorboard_log",
+            tensorboard_log=logdir / "tensorboard",
             use_sde=True,
         )
         model.learn(total_timesteps=config["train_steps"])

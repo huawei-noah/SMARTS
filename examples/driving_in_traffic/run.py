@@ -33,7 +33,7 @@ yaml = YAML(typ="safe")
 seed(42)
 
 
-def main(args):
+def main(args: argparse.Namespace):
     # Load config file.
     config_file = yaml.load(
         (pathlib.Path(__file__).absolute().parent / "config.yaml").read_text()
