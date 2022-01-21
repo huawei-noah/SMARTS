@@ -1,4 +1,4 @@
-name: SMARTS CI Dependencies Linux
+name: SMARTS CI Auto Commit Linux
 
 on:
   push:
@@ -12,7 +12,7 @@ env:
   venv_dir: .venv
 
 jobs:
-  update-requirements-linux:
+  auto-commit-linux:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.18-minimal
@@ -34,10 +34,18 @@ jobs:
           pip install --upgrade pip wheel
           pip install .[test,train,camera-obs]
           pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements.txt
+      - name: Black and isort
+        run: |
+          pip install -e .[dev]
+          echo "isort, version `isort --version-number`"
+          isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines/marl_benchmark/ ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./ultra ./zoo
+          black --version
+          black .
+          npx prettier --write envision/web/src
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
           add: 'requirements.txt'
           branch: develop
           default_author: user_info 
-          message: 'GitHub Actions: Update requirements.txt'
+          message: 'GitHub Actions: Update requirements and format.'
