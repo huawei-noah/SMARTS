@@ -23,7 +23,7 @@ import math
 import os
 import warnings
 from collections import defaultdict
-from typing import Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 
@@ -51,7 +51,8 @@ from .motion_planner_provider import MotionPlannerProvider
 from .provider import Provider, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
-from .sensors import Collision
+from .sensors import Collision, Observation
+from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
 from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .trap_manager import TrapManager
@@ -73,14 +74,20 @@ MAX_PYBULLET_FREQ = 240
 
 
 class SMARTSNotSetupError(Exception):
+    """Represents a case where SMARTS cannot operate because it is not set up yet."""
+
     pass
 
 
 class SMARTSDestroyedError(Exception):
+    """Represents a case where SMARTS cannot operate because it is destroyed."""
+
     pass
 
 
 class SMARTS:
+    """The core SMARTS simulator."""
+
     def __init__(
         self,
         agent_interfaces,
@@ -106,7 +113,7 @@ class SMARTS:
         self._reset_required = False
 
         assert fixed_timestep_sec is None or fixed_timestep_sec > 0
-        self.fixed_timestep_sec = fixed_timestep_sec
+        self.fixed_timestep_sec: float = fixed_timestep_sec
         self._last_dt = fixed_timestep_sec
 
         self._elapsed_sim_time = 0
@@ -172,8 +179,26 @@ class SMARTS:
         self._ground_bullet_id = None
         self._map_bb = None
 
-    def step(self, agent_actions, time_delta_since_last_step: Optional[float] = None):
-        """Note the time_delta_since_last_step param is in (nominal) seconds."""
+    def step(
+        self,
+        agent_actions: Dict[str, Any],
+        time_delta_since_last_step: Optional[float] = None,
+    ) -> Tuple[
+        Dict[str, Observation],
+        Dict[str, float],
+        Dict[str, bool],
+        Dict[str, Dict[str, float]],
+    ]:
+        """Progress the simulation by a fixed or specified time.
+        Args:
+            agent_actions:
+                Actions that the agents want to perform on their actors.
+            time_delta_since_last_step:
+                Overrides the simulation step length. Progress simulation time by the given amount.
+                Note the time_delta_since_last_step param is in (nominal) seconds.
+        Returns:
+            observations, rewards, dones, infos
+        """
         if not self._is_setup:
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
         self._check_valid()
@@ -205,7 +230,7 @@ class SMARTS:
 
     def _step(self, agent_actions, time_delta_since_last_step: Optional[float] = None):
         """Steps through the simulation while applying the given agent actions.
-        Returns the observations, rewards, and done signals.
+        Returns the observations, rewards, done, and infos signals.
         """
 
         # Due to a limitation of our traffic simulator(SUMO) interface(TRACI), we can
@@ -332,7 +357,17 @@ class SMARTS:
         self._agent_manager.teardown_social_agents(agents_to_teardown)
         self._teardown_vehicles(vehicles_to_teardown)
 
-    def reset(self, scenario: Scenario):
+    def reset(self, scenario: Scenario) -> Dict[str, Observation]:
+        """Reset the simulation progressing simulation up to the first time an agent appears if any
+         agents are in the simulation. Reinitializes with the specified scenario.
+        Args:
+            scenario:
+                The scenario to reset the simulation with.
+        Returns:
+            Agent observations. This observation is as follows:
+                - If no agents: the initial simulation observation at time 0
+                - If agents: the first step of the simulation with an agent observation
+        """
         tries = 2
         first_exception = None
         for _ in range(tries):
@@ -397,6 +432,7 @@ class SMARTS:
         return observations_for_ego
 
     def setup(self, scenario: Scenario):
+        """Setup the next scenario."""
         self._check_valid()
         self._scenario = scenario
 
@@ -422,6 +458,9 @@ class SMARTS:
         provider: Provider,
         recovery_flags: ProviderRecoveryFlags = ProviderRecoveryFlags.EXPERIMENT_REQUIRED,
     ):
+        """Add a provider to the simulation. A provider is a co-simulator conformed to a common
+        interface.
+        """
         self._check_valid()
         assert isinstance(provider, Provider)
         self._insert_provider(len(self._providers), provider, recovery_flags)
@@ -436,7 +475,8 @@ class SMARTS:
         self._providers.insert(index, provider)
         self._provider_recovery_flags[provider] = recovery_flags
 
-    def switch_ego_agents(self, agent_interfaces):
+    def switch_ego_agents(self, agent_interfaces: Dict[str, AgentInterface]):
+        """Change the ego agents in the simulation. Effective on the next reset."""
         self._check_valid()
         self._agent_manager.switch_initial_agents(agent_interfaces)
         self._is_setup = False
@@ -444,6 +484,9 @@ class SMARTS:
     def add_agent_with_mission(
         self, agent_id: str, agent_interface: AgentInterface, mission: Mission
     ):
+        """Add an agent to the simulation. The simulation will attempt to provide a vehicle for
+        the agent.
+        """
         self._check_valid()
         # TODO:  check that agent_id isn't already used...
         if self._trap_manager.add_trap_for_agent(agent_id, mission, self.road_map):
@@ -460,6 +503,7 @@ class SMARTS:
         agent_interface: AgentInterface,
         mission: Mission,
     ) -> Vehicle:
+        """Add the new specified ego agent and then take over control of the specified vehicle."""
         self._check_valid()
         self.agent_manager.add_ego_agent(agent_id, agent_interface, for_trap=False)
         vehicle = self.switch_control_to_agent(
@@ -475,6 +519,10 @@ class SMARTS:
         recreate: bool,
         is_hijacked: bool,
     ) -> Vehicle:
+        """Give control of the specifed vehicle to the given agent.
+
+        It is not possible to take over a vehicle already controlled by another agent.
+        """
         self._check_valid()
         # Check if this is a history vehicle
         history_veh_id = self._traffic_history_provider.get_history_id(vehicle_id)
@@ -514,6 +562,7 @@ class SMARTS:
         vehicle: Vehicle,
         agent_id: str,
     ):
+        """Notify all providers of the existance of a vehicle."""
         self._check_valid()
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         for provider in self.providers:
@@ -593,6 +642,7 @@ class SMARTS:
         )
 
     def teardown(self):
+        """Clean up episode resources."""
         if self._agent_manager is not None:
             self._agent_manager.teardown()
         if self._vehicle_index is not None:
@@ -617,6 +667,7 @@ class SMARTS:
         self._is_setup = False
 
     def destroy(self):
+        """Destroy the simulation. Cleans up all remaining simulation resources."""
         if self._is_destroyed:
             return
         self.teardown()
@@ -666,12 +717,20 @@ class SMARTS:
         self._clear_collisions(vehicle_ids)
 
     def attach_sensors_to_vehicles(self, agent_spec, vehicle_ids):
+        """Set the specified vehicles with the sensors needed to satisfy the specified agent
+        interface.
+        """
         self._check_valid()
         self._agent_manager.attach_sensors_to_vehicles(
             self, agent_spec.interface, vehicle_ids
         )
 
-    def observe_from(self, vehicle_ids):
+    def observe_from(
+        self, vehicle_ids: Sequence[str]
+    ) -> Tuple[
+        Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]
+    ]:
+        """Generate observations from the specified vehicles."""
         self._check_valid()
         return self._agent_manager.observe_from(
             self, vehicle_ids, self._traffic_history_provider.done_this_step
@@ -679,6 +738,7 @@ class SMARTS:
 
     @property
     def renderer(self):
+        """The renderer singleton. On call, the sim will attempt to create it if it does not exist."""
         if not self._renderer:
             try:
                 from .renderer import Renderer
@@ -693,47 +753,60 @@ class SMARTS:
         return self._renderer
 
     @property
-    def is_rendering(self):
+    def is_rendering(self) -> bool:
+        """If the simulation has image rendering active."""
         return self._renderer is not None
 
     @property
-    def road_stiffness(self):
+    def road_stiffness(self) -> Any:
+        """The stiffness of the road."""
         return self._bullet_client.getDynamicsInfo(self._ground_bullet_id, -1)[9]
 
     @property
-    def dynamic_action_spaces(self):
+    def dynamic_action_spaces(self) -> Set[ActionSpaceType]:
+        """The set of vehicle action spaces that use dynamics."""
         return self._dynamic_action_spaces
 
     @property
-    def traffic_sim(self):  # -> SumoTrafficSimulation
+    def traffic_sim(
+        self,
+    ) -> Optional[SumoTrafficSimulation]:  # -> SumoTrafficSimulation
+        """The underlying traffic simulation."""
         return self._traffic_sim
 
     @property
     def road_map(self) -> RoadMap:
+        """The road map api which allows lookup of road features."""
         return self.scenario.road_map
 
     @property
     def external_provider(self) -> ExternalProvider:
+        """The external provider that can be used to inject vehicle states directly."""
         return self._external_provider
 
     @property
     def bc(self):
+        """The bullet physics client instance."""
         return self._bullet_client
 
     @property
-    def envision(self):
+    def envision(self) -> Optional[EnvisionClient]:
+        """The envision instance"""
         return self._envision
 
     @property
     def step_count(self) -> int:
+        """The number of steps since the last reset."""
         return self._step_count
 
     @property
     def elapsed_sim_time(self) -> float:
+        """Elapsed time since simulation start."""
         return self._elapsed_sim_time
 
     @property
     def version(self) -> str:
+        """SMARTS version."""
         return VERSION
 
     def teardown_agents_without_vehicles(self, agent_ids: Iterable[str]):
@@ -863,23 +936,28 @@ class SMARTS:
 
     @property
     def vehicle_index(self):
+        """The vehicle index for direct vehicle manipulation."""
         return self._vehicle_index
 
     @property
-    def agent_manager(self):
+    def agent_manager(self) -> AgentManager:
+        """The agent manager for direct agent manipulation."""
         return self._agent_manager
 
     @property
-    def providers(self):
+    def providers(self) -> List[Provider]:
+        """The current providers contributing to the simulation."""
         # TODO: Add check to ensure that action spaces are disjoint between providers
         # TODO: It's inconsistent that pybullet is not here
         return self._providers
 
-    def get_provider_by_type(self, requested_type):
+    def get_provider_by_type(self, requested_type) -> Provider:
+        """Get The first provider that matches the requested type."""
         self._check_valid()
         for provider in self._providers:
             if isinstance(provider, requested_type):
                 return provider
+        return None
 
     def _setup_providers(self, scenario) -> ProviderState:
         provider_state = ProviderState()
@@ -1043,14 +1121,17 @@ class SMARTS:
 
     @property
     def should_reset(self):
+        """If the simulation requires a reset."""
         return self._reset_required
 
     @property
     def scenario(self):
+        """The current simulation scenario."""
         return self._scenario
 
     @property
     def timestep_sec(self) -> float:
+        """Deprecated. Use `fixed_timestep_sec`."""
         warnings.warn(
             "SMARTS timestep_sec property has been deprecated in favor of fixed_timestep_sec.  Please update your code.",
             category=DeprecationWarning,
@@ -1059,6 +1140,7 @@ class SMARTS:
 
     @property
     def fixed_timestep_sec(self) -> float:
+        """The simulation fixed timestep."""
         # May be None if time deltas are externally driven
         return self._fixed_timestep_sec
 
@@ -1074,10 +1156,12 @@ class SMARTS:
 
     @property
     def last_dt(self) -> float:
+        """The last delta time."""
         assert not self._last_dt or self._last_dt > 0
         return self._last_dt
 
     def neighborhood_vehicles_around_vehicle(self, vehicle, radius=None):
+        """Find vehicles in the vicinity of the target vehicle."""
         self._check_valid()
         other_states = [v for v in self._vehicle_states if v.vehicle_id != vehicle.id]
         if radius is None:
@@ -1093,14 +1177,18 @@ class SMARTS:
         indices = np.argwhere(distances <= radius).flatten()
         return [other_states[i] for i in indices]
 
-    def vehicle_did_collide(self, vehicle_id):
+    def vehicle_did_collide(self, vehicle_id) -> bool:
+        """Test if the given vehicle had any collisions in the last physics update."""
         self._check_valid()
         for c in self._vehicle_collisions[vehicle_id]:
             if c.collidee_id != self._ground_bullet_id:
                 return True
         return False
 
-    def vehicle_collisions(self, vehicle_id):
+    def vehicle_collisions(self, vehicle_id) -> List[Collision]:
+        """Get a list of all collisions the given vehicle was involved in during the last
+        physics update.
+        """
         self._check_valid()
         return [
             c
