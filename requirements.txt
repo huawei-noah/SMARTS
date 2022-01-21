@@ -130,7 +130,7 @@ pybullet==3.0.6
 pycparser==2.21
 pyglet==1.5.15
 Pygments==2.11.2
-pyparsing==3.0.6
+pyparsing==3.0.7
 pyproj==3.2.1
 pyrsistent==0.18.1
 pytest==6.2.5
@@ -163,7 +163,7 @@ sniffio==1.2.0
 soupsieve==2.3.1
 tableprint==0.9.1
 tabulate==0.8.9
-tensorboard==2.7.0
+tensorboard==2.8.0
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
 tensorboardX==2.4.1
