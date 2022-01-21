@@ -66,7 +66,7 @@ def main(args: argparse.Namespace):
         time = datetime.now().strftime("%Y_%m_%d_%H_%M")
         logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
     elif config_env["mode"] == "train" and args.logdir:
-        # Train from a pretrained model.
+        # Begin training from a pretrained model.
         logdir = args.logdir
     elif config_env["mode"] == "evaluate":
         logdir = args.logdir
