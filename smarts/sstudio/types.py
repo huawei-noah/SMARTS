@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import collections.abc as collections_abc
+from functools import cached_property
 import hashlib
 import logging
 import pickle
@@ -393,7 +394,7 @@ class Flow:
         return self.__class__ == other.__class__ and hash(self) == hash(other)
 
 
-@dataclass
+@dataclass(frozen=True)
 class SingleVehicle:
     """A single vehicle that can be interchanged with flow."""
 
@@ -407,6 +408,23 @@ class SingleVehicle:
     weight:
         The chance of this actor appearing as a ratio over total weight.
     """
+
+    depart: float = 0
+
+    @property
+    def id(self) -> str:
+        return "single-vehicle-{}-{}-".format(
+            self.route.id,
+            str(_pickle_hash(sorted(self.actors.items(), key=lambda a: a[0].name))),
+        )
+
+    def __hash__(self):
+        # Custom hash since self.actors is not hashable, here we first convert to a
+        # frozenset.
+        return _pickle_hash((self.route, self.rate, frozenset(self.actors.items())))
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and hash(self) == hash(other)
 
 
 @dataclass
@@ -424,7 +442,7 @@ class Rerouter:
     vehicle_types: Sequence[str] = field(default=set)
     """The actor types that this rerouter affects. Empty definition affects everything."""
     off: bool = False
-    """Deactivate."""
+    """Deactivate this router."""
 
 
 @dataclass(frozen=True)
@@ -467,6 +485,31 @@ class Traffic:
 
     flows: Sequence[Flow]
     """Flows are used to define a steady supply of vehicles."""
+
+    single_vehicles: Sequence[SingleVehicle] = field(default_factory=list)
+    """Single instance vehicles"""
+
+    @cached_property
+    def actors(self) -> Sequence[TrafficActor]:
+        actors = set()
+        for a in [a for flow in self.flows for a in flow.actors]:
+            actors.add(a)
+
+        for a in [a for sv in self.single_vehicles for a in sv.actors]:
+            actors.add(a)
+
+        return actors
+
+    @cached_property
+    def routes(self) -> Sequence[Route]:
+        routes = set()
+        for r in (f.route for f in self.flows):
+            routes.add(r)
+
+        for r in (sv.route for sv in self.single_vehicles):
+            routes.add(r)
+
+        return routes
 
 
 @dataclass(frozen=True)

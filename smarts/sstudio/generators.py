@@ -17,12 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import bisect
+from functools import reduce
 import logging
 import os
 import random
 import tempfile
 from dataclasses import replace
-from typing import Optional
+from typing import Dict, List, Optional, Tuple, Union
 
 import sh
 from yattag import Doc, indent
@@ -201,9 +203,7 @@ class TrafficGenerator:
         ):
             # Actors and routes may be declared once then reused. To prevent creating
             # duplicates we unique them here.
-            for actor in {
-                actor for flow in traffic.flows for actor in flow.actors.keys()
-            }:
+            for actor in traffic.actors:
                 sigma = min(1, max(0, actor.imperfection.sample()))  # range [0,1]
                 min_gap = max(0, actor.min_gap.sample())  # range >= 0
                 doc.stag(
@@ -223,12 +223,40 @@ class TrafficGenerator:
 
             # Make sure all routes are "resolved" (e.g. `RandomRoute` are converted to
             # `Route`) so that we can write them all to file.
-            resolved_routes = {}
-            for route in {flow.route for flow in traffic.flows}:
+            resolved_routes: Dict[
+                Union[types.Route, types.RandomRoute], types.Route
+            ] = {}
+            for route in traffic.routes:
                 resolved_routes[route] = self.resolve_route(route)
 
             for route in set(resolved_routes.values()):
                 doc.stag("route", id=route.id, edges=" ".join(route.roads))
+
+            for sv in traffic.single_vehicles:
+                actor_totals: List[Tuple[types.TrafficActor, int]] = []
+                total_weight = 0
+                for actor, value in sv.actors.items():
+                    total_weight += value
+                    actor_totals.append((actor, total_weight))
+                route = resolved_routes[sv.route]
+                actor_idx = bisect.bisect_left(
+                    [t for _, t in actor_totals], random.randint(0, total_weight - 1)
+                )
+                actor, _ = actor_totals[actor_idx]
+
+                doc.stag(
+                    "vehicle",
+                    id="{}-{}-{}".format(actor.name, sv.id, actor_idx),
+                    type=actor.id,
+                    route=route.id,
+                    departLane=route.begin[1],
+                    departPos=route.begin[2],
+                    departSpeed=actor.depart_speed,
+                    arrivalLane=route.end[1],
+                    arrivalPos=route.end[2],
+                    depart=sv.depart,
+                    # via=reduce(lambda a, b: a+" "+b, route.via),
+                )
 
             # We don't de-dup flows since defining the same flow multiple times should
             # create multiple traffic flows. Since IDs can't be reused, we also unique
@@ -252,6 +280,7 @@ class TrafficGenerator:
                         arrivalPos=route.end[2],
                         begin=flow.begin,
                         end=flow.end,
+                        # via=reduce(lambda a, b: a+" "+b, route.via),
                     )
 
         with open(route_path, "w") as f:
