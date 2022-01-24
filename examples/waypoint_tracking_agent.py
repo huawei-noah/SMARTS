@@ -36,8 +36,11 @@ class WaypointTrackingAgent(Agent):
         for path in obs.waypoint_paths:
             num_lanes = max(num_lanes, path[0].lane_index + 1)
 
-        # This is when there are waypoint paths that change lanes, assuming every lane can change to every lane
-        if len(obs.waypoint_paths) == num_lanes ** 2:
+        # This is when there are waypoint paths that change lanes
+        if (
+            len(obs.waypoint_paths) > num_lanes
+            and len(obs.waypoint_paths) <= num_lanes ** 2
+        ):
 
             goal_position = obs.ego_vehicle_state.mission.goal.position
             min_lateral_error = 100
@@ -100,10 +103,10 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
             AgentType.Tracker,
-            max_episode_steps=200,
+            max_episode_steps=300,
             done_criteria=DoneCriteria(
-                off_route=False,
-                off_road=False,
+                off_route=True,
+                off_road=True,
                 collision=False,
             ),
         ),
@@ -128,7 +131,7 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
     # output compliant with gym spaces.
     env = SingleAgent(env)
 
-    for episode in episodes(n=1):
+    for episode in episodes(n=num_episodes):
         agent = agent_spec.build_agent()
         observation = env.reset()
         episode.record_scenario(env.scenario_log)
