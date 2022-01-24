@@ -31,15 +31,13 @@ class WaypointTrackingAgent(Agent):
         # Desired speed is in m/s
         desired_speed = 10
         wp_index = 0
-
         num_lanes = 0
+
         for path in obs.waypoint_paths:
             num_lanes = max(num_lanes, path[0].lane_index + 1)
 
         # This is when there are waypoint paths that change lanes
-        if (
-            num_lanes < len(obs.waypoint_paths) <= num_lanes ** 2
-        ):
+        if num_lanes < len(obs.waypoint_paths) <= num_lanes ** 2:
 
             goal_position = obs.ego_vehicle_state.mission.goal.position
             min_lateral_error = 100
@@ -67,34 +65,19 @@ class WaypointTrackingAgent(Agent):
                     break
 
         if self.waypoint_path:
-
-            num_trajectory_points = min([5, len(self.waypoint_path)])
-            trajectory = [
-                [self.waypoint_path[i].pos[0] for i in range(num_trajectory_points)],
-                [self.waypoint_path[i].pos[1] for i in range(num_trajectory_points)],
-                [self.waypoint_path[i].heading for i in range(num_trajectory_points)],
-                [desired_speed for i in range(num_trajectory_points)],
-            ]
+            chosen_waypoint_path = self.waypoint_path
             self.waypoint_path.pop(0)
-
         else:
+            chosen_waypoint_path = obs.waypoint_paths[wp_index]
 
-            num_trajectory_points = min([5, len(obs.waypoint_paths[wp_index])])
-            trajectory = [
-                [
-                    obs.waypoint_paths[wp_index][i].pos[0]
-                    for i in range(num_trajectory_points)
-                ],
-                [
-                    obs.waypoint_paths[wp_index][i].pos[1]
-                    for i in range(num_trajectory_points)
-                ],
-                [
-                    obs.waypoint_paths[wp_index][i].heading
-                    for i in range(num_trajectory_points)
-                ],
-                [desired_speed for i in range(num_trajectory_points)],
-            ]
+        num_trajectory_points = min([10, len(chosen_waypoint_path)])
+        trajectory = [
+            [chosen_waypoint_path[i].pos[0] for i in range(num_trajectory_points)],
+            [chosen_waypoint_path[i].pos[1] for i in range(num_trajectory_points)],
+            [chosen_waypoint_path[i].heading for i in range(num_trajectory_points)],
+            [desired_speed for i in range(num_trajectory_points)],
+        ]
+
         return trajectory
 
 
