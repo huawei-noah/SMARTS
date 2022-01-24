@@ -38,8 +38,7 @@ class WaypointTrackingAgent(Agent):
 
         # This is when there are waypoint paths that change lanes
         if (
-            len(obs.waypoint_paths) > num_lanes
-            and len(obs.waypoint_paths) <= num_lanes ** 2
+            num_lanes < len(obs.waypoint_paths) <= num_lanes ** 2
         ):
 
             goal_position = obs.ego_vehicle_state.mission.goal.position
