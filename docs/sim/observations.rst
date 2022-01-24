@@ -25,7 +25,7 @@ is a Python `NamedTuple` with the following fields:
     * `bounding_box` - `Dimensions` data class for the `length`, `width`, `height` of the vehicle
     * `heading` - vehicle heading in radians
     * `speed` - agent speed in m/s
-    * `steering` - angle of front wheels in radians within [-1:1]
+    * `steering` - angle of front wheels in radians
     * `yaw_rate` - rotational speed in radian per second
     * `road_id` - the identifier for the road nearest to this vehicle
     * `lane_id` - a globally unique identifier of the lane under this vehicle 
