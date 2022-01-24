@@ -2,7 +2,7 @@ name: SMARTS CI Base Tests Mac
 
 on:
   workflow_run:
-    workflows: ["SMARTS CI Dependencies Mac"]
+    workflows: ["SMARTS CI Auto Commit Mac"]
     types:
       - completed
   workflow_dispatch:
@@ -21,7 +21,7 @@ jobs:
           - ./examples/tests --ignore=./examples/tests/test_learning.py
           - ./smarts/sstudio
           - ./smarts/env/tests/test_rllib_hiway_env.py
-          - ./smarts/core
+          - ./smarts/core --nb-exec-timeout 65536
           - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
     steps:
       - name: Checkout
@@ -64,4 +64,5 @@ jobs:
             --ignore=./smarts/env/tests/test_determinism.py \
             --ignore=./smarts/core/tests/test_renderers.py \
             --ignore=./smarts/core/tests/test_smarts.py \
+            --ignore=./smarts/core/tests/test_env_frame_rate.py \
             --ignore=./smarts/core/tests/test_observations.py

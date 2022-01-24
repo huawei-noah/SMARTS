@@ -18,17 +18,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass, field
-from typing import List, Set
+from enum import IntFlag
+from typing import List, Optional, Set, Tuple
 
 from .controllers import ActionSpaceType
 from .scenario import Scenario
 from .vehicle import VehicleState
 
 
+class ProviderRecoveryFlags(IntFlag):
+    """This describes actions to be taken with a provider should it fail."""
+
+    NOT_REQUIRED = 0x00000000
+    """Not needed for the current step. Error causes skip."""
+    EPISODE_REQUIRED = 0x00000010
+    """Needed for the current episode. Results in episode ending."""
+    EXPERIMENT_REQUIRED = 0x00000100
+    """Needed for the experiment. Results in exception if an error is thrown."""
+    ATTEMPT_RECOVERY = 0x00001000
+    """Provider should attempt to recover from the exception or disconnection."""
+
+
 @dataclass
 class ProviderState:
     vehicles: List[VehicleState] = field(default_factory=list)
-    dt: float = None  # most Providers can leave this blank
+    dt: Optional[float] = None  # most Providers can leave this blank
 
     def merge(self, other: "ProviderState"):
         our_vehicles = {v.vehicle_id for v in self.vehicles}
@@ -76,3 +90,28 @@ class Provider:
 
     def teardown(self):
         raise NotImplementedError
+
+    def recover(
+        self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
+    ) -> Tuple[ProviderState, bool]:
+        """Attempt to reconnect the provider if an error or disconnection occured.
+        Implementations may choose to e-raise the passed in exception.
+        Args:
+            scenario (Scenario): The scenario of the current episode.
+            elapsed_sim_time (float): The current elapsed simulation time.
+            error (Optional[Exception]): An exception if an exception was thrown.
+        Returns:
+            bool: The success/failure of the attempt to reconnect.
+        """
+        if error:
+            raise error
+        return ProviderState(), False
+
+    @property
+    def connected(self) -> bool:
+        """Determine if the provider is still responsive. (e.g. the case that the provider is
+        sending provider state over the internet and has stopped responding)
+        Returns:
+            bool: The connection state of the provider.
+        """
+        return True

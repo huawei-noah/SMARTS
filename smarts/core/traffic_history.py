@@ -27,9 +27,11 @@ import random
 import sqlite3
 from contextlib import closing, nullcontext
 from functools import lru_cache
-from typing import Dict, Generator, NamedTuple, Set, Tuple, Type, TypeVar, List
+from typing import Dict, Generator, NamedTuple, Optional, Set, Tuple, Type, TypeVar
 
 from cached_property import cached_property
+
+from smarts.core.coordinates import Dimensions
 
 T = TypeVar("T")
 
@@ -57,7 +59,9 @@ class TrafficHistory:
             self._db_cnxn.close()
             self._db_cnxn = None
 
-    def _query_val(self, result_type: Type[T], query: str, params: Tuple = ()) -> T:
+    def _query_val(
+        self, result_type: Type[T], query: str, params: Tuple = ()
+    ) -> Optional[T]:
         with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
             sqlite3.connect(self._db)
         ) as dbcnxn:
@@ -128,12 +132,14 @@ class TrafficHistory:
             )
         return "passenger"
 
+    @lru_cache(maxsize=32)
     def vehicle_config_type(self, vehicle_id: str) -> str:
         query = "SELECT type FROM Vehicle WHERE id = ?"
         veh_type = self._query_val(int, query, params=(vehicle_id,))
         return self.decode_vehicle_type(veh_type)
 
-    def vehicle_size(self, vehicle_id: str) -> Tuple[float, float, float]:
+    @lru_cache(maxsize=32)
+    def vehicle_dims(self, vehicle_id: str) -> Dimensions:
         # do import here to break circular dependency chain
         from smarts.core.vehicle import VEHICLE_CONFIGS
 
@@ -148,7 +154,7 @@ class TrafficHistory:
             width = default_dims.width
         if not height:
             height = default_dims.height
-        return length, width, height
+        return Dimensions(length, width, height)
 
     def first_seen_times(self) -> Generator[Tuple[str, float], None, None]:
         # XXX: For now, limit agent missions to just cars (V.type = 2)
@@ -160,7 +166,7 @@ class TrafficHistory:
 
     def vehicle_pose_at_time(
         self, vehicle_id: str, sim_time: float
-    ) -> Tuple[float, float, float]:
+    ) -> Tuple[float, float, float, float]:
         query = """SELECT position_x, position_y, heading_rad, speed
                    FROM Trajectory
                    WHERE vehicle_id = ? and sim_time = ?"""

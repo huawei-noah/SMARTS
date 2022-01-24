@@ -30,13 +30,20 @@ from smarts.core import sensors
 
 
 class FrameStack(gym.Wrapper):
-    """Wrapper stacks num_stack (default=3) consecutive frames, in a moving-window fashion, and returns the stacked_frames.
+    """Wrapper stacks num_stack (default=3) consecutive frames, in a moving-window
+    fashion, and returns the stacked_frames.
 
     Note:
-        Wrapper returns a deepcopy of the stacked frames, which may be expensive for large frames and large num_stack values.
+        Wrapper returns a deepcopy of the stacked frames, which may be expensive
+        for large frames and large num_stack values.
     """
 
     def __init__(self, env: gym.Env, num_stack: int = 3):
+        """
+        Args:
+            env (gym.Env): Gym environment to be wrapped.
+            num_stack (int, optional): Number of frames to be stacked. Defaults to 3.
+        """
         assert num_stack > 1, f"Expected num_stack > 1, but got {num_stack}."
         super(FrameStack, self).__init__(env)
         self._num_stack = num_stack
@@ -44,15 +51,23 @@ class FrameStack(gym.Wrapper):
             key: deque(maxlen=self._num_stack) for key in self.env.agent_specs.keys()
         }
 
+        if self.observation_space:
+            self.observation_space = gym.spaces.Dict(
+                {
+                    agent_id: gym.spaces.Tuple([space] * self._num_stack)
+                    for agent_id, space in self.observation_space.spaces.items()
+                }
+            )
+
     def _get_observations(
-        self, frame: sensors.Observation
+        self, frame: Dict[str, sensors.Observation]
     ) -> Dict[str, List[sensors.Observation]]:
         """Update and return frames stack with given latest single frame."""
 
         new_frames = dict.fromkeys(frame)
 
         for agent_id, observation in frame.items():
-            self._frames[agent_id].append(observation)
+            self._frames[agent_id].appendleft(observation)
             frames_list = list(self._frames[agent_id])
             new_frames[agent_id] = copy.deepcopy(frames_list)
 
@@ -66,7 +81,14 @@ class FrameStack(gym.Wrapper):
         Dict[str, bool],
         Dict[str, Dict[str, Union[float, sensors.Observation]]],
     ]:
+        """Steps the environment by one step.
 
+        Args:
+            agent_actions (Dict): Actions for each agent.
+
+        Returns:
+            Tuple[ Dict[str, List[sensors.Observation]], Dict[str, float], Dict[str, bool], Dict[str, Dict[str, Union[float, sensors.Observation]]] ]: Observation, reward, done, info, for each agent.
+        """
         env_observations, rewards, dones, infos = super(FrameStack, self).step(
             agent_actions
         )
@@ -74,9 +96,14 @@ class FrameStack(gym.Wrapper):
         return self._get_observations(env_observations), rewards, dones, infos
 
     def reset(self) -> Dict[str, List[sensors.Observation]]:
+        """Resets the environment.
+
+        Returns:
+            Dict[str, List[sensors.Observation]]: Observation upon reset for each agent.
+        """
         env_observations = super(FrameStack, self).reset()
         for agent_id, observation in env_observations.items():
             for _ in range(self._num_stack - 1):
-                self._frames[agent_id].append(observation)
+                self._frames[agent_id].appendleft(observation)
 
         return self._get_observations(env_observations)

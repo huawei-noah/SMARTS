@@ -74,15 +74,15 @@ source .venv/bin/activate
 pip install --upgrade pip
 
 # install [train] version of python package with the rllib dependencies
-pip install -e .[train]
+pip install -e '.[train]'
 
 # install [camera-obs] version of python package with the panda3D dependencies if you want to run sanity tests or render camera sensor observations in your simulations
 # make sure to install [test] version of python package with the rllib dependencies so that you can run sanity-test (and verify they are passing)
-pip install -e .[camera-obs]  
+pip install -e '.[camera-obs]'  
 
 # make sure you install the [camera-obs] dependencies first and then can run sanity-test (and verify they are passing)
 # if tests fail, check './sanity_test_result.xml' for test report. 
-pip install -e .[test]
+pip install -e '.[test]'
 make sanity-test
 
 # then you can run a scenario, see following section for more details
@@ -246,7 +246,7 @@ If you're comfortable using docker or are on a platform without suitable support
 ```bash
 $ cd </path/to/SMARTS>
 $ docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:<version>
-# E.g. docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:v0.4.18
+# E.g. docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:v0.5.0
 # <press enter>
 
 # Run Envision server in the background
@@ -269,7 +269,7 @@ $ python examples/single_agent.py scenarios/loop
 ```bash
 # For this to work, your account needs to be added to the huaweinoah org
 $ cd </path/to/SMARTS>
-export VERSION=v0.4.18
+export VERSION=v0.5.0
 $ docker build --no-cache -f ./utils/docker/Dockerfile -t huaweinoah/smarts:$VERSION .
 $ docker login
 $ docker push huaweinoah/smarts:$VERSION

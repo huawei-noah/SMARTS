@@ -24,6 +24,7 @@ import pickle
 import random
 from ctypes import c_int64
 from dataclasses import dataclass, field
+from enum import IntEnum
 from sys import maxsize
 from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
 
@@ -45,6 +46,11 @@ from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_around_point
 
 
+class _SUMO_PARAMS_MODE(IntEnum):
+    TITLE_CASE = 0
+    KEEP_SNAKE_CASE = 1
+
+
 def _pickle_hash(obj) -> int:
     pickle_bytes = pickle.dumps(obj, protocol=4)
     hasher = hashlib.md5()
@@ -59,16 +65,28 @@ class _SumoParams(collections_abc.Mapping):
     between PEP8-compatible naming and Sumo's.
     """
 
-    def __init__(self, prefix, whitelist=[], **kwargs):
+    def __init__(
+        self, prefix, whitelist=[], mode=_SUMO_PARAMS_MODE.TITLE_CASE, **kwargs
+    ):
         def snake_to_title(word):
             return "".join(x.capitalize() or "_" for x in word.split("_"))
+
+        def keep_snake_case(word: str):
+            w = word[0].upper() + word[1:]
+            return "".join(x or "_" for x in w.split("_"))
+
+        func: Callable[[str], str] = snake_to_title
+        if mode == _SUMO_PARAMS_MODE.TITLE_CASE:
+            pass
+        elif mode == _SUMO_PARAMS_MODE.KEEP_SNAKE_CASE:
+            func = keep_snake_case
 
         # XXX: On rare occasions sumo doesn't respect their own conventions
         #      (e.x. junction model's impatience).
         self._params = {key: kwargs.pop(key) for key in whitelist if key in kwargs}
 
         for key, value in kwargs.items():
-            self._params[f"{prefix}{snake_to_title(key)}"] = value
+            self._params[f"{prefix}{func(key)}"] = value
 
     def __iter__(self):
         return iter(self._params)
@@ -90,7 +108,7 @@ class LaneChangingModel(_SumoParams):
     """Models how the actor acts with respect to lane changes."""
 
     def __init__(self, **kwargs):
-        super().__init__("lc", **kwargs)
+        super().__init__("lc", mode=_SUMO_PARAMS_MODE.KEEP_SNAKE_CASE, **kwargs)
 
 
 class JunctionModel(_SumoParams):
@@ -223,7 +241,7 @@ class SocialAgentActor(Actor):
     """Additional keyword arguments to be passed to the constructed class overriding the
     existing registered arguments.
     """
-    initial_speed: float = None
+    initial_speed: Optional[float] = None
     """Set the initial speed, defaults to 0."""
 
 
@@ -248,7 +266,9 @@ class BoidAgentActor(SocialAgentActor):
 # This function should be re-callable (although caching is up to the implementation).
 # The idea here is that anything in SMARTS that needs to use a RoadMap
 # can call this builder to get or create one as necessary.
-MapBuilder = NewType("MapBuilder", Callable[[Any], Tuple[RoadMap, str]])
+MapBuilder = NewType(
+    "MapBuilder", Callable[[Any], Tuple[Optional[RoadMap], Optional[str]]]
+)
 
 
 @dataclass(frozen=True)
@@ -259,7 +279,10 @@ class MapSpec:
     """If specified, the default distance between pre-generated Lane Points (Waypoints)."""
     default_lane_width: Optional[float] = None
     """If specified, the default width (in meters) of lanes on this map."""
-    builder_fn: Optional[MapBuilder] = get_road_map
+    shift_to_origin: bool = False
+    """If True, upon creation a map whose bounding-box does not intersect with
+    the origin point (0,0) will be shifted such that it does."""
+    builder_fn: MapBuilder = get_road_map
     """If specified, this should return an object derived from the RoadMap base class
     and a hash that uniquely identifies it (changes to the hash should signify
     that the map is different enough that map-related caches should be reloaded).
@@ -336,7 +359,7 @@ class RandomRoute:
 class Flow:
     """A route with an actor type emitted at a given rate."""
 
-    route: Route
+    route: Union[RandomRoute, Route]
     """The route for the actor to attempt to follow."""
     rate: float
     """Vehicles per hour."""
@@ -372,7 +395,7 @@ class Flow:
 
 @dataclass(frozen=True)
 class JunctionEdgeIDResolver:
-    """ A utility for resolving a junction connection edge """
+    """A utility for resolving a junction connection edge"""
 
     start_edge_id: str
     start_lane_index: int
@@ -427,7 +450,7 @@ class TrapEntryTactic(EntryTactic):
     """The zone of the hijack area"""
     exclusion_prefixes: Tuple[str, ...] = tuple()
     """The prefixes of vehicles to avoid hijacking"""
-    default_entry_speed: float = None
+    default_entry_speed: Optional[float] = None
     """The speed that the vehicle starts at when defaulting to emitting"""
 
 
@@ -435,7 +458,7 @@ class TrapEntryTactic(EntryTactic):
 class Mission:
     """The descriptor for an actor's mission."""
 
-    route: Route
+    route: Union[RandomRoute, Route]
     """The route for the actor to attempt to follow."""
 
     via: Tuple[Via, ...] = ()
@@ -446,7 +469,7 @@ class Mission:
     `entry_tactic`.
     """
 
-    entry_tactic: EntryTactic = None
+    entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission."""
 
 
@@ -468,7 +491,7 @@ class EndlessMission:
     """Points on a road that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
-    entry_tactic: EntryTactic = None
+    entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
 
 
@@ -486,7 +509,7 @@ class LapMission:
     """Points on a road that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
-    entry_tactic: EntryTactic = None
+    entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
 
 
@@ -533,7 +556,7 @@ class MapZone(Zone):
     """
     length: float
     """The length of the geometry along the center of the lane. Also acceptable\\: 'max'"""
-    n_lanes: 2
+    n_lanes: int = 2
     """The number of lanes from right to left that this zone covers."""
 
     def to_geometry(self, road_map: RoadMap) -> Polygon:
@@ -613,9 +636,8 @@ class MapZone(Zone):
 
             lane_offset = resolve_offset(offset, geom_length, lane_length)
             lane_offset += buffer_from_ends
-
             width = lane.width_at_offset(lane_offset)
-            lane_shape = lane.shape(width + 0.3)
+            lane_shape = lane.shape(0.3, width)
 
             geom_length = max(geom_length - buffer_from_ends, buffer_from_ends)
             lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)
@@ -658,7 +680,7 @@ class PositionalZone(Zone):
     size: Tuple[float, float]
     """The (length, width) dimensions of the zone."""
 
-    def to_geometry(self, road_map: RoadMap = None) -> Polygon:
+    def to_geometry(self, road_map: Optional[RoadMap] = None) -> Polygon:
         w, h = self.size
         p0 = (self.pos[0] - w / 2, self.pos[1] - h / 2)  # min
         p1 = (self.pos[0] + w / 2, self.pos[1] + h / 2)  # max
@@ -692,17 +714,17 @@ class Bubble:
     # If limit != None it will only allow that specified number of vehicles to be
     # hijacked. N.B. when actor = BoidAgentActor the lesser of the actor capacity
     # and bubble limit will be used.
-    limit: BubbleLimits = None
+    limit: Optional[BubbleLimits] = None
     """The maximum number of actors that could be captured."""
     exclusion_prefixes: Tuple[str, ...] = field(default_factory=tuple)
     """Used to exclude social actors from capture."""
     id: str = field(default_factory=lambda: f"bubble-{gen_id()}")
-    follow_actor_id: str = None
+    follow_actor_id: Optional[str] = None
     """Actor ID of agent we want to pin to. Doing so makes this a "travelling bubble"
     which means it moves to follow the `follow_actor_id`'s vehicle. Offset is from the
     vehicle's center position to the bubble's center position.
     """
-    follow_offset: Tuple[float, float] = None
+    follow_offset: Optional[Tuple[float, float]] = None
     """Maintained offset to place the travelling bubble relative to the follow
     vehicle if it were facing north.
     """

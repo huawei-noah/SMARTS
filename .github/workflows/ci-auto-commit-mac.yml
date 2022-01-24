@@ -1,0 +1,40 @@
+name: SMARTS CI Auto Commit Mac
+
+on:
+  schedule:
+    - cron: '0 23 * * 1'
+      # Runs at 11.00pm, UTC, every Monday
+  workflow_dispatch:
+
+env:
+  venv_dir: .venv
+
+jobs:
+  auto-commit-mac:
+    runs-on: macos-11
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2   
+        with:
+          ref: develop 
+      - name: Setup Python
+        run: |
+          brew update
+          brew install python@3.7
+          brew unlink python@3.9
+          brew link --force --overwrite python@3.7
+      - name: Update requirements
+        run: |
+          cd $GITHUB_WORKSPACE
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
+          pip install --upgrade pip wheel
+          pip install .[train,test,camera-obs]
+          pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > utils/setup/mac_requirements.txt
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v7
+        with:
+          add: 'utils/setup/mac_requirements.txt'
+          branch: develop
+          default_author: user_info 
+          message: 'GitHub Actions: Update mac_requirements.txt'
