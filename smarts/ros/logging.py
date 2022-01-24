@@ -22,7 +22,6 @@ import logging
 
 import rospy
 
-
 # Note:  these ROS logging utils will require installing the SMARTS package with the "[ros]" extensions.
 
 

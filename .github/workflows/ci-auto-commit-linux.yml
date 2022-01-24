@@ -17,35 +17,44 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.18-minimal
     steps:
-      - name: Install git
+      - name: Install packages
         run: |
-          add-apt-repository -y ppa:git-core/ppa && \
-            apt-get update && \
-            apt-get install -y git
+          add-apt-repository -y ppa:git-core/ppa
+          apt-get update
+          apt-get install -y git curl ca-certificates
+          curl -sL https://deb.nodesource.com/setup_14.x | bash -
+          apt-get install -y nodejs
       - name: Checkout
         uses: actions/checkout@v2
         with:
           ref: develop 
-      - name: Update requirements
+      - name: Install SMARTS
         run: |
-          cd $GITHUB_WORKSPACE
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
-          pip install .[test,train,camera-obs]
-          pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements.txt
-      - name: Black and isort
+          pip install .[camera-obs,dev,test,train]
+      - name: Update requirements
         run: |
-          pip install -e .[dev]
-          echo "isort, version `isort --version-number`"
-          isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines/marl_benchmark/ ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./ultra ./zoo
-          black --version
-          black .
-          npx prettier --write envision/web/src
-      - name: Commit changes
+          . ${{env.venv_dir}}/bin/activate
+          pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements.txt
+      - name: Commit requirement changes
         uses: EndBug/add-and-commit@v7
         with:
           add: 'requirements.txt'
           branch: develop
           default_author: user_info 
-          message: 'GitHub Actions: Update requirements and format.'
+          message: 'GitHub Actions: Update requirements.txt'
+      - name: isort, Black, and prettier
+        run: |
+          . ${{env.venv_dir}}/bin/activate
+          isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines/marl_benchmark/ ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./ultra ./zoo
+          black .
+          npx prettier --write ./envision/web/src
+      - name: Commit format changes
+        uses: EndBug/add-and-commit@v7
+        with:
+          add: '*.py'
+          branch: develop
+          default_author: user_info 
+          message: 'GitHub Actions: Format'      
