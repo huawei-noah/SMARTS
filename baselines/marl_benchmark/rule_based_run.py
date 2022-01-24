@@ -23,10 +23,10 @@ import argparse
 import os
 from pathlib import Path
 
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.scenario import Scenario
-from smarts.env.hiway_env import HiWayEnv
+from src.smarts.core.agent import Agent, AgentSpec
+from src.smarts.core.agent_interface import AgentInterface, AgentType
+from src.smarts.core.scenario import Scenario
+from src.smarts.env.hiway_env import HiWayEnv
 
 
 class RuleBasedAgent(Agent):

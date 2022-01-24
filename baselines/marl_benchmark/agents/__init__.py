@@ -28,14 +28,14 @@ from benchmark.metrics import basic_handler as metrics
 from benchmark.utils import format
 from benchmark.wrappers import rllib as rllib_wrappers
 
-from smarts.core.agent_interface import (
+from src.smarts.core.agent_interface import (
     OGM,
     RGB,
     AgentInterface,
     NeighborhoodVehicles,
     Waypoints,
 )
-from smarts.core.controllers import ActionSpaceType
+from src.smarts.core.controllers import ActionSpaceType
 
 
 def _get_trainer(path, name):

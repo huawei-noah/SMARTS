@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import re
 
-from smarts.sstudio.types import (
+from src.smarts.sstudio.types import (
     Distribution,
     JunctionModel,
     LaneChangingModel,

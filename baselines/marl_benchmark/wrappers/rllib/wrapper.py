@@ -23,7 +23,7 @@ import copy
 
 from ray.rllib.env import MultiAgentEnv
 
-from smarts.env.rllib_hiway_env import RLlibHiWayEnv
+from src.smarts.env.rllib_hiway_env import RLlibHiWayEnv
 
 
 class Wrapper(MultiAgentEnv):

@@ -37,9 +37,9 @@ from typing import Any, Dict, Sequence
 import numpy as np
 import yaml
 
-from smarts.core.utils.sumo import sumolib
-from smarts.sstudio import gen_bubbles, gen_missions, gen_traffic
-from smarts.sstudio.types import (
+from src.smarts.core.utils.sumo import sumolib
+from src.smarts.sstudio import gen_bubbles, gen_missions, gen_traffic
+from src.smarts.sstudio.types import (
     Bubble,
     Distribution,
     Flow,

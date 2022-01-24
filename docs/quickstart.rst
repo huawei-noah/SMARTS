@@ -27,7 +27,7 @@ Some common configurations have been packaged up under :class:`smarts.core.agent
 
 .. code-block:: python
 
-   from smarts.core.agent_interface import AgentInterface, AgentType
+   from src.smarts.core.agent_interface import AgentInterface, AgentType
 
    AgentInterface.from_type(AgentType.Tracker)
 
@@ -43,8 +43,8 @@ This is done by implementing the :class:`smarts.core.agent.Agent` interface:
 
 .. code-block:: python
 
-   from smarts.core.bezier_motion_planner import BezierMotionPlanner
-   from smarts.core.agent import Agent
+   from src.smarts.core.bezier_motion_planner import BezierMotionPlanner
+   from src.smarts.core.agent import Agent
 
    class ExampleAgent(Agent):
        def __init__(self, target_speed = 10):
@@ -104,10 +104,10 @@ We can run this agent with "scenarios/loop", one of the scenarios packaged with 
 .. code-block:: python
 
    import gym
-   from smarts.core.agent import AgentSpec, Agent
-   from smarts.core.agent_interface import AgentInterface, AgentType
-   from smarts.core.bezier_motion_planner import BezierMotionPlanner
-   from smarts.core.utils.episodes import episodes
+   from src.smarts.core.agent import AgentSpec, Agent
+   from src.smarts.core.agent_interface import AgentInterface, AgentType
+   from src.smarts.core.bezier_motion_planner import BezierMotionPlanner
+   from src.smarts.core.utils.episodes import episodes
 
    class ExampleAgent(Agent):
        def __init__(self, target_speed = 10):

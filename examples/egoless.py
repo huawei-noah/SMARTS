@@ -2,7 +2,7 @@ import logging
 
 import gym
 
-from smarts.core.utils.episodes import episodes
+from src.smarts.core.utils.episodes import episodes
 
 # The following ugliness was made necessary because the `aiohttp` #
 # dependency has an "examples" module too.  (See PR #1120.)

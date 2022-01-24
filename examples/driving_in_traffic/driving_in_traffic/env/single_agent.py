@@ -3,12 +3,12 @@ from typing import Dict
 
 from driving_in_traffic.env import action, reward
 
-from smarts.core import agent as smarts_agent
-from smarts.core import agent_interface as smarts_agent_interface
-from smarts.core import controllers as smarts_controllers
-from smarts.env import hiway_env as smarts_hiway_env
-from smarts.env.wrappers import rgb_image as smarts_rgb_image
-from smarts.env.wrappers import single_agent as smarts_single_agent
+from src.smarts.core import agent as smarts_agent
+from src.smarts.core import agent_interface as smarts_agent_interface
+from src.smarts.core import controllers as smarts_controllers
+from src.smarts.env import hiway_env as smarts_hiway_env
+from src.smarts.env.wrappers import rgb_image as smarts_rgb_image
+from src.smarts.env.wrappers import single_agent as smarts_single_agent
 
 
 def gen_env(config: Dict, seed: int):

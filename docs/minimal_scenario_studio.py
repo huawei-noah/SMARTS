@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from smarts.sstudio import types as t
-from smarts.sstudio import gen_traffic, gen_bubbles, gen_missions
+from src.smarts.sstudio import types as t
+from src.smarts.sstudio import gen_traffic, gen_bubbles, gen_missions
 
 scenario = str(Path(__file__).parent)
 

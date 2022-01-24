@@ -6,14 +6,14 @@ from dataclasses import replace
 from typing import Sequence, Tuple
 
 from envision.client import Client as Envision
-from smarts.core import seed as random_seed
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation
-from smarts.core.smarts import SMARTS
-from smarts.core.traffic_history_provider import TrafficHistoryProvider
-from smarts.core.utils.math import rounder_for_dt
+from src.smarts.core import seed as random_seed
+from src.smarts.core.agent import Agent, AgentSpec
+from src.smarts.core.agent_interface import AgentInterface, AgentType
+from src.smarts.core.scenario import Scenario
+from src.smarts.core.sensors import Observation
+from src.smarts.core.smarts import SMARTS
+from src.smarts.core.traffic_history_provider import TrafficHistoryProvider
+from src.smarts.core.utils.math import rounder_for_dt
 
 # The following ugliness was made necessary because the `aiohttp` #
 # dependency has an "examples" module too.  (See PR #1120.)

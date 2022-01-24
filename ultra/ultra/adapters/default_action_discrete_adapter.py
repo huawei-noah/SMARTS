@@ -24,7 +24,7 @@ from typing import Sequence
 import gym
 import numpy as np
 
-from smarts.core.controllers import ActionSpaceType
+from src.smarts.core.controllers import ActionSpaceType
 
 
 class DiscreteStrings(gym.Space):

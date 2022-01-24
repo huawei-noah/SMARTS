@@ -31,7 +31,7 @@ import dill
 import gym
 import ray
 
-from smarts.core.controllers import ActionSpaceType
+from src.smarts.core.controllers import ActionSpaceType
 from ultra.baselines.agent_spec import BaselineAgentSpec
 from ultra.baselines.sac.sac.policy import SACPolicy
 from ultra.evaluate import collect_evaluations, evaluate, evaluation_check

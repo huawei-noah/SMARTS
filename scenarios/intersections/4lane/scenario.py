@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
 
-from smarts.sstudio.genscenario import gen_scenario
-from smarts.sstudio.types import (
+from src.smarts.sstudio.genscenario import gen_scenario
+from src.smarts.sstudio.types import (
     EndlessMission,
     Flow,
     JunctionEdgeIDResolver,

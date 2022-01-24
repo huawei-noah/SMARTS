@@ -10,7 +10,7 @@ import math
 
 import gym
 
-from smarts.core.utils.episodes import episodes
+from src.smarts.core.utils.episodes import episodes
 
 try:
     open_agent = importlib.import_module("open_agent")

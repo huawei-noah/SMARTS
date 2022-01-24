@@ -30,9 +30,9 @@ from collections import defaultdict
 import dill
 import ray
 
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles
-from smarts.core.controllers import ActionSpaceType
+from src.smarts.core.agent import Agent, AgentSpec
+from src.smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles
+from src.smarts.core.controllers import ActionSpaceType
 from ultra.scenarios.analysis.behavior_analysis import BehaviorAnalysis
 from ultra.scenarios.analysis.scenario_analysis import ScenarioAnalysis
 from ultra.scenarios.analysis.sumo_experiment import (

@@ -21,8 +21,8 @@
 # THE SOFTWARE.
 from pathlib import Path
 
-import smarts.sstudio.types as t
-from smarts.sstudio import gen_scenario
+import src.smarts.sstudio.types as t
+from src.smarts.sstudio import gen_scenario
 
 missions = [
     t.Mission(t.Route(begin=("gneE17", 0, 10), end=("gneE5", 0, 100))),

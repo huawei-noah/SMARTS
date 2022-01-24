@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from smarts.sstudio.genscenario import gen_scenario
-from smarts.sstudio.types import Scenario
+from src.smarts.sstudio.genscenario import gen_scenario
+from src.smarts.sstudio.types import Scenario
 
 gen_scenario(
     Scenario(),

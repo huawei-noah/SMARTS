@@ -4,13 +4,13 @@ from typing import Any, Callable, Dict, Sequence
 
 from envision.client import Client as Envision
 from examples.argument_parser import default_argument_parser
-from smarts.core import seed as random_seed
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface
-from smarts.core.controllers import ActionSpaceType
-from smarts.core.plan import PlanningError
-from smarts.core.scenario import Scenario
-from smarts.core.smarts import SMARTS
+from src.smarts.core import seed as random_seed
+from src.smarts.core.agent import Agent, AgentSpec
+from src.smarts.core.agent_interface import AgentInterface
+from src.smarts.core.controllers import ActionSpaceType
+from src.smarts.core.plan import PlanningError
+from src.smarts.core.scenario import Scenario
+from src.smarts.core.smarts import SMARTS
 
 logging.basicConfig(level=logging.INFO)
 

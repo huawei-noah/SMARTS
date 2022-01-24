@@ -27,14 +27,14 @@ import gym
 import numpy as np
 
 import ultra.adapters as adapters
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
-from smarts.core.controllers import ActionSpaceType
-from smarts.core.coordinates import Heading
-from smarts.core.events import Events
-from smarts.core.road_map import Waypoint
-from smarts.core.scenario import PositionalGoal, Start
-from smarts.core.sensors import Observation
+from src.smarts.core.agent import Agent, AgentSpec
+from src.smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
+from src.smarts.core.controllers import ActionSpaceType
+from src.smarts.core.coordinates import Heading
+from src.smarts.core.events import Events
+from src.smarts.core.road_map import Waypoint
+from src.smarts.core.scenario import PositionalGoal, Start
+from src.smarts.core.sensors import Observation
 from ultra.env.ultra_env import UltraEnv
 
 AGENT_ID = "001"

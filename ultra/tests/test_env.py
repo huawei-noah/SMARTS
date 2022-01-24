@@ -26,16 +26,16 @@ import gym
 import numpy as np
 import ray
 
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import (
+from src.smarts.core.agent import Agent, AgentSpec
+from src.smarts.core.agent_interface import (
     RGB,
     AgentInterface,
     NeighborhoodVehicles,
     Waypoints,
 )
-from smarts.core.controllers import ActionSpaceType
-from smarts.core.sensors import TopDownRGB
-from smarts.zoo.registry import make
+from src.smarts.core.controllers import ActionSpaceType
+from src.smarts.core.sensors import TopDownRGB
+from src.smarts.zoo.registry import make
 from ultra.baselines.agent_spec import BaselineAgentSpec
 from ultra.baselines.ppo.ppo.policy import PPOPolicy
 

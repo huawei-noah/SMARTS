@@ -30,8 +30,8 @@ import yaml
 from scipy.spatial import distance
 
 import ultra.adapters as adapters
-from smarts.core.scenario import Scenario
-from smarts.env.rllib_hiway_env import RLlibHiWayEnv
+from src.smarts.core.scenario import Scenario
+from src.smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from ultra.baselines.common.yaml_loader import load_yaml
 
 path.append("./ultra")

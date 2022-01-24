@@ -80,8 +80,8 @@ We recommend you customize your `agent_interface`, like:
 
 .. code-block:: python
 
-    from smarts.core.agent_interface import AgentInterface
-    from smarts.core.controllers import ActionSpaceType
+    from src.smarts.core.agent_interface import AgentInterface
+    from src.smarts.core.controllers import ActionSpaceType
 
     agent_interface = AgentInterface(
         max_episode_steps=1000,
@@ -98,8 +98,8 @@ For further customization, you can try:
 
 .. code-block:: python
 
-    from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, DrivableAreaGridMap, OGM, RGB, Waypoints
-    from smarts.core.controllers import ActionSpaceType
+    from src.smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, DrivableAreaGridMap, OGM, RGB, Waypoints
+    from src.smarts.core.controllers import ActionSpaceType
 
     agent_interface = AgentInterface(
         max_episode_steps=1000,

@@ -3,15 +3,15 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from smarts.core.chassis import AckermannChassis
-from smarts.core.controllers import (
+from src.smarts.core.chassis import AckermannChassis
+from src.smarts.core.controllers import (
     TrajectoryTrackingController,
     TrajectoryTrackingControllerState,
 )
-from smarts.core.coordinates import Heading, Pose
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
-from smarts.core.vehicle import Vehicle
+from src.smarts.core.coordinates import Heading, Pose
+from src.smarts.core.utils import pybullet
+from src.smarts.core.utils.pybullet import bullet_client as bc
+from src.smarts.core.vehicle import Vehicle
 
 TIMESTEP_SEC = 1 / 240
 (vel, tim, axx, des, head, xdes, ydes, xx, yy) = ([] for i in range(9))

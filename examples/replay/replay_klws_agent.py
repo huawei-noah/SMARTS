@@ -7,8 +7,8 @@ import sys
 import gym
 
 from examples.argument_parser import default_argument_parser
-from smarts.core.utils.episodes import episodes
-from smarts.zoo.registry import make as zoo_make
+from src.smarts.core.utils.episodes import episodes
+from src.smarts.zoo.registry import make as zoo_make
 
 logging.basicConfig(level=logging.INFO)
 

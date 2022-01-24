@@ -4,14 +4,14 @@ import pickle
 from typing import Any, Dict, Sequence
 
 from envision.client import Client as Envision
-from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.controllers import ControllerOutOfLaneException
-from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation
-from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.math import radians_to_vec
+from src.smarts.core.agent import AgentSpec
+from src.smarts.core.agent_interface import AgentInterface, AgentType
+from src.smarts.core.controllers import ControllerOutOfLaneException
+from src.smarts.core.scenario import Scenario
+from src.smarts.core.sensors import Observation
+from src.smarts.core.smarts import SMARTS
+from src.smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from src.smarts.core.utils.math import radians_to_vec
 
 # The following ugliness was made necessary because the `aiohttp` #
 # dependency has an "examples" module too.  (See PR #1120.)

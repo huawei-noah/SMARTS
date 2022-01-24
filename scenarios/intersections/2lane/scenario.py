@@ -1,7 +1,7 @@
 import os
 
-from smarts.sstudio import gen_traffic
-from smarts.sstudio.types import (
+from src.smarts.sstudio import gen_traffic
+from src.smarts.sstudio.types import (
     Distribution,
     Flow,
     JunctionModel,

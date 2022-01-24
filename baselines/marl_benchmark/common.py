@@ -30,10 +30,10 @@ from ray.rllib.env import BaseEnv
 from ray.rllib.evaluation import MultiAgentEpisode, RolloutWorker
 from ray.rllib.policy import Policy
 
-from smarts.core.controllers import ActionSpaceType
-from smarts.core.plan import PositionalGoal
-from smarts.core.sensors import Observation
-from smarts.core.utils.math import vec_2d
+from src.smarts.core.controllers import ActionSpaceType
+from src.smarts.core.plan import PositionalGoal
+from src.smarts.core.sensors import Observation
+from src.smarts.core.utils.math import vec_2d
 
 SPACE_LIB = dict(
     # normalized distance to lane center

@@ -1,8 +1,8 @@
 import random
 from pathlib import Path
 
-from smarts.sstudio import gen_scenario
-from smarts.sstudio import types as t
+from src.smarts.sstudio import gen_scenario
+from src.smarts.sstudio import types as t
 
 NUM_TRAFFIC_FLOWS = 350
 

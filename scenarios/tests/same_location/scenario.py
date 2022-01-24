@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Any, Tuple
 
-import smarts.sstudio.types as types
-from smarts.sstudio import gen_missions, gen_traffic
+import src.smarts.sstudio.types as types
+from src.smarts.sstudio import gen_missions, gen_traffic
 
 scenario = str(Path(__file__).parent)
 

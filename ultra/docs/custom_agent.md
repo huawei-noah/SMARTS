@@ -30,8 +30,8 @@ Similar to the baseline agents available in `ultra/baselines/` a custom agent co
 ## Allow for Agent Registration
 Once your agent is configured as above, we must ensure that it can be registered. In the package containing your agent, add the following  to the package's `__init__.py`
 ```python
-from smarts.zoo.registry import register
-from smarts.core.controllers import ActionSpaceType
+from src.smarts.zoo.registry import register
+from src.smarts.core.controllers import ActionSpaceType
 from ultra.baselines.agent_spec import BaselineAgentSpec
 
 from <your.agents.package.name>.<your_agent_name>.<your_agent_name>.policy import <YourAgentsPolicyClass>

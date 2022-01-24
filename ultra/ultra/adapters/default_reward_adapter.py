@@ -24,8 +24,8 @@ import math
 import numpy as np
 from scipy.spatial import distance
 
-from smarts.core.agent_interface import Waypoints
-from smarts.core.sensors import Observation
+from src.smarts.core.agent_interface import Waypoints
+from src.smarts.core.sensors import Observation
 from ultra.adapters.constants import DEFAULT_WAYPOINTS
 from ultra.utils.common import get_closest_waypoint, get_path_to_goal
 

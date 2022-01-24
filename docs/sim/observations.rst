@@ -75,7 +75,7 @@ Note: Some observations like `occupancy_grid_map`, `drivable_area_grid_map` and 
 =======
 Rewards
 =======
-The reward from smarts environments is given by a calculation within smarts; `env_reward` from smarts environments directly uses the reward from smarts. The given reward is 0 or `reward < -0.5` or `reward > 0.5` relating to distance traveled in meters on the step that a vehicle has gone at least 0.5 meters since the last given non-zero reward.
+The reward from src.smarts environments is given by a calculation within smarts; `env_reward` from src.smarts environments directly uses the reward from src.smarts. The given reward is 0 or `reward < -0.5` or `reward > 0.5` relating to distance traveled in meters on the step that a vehicle has gone at least 0.5 meters since the last given non-zero reward.
 
 =======
 Actions

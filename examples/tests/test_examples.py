@@ -4,7 +4,7 @@ from pathlib import Path
 import psutil
 import pytest
 
-from smarts.core.utils import import_utils
+from src.smarts.core.utils import import_utils
 
 import_utils.import_module_from_file(
     "examples", Path(__file__).parents[1] / "__init__.py"

@@ -62,8 +62,8 @@ Here is a simple example of how a single agent experiment can be built:
 
 ```python
 import gym
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, Agent
+from src.smarts.core.agent_interface import AgentInterface, AgentType
+from src.smarts.core.agent import AgentSpec, Agent
 
 class SimpleAgent(Agent):
     def act(self, obs):
@@ -145,8 +145,8 @@ You can create a simple `scenario.py` script to generate the scenario like:
 from pathlib import Path
 from typing import Any, Tuple
 
-import smarts.sstudio.types as types
-from smarts.sstudio import gen_missions, gen_traffic
+import src.smarts.sstudio.types as types
+from src.smarts.sstudio import gen_missions, gen_traffic
 
 scenario = str(Path(__file__).parent)
 

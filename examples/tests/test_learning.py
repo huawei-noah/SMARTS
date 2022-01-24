@@ -9,9 +9,9 @@ from pathlib import Path
 from ray import tune
 from ray.rllib.models import ModelCatalog
 
-from smarts.core.utils import import_utils
-from smarts.core.utils.file import make_dir_in_smarts_log_dir
-from smarts.env.rllib_hiway_env import RLlibHiWayEnv
+from src.smarts.core.utils import import_utils
+from src.smarts.core.utils.file import make_dir_in_smarts_log_dir
+from src.smarts.env.rllib_hiway_env import RLlibHiWayEnv
 
 HORIZON = 5000
 

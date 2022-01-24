@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from smarts.core.utils.episodes import EpisodeLog
+from src.smarts.core.utils.episodes import EpisodeLog
 
 
 @dataclass

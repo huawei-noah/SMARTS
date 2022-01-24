@@ -43,15 +43,15 @@ import torch
 from ray import tune
 from ray.rllib.models import ModelCatalog
 
-from smarts.core.agent import AgentSpec
-from smarts.core.agent_interface import (
+from src.smarts.core.agent import AgentSpec
+from src.smarts.core.agent_interface import (
     OGM,
     AgentInterface,
     NeighborhoodVehicles,
     Waypoints,
 )
-from smarts.core.controllers import ActionSpaceType
-from smarts.zoo.registry import make
+from src.smarts.core.controllers import ActionSpaceType
+from src.smarts.zoo.registry import make
 from ultra.baselines.common.yaml_loader import load_yaml
 from ultra.baselines.rllib.agent import RllibAgent
 from ultra.baselines.rllib.models.fc_network import CustomFCModel

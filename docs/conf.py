@@ -12,7 +12,7 @@
 #
 import os
 import sys
-from smarts import VERSION
+from src.smarts import VERSION
 
 sys.path.insert(0, os.path.abspath(".."))
 

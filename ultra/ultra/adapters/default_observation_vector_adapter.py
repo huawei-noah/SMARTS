@@ -27,9 +27,9 @@ import gym
 import numpy as np
 from scipy.spatial import distance
 
-from smarts.core.agent_interface import NeighborhoodVehicles, Waypoints
-from smarts.core.coordinates import Heading
-from smarts.core.sensors import Observation, VehicleObservation
+from src.smarts.core.agent_interface import NeighborhoodVehicles, Waypoints
+from src.smarts.core.coordinates import Heading
+from src.smarts.core.sensors import Observation, VehicleObservation
 from ultra.adapters.constants import DEFAULT_RADIUS, DEFAULT_WAYPOINTS
 from ultra.utils.common import get_closest_waypoint, get_path_to_goal, rotate2d_vector
 

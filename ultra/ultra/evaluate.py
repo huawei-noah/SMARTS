@@ -35,7 +35,7 @@ import numpy as np
 import ray
 import torch
 
-from smarts.zoo.registry import make
+from src.smarts.zoo.registry import make
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
 

@@ -1,0 +1,41 @@
+<?xml version="1.0" ?>
+<robot name="plane">
+  <link name="plane_link">
+    <contact>
+      <!--
+        In physics, the coefficient of friction is computed between each material
+        but bullet physics only allows us to set friction values on each object and
+        computes the final coefficients with,
+
+          friction_coeff = obj_a.lateral_friction * obj_b.lateral_friction
+
+        In our case, since we really just have wheels connecting with this plane,
+        we can achieve our desired coefficient by setting the wheel lateral friction
+        to 1.0 and set the lateral friction here to rubber/asphalt coeff.
+
+        Here are some real-world measured coeefficients:
+        (from https://www.engineeringtoolbox.com/friction-coefficients-d_778.html)
+
+          mat A: Rubber
+          mat B: Dry Asphalt
+          static coefficient: 0.9
+          sliding coefficient: 0.5 - 0.8
+      -->
+      <lateral_friction value="3"/>
+      <!-- <rolling_friction value="0.5"/> -->
+      <stiffness value="100000"/>
+      <damping value="35000"/>
+    </contact>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value=".0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="1000000 1000000 0.0"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

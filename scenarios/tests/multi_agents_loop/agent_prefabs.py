@@ -1,7 +1,7 @@
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, DoneCriteria
-from smarts.core.controllers import ActionSpaceType
-from smarts.zoo.registry import register
+from src.smarts.core.agent import Agent, AgentSpec
+from src.smarts.core.agent_interface import AgentInterface, DoneCriteria
+from src.smarts.core.controllers import ActionSpaceType
+from src.smarts.zoo.registry import register
 
 
 class StoppedAgent(Agent):

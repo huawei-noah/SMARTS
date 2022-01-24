@@ -1,7 +1,7 @@
 import os
 
-from smarts.sstudio import gen_social_agent_missions
-from smarts.sstudio.types import Mission, Route, SocialAgentActor
+from src.smarts.sstudio import gen_social_agent_missions
+from src.smarts.sstudio.types import Mission, Route, SocialAgentActor
 
 scenario = os.path.dirname(os.path.realpath(__file__))
 

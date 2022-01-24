@@ -50,7 +50,7 @@ RLlibHiwayEnv
 
 .. code-block:: python
 
-    from smarts.env.rllib_hiway_env import RLlibHiWayEnv
+    from src.smarts.env.rllib_hiway_env import RLlibHiWayEnv
     env = RLlibHiWayEnv(
         config={
             "scenarios": [scenario_path], # scenarios list

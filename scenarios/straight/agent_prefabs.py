@@ -1,9 +1,9 @@
 import numpy as np
 
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface
-from smarts.core.controllers import ActionSpaceType
-from smarts.zoo.registry import register
+from src.smarts.core.agent import Agent, AgentSpec
+from src.smarts.core.agent_interface import AgentInterface
+from src.smarts.core.controllers import ActionSpaceType
+from src.smarts.zoo.registry import register
 
 
 class PoseBoidAgent(Agent):

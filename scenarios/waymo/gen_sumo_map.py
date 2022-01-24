@@ -9,7 +9,7 @@ from typing import Callable, Dict, List, Tuple
 
 from waymo_open_dataset.protos import map_pb2, scenario_pb2
 
-from smarts.sstudio.genhistories import Waymo
+from src.smarts.sstudio.genhistories import Waymo
 
 
 class SumoMapGenerator:

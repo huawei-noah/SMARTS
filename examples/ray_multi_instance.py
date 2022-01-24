@@ -17,9 +17,9 @@ except Exception as e:
     raise RayException.required_to("ray_multi_instance.py")
 
 
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.utils.episodes import episodes
+from src.smarts.core.agent import Agent, AgentSpec
+from src.smarts.core.agent_interface import AgentInterface, AgentType
+from src.smarts.core.utils.episodes import episodes
 
 # The following ugliness was made necessary because the `aiohttp` #
 # dependency has an "examples" module too.  (See PR #1120.)

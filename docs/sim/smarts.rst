@@ -7,8 +7,8 @@ The SMARTS class can be instantiated in the following way:
 
 .. code-block:: python
 
-  from smarts.core.smarts import SMARTS
-  from smarts.core.agent_interface import AgentInterface, AgentType
+  from src.smarts.core.smarts import SMARTS
+  from src.smarts.core.agent_interface import AgentInterface, AgentType
 
   # Instantiate the simulator
   smarts: SMARTS = SMARTS(
@@ -21,7 +21,7 @@ The step interface is similar to gym but with a few notable differences mainly d
 
 .. code-block:: python
 
-  from smarts.core.smarts import SMARTS
+  from src.smarts.core.smarts import SMARTS
   # Instantiate the simulator
   obs = smarts.reset()
   dones = {"__all__": False}
@@ -37,7 +37,7 @@ The SMARTS simulator has the explict requirement to call `destroy()` before dele
 
 .. code-block:: python
 
-  from smarts.core.smarts import SMARTSDestroyedError
+  from src.smarts.core.smarts import SMARTSDestroyedError
   smarts = SMARTS()
   try:
     del smarts # Raises

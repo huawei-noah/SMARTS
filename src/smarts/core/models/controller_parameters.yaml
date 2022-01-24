@@ -1,0 +1,51 @@
+sedan:
+    control:
+            final_heading_gain: .15
+            final_lateral_gain: 4.65
+            final_steering_filter_constant: 23.5
+            throttle_filter_constant: 22.5
+            velocity_gain: 5.1
+            velocity_integral_gain: 0
+            traction_gain: 6
+            final_lateral_error_derivative_gain: 0.3
+            final_heading_error_derivative_gain: 3.1
+            initial_look_ahead_distant: 6
+            derivative_activation: 1
+            speed_reduction_activation: 1
+            velocity_damping_gain: 0.001
+            windup_gain: 0.01
+    chassis:
+            chassis_aero_force_gain : 0.63
+            max_brake_gain : 10000
+            max_turn_radius : 2.2
+            wheel_radius : 0.31265
+            max_torque : 1600
+            max_btorque : 1400
+            max_steering : 12.56
+            steering_gear_ratio : 17.4
+
+bus:
+    control:
+            final_heading_gain: 0.15
+            final_lateral_gain: 5.3
+            final_steering_filter_constant: 27.5
+            throttle_filter_constant: 2
+            velocity_gain: 6.1
+            velocity_integral_gain: 0
+            traction_gain: 8
+            final_lateral_error_derivative_gain: 0.45
+            final_heading_error_derivative_gain: 2.5
+            initial_look_ahead_distant: 3
+            derivative_activation: 1
+            speed_reduction_activation: 0
+            velocity_damping_gain: 0.001
+            windup_gain: 0.01
+    chassis:
+            chassis_aero_force_gain : 0.63
+            max_brake_gain : 10000
+            max_turn_radius : 2.2
+            wheel_radius : 0.31265
+            max_torque : 2100
+            max_btorque : 1200
+            max_steering : 12.56
+            steering_gear_ratio : 17.4

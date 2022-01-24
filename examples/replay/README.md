@@ -5,7 +5,7 @@ This module shows how you can write your own experiments that will allow you to 
 You need to wrap your social agent using the `ReplayAgent` wrapper to save agent observations and actions at each step.
 Checkout `examples/replay/replay_klws_agent.py` on an example on how you can write your own experiment to replay your agent:
 ```python
-    from smarts.zoo.registry import make as zoo_make
+    from src.smarts.zoo.registry import make as zoo_make
     from zoo import policies
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)

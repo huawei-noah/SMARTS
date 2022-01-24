@@ -25,8 +25,8 @@ import pickle
 import shutil
 import unittest
 
-from smarts.core.utils.sumo import sumolib
-from smarts.sstudio.types import MapZone, PositionalZone
+from src.smarts.core.utils.sumo import sumolib
+from src.smarts.sstudio.types import MapZone, PositionalZone
 from ultra.scenarios.generate_scenarios import *
 
 

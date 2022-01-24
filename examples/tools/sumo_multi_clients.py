@@ -3,7 +3,7 @@ import subprocess
 import threading
 import time
 
-from smarts.core.utils.sumo import SUMO_PATH, sumolib, traci
+from src.smarts.core.utils.sumo import SUMO_PATH, sumolib, traci
 
 PORT = 8001
 

@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from smarts.core import seed
-from smarts.sstudio import gen_scenario
-from smarts.sstudio import types as t
+from src.smarts.core import seed
+from src.smarts.sstudio import gen_scenario
+from src.smarts.sstudio import types as t
 
 seed(42)
 

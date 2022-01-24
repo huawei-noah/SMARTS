@@ -34,7 +34,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 import ultra.adapters as adapters
-from smarts.core.agent import Agent
+from src.smarts.core.agent import Agent
 from ultra.baselines.common.replay_buffer import ReplayBuffer
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.baselines.common.yaml_loader import load_yaml

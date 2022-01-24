@@ -22,7 +22,7 @@
 import gym
 import numpy as np
 
-from smarts.core.controllers import ActionSpaceType
+from src.smarts.core.controllers import ActionSpaceType
 
 # The space of the adapted action.
 gym_space: gym.Space = gym.spaces.Box(

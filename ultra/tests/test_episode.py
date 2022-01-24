@@ -27,7 +27,7 @@ import gym
 import numpy as np
 import ray
 
-from smarts.zoo.registry import make
+from src.smarts.zoo.registry import make
 from ultra.utils.episode import episodes
 
 AGENT_ID = "001"

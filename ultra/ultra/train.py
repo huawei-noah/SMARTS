@@ -37,7 +37,7 @@ import psutil
 import ray
 import torch
 
-from smarts.zoo.registry import make
+from src.smarts.zoo.registry import make
 from ultra.evaluate import collect_evaluations, evaluation_check
 from ultra.utils.common import agent_pool_value
 from ultra.utils.episode import episodes

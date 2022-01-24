@@ -5,8 +5,8 @@ except Exception as e:
 
     raise RayException.required_to("stress_sumo.py")
 
-from smarts.core.scenario import Scenario
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from src.smarts.core.scenario import Scenario
+from src.smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
 
 @ray.remote

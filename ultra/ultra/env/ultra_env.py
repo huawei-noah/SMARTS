@@ -34,9 +34,9 @@ import yaml
 from scipy.spatial import distance
 
 import ultra.adapters as adapters
-from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation, TopDownRGB
-from smarts.env.hiway_env import HiWayEnv
+from src.smarts.core.scenario import Scenario
+from src.smarts.core.sensors import Observation, TopDownRGB
+from src.smarts.env.hiway_env import HiWayEnv
 from ultra.baselines.common.yaml_loader import load_yaml
 
 path.append("./ultra")

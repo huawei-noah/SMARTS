@@ -21,8 +21,8 @@
 # THE SOFTWARE.
 from pathlib import Path
 
-from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import Mission, Route, Scenario
+from src.smarts.sstudio import gen_scenario
+from src.smarts.sstudio.types import Mission, Route, Scenario
 
 missions = [
     Mission(Route(begin=("edge-south-SN", 1, 40), end=("edge-west-EW", 0, 60))),

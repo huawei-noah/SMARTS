@@ -1,0 +1,51 @@
+{
+  "name": "envision",
+  "version": "0.1.0",
+  "description": "Envision is a visualization front-end for SMARTS providing a real-time view of an environment.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "webpack-dev-server --open --mode development",
+    "build": "webpack --mode production"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.9.0",
+    "@babel/preset-env": "^7.9.0",
+    "@babel/preset-react": "^7.9.4",
+    "babel-loader": "^8.1.0",
+    "css-loader": "^3.5.2",
+    "html-loader": "^1.0.0",
+    "html-webpack-plugin": "^4.0.3",
+    "regenerator-runtime": "^0.13.5",
+    "style-loader": "^1.1.3",
+    "webpack": "^4.42.0",
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.11.0"
+  },
+  "dependencies": {
+    "@ant-design/dark-theme": "^2.0.1",
+    "@babylonjs/core": "^4.1.0",
+    "@babylonjs/gui": "^4.1.0",
+    "@babylonjs/inspector": "^4.1.0",
+    "@babylonjs/loaders": "^4.1.0",
+    "@ffmpeg/core": "^0.8.5",
+    "@ffmpeg/ffmpeg": "^0.9.6",
+    "antd": "^4.1.2",
+    "babylonjs": "^4.1.0",
+    "babylonjs-hook": "0.0.1",
+    "earcut": "^2.2.2",
+    "html2canvas": "^1.0.0-rc.5",
+    "prettier": "^2.3.1",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "react-reconciler": "^0.25.1",
+    "react-router": "^5.2.0",
+    "react-router-dom": "^5.2.0",
+    "react-toast-notifications": "^2.4.0",
+    "recordrtc": "^5.5.9",
+    "styled-components": "^5.0.1"
+  }
+}

@@ -2,11 +2,11 @@ import logging
 
 import gym
 
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.sensors import Observation
-from smarts.core.utils.episodes import episodes
-from smarts.env.wrappers.single_agent import SingleAgent
+from src.smarts.core.agent import Agent, AgentSpec
+from src.smarts.core.agent_interface import AgentInterface, AgentType
+from src.smarts.core.sensors import Observation
+from src.smarts.core.utils.episodes import episodes
+from src.smarts.env.wrappers.single_agent import SingleAgent
 
 # The following ugliness was made necessary because the `aiohttp` #
 # dependency has an "examples" module too.  (See PR #1120.)

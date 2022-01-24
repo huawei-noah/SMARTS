@@ -24,9 +24,9 @@ except Exception as e:
 
     raise RayException.required_to("rllib.py")
 
-import smarts
-from smarts.core.utils.file import copy_tree
-from smarts.env.rllib_hiway_env import RLlibHiWayEnv
+import src.smarts
+from src.smarts.core.utils.file import copy_tree
+from src.smarts.env.rllib_hiway_env import RLlibHiWayEnv
 
 from .rllib_agent import TrainingModel, rllib_agent
 

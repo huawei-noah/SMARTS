@@ -19,8 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from smarts.core.controllers import ActionSpaceType
-from smarts.zoo.registry import register
+from src.smarts.core.controllers import ActionSpaceType
+from src.smarts.zoo.registry import register
 from ultra.baselines.agent_spec import BaselineAgentSpec
 
 from .bdqn.bdqn.policy import BehavioralDQNPolicy
