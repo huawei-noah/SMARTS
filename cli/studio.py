@@ -86,9 +86,11 @@ def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
 def _build_single_scenario_proc(
     clean: bool, allow_offset_map: bool, scenario: str, semaphore: Semaphore
 ):
-    semaphore.acquire()
-    _build_single_scenario(clean, allow_offset_map, scenario)
-    semaphore.release()
+    semaphore.lock()
+    try:
+        _build_single_scenario(clean, allow_offset_map, scenario)
+    finally:
+        semaphore.release()
 
 
 def _install_requirements(scenario_root):
