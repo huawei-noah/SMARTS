@@ -25,6 +25,7 @@ from typing import Any, Callable, Optional
 
 import cloudpickle
 import gym
+import numpy as np
 
 from .agent_interface import AgentInterface
 
@@ -41,8 +42,18 @@ class Adapter:
     def __post_init__(self):
         assert isinstance(self.space, gym.Space)
 
+    def verify(self, adaptee):
+        adapted = self.func(adaptee)
+
+        # if np.any(adapted, )
+
     def __call__(self, adaptee):
-        return self.func(adaptee)
+        result = self.func(adaptee)
+        if isinstance(self.space, gym.spaces.Box):
+            assert np.shape(result) == self.space.shape
+            for i in range(len(result)):
+                assert self.space.low[i] <= result[i] <= self.space.high[i]
+        return result
 
 
 class Agent:
