@@ -42,11 +42,6 @@ class Adapter:
     def __post_init__(self):
         assert isinstance(self.space, gym.Space)
 
-    def verify(self, adaptee):
-        adapted = self.func(adaptee)
-
-        # if np.any(adapted, )
-
     def __call__(self, adaptee):
         result = self.func(adaptee)
         if isinstance(self.space, gym.spaces.Box):
