@@ -38,6 +38,9 @@ class Adapter:
     space: gym.Space
     func: Callable = lambda x: x
 
+    def __post_init__(self):
+        assert isinstance(self.space, gym.Space)
+
     def __call__(self, adaptee):
         return self.func(adaptee)
 
