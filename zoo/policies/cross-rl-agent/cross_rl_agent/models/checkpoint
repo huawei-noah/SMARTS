@@ -1,3 +1,0 @@
-model_checkpoint_path: "Soc_Mt_TD3Network_0.ckpt"
-all_model_checkpoint_paths: "Soc_Mt_TD3Network.ckpt"
-all_model_checkpoint_paths: "Soc_Mt_TD3Network_0.ckpt"

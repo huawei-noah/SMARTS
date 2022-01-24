@@ -1,6 +1,0 @@
-tire_model: 'LinearTireforce(wheel)'
-road_friction: 1
-C_alpha_front: 25000
-C_alpha_rear: 25000
-C_x_front: 40000
-C_x_rear: 40000
