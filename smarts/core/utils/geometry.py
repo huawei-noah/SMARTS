@@ -18,13 +18,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import math
+from typing import List
+
+import numpy as np
+import trimesh
 from shapely.geometry import LineString, MultiPolygon, Polygon
 from shapely.geometry.base import CAP_STYLE, JOIN_STYLE
 from shapely.ops import triangulate
-import trimesh
-import numpy as np
-import math
-from typing import List
 
 
 def buffered_shape(shape, width: float = 1.0) -> Polygon:
