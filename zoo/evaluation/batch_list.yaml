@@ -1,0 +1,118 @@
+# TODO: Commented out scenarios + agents are broken.
+
+result_path:
+  .
+
+evaluation_items:
+  diversity
+  offroad
+  collision
+  kinematics
+
+scenarios_root:
+  # Could be pointed to other scenarios path.
+  # For example, scenarios under smarts project root,
+  ./scenarios
+
+agent_list:
+  group_1:
+    - locator: zoo.policies.open-agent.open_agent:open_agent-v0
+      params:
+        gains:
+          theta: 1.3173076923076925
+          position: 1.221153846153846
+          obstacle: 3.0
+          u_accel: 10.103365384615384
+          u_yaw_rate: 40.1778846153846156
+          terminal: 0.04807692307692313
+          impatience: 0.10817307692307687
+          speed: 0.01
+          rate: 1
+    - locator: zoo.policies:keep-lane-agent-v0
+
+  group_2:
+    - locator: zoo.policies.open-agent.open_agent:open_agent-v0
+      name: open_agent_default
+      params:
+        gains:
+          theta: 1.3173076923076925
+          position: 1.221153846153846
+          obstacle: 3.0
+          u_accel: 10.103365384615384
+          u_yaw_rate: 40.1778846153846156
+          terminal: 0.04807692307692313
+          impatience: 0.10817307692307687
+          speed: 0.01
+          rate: 1
+
+    - locator: zoo.policies.open-agent.open_agent:open_agent-v0
+      name: open_agent_stable
+      params:
+        gains:
+          theta: 1.3
+          position: 1.5
+          obstacle: 3.0
+          u_accel: 10.0
+          u_yaw_rate: 40.0
+          terminal: 0.05
+          impatience: 0.2
+          speed: 0.01
+          rate: 1
+
+    - locator: zoo.policies.open-agent.open_agent:open_agent-v0
+      name: open_agent_safe
+      params:
+        gains:
+          theta: 1.3
+          position: 3.2
+          obstacle: 4.0
+          u_accel: 10.0
+          u_yaw_rate: 40.0
+          terminal: 0.0
+          impatience: 0.0
+          speed: 0.01
+          rate: 1
+
+  group_3:
+    - locator: rl_agent:rl-agent-v0
+      name: normal_speed_agent
+      params:
+        goal_is_nearby_threshold: 40
+        lane_end_threshold: 51
+        lane_crash_distance_threshold: 6
+        lane_crash_ttc_threshold: 2
+        intersection_crash_distance_threshold: 6
+        intersection_crash_ttc_threshold: 5
+        target_speed: 15
+        lane_change_speed: 12.5
+
+    - locator: rl_agent:rl-agent-v0
+      name: low_speed_agent
+      params:
+        goal_is_nearby_threshold: 40
+        lane_end_threshold: 51
+        lane_crash_distance_threshold: 6
+        lane_crash_ttc_threshold: 2
+        intersection_crash_distance_threshold: 6
+        intersection_crash_ttc_threshold: 5
+        target_speed: 5
+        lane_change_speed: 5
+
+# ../ syntax is not supported. All scenarios must start from `scenaros_root`
+scenario_list:
+  cross:
+    step_num: 100
+  merge:
+    step_num: 250
+  straight_pick_lane:
+    step_num: 300
+  turnleft_pick_lane:
+    step_num: 300
+  cross_1:
+    step_num: 150
+  merge_1:
+    step_num: 240
+  cross_2:
+    step_num: 80
+  merge_2:
+    step_num: 200
