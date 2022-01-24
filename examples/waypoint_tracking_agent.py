@@ -32,7 +32,12 @@ class WaypointTrackingAgent(Agent):
         desired_speed = 10
         wp_index = 0
 
-        if len(obs.waypoint_paths) == 9:
+        num_lanes = 0
+
+        for path in obs.waypoint_paths:
+            num_lanes = max(num_lanes, path[0].lane_index + 1)
+
+        if len(obs.waypoint_paths) == num_lanes ** 2:
 
             goal_position = obs.ego_vehicle_state.mission.goal.position
             min_lateral_error = 100
