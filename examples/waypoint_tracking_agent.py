@@ -23,7 +23,7 @@ AGENT_ID = "WaypointTrackingAgent"
 
 class WaypointTrackingAgent(Agent):
     def __init__(self):
-        self.path = []
+        self.waypoint_path = []
 
     def act(self, obs):
 
@@ -51,7 +51,7 @@ class WaypointTrackingAgent(Agent):
                         min_lateral_error = abs(lateral_error)
                         wp_index = idx
 
-            self.path = obs.waypoint_paths[wp_index]
+            self.waypoint_path = obs.waypoint_paths[wp_index]
 
         else:
             for i in range(len(obs.waypoint_paths)):
@@ -59,21 +59,20 @@ class WaypointTrackingAgent(Agent):
                     wp_index = i
                     break
 
-        if self.path:
+        if self.waypoint_path:
 
-            num_trajectory_points = min([5, len(self.path)])
+            num_trajectory_points = min([5, len(self.waypoint_path)])
             trajectory = [
-                [self.path[i].pos[0] for i in range(num_trajectory_points)],
-                [self.path[i].pos[1] for i in range(num_trajectory_points)],
-                [self.path[i].heading for i in range(num_trajectory_points)],
+                [self.waypoint_path[i].pos[0] for i in range(num_trajectory_points)],
+                [self.waypoint_path[i].pos[1] for i in range(num_trajectory_points)],
+                [self.waypoint_path[i].heading for i in range(num_trajectory_points)],
                 [desired_speed for i in range(num_trajectory_points)],
             ]
-            self.path.pop(0)
+            self.waypoint_path.pop(0)
 
         else:
 
             num_trajectory_points = min([5, len(obs.waypoint_paths[wp_index])])
-
             trajectory = [
                 [
                     obs.waypoint_paths[wp_index][i].pos[0]
