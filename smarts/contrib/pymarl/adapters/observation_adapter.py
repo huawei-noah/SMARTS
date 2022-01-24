@@ -138,7 +138,7 @@ def nv_heading_to_ego_heading(nv_heading):
 
 
 def ttc_by_path(ego, waypoint_paths, neighborhood_vehicle_states, ego_closest_wp):
-    """Attempt to calculate Time To Collision(ttc) information of the given vehicles against the
+    """Compute time-to-collision (ttc) information of the given vehicles against the
     ego vehicle.
     """
     # TODO: Phase this out; used for penalizing close proximity to other cars

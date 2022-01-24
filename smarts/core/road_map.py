@@ -91,7 +91,7 @@ class RoadMap:
     def nearest_lane(
         self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> RoadMap.Lane:
-        """Find the nearest lane on this road map near the given point."""
+        """Find the nearest lane on this road map to the given point."""
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
         return nearest_lanes[0][0] if nearest_lanes else None
 

@@ -106,7 +106,7 @@ class _GLBData:
 
 @dataclass
 class LaneBoundary:
-    """Describes a lane boundry."""
+    """Describes a lane boundary."""
 
     refline: PlanViewElement
     inner: Optional["LaneBoundary"]
@@ -132,7 +132,7 @@ class LaneBoundary:
         return [s for s in s_vals if s_start <= s <= s_end]
 
     def get_lane_offset(self, s: float) -> float:
-        """Get the lane offset in this boundry."""
+        """Get the lane offset for this boundary at a given s value."""
         if len(self.lane_offsets) == 0:
             return 0
         if s < self.lane_offsets[0].start_pos:
@@ -153,7 +153,7 @@ class LaneBoundary:
         return self.lane_widths[i]
 
     def calc_t(self, s: float, section_s_start: float, lane_idx: int) -> float:
-        """Used to evaluate lane boundry shape."""
+        """Used to evaluate lane boundary shape."""
         # Find the lateral shift of lane reference line with road reference line (known as laneOffset in OpenDRIVE)
         lane_offset = self.get_lane_offset(s)
 
@@ -168,7 +168,7 @@ class LaneBoundary:
         )
 
     def to_linear_segments(self, s_start: float, s_end: float) -> List[float]:
-        """Convert from lane boundry shape to linear segments."""
+        """Convert from lane boundary shape to linear segments."""
         if self.inner:
             inner_s_vals = self.inner.to_linear_segments(s_start, s_end)
         else:
@@ -626,7 +626,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
     @cached_property
     def bounding_box(self) -> BoundingBox:
-        """Return a bounding box that encapulates the map."""
+        """Return a bounding box that encapsulates the map."""
         x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
         for road_id in self._roads:
             road = self._roads[road_id]
@@ -873,7 +873,7 @@ class OpenDriveRoadNetwork(RoadMap):
         # Central Reference line of the lane, (For vector and heading computation)
         @property
         def centerline_points(self) -> List[Tuple[float, float]]:
-            """A list of points that shape centerline that runs through the center of the lane."""
+            """A list of points that run through the center of the lane."""
             return self._centerline_points
 
         @cached_property

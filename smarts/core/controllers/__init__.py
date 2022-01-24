@@ -79,7 +79,7 @@ class Controllers:
             action:
                 The action for the controller to perform.
             controller_state:
-                The last a vehicle controller as relates to action space.
+                The last vehicle controller state as relates to its action space.
             sensor_state:
                 The state of a vehicle sensor as relates to vehicle sensors.
             action_space:
@@ -153,7 +153,7 @@ class Controllers:
 
 
 class ControllerOutOfLaneException(Exception):
-    """Represents an error due to a vehicle straying to far from any available lane."""
+    """Represents an error due to a vehicle straying too far from any available lane."""
 
     pass
 

@@ -22,7 +22,7 @@ from enum import Enum
 
 # Color channel order: RGBA
 class Colors(Enum):
-    """Common simuation colors as RGBA values."""
+    """Common simulation colors as RGBA values."""
 
     Red = (210 / 255, 30 / 255, 30 / 255, 1)
     Rose = (196 / 255, 0, 84 / 255, 1)

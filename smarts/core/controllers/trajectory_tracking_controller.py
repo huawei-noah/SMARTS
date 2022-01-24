@@ -173,7 +173,7 @@ class TrajectoryTrackingController:
         state,
         dt_sec,
     ):
-        """Attempts model proportional integral derivative for the given vehicle given an expected
+        """Attempts proportional derivative control for the vehicle given an expected
         trajectory.
         """
         # Controller parameters for trajectory tracking.

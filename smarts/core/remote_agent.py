@@ -79,7 +79,7 @@ class RemoteAgent:
         self._worker_stub = worker_pb2_grpc.WorkerStub(self._worker_channel)
 
     def act(self, obs):
-        """Call the agent act asynchronously and return a Future."""
+        """Call the agent's act function asynchronously and return a Future."""
         self._act_future = self._worker_stub.act.future(
             worker_pb2.Observation(payload=cloudpickle.dumps(obs))
         )
