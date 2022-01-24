@@ -17,7 +17,7 @@ beautifulsoup4==4.10.0
 bleach==4.1.0
 blessings==1.7
 cached-property==1.5.2
-cachetools==4.2.4
+cachetools==5.0.0
 certifi==2021.10.8
 cffi==1.15.0
 charset-normalizer==2.0.10
@@ -38,7 +38,7 @@ entrypoints==0.3
 execnet==1.9.0
 filelock==3.4.2
 flatbuffers==2.0
-fonttools==4.28.5
+fonttools==4.29.0
 frozenlist==1.3.0
 future==0.18.2
 gast==0.4.0
@@ -46,7 +46,7 @@ gitdb==4.0.9
 GitPython==3.1.26
 google==3.0.0
 google-api-core==2.4.0
-google-auth==2.3.3
+google-auth==2.4.1
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 googleapis-common-protos==1.54.0
