@@ -28,7 +28,11 @@ import numpy as np
 
 import ultra.adapters as adapters
 from src.smarts.core.agent import Agent, AgentSpec
-from src.smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
+from src.smarts.core.agent_interface import (
+    AgentInterface,
+    NeighborhoodVehicles,
+    Waypoints,
+)
 from src.smarts.core.controllers import ActionSpaceType
 from src.smarts.core.coordinates import Heading
 from src.smarts.core.events import Events

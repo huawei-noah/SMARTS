@@ -37,7 +37,11 @@ import torch
 from matplotlib import pyplot as plt
 
 from src.smarts.core.agent import Agent, AgentSpec
-from src.smarts.core.agent_interface import AgentInterface, AgentType, NeighborhoodVehicles
+from src.smarts.core.agent_interface import (
+    AgentInterface,
+    AgentType,
+    NeighborhoodVehicles,
+)
 from src.smarts.core.controllers import ActionSpaceType
 from src.smarts.core.utils.episodes import episodes
 from ultra.scenarios.analysis.base_analysis import BaseAnalysis
