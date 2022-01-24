@@ -21,11 +21,11 @@ import multiprocessing
 import os
 import subprocess
 import sys
+from multiprocessing import Process, Semaphore
 from pathlib import Path
 from threading import Thread
-from multiprocessing import Process
-from multiprocessing import Semaphore
 from typing import Sequence
+
 import click
 
 
