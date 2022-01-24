@@ -83,11 +83,10 @@ setup(
             "grpcio-tools==1.32.0",
             "isort==5.7.0",
             "pre-commit==2.16.0",
-            "pylint==2.12.2",
+            "pylint>=2.12.2",
             "sphinx",
             "sphinx-rtd-theme",
             "sphinxcontrib-apidoc",
-            "pylint>=2.12.2",  # Used for checking if the public module/classes/methods contains docstrings
         ],
         "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
         "ros": ["catkin_pkg", "rospkg"],
