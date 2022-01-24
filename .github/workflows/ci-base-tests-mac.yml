@@ -2,7 +2,7 @@ name: SMARTS CI Base Tests Mac
 
 on:
   workflow_run:
-    workflows: ["SMARTS CI Dependencies Mac"]
+    workflows: ["SMARTS CI Auto Commit Mac"]
     types:
       - completed
   workflow_dispatch:

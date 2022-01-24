@@ -21,24 +21,23 @@ import logging
 import os
 import random
 from functools import lru_cache
+from subprocess import check_output
 from typing import List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import trimesh
 import trimesh.scene
 from cached_property import cached_property
-from shapely.geometry import Polygon
-from shapely.ops import snap, nearest_points
-from trimesh.exchange import gltf
 from shapely.geometry import Point as shPoint
-from subprocess import check_output
-
+from shapely.geometry import Polygon
+from shapely.ops import nearest_points, snap
+from trimesh.exchange import gltf
 
 from smarts.sstudio.types import MapSpec
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
+from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
-from .lanepoints import LinkedLanePoint, LanePoints
 from .utils.geometry import buffered_shape, generate_mesh_from_polygons
 from .utils.math import inplace_unwrap, radians_to_vec, vec_2d
 
