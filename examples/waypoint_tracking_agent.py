@@ -33,10 +33,10 @@ class WaypointTrackingAgent(Agent):
         wp_index = 0
 
         num_lanes = 0
-
         for path in obs.waypoint_paths:
             num_lanes = max(num_lanes, path[0].lane_index + 1)
 
+        # This is when there are waypoint paths that change lanes, assuming every lane can change to every lane
         if len(obs.waypoint_paths) == num_lanes ** 2:
 
             goal_position = obs.ego_vehicle_state.mission.goal.position
