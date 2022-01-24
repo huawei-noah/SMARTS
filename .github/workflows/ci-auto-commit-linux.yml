@@ -33,7 +33,7 @@ jobs:
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
-          pip install .[camera-obs,dev,test,train]
+          pip install .[camera-obs,test,train]
       - name: Update requirements
         run: |
           . ${{env.venv_dir}}/bin/activate
@@ -48,6 +48,7 @@ jobs:
       - name: isort, Black, and prettier
         run: |
           . ${{env.venv_dir}}/bin/activate
+          pip install .[dev]
           isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines/marl_benchmark/ ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./ultra ./zoo
           black .
           npx prettier --write ./envision/web/src
