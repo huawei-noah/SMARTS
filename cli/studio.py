@@ -86,7 +86,7 @@ def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
 def _build_single_scenario_proc(
     clean: bool, allow_offset_map: bool, scenario: str, semaphore: Semaphore
 ):
-    semaphore.lock()
+    semaphore.acquire()
     try:
         _build_single_scenario(clean, allow_offset_map, scenario)
     finally:
