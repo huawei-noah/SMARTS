@@ -41,6 +41,6 @@ jobs:
             -e missing-function-docstring \
             -e missing-class-docstring \
             -s n \
-            --ignore marl_benchmark,examples,scenarios,docs \
+            --ignore marl_benchmark,examples,scenarios,docs,manager_pb2_grpc.py,worker_pb2_grpc.py \
             --msg-template='{path}: line {line}: {msg_id}: {msg}' \
             ./smarts ./envision
