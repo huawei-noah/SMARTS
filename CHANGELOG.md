@@ -14,9 +14,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 - If more than one qualifying map file exists in a the `map_spec.source` folder, `get_road_map()` in `default_map_builder.py` will prefer to return the default files (`map.net.xml` or `map.xodr`) if they exist.
 - Moved the `smarts_ros` ROS node from the `examples` area into the `smarts.ros` module so that it can be distributed with SMARTS packages.
+- Use `Process` to replace `Thread` to speed up the `scl scenario build-all --clean <scenario_dir>` runtime.
 ### Deprecated
 ### Fixed
-- Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error. 
+- Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error.
 ### Removed
 ### Security
 

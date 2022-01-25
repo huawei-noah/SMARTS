@@ -68,6 +68,8 @@ class Client:
     """
 
     class QueueDone:
+        """A marker type to indicate termination of messages."""
+
         pass
 
     def __init__(
@@ -108,6 +110,8 @@ class Client:
             self._logging_process.daemon = True
             self._logging_process.start()
 
+        self._process = None
+        self._state_queue = None
         if not self._headless:
             self._state_queue = multiprocessing.Queue()
             self._process = multiprocessing.Process(
@@ -123,6 +127,7 @@ class Client:
 
     @property
     def headless(self):
+        """Indicates if this client is disconnected from the remote."""
         return self._headless
 
     @staticmethod
@@ -146,6 +151,7 @@ class Client:
         fixed_timestep_sec: float = 0.1,
         wait_between_retries: float = 0.5,
     ):
+        """Send a pre-recorded envision simulation to the envision server."""
         client = Client(
             endpoint=endpoint,
             wait_between_retries=wait_between_retries,
@@ -244,6 +250,7 @@ class Client:
         run_socket(endpoint, wait_between_retries)
 
     def send(self, state: types.State):
+        """Send the given envision state to the remote as the most recent state."""
         if not self._headless and self._process.is_alive():
             self._state_queue.put(state)
         if self._logging_process:
@@ -256,10 +263,15 @@ class Client:
         self._state_queue.put(state)
 
     def teardown(self):
-        if not self._headless and self._state_queue:
+        """Clean up the client resources."""
+        if self._state_queue:
             self._state_queue.put(Client.QueueDone())
+
+        if self._process:
             self._process.join(timeout=3)
             self._process = None
+
+        if self._state_queue:
             self._state_queue.close()
             self._state_queue = None
 

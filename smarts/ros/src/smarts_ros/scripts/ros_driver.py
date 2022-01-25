@@ -105,6 +105,7 @@ class ROSDriver:
         time_ratio: float = 1.0,
         pub_queue_size: int = 10,
     ):
+        """Set up the SMARTS ros node."""
         assert not self._state_publisher
 
         # enforce only one SMARTS instance per ROS network...
@@ -149,6 +150,7 @@ class ROSDriver:
     def setup_smarts(
         self, headless: bool = True, seed: int = 42, time_ratio: float = 1.0
     ):
+        """Do the setup of the underlying SMARTS instance."""
         assert not self._smarts
         if not self._state_publisher:
             raise RuntimeError("must call setup_ros() first.")
@@ -389,14 +391,19 @@ class ROSDriver:
 
         @property
         def stamp(self):
+            """The estimated timestamp of this vehicle state."""
             return self.vector[0]
 
         def average_with(self, other_vect: np.ndarray):
+            """Update this vehicle state with the average between this state and the given new
+            state.
+            """
             self.vector += other_vect
             self.vector /= 2
             self.update_vehicle_state()
 
         def update_vehicle_state(self):
+            """Update this vehicle state."""
             assert len(self.vector) == 20
             self.vs.pose = Pose.from_center(
                 self.vector[1:4], Heading(self.vector[4] % (2 * math.pi))
@@ -625,6 +632,7 @@ class ROSDriver:
         return None
 
     def run_forever(self):
+        """Publish the SMARTS ros node and run indefinitely."""
         if not self._state_publisher:
             raise RuntimeError("must call setup_ros() first.")
         if not self._smarts:
@@ -688,7 +696,7 @@ class ROSDriver:
                     rate.sleep()
 
         except rospy.ROSInterruptException:
-            rospy.loginfo("ROS interrrupted.  exiting...")
+            rospy.loginfo("ROS interrupted.  exiting...")
 
         self._reset()  # cleans up the SMARTS instance...
 

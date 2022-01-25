@@ -32,6 +32,8 @@ except ImportError:
 
 
 class VisdomClient:
+    """A client for handling connection to a Visdom server."""
+
     def __init__(self, hostname="http://localhost", port=8097):
         self._log = logging.getLogger(self.__class__.__name__)
         self._port = port
@@ -39,12 +41,14 @@ class VisdomClient:
         self._visdom_obs_queue = self._build_visdom_watcher_queue()
 
     def send(self, obs):
+        """Send an observation to the Visdom server."""
         try:
             self._visdom_obs_queue.put(obs, block=False)
         except Exception:
-            self._log.debug("Dropped visdom frame instead of blocking")
+            self._log.debug("Dropped Visdom frame instead of blocking")
 
     def teardown(self):
+        """Clean up unmanaged resources."""
         pass
 
     def _build_visdom_watcher_queue(self):

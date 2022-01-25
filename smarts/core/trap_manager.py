@@ -35,28 +35,37 @@ from smarts.sstudio.types import MapZone, TrapEntryTactic
 
 @dataclass
 class Trap:
-    """Caches geometry and temporal information to use to capture social agents"""
+    """Caches geometry and temporal information to use to capture actors for social agents"""
 
     geometry: Polygon
+    """The trap area within which actors are considered for capture."""
     mission: Mission
+    """The mission that this trap should assign the captured actor."""
     exclusion_prefixes: Sequence[str]
+    """Prefixes of actors that should be ignored by this trap."""
     remaining_time_to_activation: float
+    """The amount of time left until this trap activates."""
     patience: float
+    """Patience to wait for better capture circumstances after which the trap expires."""
     default_entry_speed: float
+    """The default entry speed of a new vehicle should this trap expire."""
 
     def step_trigger(self, dt: float):
+        """Update the trigger state"""
         self.remaining_time_to_activation -= dt
 
     @property
     def ready(self):
+        """If the trap is ready to capture a vehicle."""
         return self.remaining_time_to_activation < 0
 
     @property
     def patience_expired(self):
-        """Patience recommendation to wait for better capture circumstances"""
+        """If the trap has expired and should no longer capture a vehicle."""
         return self.remaining_time_to_activation < -self.patience
 
     def includes(self, vehicle_id: str):
+        """Returns if the given actor should be considered for capture."""
         for prefix in self.exclusion_prefixes:
             if vehicle_id.startswith(prefix):
                 return False
@@ -64,7 +73,7 @@ class Trap:
 
 
 class TrapManager:
-    """Facilitates ego hijacking of social vehicles"""
+    """Facilitates agent hijacking of actors"""
 
     def __init__(self, scenario):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -72,11 +81,13 @@ class TrapManager:
         self.init_traps(scenario.road_map, scenario.missions)
 
     def init_traps(self, road_map, missions):
+        """Set up the traps used to capture actors."""
         self._traps.clear()
         for agent_id, mission in missions.items():
             self.add_trap_for_agent(agent_id, mission, road_map)
 
     def add_trap_for_agent(self, agent_id: str, mission: Mission, road_map) -> bool:
+        """Add a new trap to capture an actor for the given agent."""
         if mission is None:
             mission = Mission.random_endless_mission(road_map)
 
@@ -94,11 +105,21 @@ class TrapManager:
         self._traps[agent_id] = trap
         return True
 
-    def reset_traps(self, used_traps):
+    def remove_traps(self, used_traps):
+        """Remove the given used traps."""
         for agent_id, _ in used_traps:
             del self._traps[agent_id]
 
+    def reset_traps(self, used_traps):
+        """Reset all used traps."""
+        logging.warning.warn(
+            "`TrapManager.reset_traps(..)` method has been deprecated in favor of `remove_traps(..)`.  Please update your code.",
+            category=DeprecationWarning,
+        )
+        self.remove_traps(used_traps)
+
     def step(self, sim):
+        """Run hijacking and update agent and actor states."""
         captures_by_agent_id = defaultdict(list)
 
         # Do an optimization to only check if there are pending agents.
@@ -216,11 +237,12 @@ class TrapManager:
             used_traps.append((agent_id, trap))
 
         if len(agents_given_vehicle) > 0:
-            self.reset_traps(used_traps)
+            self.remove_traps(used_traps)
             sim.agent_manager.remove_pending_agent_ids(agents_given_vehicle)
 
     @property
-    def traps(self):
+    def traps(self) -> Dict[str, Trap]:
+        """The traps in this manager."""
         return self._traps
 
     @staticmethod
@@ -243,9 +265,11 @@ class TrapManager:
         return vehicle
 
     def reset(self):
+        """Resets to a pre-initialized state."""
         self.captures_by_agent_id = defaultdict(list)
 
     def teardown(self):
+        """Clear internal state"""
         self.reset()
         self._traps.clear()
 

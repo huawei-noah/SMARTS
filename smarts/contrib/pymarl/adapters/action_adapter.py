@@ -32,6 +32,7 @@ DEFAULT_ACTION_SPACE = gym.spaces.Discrete(N_ACTIONS)
 
 
 def default_action_adapter(model_action):
+    """The default pymarl action adaptor."""
     if type(model_action) in (int, np.int, np.int8, np.int16, np.int32, np.int64):
         action = model_action
     elif type(model_action) in (list, tuple, np.ndarray):

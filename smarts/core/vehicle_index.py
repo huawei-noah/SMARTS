@@ -21,7 +21,7 @@ import logging
 from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
-from typing import FrozenSet, NamedTuple
+from typing import FrozenSet, NamedTuple, Optional, Tuple
 
 import numpy as np
 import tableprint as tp
@@ -70,6 +70,8 @@ class _ControlEntity(NamedTuple):
 #       VehicleIndex can perform operations on. Then we can do diffs of that
 #       recarray with subset queries.
 class VehicleIndex:
+    """A vehicle management system that associates actors with vehicles."""
+
     def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
         self._controlled_by = VehicleIndex._build_empty_controlled_by()
@@ -93,6 +95,7 @@ class VehicleIndex:
 
     @classmethod
     def identity(cls):
+        """Returns an empty identity index."""
         return cls()
 
     def __sub__(self, other: "VehicleIndex") -> "VehicleIndex":
@@ -154,12 +157,14 @@ class VehicleIndex:
 
     @cache
     def vehicle_ids(self):
+        """A set of all unique vehicles ids in the index."""
         vehicle_ids = self._controlled_by["vehicle_id"]
         vehicle_ids = [self._2id_to_id[id_] for id_ in vehicle_ids]
         return set(vehicle_ids)
 
     @cache
     def agent_vehicle_ids(self):
+        """A set of vehicle ids associated with an agent."""
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Agent
         ]["vehicle_id"]
@@ -169,6 +174,7 @@ class VehicleIndex:
 
     @cache
     def social_vehicle_ids(self, vehicle_types: FrozenSet[str] = None):
+        """A set of vehicle ids associated with traffic vehicles."""
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Social
         ]["vehicle_id"]
@@ -181,6 +187,7 @@ class VehicleIndex:
 
     @cache
     def vehicle_is_hijacked_or_shadowed(self, vehicle_id):
+        """Determine if a vehicle is either taken over by an agent or watched by an agent."""
         vehicle_id = _2id(vehicle_id)
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
@@ -208,7 +215,8 @@ class VehicleIndex:
         return [self._2id_to_id[id_] for id_ in vehicle_ids]
 
     @cache
-    def actor_id_from_vehicle_id(self, vehicle_id):
+    def actor_id_from_vehicle_id(self, vehicle_id) -> Optional[str]:
+        """Find the actor id associated with the given vehicle."""
         vehicle_id = _2id(vehicle_id)
 
         actor_ids = self._controlled_by[
@@ -221,7 +229,8 @@ class VehicleIndex:
         return None
 
     @cache
-    def shadow_actor_id_from_vehicle_id(self, vehicle_id):
+    def shadow_actor_id_from_vehicle_id(self, vehicle_id) -> Optional[str]:
+        """Find the first actor watching a vehicle."""
         vehicle_id = _2id(vehicle_id)
 
         shadow_actor_ids = self._controlled_by[
@@ -235,6 +244,7 @@ class VehicleIndex:
 
     @cache
     def vehicle_position(self, vehicle_id):
+        """Find the position of the given vehicle."""
         vehicle_id = _2id(vehicle_id)
 
         positions = self._controlled_by[
@@ -244,31 +254,46 @@ class VehicleIndex:
         return positions[0] if len(positions) > 0 else None
 
     def vehicles_by_actor_id(self, actor_id, include_shadowers=False):
+        """Find vehicles associated with the given actor.
+        Args:
+            actor_id:
+                The actor to find all associated vehicle ids.
+            include_shadowers:
+                If to include vehicles that the actor is only watching.
+        Returns:
+            A list of associated vehicles.
+        """
         vehicle_ids = self.vehicle_ids_by_actor_id(actor_id, include_shadowers)
         return [self._vehicles[_2id(id_)] for id_ in vehicle_ids]
 
     def vehicle_is_hijacked(self, vehicle_id):
+        """Determine if a vehicle is controlled by an actor."""
         is_hijacked, _ = self.vehicle_is_hijacked_or_shadowed(vehicle_id)
         return is_hijacked
 
     def vehicle_is_shadowed(self, vehicle_id):
+        """Determine if a vehicle is watched by an actor."""
         _, is_shadowed = self.vehicle_is_hijacked_or_shadowed(vehicle_id)
         return is_shadowed
 
     @property
     def vehicles(self):
+        """A list of all existing vehicles."""
         # XXX: Order is not ensured
         return list(self._vehicles.values())
 
-    def vehicleitems(self):
+    def vehicleitems(self) -> Tuple[str, Vehicle]:
+        """A list of all vehicle IDs paired with their vehicle."""
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._vehicles.items())
 
     def vehicle_by_id(self, vehicle_id):
+        """Get a vehicle by its id."""
         vehicle_id = _2id(vehicle_id)
         return self._vehicles[vehicle_id]
 
     @clear_cache
     def teardown_vehicles_by_vehicle_ids(self, vehicle_ids):
+        """Terminate and remove a vehicle from the index using its id."""
         self._log.debug(f"Tearing down vehicle ids: {vehicle_ids}")
 
         vehicle_ids = [_2id(id_) for id_ in vehicle_ids]
@@ -294,6 +319,7 @@ class VehicleIndex:
         self._controlled_by = self._controlled_by[~remove_vehicle_indices]
 
     def teardown_vehicles_by_actor_ids(self, actor_ids, include_shadowing=True):
+        """Terminate and remove all vehicles associated with an actor."""
         vehicle_ids = []
         for actor_id in actor_ids:
             vehicle_ids.extend(
@@ -306,6 +332,7 @@ class VehicleIndex:
 
     @clear_cache
     def sync(self):
+        """Update the state of the index."""
         for vehicle_id, vehicle in self._vehicles.items():
             v_index = self._controlled_by["vehicle_id"] == vehicle_id
             entity = _ControlEntity(*self._controlled_by[v_index][0])
@@ -315,6 +342,7 @@ class VehicleIndex:
 
     @clear_cache
     def teardown(self):
+        """Clean up resources, resetting the index."""
         self._controlled_by = VehicleIndex._build_empty_controlled_by()
 
         for vehicle in self._vehicles.values():
@@ -329,6 +357,7 @@ class VehicleIndex:
     def start_agent_observation(
         self, sim, vehicle_id, agent_id, agent_interface, plan, boid=False
     ):
+        """Associate an agent to a vehicle. Set up any needed sensor requirements."""
         original_agent_id = agent_id
         vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
 
@@ -370,6 +399,23 @@ class VehicleIndex:
         recreate=False,
         agent_interface=None,
     ):
+        """Give control of the specified vehicle to the specified agent.
+        Args:
+            sim:
+                An instance of a SMARTS simulation.
+            vehicle_id:
+                The id of the vehicle to associate.
+            agent_id:
+                The id of the agent to associate.
+            boid:
+                If the agent is acting as a boid agent controlling multiple vehicles.
+            hijacking:
+                If the vehicle has been taken over from another controlling actor.
+            recreate:
+                If the vehicle should be destroyed and regenerated.
+            agent_interface:
+                The agent interface for sensor requirements.
+        """
         self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
 
         vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
@@ -412,6 +458,7 @@ class VehicleIndex:
 
     @clear_cache
     def stop_agent_observation(self, vehicle_id):
+        """Strip all sensors from a vehicle and stop all actors from watching the vehicle."""
         vehicle_id = _2id(vehicle_id)
 
         vehicle = self._vehicles[vehicle_id]
@@ -426,6 +473,7 @@ class VehicleIndex:
 
     @clear_cache
     def relinquish_agent_control(self, sim, vehicle_id, social_vehicle_id):
+        """Give control of the vehicle back to its original controller."""
         self._log.debug(
             f"Relinquishing agent control v_id={vehicle_id} sv_id={social_vehicle_id}"
         )
@@ -458,6 +506,7 @@ class VehicleIndex:
 
     @clear_cache
     def attach_sensors_to_vehicle(self, sim, vehicle_id, agent_interface, plan):
+        """Attach sensors as per the agent interface requirements to the specified vehicle."""
         vehicle_id = _2id(vehicle_id)
 
         vehicle = self._vehicles[vehicle_id]
@@ -478,8 +527,8 @@ class VehicleIndex:
         agent_id = self._2id_to_id[agent_id]
 
         # TODO: There existed a SUMO connection error bug
-        #       (https://gitlab.smartsai.xyz/smarts/SMARTS/-/issues/671) that occured
-        #       during lange changing when we hijacked/trapped a SUMO vehicle. Forcing
+        #       (https://gitlab.smartsai.xyz/smarts/SMARTS/-/issues/671) that occurred
+        #       during lane changing when we hijacked/trapped a SUMO vehicle. Forcing
         #       vehicle recreation seems to address the problem. Ideally we discover
         #       the underlaying problem and can go back to the preferred implementation
         #       of simply swapping control of a persistent vehicle.
@@ -547,6 +596,7 @@ class VehicleIndex:
         initial_speed=None,
         boid=False,
     ):
+        """Build an entirely new vehicle for an agent."""
         vehicle_id = f"{agent_id}-{gen_id()}"
         vehicle = Vehicle.build_agent_vehicle(
             sim,
@@ -628,6 +678,7 @@ class VehicleIndex:
     def build_social_vehicle(
         self, sim, vehicle_state, actor_id, vehicle_config_type, vehicle_id=None
     ) -> Vehicle:
+        """Build an entirely new vehicle for a social agent."""
         if vehicle_id is None:
             vehicle_id = gen_id()
 
@@ -656,6 +707,7 @@ class VehicleIndex:
         return vehicle
 
     def begin_rendering_vehicles(self, renderer):
+        """Render vehicles using the specified renderer."""
         agent_ids = self.agent_vehicle_ids()
         for vehicle in self._vehicles.values():
             if not vehicle.renderer:
@@ -664,24 +716,30 @@ class VehicleIndex:
                 renderer.begin_rendering_vehicle(vehicle.id, is_agent)
 
     def sensor_states_items(self):
+        """Get the sensor states of all listed vehicles."""
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._sensor_states.items())
 
     def check_vehicle_id_has_sensor_state(self, vehicle_id: str) -> bool:
+        """Determine if a vehicle contains sensors."""
         v_id = _2id(vehicle_id)
         return v_id in self._sensor_states
 
-    def sensor_state_for_vehicle_id(self, vehicle_id):
+    def sensor_state_for_vehicle_id(self, vehicle_id: str) -> SensorState:
+        """Retrieve the sensor state of the given vehicle."""
         vehicle_id = _2id(vehicle_id)
         return self._sensor_states[vehicle_id]
 
-    def controller_state_for_vehicle_id(self, vehicle_id):
+    def controller_state_for_vehicle_id(self, vehicle_id: str) -> ControllerState:
+        """Retrieve the controller state of the given vehicle."""
         vehicle_id = _2id(vehicle_id)
         return self._controller_states[vehicle_id]
 
     def load_controller_params(self, controller_filepath: str):
+        """Set the default controller parameters for actor controlled vehicles."""
         self._controller_params = resources.load_controller_params(controller_filepath)
 
     def controller_params_for_vehicle_type(self, vehicle_type: str):
+        """Get the controller parameters for the given vehicle type"""
         assert self._controller_params, "Controller params have not been loaded"
         return self._controller_params[vehicle_type]
 
