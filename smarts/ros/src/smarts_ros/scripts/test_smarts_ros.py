@@ -59,9 +59,10 @@ class TestSmartsRos(TestCase):
         def_namespace: str = "SMARTS/",
         pub_queue_size: int = 10,
     ):
+        """Set up the SMARTS ros test node."""
         rospy.init_node(node_name, anonymous=True)
 
-        # If the namespace is aready set in the environment, we use it,
+        # If the namespace is already set in the environment, we use it,
         # otherwise we use our default.
         namespace = def_namespace if not os.environ.get("ROS_NAMESPACE") else ""
 
@@ -153,6 +154,7 @@ class TestSmartsRos(TestCase):
             self._agent_publisher.publish(agent_spec)
 
     def run_forever(self):
+        """Publish the SMARTS ros test node and run indefinitely."""
         if not self._smarts_info_srv:
             raise RuntimeError("must call setup_ros() first.")
         scenario = self._init_scenario()

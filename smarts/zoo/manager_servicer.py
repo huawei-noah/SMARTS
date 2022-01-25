@@ -87,6 +87,7 @@ class ManagerServicer(manager_pb2_grpc.ManagerServicer):
         return manager_pb2.Status()
 
     def destroy(self):
+        """ Cleans up unmanaged resources. """
         log.debug(
             f"Manager - pid({os.getpid()}), shutting down remaining agent worker processes."
         )
