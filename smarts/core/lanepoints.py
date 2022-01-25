@@ -29,7 +29,6 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import List, NamedTuple, Optional, Sequence, Tuple
 
-
 import numpy as np
 
 with warnings.catch_warnings():
