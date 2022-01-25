@@ -430,6 +430,9 @@ class SMARTS:
 
         self._reset_providers()
 
+        for agent in observations_for_ego:
+            assert not any(observations_for_ego[agent].events)
+
         return observations_for_ego
 
     def setup(self, scenario: Scenario):
