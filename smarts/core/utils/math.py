@@ -244,9 +244,6 @@ def low_pass_filter(
     return previous_filter_state
 
 
-import math
-
-math.isclose
 
 
 def radians_to_vec(radians) -> np.ndarray:
