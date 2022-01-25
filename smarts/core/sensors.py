@@ -76,7 +76,7 @@ class EgoVehicleObservation(NamedTuple):
     speed: float
     """The travel m/s in the direction of the vehicle."""
     steering: float
-    """Angle of front wheels in radians between [-1:1]."""
+    """Angle of front wheels in radians between [-pi, pi]."""
     yaw_rate: float
     """Rotational speed in radians per second"""
     road_id: str
@@ -88,13 +88,13 @@ class EgoVehicleObservation(NamedTuple):
     mission: Mission
     """A field describing the vehicle plotted route"""
     linear_velocity: np.ndarray
-    """A 3D array of vehicle velocities in body coordinate frame"""
+    """Vehicle velocity along body coordinate axes. A numpy array of shape=(3,) and dtype=np.float64."""
     angular_velocity: np.ndarray
-    """A 3D numpy array of angular velocity vector"""
+    """Angular velocity vector. A numpy array of shape=(3,) and dtype=np.float64."""
     linear_acceleration: np.ndarray
-    """A 3D array of linear acceleration vector (requires accelerometer sensor)"""
+    """Linear acceleration vector. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
     angular_acceleration: np.ndarray
-    """A 3D array of angular acceleration vector (requires accelerometer sensor)"""
+    """Angular acceleration vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     linear_jerk: np.ndarray
     """A 3D array of linear jerk vector (requires accelerometer sensor)"""
     angular_jerk: np.ndarray

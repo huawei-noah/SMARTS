@@ -195,7 +195,7 @@ class Renderer:
         self._is_setup = False
 
     def destroy(self):
-        """"""
+        """Destroy the renderer. Cleans up all remaining renderer resources."""
         self.teardown()
         self._showbase_instance = None
 
