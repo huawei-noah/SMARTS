@@ -37,15 +37,16 @@ class ImitationController:
     def perform_action(
         cls,
         dt: float,
+        vehicle: Vehicle,
         action: Union[float, Tuple[Tuple[float, float], float]],
     ):
         """Performs an action adapting to the underlying chassis.
         Args:
-            dt:
+            dt (float):
                 A delta time value.
-            vehicle:
+            vehicle (Vehicle):
                 The vehicle to control.
-            action:
+            action (Union[float, Tuple[Tuple[float, float], float]]):
                 (speed) XOR (acceleration, angular_velocity)
         """
         chassis = vehicle.chassis

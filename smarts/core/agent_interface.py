@@ -93,10 +93,10 @@ class RoadWaypoints:
 
 @dataclass
 class NeighborhoodVehicles:
-    """Detection of nearby vehicles and configuration as to filtering of the vehicles."""
+    """Detection of nearby vehicles and configuration for filtering of the vehicles."""
 
     radius: Optional[float] = None
-    """The distance at which neighborhood vehicles are detected. `None` means no radius filtering"""
+    """The distance within which neighborhood vehicles are detected. `None` means vehicles will be detected within an unlimited distance."""
 
 
 @dataclass

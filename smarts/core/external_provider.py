@@ -29,7 +29,7 @@ from .vehicle import VehicleState
 
 
 class ExternalProvider(Provider):
-    """A provider that is intended to be accessed from external."""
+    """A provider that is intended to used for external intervention in the simulation."""
 
     def __init__(self, sim):
         self._sim = sim

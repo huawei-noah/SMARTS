@@ -281,17 +281,17 @@ class Cursor:
     ) -> "Cursor":
         """Generate a cursor.
         Args:
-            pos:
+            pos (Point):
                 The shapely position of the vehicle.
-            vehicle:
+            vehicle (Vehicle):
                 The vehicle that is to be tracked.
-            bubble:
+            bubble (Bubble):
                 The bubble that the vehicle is interacting with.
-            index:
+            index (VehicleIndex):
                 The vehicle index the vehicle is in.
-            vehicle_ids_per_bubble:
+            vehicle_ids_per_bubble (Dict[Bubble, Set[str]]):
                 Bubbles associated with vehicle ids.
-            running_cursors:
+            running_cursors (Set["Cursor"]):
                 A set of existing cursors.
         """
         in_bubble_zone, in_airlock_zone = bubble.in_bubble_or_airlock(pos)

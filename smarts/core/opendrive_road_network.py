@@ -115,7 +115,7 @@ class LaneBoundary:
     segment_size: float = 0.5
 
     def refline_to_linear_segments(self, s_start: float, s_end: float) -> List[float]:
-        """Get segment offsets between the give offsets."""
+        """Get segment offsets between the given offsets."""
         s_vals = []
         geom_start = 0
         for geom in self.refline._geometries:

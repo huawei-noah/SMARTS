@@ -34,7 +34,7 @@ from .utils.math import min_angles_difference_signed, vec_to_radians
 
 
 class PlanningError(Exception):
-    """Raised in cases when `Plan`'s planning fails."""
+    """Raised in cases when map related planning fails."""
 
     pass
 

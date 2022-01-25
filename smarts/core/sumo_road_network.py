@@ -193,7 +193,7 @@ class SumoRoadNetwork(RoadMap):
         return map_spec.source
 
     def is_same_map(self, map_spec: MapSpec) -> bool:
-        """Test if the rode network is identical to the given map specification."""
+        """Test if the road network is identical to the given map specification."""
         return (
             (
                 map_spec.source == self._map_spec.source
@@ -413,14 +413,12 @@ class SumoRoadNetwork(RoadMap):
         def waypoint_paths_for_pose(
             self, pose: Pose, lookahead: int, route: RoadMap.Route = None
         ) -> List[List[Waypoint]]:
-            """Waypoints on this lane leading on from the given pose."""
             road_ids = [road.road_id for road in route.roads] if route else None
             return self._waypoint_paths_at(pose.position, lookahead, road_ids)
 
         def waypoint_paths_at_offset(
             self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
         ) -> List[List[Waypoint]]:
-            """Waypoints on this lane leading on from the given offset."""
             wp_start = self.from_lane_coord(RefLinePoint(offset))
             road_ids = [road.road_id for road in route.roads] if route else None
             return self._waypoint_paths_at(wp_start, lookahead, road_ids)
@@ -474,7 +472,6 @@ class SumoRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def offset_along_lane(self, world_point: Point) -> float:
-            """The offset that the given point has along this lane."""
             shape = self._sumo_lane.getShape(False)
             point = world_point[:2]
             if point not in shape:

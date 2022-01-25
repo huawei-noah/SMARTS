@@ -58,7 +58,7 @@ class RoadMap:
 
     @property
     def scale_factor(self) -> float:
-        """The ratio between the default lane width and the actual lane width"""
+        """The ratio between 1 unit on the map and 1 meter."""
         # map units per meter
         return 1.0
 
@@ -106,8 +106,7 @@ class RoadMap:
         via: Optional[Sequence[RoadMap.Road]] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
-        """Generates routes between two roads. Routes will be returned in order of increasing
-         length.
+        """Generates routes between two roads.
         Args:
             start_road:
                 The beginning road of the generated routes.
@@ -118,7 +117,8 @@ class RoadMap:
             max_to_gen:
                 The maximum number of routes to generate.
         Returns:
-            A list of generated routes that satisfy the given restrictions.
+            A list of generated routes that satisfy the given restrictions. Routes will be
+             returned in order of increasing length.
         """
         raise NotImplementedError()
 
@@ -360,13 +360,13 @@ class RoadMap:
             return self.from_lane_coord(RefLinePoint(s=offset))
 
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            """Get the boundry points perpendicular to the center of the lane closest to the given
+            """Get the boundary points perpendicular to the center of the lane closest to the given
              world coordinate.
             Args:
                 point:
                     A world coordinate point.
             Returns:
-                A pair of points indicating the left boundry and right boundry of the lane.
+                A pair of points indicating the left boundary and right boundry of the lane.
             """
             offset = self.offset_along_lane(point)
             width = self.width_at_offset(offset)
@@ -489,7 +489,7 @@ class RoadMap:
             raise NotImplementedError()
 
         def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            """Get the boundry points perpendicular to the center of the road closest to the given
+            """Get the boundary points perpendicular to the center of the road closest to the given
              world coordinate.
             Args:
                 point:

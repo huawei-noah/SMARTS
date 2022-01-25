@@ -136,11 +136,11 @@ class PyMARLHiWayEnv:
         return self._observations
 
     def get_obs_agent(self, agent_id):
-        """ Returns observation for agent_id. """
+        """ Returns the observation for the given agent. """
         return self._observations[agent_id]
 
     def get_obs_size(self):
-        """ Returns the shape of the observation. """
+        """ Returns the total size of all agent observation data. """
         obs_size = 0
         for obs in self.observation_space.spaces.values():
             if type(obs) is Box:
@@ -178,7 +178,7 @@ class PyMARLHiWayEnv:
         pass
 
     def step(self, agent_actions):
-        """ Returns reward, terminated, info. """
+        """Steps the environment and returns rewards, dones, and info."""
         agent_actions = {
             agent_id: self._action_adapter(action)
             for agent_id, action in zip(self._agent_ids, agent_actions)

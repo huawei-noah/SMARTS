@@ -32,7 +32,7 @@ def timeit(name: str, logger):
     """Context manger that stopwatches the amount of time between context block start and end.
     ```python
     import logging
-    with timit(n,logging):
+    with timeit(n,logging):
         a = a * b
     ```
     """

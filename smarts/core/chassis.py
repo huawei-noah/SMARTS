@@ -112,7 +112,7 @@ class Chassis:
 
     @property
     def velocity_vectors(self) -> Tuple[np.ndarray, np.ndarray]:
-        """Linear velocity vector is in m/s and Angular veclocity is in Rad/sec"""
+        """Returns linear velocity vector in m/s and angular velocity in rad/sec."""
         raise NotImplementedError
 
     @property
@@ -132,7 +132,7 @@ class Chassis:
 
     @property
     def steering(self):
-        """The steering value of the chassis in radians [-1:1]."""
+        """The steering value of the chassis in radians [-math.pi, math.pi]."""
         raise NotImplementedError
 
     @property
