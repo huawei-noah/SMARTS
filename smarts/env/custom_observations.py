@@ -45,7 +45,7 @@ def scan_for_vehicle(
     self_vehicle_state,
     other_vehicle_state,
 ):
-    """Sense test for another vehicle within a semi-circle radius of a vehicle.
+    """Sense test for another vehicle within a semi-circle range of a vehicle.
 
     Args:
         target_prefix:
