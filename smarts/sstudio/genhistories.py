@@ -80,7 +80,7 @@ class _TrajectoryDataset:
         raise NotImplementedError
 
     def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
-        """Validate the form of the datatset specification."""
+        """Validate the form of the dataset specification."""
         errmsg = None
         if "input_path" not in dataset_spec:
             errmsg = "'input_path' field is required in dataset yaml."
@@ -141,7 +141,7 @@ class _TrajectoryDataset:
 
         Args:
             time_precision: A limit for digits after decimal for each processed sim_time.
-                (3 is milisecond precision)
+                (3 is millisecond precision)
         """
         dbconxn = sqlite3.connect(self._output)
 

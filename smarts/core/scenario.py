@@ -404,7 +404,7 @@ class Scenario:
         """Retrieve all specific scenarios in the directory tree of the given scenario directory.
         Args:
             scenario_or_scenario_dir:
-                A directory that either immediately contains a scenario which tree contains a scenario.
+                A directory that either immediately contains a scenario or the root of a directory tree that contains multiple scenarios.
         Returns:
             All specific scenarios.
         """
