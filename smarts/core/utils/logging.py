@@ -46,7 +46,7 @@ def isnotebook():
     """Determines if executing in ipython (Jupyter Notebook)"""
     try:
         shell = get_ipython().__class__.__name__
-        if shell == "ZMQInteractiveShell":
+        if shell == "ZMQInteractiveShell" or "google.colab" in sys.modules:
             return True  # Jupyter notebook or qtconsole
     except NameError:
         pass
