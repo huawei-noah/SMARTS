@@ -87,7 +87,7 @@ class RoadWaypoints:
     that lane.
     """
 
-    # The distance in meters to include waypoints for (both behind and infront of the agent)
+    # The distance in meters to include waypoints for (both behind and in front of the agent)
     horizon: int = 20
 
 
@@ -335,11 +335,11 @@ class AgentInterface:
                 waypoints=True,
                 action=ActionSpaceType.Trajectory,
             )
-        # The trajectory interpolation agent which recieves a with-time-trajectory and move vehicle
+        # The trajectory interpolation agent which receives a with-time-trajectory and move vehicle
         # with linear time interpolation
         elif requested_type == AgentType.TrajectoryInterpolator:
             interface = AgentInterface(action=ActionSpaceType.TrajectoryWithTime)
-        # The MPC based trajectory tracking agent wich recieves a series of
+        # The MPC based trajectory tracking agent which receives a series of
         # reference trajectory points and speeds and computes the optimal
         # steering action.
         elif requested_type == AgentType.MPCTracker:
@@ -378,7 +378,7 @@ class AgentInterface:
         return interface.replace(**kwargs)
 
     def replace(self, **kwargs):
-        """Clone this AgentInteface with the given fields updated
+        """Clone this AgentInterface with the given fields updated
         >>> interface = AgentInterface(action=ActionSpaceType.Continuous) \
                             .replace(waypoints=True)
         >>> interface.waypoints

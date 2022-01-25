@@ -61,7 +61,7 @@ class TrajectoryTrackingController:
         (
             heading_error,
             lateral_error,
-        ) = TrajectoryTrackingController.calulate_heading_lateral_error(
+        ) = TrajectoryTrackingController.calculate_heading_lateral_error(
             vehicle=vehicle,
             trajectory=trajectory,
             initial_look_ahead_distant=3,
@@ -253,7 +253,7 @@ class TrajectoryTrackingController:
         (
             heading_error,
             lateral_error,
-        ) = TrajectoryTrackingController.calulate_heading_lateral_error(
+        ) = TrajectoryTrackingController.calculate_heading_lateral_error(
             vehicle, trajectory, initial_look_ahead_distant, speed_reduction_activation
         )
 
@@ -274,7 +274,7 @@ class TrajectoryTrackingController:
         # lateral control gains.
         # TODO: The lateral and heading gains of the steering controller should be
         # calculated based on the current velocity. The coefficient value for the
-        # feed forward term is 0.1 and it depends on the cornering stifness and
+        # feed forward term is 0.1 and it depends on the cornering stiffness and
         # vehicle inertia properties.
         steering_feed_forward_term = 0.1 * (1 / curvature_radius) * (vehicle.speed) ** 2
         steering_raw = np.clip(
@@ -388,7 +388,7 @@ class TrajectoryTrackingController:
         return (state.throttle_state, desired_speed)
 
     @staticmethod
-    def calulate_heading_lateral_error(
+    def calculate_heading_lateral_error(
         vehicle, trajectory, initial_look_ahead_distant, speed_reduction_activation
     ):
         """Determine vehicle heading error and lateral error in regards to the given trajectory."""

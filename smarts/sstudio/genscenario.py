@@ -190,11 +190,11 @@ def gen_social_agent_missions(
             A short name for this grouping of social agents. Is also used as the name
             of the social agent traffic file
         seed:
-            The random seed to use when generating behaviour
+            The random seed to use when generating behavior
         overwrite:
             If to forcefully write over the previous existing output file
         map_spec:
-            An optional map specification that takes precidence over scenario directory information.
+            An optional map specification that takes precedence over scenario directory information.
     """
 
     # For backwards compatibility we support both a single value and a sequence
@@ -237,7 +237,7 @@ def gen_missions(
     map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates a route file to represent missions (a route per mission). Will create
-    the output_dir if it doesn't exist already. The ouput file will be named `missions`.
+    the output_dir if it doesn't exist already. The output file will be named `missions`.
 
     Args:
         scenario:
@@ -245,11 +245,11 @@ def gen_missions(
         missions:
             A sequence of missions for social agents to perform
         seed:
-            The random seed to use when generating behaviour
+            The random seed to use when generating behavior
         overwrite:
             If to forcefully write over the previous existing output file
         map_spec:
-            An optional map specification that takes precidence over scenario directory information.
+            An optional map specification that takes precedence over scenario directory information.
     """
 
     saved = _gen_missions(
@@ -455,7 +455,7 @@ def gen_traffic_histories(
         overwrite:
             If to forcefully write over the previous existing output file
         map_spec:
-            An optional map specification that takes precidence over scenario directory information.
+            An optional map specification that takes precedence over scenario directory information.
     """
     # For SUMO maps, we need to check if the map was shifted and translate the vehicle positions if so
     xy_offset = None

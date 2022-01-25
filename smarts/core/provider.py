@@ -87,7 +87,7 @@ class Provider:
         raise NotImplementedError
 
     def sync(self, provider_state: ProviderState):
-        """Syncronize with external state."""
+        """Synchronize with external state."""
         raise NotImplementedError
 
     def create_vehicle(self, provider_vehicle: VehicleState):
@@ -105,7 +105,7 @@ class Provider:
     def recover(
         self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
     ) -> Tuple[ProviderState, bool]:
-        """Attempt to reconnect the provider if an error or disconnection occured.
+        """Attempt to reconnect the provider if an error or disconnection occurred.
         Implementations may choose to e-raise the passed in exception.
         Args:
             scenario (Scenario): The scenario of the current episode.

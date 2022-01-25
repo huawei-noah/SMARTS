@@ -123,7 +123,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         # on the step that an agent transitions to "done". All subsequent calls
         # to env.step(..) will no longer contain actions from the "done" agent.
         #
-        # The way we implement this behaviour here is to rely on the presence of
+        # The way we implement this behavior here is to rely on the presence of
         # agent actions to filter out all environment observations/rewards/infos
         # to only agents who are actively sending in actions.
         observations = {

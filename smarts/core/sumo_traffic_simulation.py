@@ -49,7 +49,7 @@ class SumoTrafficSimulation(Provider):
         headless:
             False to run with `sumo-gui`. True to run with `sumo`
         time_resolution:
-            SUMO simulation is descretized into steps of `time_resolution` seconds
+            SUMO simulation is occurs in discrete `time_resolution` second steps
             WARNING:
                 Since our interface(TRACI) to SUMO is delayed by one simulation step,
                 setting a higher time resolution may lead to unexpected artifacts
@@ -193,7 +193,7 @@ class SumoTrafficSimulation(Provider):
                     self._close_traci_and_pipes()
                     continue
                 except TraCIException as e:
-                    logging.debug(f"Unknown connection issue has occured: {e}")
+                    logging.debug(f"Unknown connection issue has occurred: {e}")
                     self._close_traci_and_pipes()
             except ConnectionRefusedError:
                 logging.debug(

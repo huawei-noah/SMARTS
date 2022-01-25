@@ -298,7 +298,7 @@ class MapSpec:
 @dataclass(frozen=True)
 class Route:
     """A route is represented by begin and end road IDs, with an optional list of
-    itermediary road IDs. When an intermediary is not specified the router will
+    intermediary road IDs. When an intermediary is not specified the router will
     decide what it should be.
     """
 
@@ -590,14 +590,14 @@ class MapZone(Zone):
             if not isinstance(lane_shape, GeometryCollection):
                 return lane_shape
 
-            # For simplicty, we only deal w/ the == 1 or 2 case
+            # For simplicity, we only deal w/ the == 1 or 2 case
             if len(lane_shape.geoms) not in {1, 2}:
                 return None
 
             if len(lane_shape.geoms) == 1:
                 return lane_shape.geoms[0]
 
-            # We assume that there are only two splited shapes to choose from
+            # We assume that there are only two split shapes to choose from
             keep_index = 0
             if lane_shape.geoms[1].minimum_rotated_rectangle.contains(expected_point):
                 # 0 is the discard piece, keep the other
@@ -779,7 +779,7 @@ class Bubble:
 
 @dataclass(frozen=True)
 class RoadSurfacePatch:
-    """A descriptor that defines a patch of road surface with a different friction coefficent."""
+    """A descriptor that defines a patch of road surface with a different friction coefficient."""
 
     zone: Zone
     """The zone which to capture vehicles."""

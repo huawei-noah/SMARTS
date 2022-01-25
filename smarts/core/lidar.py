@@ -31,7 +31,7 @@ from .utils.pybullet import bullet_client as bc
 
 
 class Lidar:
-    """Lidar utilites."""
+    """Lidar utilities."""
 
     def __init__(
         self, origin, sensor_params: SensorParams, bullet_client: bc.BulletClient

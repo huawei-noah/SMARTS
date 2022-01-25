@@ -45,7 +45,7 @@ class VisdomClient:
         try:
             self._visdom_obs_queue.put(obs, block=False)
         except Exception:
-            self._log.debug("Dropped visdom frame instead of blocking")
+            self._log.debug("Dropped Visdom frame instead of blocking")
 
     def teardown(self):
         """Clean up unmanaged resources."""

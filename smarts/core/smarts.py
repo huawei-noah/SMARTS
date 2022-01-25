@@ -248,7 +248,7 @@ class SMARTS:
         # 7. Perform visualization
         #
         # In this way, observations and reward are computed with data that is
-        # consistently with one step of latencey and the agent will observe consistent
+        # consistently with one step of latency and the agent will observe consistent
         # data.
 
         # 0. Advance the simulation clock.
@@ -359,7 +359,7 @@ class SMARTS:
 
     def reset(self, scenario: Scenario) -> Dict[str, Observation]:
         """Reset the simulation progressing simulation up to the first time an agent appears if any
-         agents are in the simulation. Reinitializes with the specified scenario.
+         agents are in the simulation. Reinitialize with the specified scenario.
         Args:
             scenario:
                 The scenario to reset the simulation with.
@@ -521,7 +521,7 @@ class SMARTS:
         recreate: bool,
         is_hijacked: bool,
     ) -> Vehicle:
-        """Give control of the specifed vehicle to the given agent.
+        """Give control of the specified vehicle to the given agent.
 
         It is not possible to take over a vehicle already controlled by another agent.
         """
@@ -564,7 +564,7 @@ class SMARTS:
         vehicle: Vehicle,
         agent_id: str,
     ):
-        """Notify all providers of the existance of a vehicle."""
+        """Notify all providers of the existence of a vehicle."""
         self._check_valid()
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         for provider in self.providers:

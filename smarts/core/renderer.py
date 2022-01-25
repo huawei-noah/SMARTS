@@ -248,7 +248,7 @@ class Renderer:
         renderer: Renderer
 
         def wait_for_ram_image(self, img_format: str, retries=100):
-            """Attempt to aquire a graphics buffer."""
+            """Attempt to acquire a graphics buffer."""
             # Rarely, we see dropped frames where an image is not available
             # for our observation calculations.
             #
@@ -307,7 +307,7 @@ class Renderer:
         fb_props.setRgbColor(True)
         fb_props.setRgbaBits(8, 8, 8, 1)
         # XXX: Though we don't need the depth buffer returned, setting this to 0
-        #      causes undefined behaviour where the ordering of meshes is random.
+        #      causes undefined behavior where the ordering of meshes is random.
         fb_props.setDepthBits(8)
 
         buffer = self._showbase_instance.win.engine.makeOutput(
@@ -338,7 +338,7 @@ class Renderer:
         )
         camera_np.reparentTo(self._root_np)
 
-        # mask is set to make undesireable objects invisible to this camera
+        # mask is set to make undesirable objects invisible to this camera
         camera_np.node().setCameraMask(camera_np.node().getCameraMask() & mask)
 
         return Renderer.OffscreenCamera(camera_np, buffer, tex, self)

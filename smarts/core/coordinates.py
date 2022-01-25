@@ -89,7 +89,7 @@ class Point(NamedTuple):
     @property
     def as_shapely(self) -> SPoint:
         """Use with caution! Convert this point to a shapely point."""
-        # Shapley Point construction is expensive!
+        # Shapely Point construction is expensive!
         # Note that before python3.8, @cached_property was not thread safe,
         # nor can it be used in a NamedTuple (which doesn't have a __dict__).
         # (Points can be used by multi-threaded client code, even when
@@ -244,7 +244,7 @@ class Heading(float):
 
 @dataclass
 class Pose:
-    """A pair of position and orienation values."""
+    """A pair of position and orientation values."""
 
     # TODO: these should be np.ndarray
     position: Sequence  # [x, y, z]

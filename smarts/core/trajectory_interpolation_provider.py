@@ -102,7 +102,7 @@ class TrajectoryInterpolationProvider(Provider):
 
         assert np.isfinite(
             trajectory
-        ).all(), "Has nan, positive infi or nagative infi in trajectory!"
+        ).all(), "Has nan, positive inf or negative inf in trajectory!"
 
         assert (
             np.diff(trajectory[TrajectoryWithTime.TIME_INDEX]) > 0

@@ -200,14 +200,14 @@ class LaneFollowingController:
         # directly related to the steering angle, this is added to further
         # enhance the speed tracking performance. TODO: currently, the bullet
         # does not provide the lateral acceleration which is needed for
-        # calculating the front laterl force. we need to replace the coefficent
+        # calculating the front lateral force. we need to replace the coefficient
         # with better approximation of the front lateral forces using explicit
         # differention.
         lateral_force_coefficient = 1.5
         if vehicle.speed < 8 or target_speed < 6:
             lateral_force_coefficient = 0
-        # 0.2 is the coefficent of d-controller for speed tracking
-        # 0.1 is the coefficent of I-controller for speed tracking
+        # 0.2 is the coefficient of d-controller for speed tracking
+        # 0.1 is the coefficient of I-controller for speed tracking
         raw_throttle += (
             -0.2 * velocity_error_damping_term
             - 0.1 * state.integral_speed_error

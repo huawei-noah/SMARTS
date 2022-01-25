@@ -69,7 +69,7 @@ class Scenario:
             If specified, allows specifying a MapSpec at run-time
             to override any spec that may have been pre-specified
             in the scenario folder (or the default if none were).
-            Also see comments around the sstudio.types.MapSpec defn.
+            Also see comments around the sstudio.types.MapSpec definition.
     """
 
     def __init__(
@@ -169,7 +169,7 @@ class Scenario:
             agents_to_be_briefed:
                 Agent IDs that will be assigned a mission ("briefed" on a mission).
             shuffle_scenarios:
-                Return scenarios in a psuedo-random order.
+                Return scenarios in a pseudo-random order.
         Returns:
             A generator that serves up Scenarios.
         """
@@ -305,7 +305,7 @@ class Scenario:
     def discover_friction_map(scenario_root) -> List[Dict[str, Any]]:
         """Returns the list of surface patches parameters defined in
         scenario file. Each element of the list contains the
-        parameters of the specifiec surface patch.
+        parameters of the specified surface patch.
         """
         surface_patches = []
         friction_map_file = os.path.join(scenario_root, "friction_map.pkl")

@@ -169,7 +169,7 @@ class Chassis:
         angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
-        and may have unintended behavioural or performance consequences."""
+        and may have unintended behavioral or performance consequences."""
         raise NotImplementedError
 
 
@@ -217,7 +217,7 @@ class BoxChassis(Chassis):
         angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
-        and may have unintended behavioural or performance consequences."""
+        and may have unintended behavioral or performance consequences."""
         if self._pose:
             self._last_heading = self._pose.heading
         self._last_dt = dt
@@ -714,7 +714,7 @@ class AckermannChassis(Chassis):
         angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
-        and may have unintended behavioural or performance consequences."""
+        and may have unintended behavioral or performance consequences."""
         self.set_pose(force_pose)
         if linear_velocity is not None or angular_velocity is not None:
             assert linear_velocity is not None

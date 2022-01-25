@@ -27,7 +27,7 @@ def default_reward_adapter(env_obs, env_reward):
     obs = default_obs_adapter(env_obs)
     center_penalty = -np.abs(obs["distance_from_center"])
 
-    # penalize flip occurences (taking into account that the vehicle spawns in the air)
+    # penalize flip occurrences (taking into account that the vehicle spawns in the air)
     flip_penalty = 0
     if (
         env_obs.ego_vehicle_state.speed >= 25
@@ -35,7 +35,7 @@ def default_reward_adapter(env_obs, env_reward):
     ):
         flip_penalty = -2 * env_obs.ego_vehicle_state.speed
 
-    # penalise sharp turns done at high speeds
+    # penalize sharp turns done at high speeds
     steering_penalty = 0
     if env_obs.ego_vehicle_state.speed > 60:
         steering_penalty = -pow(

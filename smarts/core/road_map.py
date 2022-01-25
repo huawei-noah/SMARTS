@@ -366,7 +366,7 @@ class RoadMap:
                 point:
                     A world coordinate point.
             Returns:
-                A pair of points indicating the left boundary and right boundry of the lane.
+                A pair of points indicating the left boundary and right boundary of the lane.
             """
             offset = self.offset_along_lane(point)
             width = self.width_at_offset(offset)
@@ -495,7 +495,7 @@ class RoadMap:
                 point:
                     A world coordinate point.
             Returns:
-                A pair of points indicating the left boundry and right boundry of the road.
+                A pair of points indicating the left boundary and right boundary of the road.
             """
             raise NotImplementedError()
 

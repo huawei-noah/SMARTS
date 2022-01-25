@@ -98,7 +98,7 @@ class TireForces:
 
         z_yaw = chassis.velocity_vectors[1][2]
         # 0.1 is the threshold for speed of the center of wheel
-        # to activate slip angle caluclation.
+        # to activate slip angle calculation.
         for i in range(4):
             if abs(abs_speed_corners[i]) > 0.1:
 

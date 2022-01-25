@@ -527,8 +527,8 @@ class VehicleIndex:
         agent_id = self._2id_to_id[agent_id]
 
         # TODO: There existed a SUMO connection error bug
-        #       (https://gitlab.smartsai.xyz/smarts/SMARTS/-/issues/671) that occured
-        #       during lange changing when we hijacked/trapped a SUMO vehicle. Forcing
+        #       (https://gitlab.smartsai.xyz/smarts/SMARTS/-/issues/671) that occurred
+        #       during lane changing when we hijacked/trapped a SUMO vehicle. Forcing
         #       vehicle recreation seems to address the problem. Ideally we discover
         #       the underlaying problem and can go back to the preferred implementation
         #       of simply swapping control of a persistent vehicle.

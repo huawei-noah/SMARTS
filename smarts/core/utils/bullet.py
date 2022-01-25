@@ -141,7 +141,7 @@ class BulletBoxShape:
 
 class BulletPositionConstraint:
     """A "half"-spring constraint that pulls the attached shape to a pose. This allows motion
-    through forces rather than disrupting the simumlation by moving the shape without forces.
+    through forces rather than disrupting the simulation by moving the shape without forces.
     """
 
     def __init__(self, bullet_shape, bullet_client):
@@ -172,7 +172,7 @@ class BulletPositionConstraint:
             self._make_constraint(pose)
         position, orientation = pose.as_bullet()
         # TODO: Consider to remove offset when collision is improved
-        # Move contraints slightly up to avoid ground collision
+        # Move constraints slightly up to avoid ground collision
         ground_position = position + [0, 0, 0.2]
         self._client.changeConstraint(self._bullet_cid, ground_position, orientation)
 

@@ -57,7 +57,7 @@ class VehicleObservation(NamedTuple):
     road_id: str
     """The identifier for the road nearest to this vehicle."""
     lane_id: str
-    """The indentifier for the lane nearest to this vehicle."""
+    """The identifier for the lane nearest to this vehicle."""
     lane_index: int
     """The index of the nearest lane on the road nearest to this vehicle."""
 
@@ -82,7 +82,7 @@ class EgoVehicleObservation(NamedTuple):
     road_id: str
     """The identifier for the road nearest to this vehicle."""
     lane_id: str
-    """The indentifier for the lane nearest to this vehicle."""
+    """The identifier for the lane nearest to this vehicle."""
     lane_index: int
     """The index of the nearest lane on the road nearest to this vehicle."""
     mission: Mission
@@ -181,7 +181,7 @@ class Observation:
 
     # dt is the amount of sim_time the last step took .
     # step_count is the number of steps take by SMARTS so far.
-    # elapsed_sim_time is the amout of simulation time that's passed so far.
+    # elapsed_sim_time is the amount of simulation time that's passed so far.
     # note: to get the average step_time, elapsed_sim_time can be divided by step_count
     dt: float
     step_count: int
@@ -193,7 +193,7 @@ class Observation:
     distance_travelled: float
 
     # TODO: Convert to `namedtuple` or only return point cloud
-    # [points], [hits], [(ray_origin, ray_directino)]
+    # [points], [hits], [(ray_origin, ray_direction)]
     lidar_point_cloud: Tuple[
         List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
     ]
@@ -946,7 +946,7 @@ class TripMeterSensor(Sensor):
 
 
 class NeighborhoodVehiclesSensor(Sensor):
-    """Detects other vehicles around the sensor equiped vehicle."""
+    """Detects other vehicles around the sensor equipped vehicle."""
 
     def __init__(self, vehicle, sim, radius=None):
         self._vehicle = vehicle
@@ -1042,7 +1042,7 @@ class RoadWaypointsSensor(Sensor):
 
 
 class AccelerometerSensor(Sensor):
-    """Tracks motion changes within the vehicle equiped with this sensor."""
+    """Tracks motion changes within the vehicle equipped with this sensor."""
 
     def __init__(self, vehicle):
         self.linear_velocities = deque(maxlen=3)

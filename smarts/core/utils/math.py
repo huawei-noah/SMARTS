@@ -121,7 +121,7 @@ def mult_quat(q1, q2):
 
 def rotate_quat(quat, vect):
     """Rotate a vector with the rotation defined by a quaternion."""
-    # Transform vect into an quaternion
+    # Transform a vector into an quaternion
     vect = np.append([0], vect)
     # Normalize it
     norm_vect = np.linalg.norm(vect)
