@@ -50,7 +50,7 @@ class SumoTrafficSimulation(Provider):
         headless:
             False to run with `sumo-gui`. True to run with `sumo`
         time_resolution:
-            SUMO simulation is occurs in discrete `time_resolution` second steps
+            SUMO simulation occurs in discrete `time_resolution`-second steps
             WARNING:
                 Since our interface(TRACI) to SUMO is delayed by one simulation step,
                 setting a higher time resolution may lead to unexpected artifacts

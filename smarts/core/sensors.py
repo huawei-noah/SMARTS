@@ -96,9 +96,9 @@ class EgoVehicleObservation(NamedTuple):
     angular_acceleration: np.ndarray
     """Angular acceleration vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     linear_jerk: np.ndarray
-    """A 3D array of linear jerk vector (requires accelerometer sensor)"""
+    """Linear jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     angular_jerk: np.ndarray
-    """A 3D array of angular jerk vector (requires accelerometer sensor)"""
+    """Angular jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
 
 
 class RoadWaypoints(NamedTuple):

@@ -773,7 +773,7 @@ class SMARTS:
     @property
     def traffic_sim(
         self,
-    ) -> Optional[SumoTrafficSimulation]:  # -> SumoTrafficSimulation
+    ) -> Optional[SumoTrafficSimulation]:
         """The underlying traffic simulation."""
         return self._traffic_sim
 
