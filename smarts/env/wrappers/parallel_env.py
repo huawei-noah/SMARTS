@@ -127,7 +127,7 @@ class ParallelEnv(object):
 
     @property
     def batch_size(self) -> int:
-        """The number of results given from a step."""
+        """The number of environments."""
         return self._num_envs
 
     @property

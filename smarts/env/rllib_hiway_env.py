@@ -168,7 +168,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         return observations, rewards, dones, infos
 
     def reset(self):
-        """Environment Reset"""
+        """Environment reset."""
         scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
@@ -186,7 +186,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         return observations
 
     def close(self):
-        """Environment Close"""
+        """Environment close."""
         if self._smarts is not None:
             self._smarts.destroy()
 

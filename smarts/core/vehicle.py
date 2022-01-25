@@ -302,7 +302,10 @@ class Vehicle:
 
     @property
     def heading(self) -> Heading:
-        """The heading of this vehicle. CCW and north is 0."""
+        """The heading of this vehicle.
+        
+        Note: Heading rotates counterclockwise with north as 0.
+        """
         self._assert_initialized()
         return self._chassis.pose.heading
 
