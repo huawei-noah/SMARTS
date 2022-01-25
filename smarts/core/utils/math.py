@@ -244,8 +244,6 @@ def low_pass_filter(
     return previous_filter_state
 
 
-
-
 def radians_to_vec(radians) -> np.ndarray:
     """Convert a radian value to a unit directional vector."""
     # +y = 0 rad.

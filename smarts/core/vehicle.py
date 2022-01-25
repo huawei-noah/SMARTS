@@ -303,7 +303,7 @@ class Vehicle:
     @property
     def heading(self) -> Heading:
         """The heading of this vehicle.
-        
+
         Note: Heading rotates counterclockwise with north as 0.
         """
         self._assert_initialized()
