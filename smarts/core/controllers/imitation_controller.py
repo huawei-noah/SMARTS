@@ -37,7 +37,7 @@ class ImitationController:
     def perform_action(
         cls,
         dt: float,
-        vehicle: Vehicle,
+        vehicle,
         action: Union[float, Tuple[Tuple[float, float], float]],
     ):
         """Performs an action adapting to the underlying chassis.
