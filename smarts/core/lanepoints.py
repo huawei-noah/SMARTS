@@ -28,6 +28,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import List, NamedTuple, Optional, Sequence, Tuple
+
 import numpy as np
 
 with warnings.catch_warnings():
@@ -39,7 +40,7 @@ with warnings.catch_warnings():
         # aggressive
         from sklearn.neighbors import KDTree
 
-from smarts.core.coordinates import Heading, Pose, Point
+from smarts.core.coordinates import Heading, Point, Pose
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
     fast_quaternion_from_angle,

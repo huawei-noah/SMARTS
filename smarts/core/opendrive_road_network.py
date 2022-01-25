@@ -18,19 +18,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import heapq
-import os
 import logging
 import math
+import os
 import random
 import time
+from bisect import bisect
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Dict, List, Sequence, Set, Tuple, Optional
+from typing import Dict, List, Optional, Sequence, Set, Tuple
+
+import numpy as np
+import rtree
 import trimesh
 import trimesh.scene
-from trimesh.exchange import gltf
-import numpy as np
 from cached_property import cached_property
+from lxml import etree
 from opendrive2lanelet.opendriveparser.elements.geometry import Line as LineGeometry
 from opendrive2lanelet.opendriveparser.elements.opendrive import (
     OpenDrive as OpenDriveElement,
@@ -50,29 +53,27 @@ from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
     PlanView as PlanViewElement,
 )
 from opendrive2lanelet.opendriveparser.parser import parse_opendrive
-from lxml import etree
 from shapely.geometry import Polygon
-import rtree
-from bisect import bisect
+from trimesh.exchange import gltf
 
 from smarts.core.road_map import RoadMap, Waypoint
-from smarts.sstudio.types import MapSpec
+from smarts.core.utils.geometry import generate_mesh_from_polygons
+from smarts.core.utils.key_wrapper import KeyWrapper
 from smarts.core.utils.math import (
     CubicPolynomial,
     constrain_angle,
     distance_point_to_polygon,
     get_linear_segments_for_range,
+    inplace_unwrap,
     offset_along_shape,
     position_at_shape_offset,
-    vec_2d,
-    inplace_unwrap,
     radians_to_vec,
+    vec_2d,
 )
+from smarts.sstudio.types import MapSpec
 
-from .lanepoints import LinkedLanePoint, LanePoints
-from .coordinates import BoundingBox, Point, Pose, RefLinePoint, Heading
-from smarts.core.utils.geometry import generate_mesh_from_polygons
-from smarts.core.utils.key_wrapper import KeyWrapper
+from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
+from .lanepoints import LanePoints, LinkedLanePoint
 
 
 def _convert_camera(camera):

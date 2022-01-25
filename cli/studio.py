@@ -21,9 +21,10 @@ import multiprocessing
 import os
 import subprocess
 import sys
-from typing import Sequence
+from multiprocessing import Process, Semaphore
 from pathlib import Path
 from threading import Thread
+from typing import Sequence
 
 import click
 
@@ -80,6 +81,16 @@ def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
         return
 
     road_map.to_glb(os.path.join(scenario_root, "map.glb"))
+
+
+def _build_single_scenario_proc(
+    clean: bool, allow_offset_map: bool, scenario: str, semaphore: Semaphore
+):
+    semaphore.acquire()
+    try:
+        _build_single_scenario(clean, allow_offset_map, scenario)
+    finally:
+        semaphore.release()
 
 
 def _install_requirements(scenario_root):
@@ -155,22 +166,24 @@ def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
         # if scenarios is not given, set /scenarios as default
         scenarios = ["scenarios"]
 
-    builder_threads = {}
+    concurrency = max(1, multiprocessing.cpu_count() - 1)
+    sema = Semaphore(concurrency)
+    all_processes = []
     for scenarios_path in scenarios:
         for subdir, _, _ in os.walk(scenarios_path):
             if _is_scenario_folder_to_build(subdir):
                 p = Path(subdir)
                 scenario = f"{scenarios_path}/{p.relative_to(scenarios_path)}"
-                builder_thread = Thread(
-                    target=_build_single_scenario,
-                    args=(clean, allow_offset_maps, scenario),
+                proc = Process(
+                    target=_build_single_scenario_proc,
+                    args=(clean, allow_offset_maps, scenario, sema),
                 )
-                builder_threads[p] = builder_thread
-                builder_thread.start()
+                all_processes.append((scenario, proc))
+                proc.start()
 
-    for scenario_path, builder_thread in builder_threads.items():
+    for scenario_path, proc in all_processes:
         click.echo(f"Waiting on {scenario_path} ...")
-        builder_thread.join()
+        proc.join()
 
 
 @scenario_cli.command(name="clean")

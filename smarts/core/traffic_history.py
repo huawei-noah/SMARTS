@@ -33,7 +33,6 @@ from cached_property import cached_property
 
 from smarts.core.coordinates import Dimensions
 
-
 T = TypeVar("T")
 
 
