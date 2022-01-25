@@ -281,6 +281,7 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
         self._max_capacity_mb = max_capacity_mb
 
     async def open(self, simulation_id):
+        """Asynchronously open the websocket to broadcast to all web clients."""
         self._logger.debug(f"Broadcast websocket opened for simulation={simulation_id}")
         self._simulation_id = simulation_id
         self._frames = Frames(max_capacity_mb=self._max_capacity_mb)
@@ -288,6 +289,7 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
         WEB_CLIENT_RUN_LOOPS[simulation_id] = set()
 
     def on_close(self):
+        """Close the broadcast websocket."""
         self._logger.debug(
             f"Broadcast websocket closed for simulation={self._simulation_id}"
         )
@@ -295,6 +297,7 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
         del FRAMES[self._simulation_id]
 
     async def on_message(self, message):
+        """Asynchronously receive messages from the Envision client."""
         frame_time = next(ijson.items(message, "frame_time", use_float=True))
         self._frames.append(Frame(timestamp=frame_time, data=message))
 
@@ -309,12 +312,15 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
         self._logger = logging.getLogger(self.__class__.__name__)
 
     def check_origin(self, origin):
+        """Check the validity of the message origin."""
         return True
 
     def get_compression_options(self):
+        """Get the message compression configuration."""
         return {"compression_level": 6, "mem_level": 5}
 
     async def open(self, simulation_id):
+        """Open this socket to  listen for webclient playback requests."""
         if simulation_id not in WEB_CLIENT_RUN_LOOPS:
             raise tornado.web.HTTPError(404)
 
@@ -333,6 +339,7 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
         self._run_loop.run_forever()
 
     def on_close(self):
+        """Stop listening and close the socket."""
         self._logger.debug(f"State websocket closed")
         for run_loop in WEB_CLIENT_RUN_LOOPS.values():
             if self in run_loop:
@@ -340,6 +347,7 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
                 run_loop.remove(self._run_loop)
 
     async def on_message(self, message):
+        """Asynchonously handle playback requests."""
         message = json.loads(message)
         if "seek" in message:
             self._run_loop.seek(message["seek"])

@@ -96,6 +96,7 @@ class _ShowBaseInstance(ShowBase):
             raise e
 
     def destroy(self):
+        """Destroy this renderer and clean up all remaining resources."""
         super().destroy()
         self.__class__.__it__ = None
 
