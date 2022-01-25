@@ -29,7 +29,7 @@ from smarts.core.utils.math import squared_dist, vec_2d, vec_to_radians
 
 @dataclass
 class Adapter:
-    """An adapter for pairing a action/observation transformation method with its gym
+    """An adapter for pairing an action/observation transformation method with its gym
     space representation.
     """
 
@@ -57,7 +57,7 @@ def scan_for_vehicle(
         activation_dist_squared:
             The distance to check for the target.
         self_vehicle_state:
-            The vehicle state of the vehicle that is scaning.
+            The vehicle state of the vehicle that is scanning.
         other_vehicle_state:
             The vehicle to test for.
     Returns:
@@ -101,7 +101,7 @@ def scan_for_vehicles(
         activation_dist_squared:
             The distance to check for the target.
         self_vehicle_state:
-            The vehicle state of the vehicle that is scaning.
+            The vehicle state of the vehicle that is scanning.
         other_vehicle_states:
             The set of vehicles to test for.
     Returns:
