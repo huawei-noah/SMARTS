@@ -58,4 +58,4 @@ jobs:
           add: '["*.py", "*.html", "*.js"]'
           branch: develop
           default_author: user_info 
-          message: 'GitHub Actions: Format'      
+          message: 'GitHub Actions: Format'
