@@ -438,6 +438,8 @@ class SMARTS:
                 agent
             ].events.on_shoulder, f"Agent {agent} is on shoulder before episode start"
 
+        self._step_count = 0
+
         return observations_for_ego
 
     def setup(self, scenario: Scenario):
