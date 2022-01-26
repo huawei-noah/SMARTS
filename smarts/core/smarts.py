@@ -414,7 +414,6 @@ class SMARTS:
 
         self._total_sim_time += self._elapsed_sim_time
         self._elapsed_sim_time = 0
-        self._step_count = 0
         self._reset_required = False
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
@@ -424,19 +423,14 @@ class SMARTS:
         # Visualization
         self._try_emit_visdom_obs(observations)
 
-        if len(self._agent_manager.ego_agent_ids):
-            while len(observations_for_ego) < 1:
-                observations_for_ego, _, _, _ = self.step({})
+        while not observations_for_ego or any(
+            observations_for_ego[agent].events for agent in observations_for_ego
+        ):
+            if len(self._agent_manager.ego_agent_ids):
+                while len(observations_for_ego) < 1:
+                    observations_for_ego, _, _, _ = self.step({})
 
         self._reset_providers()
-
-        for agent in observations_for_ego:
-            assert not observations_for_ego[
-                agent
-            ].events.off_road, f"Agent {agent} is off road before episode start"
-            assert not observations_for_ego[
-                agent
-            ].events.on_shoulder, f"Agent {agent} is on shoulder before episode start"
 
         self._step_count = 0
 
