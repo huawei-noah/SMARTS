@@ -10,14 +10,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
-- Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 ### Changed
-- If more than one qualifying map file exists in a the `map_spec.source` folder, `get_road_map()` in `default_map_builder.py` will prefer to return the default files (`map.net.xml` or `map.xodr`) if they exist.
-- Moved the `smarts_ros` ROS node from the `examples` area into the `smarts.ros` module so that it can be distributed with SMARTS packages.
-- Use `Process` to replace `Thread` to speed up the `scl scenario build-all --clean <scenario_dir>` runtime.
+- Changed the `ParallelEnv` to support passing in the `polling_period` parameter.
 ### Deprecated
 ### Fixed
-- Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error.
+- Fixed `seed()` method in `HiWayEnv` to confirm to the `gym.Env` prototype: it now returns a list of seeds.
 ### Removed
 ### Security
 
