@@ -199,8 +199,8 @@ class ParallelEnv(object):
         """
         seeds = [seed + i for i in range(self._num_envs)]
 
-        seeds = self._call(_Message.SEED, seeds)
-        return seeds
+        seed_lists = self._call(_Message.SEED, seeds)
+        return [seed for seed_list in seed_lists for seed in seed_list]
 
     def reset(self) -> Sequence[Dict[str, Any]]:
         """Reset all environments.
