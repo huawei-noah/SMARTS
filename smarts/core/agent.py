@@ -36,7 +36,7 @@ class Agent:
     """The base class for agents"""
 
     @classmethod
-    def from_function(cls, agent_function: Callable):
+    def from_function(cls, agent_function: Callable[[Any], Any]) -> "Agent":
         """A utility function to create an agent from a lambda or other callable object.
 
         .. code-block:: python
@@ -46,6 +46,8 @@ class Agent:
         assert callable(agent_function)
 
         class FunctionAgent(Agent):
+            """An agent generated from a function."""
+
             def act(self, obs):
                 return agent_function(obs)
 

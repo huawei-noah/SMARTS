@@ -23,6 +23,7 @@ from contextlib import closing
 
 # Directly copied from https://stackoverflow.com/a/45690594
 def find_free_port():
+    """Attempt to find an open networking port."""
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
         s.bind(("", 0))
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

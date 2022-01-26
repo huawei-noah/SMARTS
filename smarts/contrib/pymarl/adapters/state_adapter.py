@@ -34,4 +34,5 @@ DEFAULT_STATE_SPACE = gym.spaces.Dict(
 
 
 def default_state_adapter(state):
+    """The default pymarl state adaptor."""
     return state

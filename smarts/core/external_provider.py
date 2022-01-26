@@ -29,6 +29,8 @@ from .vehicle import VehicleState
 
 
 class ExternalProvider(Provider):
+    """A provider that is intended to used for external intervention in the simulation."""
+
     def __init__(self, sim):
         self._sim = sim
         self.reset()
@@ -44,6 +46,7 @@ class ExternalProvider(Provider):
         vehicle_states: Sequence[VehicleState],
         step_delta: float,
     ):
+        """Update vehicle states. Use `all_vehicle_states()` to look at previous states."""
         self._ext_vehicle_states = vehicle_states
         self._last_step_delta = step_delta
 
@@ -76,6 +79,7 @@ class ExternalProvider(Provider):
 
     @property
     def all_vehicle_states(self) -> List[VehicleState]:
+        """Get all current vehicle states."""
         result = []
         for vehicle in self._sim.vehicle_index.vehicles:
             if vehicle.subscribed_to_accelerometer_sensor:

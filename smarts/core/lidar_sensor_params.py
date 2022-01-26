@@ -24,6 +24,8 @@ import numpy as np
 
 @dataclass(frozen=True)
 class SensorParams:
+    """Lidar sensor parameters."""
+
     start_angle: float
     end_angle: float
     laser_angles: list

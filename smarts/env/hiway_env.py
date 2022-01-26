@@ -19,11 +19,11 @@
 # THE SOFTWARE.
 
 import logging
+import os
 import warnings
 from typing import Dict, Sequence
 
 import gym
-import os
 
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
@@ -165,6 +165,11 @@ class HiWayEnv(gym.Env):
 
     @property
     def agent_specs(self):
+        """Agent specs currently in use for this simulation.
+
+        Returns:
+            A list of AgentSpec.
+        """
         return self._agent_specs
 
     @property
@@ -192,10 +197,12 @@ class HiWayEnv(gym.Env):
         }
 
     def seed(self, seed: int) -> int:
+        """Set the seed of this environment."""
         smarts_seed(seed)
         return seed
 
     def step(self, agent_actions):
+        """Step and return observations, rewards, dones, and infos."""
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
@@ -227,6 +234,7 @@ class HiWayEnv(gym.Env):
         return observations, rewards, dones, infos
 
     def reset(self):
+        """Reset the environment and reinitialize to the next scenario."""
         scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
@@ -244,6 +252,7 @@ class HiWayEnv(gym.Env):
         pass
 
     def close(self):
+        """Clean up all remaining resources."""
         if self._smarts is not None:
             self._smarts.destroy()
             self._smarts = None

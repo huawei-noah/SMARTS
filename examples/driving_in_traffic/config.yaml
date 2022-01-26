@@ -11,6 +11,7 @@ smarts:
     - loop
 
 dreamerv2:
+  steps: 1e8
   log_every: 1e4
   eval_every: 1e5
   prefill: 1e4

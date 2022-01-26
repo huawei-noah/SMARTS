@@ -29,6 +29,8 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class MotionPlannerProvider(Provider):
+    """A provider that reshapes vehicle motion to follow a motion plan."""
+
     _poses: np.ndarray
 
     def __init__(self):
@@ -56,7 +58,9 @@ class MotionPlannerProvider(Provider):
     def reset(self):
         pass
 
-    def step(self, target_poses_at_t, dt, elapsed_sim_time) -> ProviderState:
+    def step(
+        self, target_poses_at_t, dt: float, elapsed_sim_time: float
+    ) -> ProviderState:
         """Step through and update the vehicle poses
 
         Args:
@@ -65,6 +69,8 @@ class MotionPlannerProvider(Provider):
                  pose we would like to have this many seconds into the future
             dt:
                 sim time in seconds to advance into the future
+            elapsed_sim_time:
+                The amount of time elapsed since simulation start
         """
         assert self._is_setup
         self._update_membership(target_poses_at_t)

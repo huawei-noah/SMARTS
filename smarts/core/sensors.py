@@ -42,80 +42,133 @@ logger = logging.getLogger(__name__)
 
 
 class VehicleObservation(NamedTuple):
+    """Perceived vehicle information."""
+
     id: str
+    """The vehicle identifier."""
     position: Tuple[float, float, float]
+    """The position of the vehicle within the simulation."""
     bounding_box: Dimensions
+    """A bounding box describing the extents of the vehicle."""
     heading: Heading
+    """The facing direction of the vehicle."""
     speed: float
+    """The travel m/s in the direction of the vehicle."""
     road_id: str
+    """The identifier for the road nearest to this vehicle."""
     lane_id: str
+    """The identifier for the lane nearest to this vehicle."""
     lane_index: int
+    """The index of the nearest lane on the road nearest to this vehicle."""
 
 
 class EgoVehicleObservation(NamedTuple):
+    """Perceived ego vehicle information."""
+
     id: str
+    """The vehicle identifier."""
     position: np.ndarray
+    """The position of the vehicle within the simulation."""
     bounding_box: Dimensions
+    """A bounding box describing the extents of the vehicle."""
     heading: Heading
+    """The facing direction of the vehicle."""
     speed: float
+    """The travel m/s in the direction of the vehicle."""
     steering: float
+    """Angle of front wheels in radians between [-pi, pi]."""
     yaw_rate: float
+    """Rotational speed in radians per second"""
     road_id: str
+    """The identifier for the road nearest to this vehicle."""
     lane_id: str
+    """The identifier for the lane nearest to this vehicle."""
     lane_index: int
+    """The index of the nearest lane on the road nearest to this vehicle."""
     mission: Mission
+    """A field describing the vehicle plotted route"""
     linear_velocity: np.ndarray
+    """Vehicle velocity along body coordinate axes. A numpy array of shape=(3,) and dtype=np.float64."""
     angular_velocity: np.ndarray
+    """Angular velocity vector. A numpy array of shape=(3,) and dtype=np.float64."""
     linear_acceleration: np.ndarray
+    """Linear acceleration vector. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
     angular_acceleration: np.ndarray
+    """Angular acceleration vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     linear_jerk: np.ndarray
+    """Linear jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     angular_jerk: np.ndarray
+    """Angular jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
 
 
 class RoadWaypoints(NamedTuple):
+    """Per-road waypoint information."""
+
     lanes: Dict[str, List[List[Waypoint]]]
 
 
 class GridMapMetadata(NamedTuple):
-    # time at which the map was loaded
+    """Map grid metadata."""
+
     created_at: int
-    # map resolution in world-space-distance/cell
+    """The time at which the map was loaded"""
     resolution: float
-    # map width in # of cells
+    """The map resolution in world-space-distance/cell"""
     width: int
-    # map height in # of cells
+    """The map width in # of cells"""
     height: int
-    # camera position when project onto the map
+    """The map height in # of cells"""
     camera_pos: Tuple[float, float, float]
-    # camera rotation angle along z-axis when project onto the map
+    """The camera position when project onto the map"""
     camera_heading_in_degrees: float
+    """The camera rotation angle along z-axis when projected onto the map"""
 
 
 class TopDownRGB(NamedTuple):
+    """RGB camera observation"""
+
     metadata: GridMapMetadata
+    """Map metadata"""
     data: np.ndarray
+    """A RGB image (default 256x256) with the ego vehicle at the center"""
 
 
 class OccupancyGridMap(NamedTuple):
+    """Occupancy camera observation"""
+
     metadata: GridMapMetadata
+    """Map metadata"""
     data: np.ndarray
+    """An `OGM <https://en.wikipedia.org/wiki/Occupancy_grid_mapping>`_ (default 256x256) around the ego vehicle"""
 
 
 class DrivableAreaGridMap(NamedTuple):
+    """Drivable area observation"""
+
     metadata: GridMapMetadata
+    """Map metadata"""
     data: np.ndarray
+    """A grid map (default 256x256) that shows the static drivable area around the ego vehicle"""
 
 
 @dataclass
 class ViaPoint:
+    """Describes 'collectable' locations that can be placed within the simulation."""
+
     position: Tuple[float, float]
+    """The location of this collectable"""
     lane_index: float
+    """The lane index on the road this collectable is associated with"""
     road_id: str
+    """The road id this collectable is associated with"""
     required_speed: float
+    """The rough speed required to collect this collectable"""
 
 
 @dataclass(frozen=True)
 class Vias:
+    """A listing of nearby via points and points collected in the last step"""
+
     near_via_points: List[ViaPoint]
     """Ordered list of nearby points that have not been hit"""
     hit_via_points: List[ViaPoint]
@@ -124,9 +177,11 @@ class Vias:
 
 @dataclass
 class Observation:
+    """The standard simulation observation."""
+
     # dt is the amount of sim_time the last step took .
     # step_count is the number of steps take by SMARTS so far.
-    # elapsed_sim_time is the amout of simulation time that's passed so far.
+    # elapsed_sim_time is the amount of simulation time that's passed so far.
     # note: to get the average step_time, elapsed_sim_time can be divided by step_count
     dt: float
     step_count: int
@@ -138,7 +193,7 @@ class Observation:
     distance_travelled: float
 
     # TODO: Convert to `namedtuple` or only return point cloud
-    # [points], [hits], [(ray_origin, ray_directino)]
+    # [points], [hits], [(ray_origin, ray_direction)]
     lidar_point_cloud: Tuple[
         List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
     ]
@@ -151,15 +206,20 @@ class Observation:
 
 @dataclass
 class Collision:
+    """Represents a collision by an ego vehicle with another vehicle."""
+
+    # XXX: This might not work for boid agents
     collidee_id: str
 
 
 class Sensors:
+    """Sensor utility"""
+
     _log = logging.getLogger("Sensors")
 
     @staticmethod
     def observe_batch(sim, agent_id, sensor_states, vehicles):
-        """Operates on a batch of vehicles for a single agent."""
+        """Operates all sensors on a batch of vehicles for a single agent."""
         # TODO: Replace this with a more efficient implementation that _actually_
         #       does batching
         assert sensor_states.keys() == vehicles.keys()
@@ -175,6 +235,7 @@ class Sensors:
 
     @staticmethod
     def observe(sim, agent_id, sensor_state, vehicle):
+        """Generate observations for the given agent around the given vehicle."""
         neighborhood_vehicles = None
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:
             neighborhood_vehicles = []
@@ -335,6 +396,7 @@ class Sensors:
 
     @staticmethod
     def step(sim, sensor_state):
+        """Step the sensor state."""
         return sensor_state.step()
 
     @classmethod
@@ -529,21 +591,32 @@ class Sensors:
 
 
 class Sensor:
+    """The sensor base class."""
+
     def step(self):
+        """Update sensor state."""
         pass
+
+    def teardown(self):
+        """Clean up internal resources"""
+        raise NotImplementedError
 
 
 class SensorState:
+    """Sensor state information"""
+
     def __init__(self, max_episode_steps, plan):
         self._max_episode_steps = max_episode_steps
         self._plan = plan
         self._step = 0
 
     def step(self):
+        """Update internal state."""
         self._step += 1
 
     @property
     def reached_max_episode_steps(self):
+        """Inbuilt sensor information that describes if episode step limit has been reached."""
         if self._max_episode_steps is None:
             return False
 
@@ -551,14 +624,18 @@ class SensorState:
 
     @property
     def plan(self):
+        """Get the current plan for the actor."""
         return self._plan
 
     @property
     def steps_completed(self):
+        """Get the number of steps where this sensor has been updated."""
         return self._step
 
 
 class CameraSensor(Sensor):
+    """The base for a sensor that renders images."""
+
     def __init__(
         self,
         vehicle,
@@ -592,6 +669,8 @@ class CameraSensor(Sensor):
 
 
 class DrivableAreaGridMapSensor(CameraSensor):
+    """A sensor that renders drivable area from around its target actor."""
+
     def __init__(
         self,
         vehicle,
@@ -634,6 +713,8 @@ class DrivableAreaGridMapSensor(CameraSensor):
 
 
 class OGMSensor(CameraSensor):
+    """A sensor that renders occupancy information from around its target actor."""
+
     def __init__(
         self,
         vehicle,
@@ -676,6 +757,8 @@ class OGMSensor(CameraSensor):
 
 
 class RGBSensor(CameraSensor):
+    """A sensor that renders color values from around its target actor."""
+
     def __init__(
         self,
         vehicle,
@@ -710,6 +793,8 @@ class RGBSensor(CameraSensor):
 
 
 class LidarSensor(Sensor):
+    """A lidar sensor."""
+
     def __init__(
         self,
         vehicle,
@@ -753,6 +838,7 @@ class DrivenPathSensor(Sensor):
         self._driven_path = deque(maxlen=max_path_length)
 
     def track_latest_driven_path(self, sim):
+        """Records the current location of the tracked vehicle."""
         pos = self._vehicle.position[:2]
         self._driven_path.append(
             DrivenPathSensor.Entry(timestamp=sim.elapsed_sim_time, position=pos)
@@ -770,6 +856,7 @@ class DrivenPathSensor(Sensor):
         last_n_seconds: Optional[float] = None,
         last_n_steps: Optional[int] = None,
     ):
+        """Find the amount of distance travelled over the last # of seconds XOR steps"""
         if last_n_seconds is None and last_n_steps is None:
             raise ValueError("Either last N seconds or last N steps must be provided")
 
@@ -809,6 +896,7 @@ class TripMeterSensor(Sensor):
             self._wps_for_distance.append(waypoint_paths[0][0])
 
     def append_waypoint_if_new(self, new_wp):
+        """Append a waypoint to the history if it is not already counted."""
         # Distance calculation. Intention is the shortest trip travelled at the lane
         # level the agent has travelled. This is to prevent lateral movement from
         # increasing the total distance travelled.
@@ -858,6 +946,8 @@ class TripMeterSensor(Sensor):
 
 
 class NeighborhoodVehiclesSensor(Sensor):
+    """Detects other vehicles around the sensor equipped vehicle."""
+
     def __init__(self, vehicle, sim, radius=None):
         self._vehicle = vehicle
         self._sim = sim
@@ -865,6 +955,7 @@ class NeighborhoodVehiclesSensor(Sensor):
 
     @property
     def radius(self):
+        """Radius to check for nearby vehicles."""
         return self._radius
 
     def __call__(self):
@@ -877,6 +968,8 @@ class NeighborhoodVehiclesSensor(Sensor):
 
 
 class WaypointsSensor(Sensor):
+    """Detects waypoints leading forward along the vehicle plan."""
+
     def __init__(self, vehicle, plan: Plan, lookahead=32):
         self._vehicle = vehicle
         self._plan = plan
@@ -894,6 +987,8 @@ class WaypointsSensor(Sensor):
 
 
 class RoadWaypointsSensor(Sensor):
+    """Detects waypoints from all paths nearby the vehicle."""
+
     def __init__(self, vehicle, sim, plan, horizon=32):
         self._vehicle = vehicle
         self._road_map = sim.road_map
@@ -916,6 +1011,7 @@ class RoadWaypointsSensor(Sensor):
         return RoadWaypoints(lanes=lane_paths)
 
     def paths_for_lane(self, lane, overflow_offset=None):
+        """Gets waypoint paths along the given lane."""
         # XXX: the following assumes waypoint spacing is 1m
         if overflow_offset is None:
             offset = lane.offset_along_lane(Point(*self._vehicle.position))
@@ -946,6 +1042,8 @@ class RoadWaypointsSensor(Sensor):
 
 
 class AccelerometerSensor(Sensor):
+    """Tracks motion changes within the vehicle equipped with this sensor."""
+
     def __init__(self, vehicle):
         self.linear_velocities = deque(maxlen=3)
         self.angular_velocities = deque(maxlen=3)
@@ -988,6 +1086,8 @@ class AccelerometerSensor(Sensor):
 
 
 class ViaSensor(Sensor):
+    """Tracks collection of ViaPoint collectables"""
+
     def __init__(self, vehicle, plan, lane_acquisition_range, speed_accuracy):
         self._consumed_via_points = set()
         self._plan: Plan = plan

@@ -24,6 +24,8 @@ import numpy as np
 
 
 class TireForces:
+    """Tire forces utility"""
+
     def __init__(self, stiffness, road_friction):
         self.c_alpha_front, self.c_alpha_rear, self.c_x_front, self.c_x_rear = stiffness
         self.road_friction = road_friction
@@ -96,7 +98,7 @@ class TireForces:
 
         z_yaw = chassis.velocity_vectors[1][2]
         # 0.1 is the threshold for speed of the center of wheel
-        # to activate slip angle caluclation.
+        # to activate slip angle calculation.
         for i in range(4):
             if abs(abs_speed_corners[i]) > 0.1:
 
@@ -152,6 +154,7 @@ class TireForces:
 
     @staticmethod
     def build_tire_model(stiffness, tire_model_type, road_friction):
+        """Generates the requested tire model."""
         if tire_model_type == "LinearTireforce(wheel)":
             return LinearTireForces(stiffness, road_friction)
         elif tire_model_type == "LinearTireforce(contact)":
@@ -165,6 +168,8 @@ class TireForces:
 
 
 class LinearTireForces(TireForces):
+    """A linear forces implemention of a tire model."""
+
     def _calculate_tire_forces(self, chassis, client, action):
 
         tire_angles = self._calculate_tire_angles(chassis, client, action)
@@ -235,7 +240,7 @@ class LinearTireForces(TireForces):
         return (forces, lat_forces, lon_forces)
 
     def apply_tire_forces(self, chassis, client, action):
-
+        """Applies linear tire forces"""
         wheel_index = [2, 4, 5, 6]
         wheel_positions = [
             np.array(client.getLinkState(chassis.bullet_id, wheel_idx)[0])
@@ -262,16 +267,19 @@ class LinearTireForces(TireForces):
         return (lat_forces, lon_forces)
 
 
-# TODO: Implement tire forces at contact points
 class LinearTireForcesContact(TireForces):
+    """TODO: Implement tire forces at contact points"""
+
     pass
 
 
-# TODO: Implement nonlinear tire forces
 class NonlinearTireForces(TireForces):
+    """TODO: Implement nonlinear tire forces"""
+
     pass
 
 
-# TODO: Implement nonlinear tire forces at contact points
 class NonlinearTireForcesContact(TireForces):
+    """TODO: Implement nonlinear tire forces at contact points"""
+
     pass

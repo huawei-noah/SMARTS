@@ -22,6 +22,7 @@ In addition to following the setup steps in the README, you'll need to install t
 
 ```bash
 pip install -e .[dev]
+pre-commit install
 ```
 
 Once done, you're all set to make your first contribution!
@@ -42,8 +43,8 @@ Please take care in using good commit messages as they're useful for debugging, 
 
 ## Pre-Push Checklist
 
-1. Do your best to see that your code compiles locally.
-2. Run `make format`. See [Formatting](#Formatting).
+1. Make sure the pre-commit hooks are installed via `pre-commit install`.
+2. Do your best to see that your code compiles locally.
 3. Do not push to `master`. Instead make a branch and a [pull request](#Pull-Requests)
 
 ## Submission of a Pull Request
@@ -89,8 +90,6 @@ Tag the issue as a feature request using `enhancement` and if it takes more than
 ## Formatting
 
 ### Python(Format)
-
-1. Always run `make format` before committing.
 
 The project follows a strict format requirement for python code. We made a decision early on in the project to use [Black](https://github.com/psf/black). This makes formatting consistent while eliminating [bike shedding](http://bikeshed.com/).
 If you do not already have it please install it via `pip install black`.

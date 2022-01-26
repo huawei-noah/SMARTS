@@ -1,5 +1,3 @@
-# MIT License
-#
 # Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,7 +22,7 @@ import logging
 
 import rospy
 
-# Note:  use of these utilities may require installing the SMARTS package with the "[ros]" extentions.
+# Note:  these ROS logging utils will require installing the SMARTS package with the "[ros]" extensions.
 
 
 class LogToROSHandler(logging.Handler):

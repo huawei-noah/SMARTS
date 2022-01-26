@@ -1,5 +1,25 @@
 #!/usr/bin/env python3
 
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 import json
 import logging
 import math
@@ -41,8 +61,8 @@ from smarts.core.utils.math import (
     vec_to_radians,
     yaw_from_quaternion,
 )
-from smarts.core.utils.ros import log_everything_to_ROS
 from smarts.core.vehicle import VehicleState
+from smarts.ros.logging import log_everything_to_ROS
 from smarts.sstudio.types import MapSpec
 from smarts.zoo import registry
 
@@ -85,6 +105,7 @@ class ROSDriver:
         time_ratio: float = 1.0,
         pub_queue_size: int = 10,
     ):
+        """Set up the SMARTS ros node."""
         assert not self._state_publisher
 
         # enforce only one SMARTS instance per ROS network...
@@ -129,6 +150,7 @@ class ROSDriver:
     def setup_smarts(
         self, headless: bool = True, seed: int = 42, time_ratio: float = 1.0
     ):
+        """Do the setup of the underlying SMARTS instance."""
         assert not self._smarts
         if not self._state_publisher:
             raise RuntimeError("must call setup_ros() first.")
@@ -271,6 +293,7 @@ class ROSDriver:
         task_params = json.loads(task.params_json) if task.params_json else {}
         task_version = task.task_ver or "latest"
         agent_locator = f"{self._zoo_module}:{task.task_ref}-{task_version}"
+        agent_spec = None
         try:
             agent_spec = registry.make(agent_locator, **task_params)
         except ImportError as ie:
@@ -368,14 +391,19 @@ class ROSDriver:
 
         @property
         def stamp(self):
+            """The estimated timestamp of this vehicle state."""
             return self.vector[0]
 
         def average_with(self, other_vect: np.ndarray):
+            """Update this vehicle state with the average between this state and the given new
+            state.
+            """
             self.vector += other_vect
             self.vector /= 2
             self.update_vehicle_state()
 
         def update_vehicle_state(self):
+            """Update this vehicle state."""
             assert len(self.vector) == 20
             self.vs.pose = Pose.from_center(
                 self.vector[1:4], Heading(self.vector[4] % (2 * math.pi))
@@ -604,6 +632,7 @@ class ROSDriver:
         return None
 
     def run_forever(self):
+        """Publish the SMARTS ros node and run indefinitely."""
         if not self._state_publisher:
             raise RuntimeError("must call setup_ros() first.")
         if not self._smarts:
@@ -667,7 +696,7 @@ class ROSDriver:
                     rate.sleep()
 
         except rospy.ROSInterruptException:
-            rospy.loginfo("ROS interrrupted.  exiting...")
+            rospy.loginfo("ROS interrupted.  exiting...")
 
         self._reset()  # cleans up the SMARTS instance...
 

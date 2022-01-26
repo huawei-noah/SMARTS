@@ -24,15 +24,10 @@ from smarts.sstudio.types import MapSpec
 
 
 def generate_glb_from_sumo_file(sumo_net_file: str, out_glb_file: str):
+    """Creates a geometry file from a sumo map file."""
     map_spec = MapSpec(sumo_net_file)
     road_network = SumoRoadNetwork.from_spec(map_spec)
     road_network.to_glb(out_glb_file)
-
-
-def generate_glb_from_sumo_network(
-    sumo_road_network: SumoRoadNetwork, out_glb_file: str
-):
-    sumo_road_network.to_glb(out_glb_file)
 
 
 if __name__ == "__main__":
