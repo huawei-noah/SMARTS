@@ -431,7 +431,12 @@ class SMARTS:
         self._reset_providers()
 
         for agent in observations_for_ego:
-            assert not any(observations_for_ego[agent].events)
+            assert not observations_for_ego[
+                agent
+            ].events.off_road, f"Agent {agent} is off road before episode start"
+            assert not observations_for_ego[
+                agent
+            ].events.on_shoulder, f"Agent {agent} is on shoulder before episode start"
 
         return observations_for_ego
 
