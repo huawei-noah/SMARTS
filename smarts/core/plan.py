@@ -240,6 +240,8 @@ class Mission:
         offset *= n_lane.length
         coord = n_lane.from_lane_coord(RefLinePoint(offset))
         target_pose = n_lane.center_pose_at_point(coord)
+        # TODO:  added for testing CI on branch.  remove before merging!
+        print(f"STEVE {road.road_id} {n_lane} {offset} {coord}")
         return Mission(
             start=Start(target_pose.position, target_pose.heading),
             goal=EndlessGoal(),
