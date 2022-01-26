@@ -1,6 +1,7 @@
 import logging
-import os
 import pathlib
+import subprocess
+from typing import List
 
 import gym
 import numpy as np
@@ -67,9 +68,9 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     env.close()
 
 
-def _build_scenario(scenario):
-    build_scenario = f"scl scenario build-all --clean {scenario}"
-    os.system(build_scenario)
+def _build_scenario(scenario: List[str]):
+    build_scenario = " ".join(["scl scenario build-all --clean"] + scenario)
+    subprocess.call(build_scenario, shell=True)
 
 
 if __name__ == "__main__":

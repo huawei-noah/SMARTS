@@ -225,7 +225,7 @@ class HiWayEnv(gym.Env):
             agent_actions (Dict[str, Any]): Action taken for each agent.
 
         Returns:
-            Tuple[ Dict[str, Observations], Dict[str, float], Dict[str, bool], Dict[str, Any] ]:
+            Tuple[ Dict[str, Observation], Dict[str, float], Dict[str, bool], Dict[str, Any] ]:
                 Observations, rewards, dones, and infos for active agents.
         """
 
@@ -263,7 +263,7 @@ class HiWayEnv(gym.Env):
         """Resets the environment.
 
         Returns:
-            Dict[str, Observations]: Agents' observation.
+            Dict[str, Observation]: Agents' observation.
         """
 
         scenario = next(self._scenarios_iterator)
