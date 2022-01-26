@@ -73,7 +73,7 @@ def test_non_callable_env_constructors(env_constructor):
         env_constructor(),
     ]
     with pytest.raises(TypeError):
-        env = ParallelEnv(env_constructors=env_constructed, auto_reset=True)
+        env = ParallelEnv(env_constructors=env_constructed, auto_reset=True, polling_period=0)
         env.close()
 
 

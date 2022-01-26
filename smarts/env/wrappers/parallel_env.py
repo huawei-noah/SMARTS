@@ -61,6 +61,7 @@ class ParallelEnv(object):
         env_constructors: Sequence[EnvConstructor],
         auto_reset: bool,
         seed: int = 42,
+        polling_period: float = 0.1,
     ):
         """The environments can be different but must use the same action and
         observation spaces.
@@ -90,7 +91,7 @@ class ParallelEnv(object):
             )
 
         self._num_envs = len(env_constructors)
-        self._polling_period = 0.1
+        self._polling_period = polling_period
         self._closed = False
 
         # Fork is not a thread safe method.

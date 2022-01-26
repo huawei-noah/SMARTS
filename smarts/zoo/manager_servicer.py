@@ -55,7 +55,7 @@ class ManagerServicer(manager_pb2_grpc.ManagerServicer):
         ]
 
         worker = subprocess.Popen(cmd)
-        if worker.poll() == None:
+        if worker.poll() is None:
             self._workers[port] = worker
             return manager_pb2.Port(num=port)
 
@@ -70,7 +70,7 @@ class ManagerServicer(manager_pb2_grpc.ManagerServicer):
 
         # Get worker_process corresponding to the received port number.
         worker = self._workers.get(request.num, None)
-        if worker == None:
+        if worker is None:
             context.set_details(
                 f"Trying to stop nonexistent worker with a port {request.num}."
             )
@@ -93,6 +93,6 @@ class ManagerServicer(manager_pb2_grpc.ManagerServicer):
         )
         workers_to_kill = list(self._workers.values())
         for worker in workers_to_kill:
-            if worker.poll() == None:
+            if worker.poll() is None:
                 worker.terminate()
                 worker.wait()

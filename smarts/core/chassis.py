@@ -642,7 +642,7 @@ class AckermannChassis(Chassis):
         return self._client
 
     def step(self, current_simulation_time):
-        if self._friction_map != None:
+        if self._friction_map:
             self._set_road_friction(current_simulation_time)
         self._clear_step_cache()
 
@@ -690,7 +690,7 @@ class AckermannChassis(Chassis):
         # If the tire parameters yaml file exists, then the throttle and
         # brake forces are applied according to the requested tire model.
         # Otherwise, it uses bullet to calculate the reaction forces.
-        if self._tire_model != None:
+        if self._tire_model:
             self._lat_forces, self._lon_forces = self._tire_model.apply_tire_forces(
                 self,
                 self.bullet_client,

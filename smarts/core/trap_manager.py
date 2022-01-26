@@ -230,7 +230,7 @@ class TrapManager:
                 )
             else:
                 continue
-            if vehicle == None:
+            if vehicle is None:
                 continue
             sim.create_vehicle_in_providers(vehicle, agent_id)
             agents_given_vehicle.add(agent_id)

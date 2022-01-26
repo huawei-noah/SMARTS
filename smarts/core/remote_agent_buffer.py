@@ -149,7 +149,7 @@ class RemoteAgentBuffer:
                     f"Failed {retry+1}/{retries} times in attempt to spawn a remote worker process. {e}"
                 )
 
-        if worker_port == None:
+        if worker_port is None:
             raise RemoteAgentException(
                 "Remote worker process could not be spawned by the zoo manager."
             )
@@ -207,7 +207,7 @@ class RemoteAgentBuffer:
         Returns:
             RemoteAgent: A new RemoteAgent object.
         """
-        if timeout == None:
+        if timeout is None:
             timeout = self._timeout
 
         for retry in range(retries):
@@ -236,7 +236,7 @@ def spawn_local_zoo_manager(port):
     ]
 
     manager = subprocess.Popen(cmd)
-    if manager.poll() == None:
+    if manager.poll() is None:
         return manager
 
     raise RuntimeError("Zoo manager subprocess is not running.")

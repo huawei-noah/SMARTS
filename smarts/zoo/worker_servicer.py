@@ -55,7 +55,7 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
         return worker_pb2.Status()
 
     def act(self, request, context):
-        if self._agent == None or self._agent_spec == None:
+        if self._agent is None or self._agent_spec is None:
             context.set_details(f"Remote agent not built yet.")
             context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
             return worker_pb2.Action()
