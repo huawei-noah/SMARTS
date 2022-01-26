@@ -16,7 +16,7 @@ except Exception as e:
     raise RayException.required_to("rllib_agent.py")
 
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Adapter, Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.env.custom_observations import lane_ttc_observation_adapter
 
@@ -93,9 +93,9 @@ rllib_agent = {
             "observation_space": OBSERVATION_SPACE,
         },
         agent_builder=RLLibTFSavedModelAgent,
-        observation_adapter=observation_adapter,
+        action_adapter=Adapter(space=ACTION_SPACE, func=action_adapter),
+        observation_adapter=Adapter(space=OBSERVATION_SPACE, func=observation_adapter),
         reward_adapter=reward_adapter,
-        action_adapter=action_adapter,
     ),
     "observation_space": OBSERVATION_SPACE,
     "action_space": ACTION_SPACE,
