@@ -239,7 +239,7 @@ class TrapManager:
 
         if len(agents_given_vehicle) > 0:
             self._log.debug(
-                f"trap giving vehicles to agents at sim-time={sim.elapsed_sim_time}:  {agents_given_vehicles}"
+                f"trap giving vehicles to agents at sim-time={sim.elapsed_sim_time}:  {agents_given_vehicle}"
             )
             self.remove_traps(used_traps)
             sim.agent_manager.remove_pending_agent_ids(agents_given_vehicle)
