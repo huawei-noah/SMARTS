@@ -224,6 +224,9 @@ class TrapManager:
                         overlapping = True
                         break
                 if overlapping:
+                    self._log.debug(
+                        f"trap manager would give new vehicle to {agent_id} but there's another vehicle there."
+                    )
                     continue
 
                 vehicle = TrapManager._make_vehicle(

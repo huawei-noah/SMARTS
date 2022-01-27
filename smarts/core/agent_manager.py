@@ -44,6 +44,7 @@ class AgentManager:
 
     def __init__(self, interfaces, zoo_addrs=None):
         self._log = logging.getLogger(self.__class__.__name__)
+        self._log.setLevel(logging.DEBUG)
         self._remote_agent_buffer = None
         self._zoo_addrs = zoo_addrs
         self._ego_agent_ids = set()
@@ -371,6 +372,9 @@ class AgentManager:
         """Adds an ego agent to the manager."""
         if for_trap:
             self.pending_agent_ids.add(agent_id)
+            self._log.debug(
+                f"AgentManager added {agent_id} to pending set for trapping."
+            )
         self._ego_agent_ids.add(agent_id)
         self.agent_interfaces[agent_id] = agent_interface
         # agent will now be given vehicle by trap manager when appropriate
