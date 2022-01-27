@@ -24,10 +24,15 @@ from typing import List, NamedTuple, Optional
 
 @dataclass
 class Collision:
+    """Represents a collision by an ego vehicle with another vehicle."""
+
+    # XXX: This might not work for boid agents
     collidee_id: str
 
 
 class Events(NamedTuple):
+    """Classified observations that can cause agent done state."""
+
     agents_alive_done: bool
     collisions: List[Optional[Collision]]
     not_moving: bool

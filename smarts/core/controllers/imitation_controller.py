@@ -18,23 +18,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-from dataclasses import dataclass
+from typing import Tuple, Union
 
 import numpy as np
 
 from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.coordinates import Pose
-from smarts.core.utils.math import (
-    fast_quaternion_from_angle,
-    min_angles_difference_signed,
-    radians_to_vec,
-    vec_to_radians,
-)
+from smarts.core.utils.math import fast_quaternion_from_angle, radians_to_vec
 
 
 class ImitationController:
+    """A controller that is useful for imitation learning."""
+
     @classmethod
-    def perform_action(cls, dt, vehicle, action):
+    def perform_action(
+        cls,
+        dt: float,
+        vehicle,
+        action: Union[float, Tuple[Tuple[float, float], float]],
+    ):
+        """Performs an action adapting to the underlying chassis.
+        Args:
+            dt (float):
+                A delta time value.
+            vehicle (Vehicle):
+                The vehicle to control.
+            action (Union[float, Tuple[Tuple[float, float], float]]):
+                (speed) XOR (acceleration, angular_velocity)
+        """
         chassis = vehicle.chassis
         if isinstance(action, (int, float)):
             # special case:  setting the initial speed

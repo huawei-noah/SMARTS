@@ -1,0 +1,61 @@
+name: SMARTS CI Auto Commit Linux
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+env:
+  venv_dir: .venv
+
+jobs:
+  auto-commit-linux:
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: huaweinoah/smarts:v0.4.18-minimal
+    steps:
+      - name: Install packages
+        run: |
+          add-apt-repository -y ppa:git-core/ppa
+          apt-get update
+          apt-get install -y git curl ca-certificates
+          curl -sL https://deb.nodesource.com/setup_14.x | bash -
+          apt-get install -y nodejs
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: develop 
+      - name: Install SMARTS
+        run: |
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
+          pip install --upgrade pip wheel
+          pip install .[camera-obs,test,train]
+      - name: Update requirements
+        run: |
+          . ${{env.venv_dir}}/bin/activate
+          pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > requirements.txt
+      - name: Commit requirement changes
+        uses: EndBug/add-and-commit@v7
+        with:
+          add: 'requirements.txt'
+          branch: develop
+          default_author: user_info 
+          message: 'GitHub Actions: Update requirements.txt'
+      - name: isort, Black, and prettier
+        run: |
+          . ${{env.venv_dir}}/bin/activate
+          pip install .[dev]
+          isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines/marl_benchmark/ ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./ultra ./zoo
+          black .
+          npx prettier --write ./envision/web/src
+      - name: Commit format changes
+        uses: EndBug/add-and-commit@v7
+        with:
+          add: '["*.py", "*.html", "*.js"]'
+          branch: develop
+          default_author: user_info 
+          message: 'GitHub Actions: Format'

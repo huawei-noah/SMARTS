@@ -87,7 +87,7 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
 
             for veh_id in current_vehicles:
                 try:
-                    smarts.attach_sensors_to_vehicles(agent_spec, {veh_id})
+                    smarts.attach_sensors_to_vehicles(agent_spec.interface, {veh_id})
                 except ControllerOutOfLaneException:
                     logger.warning(f"{veh_id} out of lane, skipped attaching sensors")
                     vehicles_off_road.add(veh_id)

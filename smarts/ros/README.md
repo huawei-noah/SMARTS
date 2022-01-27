@@ -10,7 +10,7 @@ First, see [wiki.ros.org](http://wiki.ros.org) for instructions about installing
 
 Note that SMARTS uses **python3**, whereas ROS verions `1.*` (kinetic, lunar, melodic, or noetic) were designed for **python2**.
 
-The example node in `src/smarts_ros/scripts/ros_driver.py` was created for the "_kinetic_" ROS distribution and may not work with a ROS `2.*` distribution.
+The node in `src/smarts_ros/scripts/ros_driver.py` was created for the "_kinetic_" ROS distribution and may not work with a ROS `2.*` distribution.
 Therefore, you may need to tweak your ROS and/or python environment(s) slightly to get things to work.
 
 The exact tweaks/workarounds to get python3 code running correctly with ROS version `1.*` will depend upon your local setup.
@@ -19,18 +19,18 @@ But among other things, you may need to do the following (after the "normal" SMA
 source .venv/bin/activate
 pip3 install rospkg catkin_pkg
 ```
+This is included now by default if you pip install the Smarts package with the "[ros]" extensions.
 
 ## Setup
 
-Setup your environment:
+First run the following to build the node:
 ```bash
-source /opt/ros/kinetic/setup.bash
+python -m smarts.ros setup_node
 ```
+
+Upon successful completion, it will instruct you to source another file.  Do so.  For example, it might be:
 ```bash
-cd examples/ros
-catkin_make
-catkin_make install
-source install/setup.bash
+source smarts/ros/install/setup.bash
 ```
 
 
@@ -46,7 +46,7 @@ rosrun smarts_ros ros_driver.py
 ```
 Or if you prefer (or if required due to the python version issues desribed above):
 ```bash
-python3 exmples/ros/src/smarts_ros/scripts/ros_driver.py
+python3 smarts/ros/src/smarts_ros/scripts/ros_driver.py
 ```
 
 These latter 2 may require you to explicitly start `rosmaster` node first
@@ -58,7 +58,7 @@ which will run one in the background.
 
 Alternatively, if you have parameters that you want to override on a regular basis,
 create a custom [roslaunch](http://wiki.ros.org/roslaunch) file in your package's launch folder,
-like the one in [examples/ros/src/smarts_ros/launch/ros_driver.launch](examples/ros/src/smarts_ros/launch/ros_driver.launch).
+like the one in [smarts/ros/src/smarts_ros/launch/ros_driver.launch](smarts/ros/src/smarts_ros/launch/ros_driver.launch).
 And then, if you called it `my_ros_driver.launch`:
 ```bash
 roslaunch smarts_ros launch/my_ros_driver.launch

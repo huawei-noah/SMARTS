@@ -175,10 +175,10 @@ class HiWayEnv(gym.Env):
 
     @property
     def agent_specs(self) -> Dict[str, AgentSpec]:
-        """Ego agents' specifications.
+        """Agents' specifications used in this simulation.
 
         Returns:
-            (Dict[str, AgentSpec]): Ego agent's specifications.
+            (Dict[str, AgentSpec]): Agents' specifications.
         """
         return self._agent_specs
 
@@ -228,7 +228,6 @@ class HiWayEnv(gym.Env):
             Tuple[ Dict[str, Observation], Dict[str, float], Dict[str, bool], Dict[str, Any] ]:
                 Observations, rewards, dones, and infos for active agents.
         """
-
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
@@ -260,12 +259,11 @@ class HiWayEnv(gym.Env):
         return observations, rewards, dones, infos
 
     def reset(self) -> Dict[str, Observation]:
-        """Resets the environment.
+        """Resets the environment and initializes to the next scenario.
 
         Returns:
             Dict[str, Observation]: Agents' observation.
         """
-
         scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
