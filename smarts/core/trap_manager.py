@@ -227,6 +227,13 @@ class TrapManager:
                     self._log.debug(
                         f"trap manager would give new vehicle to {agent_id} but there's another vehicle there."
                     )
+                    # STEVE TODO:  remove these later
+                    self._log.debug(
+                        f"STEVE {pos} {mission.start.position[:2]} {largest_dimension} {new_veh_maxd}"
+                    )
+                    self._log.debug(
+                        f"STEVE {squared_dist(pos, mission.start.position[:2])} <=? {(0.5 * (largest_dimension + new_veh_maxd)) ** 2}"
+                    )
                     continue
 
                 vehicle = TrapManager._make_vehicle(
