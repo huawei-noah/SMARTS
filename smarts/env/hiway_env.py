@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 
 import logging
-import os
 import warnings
 from typing import Dict, Sequence
 
@@ -164,7 +163,7 @@ class HiWayEnv(gym.Env):
         )
 
     @property
-    def agent_specs(self):
+    def agent_specs(self) -> Dict[str, AgentSpec]:
         """Agent specs currently in use for this simulation.
 
         Returns:
