@@ -215,8 +215,6 @@ class Collision:
 class Sensors:
     """Sensor utility"""
 
-    _log = logging.getLogger("Sensors")
-
     @staticmethod
     def observe_batch(sim, agent_id, sensor_states, vehicles):
         """Operates all sensors on a batch of vehicles for a single agent."""
@@ -647,7 +645,6 @@ class CameraSensor(Sensor):
         resolution: float,
     ):
         assert renderer
-        self._log = logging.getLogger(self.__class__.__name__)
         self._vehicle = vehicle
         self._camera = renderer.build_offscreen_camera(
             name,

@@ -84,6 +84,7 @@ class SumoTrafficSimulation(Provider):
     ):
         self._remove_agents_only_mode = remove_agents_only_mode
         self._log = logging.getLogger(self.__class__.__name__)
+        self._log.setLevel(logging.DEBUG)
 
         self._debug = debug
         self._scenario = None
@@ -190,14 +191,14 @@ class SumoTrafficSimulation(Provider):
                     ), "TraCI API version must be >= 20 (SUMO 1.5.0)"
                 # We will retry since this is our first sumo command
                 except FatalTraCIError:
-                    logging.debug("Connection closed. Retrying...")
+                    self._log.debug("Connection closed. Retrying...")
                     self._close_traci_and_pipes()
                     continue
                 except TraCIException as e:
-                    logging.debug(f"Unknown connection issue has occurred: {e}")
+                    self._log.debug(f"Unknown connection issue has occurred: {e}")
                     self._close_traci_and_pipes()
             except ConnectionRefusedError:
-                logging.debug(
+                self._log.debug(
                     "Connection refused. Tried to connect to unpaired TraCI client."
                 )
                 self._close_traci_and_pipes()
@@ -209,7 +210,7 @@ class SumoTrafficSimulation(Provider):
             self._traci_conn.setOrder(0)
             self._traci_conn.getVersion()
         except Exception as e:
-            logging.error(
+            self._log.error(
                 f"""Failed to initialize SUMO
                 Your scenario might not be configured correctly or
                 you were trying to initialize many SUMO instances at
@@ -322,7 +323,7 @@ class SumoTrafficSimulation(Provider):
         self._traci_conn = None
 
     def _handle_traci_disconnect(self, e):
-        logging.error(f"TraCI has disconnected with: {e}")
+        self._log.error(f"TraCI has disconnected with: {e}")
         self._close_traci_and_pipes()
 
     def _remove_vehicles(self):

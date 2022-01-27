@@ -100,6 +100,7 @@ class SMARTS:
         external_provider: bool = False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
+        self._log.setLevel(logging.DEBUG)
         self._sim_id = Id.new("smarts")
         self._is_setup = False
         self._is_destroyed = False
