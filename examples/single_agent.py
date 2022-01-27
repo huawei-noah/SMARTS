@@ -1,10 +1,9 @@
 import logging
 
 import gym
-import numpy as np
 
-from smarts.core.agent import Adapter, Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
+from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
 from smarts.env.wrappers.single_agent import SingleAgent
@@ -19,46 +18,6 @@ else:
 logging.basicConfig(level=logging.INFO)
 
 AGENT_ID = "SingleAgent"
-
-ACTION_SPACE = gym.spaces.Box(
-    low=np.array([0.0, -1.0]), high=np.array([100, 1.0]), dtype=np.float32
-)
-
-OBSERVATION_SPACE = gym.spaces.Dict(
-    {
-        "dt": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-        "step_count": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-        "elapsed_sim_time": gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-        "events": gym.spaces.MultiBinary(9),
-        "ego_vehicle_state": gym.spaces.Tuple(
-            gym.spaces.Box(low=0, high=1e10, shape=(1,)),
-            gym.spaces.Box(
-                low=np.array([-1e10, -1e10, -1e10]),
-                high=np.array([1e10, 1e10, 1e10]),
-                shape=(3,),
-            ),
-            gym.spaces.Box(
-                low=np.array([-1e10, -1e10, -1e10]),
-                high=np.array([1e10, 1e10, 1e10]),
-                shape=(3,),
-            ),
-            gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-            gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-            gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-            gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-            # road id
-            # lane id
-            gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-            # mission
-            gym.spaces.Box(low=-1e10, high=1e10),
-            gym.spaces.Box(low=-1e10, high=1e10),
-            gym.spaces.Box(low=-1e10, high=1e10),
-            gym.spaces.Box(low=-1e10, high=1e10),
-            gym.spaces.Box(low=-1e10, high=1e10),
-            gym.spaces.Box(low=-1e10, high=1e10),
-        ),
-    }
-)
 
 
 class ChaseViaPointsAgent(Agent):
@@ -82,12 +41,8 @@ class ChaseViaPointsAgent(Agent):
 def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
-            AgentType.LanerWithSpeed,
-            max_episode_steps=max_episode_steps,
-            # done_criteria=DoneCriteria(on_shoulder=True, off_road=False)
+            AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
         ),
-        action_adapter=Adapter(space=ACTION_SPACE),
-        observation_adapter=Adapter(space=OBSERVATION_SPACE),
         agent_builder=ChaseViaPointsAgent,
     )
 

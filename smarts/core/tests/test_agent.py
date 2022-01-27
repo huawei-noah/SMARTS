@@ -19,7 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Adapter, Agent, AgentSpec
 
 
 def test_building_agent_with_list_or_tuple_params():
@@ -50,3 +50,22 @@ def test_building_agent_with_dict_params():
 
     agent = agent_spec.build_agent()
     assert agent.act("dummy observation") == 1 / 2
+
+
+def test_building_agent_with_adapter():
+
+    import gym
+    import numpy as np
+
+    ACTION_SPACE = gym.spaces.Box(
+        low=np.array([0.0, 0.0, 0.0, 0.0]),
+        high=np.array([100, 100, 100, 100]),
+        dtype=np.float32,
+    )
+    agent_spec = AgentSpec(
+        agent_params=[32, 41],
+        agent_builder=lambda x, y: Agent.from_function(lambda _: (x, y)),
+        action_adapter=Adapter(space=ACTION_SPACE, func=lambda x: 2 * x),
+    )
+
+    assert agent_spec.action_adapter([32, 41]) == [32, 41, 32, 41]
