@@ -77,6 +77,7 @@ class TrapManager:
 
     def __init__(self, scenario):
         self._log = logging.getLogger(self.__class__.__name__)
+        self._log.setLevel(logging.DEBUG)
         self._traps: Dict[str, Trap] = defaultdict(Trap)
         self.init_traps(scenario.road_map, scenario.missions)
 
@@ -237,6 +238,9 @@ class TrapManager:
             used_traps.append((agent_id, trap))
 
         if len(agents_given_vehicle) > 0:
+            self._log.debug(
+                f"trap giving vehicles to agents at sim-time={sim.elapsed_sim_time}:  {agents_given_vehicles}"
+            )
             self.remove_traps(used_traps)
             sim.agent_manager.remove_pending_agent_ids(agents_given_vehicle)
 

@@ -372,11 +372,14 @@ class SMARTS:
         """
         tries = 2
         first_exception = None
-        for _ in range(tries):
+        for rtry in range(tries):
             try:
                 self._resetting = True
                 return self._reset(scenario)
             except Exception as e:
+                self._log.debug(
+                    f"exception during reset on try {rtry + 1} of {tries}: {e}"
+                )
                 if not first_exception:
                     first_exception = e
             finally:
