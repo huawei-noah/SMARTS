@@ -21,6 +21,7 @@ import importlib.resources as pkg_resources
 import logging
 import math
 import os
+from urllib.request import AbstractDigestAuthHandler
 import warnings
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
@@ -305,8 +306,9 @@ class SMARTS:
         self._agent_manager.send_observations_to_social_agents(observations)
 
         # 6. Clear done agents
-        self._log.info("Clearing done agents")
-        self._teardown_done_agents_and_vehicles(dones)
+        if not self._resetting:
+            self._log.info("Clearing done agents")
+            self._teardown_done_agents_and_vehicles(dones)
 
         # 7. Perform visualization
         self._log.info("Trying to emit the envision state")
@@ -418,17 +420,23 @@ class SMARTS:
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
         observations, _, _, _ = self._agent_manager.observe(self)
-        observations_for_ego = self._agent_manager.reset_agents(observations)
+        observations_for_ego = None 
+        dones = False
 
         # Visualization
         self._try_emit_visdom_obs(observations)
 
-        while not observations_for_ego or any(
-            observations_for_ego[agent].events for agent in observations_for_ego
-        ):
+        while not observations_for_ego or dones:
+            
+            observations, _, _, _ = self._agent_manager.observe(self)
+            observations_for_ego = self._agent_manager.reset_agents(observations)
+
             if len(self._agent_manager.ego_agent_ids):
                 while len(observations_for_ego) < 1:
                     observations_for_ego, _, _, _ = self.step({})
+
+            for agent in observations_for_ego:
+                dones = any(observations_for_ego[agent].events)
 
         self._reset_providers()
 
