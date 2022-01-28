@@ -143,6 +143,10 @@ class TrapManager:
             (v.position[:2], largest_vehicle_plane_dimension(v), v)
             for v in vehicles.values()
         ]
+        # TODO STEVE: remove...
+        self._log.debug(
+            f"STEVE {vehicles['car-flow-random-route-17fc695a-7772817341121806087--4-0.0']}"
+        )
 
         for agent_id in sim.agent_manager.pending_agent_ids:
             trap = self._traps[agent_id]
@@ -226,13 +230,6 @@ class TrapManager:
                 if overlapping:
                     self._log.debug(
                         f"trap manager would give new vehicle to {agent_id} but there's another vehicle there."
-                    )
-                    # STEVE TODO:  remove these later
-                    self._log.debug(
-                        f"STEVE {pos} {mission.start.position[:2]} {largest_dimension} {new_veh_maxd}"
-                    )
-                    self._log.debug(
-                        f"STEVE {squared_dist(pos, mission.start.position[:2])} <=? {(0.5 * (largest_dimension + new_veh_maxd)) ** 2}"
                     )
                     continue
 
