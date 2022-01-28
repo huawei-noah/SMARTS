@@ -144,9 +144,10 @@ class TrapManager:
             for v in vehicles.values()
         ]
         # TODO STEVE: remove...
-        self._log.debug(
-            f"STEVE {vehicles['car-flow-random-route-17fc695a-7772817341121806087--4-0.0']}"
-        )
+        if "car-flow-random-route-17fc695a-7772817341121806087--4-0.0" in vehicles:
+            self._log.debug(
+                f"STEVE {vehicles['car-flow-random-route-17fc695a-7772817341121806087--4-0.0']}"
+            )
 
         for agent_id in sim.agent_manager.pending_agent_ids:
             trap = self._traps[agent_id]
