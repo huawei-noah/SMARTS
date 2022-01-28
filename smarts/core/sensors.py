@@ -91,13 +91,13 @@ class EgoVehicleObservation(NamedTuple):
     """Vehicle velocity along body coordinate axes. A numpy array of shape=(3,) and dtype=np.float64."""
     angular_velocity: np.ndarray
     """Angular velocity vector. A numpy array of shape=(3,) and dtype=np.float64."""
-    linear_acceleration: np.ndarray
+    linear_acceleration: Optional[np.ndarray]
     """Linear acceleration vector. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
-    angular_acceleration: np.ndarray
+    angular_acceleration: Optional[np.ndarray]
     """Angular acceleration vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
-    linear_jerk: np.ndarray
+    linear_jerk: Optional[np.ndarray]
     """Linear jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
-    angular_jerk: np.ndarray
+    angular_jerk: Optional[np.ndarray]
     """Angular jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
 
 
@@ -184,23 +184,31 @@ class Observation:
     step_count: int
     """Number of steps taken by SMARTS thus far."""
     elapsed_sim_time: float
-    """Amout of simulation time elapsed."""
-    distance_travelled: float
-    drivable_area_grid_map: DrivableAreaGridMap
-    ego_vehicle_state: EgoVehicleObservation
+    """Amout of simulation time elapsed. Average step_time can be computed as 
+    elapsed_sim_time/step_count."""
     events: Events
+    ego_vehicle_state: EgoVehicleObservation
+    neighborhood_vehicle_states: Optional[List[VehicleObservation]]
+    waypoint_paths: Optional[List[List[Waypoint]]]
+    distance_travelled: float
     # TODO: Convert to `NamedTuple` or only return point cloud.
-    # [points], [hits], [(ray_origin, ray_direction)]
-    lidar_point_cloud: Tuple[
-        List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
+    lidar_point_cloud: Optional[
+        Tuple[List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]]
     ]
     """Lidar point cloud consists of [points, hits, (ray_origin, ray_vector)]."""
-    neighborhood_vehicle_states: List[VehicleObservation]
-    occupancy_grid_map: OccupancyGridMap
-    top_down_rgb: TopDownRGB
-    waypoint_paths: List[List[Waypoint]]
-    road_waypoints: Optional[RoadWaypoints] = None
-    via_data: Optional[Vias] = None
+    drivable_area_grid_map: Optional[DrivableAreaGridMap]
+    occupancy_grid_map: Optional[OccupancyGridMap]
+    top_down_rgb: Optional[TopDownRGB]
+    road_waypoints: Optional[RoadWaypoints]
+    via_data: Vias
+
+
+@dataclass
+class Collision:
+    """Represents a collision by an ego vehicle with another vehicle."""
+
+    # XXX: This might not work for boid agents
+    collidee_id: str
 
 
 class Sensors:
@@ -788,7 +796,7 @@ class LidarSensor(Sensor):
         self,
         vehicle,
         bullet_client,
-        sensor_params: SensorParams = None,
+        sensor_params: Optional[SensorParams] = None,
         lidar_offset=(0, 0, 1),
     ):
         self._vehicle = vehicle
@@ -822,7 +830,7 @@ class DrivenPathSensor(Sensor):
 
     Entry = namedtuple("TimeAndPos", ["timestamp", "position"])
 
-    def __init__(self, vehicle, max_path_length: float = 500):
+    def __init__(self, vehicle, max_path_length: int = 500):
         self._vehicle = vehicle
         self._driven_path = deque(maxlen=max_path_length)
 

@@ -46,13 +46,12 @@ from .bubble_manager import BubbleManager
 from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
 from .coordinates import BoundingBox, Point
-from .events import Collision
 from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
 from .provider import Provider, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
-from .sensors import Observation
+from .sensors import Collision, Observation
 from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
 from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
@@ -171,7 +170,7 @@ class SMARTS:
         self._vehicle_index = VehicleIndex()
 
         # TODO: Should not be stored in SMARTS
-        self._vehicle_collisions = defaultdict(list)
+        self._vehicle_collisions = defaultdict(list)  # list of `Collision` instances
         self._vehicle_states = []
 
         self._bubble_manager = None

@@ -58,6 +58,22 @@ setup(
         "opendrive2lanelet",
     ],
     extras_require={
+        "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
+        "dev": [
+            "black==20.8b1",
+            "grpcio-tools==1.32.0",
+            "isort==5.7.0",
+            "pre-commit==2.16.0",
+            "pylint>=2.12.2",
+            "pytype>=2022.1.13",
+        ],
+        "doc": [
+            "sphinx>=4.4.0",
+            "sphinx-rtd-theme>=1.0.0",
+            "sphinxcontrib-apidoc>=0.3.0",
+        ],
+        "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
+        "ros": ["catkin_pkg", "rospkg"],
         "test": [
             # The following are for testing
             "ipykernel>=6.5.0",
@@ -71,28 +87,12 @@ setup(
             "tensorflow>=2.4.0",  # For rllib tests
         ],
         "train": [
-            "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
-            # XXX: TF requires specific version of scipy
-            "scipy==1.4.1",
+            "ray[rllib]==1.0.1.post1",
             "tensorflow>=2.4.0",
             "torch==1.4.0",
             "torchvision==0.5.0",
         ],
-        "dev": [
-            "black==20.8b1",
-            "grpcio-tools==1.32.0",
-            "isort==5.7.0",
-            "pre-commit==2.16.0",
-            "pylint>=2.12.2",
-            "pytype>=2022.1.13",
-            "sphinx",
-            "sphinx-rtd-theme",
-            "sphinxcontrib-apidoc",
-        ],
-        "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
-        "ros": ["catkin_pkg", "rospkg"],
         "waymo": ["waymo-open-dataset-tf-2-2-0"],
-        "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )

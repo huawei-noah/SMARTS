@@ -80,7 +80,7 @@ jupyterlab-pygments==0.1.2
 keras==2.7.0
 Keras-Preprocessing==1.1.2
 kiwisolver==1.3.2
-libclang==12.0.0
+libclang==13.0.0
 lxml==4.7.1
 lz4==3.1.10
 Markdown==3.3.6
@@ -117,7 +117,7 @@ pickleshare==0.7.5
 Pillow==8.2.0
 pluggy==1.0.0
 prometheus-client==0.13.0
-prompt-toolkit==3.0.24
+prompt-toolkit==3.0.26
 protobuf==3.19.3
 psutil==5.9.0
 ptyprocess==0.7.0
@@ -171,7 +171,7 @@ tensorflow==2.7.0
 tensorflow-estimator==2.7.0
 tensorflow-io-gcs-filesystem==0.23.1
 termcolor==1.1.0
-terminado==0.12.1
+terminado==0.13.1
 testpath==0.5.0
 threadpoolctl==3.0.0
 tifffile==2021.11.2

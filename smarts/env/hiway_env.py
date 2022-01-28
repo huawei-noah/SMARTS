@@ -1,4 +1,4 @@
-# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 
 import logging
-import os
 import warnings
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
@@ -259,7 +258,7 @@ class HiWayEnv(gym.Env):
         return observations, rewards, dones, infos
 
     def reset(self) -> Dict[str, Observation]:
-        """Resets the environment and initializes to the next scenario.
+        """Reset the environment and initialize to the next scenario.
 
         Returns:
             Dict[str, Observation]: Agents' observation.

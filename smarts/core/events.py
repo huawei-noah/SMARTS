@@ -1,4 +1,4 @@
-# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,28 +17,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
-from dataclasses import dataclass
-from typing import List, NamedTuple, Optional
-
-
-@dataclass
-class Collision:
-    """Represents a collision by an ego vehicle with another vehicle."""
-
-    # XXX: This might not work for boid agents
-    collidee_id: str
+from typing import NamedTuple, Sequence
 
 
 class Events(NamedTuple):
     """Classified observations that can cause agent done state."""
 
-    agents_alive_done: bool
-    collisions: List[Optional[Collision]]
-    not_moving: bool
+    collisions: Sequence  # Sequence[Collision]
     off_road: bool
     off_route: bool
     on_shoulder: bool
+    wrong_way: bool
+    not_moving: bool
     reached_goal: bool
     reached_max_episode_steps: bool
-    wrong_way: bool
+    agents_alive_done: bool

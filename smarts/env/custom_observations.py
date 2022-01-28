@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Dict
 
 import gym
 import numpy as np
@@ -145,7 +145,20 @@ _LANE_TTC_OBSERVATION_SPACE = gym.spaces.Dict(
 )
 
 
-def lane_ttc(obs: Observation):
+def lane_ttc(obs: Observation) -> Dict[str, np.ndarray]:
+    """Computes time-to-collision (TTC) and distance-to-collision (DTC) using
+    the given agent's observation. TTC and DTC are numpy arrays of shape (3,)
+    with values for the right lane (at index [0]), current lane (at index [1]),
+    and left lane (at index [2]).
+
+    Args:
+        obs (Observation): Agent observation.
+
+    Returns:
+        Dict[str, np.ndarray]: Returns agent's distance from center
+            (shape=(1,)), angle_error (shape=(1,), speed (shape=(1,)), steering
+            (shape=(1,)), TTC (shape=(3,)), and DTC (shape=(3,)).
+    """
     ego = obs.ego_vehicle_state
     waypoint_paths = obs.waypoint_paths
     wps = [path[0] for path in waypoint_paths]
