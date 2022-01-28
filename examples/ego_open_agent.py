@@ -9,7 +9,8 @@ import logging
 import math
 
 import gym
-
+import sys
+sys.path.append('./src')
 from smarts.core.utils.episodes import episodes
 
 try:

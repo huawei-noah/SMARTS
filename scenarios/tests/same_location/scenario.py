@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Tuple
-
+import sys
+sys.path.append('./src')
 import smarts.sstudio.types as types
 from smarts.sstudio import gen_missions, gen_traffic
 

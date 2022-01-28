@@ -27,13 +27,13 @@ sanity-test: build-all-scenarios
 		--dist=loadscope \
 		--junitxml="sanity_test_result.xml" \
 		-n `expr \( \`nproc\` \/ 2 \& \`nproc\` \> 3 \) \| 2` \
-		./smarts/core/tests/test_python_version.py::test_python_version \
-		./smarts/core/tests/test_sumo_version.py::test_sumo_version \
-		./smarts/core/tests/test_dynamics_backend.py::test_set_pose \
-		./smarts/core/tests/test_sensors.py::test_waypoints_sensor \
-		./smarts/core/tests/test_smarts.py::test_smarts_doesnt_leak_tasks_after_reset \
-		./examples/tests/test_examples.py::test_examples[multi_agent] \
-		./smarts/env/tests/test_social_agent.py::test_social_agents
+		./src/smarts/core/tests/test_python_version.py::test_python_version \
+		./src/smarts/core/tests/test_sumo_version.py::test_sumo_version \
+		./src/smarts/core/tests/test_dynamics_backend.py::test_set_pose \
+		./src/smarts/core/tests/test_sensors.py::test_waypoints_sensor \
+		./src/smarts/core/tests/test_smarts.py::test_smarts_doesnt_leak_tasks_after_reset \
+		./src/examples/tests/test_examples.py::test_examples[multi_agent] \
+		./src/smarts/env/tests/test_social_agent.py::test_social_agents
 
 .PHONY: test-learning
 test-learning: build-all-scenarios

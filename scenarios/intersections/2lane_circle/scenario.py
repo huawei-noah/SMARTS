@@ -1,5 +1,6 @@
 import os
-
+import sys
+sys.path.append('./src')
 from smarts.sstudio import gen_social_agent_missions
 from smarts.sstudio.types import Mission, Route, SocialAgentActor
 

@@ -25,7 +25,8 @@ import logging
 import os
 import signal
 from concurrent import futures
-
+import sys
+sys.path.append('./src')
 import grpc
 
 from smarts.zoo import manager_pb2_grpc, manager_servicer

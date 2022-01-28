@@ -1,9 +1,10 @@
 from pathlib import Path
-
+import sys
+sys.path.append('./src')
 from smarts.core import seed
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-
+sys.path.append('./src')
 seed(42)
 
 traffic = t.Traffic(

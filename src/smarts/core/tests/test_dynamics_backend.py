@@ -23,7 +23,8 @@ import math
 
 import numpy as np
 import pytest
-
+import sys
+sys.path.append('./src')
 from smarts.core.chassis import AckermannChassis
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.utils import pybullet

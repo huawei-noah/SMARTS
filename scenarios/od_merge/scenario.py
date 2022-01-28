@@ -1,5 +1,6 @@
 from pathlib import Path
-
+import sys
+sys.path.append('./src')
 from smarts.sstudio import types as t
 from smarts.sstudio.genscenario import gen_scenario
 

@@ -24,7 +24,8 @@ from itertools import cycle
 
 import numpy as np
 import pytest
-
+import sys
+sys.path.append('./src')
 from smarts.core.agent_interface import (
     ActionSpaceType,
     AgentInterface,

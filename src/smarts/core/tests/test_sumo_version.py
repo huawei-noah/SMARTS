@@ -21,7 +21,8 @@
 # THE SOFTWARE.
 import os
 import subprocess
-
+import sys
+sys.path.append('./src')
 
 def test_sumo_lib():
     # import does runtime check by necessity

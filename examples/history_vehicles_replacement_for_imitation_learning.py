@@ -4,7 +4,8 @@ import pickle
 import random
 from dataclasses import replace
 from typing import Sequence, Tuple
-
+import sys
+sys.path.append('./src')
 from envision.client import Client as Envision
 from smarts.core import seed as random_seed
 from smarts.core.agent import Agent, AgentSpec

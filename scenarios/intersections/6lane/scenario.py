@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
-
+import sys
+sys.path.append('./src')
 from smarts.sstudio import gen_scenario
 from smarts.sstudio.types import Mission, Route, Scenario, SocialAgentActor
 

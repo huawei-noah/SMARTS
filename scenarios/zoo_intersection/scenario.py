@@ -1,6 +1,7 @@
 import os
 import random
-
+import sys
+sys.path.append('./src')
 from smarts.sstudio import gen_missions, gen_social_agent_missions, gen_traffic
 from smarts.sstudio.types import (
     Distribution,

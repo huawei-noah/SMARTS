@@ -4,7 +4,8 @@ gym.logger.set_level(40)
 
 from functools import partial
 from typing import Dict, Sequence, Tuple
-
+import sys
+sys.path.append('./src')
 from argument_parser import default_argument_parser
 
 from smarts.core.agent import Agent, AgentSpec

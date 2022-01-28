@@ -24,7 +24,8 @@ from unittest import mock
 import numpy as np
 import pytest
 from helpers.scenario import temp_scenario
-
+import sys
+sys.path.append('./src')
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.plan import Plan

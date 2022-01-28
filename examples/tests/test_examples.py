@@ -3,7 +3,8 @@ from pathlib import Path
 
 import psutil
 import pytest
-
+import sys
+sys.path.append('./src')
 from smarts.core.utils import import_utils
 
 import_utils.import_module_from_file(

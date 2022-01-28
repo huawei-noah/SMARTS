@@ -1,7 +1,8 @@
 import logging
 
 import gym
-
+import sys
+sys.path.append('./src')
 from smarts.core.utils.episodes import episodes
 
 # The following ugliness was made necessary because the `aiohttp` #

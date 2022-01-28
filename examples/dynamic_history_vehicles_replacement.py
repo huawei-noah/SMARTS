@@ -1,7 +1,8 @@
 import logging
 import random
 from typing import Any, Callable, Dict, Sequence
-
+import sys
+sys.path.append('./src')
 from envision.client import Client as Envision
 from examples.argument_parser import default_argument_parser
 from smarts.core import seed as random_seed

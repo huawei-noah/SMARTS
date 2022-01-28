@@ -2,7 +2,8 @@ import logging
 import os
 import pickle
 from typing import Any, Dict, Sequence
-
+import sys
+sys.path.append('./src')
 from envision.client import Client as Envision
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType

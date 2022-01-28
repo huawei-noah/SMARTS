@@ -1,7 +1,8 @@
 import logging
 
 import gym
-
+import sys
+sys.path.append('./src')
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes

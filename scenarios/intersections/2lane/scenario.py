@@ -1,5 +1,6 @@
 import os
-
+import sys
+sys.path.append('./src')
 from smarts.sstudio import gen_traffic
 from smarts.sstudio.types import (
     Distribution,
