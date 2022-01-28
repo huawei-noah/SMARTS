@@ -1,15 +1,12 @@
+import pathlib
+
 import gym
 
+from examples import build_scenario
+from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
-
-# The following ugliness was made necessary because the `aiohttp` #
-# dependency has an "examples" module too.  (See PR #1120.)
-if __name__ == "__main__":
-    from argument_parser import default_argument_parser
-else:
-    from .argument_parser import default_argument_parser
 
 N_AGENTS = 4
 AGENT_IDS = ["Agent %i" % i for i in range(N_AGENTS)]
@@ -20,7 +17,7 @@ class KeepLaneAgent(Agent):
         return "keep_lane"
 
 
-def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=None):
+def main(scenarios, headless, num_episodes, max_episode_steps=None):
     agent_specs = {
         agent_id: AgentSpec(
             interface=AgentInterface.from_type(
@@ -35,9 +32,8 @@ def main(scenarios, sim_name, headless, num_episodes, seed, max_episode_steps=No
         "smarts.env:hiway-v0",
         scenarios=scenarios,
         agent_specs=agent_specs,
-        sim_name=sim_name,
         headless=headless,
-        seed=seed,
+        sumo_headless=True,
     )
 
     for episode in episodes(n=num_episodes):
@@ -65,10 +61,15 @@ if __name__ == "__main__":
     parser = default_argument_parser("multi-agent-example")
     args = parser.parse_args()
 
+    if not args.scenarios:
+        args.scenarios = [
+            str(pathlib.Path(__file__).absolute().parents[1] / "scenarios" / "loop")
+        ]
+
+    build_scenario(args.scenarios)
+
     main(
         scenarios=args.scenarios,
-        sim_name=args.sim_name,
         headless=args.headless,
         num_episodes=args.episodes,
-        seed=args.seed,
     )

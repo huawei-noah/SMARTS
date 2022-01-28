@@ -1,3 +1,7 @@
+import subprocess
+from typing import List
+
+
 class RayException(Exception):
     """An exception raised if ray package is required but not available."""
 
@@ -10,4 +14,11 @@ class RayException(Exception):
         )
 
 
-from . import argument_parser as argument_parser
+def build_scenario(scenario: List[str]):
+    """Build the given scenarios.
+
+    Args:
+        scenario (List[str]): Scenarios to build.
+    """
+    build_scenario = " ".join(["scl scenario build-all"] + scenario)
+    subprocess.call(build_scenario, shell=True)

@@ -20,7 +20,7 @@
 
 import logging
 import warnings
-from typing import Dict, Sequence
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 import gym
 
@@ -28,45 +28,14 @@ from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
 from smarts.core.agent import AgentSpec
 from smarts.core.scenario import Scenario
+from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.visdom_client import VisdomClient
 
 
 class HiWayEnv(gym.Env):
-    """A complete gym environment that wraps a SMARTS simulation.
-
-    Args:
-        scenarios:
-            a list of directories of the scenarios that will be run
-        agent_specs:
-            a list of agents that will run in the environment
-        sim_name:
-            a string that gives this simulation a name
-        headless:
-            true|false envision disabled
-        visdom:
-            true|false visdom integration
-        fixed_timestep_sec:
-            the step length for all components of the simulation
-            (may be None if time deltas are externally-driven)
-        seed:
-            the seed for random number generation
-        num_external_sumo_clients:
-            the number of SUMO clients beyond SMARTS
-        sumo_headless:
-            true|false for SUMO visualization disabled [sumo-gui|sumo]
-        sumo_port:
-            used to specify a specific sumo port
-        sumo_auto_start:
-            true|false sumo will start automatically
-        envision_endpoint:
-            used to specify envision's uri
-        envision_record_data_replay_path:
-            used to specify envision's data replay output directory
-        zoo_addrs:
-            List of (ip, port) tuples of zoo server, used to instantiate remote social agents
-    """
+    """A generic environment for various driving tasks simulated by SMARTS."""
 
     metadata = {"render.modes": ["human"]}
     """Metadata for gym's use"""
@@ -75,22 +44,63 @@ class HiWayEnv(gym.Env):
         self,
         scenarios: Sequence[str],
         agent_specs: Dict[str, AgentSpec],
-        sim_name=None,
-        shuffle_scenarios=True,
-        headless=False,
-        visdom=False,
-        fixed_timestep_sec=None,
-        seed=42,
-        num_external_sumo_clients=0,
-        sumo_headless=True,
-        sumo_port=None,
-        sumo_auto_start=True,
-        endless_traffic=True,
-        envision_endpoint=None,
-        envision_record_data_replay_path=None,
-        zoo_addrs=None,
-        timestep_sec=None,  # for backwards compatibility (deprecated)
+        sim_name: Optional[str] = None,
+        shuffle_scenarios: bool = True,
+        headless: bool = True,
+        visdom: bool = False,
+        fixed_timestep_sec: Optional[float] = None,
+        seed: int = 42,
+        num_external_sumo_clients: int = 0,
+        sumo_headless: bool = True,
+        sumo_port: Optional[str] = None,
+        sumo_auto_start: bool = True,
+        endless_traffic: bool = True,
+        envision_endpoint: Optional[str] = None,
+        envision_record_data_replay_path: Optional[str] = None,
+        zoo_addrs: Optional[str] = None,
+        timestep_sec: Optional[
+            float
+        ] = None,  # for backwards compatibility (deprecated)
     ):
+        """
+        Args:
+            scenarios (Sequence[str]):  A list of scenario directories that
+                will be simulated.
+            agent_specs (Dict[str, AgentSpec]): Specification of the agents
+                that will run in the environment.
+            sim_name (Optional[str], optional): Simulation name. Defaults to
+                None.
+            shuffle_scenarios (bool, optional): If true, order of scenarios
+                will be randomized, else it will be maintained. Defaults to
+                True.
+            headless (bool, optional): If True, disables visualization in
+                Envision. Defaults to False.
+            visdom (bool, optional): If True, enables visualization of observed
+                RGB images in Visdom. Defaults to False.
+            fixed_timestep_sec (Optional[float], optional): Step duration for
+                all components of the simulation. May be None if time deltas
+                are externally-driven. Defaults to None.
+            seed (int, optional): Random number generator seed. Defaults to 42.
+            num_external_sumo_clients (int, optional): Number of SUMO clients
+                beyond SMARTS. Defaults to 0.
+            sumo_headless (bool, optional): If True, disables visualization in
+                SUMO GUI. Defaults to True.
+            sumo_port (Optional[str], optional): SUMO port. Defaults to None.
+            sumo_auto_start (bool, optional): Automatic starting of SUMO.
+                Defaults to True.
+            endless_traffic (bool, optional): SUMO's endless traffic setting.
+                Defaults to True.
+            envision_endpoint (Optional[str], optional): Envision's uri.
+                Defaults to None.
+            envision_record_data_replay_path (Optional[str], optional):
+                Envision's data replay output directory. Defaults to None.
+            zoo_addrs (Optional[str], optional): List of (ip, port) tuples of
+                zoo server, used to instantiate remote social agents. Defaults
+                to None.
+            timestep_sec (Optional[float], optional): [description]. Defaults
+                to None.
+        """
+
         self._log = logging.getLogger(self.__class__.__name__)
         self.seed(seed)
 
@@ -164,27 +174,23 @@ class HiWayEnv(gym.Env):
 
     @property
     def agent_specs(self) -> Dict[str, AgentSpec]:
-        """Agent specs currently in use for this simulation.
+        """Agents' specifications used in this simulation.
 
         Returns:
-            A list of AgentSpec.
+            (Dict[str, AgentSpec]): Agents' specifications.
         """
         return self._agent_specs
 
     @property
-    def scenario_log(self):
-        """Simulation step logs.
+    def scenario_log(self) -> Dict[str, Union[float, str]]:
+        """Simulation steps log.
 
         Returns:
-            A dictionary with the following:
-                fixed_timestep_sec:
-                    The timestep of the simulation.
-                scenario_map:
-                    The name of the current scenario.
-                scenario_routes:
-                    The routes in the map.
-                mission_hash:
-                    The hash identifier for the current scenario.
+            Dict[str, Union[float,str]]: A dictionary with the following keys.
+                fixed_timestep_sec - Simulation timestep.
+                scenario_map - Name of the current scenario.
+                scenario_routes - Routes in the map.
+                mission_hash - Hash identifier for the current scenario.
         """
 
         scenario = self._smarts.scenario
@@ -196,12 +202,31 @@ class HiWayEnv(gym.Env):
         }
 
     def seed(self, seed: int) -> int:
-        """Set the seed of this environment."""
+        """Sets random number generator seed number.
+
+        Args:
+            seed (int): Seed number.
+
+        Returns:
+            int: Seed number.
+        """
         smarts_seed(seed)
         return seed
 
-    def step(self, agent_actions):
-        """Step and return observations, rewards, dones, and infos."""
+    def step(
+        self, agent_actions
+    ) -> Tuple[
+        Dict[str, Observation], Dict[str, float], Dict[str, bool], Dict[str, Any]
+    ]:
+        """Steps the environment.
+
+        Args:
+            agent_actions (Dict[str, Any]): Action taken for each agent.
+
+        Returns:
+            Tuple[ Dict[str, Observation], Dict[str, float], Dict[str, bool], Dict[str, Any] ]:
+                Observations, rewards, dones, and infos for active agents.
+        """
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
@@ -232,8 +257,12 @@ class HiWayEnv(gym.Env):
 
         return observations, rewards, dones, infos
 
-    def reset(self):
-        """Reset the environment and reinitialize to the next scenario."""
+    def reset(self) -> Dict[str, Observation]:
+        """Reset the environment and initialize to the next scenario.
+
+        Returns:
+            Dict[str, Observation]: Agents' observation.
+        """
         scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
@@ -251,7 +280,7 @@ class HiWayEnv(gym.Env):
         pass
 
     def close(self):
-        """Clean up all remaining resources."""
+        """Closes the environment and releases all resources."""
         if self._smarts is not None:
             self._smarts.destroy()
             self._smarts = None
