@@ -21,13 +21,12 @@
 import dataclasses
 
 import gym
-import numpy as np
 import pytest
 
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, Waypoints
 from smarts.core.controllers import ActionSpaceType
-from smarts.env.wrappers.standard_obs import StandardObs, get_spaces, intrfc_to_stdobs
+from smarts.env.wrappers.format_obs import FormatObs, get_spaces, intrfc_to_stdobs
 
 
 def _intrfcs_init():
@@ -56,6 +55,7 @@ def _intrfcs_obs():
 
     return [
         [base_intrfc] * 2,
+        [dict(base_intrfc, **{"accelerometer": False})] * 2,
         [dict(base_intrfc, **{"waypoints": Waypoints(lookahead=50)})] * 2,
     ]
 
@@ -111,13 +111,13 @@ def test_init(make_env, spaces):
     ]
     if not all(intrfc == base_intrfcs[0] for intrfc in base_intrfcs):
         with pytest.raises(AssertionError):
-            env = StandardObs(env=base_env)
+            env = FormatObs(env=base_env)
             env.close()
         return
-    else:
-        env = StandardObs(env=base_env)
 
-    # Test observation space of wrapped env
+    env = FormatObs(env=base_env)
+
+    # Test whether observation space of wrapped env is created properly
     agent_id = next(iter(base_env.agent_specs.keys()))
     rcv_space = env.observation_space
     rcv_space_keys = set([key for key in rcv_space[agent_id]])
@@ -158,7 +158,7 @@ def _check_observation(
 @pytest.mark.parametrize("make_env", _intrfcs_obs(), indirect=True)
 def test_observation(make_env):
     base_env, _ = make_env
-    env = StandardObs(env=base_env)
+    env = FormatObs(env=base_env)
     rcv_space = env.observation_space
 
     # Test whether returned observation matches observation space
