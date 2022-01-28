@@ -123,11 +123,11 @@ class StdObs:
     hit:
         Binary array. 1 if an object is hit, else 0. shape(300,).
     point_cloud:
-        Coordinates of lidar point cloud. shape=(300,3). dtype=np.float32.
+        Coordinates of lidar point cloud. shape=(300,3). dtype=np.float64.
     ray_origin:
-        Ray origin coordinates. shape=(300,3). dtype=np.float32.
+        Ray origin coordinates. shape=(300,3). dtype=np.float64.
     ray_vector:
-        Ray vectors. shape=(300,3). dtype=np.float32.
+        Ray vectors. shape=(300,3). dtype=np.float64.
     """
     neighbors: Optional[Dict[str, np.ndarray]] = None
     """Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
@@ -344,9 +344,9 @@ def get_spaces() -> Tuple[Dict[str, gym.Space], Dict[str, Callable[[Any], gym.Sp
         "dagm": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
         "lidar": lambda _: gym.spaces.Dict({
             "hit": gym.spaces.MultiBinary(_LIDAR_SHP),
-            "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float32),
-            "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float32),
-            "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float32),
+            "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
+            "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
+            "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
         }),
         "neighbors": lambda _: gym.spaces.Dict({
             "box": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),
@@ -458,17 +458,17 @@ def _std_lidar(
 
     des_shp = _LIDAR_SHP
     hit = np.array(val[1], dtype=np.int8)
-    point_cloud = np.array(val[0], dtype=np.float32)
+    point_cloud = np.array(val[0], dtype=np.float64)
     point_cloud = np.nan_to_num(
         point_cloud,
         copy=False,
-        nan=np.float32(0),
-        posinf=np.float32(0),
-        neginf=np.float32(0),
+        nan=np.float64(0),
+        posinf=np.float64(0),
+        neginf=np.float64(0),
     )
     ray_origin, ray_vector = zip(*(val[2]))
-    ray_origin = np.array(ray_origin, np.float32)
-    ray_vector = np.array(ray_vector, np.float32)
+    ray_origin = np.array(ray_origin, np.float64)
+    ray_vector = np.array(ray_vector, np.float64)
 
     try:
         assert hit.shape == (des_shp,)
