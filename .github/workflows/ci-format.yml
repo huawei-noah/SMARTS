@@ -9,7 +9,7 @@ jobs:
   test-header:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.5.1-minimal
+    container: huaweinoah/smarts:v0.5.0-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -21,7 +21,7 @@ jobs:
   test-docstring:
     runs-on: ubuntu-18.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.5.1-minimal
+    container: huaweinoah/smarts:v0.5.0-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
