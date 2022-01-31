@@ -9,17 +9,12 @@ from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
 from smarts.env.wrappers.single_agent import SingleAgent
 
-# The following ugliness was made necessary because the `aiohttp` #
-# dependency has an "examples" module too.  (See PR #1120.)
-if __name__ == "__main__":
-    from argument_parser import default_argument_parser
-else:
-    from .argument_parser import default_argument_parser
+from examples.argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
 AGENT_ID = "WaypointTrackingAgent"
-
+MIN_WAYPOINTS = 10
 
 class WaypointTrackingAgent(Agent):
     def __init__(self):
@@ -70,7 +65,7 @@ class WaypointTrackingAgent(Agent):
         else:
             chosen_waypoint_path = obs.waypoint_paths[wp_index]
 
-        num_trajectory_points = min([10, len(chosen_waypoint_path)])
+        num_trajectory_points = min([MIN_WAYPOINTS, len(chosen_waypoint_path)])
         trajectory = [
             [chosen_waypoint_path[i].pos[0] for i in range(num_trajectory_points)],
             [chosen_waypoint_path[i].pos[1] for i in range(num_trajectory_points)],
