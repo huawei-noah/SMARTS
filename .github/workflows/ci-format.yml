@@ -1,0 +1,39 @@
+name: SMARTS CI Format
+
+on: [push, pull_request]
+
+env:
+  venv_dir: .venv
+
+jobs:
+  test-header:
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: huaweinoah/smarts:v0.4.18-minimal
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Check header
+        run: |
+          cd $GITHUB_WORKSPACE
+          make header-test
+
+  test-docstring:
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: huaweinoah/smarts:v0.4.18-minimal
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Check docstring
+        run: |
+          cd $GITHUB_WORKSPACE
+          pip install --upgrade pip
+          pip install pylint
+          pylint -d all \
+            -e missing-function-docstring \
+            -e missing-class-docstring \
+            -s n \
+            --ignore marl_benchmark,examples,scenarios,docs,manager_pb2_grpc.py,worker_pb2_grpc.py \
+            --msg-template='{path}: line {line}: {msg_id}: {msg}' \
+            ./smarts ./envision

@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from sys import maxsize
-from typing import Dict, FrozenSet, Optional, Sequence, Set
+from typing import Dict, FrozenSet, Optional, Sequence, Set, Union
 
 from shapely.affinity import rotate, translate
 from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
@@ -43,6 +43,8 @@ from smarts.zoo.registry import make as make_social_agent
 
 
 class BubbleTransition(Enum):
+    """Describes a bubble transition state."""
+
     # --> [  AirlockEntered  [  Entered  ]  Exited  ]  AirlockExited -->
     AirlockEntered = 0  # --> (Airlock)
     Entered = 1  # Airlock --> (Bubble)
@@ -51,6 +53,8 @@ class BubbleTransition(Enum):
 
 
 class BubbleState(Enum):
+    """Describes the actor's occupancy in a bubble."""
+
     InBubble = 0
     InAirlock = 1
 
@@ -99,40 +103,52 @@ class Bubble:
 
     @property
     def exclusion_prefixes(self):
+        """The blacklist of actor prefixes, used to ignore specific actors."""
         return self._exclusion_prefixes
 
     @property
     def id(self):
+        """The id of the underlying bubble."""
         return self._bubble.id
 
     @property
     def actor(self) -> SocialAgentActor:
+        """The actor that should replace the captured actor."""
         return self._bubble.actor
 
     @property
     def follow_actor_id(self) -> str:
+        """A target actor that the bubble should remain at a fixed offset from."""
         return self._bubble.follow_actor_id
 
     @property
     def limit(self):
+        """The maximum number of actors that the bubble can have captured at the same time."""
         return self._limit
 
     @property
     def is_boid(self):
+        """If the actors captured by the bubble should be controlled by a boid agent."""
         return self._bubble.is_boid
 
     @property
     def keep_alive(self):
+        """If enabled, the social agent actor will be spawned upon first vehicle airlock
+        and be reused for every subsequent vehicle entering the bubble until the episode
+        is over.
+        """
         return self._bubble.keep_alive
 
     # XXX: In the case of travelling bubbles, the geometry and zone are moving
     #      according to the follow vehicle.
     @property
     def geometry(self) -> Polygon:
+        """The geometry of the managed bubble."""
         return self._cached_inner_geometry
 
     @property
     def airlock_geometry(self) -> Polygon:
+        """The airlock geometry of the managed bubble."""
         return self._cached_airlock_geometry
 
     def admissibility(
@@ -187,7 +203,8 @@ class Bubble:
 
         return hijackable, shadowable
 
-    def in_bubble_or_airlock(self, position):
+    def in_bubble_or_airlock(self, position: Union[Point, list]):
+        """Test if the position is within the bubble or airlock around the bubble."""
         if not isinstance(position, Point):
             position = Point(position)
 
@@ -200,9 +217,11 @@ class Bubble:
 
     @property
     def is_travelling(self):
+        """If the bubble is following an actor."""
         return self._bubble.follow_actor_id is not None
 
     def move_to_follow_vehicle(self, vehicle: Vehicle):
+        """Move the bubble to a pose relative to the given vehicle."""
         x, y, _ = vehicle.position
 
         def _transform(geom):
@@ -241,7 +260,7 @@ class Bubble:
 
 @dataclass(frozen=True, eq=True)
 class Cursor:
-    """Tracks a vehicle through an airlock or a bubble."""
+    """Tracks an actor through an airlock or a bubble."""
 
     # We would always want to have the vehicle go through the airlock zone. This may
     # not be the case if we spawn a vehicle in a bubble, but that wouldn't be ideal.
@@ -253,13 +272,28 @@ class Cursor:
     @classmethod
     def from_pos(
         cls,
-        pos,
-        vehicle,
-        bubble,
-        index,
+        pos: Point,
+        vehicle: Vehicle,
+        bubble: Bubble,
+        index: VehicleIndex,
         vehicle_ids_per_bubble: Dict[Bubble, Set[str]],
         running_cursors: Set["Cursor"],
-    ):
+    ) -> "Cursor":
+        """Generate a cursor.
+        Args:
+            pos (Point):
+                The shapely position of the vehicle.
+            vehicle (Vehicle):
+                The vehicle that is to be tracked.
+            bubble (Bubble):
+                The bubble that the vehicle is interacting with.
+            index (VehicleIndex):
+                The vehicle index the vehicle is in.
+            vehicle_ids_per_bubble (Dict[Bubble, Set[str]]):
+                Bubbles associated with vehicle ids.
+            running_cursors (Set["Cursor"]):
+                A set of existing cursors.
+        """
         in_bubble_zone, in_airlock_zone = bubble.in_bubble_or_airlock(pos)
         is_social = vehicle.id in index.social_vehicle_ids()
         is_hijacked, is_shadowed = index.vehicle_is_hijacked_or_shadowed(vehicle.id)
@@ -305,6 +339,8 @@ class Cursor:
 
 
 class BubbleManager:
+    """Manages bubble interactions."""
+
     def __init__(self, bubbles: Sequence[SSBubble], road_map: RoadMap):
         self._log = logging.getLogger(self.__class__.__name__)
         self._cursors = set()
@@ -313,6 +349,7 @@ class BubbleManager:
 
     @property
     def bubbles(self) -> Sequence[Bubble]:
+        """A sequence of currently active bubbles."""
         return self._active_bubbles()
 
     def _active_bubbles(self) -> Sequence[Bubble]:
@@ -345,12 +382,14 @@ class BubbleManager:
         cls,
         cursors: FrozenSet[Cursor],
     ) -> Dict[Bubble, Set[str]]:
+        """Bubbles associated with the vehicles they contain."""
         vid = cls._vehicle_ids_divided_by_bubble_state(cursors)
         return defaultdict(
             set, {**vid[BubbleState.InBubble], **vid[BubbleState.InAirlock]}
         )
 
     def step(self, sim):
+        """Update the associations between bubbles, actors, and agents"""
         self._move_travelling_bubbles(sim)
         self._cursors = self._sync_cursors(self._last_vehicle_index, sim.vehicle_index)
         self._handle_transitions(sim, self._cursors)
@@ -582,5 +621,6 @@ class BubbleManager:
         return f"BUBBLE-AGENT-{truncate(social_agent_actor.id, 48)}"
 
     def teardown(self):
+        """Clean up internal state."""
         self._cursors = []
         self._bubbles = []

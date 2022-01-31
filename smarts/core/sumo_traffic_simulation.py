@@ -38,6 +38,7 @@ from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
+
 from smarts.core.utils.sumo import SUMO_PATH, traci  # isort:skip
 from traci.exceptions import FatalTraCIError, TraCIException  # isort:skip
 import traci.constants as tc  # isort:skip
@@ -49,7 +50,7 @@ class SumoTrafficSimulation(Provider):
         headless:
             False to run with `sumo-gui`. True to run with `sumo`
         time_resolution:
-            SUMO simulation is descretized into steps of `time_resolution` seconds
+            SUMO simulation occurs in discrete `time_resolution`-second steps
             WARNING:
                 Since our interface(TRACI) to SUMO is delayed by one simulation step,
                 setting a higher time resolution may lead to unexpected artifacts
@@ -134,6 +135,7 @@ class SumoTrafficSimulation(Provider):
         return repr(self)
 
     def destroy(self):
+        """Clean up TraCI related connections."""
         self._close_traci_and_pipes()
         if not self._is_setup:
             return
@@ -142,6 +144,7 @@ class SumoTrafficSimulation(Provider):
 
     @property
     def headless(self):
+        """Does not show TraCI visualization."""
         return self._headless
 
     def _initialize_traci_conn(self, num_retries=5):
@@ -191,7 +194,7 @@ class SumoTrafficSimulation(Provider):
                     self._close_traci_and_pipes()
                     continue
                 except TraCIException as e:
-                    logging.debug(f"Unknown connection issue has occured: {e}")
+                    logging.debug(f"Unknown connection issue has occurred: {e}")
                     self._close_traci_and_pipes()
             except ConnectionRefusedError:
                 logging.debug(
@@ -248,12 +251,16 @@ class SumoTrafficSimulation(Provider):
         if self._auto_start:
             load_params.append("--start")
 
+        ## See for more information about --route-files
+        # https://sumo.dlr.de/docs/Simulation/Basic_Definition.html#traffic_demand_routes
+        # https://sumo.dlr.de/docs/sumo.html#loading_order_of_input_files
         if self._scenario.route_files_enabled:
             load_params.append("--route-files={}".format(self._scenario.route_filepath))
 
         return load_params
 
     def setup(self, next_scenario) -> ProviderState:
+        """Initialize the simulation with a new scenario."""
         self._log.debug("Setting up SumoTrafficSim %s" % self)
         assert not self._is_setup, (
             "Can't setup twice, %s, see teardown()" % self._is_setup
@@ -331,6 +338,7 @@ class SumoTrafficSimulation(Provider):
             self._traci_conn.vehicle.remove(vehicle_id)
 
     def teardown(self):
+        """Clean up resources as are needed."""
         self._log.debug("Tearing down SUMO traffic sim %s" % self)
         if not self._is_setup:
             self._log.debug("Nothing to teardown")
@@ -536,6 +544,7 @@ class SumoTrafficSimulation(Provider):
         self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
 
     def update_route_for_vehicle(self, vehicle_id, new_route_edges):
+        """Set a new route for the given vehicle."""
         if not self.connected:
             return
         try:
@@ -743,6 +752,7 @@ class SumoTrafficSimulation(Provider):
             self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
 
     def vehicle_route(self, vehicle_id) -> Sequence[str]:
+        """Get the route of the given vehicle."""
         if not self.connected:
             return []
         try:
@@ -766,6 +776,7 @@ class SumoTrafficSimulation(Provider):
         self._reserved_areas[vehicle_id] = reserved_location
 
     def remove_traffic_vehicle(self, vehicle_id: str):
+        """Remove the given vehicle from the traffic simulation."""
         if not self.connected:
             return
         try:

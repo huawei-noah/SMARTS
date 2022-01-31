@@ -38,13 +38,20 @@ METER_PER_SECOND_TO_KM_PER_HR = 3.6
 
 
 class ActuatorDynamicControllerState:
+    """Controller state information"""
+
     def __init__(self):
         self.last_steering_angle = 0
 
 
 class ActuatorDynamicController:
+    """A controller that maintains the last steering angle."""
+
     @classmethod
     def perform_action(cls, vehicle, action, state, dt_sec):
+        """Perform throttle, break, and steering, keeping the previous steering angle as the start
+        for the next steering angle.
+        """
         throttle, brake, steering_change = action
 
         # The following is the normalized steering change

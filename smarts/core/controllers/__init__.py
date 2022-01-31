@@ -40,6 +40,8 @@ METER_PER_SECOND_TO_KM_PER_HR = 3.6
 
 
 class ActionSpaceType(Enum):
+    """Available vehicle action spaces."""
+
     Continuous = 0
     Lane = 1
     ActuatorDynamic = 2
@@ -53,6 +55,8 @@ class ActionSpaceType(Enum):
 
 
 class Controllers:
+    """Handles vehicle controller selection."""
+
     @staticmethod
     def perform_action(
         sim,
@@ -64,6 +68,25 @@ class Controllers:
         action_space,
         vehicle_type,
     ):
+        """Calls control for the given vehicle based on a given action space and action.
+        Args:
+            sim:
+                A simulation instance.
+            agent_id:
+                An agent within the simulation that is associated with a vehicle.
+            vehicle:
+                A vehicle within the simulation that is associated with an agent.
+            action:
+                The action for the controller to perform.
+            controller_state:
+                The last vehicle controller state as relates to its action space.
+            sensor_state:
+                The state of a vehicle sensor as relates to vehicle sensors.
+            action_space:
+                The action space of the provided action.
+            vehicle_type:
+                Vehicle type information about the given vehicle.
+        """
         if action is None:
             return
         if vehicle_type == "bus":
@@ -130,12 +153,17 @@ class Controllers:
 
 
 class ControllerOutOfLaneException(Exception):
+    """Represents an error due to a vehicle straying too far from any available lane."""
+
     pass
 
 
 class ControllerState:
+    """Controller state"""
+
     @staticmethod
     def from_action_space(action_space, vehicle_pose, sim):
+        """Generate the appropriate controller state given an action space."""
         if action_space in (
             ActionSpaceType.Lane,
             ActionSpaceType.LaneWithContinuousSpeed,

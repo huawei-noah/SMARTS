@@ -28,13 +28,13 @@ What Agent code does is out of our direct control, we want to avoid any interact
 To protect and isolate Agents from any pollution of global state in the main SMARTS process, we spawn Agents in their fresh and independent python process.
 
 This script is called from within SMARTS to instantiate a remote agent.
-The protocal is as follows:
+The protocol is as follows:
 
 1. SMARTS calls: worker.py --port 5467 # sets a unique port per agent
 2. worker.py will begin listening on port 5467.
 3. SMARTS connects to (ip, 5467) as a client.
 4. SMARTS calls `build()` rpc with `AgentSpec` as input.
-5. worker.py recieves the `AgentSpec` instances and builds the Agent.
+5. worker.py receives the `AgentSpec` instances and builds the Agent.
 6. SMARTS calls `act()` rpc with observation as input and receives the actions as response from worker.py.
 """
 
@@ -81,6 +81,7 @@ log = logging.getLogger(f"worker.py - pid({os.getpid()})")
 
 
 def serve(port):
+    """Start an agent worker server."""
     ip = "[::]"
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
     worker_pb2_grpc.add_WorkerServicer_to_server(

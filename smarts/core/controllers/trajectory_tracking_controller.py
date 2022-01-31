@@ -18,14 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-from enum import Enum
-from functools import partial
 
 import numpy as np
 from numpy.linalg import matrix_power
-from scipy import signal
 
-from smarts.core.chassis import AckermannChassis
 from smarts.core.utils.math import (
     lerp,
     low_pass_filter,
@@ -38,6 +34,8 @@ METER_PER_SECOND_TO_KM_PER_HR = 3.6
 
 
 class TrajectoryTrackingControllerState:
+    """Controller state"""
+
     def __init__(self):
         self.heading_error_gain = None
         self.lateral_error_gain = None
@@ -51,16 +49,19 @@ class TrajectoryTrackingControllerState:
 
 
 class TrajectoryTrackingController:
+    """A trajectory tracking controller."""
+
     @staticmethod
     def perform_trajectory_tracking_MPC(
         trajectory, vehicle, state, dt_sec, prediction_horizon=5
     ):
+        """Attempts model predictive control for the given vehicle given an expected trajectory."""
         half_vehicle_len = vehicle.length / 2
         vehicle_mass, vehicle_inertia_z = vehicle.chassis.mass_and_inertia
         (
             heading_error,
             lateral_error,
-        ) = TrajectoryTrackingController.calulate_heading_lateral_error(
+        ) = TrajectoryTrackingController.calculate_heading_lateral_error(
             vehicle=vehicle,
             trajectory=trajectory,
             initial_look_ahead_distant=3,
@@ -172,6 +173,9 @@ class TrajectoryTrackingController:
         state,
         dt_sec,
     ):
+        """Attempts proportional derivative control for the vehicle given an expected
+        trajectory.
+        """
         # Controller parameters for trajectory tracking.
         params = vehicle.chassis.controller_parameters
         final_heading_gain = params["final_heading_gain"]
@@ -249,7 +253,7 @@ class TrajectoryTrackingController:
         (
             heading_error,
             lateral_error,
-        ) = TrajectoryTrackingController.calulate_heading_lateral_error(
+        ) = TrajectoryTrackingController.calculate_heading_lateral_error(
             vehicle, trajectory, initial_look_ahead_distant, speed_reduction_activation
         )
 
@@ -270,7 +274,7 @@ class TrajectoryTrackingController:
         # lateral control gains.
         # TODO: The lateral and heading gains of the steering controller should be
         # calculated based on the current velocity. The coefficient value for the
-        # feed forward term is 0.1 and it depends on the cornering stifness and
+        # feed forward term is 0.1 and it depends on the cornering stiffness and
         # vehicle inertia properties.
         steering_feed_forward_term = 0.1 * (1 / curvature_radius) * (vehicle.speed) ** 2
         steering_raw = np.clip(
@@ -334,6 +338,7 @@ class TrajectoryTrackingController:
         throttle_filter_constant,
         dt_sec,
     ):
+        """Applies filters to the throttle for stability."""
         desired_speed = trajectory[3][-1]
         # If the vehicle is on the curvy portion of the road, then the desired speed
         # will be reduced to 80 percent of the desired speed of the trajectory.
@@ -383,9 +388,10 @@ class TrajectoryTrackingController:
         return (state.throttle_state, desired_speed)
 
     @staticmethod
-    def calulate_heading_lateral_error(
+    def calculate_heading_lateral_error(
         vehicle, trajectory, initial_look_ahead_distant, speed_reduction_activation
     ):
+        """Determine vehicle heading error and lateral error in regards to the given trajectory."""
         heading_error = min_angles_difference_signed(
             (vehicle.heading % (2 * math.pi)), trajectory[2][0]
         )
@@ -429,6 +435,7 @@ class TrajectoryTrackingController:
 
     @staticmethod
     def curvature_calculation(trajectory, offset=0, num_points=5):
+        """Attempts to approximate the curvature radius of a trajectory"""
         number_ahead_points = num_points
         relative_heading_sum, relative_distant_sum = 0, 0
 
@@ -460,6 +467,7 @@ class TrajectoryTrackingController:
 
     @staticmethod
     def mpc_drift_matrix(vehicle, trajectory, prediction_horizon=1):
+        """TODO: Clarify"""
         half_vehicle_len = vehicle.length / 2
         vehicle_mass, vehicle_inertia_z = vehicle.chassis.mass_and_inertia
         factor_matrix = np.array(
@@ -516,9 +524,10 @@ class TrajectoryTrackingController:
         drift_matrix,
         prediction_horizon=5,
     ):
-        # Implementation of MPC, please see the following ref:
-        # Convex Optimization – Boyd and Vandenberghe
-        # https://markcannon.github.io/assets/downloads/teaching/C21_Model_Predictive_Control/mpc_notes.pdf
+        """Implementation of MPC, please see the following ref:
+        Convex Optimization – Boyd and Vandenberghe
+        https://markcannon.github.io/assets/downloads/teaching/C21_Model_Predictive_Control/mpc_notes.pdf
+        """
         matrix_A = np.eye(state_matrix.shape[0]) + dt * state_matrix
         matrix_B = dt * input_matrix
         matrix_B0 = dt * drift_matrix

@@ -21,20 +21,22 @@ is a Python `NamedTuple` with the following fields:
     * `reached_max_episode_steps` - `True` if the vehicle has reached its max episode steps
 * `ego_vehicle_state` - a `VehicleObservation` `NamedTuple` for the ego vehicle with the following fields:
     * `id` - a string identifier for this vehicle
-    * `position` - A 3D numpy array (x, y, z) of the center of the vehicle bounding box's bottom plane
+    * `position` - Coordinate of the center of the vehicle bounding box's bottom plane. shape=(3,). dtype=np.float64.
     * `bounding_box` - `Dimensions` data class for the `length`, `width`, `height` of the vehicle
     * `heading` - vehicle heading in radians
     * `speed` - agent speed in m/s
     * `steering` - angle of front wheels in radians
     * `yaw_rate` - rotational speed in radian per second
+    * `road_id` - the identifier for the road nearest to this vehicle
     * `lane_id` - a globally unique identifier of the lane under this vehicle 
     * `lane_index` - index of the lane under this vehicle, right most lane has index 0 and the index increments to the left
-    * `linear_velocity` - A 3D numpy array of vehicle velocities in body coordinate frame
-    * `angular_velocity` - A 3D numpy array of angular velocity vector
-    * `linear_acceleration` - A 3D numpy array of linear acceleration vector (requires accelerometer sensor)
-    * `angular_acceleration` - A 3D numpy array of angular acceleration vector (requires accelerometer sensor)
-    * `linear_jerk` - A 3D numpy array of linear jerk vector (requires accelerometer sensor)
-    * `angular_jerk` - A 3D numpy array of angular jerk vector (requires accelerometer sensor)
+    * `mission` - a field describing the vehicle plotted route
+    * `linear_velocity` - Vehicle velocity along body coordinate axes. A numpy array of shape=(3,) and dtype=np.float64.
+    * `angular_velocity` - Angular velocity vector. A numpy array of shape=(3,) and dtype=np.float64.
+    * `linear_acceleration` - Linear acceleration vector. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor.
+    * `angular_acceleration` - Angular acceleration vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor. 
+    * `linear_jerk` - Linear jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor.
+    * `angular_jerk` - Angular jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor. 
 * `neighborhood_vehicle_states` - a list of `VehicleObservation` `NamedTuple`s, each with the following fields:
     * `position`, `bounding_box`, `heading`, `speed`, `lane_id`, `lane_index` - the same as with `ego_vehicle_state`
 * `GridMapMetadata` - Metadata for the observation maps with the following information,

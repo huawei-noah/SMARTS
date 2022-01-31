@@ -27,7 +27,8 @@ import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import List, NamedTuple, Sequence, Tuple
+from typing import List, NamedTuple, Optional, Sequence, Tuple
+
 import numpy as np
 
 with warnings.catch_warnings():
@@ -39,7 +40,7 @@ with warnings.catch_warnings():
         # aggressive
         from sklearn.neighbors import KDTree
 
-from smarts.core.coordinates import Heading, Pose, Point
+from smarts.core.coordinates import Heading, Point, Pose
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
     fast_quaternion_from_angle,
@@ -52,12 +53,19 @@ from smarts.core.utils.math import (
 
 @dataclass(frozen=True)
 class LanePoint:
+    """A point on a lane."""
+
     lane: RoadMap.Lane
+    """The lane this point is on."""
     pose: Pose
+    """The pose of this lane."""
     lane_width: float
+    """The width of the lane at this point."""
 
 
 class LinkedLanePoint(NamedTuple):
+    """A lane point that is linked to the next points in the road network."""
+
     lp: LanePoint = None
     is_inferred: bool = True
     nexts: List[LinkedLanePoint] = []  # list of next immediate LanePoint(s)
@@ -71,6 +79,8 @@ class LinkedLanePoint(NamedTuple):
 
 
 class LanePoints:
+    """A LanePoint utility class."""
+
     def __init__(self, shape_lps: List[LinkedLanePoint], spacing: float):
         # self._road_map = road_map
 
@@ -582,9 +592,20 @@ class LanePoints:
         self,
         poses: Sequence[Pose],
         within_radius: float = 10,
-        on_lane_id: str = None,
+        on_lane_id: Optional[str] = None,
         maximum_count: int = 10,
     ) -> List[LanePoint]:
+        """Get the lanepoints closest to the given poses.
+        Args:
+            poses:
+                The poses to look around for lanepoints.
+            within_radius:
+                The radius which lanepoints can be found from the given poses.
+            on_lane_id:
+                Restricts the lanepoints to the specified lane.
+            maximum_count:
+                The maximum lanepoints found.
+        """
         if on_lane_id is None:
             lanepoints = self._linked_lanepoints
             kd_tree = self._lanepoints_kd_tree
@@ -601,17 +622,20 @@ class LanePoints:
         return [l_lps[0].lp for l_lps in linked_lanepoints]
 
     def closest_lanepoint_on_lane_to_point(self, point, lane_id: str) -> LanePoint:
+        """Returns the closest lanepoint on the given lane to the given world coordinate."""
         return self.closest_linked_lanepoint_on_lane_to_point(point, lane_id).lp
 
     def closest_linked_lanepoint_on_lane_to_point(
         self, point, lane_id: str
     ) -> LinkedLanePoint:
+        """Returns the closest linked lanepoint on the given lane."""
         lane_kd_tree = self._lanepoints_kd_tree_by_lane_id[lane_id]
         return LanePoints._closest_linked_lp_in_kd_tree_batched(
             [point], self._lanepoints_by_lane_id[lane_id], lane_kd_tree, k=1
         )[0][0]
 
     def closest_linked_lanepoint_on_road(self, point, road_id: str) -> LinkedLanePoint:
+        """Returns the closest linked lanepoint on the given road."""
         return LanePoints._closest_linked_lp_in_kd_tree_batched(
             [point],
             self._lanepoints_by_edge_id[road_id],
@@ -622,6 +646,17 @@ class LanePoints:
     def paths_starting_at_lanepoint(
         self, lanepoint: LinkedLanePoint, lookahead: int, filter_edge_ids: tuple
     ) -> List[List[LinkedLanePoint]]:
+        """Returns all full branches from the given lanepoint up to the length of the lookahead.
+        Args:
+            lanepoint:
+                The starting lanepoint.
+            lookahead:
+                The maximum lanepoints in a branch.
+            filter_edge_ids:
+                Blacklisted edge ids.
+        Returns:
+            All branches(as lists) stemming from the lanepoint.
+        """
         lanepoint_paths = [[lanepoint]]
         for _ in range(lookahead):
             next_lanepoint_paths = []

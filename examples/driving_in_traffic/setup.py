@@ -18,7 +18,7 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "setuptools>=41.0.0,!=50.0",
-        "smarts[camera-obs] @ git+https://git@github.com/huawei-noah/SMARTS@develop",
+        "smarts[camera-obs]==0.5.1",
         "dreamerv2==2.1.1",
         "tensorflow==2.4.0",
         "tensorflow-probability==0.12.2",

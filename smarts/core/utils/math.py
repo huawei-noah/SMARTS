@@ -18,13 +18,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-from math import factorial
-from typing import Callable, List, Tuple, Optional, Union
 from dataclasses import dataclass
+from math import factorial
+from typing import Callable, List, Optional, Tuple, Union
 
 
 @dataclass(frozen=True)
 class CubicPolynomial:
+    """A cubic polynomial."""
+
     a: float
     b: float
     c: float
@@ -32,6 +34,12 @@ class CubicPolynomial:
 
     @classmethod
     def from_list(cls, coefficients: List[float]):
+        """Generates CubicPolynomial.
+        Args:
+            coefficients: The list of coefficients [a, b, c, d]
+        Returns:
+            A new CubicPolynomial.
+        """
         return cls(
             a=coefficients[0],
             b=coefficients[1],
@@ -40,11 +48,12 @@ class CubicPolynomial:
         )
 
     def eval(self, ds: float) -> float:
+        """ Evaluate a value along the polynomial."""
         return self.a + self.b * ds + self.c * ds * ds + self.d * ds * ds * ds
 
 
 def constrain_angle(angle: float) -> float:
-    """Constrain to [-pi, pi]"""
+    """Constrain an angle within the inclusive range [-pi, pi]"""
     angle %= 2 * math.pi
     if angle > math.pi:
         angle -= 2 * math.pi
@@ -98,8 +107,9 @@ def fast_quaternion_from_angle(angle: float) -> np.ndarray:
 
 
 def mult_quat(q1, q2):
-    """
-    Quaternion multiplication.
+    """Specialized quaternion multiplication as required by the unique attributes of quaternions.
+    Returns:
+        The product of the quaternions.
     """
     q3 = np.copy(q1)
     q3[0] = q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3]
@@ -110,10 +120,8 @@ def mult_quat(q1, q2):
 
 
 def rotate_quat(quat, vect):
-    """
-    Rotate a vector with the rotation defined by a quaternion.
-    """
-    # Transform vect into an quaternion
+    """Rotate a vector with the rotation defined by a quaternion."""
+    # Transform a vector into an quaternion
     vect = np.append([0], vect)
     # Normalize it
     norm_vect = np.linalg.norm(vect)
@@ -126,6 +134,7 @@ def rotate_quat(quat, vect):
 
 
 def clip(val, min_val, max_val):
+    """Constrain a value between a min and max by clamping exterior values to the extremes. """
     assert (
         min_val <= max_val
     ), f"min_val({min_val}) must be less than max_val({max_val})"
@@ -135,7 +144,7 @@ def clip(val, min_val, max_val):
 def get_linear_segments_for_range(
     s_start: float, s_end: float, segment_size: float
 ) -> List[float]:
-    """Given a range from s_start to s_end, give a linear segment of size segment_size"""
+    """Given a range from s_start to s_end, give a linear segment of size segment_size."""
     num_segments = int((s_end - s_start) / segment_size) + 1
     return [s_start + seg * segment_size for seg in range(num_segments)]
 
@@ -215,6 +224,19 @@ def low_pass_filter(
     lower_bound=-1,
     raw_value=0,
 ):
+    """Filters out large value jumps by taking a filter state and returning a filter state.
+    This is generally intended for filtering out high frequencies from raw signal values.
+    Args:
+        input_value: The raw signal value.
+        previous_filter_state: The last generated value from the filter.
+        filter_constant: The scale of the filter
+        time_step: The length of time between the previously processed signal and the current signal.
+        lower_bound: The lowest possible value allowed.
+        raw_value: A scalar addition to the signal value.
+    Returns:
+        The processed raw signal value.
+
+    """
     previous_filter_state += (
         time_step * filter_constant * (input_value - previous_filter_state)
     )
@@ -223,12 +245,14 @@ def low_pass_filter(
 
 
 def radians_to_vec(radians) -> np.ndarray:
+    """Convert a radian value to a unit directional vector."""
     # +y = 0 rad.
     angle = (radians + math.pi * 0.5) % (2 * math.pi)
     return np.array((math.cos(angle), math.sin(angle)))
 
 
 def vec_to_radians(v) -> float:
+    """Converts a vector to a radian value."""
     # See: https://stackoverflow.com/a/15130471
     assert len(v) == 2, f"Vector must be 2D: {repr(v)}"
 
@@ -246,10 +270,20 @@ def vec_to_radians(v) -> float:
 
 
 def is_close(a: float, b: float, rel_tol: float = 1e-09, abs_tol: float = 0.0) -> bool:
+    """Determines if two values are close as defined by the inputs.
+    Args:
+        a: The first value.
+        b: The other value.
+        rel_tol: Difference required to be close relative to the magnitude
+        abs_tol: Absolute different allowed to be close.
+    Returns:
+        If the two values are "close".
+    """
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
 def euclidean_distance(p1: Tuple[float], p2: Tuple[float]) -> float:
+    """The distance taking measuring a direct line between p1 and p2."""
     dx = p1[0] - p2[0]
     dy = p1[1] - p2[1]
     return math.sqrt(dx * dx + dy * dy)
@@ -258,6 +292,7 @@ def euclidean_distance(p1: Tuple[float], p2: Tuple[float]) -> float:
 def position_at_offset(
     p1: Tuple[float], p2: Tuple[float], offset: float
 ) -> Optional[Tuple[float]]:
+    """A point between p1 and p2 given an offset less than the distance between p1 and p2."""
     if is_close(offset, 0.0):  # for pathological cases with dist == 0 and offset == 0
         return p1
 
@@ -277,6 +312,9 @@ def position_at_offset(
 def offset_along_shape(
     point: Tuple[float], shape: List[Tuple[float]]
 ) -> Union[float, int]:
+    """An offset on a shape defined as a vector path determined by the closest location on the
+    path to the point.
+    """
     if point not in shape:
         return polygon_offset_with_minimum_distance_to_point(point, shape)
     offset = 0
@@ -290,6 +328,7 @@ def offset_along_shape(
 def position_at_shape_offset(
     shape: List[Tuple[float]], offset: float
 ) -> Optional[Tuple[float]]:
+    """A point defined as the offset into a shape defined as vector path."""
     seen_length = 0
     curr = shape[0]
     for next_p in shape[1:]:
@@ -399,6 +438,7 @@ def rotate_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
 
 
 def min_angles_difference_signed(first, second) -> float:
+    """The minimum signed difference between angles(radians)."""
     return ((first - second) + math.pi) % (2 * math.pi) - math.pi
 
 
@@ -425,10 +465,15 @@ def position_to_ego_frame(position, ego_position, ego_heading):
 
 
 def comb(n, k):
+    """Binomial coefficient"""
     return factorial(n) // (factorial(k) * factorial(n - k))
 
 
 def get_bezier_curve(points):
+    """Get the curve function given a series of points.
+    Returns:
+        A curve function that takes a normalized offset [0:1] into the curve.
+    """
     n = len(points) - 1
     return lambda t: sum(
         comb(n, i) * t ** i * (1 - t) ** (n - i) * points[i] for i in range(n + 1)
@@ -436,12 +481,20 @@ def get_bezier_curve(points):
 
 
 def evaluate_bezier(points, total):
+    """Generate the approximated points of a bezier curve given a series of control points.
+    Args:
+        points: The bezier control points.
+        total: The number of points generated from approximating the curve.
+    Returns:
+        An approximation of the bezier curve.
+    """
     bezier = get_bezier_curve(points)
     new_points = np.array([bezier(t) for t in np.linspace(0, 1, total)])
     return new_points[:, 0], new_points[:, 1]
 
 
 def inplace_unwrap(wp_array):
+    """Unwraps an array in place."""
     ## minor optimization hack adapted from
     ##  https://github.com/numpy/numpy/blob/v1.20.0/numpy/lib/function_base.py#L1492-L1546
     ## to avoid unnecessary (slow) np array copy

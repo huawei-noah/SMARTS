@@ -80,6 +80,7 @@ class _ShowBaseInstance(ShowBase):
         pass  # singleton pattern, uses init() instead (don't call super().__init__() here!)
 
     def init(self):
+        """Initializer for the purposes of maintaining a singleton of this class."""
         self._render_lock = Lock()
         try:
             # There can be only 1 ShowBase instance at a time.
@@ -95,6 +96,7 @@ class _ShowBaseInstance(ShowBase):
             raise e
 
     def destroy(self):
+        """Destroy this renderer and clean up all remaining resources."""
         super().destroy()
         self.__class__.__it__ = None
 
@@ -102,6 +104,7 @@ class _ShowBaseInstance(ShowBase):
         self.destroy()
 
     def setup_sim_root(self, simid: str):
+        """Creates the simulation root node in the scene graph."""
         root_np = NodePath(simid)
         with self._render_lock:
             root_np.reparentTo(self.render)
@@ -119,6 +122,7 @@ class _ShowBaseInstance(ShowBase):
         return root_np
 
     def render_node(self, sim_root: NodePath):
+        """Render a panda3D scene graph from the given node."""
         # Hack to prevent other SMARTS instances from also rendering
         # when we call poll() here.
         hidden = []
@@ -133,6 +137,8 @@ class _ShowBaseInstance(ShowBase):
 
 
 class Renderer:
+    """The utility used to render simulation geometry."""
+
     def __init__(self, simid: str):
         self._log = logging.getLogger(self.__class__.__name__)
         self._is_setup = False
@@ -147,9 +153,11 @@ class Renderer:
 
     @property
     def id(self):
+        """The id of the simulation rendered."""
         return self._simid
 
     def setup(self, scenario: Scenario):
+        """Initialize this renderer."""
         self._root_np = self._showbase_instance.setup_sim_root(self._simid)
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
 
@@ -169,6 +177,7 @@ class Renderer:
         self._is_setup = True
 
     def render(self):
+        """Render the scene graph of the simulation."""
         assert self._is_setup
         self._showbase_instance.render_node(self._root_np)
 
@@ -177,6 +186,7 @@ class Renderer:
         self._showbase_instance.taskMgr.step()
 
     def teardown(self):
+        """Clean up internal resources."""
         if self._root_np is not None:
             self._root_np.clearLight()
             self._root_np.removeNode()
@@ -186,6 +196,7 @@ class Renderer:
         self._is_setup = False
 
     def destroy(self):
+        """Destroy the renderer. Cleans up all remaining renderer resources."""
         self.teardown()
         self._showbase_instance = None
 
@@ -193,6 +204,7 @@ class Renderer:
         self.destroy()
 
     def create_vehicle_node(self, glb_model: str, vid: str, color, pose: Pose):
+        """Create a vehicle node."""
         with pkg_resources.path(models, glb_model) as path:
             node_path = self._showbase_instance.loader.loadModel(str(path.absolute()))
         node_path.setName("vehicle-%s" % vid)
@@ -203,7 +215,7 @@ class Renderer:
         self._vehicle_nodes[vid] = node_path
 
     def begin_rendering_vehicle(self, vid: str, is_agent: bool):
-        """ adds the vehicle node to the scene graph """
+        """Add the vehicle node to the scene graph """
         vehicle_path = self._vehicle_nodes.get(vid, None)
         if not vehicle_path:
             self._log.warning(f"Renderer ignoring invalid vehicle id: {vid}")
@@ -212,6 +224,7 @@ class Renderer:
         vehicle_path.reparentTo(self._vehicles_np if is_agent else self._root_np)
 
     def update_vehicle_node(self, vid: str, pose: Pose):
+        """Move the specified vehicle node."""
         vehicle_path = self._vehicle_nodes.get(vid, None)
         if not vehicle_path:
             self._log.warning(f"Renderer ignoring invalid vehicle id: {vid}")
@@ -220,6 +233,7 @@ class Renderer:
         vehicle_path.setPosHpr(*pos, heading, 0, 0)
 
     def remove_vehicle_node(self, vid: str):
+        """Remove a vehicle node"""
         vehicle_path = self._vehicle_nodes.get(vid, None)
         if not vehicle_path:
             self._log.warning(f"Renderer ignoring invalid vehicle id: {vid}")
@@ -227,12 +241,15 @@ class Renderer:
         vehicle_path.removeNode()
 
     class OffscreenCamera(NamedTuple):
+        """A camera used for rendering images to a graphics buffer."""
+
         camera_np: NodePath
         buffer: GraphicsOutput
         tex: Texture
         renderer: Renderer
 
         def wait_for_ram_image(self, img_format: str, retries=100):
+            """Attempt to acquire a graphics buffer."""
             # Rarely, we see dropped frames where an image is not available
             # for our observation calculations.
             #
@@ -256,12 +273,20 @@ class Renderer:
             return ram_image
 
         def update(self, pose: Pose, height: float):
+            """Update the location of the camera.
+            Args:
+                pose:
+                    The pose of the camera target.
+                height:
+                    The height of the camera above the camera target.
+            """
             pos, heading = pose.as_panda3d()
             self.camera_np.setPos(pos[0], pos[1], height)
             self.camera_np.lookAt(*pos)
             self.camera_np.setH(heading)
 
         def teardown(self):
+            """Clean up internal resources."""
             self.camera_np.removeNode()
             region = self.buffer.getDisplayRegion(0)
             region.window.clearRenderTextures()
@@ -275,14 +300,15 @@ class Renderer:
         width: int,
         height: int,
         resolution: float,
-    ):
+    ) -> Renderer.OffscreenCamera:
+        """Generates a new offscreen camera."""
         # setup buffer
         win_props = WindowProperties.size(width, height)
         fb_props = FrameBufferProperties()
         fb_props.setRgbColor(True)
         fb_props.setRgbaBits(8, 8, 8, 1)
         # XXX: Though we don't need the depth buffer returned, setting this to 0
-        #      causes undefined behaviour where the ordering of meshes is random.
+        #      causes undefined behavior where the ordering of meshes is random.
         fb_props.setDepthBits(8)
 
         buffer = self._showbase_instance.win.engine.makeOutput(
@@ -313,7 +339,7 @@ class Renderer:
         )
         camera_np.reparentTo(self._root_np)
 
-        # mask is set to make undesireable objects invisible to this camera
+        # mask is set to make undesirable objects invisible to this camera
         camera_np.node().setCameraMask(camera_np.node().getCameraMask() & mask)
 
         return Renderer.OffscreenCamera(camera_np, buffer, tex, self)
