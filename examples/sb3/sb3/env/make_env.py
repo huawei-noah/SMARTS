@@ -32,7 +32,7 @@ def make_env(config: Dict[str, Any]) -> gym.Env:
             off_route=False,
             on_shoulder=False,
             wrong_way=False,
-            not_moving=False,
+            not_moving=True,
         ),
     )
 
