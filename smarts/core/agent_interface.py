@@ -188,7 +188,7 @@ class DoneCriteria:
     """End the episode when the agent drives in the wrong direction, even though it
     may be driving on the mission route.
     """
-    not_moving: bool = False
+    not_moving: Tuple = (False, 60)
     """End the episode when the agent is not moving for 60 seconds or more. To account
     for controller noise not moving means <= 1 meter of displacement within 60 seconds.
     """
