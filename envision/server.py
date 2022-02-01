@@ -220,7 +220,6 @@ class WebClientRunLoop:
                     self._seek = None
 
                 assert len(frames_to_send) > 0
-                print(len(frames_to_send), "len of frames to send .... ")
                 closed = self._push_frames_to_web_client(frames_to_send)
                 if closed:
                     self._log.debug("Socket closed, exiting")
