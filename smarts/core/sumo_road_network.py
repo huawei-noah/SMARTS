@@ -367,7 +367,7 @@ class SumoRoadNetwork(RoadMap):
         def oncoming_lanes_at_offset(self, offset: float) -> List[RoadMap.Lane]:
             """Adjacent lanes travelling in the opposite direction to this lane."""
             result = []
-            radius = 1.1 * self.width_at_offset(offset)
+            radius = 1.1 * self.width_at_offset(offset)[0]
             pt = self.from_lane_coord(RefLinePoint(offset))
             nearby_lanes = self._map.nearest_lanes(pt, radius=radius)
             if not nearby_lanes:
@@ -442,10 +442,13 @@ class SumoRoadNetwork(RoadMap):
             )
 
         @lru_cache(maxsize=4)
-        def shape(
+        def _shape(
             self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
-            """The lane geometry as a shape."""
+            """Returns a convex polygon representing this lane, buffered by buffered_width (which must be non-negative),
+            where buffer_width is a buffer around the perimeter of the polygon.  In some situations, it may be desirable to
+            also specify a `default_width`, in which case the returned polygon should have a convex shape where the
+            distance across it is no less than buffered_width + default_width at any point."""
             new_width = buffer_width
             if default_width:
                 new_width += default_width
@@ -486,8 +489,8 @@ class SumoRoadNetwork(RoadMap):
                 offset += sumolib.geomhelper.distance(shape[i], shape[i + 1])
             return offset
 
-        def width_at_offset(self, offset: float) -> float:
-            return self._width
+        def width_at_offset(self, offset: float) -> Tuple[float, float]:
+            return self._width, 1.0
 
         @lru_cache(maxsize=8)
         def project_along(
@@ -510,8 +513,20 @@ class SumoRoadNetwork(RoadMap):
             return super().center_at_point(point)
 
         @lru_cache(8)
-        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            return super().edges_at_point(point)
+        def _edges_at_point(self, point: Point) -> Tuple[Point, Point]:
+            """Get the boundary points perpendicular to the center of the lane closest to the given
+             world coordinate.
+            Args:
+                point:
+                    A world coordinate point.
+            Returns:
+                A pair of points indicating the left boundary and right boundary of the lane.
+            """
+            offset = self.offset_along_lane(point)
+            width, _ = self.width_at_offset(offset)
+            left_edge = RefLinePoint(s=offset, t=width / 2)
+            right_edge = RefLinePoint(s=offset, t=-width / 2)
+            return self.from_lane_coord(left_edge), self.from_lane_coord(right_edge)
 
         @lru_cache(8)
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
@@ -632,16 +647,28 @@ class SumoRoadNetwork(RoadMap):
             return False
 
         @lru_cache(maxsize=8)
-        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
+        def _edges_at_point(self, point: Point) -> Tuple[Point, Point]:
+            """Get the boundary points perpendicular to the center of the road closest to the given
+             world coordinate.
+            Args:
+                point:
+                    A world coordinate point.
+            Returns:
+                A pair of points indicating the left boundary and right boundary of the road.
+            """
             lanes = self.lanes
-            _, right_edge = lanes[0].edges_at_point(point)
-            left_edge, _ = lanes[-1].edges_at_point(point)
+            _, right_edge = lanes[0]._edges_at_point(point)
+            left_edge, _ = lanes[-1]._edges_at_point(point)
             return left_edge, right_edge
 
         @lru_cache(maxsize=4)
-        def shape(
+        def _shape(
             self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
+            """Returns a convex polygon representing this road, buffered by buffered_width (which must be non-negative),
+            where buffer_width is a buffer around the perimeter of the polygon.  In some situations, it may be desirable to
+            also specify a `default_width`, in which case the returned polygon should have a convex shape where the
+            distance across it is no less than buffered_width + default_width at any point."""
             new_width = buffer_width
             if default_width:
                 new_width += default_width
@@ -902,7 +929,7 @@ class SumoRoadNetwork(RoadMap):
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
             return [
                 list(
-                    road.shape(
+                    road._shape(
                         0.0, sum([lane._width for lane in road.lanes])
                     ).exterior.coords
                 )

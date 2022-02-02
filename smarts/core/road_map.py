@@ -26,7 +26,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Sequence, Set, Tuple
 
 import numpy as np
-from shapely.geometry import Polygon
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .utils.math import (
@@ -80,6 +79,12 @@ class RoadMap:
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         """Find a road in this road map that has the given identifier."""
+        raise NotImplementedError()
+
+    def nearest_surfaces(
+        self, point: Point, radius: Optional[float] = None
+    ) -> List[Tuple[RoadMap.Surface, float]]:
+        """Find surfaces (lanes, roads, etc.) on this road map that are near the given point."""
         raise NotImplementedError()
 
     def nearest_lanes(
@@ -181,17 +186,10 @@ class RoadMap:
             """The features on this surface near the given pose."""
             raise NotImplementedError()
 
-        def shape(
-            self, buffer_width: float = 0.0, default_width: Optional[float] = None
-        ) -> Polygon:
-            """Returns a convex polygon representing this surface, buffered by buffered_width (which must be non-negative),
-            where buffer_width is a buffer around the perimeter of the polygon.  In some situations, it may be desirable to
-            also specify a `default_width`, in which case the returned polygon should have a convex shape where the
-            distance across it is no less than buffered_width + default_width at any point."""
-            raise NotImplementedError()
-
         def contains_point(self, point: Point) -> bool:
-            """Returns True iff this point is fully contained by this surface."""
+            """Returns True iff this point is fully contained by this surface.
+            For some regions of some maps, it map not be possible to determine this.
+            In such indeterminant cases, it is recommended to return True."""
             raise NotImplementedError()
 
     class Lane(Surface):
@@ -309,8 +307,11 @@ class RoadMap:
             """Get the offset of the given point imposed on this lane."""
             raise NotImplementedError()
 
-        def width_at_offset(self, offset: float) -> float:
-            """Get the width of the lane at the given offset."""
+        def width_at_offset(self, offset: float) -> Tuple[float, float]:
+            """Get the width of the lane at the given offset as well as
+            a measure of certainty in this width between 0 and 1.0, where
+            1 indicates that the width is exact and certain, and 0 indicates
+            a width estimate with no confidence."""
             raise NotImplementedError()
 
         def project_along(
@@ -340,7 +341,7 @@ class RoadMap:
             """Get a world point on the lane from the given lane coordinate point."""
             raise NotImplementedError()
 
-        ## The next 6 methods are "reference" implementations for convenience.
+        ## The next 5 methods are "reference" implementations for convenience.
         ## Derived classes may want to extend as well as add a cache.
 
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
@@ -358,21 +359,6 @@ class RoadMap:
             """Get the 'center' of the lane closest to the given world coordinate."""
             offset = self.offset_along_lane(point)
             return self.from_lane_coord(RefLinePoint(s=offset))
-
-        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            """Get the boundary points perpendicular to the center of the lane closest to the given
-             world coordinate.
-            Args:
-                point:
-                    A world coordinate point.
-            Returns:
-                A pair of points indicating the left boundary and right boundary of the lane.
-            """
-            offset = self.offset_along_lane(point)
-            width = self.width_at_offset(offset)
-            left_edge = RefLinePoint(s=offset, t=width / 2)
-            right_edge = RefLinePoint(s=offset, t=-width / 2)
-            return self.from_lane_coord(left_edge), self.from_lane_coord(right_edge)
 
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
             """The lane direction vector at the given offset."""
@@ -486,17 +472,6 @@ class RoadMap:
 
         def lane_at_index(self, index: int) -> RoadMap.Lane:
             """Gets the lane with the given index."""
-            raise NotImplementedError()
-
-        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            """Get the boundary points perpendicular to the center of the road closest to the given
-             world coordinate.
-            Args:
-                point:
-                    A world coordinate point.
-            Returns:
-                A pair of points indicating the left boundary and right boundary of the road.
-            """
             raise NotImplementedError()
 
     class Feature:

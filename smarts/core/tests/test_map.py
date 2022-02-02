@@ -56,7 +56,6 @@ def test_sumo_map(sumo_scenario):
     assert lane.index == 0
     assert lane.road.contains_point(point)
     assert lane.is_drivable
-    assert len(lane.shape().exterior.coords) >= 2
     assert lane.length == 55.6
 
     right_lane, direction = lane.lane_to_right
@@ -81,7 +80,9 @@ def test_sumo_map(sumo_scenario):
     assert reflinept.t == 0.0
 
     offset = reflinept.s
-    assert lane.width_at_offset(offset) == 3.2
+    width, conf = lane.width_at_offset(offset)
+    assert width == 3.2
+    assert conf == 1.0
     assert lane.curvature_radius_at_offset(offset) == math.inf
 
     on_lanes = lane.oncoming_lanes_at_offset(offset)
@@ -114,11 +115,9 @@ def test_sumo_map(sumo_scenario):
     r1 = road_map.road_by_id("edge-north-NS")
     assert r1
     assert r1.is_drivable
-    assert len(r1.shape()) >= 2
     r2 = road_map.road_by_id("edge-east-WE")
     assert r2
     assert r2.is_drivable
-    assert len(r2.shape()) >= 2
 
     routes = road_map.generate_routes(r1, r2)
     assert routes
@@ -166,7 +165,6 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert len(r_0_R.lanes) == 2
     assert r_0_R.lane_at_index(-1) is None
     assert r_0_R.lane_at_index(1).road.road_id == "57_0_R"
-    assert len(r_0_R.shape().exterior.coords) == 5
     assert set(r.road_id for r in r_0_R.incoming_roads) == set()
     assert set(r.road_id for r in r_0_R.outgoing_roads) == {
         "69_0_R",
@@ -180,7 +178,6 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert r2_0_R.length == 55.6
     assert len(r2_0_R.lanes) == 2
     assert r2_0_R.lane_at_index(0).road.road_id == "53_0_R"
-    assert len(r2_0_R.shape().exterior.coords) == 5
     assert set(r.road_id for r in r2_0_R.incoming_roads) == {
         "61_0_R",
         "65_0_R",
@@ -216,7 +213,6 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert len(l1.lanes_in_same_direction) == 1
     assert l1.length == 55.6
     assert l1.is_drivable
-    assert len(l1.shape().exterior.coords) == 5
     assert l1.speed_limit == 16.67
     assert set(l.lane_id for l in l1.incoming_lanes) == set()
     assert set(l.lane_id for l in l1.outgoing_lanes) == {
@@ -248,7 +244,9 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert round(refline_pt.t, 2) == -0.4
 
     offset = refline_pt.s
-    assert l1.width_at_offset(offset) == 3.20
+    width, conf = l1.width_at_offset(offset)
+    assert width == 3.20
+    assert conf == 1.0
     assert l1.curvature_radius_at_offset(offset) == math.inf
     assert l1.contains_point(point)
     assert l1.road.contains_point(point)
@@ -261,16 +259,6 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert len(on_lanes) == 1
     assert on_lanes[0].lane_id == "53_0_R_-1"
 
-    # lane edges on point
-    left_edge, right_edge = l1.edges_at_point(point)
-    assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (150.0, -28.0)
-    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (146.8, -28.0)
-
-    # road edges on point
-    road_left_edge, road_right_edge = l1.road.edges_at_point(point)
-    assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (150.0, -28.0)
-    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (143.6, -28.0)
-
     # check for locations (lane, offset tuples) within distance at this offset
     candidates = l1.project_along(offset, 70)
     assert (len(candidates)) == 6
@@ -282,7 +270,9 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert round(refline_pt.t, 2) == -4.4
 
     offset = refline_pt.s
-    assert l1.width_at_offset(offset) == 3.20
+    width, conf = l1.width_at_offset(offset)
+    assert width == 3.20
+    assert conf == 1.0
     assert l1.curvature_radius_at_offset(offset) == math.inf
     assert not l1.contains_point(point)
     assert l1.road.contains_point(point)
@@ -303,16 +293,6 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
 
     foes = l3.foes
     assert set(f.lane_id for f in foes) == {"58_0_R_-1", "62_0_R_-1"}
-
-    # road edges on point for a road with one lane
-    point = (148.52, -52.22, 0)
-    r5 = road_map.road_by_id("60_0_R")
-    road_left_edge, road_right_edge = r5.edges_at_point(point)
-    assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (150.79, -51.56)
-    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (
-        147.72,
-        -52.45,
-    )
 
     # nearest lane for a point outside road
     point = (164.0, -68.0, 0)
@@ -343,6 +323,7 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
         round(l1_lane_point.pose.position[1], 2),
     ) == (148.4, -17.0)
 
+    r5 = road_map.road_by_id("60_0_R")
     point = (148.00, -47.00)
     r5_linked_lane_point = lanepoints.closest_linked_lanepoint_on_road(
         point, r5.road_id
@@ -571,20 +552,12 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
     assert round(refline_pt.t, 2) == -0.31
 
     offset = refline_pt.s
-    assert round(l0.width_at_offset(offset), 2) == 3.12
+    width, conf = l0.width_at_offset(offset)
+    assert round(width, 2) == 3.12
+    assert conf == 1.0
     assert round(l0.curvature_radius_at_offset(offset), 2) == -291.53
     assert l0.contains_point(point)
     assert l0.road.contains_point(point)
-
-    # lane edges on point
-    left_edge, right_edge = l0.edges_at_point(point)
-    assert (round(left_edge.x, 2), round(left_edge.y, 2)) == (31.08, 0.13)
-    assert (round(right_edge.x, 2), round(right_edge.y, 2)) == (31.0, 3.25)
-
-    # road edges on point
-    road_left_edge, road_right_edge = r_1_1_R.edges_at_point(point)
-    assert (round(road_left_edge.x, 2), round(road_left_edge.y, 2)) == (31.08, 0.13)
-    assert (round(road_right_edge.x, 2), round(road_right_edge.y, 2)) == (31.0, -6.5)
 
     # point not on lane but on road
     point = (31.0, 4.5, 0)
@@ -593,7 +566,9 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
     assert round(refline_pt.t, 2) == -2.81
 
     offset = refline_pt.s
-    assert round(l0.width_at_offset(offset), 2) == 3.12
+    width, conf = l0.width_at_offset(offset)
+    assert round(width, 2) == 3.12
+    assert conf == 1.0
     assert round(l0.curvature_radius_at_offset(offset), 2) == -292.24
     assert not l0.contains_point(point)
     assert l0.road.contains_point(point)
