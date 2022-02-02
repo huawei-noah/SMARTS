@@ -36,7 +36,7 @@ class ChaseViaPointsAgent(Agent):
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
-            AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
+            AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps, rgb=True,
         ),
         agent_builder=ChaseViaPointsAgent,
     )
@@ -47,6 +47,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
         agent_specs={"SingleAgent": agent_spec},
         headless=headless,
         sumo_headless=True,
+        visdom=True,
     )
 
     # Convert `env.step()` and `env.reset()` from multi-agent interface to
