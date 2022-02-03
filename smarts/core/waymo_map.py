@@ -44,6 +44,9 @@ class WaymoMap(RoadMap):
         self._surfaces = {}
         self._lanes = {}
         self._roads = {}
+        self._map_features = {"lane": [], "road_line": [], "road_edge": [], "stop_sign": [], "crosswalk": [],
+                              "speed_bump": []}
+        self._scenario_id = None
         # self._waypoints_cache = TODO
         self._lanepoints = None
         if map_spec.lanepoint_spacing is not None:
@@ -67,21 +70,19 @@ class WaymoMap(RoadMap):
             errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
             raise ValueError(errmsg)
 
-        features = {"lane": [], "road_line": [], "road_edge": [], "stop_sign": [], "crosswalk": [],
-                    "speed_bump": []}
-
+        self._scenario_id = scenario.scenario_id
         for i in range(len(scenario.map_features)):
             map_feature = scenario.map_features[i]
             key = map_feature.WhichOneof("feature_data")
             if key is not None:
-                features[key].append((getattr(map_feature, key), map_feature.id))
+                self._map_features[key].append((getattr(map_feature, key), map_feature.id))
 
-        for lane in features["lane"]:
+        for lane in self._map_features["lane"]:
             lane_center = lane[0]
             lane_id = lane[1]
-            self._lanes[lane_id] = WaymoMap.Lane(self, lane_id, lane_center)
-        return scenario.scenario_id, features
-
+            lane = WaymoMap.Lane(self, lane_id, lane_center)
+            self._lanes[lane_id] = lane
+            self._surfaces[lane_id] = lane
 
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
@@ -141,6 +142,7 @@ class WaymoMap(RoadMap):
         def __init__(self, road_map, lane_id, lane_center):
             super().__init__(lane_id, road_map)
             self.lane_id = lane_id
+            self._map = road_map
             self.lane_pts = [np.array([p.x, p.y]) for p in lane_center.polyline]
             self.entry_lanes = [entry_lane for entry_lane in lane_center.entry_lanes]
             self.exit_lanes = [exit_lane for exit_lane in lane_center.exit_lanes]
@@ -173,3 +175,50 @@ class WaymoMap(RoadMap):
                 bds.append(boundary)
 
             return bds
+
+        @cached_property
+        def incoming_lanes(self) -> List[RoadMap.Lane]:
+            """Lanes leading into this lane."""
+            return [
+                self._map.lane_by_id(entry_lane)
+                for entry_lane in self.entry_lanes
+            ]
+
+        @cached_property
+        def outgoing_lanes(self) -> List[RoadMap.Lane]:
+            """Lanes leading out of this lane."""
+            return [
+                self._map.lane_by_id(exit_lanes)
+                for exit_lanes in self.exit_lanes
+            ]
+
+        @cached_property
+        def entry_surfaces(self) -> List[RoadMap.Surface]:
+            """All surfaces leading into this lane."""
+            return self.incoming_lanes
+
+        @cached_property
+        def exit_surfaces(self) -> List[RoadMap.Surface]:
+            """All surfaces leading out of this lane."""
+            return self.outgoing_lanes
+
+    def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
+        lane = self._lanes.get(lane_id)
+        if lane:
+            return lane
+        lane_center = None
+        for waymo_lane in self._map_features["lane"]:
+            if waymo_lane[1] == lane_id:
+                lane_center = waymo_lane[0]
+                break
+
+        if not lane_center:
+            self._log.warning(
+                f"WaymoMap got request for unknown lane_id '{lane_id}'"
+            )
+            return None
+        lane = WaymoMap.Lane(self, lane_id, lane_center)
+        self._lanes[lane_id] = lane
+        assert lane_id not in self._surfaces
+        self._surfaces[lane_id] = lane
+        return lane
