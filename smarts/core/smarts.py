@@ -740,15 +740,10 @@ class SMARTS:
         if not self._renderer:
             try:
                 from .renderer import Renderer
-                print("first  dddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
 
                 self._renderer = Renderer(self._sim_id)
-                print("second  dddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
                 if self._scenario:
-                    print("third   dddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
                     self._renderer.setup(self._scenario)
-                    print("fourth   dddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
-
                     self._vehicle_index.begin_rendering_vehicles(self._renderer)
             except Exception as e:
                 self._log.warning("unable to create Renderer:  " + repr(e))
