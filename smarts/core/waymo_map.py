@@ -22,7 +22,8 @@ import os
 from functools import lru_cache
 from subprocess import check_output
 from typing import List, Optional, Sequence, Set, Tuple
-
+from waymo_open_dataset.protos import scenario_pb2
+from enum import Enum
 import numpy as np
 from cached_property import cached_property
 
@@ -31,6 +32,52 @@ from smarts.sstudio.types import MapSpec
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
+from .utils.file import read_tfrecord_file
+
+
+class RoadLineType(Enum):
+    UNKNOWN = 0
+    BROKEN_SINGLE_WHITE = 1
+    SOLID_SINGLE_WHITE = 2
+    SOLID_DOUBLE_WHITE = 3
+    BROKEN_SINGLE_YELLOW = 4
+    BROKEN_DOUBLE_YELLOW = 5
+    SOLID_SINGLE_YELLOW = 6
+    SOLID_DOUBLE_YELLOW = 7
+    PASSING_DOUBLE_YELLOW = 8
+
+    @staticmethod
+    def is_road_line(line):
+        return True if line.__class__ == RoadLineType else False
+
+    @staticmethod
+    def is_yellow(line):
+        return True if line in [
+            RoadLineType.SOLID_DOUBLE_YELLOW, RoadLineType.PASSING_DOUBLE_YELLOW, RoadLineType.SOLID_SINGLE_YELLOW,
+            RoadLineType.BROKEN_DOUBLE_YELLOW, RoadLineType.BROKEN_SINGLE_YELLOW
+        ] else False
+
+    @staticmethod
+    def is_broken(line):
+        return True if line in [
+            RoadLineType.BROKEN_DOUBLE_YELLOW, RoadLineType.BROKEN_SINGLE_YELLOW, RoadLineType.BROKEN_SINGLE_WHITE
+        ] else False
+
+
+class RoadEdgeType(Enum):
+    UNKNOWN = 0
+    # Physical road boundary that doesn't have traffic on the other side (e.g., a curb or the k-rail on the right side of a freeway).
+    BOUNDARY = 1
+    # Physical road boundary that separates the car from other traffic (e.g. a k-rail or an island).
+    MEDIAN = 2
+
+    @staticmethod
+    def is_road_edge(edge):
+        return True if edge.__class__ == RoadEdgeType else False
+
+    @staticmethod
+    def is_sidewalk(edge):
+        return True if edge == RoadEdgeType.BOUNDARY else False
 
 
 class WaymoMap(RoadMap):
@@ -50,6 +97,36 @@ class WaymoMap(RoadMap):
             self._lanepoints = LanePoints.from_waymo(
                 self, spacing=map_spec.lanepoint_spacing
             )
+
+    def _load(self, path, scenario_id):
+        scenario = None
+        dataset = read_tfrecord_file(path)
+        for record in dataset:
+            parsed_scenario = scenario_pb2.Scenario()
+            parsed_scenario.ParseFromString(bytearray(record))
+            if parsed_scenario.scenario_id == scenario_id:
+                scenario = parsed_scenario
+                break
+
+        if scenario is None:
+            errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
+            raise ValueError(errmsg)
+
+        features = {"lane": [], "road_line": [], "road_edge": [], "stop_sign": [], "crosswalk": [],
+                    "speed_bump": []}
+
+        for i in range(len(scenario.map_features)):
+            map_feature = scenario.map_features[i]
+            key = map_feature.WhichOneof("feature_data")
+            if key is not None:
+                features[key].append(getattr(map_feature, key), map_feature.id)
+
+        for lane in features["lane"]:
+            lane_center = lane[0]
+            lane_id = lane[1]
+            self._lanes[lane_id] = WaymoMap.Lane(self, lane_id, lane_center)
+        return scenario.scenario_id, features
+
 
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
@@ -101,3 +178,43 @@ class WaymoMap(RoadMap):
         return self._surfaces.get(surface_id)
 
     # TODO, etc.
+
+    class Lane(RoadMap.Lane, Surface):
+        lane_id: int
+        lane_pts: List
+
+        def __init__(self, road_map, lane_id, lane_center):
+            super().__init__(lane_id, road_map)
+            self.lane_id = lane_id
+            self.lane_pts = [np.array([p.x, p.y]) for p in lane_center.polyline]
+            self.entry_lanes = [entry_lane for entry_lane in lane_center.entry_lanes]
+            self.exit_lanes = [exit_lane for exit_lane in lane_center.exit_lanes]
+            self.left_boundaries = self.extract_boundaries(lane_center.left_boundaries)
+            self.right_boundaries = self.extract_boundaries(lane_center.right_boundaries)
+            self.left_neighbors = self.extract_neighbors(lane_center.left_neighbors)
+            self.right_neighbors = self.extract_neighbors(lane_center.right_neighbors)
+
+        @staticmethod
+        def extract_neighbours(self, neighbours):
+            nbs = []
+            for i in range(len(neighbours)):
+                nb = dict()
+                nb['id'] = neighbours[i].feature_id
+                nb['indexes'] = [
+                    neighbours[i].self_start_index, neighbours[i].self_end_index, neighbours[i].neighbor_start_index, neighbours[i].neighbor_end_index
+                ]
+                nb['boundaries'] = self.extract_boundaries(neighbours.boundaries)
+                nbs.append(nb)
+            return nbs
+
+        @staticmethod
+        def extract_boundaries(boundaries):
+            bds = []
+            for i in range(len(boundaries)):
+                boundary = dict()
+                boundary['index'] = [boundaries[i].lane_start_index, boundaries[i].lane_end_index]
+                boundary['type'] = RoadLineType(boundaries[i].boundary_type)
+                boundary['id'] = boundaries[i].boundary_feature_id
+                bds.append(boundary)
+
+            return bds

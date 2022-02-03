@@ -22,6 +22,8 @@ import hashlib
 import os
 import shutil
 from contextlib import contextmanager
+from typing import Generator
+import struct
 
 
 def file_in_folder(filename: str, path: str) -> bool:
@@ -135,3 +137,20 @@ def suppress_pkg_resources():
     sys.modules["pkg_resources"] = property(raise_import_error)
     yield
     sys.modules["pkg_resources"] = pkg_res
+
+
+def read_tfrecord_file(path: str) -> Generator[bytes, None, None]:
+    """Iterate over the records in a TFRecord file and return the bytes of each record.
+
+    path: The path to the TFRecord file
+    """
+    with open(path, "rb") as f:
+        while True:
+            length_bytes = f.read(8)
+            if len(length_bytes) != 8:
+                return
+            record_len = int(struct.unpack("Q", length_bytes)[0])
+            _ = f.read(4)  # masked_crc32_of_length (ignore)
+            record_data = f.read(record_len)
+            _ = f.read(4)  # masked_crc32_of_data (ignore)
+            yield record_data
