@@ -803,7 +803,6 @@ class SMARTS:
 
             try:
                 from .renderer import Renderer
-                print("first  dddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
 
                 self._renderer = Renderer(self._sim_id)
             except ImportError as e:
@@ -813,10 +812,7 @@ class SMARTS:
                 raise RendererException("Unable to create renderer.")
             if not self._renderer.is_setup:
                 if self._scenario:
-                    print("third   dddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
                     self._renderer.setup(self._scenario)
-                    print("fourth   dddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
-
                     self._vehicle_index.begin_rendering_vehicles(self._renderer)
         return self._renderer
 
