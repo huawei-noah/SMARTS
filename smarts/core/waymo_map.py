@@ -35,51 +35,6 @@ from .road_map import RoadMap, Waypoint
 from .utils.file import read_tfrecord_file
 
 
-class RoadLineType(Enum):
-    UNKNOWN = 0
-    BROKEN_SINGLE_WHITE = 1
-    SOLID_SINGLE_WHITE = 2
-    SOLID_DOUBLE_WHITE = 3
-    BROKEN_SINGLE_YELLOW = 4
-    BROKEN_DOUBLE_YELLOW = 5
-    SOLID_SINGLE_YELLOW = 6
-    SOLID_DOUBLE_YELLOW = 7
-    PASSING_DOUBLE_YELLOW = 8
-
-    @staticmethod
-    def is_road_line(line):
-        return True if line.__class__ == RoadLineType else False
-
-    @staticmethod
-    def is_yellow(line):
-        return True if line in [
-            RoadLineType.SOLID_DOUBLE_YELLOW, RoadLineType.PASSING_DOUBLE_YELLOW, RoadLineType.SOLID_SINGLE_YELLOW,
-            RoadLineType.BROKEN_DOUBLE_YELLOW, RoadLineType.BROKEN_SINGLE_YELLOW
-        ] else False
-
-    @staticmethod
-    def is_broken(line):
-        return True if line in [
-            RoadLineType.BROKEN_DOUBLE_YELLOW, RoadLineType.BROKEN_SINGLE_YELLOW, RoadLineType.BROKEN_SINGLE_WHITE
-        ] else False
-
-
-class RoadEdgeType(Enum):
-    UNKNOWN = 0
-    # Physical road boundary that doesn't have traffic on the other side (e.g., a curb or the k-rail on the right side of a freeway).
-    BOUNDARY = 1
-    # Physical road boundary that separates the car from other traffic (e.g. a k-rail or an island).
-    MEDIAN = 2
-
-    @staticmethod
-    def is_road_edge(edge):
-        return True if edge.__class__ == RoadEdgeType else False
-
-    @staticmethod
-    def is_sidewalk(edge):
-        return True if edge == RoadEdgeType.BOUNDARY else False
-
-
 class WaymoMap(RoadMap):
     """A map associated with a Waymo dataset"""
 
@@ -119,7 +74,7 @@ class WaymoMap(RoadMap):
             map_feature = scenario.map_features[i]
             key = map_feature.WhichOneof("feature_data")
             if key is not None:
-                features[key].append(getattr(map_feature, key), map_feature.id)
+                features[key].append((getattr(map_feature, key), map_feature.id))
 
         for lane in features["lane"]:
             lane_center = lane[0]
@@ -213,7 +168,7 @@ class WaymoMap(RoadMap):
             for i in range(len(boundaries)):
                 boundary = dict()
                 boundary['index'] = [boundaries[i].lane_start_index, boundaries[i].lane_end_index]
-                boundary['type'] = RoadLineType(boundaries[i].boundary_type)
+                boundary['type'] = boundaries[i].boundary_type
                 boundary['id'] = boundaries[i].boundary_feature_id
                 bds.append(boundary)
 
