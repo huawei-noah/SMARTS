@@ -217,9 +217,7 @@ class Renderer:
                 "road_map={} already exists. Removing and adding a new "
                 "one from glb_path={}".format(self._road_map_np, map_path)
             )
-        print("fifth wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww")    
         map_np = self._showbase_instance.loader.loadModel(map_path, noCache=True)
-        print("sixth wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww")
         np = self._root_np.attachNewNode("road_map")
         map_np.reparent_to(np)
         np.hide(RenderMasks.OCCUPANCY_HIDE)
