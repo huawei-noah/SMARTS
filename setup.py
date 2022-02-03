@@ -79,11 +79,11 @@ setup(
         "test": [
             # The following are for testing
             "ipykernel>=6.8.0",
-            "jupyter-client==6.1.12",
+            "jupyter-client>=7.1.2",
             "pytest>=6.2.5",
             "pytest-benchmark>=3.4.1",
             "pytest-cov>=3.0.0",
-            "pytest-notebook==0.7.0",
+            "pytest-notebook>=0.7.0",
             "pytest-xdist>=2.4.0",
         ],
         "torch": [
