@@ -37,6 +37,7 @@ from .utils.file import read_tfrecord_file
 
 class WaymoMap(RoadMap):
     """A map associated with a Waymo dataset"""
+    DEFAULT_LANE_SPEED = 16.67  # in m/s
 
     def __init__(self, map_spec: MapSpec, scenario):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -142,6 +143,10 @@ class WaymoMap(RoadMap):
             self._lane_id = lane_id
             self._lane_feat = lane_feat
             self._lane_pts = [np.array([p.x, p.y]) for p in lane_feat.polyline]
+            if lane_feat.speed_limit_mph:
+                self._speed_limit = lane_feat.lane_feat.speed_limit_mph * 0.44704
+            else:
+                self._speed_limit = WaymoMap.DEFAULT_LANE_SPEED
 
         @cached_property
         def length(self) -> float:
@@ -165,8 +170,11 @@ class WaymoMap(RoadMap):
             """Lanes leading out of this lane."""
             return [
                 self._map.lane_by_id(exit_lanes)
-                for exit_lanes in self._lane_feat._exit_lanes
+                for exit_lanes in self._lane_feat.exit_lanes
             ]
+
+        def speed_limit(self) -> float:
+            return self._speed_limit
 
         @cached_property
         def entry_surfaces(self) -> List[RoadMap.Surface]:

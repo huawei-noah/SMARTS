@@ -630,7 +630,7 @@ class Waymo(_TrajectoryDataset):
                 obj_state = scenario.tracks[i].states[j]
                 vel = np.array([obj_state.velocity_x, obj_state.velocity_y])
 
-                row = {}
+                row = dict()
                 row["valid"] = obj_state.valid
                 row["vehicle_id"] = vehicle_id
                 row["type"] = vehicle_type
@@ -664,8 +664,7 @@ class Waymo(_TrajectoryDataset):
                         continue
 
                     # Interpolate backwards using previous timestep
-                    interp_row = {}
-                    interp_row["sim_time"] = time_expected
+                    interp_row = {"sim_time": time_expected}
 
                     prev_row = rows[j - 1]
                     prev_time = prev_row["sim_time"]
@@ -691,8 +690,7 @@ class Waymo(_TrajectoryDataset):
                         continue
 
                     # Interpolate forwards using next timestep
-                    interp_row = {}
-                    interp_row["sim_time"] = time_expected
+                    interp_row = {"sim_time": time_expected}
 
                     next_row = rows[j + 1]
                     next_time = next_row["sim_time"]
@@ -712,7 +710,7 @@ class Waymo(_TrajectoryDataset):
 
             # Third pass -- filter invalid states, replace interpolated values, convert to ms, constrain angles
             for j in range(num_steps):
-                if rows[j]["valid"] == False:
+                if not rows[j]["valid"]:
                     continue
                 if interp_rows[j] is not None:
                     rows[j]["sim_time"] = interp_rows[j]["sim_time"]
