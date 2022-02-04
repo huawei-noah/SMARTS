@@ -188,7 +188,7 @@ class RoadMap:
 
         def contains_point(self, point: Point) -> bool:
             """Returns True iff this point is fully contained by this surface.
-            For some regions of some maps, it map not be possible to determine this.
+            For some regions of some maps, it may not be possible to determine this.
             In such indeterminant cases, it is recommended to return True."""
             raise NotImplementedError()
 

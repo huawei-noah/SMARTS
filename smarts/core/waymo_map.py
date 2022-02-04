@@ -21,7 +21,7 @@ import logging
 import os
 from functools import lru_cache
 from subprocess import check_output
-from typing import List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 from waymo_open_dataset.protos import scenario_pb2
 from enum import Enum
 import numpy as np
@@ -44,8 +44,8 @@ class WaymoMap(RoadMap):
         self._surfaces = {}
         self._lanes = {}
         self._roads = {}
-        self._map_features = {"lane": [], "road_line": [], "road_edge": [], "stop_sign": [], "crosswalk": [],
-                              "speed_bump": []}
+        # some keys in _map_features include:  lane, road_line, road_edge, stop_sign, crosswalk, speed_bump
+        self._map_features = {}
         self._scenario_id = None
         # self._waypoints_cache = TODO
         self._lanepoints = None
@@ -56,8 +56,7 @@ class WaymoMap(RoadMap):
                 self, spacing=map_spec.lanepoint_spacing
             )
 
-    def _load(self, path, scenario_id):
-        scenario = None
+    def _load(self, path: str, scenario_id):
         dataset = read_tfrecord_file(path)
         for record in dataset:
             parsed_scenario = scenario_pb2.Scenario()
@@ -65,8 +64,7 @@ class WaymoMap(RoadMap):
             if parsed_scenario.scenario_id == scenario_id:
                 scenario = parsed_scenario
                 break
-
-        if scenario is None:
+        else:
             errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
             raise ValueError(errmsg)
 
@@ -75,23 +73,26 @@ class WaymoMap(RoadMap):
             map_feature = scenario.map_features[i]
             key = map_feature.WhichOneof("feature_data")
             if key is not None:
-                self._map_features[key].append((getattr(map_feature, key), map_feature.id))
+                self._map_features.setdefault(key, []).append(
+                    (getattr(map_feature, key), map_feature.id)
+                )
 
-        for lane in self._map_features["lane"]:
-            lane_center = lane[0]
-            lane_id = lane[1]
-            lane = WaymoMap.Lane(self, lane_id, lane_center)
+        for lane_feats in self._map_features["lane"]:
+            lane_feat = lane_feats[0]
+            lane_id = lane_feats[1]
+            lane = WaymoMap.Lane(self, lane_id, lane_feat)
             self._lanes[lane_id] = lane
             self._surfaces[lane_id] = lane
 
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
         """Generate a road network from the given map specification."""
+        # TODO:  check that map_spec.source encodes valid path as well as scenario_id
         pass  # TODO
 
     @property
     def source(self) -> str:
-        pass  # TODO
+        return self._scenario_id  # TAI: include path too?
 
     def is_same_map(self, map_spec: MapSpec) -> bool:
         """Test if the road network is identical to the given map specification."""
@@ -105,9 +106,9 @@ class WaymoMap(RoadMap):
     @property
     def scale_factor(self) -> float:
         """Get the scale factor between the default lane width and the default lane width."""
-        pass  # TODO
+        return 1.0  # TODO
 
-    def to_glb(self, at_path):
+    def to_glb(self, at_path: str):
         """Build a glb file for camera rendering and envision"""
         pass  # TODO (or not!)
 
@@ -126,62 +127,70 @@ class WaymoMap(RoadMap):
         @property
         def is_drivable(self) -> bool:
             """If it is possible to drive on this surface."""
-            # TODO
-            return True
+            return True  # TODO?
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
         """Find a surface by its identifier."""
         return self._surfaces.get(surface_id)
 
-    # TODO, etc.
-
     class Lane(RoadMap.Lane, Surface):
-        lane_id: int
-        lane_pts: List
-
-        def __init__(self, road_map, lane_id, lane_center):
+        def __init__(self, road_map, lane_id: str, lane_feat):
             super().__init__(lane_id, road_map)
-            self.lane_id = lane_id
+            self._lane_id = lane_id
             self._map = road_map
-            self.lane_pts = [np.array([p.x, p.y]) for p in lane_center.polyline]
-            self.entry_lanes = [entry_lane for entry_lane in lane_center.entry_lanes]
-            self.exit_lanes = [exit_lane for exit_lane in lane_center.exit_lanes]
-            self.left_boundaries = self.extract_boundaries(lane_center.left_boundaries)
-            self.right_boundaries = self.extract_boundaries(lane_center.right_boundaries)
-            self.left_neighbors = self.extract_neighbors(lane_center.left_neighbors)
-            self.right_neighbors = self.extract_neighbors(lane_center.right_neighbors)
+            # since lane_feat is kept in self._map_features too,
+            # we can just keep a reference to it here and extract things
+            # from it on-demand
+            self_lane_feat = lane_feat
+
+            # TODO: remove below and only do the following on demand (cache if necessary)...
+            self._lane_pts = [np.array([p.x, p.y]) for p in lane_feat.polyline]
+            self._left_boundaries = WaymoMap.Lane._extract_boundaries(
+                lane_feat.left_boundaries
+            )
+            self._right_boundaries = WaymoMap.Lane._extract_boundaries(
+                lane_feat.right_boundaries
+            )
+            self._left_neighbors = WaymoMap.Lane._extract_neighbors(
+                lane_feat.left_neighbors
+            )
+            self._right_neighbors = WaymoMap.Lane._extract_neighbors(
+                lane_feat.right_neighbors
+            )
 
         @staticmethod
-        def extract_neighbours(self, neighbours):
-            nbs = []
-            for i in range(len(neighbours)):
-                nb = dict()
-                nb['id'] = neighbours[i].feature_id
-                nb['indexes'] = [
-                    neighbours[i].self_start_index, neighbours[i].self_end_index, neighbours[i].neighbor_start_index, neighbours[i].neighbor_end_index
-                ]
-                nb['boundaries'] = self.extract_boundaries(neighbours.boundaries)
-                nbs.append(nb)
-            return nbs
+        def _extract_neighbors(neighbors: Sequence) -> List[Dict[str, Any]]:
+            return [
+                {
+                    "id": nb.feature_id,
+                    "indexes": [
+                        nb.self_start_index,
+                        nb.self_end_index,
+                        nb.neighbor_start_index,
+                        nb.neighbor_end_index,
+                    ],
+                    "boundaries": WaymoMap.Lane._extract_boundaries(nb.boundaries),
+                }
+                for nb in neighbors
+            ]
 
         @staticmethod
-        def extract_boundaries(boundaries):
-            bds = []
-            for i in range(len(boundaries)):
-                boundary = dict()
-                boundary['index'] = [boundaries[i].lane_start_index, boundaries[i].lane_end_index]
-                boundary['type'] = boundaries[i].boundary_type
-                boundary['id'] = boundaries[i].boundary_feature_id
-                bds.append(boundary)
-
-            return bds
+        def _extract_boundaries(boundaries: Sequence) -> List[Dict[str, Any]]:
+            return [
+                {
+                    "index": [bd.lane_start_index, bd.lane_end_index],
+                    "type": bd.boundary_type,
+                    "id": bd.boundary_feature_id,
+                }
+                for bd in boundaries
+            ]
 
         @cached_property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
             """Lanes leading into this lane."""
             return [
                 self._map.lane_by_id(entry_lane)
-                for entry_lane in self.entry_lanes
+                for entry_lane in self._lane_feat.entry_lanes
             ]
 
         @cached_property
@@ -189,36 +198,21 @@ class WaymoMap(RoadMap):
             """Lanes leading out of this lane."""
             return [
                 self._map.lane_by_id(exit_lanes)
-                for exit_lanes in self.exit_lanes
+                for exit_lanes in self._lane_feat._exit_lanes
             ]
 
         @cached_property
         def entry_surfaces(self) -> List[RoadMap.Surface]:
             """All surfaces leading into this lane."""
+            # TODO?  can a non-lane connect into a lane?
             return self.incoming_lanes
 
         @cached_property
         def exit_surfaces(self) -> List[RoadMap.Surface]:
             """All surfaces leading out of this lane."""
+            # TODO?  can a lane exit to a non-lane?
             return self.outgoing_lanes
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
-        lane = self._lanes.get(lane_id)
-        if lane:
-            return lane
-        lane_center = None
-        for waymo_lane in self._map_features["lane"]:
-            if waymo_lane[1] == lane_id:
-                lane_center = waymo_lane[0]
-                break
-
-        if not lane_center:
-            self._log.warning(
-                f"WaymoMap got request for unknown lane_id '{lane_id}'"
-            )
-            return None
-        lane = WaymoMap.Lane(self, lane_id, lane_center)
-        self._lanes[lane_id] = lane
-        assert lane_id not in self._surfaces
-        self._surfaces[lane_id] = lane
-        return lane
+        # note: all lanes were cached already by _load()
+        return self._lanes.get(lane_id)
