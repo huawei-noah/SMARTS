@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+import os
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -28,6 +30,8 @@ from smarts.core.coordinates import Point
 from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.waymo_map import WaymoMap
+from smarts.sstudio.types import MapSpec
 
 
 @pytest.fixture
@@ -641,3 +645,24 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
     r0_lp_path = lanepoints.paths_starting_at_lanepoint(r0_linked_lane_point, 5, ())
     assert len(r0_lp_path) == 1
     assert [llp.lp.lane.lane_id for llp in r0_lp_path[0]].count("1_0_L_1") == 6
+
+
+def test_waymo_map():
+    scenario_id = "4f30f060069bbeb9"
+    dataset_root = os.path.join(Path(__file__).parent, "maps/")
+    dataset_file = (
+        "uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000"
+    )
+    dataset_path = os.path.join(dataset_root, dataset_file)
+
+    if not os.path.exists(dataset_path):
+        return
+
+    source_str = f"{dataset_path}#{scenario_id}"
+    map_spec = MapSpec(source=source_str)
+    road_map = WaymoMap.from_spec(map_spec)
+
+    assert isinstance(road_map, WaymoMap)
+    assert len(road_map._lanes) > 0
+    for lane_id, lane in road_map._lanes.items():
+        assert lane.length > 0

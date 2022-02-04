@@ -325,7 +325,9 @@ class LanePoints:
                 last_lane_coord = curr_lanepoint.lp.lane.to_lane_coord(
                     Point(x=lane_shape[-1][0], y=lane_shape[-1][1], z=0.0)
                 )
-                lane_width = curr_lanepoint.lp.lane.width_at_offset(last_lane_coord.s)
+                lane_width, _ = curr_lanepoint.lp.lane.width_at_offset(
+                    last_lane_coord.s
+                )
                 last_linked_lanepoint = LinkedLanePoint(
                     lp=LanePoint(
                         lane=curr_lanepoint.lp.lane,
