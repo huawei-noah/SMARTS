@@ -29,10 +29,10 @@ Generate traffic
 You can specify acceleration, deceleration, speed distribution, imperfection distribution and other configs for social cars.
 See more config for `TrafficActor` in :class:`smarts.sstudio.types`.
 
-Flow can be used to generate repeated vehicle runs on the same route, you can config vehicle route and depart rate here. 
+Flow can be used to generate repeated vehicle runs on the same route, you can config vehicle route and depart rate here.
 
 After the `gen_traffic` function is run, a dir named "traffic" containing vehicle config xmls will be created under output_dir.
- 
+
 
 This a short file example of how it works:
 
@@ -82,12 +82,40 @@ The Scenario Studio of SMARTS also allows generation of *friction map* which con
       friction_coefficient=0.5)]
   )
 
-===============
-Edit SUMO maps
-===============
+=================
+Generate road map
+=================
 
-To enrich your training datasets, you can edit your own map through [SUMO's NETEDIT](https://sumo.dlr.de/docs/NETEDIT.html) and export it in a map.net.xml format.
-And if you have an additional file you wish to turn into a map you can use the conversion utility `sumo2mesh.py` like this:
+SMARTS was initially designed to use maps in the SUMO road network format; it supports these natively.
+However as of v0.5, SMARTS now supports other custom map formats, as
+long as a class that implements the `smarts.core.RoadMap` interface is provided to read these.
+An example implementation of the [OpenDRIVE map format](https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09)
+is provided as `smarts.core.OpenDriveRoadNetwork` to show how this can be done.
+Also see `smarts.core.WaymoMap` for an example of support for a format from Waymo.
+
+Create a custom map
+-------------------
+If not utilizing a built-in map type (i.e., Sumo or OpenDRIVE road networks or a Waymo map),
+define a `MapSpec` object in your `scenario.py`.
+
+.. code-block:: python
+
+  # function that can create custom map objects using a map_spec
+  def custom_map_builder(map_spec):
+     # ...
+     return map_object, map_hash
+
+  map_spec = MapSpec(source="path_or_uri", builder_fn=custom_map_builder)
+
+  gen_map(map_spec)
+
+However, note that the `gen_traffic()` operation is net yet supported with custom map types.
+To use that feature, you may still need to convert your map to the Sumo road network format.
+
+
+Convert existing map to Sumo
+----------------------------
+If you have a suitable file in another format, you can turn it into a Sumo road network using the conversion utility `sumo2mesh.py` like this:
 
 .. code-block:: bash
 
@@ -95,16 +123,17 @@ And if you have an additional file you wish to turn into a map you can use the c
   python3 -m smarts.sstudio.sumo2mesh dataset_public/2lane_sharp/map.net.xml dataset_public/2lane_sharp/map.egg --format=egg
 
 
-Create map
----------------
+Create a Sumo map
+-----------------
 
+You can edit your own Sumo map through [SUMO's NETEDIT](https://sumo.dlr.de/docs/NETEDIT.html) and export it in a map.net.xml format.
 First, to start `netedit`, run the following on terminal:
 
 .. code-block:: bash
 
   netedit
 
-On the top left bar, "file" -> "new network" to create a new map. 
+On the top left bar, "file" -> "new network" to create a new map.
 
 Use shortcut key "e" to change to edge mode. Click "chain" and "two-way" icons located on the far right of top tool bar, shown in the image below:
 
@@ -112,10 +141,11 @@ Use shortcut key "e" to change to edge mode. Click "chain" and "two-way" icons l
 
 Then click on map to start creating new edges and lanes.
 
-Edit existing map
+
+Edit existing Sumo map
 ----------------------
 
-"file" -> "Open Network..." to open an existing map. 
+"file" -> "Open Network..." to open an existing map.
 
 Click on the inspect icon to enable inspect mode
 
@@ -150,8 +180,8 @@ Create traffic routes
 For example, using the following `Route` definition:
 
 .. code-block:: python
-  
+
   Route(begin=("gneE72", 0, "random"), end=("edge2", 1, "max"),)
 
-`begin=("gneE72", 0, "random")` defines the route to start on edge with id `gneE72` and at lane index `0`, 
+`begin=("gneE72", 0, "random")` defines the route to start on edge with id `gneE72` and at lane index `0`,
 which is the same lane as the selected lane in the figure above. `"random"` here specifies the amount of offset on the lane to start the route.
