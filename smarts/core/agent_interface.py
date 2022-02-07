@@ -87,22 +87,28 @@ class RoadWaypoints:
     that lane.
     """
 
-    # The distance in meters to include waypoints for (both behind and infront of the agent)
+    # The distance in meters to include waypoints for (both behind and in front of the agent)
     horizon: int = 20
 
 
 @dataclass
 class NeighborhoodVehicles:
-    # `None` means no radius filtering
+    """Detection of nearby vehicles and configuration for filtering of the vehicles."""
+
     radius: Optional[float] = None
+    """The distance within which neighborhood vehicles are detected. `None` means vehicles will be detected within an unlimited distance."""
 
 
 @dataclass
 class Accelerometer:
+    """Requires detection of motion changes within the agents vehicle."""
+
     pass
 
 
 class AgentType(IntEnum):
+    """Used to select preconfigured agent interfaces."""
+
     Buddha = 0
     """Agent sees nothing and does nothing"""
     Full = 1
@@ -135,6 +141,8 @@ class AgentType(IntEnum):
 
 @dataclass(frozen=True)
 class AgentsListAlive:
+    """Describes agents that are active in the simulation."""
+
     agents_list: List[str]
     """The list of agents to check whether they are alive"""
     minimum_agents_alive_in_list: int
@@ -143,6 +151,8 @@ class AgentsListAlive:
 
 @dataclass(frozen=True)
 class AgentsAliveDoneCriteria:
+    """Multi-agent requirements used to determine if an agent should be removed from an episode."""
+
     minimum_ego_agents_alive: Optional[int] = None
     """If set, triggers the agent to be done if the total number of alive ego agents falls below the given value."""
     minimum_total_agents_alive: Optional[int] = None
@@ -164,7 +174,7 @@ class AgentsAliveDoneCriteria:
 
 @dataclass(frozen=True)
 class DoneCriteria:
-    """Toggleable conditions on which to trigger episode end."""
+    """Toggleable conditions on which cause removal of an agent from the current episode."""
 
     collision: bool = True
     """End the episode when the agent collides with another vehicle."""
@@ -325,11 +335,11 @@ class AgentInterface:
                 waypoints=True,
                 action=ActionSpaceType.Trajectory,
             )
-        # The trajectory interpolation agent which recieves a with-time-trajectory and move vehicle
+        # The trajectory interpolation agent which receives a with-time-trajectory and move vehicle
         # with linear time interpolation
         elif requested_type == AgentType.TrajectoryInterpolator:
             interface = AgentInterface(action=ActionSpaceType.TrajectoryWithTime)
-        # The MPC based trajectory tracking agent wich recieves a series of
+        # The MPC based trajectory tracking agent which receives a series of
         # reference trajectory points and speeds and computes the optimal
         # steering action.
         elif requested_type == AgentType.MPCTracker:
@@ -368,7 +378,7 @@ class AgentInterface:
         return interface.replace(**kwargs)
 
     def replace(self, **kwargs):
-        """Clone this AgentInteface with the given fields updated
+        """Clone this AgentInterface with the given fields updated
         >>> interface = AgentInterface(action=ActionSpaceType.Continuous) \
                             .replace(waypoints=True)
         >>> interface.waypoints
@@ -378,6 +388,7 @@ class AgentInterface:
 
     @property
     def action_space(self):
+        """Deprecated. Use `action` instead."""
         # for backwards compatibility
         return self.action
 

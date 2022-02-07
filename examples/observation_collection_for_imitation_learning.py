@@ -4,6 +4,7 @@ import pickle
 from typing import Any, Dict, Sequence
 
 from envision.client import Client as Envision
+from examples.argument_parser import default_argument_parser
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ControllerOutOfLaneException
@@ -13,18 +14,13 @@ from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.math import radians_to_vec
 
-# The following ugliness was made necessary because the `aiohttp` #
-# dependency has an "examples" module too.  (See PR #1120.)
-if __name__ == "__main__":
-    from argument_parser import default_argument_parser
-else:
-    from .argument_parser import default_argument_parser
-
 logging.basicConfig(level=logging.INFO)
 
 
 def _record_data(
-    t: float, obs: Observation, collected_data: Dict[str, Dict[float, Dict[str, Any]]]
+    t: float,
+    obs: Dict[str, Observation],
+    collected_data: Dict[str, Dict[float, Dict[str, Any]]],
 ):
     # just a hypothetical example of how we might collect some observations to save...
     for car, car_obs in obs.items():
@@ -52,7 +48,6 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
         agent_builder=None,
-        observation_adapter=None,
     )
 
     smarts = SMARTS(
@@ -87,13 +82,13 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
 
             for veh_id in current_vehicles:
                 try:
-                    smarts.attach_sensors_to_vehicles(agent_spec, {veh_id})
+                    smarts.attach_sensors_to_vehicles(agent_spec.interface, {veh_id})
                 except ControllerOutOfLaneException:
                     logger.warning(f"{veh_id} out of lane, skipped attaching sensors")
                     vehicles_off_road.add(veh_id)
 
             valid_vehicles = {v for v in current_vehicles if v not in vehicles_off_road}
-            obs, _, _, dones = smarts.observe_from(valid_vehicles)
+            obs, _, _, dones = smarts.observe_from(list(valid_vehicles))
             _record_data(smarts.elapsed_sim_time, obs, collected_data)
 
         # an example of how we might save the data per car

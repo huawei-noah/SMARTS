@@ -22,6 +22,8 @@ from enum import Enum
 
 # Color channel order: RGBA
 class Colors(Enum):
+    """Common simulation colors as RGBA values."""
+
     Red = (210 / 255, 30 / 255, 30 / 255, 1)
     Rose = (196 / 255, 0, 84 / 255, 1)
     Burgundy = (127 / 255, 0, 1 / 255, 1)
@@ -51,6 +53,8 @@ class Colors(Enum):
 
 
 class SceneColors(Enum):
+    """Simulation feature colors as RGBA values"""
+
     Agent = Colors.Red.value
     SocialAgent = Colors.Silver.value
     SocialVehicle = Colors.Silver.value

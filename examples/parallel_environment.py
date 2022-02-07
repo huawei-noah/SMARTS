@@ -1,3 +1,5 @@
+import pathlib
+
 import gym
 
 gym.logger.set_level(40)
@@ -5,8 +7,8 @@ gym.logger.set_level(40)
 from functools import partial
 from typing import Dict, Sequence, Tuple
 
-from argument_parser import default_argument_parser
-
+from examples import build_scenario
+from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
@@ -211,11 +213,19 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if not args.scenarios:
-        args.scenarios = ["./scenarios/figure_eight"]
-
     if not args.sim_name:
         args.sim_name = "par_env"
+
+    if not args.scenarios:
+        args.scenarios = [
+            str(
+                pathlib.Path(__file__).absolute().parents[1]
+                / "scenarios"
+                / "figure_eight"
+            )
+        ]
+
+    build_scenario(args.scenarios)
 
     print("\nParallel environments with asynchronous episodes.")
     main(

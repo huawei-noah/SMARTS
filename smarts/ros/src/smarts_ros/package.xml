@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>smarts_ros</name>
-  <version>0.5.0</version>
+  <version>0.5.1</version>
   <description>The SMARTS package includes a node to wrap and drive a SMARTS simulation,
     publishing the state updates after each step.</description>
 

@@ -1,6 +1,7 @@
 from functools import partial
-from typing import Dict
+from typing import Any, Callable, Dict, Generator
 
+import gym
 from driving_in_traffic.env import action, reward
 
 from smarts.core import agent as smarts_agent
@@ -11,14 +12,16 @@ from smarts.env.wrappers import rgb_image as smarts_rgb_image
 from smarts.env.wrappers import single_agent as smarts_single_agent
 
 
-def gen_env(config: Dict, seed: int):
+def gen_env(
+    config: Dict[str, Any], seed: int
+) -> Generator[Callable[[str], gym.Env], None, None]:
     base_seed = seed
     while True:
         yield partial(make_env, config=config, seed=base_seed)
         base_seed += 1
 
 
-def make_env(config: Dict, seed: int, env_name: str = None):
+def make_env(config: Dict[str, Any], seed: int, env_name: str = None) -> gym.Env:
 
     vehicle_interface = smarts_agent_interface.AgentInterface(
         max_episode_steps=config["max_episode_steps"],

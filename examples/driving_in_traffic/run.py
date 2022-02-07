@@ -11,7 +11,9 @@ import pathlib
 import re
 import warnings
 from datetime import datetime
+from typing import Callable, Generator
 
+import gym
 import numpy as np
 import rich.traceback
 import tensorflow as tf
@@ -33,7 +35,7 @@ yaml = YAML(typ="safe")
 seed(42)
 
 
-def main(args):
+def main(args: argparse.Namespace):
     # Load config file.
     config_file = yaml.load(
         (pathlib.Path(__file__).absolute().parent / "config.yaml").read_text()
@@ -42,7 +44,6 @@ def main(args):
     # Load SMARTS env config.
     config_env = config_file["smarts"]
     config_env["mode"] = args.mode
-    config_env["logdir"] = args.logdir
     config_env["headless"] = not args.head
     config_env["scenarios_dir"] = (
         pathlib.Path(__file__).absolute().parents[0] / "scenarios"
@@ -57,6 +58,39 @@ def main(args):
     tf.config.run_functions_eagerly(not config_dv2.jit)
 
     # Setup GPU.
+    _setup_gpu()
+
+    # Train or evaluate.
+    if config_env["mode"] == "train" and not args.logdir:
+        # Train from scratch.
+        time = datetime.now().strftime("%Y_%m_%d_%H_%M")
+        logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
+    elif config_env["mode"] == "train" and args.logdir:
+        # Begin training from a pretrained model.
+        logdir = args.logdir
+    elif config_env["mode"] == "evaluate":
+        logdir = args.logdir
+        config_dv2 = config_dv2.update({"eval_eps": 1e8})
+    else:
+        raise KeyError(
+            f'Expected \'train\' or \'evaluate\', but got {config_env["mode"]}.'
+        )
+    config_dv2 = config_dv2.update({"logdir": logdir})
+
+    # Create SMARTS env.
+    gen_env = single_agent.gen_env(config_env, config_env["seed"])
+
+    # Run training or evaluation.
+    run(config_dv2, gen_env, config_env["mode"])
+
+
+def _build_scenario():
+    scenario = str(pathlib.Path(__file__).absolute().parent / "scenarios")
+    build_scenario = f"scl scenario build-all --clean {scenario}"
+    os.system(build_scenario)
+
+
+def _setup_gpu():
     gpus = tf.config.list_physical_devices("GPU")
     if gpus:
         try:
@@ -72,46 +106,8 @@ def main(args):
             ResourceWarning,
         )
 
-    # Train or evaluate.
-    if config_env["mode"] == "train":
-        if not config_env["logdir"]:
-            # Begin training from scratch.
-            time = datetime.now().strftime("%Y_%m_%d_%H_%M")
-            logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
-        else:
-            # Begin training from a pretrained model.
-            logdir = config_env["logdir"]
-        config_dv2 = config_dv2.update(
-            {
-                "logdir": logdir,
-            }
-        )
-    elif config_env["mode"] == "evaluate":
-        config_dv2 = config_dv2.update(
-            {
-                "logdir": config_env["logdir"],
-                "eval_eps": 1e8,
-            }
-        )
-    else:
-        raise KeyError(
-            f'Expected \'train\' or \'evaluate\', but got {config_env["mode"]}.'
-        )
 
-    # Create SMARTS env.
-    gen_env = single_agent.gen_env(config_env, config_env["seed"])
-
-    # Run training or evaluation.
-    run(config_dv2, gen_env, config_env["mode"])
-
-
-def _build_scenario():
-    scenario = str(pathlib.Path(__file__).absolute().parent / "scenarios")
-    build_scenario = f"scl scenario build-all --clean {scenario}"
-    os.system(build_scenario)
-
-
-def _wrap_env(env, config):
+def _wrap_env(env: gym.Env, config: common.config.Config):
     env = dv2.common.GymWrapper(env)
     env = dv2.common.ResizeImage(env)
     if hasattr(env.act_space["action"], "n"):
@@ -122,12 +118,16 @@ def _wrap_env(env, config):
     return env
 
 
-def run(config, gen_env, mode: str):
+def run(
+    config: common.config.Config,
+    gen_env: Generator[Callable[[str], gym.Env], None, None],
+    mode: str,
+):
     logdir = pathlib.Path(config.logdir).expanduser()
     logdir.mkdir(parents=True, exist_ok=True)
     config.save(logdir / "config.yaml")
     print(config, "\n")
-    print("Logdir", logdir)
+    print("Logdir:", logdir)
 
     train_replay = dv2.common.Replay(logdir / "train_episodes", **config.replay)
     eval_replay = dv2.common.Replay(

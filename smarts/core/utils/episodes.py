@@ -27,6 +27,8 @@ import tableprint as tp
 
 @dataclass
 class EpisodeLog:
+    """An episode logging tool."""
+
     index: int = 0
     start_time: float = field(default_factory=lambda: time.time())
     fixed_timestep_sec: float = 0
@@ -38,27 +40,33 @@ class EpisodeLog:
 
     @property
     def wall_time(self):
+        """Time elapsed since instantiation."""
         return time.time() - self.start_time
 
     @property
     def sim_time(self):
+        """An estimation of the total fixed-timestep simulation performed."""
         return self.fixed_timestep_sec * self.steps
 
     @property
     def sim2wall_ratio(self):
+        """The ration of sim time to wall time. Above 1 is hyper-realtime."""
         return self.sim_time / self.wall_time
 
     @property
     def steps_per_second(self):
+        """The rate of steps performed since instantiation."""
         return self.steps / self.wall_time
 
     def record_scenario(self, scenario_log):
+        """Record a scenario end."""
         self.fixed_timestep_sec = scenario_log["fixed_timestep_sec"]
         self.scenario_map = scenario_log["scenario_map"]
         self.scenario_routes = scenario_log["scenario_routes"]
         self.mission_hash = scenario_log["mission_hash"]
 
     def record_step(self, observations=None, rewards=None, dones=None, infos=None):
+        """Record a step end."""
         self.steps += 1
 
         if not isinstance(observations, dict):
@@ -79,6 +87,9 @@ class EpisodeLog:
 
 
 def episodes(n):
+    """An iteration method that provides numbered episodes.
+    Acts similar to python's `range(n)` but yielding episode loggers.
+    """
     col_width = 18
     with tp.TableContext(
         [
