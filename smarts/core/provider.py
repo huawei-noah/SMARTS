@@ -41,10 +41,13 @@ class ProviderRecoveryFlags(IntFlag):
 
 @dataclass
 class ProviderState:
+    """State information from a provider."""
+
     vehicles: List[VehicleState] = field(default_factory=list)
     dt: Optional[float] = None  # most Providers can leave this blank
 
     def merge(self, other: "ProviderState"):
+        """Merge state with another provider's state."""
         our_vehicles = {v.vehicle_id for v in self.vehicles}
         other_vehicles = {v.vehicle_id for v in other.vehicles}
         assert our_vehicles.isdisjoint(other_vehicles)
@@ -53,6 +56,7 @@ class ProviderState:
         self.dt = max(self.dt, other.dt, key=lambda x: x if x else 0)
 
     def filter(self, vehicle_ids):
+        """Filter vehicle states down to the given vehicles."""
         provider_vehicle_ids = [v.vehicle_id for v in self.vehicles]
         for v_id in vehicle_ids:
             try:
@@ -71,30 +75,37 @@ class Provider:
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
+        """The action spaces of the provider."""
         raise NotImplementedError
 
     def setup(self, scenario: Scenario) -> ProviderState:
+        """Initialize the provider with a scenario."""
         raise NotImplementedError
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
+        """Progress the provider to generate new vehicle state."""
         raise NotImplementedError
 
     def sync(self, provider_state: ProviderState):
+        """Synchronize with external state."""
         raise NotImplementedError
 
     def create_vehicle(self, provider_vehicle: VehicleState):
+        """Create a vehicle within the provider."""
         raise NotImplementedError
 
     def reset(self):
+        """Reset this provider to a pre-initialized state."""
         raise NotImplementedError
 
     def teardown(self):
+        """Clean up provider resources."""
         raise NotImplementedError
 
     def recover(
         self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
     ) -> Tuple[ProviderState, bool]:
-        """Attempt to reconnect the provider if an error or disconnection occured.
+        """Attempt to reconnect the provider if an error or disconnection occurred.
         Implementations may choose to e-raise the passed in exception.
         Args:
             scenario (Scenario): The scenario of the current episode.

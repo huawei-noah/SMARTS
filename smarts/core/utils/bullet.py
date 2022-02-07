@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from multiprocessing import Pipe, Process
+from multiprocessing.connection import Connection
 from typing import NamedTuple, Tuple
 
 import numpy as np
@@ -61,7 +62,12 @@ class BulletClient:
         return wrapper
 
     @staticmethod
-    def consume(bullet_connect_mode, connection):
+    def consume(bullet_connect_mode, connection: Connection):
+        """Builds a child pybullet process.
+        Args:
+            bullet_connect_mode: The type of bullet process.
+            connection: The child end of a pipe.
+        """
         # runs in sep. process
         client = bc.BulletClient(bullet_connect_mode)
 
@@ -72,12 +78,19 @@ class BulletClient:
 
 
 class ContactPoint(NamedTuple):
+    """Contact result between a shape and another shape."""
+
     bullet_id: str
+    """The id of the other shape."""
     contact_point: Tuple[float, float, float]
+    """The contact point of the query shape."""
     contact_point_other: Tuple[float, float, float]
+    """The contact point of the collided shape."""
 
 
 class JointInfo(NamedTuple):
+    """Details about a bullet joint."""
+
     index: int
     type_: int
     lower_limit: float
@@ -87,11 +100,15 @@ class JointInfo(NamedTuple):
 
 
 class JointState(NamedTuple):
+    """Physics state information about a joint."""
+
     position: Tuple[float, ...]
     velocity: Tuple[float, ...]
 
 
 class BulletBoxShape:
+    """A bullet box."""
+
     def __init__(self, bbox, bullet_client):
         self._client = bullet_client
 
@@ -106,7 +123,9 @@ class BulletBoxShape:
         self._bullet_id = self._client.createMultiBody(1, collision_box)
 
     def reset_pose(self, pose: Pose):
-        """Only call this before it needs to do anything physics-wise"""
+        """Resets the box to the given pose. Only call this before it needs to do anything
+        physics-wise
+        """
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self._bullet_id,
@@ -115,11 +134,16 @@ class BulletBoxShape:
         )
 
     def teardown(self):
+        """Cleans up bullet resource handles."""
         self._client.removeBody(self._bullet_id)
         self._bullet_id = None
 
 
 class BulletPositionConstraint:
+    """A "half"-spring constraint that pulls the attached shape to a pose. This allows motion
+    through forces rather than disrupting the simulation by moving the shape without forces.
+    """
+
     def __init__(self, bullet_shape, bullet_client):
         self._client = bullet_client
 
@@ -143,15 +167,17 @@ class BulletPositionConstraint:
         )
 
     def move_to(self, pose: Pose):
+        """Moves the constraint to the given pose. The attached shape will attempt to follow."""
         if not self._bullet_cid:
             self._make_constraint(pose)
         position, orientation = pose.as_bullet()
         # TODO: Consider to remove offset when collision is improved
-        # Move contraints slightly up to avoid ground collision
+        # Move constraints slightly up to avoid ground collision
         ground_position = position + [0, 0, 0.2]
         self._client.changeConstraint(self._bullet_cid, ground_position, orientation)
 
     def teardown(self):
+        """Clean up unmanaged resources."""
         if self._bullet_cid is not None:
             self._client.removeConstraint(self._bullet_cid)
         self._bullet_cid = None

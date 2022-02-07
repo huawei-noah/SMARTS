@@ -22,9 +22,13 @@ import logging
 import os
 from dataclasses import dataclass
 from functools import lru_cache
+from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
-import yaml
+
+from smarts.core.agent_interface import AgentInterface
+from smarts.core.plan import Mission, Plan
+from smarts.core.renderer import Renderer
 
 from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
@@ -48,6 +52,8 @@ from .utils.math import rotate_around_point
 
 @dataclass
 class VehicleState:
+    """Vehicle state information."""
+
     vehicle_id: str
     pose: Pose
     dimensions: Dimensions
@@ -70,11 +76,14 @@ class VehicleState:
 
     @property
     def privileged(self) -> bool:
+        """If the vehicle state is privilaged over the internal simulation state."""
         return self._privileged
 
 
 @dataclass(frozen=True)
 class VehicleConfig:
+    """Vehicle configuration"""
+
     vehicle_type: str
     color: tuple
     dimensions: Dimensions
@@ -130,24 +139,21 @@ VEHICLE_CONFIGS = {
     ),
 }
 
-# TODO: Replace VehicleConfigs w/ the VehicleGeometry class
-class VehicleGeometry:
-    @classmethod
-    def fromfile(cls, path, color):
-        pass
-
-
+# XXX: This is the wrong place for this exception.
 class RendererException(Exception):
     """An exception raised if a renderer is required but not available."""
 
     @classmethod
-    def required_to(cls, thing):
+    def required_to(cls, thing: str) -> "RendererException":
+        """Generate a `RenderException` requiring a render to do `thing`."""
         return cls(
             f"""A renderer is required to {thing}. You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. Install them first using the command `pip install -e .[camera-obs]` at the source directory."""
         )
 
 
 class Vehicle:
+    """Represents a single vehicle."""
+
     def __init__(
         self,
         id: str,
@@ -193,30 +199,39 @@ class Vehicle:
 
     @property
     def id(self):
+        """The id of this vehicle."""
         return self._id
 
     @property
-    def length(self):
+    def length(self) -> float:
+        """The length of this vehicle."""
         self._assert_initialized()
         return self._chassis.dimensions.length
 
     @property
-    def max_steering_wheel(self):
+    def max_steering_wheel(self) -> Optional[float]:
+        """The max steering value the chassis steering wheel can turn to.
+
+        Some chassis types do not support this.
+        """
         self._assert_initialized()
-        return self._chassis.max_steering_wheel
+        return getattr(self._chassis, "max_steering_wheel", None)
 
     @property
-    def width(self):
+    def width(self) -> float:
+        """The width of this vehicle."""
         self._assert_initialized()
         return self._chassis.dimensions.width
 
     @property
-    def height(self):
+    def height(self) -> float:
+        """The height of this vehicle."""
         self._assert_initialized()
         return self._chassis.dimensions.height
 
     @property
-    def speed(self):
+    def speed(self) -> float:
+        """The current speed of this vehicle."""
         self._assert_initialized()
         if self._speed is not None:
             return self._speed
@@ -224,15 +239,18 @@ class Vehicle:
             return self._chassis.speed
 
     def set_speed(self, speed):
+        """Set the current speed of this vehicle."""
         self._speed = speed
 
     @property
-    def sensors(self):
+    def sensors(self) -> dict:
+        """The sensors attached to this vehicle."""
         self._assert_initialized()
         return self._sensors
 
     @property
-    def renderer(self):
+    def renderer(self) -> Optional[Renderer]:
+        """The renderer this vehicle is rendered to."""
         return self._renderer
 
     # # TODO: See issue #898 This is a currently a no-op
@@ -241,12 +259,14 @@ class Vehicle:
     #     self._chassis.speed = speed
 
     @property
-    def vehicle_color(self):
+    def vehicle_color(self) -> SceneColors:
+        """The color of this vehicle (generally used for rendering purposes.)"""
         self._assert_initialized()
         return self._color
 
     @property
-    def state(self):
+    def state(self) -> VehicleState:
+        """The current state of this vehicle."""
         self._assert_initialized()
         return VehicleState(
             vehicle_id=self.id,
@@ -264,32 +284,41 @@ class Vehicle:
 
     @property
     def action_space(self):
+        """The action space this vehicle uses."""
         self._assert_initialized()
         return self._action_space
 
     @property
     def pose(self) -> Pose:
+        """The pose of this vehicle. Pose is defined as position and orientation."""
         self._assert_initialized()
         return self._chassis.pose
 
     @property
-    def chassis(self):
+    def chassis(self) -> Chassis:
+        """The underlying chassis of this vehicle."""
         self._assert_initialized()
         return self._chassis
 
     @property
     def heading(self) -> Heading:
+        """The heading of this vehicle.
+
+        Note: Heading rotates counterclockwise with north as 0.
+        """
         self._assert_initialized()
         return self._chassis.pose.heading
 
     @property
-    def position(self):
+    def position(self) -> Sequence:
+        """The position of this vehicle."""
         self._assert_initialized()
         pos, _ = self._chassis.pose.as_panda3d()
         return pos
 
     @property
-    def bounding_box(self):
+    def bounding_box(self) -> List[np.ndarray]:
+        """The minimum fitting heading aligned bounding box. Four 2D points representing the minimum fitting box."""
         self._assert_initialized()
         # Assuming the position is the centre,
         # calculate the corner coordinates of the bounding_box
@@ -307,11 +336,18 @@ class Vehicle:
         ]
 
     @property
-    def vehicle_type(self):
+    def vehicle_type(self) -> str:
+        """Get the vehicle type identifier."""
         return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
 
     @staticmethod
-    def agent_vehicle_dims(mission) -> Dimensions:
+    def agent_vehicle_dims(mission: Mission) -> Dimensions:
+        """Get the vehicle dimensions from the mission requirements.
+        Args:
+            A mission for the agent.
+        Returns:
+            The mission vehicle spec dimensions XOR the default "passenger" vehicle dimensions.
+        """
         if mission.vehicle_spec:
             # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
             # but we use that value here in case we ever expand our history functionality.
@@ -328,15 +364,18 @@ class Vehicle:
     def build_agent_vehicle(
         cls,
         sim,
-        vehicle_id,
-        agent_interface,
-        plan,
-        vehicle_filepath,
-        tire_filepath,
-        trainable,
-        surface_patches,
-        initial_speed=None,
-    ):
+        vehicle_id: str,
+        agent_interface: AgentInterface,
+        plan: Plan,
+        vehicle_filepath: str,
+        tire_filepath: str,
+        trainable: bool,
+        surface_patches: List[Dict[str, Any]],
+        initial_speed: Optional[float] = None,
+    ) -> "Vehicle":
+        """Create a new vehicle and set up sensors and planning information as required by the
+        ego agent.
+        """
         mission = plan.mission
 
         chassis_dims = cls.agent_vehicle_dims(mission)
@@ -404,7 +443,10 @@ class Vehicle:
         return vehicle
 
     @staticmethod
-    def build_social_vehicle(sim, vehicle_id, vehicle_state, vehicle_config_type):
+    def build_social_vehicle(
+        sim, vehicle_id, vehicle_state, vehicle_config_type
+    ) -> "Vehicle":
+        """Create a new unassociated vehicle."""
         dims = Dimensions.copy_with_defaults(
             vehicle_state.dimensions, VEHICLE_CONFIGS[vehicle_config_type].dimensions
         )
@@ -420,6 +462,7 @@ class Vehicle:
 
     @staticmethod
     def attach_sensors_to_vehicle(sim, vehicle, agent_interface, plan):
+        """Attach sensors as required to satisfy the agent interface's requirements"""
         # The distance travelled sensor is not optional b/c it is used for the score
         # and reward calculation
         vehicle.attach_trip_meter_sensor(
@@ -520,13 +563,19 @@ class Vehicle:
         )
 
     def step(self, current_simulation_time):
+        """Update internal state."""
         self._has_stepped = True
         self._chassis.step(current_simulation_time)
 
     def control(self, *args, **kwargs):
+        """Apply control values to this vehicle.
+
+        Forwards control to the chassis.
+        """
         self._chassis.control(*args, **kwargs)
 
     def update_state(self, state: VehicleState, dt: float):
+        """Update the vehicle's state"""
         state.updated = True
         if not state.privileged:
             assert isinstance(self._chassis, BoxChassis)
@@ -549,6 +598,7 @@ class Vehicle:
         self._chassis.state_override(dt, state.pose, linear_velocity, angular_velocity)
 
     def create_renderer_node(self, renderer):
+        """Create the vehicle's rendering node in the renderer."""
         assert not self._renderer
         self._renderer = renderer
         config = VEHICLE_CONFIGS[self._vehicle_config_type]
@@ -557,6 +607,7 @@ class Vehicle:
         )
 
     def sync_to_renderer(self):
+        """Update the vehicle's rendering node."""
         assert self._renderer
         self._renderer.update_vehicle_node(self._id, self.pose)
 
@@ -570,16 +621,23 @@ class Vehicle:
 
     # TODO: Merge this w/ speed setter as a set GCD call?
     def set_pose(self, pose: Pose):
+        """Use with caution. This will directly set the pose of the chassis.
+
+        This may disrupt physics simulation of the chassis physics body for a few steps after use.
+        """
         self._warn_AckermannChassis_set_pose()
         self._chassis.set_pose(pose)
 
     def swap_chassis(self, chassis: Chassis):
-        # Apply GCD ("greatest common denominator state" from front-end to back-end)
+        """Swap the current chassis with the given chassis. Apply the GCD of the previous chassis
+        to the new chassis ("greatest common denominator state" from front-end to back-end)
+        """
         chassis.inherit_physical_values(self._chassis)
         self._chassis.teardown()
         self._chassis = chassis
 
     def teardown(self, exclude_chassis=False):
+        """Clean up internal resources"""
         for sensor in [
             sensor
             for sensor in [

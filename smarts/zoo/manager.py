@@ -35,6 +35,7 @@ log = logging.getLogger(f"manager.py - pid({os.getpid()})")
 
 
 def serve(port):
+    """ Starts a SMARTS agent worker server to offload agent action processing. """
     ip = "[::]"
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
     manager_servicer_object = manager_servicer.ManagerServicer()

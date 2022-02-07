@@ -24,12 +24,15 @@ from smarts.contrib.pymarl import PyMARLHiWayEnv
 
 
 class ListHiWayEnv(PyMARLHiWayEnv):
+    """A specialized PyMARLHiWayEnv environment that provides all information as arrays. """
+
     metadata = {"render.modes": ["human"]}
 
     def __init__(self, config):
         super(ListHiWayEnv, self).__init__(config)
 
     def step(self, agent_actions):
+        """ Returns observations, rewards, dones, infos. """
         agent_actions = np.array(agent_actions)
         _, _, infos = super().step(agent_actions)
         n_rewards = infos.pop("rewards_list")

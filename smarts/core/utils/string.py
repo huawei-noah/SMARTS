@@ -23,6 +23,15 @@ import math
 
 
 def truncate(str_, length, separator="..."):
+    """Truncates a string to the given length by removing internal characters.
+    Args:
+        str_:
+            The string to truncate.
+        length:
+            The length to truncate the string to.
+        separator:
+            The intermediary characters that replaces removed characters.
+    """
     if len(str_) <= length:
         return str_
 

@@ -29,6 +29,7 @@ NAME_CONSTRAINT_REGEX = re.compile(r"^(?:[\w:-]+\/)?([\w:.-]+)-(v(\d+)|latest)$"
 
 
 def is_valid_locator(locator: str):
+    """Validate the given locator."""
     # Handle non-URL-based agents (e.g. open_agent-v0)
     return NAME_CONSTRAINT_REGEX.search(locator)
 
@@ -46,6 +47,8 @@ def find_attribute_spec(name):
 
 
 class ClassFactory:
+    """A named factory that can preconfigure generation of objects."""
+
     def __init__(self, name, entrypoint=None, **kwargs):
         self.name = name
         self.entrypoint = entrypoint
@@ -57,6 +60,9 @@ class ClassFactory:
             )
 
     def make(self, **kwargs):
+        """Provides an object from the entrypoint. Overriding predefined keyword arguments with
+        the given keyword arguments.
+        """
         if self.entrypoint is None:
             raise AttributeError(f"Entry-point does not exist for name `{self.name}`")
         _kwargs = self._kwargs.copy()
@@ -78,10 +84,18 @@ class ClassFactory:
 
 
 class ClassRegister:
+    """A listing of key named class factories."""
+
     def __init__(self):
         self.index = {}
 
     def register(self, locator, entry_point=None, **kwargs):
+        """Registers a new factory with the given locator as the key.
+        Args:
+            locator: The key value of the factory.
+            entry_point: The factory method.
+            kwargs: Predefined arguments to the factory method.
+        """
         # TODO: locator is being used for both module:name and just name. The former
         #       is the locator, and the latter is simply name. Update the signature of
         #       this method to be register(name, entrypoint, ...)
@@ -90,6 +104,7 @@ class ClassRegister:
             self.index[name] = ClassFactory(locator, entry_point, **kwargs)
 
     def find_factory(self, locator):
+        """Locates a factory given a locator."""
         self._raise_on_invalid_locator(locator)
 
         mod_name, name = locator.split(":", 1)
@@ -110,11 +125,15 @@ class ClassRegister:
             raise NameError(f"Locator not registered in lookup: {locator}")
 
     def make(self, locator, **kwargs):
+        """Calls the factory with `locator` name key supplying the keyword arguments as argument
+        overrides.
+        """
         factory = self.find_factory(locator)
         instance = factory.make(**kwargs)
         return instance
 
     def all(self):
+        """Lists all available factory objects."""
         return self.index.values()
 
     def _raise_on_invalid_locator(self, locator: str):

@@ -1,4 +1,4 @@
-name: SMARTS CI Dependencies Mac
+name: SMARTS CI Auto Commit Mac
 
 on:
   schedule:
@@ -10,7 +10,7 @@ env:
   venv_dir: .venv
 
 jobs:
-  update-requirements-mac:
+  auto-commit-mac:
     runs-on: macos-11
     steps:
       - name: Checkout

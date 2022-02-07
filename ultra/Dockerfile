@@ -43,7 +43,6 @@ RUN apt-get update --fix-missing && \
     apt-get install -y \
         wget \
         python3.7 \
-        python3.7-dev \
         python3.7-venv \
         sumo \
         sumo-tools \

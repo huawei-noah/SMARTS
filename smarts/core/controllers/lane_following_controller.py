@@ -18,30 +18,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-from enum import Enum
-from functools import partial
 
 import numpy as np
-from numpy.linalg import matrix_power
 from scipy import signal
 
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers.trajectory_tracking_controller import (
     TrajectoryTrackingController,
-    TrajectoryTrackingControllerState,
 )
-from smarts.core.utils.math import (
-    lerp,
-    low_pass_filter,
-    min_angles_difference_signed,
-    radians_to_vec,
-    signed_dist_to_line,
-)
+from smarts.core.utils.math import lerp, low_pass_filter, min_angles_difference_signed
 
 METER_PER_SECOND_TO_KM_PER_HR = 3.6
 
 
 class LaneFollowingControllerState:
+    """Controller state"""
+
     # TODO: Consider making this immutable and making `LaneFollowingController`
     #       generate new state object.
     def __init__(self, target_lane_id):
@@ -58,6 +50,11 @@ class LaneFollowingControllerState:
 
 
 class LaneFollowingController:
+    """A controller that attempts to follow road waypoints along the vehicle's plan.
+
+    Requires the controlled vehicle to have an Ackermann chassis.
+    """
+
     lateral_error = -35
     heading_error = -15
     yaw_rate = -2
@@ -67,13 +64,31 @@ class LaneFollowingController:
     def perform_lane_following(
         cls,
         sim,
-        agent_id,
+        agent_id: str,
         vehicle,
-        controller_state,
+        controller_state: LaneFollowingControllerState,
         sensor_state,
-        target_speed=12.5,
-        lane_change=0,
+        target_speed: float = 12.5,
+        lane_change: int = 0,
     ):
+        """Control a vehicle
+
+        Args:
+            sim:
+                The simulator instance.
+            agent_id:
+                The id of the agent controlling the vehicle. XXX: unsure why this is needed
+            vehicle:
+                The vehicle that is to be controlled.
+            controller_state:
+                The previous controller state from this controller.
+            sensor_state:
+                The current sensor state from the vehicle's sensors.
+            target_speed:
+                The baseline target speed (controller may give more or less regardless.)
+            lane_change:
+                Lane index offset from vehicle's current lane.
+        """
         assert isinstance(vehicle.chassis, AckermannChassis)
         state = controller_state
         # This lookahead value is coupled with a few calculations below, changing it
@@ -181,14 +196,14 @@ class LaneFollowingController:
         # directly related to the steering angle, this is added to further
         # enhance the speed tracking performance. TODO: currently, the bullet
         # does not provide the lateral acceleration which is needed for
-        # calculating the front laterl force. we need to replace the coefficent
+        # calculating the front lateral force. we need to replace the coefficient
         # with better approximation of the front lateral forces using explicit
         # differention.
         lateral_force_coefficient = 1.5
         if vehicle.speed < 8 or target_speed < 6:
             lateral_force_coefficient = 0
-        # 0.2 is the coefficent of d-controller for speed tracking
-        # 0.1 is the coefficent of I-controller for speed tracking
+        # 0.2 is the coefficient of d-controller for speed tracking
+        # 0.1 is the coefficient of I-controller for speed tracking
         raw_throttle += (
             -0.2 * velocity_error_damping_term
             - 0.1 * state.integral_speed_error
@@ -351,6 +366,7 @@ class LaneFollowingController:
 
     @staticmethod
     def find_current_lane(wp_paths, vehicle_position):
+        """Find the lane of the vehicle given a set of waypoint paths."""
         relative_distant_lane = [
             np.linalg.norm(wp_paths[idx][0].pos - vehicle_position[0:2])
             for idx in range(len(wp_paths))
@@ -359,6 +375,7 @@ class LaneFollowingController:
 
     @staticmethod
     def calculate_lateral_gains(sim, state, vehicle, desired_poles, target_speed):
+        """Update the state lateral gains"""
         # Only calculate gains if the target_speed is updated.
         # TODO: Replace this w/ an isclose(...) check
         if state.target_speed == target_speed:

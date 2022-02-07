@@ -21,7 +21,7 @@ import importlib.resources as pkg_resources
 import logging
 import math
 import os
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Tuple
 
 import numpy as np
 import yaml
@@ -81,33 +81,43 @@ def _query_bullet_contact_points(bullet_client, bullet_id, link_index):
 
 
 class Chassis:
+    """Represents a vehicle chassis."""
+
     def control(self, *args, **kwargs):
+        """Apply control values to the chassis."""
         raise NotImplementedError
 
     def reapply_last_control(self):
+        """Re-apply the last given control given to the chassis."""
         raise NotImplementedError
 
     def teardown(self):
+        """Clean up resources."""
         raise NotImplementedError
 
     @property
     def dimensions(self) -> Dimensions:
+        """The fitted front aligned dimensions of the chassis."""
         raise NotImplementedError
 
     @property
     def contact_points(self) -> Sequence:
+        """The contact point of the chassis."""
         raise NotImplementedError
 
     @property
     def bullet_id(self) -> str:
+        """The physics id of the chassis physics body."""
         raise NotImplementedError
 
     @property
-    def velocity_vectors(self):
+    def velocity_vectors(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Returns linear velocity vector in m/s and angular velocity in rad/sec."""
         raise NotImplementedError
 
     @property
     def speed(self) -> float:
+        """The speed of the chassis in the facing direction of the chassis."""
         raise NotImplementedError
 
     @speed.setter
@@ -117,14 +127,17 @@ class Chassis:
 
     @property
     def pose(self) -> Pose:
+        """The pose of the chassis."""
         raise NotImplementedError
 
     @property
     def steering(self):
+        """The steering value of the chassis in radians [-math.pi, math.pi]."""
         raise NotImplementedError
 
     @property
     def yaw_rate(self) -> float:
+        """The turning rate of the chassis in radians."""
         raise NotImplementedError
 
     def inherit_physical_values(self, other: "Chassis"):
@@ -133,6 +146,7 @@ class Chassis:
 
     @property
     def to_polygon(self) -> Polygon:
+        """Convert the chassis to a 2D shape."""
         p = self.pose.position
         d = self.dimensions
         poly = shapely_box(
@@ -144,6 +158,7 @@ class Chassis:
         return shapely_rotate(poly, self.pose.heading, use_radians=True)
 
     def step(self, current_simulation_time):
+        """Update the chassis state."""
         raise NotImplementedError
 
     def state_override(
@@ -154,7 +169,7 @@ class Chassis:
         angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
-        and may have unintended behavioural or performance consequences."""
+        and may have unintended behavioral or performance consequences."""
         raise NotImplementedError
 
 
@@ -202,7 +217,7 @@ class BoxChassis(Chassis):
         angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
-        and may have unintended behavioural or performance consequences."""
+        and may have unintended behavioral or performance consequences."""
         if self._pose:
             self._last_heading = self._pose.heading
         self._last_dt = dt
@@ -471,6 +486,9 @@ class AckermannChassis(Chassis):
         )
 
     def set_pose(self, pose: Pose):
+        """Use with caution since it disrupts the physics simulation. Sets the pose of the
+        chassis.
+        """
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self._bullet_id, position, orientation
@@ -502,7 +520,6 @@ class AckermannChassis(Chassis):
 
     @cached_property
     def velocity_vectors(self):
-        """Linear velocity vector is in m/s and Angular veclocity is in Rad/sec"""
         linear_velocity, angular_velocity = np.array(
             self._client.getBaseVelocity(self._bullet_id)
         )
@@ -535,6 +552,7 @@ class AckermannChassis(Chassis):
 
     @property
     def front_rear_stiffness(self):
+        """The front and rear stiffness values of the tires on this chassis."""
         if self._tire_parameters is not None:
             return (
                 self._tire_parameters["C_alpha_front"],
@@ -559,6 +577,7 @@ class AckermannChassis(Chassis):
 
     @cached_property
     def mass_and_inertia(self):
+        """The mass and inertia values of this chassis."""
         return (
             self._client.getDynamicsInfo(self._bullet_id, 0)[0],
             self._client.getDynamicsInfo(self._bullet_id, 0)[2][2],
@@ -566,6 +585,7 @@ class AckermannChassis(Chassis):
 
     @property
     def controller_parameters(self):
+        """The current controller parameters for this chassis."""
         return self._controller_parameters
 
     @property
@@ -574,34 +594,42 @@ class AckermannChassis(Chassis):
 
     @property
     def max_steering_wheel(self):
+        """Maximum steering output for the current gear ratio."""
         return self._max_steering / self._steering_gear_ratio
 
     @property
     def wheel_radius(self):
+        """The wheel radius of the wheels on the chassis."""
         return self._wheel_radius
 
     @property
     def front_rear_axle_CG_distance(self):
+        """The axle offsets from the vehicle base."""
         return (self._front_distant_CG, self._rear_distant_CG)
 
     @property
     def front_track_width(self):
+        """The track width between the front wheels."""
         return self._front_track_width
 
     @property
     def rear_track_width(self):
+        """The track width between the back wheels."""
         return self._rear_track_width
 
     @property
     def max_torque(self):
+        """The maximum throttle torque."""
         return self._max_torque
 
     @property
     def max_btorque(self):
+        """The maximum break torque."""
         return self._max_btorque
 
     @property
     def steering_ratio(self):
+        """The steering gear ratio"""
         return self._steering_gear_ratio
 
     @property
@@ -610,6 +638,7 @@ class AckermannChassis(Chassis):
 
     @property
     def bullet_client(self):
+        """The bullet physics simulator."""
         return self._client
 
     def step(self, current_simulation_time):
@@ -685,7 +714,7 @@ class AckermannChassis(Chassis):
         angular_velocity: Optional[np.ndarray] = None,
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
-        and may have unintended behavioural or performance consequences."""
+        and may have unintended behavioral or performance consequences."""
         self.set_pose(force_pose)
         if linear_velocity is not None or angular_velocity is not None:
             assert linear_velocity is not None

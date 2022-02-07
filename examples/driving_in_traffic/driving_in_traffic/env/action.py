@@ -1,9 +1,11 @@
+from typing import Callable, Tuple
+
 import gym
 import numpy as np
 
 
 class Action(gym.ActionWrapper):
-    def __init__(self, env):
+    def __init__(self, env: gym.Env):
         super().__init__(env)
         self._wrapper, self.action_space = continuous()
 
@@ -14,7 +16,7 @@ class Action(gym.ActionWrapper):
         return wrapped_act
 
 
-def continuous():
+def continuous() -> Tuple[Callable[[np.array], np.array], gym.Space]:
     space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
 
     def wrapper(model_action):

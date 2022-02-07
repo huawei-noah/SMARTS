@@ -12,12 +12,27 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 - Added `sb3` reinforcement-learning example. An ego agent is trained using PPO algorithm from Stable Baselines3 library, to drive as far and as fast as possible in heavy traffic, without colliding or going off-road.
+- Added `FormatObs` wrapper which converts SMARTS observations to gym-compliant RL-friendly vectorized observations and returns `StdObs`.
 ### Changed
 - If more than one qualifying map file exists in a the `map_spec.source` folder, `get_road_map()` in `default_map_builder.py` will prefer to return the default files (`map.net.xml` or `map.xodr`) if they exist.
 - Moved the `smarts_ros` ROS node from the `examples` area into the `smarts.ros` module so that it can be distributed with SMARTS packages.
+- Use `Process` to replace `Thread` to speed up the `scl scenario build-all --clean <scenario_dir>` runtime.
 ### Deprecated
 ### Fixed
-- Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error. 
+- Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error.
+### Removed
+### Security
+
+# [0.5.1] 2022-01-25
+### Added
+- Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
+### Changed
+- If more than one qualifying map file exists in a the `map_spec.source` folder, `get_road_map()` in `default_map_builder.py` will prefer to return the default files (`map.net.xml` or `map.xodr`) if they exist.
+- Moved the `smarts_ros` ROS node from the `examples` area into the `smarts.ros` module so that it can be distributed with SMARTS packages.
+- Use `Process` to replace `Thread` to speed up the `scl scenario build-all --clean <scenario_dir>` runtime.
+### Deprecated
+### Fixed
+- Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error.
 ### Removed
 ### Security
 

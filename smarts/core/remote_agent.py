@@ -30,10 +30,14 @@ from smarts.zoo import manager_pb2, manager_pb2_grpc, worker_pb2, worker_pb2_grp
 
 
 class RemoteAgentException(Exception):
+    """An exception describing issues relating to maintaining connection with a remote agent."""
+
     pass
 
 
 class RemoteAgent:
+    """A remotely controlled agent."""
+
     def __init__(
         self,
         manager_address: Tuple[str, int],
@@ -75,7 +79,7 @@ class RemoteAgent:
         self._worker_stub = worker_pb2_grpc.WorkerStub(self._worker_channel)
 
     def act(self, obs):
-        # Run task asynchronously and return a Future.
+        """Call the agent's act function asynchronously and return a Future."""
         self._act_future = self._worker_stub.act.future(
             worker_pb2.Observation(payload=cloudpickle.dumps(obs))
         )
@@ -83,13 +87,14 @@ class RemoteAgent:
         return self._act_future
 
     def start(self, agent_spec: AgentSpec):
-        # Send the AgentSpec to the agent runner.
+        """Send the AgentSpec to the agent runner."""
         # Cloudpickle used only for the agent_spec to allow for serialization of lambdas.
         self._worker_stub.build(
             worker_pb2.Specification(payload=cloudpickle.dumps(agent_spec))
         )
 
     def terminate(self):
+        """Close the agent connection and invalidate this agent."""
         # If the last action future returned is incomplete, cancel it first.
         if (self._act_future is not None) and (not self._act_future.done()):
             self._act_future.cancel()
