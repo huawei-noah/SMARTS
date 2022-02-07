@@ -1128,6 +1128,11 @@ class SMARTS:
         return self._reset_required
 
     @property
+    def resetting(self):
+        """If the simulation is currently resetting"""
+        return self._resetting
+
+    @property
     def scenario(self):
         """The current simulation scenario."""
         return self._scenario
