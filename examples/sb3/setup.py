@@ -18,7 +18,7 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "setuptools>=41.0.0,!=50.0",
-        "smarts[camera-obs]==0.5.0",
+        "smarts[camera-obs]==0.5.1",
         "stable-baselines3[extra]==1.4.0",
         "tensorflow==2.4.0",
         "ruamel.yaml==0.17.17",
