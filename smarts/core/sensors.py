@@ -443,7 +443,6 @@ class Sensors:
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
         event_config = interface.event_configuration
-        # print(event_config.not_moving)
 
         # TODO:  the following calls nearest_lanes (expensive) 6 times
         reached_goal = cls._agent_reached_goal(sim, vehicle)
