@@ -442,13 +442,15 @@ class Sensors:
     def _is_done_with_events(cls, sim, agent_id, vehicle, sensor_state):
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
+        event_config = interface.event_configuration
+        # print(event_config.not_moving)
 
         # TODO:  the following calls nearest_lanes (expensive) 6 times
         reached_goal = cls._agent_reached_goal(sim, vehicle)
         collided = sim.vehicle_did_collide(vehicle.id)
         is_off_road = cls._vehicle_is_off_road(sim, vehicle)
         is_on_shoulder = cls._vehicle_is_on_shoulder(sim, vehicle)
-        is_not_moving = cls._vehicle_is_not_moving(sim, vehicle, done_criteria.not_moving[1])
+        is_not_moving = cls._vehicle_is_not_moving(sim, vehicle, event_config.not_moving)
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
             sim, vehicle
@@ -463,7 +465,7 @@ class Sensors:
             or reached_max_episode_steps
             or (is_on_shoulder and done_criteria.on_shoulder)
             or (collided and done_criteria.collision)
-            or (is_not_moving and done_criteria.not_moving[0])
+            or (is_not_moving and done_criteria.not_moving)
             or (is_off_route and done_criteria.off_route)
             or (is_wrong_way and done_criteria.wrong_way)
             or agents_alive_done
@@ -505,8 +507,7 @@ class Sensors:
 
     @classmethod
     def _vehicle_is_not_moving(cls, sim, vehicle, last_n_seconds_considered):
-
-        # Flag if the vehicle has been immobile for the past 60 seconds
+        # Flag if the vehicle has been immobile for the past 'last_n_seconds_considered' seconds
         if sim.elapsed_sim_time < last_n_seconds_considered:
             return False
 
