@@ -458,7 +458,7 @@ class Sensors:
         )
 
         done = (
-            (not sim.resetting) and 
+            not sim.resetting and 
             ((is_off_road and done_criteria.off_road)
             or reached_goal
             or reached_max_episode_steps
