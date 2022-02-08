@@ -33,6 +33,7 @@ from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
 from .utils.file import read_tfrecord_file
+from .utils.math import offset_along_shape
 
 
 class WaymoMap(RoadMap):
@@ -144,7 +145,7 @@ class WaymoMap(RoadMap):
             self._lane_feat = lane_feat
             self._lane_pts = [np.array([p.x, p.y]) for p in lane_feat.polyline]
             if lane_feat.speed_limit_mph:
-                self._speed_limit = lane_feat.lane_feat.speed_limit_mph * 0.44704
+                self._speed_limit = lane_feat.speed_limit_mph * 0.44704
             else:
                 self._speed_limit = WaymoMap.DEFAULT_LANE_SPEED
 
@@ -175,6 +176,10 @@ class WaymoMap(RoadMap):
 
         def speed_limit(self) -> float:
             return self._speed_limit
+
+        @lru_cache(maxsize=8)
+        def offset_along_lane(self, world_point: Point) -> float:
+            return offset_along_shape(world_point[:2], self._lane_pts)
 
         @cached_property
         def entry_surfaces(self) -> List[RoadMap.Surface]:
