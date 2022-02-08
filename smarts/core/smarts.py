@@ -954,7 +954,7 @@ class SMARTS:
         # TODO: It's inconsistent that pybullet is not here
         return self._providers
 
-    def get_provider_by_type(self, requested_type) -> Provider:
+    def get_provider_by_type(self, requested_type):
         """Get The first provider that matches the requested type."""
         self._check_valid()
         for provider in self._providers:
@@ -994,7 +994,7 @@ class SMARTS:
             except Exception as provider_error:
                 self._handle_provider(provider, provider_error)
 
-    def _handle_provider(self, provider: Provider, provider_error) -> ProviderState:
+    def _handle_provider(self, provider: Provider, provider_error):
         provider_problem = bool(provider_error or not provider.connected)
         if not provider_problem:
             return
@@ -1385,7 +1385,7 @@ class SMARTS:
                 )
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
                     actor_type=envision_types.TrafficActorType.SocialVehicle,
-                    vehicle_type=veh_type,
+                    vehicle_type=envision_types.VehicleType(veh_type),
                     position=tuple(v.pose.position),
                     heading=float(v.pose.heading),
                     speed=v.speed,
