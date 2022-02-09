@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import logging
 import os
+import rtree
 from functools import lru_cache
 from subprocess import check_output
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
@@ -33,12 +34,13 @@ from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
 from .utils.file import read_tfrecord_file
-from .utils.math import offset_along_shape
+from .utils.math import offset_along_shape, position_at_shape_offset, distance_point_to_polygon
 
 
 class WaymoMap(RoadMap):
     """A map associated with a Waymo dataset"""
     DEFAULT_LANE_SPEED = 16.67  # in m/s
+    DEFAULT_LANE_WIDTH = 3.2
 
     def __init__(self, map_spec: MapSpec, scenario):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -47,6 +49,8 @@ class WaymoMap(RoadMap):
         self._lanes: Dict[int, RoadMap.Lane] = {}
         self._roads: Dict[int, RoadMap.Road] = {}
         self._map_features = {}
+        self._default_lane_width = WaymoMap.DEFAULT_LANE_WIDTH
+        self._lane_rtree = None
         self._load_from_scenario(scenario)
 
         # self._waypoints_cache = TODO
@@ -144,10 +148,14 @@ class WaymoMap(RoadMap):
             self._lane_id = lane_id
             self._lane_feat = lane_feat
             self._lane_pts = [np.array([p.x, p.y]) for p in lane_feat.polyline]
+
             if lane_feat.speed_limit_mph:
                 self._speed_limit = lane_feat.speed_limit_mph * 0.44704
             else:
                 self._speed_limit = WaymoMap.DEFAULT_LANE_SPEED
+
+            self._lane_width = None
+            self._bounding_box = None
 
         @cached_property
         def length(self) -> float:
@@ -181,6 +189,67 @@ class WaymoMap(RoadMap):
         def offset_along_lane(self, world_point: Point) -> float:
             return offset_along_shape(world_point[:2], self._lane_pts)
 
+        @lru_cache(maxsize=8)
+        def width_at_offset(self, lane_point_s: float) -> Tuple[float, float]:
+            return self._lane_width, 1.0
+
+        @lru_cache(maxsize=8)
+        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
+            x, y = position_at_shape_offset(self._lane_pts, lane_point.s)
+            return Point(x=x, y=y)
+
+        @lru_cache(maxsize=8)
+        def to_lane_coord(self, world_point: Point) -> RefLinePoint:
+            return super().to_lane_coord(world_point)
+
+        @lru_cache(maxsize=8)
+        def center_at_point(self, point: Point) -> Point:
+            return super().center_at_point(point)
+
+        @lru_cache(8)
+        def vector_at_offset(self, start_offset: float) -> np.ndarray:
+            return super().vector_at_offset(start_offset)
+
+        @lru_cache(maxsize=8)
+        def center_pose_at_point(self, point: Point) -> Pose:
+            return super().center_pose_at_point(point)
+
+        @lru_cache(maxsize=8)
+        def curvature_radius_at_offset(
+                self, offset: float, lookahead: int = 5
+        ) -> float:
+            return super().curvature_radius_at_offset(offset, lookahead)
+
+        @cached_property
+        def bounding_box(self) -> List[Tuple[float, float]]:
+            """Get the minimal axis aligned bounding box that contains all geometry in this lane."""
+            # XXX: This signature is wrong. It should return Optional[BoundingBox]
+            x_coordinates, y_coordinates = zip(*self.lane_polygon)
+            self._bounding_box = [
+                (min(x_coordinates), min(y_coordinates)),
+                (max(x_coordinates), max(y_coordinates)),
+            ]
+            return self._bounding_box
+
+        @lru_cache(maxsize=8)
+        def contains_point(self, point: Point) -> bool:
+            if (
+                    self._bounding_box[0][0] <= point[0] <= self._bounding_box[1][0]
+                    and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
+            ):
+                lane_point = self.to_lane_coord(point)
+                return (
+                        abs(lane_point.t) <= (self._lane_width / 2)
+                        and 0 <= lane_point.s < self.length
+                )
+            return False
+
+        @lru_cache(maxsize=8)
+        def project_along(
+                self, start_offset: float, distance: float
+        ) -> Set[Tuple[RoadMap.Lane, float]]:
+            return super().project_along(start_offset, distance)
+
         @cached_property
         def entry_surfaces(self) -> List[RoadMap.Surface]:
             """All surfaces leading into this lane."""
@@ -196,3 +265,48 @@ class WaymoMap(RoadMap):
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         # note: all lanes were cached already by _load()
         return self._lanes.get(lane_id)
+
+    def _build_lane_r_tree(self):
+        result = rtree.index.Index()
+        result.interleaved = True
+        all_lanes = list(self._lanes.values())
+        for idx, lane in enumerate(all_lanes):
+            bounding_box = (
+                lane.bounding_box[0][0],
+                lane.bounding_box[0][1],
+                lane.bounding_box[1][0],
+                lane.bounding_box[1][1],
+            )
+            result.add(idx, bounding_box)
+        return result
+
+    def _get_neighboring_lanes(
+        self, x: float, y: float, r: float = 0.1
+    ) -> List[Tuple[RoadMap.Lane, float]]:
+        neighboring_lanes = []
+        all_lanes = list(self._lanes.values())
+        if self._lane_rtree is None:
+            self._lane_rtree = self._build_lane_r_tree()
+
+        for i in self._lane_rtree.intersection((x - r, y - r, x + r, y + r)):
+            lane = all_lanes[i]
+            d = distance_point_to_polygon((x, y), lane.lane_polygon)
+            if d < r:
+                neighboring_lanes.append((lane, d))
+        return neighboring_lanes
+
+    @lru_cache(maxsize=16)
+    def nearest_lanes(
+        self, point: Point, radius: Optional[float] = None, include_junctions=False
+    ) -> List[Tuple[RoadMap.Lane, float]]:
+        if radius is None:
+            radius = max(10, 2 * self._default_lane_width)
+        candidate_lanes = self._get_neighboring_lanes(point[0], point[1], r=radius)
+        candidate_lanes.sort(key=lambda lane_dist_tup: lane_dist_tup[1])
+        return candidate_lanes
+
+    def nearest_lane(
+        self, point: Point, radius: float = None, include_junctions=False
+    ) -> Optional[RoadMap.Lane]:
+        nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
+        return nearest_lanes[0][0] if nearest_lanes else None
