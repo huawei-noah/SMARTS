@@ -2,6 +2,7 @@ from smarts.core.agent import Agent
 
 MIN_WAYPOINTS = 10
 
+
 class WaypointTrackingAgent(Agent):
     def __init__(self):
         self.waypoint_path = []
@@ -60,4 +61,3 @@ class WaypointTrackingAgent(Agent):
         ]
 
         return trajectory
-

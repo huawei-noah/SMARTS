@@ -34,6 +34,7 @@ register(
     ),
 )
 
+
 def klws_entrypoint(speed):
     from .keep_left_with_speed_agent import KeepLeftWithSpeedAgent
 
