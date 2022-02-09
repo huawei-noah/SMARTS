@@ -458,7 +458,8 @@ class Sensors:
         )
 
         done = (
-            (is_off_road and done_criteria.off_road)
+            not sim.resetting and 
+            ((is_off_road and done_criteria.off_road)
             or reached_goal
             or reached_max_episode_steps
             or (is_on_shoulder and done_criteria.on_shoulder)
@@ -466,7 +467,7 @@ class Sensors:
             or (is_not_moving and done_criteria.not_moving)
             or (is_off_route and done_criteria.off_route)
             or (is_wrong_way and done_criteria.wrong_way)
-            or agents_alive_done
+            or agents_alive_done)
         )
 
         events = Events(
