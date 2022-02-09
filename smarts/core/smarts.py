@@ -1385,7 +1385,7 @@ class SMARTS:
                 )
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
                     actor_type=envision_types.TrafficActorType.SocialVehicle,
-                    vehicle_type=envision_types.VehicleType(veh_type),
+                    vehicle_type=veh_type,
                     position=tuple(v.pose.position),
                     heading=float(v.pose.heading),
                     speed=v.speed,
