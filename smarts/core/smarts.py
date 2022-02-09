@@ -994,7 +994,9 @@ class SMARTS:
             except Exception as provider_error:
                 self._handle_provider(provider, provider_error)
 
-    def _handle_provider(self, provider: Provider, provider_error) -> Optional[ProviderState]:
+    def _handle_provider(
+        self, provider: Provider, provider_error
+    ) -> Optional[ProviderState]:
         provider_problem = bool(provider_error or not provider.connected)
         if not provider_problem:
             return None
