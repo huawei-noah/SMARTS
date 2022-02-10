@@ -22,6 +22,7 @@
 import math
 import os
 from pathlib import Path
+from matplotlib import pyplot as plt
 
 import numpy as np
 import pytest
@@ -666,3 +667,78 @@ def test_waymo_map():
     assert len(road_map._lanes) > 0
     for lane_id, lane in road_map._lanes.items():
         assert lane.length > 0
+        assert lane.lane_id
+
+
+# XXX: The below is just for testing. Remove before merging.
+
+
+def convert_polyline(polyline):
+    xs, ys = [], []
+    for p in polyline:
+        xs.append(p.x)
+        ys.append(p.y)
+    return xs, ys
+
+
+def plot_lane(lane):
+    xs, ys = convert_polyline(lane.polyline)
+    plt.plot(xs, ys, linestyle="-", c="gray")
+    # plt.scatter(xs, ys, s=12, c="gray")
+    # plt.scatter(xs[0], ys[0], s=12, c="red")
+
+
+def plot_road_line(road_line):
+    xs, ys = convert_polyline(road_line.polyline)
+    plt.plot(xs, ys, "y-")
+    plt.scatter(xs, ys, s=12, c="y")
+    # plt.scatter(xs[0], ys[0], s=12, c="red")
+
+
+def plot_road_edge(road_edge):
+    xs, ys = convert_polyline(road_edge.polyline)
+    plt.plot(xs, ys, "k-")
+    plt.scatter(xs, ys, s=12, c="black")
+    # plt.scatter(xs[0], ys[0], s=12, c="red")
+
+
+def plot_boundaries(lane, features):
+    if lane.left_boundaries or lane.right_boundaries:
+        for name, lst in [
+            ("Left", list(lane.left_boundaries)),
+            ("Right", list(lane.right_boundaries)),
+        ]:
+            for b in lst:
+                if b.boundary_type == 0:
+                    plot_road_edge(features[b.boundary_feature_id])
+                else:
+                    plot_road_line(features[b.boundary_feature_id])
+
+
+if __name__ == "__main__":
+    scenario_id = "4f30f060069bbeb9"
+    dataset_root = os.path.join(Path(__file__).parent, "maps/")
+    dataset_file = (
+        "uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000"
+    )
+    dataset_path = os.path.join(dataset_root, dataset_file)
+    source_str = f"{dataset_path}#{scenario_id}"
+
+    fig, ax = plt.subplots()
+    ax.set_title(f"Scenario {scenario_id}")
+    ax.axis("equal")
+
+    map_spec = MapSpec(source=source_str)
+    road_map = WaymoMap.from_spec(map_spec)
+
+    for lane_id, lane in road_map._lanes.items():
+        plot_lane(lane._lane_feat)
+        # plot_boundaries(lane_feat, features)
+        xs = [x for x in lane._polygon.exterior.coords.xy[0]]
+        ys = [y for y in lane._polygon.exterior.coords.xy[1]]
+        plt.plot(xs, ys, "b-")
+
+    mng = plt.get_current_fig_manager()
+    mng.resize(1000, 1000)
+    # mng.resize(*mng.window.maxsize())
+    plt.show()
