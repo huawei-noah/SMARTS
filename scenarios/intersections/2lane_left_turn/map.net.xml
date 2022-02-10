@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2022-01-04 19:12:24 by Eclipse SUMO netedit Version 1.10.0
+<!-- generated on 2022-02-10 18:23:54 by Eclipse SUMO netedit Version 1.11.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
@@ -38,7 +38,7 @@
 
 <net version="1.9" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
 
-    <location netOffset="-630882.85,-4856133.12" convBoundary="-110.00,-70.00,70.00,70.00" origBoundary="-79.371708,43.846679,-79.369237,43.847436" projParameter="+proj=utm +zone=17 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"/>
+    <location netOffset="-630882.85,-4856133.12" convBoundary="-125.00,-70.00,70.00,70.00" origBoundary="-79.371708,43.846679,-79.369237,43.847436" projParameter="+proj=utm +zone=17 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"/>
 
     <type id="highway.bridleway" priority="1" numLanes="1" speed="2.78" allow="pedestrian" oneway="1" width="2.00"/>
     <type id="highway.bus_guideway" priority="1" numLanes="1" speed="27.78" allow="bus" oneway="1"/>
@@ -128,11 +128,11 @@
     <edge id="edge-south-SN" from="junction-south" to="junction-intersection" priority="-1" length="70.00">
         <lane id="edge-south-SN_0" index="0" speed="13.00" length="70.00" shape="1.60,-70.00 1.60,-11.20"/>
     </edge>
-    <edge id="edge-west-EW" from="junction-intersection" to="junction-west" priority="-1">
-        <lane id="edge-west-EW_0" index="0" speed="13.00" length="98.80" shape="-11.20,1.60 -110.00,1.60"/>
+    <edge id="edge-west-EW" from="junction-intersection" to="junction-west" priority="-1" length="125.00">
+        <lane id="edge-west-EW_0" index="0" speed="13.00" length="125.00" shape="-11.20,1.60 -125.00,1.60"/>
     </edge>
-    <edge id="edge-west-WE" from="junction-west" to="junction-intersection" priority="-1" length="100.00">
-        <lane id="edge-west-WE_0" index="0" speed="13.00" length="100.00" shape="-110.00,-1.60 -11.20,-1.60"/>
+    <edge id="edge-west-WE" from="junction-west" to="junction-intersection" priority="-1" length="125.00">
+        <lane id="edge-west-WE_0" index="0" speed="13.00" length="125.00" shape="-125.00,-1.60 -11.20,-1.60"/>
     </edge>
 
     <junction id="junction-east" type="dead_end" x="70.00" y="0.00" incLanes="edge-east-WE_0" intLanes="" shape="70.00,0.00 70.00,-3.20 70.00,0.00"/>
@@ -152,7 +152,7 @@
     </junction>
     <junction id="junction-north" type="dead_end" x="0.00" y="70.00" incLanes="edge-north-SN_0" intLanes="" shape="0.00,70.00 3.20,70.00 0.00,70.00"/>
     <junction id="junction-south" type="dead_end" x="0.00" y="-70.00" incLanes="edge-south-NS_0" intLanes="" shape="0.00,-70.00 -3.20,-70.00 0.00,-70.00"/>
-    <junction id="junction-west" type="dead_end" x="-110.00" y="0.00" incLanes="edge-west-EW_0" intLanes="" shape="-110.00,0.00 -110.00,3.20 -110.00,0.00"/>
+    <junction id="junction-west" type="dead_end" x="-125.00" y="0.00" incLanes="edge-west-EW_0" intLanes="" shape="-125.00,0.00 -125.00,3.20 -125.00,0.00"/>
 
     <connection from="edge-east-EW" to="edge-north-SN" fromLane="0" toLane="0" via=":junction-intersection_3_0" dir="r" state="w"/>
     <connection from="edge-east-EW" to="edge-west-EW" fromLane="0" toLane="0" via=":junction-intersection_4_0" dir="s" state="w"/>

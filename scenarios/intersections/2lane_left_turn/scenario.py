@@ -49,17 +49,22 @@ for name, routes in {
                     begin=(f"edge-{r[0]}", 0, "random"),
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
-                rate=60 * 3,
-                end=10,
+                rate=60 * 4,
+                end=60 * 60 * 1,
+                # Note: For an episode with maximum_episode_steps=3000 and step
+                # time=0.1s, maximum episode time=300s. Hence, traffic set to
+                # end at 3600s, which is greater than maximum episode time of
+                # 300s.
                 actors={intersection_car: 1},
             )
             for r in routes
         ]
     )
 
+
 ego_missions = [
     Mission(
-        route=Route(begin=("edge-west-WE", 0, 40), end=("edge-north-SN", 0, 30)),
+        route=Route(begin=("edge-west-WE", 0, 55), end=("edge-north-SN", 0, 30)),
     ),
 ]
 

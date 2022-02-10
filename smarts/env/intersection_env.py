@@ -100,7 +100,7 @@ def intersection_env(
     build_scenario(scenario)
 
     done_criteria = DoneCriteria(
-        collision=False,  # Temporary for testing purpose ********
+        collision=True,
         off_road=True,
         off_route=True,
         on_shoulder=True,

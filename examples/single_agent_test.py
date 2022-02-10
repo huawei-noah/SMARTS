@@ -1,5 +1,3 @@
-import pathlib
-
 import gym
 import numpy as np
 
@@ -15,7 +13,7 @@ class ChaseWaypointsAgent(Agent):
         next_lane_index = obs.waypoints["lane_index"][0, 0]
 
         return (
-            obs.waypoints["speed_limit"][0, 0] / 2,
+            obs.waypoints["speed_limit"][0, 0] / 5,
             np.sign(next_lane_index - cur_lane_index),
         )
 
@@ -23,8 +21,8 @@ class ChaseWaypointsAgent(Agent):
 def main(headless, num_episodes):
     env = gym.make(
         "smarts.env:intersection-v0",
-        headless=headless,
-        sumo_headless=True,
+        headless=True,
+        sumo_headless=False,
     )
 
     for episode in episodes(n=num_episodes):
@@ -37,6 +35,7 @@ def main(headless, num_episodes):
             agent_action = agent.act(observation)
             observation, reward, done, info = env.step(agent_action)
             episode.record_step(observation, reward, done, info)
+        print("Score==", info["score"])
 
     env.close()
 
@@ -44,13 +43,6 @@ def main(headless, num_episodes):
 if __name__ == "__main__":
     parser = default_argument_parser("single-agent-example")
     args = parser.parse_args()
-
-    if not args.scenarios:
-        args.scenarios = [
-            str(pathlib.Path(__file__).absolute().parents[1] / "scenarios" / "loop")
-        ]
-
-    build_scenario(args.scenarios)
 
     main(
         headless=args.headless,
