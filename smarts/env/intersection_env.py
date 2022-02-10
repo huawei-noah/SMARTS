@@ -112,7 +112,7 @@ def intersection_env(
     img_meters = 100
     img_pixels = 256
     agent_specs = {
-        "turn-left-agent": AgentSpec(
+        "LeftTurnAgent": AgentSpec(
             interface=AgentInterface(
                 accelerometer=True,
                 # action=ActionSpaceType.Continuous, # Temporary for testing purpose ********

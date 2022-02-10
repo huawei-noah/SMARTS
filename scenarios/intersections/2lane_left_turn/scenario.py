@@ -49,7 +49,8 @@ for name, routes in {
                     begin=(f"edge-{r[0]}", 0, "random"),
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
-                rate=60 * 4,
+                rate=60 * 3,
+                end=10,
                 actors={intersection_car: 1},
             )
             for r in routes
