@@ -30,7 +30,6 @@ from smarts.core.agent_interface import (
     DoneCriteria,
     DrivableAreaGridMap,
     NeighborhoodVehicles,
-    RoadWaypoints,
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType

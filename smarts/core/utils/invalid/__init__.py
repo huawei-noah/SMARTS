@@ -20,4 +20,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 def raise_import_error():
+    """A method which when called invokes an ImportError exception. """
     raise ImportError()

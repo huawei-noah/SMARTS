@@ -72,6 +72,10 @@ class RGBImage(gym.ObservationWrapper):
         )
 
     def observation(self, obs: Dict[str, Any]) -> Dict[str, np.ndarray]:
+        """Adapts the wrapped environment's observation.
+
+        Note: Users should not directly call this method.
+        """
         wrapped_obs = {}
         for agent_id, agent_obs in obs.items():
             if isinstance(agent_obs, Sequence):

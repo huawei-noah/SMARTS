@@ -101,14 +101,18 @@ class _CacheCallable:
         return cached[key]
 
     def clear_cache(self):
+        """Clear the instance cache."""
         _CacheCallable.external_clear_cache(self._instance, self._cache_key)
 
     @staticmethod
     def external_clear_cache(instance, cache_key):
+        """Clears the cache on the given instance."""
         setattr(instance, cache_key, {})
 
 
 class cache:
+    """A caching decorator."""
+
     def __init__(self, method: FunctionType):
         self._method = method
         self._cache_key = f"{_CACHE_KEY_PREFIX}_{method.__name__}"
@@ -119,6 +123,8 @@ class cache:
 
 
 def clear_cache(func):
+    """A decorator that clears `@cache` type caches."""
+
     def _clear_caches(self):
         for key in self.__dict__:
             if key.startswith(_CACHE_KEY_PREFIX):

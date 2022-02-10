@@ -26,7 +26,7 @@ import uuid
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple
 
 import cloudpickle
 import numpy as np
@@ -69,7 +69,7 @@ class Scenario:
             If specified, allows specifying a MapSpec at run-time
             to override any spec that may have been pre-specified
             in the scenario folder (or the default if none were).
-            Also see comments around the sstudio.types.MapSpec defn.
+            Also see comments around the sstudio.types.MapSpec definition.
     """
 
     def __init__(
@@ -92,7 +92,6 @@ class Scenario:
         self._social_agents = social_agents or {}
         self._surface_patches = surface_patches
         self._log_dir = self._resolve_log_dir(log_dir)
-        self._validate_assets_exist()
 
         if traffic_history:
             self._traffic_history = TrafficHistory(traffic_history)
@@ -111,6 +110,8 @@ class Scenario:
         self._road_map, self._road_map_hash = map_spec.builder_fn(map_spec)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
 
+        os.makedirs(self._log_dir, exist_ok=True)
+
     def __repr__(self):
         return f"""Scenario(
   _root={self._root},
@@ -119,7 +120,10 @@ class Scenario:
 )"""
 
     @staticmethod
-    def get_scenario_list(scenarios_or_scenarios_dirs: Sequence[str]):
+    def get_scenario_list(scenarios_or_scenarios_dirs: Sequence[str]) -> Sequence[str]:
+        """Find all specific scenario directories in the directory trees of the initial scenario
+        directory.
+        """
         scenario_roots = []
         for root in scenarios_or_scenarios_dirs:
             if Scenario.is_valid_scenario(root):
@@ -134,8 +138,8 @@ class Scenario:
         scenarios_or_scenarios_dirs: Sequence[str],
         agents_to_be_briefed: Sequence[str],
         shuffle_scenarios: bool = True,
-    ):
-        """Generate a cycle of the configurations of scenarios.
+    ) -> Generator["Scenario", None, None]:
+        """Generate a cycle of scenario configurations.
 
         Args:
             scenarios_or_scenarios_dirs:
@@ -143,6 +147,8 @@ class Scenario:
                 can use) OR a directory of scenarios to sample from.
             agents_to_be_briefed:
                 Agent IDs that will be assigned a mission ("briefed" on a mission).
+        Returns:
+            A generator that serves up Scenarios.
         """
         scenario_roots = Scenario.get_scenario_list(scenarios_or_scenarios_dirs)
 
@@ -156,7 +162,18 @@ class Scenario:
     @staticmethod
     def variations_for_all_scenario_roots(
         scenario_roots, agents_to_be_briefed, shuffle_scenarios=True
-    ):
+    ) -> Generator["Scenario", None, None]:
+        """Convert scenario roots to concrete scenarios.
+        Args:
+            scenario_roots:
+                Scenario directories containing scenario resource files.
+            agents_to_be_briefed:
+                Agent IDs that will be assigned a mission ("briefed" on a mission).
+            shuffle_scenarios:
+                Return scenarios in a pseudo-random order.
+        Returns:
+            A generator that serves up Scenarios.
+        """
         for scenario_root in scenario_roots:
             surface_patches = Scenario.discover_friction_map(scenario_root)
 
@@ -236,6 +253,7 @@ class Scenario:
 
     @staticmethod
     def discover_agent_missions_count(scenario_root):
+        """Retrieve the agent missions from the given scenario directory."""
         missions_file = os.path.join(scenario_root, "missions.pkl")
         if os.path.exists(missions_file):
             with open(missions_file, "rb") as f:
@@ -285,10 +303,10 @@ class Scenario:
         return missions
 
     @staticmethod
-    def discover_friction_map(scenario_root):
+    def discover_friction_map(scenario_root) -> List[Dict[str, Any]]:
         """Returns the list of surface patches parameters defined in
         scenario file. Each element of the list contains the
-        parameters of the specifiec surface patch.
+        parameters of the specified surface patch.
         """
         surface_patches = []
         friction_map_file = os.path.join(scenario_root, "friction_map.pkl")
@@ -384,6 +402,13 @@ class Scenario:
 
     @staticmethod
     def discover_scenarios(scenario_or_scenarios_dir):
+        """Retrieve all specific scenarios in the directory tree of the given scenario directory.
+        Args:
+            scenario_or_scenario_dir:
+                A directory that either immediately contains a scenario or the root of a directory tree that contains multiple scenarios.
+        Returns:
+            All specific scenarios.
+        """
         if Scenario.is_valid_scenario(scenario_or_scenarios_dir):
             # This is the single scenario mode, only training against a single scenario
             scenario = scenario_or_scenarios_dir
@@ -403,6 +428,7 @@ class Scenario:
 
     @staticmethod
     def build_map(scenario_root: str) -> Tuple[RoadMap, str]:
+        """Builds a road map from the given scenario's resources."""
         # XXX: using a map builder_fn supplied by users is a security risk
         # as SMARTS will be executing the code "as is".  We are currently
         # trusting our users to not try to sabotage their own simulations.
@@ -413,6 +439,7 @@ class Scenario:
 
     @staticmethod
     def supports_traffic_simulation(scenarios):
+        """Determines if all given scenarios support traffic simulation."""
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
         num_sumo = 0
@@ -436,6 +463,20 @@ class Scenario:
         default_lane_width: Optional[float] = None,
         shift_to_origin: bool = False,
     ) -> MapSpec:
+        """Generates the map specification from the given scenario's file resources.
+
+        Args:
+            scenarios_root:
+                A specific scenario to run (e.g. scenarios/loop)
+            lanepoint_spacing:
+                The distance between lanepoints that represent a lane's geometry.
+            default_lane_width:
+                The default width of a lane from its centre if it does not have a specific width.
+            shift_to_origin:
+                Shifts the map location to near the simulation origin so that the map contains (0, 0).
+        Returns:
+            A new map spec.
+        """
         path = os.path.join(scenario_root, "map_spec.pkl")
         if not os.path.exists(path):
             # Use our default map builder if none specified by scenario...
@@ -475,7 +516,11 @@ class Scenario:
             bubbles = pickle.load(f)
             return bubbles
 
-    def set_ego_missions(self, ego_missions: dict):
+    def set_ego_missions(self, ego_missions: Dict[str, Mission]):
+        """Replaces the ego missions within the scenario.
+        Args:
+            ego_missions: Ego agent ids mapped to missions.
+        """
         self._missions = ego_missions
 
     def get_vehicle_start_at_time(
@@ -506,12 +551,12 @@ class Scenario:
         assert final_pose
         final_pos_x, final_pos_y, final_heading, _ = final_pose
         # missions start from front bumper, but pos is center of vehicle
-        veh_dims = self._traffic_history.vehicle_dims(veh_id)
-        hhx, hhy = radians_to_vec(heading) * (0.5 * veh_dims.length)
+        veh_dims = self._traffic_history.vehicle_dims(vehicle_id)
         final_hhx, final_hhy = radians_to_vec(final_heading) * (0.5 * veh_dims.length)
         return Point(final_pos_x + final_hhx, final_pos_y + final_hhy)
 
     def discover_missions_of_traffic_histories(self) -> Dict[str, Mission]:
+        """Retrieves the missions of traffic history vehicles."""
         vehicle_missions = {}
         for row in self._traffic_history.first_seen_times():
             v_id = str(row[0])
@@ -536,6 +581,19 @@ class Scenario:
     def create_dynamic_traffic_history_mission(
         self, veh_id: str, trigger_time: float, positional_radius: int
     ) -> Tuple[Mission, Mission]:
+        """Builds a vehicle out of
+        Args:
+            veh_id:
+                The id of a vehicle in the traffic history dataset.
+            trigger_time:
+                The time that this mission should become active.
+            positional_radius:
+                The goal radius for the positional goal.
+        Returns:
+            (positional_mission, traverse_mission): A positional mission that follows the initial
+             original vehicle's travel as well as a traverse style mission which is done when the
+             vehicle leaves the map.
+        """
         start, speed = self.get_vehicle_start_at_time(veh_id, trigger_time)
         veh_goal = self._get_vehicle_goal(veh_id)
         entry_tactic = default_entry_tactic(speed)
@@ -556,6 +614,7 @@ class Scenario:
 
     @staticmethod
     def discover_traffic_histories(scenario_root: str):
+        """Finds all existing traffic history files in the specific scenario."""
         return [
             entry
             for entry in os.scandir(scenario_root)
@@ -691,7 +750,7 @@ class Scenario:
         )
 
     @staticmethod
-    def is_valid_scenario(scenario_root):
+    def is_valid_scenario(scenario_root) -> bool:
         """Checks if the scenario_root directory matches our expected scenario structure
 
         >>> Scenario.is_valid_scenario("scenarios/loop")
@@ -707,7 +766,7 @@ class Scenario:
         return road_map is not None
 
     @staticmethod
-    def next(scenario_iterator, log_id=""):
+    def next(scenario_iterator, log_id="") -> "Scenario":
         """Utility to override specific attributes from a scenario iterator"""
 
         scenario = next(scenario_iterator)
@@ -715,78 +774,96 @@ class Scenario:
         return scenario
 
     @property
-    def name(self):
+    def name(self) -> str:
+        """The name of the scenario."""
         return os.path.basename(os.path.normpath(self._root))
 
     @property
-    def root_filepath(self):
+    def root_filepath(self) -> str:
+        """The root directory of the scenario."""
         return self._root
 
     @property
     def surface_patches(self):
+        """A list of surface areas with dynamics implications (e.g. icy road.)"""
         return self._surface_patches
 
     @property
     def road_map_hash(self):
+        """A hash value of this road map."""
         return self._road_map_hash
 
     @property
-    def plane_filepath(self):
+    def plane_filepath(self) -> str:
+        """The ground plane."""
         return os.path.join(self._root, "plane.urdf")
 
     @property
-    def vehicle_filepath(self):
+    def vehicle_filepath(self) -> str:
+        """The filepath of the vehicle's physics model."""
         if not os.path.isdir(self._root):
             return None
         for fname in os.listdir(self._root):
-            if fname.endswith(".urdf") and fname != "plane.urdf":
+            if fname.endswith("vehicle.urdf"):
                 return os.path.join(self._root, fname)
         return None
 
     @property
-    def tire_parameters_filepath(self):
+    def tire_parameters_filepath(self) -> str:
+        """The path of the tire model's parameters."""
         return os.path.join(self._root, "tire_parameters.yaml")
 
     @property
-    def controller_parameters_filepath(self):
+    def controller_parameters_filepath(self) -> str:
+        """The path of the vehicle controller parameters."""
         return os.path.join(self._root, "controller_parameters.yaml")
 
     @property
-    def route(self):
+    def route(self) -> str:
+        """The traffic route file name."""
         return self._route
 
     @property
     def route_files_enabled(self):
+        """If there is a traffic route file."""
         return bool(self._route)
 
     @property
     def route_filepath(self):
+        """The filepath to the traffic route file."""
         return os.path.join(self._root, "traffic", self._route)
 
     @property
     def map_glb_filepath(self):
+        """The map geometry filepath."""
         return os.path.join(self._root, "map.glb")
 
     def unique_sumo_log_file(self):
+        """A unique logging file for SUMO logging."""
         return os.path.join(self._log_dir, f"sumo-{str(uuid.uuid4())[:8]}")
 
     @property
-    def road_map(self):
+    def road_map(self) -> RoadMap:
+        """The road map of the scenario."""
         return self._road_map
 
     @property
-    def missions(self):
+    def missions(self) -> Dict[str, Mission]:
+        """Agent missions contained within this scenario."""
         return self._missions
 
     @property
-    def social_agents(self):
+    def social_agents(self) -> Dict[str, SocialAgent]:
+        """Managed social agents within this scenario."""
         return self._social_agents
 
     @property
     def bubbles(self):
+        """Bubbles within this scenario."""
         return self._bubbles
 
-    def mission(self, agent_id):
+    def mission(self, agent_id) -> Optional[Mission]:
+        """Get the mission assigned to the given agent."""
         return self._missions.get(agent_id, None)
 
     def _resolve_log_dir(self, log_dir):
@@ -795,14 +872,12 @@ class Scenario:
 
         return os.path.abspath(log_dir)
 
-    def _validate_assets_exist(self):
-        assert Scenario.is_valid_scenario(self._root)
-        os.makedirs(self._log_dir, exist_ok=True)
-
     @property
-    def traffic_history(self):
+    def traffic_history(self) -> Optional[TrafficHistory]:
+        """Traffic history contained within this scenario."""
         return self._traffic_history
 
     @property
-    def scenario_hash(self):
+    def scenario_hash(self) -> str:
+        """A hash of the scenario."""
         return self._scenario_hash

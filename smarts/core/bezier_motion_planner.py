@@ -23,11 +23,14 @@ from .utils.math import vec_to_radians
 
 
 class BezierMotionPlanner:
+    """A bezier trajectory builder."""
+
     def __init__(self, extend=0.9, extend_bias=0.5):
         self._extend = extend
         self._extend_bias = extend_bias
 
     def trajectory(self, current_pose, target_pose_at_t, n, dt):
+        """Generate a bezier trajectory to a target pose."""
         return self.trajectory_batched(
             np.array([current_pose]), np.array([target_pose_at_t]), n, dt
         )[0]

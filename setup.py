@@ -13,7 +13,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.5.0",
+    version="0.5.1",
     packages=find_packages(exclude=("tests", "examples")),
     include_package_data=True,
     zip_safe=True,
@@ -55,44 +55,43 @@ setup(
         "protobuf>=3.19.1",
         "PyYAML>=6.0",
         "twisted>=21.7.0",
-        "opendrive2lanelet",
+        "opendrive2lanelet>=1.2.1",
     ],
     extras_require={
-        "test": [
-            # The following are for testing
-            "ipykernel>=6.5.0",
-            "jupyter-client==6.1.12",
-            "pytest>=6.2.5",
-            "pytest-benchmark>=3.4.1",
-            "pytest-cov>=3.0.0",
-            "pytest-notebook>=0.6.1",
-            "pytest-xdist>=2.4.0",
-            "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
-            "tensorflow>=2.4.0",  # For rllib tests
-        ],
-        "train": [
-            "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
-            # XXX: TF requires specific version of scipy
-            "scipy==1.4.1",
-            "tensorflow>=2.4.0",
-            "torch==1.4.0",
-            "torchvision==0.5.0",
-        ],
+        "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
         "dev": [
             "black==20.8b1",
             "grpcio-tools==1.32.0",
             "isort==5.7.0",
             "pre-commit==2.16.0",
-            "pylint==2.12.2",
+            "pylint>=2.12.2",
             "pytype>=2022.1.13",
-            "sphinx",
-            "sphinx-rtd-theme",
-            "sphinxcontrib-apidoc",
         ],
-        "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
-        "ros": ["catkin_pkg", "rospkg"],
-        "waymo": ["waymo-open-dataset-tf-2-2-0"],
+        "doc": [
+            "sphinx>=4.4.0",
+            "sphinx-rtd-theme>=1.0.0",
+            "sphinxcontrib-apidoc>=0.3.0",
+        ],
         "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
+        "ros": ["catkin_pkg", "rospkg"],
+        "test": [
+            # The following are for testing
+            "ipykernel>=6.8.0",
+            "jupyter-client>=7.1.2",
+            "pytest>=6.2.5",
+            "pytest-benchmark>=3.4.1",
+            "pytest-cov>=3.0.0",
+            "pytest-notebook>=0.7.0",
+            "pytest-xdist>=2.4.0",
+        ],
+        "train": [
+            "opencv-contrib-python-headless==4.1.2.30",
+            "ray[rllib]==1.0.1.post1",
+            "tensorflow>=2.4.0",
+            "torch==1.4.0",
+            "torchvision==0.5.0",
+        ],
+        "waymo": ["waymo-open-dataset-tf-2-2-0"],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )
