@@ -437,6 +437,32 @@ def rotate_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
     return np.array([qx, qy])
 
 
+def line_intersect(a, b, c, d) -> Union[np.ndarray, None]:
+    r = b - a
+    s = d - c
+    d = r[0] * s[1] - r[1] * s[0]
+
+    if d == 0:
+        return None
+
+    u = ((c[0] - a[0]) * r[1] - (c[1] - a[1]) * r[0]) / d
+    t = ((c[0] - a[0]) * s[1] - (c[1] - a[1]) * s[0]) / d
+
+    if 0 <= u <= 1 and 0 <= t <= 1:
+        return a + t * r
+
+    return None
+
+
+def ray_boundary_intersect(ray_start, ray_end, boundary_pts) -> Union[np.ndarray, None]:
+    for j in range(len(boundary_pts) - 1):
+        b0 = boundary_pts[j]
+        b1 = boundary_pts[j + 1]
+        intersect_pt = line_intersect(b0, b1, ray_start, ray_end)
+        if intersect_pt is not None:
+            return intersect_pt
+
+
 def min_angles_difference_signed(first, second) -> float:
     """The minimum signed difference between angles(radians)."""
     return ((first - second) + math.pi) % (2 * math.pi) - math.pi

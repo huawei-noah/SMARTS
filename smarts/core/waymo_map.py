@@ -41,35 +41,8 @@ from .utils.math import (
     offset_along_shape,
     position_at_shape_offset,
     distance_point_to_polygon,
+    ray_boundary_intersect,
 )
-
-# TODO: move to math or utils module
-def line_intersect(a, b, c, d) -> Union[np.ndarray, None]:
-    r = b - a
-    s = d - c
-    d = r[0] * s[1] - r[1] * s[0]
-
-    if d == 0:
-        return None
-
-    u = ((c[0] - a[0]) * r[1] - (c[1] - a[1]) * r[0]) / d
-    t = ((c[0] - a[0]) * s[1] - (c[1] - a[1]) * s[0]) / d
-
-    if 0 <= u and u <= 1 and 0 <= t and t <= 1:
-        return a + t * r
-
-    return None
-
-
-# TODO: move to math or utils module
-def ray_boundary_intersect(ray_start, ray_end, boundary_pts) -> Union[np.ndarray, None]:
-    for j in range(len(boundary_pts) - 1):
-        b0 = boundary_pts[j]
-        b1 = boundary_pts[j + 1]
-        intersect_pt = line_intersect(b0, b1, ray_start, ray_end)
-        if intersect_pt is not None:
-            return intersect_pt
-    return None
 
 
 class WaymoMap(RoadMap):
@@ -466,8 +439,8 @@ class WaymoMap(RoadMap):
         @lru_cache(maxsize=8)
         def contains_point(self, point: Point) -> bool:
             if (
-                self._bounding_box[0][0] <= point[0] <= self._bounding_box[1][0]
-                and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
+                self._bounding_box.min_pt.x <= point[0] <= self._bounding_box.max_pt.x
+                and self._bounding_box.min_pt.y <= point[1] <= self._bounding_box.max_pt.y
             ):
                 lane_point = self.to_lane_coord(point)
                 return (
@@ -530,10 +503,10 @@ class WaymoMap(RoadMap):
         all_lanes = list(self._lanes.values())
         for idx, lane in enumerate(all_lanes):
             bounding_box = (
-                lane.bounding_box[0][0],
-                lane.bounding_box[0][1],
-                lane.bounding_box[1][0],
-                lane.bounding_box[1][1],
+                lane.bounding_box.min_pt.x,
+                lane.bounding_box.min_pt.y,
+                lane.bounding_box.max_pt.x,
+                lane.bounding_box.max_pt.y,
             )
             result.add(idx, bounding_box)
         return result

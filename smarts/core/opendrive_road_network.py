@@ -367,7 +367,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
                     road_id = OpenDriveRoadNetwork._elem_id(section_elem, suffix)
                     road: RoadMap.Road = self._roads[road_id]
-                    road.bounding_box = [
+                    road_bounding_box = [
                         (float("inf"), float("inf")),
                         (float("-inf"), float("-inf")),
                     ]
@@ -424,16 +424,33 @@ class OpenDriveRoadNetwork(RoadMap):
                         lane._cache_geometry(inner_boundary, outer_boundary)
                         inner_boundary = outer_boundary
 
-                        road.bounding_box = [
+                        road_bounding_box = [
                             (
-                                min(road.bounding_box[0][0], lane.bounding_box[0][0]),
-                                min(road.bounding_box[0][1], lane.bounding_box[0][1]),
+                                min(
+                                    road_bounding_box[0][0], lane.bounding_box.min_pt.x
+                                ),
+                                min(
+                                    road_bounding_box[0][1], lane.bounding_box.min_pt.y
+                                ),
                             ),
                             (
-                                max(road.bounding_box[1][0], lane.bounding_box[1][0]),
-                                max(road.bounding_box[1][1], lane.bounding_box[1][1]),
+                                max(
+                                    road_bounding_box[1][0], lane.bounding_box.max_pt.x
+                                ),
+                                max(
+                                    road_bounding_box[1][1], lane.bounding_box.max_pt.y
+                                ),
                             ),
                         ]
+                    road.bounding_box = BoundingBox(
+                        min_pt=Point(
+                            x=road_bounding_box[0][0], y=road_bounding_box[0][1]
+                        ),
+                        max_pt=Point(
+                            x=road_bounding_box[1][0], y=road_bounding_box[1][1]
+                        ),
+                    )
+
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Second pass: {elapsed} ms")
@@ -631,10 +648,10 @@ class OpenDriveRoadNetwork(RoadMap):
         x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
         for road_id in self._roads:
             road = self._roads[road_id]
-            x_mins.append(road.bounding_box[0][0])
-            y_mins.append(road.bounding_box[0][1])
-            x_maxs.append(road.bounding_box[1][0])
-            y_maxs.append(road.bounding_box[1][1])
+            x_mins.append(road.bounding_box.min_pt.x)
+            y_mins.append(road.bounding_box.min_pt.y)
+            x_maxs.append(road.bounding_box.max_pt.x)
+            y_maxs.append(road.bounding_box.max_pt.y)
 
         return BoundingBox(
             min_pt=Point(x=min(x_mins), y=min(y_mins)),
@@ -789,7 +806,7 @@ class OpenDriveRoadNetwork(RoadMap):
             self._lane_boundaries = tuple()
             self._lane_polygon = []
             self._centerline_points = []
-            self._bounding_box = []
+            self._bounding_box = None
             self._lane_to_left = None, True
             self._lane_to_right = None, True
             self._in_junction = None
@@ -878,13 +895,13 @@ class OpenDriveRoadNetwork(RoadMap):
             return self._centerline_points
 
         @cached_property
-        def bounding_box(self) -> List[Tuple[float, float]]:
+        def bounding_box(self) -> Optional[BoundingBox]:
             """Get the minimal axis aligned bounding box that contains all geometry in this lane."""
             x_coordinates, y_coordinates = zip(*self.lane_polygon)
-            self._bounding_box = [
-                (min(x_coordinates), min(y_coordinates)),
-                (max(x_coordinates), max(y_coordinates)),
-            ]
+            self._bounding_box = BoundingBox(
+                min_pt=Point(x=min(x_coordinates), y=min(y_coordinates)),
+                max_pt=Point(x=max(x_coordinates), y=max(y_coordinates)),
+            )
             return self._bounding_box
 
         def _t_angle(self, s_heading: float) -> float:
@@ -1010,8 +1027,10 @@ class OpenDriveRoadNetwork(RoadMap):
         @lru_cache(maxsize=8)
         def contains_point(self, point: Point) -> bool:
             if (
-                self._bounding_box[0][0] <= point[0] <= self._bounding_box[1][0]
-                and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
+                self._bounding_box.min_pt.x <= point[0] <= self._bounding_box.max_pt.x
+                and self._bounding_box.min_pt.y
+                <= point[1]
+                <= self._bounding_box.max_pt.y
             ):
                 lane_point = self.to_lane_coord(point)
                 width_at_offset, _ = self.width_at_offset(lane_point.s)
@@ -1164,7 +1183,7 @@ class OpenDriveRoadNetwork(RoadMap):
             self._start_pos = start_pos
             self._is_drivable = False
             self._lanes = []
-            self._bounding_box = []
+            self._bounding_box = None
             self._incoming_roads = []
             self._outgoing_roads = []
             self._parallel_roads = []
@@ -1213,7 +1232,7 @@ class OpenDriveRoadNetwork(RoadMap):
             return self._lanes
 
         @property
-        def bounding_box(self) -> List[Tuple[float, float]]:
+        def bounding_box(self) -> Optional[BoundingBox]:
             """Get the minimal axis aligned bounding box that contains all road geometry."""
             # XXX: The return here should be Optional[BoundingBox]
             return self._bounding_box
@@ -1225,8 +1244,10 @@ class OpenDriveRoadNetwork(RoadMap):
         @lru_cache(maxsize=8)
         def contains_point(self, point: Point) -> bool:
             if (
-                self._bounding_box[0][0] <= point[0] <= self._bounding_box[1][0]
-                and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
+                self._bounding_box.min_pt.x <= point[0] <= self._bounding_box.max_pt.x
+                and self._bounding_box.min_pt.y
+                <= point[1]
+                <= self._bounding_box.max_pt.y
             ):
                 for lane in self.lanes:
                     if lane.contains_point(point):
@@ -1335,10 +1356,10 @@ class OpenDriveRoadNetwork(RoadMap):
         all_lanes = list(self._lanes.values())
         for idx, lane in enumerate(all_lanes):
             bounding_box = (
-                lane.bounding_box[0][0],
-                lane.bounding_box[0][1],
-                lane.bounding_box[1][0],
-                lane.bounding_box[1][1],
+                lane.bounding_box.min_pt.x,
+                lane.bounding_box.min_pt.y,
+                lane.bounding_box.max_pt.x,
+                lane.bounding_box.max_pt.y,
             )
             result.add(idx, bounding_box)
         return result
