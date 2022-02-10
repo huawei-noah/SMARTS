@@ -11,8 +11,6 @@ from smarts.core.utils.episodes import episodes
 from smarts.env import build_scenario
 from smarts.env.wrappers.single_agent import SingleAgent
 
-logging.basicConfig(level=logging.INFO)
-
 
 class ChaseWaypointsAgent(Agent):
     def act(self, obs):

@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import logging
-import math
 import os
 import warnings
 from collections import defaultdict
