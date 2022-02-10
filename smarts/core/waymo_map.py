@@ -248,6 +248,32 @@ class WaymoMap(RoadMap):
                 )
             return False
 
+        @lru_cache(8)
+        def _edges_at_point(self, point: Point) -> Tuple[Point, Point]:
+            """Get the boundary points perpendicular to the center of the lane closest to the given
+             world coordinate.
+            Args:
+                point:
+                    A world coordinate point.
+            Returns:
+                A pair of points indicating the left boundary and right boundary of the lane.
+            """
+            reference_line_vertices_len = int((len(self._lane_polygon) - 1) / 2)
+            # left_edge
+            left_edge_shape = self._lane_polygon[:reference_line_vertices_len]
+            left_offset = offset_along_shape(point[:2], left_edge_shape)
+            x, y = position_at_shape_offset(left_edge_shape, left_offset)
+            left_edge = Point(x, y)
+
+            # right_edge
+            right_edge_shape = self._lane_polygon[
+                               reference_line_vertices_len: len(self._lane_polygon) - 1
+                               ]
+            right_offset = offset_along_shape(point[:2], right_edge_shape)
+            x, y = position_at_shape_offset(right_edge_shape, right_offset)
+            right_edge = Point(x, y)
+            return left_edge, right_edge
+
         @lru_cache(maxsize=8)
         def project_along(
             self, start_offset: float, distance: float
