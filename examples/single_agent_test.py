@@ -1,15 +1,12 @@
-import logging
 import pathlib
 
 import gym
 import numpy as np
 
 from examples.argument_parser import default_argument_parser
-from smarts.core.agent import Agent, AgentSpec
-from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.agent import Agent
 from smarts.core.utils.episodes import episodes
 from smarts.env import build_scenario
-from smarts.env.wrappers.single_agent import SingleAgent
 
 
 class ChaseWaypointsAgent(Agent):
@@ -50,11 +47,7 @@ if __name__ == "__main__":
 
     if not args.scenarios:
         args.scenarios = [
-            str(
-                pathlib.Path(__file__).absolute().parents[1]
-                / "scenarios"
-                / "loop"
-            )
+            str(pathlib.Path(__file__).absolute().parents[1] / "scenarios" / "loop")
         ]
 
     build_scenario(args.scenarios)

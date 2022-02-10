@@ -49,16 +49,8 @@ def intersection_env(
     lights. Traffic vehicles stop before entering the junction.
 
     Observation:
-        Key                             Value
-        drivable_area_grid_map          Top down binary driveable are grid map
-        ego_vehicle_state
-        events
-        lidar_point_cloud
-        neighborhood_vehicle_states
-        occupancy_grid_map              Top down binary occupancy grid map
-        road_waypoints
-        top_down_rgb                    Top down color image
-        waypoint_paths
+        A `smarts.env.wrappers.format_obs.StdObs` dataclass, with all fields
+        enabled, is returned as observation.
 
     Actions:
         Type: gym.spaces.Box(
@@ -76,8 +68,8 @@ def intersection_env(
 
     Episode termination:
         Episode is terminated if any of the following is fulfilled.
-        Steps per episode exceed 1000.
-        Agent collides, drives off road, or drives off route.
+        Steps per episode exceed 3000.
+        Agent collides, drives off road, drives off route, or drives on shoulder.
 
     Solved requirement:
         Considered solved when the average `info["score"]` is greater than or
@@ -97,53 +89,55 @@ def intersection_env(
         A single-agent unprotected left turn intersection environment.
     """
 
-    scenario = [str(
-        pathlib.Path(__file__).absolute().parents[2]
-        / "scenarios"
-        / "intersections"
-        / "2lane_left_turn"
-    )]
+    scenario = [
+        str(
+            pathlib.Path(__file__).absolute().parents[2]
+            / "scenarios"
+            / "intersections"
+            / "2lane_left_turn"
+        )
+    ]
     build_scenario(scenario)
 
     done_criteria = DoneCriteria(
-        collision=False,
+        collision=False,  # Temporary for testing purpose ********
         off_road=True,
         off_route=True,
-        on_shoulder=False,
+        on_shoulder=True,
         wrong_way=False,
         not_moving=False,
         agents_alive=None,
     )
     max_episode_steps = 3000
-    img_meters = 64
+    img_meters = 100
     img_pixels = 256
     agent_specs = {
-        "intersection": AgentSpec(
+        "turn-left-agent": AgentSpec(
             interface=AgentInterface(
+                accelerometer=True,
+                # action=ActionSpaceType.Continuous, # Temporary for testing purpose ********
+                action=ActionSpaceType.LaneWithContinuousSpeed,  # Temporary for testing purpose ********
                 done_criteria=done_criteria,
-                max_episode_steps=max_episode_steps,
-                # action=ActionSpaceType.Continuous,
-                action=ActionSpaceType.LaneWithContinuousSpeed,
-                rgb=RGB(
-                    width=img_pixels,
-                    height=img_pixels,
-                    resolution=img_meters / img_pixels,
-                ),
-                ogm=OGM(
-                    width=img_pixels,
-                    height=img_pixels,
-                    resolution=img_meters / img_pixels,
-                ),
                 drivable_area_grid_map=DrivableAreaGridMap(
                     width=img_pixels,
                     height=img_pixels,
                     resolution=img_meters / img_pixels,
                 ),
-                neighborhood_vehicles=NeighborhoodVehicles(img_meters),
-                waypoints=Waypoints(lookahead=30),
-                road_waypoints=False,
-                accelerometer=True,
                 lidar=True,
+                max_episode_steps=max_episode_steps,
+                neighborhood_vehicles=NeighborhoodVehicles(img_meters),
+                ogm=OGM(
+                    width=img_pixels,
+                    height=img_pixels,
+                    resolution=img_meters / img_pixels,
+                ),
+                rgb=RGB(
+                    width=img_pixels,
+                    height=img_pixels,
+                    resolution=img_meters / img_pixels,
+                ),
+                road_waypoints=False,
+                waypoints=Waypoints(lookahead=img_meters),
             ),
         )
     }
@@ -155,6 +149,7 @@ def intersection_env(
         headless=headless,
         visdom=visdom,
         sumo_headless=sumo_headless,
+        endless_traffic=False,
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
     env = FormatObs(env=env)
