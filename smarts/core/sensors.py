@@ -458,7 +458,7 @@ class Sensors:
             sim.agent_manager, done_criteria.agents_alive
         )
 
-        done = (
+        done = not sim.resetting and (
             (is_off_road and done_criteria.off_road)
             or reached_goal
             or reached_max_episode_steps

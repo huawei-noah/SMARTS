@@ -954,7 +954,7 @@ class SMARTS:
         # TODO: It's inconsistent that pybullet is not here
         return self._providers
 
-    def get_provider_by_type(self, requested_type) -> Provider:
+    def get_provider_by_type(self, requested_type) -> Optional[Provider]:
         """Get The first provider that matches the requested type."""
         self._check_valid()
         for provider in self._providers:
@@ -994,10 +994,12 @@ class SMARTS:
             except Exception as provider_error:
                 self._handle_provider(provider, provider_error)
 
-    def _handle_provider(self, provider: Provider, provider_error) -> ProviderState:
+    def _handle_provider(
+        self, provider: Provider, provider_error
+    ) -> Optional[ProviderState]:
         provider_problem = bool(provider_error or not provider.connected)
         if not provider_problem:
-            return
+            return None
 
         recovery_flags = self._provider_recovery_flags.get(
             provider, ProviderRecoveryFlags.EXPERIMENT_REQUIRED
@@ -1126,6 +1128,11 @@ class SMARTS:
     def should_reset(self):
         """If the simulation requires a reset."""
         return self._reset_required
+
+    @property
+    def resetting(self) -> bool:
+        """If the simulation is currently resetting"""
+        return self._resetting
 
     @property
     def scenario(self):
