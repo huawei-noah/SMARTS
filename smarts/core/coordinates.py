@@ -176,7 +176,7 @@ class Heading(float):
 
     @classmethod
     def from_bullet(cls, bullet_heading):
-        """Bullet's space is in radians, 0 faces north, and we turn
+        """Bullet's space is in radians, 0 faces north, and turns
         counter-clockwise.
         """
         h = Heading(bullet_heading)
@@ -186,7 +186,7 @@ class Heading(float):
     @classmethod
     def from_panda3d(cls, p3d_heading):
         """Panda3D's space is in degrees, 0 faces north,
-        and we turn counter-clockwise.
+        and turns counter-clockwise.
         """
         h = Heading(math.radians(p3d_heading))
         h.source = "p3d"
@@ -194,7 +194,7 @@ class Heading(float):
 
     @classmethod
     def from_sumo(cls, sumo_heading):
-        """Sumo's space uses degrees, 0 faces north, and we turn clockwise."""
+        """Sumo's space uses degrees, 0 faces north, and turns clockwise."""
         heading = Heading._flip_clockwise(math.radians(sumo_heading))
         h = Heading(heading)
         h.source = "sumo"
