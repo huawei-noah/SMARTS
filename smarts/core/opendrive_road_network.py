@@ -880,12 +880,11 @@ class OpenDriveRoadNetwork(RoadMap):
         @cached_property
         def bounding_box(self) -> List[Tuple[float, float]]:
             """Get the minimal axis aligned bounding box that contains all geometry in this lane."""
-            # XXX: This signature is wrong. It should return Optional[BoundingBox]
             x_coordinates, y_coordinates = zip(*self.lane_polygon)
-            self._bounding_box = [
-                (min(x_coordinates), min(y_coordinates)),
-                (max(x_coordinates), max(y_coordinates)),
-            ]
+            self._bounding_box = BoundingBox(
+                min_pt=Point(x=min(x_coordinates), y=min(y_coordinates)),
+                max_pt=Point(x=max(x_coordinates), y=max(y_coordinates)),
+            )
             return self._bounding_box
 
         def _t_angle(self, s_heading: float) -> float:

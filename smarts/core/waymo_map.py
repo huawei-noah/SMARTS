@@ -34,11 +34,16 @@ from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
 from .utils.file import read_tfrecord_file
-from .utils.math import offset_along_shape, position_at_shape_offset, distance_point_to_polygon
+from .utils.math import (
+    offset_along_shape,
+    position_at_shape_offset,
+    distance_point_to_polygon,
+)
 
 
 class WaymoMap(RoadMap):
     """A map associated with a Waymo dataset"""
+
     DEFAULT_LANE_SPEED = 16.67  # in m/s
     DEFAULT_LANE_WIDTH = 3.2
 
@@ -216,37 +221,36 @@ class WaymoMap(RoadMap):
 
         @lru_cache(maxsize=8)
         def curvature_radius_at_offset(
-                self, offset: float, lookahead: int = 5
+            self, offset: float, lookahead: int = 5
         ) -> float:
             return super().curvature_radius_at_offset(offset, lookahead)
 
         @cached_property
-        def bounding_box(self) -> List[Tuple[float, float]]:
+        def bounding_box(self) -> Optional[BoundingBox]:
             """Get the minimal axis aligned bounding box that contains all geometry in this lane."""
-            # XXX: This signature is wrong. It should return Optional[BoundingBox]
             x_coordinates, y_coordinates = zip(*self.lane_polygon)
-            self._bounding_box = [
-                (min(x_coordinates), min(y_coordinates)),
-                (max(x_coordinates), max(y_coordinates)),
-            ]
+            self._bounding_box = BoundingBox(
+                min_pt=Point(x=min(x_coordinates), y=min(y_coordinates)),
+                max_pt=Point(x=max(x_coordinates), y=max(y_coordinates)),
+            )
             return self._bounding_box
 
         @lru_cache(maxsize=8)
         def contains_point(self, point: Point) -> bool:
             if (
-                    self._bounding_box[0][0] <= point[0] <= self._bounding_box[1][0]
-                    and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
+                self._bounding_box[0][0] <= point[0] <= self._bounding_box[1][0]
+                and self._bounding_box[0][1] <= point[1] <= self._bounding_box[1][1]
             ):
                 lane_point = self.to_lane_coord(point)
                 return (
-                        abs(lane_point.t) <= (self._lane_width / 2)
-                        and 0 <= lane_point.s < self.length
+                    abs(lane_point.t) <= (self._lane_width / 2)
+                    and 0 <= lane_point.s < self.length
                 )
             return False
 
         @lru_cache(maxsize=8)
         def project_along(
-                self, start_offset: float, distance: float
+            self, start_offset: float, distance: float
         ) -> Set[Tuple[RoadMap.Lane, float]]:
             return super().project_along(start_offset, distance)
 
