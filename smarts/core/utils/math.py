@@ -245,14 +245,14 @@ def low_pass_filter(
 
 
 def radians_to_vec(radians) -> np.ndarray:
-    """Convert a radian value to a unit directional vector."""
+    """Convert a radian value to a unit directional vector. 0 is at [0, 1]."""
     # +y = 0 rad.
     angle = (radians + math.pi * 0.5) % (2 * math.pi)
     return np.array((math.cos(angle), math.sin(angle)))
 
 
 def vec_to_radians(v) -> float:
-    """Converts a vector to a radian value."""
+    """Converts a vector to a radian value. [0,+y] is 0."""
     # See: https://stackoverflow.com/a/15130471
     assert len(v) == 2, f"Vector must be 2D: {repr(v)}"
 
