@@ -505,7 +505,7 @@ class Sensors:
         return False
 
     @classmethod
-    def _vehicle_is_not_moving(cls, sim, vehicle, last_n_seconds_considered, total_distance):
+    def _vehicle_is_not_moving(cls, sim, vehicle, last_n_seconds_considered, min_distance_moved):
         # Flag if the vehicle has been immobile for the past 'last_n_seconds_considered' seconds
         if sim.elapsed_sim_time < last_n_seconds_considered:
             return False
@@ -516,7 +516,7 @@ class Sensors:
 
         # Due to controller instabilities there may be some movement even when a
         # vehicle is "stopped".
-        return distance < total_distance
+        return distance < min_distance_moved
 
     @classmethod
     def _vehicle_is_off_route_and_wrong_way(cls, sim, vehicle):
