@@ -626,7 +626,7 @@ class OpenDriveRoadNetwork(RoadMap):
         return self._surfaces.get(surface_id)
 
     @cached_property
-    def bounding_box(self) -> BoundingBox:
+    def bounding_box(self):
         """Return a bounding box that encapsulates the map."""
         x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
         for road_id in self._roads:
@@ -880,7 +880,6 @@ class OpenDriveRoadNetwork(RoadMap):
         @cached_property
         def bounding_box(self) -> List[Tuple[float, float]]:
             """Get the minimal axis aligned bounding box that contains all geometry in this lane."""
-            # XXX: This signature is wrong. It should return Optional[BoundingBox]
             x_coordinates, y_coordinates = zip(*self.lane_polygon)
             self._bounding_box = [
                 (min(x_coordinates), min(y_coordinates)),
