@@ -25,26 +25,15 @@ class ChaseWaypointsAgent(Agent):
         )
 
 
-def main(scenarios, headless, num_episodes, max_episode_steps=None):
-    agent_spec = AgentSpec(
-        interface=AgentInterface.from_type(
-            AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
-        ),
-        agent_builder=ChaseWaypointsAgent,
-    )
-
+def main(headless, num_episodes):
     env = gym.make(
         "smarts.env:intersection-v0",
         headless=headless,
         sumo_headless=True,
     )
 
-    # Convert `env.step()` and `env.reset()` from multi-agent interface to
-    # single-agent interface.
-    env = SingleAgent(env=env)
-
     for episode in episodes(n=num_episodes):
-        agent = agent_spec.build_agent()
+        agent = ChaseWaypointsAgent()
         observation = env.reset()
         episode.record_scenario(env.scenario_log)
 
@@ -73,7 +62,6 @@ if __name__ == "__main__":
     build_scenario(args.scenarios)
 
     main(
-        scenarios=args.scenarios,
         headless=args.headless,
         num_episodes=args.episodes,
     )

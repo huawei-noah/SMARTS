@@ -97,12 +97,12 @@ def intersection_env(
         A single-agent unprotected left turn intersection environment.
     """
 
-    scenario = str(
+    scenario = [str(
         pathlib.Path(__file__).absolute().parents[2]
         / "scenarios"
         / "intersections"
         / "2lane_left_turn"
-    )
+    )]
     build_scenario(scenario)
 
     done_criteria = DoneCriteria(
@@ -149,7 +149,7 @@ def intersection_env(
     }
 
     env = HiWayEnv(
-        scenarios=[scenario],
+        scenarios=scenario,
         agent_specs=agent_specs,
         sim_name="LeftTurn",
         headless=headless,
