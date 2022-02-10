@@ -3,7 +3,7 @@ import pathlib
 
 import gym
 
-from examples import build_scenario
+from smarts.env import build_scenario
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType

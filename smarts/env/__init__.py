@@ -18,6 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from gym.envs.registration import register
+import subprocess
+from typing import List
 
 register(
     id="hiway-v0",
@@ -28,3 +30,12 @@ register(
     id="intersection-v0",
     entry_point="smarts.env.intersection_env:intersection_env",
 )
+
+def build_scenario(scenario: List[str]):
+    """Build the given scenarios.
+
+    Args:
+        scenario (List[str]): Scenarios to build.
+    """
+    build_scenario = " ".join(["scl scenario build-all"] + scenario)
+    subprocess.call(build_scenario, shell=True)

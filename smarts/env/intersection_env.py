@@ -18,7 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import os
 import pathlib
 from typing import Optional
 
@@ -35,7 +34,8 @@ from smarts.core.agent_interface import (
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.single_agent import SingleAgent
-from smarts.env.wrappers.standard_obs import StandardObs
+from smarts.env.wrappers.format_obs import FormatObs
+from smarts.env import build_scenario
 
 
 def intersection_env(
@@ -80,8 +80,8 @@ def intersection_env(
         Agent collides, drives off road, or drives off route.
 
     Solved requirement:
-        Considered solved when the average return is greater than or equal to
-        90.0 over 100 consecutive trials.
+        Considered solved when the average `info["score"]` is greater than or
+        equal to 90.0 over 100 consecutive trials.
 
     Args:
         headless (bool, optional): If True, disables visualization in
@@ -97,7 +97,13 @@ def intersection_env(
         A single-agent unprotected left turn intersection environment.
     """
 
-    scenario = _build_scenario()
+    scenario = str(
+        pathlib.Path(__file__).absolute().parents[2]
+        / "scenarios"
+        / "intersections"
+        / "2lane_left_turn"
+    )
+    build_scenario(scenario)
 
     done_criteria = DoneCriteria(
         collision=False,
@@ -135,7 +141,7 @@ def intersection_env(
                 ),
                 neighborhood_vehicles=NeighborhoodVehicles(img_meters),
                 waypoints=Waypoints(lookahead=30),
-                road_waypoints=False,  # RoadWaypoints(horizon=30),
+                road_waypoints=False,
                 accelerometer=True,
                 lidar=True,
             ),
@@ -151,19 +157,7 @@ def intersection_env(
         sumo_headless=sumo_headless,
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
-    env = StandardObs(env=env)
+    env = FormatObs(env=env)
     env = SingleAgent(env=env)
 
     return env
-
-
-def _build_scenario() -> str:
-    scenario = str(
-        pathlib.Path(__file__).absolute().parents[2]
-        / "scenarios"
-        / "intersections"
-        / "2lane_left_turn"
-    )
-    build_scenario = f"scl scenario build-all --clean {scenario}"
-    os.system(build_scenario)
-    return scenario
