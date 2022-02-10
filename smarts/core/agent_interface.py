@@ -174,6 +174,8 @@ class AgentsAliveDoneCriteria:
 
 @dataclass(frozen=True)
 class EventConfiguration:
+    """Configure the conditions in which an Event is triggered."""
+
     not_moving_time: int = 60
     """How long in seconds to check the agent after which it is considered not moving"""
     not_moving_distance: int = 1
