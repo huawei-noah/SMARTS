@@ -4,11 +4,11 @@ import pathlib
 import gym
 import numpy as np
 
-from smarts.env import build_scenario
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
+from smarts.env import build_scenario
 from smarts.env.wrappers.single_agent import SingleAgent
 
 logging.basicConfig(level=logging.INFO)
@@ -35,8 +35,6 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
 
     env = gym.make(
         "smarts.env:intersection-v0",
-        scenarios=scenarios,
-        agent_specs={"SingleAgent": agent_spec},
         headless=headless,
         sumo_headless=True,
     )
@@ -65,7 +63,11 @@ if __name__ == "__main__":
 
     if not args.scenarios:
         args.scenarios = [
-            str(pathlib.Path(__file__).absolute().parents[1] / "scenarios" / "intersections" / "2lane_left_turn")
+            str(
+                pathlib.Path(__file__).absolute().parents[1]
+                / "scenarios"
+                / "loop"
+            )
         ]
 
     build_scenario(args.scenarios)
