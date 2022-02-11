@@ -51,7 +51,7 @@ class WaymoMap(RoadMap):
     DEFAULT_LANE_SPEED = 16.67  # in m/s
     DEFAULT_LANE_WIDTH = 3.2
 
-    def __init__(self, map_spec: MapSpec, scenario):
+    def __init__(self, map_spec: MapSpec, waymo_scenario):
         self._log = logging.getLogger(self.__class__.__name__)
         self._map_spec = map_spec
         self._surfaces: Dict[str, WaymoMap.Surface] = dict()
@@ -60,7 +60,7 @@ class WaymoMap(RoadMap):
         self._map_features: Dict[int, Any] = dict()
         self._default_lane_width = WaymoMap.DEFAULT_LANE_WIDTH
         self._lane_rtree = None
-        self._load_from_scenario(scenario)
+        self._load_from_scenario(waymo_scenario)
 
         # self._waypoints_cache = TODO
         self._lanepoints = None
@@ -71,11 +71,11 @@ class WaymoMap(RoadMap):
                 self, spacing=map_spec.lanepoint_spacing
             )
 
-    def _load_from_scenario(self, scenario):
+    def _load_from_scenario(self, waymo_scenario):
         start = time.time()
         lanes: List[Tuple[str, Any]] = []
-        for i in range(len(scenario.map_features)):
-            map_feature = scenario.map_features[i]
+        for i in range(len(waymo_scenario.map_features)):
+            map_feature = waymo_scenario.map_features[i]
             key = map_feature.WhichOneof("feature_data")
             if key is not None:
                 self._map_features[map_feature.id] = getattr(map_feature, key)
@@ -83,6 +83,7 @@ class WaymoMap(RoadMap):
                     lanes.append((str(map_feature.id), getattr(map_feature, key)))
 
         # First pass -- create lane objects, initial geometry computations
+        # TODO:  also create Road{Segments} here (and Composite lanes/roads)
         for lane_id, lane_feat in lanes:
             lane = WaymoMap.Lane(self, lane_id, lane_feat, self._map_features)
             self._lanes[lane_id] = lane
@@ -94,41 +95,40 @@ class WaymoMap(RoadMap):
         while should_run and i < 10:
             should_run = False
             i += 1
-            for lane_id, lane_feat in lanes:
-                lane = self._lanes[lane_id]
-                if lane.fill_in_connected_points():
+            for lane_id, lane in self._lanes.items():
+                if lane._fill_in_connected_points():
                     should_run = True
 
         # Third pass -- create polygons
-        for lane_id, lane_feat in lanes:
-            lane = self._lanes[lane_id]
-            lane.create_polygon()
+        for lane_id, lane in self._lanes.items():
+            lane._create_polygon()
+
+        self._waymo_scenario_id = waymo_scenario.scenario_id
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Loading Waymo map took: {elapsed} ms")
 
-    @classmethod
-    def from_spec(cls, map_spec: MapSpec):
-        """Generate a road network from the given map specification."""
-
+    @staticmethod
+    def _parse_source_to_scenario(source: str):
         # Read the dataset file and get the specified scenario
-        dataset_path = map_spec.source.split("#")[0]
-        scenario_id = map_spec.source.split("#")[1]
+        dataset_path = source.split("#")[0]
+        scenario_id = source.split("#")[1]
         dataset_records = read_tfrecord_file(dataset_path)
-        scenario = None
         for record in dataset_records:
             parsed_scenario = scenario_pb2.Scenario()
             parsed_scenario.ParseFromString(bytearray(record))
             if parsed_scenario.scenario_id == scenario_id:
-                scenario = parsed_scenario
-                break
-        else:
-            errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
-            raise ValueError(errmsg)
+                return parsed_scenario
+        errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
+        raise ValueError(errmsg)
 
+    @classmethod
+    def from_spec(cls, map_spec: MapSpec):
+        """Generate a road network from the given map specification."""
+        waymo_scenario = cls._parse_source_to_scenario(map_spec.source)
         assert scenario
-        return cls(map_spec, scenario)
+        return cls(map_spec, waymo_scenario)
 
     @property
     def source(self) -> str:
@@ -136,7 +136,8 @@ class WaymoMap(RoadMap):
 
     def is_same_map(self, map_spec: MapSpec) -> bool:
         """Test if the road network is identical to the given map specification."""
-        pass  # TODO
+        waymo_scenario = _parse_source_to_scenario(map_spec)
+        return waymo_scenario.scenario_id == self._waymo_scenario_id
 
     @cached_property
     def bounding_box(self) -> BoundingBox:
@@ -179,6 +180,7 @@ class WaymoMap(RoadMap):
             self._map = road_map
             self._lane_id = lane_id
             self._lane_feat = lane_feat
+            # XXX: why np.array?  i.e., should we use smarts.core.coordinates.Point here instead?
             self._lane_pts = [np.array([p.x, p.y]) for p in lane_feat.polyline]
             self._lane_width = None
             self._bounding_box = None
@@ -190,15 +192,12 @@ class WaymoMap(RoadMap):
 
             # Geometry
             self._n_pts = len(self._lane_pts)
-            self._normals = [None] * self._n_pts
             self._left_widths = [0] * self._n_pts
             self._right_widths = [0] * self._n_pts
-            self._ray_dist = 20.0
             self._polygon = None
-            self._calculate_normals()
-            self._raycast_boundaries(features)
 
-        def _calculate_normals(self):
+        def _calculate_normals(self) -> Sequence[np.ndarray]:
+            normals = [None] * self._n_pts
             for i in range(self._n_pts):
                 p = self._lane_pts[i]
                 dp = None
@@ -215,16 +214,18 @@ class WaymoMap(RoadMap):
                         math.sin(angle) * dp[0] + math.cos(angle) * dp[1],
                     ]
                 )
-                self._normals[i] = normal
+                normals[i] = normal
+            return normals
 
-        def _raycast_boundaries(self, features):
+        def _raycast_boundaries(self, features, ray_dist = 20.0) -> Sequence[np.ndarray]:
+            normals = self._calculate_normals()
             for i in range(self._n_pts):
                 ray_start = self._lane_pts[i]
-                normal = self._normals[i]
+                normal = normals[i]
 
                 if self._lane_feat.left_neighbors:
                     sign = 1.0
-                    ray_end = ray_start + sign * self._ray_dist * normal
+                    ray_end = ray_start + sign * ray_dist * normal
                     for n in self._lane_feat.left_neighbors:
                         if not (n.self_start_index <= i <= n.self_end_index):
                             continue
@@ -241,7 +242,7 @@ class WaymoMap(RoadMap):
 
                 if self._lane_feat.right_neighbors:
                     sign = -1.0
-                    ray_end = ray_start + sign * self._ray_dist * normal
+                    ray_end = ray_start + sign * ray_dist * normal
                     for n in self._lane_feat.right_neighbors:
                         if not (n.self_start_index <= i <= n.self_end_index):
                             continue
@@ -266,11 +267,11 @@ class WaymoMap(RoadMap):
 
             for i in [0, self._n_pts - 1]:
                 ray_start = self._lane_pts[i]
-                normal = self._normals[i]
+                normal = normals[i]
 
                 if self._lane_feat.left_boundaries:
                     sign = 1.0
-                    ray_end = ray_start + sign * self._ray_dist * normal
+                    ray_end = ray_start + sign * ray_dist * normal
                     for boundary in self._lane_feat.left_boundaries:
                         if not (
                             boundary.lane_start_index <= i <= boundary.lane_end_index
@@ -289,7 +290,7 @@ class WaymoMap(RoadMap):
 
                 if self._lane_feat.right_boundaries:
                     sign = -1.0
-                    ray_end = ray_start + sign * self._ray_dist * normal
+                    ray_end = ray_start + sign * ray_dist * normal
                     for boundary in self._lane_feat.right_boundaries:
                         if not (
                             boundary.lane_start_index <= i <= boundary.lane_end_index
@@ -306,7 +307,9 @@ class WaymoMap(RoadMap):
                             )
                             break
 
-        def fill_in_connected_points(self) -> bool:
+            return normals
+
+        def _fill_in_connected_points(self) -> bool:
             filled_in_point = False
             if (
                 self._left_widths[0] == 0
@@ -336,21 +339,23 @@ class WaymoMap(RoadMap):
                         break
             return filled_in_point
 
-        def create_polygon(self):
+        def _create_polygon(self):
+            normals = self._raycast_boundaries(features)
             max_width = max(
                 self._left_widths[0],
                 self._left_widths[-1],
                 self._right_widths[0],
                 self._right_widths[-1],
             )
-            max_width = 3 if max_width == 0 else max_width
+            if max_width == 0:
+                max_width = 3
 
             new_left_pts = [None] * self._n_pts
             new_right_pts = [None] * self._n_pts
             for i in range(self._n_pts):
                 p = self._lane_pts[i]
-                new_left_pts[i] = p + (max_width * self._normals[i])
-                new_right_pts[i] = p + (-1.0 * max_width * self._normals[i])
+                new_left_pts[i] = p + (max_width * normals[i])
+                new_right_pts[i] = p + (-1.0 * max_width * normals[i])
 
             xs, ys = [], []
             for p in new_left_pts + new_right_pts[::-1] + [new_left_pts[0]]:
@@ -541,3 +546,4 @@ class WaymoMap(RoadMap):
     ) -> Optional[RoadMap.Lane]:
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
         return nearest_lanes[0][0] if nearest_lanes else None
+
