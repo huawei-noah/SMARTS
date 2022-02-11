@@ -75,9 +75,7 @@ for _ in range(1000):
 Documentation is available at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest).
 
 # Setup
-
 ### Installation
-
 ```bash
 git clone https://github.com/huawei-noah/SMARTS.git
 cd <path/to/SMARTS>
@@ -115,7 +113,7 @@ make sanity-test
 # Then you can run a scenario, see following section for more details
 ```
 
-## Running
+### Running
 Use the `scl` command line to run SMARTS together with it's supporting processes. To run the default example simply build a scenario and run the following command:
 
 ```bash
@@ -139,15 +137,13 @@ scl run --envision <examples/script_path> <scenarios/path>
 Pass in the agent example path and scenarios folder path above to run an experiment like the one mentioned above.
 
 # Examples 
-
-## Usage
-
+### Usage
 Illustration of Various ways to use SMARTS. 
 1. [Single agent](examples/single_agent.py) example.
 1. [Multi agent](examples/multi_agent.py) example.
 1. [Parallel environments](examples/parallel_environment.py) to run multiple SMARTS environments in parallel.
 
-## Reinforcement Learning
+### Reinforcement Learning
 1. [MARL benchmark](baselines/marl_benchmark)
 1. [Stable Baselines 3](examples/sb3) using PPO.
 1. [Driving in traffic](examples/driving_in_traffic) using world model based RL. A trained agent's performance is shown below.
@@ -277,7 +273,7 @@ python examples/run_smarts.py --algo SAC --scenario ./scenarios/loop --n_agents 
 ```
 
 # Containers
-## Docker
+### Docker
 SMARTS docker images are hosted at [dockerhub](https://hub.docker.com/orgs/huaweinoah).
 
 ```bash
@@ -299,7 +295,7 @@ $ python examples/single_agent.py scenarios/loop
 # Visit http://localhost:8081 in the host machine to see the running simulation in Envision.
 ```
 
-## Singularity
+### Singularity
 ```bash
 $ cd </path/to/SMARTS>
 
@@ -327,10 +323,10 @@ $ singularity instance start --containall --bind ../SMARTS:/src ./utils/singular
 ```
 
 # Troubleshooting
-## General
+### General
 In most cases SMARTS debug logs are located at `~/.smarts`. These can be helpful to diagnose problems.
 
-## SUMO
+### SUMO
 SUMO can have some problems in setup. Please look through the following for support for SUMO:
 * If you are having issues see: **[SETUP](docs/setup.rst)** and **[SUMO TROUBLESHOOTING](docs/SUMO_TROUBLESHOOTING.md)**
 * If you wish to find binaries: **[SUMO Download Page](https://sumo.dlr.de/docs/Downloads.php)**
