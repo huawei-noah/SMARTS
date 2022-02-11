@@ -1385,13 +1385,17 @@ class SMARTS:
                 veh_type = (
                     v.vehicle_config_type if v.vehicle_config_type else v.vehicle_type
                 )
-                traffic[v.vehicle_id] = envision_types.TrafficActorState(
-                    actor_type=envision_types.TrafficActorType.SocialVehicle,
-                    vehicle_type=envision_types.VehicleType(veh_type),
-                    position=tuple(v.pose.position),
-                    heading=float(v.pose.heading),
-                    speed=v.speed,
-                )
+
+                SUPPORTED_VEHICLES = {"car", "truck", "passenger", "bus", "trailer", "coach"}
+
+                if veh_type in SUPPORTED_VEHICLES:
+                    traffic[v.vehicle_id] = envision_types.TrafficActorState(
+                        actor_type=envision_types.TrafficActorType.SocialVehicle,
+                        vehicle_type=envision_types.VehicleType(veh_type),
+                        position=tuple(v.pose.position),
+                        heading=float(v.pose.heading),
+                        speed=v.speed,
+                    )
 
         bubble_geometry = [
             list(bubble.geometry.exterior.coords)
