@@ -138,7 +138,7 @@ Pass in the agent example path and scenarios folder path above to run an experim
 
 # Examples 
 ### Usage
-Illustration of Various ways to use SMARTS. 
+Illustration of various ways to use SMARTS. 
 1. [Single agent](examples/single_agent.py) example.
 1. [Multi agent](examples/multi_agent.py) example.
 1. [Parallel environments](examples/parallel_environment.py) to run multiple SMARTS environments in parallel.
@@ -146,19 +146,17 @@ Illustration of Various ways to use SMARTS.
 ### Reinforcement Learning
 1. [MARL benchmark](baselines/marl_benchmark)
 1. [Stable Baselines 3](examples/sb3) using PPO.
-1. [Driving in traffic](examples/driving_in_traffic) using world model based RL. A trained agent's performance is shown below.
-    ![](examples/driving_in_traffic/docs/_static/driving_in_traffic.gif) 
+1. [Driving in traffic](examples/driving_in_traffic) using world model based RL.
 
 # Standard Environments
-1. `intersection-v0` - A left-turn intersection environment. Task description given [here](smarts/env/intersection_env.py). Create a left turn intersection environment as follows.
-```python
+1. `intersection-v0`: In this task, the ego-vehicle needs to drives towards an intersection with an all-way-stop traffic, and make a left turn without any collisions. Further task description is available at [/smarts/env/intersection_env.py](smarts/env/intersection_env.py).  
+    ```python
     env = gym.make(
         "smarts.env:intersection-v0",
         headless=True, # If False, enables Envision display.
         sumo_headless=False, # If True, enables sumo-gui display.
     )
-```
-
+    ```
 
 ## CLI tool
 
