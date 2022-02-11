@@ -36,10 +36,10 @@ turn_right_routes = [
 traffic = {}
 for name, routes in {
     # "vertical": vertical_routes,
-    # "horizontal": horizontal_routes,
+    "horizontal": horizontal_routes,
     # "turn_left": turn_left_routes,
     # "turn_right": turn_right_routes,
-    "turns": turn_left_routes + turn_right_routes,
+    # "turns": turn_left_routes + turn_right_routes,
     # "all": vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes,
 }.items():
     traffic[name] = Traffic(
