@@ -173,7 +173,7 @@ class Heading(float):
         float.__init__(value)
 
     def __new__(
-        self, x: Union[SupportsFloat, SupportsIndex, ellipsis] = ...
+        self, x: Union[SupportsFloat, SupportsIndex, Ellipsis] = ...
     ) -> "Heading":
         """A override to constrain heading to -pi to pi"""
         value = x
