@@ -1,13 +1,18 @@
 # SMARTS
-![SMARTS CI](https://github.com/junluo-huawei/SMARTS/workflows/SMARTS%20CI/badge.svg?branch=master) ![Code style](https://img.shields.io/badge/code%20style-black-000000.svg)
+[![SMARTS CI Base Tests Linux](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-base-tests-linux.yml/badge.svg?branch=master)](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-base-tests-linux.yml?query=branch%3Amaster) 
+[![SMARTS CI Format](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-format.yml/badge.svg?branch=master)](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-format.yml)
+![Code style](https://img.shields.io/badge/code%20style-black-000000.svg) 
+[![Downloads](https://img.shields.io/pypi/dm/smarts)](https://pypi.org/project/smarts/)
+[![GitHub contributors](https://img.shields.io/github/contributors/huawei-noah/smarts)](https://github.com/huawei-noah/smarts/graphs/contributors)
 
-SMARTS (Scalable Multi-Agent RL Training School) is a simulation platform for reinforcement learning and multi-agent research on autonomous driving. Its focus is on realistic and diverse interactions. It is part of the [XingTian](https://github.com/huawei-noah/xingtian/) suite of RL platforms from Huawei Noah's Ark Lab.
+
+SMARTS (Scalable Multi-Agent RL Training School) is a simulation platform for reinforcement learning (RL) and multi-agent research on autonomous driving. Its focus is on realistic and diverse interactions. It is part of the [XingTian](https://github.com/huawei-noah/xingtian/) suite of RL platforms from Huawei Noah's Ark Lab.
 
 Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Training School for Autonomous Driving](https://arxiv.org/abs/2010.09776) for background on some of the project goals.
 
 ![](docs/_static/smarts_envision.gif)
 
-## Multi-Agent experiment as simple as...
+## Multi-Agent experiment as simple as ...
 
 ```python
 import gym
@@ -54,38 +59,38 @@ for _ in range(1000):
 ```bash
 # For Mac OS X users, make sure XQuartz is pre-installed as SUMO's dependency
 
-# git clone ...
+git clone https://github.com/huawei-noah/SMARTS.git
 cd <path/to/SMARTS>
 
 # Install the system requirements, then follow the instructions for setting up the SUMO_HOME environment variable. You may use the `-y` option to enable automatic assumption of "yes" to all prompts to avoid timeout from waiting for user input. 
 bash utils/setup/install_deps.sh
 
-# verify sumo is >= 1.5.0
+# Verify sumo is >= 1.5.0
 # if you have issues see ./doc/SUMO_TROUBLESHOOTING.md
 sumo
 
-# setup virtual environment; presently at least Python 3.7 and higher is officially supported
+# Setup virtual environment; presently at least Python 3.7 and higher is officially supported
 python3.7 -m venv .venv
 
-# enter virtual environment to install all dependencies
+# Enter virtual environment to install dependencies
 source .venv/bin/activate
 
-# upgrade pip, a recent version of pip is needed for the version of tensorflow we depend on
+# Upgrade pip
 pip install --upgrade pip
 
-# install [train] version of python package with the rllib dependencies
+# Install [train] version of python package with the rllib dependencies
 pip install -e '.[train]'
 
-# install [camera-obs] version of python package with the panda3D dependencies if you want to run sanity tests or render camera sensor observations in your simulations
+# Install [camera-obs] version of python package with the panda3D dependencies if you want to run sanity tests or render camera sensor observations in your simulations
 # make sure to install [test] version of python package with the rllib dependencies so that you can run sanity-test (and verify they are passing)
 pip install -e '.[camera-obs]'  
 
-# make sure you install the [camera-obs] dependencies first and then can run sanity-test (and verify they are passing)
+# Make sure you install the [camera-obs] dependencies first and then can run sanity-test (and verify they are passing)
 # if tests fail, check './sanity_test_result.xml' for test report. 
 pip install -e '.[test]'
 make sanity-test
 
-# then you can run a scenario, see following section for more details
+# Then you can run a scenario, see following section for more details
 ```
 
 ## Running
@@ -111,6 +116,10 @@ scl run --envision <examples/script_path> <scenarios/path>
 ```
 
 Pass in the agent example path and scenarios folder path above to run an experiment like the one mentioned above.
+
+## Reinforcement Learning Examples
+[Driving in traffic](examples/driving_in_traffic)
+![](examples/driving_in_traffic/docs/_static/driving_in_traffic.gif)
 
 ## Documentation
 
