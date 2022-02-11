@@ -296,8 +296,8 @@ def euclidean_distance(p1: Tuple[float], p2: Tuple[float]) -> float:
 
 
 def position_at_offset(
-    p1: Tuple[float], p2: Tuple[float], offset: float
-) -> Optional[Tuple[float]]:
+    p1: Tuple[float, ...], p2: Tuple[float, ...], offset: float
+) -> Optional[Tuple[float, ...]]:
     """A point between p1 and p2 given an offset less than the distance between p1 and p2."""
     if is_close(offset, 0.0):  # for pathological cases with dist == 0 and offset == 0
         return p1

@@ -20,7 +20,16 @@
 import enum
 import math
 from dataclasses import dataclass
-from typing import NamedTuple, Optional, Sequence, SupportsFloat, Tuple, Type, Union
+from typing import (
+    Any,
+    NamedTuple,
+    Optional,
+    Sequence,
+    SupportsFloat,
+    Tuple,
+    Type,
+    Union,
+)
 
 import numpy as np
 from cached_property import cached_property
@@ -163,7 +172,9 @@ class Heading(float):
     def __init__(self, value=...):
         float.__init__(value)
 
-    def __new__(self, x: Union[SupportsFloat, SupportsIndex] = ...) -> "Heading":
+    def __new__(
+        self, x: Union[SupportsFloat, SupportsIndex, ellipsis] = ...
+    ) -> "Heading":
         """A override to constrain heading to -pi to pi"""
         value = x
         if isinstance(value, (int, float)):
@@ -247,11 +258,13 @@ class Pose:
     """A pair of position and orientation values."""
 
     # TODO: these should be np.ndarray
-    position: Sequence  # [x, y, z]
-    orientation: Sequence  # [a, b, c, d] -> a + bi + cj + dk = 0
+    position: Union[NamedTuple, Tuple, np.ndarray]  # [x, y, z]
+    orientation: Union[
+        NamedTuple, Tuple, np.ndarray
+    ]  # [a, b, c, d] -> a + bi + cj + dk = 0
     heading_: Optional[Heading] = None  # cached heading to avoid recomputing
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Pose):
             return False
         return (self.position == other.position).all() and (
