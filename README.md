@@ -75,7 +75,9 @@ for _ in range(1000):
 Documentation is available at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest).
 
 # Setup
-## Installation
+
+### Installation
+
 ```bash
 git clone https://github.com/huawei-noah/SMARTS.git
 cd <path/to/SMARTS>
@@ -137,7 +139,9 @@ scl run --envision <examples/script_path> <scenarios/path>
 Pass in the agent example path and scenarios folder path above to run an experiment like the one mentioned above.
 
 # Examples 
+
 ## Usage
+
 Illustration of Various ways to use SMARTS. 
 1. [Single agent](examples/single_agent.py) example.
 1. [Multi agent](examples/multi_agent.py) example.
