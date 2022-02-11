@@ -35,12 +35,12 @@ turn_right_routes = [
 
 traffic = {}
 for name, routes in {
-    "vertical": vertical_routes,
-    "horizontal": horizontal_routes,
-    "turn_left": turn_left_routes,
-    "turn_right": turn_right_routes,
+    # "vertical": vertical_routes,
+    # "horizontal": horizontal_routes,
+    # "turn_left": turn_left_routes,
+    # "turn_right": turn_right_routes,
     "turns": turn_left_routes + turn_right_routes,
-    "all": vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes,
+    # "all": vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes,
 }.items():
     traffic[name] = Traffic(
         flows=[
@@ -64,7 +64,7 @@ for name, routes in {
 
 ego_missions = [
     Mission(
-        route=Route(begin=("edge-west-WE", 0, 55), end=("edge-north-SN", 0, 30)),
+        route=Route(begin=("edge-west-WE", 0, 55), end=("edge-north-SN", 0, 50)),
     ),
 ]
 

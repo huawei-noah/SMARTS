@@ -1,3 +1,5 @@
+import time
+
 import gym
 import numpy as np
 
@@ -30,12 +32,18 @@ def main(headless, num_episodes):
         observation = env.reset()
         episode.record_scenario(env.scenario_log)
 
+        tot_reward = 0
         done = False
         while not done:
             agent_action = agent.act(observation)
             observation, reward, done, info = env.step(agent_action)
             episode.record_step(observation, reward, done, info)
-        print("Score==", info["score"])
+            tot_reward += reward
+            if tot_reward >= 100:
+                print("TOTAL REWARD EXCEEDED 100")
+                time.sleep(10)
+                break
+        print("Score==", info["score"], ", reward==", tot_reward)
 
     env.close()
 

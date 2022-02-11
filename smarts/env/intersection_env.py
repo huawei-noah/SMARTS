@@ -100,7 +100,7 @@ def intersection_env(
     build_scenario(scenario)
 
     done_criteria = DoneCriteria(
-        collision=True,
+        collision=False,  # Temporary. For testing purposes. To be changed later.
         off_road=True,
         off_route=True,
         on_shoulder=True,
@@ -115,8 +115,8 @@ def intersection_env(
         "LeftTurnAgent": AgentSpec(
             interface=AgentInterface(
                 accelerometer=True,
-                # action=ActionSpaceType.Continuous, # Temporary for testing purpose ********
-                action=ActionSpaceType.LaneWithContinuousSpeed,  # Temporary for testing purpose ********
+                # action=ActionSpaceType.Continuous,  # Temporary. For testing purposes. To be changed later.
+                action=ActionSpaceType.LaneWithContinuousSpeed,  # Temporary. For testing purposes. To be changed later.
                 done_criteria=done_criteria,
                 drivable_area_grid_map=DrivableAreaGridMap(
                     width=img_pixels,
