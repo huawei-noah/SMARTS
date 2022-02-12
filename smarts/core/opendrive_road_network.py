@@ -971,7 +971,7 @@ class OpenDriveRoadNetwork(RoadMap):
             if not self.is_drivable:
                 return []
             road_ids = [road.road_id for road in route.roads] if route else None
-            return self._waypoint_paths_at(pose.position2d, lookahead, road_ids)
+            return self._waypoint_paths_at(pose.as_position2(), lookahead, road_ids)
 
         def waypoint_paths_at_offset(
             self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
@@ -1618,7 +1618,7 @@ class OpenDriveRoadNetwork(RoadMap):
             road_ids = [road.road_id for road in route.roads]
         if road_ids:
             return self._waypoint_paths_along_route(
-                pose.position2d, lookahead, road_ids
+                pose.as_position2(), lookahead, road_ids
             )
         closest_lps = self._lanepoints.closest_lanepoints(
             [pose], within_radius=within_radius
@@ -1626,7 +1626,7 @@ class OpenDriveRoadNetwork(RoadMap):
         closest_lane = closest_lps[0].lane
         waypoint_paths = []
         for lane in closest_lane.road.lanes:
-            waypoint_paths += lane._waypoint_paths_at(pose.position2d, lookahead)
+            waypoint_paths += lane._waypoint_paths_at(pose.as_position2(), lookahead)
         return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
 
     def _waypoint_paths_along_route(
@@ -1740,7 +1740,7 @@ class OpenDriveRoadNetwork(RoadMap):
             ref_lanepoints_coordinates["headings"]
         )
         first_lp_heading = ref_lanepoints_coordinates["headings"][0]
-        lp_position = path[0].lp.pose.position2d
+        lp_position = path[0].lp.pose.as_position2()
         vehicle_pos = np.array(point[:2])
         heading_vec = np.array(radians_to_vec(first_lp_heading))
         projected_distant_lp_vehicle = np.inner(
@@ -1768,7 +1768,7 @@ class OpenDriveRoadNetwork(RoadMap):
             lp_lane_coord = lp.lane.to_lane_coord(lp_position)
             return [
                 Waypoint(
-                    pos=lp.pose.position2d,
+                    pos=lp.pose.as_position2(),
                     heading=lp.pose.heading,
                     lane_width=lp.lane.width_at_offset(lp_lane_coord.s),
                     speed_limit=lp.lane.speed_limit,

@@ -1284,7 +1284,7 @@ class SMARTS:
         map_max = np.array(self._map_bb.max_pt[:2]) if self._map_bb else None
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            map_spot = np.array(vehicle.pose.position2d)
+            map_spot = np.array(vehicle.pose.as_position2())
             if map_min is None:
                 map_min = map_spot
                 rescale_plane = True
@@ -1373,7 +1373,7 @@ class SMARTS:
                     mission_route_geometry=mission_route_geometry,
                 )
                 speed[agent_id] = v.speed
-                position[agent_id] = tuple(v.pose.position2d)
+                position[agent_id] = tuple(v.pose.as_position2())
                 heading[agent_id] = float(v.pose.heading)
                 if (
                     vehicle_obs.waypoint_paths

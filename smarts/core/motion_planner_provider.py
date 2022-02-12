@@ -162,7 +162,7 @@ class MotionPlannerProvider(Provider):
         self._vehicle_index_to_id[vehicle_index] = vehicle_id
 
         position, heading = (
-            provider_vehicle.pose.position2d,
+            provider_vehicle.pose.as_position2(),
             provider_vehicle.pose.heading,
         )
         self._poses = np.append(self._poses, [*position, heading]).reshape(-1, 3)

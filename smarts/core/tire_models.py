@@ -117,6 +117,7 @@ class TireForces:
         return slip_angles
 
     def apply_tire_forces(self, chassis, client, action):
+        """Applies tire forces"""
         raise NotImplementedError
 
     @staticmethod

@@ -403,8 +403,8 @@ class Pose:
 
         return self.heading_
 
-    @property
-    def position2d(self):
+    def as_position2(self) -> np.ndarray:
+        """Convert to a 2d position array"""
         return self.position[:2]
 
     def as_panda3d(self):
