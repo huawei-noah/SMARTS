@@ -57,10 +57,13 @@ for _ in range(1000):
 1. [Setup](#Setup)
     + [Installation](#Installation)
     + [Running](#Running)
+1. [CLI Tool](#CLI-Tool)  
+    + [CLI Usage](#CLI-Usage)
+    + [CLI Examples](#CLI-Examples)
 1. [Examples](#Examples)
     + [Usage](#Usage)
     + [Reinforcement Learning](#Reinforcement-Learning)
-1. [Standard Environments](#Standard-Environment)
+1. [Task Environments](#Task-Environments)
 1. [Containers](#Containers)
     + [Docker](#Docker)
     + [Singularity](#Singularity)
@@ -148,7 +151,7 @@ Illustration of various ways to use SMARTS.
 1. [Stable Baselines 3](examples/sb3) using PPO.
 1. [Driving in traffic](examples/driving_in_traffic) using world model based RL.
 
-# Standard Environments
+# Task Environments
 1. `intersection-v0`: In this task, the ego-vehicle needs to drives towards an intersection with an all-way-stop traffic, and make a left turn without any collisions. Further task description is available at [/smarts/env/intersection_env.py](smarts/env/intersection_env.py).  
     ```python
     env = gym.make(
@@ -158,12 +161,11 @@ Illustration of various ways to use SMARTS.
     )
     ```
 
-## CLI tool
-
+# CLI Tool
 SMARTS provides a command-line tool to interact with scenario studio and Envision.
 
-Usage
-```
+### CLI Usage
+```bash
 scl COMMAND SUBCOMMAND [OPTIONS] [ARGS]...
 ```
 
@@ -173,27 +175,28 @@ Commands:
 * zoo
 * run
 
-Subcommands of scenario:
-* build-all: Generate all scenarios under the given directories
-* build: Generate a single scenario
-* clean: Clean generated artifacts
+Subcommands of `scenario`:
+* build: Generate a single scenario.
+* build-all: Generate all scenarios under the given directories.
+* clean: Clean generated artifacts.
 
-Subcommands of envision:
-* start: start envision server
+Subcommands of `envision`:
+* start: Start Envision server.
 
-Subcommands of zoo:
-* zoo: Build an agent, used for submitting to the agent-zoo
+Subcommands of `zoo`:
+* build: Build a policy, to submit to the agent zoo.
+* install: Attempt to install the specified agents from the given paths/url.
+* manager: Start the manager process which instantiates workers.
 
 Subcommands of run:
-No subcommands of `run`. You can directly use `run` to simulate an experiment as mentioned in the example above.
+* No subcommands. Use `run` directly to simulate as shown [above](#Running).
 
-### Examples:
-
-```
-# Start envision, serve scenario assets out of ./scenarios
+### CLI Examples:
+```bash
+# Start envision and serve scenario assets out of ./scenarios
 scl envision start --scenarios ./scenarios
 
-# Build all scenario under given directories
+# Build all scenarios under given directories
 scl scenario build-all ./scenarios ./eval_scenarios
 
 # Rebuild a single scenario, replacing any existing generated assets
@@ -203,20 +206,7 @@ scl scenario build --clean scenarios/loop
 scl scenario clean scenarios/loop
 ```
 
-
-### Building Docs Locally
-
-Assuming you have run `pip install .[dev]`.
-
-```bash
-make docs
-
-python -m http.server -d docs/_build/html
-# Open http://localhost:8000 in your browser
-```
-
 ## Extras
-
 ### Visualizing Agent Observations
 If you want to easily visualize observations you can use our [Visdom](https://github.com/facebookresearch/visdom) integration. Start the visdom server before running your scenario,
 
