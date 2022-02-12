@@ -460,9 +460,7 @@ class WaymoMap(RoadMap):
         def contains_point(self, point: Point) -> bool:
             if (
                 self.bounding_box.min_pt.x <= point[0] <= self.bounding_box.max_pt.x
-                and self.bounding_box.min_pt.y
-                <= point[1]
-                <= self.bounding_box.max_pt.y
+                and self.bounding_box.min_pt.y <= point[1] <= self.bounding_box.max_pt.y
             ):
                 lane_point = self.to_lane_coord(point)
                 return (

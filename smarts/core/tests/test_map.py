@@ -665,8 +665,12 @@ def test_waymo_map():
 
     assert isinstance(road_map, WaymoMap)
     assert len(road_map._lanes) > 0
-    assert road_map.bounding_box.max_pt == Point(x=2912.9108803947315, y=-2516.317007241915, z=0)
-    assert road_map.bounding_box.min_pt == Point(x=2638.180643600848, y=-2827.317950309347, z=0)
+    assert road_map.bounding_box.max_pt == Point(
+        x=2912.9108803947315, y=-2516.317007241915, z=0
+    )
+    assert road_map.bounding_box.min_pt == Point(
+        x=2638.180643600848, y=-2827.317950309347, z=0
+    )
     for lane_id, lane in road_map._lanes.items():
         assert lane.length > 0
         assert lane.lane_id
@@ -711,6 +715,7 @@ def test_waymo_map():
     #     l5 = road_map.nearest_lane(point)
     #     assert l5.lane_id == "65_0_R_-1"
     #     assert l5.contains_point(point)
+
 
 # XXX: The below is just for testing. Remove before merging.
 
