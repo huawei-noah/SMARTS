@@ -665,10 +665,52 @@ def test_waymo_map():
 
     assert isinstance(road_map, WaymoMap)
     assert len(road_map._lanes) > 0
+    assert road_map.bounding_box.max_pt == Point(x=2912.9108803947315, y=-2516.317007241915, z=0)
+    assert road_map.bounding_box.min_pt == Point(x=2638.180643600848, y=-2827.317950309347, z=0)
     for lane_id, lane in road_map._lanes.items():
         assert lane.length > 0
         assert lane.lane_id
 
+    # Lane Tests
+    l1 = road_map.lane_by_id("100")
+    assert l1
+    assert l1.lane_id == "100"
+    assert l1.is_drivable
+    assert round(l1.length, 2) == 124.48
+    assert l1.speed_limit == 13.4112
+
+    assert set(l.lane_id for l in l1.incoming_lanes) == {"101", "110", "105"}
+    assert set(l.lane_id for l in l1.outgoing_lanes) == set()
+
+    l1_vector = l1.vector_at_offset(50.01)
+    l1_vector = l1_vector.tolist()
+    assert l1_vector == [-0.5304760093854384, -0.8476999406939285, 0.0]
+
+    # point on lane
+    point = (2714.0, -2764.5, 0)
+    refline_pt = l1.to_lane_coord(point)
+    assert round(refline_pt.s, 2) == 50.77
+    assert round(refline_pt.t, 2) == 1.18
+
+    offset = refline_pt.s
+    width, conf = l1.width_at_offset(offset)
+    assert round(width, 2) == 4.43
+    assert conf == 1.0
+    assert round(l1.curvature_radius_at_offset(offset), 2) == -3136.8
+    assert l1.contains_point(point)
+
+    # nearest lane for a point outside all lanes
+    #     point = (164.0, -68.0, 0)
+    #     l4 = road_map.nearest_lane(point)
+    #     assert l4.lane_id == "64_0_R_-2"
+    #     assert l4.speed_limit == 16.67
+    #     assert not l4.contains_point(point)
+    #
+    # nearest lane for a point inside a lane
+    #     point = (151.0, -60.0, 0)
+    #     l5 = road_map.nearest_lane(point)
+    #     assert l5.lane_id == "65_0_R_-1"
+    #     assert l5.contains_point(point)
 
 # XXX: The below is just for testing. Remove before merging.
 
@@ -734,8 +776,10 @@ if __name__ == "__main__":
     for lane_id, lane in road_map._lanes.items():
         plot_lane(lane._lane_feat)
         # plot_boundaries(lane_feat, features)
-        xs = [x for x in lane._polygon.exterior.coords.xy[0]]
-        ys = [y for y in lane._polygon.exterior.coords.xy[1]]
+        xs, ys = [], []
+        for x, y in lane._lane_polygon:
+            xs.append(x)
+            ys.append(y)
         plt.plot(xs, ys, "b-")
 
     mng = plt.get_current_fig_manager()

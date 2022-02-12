@@ -19,20 +19,16 @@
 # THE SOFTWARE.
 import logging
 import math
-import os
 import rtree
 from functools import lru_cache
-from subprocess import check_output
 import time
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 from waymo_open_dataset.protos import scenario_pb2
-from enum import Enum
 import numpy as np
 from cached_property import cached_property
 from shapely.geometry import Polygon
 
 from smarts.sstudio.types import MapSpec
-
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
@@ -49,7 +45,7 @@ class WaymoMap(RoadMap):
     """A map associated with a Waymo dataset"""
 
     DEFAULT_LANE_SPEED = 16.67  # in m/s
-    DEFAULT_LANE_WIDTH = 3.2
+    DEFAULT_LANE_WIDTH = 3.5
 
     def __init__(self, map_spec: MapSpec, waymo_scenario):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -142,7 +138,18 @@ class WaymoMap(RoadMap):
     @cached_property
     def bounding_box(self) -> BoundingBox:
         """Get the minimal axis aligned bounding box that contains all map geometry."""
-        pass  # TODO
+        x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
+        for lane_id in self._lanes:
+            lane = self._lanes[lane_id]
+            x_mins.append(lane.bounding_box.min_pt.x)
+            y_mins.append(lane.bounding_box.min_pt.y)
+            x_maxs.append(lane.bounding_box.max_pt.x)
+            y_maxs.append(lane.bounding_box.max_pt.y)
+
+        return BoundingBox(
+            min_pt=Point(x=min(x_mins), y=min(y_mins)),
+            max_pt=Point(x=max(x_maxs), y=max(y_maxs)),
+        )
 
     @property
     def scale_factor(self) -> float:
@@ -182,6 +189,7 @@ class WaymoMap(RoadMap):
             self._lane_feat = lane_feat
             # XXX: why np.array?  i.e., should we use smarts.core.coordinates.Point here instead?
             self._lane_pts = [np.array([p.x, p.y]) for p in lane_feat.polyline]
+            self._centerline_pts = [(p.x, p.y) for p in lane_feat.polyline]
             self._lane_width = None
             self._bounding_box = None
 
@@ -194,13 +202,12 @@ class WaymoMap(RoadMap):
             self._n_pts = len(self._lane_pts)
             self._left_widths = [0] * self._n_pts
             self._right_widths = [0] * self._n_pts
-            self._polygon = None
+            self._lane_polygon = None
 
         def _calculate_normals(self) -> Sequence[np.ndarray]:
             normals = [None] * self._n_pts
             for i in range(self._n_pts):
                 p = self._lane_pts[i]
-                dp = None
                 if i < self._n_pts - 1:
                     dp = self._lane_pts[i + 1] - p
                 else:
@@ -347,8 +354,11 @@ class WaymoMap(RoadMap):
                 self._right_widths[0],
                 self._right_widths[-1],
             )
+
             if max_width == 0:
-                max_width = 3
+                max_width = WaymoMap.DEFAULT_LANE_WIDTH / 2
+
+            self._lane_width = max_width * 2
 
             new_left_pts = [None] * self._n_pts
             new_right_pts = [None] * self._n_pts
@@ -362,7 +372,7 @@ class WaymoMap(RoadMap):
                 if p is not None:
                     xs.append(p[0])
                     ys.append(p[1])
-            self._polygon = Polygon(list(zip(xs, ys)))
+            self._lane_polygon = list(zip(xs, ys))
 
         @property
         def lane_id(self) -> str:
@@ -381,7 +391,7 @@ class WaymoMap(RoadMap):
         def incoming_lanes(self) -> List[RoadMap.Lane]:
             """Lanes leading into this lane."""
             return [
-                self._map.lane_by_id(entry_lane)
+                self._map.lane_by_id(str(entry_lane))
                 for entry_lane in self._lane_feat.entry_lanes
             ]
 
@@ -389,16 +399,21 @@ class WaymoMap(RoadMap):
         def outgoing_lanes(self) -> List[RoadMap.Lane]:
             """Lanes leading out of this lane."""
             return [
-                self._map.lane_by_id(exit_lanes)
+                self._map.lane_by_id(str(exit_lanes))
                 for exit_lanes in self._lane_feat.exit_lanes
             ]
 
+        @property
         def speed_limit(self) -> float:
             return self._speed_limit
 
+        @property
+        def is_drivable(self) -> bool:
+            return True
+
         @lru_cache(maxsize=8)
         def offset_along_lane(self, world_point: Point) -> float:
-            return offset_along_shape(world_point[:2], self._lane_pts)
+            return offset_along_shape(world_point[:2], self._centerline_pts)
 
         @lru_cache(maxsize=8)
         def width_at_offset(self, lane_point_s: float) -> Tuple[float, float]:
@@ -406,7 +421,7 @@ class WaymoMap(RoadMap):
 
         @lru_cache(maxsize=8)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
-            x, y = position_at_shape_offset(self._lane_pts, lane_point.s)
+            x, y = position_at_shape_offset(self._centerline_pts, lane_point.s)
             return Point(x=x, y=y)
 
         @lru_cache(maxsize=8)
@@ -434,7 +449,7 @@ class WaymoMap(RoadMap):
         @cached_property
         def bounding_box(self) -> Optional[BoundingBox]:
             """Get the minimal axis aligned bounding box that contains all geometry in this lane."""
-            x_coordinates, y_coordinates = zip(*self.lane_polygon)
+            x_coordinates, y_coordinates = zip(*self._lane_polygon)
             self._bounding_box = BoundingBox(
                 min_pt=Point(x=min(x_coordinates), y=min(y_coordinates)),
                 max_pt=Point(x=max(x_coordinates), y=max(y_coordinates)),
@@ -444,10 +459,10 @@ class WaymoMap(RoadMap):
         @lru_cache(maxsize=8)
         def contains_point(self, point: Point) -> bool:
             if (
-                self._bounding_box.min_pt.x <= point[0] <= self._bounding_box.max_pt.x
-                and self._bounding_box.min_pt.y
+                self.bounding_box.min_pt.x <= point[0] <= self.bounding_box.max_pt.x
+                and self.bounding_box.min_pt.y
                 <= point[1]
-                <= self._bounding_box.max_pt.y
+                <= self.bounding_box.max_pt.y
             ):
                 lane_point = self.to_lane_coord(point)
                 return (
@@ -528,7 +543,7 @@ class WaymoMap(RoadMap):
 
         for i in self._lane_rtree.intersection((x - r, y - r, x + r, y + r)):
             lane = all_lanes[i]
-            d = distance_point_to_polygon((x, y), lane.lane_polygon)
+            d = distance_point_to_polygon((x, y), lane._lane_polygon)
             if d < r:
                 neighboring_lanes.append((lane, d))
         return neighboring_lanes
