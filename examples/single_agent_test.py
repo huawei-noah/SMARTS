@@ -24,7 +24,8 @@ def main(headless, num_episodes):
     env = gym.make(
         "smarts.env:intersection-v0",
         headless=True,
-        sumo_headless=False,
+        sumo_headless=True,
+        visdom=True,
     )
 
     for episode in episodes(n=num_episodes):
@@ -39,10 +40,9 @@ def main(headless, num_episodes):
             observation, reward, done, info = env.step(agent_action)
             episode.record_step(observation, reward, done, info)
             tot_reward += reward
-            if tot_reward >= 100:
-                print("TOTAL REWARD EXCEEDED 100")
-                time.sleep(10)
-                break
+            # if tot_reward >= 100 and tot_reward<=101:
+            #     print("TOTAL REWARD EXCEEDED 100")
+            #     time.sleep(10)
         print("Score==", info["score"], ", reward==", tot_reward)
 
     env.close()
