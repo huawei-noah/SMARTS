@@ -377,7 +377,7 @@ class LanePoints:
     @staticmethod
     def _build_kd_tree(linked_lps: Sequence[LinkedLanePoint]) -> KDTree:
         return KDTree(
-            np.array([l_lp.lp.pose.position for l_lp in linked_lps]), leaf_size=50
+            np.array([l_lp.lp.pose.position2d for l_lp in linked_lps]), leaf_size=50
         )
 
     @staticmethod
@@ -459,7 +459,7 @@ class LanePoints:
 
         curr_lanepoint = first_linked_lanepoint
 
-        lane_seg_vec = next_shape_lp.lp.pose.position - shape_lp.lp.pose.position
+        lane_seg_vec = next_shape_lp.lp.pose.position2d - shape_lp.lp.pose.position2d
         lane_seg_len = np.linalg.norm(lane_seg_vec)
 
         # We set the initial distance into the lane at `spacing` because
@@ -467,7 +467,7 @@ class LanePoints:
         dist_into_lane_seg = spacing
         while dist_into_lane_seg < lane_seg_len:
             p = dist_into_lane_seg / lane_seg_len
-            pos = shape_lp.lp.pose.position + lane_seg_vec * p
+            pos = shape_lp.lp.pose.position2d + lane_seg_vec * p
 
             # The thresholds for calculating last lanepoint. If the
             # midpoint between the current lanepoint and the next shape
@@ -481,15 +481,16 @@ class LanePoints:
             minimum_dist_next_shape_lp = 1.4
 
             half_distant_current_next_shape_lp = np.linalg.norm(
-                0.5 * (curr_lanepoint.lp.pose.position - next_shape_lp.lp.pose.position)
+                0.5
+                * (curr_lanepoint.lp.pose.position2d - next_shape_lp.lp.pose.position2d)
             )
             mid_point_current_next_shape_lp = 0.5 * (
-                next_shape_lp.lp.pose.position + curr_lanepoint.lp.pose.position
+                next_shape_lp.lp.pose.position2d + curr_lanepoint.lp.pose.position2d
             )
             if half_distant_current_next_shape_lp < minimum_dist_next_shape_lp:
                 pos = mid_point_current_next_shape_lp
             dist_pos_next_shape_lp = np.linalg.norm(
-                next_shape_lp.lp.pose.position - pos
+                next_shape_lp.lp.pose.position2d - pos
             )
             if dist_pos_next_shape_lp < last_spacing_threshold_dist:
                 break
@@ -533,14 +534,14 @@ class LanePoints:
         k: int = 10,
     ):
         linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_batched(
-            [pose.position[:2] for pose in poses], lanepoints, tree, k=k
+            [pose.position2d for pose in poses], lanepoints, tree, k=k
         )
 
         linked_lanepoints = [
             sorted(
                 l_lps,
                 key=lambda _llp: squared_dist(
-                    poses[idx].position[:2], _llp.lp.pose.position
+                    poses[idx].position2d, _llp.lp.pose.position2d
                 ),
             )
             for idx, l_lps in enumerate(linked_lanepoints)
@@ -552,7 +553,7 @@ class LanePoints:
                 [
                     _llp
                     for i, _llp in enumerate(_llps)
-                    if squared_dist(poses[idx].position[:2], _llp.lp.pose.position)
+                    if squared_dist(poses[idx].position2d, _llp.lp.pose.position2d)
                     <= radius_sq
                     or i == 0
                 ]
@@ -566,7 +567,7 @@ class LanePoints:
         ]
         if len(unfound_lanepoints) > 0:
             remaining_linked_lps = LanePoints._closest_linked_lp_in_kd_tree_batched(
-                [pose.position[:2] for _, pose in unfound_lanepoints],
+                [pose.position2d for _, pose in unfound_lanepoints],
                 lanepoints,
                 tree=tree,
                 k=k,
@@ -581,7 +582,7 @@ class LanePoints:
             sorted(
                 l_lps,
                 key=lambda _llp: squared_dist(
-                    poses[idx].position[:2], _llp.lp.pose.position
+                    poses[idx].position2d, _llp.lp.pose.position2d
                 )
                 + abs(poses[idx].heading.relative_to(_llp.lp.pose.heading)),
             )
