@@ -57,13 +57,15 @@ for _ in range(1000):
 1. [Setup](#Setup)
     + [Installation](#Installation)
     + [Running](#Running)
-1. [CLI Tool](#CLI-Tool)  
-    + [CLI Usage](#CLI-Usage)
-    + [CLI Examples](#CLI-Examples)
 1. [Examples](#Examples)
     + [Usage](#Usage)
     + [Reinforcement Learning](#Reinforcement-Learning)
 1. [Task Environments](#Task-Environments)
+1. [CLI Tool](#CLI-Tool)  
+    + [CLI Usage](#CLI-Usage)
+    + [CLI Examples](#CLI-Examples)
+1. [Visualizing Observations](#Visualizing-Observations)
+1. [PyMARL and MALib](#PyMARL-and-MALib)
 1. [Containers](#Containers)
     + [Docker](#Docker)
     + [Singularity](#Singularity)
@@ -101,9 +103,9 @@ source .venv/bin/activate
 pip install --upgrade pip
 
 # Install smarts with extras as needed. Extras include the following: 
-# `camera-obs` - needed for rendering camera sensor. observations, and for testing.
+# `camera-obs` - needed for rendering camera sensor observations, and for testing.
 # `test` - needed for testing.
-# `train` - needed for RL training.
+# `train` - needed for RL training and testing.
 pip install -e '.[camera-obs,test,train]'
 
 # Run sanity-test and verify they are passing.
@@ -112,27 +114,27 @@ make sanity-test
 ```
 
 ### Running
-Use the `scl` command line to run SMARTS together with it's supporting processes. To run the default example simply build a scenario and run the following command:
+Use the `scl` command to run SMARTS together with it's supporting processes. 
 
+To run the default example, first build the scenario `scenarios/loop`.
 ```bash
-# Build `scenarios/loop`.
 scl scenario build --clean scenarios/loop
+```
 
-# Run an experiment with Envision display and `loop` scenario. 
+Then, run a single agent SMARTS simulation with Envision display and `loop` scenario.
+```bash 
 scl run --envision examples/single_agent.py scenarios/loop 
 ```
 
-Add the `--envision` flag to run the Envision server where you can see the visualization of the experiment. See [./envision/README.md](./envision/README.md) for more information on Envision, our front-end visualization tool.
+The `--envision` flag runs the Envision server which displays the simulation visualization. See [./envision/README.md](./envision/README.md) for more information on Envision, SMARTS's front-end visualization tool.
 
-After executing the above command, visit http://localhost:8081/ in your browser to view your experiment.
+After executing the above command, visit http://localhost:8081/ in  browser to view the experiment.
 
-Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
+Several example scripts are provided in [`examples`](./examples) folder, as well as a handful of scenarios in [`scenarios`](./scenarios) folder. You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
 
 ```bash
-scl run --envision <examples/script_path> <scenarios/path> 
+scl run --envision <examples/path> <scenarios/path> 
 ```
-
-Pass in the agent example path and scenarios folder path above to run an experiment like the one mentioned above.
 
 # Examples 
 ### Usage
@@ -152,7 +154,8 @@ Illustration of various ways to use SMARTS.
     env = gym.make(
         "smarts.env:intersection-v0",
         headless=True, # If False, enables Envision display.
-        sumo_headless=False, # If True, enables sumo-gui display.
+        visdom=False, # If True, enables Visdom display.
+        sumo_headless=True, # If False, enables sumo-gui display.
     )
     ```
 
@@ -201,17 +204,16 @@ scl scenario build --clean scenarios/loop
 scl scenario clean scenarios/loop
 ```
 
-## Extras
-### Visualizing Agent Observations
-If you want to easily visualize observations you can use our [Visdom](https://github.com/facebookresearch/visdom) integration. Start the visdom server before running your scenario,
+# Visualizing Observations
+Use the [Visdom](https://github.com/facebookresearch/visdom) integration to easily visualize the observations. 
 
+Firstly, start the Visdom server in a terminal.
 ```bash
 visdom
-# Open the printed URL in your browser
+# Open the printed URL in a browser.
 ```
 
-And in your experiment, start your environment with `visdom=True`
-
+Secondly, in a separate terminal, run SMARTS simulation. Enable Visdom in the environment by setting `visdom=True`. For example:
 ```python
 env = gym.make(
     "smarts.env:hiway-v0",
@@ -221,10 +223,8 @@ env = gym.make(
 )
 ```
 
-### Interfacing w/ PyMARL and malib
-
-[PyMARL](https://github.com/oxwhirl/pymarl) and [malib](https://github.com/ying-wen/malib) have been open-sourced. You can run them via,
-
+# PyMARL and MALib
+Run SMARTS with [PyMARL](https://github.com/oxwhirl/pymarl).
 ```bash
 git clone git@github.com:ying-wen/pymarl.git
 
@@ -232,7 +232,7 @@ ln -s your-project/scenarios ./pymarl/scenarios
 
 cd pymarl
 
-# setup virtual environment
+# Setup virtual environment.
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -240,6 +240,7 @@ pip install -r requirements.txt
 python src/main.py --config=qmix --env-config=smarts
 ```
 
+Run SMARTS with [MALib](https://github.com/ying-wen/malib). 
 ```bash
 git clone git@github.com:ying-wen/malib.git
 
@@ -247,7 +248,7 @@ ln -s your-project/scenarios ./malib/scenarios
 
 cd malib
 
-# setup virtual environment
+# Setup virtual environment.
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
