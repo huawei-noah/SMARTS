@@ -311,12 +311,12 @@ $ singularity instance start --containall --bind ../SMARTS:/src ./utils/singular
 In most cases SMARTS debug logs are located at `~/.smarts`. These can be helpful to diagnose problems.
 
 ### SUMO
-SUMO can have some problems in setup. Please look through the following for support for SUMO:
-* If you are having issues see: **[SETUP](docs/setup.rst)** and **[SUMO TROUBLESHOOTING](docs/SUMO_TROUBLESHOOTING.md)**
-* If you wish to find binaries: **[SUMO Download Page](https://sumo.dlr.de/docs/Downloads.php)**
-* If you wish to compile from source see: **[SUMO Build Instructions](https://sumo.dlr.de/docs/Developer/Main.html#build_instructions)**. 
-    * **Please note that building SUMO may not install other vital dependencies that SUMO requires to run.**
-    * If you build from the git repository we recommend you use: **[SUMO version 1.7.0](https://github.com/eclipse/sumo/commits/v1_7_0)** or higher
+SUMO might encounter problems during setup. Please look through the following for support for SUMO:
+* If you are having issues see: [Setup](docs/setup.rst) and [SUMO TROUBLESHOOTING](docs/SUMO_TROUBLESHOOTING.md)
+* If you wish to find binaries: [SUMO Download Page](https://sumo.dlr.de/docs/Downloads.php)
+* If you wish to compile from source see: [SUMO Build Instructions](https://sumo.dlr.de/docs/Developer/Main.html#build_instructions). 
+    * Please note that building SUMO may not install other vital dependencies that SUMO requires to run.
+    * If you build from the git repository we recommend to use [SUMO version 1.7.0](https://github.com/eclipse/sumo/commits/v1_7_0) or higher
 
 # Bug Reports
 Please read [how to create a bug report](https://github.com/huawei-noah/SMARTS/wiki/How-To-Make-a-Bug-Report) and then open an issue [here](https://github.com/huawei-noah/SMARTS/issues).
