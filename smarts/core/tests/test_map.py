@@ -676,14 +676,14 @@ def test_waymo_map():
         assert lane.lane_id
 
     # Lane Tests
-    l1 = road_map.lane_by_id("100")
+    l1 = road_map.lane_by_id("100_0")
     assert l1
-    assert l1.lane_id == "100"
+    assert l1.lane_id == "100_0"
     assert l1.is_drivable
     assert round(l1.length, 2) == 124.48
     assert l1.speed_limit == 13.4112
 
-    assert set(l.lane_id for l in l1.incoming_lanes) == {"101", "110", "105"}
+    assert set(l.lane_id for l in l1.incoming_lanes) == {"101_0", "110_0", "105_0"}
     assert set(l.lane_id for l in l1.outgoing_lanes) == set()
 
     l1_vector = l1.vector_at_offset(50.01)
@@ -706,14 +706,14 @@ def test_waymo_map():
     # nearest lane for a point inside a lane
     point = (2740.0, -2710.0, 0)
     l2 = road_map.nearest_lane(point)
-    assert l2.lane_id == "97"
+    assert l2.lane_id == "97_0"
     assert l2.speed_limit == 13.4112
     assert l2.contains_point(point)
 
     # nearest lane for a point outside all lanes
     point = (2780.0, -2660.0, 0)
     l3 = road_map.nearest_lane(point)
-    assert l3.lane_id == "117"
+    assert l3.lane_id == "117_0"
     assert not l3.contains_point(point)
 
 # XXX: The below is just for testing. Remove before merging.
