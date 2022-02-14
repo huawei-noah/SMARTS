@@ -111,7 +111,7 @@ class WaymoMap(RoadMap):
 
     @staticmethod
     def _waymo_pb_to_dict(waymo_lane_feats) -> Dict[str, Any]:
-        # we can't mutate the waymo protobof objects, nor do they have a __dict__,
+        # we can't mutate the waymo protobuf objects, nor do they have a __dict__,
         # so we just keep the fields we're going to use...
         attribs = [
             "type",
@@ -135,7 +135,7 @@ class WaymoMap(RoadMap):
         return f"{lane_id}_{split_pt}"
 
     def _create_roads_and_lanes(self, waymo_lanes: List[Tuple[str, Any]]):
-        # first segment lanes based on their boundaries and neihbors
+        # first segment lanes based on their boundaries and neighbors
         waymo_lanedicts = {}
         for lane_id, lane_feat in waymo_lanes:
             rt_split_pts = WaymoMap._find_lane_segments(lane_feat, "right")
@@ -192,7 +192,7 @@ class WaymoMap(RoadMap):
     def _add_adj_lanes_to_road(
         self,
         lane_dict: Dict[str, Any],
-        road_lane: Sequence[RoadMap.Lane],
+        road_lane: List[RoadMap.Lane],
         lanedicts: Dict[str, Dict[str, Any]],
     ):
         # XXX: there _should_ only be one left-neighbor at a time now,
@@ -210,7 +210,7 @@ class WaymoMap(RoadMap):
             self._surfaces[ln_lane_id] = lane
             road_lane.append(lane)
         for adj_lane_dict in lns_to_do:
-            self._add_adj_lanes_to_road(ln_lane_dict, road_lane, lanedicts)
+            self._add_adj_lanes_to_road(adj_lane_dict, road_lane, lanedicts)
 
     def _load_from_scenario(self, waymo_scenario):
         start = time.time()
@@ -537,6 +537,15 @@ class WaymoMap(RoadMap):
                 for exit_lanes in self._lane_dict["exit_lanes"]
             ]
 
+        @cached_property
+        def lanes_in_same_direction(self) -> List[RoadMap.Lane]:
+            in_same_direction = []
+            for l_neighbor in self._lane_dict["left_neighbors"]:
+                in_same_direction.append(self._map.lane_by_id(str(l_neighbor.feature_id)))
+            for r_neighbor in self._lane_dict["right_neighbors"]:
+                in_same_direction.append(self._map.lane_by_id(str(r_neighbor.feature_id)))
+            return in_same_direction
+
         @property
         def speed_limit(self) -> float:
             return self._speed_limit
@@ -690,7 +699,7 @@ class WaymoMap(RoadMap):
                 if road_type != 0 and lane.type != road_type:
                     assert (
                         False
-                    ), f"temporary assert to see if this ever happens:  {lane.type} != {road_type}.  can remove assert."
+                    ), f'temporary assert to see if this ever happens:  {lane.type} != {road_type}.  can remove assert.'
                     return 0
                 road_type = lane.type
             return road_type
@@ -756,8 +765,7 @@ class WaymoMap(RoadMap):
             raise NotImplementedError()
 
         def parallel_roads(self) -> List[RoadMap.Road]:
-            # TODO:  probably can't do this one?
-            raise NotImplementedError()
+            return []
 
         @property
         def lanes(self) -> List[RoadMap.Lane]:
