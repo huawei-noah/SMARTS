@@ -173,6 +173,16 @@ class AgentsAliveDoneCriteria:
 
 
 @dataclass(frozen=True)
+class EventConfiguration:
+    """Configure the conditions in which an Event is triggered."""
+
+    not_moving_time: float = 60
+    """How long in seconds to check the agent after which it is considered not moving"""
+    not_moving_distance: float = 1
+    """How many meters the agent's actor has to move under which the agent is considered not moving"""
+
+
+@dataclass(frozen=True)
 class DoneCriteria:
     """Toggleable conditions on which cause removal of an agent from the current episode."""
 
@@ -189,8 +199,8 @@ class DoneCriteria:
     may be driving on the mission route.
     """
     not_moving: bool = False
-    """End the episode when the agent is not moving for 60 seconds or more. To account
-    for controller noise not moving means <= 1 meter of displacement within 60 seconds.
+    """End the episode when the agent is not moving for n seconds or more. To account
+    for controller noise not moving means <= 1 meter of displacement within n seconds.
     """
     agents_alive: Optional[AgentsAliveDoneCriteria] = None
     """If set, triggers the ego agent to be done based on the number of active agents for multi-agent purposes."""
@@ -205,6 +215,9 @@ class AgentInterface:
 
     debug: bool = False
     """Enable debug information for the various sensors and action spaces."""
+
+    event_configuration: EventConfiguration = EventConfiguration()
+    """Configurable criteria of when to trigger events"""
 
     done_criteria: DoneCriteria = field(default_factory=lambda: DoneCriteria())
     """Configurable criteria of when to mark this actor as done. Done actors will be
