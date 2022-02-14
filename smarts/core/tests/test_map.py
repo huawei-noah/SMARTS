@@ -703,19 +703,18 @@ def test_waymo_map():
     assert round(l1.curvature_radius_at_offset(offset), 2) == -3136.8
     assert l1.contains_point(point)
 
-    # nearest lane for a point outside all lanes
-    #     point = (164.0, -68.0, 0)
-    #     l4 = road_map.nearest_lane(point)
-    #     assert l4.lane_id == "64_0_R_-2"
-    #     assert l4.speed_limit == 16.67
-    #     assert not l4.contains_point(point)
-    #
     # nearest lane for a point inside a lane
-    #     point = (151.0, -60.0, 0)
-    #     l5 = road_map.nearest_lane(point)
-    #     assert l5.lane_id == "65_0_R_-1"
-    #     assert l5.contains_point(point)
+    point = (2740.0, -2710.0, 0)
+    l2 = road_map.nearest_lane(point)
+    assert l2.lane_id == "64_0_R_-2"
+    assert l2.speed_limit == 16.67
 
+    # nearest lane for a point outside all lanes
+    point = (2780.0, -2660.0, 0)
+    l3 = road_map.nearest_lane(point)
+    assert l3.lane_id == "65_0_R_-1"
+    assert l3.contains_point(point)
+    assert not l3.contains_point(point)
 
 # XXX: The below is just for testing. Remove before merging.
 
