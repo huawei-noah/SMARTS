@@ -55,7 +55,7 @@ setup(
         "protobuf>=3.19.1",
         "PyYAML>=6.0",
         "twisted>=21.7.0",
-        "opendrive2lanelet",
+        "opendrive2lanelet>=1.2.1",
     ],
     extras_require={
         "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
@@ -76,17 +76,16 @@ setup(
         "ros": ["catkin_pkg", "rospkg"],
         "test": [
             # The following are for testing
-            "ipykernel>=6.5.0",
-            "jupyter-client==6.1.12",
+            "ipykernel>=6.8.0",
+            "jupyter-client>=7.1.2",
             "pytest>=6.2.5",
             "pytest-benchmark>=3.4.1",
             "pytest-cov>=3.0.0",
-            "pytest-notebook>=0.6.1",
+            "pytest-notebook>=0.7.0",
             "pytest-xdist>=2.4.0",
-            "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
-            "tensorflow>=2.4.0",  # For rllib tests
         ],
         "train": [
+            "opencv-contrib-python-headless==4.1.2.30",
             "ray[rllib]==1.0.1.post1",
             "tensorflow>=2.4.0",
             "torch==1.4.0",
