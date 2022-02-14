@@ -449,7 +449,9 @@ class Sensors:
         collided = sim.vehicle_did_collide(vehicle.id)
         is_off_road = cls._vehicle_is_off_road(sim, vehicle)
         is_on_shoulder = cls._vehicle_is_on_shoulder(sim, vehicle)
-        is_not_moving = cls._vehicle_is_not_moving(sim, vehicle, event_config.not_moving_time, event_config.not_moving_distance)
+        is_not_moving = cls._vehicle_is_not_moving(
+            sim, vehicle, event_config.not_moving_time, event_config.not_moving_distance
+        )
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
             sim, vehicle
@@ -505,7 +507,9 @@ class Sensors:
         return False
 
     @classmethod
-    def _vehicle_is_not_moving(cls, sim, vehicle, last_n_seconds_considered, min_distance_moved):
+    def _vehicle_is_not_moving(
+        cls, sim, vehicle, last_n_seconds_considered, min_distance_moved
+    ):
         # Flag if the vehicle has been immobile for the past 'last_n_seconds_considered' seconds
         if sim.elapsed_sim_time < last_n_seconds_considered:
             return False
