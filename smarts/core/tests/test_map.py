@@ -749,10 +749,10 @@ def plot_road_edge(road_edge):
 
 
 def plot_boundaries(lane, features):
-    if lane.left_boundaries or lane.right_boundaries:
+    if lane["left_boundaries"] or lane["right_boundaries"]:
         for name, lst in [
-            ("Left", list(lane.left_boundaries)),
-            ("Right", list(lane.right_boundaries)),
+            ("Left", list(lane["left_boundaries"])),
+            ("Right", list(lane["right_boundaries"])),
         ]:
             for b in lst:
                 if b.boundary_type == 0:
