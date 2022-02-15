@@ -282,12 +282,12 @@ class WaymoMap(RoadMap):
     def bounding_box(self) -> BoundingBox:
         """Get the minimal axis aligned bounding box that contains all map geometry."""
         x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
-        for lane_id in self._lanes:
-            lane = self._lanes[lane_id]
-            x_mins.append(lane.bounding_box.min_pt.x)
-            y_mins.append(lane.bounding_box.min_pt.y)
-            x_maxs.append(lane.bounding_box.max_pt.x)
-            y_maxs.append(lane.bounding_box.max_pt.y)
+        for road_id in self._roads:
+            road = self._roads[road_id]
+            x_mins.append(road.bounding_box.min_pt.x)
+            y_mins.append(road.bounding_box.min_pt.y)
+            x_maxs.append(road.bounding_box.max_pt.x)
+            y_maxs.append(road.bounding_box.max_pt.y)
 
         return BoundingBox(
             min_pt=Point(x=min(x_mins), y=min(y_mins)),
@@ -733,6 +733,21 @@ class WaymoMap(RoadMap):
                 if lane.is_drivable:
                     return True
             return False
+
+        @cached_property
+        def bounding_box(self) -> BoundingBox:
+            """Get the minimal axis aligned bounding box that contains all map geometry."""
+            x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
+            for lane in self.lanes:
+                x_mins.append(lane.bounding_box.min_pt.x)
+                y_mins.append(lane.bounding_box.min_pt.y)
+                x_maxs.append(lane.bounding_box.max_pt.x)
+                y_maxs.append(lane.bounding_box.max_pt.y)
+
+            return BoundingBox(
+                min_pt=Point(x=min(x_mins), y=min(y_mins)),
+                max_pt=Point(x=max(x_maxs), y=max(y_maxs)),
+            )
 
         @property
         def composite_road(self) -> RoadMap.Road:
