@@ -2,7 +2,6 @@
 [![SMARTS CI Base Tests Linux](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-base-tests-linux.yml/badge.svg?branch=master)](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-base-tests-linux.yml?query=branch%3Amaster) 
 [![SMARTS CI Format](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-format.yml/badge.svg?branch=master)](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-format.yml)
 ![Code style](https://img.shields.io/badge/code%20style-black-000000.svg) 
-[![Downloads](https://img.shields.io/pypi/dm/smarts)](https://pypi.org/project/smarts/)
 [![GitHub contributors](https://img.shields.io/github/contributors/huawei-noah/smarts)](https://github.com/huawei-noah/smarts/graphs/contributors)
 
 SMARTS (Scalable Multi-Agent RL Training School) is a simulation platform for reinforcement learning (RL) and multi-agent research on autonomous driving. Its focus is on realistic and diverse interactions. It is part of the [XingTian](https://github.com/huawei-noah/xingtian/) suite of RL platforms from Huawei Noah's Ark Lab.
@@ -145,7 +144,6 @@ Illustration of various ways to use SMARTS.
 
 ### Reinforcement Learning
 1. [MARL benchmark](baselines/marl_benchmark)
-1. [Stable Baselines 3](examples/sb3) using PPO.
 1. [Driving in traffic](examples/driving_in_traffic) using world model based RL.
 
 # Task Environments
@@ -195,7 +193,7 @@ Subcommands of `zoo`:
 Subcommands of run:
 * No subcommands. Use `run` directly to simulate as shown [above](#Running).
 
-### CLI Examples:
+### CLI Examples
 ```bash
 # Start envision and serve scenario assets out of ./scenarios
 scl envision start --scenarios ./scenarios
@@ -228,6 +226,10 @@ env = gym.make(
     visdom=True,
 )
 ```
+    <p align="center">
+    <img src="docs/_static/visdom.gif" width="650" height="425"><br/>
+    Sample visualization of top-down RGB images returned in an agent's observation.
+    </p>
 
 # PyMARL and MALib
 Run SMARTS with [PyMARL](https://github.com/oxwhirl/pymarl).
