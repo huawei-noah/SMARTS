@@ -255,7 +255,6 @@ class Heading(float):
 class Pose:
     """A pair of position and orientation values."""
 
-    # TODO: these should be np.ndarray
     position: np.ndarray  # [x, y, z]
     orientation: np.ndarray  # [a, b, c, d] -> a + bi + cj + dk = 0
     heading_: Optional[Heading] = None  # cached heading to avoid recomputing
