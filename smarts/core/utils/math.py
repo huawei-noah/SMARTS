@@ -245,7 +245,7 @@ def low_pass_filter(
 
 
 def radians_to_vec(radians) -> np.ndarray:
-    """Convert a radian value to a unit directional vector. 0 rad relates to [0, 1] with
+    """Convert a radian value to a unit directional vector. 0 rad relates to [0x, 1y] with
     counter-clockwise rotation.
     """
     # +y = 0 rad.
@@ -254,7 +254,7 @@ def radians_to_vec(radians) -> np.ndarray:
 
 
 def vec_to_radians(v) -> float:
-    """Converts a vector to a radian value. [0,+y] is 0 rad with counter-clockwise rotation."""
+    """Converts a vector to a radian value. [0x,+y] is 0 rad with counter-clockwise rotation."""
     # See: https://stackoverflow.com/a/15130471
     assert len(v) == 2, f"Vector must be 2D: {repr(v)}"
 
@@ -263,9 +263,11 @@ def vec_to_radians(v) -> float:
 
     # Adjust angle based on quadrant where +y = 0 rad.
     # Standard quadrants
-    # 2 | 1
-    # - - -
-    # 3 | 4
+    #    +y
+    #   2 | 1
+    # -x - - - +x
+    #   3 | 4
+    #    -y
     if x < 0:
         if y < 0:
             return (r + 0.5 * math.pi) % (2 * math.pi)  # quad 3
