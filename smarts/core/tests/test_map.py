@@ -686,6 +686,12 @@ def test_waymo_map():
     assert set(l.lane_id for l in l1.incoming_lanes) == {"101_0", "110_0", "105_0"}
     assert set(l.lane_id for l in l1.outgoing_lanes) == set()
 
+    right_lane, direction = l1.lane_to_right
+    assert not right_lane
+
+    left_lane, direction = l1.lane_to_left
+    assert not left_lane
+
     l1_vector = l1.vector_at_offset(50.01)
     l1_vector = l1_vector.tolist()
     assert l1_vector == [-0.5304760093854384, -0.8476999406939285, 0.0]

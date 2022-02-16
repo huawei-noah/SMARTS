@@ -569,16 +569,27 @@ class WaymoMap(RoadMap):
 
         @cached_property
         def lanes_in_same_direction(self) -> List[RoadMap.Lane]:
-            in_same_direction = []
+            return [l for l in self.road.lanes if l != self]
+
+        @cached_property
+        def lane_to_left(self) -> Tuple[Optional[RoadMap.Lane], bool]:
+            if not self._lane_dict["left_neighbors"]:
+                return None, True
+            left_lanes = []
             for l_neighbor in self._lane_dict["left_neighbors"]:
-                in_same_direction.append(
-                    self._map.lane_by_id(str(l_neighbor.feature_id))
-                )
+                left_lanes.append(self._map.lane_by_id(str(l_neighbor.feature_id)))
+            assert len(left_lanes) == 1
+            return left_lanes[0], True
+
+        @cached_property
+        def lane_to_right(self) -> Tuple[Optional[RoadMap.Lane], bool]:
+            if not self._lane_dict["right_neighbors"]:
+                return None, True
+            right_lanes = []
             for r_neighbor in self._lane_dict["right_neighbors"]:
-                in_same_direction.append(
-                    self._map.lane_by_id(str(r_neighbor.feature_id))
-                )
-            return in_same_direction
+                right_lanes.append(self._map.lane_by_id(str(r_neighbor.feature_id)))
+            assert len(right_lanes) == 1
+            return right_lanes[0], True
 
         @property
         def speed_limit(self) -> float:

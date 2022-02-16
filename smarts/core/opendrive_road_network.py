@@ -793,7 +793,7 @@ class OpenDriveRoadNetwork(RoadMap):
             # lane_elem negative ID run on the right side of the center lane.
             # OpenDRIVE's assumption is that the direction of reference line is same as direction of lanes with
             # lane_elem negative ID, hence for a given road -1 will be the left most lane in one direction
-            # and 1 will be the left most lane in other direction if it exist.
+            # and 1 will be the left most lane in other direction if it exists.
             # If there is only one lane in a road, its index will be -1.
             self._lane_elem_index = index
 
