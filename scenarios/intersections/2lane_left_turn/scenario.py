@@ -71,12 +71,12 @@ for name, routes in {
         ]
     )
 
-route = Route(begin=("edge-west-WE", 0, 55), end=("edge-north-SN", 0, 40))
+route = Route(begin=("edge-west-WE", 0, 65), end=("edge-north-SN", 0, 40))
 ego_missions = [
     Mission(
         route=route,
         entry_tactic=TrapEntryTactic(
-            wait_to_hijack_limit_s=3,
+            wait_to_hijack_limit_s=2,
             zone=MapZone(
                 start=(
                     route.begin[0],

@@ -25,7 +25,7 @@ def main(headless, num_episodes):
         "smarts.env:intersection-v0",
         headless=True,
         sumo_headless=False,
-        visdom=True,
+        visdom=False,
     )
 
     for episode in episodes(n=num_episodes):
