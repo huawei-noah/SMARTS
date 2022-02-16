@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from numpy.random import default_rng
+import random  
 
 from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
@@ -44,8 +44,6 @@ turn_right_routes = [
     ("east-EW", "north-SN"),
 ]
 
-
-rng = default_rng()
 traffic = {}
 for name, routes in {
     "vertical": vertical_routes,
@@ -59,11 +57,11 @@ for name, routes in {
         flows=[
             Flow(
                 route=Route(
-                    begin=(f"edge-{r[0]}", 0, "random"),
+                    begin=(f"edge-{r[0]}", 0, 0),
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
                 rate=60 * 4,
-                begin=i * rng.integers(low=0, high=10),
+                begin=random.uniform(0, 10),
                 end=60 * 30,
                 # Note: For an episode with maximum_episode_steps=3000 and step
                 # time=0.1s, maximum episode time=300s. Hence, traffic set to
@@ -71,7 +69,7 @@ for name, routes in {
                 # 300s.
                 actors={intersection_car: 1},
             )
-            for i, r in enumerate(routes)
+            for r in routes
         ]
     )
 
@@ -79,6 +77,7 @@ route = Route(begin=("edge-west-WE", 0, 60), end=("edge-north-SN", 0, 40))
 ego_missions = [
     Mission(
         route=route,
+        start_time = 10,
         entry_tactic=TrapEntryTactic(
             wait_to_hijack_limit_s=1,
             zone=MapZone(
