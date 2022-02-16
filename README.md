@@ -11,7 +11,7 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 
 ![](docs/_static/smarts_envision.gif)
 
-# Multi-Agent experiment as simple as ...
+# Multi-agent experiment as simple as ...
 ```python
 import gym
 
@@ -149,15 +149,21 @@ Illustration of various ways to use SMARTS.
 1. [Driving in traffic](examples/driving_in_traffic) using world model based RL.
 
 # Task Environments
-1. `intersection-v0`: In this task, the ego-vehicle needs to drives towards an intersection with an all-way-stop traffic, and make a left turn without any collisions. Further task description is available at [/smarts/env/intersection_env.py](smarts/env/intersection_env.py).  
-    ```python
-    env = gym.make(
-        "smarts.env:intersection-v0",
-        headless=True, # If False, enables Envision display.
-        visdom=False, # If True, enables Visdom display.
-        sumo_headless=True, # If False, enables sumo-gui display.
-    )
-    ```
+The following are standard environments with specific tasks to be completed. Each of them can be instantiated as follows:
+```python
+env = gym.make(
+    "smarts.env:<environment-vx>",
+    headless=True, # If False, enables Envision display.
+    visdom=False, # If True, enables Visdom display.
+    sumo_headless=True, # If False, enables sumo-gui display.
+)
+```
+
+1. `intersection-v0`: In this task, the ego-vehicle needs to drives towards an intersection with an allway-stop traffic, and make a left turn without any collisions. Further task description is available at [/smarts/env/intersection_env.py](smarts/env/intersection_env.py).  
+    <p align="center">
+    <img src="docs/_static/intersection.gif" width="650" height="425"><br/>
+    The <em>intersection-v0</em> environment.
+    </p>
 
 # CLI Tool
 SMARTS provides a command-line tool to interact with scenario studio and Envision.
