@@ -415,11 +415,7 @@ class LanePoints:
                 heading = Heading(heading)
                 orientation = fast_quaternion_from_angle(heading)
 
-                first_lane_coord = curr_lane.to_lane_coord(
-                    Point(x=lane_shape[0][0], y=lane_shape[0][1], z=0.0)
-                )
-
-                lane_width, _ = curr_lane.width_at_offset(first_lane_coord.s)
+                lane_width, _ = curr_lane.width_at_offset(0)
                 first_lanepoint = LinkedLanePoint(
                     lp=LanePoint(
                         lane=curr_lane,
@@ -444,10 +440,7 @@ class LanePoints:
                     heading_ = vec_to_radians(p2 - p1)
                     heading_ = Heading(heading_)
                     orientation_ = fast_quaternion_from_angle(heading_)
-                    lp_lane_coord = curr_lane.to_lane_coord(
-                        Point(x=p1[0], y=p1[1], z=0.0)
-                    )
-                    lane_width, _ = curr_lane.width_at_offset(lp_lane_coord.s)
+                    lane_width, _ = curr_lane.width_at_offset(0)
                     linked_lanepoint = LinkedLanePoint(
                         lp=LanePoint(
                             lane=curr_lane,
@@ -464,10 +457,7 @@ class LanePoints:
 
                 # Add a lanepoint for the last point of the current lane
                 curr_lanepoint_lane = curr_lanepoint.lp.lane
-                last_lane_coord = curr_lanepoint_lane.to_lane_coord(
-                    Point(x=lane_shape[-1][0], y=lane_shape[-1][1], z=0.0)
-                )
-                lane_width, _ = curr_lanepoint_lane.width_at_offset(last_lane_coord.s)
+                lane_width, _ = curr_lanepoint_lane.width_at_offset(0)
                 last_linked_lanepoint = LinkedLanePoint(
                     lp=LanePoint(
                         lane=curr_lanepoint.lp.lane,

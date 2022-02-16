@@ -282,9 +282,26 @@ class WaymoMap(RoadMap):
     def source(self) -> str:
         return self._map_spec.source
 
+    @staticmethod
+    def _spec_lane_width(map_spec: MapSpec) -> float:
+        return (
+            map_spec.default_lane_width
+            if map_spec.default_lane_width is not None
+            else WaymoMap.DEFAULT_LANE_WIDTH
+        )
+
     def is_same_map(self, map_spec: MapSpec) -> bool:
         waymo_scenario = WaymoMap._parse_source_to_scenario(map_spec)
-        return waymo_scenario.scenario_id == self._waymo_scenario_id
+        return (
+            waymo_scenario.scenario_id == self._waymo_scenario_id
+            and map_spec.lanepoint_spacing == self._map_spec.lanepoint_spacing
+            and (
+                map_spec.default_lane_width == self._map_spec.default_lane_width
+                or WaymoMap._spec_lane_width(map_spec)
+                == WaymoMap._spec_lane_width(self._map_spec)
+            )
+            and map_spec.shift_to_origin == self._map_spec.shift_to_origin
+        )
 
     @cached_property
     def bounding_box(self) -> BoundingBox:
@@ -515,7 +532,7 @@ class WaymoMap(RoadMap):
                     ys.append(p[1])
             self._lane_polygon = list(zip(xs, ys))
 
-            # No need to keep these around any more...
+            # No need to keep these around anymore...
             self._normals = None
 
         @property
@@ -566,10 +583,6 @@ class WaymoMap(RoadMap):
         @property
         def speed_limit(self) -> float:
             return self._speed_limit
-
-        @property
-        def is_drivable(self) -> bool:
-            return True
 
         @lru_cache(maxsize=8)
         def offset_along_lane(self, world_point: Point) -> float:
@@ -645,8 +658,138 @@ class WaymoMap(RoadMap):
             # TODO?  can a lane exit to a non-lane?
             return self.outgoing_lanes
 
+    class Road(RoadMap.Road, Surface):
+        """This is akin to a 'road segment' in real life.
+        Many of these might correspond to a single named road in reality."""
+
+        def __init__(self, road_map, road_lanes: Sequence[RoadMap.Lane]):
+            self._road_id = "waymo_road-"
+            for lane in road_lanes:
+                self._road_id += f"-{lane.lane_id}"
+            super().__init__(self._road_id, road_map)
+            self._lanes = road_lanes
+
+        @property
+        def road_id(self) -> str:
+            return self._road_id
+
+        @cached_property
+        def type(self) -> int:
+            road_type = 0  # 0 == LaneType.TYPE_UNDEFINED
+            for lane in self._lanes:
+                if road_type != 0 and lane.type != road_type:
+                    return 0
+                road_type = lane.type
+            return road_type
+
+        @cached_property
+        def type_as_str(self) -> str:
+            road_type = self.type
+            if road_type == 0:
+                return "undefined"
+            elif road_type == 1:
+                return "freeway"
+            elif road_type == 2:
+                return "surface street"
+            elif road_type == 3:
+                return "bike lane"
+            return "undefined"
+
+        @cached_property
+        def is_drivable(self) -> bool:
+            for lane in self.lanes:
+                if lane.is_drivable:
+                    return True
+            return False
+
+        @cached_property
+        def bounding_box(self) -> BoundingBox:
+            """Get the minimal axis aligned bounding box that contains all map geometry."""
+            x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
+            for lane in self._lanes:
+                x_mins.append(lane.bounding_box.min_pt.x)
+                y_mins.append(lane.bounding_box.min_pt.y)
+                x_maxs.append(lane.bounding_box.max_pt.x)
+                y_maxs.append(lane.bounding_box.max_pt.y)
+
+            return BoundingBox(
+                min_pt=Point(x=min(x_mins), y=min(y_mins)),
+                max_pt=Point(x=max(x_maxs), y=max(y_maxs)),
+            )
+
+        @property
+        def composite_road(self) -> RoadMap.Road:
+            # TODO
+            return self
+
+        @property
+        def is_composite(self) -> bool:
+            # TODO
+            return False
+
+        @property
+        def is_junction(self) -> bool:
+            # TODO
+            raise NotImplementedError()
+
+        @cached_property
+        def length(self) -> float:
+            return max(lane.length for lane in self.lanes)
+
+        @cached_property
+        def incoming_roads(self) -> List[RoadMap.Road]:
+            return list(
+                {in_lane.road for lane in self.lanes for in_lane in lane.incoming_lanes}
+            )
+
+        @cached_property
+        def outgoing_roads(self) -> List[RoadMap.Road]:
+            return list(
+                {
+                    out_lane.road
+                    for lane in self.lanes
+                    for out_lane in lane.outgoing_lanes
+                }
+            )
+
+        @lru_cache(maxsize=8)
+        def contains_point(self, point: Point) -> bool:
+            if (
+                self._bounding_box.min_pt.x <= point[0] <= self._bounding_box.max_pt.x
+                and self._bounding_box.min_pt.y
+                <= point[1]
+                <= self._bounding_box.max_pt.y
+            ):
+                for lane in self._lanes:
+                    if lane.contains_point(point):
+                        return True
+            return False
+
+        def oncoming_roads_at_point(self, point: Point) -> List[RoadMap.Road]:
+            # TODO:  may not be able to do this one?
+            raise NotImplementedError()
+
+        def parallel_roads(self) -> List[RoadMap.Road]:
+            return []
+
+        @property
+        def lanes(self) -> List[RoadMap.Lane]:
+            return self._lanes
+
+        def lane_at_index(self, index: int) -> RoadMap.Lane:
+            return self._lanes[index]
+
+    def road_by_id(self, road_id: str) -> RoadMap.Road:
+        road = self._roads.get(road_id)
+        if not road:
+            self._log.warning(f"WaymoMap got request for unknown road_id '{road_id}'")
+        return road
+
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         # note: all lanes were cached already by _load()
+        lane = self._lanes.get(lane_id)
+        if not lane:
+            self._log.warning(f"WaymoMap got request for unknown lane_id '{lane_id}'")
         return self._lanes.get(lane_id)
 
     def _build_lane_r_tree(self):
@@ -694,114 +837,59 @@ class WaymoMap(RoadMap):
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
         return nearest_lanes[0][0] if nearest_lanes else None
 
-    class Road(RoadMap.Road, Surface):
-        """This is akin to a 'road segment' in real life.
-        Many of these might correspond to a single named road in reality."""
+    @lru_cache(maxsize=16)
+    def road_with_point(self, point: Point) -> RoadMap.Road:
+        radius = max(5, 2 * self._default_lane_width)
+        for nl, dist in self.nearest_lanes(point, radius):
+            if nl.contains_point(point):
+                return nl.road
+        return None
 
-        def __init__(self, road_map, road_lanes: Sequence[RoadMap.Lane]):
-            self._road_id = "waymo_road-"
-            for lane in road_lanes:
-                self._road_id += f"-{lane.lane_id}"
-            super().__init__(self._road_id, road_map)
-            self._lanes = road_lanes
+    class _WaypointsCache:
+        def __init__(self):
+            self.lookahead = 0
+            self.point = (0, 0, 0)
+            self.filter_road_ids = ()
+            self._starts = {}
 
-        @property
-        def road_id(self) -> str:
-            return self._road_id
-
-        @cached_property
-        def type(self) -> int:
-            road_type = 0  # 0 == LaneType.TYPE_UNDEFINED
-            for lane in self.lanes:
-                if road_type != 0 and lane.type != road_type:
-                    assert (
-                        False
-                    ), f"temporary assert to see if this ever happens:  {lane.type} != {road_type}.  can remove assert."
-                    return 0
-                road_type = lane.type
-            return road_type
-
-        @cached_property
-        def type_as_str(self) -> str:
-            road_type = self.type
-            if road_type == 0:
-                return "undefined"
-            elif road_type == 1:
-                return "freeway"
-            elif road_type == 2:
-                return "surface street"
-            elif road_type == 3:
-                return "bike lane"
-            assert False, "unknown road_type: {road_type}"
-            return "undefined"
-
-        @cached_property
-        def is_drivable(self) -> bool:
-            for lane in self.lanes:
-                if lane.is_drivable:
-                    return True
-            return False
-
-        @cached_property
-        def bounding_box(self) -> BoundingBox:
-            """Get the minimal axis aligned bounding box that contains all map geometry."""
-            x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
-            for lane in self.lanes:
-                x_mins.append(lane.bounding_box.min_pt.x)
-                y_mins.append(lane.bounding_box.min_pt.y)
-                x_maxs.append(lane.bounding_box.max_pt.x)
-                y_maxs.append(lane.bounding_box.max_pt.y)
-
-            return BoundingBox(
-                min_pt=Point(x=min(x_mins), y=min(y_mins)),
-                max_pt=Point(x=max(x_maxs), y=max(y_maxs)),
+        # XXX:  all vehicles share this cache now (as opposed to before
+        # when it was in Plan.py and each vehicle had its own cache).
+        # TODO: probably need to add vehicle_id to the key somehow (or just make it bigger)
+        def _match(self, lookahead, point, filter_road_ids) -> bool:
+            return (
+                lookahead <= self.lookahead
+                and point[0] == self.point[0]
+                and point[1] == self.point[1]
+                and filter_road_ids == self.filter_road_ids
             )
 
-        @property
-        def composite_road(self) -> RoadMap.Road:
-            # TODO
-            return self
+        def update(
+            self,
+            lookahead: int,
+            point: Tuple[float, float, float],
+            filter_road_ids: tuple,
+            llp,
+            paths: List[List[Waypoint]],
+        ):
+            """Update the current cache if not already cached."""
+            if not self._match(lookahead, point, filter_road_ids):
+                self.lookahead = lookahead
+                self.point = point
+                self.filter_road_ids = filter_road_ids
+                self._starts = {}
+            self._starts[llp.lp.lane.index] = paths
 
-        @property
-        def is_composite(self) -> bool:
-            # TODO
-            return False
-
-        @property
-        def is_junction(self) -> bool:
-            # TODO
-            raise NotImplementedError()
-
-        @cached_property
-        def length(self) -> float:
-            return max(lane.length for lane in self.lanes)
-
-        @cached_property
-        def incoming_roads(self) -> List[RoadMap.Road]:
-            return list(
-                {in_lane.road for lane in self.lanes for in_lane in lane.incoming_lanes}
-            )
-
-        @cached_property
-        def outgoing_roads(self) -> List[RoadMap.Road]:
-            return list(
-                {
-                    out_lane.road
-                    for lane in self.lanes
-                    for out_lane in lane.outgoing_lanes
-                }
-            )
-
-        def oncoming_roads_at_point(self, point: Point) -> List[RoadMap.Road]:
-            # TODO:  may not be able to do this one?
-            raise NotImplementedError()
-
-        def parallel_roads(self) -> List[RoadMap.Road]:
-            return []
-
-        @property
-        def lanes(self) -> List[RoadMap.Lane]:
-            return self._lanes
-
-        def lane_at_index(self, index: int) -> RoadMap.Lane:
-            return self._lanes[index]
+        def query(
+            self,
+            lookahead: int,
+            point: Tuple[float, float, float],
+            filter_road_ids: tuple,
+            llp,
+        ) -> Optional[List[List[Waypoint]]]:
+            """Attempt to find previously cached waypoints"""
+            if self._match(lookahead, point, filter_road_ids):
+                hit = self._starts.get(llp.lp.lane.index, None)
+                if hit:
+                    # consider just returning all of them (not slicing)?
+                    return [path[: (lookahead + 1)] for path in hit]
+                return None
