@@ -290,7 +290,7 @@ def is_close(a: float, b: float, rel_tol: float = 1e-09, abs_tol: float = 0.0) -
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
-def euclidean_distance(p1: Tuple[float], p2: Tuple[float]) -> float:
+def euclidean_distance(p1: Tuple[float, ...], p2: Tuple[float, ...]) -> float:
     """The distance taking measuring a direct line between p1 and p2."""
     dx = p1[0] - p2[0]
     dy = p1[1] - p2[1]
@@ -299,7 +299,7 @@ def euclidean_distance(p1: Tuple[float], p2: Tuple[float]) -> float:
 
 def position_at_offset(
     p1: Tuple[float, ...], p2: Tuple[float, ...], offset: float
-) -> Optional[Tuple[float, ...]]:
+) -> Tuple[float, ...]:
     """A point between p1 and p2 given an offset less than the distance between p1 and p2."""
     if is_close(offset, 0.0):  # for pathological cases with dist == 0 and offset == 0
         return p1
@@ -308,9 +308,6 @@ def position_at_offset(
 
     if is_close(dist, offset):
         return p2
-
-    if offset > dist:
-        return None
 
     return p1[0] + (p2[0] - p1[0]) * (offset / dist), p1[1] + (p2[1] - p1[1]) * (
         offset / dist
@@ -334,8 +331,8 @@ def offset_along_shape(
 
 
 def position_at_shape_offset(
-    shape: List[Tuple[float]], offset: float
-) -> Optional[Tuple[float]]:
+    shape: List[Tuple[float, float]], offset: float
+) -> Tuple[float, float]:
     """A point defined as the offset into a shape defined as vector path."""
     seen_length = 0
     curr = shape[0]
@@ -415,7 +412,9 @@ def distance_point_to_line(
 
 
 def distance_point_to_polygon(
-    point: Tuple[float], polygon: List[Tuple[float]], perpendicular: bool = False
+    point: Tuple[float, ...],
+    polygon: List[Tuple[float, ...]],
+    perpendicular: bool = False,
 ) -> Union[float, int]:
     """Return the minimum distance between point and polygon"""
     p = point

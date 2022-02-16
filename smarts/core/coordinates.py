@@ -172,9 +172,7 @@ class Heading(float):
     def __init__(self, value=...):
         float.__init__(value)
 
-    def __new__(
-        self, x: Union[SupportsFloat, SupportsIndex, Ellipsis.__class__] = ...
-    ) -> "Heading":
+    def __new__(self, x: Union[SupportsFloat, SupportsIndex, Ellipsis.__class__] = ...):
         """A override to constrain heading to -pi to pi"""
         value = x
         if isinstance(value, (int, float)):
@@ -257,12 +255,19 @@ class Heading(float):
 class Pose:
     """A pair of position and orientation values."""
 
-    # TODO: these should be np.ndarray
-    position: Union[NamedTuple, Tuple, np.ndarray]  # [x, y, z]
-    orientation: Union[
-        NamedTuple, Tuple, np.ndarray
-    ]  # [a, b, c, d] -> a + bi + cj + dk = 0
+    position: np.ndarray  # [x, y, z]
+    orientation: np.ndarray  # [a, b, c, d] -> a + bi + cj + dk = 0
     heading_: Optional[Heading] = None  # cached heading to avoid recomputing
+
+    def __post_init__(self):
+        if not isinstance(self.position, np.ndarray):
+            self.position = np.array(self.position, dtype=np.float64)
+        assert len(self.position) <= 3
+        if len(self.position) < 3:
+            self.position = np.resize(self.position, 3)
+        assert len(self.orientation) == 4
+        if not isinstance(self.orientation, np.ndarray):
+            self.orientation = np.array(self.orientation, dtype=np.float64)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Pose):
@@ -396,6 +401,10 @@ class Pose:
             self.heading_ = Heading(yaw)
 
         return self.heading_
+
+    def as_position2d(self) -> np.ndarray:
+        """Convert to a 2d position array"""
+        return self.position[:2]
 
     def as_panda3d(self):
         """ Convert to panda3D (object bounds centre position, heading)"""

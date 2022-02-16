@@ -57,7 +57,7 @@ class Start:
     def from_pose(cls, pose: Pose):
         """Convert to a starting location from a pose."""
         return cls(
-            position=pose.position[:2],
+            position=pose.as_position2d(),
             heading=pose.heading,
             from_front_bumper=False,
         )
@@ -241,7 +241,7 @@ class Mission:
         coord = n_lane.from_lane_coord(RefLinePoint(offset))
         target_pose = n_lane.center_pose_at_point(coord)
         return Mission(
-            start=Start(target_pose.position, target_pose.heading),
+            start=Start(target_pose.as_position2d(), target_pose.heading),
             goal=EndlessGoal(),
             entry_tactic=None,
         )
