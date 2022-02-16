@@ -44,8 +44,7 @@ turn_right_routes = [
 
 # Total route combinations = 12C1 + 12C2 + 12C3 + 12C4 = 793
 all_routes = vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes
-route_comb = [com for elem in range(1, 5) for com in combinations(all_routes, elem)]
-route_comb = random.shuffle(route_comb)
+route_comb = [com for elems in range(1, 5) for com in combinations(all_routes, elems)]
 traffic = {}
 for name, routes in enumerate(route_comb):
     traffic[name] = Traffic(
@@ -55,15 +54,15 @@ for name, routes in enumerate(route_comb):
                     begin=(f"edge-{r[0]}", 0, 0),
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
-                # Random flow rate, between 1 vehicle per minute and 6 vehicles
-                # per minute.
-                rate=1,  # 60 * random.uniform(1, 6),
+                # Random flow rate, between 2 and 5 vehicles per minute.
+                rate=60 * random.uniform(2, 5),
+                # Random flow start time, between 0 and 10 seconds.
                 begin=random.uniform(0, 10),
-                end=60 * 15,
                 # For an episode with maximum_episode_steps=3000 and step
                 # time=0.1s, maximum episode time=300s. Hence, traffic set to
                 # end at 900s, which is greater than maximum episode time of
                 # 300s.
+                end=60 * 15,
                 actors={intersection_car: 1},
             )
             for r in routes
