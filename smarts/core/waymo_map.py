@@ -19,27 +19,33 @@
 # THE SOFTWARE.
 import logging
 import math
-import rtree
-from functools import lru_cache
 import time
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
-from waymo_open_dataset.protos import scenario_pb2
-import numpy as np
-from cached_property import cached_property
 from copy import deepcopy
+from functools import lru_cache
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
+
+import numpy as np
+import rtree
+from cached_property import cached_property
 from shapely.geometry import Polygon
+from waymo_open_dataset.protos import scenario_pb2
 
 from smarts.sstudio.types import MapSpec
-from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
+
+from .coordinates import (
+    BoundingBox,
+    Heading,
+    Point,
+    Pose,
+    RefLinePoint,
+    distance_point_to_polygon,
+    offset_along_shape,
+    position_at_shape_offset,
+)
 from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
 from .utils.file import read_tfrecord_file
-from .utils.math import (
-    offset_along_shape,
-    position_at_shape_offset,
-    distance_point_to_polygon,
-    ray_boundary_intersect,
-)
+from .utils.math import ray_boundary_intersect
 
 
 class WaymoMap(RoadMap):
@@ -575,8 +581,7 @@ class WaymoMap(RoadMap):
 
         @lru_cache(maxsize=8)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
-            x, y = position_at_shape_offset(self._centerline_pts, lane_point.s)
-            return Point(x=x, y=y)
+            return position_at_shape_offset(self._centerline_pts, lane_point.s)
 
         @lru_cache(maxsize=8)
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
@@ -612,6 +617,7 @@ class WaymoMap(RoadMap):
 
         @lru_cache(maxsize=8)
         def contains_point(self, point: Point) -> bool:
+            assert type(point) == Point
             if (
                 self.bounding_box.min_pt.x <= point[0] <= self.bounding_box.max_pt.x
                 and self.bounding_box.min_pt.y <= point[1] <= self.bounding_box.max_pt.y

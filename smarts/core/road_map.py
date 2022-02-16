@@ -350,7 +350,7 @@ class RoadMap:
             vector = self.vector_at_offset(s)
             normal = np.array([-vector[1], vector[0], 0])
             center_at_s = self.from_lane_coord(RefLinePoint(s=s))
-            offcenter_vector = np.array(world_point) - center_at_s
+            offcenter_vector = np.array(world_point) - np.array(center_at_s)
             t_sign = np.sign(np.dot(offcenter_vector, normal))
             t = np.linalg.norm(offcenter_vector) * t_sign
             return RefLinePoint(s=s, t=t)

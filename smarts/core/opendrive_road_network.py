@@ -62,17 +62,23 @@ from smarts.core.utils.key_wrapper import KeyWrapper
 from smarts.core.utils.math import (
     CubicPolynomial,
     constrain_angle,
-    distance_point_to_polygon,
     get_linear_segments_for_range,
     inplace_unwrap,
-    offset_along_shape,
-    position_at_shape_offset,
     radians_to_vec,
     vec_2d,
 )
 from smarts.sstudio.types import MapSpec
 
-from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
+from .coordinates import (
+    BoundingBox,
+    Heading,
+    Point,
+    Pose,
+    RefLinePoint,
+    distance_point_to_polygon,
+    offset_along_shape,
+    position_at_shape_offset,
+)
 from .lanepoints import LanePoints, LinkedLanePoint
 
 
@@ -956,7 +962,9 @@ class OpenDriveRoadNetwork(RoadMap):
             if self._lane_elem_index > 0:
                 center_xs = center_xs[::-1]
                 center_ys = center_ys[::-1]
-            self._centerline_points = list(zip(center_xs, center_ys))
+            self._centerline_points = [
+                Point(x, y) for x, y in zip(center_xs, center_ys)
+            ]
 
             # Cache lane polygon (normal size, with no buffer)
             self._lane_polygon = self._compute_lane_polygon()
@@ -1075,8 +1083,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @lru_cache(maxsize=8)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
-            x, y = position_at_shape_offset(self._centerline_points, lane_point.s)
-            return Point(x=x, y=y)
+            return position_at_shape_offset(self._centerline_points, lane_point.s)
 
         @lru_cache(maxsize=8)
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
@@ -1100,16 +1107,14 @@ class OpenDriveRoadNetwork(RoadMap):
             # left_edge
             left_edge_shape = self._lane_polygon[:reference_line_vertices_len]
             left_offset = offset_along_shape(point[:2], left_edge_shape)
-            x, y = position_at_shape_offset(left_edge_shape, left_offset)
-            left_edge = Point(x, y)
+            left_edge = position_at_shape_offset(left_edge_shape, left_offset)
 
             # right_edge
             right_edge_shape = self._lane_polygon[
                 reference_line_vertices_len : len(self._lane_polygon) - 1
             ]
             right_offset = offset_along_shape(point[:2], right_edge_shape)
-            x, y = position_at_shape_offset(right_edge_shape, right_offset)
-            right_edge = Point(x, y)
+            right_edge = position_at_shape_offset(right_edge_shape, right_offset)
             return left_edge, right_edge
 
         @lru_cache(8)
