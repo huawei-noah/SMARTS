@@ -22,8 +22,8 @@
 import math
 import threading
 
-import pytest
 import numpy as np
+import pytest
 from panda3d.core import Thread as p3dThread  # pytype: disable=import-error
 
 from smarts.core.agent_interface import (
