@@ -116,6 +116,10 @@ class TireForces:
 
         return slip_angles
 
+    def apply_tire_forces(self, chassis, client, action):
+        """Applies tire forces"""
+        raise NotImplementedError
+
     @staticmethod
     def _calculate_slip_ratios(chassis, client, action):
         slip_ratios = np.zeros(4)
