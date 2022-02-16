@@ -18,29 +18,53 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Dict
 
 import gym
 import numpy as np
 
 from smarts.core.coordinates import Heading
+from smarts.core.sensors import Observation
 from smarts.core.utils.math import squared_dist, vec_2d, vec_to_radians
 
 
 @dataclass
 class Adapter:
+    """An adapter for pairing an action/observation transformation method with its gym
+    space representation.
+    """
+
     space: gym.Space
     transform: Callable
 
 
 def scan_for_vehicle(
-    target_prefix,
-    angle_a,
-    angle_b,
-    activation_dist_squared,
+    target_prefix: str,
+    angle_a: float,
+    angle_b: float,
+    activation_dist_squared: float,
     self_vehicle_state,
     other_vehicle_state,
-):
+) -> bool:
+    """Sense test for another vehicle within a semi-circle range of a vehicle.
+
+    Args:
+        target_prefix:
+            The whitelist of vehicles with vehicle_ids starting with this prefix for quick elimination.
+        angle_a:
+            The minimum sweep angle between -pi and pi.
+        angle_b:
+            The maximum sweep angle between -pi and pi.
+        activation_dist_squared:
+            The distance to check for the target.
+        self_vehicle_state:
+            The vehicle state of the vehicle that is scanning.
+        other_vehicle_state:
+            The vehicle to test for.
+    Returns:
+        If the tested for vehicle is within the semi-circle range of the base vehicle.
+
+    """
     if target_prefix and not other_vehicle_state.id.startswith(target_prefix):
         return False
 
@@ -66,6 +90,25 @@ def scan_for_vehicles(
     other_vehicle_states,
     short_circuit: bool = False,
 ):
+    """Sense test for vehicles within a semi-circle radius of a vehicle.
+
+    Args:
+        target_prefix:
+            The whitelist of vehicles with vehicle_ids starting with this prefix for quick elimination.
+        angle_a:
+            The minimum sweep angle between -pi and pi.
+        angle_b:
+            The maximum sweep angle between -pi and pi.
+        activation_dist_squared:
+            The distance to check for the target.
+        self_vehicle_state:
+            The vehicle state of the vehicle that is scanning.
+        other_vehicle_states:
+            The set of vehicles to test for.
+    Returns:
+        If the tested for vehicle is within the semi-circle range of the base vehicle.
+
+    """
     if target_prefix:
         other_vehicle_states = filter(
             lambda v: v.id.startswith(target_prefix), other_vehicle_states
@@ -102,9 +145,22 @@ _LANE_TTC_OBSERVATION_SPACE = gym.spaces.Dict(
 )
 
 
-def _lane_ttc_observation_adapter(env_observation):
-    ego = env_observation.ego_vehicle_state
-    waypoint_paths = env_observation.waypoint_paths
+def lane_ttc(obs: Observation) -> Dict[str, np.ndarray]:
+    """Computes time-to-collision (TTC) and distance-to-collision (DTC) using
+    the given agent's observation. TTC and DTC are numpy arrays of shape (3,)
+    with values for the right lane (at index [0]), current lane (at index [1]),
+    and left lane (at index [2]).
+
+    Args:
+        obs (Observation): Agent observation.
+
+    Returns:
+        Dict[str, np.ndarray]: Returns agent's distance from center
+            (shape=(1,)), angle_error (shape=(1,), speed (shape=(1,)), steering
+            (shape=(1,)), TTC (shape=(3,)), and DTC (shape=(3,)).
+    """
+    ego = obs.ego_vehicle_state
+    waypoint_paths = obs.waypoint_paths
     wps = [path[0] for path in waypoint_paths]
 
     # distance of vehicle from center of lane
@@ -113,7 +169,7 @@ def _lane_ttc_observation_adapter(env_observation):
     lane_hwidth = closest_wp.lane_width * 0.5
     norm_dist_from_center = signed_dist_from_center / lane_hwidth
 
-    ego_ttc, ego_lane_dist = _ego_ttc_lane_dist(env_observation, closest_wp.lane_index)
+    ego_ttc, ego_lane_dist = _ego_ttc_lane_dist(obs, closest_wp.lane_index)
 
     return {
         "distance_from_center": np.array([norm_dist_from_center]),
@@ -126,20 +182,20 @@ def _lane_ttc_observation_adapter(env_observation):
 
 
 lane_ttc_observation_adapter = Adapter(
-    space=_LANE_TTC_OBSERVATION_SPACE, transform=_lane_ttc_observation_adapter
+    space=_LANE_TTC_OBSERVATION_SPACE, transform=lane_ttc
 )
 
 
-def _ego_ttc_lane_dist(env_observation, ego_lane_index):
-    ttc_by_p, lane_dist_by_p = _ttc_by_path(env_observation)
+def _ego_ttc_lane_dist(obs: Observation, ego_lane_index: int):
+    ttc_by_p, lane_dist_by_p = _ttc_by_path(obs)
 
     return _ego_ttc_calc(ego_lane_index, ttc_by_p, lane_dist_by_p)
 
 
-def _ttc_by_path(env_observation):
-    ego = env_observation.ego_vehicle_state
-    waypoint_paths = env_observation.waypoint_paths
-    neighborhood_vehicle_states = env_observation.neighborhood_vehicle_states
+def _ttc_by_path(obs: Observation):
+    ego = obs.ego_vehicle_state
+    waypoint_paths = obs.waypoint_paths
+    neighborhood_vehicle_states = obs.neighborhood_vehicle_states
 
     # first sum up the distance between waypoints along a path
     # ie. [(wp1, path1, 0),
@@ -200,7 +256,7 @@ def _ttc_by_path(env_observation):
     return ttc_by_path_index, lane_dist_by_path_index
 
 
-def _ego_ttc_calc(ego_lane_index, ttc_by_path, lane_dist_by_path):
+def _ego_ttc_calc(ego_lane_index: int, ttc_by_path, lane_dist_by_path):
     ego_ttc = [0] * 3
     ego_lane_dist = [0] * 3
 

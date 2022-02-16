@@ -109,6 +109,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         self._log = logging.getLogger(self.__class__.__name__)
 
     def step(self, agent_actions):
+        """Environment step"""
         agent_actions = {
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
@@ -122,7 +123,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         # on the step that an agent transitions to "done". All subsequent calls
         # to env.step(..) will no longer contain actions from the "done" agent.
         #
-        # The way we implement this behaviour here is to rely on the presence of
+        # The way we implement this behavior here is to rely on the presence of
         # agent actions to filter out all environment observations/rewards/infos
         # to only agents who are actively sending in actions.
         observations = {
@@ -162,11 +163,12 @@ class RLlibHiWayEnv(MultiAgentEnv):
 
         for done in dones.values():
             self._dones_registered += 1 if done else 0
-        dones["__all__"] = self._dones_registered == len(self._agent_specs)
+        dones["__all__"] = self._dones_registered >= len(self._agent_specs)
 
         return observations, rewards, dones, infos
 
     def reset(self):
+        """Environment reset."""
         scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
@@ -184,6 +186,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         return observations
 
     def close(self):
+        """Environment close."""
         if self._smarts is not None:
             self._smarts.destroy()
 

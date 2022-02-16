@@ -21,6 +21,8 @@ import logging
 import os
 import random
 import tempfile
+from dataclasses import replace
+from typing import Optional
 
 import sh
 from yattag import Doc, indent
@@ -50,16 +52,13 @@ class RandomRouteGenerator:
         self._road_map = road_map
 
     @classmethod
-    def from_file(cls, net_file: str):
-        """Constructs a route generator from the given file
+    def from_spec(cls, map_spec: types.MapSpec):
+        """Constructs a route generator from the given map spec
 
         Args:
-            net_file: The path to a '\\*.net.xml' file (generally 'map.net.xml')
+            map_spec: An instance of types.MapSpec specifying a map location
         """
-        from smarts.core.default_map_factory import create_road_map
-
-        # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
-        road_map, _ = create_road_map(net_file, lanepoint_spacing=2.0)
+        road_map, _ = map_spec.builder_fn(map_spec)
         return cls(road_map)
 
     def __iter__(self):
@@ -105,14 +104,25 @@ class RandomRouteGenerator:
 
 
 class TrafficGenerator:
+    """Generates traffic from scenario information."""
+
     def __init__(
         self,
         scenario_dir: str,
-        log_dir: str = None,
+        scenario_map_spec: Optional[types.MapSpec],
+        log_dir: Optional[str] = None,
         overwrite: bool = False,
     ):
         """
-        scenario: The path to the scenario directory
+        Args:
+            scenario:
+                The path to the scenario directory.
+            scenario_map_spec:
+                The map spec information.
+            log_dir:
+                Where logging information about traffic planning should be written to.
+            overwrite:
+                Whether to overwrite existing traffic information.
         """
         from smarts.core.utils.sumo import sumolib
 
@@ -120,13 +130,25 @@ class TrafficGenerator:
         self._scenario = scenario_dir
         self._overwrite = overwrite
         self._duarouter = sh.Command(sumolib.checkBinary("duarouter"))
+        self._scenario_map_spec = scenario_map_spec
         self._road_network_path = os.path.join(self._scenario, "map.net.xml")
+        if scenario_map_spec and scenario_map_spec.source:
+            if os.path.isfile(scenario_map_spec.source):
+                self._road_network_path = scenario_map_spec.source
+            elif os.path.exists(scenario_map_spec.source):
+                self._road_network_path = os.path.join(
+                    scenario_map_spec.source, "map.net.xml"
+                )
         self._road_network = None
         self._random_route_generator = None
         self._log_dir = self._resolve_log_dir(log_dir)
 
     def plan_and_save(
-        self, traffic: types.Traffic, name: str, output_dir: str = None, seed: int = 42
+        self,
+        traffic: types.Traffic,
+        name: str,
+        output_dir: Optional[str] = None,
+        seed: int = 42,
     ):
         """Writes a traffic spec to a route file in the given output_dir.
 
@@ -253,27 +275,53 @@ class TrafficGenerator:
         if not self._road_network:
             from smarts.core.sumo_road_network import SumoRoadNetwork
 
-            self._road_network = SumoRoadNetwork.from_file(self._road_network_path)
+            map_spec = types.MapSpec(self._road_network_path)
+            self._road_network = SumoRoadNetwork.from_spec(map_spec)
 
     def resolve_edge_length(self, edge_id, lane_idx):
+        """Determine the length of the given lane on an edge.
+        Args:
+            edge_id: The edge id of the road segment.
+            lane_idx: The index of a lane.
+        Returns:
+            The length of the lane (same as the length of the edge.)
+        """
         self._cache_road_network()
-        lane = self._road_network.edge_by_id(edge_id).lanes[lane_idx]
+        lane = self._road_network.road_by_id(edge_id).lanes[lane_idx]
         return lane.length
 
     def resolve_route(self, route):
+        """Attempts to fill in the route between the begining and end specified in the initial
+         route.
+        Args:
+            route: An incomplete route.
+        Returns:
+            A complete route listing all road segments it passes through.
+        """
         if not isinstance(route, types.RandomRoute):
             return route
 
         if not self._random_route_generator:
+            map_spec = route.map_spec
+            if not map_spec:
+                # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
+                lp_spacing = 2.0
+                if self._scenario_map_spec:
+                    map_spec = replace(
+                        self._scenario_map_spec, lanepoint_spacing=lp_spacing
+                    )
+                else:
+                    map_spec = types.MapSpec(
+                        self._road_network_path, lanepoint_spacing=lp_spacing
+                    )
             # Lazy-load to improve performance when not using random route generation.
-            self._random_route_generator = RandomRouteGenerator.from_file(
-                self._road_network_path
-            )
+            self._random_route_generator = RandomRouteGenerator.from_spec(map_spec)
 
         return next(self._random_route_generator)
 
     @property
     def road_network(self):
+        """Retrieves the road network this generator is associated with."""
         self._cache_road_network()
         return self._road_network
 

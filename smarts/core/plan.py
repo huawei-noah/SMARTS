@@ -24,10 +24,7 @@ from __future__ import annotations
 import math
 import random
 from dataclasses import dataclass, field
-from functools import lru_cache
-from typing import List, Optional, Tuple
-
-import numpy as np
+from typing import Optional, Tuple
 
 from smarts.sstudio.types import EntryTactic, TrapEntryTactic
 
@@ -37,22 +34,28 @@ from .utils.math import min_angles_difference_signed, vec_to_radians
 
 
 class PlanningError(Exception):
+    """Raised in cases when map related planning fails."""
+
     pass
 
 
 # XXX: consider using smarts.core.coordinates.Pose for this
 @dataclass(frozen=True)
 class Start:
+    """A starting state for a route or mission."""
+
     position: Tuple[int, int]
     heading: Heading
     from_front_bumper: Optional[bool] = True
 
     @property
     def point(self) -> Point:
+        """The coordinate of this starting location."""
         return Point(*self.position)
 
     @classmethod
     def from_pose(cls, pose: Pose):
+        """Convert to a starting location from a pose."""
         return cls(
             position=pose.position[:2],
             heading=pose.heading,
@@ -62,20 +65,28 @@ class Start:
 
 @dataclass(unsafe_hash=True)
 class Goal:
+    """Describes an expected end state for a route or mission."""
+
     def is_endless(self) -> bool:
+        """If the goal can never be reached."""
         return True
 
     def is_reached(self, vehicle) -> bool:
+        """If the goal has been completed."""
         return False
 
 
 @dataclass(unsafe_hash=True)
 class EndlessGoal(Goal):
+    """A goal that can never be completed."""
+
     pass
 
 
 @dataclass(unsafe_hash=True)
 class PositionalGoal(Goal):
+    """A goal that can be completed by reaching an end area."""
+
     position: Point
     # target_heading: Heading
     radius: float
@@ -86,9 +97,10 @@ class PositionalGoal(Goal):
         road_id: str,
         road_map: RoadMap,
         lane_index: int = 0,
-        lane_offset: float = None,
+        lane_offset: Optional[float] = None,
         radius: float = 1,
     ):
+        """Generate the goal ending at the specified road lane."""
         road = road_map.road_by_id(road_id)
         lane = road.lane_at_index(lane_index)
 
@@ -112,7 +124,7 @@ class PositionalGoal(Goal):
 
 class TraverseGoal(Goal):
     """A TraverseGoal is satisfied whenever an Agent-driven vehicle
-    successfully finishes traversing a non-closed (acyclical) map
+    successfully finishes traversing a non-closed (acyclic) map
     It's a way for the vehicle to exit the simulation successfully,
     for example, driving across from one side to the other on a
     straight road and then continuing off the map.  This goal is
@@ -152,7 +164,8 @@ class TraverseGoal(Goal):
         return abs(heading_err) < math.pi / 6
 
 
-def default_entry_tactic(default_entry_speed: float = None) -> EntryTactic:
+def default_entry_tactic(default_entry_speed: Optional[float] = None) -> EntryTactic:
+    """The default tactic the simulation will use to acquire an actor for an agent."""
     return TrapEntryTactic(
         wait_to_hijack_limit_s=0,
         exclusion_prefixes=tuple(),
@@ -163,6 +176,8 @@ def default_entry_tactic(default_entry_speed: float = None) -> EntryTactic:
 
 @dataclass(frozen=True)
 class Via:
+    """Describes a collectable item that can be used to shape rewards."""
+
     lane_id: str
     road_id: str
     lane_index: int
@@ -173,6 +188,8 @@ class Via:
 
 @dataclass(frozen=True)
 class VehicleSpec:
+    """Vehicle specifications"""
+
     veh_id: str
     veh_config_type: str
     dimensions: Dimensions
@@ -180,6 +197,8 @@ class VehicleSpec:
 
 @dataclass(frozen=True)
 class Mission:
+    """A navigation mission."""
+
     start: Start
     goal: Goal
     # An optional list of road IDs between the start and end goal that we want to
@@ -193,9 +212,11 @@ class Mission:
 
     @property
     def has_fixed_route(self) -> bool:
+        """If the route is fixed and immutable."""
         return not self.goal.is_endless()
 
     def is_complete(self, vehicle, distance_travelled: float) -> bool:
+        """If the mission has been completed successfully."""
         return self.goal.is_reached(vehicle)
 
     @staticmethod
@@ -204,6 +225,7 @@ class Mission:
         min_range_along_lane: float = 0.3,
         max_range_along_lane: float = 0.9,
     ) -> Mission:
+        """A mission that starts from a random location and continues indefinitely."""
         assert min_range_along_lane > 0  # Need to start further than beginning of lane
         assert max_range_along_lane < 1  # Cannot start past end of lane
         assert min_range_along_lane < max_range_along_lane  # Min must be less than max
@@ -227,6 +249,8 @@ class Mission:
 
 @dataclass(frozen=True)
 class LapMission:
+    """A mission requiring a number of laps through the goal."""
+
     start: Start
     goal: Goal
     route_length: float
@@ -240,9 +264,11 @@ class LapMission:
 
     @property
     def has_fixed_route(self) -> bool:
+        """If the route in this mission is immutable."""
         return True
 
     def is_complete(self, vehicle, distance_travelled: float) -> bool:
+        """If the mission has been completed."""
         return (
             self.goal.is_reached(vehicle)
             and distance_travelled > self.route_length * self.num_laps
@@ -250,8 +276,13 @@ class LapMission:
 
 
 class Plan:
+    """Describes a navigation plan."""
+
     def __init__(
-        self, road_map: RoadMap, mission: Mission = None, find_route: bool = True
+        self,
+        road_map: RoadMap,
+        mission: Optional[Mission] = None,
+        find_route: bool = True,
     ):
         self._road_map = road_map
         self._mission = mission
@@ -260,7 +291,8 @@ class Plan:
             self.create_route(mission)
 
     @property
-    def route(self) -> RoadMap.Route:
+    def route(self) -> Optional[RoadMap.Route]:
+        """The route that this plan calls for."""
         return self._route
 
     @route.setter
@@ -269,14 +301,18 @@ class Plan:
         self._route = route
 
     @property
-    def mission(self) -> Mission:
+    def mission(self) -> Optional[Mission]:
+        """The mission generated from this plan."""
+        # XXX: This currently can be `None`
         return self._mission
 
     @property
     def road_map(self) -> RoadMap:
+        """The road map this plan is for."""
         return self._road_map
 
     def create_route(self, mission: Mission) -> Mission:
+        """Generates a mission that conforms to this plan."""
         assert not self._route, "already called create_route()"
         self._mission = mission or Mission.random_endless_mission(self._road_map)
 

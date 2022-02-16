@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import itertools
 import random
+from typing import List, Sequence, Tuple
 
 import numpy as np
 import psutil
@@ -30,6 +31,8 @@ from .utils.pybullet import bullet_client as bc
 
 
 class Lidar:
+    """Lidar utilities."""
+
     def __init__(
         self, origin, sensor_params: SensorParams, bullet_client: bc.BulletClient
     ):
@@ -45,6 +48,7 @@ class Lidar:
 
     @property
     def origin(self):
+        """The center of the emission point of the lidar lasers."""
         return self._origin
 
     @origin.setter
@@ -67,7 +71,13 @@ class Lidar:
             )
         return np.array(static_lidar_noise, dtype=np.float)
 
-    def compute_point_cloud(self):
+    def compute_point_cloud(
+        self,
+    ) -> Tuple[List[np.ndarray], List[int], List[Tuple[np.ndarray, np.ndarray]]]:
+        """Generate a point cloud.
+        Returns:
+            Point cloud of 3D points, a list of hit objects, a list of rays fired.
+        """
         rays = self._compute_rays()
         point_cloud, hits = self._trace_rays(rays)
         # point_cloud = self._apply_noise(point_cloud)
@@ -84,7 +94,7 @@ class Lidar:
                 / self._sensor_params.angle_resolution
             )
 
-            yaws = -self._sensor_params.laser_angles
+            yaws = -1 * self._sensor_params.laser_angles
             rolls = np.arange(n_rays) * self._sensor_params.angle_resolution
             for yaw, roll in itertools.product(yaws, rolls):
                 rot = pybullet.getQuaternionFromEuler((roll, 0, yaw))

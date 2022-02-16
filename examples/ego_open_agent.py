@@ -6,7 +6,6 @@ NOTE: You will need to install Rust to run this example. See https://rustup.rs/ 
 
 import importlib
 import logging
-import math
 
 import gym
 
@@ -19,12 +18,7 @@ except ModuleNotFoundError as e:
         f"Ensure that the open-agent has been installed with `pip install open-agent"
     )
 
-# The following ugliness was made necessary because the `aiohttp` #
-# dependency has an "examples" module too.  (See PR #1120.)
-if __name__ == "__main__":
-    from argument_parser import default_argument_parser
-else:
-    from .argument_parser import default_argument_parser
+from examples.argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 

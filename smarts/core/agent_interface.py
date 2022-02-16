@@ -87,22 +87,28 @@ class RoadWaypoints:
     that lane.
     """
 
-    # The distance in meters to include waypoints for (both behind and infront of the agent)
+    # The distance in meters to include waypoints for (both behind and in front of the agent)
     horizon: int = 20
 
 
 @dataclass
 class NeighborhoodVehicles:
-    # `None` means no radius filtering
-    radius: float = None
+    """Detection of nearby vehicles and configuration for filtering of the vehicles."""
+
+    radius: Optional[float] = None
+    """The distance within which neighborhood vehicles are detected. `None` means vehicles will be detected within an unlimited distance."""
 
 
 @dataclass
 class Accelerometer:
+    """Requires detection of motion changes within the agents vehicle."""
+
     pass
 
 
 class AgentType(IntEnum):
+    """Used to select preconfigured agent interfaces."""
+
     Buddha = 0
     """Agent sees nothing and does nothing"""
     Full = 1
@@ -135,6 +141,8 @@ class AgentType(IntEnum):
 
 @dataclass(frozen=True)
 class AgentsListAlive:
+    """Describes agents that are active in the simulation."""
+
     agents_list: List[str]
     """The list of agents to check whether they are alive"""
     minimum_agents_alive_in_list: int
@@ -143,6 +151,8 @@ class AgentsListAlive:
 
 @dataclass(frozen=True)
 class AgentsAliveDoneCriteria:
+    """Multi-agent requirements used to determine if an agent should be removed from an episode."""
+
     minimum_ego_agents_alive: Optional[int] = None
     """If set, triggers the agent to be done if the total number of alive ego agents falls below the given value."""
     minimum_total_agents_alive: Optional[int] = None
@@ -163,8 +173,18 @@ class AgentsAliveDoneCriteria:
 
 
 @dataclass(frozen=True)
+class EventConfiguration:
+    """Configure the conditions in which an Event is triggered."""
+
+    not_moving_time: float = 60
+    """How long in seconds to check the agent after which it is considered not moving"""
+    not_moving_distance: float = 1
+    """How many meters the agent's actor has to move under which the agent is considered not moving"""
+
+
+@dataclass(frozen=True)
 class DoneCriteria:
-    """Toggleable conditions on which to trigger episode end."""
+    """Toggleable conditions on which cause removal of an agent from the current episode."""
 
     collision: bool = True
     """End the episode when the agent collides with another vehicle."""
@@ -179,8 +199,8 @@ class DoneCriteria:
     may be driving on the mission route.
     """
     not_moving: bool = False
-    """End the episode when the agent is not moving for 60 seconds or more. To account
-    for controller noise not moving means <= 1 meter of displacement within 60 seconds.
+    """End the episode when the agent is not moving for n seconds or more. To account
+    for controller noise not moving means <= 1 meter of displacement within n seconds.
     """
     agents_alive: Optional[AgentsAliveDoneCriteria] = None
     """If set, triggers the ego agent to be done based on the number of active agents for multi-agent purposes."""
@@ -195,6 +215,9 @@ class AgentInterface:
 
     debug: bool = False
     """Enable debug information for the various sensors and action spaces."""
+
+    event_configuration: EventConfiguration = EventConfiguration()
+    """Configurable criteria of when to trigger events"""
 
     done_criteria: DoneCriteria = field(default_factory=lambda: DoneCriteria())
     """Configurable criteria of when to mark this actor as done. Done actors will be
@@ -325,11 +348,11 @@ class AgentInterface:
                 waypoints=True,
                 action=ActionSpaceType.Trajectory,
             )
-        # The trajectory interpolation agent which recieves a with-time-trajectory and move vehicle
+        # The trajectory interpolation agent which receives a with-time-trajectory and move vehicle
         # with linear time interpolation
         elif requested_type == AgentType.TrajectoryInterpolator:
             interface = AgentInterface(action=ActionSpaceType.TrajectoryWithTime)
-        # The MPC based trajectory tracking agent wich recieves a series of
+        # The MPC based trajectory tracking agent which receives a series of
         # reference trajectory points and speeds and computes the optimal
         # steering action.
         elif requested_type == AgentType.MPCTracker:
@@ -368,7 +391,7 @@ class AgentInterface:
         return interface.replace(**kwargs)
 
     def replace(self, **kwargs):
-        """Clone this AgentInteface with the given fields updated
+        """Clone this AgentInterface with the given fields updated
         >>> interface = AgentInterface(action=ActionSpaceType.Continuous) \
                             .replace(waypoints=True)
         >>> interface.waypoints
@@ -378,6 +401,7 @@ class AgentInterface:
 
     @property
     def action_space(self):
+        """Deprecated. Use `action` instead."""
         # for backwards compatibility
         return self.action
 

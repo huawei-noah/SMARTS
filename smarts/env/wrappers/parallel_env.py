@@ -127,19 +127,18 @@ class ParallelEnv(object):
 
     @property
     def batch_size(self) -> int:
+        """The number of environments."""
         return self._num_envs
 
     @property
-    def observation_space(self) -> Optional[gym.Space]:
-        if self._single_observation_space:
-            return gym.spaces.Tuple([self._single_observation_space] * self._num_envs)
-        return None
+    def observation_space(self) -> gym.Space:
+        """The environment's observation space in gym representation."""
+        return self._single_observation_space
 
     @property
-    def action_space(self) -> Optional[gym.Space]:
-        if self._single_action_space:
-            return gym.spaces.Tuple([self._single_action_space] * self._num_envs)
-        return None
+    def action_space(self) -> gym.Space:
+        """The environment's action space in gym representation."""
+        return self._single_action_space
 
     def _call(self, msg: _Message, payloads: Sequence[Any]) -> Sequence[Any]:
         assert len(payloads) == self._num_envs

@@ -24,8 +24,9 @@ import pickle
 import random
 from ctypes import c_int64
 from dataclasses import dataclass, field
+from enum import IntEnum
 from sys import maxsize
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from shapely.geometry import (
@@ -39,9 +40,15 @@ from shapely.ops import split, unary_union
 
 from smarts.core import gen_id
 from smarts.core.coordinates import RefLinePoint
+from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_around_point
+
+
+class _SUMO_PARAMS_MODE(IntEnum):
+    TITLE_CASE = 0
+    KEEP_SNAKE_CASE = 1
 
 
 def _pickle_hash(obj) -> int:
@@ -58,16 +65,28 @@ class _SumoParams(collections_abc.Mapping):
     between PEP8-compatible naming and Sumo's.
     """
 
-    def __init__(self, prefix, whitelist=[], **kwargs):
+    def __init__(
+        self, prefix, whitelist=[], mode=_SUMO_PARAMS_MODE.TITLE_CASE, **kwargs
+    ):
         def snake_to_title(word):
             return "".join(x.capitalize() or "_" for x in word.split("_"))
+
+        def keep_snake_case(word: str):
+            w = word[0].upper() + word[1:]
+            return "".join(x or "_" for x in w.split("_"))
+
+        func: Callable[[str], str] = snake_to_title
+        if mode == _SUMO_PARAMS_MODE.TITLE_CASE:
+            pass
+        elif mode == _SUMO_PARAMS_MODE.KEEP_SNAKE_CASE:
+            func = keep_snake_case
 
         # XXX: On rare occasions sumo doesn't respect their own conventions
         #      (e.x. junction model's impatience).
         self._params = {key: kwargs.pop(key) for key in whitelist if key in kwargs}
 
         for key, value in kwargs.items():
-            self._params[f"{prefix}{snake_to_title(key)}"] = value
+            self._params[f"{prefix}{func(key)}"] = value
 
     def __iter__(self):
         return iter(self._params)
@@ -89,7 +108,7 @@ class LaneChangingModel(_SumoParams):
     """Models how the actor acts with respect to lane changes."""
 
     def __init__(self, **kwargs):
-        super().__init__("lc", **kwargs)
+        super().__init__("lc", mode=_SUMO_PARAMS_MODE.KEEP_SNAKE_CASE, **kwargs)
 
 
 class JunctionModel(_SumoParams):
@@ -127,6 +146,7 @@ class UniformDistribution:
             self.a, self.b = self.b, self.a
 
     def sample(self):
+        """Get the next sample."""
         return random.uniform(self.a, self.b)
 
 
@@ -145,6 +165,7 @@ class TruncatedDistribution:
             self.a, self.b = self.b, self.a
 
     def sample(self):
+        """Get the next sample"""
         from scipy.stats import truncnorm
 
         return truncnorm.rvs(self.a, self.b, loc=self.loc, scale=self.scale)
@@ -222,7 +243,7 @@ class SocialAgentActor(Actor):
     """Additional keyword arguments to be passed to the constructed class overriding the
     existing registered arguments.
     """
-    initial_speed: float = None
+    initial_speed: Optional[float] = None
     """Set the initial speed, defaults to 0."""
 
 
@@ -240,10 +261,44 @@ class BoidAgentActor(SocialAgentActor):
     """The capacity of the boid agent to take over vehicles."""
 
 
+# A MapBuilder should return an object derived from the RoadMap base class
+# and a hash that uniquely identifies it (changes to the hash should signify
+# that the map is different enough that map-related caches should be reloaded).
+#
+# This function should be re-callable (although caching is up to the implementation).
+# The idea here is that anything in SMARTS that needs to use a RoadMap
+# can call this builder to get or create one as necessary.
+MapBuilder = NewType(
+    "MapBuilder", Callable[[Any], Tuple[Optional[RoadMap], Optional[str]]]
+)
+
+
+@dataclass(frozen=True)
+class MapSpec:
+    """A map specification that describes how to generate a roadmap."""
+
+    source: str
+    """A path or URL or name uniquely designating the map source."""
+    lanepoint_spacing: Optional[float] = None
+    """If specified, the default distance between pre-generated Lane Points (Waypoints)."""
+    default_lane_width: Optional[float] = None
+    """If specified, the default width (in meters) of lanes on this map."""
+    shift_to_origin: bool = False
+    """If True, upon creation a map whose bounding-box does not intersect with
+    the origin point (0,0) will be shifted such that it does."""
+    builder_fn: MapBuilder = get_road_map
+    """If specified, this should return an object derived from the RoadMap base class
+    and a hash that uniquely identifies it (changes to the hash should signify
+    that the map is different enough that map-related caches should be reloaded).
+    The parameter is this MapSpec object itself.
+    If not specified, this currently defaults to a function that creates
+    SUMO road networks (get_road_map()) in smarts.core.default_map_builder."""
+
+
 @dataclass(frozen=True)
 class Route:
     """A route is represented by begin and end road IDs, with an optional list of
-    itermediary road IDs. When an intermediary is not specified the router will
+    intermediary road IDs. When an intermediary is not specified the router will
     decide what it should be.
     """
 
@@ -274,8 +329,13 @@ class Route:
     via: Tuple[str, ...] = field(default_factory=tuple)
     """The ids of roads that must be included in the route between `begin` and `end`."""
 
+    map_spec: Optional[MapSpec] = None
+    """All routes are relative to a road map.  If not specified here,
+    the default map_spec for the scenario is used."""
+
     @property
     def id(self) -> str:
+        """The unique id of this route."""
         return "route-{}-{}-{}-".format(
             "_".join(map(str, self.begin)),
             "_".join(map(str, self.end)),
@@ -284,6 +344,7 @@ class Route:
 
     @property
     def roads(self):
+        """All roads that are used within this route."""
         return (self.begin[0],) + self.via + (self.end[0],)
 
 
@@ -295,12 +356,16 @@ class RandomRoute:
 
     id: str = field(default_factory=lambda: f"random-route-{gen_id()}")
 
+    map_spec: Optional[MapSpec] = None
+    """All routes are relative to a road map.  If not specified here,
+    the default map_spec for the scenario is used."""
+
 
 @dataclass(frozen=True)
 class Flow:
     """A route with an actor type emitted at a given rate."""
 
-    route: Route
+    route: Union[RandomRoute, Route]
     """The route for the actor to attempt to follow."""
     rate: float
     """Vehicles per hour."""
@@ -320,6 +385,7 @@ class Flow:
 
     @property
     def id(self) -> str:
+        """The unique id of this flow."""
         return "flow-{}-{}-".format(
             self.route.id,
             str(_pickle_hash(sorted(self.actors.items(), key=lambda a: a[0].name))),
@@ -336,7 +402,7 @@ class Flow:
 
 @dataclass(frozen=True)
 class JunctionEdgeIDResolver:
-    """ A utility for resolving a junction connection edge """
+    """A utility for resolving a junction connection edge"""
 
     start_edge_id: str
     start_lane_index: int
@@ -344,6 +410,9 @@ class JunctionEdgeIDResolver:
     end_lane_index: int
 
     def to_edge(self, sumo_road_network) -> str:
+        """Queries the road network to see if there is a junction edge between the two
+        given edges.
+        """
         return sumo_road_network.get_edge_in_junction(
             self.start_edge_id,
             self.start_lane_index,
@@ -378,28 +447,30 @@ class Traffic:
 
 @dataclass(frozen=True)
 class EntryTactic:
+    """The tactic that the simulation should use to acquire a vehicle for an actor."""
+
     pass
 
 
 @dataclass(frozen=True)
 class TrapEntryTactic(EntryTactic):
-    """An entry tactic that hijacks a vehicle to start the mission."""
+    """An entry tactic that repurposes a pre-existing vehicle for an actor."""
 
     wait_to_hijack_limit_s: float
-    """The amount of seconds a hijack will wait to get a vehicle before just emitting"""
+    """The amount of seconds a hijack will wait to get a vehicle before defaulting to a new vehicle"""
     zone: "MapZone" = None
     """The zone of the hijack area"""
     exclusion_prefixes: Tuple[str, ...] = tuple()
     """The prefixes of vehicles to avoid hijacking"""
-    default_entry_speed: float = None
-    """The speed that the vehicle starts at when defaulting to emitting"""
+    default_entry_speed: Optional[float] = None
+    """The speed that the vehicle starts at when the hijack limit expiry emits a new vehicle"""
 
 
 @dataclass(frozen=True)
 class Mission:
     """The descriptor for an actor's mission."""
 
-    route: Route
+    route: Union[RandomRoute, Route]
     """The route for the actor to attempt to follow."""
 
     via: Tuple[Via, ...] = ()
@@ -410,7 +481,7 @@ class Mission:
     `entry_tactic`.
     """
 
-    entry_tactic: EntryTactic = None
+    entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission."""
 
     def __eq__(self, other):
@@ -435,7 +506,7 @@ class EndlessMission:
     """Points on a road that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
-    entry_tactic: EntryTactic = None
+    entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
 
 
@@ -453,7 +524,7 @@ class LapMission:
     """Points on a road that an actor must pass through"""
     start_time: float = 0.1
     """The earliest simulation time that this mission starts"""
-    entry_tactic: EntryTactic = None
+    entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
 
 
@@ -500,10 +571,12 @@ class MapZone(Zone):
     """
     length: float
     """The length of the geometry along the center of the lane. Also acceptable\\: 'max'"""
-    n_lanes: 2
+    n_lanes: int = 2
     """The number of lanes from right to left that this zone covers."""
 
     def to_geometry(self, road_map: RoadMap) -> Polygon:
+        """Generates a map zone over a stretch of the given lanes."""
+
         def resolve_offset(offset, geometry_length, lane_length):
             if offset == "base":
                 return 0
@@ -520,14 +593,14 @@ class MapZone(Zone):
             if not isinstance(lane_shape, GeometryCollection):
                 return lane_shape
 
-            # For simplicty, we only deal w/ the == 1 or 2 case
+            # For simplicity, we only deal w/ the == 1 or 2 case
             if len(lane_shape.geoms) not in {1, 2}:
                 return None
 
             if len(lane_shape.geoms) == 1:
                 return lane_shape.geoms[0]
 
-            # We assume that there are only two splited shapes to choose from
+            # We assume that there are only two split shapes to choose from
             keep_index = 0
             if lane_shape.geoms[1].minimum_rotated_rectangle.contains(expected_point):
                 # 0 is the discard piece, keep the other
@@ -580,9 +653,8 @@ class MapZone(Zone):
 
             lane_offset = resolve_offset(offset, geom_length, lane_length)
             lane_offset += buffer_from_ends
-
             width = lane.width_at_offset(lane_offset)
-            lane_shape = lane.shape(width + 0.3)
+            lane_shape = lane.shape(0.3, width)
 
             geom_length = max(geom_length - buffer_from_ends, buffer_from_ends)
             lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)
@@ -625,7 +697,8 @@ class PositionalZone(Zone):
     size: Tuple[float, float]
     """The (length, width) dimensions of the zone."""
 
-    def to_geometry(self, road_map: RoadMap = None) -> Polygon:
+    def to_geometry(self, road_map: Optional[RoadMap] = None) -> Polygon:
+        """Generates a box zone at the given position."""
         w, h = self.size
         p0 = (self.pos[0] - w / 2, self.pos[1] - h / 2)  # min
         p1 = (self.pos[0] + w / 2, self.pos[1] + h / 2)  # max
@@ -634,6 +707,8 @@ class PositionalZone(Zone):
 
 @dataclass(frozen=True)
 class BubbleLimits:
+    """Defines the capture limits of a bubble."""
+
     hijack_limit: int = maxsize
     """The maximum number of vehicles the bubble can hijack"""
     shadow_limit: int = maxsize
@@ -659,17 +734,17 @@ class Bubble:
     # If limit != None it will only allow that specified number of vehicles to be
     # hijacked. N.B. when actor = BoidAgentActor the lesser of the actor capacity
     # and bubble limit will be used.
-    limit: BubbleLimits = None
+    limit: Optional[BubbleLimits] = None
     """The maximum number of actors that could be captured."""
     exclusion_prefixes: Tuple[str, ...] = field(default_factory=tuple)
     """Used to exclude social actors from capture."""
     id: str = field(default_factory=lambda: f"bubble-{gen_id()}")
-    follow_actor_id: str = None
+    follow_actor_id: Optional[str] = None
     """Actor ID of agent we want to pin to. Doing so makes this a "travelling bubble"
     which means it moves to follow the `follow_actor_id`'s vehicle. Offset is from the
     vehicle's center position to the bubble's center position.
     """
-    follow_offset: Tuple[float, float] = None
+    follow_offset: Optional[Tuple[float, float]] = None
     """Maintained offset to place the travelling bubble relative to the follow
     vehicle if it were facing north.
     """
@@ -696,16 +771,18 @@ class Bubble:
 
     @staticmethod
     def to_actor_id(actor, mission_group):
+        """Mashes the actor id and mission group to create what needs to be a unique id."""
         return SocialAgentId.new(actor.name, group=mission_group)
 
     @property
     def is_boid(self):
+        """Tests if the actor is to control multiple vehicles."""
         return isinstance(self.actor, BoidAgentActor)
 
 
 @dataclass(frozen=True)
 class RoadSurfacePatch:
-    """A descriptor that defines a patch of road surface with a different friction coefficent."""
+    """A descriptor that defines a patch of road surface with a different friction coefficient."""
 
     zone: Zone
     """The zone which to capture vehicles."""
@@ -719,6 +796,9 @@ class RoadSurfacePatch:
 
 @dataclass(frozen=True)
 class Scenario:
+    """The sstudio scenario representation."""
+
+    map_spec: Optional[MapSpec] = None
     traffic: Optional[Dict[str, Traffic]] = None
     ego_missions: Optional[Sequence[Mission]] = None
     # e.g. { "turning_agents": ([actors], [missions]), ... }

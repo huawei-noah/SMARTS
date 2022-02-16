@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 import logging
-from typing import Dict, Set, Tuple
+from typing import Any, Dict, Set, Tuple
 
 import cloudpickle
 
@@ -69,6 +69,7 @@ class AgentManager:
         self._remote_social_agents_action = {}
 
     def teardown(self):
+        """Clean up resources."""
         self._log.debug("Tearing down AgentManager")
         self.teardown_ego_agents()
         self.teardown_social_agents()
@@ -76,42 +77,51 @@ class AgentManager:
         self._pending_agent_ids = set()
 
     def destroy(self):
+        """Clean up remaining resources for deletion."""
         if self._remote_agent_buffer:
             self._remote_agent_buffer.destroy()
             self._remote_agent_buffer = None
 
     @property
-    def agent_ids(self):
+    def agent_ids(self) -> Set[str]:
+        """A list of all agents in the simulation."""
         return self._ego_agent_ids | self._social_agent_ids
 
     @property
-    def ego_agent_ids(self):
+    def ego_agent_ids(self) -> Set[str]:
+        """A list of only the active ego agents in the simulation."""
         return self._ego_agent_ids
 
     @property
-    def social_agent_ids(self):
+    def social_agent_ids(self) -> Set[str]:
+        """A list of only the active social agents in the simulation."""
         return self._social_agent_ids
 
     @property
-    def agent_interfaces(self):
+    def agent_interfaces(self) -> Dict[str, AgentInterface]:
+        """A list of all agent to agent interface mappings."""
         return self._agent_interfaces
 
-    def agent_interface_for_agent_id(self, agent_id):
+    def agent_interface_for_agent_id(self, agent_id) -> AgentInterface:
+        """Get the agent interface of a specific agent."""
         return self._agent_interfaces.get(agent_id, None)
 
     @property
-    def pending_agent_ids(self):
+    def pending_agent_ids(self) -> Set[str]:
         """The IDs of agents that are waiting to enter the simulation"""
         return self._pending_agent_ids
 
     @property
-    def active_agents(self):
+    def active_agents(self) -> Set[str]:
+        """A list of all active agents in the simulation (agents that have a vehicle.)"""
         return self.agent_ids - self.pending_agent_ids
 
-    def is_ego(self, agent_id):
+    def is_ego(self, agent_id) -> bool:
+        """Test if the agent is an ego agent."""
         return agent_id in self.ego_agent_ids
 
     def remove_pending_agent_ids(self, agent_ids):
+        """Remove an agent from the group of agents waiting to enter the simulation."""
         assert agent_ids.issubset(self.agent_ids)
         self._pending_agent_ids -= agent_ids
 
@@ -120,6 +130,7 @@ class AgentManager:
     ) -> Tuple[
         Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]
     ]:
+        """Attempt to generate observations from the given vehicles."""
         observations = {}
         rewards = {}
         dones = {}
@@ -147,7 +158,12 @@ class AgentManager:
 
         return observations, rewards, scores, dones
 
-    def observe(self, sim):
+    def observe(
+        self, sim
+    ) -> Tuple[
+        Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]
+    ]:
+        """Generate observations from all vehicles associated with an active agent."""
         observations = {}
         rewards = {}
         scores = {}
@@ -213,6 +229,10 @@ class AgentManager:
                 rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
                 scores[agent_id] = vehicle.trip_meter_sensor()
 
+        if sim.should_reset:
+            dones = {agent_id: True for agent_id in self.agent_ids}
+            dones["__sim__"] = True
+
         return observations, rewards, scores, dones
 
     def _vehicle_reward(self, vehicle_id, sim):
@@ -224,6 +244,8 @@ class AgentManager:
         return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
 
     def step_sensors(self, sim):
+        """Update all known vehicle sensors."""
+        # TODO: Move to vehicle index
         for vehicle_id, sensor_state in sim.vehicle_index.sensor_states_items():
             Sensors.step(self, sensor_state)
 
@@ -238,10 +260,21 @@ class AgentManager:
             if not id_ in self.pending_agent_ids
         }
 
-    def filter_response_for_ego(self, response_tuple):
+    def filter_response_for_ego(
+        self,
+        response_tuple: Tuple[
+            Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]
+        ],
+    ) -> Tuple[
+        Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]
+    ]:
+        """Filter all (observations, rewards, dones, infos) down to those related to ego agents."""
         return tuple(map(self._filter_for_active_ego, response_tuple))
 
-    def fetch_agent_actions(self, sim, ego_agent_actions):
+    def fetch_agent_actions(
+        self, sim, ego_agent_actions: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Retrieve available social agent actions."""
         try:
             social_agent_actions = {
                 agent_id: (
@@ -314,6 +347,7 @@ class AgentManager:
         return social_agent_actions
 
     def send_observations_to_social_agents(self, observations):
+        """Forwards observations to managed social agents."""
         # TODO: Don't send observations (or receive actions) from agents that have done
         #       vehicles.
         self._remote_social_agents_action = {}
@@ -322,9 +356,11 @@ class AgentManager:
             self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
 
     def switch_initial_agents(self, agent_interfaces: Dict[str, AgentInterface]):
+        """Replaces the initial agent interfaces with a new group. This comes into effect on next reset."""
         self._initial_interfaces = agent_interfaces
 
     def setup_agents(self, sim):
+        """Initializes all agents."""
         self.init_ego_agents(sim)
         self.setup_social_agents(sim)
         self.start_keep_alive_boid_agents(sim)
@@ -332,7 +368,7 @@ class AgentManager:
     def add_ego_agent(
         self, agent_id: str, agent_interface: AgentInterface, for_trap: bool = True
     ):
-        # TODO: Remove `pending_agent_ids`
+        """Adds an ego agent to the manager."""
         if for_trap:
             self.pending_agent_ids.add(agent_id)
         self._ego_agent_ids.add(agent_id)
@@ -340,10 +376,12 @@ class AgentManager:
         # agent will now be given vehicle by trap manager when appropriate
 
     def init_ego_agents(self, sim):
+        """Initialize all ego agents."""
         for agent_id, agent_interface in self._initial_interfaces.items():
             self.add_ego_agent(agent_id, agent_interface)
 
     def setup_social_agents(self, sim):
+        """Initialize all social agents."""
         social_agents = sim.scenario.social_agents
         if social_agents:
             if not self._remote_agent_buffer:
@@ -376,6 +414,7 @@ class AgentManager:
             remote_social_agent.start(social_agents[social_agent_id][0])
 
     def start_keep_alive_boid_agents(self, sim):
+        """Configures and adds boid agents to the sim."""
         for bubble in filter(
             lambda b: b.is_boid and b.keep_alive, sim.scenario.bubbles
         ):
@@ -464,6 +503,7 @@ class AgentManager:
         self._social_agent_data_models[agent_id] = agent_model
 
     def start_social_agent(self, agent_id, social_agent, agent_model):
+        """Starts a managed social agent."""
         if not self._remote_agent_buffer:
             from smarts.core.remote_agent_buffer import RemoteAgentBuffer
 
@@ -478,11 +518,19 @@ class AgentManager:
         self._social_agent_data_models[agent_id] = agent_model
 
     def teardown_ego_agents(self, filter_ids: Set = None):
+        """Tears down all given ego agents passed through the filter.
+        Args:
+            filter_ids (Optional[Set[str]]): The whitelist of agent ids. If `None`, all ids are whitelisted.
+        """
         ids_ = self._teardown_agents_by_ids(self._ego_agent_ids, filter_ids)
         self._ego_agent_ids -= ids_
         return ids_
 
     def teardown_social_agents(self, filter_ids: Set = None):
+        """Tears down all given social agents passed through the filter.
+        Args:
+            filter_ids (Optional[Set[str]]): The whitelist of agent ids. If `None`, all ids are whitelisted.
+        """
         ids_ = self._teardown_agents_by_ids(self._social_agent_ids, filter_ids)
 
         for id_ in ids_:
@@ -504,9 +552,11 @@ class AgentManager:
         for agent_id in ids_:
             self._agent_interfaces.pop(agent_id, None)
 
+        self._pending_agent_ids = self._pending_agent_ids - ids_
         return ids_
 
-    def reset_agents(self, observations):
+    def reset_agents(self, observations: Dict[str, Observation]):
+        """Reset agents, feeding in an initial observation."""
         self._remote_social_agents_action = {}
         for agent_id, remote_agent in self._remote_social_agents.items():
             obs = observations[agent_id]
@@ -515,25 +565,29 @@ class AgentManager:
         # Observations contain those for social agents; filter them out
         return self._filter_for_active_ego(observations)
 
-    def agent_name(self, agent_id):
+    def agent_name(self, agent_id: str):
+        """Get the resolved agent name."""
         if agent_id not in self._social_agent_data_models:
             return ""
 
         return self._social_agent_data_models[agent_id].name
 
-    def is_boid_agent(self, agent_id):
+    def is_boid_agent(self, agent_id: str):
+        """Check if an agent is a boid agent"""
         if agent_id not in self._social_agent_data_models:
             return False
 
         return self._social_agent_data_models[agent_id].is_boid
 
-    def is_boid_keep_alive_agent(self, agent_id):
+    def is_boid_keep_alive_agent(self, agent_id: str):
+        """Check if this is a persistent boid agent"""
         if agent_id not in self._social_agent_data_models:
             return False
 
         return self._social_agent_data_models[agent_id].is_boid_keep_alive
 
     def attach_sensors_to_vehicles(self, sim, agent_interface, vehicle_ids):
+        """Attach the interface required sensors to the given vehicles"""
         for sv_id in vehicle_ids:
             if sv_id in self._vehicle_with_sensors:
                 continue

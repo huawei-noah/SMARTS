@@ -25,14 +25,14 @@ function do_install_for_linux {
          read -p "Install python3.7? [Yn]" should_add_python_3_7
          if [[ $should_add_python_3_7 =~ ^[yY\w]*$ ]]; then
               echo ""
-              printf "This will run the following commands:\n$ sudo apt-get update\n$ sudo apt-get install software-properties-common\n$ sudo add-apt-repository ppa:deadsnakes/ppa\n$ sudo apt-get install python3.7 python3.7-dev python3.7-tk python3.7-venv"
+              printf "This will run the following commands:\n$ sudo apt-get update\n$ sudo apt-get install software-properties-common\n$ sudo add-apt-repository ppa:deadsnakes/ppa\n$ sudo apt-get install python3.7 python3.7-tk python3.7-venv"
               echo ""
               read -p "WARNING. Is this OK? If you are unsure choose no. [Yn]" should_add_python_3_7
               # second check to make sure they really want to
               if [[ $should_add_python_3_7 =~ ^[yY\w]*$ ]]; then
                     sudo apt-get install software-properties-common
                     sudo add-apt-repository ppa:deadsnakes/ppa
-                    sudo apt-get install python3.7 python3.7-dev python3.7-tk python3.7-venv
+                    sudo apt-get install python3.7 python3.7-tk python3.7-venv
               fi
          fi
     fi

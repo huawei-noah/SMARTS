@@ -27,14 +27,18 @@ import random
 import sqlite3
 from contextlib import closing, nullcontext
 from functools import lru_cache
-from typing import Dict, Generator, NamedTuple, Set, Tuple, Type, TypeVar, List
+from typing import Dict, Generator, NamedTuple, Optional, Set, Tuple, Type, TypeVar
 
 from cached_property import cached_property
+
+from smarts.core.coordinates import Dimensions
 
 T = TypeVar("T")
 
 
 class TrafficHistory:
+    """Traffic history for use with converted datasets."""
+
     def __init__(self, db: str):
         self._log = logging.getLogger(self.__class__.__name__)
         self._db = db
@@ -42,6 +46,7 @@ class TrafficHistory:
 
     @property
     def name(self) -> str:
+        """The name of the traffic history."""
         return os.path.splitext(self._db.name)[0]
 
     def connect_for_multiple_queries(self):
@@ -53,11 +58,14 @@ class TrafficHistory:
             self._db_cnxn = sqlite3.connect(self._db.path)
 
     def disconnect(self):
+        """End connection with the history database."""
         if self._db_cnxn:
             self._db_cnxn.close()
             self._db_cnxn = None
 
-    def _query_val(self, result_type: Type[T], query: str, params: Tuple = ()) -> T:
+    def _query_val(
+        self, result_type: Type[T], query: str, params: Tuple = ()
+    ) -> Optional[T]:
         with nullcontext(self._db_cnxn) if self._db_cnxn else closing(
             sqlite3.connect(self._db)
         ) as dbcnxn:
@@ -82,38 +90,47 @@ class TrafficHistory:
 
     @cached_property
     def dataset_source(self) -> str:
+        """The known source of the history data"""
         query = "SELECT value FROM Spec where key='source'"
         return self._query_val(str, query)
 
     @cached_property
     def lane_width(self) -> float:
+        """The general lane width in the history data"""
         query = "SELECT value FROM Spec where key='map_net.lane_width'"
         return self._query_val(float, query)
 
     @cached_property
     def target_speed(self) -> float:
+        """The general speed limit in the history data."""
         query = "SELECT value FROM Spec where key='speed_limit_mps'"
         return self._query_val(float, query)
 
     def all_vehicle_ids(self) -> Generator[int, None, None]:
+        """Get the ids of all vehicles in the history data"""
         query = "SELECT id FROM Vehicle"
         return (row[0] for row in self._query_list(query))
 
     @cached_property
     def ego_vehicle_id(self) -> int:
+        """The id of the ego's actor in the history data."""
         query = "SELECT id FROM Vehicle WHERE is_ego_vehicle = 1"
         ego_id = self._query_val(int, query)
         return ego_id
 
     @lru_cache(maxsize=32)
     def vehicle_final_exit_time(self, vehicle_id: str) -> float:
+        """Returns the final time the specified vehicle is seen in the history data."""
         query = "SELECT MAX(sim_time) FROM Trajectory WHERE vehicle_id = ?"
         return self._query_val(float, query, params=(vehicle_id,))
 
     def decode_vehicle_type(self, vehicle_type: int) -> str:
-        # Options from NGSIM and INTERACTION currently include:
-        #  1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
-        # This actually returns a "vehicle_config_type".
+        """Convert from the dataset type id to their config type.
+
+        Options from NGSIM and INTERACTION currently include:
+         1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
+        This actually returns a "vehicle_config_type".
+        """
         if vehicle_type == 1:
             return "motorcycle"
         elif vehicle_type == 2:
@@ -128,12 +145,16 @@ class TrafficHistory:
             )
         return "passenger"
 
+    @lru_cache(maxsize=32)
     def vehicle_config_type(self, vehicle_id: str) -> str:
+        """Find the configuration type of the specified vehicle."""
         query = "SELECT type FROM Vehicle WHERE id = ?"
         veh_type = self._query_val(int, query, params=(vehicle_id,))
         return self.decode_vehicle_type(veh_type)
 
-    def vehicle_size(self, vehicle_id: str) -> Tuple[float, float, float]:
+    @lru_cache(maxsize=32)
+    def vehicle_dims(self, vehicle_id: str) -> Dimensions:
+        """Get the vehicle dimensions of the specified vehicle."""
         # do import here to break circular dependency chain
         from smarts.core.vehicle import VEHICLE_CONFIGS
 
@@ -148,10 +169,13 @@ class TrafficHistory:
             width = default_dims.width
         if not height:
             height = default_dims.height
-        return length, width, height
+        return Dimensions(length, width, height)
 
-    def first_seen_times(self) -> Generator[Tuple[str, float], None, None]:
-        # XXX: For now, limit agent missions to just cars (V.type = 2)
+    def first_seen_times(self) -> Generator[Tuple[int, float], None, None]:
+        """Find the times each vehicle is first seen in the traffic history.
+
+        XXX: For now, limit agent missions to just passenger cars (V.type = 2)
+        """
         query = """SELECT T.vehicle_id, MIN(T.sim_time)
             FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
             WHERE V.type = 2
@@ -160,7 +184,8 @@ class TrafficHistory:
 
     def vehicle_pose_at_time(
         self, vehicle_id: str, sim_time: float
-    ) -> Tuple[float, float, float]:
+    ) -> Tuple[float, float, float, float]:
+        """Get the pose of the specified vehicle at the specified history time."""
         query = """SELECT position_x, position_y, heading_rad, speed
                    FROM Trajectory
                    WHERE vehicle_id = ? and sim_time = ?"""
@@ -169,13 +194,20 @@ class TrafficHistory:
     def vehicle_ids_active_between(
         self, start_time: float, end_time: float
     ) -> Generator[int, None, None]:
-        # XXX: For now, limit agent missions to just cars (V.type = 2)
+        """Find the ids of all active vehicles between the given history times.
+
+        XXX: For now, limited to just passenger cars (V.type = 2)
+        XXX: This looks like the wrong level to filter out vehicles
+        """
+
         query = """SELECT DISTINCT T.vehicle_id
                    FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
                    WHERE ? <= T.sim_time AND T.sim_time <= ? AND V.type = 2"""
         return self._query_list(query, (start_time, end_time))
 
     class VehicleRow(NamedTuple):
+        """Vehicle state information"""
+
         vehicle_id: int
         vehicle_type: int
         vehicle_length: float
@@ -189,6 +221,7 @@ class TrafficHistory:
     def vehicles_active_between(
         self, start_time: float, end_time: float
     ) -> Generator[TrafficHistory.VehicleRow, None, None]:
+        """Find all vehicles active between the given history times."""
         query = """SELECT V.id, V.type, V.length, V.width, V.height,
                           T.position_x, T.position_y, T.heading_rad, T.speed
                    FROM Vehicle AS V INNER JOIN Trajectory AS T ON V.id = T.vehicle_id
@@ -198,6 +231,8 @@ class TrafficHistory:
         return (TrafficHistory.VehicleRow(*row) for row in rows)
 
     class TrajectoryRow(NamedTuple):
+        """An instant in a trajectory"""
+
         position_x: float
         position_y: float
         heading_rad: float
@@ -206,6 +241,7 @@ class TrafficHistory:
     def vehicle_trajectory(
         self, vehicle_id: str
     ) -> Generator[TrafficHistory.TrajectoryRow, None, None]:
+        """Get the trajectory of the specified vehicle"""
         query = """SELECT T.position_x, T.position_y, T.heading_rad, T.speed
                    FROM Trajectory AS T
                    WHERE T.vehicle_id = ?"""
@@ -215,10 +251,12 @@ class TrafficHistory:
     def random_overlapping_sample(
         self, vehicle_start_times: Dict[str, float], k: int
     ) -> Set[str]:
-        # ensure overlapping time intervals across sample
-        # this is inefficient, but it's not that important
-        # Note: this may return a sample with less than k
-        # if we're unable to find k overlapping.
+        """Grab a sample containing a subset of specified vehicles and ensure overlapping time
+        intervals across sample.
+
+        Note: this may return a sample with less than k if we're unable to find k overlapping.
+        """
+        # This is inefficient, but it's not that important
         choice = random.choice(list(vehicle_start_times.keys()))
         sample = {choice}
         sample_start_time = vehicle_start_times[choice]

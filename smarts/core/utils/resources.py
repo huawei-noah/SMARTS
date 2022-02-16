@@ -26,6 +26,7 @@ from .. import models
 
 
 def load_controller_params(controller_filepath: str):
+    """Load a controller parameters file."""
     if (controller_filepath is None) or not os.path.exists(controller_filepath):
         with pkg_resources.path(
             models, "controller_parameters.yaml"

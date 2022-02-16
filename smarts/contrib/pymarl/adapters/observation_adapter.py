@@ -42,6 +42,7 @@ DEFAULT_OBSERVATION_SPACE = gym.spaces.Dict(
 
 
 def default_obs_adapter(env_obs):
+    """The default pymarl observation adaptor."""
     ego = env_obs.ego_vehicle_state
     waypoint_paths = env_obs.waypoint_paths
     wps = [path[0] for path in waypoint_paths]
@@ -129,6 +130,7 @@ def proximity_detection(occupancy_grid_map):
 # Fix taken from:
 # https://gist.github.com/davidrusu/d144a2646c9597a0d412c7e795ada548#file-nv_heading_to_ego_heading-py
 def nv_heading_to_ego_heading(nv_heading):
+    """Converts orientation from east direction based to north."""
     heading = nv_heading + math.pi * 0.5
     if heading < 0:
         heading += 2 * math.pi
@@ -136,6 +138,9 @@ def nv_heading_to_ego_heading(nv_heading):
 
 
 def ttc_by_path(ego, waypoint_paths, neighborhood_vehicle_states, ego_closest_wp):
+    """Compute time-to-collision (ttc) information of the given vehicles against the
+    ego vehicle.
+    """
     # TODO: Phase this out; used for penalizing close proximity to other cars
     will_crash = False
 
@@ -233,6 +238,7 @@ def ttc_by_path(ego, waypoint_paths, neighborhood_vehicle_states, ego_closest_wp
 
 # original function extended to support 5 lanes
 def ego_ttc_calc(ego, ego_lane_index, ttc_by_path, lane_dist_by_path):
+    """Selects the 5 most relevant ttc on paths from the ego's perspective."""
     # ttc, lane distance from ego perspective
     ego_ttc = [0] * 5
     ego_lane_dist = [0] * 5

@@ -59,7 +59,7 @@ def single_env_actions(agent_specs):
 @pytest.fixture(scope="module")
 def env_constructor(agent_specs):
     env_constructor = lambda: HiWayEnv(
-        scenarios=["scenarios/loop"],
+        scenarios=["scenarios/figure_eight"],
         agent_specs=agent_specs,
         sim_name="Test_env",
         headless=True,
@@ -92,8 +92,8 @@ def test_spaces(env_constructor, num_env):
     env = _make_parallel_env(env_constructor, num_env)
 
     assert env.batch_size == num_env
-    assert env.observation_space == getattr(single_env, "observation_space", None)
-    assert env.action_space == getattr(single_env, "action_space", None)
+    assert env.observation_space == single_env.observation_space
+    assert env.action_space == single_env.action_space
 
     single_env.close()
     env.close()

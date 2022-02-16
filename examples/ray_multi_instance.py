@@ -3,6 +3,7 @@ import tempfile
 
 import gym
 import numpy as np
+import psutil
 import torch
 
 # ray[rllib] is not the part of main dependency of the SMARTS package. It needs to be installed separately
@@ -16,17 +17,10 @@ except Exception as e:
     raise RayException.required_to("ray_multi_instance.py")
 
 
+from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
-
-# The following ugliness was made necessary because the `aiohttp` #
-# dependency has an "examples" module too.  (See PR #1120.)
-if __name__ == "__main__":
-    from argument_parser import default_argument_parser
-else:
-    from .argument_parser import default_argument_parser
-
 
 logging.basicConfig(level=logging.INFO)
 
@@ -175,8 +169,12 @@ def main(
     headless,
     num_episodes,
     seed,
+    num_cpus=None,
 ):
-    ray.init()
+    num_cpus = max(
+        2, num_cpus or psutil.cpu_count(logical=False) or (psutil.cpu_count() / 2)
+    )
+    ray.init(num_cpus=max(num_cpus, 1))
     ray.wait(
         [
             train.remote(

@@ -26,13 +26,16 @@ import os
 import sqlite3
 import struct
 import sys
-from typing import Dict, Generator, Union
+from typing import Any, Dict, Generator, Iterable, Optional, Tuple, Union
 
 import ijson
 import numpy as np
 import pandas as pd
 import yaml
 from numpy.lib.stride_tricks import as_strided as stride
+from numpy.lib.stride_tricks import sliding_window_view
+
+from smarts.core.utils.math import vec_to_radians
 
 try:
     from waymo_open_dataset.protos import scenario_pb2
@@ -47,7 +50,7 @@ DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
 
 
 class _TrajectoryDataset:
-    def __init__(self, dataset_spec, output):
+    def __init__(self, dataset_spec: Dict[str, Any], output: str):
         self._log = logging.getLogger(self.__class__.__name__)
         self.check_dataset_spec(dataset_spec)
         self._output = output
@@ -61,17 +64,23 @@ class _TrajectoryDataset:
         self._swap_xy = dataset_spec.get("swap_xy", False)
 
     @property
-    def scale(self):
+    def scale(self) -> float:
+        """The base scale based on the ratio of map lane size to real lane size."""
         return self._scale
 
     @property
-    def rows(self):
+    def rows(self) -> Iterable:
+        """The iterable rows of the dataset."""
         raise NotImplementedError
 
-    def column_val_in_row(self, row, col_name):
+    def column_val_in_row(self, row, col_name: str) -> Any:
+        """Access the value of a dataset row which intersects with the given column name."""
+        # XXX: this public method is improper because this requires a dataset row but that is
+        # implementation specific.
         raise NotImplementedError
 
-    def check_dataset_spec(self, dataset_spec):
+    def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
+        """Validate the form of the dataset specification."""
         errmsg = None
         if "input_path" not in dataset_spec:
             errmsg = "'input_path' field is required in dataset yaml."
@@ -85,7 +94,7 @@ class _TrajectoryDataset:
             raise ValueError(errmsg)
         self._dataset_spec = dataset_spec
 
-    def _write_dict(self, curdict, insert_sql, cursor, curkey=""):
+    def _write_dict(self, curdict: Dict, insert_sql: str, cursor, curkey: str = ""):
         for key, value in curdict.items():
             newkey = f"{curkey}.{key}" if curkey else key
             if isinstance(value, dict):
@@ -127,8 +136,13 @@ class _TrajectoryDataset:
         dbconxn.commit()
         ccur.close()
 
-    def create_output(self, time_precision=3):
-        """ time_precision is limit for digits after decimal for sim_time (3 is milisecond precision) """
+    def create_output(self, time_precision: int = 3):
+        """Convert the dataset into the output database file.
+
+        Args:
+            time_precision: A limit for digits after decimal for each processed sim_time.
+                (3 is millisecond precision)
+        """
         dbconxn = sqlite3.connect(self._output)
 
         self._log.debug("creating tables...")
@@ -178,9 +192,9 @@ class _TrajectoryDataset:
                     float(self.column_val_in_row(row, "sim_time")) / 1000,
                     time_precision,
                 ),
-                float(self.column_val_in_row(row, "position_x") + x_offset)
+                (float(self.column_val_in_row(row, "position_x")) + x_offset)
                 * self.scale,
-                float(self.column_val_in_row(row, "position_y") + y_offset)
+                (float(self.column_val_in_row(row, "position_y")) + y_offset)
                 * self.scale,
                 float(self.column_val_in_row(row, "heading_rad")),
                 float(self.column_val_in_row(row, "speed")) * self.scale,
@@ -215,9 +229,14 @@ class _TrajectoryDataset:
 
 
 class Interaction(_TrajectoryDataset):
-    def __init__(self, dataset_spec, output):
+    """A tool to convert a dataset to a database for use in SMARTS."""
+
+    def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
         assert not self._flip_y
+        self._max_angular_velocity = dataset_spec.get("max_angular_velocity", None)
+        self._heading_min_speed = dataset_spec.get("heading_inference_min_speed", 0.22)
+        self._prev_heading = None
         self._next_row = None
         # See: https://interaction-dataset.com/details-and-format
         # position and length/width are in meters.
@@ -229,8 +248,19 @@ class Interaction(_TrajectoryDataset):
             "position_y": "x" if self._swap_xy else "y",
         }
 
+    def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
+        super().check_dataset_spec(dataset_spec)
+        hiw = dataset_spec.get("heading_inference_window", 2)
+        if hiw != 2:
+            # Adding support for this would require changing the rows() generator
+            # (since we're not using Pandas here like we are for NGSIM).
+            # So wait until if/when users request it...
+            raise ValueError(
+                "heading_inference_window not yet supported for Interaction datasets."
+            )
+
     @property
-    def rows(self):
+    def rows(self) -> Generator[Dict, None, None]:
         with open(self._path, newline="") as csvfile:
             reader = csv.DictReader(csvfile)
             last_row = None
@@ -239,7 +269,8 @@ class Interaction(_TrajectoryDataset):
                     yield last_row
                 last_row = self._next_row
             self._next_row = None
-            yield last_row
+            if last_row:
+                yield last_row
 
     def _lookup_agent_type(self, agent_type: str) -> int:
         # Try to match the NGSIM types...
@@ -254,7 +285,7 @@ class Interaction(_TrajectoryDataset):
         self._log.warning(f"unknown agent_type:  {agent_type}.")
         return 0
 
-    def column_val_in_row(self, row, col_name):
+    def column_val_in_row(self, row, col_name: str) -> Any:
         row_name = self._col_map.get(col_name)
         if row_name:
             return row[row_name]
@@ -277,34 +308,94 @@ class Interaction(_TrajectoryDataset):
                 dx = float(self._next_row["x"]) - float(row["x"])
                 dy = float(self._next_row["y"]) - float(row["y"])
                 dm = np.linalg.norm((dx, dy))
-                if dm > 0.0:
-                    r = math.atan2(dy / dm, dx / dm)
-                    return (r - math.pi / 2) % (2 * math.pi)
+                if dm != 0.0 and dm > self._heading_min_speed:
+                    new_heading = vec_to_radians((dx, dy))
+                    if self._max_angular_velocity and self._prev_heading is not None:
+                        # XXX: could try to divide by sim_time delta here instead of assuming .1s
+                        angular_velocity = (new_heading - self._prev_heading) / 0.1
+                        if abs(angular_velocity) > self._max_angular_velocity:
+                            new_heading = (
+                                self._prev_heading
+                                + np.sign(angular_velocity)
+                                * self._max_angular_velocity
+                                * 0.1
+                            )
+                    self._prev_heading = new_heading
+                    return new_heading
             # Note: pedestrian track files won't have this
-            return float(row.get("psi_rad", 0.0)) - math.pi / 2
+            self._prev_heading = float(row.get("psi_rad", 0.0)) - math.pi / 2
+            return self._prev_heading
         # XXX: should probably check for and handle x_offset_px here too like in NGSIM
         return None
 
 
 class NGSIM(_TrajectoryDataset):
-    def __init__(self, dataset_spec, output):
+    """A tool for conversion of a NGSIM dataset for use within SMARTS."""
+
+    def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
-        self._prev_heading = -math.pi / 2
+        self._prev_heading = 3 * math.pi / 2
+        self._max_angular_velocity = dataset_spec.get("max_angular_velocity", None)
+        self._heading_window = dataset_spec.get("heading_inference_window", 2)
+        # .22 corresponds to roughly 5mph.
+        self._heading_min_speed = dataset_spec.get("heading_inference_min_speed", 0.22)
 
-    def _cal_heading(self, window):
-        c = window[1, :2]
-        n = window[2, :2]
-        if any(np.isnan(c)) or any(np.isnan(n)):
-            return self._prev_heading
-        s = np.linalg.norm(n - c)
-        if s == 0.0:
-            return self._prev_heading
-        vhat = (n - c) / s
-        r = math.atan2(vhat[1], vhat[0])
-        self._prev_heading = (r - math.pi / 2) % (2 * math.pi)
-        return self._prev_heading
+    def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
+        super().check_dataset_spec(dataset_spec)
+        hiw = dataset_spec.get("heading_inference_window", 2)
+        # 11 is a semi-arbitrary max just to keep things "sane".
+        if not 2 <= hiw <= 11:
+            raise ValueError("heading_inference_window must be between 2 and 11")
 
-    def _cal_speed(self, window):
+    def _cal_heading(self, window_param) -> float:
+        window = window_param[0]
+        new_heading = 0
+        prev_heading = None
+        den = 0
+        for w in range(self._heading_window - 1):
+            c = window[w, :2]
+            n = window[w + 1, :2]
+            if any(np.isnan(c)) or any(np.isnan(n)):
+                if prev_heading is not None:
+                    new_heading += prev_heading
+                    den += 1
+                continue
+            s = np.linalg.norm(n - c)
+            ispeed = window[w, 2]
+            if s == 0.0 or (
+                self._heading_min_speed is not None
+                and (s < self._heading_min_speed or ispeed < self._heading_min_speed)
+            ):
+                if prev_heading is not None:
+                    new_heading += prev_heading
+                    den += 1
+                continue
+            vhat = (n - c) / s
+            inst_heading = vec_to_radians(vhat)
+            if prev_heading is not None:
+                if inst_heading == 0 and prev_heading > math.pi:
+                    inst_heading = 2 * math.pi
+                if self._max_angular_velocity:
+                    # XXX: could try to divide by sim_time delta here instead of assuming .1s
+                    angular_velocity = (inst_heading - prev_heading) / 0.1
+                    if abs(angular_velocity) > self._max_angular_velocity:
+                        inst_heading = (
+                            prev_heading
+                            + np.sign(angular_velocity)
+                            * self._max_angular_velocity
+                            * 0.1
+                        )
+            den += 1
+            new_heading += inst_heading
+            prev_heading = inst_heading
+        if den > 0:
+            new_heading /= den
+        else:
+            new_heading = self._prev_heading
+        self._prev_heading = new_heading
+        return new_heading % (2 * math.pi)
+
+    def _cal_speed(self, window) -> Optional[float]:
         c = window[1, :2]
         n = window[2, :2]
         badc = any(np.isnan(c))
@@ -387,17 +478,21 @@ class NGSIM(_TrajectoryDataset):
                 .values
             )
             # and compute heading with (smaller) rolling window (=3) too..
-            v = df.loc[same_car, ["position_x", "position_y"]].shift(1).values
-            d0, d1 = v.shape
-            s0, s1 = v.strides
+            shift = int(self._heading_window / 2)
+            pad = self._heading_window - shift - 1
+            v = df.loc[same_car, ["position_x", "position_y", "speed"]].values
+            v = np.insert(v, 0, [[np.nan, np.nan, np.nan]] * shift, axis=0)
             headings = [
                 self._cal_heading(values)
-                for values in stride(v, (d0 - 2, 3, d1), (s0, s0, s1))
+                for values in sliding_window_view(v, (self._heading_window, 3))
             ]
-            df.loc[same_car, "heading_rad"] = headings + [headings[-1], headings[-1]]
+            df.loc[same_car, "heading_rad"] = headings + [headings[-1]] * pad
             # ... and new speeds (based on these smoothed positions)
             # (This also overcomes problem that NGSIM speeds are "instantaneous"
             # and so don't match with dPos/dt, which can affect some models.)
+            v = df.loc[same_car, ["position_x", "position_y"]].shift(1).values
+            d0, d1 = v.shape
+            s0, s1 = v.strides
             speeds = [
                 self._cal_speed(values)
                 for values in stride(v, (d0 - 2, 3, d1), (s0, s0, s1))
@@ -414,11 +509,11 @@ class NGSIM(_TrajectoryDataset):
         return df
 
     @property
-    def rows(self):
+    def rows(self) -> Generator[Dict, None, None]:
         for t in self._transform_all_data().itertuples():
             yield t
 
-    def column_val_in_row(self, row, col_name):
+    def column_val_in_row(self, row, col_name: str) -> Any:
         if col_name == "speed":
             return row.speed_discrete if row.speed_discrete else row.speed
         return getattr(row, col_name, None)
@@ -429,8 +524,18 @@ class OldJSON(_TrajectoryDataset):
     We provide this to help people convert these previously-created .json
     history files to the new .shf format."""
 
+    def __init__(self, dataset_spec: Dict[str, Any], output: str):
+        from warnings import warn
+
+        warn(
+            f"The {self.__class__.__name__} class has been deprecated.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(dataset_spec, output)
+
     @property
-    def rows(self):
+    def rows(self) -> Generator[Tuple, None, None]:
         with open(self._dataset_spec["input_path"], "rb") as inf:
             for t, states in ijson.kvitems(inf, "", use_float=True):
                 for state in states.values():
@@ -451,7 +556,7 @@ class OldJSON(_TrajectoryDataset):
         self._log.warning(f"unknown agent_type:  {agent_type}.")
         return 0
 
-    def column_val_in_row(self, row, col_name):
+    def column_val_in_row(self, row: Tuple, col_name: str) -> Any:
         assert len(row) == 2
         if col_name == "sim_time":
             return float(row[0]) * 1000
@@ -476,7 +581,9 @@ class OldJSON(_TrajectoryDataset):
 
 
 class Waymo(_TrajectoryDataset):
-    def __init__(self, dataset_spec: Dict, output: str):
+    """A tool for conversion of a Waymo dataset for use within SMARTS."""
+
+    def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
 
     @staticmethod
@@ -498,10 +605,10 @@ class Waymo(_TrajectoryDataset):
 
     @property
     def rows(self) -> Generator[Dict, None, None]:
-        def lerp(a, b, t):
+        def lerp(a: float, b: float, t: float) -> float:
             return t * (b - a) + a
 
-        def constrain_angle(angle):
+        def constrain_angle(angle: float) -> float:
             """Constrain to [-pi, pi]"""
             angle = angle % (2 * math.pi)
             if angle > math.pi:
@@ -524,7 +631,7 @@ class Waymo(_TrajectoryDataset):
                 scenario = parsed_scenario
                 break
 
-        if scenario == None:
+        if not scenario:
             errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
             self._log.error(errmsg)
             raise ValueError(errmsg)
@@ -645,11 +752,11 @@ class Waymo(_TrajectoryDataset):
         else:
             return 0  # other
 
-    def column_val_in_row(self, row: Dict, col_name: str):
+    def column_val_in_row(self, row, col_name: str) -> Any:
         return row[col_name]
 
 
-def _check_args(args):
+def _check_args(args) -> bool:
     if not args.force and os.path.exists(args.output):
         print("output file already exists\n")
         return False

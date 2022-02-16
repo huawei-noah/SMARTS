@@ -18,18 +18,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from enum import Enum
-from typing import Dict, NamedTuple, Sequence, Tuple
+from typing import Dict, NamedTuple, Optional, Sequence, Tuple
 
 from smarts.core.events import Events
 
 
 class TrafficActorType(str, Enum):
+    """Traffic actor type information to help distinguish actors from each other."""
+
     SocialVehicle = "social_vehicle"
     SocialAgent = "social_agent"
     Agent = "agent"
 
 
 class VehicleType(str, Enum):
+    """Vehicle classification type information."""
+
     Bus = "bus"
     Coach = "coach"
     Truck = "truck"
@@ -38,13 +42,15 @@ class VehicleType(str, Enum):
 
 
 class TrafficActorState(NamedTuple):
+    """Individual traffic actor state and meta information."""
+
     actor_type: TrafficActorType
     vehicle_type: VehicleType
     position: Tuple[float, float, float]
     heading: float
     speed: float
     name: str = ""
-    actor_id: str = None
+    actor_id: Optional[str] = None
     events: Events = None
     waypoint_paths: Sequence = []
     driven_path: Sequence = []
@@ -53,6 +59,8 @@ class TrafficActorState(NamedTuple):
 
 
 class State(NamedTuple):
+    """A full representation of a single frame of an envision simulation step."""
+
     traffic: Dict[str, TrafficActorState]
     scenario_id: str
     scenario_name: str
@@ -69,6 +77,15 @@ class State(NamedTuple):
 
 
 def format_actor_id(actor_id: str, vehicle_id: str, is_multi: bool):
+    """A conversion utility to ensure that an actor id conforms to envision's actor id standard.
+    Args:
+        actor_id: The base id of the actor.
+        vehicle_id: The vehicle id of the vehicle the actor associates with.
+        is_multi: If an actor associates with multiple vehicles.
+
+    Returns:
+        An envision compliant actor id.
+    """
     if is_multi:
         return f"{actor_id}-{{{vehicle_id[:4]}}}"
     return actor_id

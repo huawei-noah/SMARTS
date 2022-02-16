@@ -18,17 +18,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-from typing import Dict, Sequence, Set
+from typing import Dict, Set, Tuple
 
 import numpy as np
 
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.provider import ProviderState
+from smarts.core.provider import Provider, ProviderState
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class TrajectoryWithTime:
+    """Used to access features from trajectory data."""
+
     TIME_INDEX = 0
     X_INDEX = 1
     Y_INDEX = 2
@@ -36,7 +38,11 @@ class TrajectoryWithTime:
     VEL_INDEX = 4
 
 
-class TrajectoryInterpolationProvider:
+class TrajectoryInterpolationProvider(Provider):
+    """A provider used to perform trajectory interpolation on agent actors that request trajectory
+    following.
+    """
+
     def __init__(self):
         self._is_setup = False
 
@@ -89,13 +95,14 @@ class TrajectoryInterpolationProvider:
 
     @staticmethod
     def is_legal_trajectory(trajectory: np.ndarray):
+        """Test if the trajectory is correctly formed."""
         assert (
             len(trajectory[TrajectoryWithTime.TIME_INDEX]) >= 2
         ), "Length of trajectory is less than 2!"
 
         assert np.isfinite(
             trajectory
-        ).all(), "Has nan, positive infi or nagative infi in trajectory!"
+        ).all(), "Has nan, positive inf or negative inf in trajectory!"
 
         assert (
             np.diff(trajectory[TrajectoryWithTime.TIME_INDEX]) > 0
@@ -125,9 +132,10 @@ class TrajectoryInterpolationProvider:
         return np_motion_state
 
     @staticmethod
-    def locate_motion_state(trajectory, time) -> np.ndarray:
+    def locate_motion_state(trajectories, time) -> Tuple[np.ndarray, np.ndarray]:
+        """Find the first pair of motion states within the given trajectories that is later the given time."""
         end_index = 0
-        for i, t in enumerate(trajectory[TrajectoryWithTime.TIME_INDEX]):
+        for i, t in enumerate(trajectories[TrajectoryWithTime.TIME_INDEX]):
             if t > time:
                 end_index = i
                 break
@@ -136,7 +144,7 @@ class TrajectoryInterpolationProvider:
             end_index > 0
         ), f"Expected relative time, {time} sec, can not be located at input with-time-trajectory"
 
-        return trajectory[:, end_index - 1], trajectory[:, end_index]
+        return trajectories[:, end_index - 1], trajectories[:, end_index]
 
     @staticmethod
     def perform_trajectory_interpolation(

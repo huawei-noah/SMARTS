@@ -21,6 +21,8 @@ from typing import NamedTuple, Sequence
 
 
 class Events(NamedTuple):
+    """Classified observations that can cause agent done state."""
+
     collisions: Sequence  # Sequence[Collision]
     off_road: bool
     off_route: bool

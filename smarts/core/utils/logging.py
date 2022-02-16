@@ -18,7 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import ctypes
-import logging
 import os
 import sys
 from contextlib import contextmanager
@@ -28,6 +27,13 @@ from time import time
 
 @contextmanager
 def timeit(name: str, logger):
+    """Context manger that stopwatches the amount of time between context block start and end.
+    ```python
+    import logging
+    with timeit(n,logging):
+        a = a * b
+    ```
+    """
     start = time()
     yield
     elapsed_time = (time() - start) * 1000
@@ -36,10 +42,11 @@ def timeit(name: str, logger):
 
 
 def isnotebook():
+    """Determines if executing in ipython (Jupyter Notebook)"""
     try:
-        shell = get_ipython().__class__.__name__
-        if shell == "ZMQInteractiveShell":
-            return True  # Jupyter notebook or qtconsole
+        shell = get_ipython().__class__.__name__  # pytype: disable=name-error
+        if shell == "ZMQInteractiveShell" or "google.colab" in sys.modules:
+            return True  # Jupyter notebook or qtconsole or Google Colab
     except NameError:
         pass
 
@@ -57,6 +64,7 @@ except:
 
 
 def try_fsync(fd):
+    """Attempts to see if fsync will work. Workaround for error on Github Actions."""
     try:
         os.fsync(fd)
     except OSError:
@@ -66,6 +74,11 @@ def try_fsync(fd):
 
 @contextmanager
 def suppress_output(stderr=True, stdout=True):
+    """Attempts to suppress console print statements.
+    Args:
+        stderr: Suppress stderr.
+        stdout: Suppress stdout.
+    """
     cleanup_stderr = None
     cleanup_stdout = None
     try:

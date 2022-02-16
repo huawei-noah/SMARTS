@@ -17,11 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import sqlite3
-from itertools import cycle
-from typing import NamedTuple, Set, Optional
 
-import numpy as np
+from typing import Iterable, Optional, Set
 
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Pose
@@ -31,6 +28,8 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class TrafficHistoryProvider(Provider):
+    """A provider that replays traffic history for simulation."""
+
     def __init__(self):
         self._histories = None
         self._is_setup = False
@@ -42,6 +41,7 @@ class TrafficHistoryProvider(Provider):
 
     @property
     def start_time(self):
+        """The start time of the traffic playback"""
         return self._start_time_offset
 
     @start_time.setter
@@ -51,19 +51,23 @@ class TrafficHistoryProvider(Provider):
 
     @property
     def done_this_step(self):
+        """The vehicles that are to be removed this step."""
         return self._this_step_dones
 
     def setup(self, scenario) -> ProviderState:
+        """Initialize this provider with the given scenario."""
         self._histories = scenario.traffic_history
         if self._histories:
             self._histories.connect_for_multiple_queries()
         self._is_setup = True
         return ProviderState()
 
-    def set_replaced_ids(self, vehicle_ids: list):
+    def set_replaced_ids(self, vehicle_ids: Iterable[str]):
+        """Replace the given vehicles, excluding them from control by this provider."""
         self._replaced_vehicle_ids.update(vehicle_ids)
 
     def get_history_id(self, vehicle_id: str) -> Optional[str]:
+        """Get the history id of the specified vehicle."""
         if vehicle_id in self._last_step_vehicles:
             return self._vehicle_id_prefix + vehicle_id
         return None
