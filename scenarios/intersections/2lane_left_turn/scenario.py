@@ -1,6 +1,5 @@
+import random
 from pathlib import Path
-
-import random  
 
 from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
@@ -14,7 +13,7 @@ from smarts.sstudio.types import (
     TrapEntryTactic,
 )
 
-scnr_path = str(Path(__file__).parent)
+scnr_path = Path(__file__).parent
 
 intersection_car = TrafficActor(
     name="car",
@@ -46,12 +45,15 @@ turn_right_routes = [
 
 traffic = {}
 for name, routes in {
-    "vertical": vertical_routes,
-    "horizontal": horizontal_routes,
-    "turn_left": turn_left_routes,
-    "turn_right": turn_right_routes,
-    "turns": turn_left_routes + turn_right_routes,
-    "all": vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes,
+    # "vertical": vertical_routes,
+    # "horizontal": horizontal_routes,
+    # "turn_left": turn_left_routes,
+    # "turn_right": turn_right_routes,
+    # "turns": turn_left_routes + turn_right_routes,
+    "all": vertical_routes
+    + horizontal_routes
+    + turn_left_routes
+    + turn_right_routes,
 }.items():
     traffic[name] = Traffic(
         flows=[
@@ -60,10 +62,10 @@ for name, routes in {
                     begin=(f"edge-{r[0]}", 0, 0),
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
-                rate=60 * 4,
+                rate=60 * random.uniform(1, 6),
                 begin=random.uniform(0, 10),
                 end=60 * 30,
-                # Note: For an episode with maximum_episode_steps=3000 and step
+                # For an episode with maximum_episode_steps=3000 and step
                 # time=0.1s, maximum episode time=300s. Hence, traffic set to
                 # end at 1800s, which is greater than maximum episode time of
                 # 300s.
@@ -77,7 +79,7 @@ route = Route(begin=("edge-west-WE", 0, 60), end=("edge-north-SN", 0, 40))
 ego_missions = [
     Mission(
         route=route,
-        start_time = 10,
+        start_time=20, # Delayed start, to ensure road has prior traffic.
         entry_tactic=TrapEntryTactic(
             wait_to_hijack_limit_s=1,
             zone=MapZone(
