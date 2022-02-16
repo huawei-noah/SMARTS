@@ -47,7 +47,7 @@ all_routes = vertical_routes + horizontal_routes + turn_left_routes + turn_right
 route_comb = [com for elems in range(1, 5) for com in combinations(all_routes, elems)]
 traffic = {}
 for name, routes in enumerate(route_comb):
-    traffic[name] = Traffic(
+    traffic[str(name)] = Traffic(
         flows=[
             Flow(
                 route=Route(

@@ -153,7 +153,7 @@ def intersection_env(
         visdom=visdom,
         sumo_headless=sumo_headless,
         # To avoid traffic jams, exiting vehicles are not reintroduced.
-        endless_traffic=False, 
+        endless_traffic=False,
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
     env = FormatObs(env=env)
