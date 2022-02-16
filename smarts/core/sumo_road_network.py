@@ -417,7 +417,7 @@ class SumoRoadNetwork(RoadMap):
             self, pose: Pose, lookahead: int, route: RoadMap.Route = None
         ) -> List[List[Waypoint]]:
             road_ids = [road.road_id for road in route.roads] if route else None
-            return self._waypoint_paths_at(pose.as_position2(), lookahead, road_ids)
+            return self._waypoint_paths_at(pose.as_position2d(), lookahead, road_ids)
 
         def waypoint_paths_at_offset(
             self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
@@ -1353,7 +1353,7 @@ class SumoRoadNetwork(RoadMap):
             ref_lanepoints_coordinates["headings"]
         )
         first_lp_heading = ref_lanepoints_coordinates["headings"][0]
-        lp_position = path[0].lp.pose.as_position2()
+        lp_position = path[0].lp.pose.as_position2d()
         vehicle_pos = np.array(point[:2])
         heading_vec = np.array(radians_to_vec(first_lp_heading))
         projected_distant_lp_vehicle = np.inner(
@@ -1380,7 +1380,7 @@ class SumoRoadNetwork(RoadMap):
             lp = path[0].lp
             return [
                 Waypoint(
-                    pos=lp.pose.as_position2(),
+                    pos=lp.pose.as_position2d(),
                     heading=lp.pose.heading,
                     lane_width=lp.lane._width,
                     speed_limit=lp.lane.speed_limit,

@@ -147,7 +147,7 @@ class Chassis:
     @property
     def to_polygon(self) -> Polygon:
         """Convert the chassis to a 2D shape."""
-        p = self.pose.as_position2()
+        p = self.pose.as_position2d()
         d = self.dimensions
         poly = shapely_box(
             p[0] - d.width * 0.5,

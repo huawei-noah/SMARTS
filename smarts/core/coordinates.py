@@ -402,7 +402,7 @@ class Pose:
 
         return self.heading_
 
-    def as_position2(self) -> np.ndarray:
+    def as_position2d(self) -> np.ndarray:
         """Convert to a 2d position array"""
         return self.position[:2]
 

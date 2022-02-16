@@ -377,7 +377,8 @@ class LanePoints:
     @staticmethod
     def _build_kd_tree(linked_lps: Sequence[LinkedLanePoint]) -> KDTree:
         return KDTree(
-            np.array([l_lp.lp.pose.as_position2() for l_lp in linked_lps]), leaf_size=50
+            np.array([l_lp.lp.pose.as_position2d() for l_lp in linked_lps]),
+            leaf_size=50,
         )
 
     @staticmethod
@@ -460,7 +461,7 @@ class LanePoints:
         curr_lanepoint = first_linked_lanepoint
 
         lane_seg_vec = (
-            next_shape_lp.lp.pose.as_position2() - shape_lp.lp.pose.as_position2()
+            next_shape_lp.lp.pose.as_position2d() - shape_lp.lp.pose.as_position2d()
         )
         lane_seg_len = np.linalg.norm(lane_seg_vec)
 
@@ -469,7 +470,7 @@ class LanePoints:
         dist_into_lane_seg = spacing
         while dist_into_lane_seg < lane_seg_len:
             p = dist_into_lane_seg / lane_seg_len
-            pos = shape_lp.lp.pose.as_position2() + lane_seg_vec * p
+            pos = shape_lp.lp.pose.as_position2d() + lane_seg_vec * p
 
             # The thresholds for calculating last lanepoint. If the
             # midpoint between the current lanepoint and the next shape
@@ -485,18 +486,18 @@ class LanePoints:
             half_distant_current_next_shape_lp = np.linalg.norm(
                 0.5
                 * (
-                    curr_lanepoint.lp.pose.as_position2()
-                    - next_shape_lp.lp.pose.as_position2()
+                    curr_lanepoint.lp.pose.as_position2d()
+                    - next_shape_lp.lp.pose.as_position2d()
                 )
             )
             mid_point_current_next_shape_lp = 0.5 * (
-                next_shape_lp.lp.pose.as_position2()
-                + curr_lanepoint.lp.pose.as_position2()
+                next_shape_lp.lp.pose.as_position2d()
+                + curr_lanepoint.lp.pose.as_position2d()
             )
             if half_distant_current_next_shape_lp < minimum_dist_next_shape_lp:
                 pos = mid_point_current_next_shape_lp
             dist_pos_next_shape_lp = np.linalg.norm(
-                next_shape_lp.lp.pose.as_position2() - pos
+                next_shape_lp.lp.pose.as_position2d() - pos
             )
             if dist_pos_next_shape_lp < last_spacing_threshold_dist:
                 break
@@ -540,14 +541,14 @@ class LanePoints:
         k: int = 10,
     ):
         linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_batched(
-            [pose.as_position2() for pose in poses], lanepoints, tree, k=k
+            [pose.as_position2d() for pose in poses], lanepoints, tree, k=k
         )
 
         linked_lanepoints = [
             sorted(
                 l_lps,
                 key=lambda _llp: squared_dist(
-                    poses[idx].as_position2(), _llp.lp.pose.as_position2()
+                    poses[idx].as_position2d(), _llp.lp.pose.as_position2d()
                 ),
             )
             for idx, l_lps in enumerate(linked_lanepoints)
@@ -560,7 +561,7 @@ class LanePoints:
                     _llp
                     for i, _llp in enumerate(_llps)
                     if squared_dist(
-                        poses[idx].as_position2(), _llp.lp.pose.as_position2()
+                        poses[idx].as_position2d(), _llp.lp.pose.as_position2d()
                     )
                     <= radius_sq
                     or i == 0
@@ -575,7 +576,7 @@ class LanePoints:
         ]
         if len(unfound_lanepoints) > 0:
             remaining_linked_lps = LanePoints._closest_linked_lp_in_kd_tree_batched(
-                [pose.as_position2() for _, pose in unfound_lanepoints],
+                [pose.as_position2d() for _, pose in unfound_lanepoints],
                 lanepoints,
                 tree=tree,
                 k=k,
@@ -590,7 +591,7 @@ class LanePoints:
             sorted(
                 l_lps,
                 key=lambda _llp: squared_dist(
-                    poses[idx].as_position2(), _llp.lp.pose.as_position2()
+                    poses[idx].as_position2d(), _llp.lp.pose.as_position2d()
                 )
                 + abs(poses[idx].heading.relative_to(_llp.lp.pose.heading)),
             )
