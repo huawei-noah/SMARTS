@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from enum import Enum
-from typing import Dict, NamedTuple, Optional, Sequence, Tuple
+from typing import Dict, NamedTuple, Optional, Sequence, Tuple, Union
 
 from smarts.core.events import Events
 
@@ -45,7 +45,7 @@ class TrafficActorState(NamedTuple):
     """Individual traffic actor state and meta information."""
 
     actor_type: TrafficActorType
-    vehicle_type: VehicleType
+    vehicle_type: Union[VehicleType, str]  # TODO: Restrict to VehicleType only
     position: Tuple[float, float, float]
     heading: float
     speed: float

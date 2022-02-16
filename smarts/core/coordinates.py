@@ -20,7 +20,16 @@
 import enum
 import math
 from dataclasses import dataclass
-from typing import NamedTuple, Optional, Sequence, SupportsFloat, Tuple, Type, Union
+from typing import (
+    Any,
+    NamedTuple,
+    Optional,
+    Sequence,
+    SupportsFloat,
+    Tuple,
+    Type,
+    Union,
+)
 
 import numpy as np
 from cached_property import cached_property
@@ -163,7 +172,7 @@ class Heading(float):
     def __init__(self, value=...):
         float.__init__(value)
 
-    def __new__(self, x: Union[SupportsFloat, SupportsIndex] = ...) -> "Heading":
+    def __new__(self, x: Union[SupportsFloat, SupportsIndex, Ellipsis.__class__] = ...):
         """A override to constrain heading to -pi to pi"""
         value = x
         if isinstance(value, (int, float)):
@@ -176,7 +185,7 @@ class Heading(float):
 
     @classmethod
     def from_bullet(cls, bullet_heading):
-        """Bullet's space is in radians, 0 faces north, and we turn
+        """Bullet's space is in radians, 0 faces north, and turns
         counter-clockwise.
         """
         h = Heading(bullet_heading)
@@ -186,7 +195,7 @@ class Heading(float):
     @classmethod
     def from_panda3d(cls, p3d_heading):
         """Panda3D's space is in degrees, 0 faces north,
-        and we turn counter-clockwise.
+        and turns counter-clockwise.
         """
         h = Heading(math.radians(p3d_heading))
         h.source = "p3d"
@@ -194,7 +203,7 @@ class Heading(float):
 
     @classmethod
     def from_sumo(cls, sumo_heading):
-        """Sumo's space uses degrees, 0 faces north, and we turn clockwise."""
+        """Sumo's space uses degrees, 0 faces north, and turns clockwise."""
         heading = Heading._flip_clockwise(math.radians(sumo_heading))
         h = Heading(heading)
         h.source = "sumo"
@@ -246,12 +255,21 @@ class Heading(float):
 class Pose:
     """A pair of position and orientation values."""
 
-    # TODO: these should be np.ndarray
-    position: Sequence  # [x, y, z]
-    orientation: Sequence  # [a, b, c, d] -> a + bi + cj + dk = 0
+    position: np.ndarray  # [x, y, z]
+    orientation: np.ndarray  # [a, b, c, d] -> a + bi + cj + dk = 0
     heading_: Optional[Heading] = None  # cached heading to avoid recomputing
 
-    def __eq__(self, other) -> bool:
+    def __post_init__(self):
+        if not isinstance(self.position, np.ndarray):
+            self.position = np.array(self.position, dtype=np.float64)
+        assert len(self.position) <= 3
+        if len(self.position) < 3:
+            self.position = np.resize(self.position, 3)
+        assert len(self.orientation) == 4
+        if not isinstance(self.orientation, np.ndarray):
+            self.orientation = np.array(self.orientation, dtype=np.float64)
+
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Pose):
             return False
         return (self.position == other.position).all() and (
@@ -383,6 +401,10 @@ class Pose:
             self.heading_ = Heading(yaw)
 
         return self.heading_
+
+    def as_position2d(self) -> np.ndarray:
+        """Convert to a 2d position array"""
+        return self.position[:2]
 
     def as_panda3d(self):
         """ Convert to panda3D (object bounds centre position, heading)"""

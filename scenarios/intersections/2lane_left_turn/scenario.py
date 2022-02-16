@@ -1,7 +1,16 @@
 from pathlib import Path
 
 from smarts.sstudio.genscenario import gen_scenario
-from smarts.sstudio.types import Flow, Mission, Route, Scenario, Traffic, TrafficActor
+from smarts.sstudio.types import (
+    Flow,
+    MapZone,
+    Mission,
+    Route,
+    Scenario,
+    Traffic,
+    TrafficActor,
+    TrapEntryTactic,
+)
 
 scnr_path = str(Path(__file__).parent)
 
@@ -62,10 +71,23 @@ for name, routes in {
         ]
     )
 
-
+route = Route(begin=("edge-west-WE", 0, 55), end=("edge-north-SN", 0, 40))
 ego_missions = [
     Mission(
-        route=Route(begin=("edge-west-WE", 0, 55), end=("edge-north-SN", 0, 40)),
+        route=route,
+        entry_tactic=TrapEntryTactic(
+            wait_to_hijack_limit_s=3,
+            zone=MapZone(
+                start=(
+                    route.begin[0],
+                    route.begin[1],
+                    route.begin[2] - 5,
+                ),
+                length=10,
+                n_lanes=1,
+            ),
+            default_entry_speed=5,
+        ),
     ),
 ]
 
