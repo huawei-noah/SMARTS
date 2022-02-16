@@ -76,7 +76,7 @@ def intersection_env(
     Solved requirement:
         If agent successfully navigates the intersection then `info["score"]`
         will equal 1, else it is 0. Considered solved when `info["score"] == 1`
-        is achieved over 100 consecutive trials.
+        is achieved over 800 consecutive episodes.
 
     Args:
         headless (bool, optional): If True, disables visualization in
@@ -152,7 +152,8 @@ def intersection_env(
         headless=headless,
         visdom=visdom,
         sumo_headless=sumo_headless,
-        endless_traffic=False,
+        # To avoid traffic jams, exiting vehicles are not reintroduced.
+        endless_traffic=False, 
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
     env = FormatObs(env=env)
@@ -174,14 +175,14 @@ class _InfoScore(gym.Wrapper):
         Dict[str, bool],
         Dict[str, Dict[str, Any]],
     ]:
-        """Steps the environment. A modified `score` is added to the returned 
+        """Steps the environment. A modified `score` is added to the returned
         `info` of each agent.
 
         Args:
             action (Dict[str, Any]): Action for each agent.
 
         Returns:
-            Tuple[ Dict[str, Any], Dict[str, float], Dict[str, bool], Dict[str, Dict[str, Any]] ]: 
+            Tuple[ Dict[str, Any], Dict[str, float], Dict[str, bool], Dict[str, Dict[str, Any]] ]:
                 Observation, reward, done, and info, for each agent is returned.
         """
         obs, reward, done, info = self.env.step(action)

@@ -57,5 +57,5 @@ if __name__ == "__main__":
 
     main(
         headless=args.headless,
-        num_episodes=30,  # args.episodes,
+        num_episodes=100,  # args.episodes,
     )
