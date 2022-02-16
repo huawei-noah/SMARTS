@@ -36,11 +36,11 @@ turn_right_routes = [
 traffic = {}
 for name, routes in {
     "vertical": vertical_routes,
-    # "horizontal": horizontal_routes,
-    # "turn_left": turn_left_routes,
-    # "turn_right": turn_right_routes,
-    # "turns": turn_left_routes + turn_right_routes,
-    # "all": vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes,
+    "horizontal": horizontal_routes,
+    "turn_left": turn_left_routes,
+    "turn_right": turn_right_routes,
+    "turns": turn_left_routes + turn_right_routes,
+    "all": vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes,
 }.items():
     traffic[name] = Traffic(
         flows=[
@@ -50,6 +50,7 @@ for name, routes in {
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
                 rate=60 * 4,
+                begin=i * 5,
                 end=60 * 30,
                 # Note: For an episode with maximum_episode_steps=3000 and step
                 # time=0.1s, maximum episode time=300s. Hence, traffic set to
@@ -57,14 +58,14 @@ for name, routes in {
                 # 300s.
                 actors={intersection_car: 1},
             )
-            for r in routes
+            for i, r in enumerate(routes)
         ]
     )
 
 
 ego_missions = [
     Mission(
-        route=Route(begin=("edge-west-WE", 0, 45), end=("edge-north-SN", 0, 40)),
+        route=Route(begin=("edge-west-WE", 0, 55), end=("edge-north-SN", 0, 40)),
     ),
 ]
 

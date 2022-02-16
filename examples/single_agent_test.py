@@ -24,7 +24,7 @@ def main(headless, num_episodes):
     env = gym.make(
         "smarts.env:intersection-v0",
         headless=True,
-        sumo_headless=True,
+        sumo_headless=False,
         visdom=True,
     )
 
@@ -32,6 +32,8 @@ def main(headless, num_episodes):
         agent = ChaseWaypointsAgent()
         observation = env.reset()
         episode.record_scenario(env.scenario_log)
+
+        print("STARTING pos==",observation.ego["pos"])
 
         tot_reward = 0
         done = False
@@ -43,7 +45,7 @@ def main(headless, num_episodes):
             # if tot_reward >= 100 and tot_reward<=101:
             #     print("TOTAL REWARD EXCEEDED 100")
             #     time.sleep(10)
-        print("Score==", info["score"], ", reward==", tot_reward)
+        # print("Score==", info["score"], ", reward==", tot_reward, "pos==",observation.ego["pos"])
 
     env.close()
 

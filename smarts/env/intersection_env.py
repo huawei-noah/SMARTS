@@ -178,7 +178,7 @@ class _InfoScore(gym.Wrapper):
 
         for agent_id in obs.keys():
             pos = obs[agent_id].ego["pos"]
-            info[agent_id]["score"] = 1 if pos[1] >= 59 else 0
-            # print("POS", pos[1], "  - SCORE", info[agent_id]["score"])
+            info[agent_id]["score"] = 1 if pos[1] >= 48 else 0
+            # print("POS", pos[0:2], "  - SCORE", info[agent_id]["score"])
 
         return obs, reward, done, info
