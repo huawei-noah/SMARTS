@@ -185,8 +185,9 @@ class WaymoMap(RoadMap):
         for lane_id, lane_dict in waymo_lanedicts.items():
             if lane_dict["right_neighbors"]:
                 continue
-            lane = WaymoMap.Lane(self, lane_id, lane_dict)
-            self._lanes[lane_id] = lane
+            lane = self._lanes.setdefault(
+                lane_id, WaymoMap.Lane(self, lane_id, lane_dict)
+            )
             self._surfaces[lane_id] = lane
             road_lanes = [lane]
             self._add_adj_lanes_to_road(lane_dict, road_lanes, waymo_lanedicts)
@@ -209,8 +210,9 @@ class WaymoMap(RoadMap):
             ln_lane_id = WaymoMap._lane_segment_id(str(ln.feature_id), nsi)
             ln_lane_dict = lanedicts[ln_lane_id]
             lns_to_do.append(ln_lane_dict)
-            lane = WaymoMap.Lane(self, ln_lane_id, ln_lane_dict)
-            self._lanes[ln_lane_id] = lane
+            lane = self._lanes.setdefault(
+                ln_lane_id, WaymoMap.Lane(self, ln_lane_id, ln_lane_dict)
+            )
             self._surfaces[ln_lane_id] = lane
             road_lane.append(lane)
         for adj_lane_dict in lns_to_do:
