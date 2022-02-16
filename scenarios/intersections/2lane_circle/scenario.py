@@ -1,7 +1,8 @@
 import os
+from pathlib import Path
 
-from smarts.sstudio import gen_social_agents
-from smarts.sstudio.types import Mission, Route, SocialAgentActor
+from smarts.sstudio import gen_social_agents, gen_scenario
+from smarts.sstudio.types import Mission, Route, SocialAgentActor, Scenario
 
 scenario = os.path.dirname(os.path.realpath(__file__))
 
@@ -14,24 +15,22 @@ buddha_agent = SocialAgentActor(
     agent_locator="scenarios.intersections.2lane_circle.agent_prefabs:buddha-agent-v0",
 )
 
-gen_social_agents(
-    scenario,
-    name=f"s-agent-{laner_agent.name}",
-    social_actor_mission_pairs=[
-        (
-            laner_agent,
-            Mission(Route(begin=("edge-east-EW", 0, 5), end=("edge-west-EW", 0, 5))),
-        )
-    ],
-)
-
-gen_social_agents(
-    scenario,
-    name=f"s-agent-{buddha_agent.name}",
-    social_actor_mission_pairs=[
+social_agents = {
+    f"all": [
         (
             buddha_agent,
             Mission(Route(begin=("edge-west-WE", 0, 5), end=("edge-east-WE", 0, 5))),
-        )
-    ],
+        ),
+        (
+            laner_agent,
+            Mission(Route(begin=("edge-east-EW", 0, 5), end=("edge-west-EW", 0, 5))),
+        ),
+    ]
+}
+
+gen_scenario(
+    scenario=Scenario(
+        social_agent_groups=social_agents,
+    ),
+    output_dir=Path(__file__).parent,
 )
