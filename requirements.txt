@@ -20,7 +20,7 @@ cached-property==1.5.2
 cachetools==5.0.0
 certifi==2021.10.8
 cffi==1.15.0
-charset-normalizer==2.0.11
+charset-normalizer==2.0.12
 click==8.0.3
 cloudpickle==1.3.0
 colorama==0.4.4
@@ -37,7 +37,7 @@ defusedxml==0.7.1
 dm-tree==0.1.6
 entrypoints==0.4
 execnet==1.9.0
-filelock==3.4.2
+filelock==3.5.0
 flatbuffers==2.0
 fonttools==4.29.1
 frozenlist==1.3.0
@@ -58,12 +58,12 @@ h5py==3.6.0
 hyperlink==21.0.0
 idna==3.3
 ijson==3.1.4
-imageio==2.15.0
-importlib-metadata==4.10.1
+imageio==2.16.0
+importlib-metadata==4.11.1
 importlib-resources==5.4.0
 incremental==21.3.0
 iniconfig==1.1.1
-ipykernel==6.9.0
+ipykernel==6.9.1
 ipython==7.31.1
 ipython-genutils==0.2.0
 iso3166==2.0.2
@@ -74,7 +74,7 @@ jsonpatch==1.32
 jsonpointer==2.2
 jsonschema==4.4.0
 jupyter-client==7.1.2
-jupyter-core==4.9.1
+jupyter-core==4.9.2
 jupyter-server==1.13.5
 jupyter-server-mathjax==0.2.4
 jupyterlab-pygments==0.1.2
@@ -83,7 +83,7 @@ Keras-Preprocessing==1.1.2
 kiwisolver==1.3.2
 libclang==13.0.0
 lxml==4.7.1
-lz4==3.1.10
+lz4==4.0.0
 Markdown==3.3.6
 MarkupSafe==2.0.1
 matplotlib==3.5.1
@@ -91,8 +91,8 @@ matplotlib-inline==0.1.3
 mistune==0.8.4
 msgpack==1.0.3
 multidict==6.0.2
-nbclient==0.5.10
-nbconvert==6.4.1
+nbclient==0.5.11
+nbconvert==6.4.2
 nbdime==3.1.1
 nbformat==5.1.3
 nest-asyncio==1.5.4
@@ -119,7 +119,7 @@ pickleshare==0.7.5
 Pillow==9.0.1
 pluggy==1.0.0
 prometheus-client==0.13.1
-prompt-toolkit==3.0.27
+prompt-toolkit==3.0.28
 protobuf==3.19.4
 psutil==5.9.0
 ptyprocess==0.7.0
@@ -134,7 +134,7 @@ Pygments==2.11.2
 pyparsing==3.0.7
 pyproj==3.2.1
 pyrsistent==0.18.1
-pytest==7.0.0
+pytest==7.0.1
 pytest-benchmark==3.4.1
 pytest-cov==3.0.0
 pytest-forked==1.4.0
@@ -184,7 +184,7 @@ tornado==6.1
 traitlets==5.1.1
 trimesh==3.9.29
 Twisted==22.1.0
-typing_extensions==4.0.1
+typing_extensions==4.1.1
 urllib3==1.26.8
 visdom==0.1.8.9
 wcwidth==0.2.5

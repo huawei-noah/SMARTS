@@ -147,7 +147,7 @@ class Chassis:
     @property
     def to_polygon(self) -> Polygon:
         """Convert the chassis to a 2D shape."""
-        p = self.pose.position
+        p = self.pose.as_position2d()
         d = self.dimensions
         poly = shapely_box(
             p[0] - d.width * 0.5,
@@ -792,7 +792,6 @@ class AckermannChassis(Chassis):
         )
         self._log.debug(
             f"wheel_states: {state_summary}\t vehicle speed: {self.speed:.2f}",
-            end="\r",
         )
 
     def _load_joints(self, bullet_id):

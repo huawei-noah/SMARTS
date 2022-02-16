@@ -25,6 +25,7 @@ def main(headless, num_episodes):
         "smarts.env:intersection-v0",
         headless=True,
         sumo_headless=False,
+        visdom=False,
     )
 
     for episode in episodes(n=num_episodes):
@@ -32,18 +33,20 @@ def main(headless, num_episodes):
         observation = env.reset()
         episode.record_scenario(env.scenario_log)
 
-        tot_reward = 0
+        print("STARTING pos==", observation.ego["pos"])
+
         done = False
         while not done:
             agent_action = agent.act(observation)
             observation, reward, done, info = env.step(agent_action)
             episode.record_step(observation, reward, done, info)
-            tot_reward += reward
-            if tot_reward >= 100:
-                print("TOTAL REWARD EXCEEDED 100")
-                time.sleep(10)
-                break
-        print("Score==", info["score"], ", reward==", tot_reward)
+
+        print(
+            "Score==",
+            info["score"],
+            "pos==",
+            observation.ego["pos"],
+        )
 
     env.close()
 
@@ -54,5 +57,5 @@ if __name__ == "__main__":
 
     main(
         headless=args.headless,
-        num_episodes=args.episodes,
+        num_episodes=100,  # args.episodes,
     )

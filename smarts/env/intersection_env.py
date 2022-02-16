@@ -19,7 +19,9 @@
 # THE SOFTWARE.
 
 import pathlib
-from typing import Optional
+from typing import Any, Dict, Optional, Tuple
+
+import gym
 
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import (
@@ -72,8 +74,9 @@ def intersection_env(
         Agent collides, drives off road, drives off route, or drives on shoulder.
 
     Solved requirement:
-        Considered solved when the average `info["score"]` is greater than or
-        equal to 90.0 over 100 consecutive trials.
+        If agent successfully navigates the intersection then `info["score"]`
+        will equal 1, else it is 0. Considered solved when `info["score"] == 1`
+        is achieved over 800 consecutive episodes.
 
     Args:
         headless (bool, optional): If True, disables visualization in
@@ -149,10 +152,45 @@ def intersection_env(
         headless=headless,
         visdom=visdom,
         sumo_headless=sumo_headless,
+        # To avoid traffic jams, exiting vehicles are not reintroduced.
         endless_traffic=False,
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
     env = FormatObs(env=env)
+    env = _InfoScore(env=env)
     env = SingleAgent(env=env)
 
     return env
+
+
+class _InfoScore(gym.Wrapper):
+    def __init__(self, env: gym.Env):
+        super(_InfoScore, self).__init__(env)
+
+    def step(
+        self, action: Dict[str, Any]
+    ) -> Tuple[
+        Dict[str, Any],
+        Dict[str, float],
+        Dict[str, bool],
+        Dict[str, Dict[str, Any]],
+    ]:
+        """Steps the environment. A modified `score` is added to the returned
+        `info` of each agent.
+
+        Args:
+            action (Dict[str, Any]): Action for each agent.
+
+        Returns:
+            Tuple[ Dict[str, Any], Dict[str, float], Dict[str, bool], Dict[str, Dict[str, Any]] ]:
+                Observation, reward, done, and info, for each agent is returned.
+        """
+        obs, reward, done, info = self.env.step(action)
+
+        for agent_id in obs.keys():
+            pos = obs[agent_id].ego["pos"]
+            # Set `score=1` if ego agent successfully drives 50m after turning
+            # left at the intersection, else `score=0`.
+            info[agent_id]["score"] = 1 if pos[1] >= 48 else 0
+
+        return obs, reward, done, info
