@@ -15,7 +15,7 @@ class ChaseWaypointsAgent(Agent):
         next_lane_index = obs.waypoints["lane_index"][0, 0]
 
         return (
-            obs.waypoints["speed_limit"][0, 0] / 5,
+            obs.waypoints["speed_limit"][0, 0] / 4,
             np.sign(next_lane_index - cur_lane_index),
         )
 
@@ -23,8 +23,8 @@ class ChaseWaypointsAgent(Agent):
 def main(headless, num_episodes):
     env = gym.make(
         "smarts.env:intersection-v0",
-        headless=True,
-        sumo_headless=False,
+        headless=headless,
+        sumo_headless=True,
         visdom=False,
     )
 
@@ -33,8 +33,6 @@ def main(headless, num_episodes):
         observation = env.reset()
         episode.record_scenario(env.scenario_log)
 
-        print("STARTING pos==", observation.ego["pos"])
-
         done = False
         while not done:
             agent_action = agent.act(observation)
@@ -42,9 +40,9 @@ def main(headless, num_episodes):
             episode.record_step(observation, reward, done, info)
 
         print(
-            "Score==",
+            "Score ==",
             info["score"],
-            "pos==",
+            "Pos ==",
             observation.ego["pos"],
         )
 
@@ -56,6 +54,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(
-        headless=args.headless,
+        headless=True,  # args.headless,
         num_episodes=100,  # args.episodes,
     )
