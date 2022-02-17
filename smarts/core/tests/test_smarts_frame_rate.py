@@ -58,14 +58,14 @@ def scenarios():
         gen_scenario(
             t.Scenario(
                 social_agent_groups={
-                    "group-1": (actors, to_mission("edge-north-NS", "edge-south-NS")),
-                    "group-2": (actors, to_mission("edge-west-WE", "edge-east-WE")),
-                    "group-3": (actors, to_mission("edge-east-EW", "edge-west-EW")),
-                    "group-4": (actors, to_mission("edge-south-SN", "edge-north-SN")),
-                    "group-5": (
+                    "group-1": [(actors, to_mission("edge-north-NS", "edge-south-NS"))],
+                    "group-2": [(actors, to_mission("edge-west-WE", "edge-east-WE"))],
+                    "group-3": [(actors, to_mission("edge-east-EW", "edge-west-EW"))],
+                    "group-4": [(actors, to_mission("edge-south-SN", "edge-north-SN"))],
+                    "group-5": [(
                         actors,
                         fifth_mission("edge-south-SN", "edge-east-WE"),
-                    ),
+                    )],
                 },
                 ego_missions=[
                     t.Mission(
