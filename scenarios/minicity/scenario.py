@@ -54,6 +54,12 @@ static_bubbles = [
         actor=laner_actor,
     )
     for id_ in ["21675239", "126742590#1", "-77720372", "-263506114#6", "-33002812#1"]
+] + [
+    t.Bubble(
+        zone=t.PositionalZone(pos=(1012.19, 1084.20), size=(30, 30)),
+        margin=5,
+        actor=laner_actor,
+    )
 ]
 
 gen_scenario(
