@@ -33,27 +33,27 @@ buddha_agent = t.SocialAgentActor(
 gen_scenario(
     t.Scenario(
         traffic={"basic": traffic},
-        social_agent_missions={
-            "group_1": (
-                [laner_agent, buddha_agent],
-                [t.Mission(route=t.RandomRoute())],
-            ),
-            "group_2": (
-                [laner_agent, buddha_agent],
-                [t.Mission(route=t.RandomRoute())],
-            ),
-            "group_3": (
-                [laner_agent, buddha_agent],
-                [t.Mission(route=t.RandomRoute())],
-            ),
-            "group_4": (
-                [laner_agent, buddha_agent],
-                [t.Mission(route=t.RandomRoute())],
-            ),
-            "group_5": (
-                [laner_agent, buddha_agent],
-                [t.Mission(route=t.RandomRoute())],
-            ),
+        social_agent_groups={
+            "group_1": [
+                (a, t.Mission(route=t.RandomRoute()))
+                for a in [laner_agent, buddha_agent]
+            ],
+            "group_2": [
+                (a, t.Mission(route=t.RandomRoute()))
+                for a in [laner_agent, buddha_agent]
+            ],
+            "group_3": [
+                (a, t.Mission(route=t.RandomRoute()))
+                for a in [laner_agent, buddha_agent]
+            ],
+            "group_4": [
+                (a, t.Mission(route=t.RandomRoute()))
+                for a in [laner_agent, buddha_agent]
+            ],
+            "group_5": [
+                (a, t.Mission(route=t.RandomRoute()))
+                for a in [laner_agent, buddha_agent]
+            ]
         },
     ),
     output_dir=Path(__file__).parent,
