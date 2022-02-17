@@ -159,7 +159,7 @@ env = gym.make(
 
 1. `intersection-v0`: In this task, the ego-vehicle needs to drives towards an intersection with an allway-stop traffic, and make a left turn without any collisions. Further task description is available at [/smarts/env/intersection_env.py](smarts/env/intersection_env.py).  
     <p align="center">
-    <img src="docs/_static/intersection.gif" width="650" height="425"><br/>
+    <img src="docs/_static/intersection.gif" width="600" height="400"><br/>
     The <em>intersection-v0</em> environment.
     </p>
 
@@ -226,10 +226,11 @@ env = gym.make(
     visdom=True,
 )
 ```
-    <p align="center">
-    <img src="docs/_static/visdom.gif" width="650" height="425"><br/>
-    Sample visualization of top-down RGB images returned in an agent's observation.
-    </p>
+Below is a sample visualization of an agent's camera sensor observations.
+<p align="center">
+<img src="docs/_static/visdom.gif" ><br/>
+(Left) Drivable area grid map. (Center) Occupancy grid map. (Right) Top-down RGB image.
+</p>
 
 # PyMARL and MALib
 Run SMARTS with [PyMARL](https://github.com/oxwhirl/pymarl).
