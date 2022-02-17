@@ -34,7 +34,7 @@ from smarts.core.agent_interface import (
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
-from smarts.env import build_scenario
+from smarts.sstudio import build_scenario
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.format_obs import FormatObs
 from smarts.env.wrappers.single_agent import SingleAgent

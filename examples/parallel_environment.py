@@ -12,7 +12,7 @@ from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.sensors import Observation
-from smarts.env import build_scenario
+from smarts.sstudio import build_scenario
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.parallel_env import ParallelEnv
