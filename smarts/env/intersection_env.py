@@ -118,8 +118,7 @@ def intersection_env(
         "LeftTurnAgent": AgentSpec(
             interface=AgentInterface(
                 accelerometer=True,
-                # action=ActionSpaceType.Continuous,  # Temporary. For testing purposes. To be changed later.
-                action=ActionSpaceType.LaneWithContinuousSpeed,  # Temporary. For testing purposes. To be changed later.
+                action=ActionSpaceType.Continuous,
                 done_criteria=done_criteria,
                 drivable_area_grid_map=DrivableAreaGridMap(
                     width=img_pixels,
