@@ -76,17 +76,14 @@ ego_missions = [
     )
 ]
 
-actors: Sequence[t.SocialAgentActor] = [
-    t.SocialAgentActor(name="open-agent", agent_locator="open_agent:open_agent-v0"),
-    t.SocialAgentActor(name="rl-agent", agent_locator="rl_agent:rl-agent-v1"),
-]
+actor = t.SocialAgentActor(name="laner-agent", agent_locator="zoo.policies:keep-lane-agent-v0"),
 
-reused_mission: Sequence[t.Mission] = t.Mission(
+mission: Sequence[t.Mission] = t.Mission(
     t.Route(begin=("edge-west-WE", 1, 10), end=("edge-east-WE", 1, "max"))
 )
 
 
-social_agents = {f"group-{actor.name}": [(actor, reused_mission)] for actor in actors}
+social_agents = {f"group-{actor.name}": [(actor, mission)]}
 
 gen_scenario(
     scenario=t.Scenario(

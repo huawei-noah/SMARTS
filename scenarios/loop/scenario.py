@@ -20,10 +20,6 @@ traffic = t.Traffic(
     ]
 )
 
-open_agent_actor = t.SocialAgentActor(
-    name="open-agent", agent_locator="open_agent:open_agent-v0"
-)
-
 laner_actor = t.SocialAgentActor(
     name="keep-lane-agent",
     agent_locator="zoo.policies:keep-lane-agent-v0",
@@ -34,15 +30,14 @@ gen_scenario(
         traffic={"basic": traffic},
         social_agent_groups={
             "all": [
-                (a, t.Mission(route=t.RandomRoute()))
-                for a in [laner_actor, open_agent_actor]
+                (laner_actor, t.Mission(route=t.RandomRoute()))
             ]
         },
         bubbles=[
             t.Bubble(
                 zone=t.PositionalZone(pos=(50, 0), size=(10, 15)),
                 margin=5,
-                actor=open_agent_actor,
+                actor=laner_actor,
                 follow_actor_id=t.Bubble.to_actor_id(laner_actor, mission_group="all"),
                 follow_offset=(-7, 10),
             ),
