@@ -2,7 +2,6 @@
 [![SMARTS CI Base Tests Linux](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-base-tests-linux.yml/badge.svg?branch=master)](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-base-tests-linux.yml?query=branch%3Amaster) 
 [![SMARTS CI Format](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-format.yml/badge.svg?branch=master)](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-format.yml)
 ![Code style](https://img.shields.io/badge/code%20style-black-000000.svg) 
-[![GitHub contributors](https://img.shields.io/github/contributors/huawei-noah/smarts)](https://github.com/huawei-noah/smarts/graphs/contributors)
 
 SMARTS (Scalable Multi-Agent RL Training School) is a simulation platform for reinforcement learning (RL) and multi-agent research on autonomous driving. Its focus is on realistic and diverse interactions. It is part of the [XingTian](https://github.com/huawei-noah/xingtian/) suite of RL platforms from Huawei Noah's Ark Lab.
 
@@ -190,7 +189,7 @@ Subcommands of `zoo`:
 * install: Attempt to install the specified agents from the given paths/url.
 * manager: Start the manager process which instantiates workers.
 
-Subcommands of run:
+Subcommands of `run`:
 * No subcommands. Use `run` directly to simulate as shown [above](#Running).
 
 ### CLI Examples
