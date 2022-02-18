@@ -56,7 +56,7 @@ setup(
     ],
     extras_require={
         "opendrive": [
-        "opendrive2lanelet>=1.2.1",
+            "opendrive2lanelet>=1.2.1",
         ],
         "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
         "dev": [
