@@ -24,6 +24,7 @@ class OpenDRIVEException(Exception):
 
     @classmethod
     def required_to(cls, thing):
+        """Generate an instance of this exception that describes what can be done to remove the exception"""
         return cls(
             f"""OpenDRIVE Package is required to simulate {thing}.
                You may not have installed the [opendrive] dependencies required to run the ray dependent example.
