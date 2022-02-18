@@ -26,7 +26,7 @@ setup(
         "cached-property>=1.5.2",
         "click>=7.1.2",  # used in scl
         "eclipse-sumo==1.10.0",  # sumo
-        "gym>=0.17.3",
+        "gym>=0.17.3,<=0.19.0",
         "numpy>=1.19.5",  # required for tf 2.4 below
         "pandas>=1.3.4",
         "psutil>=5.4.8",
