@@ -1389,6 +1389,10 @@ class SMARTS:
                 SUPPORTED_VEHICLES = {"car", "truck", "passenger", "bus", "trailer", "coach"}
 
                 if veh_type in SUPPORTED_VEHICLES:
+                    
+                    if veh_type == "passenger":
+                        veh_type = "car"
+
                     traffic[v.vehicle_id] = envision_types.TrafficActorState(
                         actor_type=envision_types.TrafficActorType.SocialVehicle,
                         vehicle_type=envision_types.VehicleType(veh_type),
