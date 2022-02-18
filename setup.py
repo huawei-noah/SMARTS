@@ -43,7 +43,7 @@ setup(
         # The following is for both SS and Envision
         "cloudpickle>=1.3.0,<1.4.0",
         # The following are for /envision
-        "tornado>=6.1",
+        "tornado>=5.1.1",
         "websocket-client>=1.2.1",
         "ijson>=3.1.4",
         # The following are for the /smarts/algorithms
@@ -78,13 +78,15 @@ setup(
         "ros": ["catkin_pkg", "rospkg"],
         "test": [
             # The following are for testing
-            "ipykernel>=6.8.0",
-            "jupyter-client>=7.1.2",
             "pytest>=6.2.5",
             "pytest-benchmark>=3.4.1",
             "pytest-cov>=3.0.0",
-            "pytest-notebook>=0.7.0",
             "pytest-xdist>=2.4.0",
+        ],
+        "test-notebook": [
+            "ipykernel>=4.10.1",
+            "jupyter-client>=7.1.2",
+            "pytest-notebook>=0.7.0",
         ],
         "torch": [
             "torch==1.4.0",
