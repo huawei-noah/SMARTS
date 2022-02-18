@@ -118,6 +118,7 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
 
     elif map_type == _OPENDRIVE_MAP:
         from smarts.core.utils.open_drive_exception import OpenDRIVEException
+
         try:
             from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
         except ImportError:
