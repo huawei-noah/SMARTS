@@ -47,25 +47,25 @@ def scenarios():
             for speed in [10, 30, 80]
         ]
 
-        def to_mission(start_edge, end_edge):
+        def to_mission(start_edge, end_edge, start_time):
             route = t.Route(begin=(start_edge, 1, 0), end=(end_edge, 1, "max"))
-            return t.Mission(route=route)
+            return t.Mission(route=route, start_time=0.1 * start_time)
 
-        def fifth_mission(start_edge, end_edge):
+        def fifth_mission(start_edge, end_edge, start_time):
             route = t.Route(begin=(start_edge, 0, 0), end=(end_edge, 0, "max"))
-            return t.Mission(route=route)
+            return t.Mission(route=route, start_time=0.1 * start_time)
 
         gen_scenario(
             t.Scenario(
                 social_agent_groups={
-                    "group-1": [(a, to_mission("edge-north-NS", "edge-south-NS")) for a in actors],
-                    "group-2": [(a, to_mission("edge-west-WE", "edge-east-WE")) for a in actors],
-                    "group-3": [(a, to_mission("edge-east-EW", "edge-west-EW")) for a in actors],
-                    "group-4": [(a, to_mission("edge-south-SN", "edge-north-SN")) for a in actors],
+                    "group-1": [(a, to_mission("edge-north-NS", "edge-south-NS", i)) for i, a in enumerate(actors)],
+                    "group-2": [(a, to_mission("edge-west-WE", "edge-east-WE", i)) for i, a in enumerate(actors)],
+                    "group-3": [(a, to_mission("edge-east-EW", "edge-west-EW", i)) for i, a in enumerate(actors)],
+                    "group-4": [(a, to_mission("edge-south-SN", "edge-north-SN", i)) for i, a in enumerate(actors)],
                     "group-5": [(
                         a,
-                        fifth_mission("edge-south-SN", "edge-east-WE"),
-                    ) for a in actors],
+                        fifth_mission("edge-south-SN", "edge-east-WE", i),
+                    ) for i, a in enumerate(actors)],
                 },
                 ego_missions=[
                     t.Mission(
