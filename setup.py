@@ -24,12 +24,12 @@ setup(
         #   50.0 is broken: https://github.com/pypa/setupatools/issues/2353
         "setuptools>=41.0.0,!=50.0",
         "cached-property>=1.5.2",
-        "click==8.0.4",  # used in scl
+        "click>=7.1.2",  # used in scl
         "eclipse-sumo==1.10.0",  # sumo
         "gym==0.19.0",
         "numpy>=1.19.5",  # required for tf 2.4 below
         "pandas>=1.3.4",  # only used by zoo/evaluation
-        "psutil>=5.8.0",
+        "psutil>=5.4.8",
         "pybullet==3.0.6",
         "rich>=11.2.0",
         "Rtree>=0.9.7",
