@@ -55,9 +55,14 @@ class _ShowBaseInstance(ShowBase):
     def __new__(cls):
         # Singleton pattern:  ensure only 1 ShowBase instance
         if "__it__" not in cls.__dict__:
-            loadPrcFileData("", "load-display p3headlessgl")
-            loadPrcFileData("", "aux-display p3headlessgl")
+            # loadPrcFileData("", "gl-debug #t")
+            loadPrcFileData("", f"load-display p3headlessgl")
+            loadPrcFileData("", "aux-display pandagl")
+            loadPrcFileData("", "aux-display pandadx9")
+            loadPrcFileData("", "aux-display pandagles")
+            loadPrcFileData("", "aux-display pandagles2")
             loadPrcFileData("", "aux-display p3tinydisplay")
+
             # disable vsync otherwise we are limited to refresh-rate of screen
             loadPrcFileData("", "sync-video false")
             loadPrcFileData("", "model-path %s" % os.getcwd())
