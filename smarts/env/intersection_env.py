@@ -188,9 +188,9 @@ class _InfoScore(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
 
         for agent_id in obs.keys():
-            pos = obs[agent_id].ego["pos"]
-            # Set `score=1` if ego agent successfully drives 50m after turning
-            # left at the intersection, else `score=0`.
-            info[agent_id]["score"] = 1 if pos[1] >= 48 else 0
+            reached_goal = obs[agent_id].events["reached_goal"]
+            # Set `score=1` if ego agent successfully navigates the left-turn 
+            # intersection and reaches the end of mission route, else `score=0`.
+            info[agent_id]["score"] = reached_goal
 
         return obs, reward, done, info
