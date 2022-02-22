@@ -660,7 +660,7 @@ def test_waymo_map():
         return
 
     source_str = f"{dataset_path}#{scenario_id}"
-    map_spec = MapSpec(source=source_str)
+    map_spec = MapSpec(source=source_str, lanepoint_spacing=1.0)
     road_map = WaymoMap.from_spec(map_spec)
 
     assert isinstance(road_map, WaymoMap)
@@ -679,6 +679,7 @@ def test_waymo_map():
     l1 = road_map.lane_by_id("100_0")
     assert l1
     assert l1.lane_id == "100_0"
+    assert l1.road.road_id == "waymo_road-100_0"
     assert l1.is_drivable
     assert round(l1.length, 2) == 124.48
     assert l1.speed_limit == 13.4112
@@ -694,7 +695,7 @@ def test_waymo_map():
 
     l1_vector = l1.vector_at_offset(50.01)
     l1_vector = l1_vector.tolist()
-    assert l1_vector == [-0.5304760093854384, -0.8476999406939285, 0.0]
+    assert l1_vector == [-0.5304760093854384, -0.8476999406939285]
 
     # point on lane
     point = Point(2714.0, -2764.5, 0)
@@ -709,6 +710,16 @@ def test_waymo_map():
     assert round(l1.curvature_radius_at_offset(offset), 2) == -3136.8
     assert l1.contains_point(point)
 
+    # oncoming lanes at this point
+    on_lanes = l1.oncoming_lanes_at_offset(offset)
+    assert on_lanes
+    assert len(on_lanes) == 1
+    assert on_lanes[0].lane_id == "95_0"
+
+    # check for locations (lane, offset tuples) within distance at this offset
+    candidates = l1.project_along(offset, 70)
+    assert (len(candidates)) == 1  # since no outgoing lanes
+
     # nearest lane for a point inside a lane
     point = Point(2910.0, -2610.0, 0)
     l2 = road_map.nearest_lane(point)
@@ -721,6 +732,25 @@ def test_waymo_map():
     l3 = road_map.nearest_lane(point)
     assert l3.lane_id == "156_0"
     assert not l3.contains_point(point)
+
+    # Lanepoints
+    lanepoints = road_map._lanepoints
+    point = Point(2715.0, -2763.5, 0)
+    l1_lane_point = lanepoints.closest_lanepoint_on_lane_to_point(point, l1.lane_id)
+    assert (
+        round(l1_lane_point.pose.position[0], 2),
+        round(l1_lane_point.pose.position[1], 2),
+    ) == (2713.84, -2762.52)
+
+    r1 = road_map.road_by_id("waymo_road-100_0")
+    point = Point(2715.0, -2763.5, 0)
+    r1_linked_lane_point = lanepoints.closest_linked_lanepoint_on_road(
+        point, r1.road_id
+    )
+    assert r1_linked_lane_point.lp.lane.lane_id == "100_0"
+    r1_lp_path = lanepoints.paths_starting_at_lanepoint(r1_linked_lane_point, 10, ())
+    assert len(r1_lp_path) == 1
+    assert [llp.lp.lane.lane_id for llp in r1_lp_path[0]].count("100_0") == 11
 
 
 # XXX: The below is just for testing. Remove before merging.
@@ -739,6 +769,14 @@ def plot_lane(lane):
     plt.plot(xs, ys, linestyle="-", c="gray")
     # plt.scatter(xs, ys, s=12, c="gray")
     # plt.scatter(xs[0], ys[0], s=12, c="red")
+
+
+def get_lp_coords(lps):
+    xs, ys = [], []
+    for lp in lps:
+        xs.append(lp.lp.pose.position[0])
+        ys.append(lp.lp.pose.position[1])
+    return xs, ys
 
 
 def plot_road_line(road_line):
@@ -781,17 +819,23 @@ if __name__ == "__main__":
     ax.set_title(f"Scenario {scenario_id}")
     ax.axis("equal")
 
-    map_spec = MapSpec(source=source_str)
+    map_spec = MapSpec(source=source_str, lanepoint_spacing=1.0)
     road_map = WaymoMap.from_spec(map_spec)
 
     for lane_id, lane in road_map._lanes.items():
         plot_lane(lane._lane_dict)
-        # plot_boundaries(lane_feat, features)
+        # plot_boundaries(lane, features)
         xs, ys = [], []
         for x, y in lane._lane_polygon:
             xs.append(x)
             ys.append(y)
         plt.plot(xs, ys, "b-")
+
+        # Plot lanepoints
+        if lane.is_drivable:
+            linked_lps = road_map._lanepoints._lanepoints_by_lane_id[lane.lane_id]
+            xlp, ylp = get_lp_coords(linked_lps)
+            plt.scatter(xlp, ylp, s=1, c="r")
 
     mng = plt.get_current_fig_manager()
     mng.resize(1000, 1000)
