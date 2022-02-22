@@ -358,6 +358,8 @@ class WaymoMap(RoadMap):
                 * 0.44704
             )
             self._road = None
+            self._index = None
+
             # Geometry
             self._n_pts = len(self._lane_pts)
             self._left_widths = [0] * self._n_pts
@@ -540,8 +542,12 @@ class WaymoMap(RoadMap):
             return self._lane_id
 
         @property
-        def road(self):
+        def road(self) -> RoadMap.Road:
             return self._road
+
+        @property
+        def index(self):
+            return self._index
 
         @cached_property
         def length(self) -> float:
@@ -703,15 +709,42 @@ class WaymoMap(RoadMap):
         ) -> Set[Tuple[RoadMap.Lane, float]]:
             return super().project_along(start_offset, distance)
 
-        @cached_property
-        def entry_surfaces(self) -> List[RoadMap.Surface]:
-            # TODO?  can a non-lane connect into a lane?
-            return self.incoming_lanes
+        def waypoint_paths_for_pose(
+            self, pose: Pose, lookahead: int, route: RoadMap.Route = None
+        ) -> List[List[Waypoint]]:
+            if not self.is_drivable:
+                return []
+            road_ids = [road.road_id for road in route.roads] if route else None
+            return self._waypoint_paths_at(pose.position, lookahead, road_ids)
 
-        @cached_property
-        def exit_surfaces(self) -> List[RoadMap.Surface]:
-            # TODO?  can a lane exit to a non-lane?
-            return self.outgoing_lanes
+        def waypoint_paths_at_offset(
+            self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
+        ) -> List[List[Waypoint]]:
+            if not self.is_drivable:
+                return []
+            wp_start = self.from_lane_coord(RefLinePoint(offset))
+            road_ids = [road.road_id for road in route.roads] if route else None
+            return self._waypoint_paths_at(wp_start, lookahead, road_ids)
+
+        def _waypoint_paths_at(
+            self,
+            point: Sequence,
+            lookahead: int,
+            filter_road_ids: Optional[Sequence[str]] = None,
+        ) -> List[List[Waypoint]]:
+            if not self.is_drivable:
+                return []
+            closest_linked_lp = (
+                self._map._lanepoints.closest_linked_lanepoint_on_lane_to_point(
+                    point, self._lane_id
+                )
+            )
+            return self._map._waypoints_starting_at_lanepoint(
+                closest_linked_lp,
+                lookahead,
+                tuple(filter_road_ids) if filter_road_ids else (),
+                tuple(point),
+            )
 
     class Road(RoadMap.Road, Surface):
         """This is akin to a 'road segment' in real life.
@@ -723,8 +756,13 @@ class WaymoMap(RoadMap):
                 self._road_id += f"-{lane.lane_id}"
             super().__init__(self._road_id, road_map)
             self._lanes = road_lanes
+
+            # Set road and index for its lanes
+            idx_counter = 0
             for lane in self._lanes:
                 lane._road = self
+                lane._index = idx_counter
+                idx_counter += 1
 
         @property
         def road_id(self) -> str:
@@ -834,6 +872,7 @@ class WaymoMap(RoadMap):
                 ]
             return result
 
+        @property
         def parallel_roads(self) -> List[RoadMap.Road]:
             return []
 
@@ -959,6 +998,50 @@ class WaymoMap(RoadMap):
                     return [path[: (lookahead + 1)] for path in hit]
                 return None
 
+    def waypoint_paths(
+        self,
+        pose: Pose,
+        lookahead: int,
+        within_radius: float = 5,
+        route: RoadMap.Route = None,
+    ) -> List[List[Waypoint]]:
+        road_ids = []
+        if route and route.roads:
+            road_ids = [road.road_id for road in route.roads]
+        if road_ids:
+            return self._waypoint_paths_along_route(pose.position, lookahead, road_ids)
+        closest_lps = self._lanepoints.closest_lanepoints(
+            [pose], within_radius=within_radius
+        )
+        closest_lane = closest_lps[0].lane
+        waypoint_paths = []
+        for lane in closest_lane.road.lanes:
+            waypoint_paths += lane._waypoint_paths_at(pose.position, lookahead)
+        return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
+
+    def _waypoint_paths_along_route(
+        self, point, lookahead: int, route: Sequence[str]
+    ) -> List[List[Waypoint]]:
+        """finds the closest lane to vehicle's position that is on its route,
+        then gets waypoint paths from all lanes in its road there."""
+        assert len(route) > 0, f"Expected at least 1 road in the route, got: {route}"
+        closest_llp_on_each_route_road = [
+            self._lanepoints.closest_linked_lanepoint_on_road(point, road)
+            for road in route
+        ]
+        closest_linked_lp = min(
+            closest_llp_on_each_route_road,
+            key=lambda l_lp: np.linalg.norm(
+                vec_2d(l_lp.lp.pose.position) - vec_2d(point)
+            ),
+        )
+        closest_lane = closest_linked_lp.lp.lane
+        waypoint_paths = []
+        for lane in closest_lane.road.lanes:
+            waypoint_paths += lane._waypoint_paths_at(point, lookahead, route)
+
+        return sorted(waypoint_paths, key=len, reverse=True)
+
     @staticmethod
     def _equally_spaced_path(
         path: Sequence[LinkedLanePoint],
@@ -985,9 +1068,6 @@ class WaymoMap(RoadMap):
             if lanepoint.is_inferred and 0 < idx < len(path) - 1:
                 continue
 
-            # Compute the lane's width at lanepoint's position
-            width_at_offset = lanepoint.lp.lane_width
-
             ref_lanepoints_coordinates["positions_x"].append(
                 lanepoint.lp.pose.position[0]
             )
@@ -1000,7 +1080,7 @@ class WaymoMap(RoadMap):
             ref_lanepoints_coordinates["lane_id"].append(lanepoint.lp.lane.lane_id)
             ref_lanepoints_coordinates["lane_index"].append(lanepoint.lp.lane.index)
 
-            ref_lanepoints_coordinates["lane_width"].append(width_at_offset)
+            ref_lanepoints_coordinates["lane_width"].append(lanepoint.lp.lane_width)
 
             ref_lanepoints_coordinates["speed_limit"].append(
                 lanepoint.lp.lane.speed_limit
@@ -1091,3 +1171,39 @@ class WaymoMap(RoadMap):
             )
 
         return waypoint_path
+
+    def _waypoints_starting_at_lanepoint(
+        self,
+        lanepoint: LinkedLanePoint,
+        lookahead: int,
+        filter_road_ids: tuple,
+        point: Tuple[float, float, float],
+    ) -> List[List[Waypoint]]:
+        """computes equally-spaced Waypoints for all lane paths starting at lanepoint
+        up to lookahead waypoints ahead, constrained to filter_road_ids if specified."""
+
+        # The following acts sort of like lru_cache(1), but it allows
+        # for lookahead to be <= to the cached value...
+        cache_paths = self._waypoints_cache.query(
+            lookahead, point, filter_road_ids, lanepoint
+        )
+        if cache_paths:
+            return cache_paths
+
+        lanepoint_paths = self._lanepoints.paths_starting_at_lanepoint(
+            lanepoint, lookahead, filter_road_ids
+        )
+        result = [
+            WaymoMap._equally_spaced_path(
+                path,
+                point,
+                self._map_spec.lanepoint_spacing,
+            )
+            for path in lanepoint_paths
+        ]
+
+        self._waypoints_cache.update(
+            lookahead, point, filter_road_ids, lanepoint, result
+        )
+
+        return result
