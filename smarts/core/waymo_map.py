@@ -29,6 +29,7 @@ import rtree
 from cached_property import cached_property
 from shapely.geometry import Polygon
 from waymo_open_dataset.protos import scenario_pb2
+from waymo_open_dataset.protos.map_pb2 import LaneCenter, RoadLine
 
 from smarts.sstudio.types import MapSpec
 
@@ -661,8 +662,7 @@ class WaymoMap(RoadMap):
 
         @cached_property
         def is_drivable(self) -> bool:
-            # Waymo's LaneType.TYPE_BIKE_LANE = 3
-            return self._lane_dict["type"] != 3
+            return self._lane_dict["type"] != LaneCenter.LaneType.TYPE_BIKE_LANE
 
         @cached_property
         def composite_lane(self) -> RoadMap.Lane:
@@ -701,25 +701,30 @@ class WaymoMap(RoadMap):
         def lanes_in_same_direction(self) -> List[RoadMap.Lane]:
             return [l for l in self.road.lanes if l != self]
 
+        @staticmethod
+        def _check_boundaries(boundaries: Sequence[Any]) -> bool:
+            for bd in boundaries:
+                if bd.boundary_type >= RoadLine.RoadLineType.TYPE_SOLID_DOUBLE_YELLOW:
+                    return False
+            return True
+
         @cached_property
         def lane_to_left(self) -> Tuple[Optional[RoadMap.Lane], bool]:
             if not self._lane_dict["left_neighbors"]:
                 return None, True
-            left_lanes = []
-            for l_neighbor in self._lane_dict["left_neighbors"]:
-                left_lanes.append(self._map.lane_by_id(str(l_neighbor.feature_id)))
-            assert len(left_lanes) == 1
-            return left_lanes[0], True
+            assert len(self._lane_dict["left_neighbors"]) == 1
+            ln = self._lane_dict["left_neighbors"][0]
+            same_dir = WaymoMap.Lane._check_boundaries(ln.boundaries)
+            return self._map.lane_by_id(str(ln.feature_id)), same_dir
 
         @cached_property
         def lane_to_right(self) -> Tuple[Optional[RoadMap.Lane], bool]:
             if not self._lane_dict["right_neighbors"]:
                 return None, True
-            right_lanes = []
-            for r_neighbor in self._lane_dict["right_neighbors"]:
-                right_lanes.append(self._map.lane_by_id(str(r_neighbor.feature_id)))
-            assert len(right_lanes) == 1
-            return right_lanes[0], True
+            assert len(self._lane_dict["right_neighbors"]) == 1
+            rn = self._lane_dict["right_neighbors"][0]
+            same_dir = WaymoMap.Lane._check_boundaries(rn.boundaries)
+            return self._map.lane_by_id(str(rn.feature_id)), same_dir
 
         @property
         def speed_limit(self) -> float:
@@ -885,7 +890,7 @@ class WaymoMap(RoadMap):
 
         @cached_property
         def type(self) -> int:
-            road_type = 0  # 0 == LaneType.TYPE_UNDEFINED
+            road_type = LaneCenter.LaneType.TYPE_UNDEFINED
             for lane in self._lanes:
                 if road_type != 0 and lane.type != road_type:
                     return 0

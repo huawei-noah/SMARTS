@@ -752,12 +752,20 @@ def test_waymo_map():
     assert l86.road.road_id == "waymo_road-86-87"
     assert l86.index == 0
     assert l87.index == 1
+    l86l, ldir = l86.lane_to_left
+    assert l86l == l87
+    assert ldir
+    l87r, rdir = l87.lane_to_right
+    assert l87r == l86
+    assert rdir
     l86_4 = road_map.lane_by_id("86_4")
     l87_4 = road_map.lane_by_id("87_4")
     assert l86_4.road != l87_4.road
     assert l86_4.road.road_id == "waymo_road-86_4"
     assert l86_4.index == 0
+    assert l86_4.lane_to_left[0] is None
     assert l87_4.index == 0
+    assert l87_4.lane_to_right[0] is None
 
     # composites
     # TODO: no composites in this test scenario?
