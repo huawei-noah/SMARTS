@@ -78,17 +78,15 @@ class WaymoMap(RoadMap):
     @staticmethod
     def _find_lane_segments(waymo_lane_feats, side: str) -> Dict[int, bool]:
         split_pts = {}
-        for nb in getattr(waymo_lane_feats, f"{side}_neighbors"):
-            split_pts[nb.self_start_index] = True
-            split_pts[nb.self_end_index + 1] = True
         boundaries = getattr(waymo_lane_feats, f"{side}_boundaries")
         for bd in range(1, len(boundaries)):
             bdry = boundaries[bd]
-            if (
-                bdry.boundary_type != boundaries[bd - 1].boundary_type
-                and bdry.lane_start_index not in split_pts
-            ):
-                split_pts.add[bdry.lane_start_index] = False
+            if bdry.boundary_type != boundaries[bd - 1].boundary_type:
+                split_pts[bdry.lane_start_index] = False
+        # overwrite any "soft" boundary splits with "hard" neighbor splits
+        for nb in getattr(waymo_lane_feats, f"{side}_neighbors"):
+            split_pts[nb.self_start_index] = True
+            split_pts[nb.self_end_index + 1] = True
         return split_pts
 
     def _waymo_pb_to_dict(self, waymo_lane_feats) -> Dict[str, Any]:
@@ -264,7 +262,6 @@ class WaymoMap(RoadMap):
         # then create a road segments out of adjacent lane segments
         for lane_id, lane_dict in waymo_lanedicts.items():
             # TODO: consider case of soft segments in right lane but not left
-            # TODO: exclude crossing lanes from right_neighbors (and left_neighbors too)
             if not self._no_roads and lane_dict["right_neighbors"]:
                 continue
             assert lane_id not in self._lanes

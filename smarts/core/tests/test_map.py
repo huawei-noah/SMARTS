@@ -745,6 +745,23 @@ def test_waymo_map():
     assert l3.lane_id == "156"
     assert not l3.contains_point(point)
 
+    # segmentation: lanes 86 and 87 diverge at point 4.
+    l86 = road_map.lane_by_id("86")
+    l87 = road_map.lane_by_id("87")
+    assert l86.road == l87.road
+    assert l86.road.road_id == "waymo_road-86-87"
+    assert l86.index == 0
+    assert l87.index == 1
+    l86_4 = road_map.lane_by_id("86_4")
+    l87_4 = road_map.lane_by_id("87_4")
+    assert l86_4.road != l87_4.road
+    assert l86_4.road.road_id == "waymo_road-86_4"
+    assert l86_4.index == 0
+    assert l87_4.index == 0
+
+    # composites
+    # TODO: no composites in this test scenario?
+
     # Lanepoints
     lanepoints = road_map._lanepoints
     point = Point(2715.0, -2763.5, 0)
