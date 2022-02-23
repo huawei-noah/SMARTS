@@ -1239,7 +1239,6 @@ class SMARTS:
                     controller_state,
                     sensor_state,
                     agent_interface.action_space,
-                    agent_interface.vehicle_type,
                 )
 
     def _sync_vehicles_to_renderer(self):

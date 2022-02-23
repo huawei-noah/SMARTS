@@ -394,9 +394,14 @@ class Vehicle:
             SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value
         )
 
-        if agent_interface.vehicle_type == "sedan":
+        if mission.vehicle_spec == None:
+            vehicle_type = "sedan"
+        else:
+            vehicle_type = mission.vehicle_spec.veh_config_type
+            
+        if vehicle_type == "sedan":
             urdf_name = "vehicle"
-        elif agent_interface.vehicle_type == "bus":
+        elif vehicle_type == "bus":
             urdf_name = "bus"
         else:
             raise Exception("Vehicle type does not exist!!!")
@@ -406,7 +411,7 @@ class Vehicle:
                 vehicle_filepath = str(path.absolute())
 
         controller_parameters = sim.vehicle_index.controller_params_for_vehicle_type(
-            agent_interface.vehicle_type
+            vehicle_type
         )
 
         chassis = None
