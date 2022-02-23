@@ -900,8 +900,13 @@ class SMARTS:
                     )
                 # Update the social vehicle avatar to match the vehicle state
                 if not vehicle.updated:
-                    # Note:  update_state() happens *after* pybullet has been stepped.
-                    social_vehicle.update_state(vehicle, dt=dt)
+                    if self._resetting:
+                        social_vehicle.chassis.state_override(
+                            dt=dt, force_pose=vehicle.pose
+                        )
+                    else:
+                        # Note: update_state() happens *after* pybullet has been stepped.
+                        social_vehicle.update_state(vehicle, dt=dt)
 
     def _step_pybullet(self):
         self._bullet_client.stepSimulation()
