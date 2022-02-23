@@ -36,7 +36,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Fixed
 - Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error.
 ### Removed
-- Removed `vehicle_type` from `AgentInterface`, instead get the vehicle type from scenario's agent missions
+- Removed `vehicle_type` from `AgentInterface`, instead get the vehicle type from scenario's agent missions.
 ### Security
 
 ## [0.5.0] - 2022-01-07
