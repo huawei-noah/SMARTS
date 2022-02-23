@@ -22,7 +22,7 @@ import math
 import time
 from copy import deepcopy
 from functools import lru_cache
-from typing import Any, Dict, List, NamedTuple, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 import rtree
