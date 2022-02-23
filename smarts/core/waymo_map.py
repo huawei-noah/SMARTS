@@ -256,7 +256,7 @@ class WaymoMap(RoadMap):
                     waymo_lanedicts[prev_hard_seg.seg_id] = prev_hard_seg.lane_dict
                     softs_since_hard = []
                 else:
-                    prev_soft_seg = orig_seg._create_lane_segment(split, prev_soft_seg)
+                    prev_soft_seg = orig_seg.create_new_segment(split_pt, prev_soft_seg)
                     waymo_lanedicts[prev_soft_seg.seg_id] = prev_soft_seg.lane_dict
                     softs_since_hard.append(prev_soft_seg)
 
@@ -668,7 +668,7 @@ class WaymoMap(RoadMap):
         def composite_lane(self) -> RoadMap.Lane:
             composite_id = self._lane_dict.get("composite")
             if composite_id:
-                return road_map.lane_by_id(composite_id)
+                return self._map.lane_by_id(composite_id)
             return self
 
         @property
