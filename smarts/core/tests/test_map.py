@@ -685,16 +685,16 @@ def test_waymo_map():
             assert lane.speed_limit >= 0
 
     # Lane Tests
-    l1 = road_map.lane_by_id("100_0")
+    l1 = road_map.lane_by_id("100")
     assert l1
-    assert l1.lane_id == "100_0"
-    assert l1.road.road_id == "waymo_road-100_0"
+    assert l1.lane_id == "100"
+    assert l1.road.road_id == "waymo_road-100"
     assert l1.is_drivable
     assert l1.index == 0
     assert round(l1.length, 2) == 124.48
     assert l1.speed_limit == 13.4112
 
-    assert set(l.lane_id for l in l1.incoming_lanes) == {"101_0", "110_0", "105_0"}
+    assert set(l.lane_id for l in l1.incoming_lanes) == {"101", "110", "105"}
     assert set(l.lane_id for l in l1.outgoing_lanes) == set()
 
     right_lane, direction = l1.lane_to_right
@@ -705,7 +705,7 @@ def test_waymo_map():
 
     l1_vector = l1.vector_at_offset(50.01)
     l1_vector = l1_vector.tolist()
-    assert l1_vector == [-0.5304760093854384, -0.8476999406939285]
+    assert l1_vector == [-0.5304760093854384, -0.8476999406939285, 0.0]
 
     # point on lane
     point = Point(2714.0, -2764.5, 0)
@@ -724,7 +724,7 @@ def test_waymo_map():
     on_lanes = l1.oncoming_lanes_at_offset(offset)
     assert on_lanes
     assert len(on_lanes) == 1
-    assert on_lanes[0].lane_id == "95_0"
+    assert on_lanes[0].lane_id == "95"
 
     # check for locations (lane, offset tuples) within distance at this offset
     candidates = l1.project_along(offset, 70)
@@ -733,16 +733,16 @@ def test_waymo_map():
     # nearest lane for a point inside a lane
     point = Point(2910.0, -2610.0, 0)
     l2 = road_map.nearest_lane(point)
-    assert l2.lane_id == "156_0"
+    assert l2.lane_id == "156"
     assert l2.index == 0
-    assert l2.road.road_id == "waymo_road-156_0"
+    assert l2.road.road_id == "waymo_road-156"
     assert l2.speed_limit == 11.176
     assert l2.contains_point(point)
 
     # nearest lane for a point outside all lanes
     point = Point(2910.0, -2612.0, 0)
     l3 = road_map.nearest_lane(point)
-    assert l3.lane_id == "156_0"
+    assert l3.lane_id == "156"
     assert not l3.contains_point(point)
 
     # Lanepoints
@@ -754,17 +754,17 @@ def test_waymo_map():
         round(l1_lane_point.pose.position[1], 2),
     ) == (2713.84, -2762.52)
 
-    r1 = road_map.road_by_id("waymo_road-100_0")
+    r1 = road_map.road_by_id("waymo_road-100")
     r1_linked_lane_point = lanepoints.closest_linked_lanepoint_on_road(
         point, r1.road_id
     )
-    assert r1_linked_lane_point.lp.lane.lane_id == "100_0"
+    assert r1_linked_lane_point.lp.lane.lane_id == "100"
     r1_lp_path = lanepoints.paths_starting_at_lanepoint(r1_linked_lane_point, 10, ())
     assert len(r1_lp_path) == 1
-    assert [llp.lp.lane.lane_id for llp in r1_lp_path[0]].count("100_0") == 11
+    assert [llp.lp.lane.lane_id for llp in r1_lp_path[0]].count("100") == 11
 
     # waypoints generation along road connections
-    lp_101_0 = road_map._lanepoints._lanepoints_by_lane_id["101_0"]
+    lp_101_0 = road_map._lanepoints._lanepoints_by_lane_id["101"]
     lp_pose = lp_101_0[0].lp.pose
     waypoints_for_route = road_map.waypoint_paths(lp_pose, 100)
     assert len(waypoints_for_route) == 4
@@ -772,7 +772,8 @@ def test_waymo_map():
     lane_ids_under_wps = set()
     for wp in waypoints_for_route[0]:
         lane_ids_under_wps.add(wp.lane_id)
-    assert lane_ids_under_wps == {'107_0', '107_19', '107_20', '107_3', '107_5', '111_0'}
+    assert lane_ids_under_wps == {"107", "107_19", "107_20", "107_3", "107_5", "111"}
+
 
 # XXX: The below is just for testing. Remove before merging.
 
@@ -861,7 +862,7 @@ if __name__ == "__main__":
 
     for lane_id, lane in road_map._lanes.items():
         plot_lane(lane._lane_dict)
-        # plot_boundaries(lane, features)
+        # plot_boundaries(lane_feat, features)
         xs, ys = [], []
         for x, y in lane._lane_polygon:
             xs.append(x)

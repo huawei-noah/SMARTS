@@ -222,7 +222,6 @@ class SumoRoadNetwork(RoadMap):
 
     @property
     def scale_factor(self) -> float:
-        """Get the scale factor between the default lane width and the default lane width."""
         # map units per meter
         return self._default_lane_width / SumoRoadNetwork.DEFAULT_LANE_WIDTH
 
