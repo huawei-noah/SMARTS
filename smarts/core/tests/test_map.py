@@ -768,6 +768,14 @@ def test_waymo_map():
     assert l87_4.lane_to_right[0] is None
 
     # composites
+    assert l86.composite_lane == l86
+    assert l87.composite_lane == l87
+    assert l86_4.composite_lane == l86_4
+    assert l87_4.composite_lane == l87_4
+    assert l86.road.composite_road== l86.road
+    assert l87.road.composite_road== l87.road
+    assert l86_4.road.composite_road == l86_4.road
+    assert l87_4.road.composite_road == l87_4.road
     # TODO: no composites in this test scenario?
 
     # Lanepoints
