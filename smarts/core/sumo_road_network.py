@@ -441,7 +441,7 @@ class SumoRoadNetwork(RoadMap):
             )
 
         @lru_cache(maxsize=4)
-        def _shape(
+        def shape(
             self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
             """Returns a convex polygon representing this lane, buffered by buffered_width (which must be non-negative),
@@ -661,7 +661,7 @@ class SumoRoadNetwork(RoadMap):
             return left_edge, right_edge
 
         @lru_cache(maxsize=4)
-        def _shape(
+        def shape(
             self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
             """Returns a convex polygon representing this road, buffered by buffered_width (which must be non-negative),
@@ -928,7 +928,7 @@ class SumoRoadNetwork(RoadMap):
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
             return [
                 list(
-                    road._shape(
+                    road.shape(
                         0.0, sum([lane._width for lane in road.lanes])
                     ).exterior.coords
                 )

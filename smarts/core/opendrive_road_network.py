@@ -674,7 +674,7 @@ class OpenDriveRoadNetwork(RoadMap):
         polygons = []
         for lane_id in self._lanes:
             lane = self._lanes[lane_id]
-            polygons.append(lane._shape())
+            polygons.append(lane.shape())
 
         mesh = generate_mesh_from_polygons(polygons)
 
@@ -1148,7 +1148,7 @@ class OpenDriveRoadNetwork(RoadMap):
             return abs(t_outer - t_inner), 1.0
 
         @lru_cache(maxsize=4)
-        def _shape(
+        def shape(
             self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
             """Returns a convex polygon representing this lane, buffered by buffered_width (which must be non-negative),
@@ -1299,10 +1299,10 @@ class OpenDriveRoadNetwork(RoadMap):
                 leftmost_lane_buffered_polygon = leftmost_lane.lane_polygon
             else:
                 rightmost_lane_buffered_polygon = rightmost_lane._compute_lane_polygon(
-                    buffer_width
+                    buffer_width / 2
                 )
                 leftmost_lane_buffered_polygon = leftmost_lane._compute_lane_polygon(
-                    buffer_width
+                    buffer_width / 2
                 )
 
             # Right edge
@@ -1324,7 +1324,7 @@ class OpenDriveRoadNetwork(RoadMap):
             return leftmost_edge_shape, rightmost_edge_shape
 
         @lru_cache(maxsize=4)
-        def _shape(
+        def shape(
             self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
             """Returns a convex polygon representing this , buffered by buffered_width (which must be non-negative),
@@ -1437,7 +1437,7 @@ class OpenDriveRoadNetwork(RoadMap):
 
         @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
-            return [list(road._shape(1.0).exterior.coords) for road in self.roads]
+            return [list(road.shape(1.0).exterior.coords) for road in self.roads]
 
         @lru_cache(maxsize=8)
         def distance_between(self, start: Point, end: Point) -> Optional[float]:

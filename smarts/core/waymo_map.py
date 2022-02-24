@@ -20,6 +20,8 @@
 import logging
 import math
 import time
+import heapq
+import random
 from copy import deepcopy
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
@@ -47,6 +49,7 @@ from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
 from .utils.file import read_tfrecord_file
 from .utils.math import ray_boundary_intersect, inplace_unwrap, radians_to_vec, vec_2d
+from .utils.geometry import buffered_shape
 
 
 class WaymoMap(RoadMap):
@@ -675,6 +678,19 @@ class WaymoMap(RoadMap):
         def is_composite(self) -> bool:
             return self._is_composite
 
+        @lru_cache(maxsize=4)
+        def shape(
+                self, buffer_width: float = 0.0, default_width: Optional[float] = None
+        ) -> Polygon:
+            """Returns a polygon representing this lane, buffered by buffered_width (which must be non-negative),
+            where buffer_width is a buffer around the perimeter of the polygon."""
+            if buffer_width == 0.0:
+                return Polygon(self._lane_polygon)
+            new_width = self._lane_width + buffer_width
+            if new_width > 0:
+                return buffered_shape(self._centerline_pts, new_width)
+            return Polygon(self._lane_polygon)
+
         @cached_property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
             return [
@@ -989,6 +1005,43 @@ class WaymoMap(RoadMap):
                     if ol.road != self
                 ]
             return result
+
+        def _edge_shape(self):
+            leftmost_lane = self.lane_at_index(self._total_lanes - 1)
+            rightmost_lane = self.lane_at_index(0)
+
+            rightmost_lane_buffered_polygon = rightmost_lane._lane_polygon
+            leftmost_lane_buffered_polygon = leftmost_lane._lane_polygon
+
+            # Right edge
+            rightmost_edge_vertices_len = int(
+                (len(rightmost_lane_buffered_polygon) - 1) / 2
+            )
+            rightmost_edge_shape = rightmost_lane_buffered_polygon[
+                rightmost_edge_vertices_len : len(rightmost_lane_buffered_polygon) - 1
+            ]
+
+            # Left edge
+            leftmost_edge_vertices_len = int(
+                (len(leftmost_lane_buffered_polygon) - 1) / 2
+            )
+            leftmost_edge_shape = leftmost_lane_buffered_polygon[
+                :leftmost_edge_vertices_len
+            ]
+
+            return leftmost_edge_shape, rightmost_edge_shape
+
+        @lru_cache(maxsize=4)
+        def shape(
+            self, buffer_width: float = 0.0, default_width: Optional[float] = None
+        ) -> Polygon:
+            """Returns the polygon representing this , buffered by buffered_width (which must be non-negative),
+            where buffer_width is a buffer around the perimeter of the polygon."""
+            leftmost_edge_shape, rightmost_edge_shape = self._edge_shape()
+            road_polygon = (
+                leftmost_edge_shape + rightmost_edge_shape + [leftmost_edge_shape[0]]
+            )
+            return Polygon(road_polygon)
 
         @property
         def parallel_roads(self) -> List[RoadMap.Road]:
