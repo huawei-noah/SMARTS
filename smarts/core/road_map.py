@@ -380,7 +380,7 @@ class RoadMap:
             s_offset = max(s_offset, 0)
             p1 = self.from_lane_coord(RefLinePoint(s=s_offset))
             p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
-            return np.array([p2[0], p2[1]]) - np.array([p1[0], p1[1]])
+            return np.array(p2) - np.array(p1)
 
         def center_pose_at_point(self, point: Point) -> Pose:
             """The pose at the center of the lane closest to the given point."""
