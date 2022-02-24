@@ -898,9 +898,15 @@ class SMARTS:
                         vehicle_id=vehicle_id,
                         vehicle_config_type=vehicle.vehicle_config_type,
                     )
-                # Update the social vehicle avatar to match the vehicle state
+
+                # Update social vehicles when no active agent is present
+                if not self._vehicle_index.agent_vehicle_ids():
+                    social_vehicle.chassis.state_override(
+                        dt=dt, force_pose=vehicle.pose
+                    )
+
                 if not vehicle.updated:
-                    # Note:  update_state() happens *after* pybullet has been stepped.
+                    # Note: update_state() happens *after* pybullet has been stepped.
                     social_vehicle.update_state(vehicle, dt=dt)
 
     def _step_pybullet(self):
@@ -954,7 +960,7 @@ class SMARTS:
         # TODO: It's inconsistent that pybullet is not here
         return self._providers
 
-    def get_provider_by_type(self, requested_type) -> Provider:
+    def get_provider_by_type(self, requested_type) -> Optional[Provider]:
         """Get The first provider that matches the requested type."""
         self._check_valid()
         for provider in self._providers:
@@ -994,10 +1000,12 @@ class SMARTS:
             except Exception as provider_error:
                 self._handle_provider(provider, provider_error)
 
-    def _handle_provider(self, provider: Provider, provider_error) -> ProviderState:
+    def _handle_provider(
+        self, provider: Provider, provider_error
+    ) -> Optional[ProviderState]:
         provider_problem = bool(provider_error or not provider.connected)
         if not provider_problem:
-            return
+            return None
 
         recovery_flags = self._provider_recovery_flags.get(
             provider, ProviderRecoveryFlags.EXPERIMENT_REQUIRED
@@ -1126,6 +1134,11 @@ class SMARTS:
     def should_reset(self):
         """If the simulation requires a reset."""
         return self._reset_required
+
+    @property
+    def resetting(self) -> bool:
+        """If the simulation is currently resetting"""
+        return self._resetting
 
     @property
     def scenario(self):
@@ -1277,7 +1290,7 @@ class SMARTS:
         map_max = np.array(self._map_bb.max_pt[:2]) if self._map_bb else None
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            map_spot = np.array(vehicle.pose.position[:2])
+            map_spot = np.array(vehicle.pose.as_position2d())
             if map_min is None:
                 map_min = map_spot
                 rescale_plane = True
@@ -1366,7 +1379,7 @@ class SMARTS:
                     mission_route_geometry=mission_route_geometry,
                 )
                 speed[agent_id] = v.speed
-                position[agent_id] = tuple(v.pose.position[:2])
+                position[agent_id] = tuple(v.pose.as_position2d())
                 heading[agent_id] = float(v.pose.heading)
                 if (
                     vehicle_obs.waypoint_paths

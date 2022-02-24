@@ -35,6 +35,10 @@ class MotionPlannerProvider(Provider):
 
     def __init__(self):
         self._is_setup = False
+        self._motion_planner: BezierMotionPlanner = None
+        self._vehicle_id_to_index: dict = {}
+        self._vehicle_index_to_id: dict = {}
+        self._poses: np.ndarray = None
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -158,10 +162,10 @@ class MotionPlannerProvider(Provider):
         self._vehicle_index_to_id[vehicle_index] = vehicle_id
 
         position, heading = (
-            provider_vehicle.pose.position,
+            provider_vehicle.pose.as_position2d(),
             provider_vehicle.pose.heading,
         )
-        self._poses = np.append(self._poses, [*position[:2], heading]).reshape(-1, 3)
+        self._poses = np.append(self._poses, [*position, heading]).reshape(-1, 3)
 
     def _alloc_index(self) -> int:
         return len(self._poses)

@@ -17,9 +17,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import subprocess
+from typing import List
+
 from gym.envs.registration import register
 
 register(
     id="hiway-v0",
     entry_point="smarts.env.hiway_env:HiWayEnv",
 )
+
+register(
+    id="intersection-v0",
+    entry_point="smarts.env.intersection_env:intersection_env",
+)
+
+
+def build_scenario(scenario: List[str]):
+    """Build the given scenarios.
+
+    Args:
+        scenario (List[str]): Scenarios to build.
+    """
+    build_scenario = " ".join(["scl scenario build-all --clean"] + scenario)
+    subprocess.call(build_scenario, shell=True)
