@@ -898,15 +898,16 @@ class SMARTS:
                         vehicle_id=vehicle_id,
                         vehicle_config_type=vehicle.vehicle_config_type,
                     )
-                # Update the social vehicle avatar to match the vehicle state
+
+                # Update social vehicle pose when no active agents are present
+                if not self._vehicle_index.agent_vehicle_ids():
+                    social_vehicle.chassis.state_override(
+                        dt=dt, force_pose=vehicle.pose
+                    )
+
                 if not vehicle.updated:
-                    if self._resetting:
-                        social_vehicle.chassis.state_override(
-                            dt=dt, force_pose=vehicle.pose
-                        )
-                    else:
-                        # Note: update_state() happens *after* pybullet has been stepped.
-                        social_vehicle.update_state(vehicle, dt=dt)
+                    # Note: update_state() happens *after* pybullet has been stepped.
+                    social_vehicle.update_state(vehicle, dt=dt)
 
     def _step_pybullet(self):
         self._bullet_client.stepSimulation()
