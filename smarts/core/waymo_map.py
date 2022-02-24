@@ -680,7 +680,7 @@ class WaymoMap(RoadMap):
 
         @lru_cache(maxsize=4)
         def shape(
-                self, buffer_width: float = 0.0, default_width: Optional[float] = None
+            self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
             """Returns a polygon representing this lane, buffered by buffered_width (which must be non-negative),
             where buffer_width is a buffer around the perimeter of the polygon."""
@@ -1119,6 +1119,193 @@ class WaymoMap(RoadMap):
             if nl.contains_point(point):
                 return nl.road
         return None
+
+    class Route(RoadMap.Route):
+        """Describes a route between roads."""
+
+        def __init__(self, road_map):
+            self._roads = []
+            self._length = 0
+            self._map = road_map
+
+        @property
+        def roads(self) -> List[RoadMap.Road]:
+            return self._roads
+
+        @property
+        def road_length(self) -> float:
+            return self._length
+
+        def add_road(self, road: RoadMap.Road):
+            """Add a road to this route."""
+            self._length += road.length
+            self._roads.append(road)
+
+        @cached_property
+        def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
+            return [list(road.shape().exterior.coords) for road in self.roads]
+
+        @lru_cache(maxsize=8)
+        def distance_between(self, start: Point, end: Point) -> Optional[float]:
+            radius = 30
+            for cand_start_lane, _ in self._map.nearest_lanes(
+                start, radius, include_junctions=False
+            ):
+                try:
+                    sind = self._roads.index(cand_start_lane.road)
+                    break
+                except ValueError:
+                    pass
+            else:
+                logging.warning("unable to find road on route near start point")
+                return None
+            start_road = cand_start_lane.road
+            for cand_end_lane, _ in self._map.nearest_lanes(
+                end, radius, include_junctions=False
+            ):
+                try:
+                    eind = self._roads.index(cand_end_lane.road)
+                    break
+                except ValueError:
+                    pass
+            else:
+                logging.warning("unable to find road on route near end point")
+                return None
+            end_road = cand_end_lane.road
+            d = 0
+            start_offset = cand_start_lane.offset_along_lane(start)
+            end_offset = cand_end_lane.offset_along_lane(end)
+            if start_road == end_road:
+                return end_offset - start_offset
+            negate = False
+            if sind > eind:
+                cand_start_lane = cand_end_lane
+                start_road, end_road = end_road, start_road
+                start_offset, end_offset = end_offset, start_offset
+                negate = True
+            for road in self._roads:
+                if d == 0 and road == start_road:
+                    d += cand_start_lane.length - start_offset
+                elif road == end_road:
+                    d += end_offset
+                    break
+                elif d > 0:
+                    d += road.length
+            return -d if negate else d
+
+        @lru_cache(maxsize=8)
+        def project_along(
+            self, start: Point, distance: float
+        ) -> Optional[Set[Tuple[RoadMap.Lane, float]]]:
+            radius = 30.0
+            route_roads = set(self._roads)
+            for cand_start_lane, _ in self._map.nearest_lanes(
+                start, radius, include_junctions=False
+            ):
+                if cand_start_lane.road in route_roads:
+                    break
+            else:
+                logging.warning("unable to find road on route near start point")
+                return None
+            started = False
+            for road in self._roads:
+                if not started:
+                    if road != cand_start_lane.road:
+                        continue
+                    started = True
+                    lane_pt = cand_start_lane.to_lane_coord(start)
+                    start_offset = lane_pt.s
+                else:
+                    start_offset = 0
+                if distance > road.length - start_offset:
+                    distance -= road.length - start_offset
+                    continue
+                return {(lane, distance) for lane in road.lanes}
+            return set()
+
+    @staticmethod
+    def _shortest_route(start: RoadMap.Road, end: RoadMap.Road) -> List[RoadMap.Road]:
+        queue = [(start.length, start.road_id, start)]
+        came_from = dict()
+        came_from[start] = None
+        cost_so_far = dict()
+        cost_so_far[start] = start.length
+        current = None
+
+        # Dijkstra’s Algorithm
+        while queue:
+            (_, _, current) = heapq.heappop(queue)
+            current: RoadMap.Road
+            if current == end:
+                break
+            for out_road in current.outgoing_roads:
+                new_cost = cost_so_far[current] + out_road.length
+                if out_road not in cost_so_far or new_cost < cost_so_far[out_road]:
+                    cost_so_far[out_road] = new_cost
+                    came_from[out_road] = current
+                    heapq.heappush(queue, (new_cost, out_road.road_id, out_road))
+
+        # This means we couldn't find a valid route since the queue is empty
+        if current != end:
+            return []
+
+        # Reconstruct path
+        current = end
+        path = []
+        while current != start:
+            path.append(current)
+            current = came_from[current]
+        path.append(start)
+        path.reverse()
+        return path
+
+    def generate_routes(
+        self,
+        start_road: RoadMap.Road,
+        end_road: RoadMap.Road,
+        via: Optional[Sequence[RoadMap.Road]] = None,
+        max_to_gen: int = 1,
+    ) -> List[RoadMap.Route]:
+        assert max_to_gen == 1, "multiple route generation not yet supported for Waymo"
+        new_route = WaymoMap.Route(self)
+        result = [new_route]
+
+        roads = [start_road]
+        if via:
+            roads += via
+        if end_road != start_road:
+            roads.append(end_road)
+
+        route_roads = []
+        for cur_road, next_road in zip(roads, roads[1:] + [None]):
+            if not next_road:
+                route_roads.append(cur_road)
+                break
+            sub_route = WaymoMap._shortest_route(cur_road, next_road) or []
+            if len(sub_route) < 2:
+                self._log.warning(
+                    f"Unable to find valid path between {(cur_road.road_id, next_road.road_id)}."
+                )
+                return result
+            # The sub route includes the boundary roads (cur_road, next_road).
+            # We clip the latter to prevent duplicates
+            route_roads.extend(sub_route[:-1])
+
+        for road in route_roads:
+            new_route.add_road(road)
+        return result
+
+    def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
+        route = WaymoMap.Route(self)
+        next_roads = list(self._roads.values())
+        while next_roads and len(route.roads) < max_route_len:
+            cur_road = random.choice(next_roads)
+            route.add_road(cur_road)
+            next_roads = list(cur_road.outgoing_roads)
+        return route
+
+    def empty_route(self) -> RoadMap.Route:
+        return WaymoMap.Route(self)
 
     class _WaypointsCache:
         def __init__(self):

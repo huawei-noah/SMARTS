@@ -782,6 +782,62 @@ def test_waymo_map():
     assert l87_4.road.composite_road == l87_4.road
     # TODO: no composites in this test scenario?
 
+    # route generation
+    r_100 = road_map.road_by_id("waymo_road-100")
+    r_120 = road_map.road_by_id("waymo_road-120")
+
+    route_120_to_100 = road_map.generate_routes(r_120, r_100)
+    assert [r.road_id for r in route_120_to_100[0].roads] == [
+        "waymo_road-120",
+        "waymo_road-113-121",
+        "waymo_road-113_4",
+        "waymo_road-113_23-114_30",
+        "waymo_road-112",
+        "waymo_road-107-108-101-108",
+        "waymo_road-101_4",
+        "waymo_road-101_8",
+        "waymo_road-101_34-105_34",
+        "waymo_road-110_24-101_36",
+        "waymo_road-100",
+    ]
+    assert route_120_to_100[0].road_length == 223.15809203789289
+
+    # waypoints generation along route
+    lp_120 = road_map._lanepoints._lanepoints_by_lane_id["120"]
+    lp_pose = lp_120[0].lp.pose
+    waypoints_for_route = road_map.waypoint_paths(
+        lp_pose, 460, route=route_120_to_100[0]
+    )
+    assert len(waypoints_for_route) == 1
+    assert len(waypoints_for_route[0]) == 459
+    lane_ids_under_wps = set()
+    for wp in waypoints_for_route[0]:
+        lane_ids_under_wps.add(wp.lane_id)
+    assert lane_ids_under_wps == {
+        "100",
+        "101",
+        "101_34",
+        "101_36",
+        "101_4",
+        "101_8",
+        "112",
+        "113",
+        "113_23",
+        "113_4",
+        "120",
+    }
+
+    # distance between points along route
+    start_point = Point(x=2778.00, y=-2639.5, z=0)
+    end_point = Point(2714.0, -2764.5, 0)
+    assert (
+        round(route_120_to_100[0].distance_between(start_point, end_point), 2) == 142.1
+    )
+
+    # project along route
+    candidates = route_120_to_100[0].project_along(start_point, 200)
+    assert len(candidates) == 1
+
     # Lanepoints
     lanepoints = road_map._lanepoints
     point = Point(2715.0, -2763.5, 0)
