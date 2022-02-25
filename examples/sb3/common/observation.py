@@ -10,10 +10,11 @@ class Observation(gym.ObservationWrapper):
         print("--------------------------------")
         self.observation_space = gym.spaces.Dict(
             {
-                agent_id: space["rgb"] for agent_id, space in env.observation_space.items() 
+                agent_id: space["rgb"]
+                for agent_id, space in env.observation_space.items()
             }
         )
-    
+
     def observation(self, obs):
         """Adapts the wrapped environment's observation.
 

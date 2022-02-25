@@ -2,17 +2,17 @@ import os
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # Silence the TF logs
 
-import gym
 import argparse
 import pathlib
 import warnings
 from datetime import datetime
 from typing import Any, Dict
 
+import gym
 from ruamel.yaml import YAML
 from stable_baselines3 import PPO
-from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.env_checker import check_env
+from stable_baselines3.common.evaluation import evaluate_policy
 
 from examples.sb3 import common
 from smarts.env.wrappers import single_agent
@@ -21,6 +21,7 @@ warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=ImportWarning)
 warnings.simplefilter("ignore", category=ResourceWarning)
 yaml = YAML(typ="safe")
+
 
 def main(args: argparse.Namespace):
     # Load config file.
@@ -36,9 +37,9 @@ def main(args: argparse.Namespace):
     # Create environment
     env = gym.make(
         "smarts.env:intersection-v0",
-        headless=not args.head, # If False, enables Envision display.
-        visdom=config_env["visdom"], # If True, enables Visdom display.
-        sumo_headless=not config_env["sumo_gui"], # If False, enables sumo-gui display.
+        headless=not args.head,  # If False, enables Envision display.
+        visdom=config_env["visdom"],  # If True, enables Visdom display.
+        sumo_headless=not config_env["sumo_gui"],  # If False, enables sumo-gui display.
     )
     # Wrap env with Action Wrapper
     env = common.action.Action(env=env)
@@ -71,6 +72,7 @@ def main(args: argparse.Namespace):
     # Run training or evaluation.
     run(env, config_env, logdir)
     env.close()
+
 
 def run(env: gym.Env, config: Dict[str, Any], logdir: pathlib.PosixPath):
 
