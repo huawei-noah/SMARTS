@@ -10,9 +10,7 @@ from datetime import datetime
 from typing import Any, Dict
 
 from ruamel.yaml import YAML
-from sb3.env.make_env import make_env
 from stable_baselines3 import PPO
-from stable_baselines3 import DQN
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.env_checker import check_env
 
@@ -50,12 +48,10 @@ def main(args: argparse.Namespace):
     env = common.observation.Observation(env=env)
     # Wrap env with SingleAgent wrapper
     env = single_agent.SingleAgent(env=env)
-
-    env = monitor.Monitor(env=env)
     # Check our custom environment
     check_env(env)
 
-    # Train or evaluate.
+    # Setup train or evaluate.
     if config_env["mode"] == "train" and not args.logdir:
         # Begin training from scratch.
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
