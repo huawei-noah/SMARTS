@@ -38,9 +38,6 @@ COPY . /src
 WORKDIR /src
 RUN pip install --no-cache-dir -e ./examples/sb3
 
-# Build scenarios and maps.
-RUN scl scenario build-all --clean ./examples/sb3/scenarios
-
 # For Envision.
 EXPOSE 8081
 

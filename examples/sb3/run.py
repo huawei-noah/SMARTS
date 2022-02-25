@@ -12,14 +12,17 @@ from typing import Any, Dict
 from ruamel.yaml import YAML
 from sb3.env.make_env import make_env
 from stable_baselines3 import PPO
+from stable_baselines3 import DQN
 from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.env_checker import check_env
+
 from examples.sb3 import common
+from smarts.env.wrappers import single_agent
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=ImportWarning)
 warnings.simplefilter("ignore", category=ResourceWarning)
 yaml = YAML(typ="safe")
-
 
 def main(args: argparse.Namespace):
     # Load config file.
@@ -30,29 +33,27 @@ def main(args: argparse.Namespace):
     # Load env config.
     config_env = config_file["smarts"]
     config_env["mode"] = args.mode
-    config_env["headless"] = not args.head
     config_env["train_steps"] = args.train_steps
-    config_env["scenarios_dir"] = (
-        pathlib.Path(__file__).absolute().parents[0] / "scenarios"
-    )
 
     # Create environment
     env = gym.make(
         "smarts.env:intersection-v0",
-        headless=config_env["headless"], # If False, enables Envision display.
+        headless=not args.head, # If False, enables Envision display.
         visdom=config_env["visdom"], # If True, enables Visdom display.
-        sumo_headless=config_env["sumo_headless"], # If False, enables sumo-gui display.
+        sumo_headless=not config_env["sumo_gui"], # If False, enables sumo-gui display.
     )
-    # Wrap env with ActionWrapper
+    # Wrap env with Action Wrapper
     env = common.action.Action(env=env)
-    # Wrap env with RewardWrapper
+    # Wrap env with Reward Wrapper
     env = common.reward.Reward(env=env)
-    # Wrap env with RGBImage wrapper to only get rgb images in observation
-    env = smarts_rgb_image.RGBImage(env=env, num_stack=1)
-    # Wrap env with SingleAgent wrapper to be Gym compliant
-    env = smarts_single_agent.SingleAgent(env=env)
+    # Wrap env with Observation Wrapper
+    env = common.observation.Observation(env=env)
+    # Wrap env with SingleAgent wrapper
+    env = single_agent.SingleAgent(env=env)
+
     env = monitor.Monitor(env=env)
-    check_env(env, warn=True)
+    # Check our custom environment
+    check_env(env)
 
     # Train or evaluate.
     if config_env["mode"] == "train" and not args.logdir:
@@ -72,11 +73,10 @@ def main(args: argparse.Namespace):
     print("Logdir:", logdir)
 
     # Run training or evaluation.
-    run(config_env, logdir)
+    run(env, config_env, logdir)
+    env.close()
 
-
-def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
-    env = make_env(config)
+def run(env: gym.Env, config: Dict[str, Any], logdir: pathlib.PosixPath):
 
     if config["mode"] == "evaluate":
         print("Start evaluation.")
@@ -87,7 +87,7 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
         model.set_env(env)
         model.learn(total_timesteps=config["train_steps"])
     else:
-        print("Start training.")
+        print("Start training from scratch.")
         model = PPO(
             "CnnPolicy",
             env,
@@ -97,6 +97,7 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
         )
         model.learn(total_timesteps=config["train_steps"])
 
+    print("Evaluate policy")
     mean_reward, std_reward = evaluate_policy(
         model, env, n_eval_episodes=config["eval_eps"], deterministic=True
     )
@@ -104,8 +105,6 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
 
     if config["mode"] == "train":
         model.save(logdir / "model")
-
-    env.close()
 
 
 if __name__ == "__main__":
@@ -127,7 +126,7 @@ if __name__ == "__main__":
         "--head", help="Run the simulation with display.", action="store_true"
     )
     parser.add_argument(
-        "--train-steps", help="Number of training steps.", type=int, default=1e6
+        "--train-steps", help="Number of training steps.", type=int, default=5e6
     )
 
     args = parser.parse_args()

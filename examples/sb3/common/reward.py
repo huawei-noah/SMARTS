@@ -26,7 +26,12 @@ class Reward(gym.Wrapper):
 
         # Penalty for driving off road
         if obs.events.off_road:
-            reward -= 5
+            reward -= 10
+            return np.float32(reward)
+
+        # Penalty for driving on road shoulder
+        if obs.events.on_shoulder:
+            reward -= 10
             return np.float32(reward)
 
         # Penalty for colliding
