@@ -5,7 +5,4 @@ smarts:
   sumo_gui: False # If True, enables sumo-gui display.
   rgb_meters: 100 # Height and width (meters) of RGB image in SMARTS observation
   rgb_pixels: 100 # Height and width (pixels) of RGB image in SMARTS observation  
-  max_episode_steps: 1000 # 30 seconds. Maximum steps per episode.
-  eval_eps: 10 # Number of evaluation epsiodes.
-  agent_ids: 
-    - SB3-Left-Turn
+  eval_eps: 800 # Number of evaluation epsiodes.
