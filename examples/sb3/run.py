@@ -2,6 +2,7 @@ import os
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # Silence the TF logs
 
+import gym
 import argparse
 import pathlib
 import warnings
@@ -12,6 +13,7 @@ from ruamel.yaml import YAML
 from sb3.env.make_env import make_env
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
+from examples.sb3 import common
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=ImportWarning)
@@ -33,7 +35,24 @@ def main(args: argparse.Namespace):
     config_env["scenarios_dir"] = (
         pathlib.Path(__file__).absolute().parents[0] / "scenarios"
     )
-    _build_scenario()
+
+    # Create environment
+    env = gym.make(
+        "smarts.env:intersection-v0",
+        headless=config_env["headless"], # If False, enables Envision display.
+        visdom=config_env["visdom"], # If True, enables Visdom display.
+        sumo_headless=config_env["sumo_headless"], # If False, enables sumo-gui display.
+    )
+    # Wrap env with ActionWrapper
+    env = common.action.Action(env=env)
+    # Wrap env with RewardWrapper
+    env = common.reward.Reward(env=env)
+    # Wrap env with RGBImage wrapper to only get rgb images in observation
+    env = smarts_rgb_image.RGBImage(env=env, num_stack=1)
+    # Wrap env with SingleAgent wrapper to be Gym compliant
+    env = smarts_single_agent.SingleAgent(env=env)
+    env = monitor.Monitor(env=env)
+    check_env(env, warn=True)
 
     # Train or evaluate.
     if config_env["mode"] == "train" and not args.logdir:
@@ -54,12 +73,6 @@ def main(args: argparse.Namespace):
 
     # Run training or evaluation.
     run(config_env, logdir)
-
-
-def _build_scenario():
-    scenario = str(pathlib.Path(__file__).absolute().parent / "scenarios")
-    build_scenario = f"scl scenario build-all --clean {scenario}"
-    os.system(build_scenario)
 
 
 def run(config: Dict[str, Any], logdir: pathlib.PosixPath):

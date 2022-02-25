@@ -11,13 +11,12 @@ RUN apt-get update --fix-missing && \
     apt-get install -y \
         libspatialindex-dev \
         python3.7 \
-        python3.7-dev \
         python3.7-venv \
         xorg && \
-    apt-get autoremove && \
+    apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
-# Update default python version
+# Update default python version.
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
 
 # Setup virtual environment and install pip.
@@ -39,11 +38,14 @@ COPY . /src
 WORKDIR /src
 RUN pip install --no-cache-dir -e ./examples/sb3
 
-# Build scenarios and maps
+# Build scenarios and maps.
 RUN scl scenario build-all --clean ./examples/sb3/scenarios
 
-# For Envision
+# For Envision.
 EXPOSE 8081
+
+# Optimizing compiler for machine learning. See https://www.tensorflow.org/xla .
+ENV TF_XLA_FLAGS="--tf_xla_enable_xla_devices --tf_xla_auto_jit=2"
 
 # Suppress message of missing /dev/input folder.
 RUN echo "mkdir -p /dev/input" >> ~/.bashrc

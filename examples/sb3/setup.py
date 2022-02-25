@@ -8,7 +8,7 @@ with open(path.join(this_dir, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="sb3",
-    description="Driving in traffic using SB3",
+    description="Intersection navigation with SB3",
     long_description=long_description,
     long_description_content_type="text/markdown",
     version="0.1.0",
@@ -18,10 +18,8 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "setuptools>=41.0.0,!=50.0",
-        "smarts[camera-obs]==0.5.1",
+        "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@sb3-1",
         "stable-baselines3[extra]==1.4.0",
         "tensorflow==2.4.0",
-        "ruamel.yaml==0.17.17",
-        "ruamel.yaml.clib==0.2.6",
     ],
 )
