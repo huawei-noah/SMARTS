@@ -72,3 +72,22 @@ def make(locator: str, **kwargs):
     ), f"Expected make to produce an instance of AgentSpec, got: {agent_spec}"
 
     return agent_spec
+
+
+def make_agent(locator: str, **kwargs):
+    """Create an Agent from the given agent spec locator.
+
+    In order to load a registered AgentSpec it needs to be reachable from a
+    directory contained in the PYTHONPATH.
+
+    Args:
+        locator:
+            A string in the format of 'path.to.file:locator-name' where the path
+            is in the form `{PYTHONPATH}[n]/path/to/file.py`
+        kwargs:
+            Additional arguments to be passed to the constructed class.
+    """
+
+    agent_spec = make(locator, kwargs=kwargs)
+
+    return agent_spec.build_agent()
