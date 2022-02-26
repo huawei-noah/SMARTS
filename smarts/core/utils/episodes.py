@@ -154,6 +154,7 @@ class Episode:
 
     def register_step(self, observation, reward, done, info):
         self._episodes.current_step += 1
+        return not done
 
 
 def episode_range(max_steps):
