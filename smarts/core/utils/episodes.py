@@ -133,3 +133,30 @@ def episodes(n):
             if len(score_summaries) > 1:
                 for s in score_summaries[1:]:
                     table(("", "", "", "", "", "", "", s))
+
+
+@dataclass
+class Episodes:
+    current_step: int = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exception):
+        pass
+
+
+class Episode:
+    """An episode recording object"""
+
+    def __init__(self, episodes) -> None:
+        self._episodes = episodes
+
+    def register_step(self, observation, reward, done, info):
+        self._episodes += 1
+
+
+def episode_range(max_steps):
+    with Episodes(0) as episodes:
+        while episodes.current_step < max_steps:
+            yield Episode(episodes=episodes)
