@@ -20,9 +20,8 @@ def entry_point(*args, **kwargs):
     scenario = (Path(__file__).parent / "../../scenarios/figure_eight").resolve()
     ## Note: can build the scenario here
     from cli.studio import _build_single_scenario
-    _build_single_scenario(
-        clean=True, allow_offset_map=True, scenario=scenario
-    )
+
+    _build_single_scenario(clean=True, allow_offset_map=True, scenario=scenario)
     return SingleAgent(
         HiWayEnv(
             agent_specs={"agent-007": agent_spec},
