@@ -149,11 +149,11 @@ class Episodes:
 class Episode:
     """An episode recording object"""
 
-    def __init__(self, episodes) -> None:
+    def __init__(self, episodes: Episodes) -> None:
         self._episodes = episodes
 
     def register_step(self, observation, reward, done, info):
-        self._episodes += 1
+        self._episodes.current_step += 1
 
 
 def episode_range(max_steps):
