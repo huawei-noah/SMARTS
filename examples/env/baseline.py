@@ -20,7 +20,7 @@ def entry_point(*args, **kwargs):
     scenario = Path(__file__).parent / "../../scenarios/figure_eight"
     ## Note: can build the scenario here
     from cli.studio import _build_single_scenario
-
+    print(scenario.resolve())
     _build_single_scenario(
         clean=True, allow_offset_map=True, scenario=scenario.resolve()
     )

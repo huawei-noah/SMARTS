@@ -7,7 +7,7 @@ Operation = Any
 
 class RecordVideo(gym.Wrapper):
     def __init__(self, env: gym.Env, frequency: int):
-        super(env, self).__init__(env)
+        super(RecordVideo, self).__init__(env)
         self._frequency = frequency
 
     def step(self, action: Action) -> Tuple[Operation, float, bool, Dict[str, Any]]:
@@ -19,7 +19,7 @@ class RecordVideo(gym.Wrapper):
 
 class RenderVideo(gym.Wrapper):
     def __init__(self, env: gym.Env):
-        super(env, self).__init__(env)
+        super(RenderVideo, self).__init__(env)
         self._first_step = False
 
     def step(self, action: Action) -> Tuple[Operation, float, bool, Dict[str, Any]]:
