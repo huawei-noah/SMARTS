@@ -21,8 +21,74 @@
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
+from typing import Union
 
 import tableprint as tp
+
+
+class EpisodeLogs:
+    def __init__(self, col_width, total_episodes: Union[str, int] = "?") -> None:
+        self._col_width = col_width
+        self._table = self.context(col_width)
+        self._current_episode = None
+        self._total_episodes = total_episodes
+        self._current_episode_num = 0
+
+    def reset(self):
+        e = self._current_episode
+        if e:
+            self._write_row()
+            self._current_episode_num += 1
+        self._current_episode = EpisodeLog(self._current_episode_num)
+        return self._current_episode
+
+    def _write_row(self):
+        e = self._current_episode
+        row = (
+            f"{e.index}/{self._total_episodes}",
+            f"{e.sim2wall_ratio:.2f}",
+            e.steps,
+            f"{e.steps_per_second:.2f}",
+            e.scenario_map[: self._col_width],
+            e.scenario_routes[: self._col_width],
+            e.mission_hash[: self._col_width],
+        )
+
+        score_summaries = [
+            f"{score:.2f} - {agent}" for agent, score in e.scores.items()
+        ]
+
+        if len(score_summaries) == 0:
+            self._table(row + ("",))
+        else:
+            self._table(row + (score_summaries[0],))
+            if len(score_summaries) > 1:
+                for s in score_summaries[1:]:
+                    self._table(("", "", "", "", "", "", "", s))
+
+    def __enter__(self):
+        self._table.__enter__()
+        return self
+
+    def __exit__(self, *exc):
+        self._table.__exit__(*exc)
+
+    @staticmethod
+    def context(col_width):
+        return tp.TableContext(
+            [
+                "Episode",
+                "Sim T / Wall T",
+                "Total Steps",
+                "Steps / Sec",
+                "Scenario Map",
+                "Scenario Routes",
+                "Mission (Hash)",
+                "Scores",
+            ],
+            width=col_width,
+            style="round",
+        )
 
 
 @dataclass
@@ -91,46 +157,10 @@ def episodes(n):
     Acts similar to python's `range(n)` but yielding episode loggers.
     """
     col_width = 18
-    with tp.TableContext(
-        [
-            "Episode",
-            "Sim T / Wall T",
-            "Total Steps",
-            "Steps / Sec",
-            "Scenario Map",
-            "Scenario Routes",
-            "Mission (Hash)",
-            "Scores",
-        ],
-        width=col_width,
-        style="round",
-    ) as table:
-        for i in range(n):
-            e = EpisodeLog(i)
-            yield e
-
-            row = (
-                f"{e.index}/{n}",
-                f"{e.sim2wall_ratio:.2f}",
-                e.steps,
-                f"{e.steps_per_second:.2f}",
-                e.scenario_map[:col_width],
-                e.scenario_routes[:col_width],
-                e.mission_hash[:col_width],
-            )
-
-            score_summaries = [
-                f"{score:.2f} - {agent}" for agent, score in e.scores.items()
-            ]
-
-            if len(score_summaries) == 0:
-                table(row + ("",))
-                continue
-
-            table(row + (score_summaries[0],))
-            if len(score_summaries) > 1:
-                for s in score_summaries[1:]:
-                    table(("", "", "", "", "", "", "", s))
+    with EpisodeLogs(col_width, n) as episode_logs:
+        for _ in range(n):
+            yield episode_logs.reset()
+        episode_logs.reset()
 
 
 @dataclass
