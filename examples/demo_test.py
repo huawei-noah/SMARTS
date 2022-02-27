@@ -9,14 +9,13 @@ import gym
 
 from smarts.zoo import registry
 from smarts.env.wrappers.episode_logger import EpisodeLogger
-from smarts.env.wrappers.record import RecordVideo, RenderVideo
+from smarts.env.wrappers.record import RecordVideo
 from smarts.core.utils.episodes import episode_range
 
 # FormatObs should already be applied
 env = gym.make("figure_eight-v0")
 # gym.wrappers.Monitor
-env: gym.Env = RecordVideo(env, frequency=10)
-env: gym.Env = RenderVideo(env)
+env: gym.Env = RecordVideo(env, frequency=10, name="007-render")
 env: gym.Env = EpisodeLogger(env)
 
 agent = registry.make_agent("zoo.policies:keep-lane-agent-v0")
