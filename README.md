@@ -60,10 +60,6 @@ cd <path/to/SMARTS>
 # Install the system requirements, then follow the instructions for setting up the SUMO_HOME environment variable. You may use the `-y` option to enable automatic assumption of "yes" to all prompts to avoid timeout from waiting for user input. 
 bash utils/setup/install_deps.sh
 
-# verify sumo is >= 1.5.0
-# if you have issues see ./doc/SUMO_TROUBLESHOOTING.md
-sumo
-
 # setup virtual environment; presently at least Python 3.7 and higher is officially supported
 python3.7 -m venv .venv
 
