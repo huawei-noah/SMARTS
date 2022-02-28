@@ -863,10 +863,11 @@ class SMARTS:
 
         # Update our pybullet world given this provider state
         dt = provider_state.dt or self._last_dt
+        agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         for vehicle in provider_state.vehicles:
             vehicle_id = vehicle.vehicle_id
             # either this is a pybullet agent vehicle, or it is a social vehicle
-            if vehicle_id in self._vehicle_index.agent_vehicle_ids():
+            if vehicle_id in agent_vehicle_ids:
                 if not vehicle.updated:
                     # this is an agent vehicle
                     agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
@@ -898,9 +899,15 @@ class SMARTS:
                         vehicle_id=vehicle_id,
                         vehicle_config_type=vehicle.vehicle_config_type,
                     )
-                # Update the social vehicle avatar to match the vehicle state
+
+                # Update social vehicle pose when no active agents are present
+                if not agent_vehicle_ids:
+                    social_vehicle.chassis.state_override(
+                        dt=dt, force_pose=vehicle.pose
+                    )
+
                 if not vehicle.updated:
-                    # Note:  update_state() happens *after* pybullet has been stepped.
+                    # Note: update_state() happens *after* pybullet has been stepped.
                     social_vehicle.update_state(vehicle, dt=dt)
 
     def _step_pybullet(self):
@@ -1077,6 +1084,7 @@ class SMARTS:
                     self._get_provider_state("OTHER", as_pred)
                 )
 
+        agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         for provider in self.providers:
             try:
                 provider_state = self._step_provider(provider, actions)
@@ -1085,7 +1093,7 @@ class SMARTS:
 
             if provider == self._traffic_sim:
                 # Remove agent vehicles from provider vehicles
-                provider_state.filter(self._vehicle_index.agent_vehicle_ids())
+                provider_state.filter(agent_vehicle_ids)
             accumulated_provider_state.merge(provider_state)
 
         self._harmonize_providers(accumulated_provider_state)
@@ -1284,7 +1292,7 @@ class SMARTS:
         map_max = np.array(self._map_bb.max_pt[:2]) if self._map_bb else None
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            map_spot = np.array(vehicle.pose.position[:2])
+            map_spot = np.array(vehicle.pose.as_position2d())
             if map_min is None:
                 map_min = map_spot
                 rescale_plane = True
@@ -1320,8 +1328,9 @@ class SMARTS:
         speed = {}
         heading = {}
         lane_ids = {}
+        agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         for v in provider_state.vehicles:
-            if v.vehicle_id in self._vehicle_index.agent_vehicle_ids():
+            if v.vehicle_id in agent_vehicle_ids:
                 # this is an agent controlled vehicle
                 agent_id = self._vehicle_index.actor_id_from_vehicle_id(v.vehicle_id)
                 agent_obs = obs[agent_id]
@@ -1373,7 +1382,7 @@ class SMARTS:
                     mission_route_geometry=mission_route_geometry,
                 )
                 speed[agent_id] = v.speed
-                position[agent_id] = tuple(v.pose.position[:2])
+                position[agent_id] = tuple(v.pose.as_position2d())
                 heading[agent_id] = float(v.pose.heading)
                 if (
                     vehicle_obs.waypoint_paths

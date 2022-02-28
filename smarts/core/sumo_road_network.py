@@ -150,7 +150,9 @@ class SumoRoadNetwork(RoadMap):
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
+        # pytype: disable=module-attr
         G = sumolib.net.readNet(net_file, withInternal=True)
+        # pytype: enable=module-attr
 
         if not cls._check_net_origin(G.getBoundary()):
             shifted_net_file = cls.shifted_net_file_path(net_file)
@@ -158,7 +160,9 @@ class SumoRoadNetwork(RoadMap):
                 map_spec.shift_to_origin
                 and cls._shift_coordinates(net_file, shifted_net_file)
             ):
+                # pytype: disable=module-attr
                 G = sumolib.net.readNet(shifted_net_file, withInternal=True)
+                # pytype: enable=module-attr
                 assert cls._check_net_origin(G.getBoundary())
                 net_file = shifted_net_file
                 # keep track of having shifted the graph by
@@ -412,7 +416,7 @@ class SumoRoadNetwork(RoadMap):
             self, pose: Pose, lookahead: int, route: RoadMap.Route = None
         ) -> List[List[Waypoint]]:
             road_ids = [road.road_id for road in route.roads] if route else None
-            return self._waypoint_paths_at(pose.position, lookahead, road_ids)
+            return self._waypoint_paths_at(pose.as_position2d(), lookahead, road_ids)
 
         def waypoint_paths_at_offset(
             self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
@@ -1375,7 +1379,7 @@ class SumoRoadNetwork(RoadMap):
             ref_lanepoints_coordinates["headings"]
         )
         first_lp_heading = ref_lanepoints_coordinates["headings"][0]
-        lp_position = path[0].lp.pose.position[:2]
+        lp_position = path[0].lp.pose.as_position2d()
         vehicle_pos = np.array(point[:2])
         heading_vec = np.array(radians_to_vec(first_lp_heading))
         projected_distant_lp_vehicle = np.inner(
@@ -1402,7 +1406,7 @@ class SumoRoadNetwork(RoadMap):
             lp = path[0].lp
             return [
                 Waypoint(
-                    pos=lp.pose.position,
+                    pos=lp.pose.as_position2d(),
                     heading=lp.pose.heading,
                     lane_width=lp.lane._width,
                     speed_limit=lp.lane.speed_limit,
