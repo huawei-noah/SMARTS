@@ -22,8 +22,9 @@
 import math
 import threading
 
+import numpy as np
 import pytest
-from panda3d.core import Thread as p3dThread
+from panda3d.core import Thread as p3dThread  # pytype: disable=import-error
 
 from smarts.core.agent_interface import (
     ActionSpaceType,
@@ -88,8 +89,8 @@ class RenderThread(threading.Thread):
     def test_renderer(self):
         self._rdr.setup(self._scenario)
         pose = Pose(
-            position=[71.65, 53.78, 0],
-            orientation=[0, 0, 0, 0],
+            position=np.array([71.65, 53.78, 0]),
+            orientation=np.array([0, 0, 0, 0]),
             heading_=Heading(math.pi * 0.91),
         )
         self._rdr.create_vehicle_node(

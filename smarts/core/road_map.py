@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Set, Tuple
-
+from shapely.geometry import Polygon
 import numpy as np
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
@@ -186,10 +186,19 @@ class RoadMap:
             """The features on this surface near the given pose."""
             raise NotImplementedError()
 
+        def shape(
+                self, buffer_width: float = 0.0, default_width: Optional[float] = None
+        ) -> Polygon:
+            """Returns a convex polygon representing this surface, buffered by buffered_width (which must be non-negative),
+            where buffer_width is a buffer around the perimeter of the polygon.  In some situations, it may be desirable to
+            also specify a `default_width`, in which case the returned polygon should have a convex shape where the
+            distance across it is no less than buffered_width + default_width at any point."""
+            raise NotImplementedError()
+
         def contains_point(self, point: Point) -> bool:
             """Returns True iff this point is fully contained by this surface.
             For some regions of some maps, it may not be possible to determine this.
-            In such indeterminant cases, it is recommended to return True."""
+            In such indeterminate cases, it is recommended to return True."""
             raise NotImplementedError()
 
     class Lane(Surface):

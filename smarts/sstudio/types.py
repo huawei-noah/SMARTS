@@ -268,9 +268,7 @@ class BoidAgentActor(SocialAgentActor):
 # This function should be re-callable (although caching is up to the implementation).
 # The idea here is that anything in SMARTS that needs to use a RoadMap
 # can call this builder to get or create one as necessary.
-MapBuilder = NewType(
-    "MapBuilder", Callable[[Any], Tuple[Optional[RoadMap], Optional[str]]]
-)
+MapBuilder = Callable[[Any], Tuple[Optional[RoadMap], Optional[str]]]
 
 
 @dataclass(frozen=True)
@@ -458,7 +456,7 @@ class TrapEntryTactic(EntryTactic):
 
     wait_to_hijack_limit_s: float
     """The amount of seconds a hijack will wait to get a vehicle before defaulting to a new vehicle"""
-    zone: "MapZone" = None
+    zone: Optional["MapZone"] = None
     """The zone of the hijack area"""
     exclusion_prefixes: Tuple[str, ...] = tuple()
     """The prefixes of vehicles to avoid hijacking"""
