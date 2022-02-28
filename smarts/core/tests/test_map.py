@@ -726,6 +726,12 @@ def test_waymo_map():
     assert len(on_lanes) == 1
     assert on_lanes[0].lane_id == "95"
 
+    # oncoming roads at this point
+    on_roads = l1.road.oncoming_roads_at_point(point)
+    assert on_roads
+    assert len(on_roads) == 1
+    assert on_roads[0].road_id == "waymo_road-95"
+
     # check for locations (lane, offset tuples) within distance at this offset
     candidates = l1.project_along(offset, 70)
     assert (len(candidates)) == 1  # since no outgoing lanes
