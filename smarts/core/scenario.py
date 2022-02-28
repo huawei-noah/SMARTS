@@ -689,7 +689,6 @@ class Scenario:
                 road_map,
             )
             goal = PositionalGoal(position, radius=2)
-            
             return Mission(
                 start=start,
                 route_vias=mission.route.via,
