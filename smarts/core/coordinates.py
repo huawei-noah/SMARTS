@@ -21,6 +21,7 @@ import enum
 import math
 from dataclasses import dataclass
 from typing import (
+    Any,
     List,
     NamedTuple,
     Optional,
@@ -540,6 +541,11 @@ class Pose:
             self.heading_ = Heading(yaw)
 
         return self.heading_
+
+    def as_position2d(self) -> np.ndarray:
+        """Convert to a 2d position array"""
+        return self.position[:2]
+
 
     def as_panda3d(self):
         """ Convert to panda3D (object bounds centre position, heading)"""
