@@ -228,6 +228,19 @@ class WaymoMap(RoadMap):
                 }
             waymo_lane_dict = self._waymo_pb_to_dict(lane_feat)
             waymo_lane_dict["_feature_id"] = lane_id
+
+            # Geometry computations that require the original lane polylines
+            left_widths, right_widths = self._raycast_boundaries(waymo_lane_dict)
+            max_width = max(
+                left_widths[0],
+                left_widths[-1],
+                right_widths[0],
+                right_widths[-1],
+            )
+            if max_width < 0.5:
+                max_width = WaymoMap.DEFAULT_LANE_WIDTH / 2
+            waymo_lane_dict["lane_width"] = max_width * 2
+
             orig_seg = WaymoMap._LaneSegment(lane_id, waymo_lane_dict)
             if not split_pts:
                 waymo_lanedicts[orig_seg.seg_id] = waymo_lane_dict
@@ -277,6 +290,128 @@ class WaymoMap(RoadMap):
             self._roads[road.road_id] = road
             self._surfaces[road.road_id] = road
 
+    @staticmethod
+    def _calculate_normals(pts) -> Sequence[np.ndarray]:
+        n_pts = len(pts)
+        normals = [None] * n_pts
+        for i in range(n_pts):
+            p = pts[i]
+            if i < n_pts - 1:
+                dp = pts[i + 1] - p
+            else:
+                dp = p - pts[i - 1]
+
+            dp /= np.linalg.norm(dp)
+            angle = math.pi / 2
+            normal = np.array(
+                [
+                    math.cos(angle) * dp[0] - math.sin(angle) * dp[1],
+                    math.sin(angle) * dp[0] + math.cos(angle) * dp[1],
+                ]
+            )
+            normals[i] = normal
+        return normals
+
+    def _raycast_boundaries(self, lane_dict, ray_dist=20.0) -> Tuple[List[float], List[float]]:
+        lane_pts = [np.array([p.x, p.y]) for p in lane_dict["polyline"]]
+        n_pts = len(lane_pts)
+        left_widths = [0] * n_pts
+        right_widths = [0] * n_pts
+        normals = WaymoMap._calculate_normals(lane_pts)
+
+        for i in range(n_pts):
+            ray_start = lane_pts[i]
+            normal = normals[i]
+
+            if lane_dict["left_neighbors"]:
+                sign = 1.0
+                ray_end = ray_start + sign * ray_dist * normal
+                for n in lane_dict["left_neighbors"]:
+                    if not (n.self_start_index <= i <= n.self_end_index):
+                        continue
+                    feature = self._waymo_features[n.feature_id]
+                    boundary_pts = [np.array([p.x, p.y]) for p in feature.polyline]
+                    intersect_pt = ray_boundary_intersect(
+                        ray_start, ray_end, boundary_pts
+                    )
+                    if intersect_pt is not None:
+                        left_widths[i] = np.linalg.norm(
+                            intersect_pt - ray_start
+                        )
+                        break
+
+            if lane_dict["right_neighbors"]:
+                sign = -1.0
+                ray_end = ray_start + sign * ray_dist * normal
+                for n in lane_dict["right_neighbors"]:
+                    if not (n.self_start_index <= i <= n.self_end_index):
+                        continue
+                    feature = self._waymo_features[n.feature_id]
+                    boundary_pts = [np.array([p.x, p.y]) for p in feature.polyline]
+                    intersect_pt = ray_boundary_intersect(
+                        ray_start, ray_end, boundary_pts
+                    )
+                    if intersect_pt is not None:
+                        right_widths[i] = np.linalg.norm(
+                            intersect_pt - ray_start
+                        )
+                        break
+
+        # Sometimes lanes that overlap are considered neighbors, so filter those out
+        width_threshold = 0.5
+        if (
+            max(left_widths) > width_threshold
+            or max(right_widths) > width_threshold
+        ):
+            return
+
+        for i in [0, n_pts - 1]:
+            ray_start = lane_pts[i]
+            normal = normals[i]
+
+            if lane_dict["left_boundaries"]:
+                sign = 1.0
+                ray_end = ray_start + sign * ray_dist * normal
+                for boundary in lane_dict["left_boundaries"]:
+                    if not (
+                        boundary.lane_start_index <= i <= boundary.lane_end_index
+                    ):
+                        continue
+                    feature = self._waymo_features[
+                        boundary.boundary_feature_id
+                    ]
+                    boundary_pts = [np.array([p.x, p.y]) for p in feature.polyline]
+                    intersect_pt = ray_boundary_intersect(
+                        ray_start, ray_end, boundary_pts
+                    )
+                    if intersect_pt is not None:
+                        left_widths[i] = np.linalg.norm(
+                            intersect_pt - ray_start
+                        )
+                        break
+
+            if lane_dict["right_boundaries"]:
+                sign = -1.0
+                ray_end = ray_start + sign * ray_dist * normal
+                for boundary in lane_dict["right_boundaries"]:
+                    if not (
+                        boundary.lane_start_index <= i <= boundary.lane_end_index
+                    ):
+                        continue
+                    feature = self._waymo_features[
+                        boundary.boundary_feature_id
+                    ]
+                    boundary_pts = [np.array([p.x, p.y]) for p in feature.polyline]
+                    intersect_pt = ray_boundary_intersect(
+                        ray_start, ray_end, boundary_pts
+                    )
+                    if intersect_pt is not None:
+                        right_widths[i] = np.linalg.norm(
+                            intersect_pt - ray_start
+                        )
+                        break
+        return left_widths, right_widths
+
     def _adj_seg_id(
         self,
         rn_feature_id: str,
@@ -323,6 +458,7 @@ class WaymoMap(RoadMap):
 
     def _load_from_scenario(self, waymo_scenario):
         start = time.time()
+
         waymo_lanes: List[Tuple[str, Any]] = []
         for i in range(len(waymo_scenario.map_features)):
             map_feature = waymo_scenario.map_features[i]
@@ -332,23 +468,7 @@ class WaymoMap(RoadMap):
                 if key == "lane":
                     waymo_lanes.append((str(map_feature.id), getattr(map_feature, key)))
 
-        # First pass -- create lane objects, initial geometry computations, infer roads
         self._create_lanes_and_roads(waymo_lanes)
-
-        # Second pass -- try to fill in missing points from connected lanes
-        should_run = True
-        i = 0
-        while should_run and i < 10:
-            should_run = False
-            i += 1
-            for lane_id, lane in self._lanes.items():
-                if lane._fill_in_connected_points():
-                    should_run = True
-
-        # Third pass -- create polygons
-        for lane_id, lane in self._lanes.items():
-            lane._create_polygon()
-
         self._waymo_scenario_id = waymo_scenario.scenario_id
 
         end = time.time()
@@ -450,184 +570,27 @@ class WaymoMap(RoadMap):
             self._lane_dict = lane_dict
             self._lane_pts = [np.array([p.x, p.y]) for p in lane_dict["polyline"]]
             self._centerline_pts = [Point(p.x, p.y) for p in lane_dict["polyline"]]
-            self._lane_width = None
+            self._n_pts = len(self._lane_pts)
+            self._lane_width = lane_dict["lane_width"]
             self._bounding_box = None
             self._speed_limit = (
                 lane_dict.get("speed_limit_mph", WaymoMap.DEFAULT_LANE_SPEED / 0.44704)
                 * 0.44704
             )
             self._is_composite = bool(lane_dict.get("sublanes", None))
-
-            # Geometry
-            self._n_pts = len(self._lane_pts)
-            self._left_widths = [0] * self._n_pts
-            self._right_widths = [0] * self._n_pts
             self._lane_polygon = None
-            self._raycast_boundaries()
-
-        def _calculate_normals(self) -> Sequence[np.ndarray]:
-            normals = [None] * self._n_pts
-            for i in range(self._n_pts):
-                p = self._lane_pts[i]
-                if i < self._n_pts - 1:
-                    dp = self._lane_pts[i + 1] - p
-                else:
-                    dp = p - self._lane_pts[i - 1]
-
-                dp /= np.linalg.norm(dp)
-                angle = math.pi / 2
-                normal = np.array(
-                    [
-                        math.cos(angle) * dp[0] - math.sin(angle) * dp[1],
-                        math.sin(angle) * dp[0] + math.cos(angle) * dp[1],
-                    ]
-                )
-                normals[i] = normal
-            return normals
-
-        def _raycast_boundaries(self, ray_dist=20.0):
-            self._normals = self._calculate_normals()
-            for i in range(self._n_pts):
-                ray_start = self._lane_pts[i]
-                normal = self._normals[i]
-
-                if self._lane_dict["left_neighbors"]:
-                    sign = 1.0
-                    ray_end = ray_start + sign * ray_dist * normal
-                    for n in self._lane_dict["left_neighbors"]:
-                        if not (n.self_start_index <= i <= n.self_end_index):
-                            continue
-                        feature = self._map._waymo_features[n.feature_id]
-                        boundary_pts = [np.array([p.x, p.y]) for p in feature.polyline]
-                        intersect_pt = ray_boundary_intersect(
-                            ray_start, ray_end, boundary_pts
-                        )
-                        if intersect_pt is not None:
-                            self._left_widths[i] = np.linalg.norm(
-                                intersect_pt - ray_start
-                            )
-                            break
-
-                if self._lane_dict["right_neighbors"]:
-                    sign = -1.0
-                    ray_end = ray_start + sign * ray_dist * normal
-                    for n in self._lane_dict["right_neighbors"]:
-                        if not (n.self_start_index <= i <= n.self_end_index):
-                            continue
-                        feature = self._map._waymo_features[n.feature_id]
-                        boundary_pts = [np.array([p.x, p.y]) for p in feature.polyline]
-                        intersect_pt = ray_boundary_intersect(
-                            ray_start, ray_end, boundary_pts
-                        )
-                        if intersect_pt is not None:
-                            self._right_widths[i] = np.linalg.norm(
-                                intersect_pt - ray_start
-                            )
-                            break
-
-            # Sometimes lanes that overlap are considered neighbors, so filter those out
-            width_threshold = 0.5
-            if (
-                max(self._left_widths) > width_threshold
-                or max(self._right_widths) > width_threshold
-            ):
-                return
-
-            for i in [0, self._n_pts - 1]:
-                ray_start = self._lane_pts[i]
-                normal = self._normals[i]
-
-                if self._lane_dict["left_boundaries"]:
-                    sign = 1.0
-                    ray_end = ray_start + sign * ray_dist * normal
-                    for boundary in self._lane_dict["left_boundaries"]:
-                        if not (
-                            boundary.lane_start_index <= i <= boundary.lane_end_index
-                        ):
-                            continue
-                        feature = self._map._waymo_features[
-                            boundary.boundary_feature_id
-                        ]
-                        boundary_pts = [np.array([p.x, p.y]) for p in feature.polyline]
-                        intersect_pt = ray_boundary_intersect(
-                            ray_start, ray_end, boundary_pts
-                        )
-                        if intersect_pt is not None:
-                            self._left_widths[i] = np.linalg.norm(
-                                intersect_pt - ray_start
-                            )
-                            break
-
-                if self._lane_dict["right_boundaries"]:
-                    sign = -1.0
-                    ray_end = ray_start + sign * ray_dist * normal
-                    for boundary in self._lane_dict["right_boundaries"]:
-                        if not (
-                            boundary.lane_start_index <= i <= boundary.lane_end_index
-                        ):
-                            continue
-                        feature = self._map._waymo_features[
-                            boundary.boundary_feature_id
-                        ]
-                        boundary_pts = [np.array([p.x, p.y]) for p in feature.polyline]
-                        intersect_pt = ray_boundary_intersect(
-                            ray_start, ray_end, boundary_pts
-                        )
-                        if intersect_pt is not None:
-                            self._right_widths[i] = np.linalg.norm(
-                                intersect_pt - ray_start
-                            )
-                            break
-
-        def _fill_in_connected_points(self) -> bool:
-            filled_in_point = False
-            if (
-                self._left_widths[0] == 0
-                and self._right_widths[0] == 0
-                and self._left_widths[-1] == 0
-                and self._right_widths[-1] == 0
-            ):
-                for n in self.incoming_lanes:
-                    if n and n._left_widths[-1] != 0:
-                        self._left_widths[0] = n._left_widths[-1]
-                        filled_in_point = True
-                        break
-                for n in self.incoming_lanes:
-                    if n and n._right_widths[-1] != 0:
-                        self._right_widths[0] = n._right_widths[-1]
-                        filled_in_point = True
-                        break
-                for n in self.outgoing_lanes:
-                    if n and n._left_widths[0] != 0:
-                        self._left_widths[-1] = n._left_widths[0]
-                        filled_in_point = True
-                        break
-                for n in self.outgoing_lanes:
-                    if n and n._right_widths[0] != 0:
-                        self._right_widths[-1] = n._right_widths[0]
-                        filled_in_point = True
-                        break
-            return filled_in_point
+            self._create_polygon()
 
         def _create_polygon(self):
-            max_width = max(
-                self._left_widths[0],
-                self._left_widths[-1],
-                self._right_widths[0],
-                self._right_widths[-1],
-            )
-
-            if max_width == 0:
-                max_width = WaymoMap.DEFAULT_LANE_WIDTH / 2
-
-            self._lane_width = max_width * 2
-
             new_left_pts = [None] * self._n_pts
             new_right_pts = [None] * self._n_pts
+            normals = WaymoMap._calculate_normals(self._lane_pts)
             for i in range(self._n_pts):
                 p = self._lane_pts[i]
-                new_left_pts[i] = p + (max_width * self._normals[i])
-                new_right_pts[i] = p + (-1.0 * max_width * self._normals[i])
+                n = normals[i]
+                w = self._lane_width/2.0
+                new_left_pts[i] = p + (w * n)
+                new_right_pts[i] = p + (-1.0 * w * n)
 
             xs, ys = [], []
             for p in new_left_pts + new_right_pts[::-1] + [new_left_pts[0]]:
@@ -635,9 +598,6 @@ class WaymoMap(RoadMap):
                     xs.append(p[0])
                     ys.append(p[1])
             self._lane_polygon = list(zip(xs, ys))
-
-            # No need to keep these around anymore...
-            self._normals = None
 
         @property
         def lane_id(self) -> str:

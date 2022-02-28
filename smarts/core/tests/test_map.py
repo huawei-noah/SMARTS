@@ -897,7 +897,21 @@ if __name__ == "__main__":
     #     xwp, ywp = get_wp_coords(waypoints)
     #     plt.scatter(xwp, ywp, s=1, c="r")
 
+    ids = [
+        # "80_0",
+        # "89_0",
+        # "90_0",
+        "81",
+        "87",
+        "87_4",
+        "87_26",
+        # "93",
+        # "86_0",
+    ]
+
     for lane_id, lane in road_map._lanes.items():
+        if ids and lane_id not in ids:
+            continue
         plot_lane(lane._lane_dict)
         # plot_boundaries(lane_feat, features)
         xs, ys = [], []
