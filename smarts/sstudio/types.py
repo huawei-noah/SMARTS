@@ -39,7 +39,7 @@ from shapely.geometry import (
 from shapely.ops import split, unary_union
 
 from smarts.core import gen_id
-from smarts.core.coordinates import RefLinePoint
+from smarts.core.coordinates import RefLinePoint, Dimensions
 from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
@@ -465,6 +465,14 @@ class TrapEntryTactic(EntryTactic):
 
 
 @dataclass(frozen=True)
+class VehicleSpec:
+    """Vehicle specifications"""
+
+    veh_id: str
+    veh_config_type: str
+    dimensions: Dimensions
+
+@dataclass(frozen=True)
 class Mission:
     """The descriptor for an actor's mission."""
 
@@ -481,6 +489,9 @@ class Mission:
 
     entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission."""
+
+    vehicle_spec: Optional[VehicleSpec] = None
+    """Vehicle Specifications"""
 
 
 @dataclass(frozen=True)
@@ -503,6 +514,8 @@ class EndlessMission:
     """The earliest simulation time that this mission starts"""
     entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
+    vehicle_spec: Optional[VehicleSpec] = None
+    """Vehicle Specifications"""
 
 
 @dataclass(frozen=True)
@@ -521,6 +534,8 @@ class LapMission:
     """The earliest simulation time that this mission starts"""
     entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
+    vehicle_spec: Optional[VehicleSpec] = None
+    """Vehicle Specifications"""
 
 
 @dataclass(frozen=True)

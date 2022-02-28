@@ -26,7 +26,7 @@ import random
 from dataclasses import dataclass, field
 from typing import Optional, Tuple, Union
 
-from smarts.sstudio.types import EntryTactic, TrapEntryTactic
+from smarts.sstudio.types import EntryTactic, TrapEntryTactic, VehicleSpec
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .road_map import RoadMap
@@ -184,16 +184,6 @@ class Via:
     position: Tuple[float, float]
     hit_distance: float
     required_speed: float
-
-
-@dataclass(frozen=True)
-class VehicleSpec:
-    """Vehicle specifications"""
-
-    veh_id: str
-    veh_config_type: str
-    dimensions: Dimensions
-
 
 @dataclass(frozen=True)
 class Mission:

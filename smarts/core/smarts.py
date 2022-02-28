@@ -573,7 +573,7 @@ class SMARTS:
                 provider.create_vehicle(
                     VehicleState(
                         vehicle_id=vehicle.id,
-                        vehicle_config_type="passenger",
+                        vehicle_config_type=vehicle._vehicle_config_type,
                         pose=vehicle.pose,
                         dimensions=vehicle.chassis.dimensions,
                         speed=vehicle.speed,
@@ -928,7 +928,7 @@ class SMARTS:
             provider_state.vehicles.append(
                 VehicleState(
                     vehicle_id=vehicle.id,
-                    vehicle_config_type="passenger",
+                    vehicle_config_type=vehicle._vehicle_config_type,
                     pose=vehicle.pose,
                     dimensions=vehicle.chassis.dimensions,
                     speed=vehicle.speed,
@@ -1353,10 +1353,15 @@ class SMARTS:
                         for paths in vehicle_obs.road_waypoints.lanes.values()
                         for path in paths
                     ]
+
+                veh_type = (
+                    v.vehicle_config_type if v.vehicle_config_type else v.vehicle_type
+                )
+                
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
                     name=self._agent_manager.agent_name(agent_id),
                     actor_type=actor_type,
-                    vehicle_type=envision_types.VehicleType.Car,
+                    vehicle_type=veh_type,
                     position=tuple(v.pose.position),
                     heading=float(v.pose.heading),
                     speed=v.speed,

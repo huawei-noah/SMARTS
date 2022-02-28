@@ -395,11 +395,13 @@ class Vehicle:
         )
 
         if mission.vehicle_spec == None:
-            vehicle_type = "sedan"
+            vehicle_type = "passenger"
+            controller_type = "sedan"
         else:
             vehicle_type = mission.vehicle_spec.veh_config_type
-            
-        if vehicle_type == "sedan":
+            controller_type = vehicle_type
+
+        if vehicle_type == "passenger":
             urdf_name = "vehicle"
         elif vehicle_type == "bus":
             urdf_name = "bus"
@@ -411,7 +413,7 @@ class Vehicle:
                 vehicle_filepath = str(path.absolute())
 
         controller_parameters = sim.vehicle_index.controller_params_for_vehicle_type(
-            vehicle_type
+            controller_type
         )
 
         chassis = None
@@ -443,6 +445,7 @@ class Vehicle:
             id=vehicle_id,
             chassis=chassis,
             color=vehicle_color,
+            vehicle_config_type=vehicle_type
         )
 
         return vehicle
