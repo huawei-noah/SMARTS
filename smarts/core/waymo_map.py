@@ -420,7 +420,7 @@ class WaymoMap(RoadMap):
         rn_feature_id: str,
         ln_feature_id: int,
         lanedicts: Dict[str, Dict[str, Any]],
-    ) -> Optinal[str]:
+    ) -> Optional[str]:
         ln_dict = lanedicts[str(ln_feature_id)]
         for rn in ln_dict["right_neighbors"]:
             if rn.feature_id == rn_feature_id:
