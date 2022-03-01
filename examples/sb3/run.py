@@ -4,25 +4,18 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # Silence the TF logs
 
 import argparse
 import pathlib
-import warnings
 from datetime import datetime
 from typing import Any, Dict
 
-from common import action as common_action
-from common import reward as common_reward
-from common import observation as common_observation
-
 import gym
+from common import action as common_action
+from common import observation as common_observation
+from common import reward as common_reward
 from ruamel.yaml import YAML
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
 
-from smarts.env.wrappers import single_agent
-
-warnings.simplefilter("ignore", category=DeprecationWarning)
-warnings.simplefilter("ignore", category=ImportWarning)
-warnings.simplefilter("ignore", category=ResourceWarning)
 yaml = YAML(typ="safe")
 
 
@@ -44,13 +37,11 @@ def main(args: argparse.Namespace):
         visdom=config_env["visdom"],  # If True, enables Visdom display.
         sumo_headless=not config_env["sumo_gui"],  # If False, enables sumo-gui display.
     )
-    # Wrap env with Action Wrapper
+    # Wrap env with action, reward, and observation wrapper
     env = common_action.Action(env=env)
-    # Wrap env with Reward Wrapper
     env = common_reward.Reward(env=env)
-    # Wrap env with Observation Wrapper
     env = common_observation.Observation(env=env)
-    # Check our custom environment
+    # Check our custom environment compatibility with SB3
     check_env(env)
 
     # Setup train or evaluate.
