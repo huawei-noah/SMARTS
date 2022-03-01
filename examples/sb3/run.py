@@ -8,7 +8,10 @@ import warnings
 from datetime import datetime
 from typing import Any, Dict
 
-import common
+from common import action as common_action
+from common import reward as common_reward
+from common import observation as common_observation
+
 import gym
 from ruamel.yaml import YAML
 from stable_baselines3 import PPO
@@ -42,11 +45,11 @@ def main(args: argparse.Namespace):
         sumo_headless=not config_env["sumo_gui"],  # If False, enables sumo-gui display.
     )
     # Wrap env with Action Wrapper
-    env = common.action.Action(env=env)
+    env = common_action.Action(env=env)
     # Wrap env with Reward Wrapper
-    env = common.reward.Reward(env=env)
+    env = common_reward.Reward(env=env)
     # Wrap env with Observation Wrapper
-    env = common.observation.Observation(env=env)
+    env = common_observation.Observation(env=env)
     # Wrap env with SingleAgent wrapper
     env = single_agent.SingleAgent(env=env)
     # Check our custom environment
