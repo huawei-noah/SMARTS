@@ -56,3 +56,4 @@ class EpisodeLogger(gym.Wrapper):
         with EpisodeLogs(col_width) as episode_logs:
             while not self._done:
                 yield episode_logs.reset()
+            episode_logs.reset()
