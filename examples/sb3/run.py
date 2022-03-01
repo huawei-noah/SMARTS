@@ -50,8 +50,6 @@ def main(args: argparse.Namespace):
     env = common_reward.Reward(env=env)
     # Wrap env with Observation Wrapper
     env = common_observation.Observation(env=env)
-    # Wrap env with SingleAgent wrapper
-    env = single_agent.SingleAgent(env=env)
     # Check our custom environment
     check_env(env)
 

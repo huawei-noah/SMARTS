@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 
-from smarts.core.sensors import Observation
+from smarts.env.wrappers import format_obs
 
 
 class Reward(gym.Wrapper):
@@ -12,30 +12,29 @@ class Reward(gym.Wrapper):
         return self.env.reset(**kwargs)
 
     def step(self, action):
-        obs, env_reward, done, info = self.env.step(action)
+        """Adapts the wrapped environment's step.
 
-        wrapped_reward = {
-            agent_id: self._reward(obs[agent_id], agent_reward)
-            for agent_id, agent_reward in env_reward.items()
-        }
-
+        Note: Users should not directly call this method.
+        """
+        obs, reward, done, info = self.env.step(action)
+        wrapped_reward = self._reward(obs, reward)
         return obs, wrapped_reward, done, info
 
-    def _reward(self, obs: Observation, env_reward: np.float64) -> np.float32:
+    def _reward(self, obs: format_obs.StdObs, env_reward: np.float64) -> np.float32:
         reward = 0
 
         # Penalty for driving off road
-        if obs.events.off_road:
+        if obs.events["off_road"]:
             reward -= 10
             return np.float32(reward)
 
         # Penalty for driving on road shoulder
-        if obs.events.on_shoulder:
+        if obs.events["on_shoulder"]:
             reward -= 10
             return np.float32(reward)
 
         # Penalty for colliding
-        if len(obs.events.collisions) > 0:
+        if obs.events["collisions"]:
             reward -= 10
             return np.float32(reward)
 
