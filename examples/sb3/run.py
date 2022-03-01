@@ -8,13 +8,13 @@ import warnings
 from datetime import datetime
 from typing import Any, Dict
 
+import common
 import gym
 from ruamel.yaml import YAML
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
 
-import common
 from smarts.env.wrappers import single_agent
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
