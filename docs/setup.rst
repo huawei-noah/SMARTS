@@ -14,12 +14,8 @@ To setup the simulator, which is called SMARTS, run the following commands,
     # git clone ...
     cd <project>
 
-    # Follow the instructions given by prompt for setting up the SUMO_HOME environment variable
+    # Follow the instructions given by prompt for installing the system requirements
     ./install_deps.sh
-
-    # verify sumo is >= 1.5.0
-    # if you have issues see ./doc/SUMO_TROUBLESHOOTING.md
-    sumo
 
     # setup virtual environment; presently only Python 3.7.x is officially supported
     python3.7 -m venv .venv
