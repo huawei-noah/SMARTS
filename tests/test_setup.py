@@ -2,8 +2,6 @@
 import sys, os, subprocess
 import multiprocessing
 
-import smarts.core.utils.sumo  # Set SUMO_HOME
-
 
 def exit_with_error(msg):
     print("ERROR:", msg)
