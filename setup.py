@@ -24,8 +24,8 @@ setup(
         #   50.0 is broken: https://github.com/pypa/setupatools/issues/2353
         "setuptools>=41.0.0,!=50.0",
         "cached-property>=1.5.2",
-        "eclipse-sumo>=1.10.0",
         "click>=8.0.3",  # used in scl
+        "eclipse-sumo>=1.11.0",
         "gym==0.19.0",
         "numpy>=1.19.5",
         "pandas>=1.3.4",
