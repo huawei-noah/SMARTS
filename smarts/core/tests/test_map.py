@@ -788,6 +788,12 @@ def test_waymo_map():
     assert l87_4.road.composite_road == l87_4.road
     # TODO: no composites in this test scenario?
 
+    # Invalid route generation
+    invalid_route = road_map.generate_routes(
+        road_map.road_by_id("waymo_road-112"), road_map.road_by_id("waymo_road-120")
+    )
+    assert [r.road_id for r in invalid_route[0].roads] == []
+
     # route generation
     r_100 = road_map.road_by_id("waymo_road-100")
     r_120 = road_map.road_by_id("waymo_road-120")
