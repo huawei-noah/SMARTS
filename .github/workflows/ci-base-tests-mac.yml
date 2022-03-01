@@ -47,7 +47,7 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade wheel
           pip install -r utils/setup/mac_requirements.txt
-          pip install -e .[train,test,camera-obs]
+          pip install -e .[train,test,camera-obs,waymo]
       - name: Run smoke tests
         run: |
           . ${{env.venv_dir}}/bin/activate
