@@ -3,4 +3,4 @@ include smarts/core/models/*.glb smarts/core/models/*.urdf
 include smarts/core/models/controller_parameters.yaml
 include envision/web/dist/*
 recursive-include smarts/ros/src *.launch *.msg *.srv package.xml CMakeLists.txt *.py
-include scenarios/intersections/2lane_left_turn/*
+recursive-include scenarios/intersections/2lane_left_turn *.xml
