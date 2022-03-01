@@ -294,7 +294,7 @@ class WaymoMap(RoadMap):
             self._surfaces[road.road_id] = road
 
     @staticmethod
-    def _calculate_normals(pts) -> Sequence[np.ndarray]:
+    def _calculate_normals(pts) -> Union[List[None], Sequence[np.ndarray]]:
         n_pts = len(pts)
         normals = [None] * n_pts
         for i in range(n_pts):
@@ -315,7 +315,7 @@ class WaymoMap(RoadMap):
             normals[i] = normal
         return normals
 
-    def _raycast_boundaries(self, lane_dict, ray_dist=20.0) -> Tuple[List[float], List[float]]:
+    def _raycast_boundaries(self, lane_dict, ray_dist=20.0) -> Optional[Tuple[List[float], List[float]]]:
         lane_pts = [np.array([p.x, p.y]) for p in lane_dict["polyline"]]
         n_pts = len(lane_pts)
         left_widths = [0] * n_pts
@@ -420,7 +420,7 @@ class WaymoMap(RoadMap):
         rn_feature_id: str,
         ln_feature_id: int,
         lanedicts: Dict[str, Dict[str, Any]],
-    ) -> str:
+    ) -> Optinal[str]:
         ln_dict = lanedicts[str(ln_feature_id)]
         for rn in ln_dict["right_neighbors"]:
             if rn.feature_id == rn_feature_id:
@@ -511,7 +511,7 @@ class WaymoMap(RoadMap):
         )
 
     def is_same_map(self, map_spec: MapSpec) -> bool:
-        waymo_scenario = WaymoMap._parse_source_to_scenario(map_spec)
+        waymo_scenario = WaymoMap._parse_source_to_scenario(map_spec.source)
         return (
             waymo_scenario.scenario_id == self._waymo_scenario_id
             and map_spec.lanepoint_spacing == self._map_spec.lanepoint_spacing
@@ -1058,7 +1058,7 @@ class WaymoMap(RoadMap):
 
     @lru_cache(maxsize=16)
     def nearest_lanes(
-        self, point: Point, radius: Optional[float] = None, include_junctions=False
+        self, point: Point, radius: Optional[float] = None, include_junctions: bool = False
     ) -> List[Tuple[RoadMap.Lane, float]]:
         if radius is None:
             radius = max(10, 2 * self._default_lane_width)
@@ -1067,7 +1067,7 @@ class WaymoMap(RoadMap):
         return candidate_lanes
 
     def nearest_lane(
-        self, point: Point, radius: float = None, include_junctions=False
+        self, point: Point, radius: Optional[float] = None, include_junctions: bool = False
     ) -> Optional[RoadMap.Lane]:
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
         return nearest_lanes[0][0] if nearest_lanes else None
