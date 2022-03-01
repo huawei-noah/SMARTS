@@ -4,6 +4,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # Silence the TF logs
 
 import argparse
 import pathlib
+import warnings
 from datetime import datetime
 from typing import Any, Dict
 
@@ -16,6 +17,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
 
+warnings.simplefilter("ignore", category=DeprecationWarning)
 yaml = YAML(typ="safe")
 
 

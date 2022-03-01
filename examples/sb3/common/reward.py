@@ -20,25 +20,25 @@ class Reward(gym.Wrapper):
         wrapped_reward = self._reward(obs, reward)
         return obs, wrapped_reward, done, info
 
-    def _reward(self, obs: format_obs.StdObs, env_reward: np.float64) -> np.float32:
+    def _reward(self, obs: format_obs.StdObs, env_reward: np.float64) -> np.float64:
         reward = 0
 
         # Penalty for driving off road
         if obs.events["off_road"]:
             reward -= 10
-            return np.float32(reward)
+            return np.float64(reward)
 
         # Penalty for driving on road shoulder
         if obs.events["on_shoulder"]:
             reward -= 10
-            return np.float32(reward)
+            return np.float64(reward)
 
         # Penalty for colliding
         if obs.events["collisions"]:
             reward -= 10
-            return np.float32(reward)
+            return np.float64(reward)
 
         # Reward for distance travelled
         reward += env_reward
 
-        return np.float32(reward)
+        return np.float64(reward)
