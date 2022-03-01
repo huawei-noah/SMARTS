@@ -1,5 +1,7 @@
 import gym
+
 from smarts.env.wrappers import format_obs
+
 
 class Observation(gym.ObservationWrapper):
     def __init__(self, env: gym.Env):
