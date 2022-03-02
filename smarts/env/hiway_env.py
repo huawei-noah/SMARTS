@@ -26,6 +26,7 @@ import gym
 
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
+from smarts.core import agent
 from smarts.core.agent import AgentSpec
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
@@ -231,6 +232,11 @@ class HiWayEnv(gym.Env):
             agent_id: self._agent_specs[agent_id].action_adapter(action)
             for agent_id, action in agent_actions.items()
         }
+
+        
+        assert isinstance(agent_actions, dict) and all(isinstance(key, str) for key in agent_actions.keys()), 'Expected Dict[str, any]'
+        
+
         observations, rewards, dones, extras = None, None, None, None
         with timeit("SMARTS Simulation/Scenario Step", self._log):
             observations, rewards, dones, extras = self._smarts.step(agent_actions)
