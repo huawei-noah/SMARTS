@@ -302,6 +302,13 @@ def rotate_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
 
 
 def line_intersect(a, b, c, d) -> Union[np.ndarray, None]:
+    """Check if the lines [a, b] and [c, d] intersect, and return the
+    intersection point if so. Otherwise, return None.
+      d
+    a─┼─b
+      c
+    """
+
     r = b - a
     s = d - c
     d = r[0] * s[1] - r[1] * s[0]
@@ -319,6 +326,7 @@ def line_intersect(a, b, c, d) -> Union[np.ndarray, None]:
 
 
 def ray_boundary_intersect(ray_start, ray_end, boundary_pts) -> Union[np.ndarray, None]:
+    """Iterate over the boundary segments, returning the intersection point if a ray intersection is found."""
     for j in range(len(boundary_pts) - 1):
         b0 = boundary_pts[j]
         b1 = boundary_pts[j + 1]

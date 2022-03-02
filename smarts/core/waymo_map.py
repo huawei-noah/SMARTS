@@ -139,6 +139,8 @@ class WaymoMap(RoadMap):
 
         @cached_property
         def seg_id(self) -> str:
+            """The segment ID"""
+
             seg_id = f"{self.feat_id}"
             if self.start_pt > 0:
                 # try to keep seg_ids the same as lane ids when not doing segmentation
@@ -201,6 +203,8 @@ class WaymoMap(RoadMap):
             prev_seg: "WaymoMap._LaneSegment",
             sub_segs: Optional[Sequence] = None,
         ) -> "WaymoMap._LaneSegment":
+            """Create a new segment at a given split index"""
+
             new_lane_dict = deepcopy(self.lane_dict)
             # XXX: Here we'd like to do the following, but python protobuf seem to have a bug with slicing:
             #    new_lane_dict["polyline"] = self.lane_dict["polyline"][prev_seg.end_pt:split_pt]
@@ -551,6 +555,7 @@ class WaymoMap(RoadMap):
         pass  # TODO (or not!)
 
     class Surface(RoadMap.Surface):
+        """Surface representation for Waymo maps"""
         def __init__(self, surface_id: str, road_map):
             self._surface_id = surface_id
             self._map = road_map
@@ -568,6 +573,7 @@ class WaymoMap(RoadMap):
         return self._surfaces.get(surface_id)
 
     class Lane(RoadMap.Lane, Surface):
+        """Lane representation for Waymo maps"""
         def __init__(self, road_map, lane_id: str, lane_dict: Dict[str, Any]):
             super().__init__(lane_id, road_map)
             self._map = road_map

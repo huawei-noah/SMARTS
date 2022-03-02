@@ -663,6 +663,7 @@ def test_waymo_map():
 
     # This is imported here to avoid pytest from checking WaymoMap on CI/CD
     from smarts.core.waymo_map import WaymoMap
+
     road_map = WaymoMap.from_spec(map_spec)
     assert isinstance(road_map, WaymoMap)
 
