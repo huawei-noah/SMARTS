@@ -93,8 +93,9 @@ setup(
             "torch==1.4.0",
             "torchvision==0.5.0",
         ],
-        "waymo": ["waymo-open-dataset-tf-2-4-0",
-                  "numpy>=1.20.0"],
+        "waymo": [
+                  "waymo-open-dataset-tf-2-4-0",
+        ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )

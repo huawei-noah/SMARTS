@@ -31,7 +31,6 @@ from smarts.core.coordinates import Point
 from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_road_network import SumoRoadNetwork
-from smarts.core.waymo_map import WaymoMap
 from smarts.sstudio.types import MapSpec
 
 
@@ -661,9 +660,12 @@ def test_waymo_map():
 
     source_str = f"{dataset_path}#{scenario_id}"
     map_spec = MapSpec(source=source_str, lanepoint_spacing=1.0)
-    road_map = WaymoMap.from_spec(map_spec)
 
+    # This is imported here to avoid pytest from checking WaymoMap on CI/CD
+    from smarts.core.waymo_map import WaymoMap
+    road_map = WaymoMap.from_spec(map_spec)
     assert isinstance(road_map, WaymoMap)
+
     assert len(road_map._lanes) > 0
     assert road_map.bounding_box.max_pt == Point(
         x=2912.9108803947315, y=-2516.317007241915, z=0
@@ -954,8 +956,9 @@ if __name__ == "__main__":
     ax.set_title(f"Scenario {scenario_id}")
     ax.axis("equal")
 
-    map_spec = MapSpec(source=source_str, lanepoint_spacing=1.0)
-    road_map = WaymoMap.from_spec(map_spec)
+    # from smarts.core.waymo_map import WaymoMap
+    # map_spec = MapSpec(source=source_str, lanepoint_spacing=1.0)
+    # road_map = WaymoMap.from_spec(map_spec)
 
     # Plot waypoints on nearest lanes of road for a given lanepoint
     # lp_101_0 = road_map._lanepoints._lanepoints_by_lane_id["101_0"]
@@ -980,24 +983,28 @@ if __name__ == "__main__":
         # "88"
     ]
 
-    for lane_id, lane in road_map._lanes.items():
-        if ids and lane_id not in ids:
-            continue
-        plot_lane(lane._lane_dict)
-        # plot_boundaries(lane_feat, features)
-        xs, ys = [], []
-        for x, y in lane._lane_polygon:
-            xs.append(x)
-            ys.append(y)
-        plt.plot(xs, ys, "b-")
-
-        # Plot lanepoints
-        # if lane.is_drivable:
-        #     linked_lps = road_map._lanepoints._lanepoints_by_lane_id[lane.lane_id]
-        #     xlp, ylp = get_lp_coords(linked_lps)
-        #     plt.scatter(xlp, ylp, s=1, c="r")
-
-    mng = plt.get_current_fig_manager()
-    mng.resize(1000, 1000)
-    # mng.resize(*mng.window.maxsize())
-    plt.show()
+    # for lane_id, lane in road_map._lanes.items():
+    #     if ids and lane_id not in ids:
+    #         continue
+    #     plot_lane(lane._lane_dict)
+    #     # plot_boundaries(lane_feat, features)
+    #     xs, ys = [], []
+    #     for x, y in lane._lane_polygon:
+    #         xs.append(x)
+    #         ys.append(y)
+    #     if lane.contains_point(Point(x=2778.00, y=-2639.5, z=0)):
+    #         print(lane_id + ", " + lane.road.road_id)
+    #         plt.plot(xs, ys, "r-")
+    #     else:
+    #         plt.plot(xs, ys, "b-")
+    #
+    #     # Plot lanepoints
+    #     # if lane.is_drivable:
+    #     #     linked_lps = road_map._lanepoints._lanepoints_by_lane_id[lane.lane_id]
+    #     #     xlp, ylp = get_lp_coords(linked_lps)
+    #     #     plt.scatter(xlp, ylp, s=1, c="r")
+    #
+    # mng = plt.get_current_fig_manager()
+    # mng.resize(1000, 1000)
+    # # mng.resize(*mng.window.maxsize())
+    # plt.show()
