@@ -21,7 +21,6 @@ import importlib.resources as pkg_resources
 import logging
 import math
 import os
-from tarfile import SUPPORTED_TYPES
 import warnings
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
