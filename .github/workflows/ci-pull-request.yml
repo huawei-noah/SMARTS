@@ -22,7 +22,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
-          pip install -e .[train,test,camera-obs,waymo]
+          pip install -e .[train,test,camera-obs]
       - name: SMARTS benchmark
         run: |
           cd $GITHUB_WORKSPACE
