@@ -208,6 +208,7 @@ class WaymoMap(RoadMap):
                 for i, p in enumerate(self.lane_dict["polyline"])
                 if seg_start <= i <= split_pt
             ]
+            new_lane_dict["_normals"] = self.lane_dict["_normals"][seg_start:split_pt+1]
             if prev_seg and prev_seg.seg_id:
                 new_lane_dict["entry_lanes"] = [prev_seg.seg_id]
             new_seg = WaymoMap._LaneSegment(
@@ -233,7 +234,9 @@ class WaymoMap(RoadMap):
             waymo_lane_dict["_feature_id"] = lane_id
 
             # Geometry computations that require the original lane polylines
-            left_widths, right_widths = self._raycast_boundaries(waymo_lane_dict)
+            lane_pts = [np.array([p.x, p.y]) for p in waymo_lane_dict["polyline"]]
+            waymo_lane_dict["_normals"] = self._calculate_normals(lane_pts)
+            left_widths, right_widths = self._raycast_boundaries(waymo_lane_dict, lane_pts)
             max_width = max(
                 left_widths[0],
                 left_widths[-1],
@@ -293,8 +296,7 @@ class WaymoMap(RoadMap):
             self._roads[road.road_id] = road
             self._surfaces[road.road_id] = road
 
-    @staticmethod
-    def _calculate_normals(pts) -> Union[List[None], Sequence[np.ndarray]]:
+    def _calculate_normals(self, pts) -> Union[List[None], Sequence[np.ndarray]]:
         n_pts = len(pts)
         normals = [None] * n_pts
         for i in range(n_pts):
@@ -315,12 +317,11 @@ class WaymoMap(RoadMap):
             normals[i] = normal
         return normals
 
-    def _raycast_boundaries(self, lane_dict, ray_dist=20.0) -> Optional[Tuple[List[float], List[float]]]:
-        lane_pts = [np.array([p.x, p.y]) for p in lane_dict["polyline"]]
+    def _raycast_boundaries(self, lane_dict, lane_pts, ray_dist=20.0) -> Optional[Tuple[List[float], List[float]]]:        
         n_pts = len(lane_pts)
         left_widths = [0] * n_pts
         right_widths = [0] * n_pts
-        normals = WaymoMap._calculate_normals(lane_pts)
+        normals = lane_dict["_normals"]
 
         for i in range(n_pts):
             ray_start = lane_pts[i]
@@ -587,10 +588,9 @@ class WaymoMap(RoadMap):
         def _create_polygon(self):
             new_left_pts = [None] * self._n_pts
             new_right_pts = [None] * self._n_pts
-            normals = WaymoMap._calculate_normals(self._lane_pts)
             for i in range(self._n_pts):
                 p = self._lane_pts[i]
-                n = normals[i]
+                n = self._lane_dict["_normals"][i]
                 w = self._lane_width/2.0
                 new_left_pts[i] = p + (w * n)
                 new_right_pts[i] = p + (-1.0 * w * n)
