@@ -367,7 +367,7 @@ class WaymoMap(RoadMap):
             max(left_widths) > width_threshold
             or max(right_widths) > width_threshold
         ):
-            return
+            return left_widths, right_widths
 
         for i in [0, n_pts - 1]:
             ray_start = lane_pts[i]
