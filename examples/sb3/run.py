@@ -1,5 +1,7 @@
 import os
+
 import tensorflow
+
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # Silence the TF logs
 
 import argparse
@@ -9,10 +11,10 @@ from datetime import datetime
 from typing import Any, Dict
 
 import gym
+from ruamel.yaml import YAML
 from sb3 import action as sb3_action
 from sb3 import observation as sb3_observation
 from sb3 import reward as sb3_reward
-from ruamel.yaml import YAML
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
