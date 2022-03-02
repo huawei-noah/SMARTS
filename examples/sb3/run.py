@@ -1,6 +1,6 @@
 import os
-
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # Silence the TF logs
+import tensorflow
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # Silence the TF logs
 
 import argparse
 import pathlib
@@ -9,9 +9,9 @@ from datetime import datetime
 from typing import Any, Dict
 
 import gym
-from sb3.common import action as common_action
-from sb3.common import observation as common_observation
-from sb3.common import reward as common_reward
+from sb3 import action as sb3_action
+from sb3 import observation as sb3_observation
+from sb3 import reward as sb3_reward
 from ruamel.yaml import YAML
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
@@ -40,9 +40,9 @@ def main(args: argparse.Namespace):
         sumo_headless=not config_env["sumo_gui"],  # If False, enables sumo-gui display.
     )
     # Wrap env with action, reward, and observation wrapper
-    env = common_action.Action(env=env)
-    env = common_reward.Reward(env=env)
-    env = common_observation.Observation(env=env)
+    env = sb3_action.Action(env=env)
+    env = sb3_reward.Reward(env=env)
+    env = sb3_observation.Observation(env=env)
     # Check our custom environment compatibility with SB3
     check_env(env)
 
