@@ -3,6 +3,8 @@ This example illustrates the training of an ego agent to drive, as fast and as f
 
 The ego agent earns reward for the distance travelled per-step and is penalised for colliding with other vehicles and for going off-road.
 
+This example is only to demonstrate the use of SB3 library with SMARTS task environments. The trained agents may not solve the task environment.
+
 ## Observation space
 + Topdown RGB image
     + size (width x height): 64 pixels x 64 pixels
