@@ -18,10 +18,10 @@ class Action(gym.ActionWrapper):
         return wrapped_act
 
 
-def _continuous() -> Tuple[Callable[[np.array], np.array], gym.Space]:
+def _continuous() -> Tuple[Callable[[np.ndarray], np.ndarray], gym.Space]:
     space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
 
-    def wrapper(model_action):
+    def wrapper(model_action: np.ndarray) -> np.ndarray:
         throttle, brake, steering = model_action
         throttle = (throttle + 1) / 2
         brake = (brake + 1) / 2
