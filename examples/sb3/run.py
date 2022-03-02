@@ -9,9 +9,9 @@ from datetime import datetime
 from typing import Any, Dict
 
 import gym
-from common import action as common_action
-from common import observation as common_observation
-from common import reward as common_reward
+from sb3.common import action as common_action
+from sb3.common import observation as common_observation
+from sb3.common import reward as common_reward
 from ruamel.yaml import YAML
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
@@ -68,7 +68,7 @@ def main(args: argparse.Namespace):
     env.close()
 
 
-def run(env: gym.Env, config: Dict[str, Any], logdir: pathlib.PosixPath):
+def run(env: gym.Env, config: Dict[str, Any], logdir: pathlib.Path):
 
     if config["mode"] == "evaluate":
         print("Start evaluation.")
