@@ -39,9 +39,6 @@ class VehicleType(str, Enum):
     Truck = "truck"
     Trailer = "trailer"
     Car = "car"
-    Pedestrian = "pedestrian"
-    Motorcycle = "motorcycle"
-    Passenger = "passenger"
 
 
 class TrafficActorState(NamedTuple):

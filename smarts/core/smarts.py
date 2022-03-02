@@ -21,6 +21,7 @@ import importlib.resources as pkg_resources
 import logging
 import math
 import os
+from tarfile import SUPPORTED_TYPES
 import warnings
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
@@ -1386,12 +1387,12 @@ class SMARTS:
                     v.vehicle_config_type if v.vehicle_config_type else v.vehicle_type
                 )
 
-                SUPPORTED_VEHICLES = {"car", "truck", "passenger", "bus", "trailer", "coach"}
+                if veh_type == "passenger":
+                    veh_type = "car"
 
-                if veh_type in SUPPORTED_VEHICLES:
-                    
-                    if veh_type == "passenger":
-                        veh_type = "car"
+                SUPPORTED_TYPES = set(item.value for item in envision_types.VehicleType)
+
+                if veh_type in SUPPORTED_TYPES:
 
                     traffic[v.vehicle_id] = envision_types.TrafficActorState(
                         actor_type=envision_types.TrafficActorType.SocialVehicle,
