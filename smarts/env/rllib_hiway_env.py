@@ -115,7 +115,9 @@ class RLlibHiWayEnv(MultiAgentEnv):
             for agent_id, action in agent_actions.items()
         }
 
-        assert isinstance(agent_actions, dict) and all(isinstance(key, str) for key in agent_actions.keys()), 'Expected Dict[str, any]'
+        assert isinstance(agent_actions, dict) and all(
+            isinstance(key, str) for key in agent_actions.keys()
+        ), "Expected Dict[str, any]"
 
         observations, rewards, dones, extras = None, None, None, None
         with timeit("SMARTS simulation/scenario step", self._log):

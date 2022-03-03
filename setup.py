@@ -92,7 +92,7 @@ setup(
             "torchvision==0.5.0",
         ],
         "waymo": ["waymo-open-dataset-tf-2-4-0"],
-        "opendrive": ["opendrive2lanelet>=1.2.1"]
+        "opendrive": ["opendrive2lanelet>=1.2.1"],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )
