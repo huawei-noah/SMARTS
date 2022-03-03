@@ -57,7 +57,7 @@ jobs:
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
-          pip install .[camera-obs,dev,extras,ros,test,train]
+          pip install .[camera-obs,dev,extras,opendrive,ros,test,train]
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v13.2  

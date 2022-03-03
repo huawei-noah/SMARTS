@@ -33,26 +33,34 @@ import rtree
 import trimesh
 import trimesh.scene
 from cached_property import cached_property
-from lxml import etree
-from opendrive2lanelet.opendriveparser.elements.geometry import Line as LineGeometry
-from opendrive2lanelet.opendriveparser.elements.opendrive import (
-    OpenDrive as OpenDriveElement,
-)
-from opendrive2lanelet.opendriveparser.elements.road import Road as RoadElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import Lane as LaneElement
-from opendrive2lanelet.opendriveparser.elements.roadLanes import (
-    LaneOffset as LaneOffsetElement,
-)
-from opendrive2lanelet.opendriveparser.elements.roadLanes import (
-    LaneSection as LaneSectionElement,
-)
-from opendrive2lanelet.opendriveparser.elements.roadLanes import (
-    LaneWidth as LaneWidthElement,
-)
-from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
-    PlanView as PlanViewElement,
-)
-from opendrive2lanelet.opendriveparser.parser import parse_opendrive
+
+try:
+    from lxml import etree
+    from opendrive2lanelet.opendriveparser.elements.geometry import Line as LineGeometry
+    from opendrive2lanelet.opendriveparser.elements.opendrive import (
+        OpenDrive as OpenDriveElement,
+    )
+    from opendrive2lanelet.opendriveparser.elements.road import Road as RoadElement
+    from opendrive2lanelet.opendriveparser.elements.roadLanes import Lane as LaneElement
+    from opendrive2lanelet.opendriveparser.elements.roadLanes import (
+        LaneOffset as LaneOffsetElement,
+    )
+    from opendrive2lanelet.opendriveparser.elements.roadLanes import (
+        LaneSection as LaneSectionElement,
+    )
+    from opendrive2lanelet.opendriveparser.elements.roadLanes import (
+        LaneWidth as LaneWidthElement,
+    )
+    from opendrive2lanelet.opendriveparser.elements.roadPlanView import (
+        PlanView as PlanViewElement,
+    )
+    from opendrive2lanelet.opendriveparser.parser import parse_opendrive
+except ImportError:
+    raise ImportError(
+        "You may not have installed the [opendrive] dependencies required for using the OpenDRIVE maps with SMARTS. Install it first using the command `pip install -e .[opendrive]` at the source directory."
+        ""
+    )
+
 from shapely.geometry import Polygon
 from trimesh.exchange import gltf
 
