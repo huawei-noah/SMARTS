@@ -18,6 +18,7 @@ from sb3 import reward as sb3_reward
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.monitor import Monitor
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 yaml = YAML(typ="safe")
@@ -41,12 +42,11 @@ def main(args: argparse.Namespace):
         visdom=config_env["visdom"],  # If True, enables Visdom display.
         sumo_headless=not config_env["sumo_gui"],  # If False, enables sumo-gui display.
     )
+
     # Wrap env with action, reward, and observation wrapper
     env = sb3_action.Action(env=env)
     env = sb3_reward.Reward(env=env)
     env = sb3_observation.Observation(env=env)
-    # Check our custom environment compatibility with SB3
-    check_env(env)
 
     # Setup train or evaluate.
     if config_env["mode"] == "train" and not args.logdir:
@@ -64,6 +64,10 @@ def main(args: argparse.Namespace):
         )
     logdir.mkdir(parents=True, exist_ok=True)
     print("Logdir:", logdir)
+
+    # Check our custom environment compatibility with SB3
+    env = Monitor(env=env, filename=str(logdir))
+    check_env(env)
 
     # Run training or evaluation.
     run(env, config_env, logdir)
@@ -89,13 +93,14 @@ def run(env: gym.Env, config: Dict[str, Any], logdir: pathlib.Path):
             tensorboard_log=logdir / "tensorboard",
             use_sde=True,
         )
-        model.learn(total_timesteps=config["train_steps"])
+        timesteps = 1e3
+        model.learn(total_timesteps=timesteps)
 
     print("Evaluate policy")
-    mean_reward, std_reward = evaluate_policy(
+    evaluate_policy(
         model, env, n_eval_episodes=config["eval_eps"], deterministic=True
     )
-    print(f"Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
+    print("Finished evaluating")
 
     if config["mode"] == "train":
         model.save(logdir / "model")

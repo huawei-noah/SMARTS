@@ -38,6 +38,11 @@ class Reward(gym.Wrapper):
             reward -= 10
             return np.float64(reward)
 
+        # Penalty for driving off route
+        if obs.events["off_route"]:
+            reward -= 10
+            return np.float64(reward)
+
         # Reward for distance travelled
         reward += env_reward
 
