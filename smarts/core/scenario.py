@@ -427,7 +427,7 @@ class Scenario:
         return discovered_scenarios
 
     @staticmethod
-    def build_map(scenario_root: str) -> Tuple[RoadMap, str]:
+    def build_map(scenario_root: str) -> Tuple[RoadMap, Optional[str]]:
         """Builds a road map from the given scenario's resources."""
         # XXX: using a map builder_fn supplied by users is a security risk
         # as SMARTS will be executing the code "as is".  We are currently
@@ -799,7 +799,7 @@ class Scenario:
         return os.path.join(self._root, "plane.urdf")
 
     @property
-    def vehicle_filepath(self) -> str:
+    def vehicle_filepath(self) -> Optional[str]:
         """The filepath of the vehicle's physics model."""
         if not os.path.isdir(self._root):
             return None
