@@ -28,7 +28,6 @@ import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
-from smarts.core.renderer import Renderer
 
 from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
@@ -48,6 +47,7 @@ from .sensors import (
     WaypointsSensor,
 )
 from .utils.math import rotate_around_point
+from .utils.custom_exceptions import RendererException
 
 
 @dataclass
@@ -138,17 +138,6 @@ VEHICLE_CONFIGS = {
         glb_model="motorcycle.glb",
     ),
 }
-
-# XXX: This is the wrong place for this exception.
-class RendererException(Exception):
-    """An exception raised if a renderer is required but not available."""
-
-    @classmethod
-    def required_to(cls, thing: str) -> "RendererException":
-        """Generate a `RenderException` requiring a render to do `thing`."""
-        return cls(
-            f"""A renderer is required to {thing}. You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. Install them first using the command `pip install -e .[camera-obs]` at the source directory."""
-        )
 
 
 class Vehicle:
@@ -249,8 +238,9 @@ class Vehicle:
         return self._sensors
 
     @property
-    def renderer(self) -> Optional[Renderer]:
+    def renderer(self):  # type: ignore
         """The renderer this vehicle is rendered to."""
+        # Returns: Optional[Renderer]
         return self._renderer
 
     # # TODO: See issue #898 This is a currently a no-op
