@@ -25,6 +25,7 @@ setup(
         "setuptools>=41.0.0,!=50.0",
         "cached-property>=1.5.2",
         "click>=8.0.3",  # used in scl
+        "eclipse-sumo==1.10.0",  # sumo
         "gym==0.19.0",
         "numpy>=1.19.5",
         "pandas>=1.3.4",
@@ -55,8 +56,6 @@ setup(
         "protobuf>=3.19.1",
         "PyYAML>=6.0",
         "twisted>=21.7.0",
-        # For OpenDRIVE map support
-        "opendrive2lanelet>=1.2.1",
     ],
     extras_require={
         "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
@@ -86,16 +85,15 @@ setup(
             "pytest-xdist>=2.4.0",
         ],
         "train": [
-            "opencv-python==4.1.2.30",
-            "opencv-python-headless==4.1.2.30",
+            "opencv-contrib-python-headless==4.1.2.30",
             "ray[rllib]==1.0.1.post1",
             "tensorflow>=2.4.0",
             "torch==1.4.0",
             "torchvision==0.5.0",
         ],
-        "waymo": [
-                  "waymo-open-dataset-tf-2-4-0",
-        ],
+        "waymo": ["waymo-open-dataset-tf-2-4-0"],
+        "opendrive": ["opendrive2lanelet>=1.2.1"],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )
+

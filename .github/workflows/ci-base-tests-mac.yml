@@ -47,7 +47,7 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade wheel
           pip install -r utils/setup/mac_requirements.txt
-          pip install -e .[train,test,camera-obs,waymo]
+          pip install -e .[camera-obs,opendrive,train,test]
       - name: Run smoke tests
         run: |
           . ${{env.venv_dir}}/bin/activate
@@ -57,6 +57,7 @@ jobs:
           PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
             -n auto \
+            --ignore-glob="**/waymo_map.py" \
             ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/env/tests/test_benchmark.py \

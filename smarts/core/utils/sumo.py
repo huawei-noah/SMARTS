@@ -24,18 +24,20 @@ for convenience and to reduce code duplication as sumolib lives under SUMO_HOME.
 import os
 import sys
 
-# Check for sumo home
-if "SUMO_HOME" not in os.environ:
-    raise ImportError("SUMO_HOME not set, can't import sumolib")
+try:
+    import sumo
 
-sumo_path = os.environ["SUMO_HOME"]
-tools_path = os.path.join(sumo_path, "tools")
+    SUMO_PATH = sumo.SUMO_HOME
+    os.environ["SUMO_HOME"] = sumo.SUMO_HOME
+except ImportError:
+    if "SUMO_HOME" not in os.environ:
+        raise ImportError("SUMO_HOME not set, can't import sumolib")
+    sumo_path = os.environ["SUMO_HOME"]
+
+tools_path = os.path.join(SUMO_PATH, "tools")
 if tools_path not in sys.path:
     sys.path.append(tools_path)
 
 
-# Intentionally making this available
-SUMO_PATH = sumo_path
-
-import sumolib  # isort:skip
-import traci  # isort:skip
+import sumo.tools.sumolib as sumolib
+import sumo.tools.traci as traci

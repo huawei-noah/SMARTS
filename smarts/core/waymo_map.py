@@ -226,7 +226,7 @@ class WaymoMap(RoadMap):
             return new_seg
 
     def _create_lanes_and_roads(self, waymo_lanes: List[Tuple[str, Any]]):
-        # first segment lanes based on their boundaries and neighbors
+        """first segment lanes based on their boundaries and neighbors"""
         waymo_lanedicts = {}
         for lane_id, lane_feat in waymo_lanes:
             split_pts = None
@@ -492,7 +492,7 @@ class WaymoMap(RoadMap):
 
     @staticmethod
     def _parse_source_to_scenario(source: str):
-        # Read the dataset file and get the specified scenario
+        """Read the dataset file and get the specified scenario"""
         dataset_path = source.split("#")[0]
         scenario_id = source.split("#")[1]
         dataset_records = read_tfrecord_file(dataset_path)
