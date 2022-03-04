@@ -326,13 +326,19 @@ def line_intersect(a, b, c, d) -> Union[np.ndarray, None]:
 
 
 def ray_boundary_intersect(ray_start, ray_end, boundary_pts) -> Union[np.ndarray, None]:
-    """Iterate over the boundary segments, returning the intersection point if a ray intersection is found."""
+    """Iterate over the boundary segments, returning the nearest intersection point if a ray intersection is found."""
+    nearest_pt = None
+    min_dist = math.inf
     for j in range(len(boundary_pts) - 1):
         b0 = boundary_pts[j]
         b1 = boundary_pts[j + 1]
-        intersect_pt = line_intersect(b0, b1, ray_start, ray_end)
-        if intersect_pt is not None:
-            return intersect_pt
+        pt = line_intersect(b0, b1, ray_start, ray_end)
+        if pt is not None:
+            dist = np.linalg.norm(pt - ray_start)
+            if dist < min_dist:
+                min_dist = dist
+                nearest_pt = pt
+    return nearest_pt
 
 
 def min_angles_difference_signed(first, second) -> float:

@@ -669,10 +669,10 @@ def test_waymo_map():
 
     assert len(road_map._lanes) > 0
     assert road_map.bounding_box.max_pt == Point(
-        x=2912.9108803947315, y=-2516.317007241915, z=0
+        x=2912.2181232681987, y=-2517.46886965742, z=0
     )
     assert road_map.bounding_box.min_pt == Point(
-        x=2638.180643600848, y=-2827.317950309347, z=0
+        x=2639.0602928565454, y=-2827.0688319058345, z=0
     )
 
     # Expected properties for all roads and lanes
@@ -718,7 +718,7 @@ def test_waymo_map():
 
     offset = refline_pt.s
     width, conf = l1.width_at_offset(offset)
-    assert round(width, 2) == 4.43
+    assert round(width, 2) == 3.5
     assert conf == 1.0
     assert round(l1.curvature_radius_at_offset(offset), 2) == -3136.8
     assert l1.contains_point(point)
@@ -740,7 +740,7 @@ def test_waymo_map():
     assert (len(candidates)) == 1  # since no outgoing lanes
 
     # nearest lane for a point inside a lane
-    point = Point(2910.0, -2610.0, 0)
+    point = Point(2910.0, -2608.0, 0)
     l2 = road_map.nearest_lane(point)
     assert l2.lane_id == "156"
     assert l2.index == 0
@@ -932,20 +932,17 @@ def plot_road_edge(road_edge):
 
 
 def plot_boundaries(lane, features):
-    if lane["left_boundaries"] or lane["right_boundaries"]:
-        for name, lst in [
-            ("Left", list(lane["left_boundaries"])),
-            ("Right", list(lane["right_boundaries"])),
-        ]:
-            for b in lst:
-                if b.boundary_type == 0:
-                    plot_road_edge(features[b.boundary_feature_id])
-                else:
-                    plot_road_line(features[b.boundary_feature_id])
+    if lane.left_boundaries or lane.right_boundaries:
+        for b in list(lane.left_boundaries) + list(lane.right_boundaries)[0:1]:
+            if b.boundary_type == 0:
+                plot_road_edge(features[b.boundary_feature_id])
+            else:
+                plot_road_line(features[b.boundary_feature_id])
 
 
 if __name__ == "__main__":
     scenario_id = "4f30f060069bbeb9"
+    # scenario_id = "c84cde79e51b087c"
     dataset_root = os.path.join(Path(__file__).parent, "maps/")
     dataset_file = (
         "uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000"
@@ -957,9 +954,10 @@ if __name__ == "__main__":
     ax.set_title(f"Scenario {scenario_id}")
     ax.axis("equal")
 
-    # from smarts.core.waymo_map import WaymoMap
-    # map_spec = MapSpec(source=source_str, lanepoint_spacing=1.0)
-    # road_map = WaymoMap.from_spec(map_spec)
+    from smarts.core.waymo_map import WaymoMap
+
+    map_spec = MapSpec(source=source_str, lanepoint_spacing=1.0)
+    road_map = WaymoMap.from_spec(map_spec)
 
     # Plot waypoints on nearest lanes of road for a given lanepoint
     # lp_101_0 = road_map._lanepoints._lanepoints_by_lane_id["101_0"]
@@ -982,30 +980,29 @@ if __name__ == "__main__":
         # "86_4",
         # "86_16",
         # "88"
+        # "129"
     ]
 
-    # for lane_id, lane in road_map._lanes.items():
-    #     if ids and lane_id not in ids:
-    #         continue
-    #     plot_lane(lane._lane_dict)
-    #     # plot_boundaries(lane_feat, features)
-    #     xs, ys = [], []
-    #     for x, y in lane._lane_polygon:
-    #         xs.append(x)
-    #         ys.append(y)
-    #     if lane.contains_point(Point(x=2778.00, y=-2639.5, z=0)):
-    #         print(lane_id + ", " + lane.road.road_id)
-    #         plt.plot(xs, ys, "r-")
-    #     else:
-    #         plt.plot(xs, ys, "b-")
-    #
-    #     # Plot lanepoints
-    #     # if lane.is_drivable:
-    #     #     linked_lps = road_map._lanepoints._lanepoints_by_lane_id[lane.lane_id]
-    #     #     xlp, ylp = get_lp_coords(linked_lps)
-    #     #     plt.scatter(xlp, ylp, s=1, c="r")
-    #
-    # mng = plt.get_current_fig_manager()
-    # mng.resize(1000, 1000)
-    # # mng.resize(*mng.window.maxsize())
-    # plt.show()
+    for lane_id, lane in road_map._lanes.items():
+        if ids and lane_id not in ids:
+            continue
+        feature_id = int(lane._lane_dict["_feature_id"])
+        feature = road_map._waymo_features[feature_id]
+        plot_lane(lane._lane_dict)
+        # plot_boundaries(feature, road_map._waymo_features)
+        xs, ys = [], []
+        for x, y in lane._lane_polygon:
+            xs.append(x)
+            ys.append(y)
+        plt.plot(xs, ys, "b-")
+
+        # Plot lanepoints
+        # if lane.is_drivable:
+        #     linked_lps = road_map._lanepoints._lanepoints_by_lane_id[lane.lane_id]
+        #     xlp, ylp = get_lp_coords(linked_lps)
+        #     plt.scatter(xlp, ylp, s=1, c="r")
+
+    mng = plt.get_current_fig_manager()
+    mng.resize(1000, 1000)
+    # mng.resize(*mng.window.maxsize())
+    plt.show()

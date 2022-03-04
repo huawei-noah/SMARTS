@@ -133,7 +133,7 @@ class WaymoMap(RoadMap):
             if sub_segs:
                 self.lane_dict["sublanes"] = [ss.seg_id for ss in sub_segs]
                 for ss in sub_segs:
-                    ss["composite"] = self.seg_id
+                    ss.lane_dict["composite"] = self.seg_id
             self._shift_and_clip("left")
             self._shift_and_clip("right")
 
@@ -201,7 +201,7 @@ class WaymoMap(RoadMap):
             self,
             split_pt: int,
             prev_seg: "WaymoMap._LaneSegment",
-            sub_segs: Optional[Sequence] = None,
+            sub_segs: Optional[Sequence] = [],
         ) -> "WaymoMap._LaneSegment":
             """Create a new segment at a given split index"""
 
@@ -252,6 +252,7 @@ class WaymoMap(RoadMap):
             )
             if max_width < 0.5:
                 max_width = WaymoMap.DEFAULT_LANE_WIDTH / 2
+            max_width = min(max_width, WaymoMap.DEFAULT_LANE_WIDTH / 2)
             waymo_lane_dict["lane_width"] = max_width * 2
 
             orig_seg = WaymoMap._LaneSegment(lane_id, waymo_lane_dict)
@@ -324,7 +325,7 @@ class WaymoMap(RoadMap):
             normals[i] = normal
         return normals
 
-    def _raycast_boundaries(self, lane_dict, lane_pts, ray_dist=20.0) -> Optional[Tuple[List[float], List[float]]]:        
+    def _raycast_boundaries(self, lane_dict, lane_pts, ray_dist=20.0) -> Optional[Tuple[List[float], List[float]]]:   
         n_pts = len(lane_pts)
         left_widths = [0] * n_pts
         right_widths = [0] * n_pts
@@ -396,10 +397,11 @@ class WaymoMap(RoadMap):
                         ray_start, ray_end, boundary_pts
                     )
                     if intersect_pt is not None:
-                        left_widths[i] = np.linalg.norm(
-                            intersect_pt - ray_start
-                        )
-                        break
+                        dist = np.linalg.norm(intersect_pt - ray_start)
+                        if left_widths[i] > 0:
+                            left_widths[i] = min(left_widths[i], dist)
+                        else:
+                            left_widths[i] = dist
 
             if lane_dict["right_boundaries"]:
                 sign = -1.0
@@ -417,10 +419,12 @@ class WaymoMap(RoadMap):
                         ray_start, ray_end, boundary_pts
                     )
                     if intersect_pt is not None:
-                        right_widths[i] = np.linalg.norm(
-                            intersect_pt - ray_start
-                        )
-                        break
+                        dist = np.linalg.norm(intersect_pt - ray_start)
+                        if right_widths[i] > 0:
+                            right_widths[i] = min(right_widths[i], dist)
+                        else:
+                            right_widths[i] = dist
+                            
         return left_widths, right_widths
 
     def _adj_seg_id(
@@ -857,7 +861,7 @@ class WaymoMap(RoadMap):
                 if lane.is_composite:
                     # TAI: do we need to keep track of sub roads?
                     self._is_composite = True
-                if lane.composite_lane != lane:
+                if lane.composite_lane and lane.composite_lane != lane:
                     self._composite = lane.composite_lane.road
             super().__init__(self._road_id, road_map)
             self._lanes = road_lanes
