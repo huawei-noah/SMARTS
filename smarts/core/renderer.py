@@ -57,6 +57,7 @@ class _ShowBaseInstance(ShowBase):
         if "__it__" not in cls.__dict__:
             # loadPrcFileData("", "gl-debug #t")
             loadPrcFileData("", "load-display p3headlessgl")
+            loadPrcFileData("", "aux-display p3dheadlessgl")
             loadPrcFileData("", "aux-display pandagl")
             loadPrcFileData("", "aux-display pandadx9")
             loadPrcFileData("", "aux-display pandagles")
