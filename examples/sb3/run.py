@@ -20,6 +20,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.callbacks import EvalCallback
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 yaml = YAML(typ="safe")
@@ -34,22 +35,8 @@ def main(args: argparse.Namespace):
     # Load env config.
     config_env = config_file["smarts"]
     config_env["mode"] = args.mode
-    config_env["train_steps"] = args.train_steps
 
-    # Create environment
-    env = gym.make(
-        "smarts.env:intersection-v0",
-        headless=not args.head,  # If False, enables Envision display.
-        visdom=config_env["visdom"],  # If True, enables Visdom display.
-        sumo_headless=not config_env["sumo_gui"],  # If False, enables sumo-gui display.
-    )
-
-    # Wrap env with action, reward, and observation wrapper
-    env = sb3_action.Action(env=env)
-    env = sb3_reward.Reward(env=env)
-    env = sb3_observation.Observation(env=env)
-
-    # Setup train or evaluate.
+    # Setup logdir.
     if config_env["mode"] == "train" and not args.logdir:
         # Begin training from scratch.
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -64,31 +51,51 @@ def main(args: argparse.Namespace):
             f'Expected \'train\' or \'evaluate\', but got {config_env["mode"]}.'
         )
     logdir.mkdir(parents=True, exist_ok=True)
+    config_env["logdir"]=logdir
     print("Logdir:", logdir)
 
-    # Check our custom environment compatibility with SB3
-    env = Monitor(env=env, filename=str(logdir))
-    check_env(env)
+    # Make training and evaluation environments.
+    env = make_env(config_env)
+    eval_env = make_env(config_env)
 
     # Run training or evaluation.
-    run(env, config_env, logdir)
+    run(env=env, eval_env=eval_env, config=config_env)
     env.close()
 
+def make_env(config: Dict[str,Any])->gym.Env:
+    # Create environment
+    env = gym.make(
+        "smarts.env:intersection-v0",
+        headless=not args.head,  # If False, enables Envision display.
+        visdom=config["visdom"],  # If True, enables Visdom display.
+        sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
+    )
 
-def run(env: gym.Env, config: Dict[str, Any], logdir: pathlib.Path):
+    # Wrap env with action, reward, and observation wrapper
+    env = sb3_action.Action(env=env)
+    env = sb3_reward.Reward(env=env)
+    env = sb3_observation.Observation(env=env)
+
+    # Check our custom environment compatibility with SB3
+    env = Monitor(env=env, filename=str(config["logdir"]))
+    check_env(env)
+
+    return env
+
+def run(env: gym.Env, eval_env:gym.Env, config: Dict[str, Any]):
 
     checkpoint_callback = CheckpointCallback(
         save_freq=config["checkpoint_freq"],
-        save_path=logdir,
-        name_prefix="rl_model",
+        save_path=config["logdir"],
+        name_prefix="model",
     )
 
     if config["mode"] == "evaluate":
         print("Start evaluation.")
-        model = PPO.load(logdir / "model.zip")
+        model = PPO.load(config["logdir"] / "model.zip")
     elif config["mode"] == "train" and args.logdir:
         print("Start training from existing model.")
-        model = PPO.load(logdir / "model.zip")
+        model = PPO.load(config["logdir"] / "model.zip")
         model.set_env(env)
         model.learn(total_timesteps=config["train_steps"], callback=checkpoint_callback)
     else:
@@ -97,17 +104,20 @@ def run(env: gym.Env, config: Dict[str, Any], logdir: pathlib.Path):
             "CnnPolicy",
             env,
             verbose=1,
-            tensorboard_log=logdir / "tensorboard",
+            tensorboard_log=config["logdir"] / "tensorboard",
             use_sde=True,
         )
         model.learn(total_timesteps=config["train_steps"], callback=checkpoint_callback)
+        eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/',
+                                    log_path='./logs/', eval_freq=500,
+                                    deterministic=True, render=False)
 
     # print("Evaluate policy")
     # evaluate_policy(model, env, n_eval_episodes=config["eval_eps"], deterministic=True)
     # print("Finished evaluating")
 
     if config["mode"] == "train":
-        model.save(logdir / "model")
+        model.save(config["logdir"] / "model")
 
 
 if __name__ == "__main__":
