@@ -95,7 +95,7 @@ class Scenario:
 
         if traffic_history:
             self._traffic_history = TrafficHistory(traffic_history)
-            default_lane_width = self.traffic_history.lane_width
+            default_lane_width = self._traffic_history.lane_width
         else:
             self._traffic_history = None
             default_lane_width = None
@@ -328,7 +328,7 @@ class Scenario:
     @lru_cache(maxsize=16)
     def _discover_social_agents_info(
         scenario,
-    ) -> Sequence[Dict[str, SocialAgent]]:
+    ) -> List[Dict[str, SocialAgent]]:
         """Loops through the social agent mission pickles, instantiating corresponding
         implementations for the given types. The output is a list of
         {agent_id: (mission, locator)}, where each dictionary corresponds to the
@@ -348,7 +348,7 @@ class Scenario:
         agent_bucketer = []
 
         # like dict.setdefault
-        def setdefault(l: Sequence[Any], index: int, default):
+        def setdefault(l: List[Any], index: int, default):
             while len(l) < index + 1:
                 l.append([])
             return l[index]
@@ -427,7 +427,7 @@ class Scenario:
         return discovered_scenarios
 
     @staticmethod
-    def build_map(scenario_root: str) -> Tuple[RoadMap, Optional[str]]:
+    def build_map(scenario_root: str) -> Tuple[Optional[RoadMap], Optional[str]]:
         """Builds a road map from the given scenario's resources."""
         # XXX: using a map builder_fn supplied by users is a security risk
         # as SMARTS will be executing the code "as is".  We are currently
