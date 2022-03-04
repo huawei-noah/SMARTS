@@ -506,6 +506,7 @@ class WaymoMap(RoadMap):
 
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
+        """Generate a road network from the given specification."""
         waymo_scenario = cls._parse_source_to_scenario(map_spec.source)
         assert waymo_scenario
         return cls(map_spec, waymo_scenario)
@@ -781,6 +782,7 @@ class WaymoMap(RoadMap):
 
         @cached_property
         def bounding_box(self) -> Optional[BoundingBox]:
+            """Get the minimal axis aligned bounding box that contains all lane geometry."""
             # XXX: this shouldn't be public.
             x_coordinates, y_coordinates = zip(*self._lane_polygon)
             self._bounding_box = BoundingBox(
@@ -908,7 +910,7 @@ class WaymoMap(RoadMap):
 
         @cached_property
         def bounding_box(self) -> BoundingBox:
-            """Get the minimal axis aligned bounding box that contains all map geometry."""
+            """Get the minimal axis aligned bounding box that contains all road geometry."""
             x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
             for lane in self._lanes:
                 x_mins.append(lane.bounding_box.min_pt.x)
