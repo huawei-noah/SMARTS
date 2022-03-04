@@ -26,7 +26,7 @@ import uuid
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle
 import numpy as np
@@ -328,7 +328,7 @@ class Scenario:
     @lru_cache(maxsize=16)
     def _discover_social_agents_info(
         scenario,
-    ) -> List[Dict[str, SocialAgent]]:
+    ) -> List[Dict[str, Tuple[SocialAgent, Union[Mission, LapMission]]]]:
         """Loops through the social agent mission pickles, instantiating corresponding
         implementations for the given types. The output is a list of
         {agent_id: (mission, locator)}, where each dictionary corresponds to the
