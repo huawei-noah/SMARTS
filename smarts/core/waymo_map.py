@@ -306,6 +306,11 @@ class WaymoMap(RoadMap):
 
     def _calculate_normals(self, pts) -> Union[List[None], Sequence[np.ndarray]]:
         n_pts = len(pts)
+
+        # Special case: return early to avoid division by zero
+        if n_pts == 1:
+            return [np.array([0, 0])]
+
         normals = [None] * n_pts
         for i in range(n_pts):
             p = pts[i]
