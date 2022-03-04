@@ -16,6 +16,7 @@ from sb3 import action as sb3_action
 from sb3 import observation as sb3_observation
 from sb3 import reward as sb3_reward
 from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
@@ -76,6 +77,12 @@ def main(args: argparse.Namespace):
 
 def run(env: gym.Env, config: Dict[str, Any], logdir: pathlib.Path):
 
+    checkpoint_callback = CheckpointCallback(
+        save_freq=config["checkpoint_freq"],
+        save_path=logdir,
+        name_prefix="rl_model",
+    )
+
     if config["mode"] == "evaluate":
         print("Start evaluation.")
         model = PPO.load(logdir / "model.zip")
@@ -83,7 +90,7 @@ def run(env: gym.Env, config: Dict[str, Any], logdir: pathlib.Path):
         print("Start training from existing model.")
         model = PPO.load(logdir / "model.zip")
         model.set_env(env)
-        model.learn(total_timesteps=config["train_steps"])
+        model.learn(total_timesteps=config["train_steps"], callback=checkpoint_callback)
     else:
         print("Start training from scratch.")
         model = PPO(
@@ -93,14 +100,11 @@ def run(env: gym.Env, config: Dict[str, Any], logdir: pathlib.Path):
             tensorboard_log=logdir / "tensorboard",
             use_sde=True,
         )
-        timesteps = 1e3
-        model.learn(total_timesteps=timesteps)
+        model.learn(total_timesteps=config["train_steps"], callback=checkpoint_callback)
 
-    print("Evaluate policy")
-    evaluate_policy(
-        model, env, n_eval_episodes=config["eval_eps"], deterministic=True
-    )
-    print("Finished evaluating")
+    # print("Evaluate policy")
+    # evaluate_policy(model, env, n_eval_episodes=config["eval_eps"], deterministic=True)
+    # print("Finished evaluating")
 
     if config["mode"] == "train":
         model.save(logdir / "model")
@@ -123,9 +127,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--head", help="Run the simulation with display.", action="store_true"
-    )
-    parser.add_argument(
-        "--train-steps", help="Number of training steps.", type=int, default=5e6
     )
 
     args = parser.parse_args()
