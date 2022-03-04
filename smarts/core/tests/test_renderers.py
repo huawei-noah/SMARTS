@@ -40,9 +40,11 @@ from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.custom_exceptions import RendererException
 
+AGENT_ID = "Agent-007"
+
 
 def _smarts_with_agent(agent) -> SMARTS:
-    agents = {"Agent-007": agent}
+    agents = {AGENT_ID: agent}
     return SMARTS(
         agents,
         traffic_sim=SumoTrafficSimulation(headless=True),
@@ -87,7 +89,7 @@ def scenario():
     scenario = Scenario(
         scenario_root="scenarios/loop",
         route="basic.rou.xml",
-        missions={"Agent-007": mission},
+        missions={AGENT_ID: mission},
     )
     return scenario
 
@@ -145,8 +147,7 @@ def test_multiple_renderers(scenario, request):
 def test_optional_renderer(smarts: SMARTS, scenario):
     assert not smarts.is_rendering
     renderer = smarts.renderer
-    if not renderer:
-        raise RendererException.required_to("run test_renderer.py")
+    assert renderer
 
     smarts._renderer = None
     smarts.reset(scenario)
@@ -154,7 +155,7 @@ def test_optional_renderer(smarts: SMARTS, scenario):
 
     smarts._renderer = None
     for _ in range(10):
-        smarts.step({"Agent-007": "keep_lane"})
+        smarts.step({AGENT_ID: "keep_lane"})
 
     assert not smarts.is_rendering
 
@@ -164,6 +165,6 @@ def test_no_renderer(smarts_wo_renderer: SMARTS, scenario):
     smarts_wo_renderer.reset(scenario)
     assert not smarts_wo_renderer.is_rendering
     for _ in range(10):
-        smarts_wo_renderer.step({"Agent-007": "keep_lane"})
+        smarts_wo_renderer.step({AGENT_ID: "keep_lane"})
 
     assert not smarts_wo_renderer.is_rendering
