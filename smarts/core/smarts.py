@@ -57,7 +57,6 @@ from .traffic_history_provider import TrafficHistoryProvider
 from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
-from .utils.config import SmartsConfig
 from .utils.id import Id
 from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
@@ -89,7 +88,7 @@ class SMARTSDestroyedError(Exception):
 class SMARTS:
     """The core SMARTS simulator. This is the direct interface to all parts of the simulation.
     Args:
-        agent_interfaces: The interfaces providing SMARTS with the understanding of what features an agent needs.
+        agent_interfaces: The interfaces providing SMARTS with the understanding of what features each agent needs.
         traffic_sim: The traffic simulator for providing non-agent traffic.
         envision: An envision client for connecting to an envision visualization server.
         visdom: A visdom client for connecting to a visdom visualization server.
@@ -110,7 +109,6 @@ class SMARTS:
         reset_agents_only: bool = False,
         zoo_addrs: Optional[Tuple[str, int]] = None,
         external_provider: bool = False,
-        config=SmartsConfig(),
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._sim_id = Id.new("smarts")
@@ -121,7 +119,7 @@ class SMARTS:
         self._envision: Optional[EnvisionClient] = envision
         self._visdom: Optional[VisdomClient] = visdom
         self._traffic_sim = traffic_sim
-        self._external_provider = None
+        self._external_provider: ExternalProvider = None
         self._resetting = False
         self._reset_required = False
 
@@ -757,9 +755,9 @@ class SMARTS:
         """The renderer singleton. On call, the sim will attempt to create it if it does not exist."""
         if not self._renderer:
             try:
-                from .renderer import get_renderer
+                from .renderer import Renderer
 
-                self._renderer = get_renderer(self._sim_id, self._config)
+                self._renderer = Renderer(self._sim_id)
             except ImportError as e:
                 self._log.warning(
                     "Renderer import failed. Please install `[camera-obs]`"
@@ -769,7 +767,7 @@ class SMARTS:
                 self._log.warning("Unable to create Renderer")
                 self._renderer = None
                 raise e
-        if self._renderer and not self._renderer.is_setup:
+        if not self._renderer.is_setup:
             if self._scenario:
                 self._renderer.setup(self._scenario)
                 self._vehicle_index.begin_rendering_vehicles(self._renderer)

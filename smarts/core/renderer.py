@@ -48,20 +48,6 @@ from .colors import SceneColors
 from .coordinates import Pose
 from .masks import RenderMasks
 from .scenario import Scenario
-from .utils.config import SmartsConfig
-
-
-def get_renderer(sim_id, config: SmartsConfig):
-    """Get the appropriate renderer given the simulation id and config.
-    Args:
-        sim_id (str): The id of a SMARTS simulation the renderer should be related to.
-        config (SmartsConfig): A configuration file determining extra configuration.
-
-    Returns:
-        Renderer: A new renderer based on the given configuration.
-    """
-    _renderer = Renderer(sim_id, config)
-    return _renderer
 
 
 class DEBUG_MODE(IntEnum):
@@ -75,15 +61,18 @@ class DEBUG_MODE(IntEnum):
 class _ShowBaseInstance(ShowBase):
     """ Wraps a singleton instance of ShowBase from Panda3D. """
 
-    _debug_mode = DEBUG_MODE.WARNING
-    _rendering_backend = "p3headlessgl"
+    _debug_mode: DEBUG_MODE = DEBUG_MODE.ERROR
+    _rendering_backend: str = "p3headlessgl"
 
     def __new__(cls):
         # Singleton pattern:  ensure only 1 ShowBase instance
         if "__it__" not in cls.__dict__:
             if cls._debug_mode <= DEBUG_MODE.INFO:
                 loadPrcFileData("", "gl-debug #t")
-            loadPrcFileData("", f"load-display {cls._rendering_backend}")
+            loadPrcFileData(
+                "",
+                f"load-display {cls._rendering_backend}",
+            )
             loadPrcFileData("", "aux-display p3headlessgl")
             loadPrcFileData("", "aux-display pandagl")
             loadPrcFileData("", "aux-display pandadx9")
@@ -100,7 +89,7 @@ class _ShowBaseInstance(ShowBase):
             loadPrcFileData("", "gl-version 3 3")
             loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
             loadPrcFileData("", "print-pipe-types false")
-            loadPrcFileData("", "basic-shaders-only #t")
+            # loadPrcFileData("", "basic-shaders-only #t")
             # https://www.panda3d.org/manual/?title=Multithreaded_Render_Pipeline
             # loadPrcFileData('', 'threading-model Cull/Draw')
             # have makeTextureBuffer create a visible window
@@ -110,14 +99,6 @@ class _ShowBaseInstance(ShowBase):
             cls.__it__ = it = object.__new__(cls)
             it.init()
         return it
-
-    @classmethod
-    def set_rendering_mode(cls, debug_mode: DEBUG_MODE):
-        cls._debug_mode = debug_mode
-
-    @classmethod
-    def set_rendering_backend(cls, backend: str):
-        cls._rendering_backend = backend
 
     def __init__(self):
         pass  # singleton pattern, uses init() instead (don't call super().__init__() here!)
@@ -137,6 +118,11 @@ class _ShowBaseInstance(ShowBase):
 
         except Exception as e:
             raise e
+
+    @classmethod
+    def set_rendering_verbosity(cls, debug_mode: DEBUG_MODE):
+        cls._debug_mode = debug_mode
+        loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
 
     def destroy(self):
         """Destroy this renderer and clean up all remaining resources."""
@@ -182,7 +168,7 @@ class _ShowBaseInstance(ShowBase):
 class Renderer:
     """The utility used to render simulation geometry."""
 
-    def __init__(self, simid: str):
+    def __init__(self, simid: str, debug_mode: DEBUG_MODE = DEBUG_MODE.ERROR):
         self._log = logging.getLogger(self.__class__.__name__)
         self._is_setup = False
         self._simid = simid
@@ -190,13 +176,9 @@ class Renderer:
         self._vehicles_np = None
         self._road_map_np = None
         self._vehicle_nodes = {}
+        _ShowBaseInstance.set_rendering_verbosity(debug_mode=debug_mode)
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
-        debug_mode = DEBUG_MODE[config.get("renderer-debug-mode", "warning").upper()]
-        _ShowBaseInstance.set_rendering_mode(debug_mode=debug_mode)
-        _ShowBaseInstance.set_rendering_backend(
-            backend=config.get("renderer-p3d-backend", "p3headlessgl")
-        )
         self._showbase_instance = _ShowBaseInstance()
 
     @property

@@ -41,24 +41,17 @@ from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.custom_exceptions import RendererException
 
 
-def _smarts_with_agent(request, agent) -> SMARTS:
-    renderer_debug_mode = request.config.getoption("--renderer-debug-mode")
+def _smarts_with_agent(agent) -> SMARTS:
     agents = {"Agent-007": agent}
     return SMARTS(
         agents,
         traffic_sim=SumoTrafficSimulation(headless=True),
         envision=None,
-        config=SmartsConfig.from_dictionary(
-            {
-                "renderer-debug-mode": renderer_debug_mode,
-                # "renderer-p3d-backend": "p3tinydisplay",
-            }
-        ),
     )
 
 
 @pytest.fixture
-def smarts(request):
+def smarts():
     buddha = AgentInterface(
         debug=True,
         done_criteria=DoneCriteria(collision=False, off_road=False, off_route=False),
@@ -68,20 +61,20 @@ def smarts(request):
         neighborhood_vehicles=NeighborhoodVehicles(radius=20),
         action=ActionSpaceType.Lane,
     )
-    smarts = _smarts_with_agent(request, buddha)
+    smarts = _smarts_with_agent(buddha)
     yield smarts
     smarts.destroy()
 
 
 @pytest.fixture
-def smarts_wo_renderer(request):
+def smarts_wo_renderer():
     buddha = AgentInterface(
         debug=True,
         done_criteria=DoneCriteria(collision=False, off_road=False, off_route=False),
         neighborhood_vehicles=NeighborhoodVehicles(radius=20),
         action=ActionSpaceType.Lane,
     )
-    smarts = _smarts_with_agent(request, buddha)
+    smarts = _smarts_with_agent(buddha)
     yield smarts
     smarts.destroy()
 
@@ -100,18 +93,15 @@ def scenario():
 
 
 class RenderThread(threading.Thread):
-    def __init__(self, r, scenario, renderer_debug_mode, num_steps=3):
+    def __init__(self, r, scenario, renderer_debug_mode: str, num_steps=3):
         self._rid = "r{}".format(r)
         super().__init__(target=self.test_renderer, name=self._rid)
 
         try:
-            from smarts.core.renderer import get_renderer
+            from smarts.core.renderer import Renderer, DEBUG_MODE as RENDERER_DEBUG_MODE
 
-            self._rdr = get_renderer(
-                self._rid,
-                SmartsConfig.from_dictionary(
-                    {"renderer-debug-mode": renderer_debug_mode}
-                ),
+            self._rdr = Renderer(
+                self._rid, RENDERER_DEBUG_MODE[renderer_debug_mode.upper()]
             )
         except ImportError as e:
             raise e
