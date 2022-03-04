@@ -760,7 +760,7 @@ class SMARTS:
                 self._renderer = Renderer(self._sim_id)
             except ImportError as e:
                 self._log.warning(
-                    "Renderer import failed. Please install `[camera-obs]`"
+                    "Renderer import failed. Please install `[camera-obs]` or remove camera sensors from your agents."
                 )
                 raise e
             except Exception as e:
