@@ -31,6 +31,8 @@ from typing import NamedTuple
 
 import gltf
 from direct.showbase.ShowBase import ShowBase
+
+# pytype: disable=import-error
 from panda3d.core import (
     FrameBufferProperties,
     GraphicsOutput,
@@ -43,6 +45,8 @@ from panda3d.core import (
     loadPrcFileData,
 )
 
+# pytype: enable=import-error
+
 from . import glsl, models
 from .colors import SceneColors
 from .coordinates import Pose
@@ -52,6 +56,7 @@ from .scenario import Scenario
 
 class DEBUG_MODE(IntEnum):
     """The rendering debug information level."""
+
     SPAM = 1
     DEBUG = 2
     INFO = 3
@@ -171,7 +176,7 @@ class Renderer:
     """The utility used to render simulation geometry."""
 
     def __init__(self, simid: str, debug_mode: DEBUG_MODE = DEBUG_MODE.ERROR):
-        self._log = logging.getLogger(self.__class__.__name__)
+        self._log: logging.Logger = logging.getLogger(self.__class__.__name__)
         self._is_setup = False
         self._simid = simid
         self._root_np = None
@@ -181,7 +186,7 @@ class Renderer:
         _ShowBaseInstance.set_rendering_verbosity(debug_mode=debug_mode)
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
-        self._showbase_instance = _ShowBaseInstance()
+        self._showbase_instance: _ShowBaseInstance = _ShowBaseInstance()
 
     @property
     def id(self):
@@ -189,11 +194,19 @@ class Renderer:
         return self._simid
 
     @property
-    def is_setup(self):
+    def is_setup(self) -> bool:
         """If the renderer has been fully initialized."""
         return self._is_setup
 
-    def setup(self, scenario: Scenario):
+    @property
+    def log(self) -> logging.Logger:
+        """The rendering logger."""
+        return self._log
+
+    def remove_buffer(self, buffer):
+        self._showbase_instance.graphicsEngine.removeWindow(buffer)
+
+    def setup(self, scenario: Scenario) -> None:
         """Initialize this renderer."""
         self._root_np = self._showbase_instance.setup_sim_root(self._simid)
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
@@ -298,7 +311,7 @@ class Renderer:
             for i in range(retries):
                 if self.tex.mightHaveRamImage():
                     break
-                self.renderer._log.debug(
+                self.renderer.log.debug(
                     f"No image available (attempt {i}/{retries}), forcing a render"
                 )
                 region = self.buffer.getDisplayRegion(0)
@@ -328,7 +341,7 @@ class Renderer:
             region = self.buffer.getDisplayRegion(0)
             region.window.clearRenderTextures()
             self.buffer.removeAllDisplayRegions()
-            self.renderer._showbase_instance.graphicsEngine.removeWindow(self.buffer)
+            self.renderer.remove_buffer(self.buffer)
 
     def build_offscreen_camera(
         self,

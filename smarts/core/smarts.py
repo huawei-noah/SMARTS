@@ -767,10 +767,10 @@ class SMARTS:
                 self._log.warning("Unable to create Renderer")
                 self._renderer = None
                 raise e
-        if not self._renderer.is_setup:
-            if self._scenario:
-                self._renderer.setup(self._scenario)
-                self._vehicle_index.begin_rendering_vehicles(self._renderer)
+            if not self._renderer.is_setup:
+                if self._scenario:
+                    self._renderer.setup(self._scenario)
+                    self._vehicle_index.begin_rendering_vehicles(self._renderer)
         return self._renderer
 
     @property
