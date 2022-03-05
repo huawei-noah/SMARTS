@@ -51,6 +51,7 @@ from .scenario import Scenario
 
 
 class DEBUG_MODE(IntEnum):
+    """The rendering debug information level."""
     SPAM = 1
     DEBUG = 2
     INFO = 3
@@ -121,6 +122,7 @@ class _ShowBaseInstance(ShowBase):
 
     @classmethod
     def set_rendering_verbosity(cls, debug_mode: DEBUG_MODE):
+        """Set rendering debug information verbosity."""
         cls._debug_mode = debug_mode
         loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
 
@@ -188,6 +190,7 @@ class Renderer:
 
     @property
     def is_setup(self):
+        """If the renderer has been fully initialized."""
         return self._is_setup
 
     def setup(self, scenario: Scenario):
