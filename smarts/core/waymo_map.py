@@ -358,6 +358,9 @@ class WaymoMap(RoadMap):
                 # this is a PITA (b/c other adjacent lanes might have different splits)
                 # so instead we punt and just get rid of our sublanes here and pretend
                 # we weren't composite to begin with.
+                self._log.info(
+                    f"ignoring sublanes for composite interior lane {lane_id} on hybrid road."
+                )
                 sublanes_to_remove += lane_dict["sublanes"]
                 new_lane_id = lane_dict["sublanes"][0]
                 for il in lane_dict["entry_lanes"]:
