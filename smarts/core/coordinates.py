@@ -546,7 +546,6 @@ class Pose:
         """Convert to a 2d position array"""
         return self.position[:2]
 
-
     def as_panda3d(self):
         """ Convert to panda3D (object bounds centre position, heading)"""
         return (self.position, self.heading.as_panda3d)

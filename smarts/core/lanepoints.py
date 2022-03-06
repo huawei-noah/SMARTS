@@ -409,10 +409,12 @@ class LanePoints:
 
                 lane_shape = curr_lane._lane_pts
 
-                assert len(lane_shape) >= 2, repr(lane_shape)
+                assert (
+                    len(lane_shape) >= 2
+                ), f"{repr(lane_shape)} for lane_id={curr_lane.lane_id}"
 
-                heading = vec_to_radians(lane_shape[1] - lane_shape[0])
-                heading = Heading(heading)
+                vd = lane_shape[1] - lane_shape[0]
+                heading = Heading(vec_to_radians(vd[:2]))
                 orientation = fast_quaternion_from_angle(heading)
 
                 lane_width, _ = curr_lane.width_at_offset(0)
@@ -437,8 +439,8 @@ class LanePoints:
                 curr_lanepoint = first_lanepoint
 
                 for p1, p2 in zip(lane_shape[1:], lane_shape[2:]):
-                    heading_ = vec_to_radians(p2 - p1)
-                    heading_ = Heading(heading_)
+                    vd = p2 - p1
+                    heading_ = Heading(vec_to_radians(vd[:2]))
                     orientation_ = fast_quaternion_from_angle(heading_)
                     lane_width, _ = curr_lane.width_at_offset(0)
                     linked_lanepoint = LinkedLanePoint(

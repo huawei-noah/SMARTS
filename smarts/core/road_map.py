@@ -187,7 +187,7 @@ class RoadMap:
             raise NotImplementedError()
 
         def shape(
-                self, buffer_width: float = 0.0, default_width: Optional[float] = None
+            self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
             """Returns a convex polygon representing this surface, buffered by buffered_width (which must be non-negative),
             where buffer_width is a buffer around the perimeter of the polygon.  In some situations, it may be desirable to
