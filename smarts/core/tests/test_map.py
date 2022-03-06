@@ -421,6 +421,18 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert [r.road_id for r in invalid_route[0].roads] == []
 
 
+def _check_composite(road_map, comp_lane_id: str, sublane_ids):
+    cl = road_map.lane_by_id(comp_lane_id)
+    assert cl.is_composite
+    assert cl.road.is_composite
+    for slid in sublane_ids:
+        sl = road_map.lane_by_id(slid)
+        assert not sl.is_composite
+        cl1 = sl.composite_lane
+        assert cl1.is_composite
+        assert cl1 == cl
+
+
 def test_opendrive_map_merge(opendrive_scenario_merge):
     road_map = opendrive_scenario_merge.road_map
     assert isinstance(road_map, OpenDriveRoadNetwork)
@@ -697,7 +709,7 @@ def test_waymo_map():
     assert round(l1.length, 2) == 124.48
     assert l1.speed_limit == 13.4112
 
-    assert set(l.lane_id for l in l1.incoming_lanes) == {"101", "110", "105"}
+    assert set(l.lane_id for l in l1.incoming_lanes) == {"101_36", "105_37", "110_25"}
     assert set(l.lane_id for l in l1.outgoing_lanes) == set()
 
     right_lane, direction = l1.lane_to_right
@@ -780,7 +792,7 @@ def test_waymo_map():
     assert l86_4.incoming_lanes == [l86]
     assert l87_4.incoming_lanes == [l87]
 
-    # composites
+    # basic composites
     assert l86.composite_lane == l86
     assert l87.composite_lane == l87
     assert l86_4.composite_lane == l86_4
@@ -789,7 +801,6 @@ def test_waymo_map():
     assert l87.road.composite_road == l87.road
     assert l86_4.road.composite_road == l86_4.road
     assert l87_4.road.composite_road == l87_4.road
-    # TODO: no composites in this test scenario?
 
     # Invalid route generation
     invalid_route = road_map.generate_routes(
@@ -881,6 +892,20 @@ def test_waymo_map():
     for wp in waypoints_for_route[0]:
         lane_ids_under_wps.add(wp.lane_id)
     assert lane_ids_under_wps == {"107", "107_19", "107_20", "107_3", "107_5", "111"}
+
+    # try another scenario that has composite lanes
+    scenario_id = "6cec26a9347e8574"
+    source_str = f"{dataset_path}#{scenario_id}"
+    map_spec = MapSpec(source=source_str, lanepoint_spacing=1.0)
+    road_map = WaymoMap.from_spec(map_spec)
+    assert isinstance(road_map, WaymoMap)
+    assert len(road_map._lanes) > 0
+    assert not road_map._no_composites
+
+    # basic composite tests
+    _check_composite(road_map, "184_11-11-18", ["184_11", "184_18"])
+    _check_composite(road_map, "216_22-22-49", ["216_22", "216_49"])
+    _check_composite(road_map, "309_13-13-40", ["309_13", "309_40"])
 
 
 # XXX: The below is just for testing. Remove before merging.

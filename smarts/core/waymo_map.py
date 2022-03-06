@@ -166,8 +166,8 @@ class WaymoMap(RoadMap):
                 for nbbd in nb.boundaries:
                     nbbd.lane_start_index -= offset
                     nbbd.lane_end_index -= offset
-                # TAI:  could try to get nb's lane_dict here?  what if it's a composite?
                 # TAI:  end_pt off by 1? yes, dufus, count on your fingers again if you must!
+                # TODO:  should try to get nb's lane_dict here if I'm a composite
                 nb_seg = WaymoMap._LaneSegment(
                     str(nb.feature_id),
                     {},
@@ -226,8 +226,13 @@ class WaymoMap(RoadMap):
                 prev_seg.lane_dict["exit_lanes"] = [new_seg.seg_id]
             return new_seg
 
-    def _add_lane(self, lane_id: str, lane_dict: Dict[str, Any]) -> "WaymoMap.Lane":
-        assert lane_id not in self._lanes
+    def _add_lane(
+        self, lane_id: str, lane_dict: Dict[str, Any], allow_existing: bool
+    ) -> "WaymoMap.Lane":
+        existing = self._lanes.get(lane_id)
+        assert allow_existing or not existing
+        if allow_existing and existing:
+            return existing
         lane = WaymoMap.Lane(self, lane_id, lane_dict)
         self._lanes[lane_id] = lane
         self._surfaces[lane_id] = lane
@@ -261,6 +266,12 @@ class WaymoMap(RoadMap):
                 }
             waymo_lane_dict = self._waymo_pb_to_dict(lane_feat)
             waymo_lane_dict["_feature_id"] = lane_id
+
+            if len(waymo_lane_dict["polyline"]) <= 1:
+                self._log.warning(
+                    f"skipping import of lane {lane_id} with polyline having {len(waymo_lane_dict['polyline'])} point(s)."
+                )
+                continue
 
             # Geometry computations that require the original lane polylines
             lane_pts = [np.array([p.x, p.y]) for p in waymo_lane_dict["polyline"]]
@@ -308,7 +319,7 @@ class WaymoMap(RoadMap):
                         )
                     else:
                         prev_hard_seg = orig_seg.create_new_segment(
-                            split_pt, prev_hard_seg, softs_since_hard
+                            split_pt, prev_hard_seg
                         )
                         prev_soft_seg = prev_hard_seg
                     waymo_lanedicts[prev_hard_seg.seg_id] = prev_hard_seg.lane_dict
@@ -332,7 +343,7 @@ class WaymoMap(RoadMap):
             for lane_id, lane_dict in waymo_lanedicts.items():
                 if lane_dict["right_neighbors"] or not lane_dict.get("sublanes"):
                     continue
-                lane = self._add_lane(lane_id, lane_dict)
+                lane = self._add_lane(lane_id, lane_dict, False)
                 if not self._no_roads:
                     self._add_road_for_lane(lane, waymo_lanedicts)
             # have to make another pass to get composites in the middle of roads
@@ -362,6 +373,7 @@ class WaymoMap(RoadMap):
                         for il in exit_lane["entry_lanes"]
                     ]
                 new_lanedicts[new_lane_id] = lane_dict
+                lane_dict["sublanes"] = []
             list(map(waymo_lanedicts.pop, sublanes_to_remove))
             waymo_lanedicts.update(new_lanedicts)
         for lane_id, lane_dict in waymo_lanedicts.items():
@@ -370,7 +382,7 @@ class WaymoMap(RoadMap):
                 continue
             if not self._no_roads and lane_dict["right_neighbors"]:
                 continue
-            lane = self._add_lane(lane_id, lane_dict)
+            lane = self._add_lane(lane_id, lane_dict, False)
             if not self._no_roads:
                 self._add_road_for_lane(lane, waymo_lanedicts)
 
@@ -524,10 +536,7 @@ class WaymoMap(RoadMap):
             assert ln_seg_id, f"{ln.feature_id} {lane_dict}"
             ln_lane_dict = lanedicts[ln_seg_id]
             lns_to_do.append(ln_lane_dict)
-            lane = self._lanes.setdefault(
-                ln_seg_id, WaymoMap.Lane(self, ln_seg_id, ln_lane_dict)
-            )
-            self._surfaces[ln_seg_id] = lane
+            lane = self._add_lane(ln_seg_id, ln_lane_dict, True)
             road_lane.append(lane)
         for adj_lane_dict in lns_to_do:
             self._add_adj_lanes_to_road(adj_lane_dict, road_lane, lanedicts)
