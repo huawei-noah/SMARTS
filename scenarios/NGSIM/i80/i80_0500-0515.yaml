@@ -3,7 +3,9 @@ trajectory_dataset:
     source: NGSIM
 
     # Specify absolute or relative path to where dataset resides on your filesystem
-    input_path: ./trajectories-0500-0515.txt
+    # For example, you could use:
+    # input_path: ./trajectories-0500-0515.txt
+    input_path: <PATH TO FILE GOES HERE>
 
     # Used by SMARTS for the initial speed of new agents being added to dataset.
     # 55mph is roughly 25m/s.  100km/h is roughly 28m/s.
