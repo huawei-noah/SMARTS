@@ -14,7 +14,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     version="0.5.1",
-    packages=find_packages(exclude=("tests", "examples")),
+    packages=find_packages(exclude=("tests", "examples", "scenarios")),
     include_package_data=True,
     zip_safe=True,
     python_requires=">=3.7",
@@ -74,6 +74,7 @@ setup(
         ],
         "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
         "ros": ["catkin_pkg", "rospkg"],
+        "scenarios": ["smarts.scenarios @ git+https://git@github.com/huawei-noah/SMARTS@sb3-1"],
         "test": [
             # The following are for testing
             "ipykernel>=6.8.0",
