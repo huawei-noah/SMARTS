@@ -65,7 +65,7 @@ setup(
             "isort==5.7.0",
             "pre-commit==2.16.0",
             "pylint>=2.12.2",
-            "pytype>=2022.1.13",
+            "pytype==2022.1.13",
         ],
         "doc": [
             "sphinx>=4.4.0",
