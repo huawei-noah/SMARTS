@@ -33,7 +33,7 @@ from envision.client import Client as EnvisionClient
 with warnings.catch_warnings():
     # XXX: Benign warning, seems no other way to "properly" fix
     warnings.filterwarnings("ignore", "numpy.ufunc size changed")
-    from sklearn.metrics.pairwise import euclidean_distances
+    # from sklearn.metrics.pairwise import euclidean_distances
 
 from smarts import VERSION
 from smarts.core.chassis import AckermannChassis, BoxChassis
@@ -58,7 +58,7 @@ from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
 from .utils.id import Id
-from .utils.math import rounder_for_dt
+from .utils.math import rounder_for_dt, euclidean_distance
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
 from .vehicle import Vehicle, VehicleState
@@ -1189,7 +1189,7 @@ class SMARTS:
         if not other_positions:
             return []
 
-        distances = euclidean_distances(other_positions, [vehicle.position]).reshape(
+        distances = euclidean_distance(other_positions, [vehicle.position]).reshape(
             -1,
         )
         indices = np.argwhere(distances <= radius).flatten()
