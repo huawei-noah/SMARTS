@@ -377,6 +377,7 @@ class AgentInterface:
         elif requested_type == AgentType.Tagger:
             interface = AgentInterface(
                 waypoints=True,
+                neighborhood_vehicles=True,
                 action=ActionSpaceType.Continuous,
             )
         # For testing imitation learners

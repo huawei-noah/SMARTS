@@ -37,7 +37,7 @@ We will further explain the fields of the `Agent` class later on this page. You 
 AgentInterface
 ==============
 
-:class:`smarts.core.agent_interface.AgentInterface` regulates the flow of informatoin between the an agent and a SMARTS environment. It specifies the observations an agent expects to receive from the environment and the action the agent does to the environment. To create an agent interface, you can try
+:class:`smarts.core.agent_interface.AgentInterface` regulates the flow of information between the an agent and a SMARTS environment. It specifies the observations an agent expects to receive from the environment and the action the agent does to the environment. To create an agent interface, you can try
 
 .. code-block:: python
 
@@ -51,28 +51,36 @@ SMARTS provide some interface types, and the differences between them is shown i
 
 .. code-block:: python
 
-    |                       |       AgentType.Full       | AgentType.StandardWithAbsoluteSteering |       AgentType.Standard        |   AgentType.Laner    |
-    | :-------------------: | :------------------------: | :------------------------------------: | :-----------------------------: | :------------------: |
-    |   max_episode_steps   |           **T**            |                 **T**                  |              **T**              |        **T**         |
-    | neighborhood_vehicles |           **T**            |                 **T**                  |              **T**              |                      |
-    |       waypoints       |           **T**            |                 **T**                  |              **T**              |        **T**         |
-    |drivable_area_grid_map |           **T**            |                                        |                                 |                      |
-    |          ogm          |           **T**            |                                        |                                 |                      |
-    |          rgb          |           **T**            |                                        |                                 |                      |
-    |         lidar         |           **T**            |                                        |                                 |                      |
-    |        action         | ActionSpaceType.Continuous |       ActionSpaceType.Continuous       | ActionSpaceType.ActuatorDynamic | ActionSpaceType.Lane |
-    |         debug         |           **T**            |                 **T**                  |              **T**              |        **T**         |
+    |                        |       AgentType.Full       | AgentType.StandardWithAbsoluteSteering |       AgentType.Standard        |    AgentType.Laner     |          AgentType.LanerWithSpeed       |      AgentType.Tracker       |  AgentType.TrajectoryInterpolator  |   AgentType.MPCTracker  |          AgentType.Boid         |        AgentType.Loner       |       AgentType.Tagger       |     AgentType.Imitation     |
+    | :--------------------: | :------------------------: | :------------------------------------: | :-----------------------------: | :--------------------: | :-------------------------------------: | :--------------------------: | :--------------------------------: | :---------------------: | :-----------------------------: | :--------------------------: | :--------------------------: | :-------------------------: |
+    |    max_episode_steps   |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                **T**               |           **T**         |              **T**              |            **T**             |            **T**             |            **T**            |
+    |  neighborhood_vehicles |           **T**            |                 **T**                  |              **T**              |                        |                                         |                              |                                    |                         |              **T**              |                              |            **T**             |            **T**            |
+    |        waypoints       |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                                    |           **T**         |              **T**              |            **T**             |            **T**             |                             |
+    | drivable_area_grid_map |           **T**            |                                        |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |                             |
+    |           ogm          |           **T**            |                                        |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |                             |
+    |           rgb          |           **T**            |                                        |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |                             |
+    |          lidar         |           **T**            |                                        |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |                             |
+    |      accelerometer     |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                **T**               |           **T**         |              **T**              |            **T**             |            **T**             |            **T**            |
+    |         action         | ActionSpaceType.Continuous |       ActionSpaceType.Continuous       | ActionSpaceType.ActuatorDynamic |  ActionSpaceType.Lane  | ActionSpaceType.LaneWithContinuousSpeed |  ActionSpaceType.Trajectory  | ActionSpaceType.TrajectoryWithTime |   ActionSpaceType.MPC   | ActionSpaceType.MultiTargetPose |  ActionSpaceType.Continuous  |  ActionSpaceType.Continuous  |  ActionSpaceType.Imitation  |
+    |          debug         |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                **T**               |           **T**         |              **T**              |            **T**             |            **T**             |            **T**            |
 
 `max_episode_steps` controls the max running steps allowed for the agent in an episode. The default `None` setting means agents have no such limit.
 You can move `max_episode_steps` control authority to RLlib with their config option `horizon`, but lose the ability to customize
 different max_episode_len for each agent.
 
-`action` controls the agent action type used. There are three `ActionSpaceType`: ActionSpaceType.Continuous, ActionSpaceType.Lane 
-and ActionSpaceType.ActuatorDynamic.
+`action` controls the agent action type used. There are multiple `ActionSpaceType` options: `ActionSpaceType.Continuous`, `ActionSpaceType.Lane`, `ActionSpaceType.LaneWithContinuousSpeed` 
+`ActionSpaceType.ActuatorDynamic`, `ActionSpaceType.Trajectory`, `ActionSpaceType.TrajectoryWithTime`, `ActionSpaceType.MPC`, `ActionSpaceType.MultiTargetPose`, and `ActionSpaceType.Imitation`.
 
-- `ActionSpaceType.Continuous`: continuous action space with throttle, brake, absolute steering angle.
-- `ActionSpaceType.ActuatorDynamic`: continuous action space with throttle, brake, steering rate. Steering rate means the amount of steering angle change *per second* (either positive or negative) to be applied to the current steering angle.
-- `ActionSpaceType.Lane`: discrete lane action space of strings including "keep_lane",  "slow_down", "change_lane_left", "change_lane_right". (WARNING: This is the case in the current version 0.3.2b, but a newer version will soon be released. In this newer version, the action space will no longer consist of strings, but will be a tuple of an integer for `lane_change` and a float for `target_speed`.)
+- `ActionSpaceType.Continuous`: `(float, float, float)` continuous action space with throttle, brake, absolute steering angle. 
+- `ActionSpaceType.ActuatorDynamic`: `(float, float float)` continuous action space with throttle, brake, steering rate. Steering rate means the amount of steering angle change *per second* (either positive or negative) to be applied to the current steering angle.
+- `ActionSpaceType.Lane`: `str` discrete lane action space of strings including "keep_lane",  "slow_down", "change_lane_left", "change_lane_right".
+- `ActionSpaceType.LaneWithContinuousSpeed`: `(int, float)` mixed action space containing discrete lane change `{-1,0,1}` and continuous target speed.
+- `ActionSpaceType.Trajectory`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space with x coordinates, y coordinates, headings, and speeds.
+- `ActionSpaceType.TrajectoryWithTime`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space with x coordinates, y coordinates, headings, and speeds.
+- `ActionSpaceType.MPC`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space with trajectory with times, x coordinates, y coordinates, headings, and speeds. 
+- `ActionSpaceType.MultiTargetPose`: `Dict[str, (float, float, float float)]` continuous action space with vehicle id mapped to x coordinate, y coordinate, heading, and future time of pose. 
+- `ActionSpaceType.Imitation`: `Union[float, (float,float)]` Case 1: continuous action space with speed. Case 2: Continuous action space with linear acceleration and angular velocity.
+
 
 For other observation options, see :ref:`observations` for details.
 
@@ -132,7 +140,7 @@ An agent maps an observation to an action.
         def act(self, obs):
             return [throttle, brake, steering_rate]
 
-The observation passed in should be the observations that a given agent sees. In **contininuous action space** the action is expected to produce values for `throttle` [0->1], `brake` [0->1], and `steering_rate` [-1->1].
+The observation passed in should be the observations that a given agent sees. In **continuous action space** the action is expected to produce values for `throttle` [0->1], `brake` [0->1], and `steering_rate` [-1->1].
 
 Otherwise, only while using **lane action space**, the agent is expected to return a lane related command: `"keep_lane"`, `"slow_down"`, `"change_lane_left"`, `"change_lane_right"`.
 
@@ -204,7 +212,7 @@ Similarly, the info adapter allows further processing on the extra info, if you 
 .. code-block:: python
 
     def info_adapter(env_obs, env_reward, env_info):
-        env_info[INFO_EXTRA_KEY] = "blah"
+        env_info[INFO_EXTRA_KEY] = "item"
         return env_info
 
 ==================
