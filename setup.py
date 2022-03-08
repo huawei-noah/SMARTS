@@ -74,7 +74,6 @@ setup(
         ],
         "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
         "ros": ["catkin_pkg", "rospkg"],
-        "scenarios": ["scenarios @ git+https://github.com/huawei-noah/SMARTS.git@sb3-1"],
         "test": [
             # The following are for testing
             "ipykernel>=6.8.0",
