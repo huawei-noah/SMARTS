@@ -24,6 +24,7 @@ import os
 import warnings
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from scipy.spatial.distance import cdist
 
 import numpy as np
 
@@ -1185,8 +1186,8 @@ class SMARTS:
             return []
 
         # calculate euclidean distances
-        distances = math.sqrt(np.dot(other_positions, other_positions) - 2 * np.dot(other_positions, [vehicle.position]) + np.dot([vehicle.position], [vehicle.position])).reshape(-1)
-               
+        distances = cdist(other_positions, [vehicle.position], metric="euclidean").reshape(-1)
+
         indices = np.argwhere(distances <= radius).flatten()
         return [other_states[i] for i in indices]
 
