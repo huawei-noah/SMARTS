@@ -249,9 +249,9 @@ class WaymoMap(RoadMap):
         self._roads[road.road_id] = road
         self._surfaces[road.road_id] = road
 
-    def _create_lanes_and_roads(self, waymo_lanes: List[Tuple[str, Any]]):
-
-        # first segment lanes based on their boundaries and neighbors
+    def _segment_lanes(
+        self, waymo_lanes: List[Tuple[str, Any]]
+    ) -> Dict[str, Dict[str, Any]]:
         waymo_lanedicts = {}
         for lane_id, lane_feat in waymo_lanes:
             split_pts = None
@@ -296,6 +296,7 @@ class WaymoMap(RoadMap):
             if not split_pts:
                 waymo_lanedicts[orig_seg.seg_id] = waymo_lane_dict
                 continue
+
             prev_split_pt = 0
             first_seg = None
             prev_seg = None
@@ -345,7 +346,9 @@ class WaymoMap(RoadMap):
                 cs.lane_dict["entry_lanes"] = cs.sub_segs[0].lane_dict["entry_lanes"]
                 cs.lane_dict["exit_lanes"] = cs.sub_segs[-1].lane_dict["exit_lanes"]
 
-        # then create a road segments out of adjacent lane segments
+        return waymo_lanedicts
+
+    def _create_road_segments(self, waymo_lanedicts: Dict[str, Dict[str, Any]]):
         if not self._no_roads and not self._no_composites:
             # have to add composite lanes and roads first so that sublane references can be resolved
             for lane_id, lane_dict in waymo_lanedicts.items():
@@ -387,6 +390,7 @@ class WaymoMap(RoadMap):
                 lane_dict["sublanes"] = []
             list(map(waymo_lanedicts.pop, sublanes_to_remove))
             waymo_lanedicts.update(new_lanedicts)
+
         for lane_id, lane_dict in waymo_lanedicts.items():
             # TODO: consider case of soft segments in right lane but not left
             if lane_id in self._lanes:
@@ -564,7 +568,11 @@ class WaymoMap(RoadMap):
                 if key == "lane":
                     waymo_lanes.append((str(map_feature.id), getattr(map_feature, key)))
 
-        self._create_lanes_and_roads(waymo_lanes)
+        # first segment lanes based on their boundaries and neighbors
+        waymo_lanedicts = self._segment_lanes(waymo_lanes)
+        # then create a road segments out of adjacent lane segments
+        self._create_road_segments(waymo_lanedicts)
+
         self._waymo_scenario_id = waymo_scenario.scenario_id
 
         end = time.time()
