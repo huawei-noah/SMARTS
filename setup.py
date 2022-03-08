@@ -35,7 +35,6 @@ setup(
         "rtree>=0.9.7",  # Used by sumolib
         "sh>=1.14.2",
         "shapely>=1.8.0",
-        "scikit-learn>=1.0.1",  # KDTree from scikit-learn is used by sumo lanepoints
         "tableprint>=0.9.1",
         "trimesh==3.9.29",  # Used for writing .glb files
         "visdom>=0.1.8.9",
