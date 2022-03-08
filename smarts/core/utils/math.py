@@ -325,8 +325,11 @@ def line_intersect(a, b, c, d) -> Union[np.ndarray, None]:
     return None
 
 
-def ray_boundary_intersect(ray_start, ray_end, boundary_pts) -> Union[np.ndarray, None]:
-    """Iterate over the boundary segments, returning the nearest intersection point if a ray intersection is found."""
+def ray_boundary_intersect(
+    ray_start, ray_end, boundary_pts, early_return=True
+) -> Union[np.ndarray, None]:
+    """Iterate over the boundary segments, returning the nearest intersection point if a ray intersection is found.
+    If early_return is True, this will return the first intersection point that is found."""
     nearest_pt = None
     min_dist = math.inf
     for j in range(len(boundary_pts) - 1):
@@ -334,6 +337,8 @@ def ray_boundary_intersect(ray_start, ray_end, boundary_pts) -> Union[np.ndarray
         b1 = boundary_pts[j + 1]
         pt = line_intersect(b0, b1, ray_start, ray_end)
         if pt is not None:
+            if early_return:
+                return pt
             dist = np.linalg.norm(pt - ray_start)
             if dist < min_dist:
                 min_dist = dist
