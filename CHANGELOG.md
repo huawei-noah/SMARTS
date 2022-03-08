@@ -25,6 +25,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Ensure that `smarts.core.coordinates.Pose` attribute `position` is an [x, y, z] numpy array, and attribute `orientation` is a quaternion length 4 numpy array. 
 - Update social vehicle pose in Bullet when no active agents are present.
 ### Removed
+- Removed the unconditional import of `Renderer` from `smarts/core/vehicle.py` to make `Panda3D` optional dependency regression. See Issue #1310.
 ### Security
 
 # [0.5.1] 2022-01-25

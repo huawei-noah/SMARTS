@@ -425,12 +425,23 @@ def _check_composite(road_map, comp_lane_id: str, sublane_ids):
     cl = road_map.lane_by_id(comp_lane_id)
     assert cl.is_composite
     assert cl.road.is_composite
+    prev_sl = None
     for slid in sublane_ids:
         sl = road_map.lane_by_id(slid)
         assert not sl.is_composite
         cl1 = sl.composite_lane
         assert cl1.is_composite
         assert cl1 == cl
+        if prev_sl:
+            assert [ol.lane_id for ol in prev_sl.outgoing_lanes] == [sl.lane_id]
+            assert [il.lane_id for il in sl.incoming_lanes] == [prev_sl.lane_id]
+        else:
+            assert cl.incoming_lanes == sl.incoming_lanes
+        prev_sl = sl
+    last_sl = road_map.lane_by_id(sublane_ids[-1])
+    assert [ol.lane_id for ol in cl.outgoing_lanes] == [
+        ol.lane_id for ol in last_sl.outgoing_lanes
+    ]
 
 
 def test_opendrive_map_merge(opendrive_scenario_merge):

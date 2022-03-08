@@ -27,7 +27,7 @@ setup(
         "click>=8.0.3",  # used in scl
         "eclipse-sumo==1.10.0",  # sumo
         "gym==0.19.0",
-        "numpy>=1.19.5",
+        "numpy>=1.19.5",  # required for tf 2.4 below
         "pandas>=1.3.4",
         "psutil>=5.8.0",
         "pybullet==3.0.6",
@@ -65,7 +65,7 @@ setup(
             "isort==5.7.0",
             "pre-commit==2.16.0",
             "pylint>=2.12.2",
-            "pytype>=2022.1.13",
+            "pytype==2022.1.13",
         ],
         "doc": [
             "sphinx>=4.4.0",
@@ -96,4 +96,3 @@ setup(
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )
-

@@ -448,11 +448,10 @@ class NGSIM(_TrajectoryDataset):
         df["speed"] *= METERS_PER_FOOT
         df["acceleration"] *= METERS_PER_FOOT
         df["spacing"] *= METERS_PER_FOOT
+        df["position_x"] *= METERS_PER_FOOT
         df["position_y"] *= METERS_PER_FOOT
-        # SMARTS uses center not front
-        df["position_x"] = (
-            df["position_x"] * METERS_PER_FOOT - 0.5 * df["length"] - x_margin
-        )
+        if x_margin:
+            df["position_x"] = df["position_x"] - x_margin
         if y_margin:
             df["position_x"] = df["position_y"] - y_margin
 
@@ -500,6 +499,15 @@ class NGSIM(_TrajectoryDataset):
                 for values in stride(v, (d0 - 2, 3, d1), (s0, s0, s1))
             ]
             df.loc[same_car, "speed_discrete"] = speeds + [None, None]
+
+        # since SMARTS' positions are the vehicle centerpoints, but NGSIM's are at the front,
+        # now adjust the vehicle position to its centerpoint based on its angle (+y = 0 rad)
+        df["position_x"] = df["position_x"] - 0.5 * df["length"] * np.cos(
+            df["heading_rad"] + 0.5 * math.pi
+        )
+        df["position_y"] = df["position_y"] - 0.5 * df["length"] * np.sin(
+            df["heading_rad"] + 0.5 * math.pi
+        )
 
         map_width = self._dataset_spec["map_net"].get("width")
         if map_width:
