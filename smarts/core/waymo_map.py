@@ -205,7 +205,9 @@ class WaymoMap(RoadMap):
             """Create a new segment at a given split index"""
 
             new_lane_dict = deepcopy(self.lane_dict)
-            seg_start = prev_seg.end_pt if prev_seg else 0
+            seg_start = (
+                prev_seg.end_pt if prev_seg else sub_segs[0].start_pt if sub_segs else 0
+            )
             # XXX: Here we'd like to do the following, but python protobuf seem to have a bug with slicing:
             #    new_lane_dict["polyline"] = self.lane_dict["polyline"][seg_start:split_pt]
             # XXX: So instead we use a list comprehension:
@@ -295,9 +297,10 @@ class WaymoMap(RoadMap):
                 waymo_lanedicts[orig_seg.seg_id] = waymo_lane_dict
                 continue
             prev_split_pt = 0
-            prev_soft_seg = None
-            prev_hard_seg = None
-            softs_since_hard = []
+            first_seg = None
+            prev_seg = None
+            subs_since_comp = []
+            comp_segs = []
             maxind = orig_seg.end_pt
             split_pts[maxind] = True
             for split_pt in sorted(split_pts.keys()):
@@ -307,35 +310,40 @@ class WaymoMap(RoadMap):
                 if prev_split_pt == split_pt:
                     continue
                 prev_split_pt = split_pt
+                prev_seg = orig_seg.create_new_segment(split_pt, prev_seg)
+                subs_since_comp.append(prev_seg)
+                waymo_lanedicts[prev_seg.seg_id] = prev_seg.lane_dict
+                if not first_seg:
+                    first_seg = prev_seg
                 if split_pts[split_pt]:
-                    if softs_since_hard:
-                        prev_soft_seg = orig_seg.create_new_segment(
-                            split_pt, prev_soft_seg
+                    if len(subs_since_comp) > 1:
+                        comp = orig_seg.create_new_segment(
+                            split_pt, None, subs_since_comp
                         )
-                        waymo_lanedicts[prev_soft_seg.seg_id] = prev_soft_seg.lane_dict
-                        softs_since_hard.append(prev_soft_seg)
-                        prev_hard_seg = orig_seg.create_new_segment(
-                            split_pt, prev_hard_seg, softs_since_hard
-                        )
-                    else:
-                        prev_hard_seg = orig_seg.create_new_segment(
-                            split_pt, prev_hard_seg
-                        )
-                        prev_soft_seg = prev_hard_seg
-                    waymo_lanedicts[prev_hard_seg.seg_id] = prev_hard_seg.lane_dict
-                    softs_since_hard = []
-                else:
-                    prev_soft_seg = orig_seg.create_new_segment(split_pt, prev_soft_seg)
-                    waymo_lanedicts[prev_soft_seg.seg_id] = prev_soft_seg.lane_dict
-                    softs_since_hard.append(prev_soft_seg)
-            if prev_soft_seg:
-                for xl in waymo_lane_dict["exit_lanes"]:
-                    next_lane = waymo_lanedicts.get(str(xl))
-                    if next_lane:
-                        next_lane["entry_lanes"] = [
-                            il if str(il) != lane_id else prev_soft_seg.seg_id
-                            for il in next_lane["entry_lanes"]
-                        ]
+                        waymo_lanedicts[comp.seg_id] = comp.lane_dict
+                        comp_segs.append(comp)
+                    subs_since_comp = []
+            if not prev_seg:
+                continue
+            for xl in waymo_lane_dict["exit_lanes"]:
+                # TAI: what if we haven't encountered xl yet?
+                next_lane = waymo_lanedicts.get(str(xl))
+                if next_lane:
+                    next_lane["entry_lanes"] = [
+                        il if str(il) != lane_id else prev_seg.seg_id
+                        for il in next_lane["entry_lanes"]
+                    ]
+            for il in waymo_lane_dict["entry_lanes"]:
+                # TAI: what if we haven't encountered il yet?
+                prev_lane = waymo_lanedicts.get(str(il))
+                if prev_lane:
+                    prev_lane["exit_lanes"] = [
+                        xl if str(xl) != lane_id else first_seg.seg_id
+                        for xl in prev_lane["exit_lanes"]
+                    ]
+            for cs in comp_segs:
+                cs.lane_dict["entry_lanes"] = cs.sub_segs[0].lane_dict["entry_lanes"]
+                cs.lane_dict["exit_lanes"] = cs.sub_segs[-1].lane_dict["exit_lanes"]
 
         # then create a road segments out of adjacent lane segments
         if not self._no_roads and not self._no_composites:
