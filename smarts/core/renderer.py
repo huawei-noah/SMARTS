@@ -204,6 +204,7 @@ class Renderer:
         return self._log
 
     def remove_buffer(self, buffer):
+        """Remove the rendering buffer."""
         self._showbase_instance.graphicsEngine.removeWindow(buffer)
 
     def setup(self, scenario: Scenario) -> None:
