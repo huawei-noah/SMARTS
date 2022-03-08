@@ -78,6 +78,13 @@ class ROSDriver:
         self._smarts = None
         self._reset()
 
+    def _reset_smarts(self):
+        with self._reset_lock:
+            self._reset_msg = None
+            self._scenario_path = None
+            self._agents = {}
+            self._agents_to_add = {}
+
     def _reset(self):
         if self._smarts:
             self._smarts.destroy()
@@ -90,11 +97,7 @@ class ROSDriver:
         self._warned_about_freq = False
         with self._state_lock:
             self._recent_state = deque(maxlen=3)
-        with self._reset_lock:
-            self._reset_msg = None
-            self._scenario_path = None
-            self._agents = {}
-            self._agents_to_add = {}
+        self._reset_smarts()
 
     def setup_ros(
         self,
@@ -148,7 +151,11 @@ class ROSDriver:
         log_everything_to_ROS(level=logging.WARNING)
 
     def setup_smarts(
-        self, headless: bool = True, seed: int = 42, time_ratio: float = 1.0
+        self,
+        headless: bool = True,
+        seed: int = 42,
+        time_ratio: float = 1.0,
+        sumo_traffic: bool = False,
     ):
         """Do the setup of the underlying SMARTS instance."""
         assert not self._smarts
@@ -163,20 +170,27 @@ class ROSDriver:
         assert time_ratio > 0.0
         self._time_ratio = time_ratio
 
+        traffic_sim = None
+        if rospy.get_param("~sumo_traffic", sumo_traffic):
+            from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
+            # Note that Sumo uses a fixed timestep, so if we have a highly-variable step rate,
+            # we may want to set time_resolution to a mutiple of the target_freq?
+            time_resolution = 1.0 / self._target_freq if self._target_freq else None
+            traffic_sim = SumoTrafficSimulation(
+                headless=headless,
+                time_resolution=time_resolution,
+            )
+
         self._smarts = SMARTS(
             agent_interfaces={},
-            traffic_sim=None,
+            traffic_sim=traffic_sim,
             fixed_timestep_sec=None,
             envision=None if headless else Envision(),
             external_provider=True,
         )
         assert self._smarts.external_provider
         self._last_step_time = None
-        with self._reset_lock:
-            self._reset_msg = None
-            self._scenario_path = None
-            self._agents = {}
-            self._agents_to_add = {}
 
     def _smarts_reset_callback(self, reset_msg: SmartsReset):
         with self._reset_lock:
@@ -626,8 +640,9 @@ class ROSDriver:
                 self._most_recent_state_sent = None
                 self._warned_about_freq = False
                 map_spec = self._get_map_spec()
+                routes = Scenario.discover_routes(self._scenario_path) or [None]
                 return self._smarts.reset(
-                    Scenario(self._scenario_path, map_spec=map_spec)
+                    Scenario(self._scenario_path, map_spec=map_spec, route=routes[0])
                 )
         return None
 
@@ -682,6 +697,7 @@ class ROSDriver:
                     rospy.logerr(traceback.format_exc())
                     rospy.logerr("Will wait for next reset...")
                     self._smarts = None
+                    self._reset_smarts()
                     self.setup_smarts()
 
                 if self._target_freq:
