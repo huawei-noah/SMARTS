@@ -53,7 +53,7 @@ from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
 from .utils.id import Id
-from .utils.math import rounder_for_dt, euclidean_distance
+from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
 from .vehicle import Vehicle, VehicleState
@@ -1184,9 +1184,9 @@ class SMARTS:
         if not other_positions:
             return []
 
-        distances = euclidean_distance(other_positions, [vehicle.position]).reshape(
-            -1,
-        )
+        # calculate euclidean distances
+        distances = math.sqrt(np.dot(other_positions, other_positions) - 2 * np.dot(other_positions, [vehicle.position]) + np.dot([vehicle.position], [vehicle.position])).reshape(-1)
+               
         indices = np.argwhere(distances <= radius).flatten()
         return [other_states[i] for i in indices]
 
