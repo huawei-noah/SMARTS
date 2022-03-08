@@ -50,7 +50,6 @@ setup(
         "ijson>=3.1.4",
         # The following are for the /smarts/algorithms
         "matplotlib>=3.4.3",
-        "scikit-image>=0.18.3",
         # The following are for /smarts/zoo and remote agents
         "grpcio==1.32.0",
         "protobuf>=3.19.1",
