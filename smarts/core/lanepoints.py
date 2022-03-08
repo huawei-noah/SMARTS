@@ -31,15 +31,7 @@ from typing import List, NamedTuple, Optional, Sequence, Tuple
 
 import numpy as np
 
-with warnings.catch_warnings():
-    from smarts.core.utils.file import suppress_pkg_resources
-
-    warnings.filterwarnings("ignore", "numpy.ufunc size changed")
-    with suppress_pkg_resources():
-        # We force sklearn to use a different importer since sklearn's use of pkg_resources is
-        # aggressive
-        from sklearn.neighbors import KDTree
-
+from scipy.spatial import KDTree
 from smarts.core.coordinates import Heading, Point, Pose
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import (
@@ -378,7 +370,7 @@ class LanePoints:
     def _build_kd_tree(linked_lps: Sequence[LinkedLanePoint]) -> KDTree:
         return KDTree(
             np.array([l_lp.lp.pose.as_position2d() for l_lp in linked_lps]),
-            leaf_size=50,
+            leafsize=50,
         )
 
     @staticmethod
@@ -527,9 +519,10 @@ class LanePoints:
         points, linked_lps, tree: KDTree, k: int = 1
     ):
         p2ds = np.array([vec_2d(p) for p in points])
-        closest_indices = tree.query(
-            p2ds, k=min(k, len(linked_lps)), return_distance=False, sort_results=True
+        _, closest_indices = tree.query(
+            p2ds, k=min(k, len(linked_lps))
         )
+        closest_indices = np.atleast_2d(closest_indices)
         return [[linked_lps[idx] for idx in idxs] for idxs in closest_indices]
 
     @staticmethod
