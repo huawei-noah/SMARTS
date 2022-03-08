@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+from typing import Sequence, Tuple
 
 import numpy as np
 from numpy.linalg import matrix_power
@@ -53,7 +54,13 @@ class TrajectoryTrackingController:
 
     @staticmethod
     def perform_trajectory_tracking_MPC(
-        trajectory, vehicle, state, dt_sec, prediction_horizon=5
+        trajectory: Tuple[
+            Sequence[float], Sequence[float], Sequence[float], Sequence[float]
+        ],
+        vehicle,
+        state,
+        dt_sec,
+        prediction_horizon=5,
     ):
         """Attempts model predictive control for the given vehicle given an expected trajectory."""
         half_vehicle_len = vehicle.length / 2
