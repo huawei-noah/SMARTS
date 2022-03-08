@@ -811,6 +811,11 @@ if __name__ == "__main__":
         with open(args.dataset, "r") as yf:
             dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
 
+    default_input_path = "<PATH TO FILE GOES HERE>"
+    if dataset_spec.get("input_path") == default_input_path:
+        print(f"skipping placeholder dataset spec at {args.dataset}.")
+        sys.exit(0)
+
     if args.x_offset:
         dataset_spec["x_offset"] = args.x_offset
 
