@@ -54,7 +54,7 @@ def get_map_features_for_scenario(scenario) -> Dict:
     return map_features, lanes
 
 
-def get_traffic_light_lanes(scenario):
+def get_traffic_light_lanes(scenario) -> List[str]:
     num_steps = len(scenario.timestamps_seconds)
     tls_lanes = []
     for i in range(num_steps):
@@ -113,7 +113,7 @@ def plot_road_edge(road_edge):
     # plt.scatter(xs[0], ys[0], s=12, c="red")
 
 
-def plot(path, scenario_id):
+def plot(path: str, scenario_id: str):
     # Find scenario from path with given scenario_id
     dataset = read_tfrecord_file(path)
     scenario = None
@@ -142,7 +142,7 @@ def plot(path, scenario_id):
     plt.show()
 
 
-def dump_plots(outdir, path):
+def dump_plots(outdir: str, path: str) -> List[str]:
     scenarios = []
     dataset = read_tfrecord_file(path)
     for record in dataset:
@@ -201,6 +201,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.outdir:
-        dump_plots(args.outdir, args.file)
+        scenario_hashes = dump_plots(args.outdir, args.file)
+        print(scenario_hashes)
     else:
         plot(args.file, args.plot[0])
