@@ -37,7 +37,7 @@ We will further explain the fields of the `Agent` class later on this page. You 
 AgentInterface
 ==============
 
-:class:`smarts.core.agent_interface.AgentInterface` regulates the flow of information between the an agent and a SMARTS environment. It specifies the observations an agent expects to receive from the environment and the action the agent does to the environment. To create an agent interface, you can try
+:class:`smarts.core.agent_interface.AgentInterface` regulates the flow of information between the agent and a SMARTS environment. It specifies the observations the agent expects to receive from the environment and the action the agent does to the environment. To create an agent interface, you can try
 
 .. code-block:: python
 
@@ -74,12 +74,12 @@ different max_episode_len for each agent.
 - `ActionSpaceType.Continuous`: `(float, float, float)` continuous action space with throttle, brake, absolute steering angle. 
 - `ActionSpaceType.ActuatorDynamic`: `(float, float float)` continuous action space with throttle, brake, steering rate. Steering rate means the amount of steering angle change *per second* (either positive or negative) to be applied to the current steering angle.
 - `ActionSpaceType.Lane`: `str` discrete lane action space of strings including "keep_lane",  "slow_down", "change_lane_left", "change_lane_right".
-- `ActionSpaceType.LaneWithContinuousSpeed`: `(int, float)` mixed action space containing discrete lane change `{-1,0,1}` and continuous target speed.
-- `ActionSpaceType.Trajectory`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space with x coordinates, y coordinates, headings, and speeds.
-- `ActionSpaceType.TrajectoryWithTime`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space with x coordinates, y coordinates, headings, and speeds.
-- `ActionSpaceType.MPC`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space with trajectory with times, x coordinates, y coordinates, headings, and speeds. 
-- `ActionSpaceType.MultiTargetPose`: `Dict[str, (float, float, float float)]` continuous action space with vehicle id mapped to x coordinate, y coordinate, heading, and future time of pose. 
-- `ActionSpaceType.Imitation`: `Union[float, (float,float)]` Case 1: continuous action space with speed. Case 2: Continuous action space with linear acceleration and angular velocity.
+- `ActionSpaceType.LaneWithContinuousSpeed`: `(int, float)` mixed action space of discrete lane change values `{-1,0,1}` corresponding to `{right_lane,current_lane,left_lane}`, and continuous target speed.
+- `ActionSpaceType.Trajectory`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space using trajectory as x coordinates, y coordinates, headings, and speeds to directly move a vehicle.
+- `ActionSpaceType.TrajectoryWithTime`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space using trajectory as times, x coordinates, y coordinates, headings, and speeds to interpolate the vehicle along the trajectory.
+- `ActionSpaceType.MPC`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space using trajectory as x coordinates, y coordinates, headings, and speeds to adaptively perform controls on the vehicle model in an attempt to match the given trajectory. 
+- `ActionSpaceType.MultiTargetPose`: `Dict[str, (float, float, float float)]` continuous action space with multiple vehicles with each vehicle id mapped to pose as x coordinate, y coordinate, heading, and future time of pose. 
+- `ActionSpaceType.Imitation``: `Union[float, (float,float)]` continuous action space where you can pass either (a) initial speed upon reset or (b) linear acceleration and angular velocity for other steps.
 
 
 For other observation options, see :ref:`observations` for details.
