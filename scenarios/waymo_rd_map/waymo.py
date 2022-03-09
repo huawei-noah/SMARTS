@@ -142,6 +142,18 @@ def plot(path: str, scenario_id: str):
     plt.show()
 
 
+def get_scenario_hashes(path: str) -> List[str]:
+    scenarios = []
+    dataset = read_tfrecord_file(path)
+    for record in dataset:
+        scenario = scenario_pb2.Scenario()
+        scenario.ParseFromString(bytearray(record))
+
+        scenario_id = scenario.scenario_id
+        scenarios.append(scenario_id)
+    return scenarios
+
+
 def dump_plots(outdir: str, path: str) -> List[str]:
     scenarios = []
     dataset = read_tfrecord_file(path)
@@ -185,11 +197,10 @@ if __name__ == "__main__":
         "--outdir", help="output directory for screenshots", type=str
     )
     parser.add_argument(
-        "--gen",
-        help="generate sumo map",
-        type=str,
-        nargs=1,
-        metavar="SCENARIO_ID",
+        "--get-hash",
+        help="get all scenario ids for the given TfRecord file",
+        is_flag=True,
+        default=False,
     )
     parser.add_argument(
         "--plot",
@@ -200,8 +211,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    if args.get_hash:
+        print(get_scenario_hashes(args.file))
     if args.outdir:
         scenario_hashes = dump_plots(args.outdir, args.file)
-        print(scenario_hashes)
     else:
         plot(args.file, args.plot[0])
