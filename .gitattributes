@@ -47,6 +47,10 @@ MANIFEST.in
 *.blend binary
 *.pkl binary
 *.pdf binary
+*.gz binary
+*.zip binary
+*.tar binary
+*.tgz binary
 
 # Declare files that will always have CRLF line endings on checkout.
 #map.net.xml text eol=crlf
