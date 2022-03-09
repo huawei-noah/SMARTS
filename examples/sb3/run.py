@@ -74,7 +74,7 @@ def make_env(config: Dict[str,Any])->gym.Env:
     # Wrap env with action, reward, and observation wrapper
     env = sb3_action.Action(env=env)
     env = sb3_reward.Reward(env=env)
-    env = sb3_observation.Observation(env=env)
+    env = sb3_observation.Observation(env=env, num_stack=3)
 
     # Check our custom environment compatibility with SB3
     env = Monitor(env=env, filename=str(config["logdir"]))
