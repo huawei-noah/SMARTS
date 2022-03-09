@@ -51,6 +51,7 @@ class TestSmartsRos(TestCase):
         super().__init__()
         self._smarts_info_srv = None
         self._reset_publisher = None
+        self._agent_publisher = None
         self._agents = {}
 
     def setup_ros(

@@ -94,7 +94,7 @@ class SMARTS:
         traffic_sim,  # SumoTrafficSimulation
         envision: Optional[EnvisionClient] = None,
         visdom: Optional[VisdomClient] = None,
-        fixed_timestep_sec: float = 0.1,
+        fixed_timestep_sec: Optional[float] = 0.1,
         reset_agents_only: bool = False,
         zoo_addrs=None,
         external_provider: bool = False,

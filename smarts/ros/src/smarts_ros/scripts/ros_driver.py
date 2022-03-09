@@ -28,7 +28,7 @@ import sys
 import time
 from collections import deque
 from threading import Lock
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import rospy
@@ -104,7 +104,7 @@ class ROSDriver:
         node_name: str = "SMARTS",
         def_namespace: str = "SMARTS/",
         buffer_size: int = 3,
-        target_freq: float = None,
+        target_freq: Optional[float] = None,
         time_ratio: float = 1.0,
         pub_queue_size: int = 10,
     ):
@@ -404,7 +404,7 @@ class ROSDriver:
             )
 
         @property
-        def stamp(self):
+        def stamp(self) -> float:
             """The estimated timestamp of this vehicle state."""
             return self.vector[0]
 
@@ -497,7 +497,7 @@ class ROSDriver:
         vs.linear_acceleration += staleness * lin_acc_slope
         vs.angular_acceleration += staleness * ang_acc_slope
 
-    def _update_smarts_state(self) -> float:
+    def _update_smarts_state(self) -> Optional[float]:
         with self._state_lock:
             if (
                 not self._recent_state
@@ -621,7 +621,7 @@ class ROSDriver:
             self._agents_to_add = {}
             return actions
 
-    def _get_map_spec(self) -> MapSpec:
+    def _get_map_spec(self) -> Optional[MapSpec]:
         """SMARTS ROS nodes can extend from this ROSDriver base class
         and implement this method to return an alternative MapSpec object
         designating the map builder to use in the Scenario (returning None
@@ -629,7 +629,7 @@ class ROSDriver:
         self._scenario_path can be used to construct a MapSpec object."""
         return None
 
-    def _check_reset(self) -> Dict[str, Observation]:
+    def _check_reset(self) -> Optional[Dict[str, Observation]]:
         with self._reset_lock:
             if self._reset_msg:
                 self._scenario_path = self._reset_msg.scenario
