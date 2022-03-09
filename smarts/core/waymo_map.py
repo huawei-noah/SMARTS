@@ -166,7 +166,7 @@ class WaymoMap(RoadMap):
                 for nbbd in nb.boundaries:
                     nbbd.lane_start_index -= offset
                     nbbd.lane_end_index -= offset
-                # TAI:  end_pt off by 1? yes, dufus, count on your fingers again if you must!
+                # TAI:  end_pt off by 1? yes, doofus, count on your fingers again if you must!
                 # TODO:  should try to get nb's lane_dict here if I'm a composite
                 nb_seg = WaymoMap._LaneSegment(
                     str(nb.feature_id),
