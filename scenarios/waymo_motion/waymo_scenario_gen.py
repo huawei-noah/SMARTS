@@ -189,8 +189,8 @@ def dump_plots(outdir: str, path: str) -> List[str]:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="waymo.py",
-        description="Extract map data from Waymo dataset and convert to SUMO.",
+        prog="waymo_scenario_gen.py",
+        description="Extract map data from Waymo dataset, plot the scenarios and save their ids.",
     )
     parser.add_argument("file", help="TFRecord file")
     parser.add_argument(
