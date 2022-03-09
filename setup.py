@@ -54,7 +54,7 @@ setup(
         # The following are for /smarts/zoo and remote agents
         "grpcio==1.32.0",
         "protobuf>=3.19.1",
-        "PyYAML>=6.0",
+        "PyYAML>=5.4.1",
         "twisted>=21.7.0",
     ],
     extras_require={
@@ -73,7 +73,11 @@ setup(
             "sphinxcontrib-apidoc>=0.3.0",
         ],
         "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
-        "ros": ["catkin_pkg", "rospkg"],
+        "ros": [
+            "catkin_pkg",
+            "rospkg",
+            "pyyaml==5.4.1",  # pinned due to bug parsing params in roslaunch
+        ],
         "test": [
             # The following are for testing
             "ipykernel>=6.8.0",
