@@ -18,9 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+# type: ignore
+
 import os
-from dataclasses import replace
-from pathlib import Path
 from typing import NamedTuple, Optional, Tuple
 
 from smarts.core.road_map import RoadMap
@@ -55,6 +55,7 @@ def _clear_cache():
 _UNKNOWN_MAP = 0
 _SUMO_MAP = 1
 _OPENDRIVE_MAP = 2
+_WAYMO_MAP = 3
 
 
 def _find_mapfile_in_dir(map_dir: str) -> Tuple[int, str]:
@@ -74,6 +75,8 @@ def _find_mapfile_in_dir(map_dir: str) -> Tuple[int, str]:
             map_path = os.path.join(map_dir, f)
         elif f.endswith(".xodr"):
             map_type = _OPENDRIVE_MAP
+        elif ".tfrecord" in f:
+            map_type = _WAYMO_MAP
             map_path = os.path.join(map_dir, f)
     return map_type, map_path
 
@@ -106,6 +109,8 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
             map_type = _SUMO_MAP
         elif map_source.endswith(".xodr"):
             map_type = _OPENDRIVE_MAP
+        elif ".tfrecord" in map_source:
+            map_type = _WAYMO_MAP
 
     if map_type == _SUMO_MAP:
         from smarts.core.sumo_road_network import SumoRoadNetwork
@@ -117,6 +122,10 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
 
         map_class = OpenDriveRoadNetwork
 
+    elif map_type == _WAYMO_MAP:
+        from smarts.core.waymo_map import WaymoMap
+
+        map_class = WaymoMap
     else:
         return None, None
 
