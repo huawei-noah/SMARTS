@@ -59,8 +59,8 @@ class TrajectoryTrackingController:
         ],
         vehicle,
         state,
-        dt_sec,
-        prediction_horizon=5,
+        dt_sec: float,
+        prediction_horizon: int = 5,
     ):
         """Attempts model predictive control for the given vehicle given an expected trajectory."""
         half_vehicle_len = vehicle.length / 2
