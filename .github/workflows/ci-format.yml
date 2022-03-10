@@ -52,19 +52,22 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Install SMARTS
+      - name: Install pytest
         run: |
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
-          pip install .[camera-obs,dev,extras,opendrive,ros,test,train]
-      - name: Get changed files
+          pip install pytype==2022.1.13
+      - name: Get changed files on branch since branching
         id: changed-files
-        uses: tj-actions/changed-files@v13.2  
-        with:
-          base_sha: origin/develop     
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          CHANGED=$(git diff --diff-filter="AM" --name-only --ignore-submodules=all origin/develop... | awk -v d=" " '{s=(NR==1?s:s d)$0}END{print s}')
+          echo "::set-output name=changed_files::$CHANGED"
       - name: Check types
-        if: contains(steps.changed-files.outputs.all_changed_files, '.py')
+        if: contains(steps.changed-files.outputs.changed_files, '.py')
         run: |
           . ${{env.venv_dir}}/bin/activate
-          pytype --disable=pyi-error ${{steps.changed-files.outputs.all_changed_files}}
+          pytype --disable=pyi-error ${{steps.changed-files.outputs.changed_files}}
+
