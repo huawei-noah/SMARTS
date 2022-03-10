@@ -4,7 +4,7 @@ import pickle
 from typing import Any, Dict, Sequence
 
 from envision.client import Client as Envision
-from examples.argument_parser import default_argument_parser
+from examples.utility.argument_parser import default_argument_parser
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ControllerOutOfLaneException

@@ -12,12 +12,12 @@ import torch
 try:
     import ray
 except Exception as e:
-    from . import RayException
+    from examples.utility import RayException
 
     raise RayException.required_to("ray_multi_instance.py")
 
 
-from examples.argument_parser import default_argument_parser
+from examples.utility.argument_parser import default_argument_parser
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
