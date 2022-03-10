@@ -57,9 +57,7 @@ jobs:
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
-          pip install .[camera-obs,dev,extras,opendrive,ros,test,train]
-          # install the specific version we want for pytest, just in case...
-          pip install pytype==2022.1.13
+          pip install .[dev]
       - name: Get changed files on branch since branching
         id: changed-files
         shell: bash
@@ -71,5 +69,5 @@ jobs:
         if: contains(steps.changed-files.outputs.changed_files, '.py')
         run: |
           . ${{env.venv_dir}}/bin/activate
-          pytype --disable=pyi-error ${{steps.changed-files.outputs.changed_files}}
+          pytype -d pyi-error import-error ${{steps.changed-files.outputs.changed_files}}
 
