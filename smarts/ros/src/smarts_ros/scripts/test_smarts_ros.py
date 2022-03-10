@@ -26,20 +26,17 @@
 
 import json
 import os
-import sys
 from unittest import TestCase
 
-import rospy
-from smarts_ros.msg import (
-    AgentReport,
+import rospy  # type: ignore
+from smarts_ros.msg import (  # type: ignore
     AgentSpec,
     AgentsStamped,
     AgentTask,
     EntitiesStamped,
-    EntityState,
     SmartsReset,
 )
-from smarts_ros.srv import SmartsInfo
+from smarts_ros.srv import SmartsInfo  # type: ignore
 
 from smarts.core.coordinates import fast_quaternion_from_angle
 

@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import logging
-import math
 import os
 import warnings
 from collections import defaultdict
@@ -36,7 +35,7 @@ with warnings.catch_warnings():
     from sklearn.metrics.pairwise import euclidean_distances
 
 from smarts import VERSION
-from smarts.core.chassis import AckermannChassis, BoxChassis
+from smarts.core.chassis import BoxChassis
 from smarts.core.plan import Plan
 
 from . import models
@@ -113,7 +112,7 @@ class SMARTS:
         self._reset_required = False
 
         assert fixed_timestep_sec is None or fixed_timestep_sec > 0
-        self.fixed_timestep_sec: float = fixed_timestep_sec
+        self.fixed_timestep_sec: Optional[float] = fixed_timestep_sec
         self._last_dt = fixed_timestep_sec
 
         self._elapsed_sim_time = 0

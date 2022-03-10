@@ -24,15 +24,13 @@ import json
 import logging
 import math
 import os
-import sys
-import time
 from collections import deque
 from threading import Lock
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
-import rospy
-from smarts_ros.msg import (
+import rospy  # type: ignore
+from smarts_ros.msg import (  # type: ignore
     AgentReport,
     AgentSpec,
     AgentsStamped,
@@ -40,10 +38,13 @@ from smarts_ros.msg import (
     EntityState,
     SmartsReset,
 )
-from smarts_ros.srv import SmartsInfo, SmartsInfoRequest, SmartsInfoResponse
+from smarts_ros.srv import (  # type: ignore
+    SmartsInfo,
+    SmartsInfoRequest,
+    SmartsInfoResponse,
+)
 
 from envision.client import Client as Envision
-from smarts.core.agent import Agent
 from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.plan import (
     EndlessGoal,
@@ -56,11 +57,7 @@ from smarts.core.plan import (
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
-from smarts.core.utils.math import (
-    fast_quaternion_from_angle,
-    vec_to_radians,
-    yaw_from_quaternion,
-)
+from smarts.core.utils.math import fast_quaternion_from_angle, vec_to_radians
 from smarts.core.vehicle import VehicleState
 from smarts.ros.logging import log_everything_to_ROS
 from smarts.sstudio.types import MapSpec
