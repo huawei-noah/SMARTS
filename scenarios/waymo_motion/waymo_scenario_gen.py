@@ -23,7 +23,7 @@
 # Visualization and prototyping script for the Waymo motion dataset.
 import argparse
 import os
-
+import yaml
 from typing import Dict, List, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -52,6 +52,16 @@ def get_map_features_for_scenario(scenario) -> Dict:
                 lanes.append((getattr(map_feature, key), map_feature.id))
     # tls_lanes = get_traffic_light_lanes(scenario)
     return map_features, lanes
+
+
+def edit_scenario_yaml(yaml_path, file_path, scenario_id):
+    with open(yaml_path) as f:
+        data_spec = yaml.safe_load(f)
+    data_spec["motion_dataset"]["input_path"] = file_path
+    data_spec["motion_dataset"]["scenario_id"] = scenario_id
+
+    with open(yaml_path, "w") as f:
+        yaml.dump(data_spec, f, default_flow_style=False)
 
 
 def get_traffic_light_lanes(scenario) -> List[str]:
@@ -192,7 +202,7 @@ if __name__ == "__main__":
         prog="waymo_scenario_gen.py",
         description="Extract map data from Waymo dataset, plot the scenarios and save their ids.",
     )
-    parser.add_argument("file", help="TFRecord file")
+    parser.add_argument("file path", help="TFRecord file path")
     parser.add_argument(
         "--outdir", help="output directory for screenshots", type=str
     )
@@ -215,5 +225,5 @@ if __name__ == "__main__":
         print(get_scenario_hashes(args.file))
     if args.outdir:
         scenario_hashes = dump_plots(args.outdir, args.file)
-    else:
+    if args.plot:
         plot(args.file, args.plot[0])
