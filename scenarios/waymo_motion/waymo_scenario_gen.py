@@ -25,11 +25,12 @@ import argparse
 import os
 import yaml
 from typing import Dict, List, Tuple, Union
-
+from pathlib import Path
 import matplotlib.pyplot as plt
 from waymo_open_dataset.protos import scenario_pb2
 
 from smarts.core.utils.file import read_tfrecord_file
+from cli.studio import _build_single_scenario
 
 
 def convert_polyline(polyline) -> Tuple[List[float], List[float]]:
@@ -54,7 +55,7 @@ def get_map_features_for_scenario(scenario) -> Dict:
     return map_features, lanes
 
 
-def edit_scenario_yaml(yaml_path, file_path, scenario_id):
+def edit_scenario_yaml(yaml_path: str, file_path: str, scenario_id: str):
     with open(yaml_path) as f:
         data_spec = yaml.safe_load(f)
     data_spec["motion_dataset"]["input_path"] = file_path
@@ -164,7 +165,20 @@ def get_scenario_hashes(path: str) -> List[str]:
     return scenarios
 
 
-def dump_plots(outdir: str, path: str) -> List[str]:
+def generate_all_scenario(dataset_path: str):
+    scenario_ids = get_scenario_hashes(dataset_path)
+    for scenario_hash in scenario_ids:
+        generate_scenario(dataset_path, scenario_hash)
+
+
+def generate_scenario(dataset_path: str, scenario_id: str):
+    scenario_root = Path(__file__).parent
+    yaml_path = os.path.join(scenario_root, "motion_dataspec.yaml")
+    edit_scenario_yaml(yaml_path, dataset_path, scenario_id)
+    _build_single_scenario(True, False, str(scenario_root))
+
+
+def dump_plots(out_dir: str, path: str) -> List[str]:
     scenarios = []
     dataset = read_tfrecord_file(path)
     for record in dataset:
@@ -186,7 +200,7 @@ def dump_plots(outdir: str, path: str) -> List[str]:
         # plt.show()
 
         filename = f"scenario-{scenario_id}.png"
-        out_path = os.path.join(outdir, filename)
+        out_path = os.path.join(out_dir, filename)
         fig = plt.gcf()
         # w, h = mng.window.maxsize()
         dpi = 100
@@ -213,8 +227,20 @@ if __name__ == "__main__":
         default=False,
     )
     parser.add_argument(
+        "--gen-all", help="generate all scenarios",
+        is_flag=True,
+        default=False,
+    )
+    parser.add_argument(
         "--plot",
         help="plot scenario map",
+        type=str,
+        nargs=1,
+        metavar="SCENARIO_ID",
+    )
+    parser.add_argument(
+        "--gen",
+        help="generate scenario",
         type=str,
         nargs=1,
         metavar="SCENARIO_ID",
@@ -227,3 +253,7 @@ if __name__ == "__main__":
         scenario_hashes = dump_plots(args.outdir, args.file)
     if args.plot:
         plot(args.file, args.plot[0])
+    if args.gen_all:
+        generate_all_scenario(args.file)
+    if args.gen:
+        generate_scenario(args.file, args.gen[0])

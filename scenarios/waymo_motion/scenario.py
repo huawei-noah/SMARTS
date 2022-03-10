@@ -9,7 +9,7 @@ yaml_file = os.path.join(Path(__file__).parent, "motion_dataspec.yaml")
 with open(yaml_file, "r") as yf:
     dataset_spec = yaml.safe_load(yf)["motion_dataset"]
 
-dataset_path = os.path.join(Path(__file__).parent, dataset_spec["input_path"])
+dataset_path = dataset_spec["input_path"]
 scenario_id = dataset_spec["scenario_id"]
 
 gen_scenario(
