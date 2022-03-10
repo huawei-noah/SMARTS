@@ -978,8 +978,9 @@ def plot_boundaries(lane, features):
 
 if __name__ == "__main__":
     # scenario_id = "4f30f060069bbeb9"
-    scenario_id = "c84cde79e51b087c"
+    # scenario_id = "c84cde79e51b087c"
     # scenario_id = "6cec26a9347e8574"
+    scenario_id = "d9a14485bb4f49e8"
     dataset_root = os.path.join(Path(__file__).parent, "maps/")
     dataset_file = (
         "uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000"
@@ -1004,6 +1005,7 @@ if __name__ == "__main__":
     #     xwp, ywp = get_wp_coords(waypoints)
     #     plt.scatter(xwp, ywp, s=1, c="r")
 
+    # ids for scenario 4f30f060069bbeb9
     ids = [
         # "80_0",
         # "89_0",

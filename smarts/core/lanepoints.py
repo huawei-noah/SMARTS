@@ -478,7 +478,7 @@ class LanePoints:
                 curr_lanepoint = last_linked_lanepoint
 
                 for out_lane in curr_lane.outgoing_lanes:
-                    if out_lane.is_drivable:
+                    if out_lane and out_lane.is_drivable:
                         lane_queue.put((out_lane, curr_lanepoint))
             return initial_lanepoint, shape_lanepoints
 
