@@ -31,10 +31,10 @@ setup(
         "pandas>=1.3.4",
         "psutil>=5.8.0",
         "pybullet==3.0.6",
-        "rich>=10.13.0",
-        "rtree>=0.9.7",  # Used by sumolib
+        "rich>=11.2.0",
+        "Rtree>=0.9.7",  # Used by sumolib
         "sh>=1.14.2",
-        "shapely>=1.8.0",
+        "shapely>=1.8.1",
         "scikit-learn>=1.0.1",  # KDTree from scikit-learn is used by sumo lanepoints
         "tableprint>=0.9.1",
         "trimesh==3.9.29",  # Used for writing .glb files
