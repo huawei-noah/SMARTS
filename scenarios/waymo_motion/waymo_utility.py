@@ -25,6 +25,7 @@ import argparse
 import os
 import yaml
 from typing import Dict, List, Tuple, Union
+from tabulate import tabulate
 from pathlib import Path
 import matplotlib.pyplot as plt
 from waymo_open_dataset.protos import scenario_pb2
@@ -43,7 +44,14 @@ def convert_polyline(polyline) -> Tuple[List[float], List[float]]:
 
 def get_map_features_for_scenario(scenario) -> Dict:
     lanes = []
-    map_features = {"lane": [], "road_line": [], "road_edge": [], "stop_sign": [], "crosswalk": [], "speed_bump": []}
+    map_features = {
+        "lane": [],
+        "road_line": [],
+        "road_edge": [],
+        "stop_sign": [],
+        "crosswalk": [],
+        "speed_bump": [],
+    }
     for i in range(len(scenario.map_features)):
         map_feature = scenario.map_features[i]
         key = map_feature.WhichOneof("feature_data")
@@ -153,22 +161,60 @@ def plot(path: str, scenario_id: str):
     plt.show()
 
 
-def get_scenario_hashes(path: str) -> List[str]:
-    scenarios = []
-    dataset = read_tfrecord_file(path)
+def get_scenario_dict(tfrecord_file: str) -> List[str]:
+    scenario_dict = {}
+    dataset = read_tfrecord_file(tfrecord_file)
     for record in dataset:
         scenario = scenario_pb2.Scenario()
         scenario.ParseFromString(bytearray(record))
 
         scenario_id = scenario.scenario_id
-        scenarios.append(scenario_id)
-    return scenarios
+        scenario_dict[scenario_id] = scenario
+
+    return scenario_dict
 
 
-def generate_all_scenario(dataset_path: str):
-    scenario_ids = get_scenario_hashes(dataset_path)
-    for scenario_hash in scenario_ids:
-        generate_scenario(dataset_path, scenario_hash)
+def parse_tfrecords(tfrecord_path: str):
+    scenarios_per_tfrecord = {}
+    if os.path.isdir(tfrecord_path):
+        for f in os.listdir(tfrecord_path):
+            if ".tfrecord" in f:
+                scenario_dict = get_scenario_dict(os.path.join(tfrecord_path, f))
+                scenarios_per_tfrecord[f] = scenario_dict
+    else:
+        scenarios_per_tfrecord[tfrecord_path] = get_scenario_dict(tfrecord_path)
+    return scenarios_per_tfrecord
+
+
+def display_scenario_info(scenarios_per_tfrecord):
+    for tfrecord_path in scenarios_per_tfrecord:
+        scenario_data_lst = []
+        for scenario_id in scenarios_per_tfrecord[tfrecord_path]:
+            scenario = scenarios_per_tfrecord[tfrecord_path][scenario_id]
+            scenario_data = [
+                scenario_id,
+                len(scenario.timestamps),
+                len(scenario.tracks),
+                len(scenario.dynamic_map_states),
+                len(scenario.objects_of_interest),
+            ]
+            scenario_data_lst.append(scenario_data)
+        print("                                               ")
+        print("-----------------------------------------------")
+        print(f"Scenarios in {tfrecord_path}:")
+        print("                                               ")
+        print(
+            tabulate(
+                scenario_data_lst,
+                headers=[
+                    "Scenario ID",
+                    "Timestamps",
+                    "Vehicles",
+                    "Traffic Lights",
+                    "Object of Interest",
+                ],
+            )
+        )
 
 
 def generate_scenario(dataset_path: str, scenario_id: str):
@@ -217,9 +263,7 @@ if __name__ == "__main__":
         description="Extract map data from Waymo dataset, plot the scenarios and save their ids.",
     )
     parser.add_argument("file path", help="TFRecord file path")
-    parser.add_argument(
-        "--outdir", help="output directory for screenshots", type=str
-    )
+    parser.add_argument("--outdir", help="output directory for screenshots", type=str)
     parser.add_argument(
         "--get-hash",
         help="get all scenario ids for the given TfRecord file",
@@ -227,7 +271,8 @@ if __name__ == "__main__":
         default=False,
     )
     parser.add_argument(
-        "--gen-all", help="generate all scenarios",
+        "--gen-all",
+        help="generate all scenarios",
         is_flag=True,
         default=False,
     )
@@ -246,14 +291,9 @@ if __name__ == "__main__":
         metavar="SCENARIO_ID",
     )
     args = parser.parse_args()
-
-    if args.get_hash:
-        print(get_scenario_hashes(args.file))
     if args.outdir:
         scenario_hashes = dump_plots(args.outdir, args.file)
     if args.plot:
         plot(args.file, args.plot[0])
-    if args.gen_all:
-        generate_all_scenario(args.file)
     if args.gen:
         generate_scenario(args.file, args.gen[0])
