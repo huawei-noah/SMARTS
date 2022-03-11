@@ -14,11 +14,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `FormatObs` wrapper which converts SMARTS observations to gym-compliant RL-friendly vectorized observations and returns `StdObs`.
 - Added `Pose.as_position2d()` method which converts the pose to an [x,y] position array.
 - Added `EventConfiguration` dataclass in the agent interface to allow users to configure the conditions in which events are triggered
-- Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make a left turn in the presence of traffic.
 ### Changed
 - If more than one qualifying map file exists in a the `map_spec.source` folder, `get_road_map()` in `default_map_builder.py` will prefer to return the default files (`map.net.xml` or `map.xodr`) if they exist.
 - Moved the `smarts_ros` ROS node from the `examples` area into the `smarts.ros` module so that it can be distributed with SMARTS packages.
 - Use `Process` to replace `Thread` to speed up the `scl scenario build-all --clean <scenario_dir>` runtime.
+- Modified the repository's front page to be more informative and better organised.
 ### Deprecated
 ### Fixed
 - Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error.

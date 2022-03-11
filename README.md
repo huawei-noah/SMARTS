@@ -58,7 +58,6 @@ for _ in range(1000):
 1. [Examples](#Examples)
     + [Usage](#Usage)
     + [Reinforcement Learning](#Reinforcement-Learning)
-1. [Task Environments](#Task-Environments)
 1. [CLI Tool](#CLI-Tool)  
     + [CLI Usage](#CLI-Usage)
     + [CLI Examples](#CLI-Examples)
@@ -140,23 +139,6 @@ Illustration of various ways to use SMARTS.
 ### Reinforcement Learning
 1. [MARL benchmark](baselines/marl_benchmark)
 1. [Driving in traffic](examples/driving_in_traffic) using world model based RL.
-
-# Task Environments
-The following are standard environments with specific tasks to be completed. Each one of them can be instantiated as follows, by replacing `<environment-name>` with the desired task environment's name.
-```python
-env = gym.make(
-    "smarts.env:<environment-name>",
-    headless=True, # If False, enables Envision display.
-    visdom=False, # If True, enables Visdom display.
-    sumo_headless=True, # If False, enables sumo-gui display.
-)
-```
-
-1. `intersection-v0`: In this task, the ego-vehicle needs to drive towards an intersection with an all-way stop traffic, and make a left turn without any collisions. Further task description is available at [/smarts/env/intersection_env.py](smarts/env/intersection_env.py).  
-    <p align="center">
-    <img src="docs/_static/intersection.gif" width="600" height="400"><br/>
-    The <em>intersection-v0</em> environment.
-    </p>
 
 # CLI Tool
 SMARTS provides a command-line tool to interact with scenario studio and Envision.
