@@ -1,6 +1,4 @@
-# MIT License
-#
-# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,25 +16,15 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE
-from typing import Sequence
+# THE SOFTWARE.
 
 
-class KeyWrapper(Sequence):
-    """A sequence that transforms the selected in an underlying sequence using the given
-    transformation key."""
+class RendererException(Exception):
+    """An exception raised if a renderer is required but not available."""
 
-    def __init__(self, iterable, key):
-        self.it = iterable
-        self.key = key
-
-    def __getitem__(self, i: int):
-        return self.key(self.it[i])
-
-    def __len__(self):
-        return len(self.it)
-
-    def insert(self, index: int, item):
-        """Insert an item into the sequence."""
-        print("asked to insert %s at index%d" % (item, index))
-        self.it.insert(index, item)
+    @classmethod
+    def required_to(cls, thing: str) -> "RendererException":
+        """Generate a `RenderException` requiring a render to do `thing`."""
+        return cls(
+            f"""A renderer is required to {thing}. You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. Install them first using the command `pip install -e .[camera-obs]` at the source directory."""
+        )

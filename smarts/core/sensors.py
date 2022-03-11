@@ -91,13 +91,13 @@ class EgoVehicleObservation(NamedTuple):
     """Vehicle velocity along body coordinate axes. A numpy array of shape=(3,) and dtype=np.float64."""
     angular_velocity: np.ndarray
     """Angular velocity vector. A numpy array of shape=(3,) and dtype=np.float64."""
-    linear_acceleration: np.ndarray
+    linear_acceleration: Optional[np.ndarray]
     """Linear acceleration vector. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
-    angular_acceleration: np.ndarray
+    angular_acceleration: Optional[np.ndarray]
     """Angular acceleration vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
-    linear_jerk: np.ndarray
+    linear_jerk: Optional[np.ndarray]
     """Linear jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
-    angular_jerk: np.ndarray
+    angular_jerk: Optional[np.ndarray]
     """Angular jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
 
 
@@ -111,17 +111,17 @@ class GridMapMetadata(NamedTuple):
     """Map grid metadata."""
 
     created_at: int
-    """The time at which the map was loaded"""
+    """The time at which the map was loaded."""
     resolution: float
-    """The map resolution in world-space-distance/cell"""
+    """The map resolution in world-space-distance/cell."""
     width: int
-    """The map width in # of cells"""
+    """The map width in # of cells."""
     height: int
-    """The map height in # of cells"""
+    """The map height in # of cells."""
     camera_pos: Tuple[float, float, float]
-    """The camera position when project onto the map"""
+    """The camera position when project onto the map."""
     camera_heading_in_degrees: float
-    """The camera rotation angle along z-axis when projected onto the map"""
+    """The camera rotation angle along z-axis when projected onto the map."""
 
 
 class TopDownRGB(NamedTuple):
@@ -177,31 +177,30 @@ class Vias:
 
 @dataclass
 class Observation:
-    """The standard simulation observation."""
+    """The simulation observation."""
 
-    # dt is the amount of sim_time the last step took .
-    # step_count is the number of steps take by SMARTS so far.
-    # elapsed_sim_time is the amount of simulation time that's passed so far.
-    # note: to get the average step_time, elapsed_sim_time can be divided by step_count
     dt: float
+    """Amount of simulation time the last step took."""
     step_count: int
+    """Number of steps taken by SMARTS thus far."""
     elapsed_sim_time: float
+    """Amout of simulation time elapsed. Average step_time can be computed as 
+    elapsed_sim_time/step_count."""
     events: Events
     ego_vehicle_state: EgoVehicleObservation
-    neighborhood_vehicle_states: List[VehicleObservation]
-    waypoint_paths: List[List[Waypoint]]
+    neighborhood_vehicle_states: Optional[List[VehicleObservation]]
+    waypoint_paths: Optional[List[List[Waypoint]]]
     distance_travelled: float
-
-    # TODO: Convert to `namedtuple` or only return point cloud
-    # [points], [hits], [(ray_origin, ray_direction)]
-    lidar_point_cloud: Tuple[
-        List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]
+    # TODO: Convert to `NamedTuple` or only return point cloud.
+    lidar_point_cloud: Optional[
+        Tuple[List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]]
     ]
-    drivable_area_grid_map: DrivableAreaGridMap
-    occupancy_grid_map: OccupancyGridMap
-    top_down_rgb: TopDownRGB
-    road_waypoints: RoadWaypoints = None
-    via_data: Vias = None
+    """Lidar point cloud consists of [points, hits, (ray_origin, ray_vector)]."""
+    drivable_area_grid_map: Optional[DrivableAreaGridMap]
+    occupancy_grid_map: Optional[OccupancyGridMap]
+    top_down_rgb: Optional[TopDownRGB]
+    road_waypoints: Optional[RoadWaypoints]
+    via_data: Vias
 
 
 @dataclass
@@ -310,7 +309,7 @@ class Sensors:
                 )
             )
 
-        ego_vehicle_observation = EgoVehicleObservation(
+        ego_vehicle = EgoVehicleObservation(
             id=ego_vehicle_state.vehicle_id,
             position=np.array(ego_vehicle_state.pose.position),
             bounding_box=ego_vehicle_state.dimensions,
@@ -380,7 +379,7 @@ class Sensors:
                 step_count=sim.step_count,
                 elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
-                ego_vehicle_state=ego_vehicle_observation,
+                ego_vehicle_state=ego_vehicle,
                 neighborhood_vehicle_states=neighborhood_vehicles,
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
@@ -443,13 +442,16 @@ class Sensors:
     def _is_done_with_events(cls, sim, agent_id, vehicle, sensor_state):
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
+        event_config = interface.event_configuration
 
         # TODO:  the following calls nearest_lanes (expensive) 6 times
         reached_goal = cls._agent_reached_goal(sim, vehicle)
         collided = sim.vehicle_did_collide(vehicle.id)
         is_off_road = cls._vehicle_is_off_road(sim, vehicle)
         is_on_shoulder = cls._vehicle_is_on_shoulder(sim, vehicle)
-        is_not_moving = cls._vehicle_is_not_moving(sim, vehicle)
+        is_not_moving = cls._vehicle_is_not_moving(
+            sim, vehicle, event_config.not_moving_time, event_config.not_moving_distance
+        )
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
             sim, vehicle
@@ -458,7 +460,7 @@ class Sensors:
             sim.agent_manager, done_criteria.agents_alive
         )
 
-        done = (
+        done = not sim.resetting and (
             (is_off_road and done_criteria.off_road)
             or reached_goal
             or reached_max_episode_steps
@@ -505,10 +507,10 @@ class Sensors:
         return False
 
     @classmethod
-    def _vehicle_is_not_moving(cls, sim, vehicle):
-        last_n_seconds_considered = 60
-
-        # Flag if the vehicle has been immobile for the past 60 seconds
+    def _vehicle_is_not_moving(
+        cls, sim, vehicle, last_n_seconds_considered, min_distance_moved
+    ):
+        # Flag if the vehicle has been immobile for the past 'last_n_seconds_considered' seconds
         if sim.elapsed_sim_time < last_n_seconds_considered:
             return False
 
@@ -517,8 +519,8 @@ class Sensors:
         )
 
         # Due to controller instabilities there may be some movement even when a
-        # vehicle is "stopped". Here we allow 1m of total distance in 60 seconds.
-        return distance < 1
+        # vehicle is "stopped".
+        return distance < min_distance_moved
 
     @classmethod
     def _vehicle_is_off_route_and_wrong_way(cls, sim, vehicle):
@@ -742,8 +744,6 @@ class OGMSensor(CameraSensor):
         grid = np.frombuffer(mem_view, np.uint8)
         grid.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 1)
         grid = np.flipud(grid)
-        grid = grid.clip(min=0, max=1).astype(np.int8)
-        grid *= 100  # full confidence on known cells
 
         metadata = GridMapMetadata(
             created_at=int(time.time()),
@@ -799,7 +799,7 @@ class LidarSensor(Sensor):
         self,
         vehicle,
         bullet_client,
-        sensor_params: SensorParams = None,
+        sensor_params: Optional[SensorParams] = None,
         lidar_offset=(0, 0, 1),
     ):
         self._vehicle = vehicle
@@ -833,7 +833,7 @@ class DrivenPathSensor(Sensor):
 
     Entry = namedtuple("TimeAndPos", ["timestamp", "position"])
 
-    def __init__(self, vehicle, max_path_length: float = 500):
+    def __init__(self, vehicle, max_path_length: int = 500):
         self._vehicle = vehicle
         self._driven_path = deque(maxlen=max_path_length)
 

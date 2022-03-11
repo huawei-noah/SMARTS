@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 import random
 from dataclasses import dataclass, field
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 from smarts.sstudio.types import EntryTactic, TrapEntryTactic
 
@@ -44,7 +44,7 @@ class PlanningError(Exception):
 class Start:
     """A starting state for a route or mission."""
 
-    position: Tuple[int, int]
+    position: Tuple[float, float]
     heading: Heading
     from_front_bumper: Optional[bool] = True
 
@@ -57,7 +57,7 @@ class Start:
     def from_pose(cls, pose: Pose):
         """Convert to a starting location from a pose."""
         return cls(
-            position=pose.position[:2],
+            position=pose.as_position2d(),
             heading=pose.heading,
             from_front_bumper=False,
         )
@@ -203,12 +203,12 @@ class Mission:
     goal: Goal
     # An optional list of road IDs between the start and end goal that we want to
     # ensure the mission includes
-    route_vias: Tuple[str] = field(default_factory=tuple)
+    route_vias: Tuple[str, ...] = field(default_factory=tuple)
     start_time: float = 0.1
-    entry_tactic: EntryTactic = None
+    entry_tactic: Optional[EntryTactic] = None
     via: Tuple[Via, ...] = ()
     # if specified, will use vehicle_spec to build the vehicle (for histories)
-    vehicle_spec: VehicleSpec = None
+    vehicle_spec: Optional[VehicleSpec] = None
 
     @property
     def has_fixed_route(self) -> bool:
@@ -241,7 +241,7 @@ class Mission:
         coord = n_lane.from_lane_coord(RefLinePoint(offset))
         target_pose = n_lane.center_pose_at_point(coord)
         return Mission(
-            start=Start(target_pose.position, target_pose.heading),
+            start=Start(target_pose.as_position2d(), target_pose.heading),
             goal=EndlessGoal(),
             entry_tactic=None,
         )
@@ -254,12 +254,12 @@ class LapMission:
     start: Start
     goal: Goal
     route_length: float
-    num_laps: int = None  # None means infinite # of laps
+    num_laps: Optional[int] = None  # None means infinite # of laps
     # An optional list of road IDs between the start and end goal that we want to
     # ensure the mission includes
-    route_vias: Tuple[str] = field(default_factory=tuple)
+    route_vias: Tuple[str, ...] = field(default_factory=tuple)
     start_time: float = 0.1
-    entry_tactic: EntryTactic = None
+    entry_tactic: Optional[EntryTactic] = None
     via_points: Tuple[Via, ...] = ()
 
     @property
@@ -319,6 +319,7 @@ class Plan:
         if not self._mission.has_fixed_route:
             self._route = self._road_map.empty_route()
             return self._mission
+        assert isinstance(self._mission.goal, PositionalGoal)
 
         start_lane = self._road_map.nearest_lane(
             self._mission.start.point,

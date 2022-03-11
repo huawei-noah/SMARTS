@@ -35,7 +35,7 @@ from smarts.core.plan import EndlessGoal, Mission, Start
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.vehicle import RendererException
+from smarts.core.utils.custom_exceptions import RendererException
 
 
 @pytest.fixture

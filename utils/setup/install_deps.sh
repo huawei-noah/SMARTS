@@ -15,23 +15,11 @@ function install_python_3_7 {
     sudo apt-get install $1 python3.7 python3.7-tk python3.7-venv
 }
 
-function set_SUMO_HOME {
-    echo "Adding SUMO_HOME to ~/.bash_profile."
-    echo 'export SUMO_HOME="/usr/local/opt/sumo/share/sumo"' >> ~/.bash_profile
-    echo "We've updated your ~/.bash_profile. Be sure to run:"
-    echo ""
-    echo "  source ~/.bash_profile"
-    echo ""
-    echo "in order to set the SUMO_HOME variable in your current session"
-}
-
 function do_install_for_linux {
-    echo "Installing sumo (used for traffic simulation and road network)"
-    sudo add-apt-repository $1 ppa:sumo/stable
+    echo "Installing dependencies"
     sudo apt-get update
     sudo apt-get install $1 \
         libspatialindex-dev \
-        sumo sumo-tools sumo-doc \
         build-essential cmake
 
     #only a problem for linux
@@ -57,17 +45,11 @@ function do_install_for_linux {
     echo ""
     echo "-- dependencies have been installed --"
     echo ""
-    echo "You'll need to set the SUMO_HOME variable. Logging out and back in will"
-    echo "get you set up. Alternatively, in your current session, you can run:"
-    echo ""
-    echo "  source /etc/profile.d/sumo.sh"
-    echo ""
 }
 
 function do_install_for_macos {
-    echo "Installing sumo (used for traffic simulation and road network)"
-    brew tap dlr-ts/sumo
-    brew install sumo spatialindex # for sumo
+    echo "Installing denpendencies"
+    brew install spatialindex
     brew install geos # for shapely
 
     # start X11 manually the first time, logging in/out will also do the trick
@@ -76,18 +58,6 @@ function do_install_for_macos {
     echo ""
     echo "-- dependencies have been installed --"
     echo ""
-    if  [[ "$1" = "-y" ]]; then
-        set_SUMO_HOME
-    else
-        read -p "Add SUMO_HOME to ~/.bash_profile? [Yn]" should_add_SUMO_HOME
-        echo "should_add_SUMO_HOME $should_add_SUMO_HOME"
-        if [[ $should_add_SUMO_HOME =~ ^[yY\w]*$ ]]; then
-            set_SUMO_HOME
-        else
-            echo "Not updating ~/.bash_profile"
-            echo "Make sure SUMO_HOME is set before proceeding"
-        fi
-    fi
 }
 
 if  [[ "$1" = "-y" ]]; then

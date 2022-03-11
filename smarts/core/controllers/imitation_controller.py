@@ -35,7 +35,7 @@ class ImitationController:
         cls,
         dt: float,
         vehicle,
-        action: Union[float, Tuple[Tuple[float, float], float]],
+        action: Union[float, Tuple[float, float]],
     ):
         """Performs an action adapting to the underlying chassis.
         Args:
@@ -43,7 +43,7 @@ class ImitationController:
                 A delta time value.
             vehicle (Vehicle):
                 The vehicle to control.
-            action (Union[float, Tuple[Tuple[float, float], float]]):
+            action (Union[float, Tuple[float, float]]):
                 (speed) XOR (acceleration, angular_velocity)
         """
         chassis = vehicle.chassis
