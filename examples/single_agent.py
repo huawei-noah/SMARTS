@@ -8,7 +8,6 @@ from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
-from smarts.env import build_scenario
 from smarts.env.wrappers.single_agent import SingleAgent
 from smarts.sstudio import build_scenario
 
