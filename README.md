@@ -84,12 +84,8 @@ git clone https://github.com/huawei-noah/SMARTS.git
 cd <path/to/SMARTS>
 
 # For Mac OS X users, ensure XQuartz is pre-installed.
-# Install the system requirements, then follow the instructions for setting up the `SUMO_HOME` environment variable. You may use the `-y` option to enable automatic assumption of "yes" to all prompts to avoid timeout from waiting for user input. 
+# Install the system requirements. You may use the `-y` option to enable automatic assumption of "yes" to all prompts to avoid timeout from waiting for user input. 
 bash utils/setup/install_deps.sh
-
-# Verify sumo is >= 1.5.0.
-# If you have issues see ./docs/SUMO_TROUBLESHOOTING.md .
-sumo
 
 # Setup virtual environment. Presently at least Python 3.7 and higher is officially supported.
 python3.7 -m venv .venv
