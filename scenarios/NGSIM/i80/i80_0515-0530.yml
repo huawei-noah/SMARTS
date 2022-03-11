@@ -48,7 +48,7 @@ trajectory_dataset:
 
         # The map width is used to filter position_x values
         # to ensure they're in range.
-        width: 641.63
+        width: 310.92
 
         # lane_width is used to figure out the map scale,
         # which is lane_width / real_lane_width_m.
