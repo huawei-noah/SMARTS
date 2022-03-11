@@ -32,7 +32,7 @@ setup(
         "psutil>=5.8.0",
         "pybullet==3.0.6",
         "rich>=11.2.0",
-        "Rtree>=0.9.7",  # Used by sumolib
+        "Rtree>=0.9.7",
         "sh>=1.14.2",
         "shapely>=1.8.1",
         "scikit-learn>=1.0.1",  # KDTree from scikit-learn is used by sumo lanepoints
