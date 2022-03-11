@@ -13,7 +13,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.5.1",
+    version="0.5.1.post1",
     packages=find_packages(exclude=("tests", "examples")),
     include_package_data=True,
     zip_safe=True,
@@ -67,12 +67,13 @@ setup(
             "pytest-cov>=3.0.0",
             "pytest-notebook>=0.6.1",
             "pytest-xdist>=2.4.0",
+            "opencv-contrib-python-headless==4.1.2.30",
             "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
             "tensorflow>=2.4.0",  # For rllib tests
         ],
         "train": [
-            "ray[rllib]==1.0.1.post1",  # We use Ray for our multiprocessing needs
-            # XXX: TF requires specific version of scipy
+            "opencv-contrib-python-headless==4.1.2.30",
+            "ray[rllib]==1.0.1.post1",
             "scipy==1.4.1",
             "tensorflow>=2.4.0",
             "torch==1.4.0",

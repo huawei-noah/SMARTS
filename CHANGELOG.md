@@ -16,6 +16,13 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Removed
 ### Security
 
+
+# [0.5.1.post1] 2022-03-11
+### Fixed
+- Fixed an issue involving relative imports in `examples/rllib/rllib.py`.
+- Fixed an issue with uncapped `opencv` causing an error within `ray.rllib`.
+- Fixed a longstanding issue that did not allow camera observations unless you had windowing.
+
 # [0.5.1] 2022-01-25
 ### Added
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
