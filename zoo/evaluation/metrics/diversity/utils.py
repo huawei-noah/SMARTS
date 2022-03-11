@@ -233,7 +233,7 @@ def count_intersection_area(pos_arr1, pos_arr2):
 
 
 def count_intersection_segment(pos_list1, pos_list2):
-    # tranverse every pair to find the target segment
+    # Traverse every pair to find the target segment
     for traj1 in pos_list1:
         for pos1 in range(len(traj1) - 1):
             A1, B1 = (
@@ -254,6 +254,8 @@ def count_intersection_segment(pos_list1, pos_list2):
                         P2 = NumMultiPoint(AddPoint(A2, B2), 0.5)
                         return A1, B1, A2, B2, P1, P2
 
+    raise Exception("No target segment found.")
+
 
 def generate_curve(A, B, C, D):
     """
@@ -271,33 +273,6 @@ def generate_curve(A, B, C, D):
     curve.append(Point(2 * (Pt.x - A.x), 2 * (Pt.y - A.y)))
     curve.append(Point(B.x - curve[0].x - curve[1].x, B.y - curve[0].y - curve[1].y))
     return curve, msg
-
-
-def count_intersection_point(curve1, curve2):
-    c1_x, c1_y = curve1[0].x, curve1[0].y
-    b1_x, b1_y = curve1[1].x, curve1[1].y
-    a1_x, a1_y = curve1[2].x, curve1[2].y
-    c2_x, c2_y = curve2[0].x, curve2[0].y
-    b2_x, b2_y = curve2[1].x, curve2[1].y
-    a2_x, a2_y = curve2[2].x, curve2[2].y
-    x = Symbol("x")
-    y = Symbol("y")
-    T_raw = solve(
-        [
-            a1_x * x ** 2 + b1_x * x + c1_x - a2_x * y ** 2 - b2_x * y - c2_x,
-            a1_y * x ** 2 + b1_y * x + c1_y - a2_y * y ** 2 - b2_y * y - c2_y,
-        ],
-        [x, y],
-    )
-    t1, t2 = None, None
-    for TT in T_raw:
-        if TT[0] >= -eps and TT[1] >= -eps:
-            t1, t2 = TT[0], TT[1]
-            break
-    P_x = a1_x * t1 ** 2 + b1_x * t1 + c1_x
-    P_y = a1_y * t1 ** 2 + b1_y * t1 + c1_y
-    P = Point(P_x, P_y)
-    return P, t1, t2
 
 
 def count_time_score(time_arr1, time_arr2, idx_A1, idx_A2, t1, t2):
