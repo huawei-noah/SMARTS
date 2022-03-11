@@ -231,7 +231,14 @@ class BoxChassis(Chassis):
                 linearVelocity=linear_velocity,
                 angularVelocity=angular_velocity,
             )
-        self._bullet_constraint.move_to(force_pose)
+        self._set_pose(force_pose)
+
+    def _set_pose(self, pose: Pose):
+        position, orientation = pose.as_bullet()
+        self._client.resetBasePositionAndOrientation(
+            self.bullet_id, position, orientation
+        )
+        self._bullet_constraint.move_to(pose)
 
     @property
     def dimensions(self) -> Dimensions:

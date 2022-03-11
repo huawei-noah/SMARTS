@@ -17,6 +17,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+import subprocess
+from typing import List
+
 from .genscenario import (
     gen_bubbles,
     gen_friction_map,
@@ -28,3 +32,13 @@ from .genscenario import (
     gen_traffic,
     gen_traffic_histories,
 )
+
+
+def build_scenario(scenario: List[str]):
+    """Build the given scenarios.
+
+    Args:
+        scenario (List[str]): Scenarios to build.
+    """
+    build_scenario = " ".join(["scl scenario build-all --clean"] + scenario)
+    subprocess.call(build_scenario, shell=True)

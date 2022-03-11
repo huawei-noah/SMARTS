@@ -39,7 +39,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
-          pip install -e .[camera-obs,test,train]
+          pip install -e .[camera-obs,opendrive,test,train]
       - name: Run smoke tests
         run: |
           . ${{env.venv_dir}}/bin/activate
