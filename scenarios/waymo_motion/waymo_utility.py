@@ -23,6 +23,7 @@
 # Visualization and prototyping script for the Waymo motion dataset.
 import argparse
 import os
+import shutil
 import yaml
 from typing import Dict, List, Tuple, Union
 from tabulate import tabulate
@@ -66,8 +67,8 @@ def get_map_features_for_scenario(scenario) -> Dict:
 def edit_scenario_yaml(yaml_path: str, file_path: str, scenario_id: str):
     with open(yaml_path) as f:
         data_spec = yaml.safe_load(f)
-    data_spec["motion_dataset"]["input_path"] = file_path
-    data_spec["motion_dataset"]["scenario_id"] = scenario_id
+    data_spec["trajectory_dataset"]["input_path"] = file_path
+    data_spec["trajectory_dataset"]["scenario_id"] = scenario_id
 
     with open(yaml_path, "w") as f:
         yaml.dump(data_spec, f, default_flow_style=False)
@@ -178,7 +179,7 @@ def parse_tfrecords(tfrecord_path: str):
     scenarios_per_tfrecord = {}
     if os.path.isdir(tfrecord_path):
         for f in os.listdir(tfrecord_path):
-            if ".tfrecord" in f:
+            if ".tfrecord" in f and os.path.isfile(os.path.join(tfrecord_path, f)):
                 scenario_dict = get_scenario_dict(os.path.join(tfrecord_path, f))
                 scenarios_per_tfrecord[f] = scenario_dict
     else:
@@ -201,7 +202,9 @@ def display_scenario_info(scenarios_per_tfrecord):
             scenario_data_lst.append(scenario_data)
         print("                                               ")
         print("-----------------------------------------------")
-        print(f"Scenarios in {tfrecord_path}:")
+        print(
+            f"{len(scenarios_per_tfrecord[tfrecord_path])} scenarios in {tfrecord_path}:"
+        )
         print("                                               ")
         print(
             tabulate(
@@ -209,7 +212,7 @@ def display_scenario_info(scenarios_per_tfrecord):
                 headers=[
                     "Scenario ID",
                     "Timestamps",
-                    "Vehicles",
+                    "Track Objects",
                     "Traffic Lights",
                     "Object of Interest",
                 ],
@@ -217,9 +220,38 @@ def display_scenario_info(scenarios_per_tfrecord):
         )
 
 
+def export_scenario(
+    target_base_path: str, tfrecord_file_path: str, scenario_id, overwrite=False
+):
+    subfolder_path = os.path.join(target_base_path, scenario_id)
+    try:
+        os.mkdir(subfolder_path)
+    except FileExistsError:
+        print(f"Folder already exists at path {subfolder_path}")
+    scenario_py = os.path.join(target_base_path, "scenario.py")
+    if os.path.exists(scenario_py):
+        print(f"scenario.py already exists in {subfolder_path}.")
+    else:
+        scenario_template = os.path.join(
+            Path(__file__).parent, "templates", "scenario_template.py"
+        )
+        shutil.copy2(scenario_template, scenario_py)
+        print(f"Scenario.py created in {subfolder_path}.")
+
+    yaml_dataspec = {
+        "trajectory_dataset": {
+            "source": "Waymo",
+            "input_path": tfrecord_file_path,
+            "scenario_id": scenario_id,
+        }
+    }
+    with open(os.path.join(target_base_path, "waymo.yaml"), "w") as yaml_file:
+        yaml.dump(yaml_dataspec, yaml_file, default_flow_style=False)
+
+
 def generate_scenario(dataset_path: str, scenario_id: str):
     scenario_root = Path(__file__).parent
-    yaml_path = os.path.join(scenario_root, "motion_dataspec.yaml")
+    yaml_path = os.path.join(scenario_root, "waymo.yaml")
     edit_scenario_yaml(yaml_path, dataset_path, scenario_id)
     _build_single_scenario(True, False, str(scenario_root))
 
@@ -266,3 +298,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     display_scenario_info(parse_tfrecords(args.file))
+    export_scenario("scenarios/waymo", args.file, "4f30f060069bbeb9")
