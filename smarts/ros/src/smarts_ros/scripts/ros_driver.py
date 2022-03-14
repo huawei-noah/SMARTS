@@ -38,7 +38,7 @@ from smarts_ros.msg import (
     EntityState,
     SmartsReset,
 )
-from smarts_ros.srv import (  # type: ignore
+from smarts_ros.srv import (
     SmartsInfo,
     SmartsInfoRequest,
     SmartsInfoResponse,
