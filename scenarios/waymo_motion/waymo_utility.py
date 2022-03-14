@@ -262,7 +262,7 @@ if __name__ == "__main__":
         prog="waymo_scenario_gen.py",
         description="Extract map data from Waymo dataset, plot the scenarios and save their ids.",
     )
-    parser.add_argument("file/folder path", help="TFRecord file/folder path")
+    parser.add_argument("file", help="TFRecord file/folder path")
     args = parser.parse_args()
 
     display_scenario_info(parse_tfrecords(args.file))
