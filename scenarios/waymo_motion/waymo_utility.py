@@ -193,7 +193,7 @@ def display_scenario_info(scenarios_per_tfrecord):
             scenario = scenarios_per_tfrecord[tfrecord_path][scenario_id]
             scenario_data = [
                 scenario_id,
-                len(scenario.timestamps),
+                len(scenario.timestamps_seconds),
                 len(scenario.tracks),
                 len(scenario.dynamic_map_states),
                 len(scenario.objects_of_interest),
