@@ -1,7 +1,7 @@
 trajectory_dataset:
     name: us101_0820-0835
     source: NGSIM
-    
+
     # Specify absolute or relative path to where dataset resides on your filesystem
     # For example, you could use:
     # input_path: ./trajectories-0400-0415.txt
