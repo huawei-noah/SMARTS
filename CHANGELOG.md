@@ -14,6 +14,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `FormatObs` wrapper which converts SMARTS observations to gym-compliant RL-friendly vectorized observations and returns `StdObs`.
 - Added `Pose.as_position2d()` method which converts the pose to an [x,y] position array.
 - Added `EventConfiguration` dataclass in the agent interface to allow users to configure the conditions in which events are triggered
+- Added scenarios for "importing" the i80 and us101 NGSIM trajectory history datasets
 ### Changed
 - If more than one qualifying map file exists in a the `map_spec.source` folder, `get_road_map()` in `default_map_builder.py` will prefer to return the default files (`map.net.xml` or `map.xodr`) if they exist.
 - Moved the `smarts_ros` ROS node from the `examples` area into the `smarts.ros` module so that it can be distributed with SMARTS packages.
