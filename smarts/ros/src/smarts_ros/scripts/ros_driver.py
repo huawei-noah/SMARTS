@@ -29,8 +29,8 @@ from threading import Lock
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
-import rospy  # type: ignore
-from smarts_ros.msg import (  # type: ignore
+import rospy  
+from smarts_ros.msg import (  
     AgentReport,
     AgentSpec,
     AgentsStamped,
