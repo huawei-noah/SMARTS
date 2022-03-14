@@ -754,19 +754,17 @@ class SMARTS:
     def renderer(self):
         """The renderer singleton. On call, the sim will attempt to create it if it does not exist."""
         if not self._renderer:
+            from .utils.custom_exceptions import RendererException
+
             try:
                 from .renderer import Renderer
 
                 self._renderer = Renderer(self._sim_id)
             except ImportError as e:
-                self._log.warning(
-                    "Renderer import failed. Please install `[camera-obs]` or remove camera sensors from your agents."
-                )
-                raise e
+                raise RendererException.required_to("use camera observations")
             except Exception as e:
-                self._log.warning("Unable to create Renderer")
                 self._renderer = None
-                raise e
+                raise RendererException("Unable to create renderer.")
             if not self._renderer.is_setup:
                 if self._scenario:
                     self._renderer.setup(self._scenario)

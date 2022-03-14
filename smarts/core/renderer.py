@@ -207,7 +207,7 @@ class Renderer:
         """Remove the rendering buffer."""
         self._showbase_instance.graphicsEngine.removeWindow(buffer)
 
-    def setup(self, scenario: Scenario) -> None:
+    def setup(self, scenario: Scenario):
         """Initialize this renderer."""
         self._root_np = self._showbase_instance.setup_sim_root(self._simid)
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
