@@ -297,3 +297,4 @@ if __name__ == "__main__":
         plot(args.file, args.plot[0])
     if args.gen:
         generate_scenario(args.file, args.gen[0])
+    display_scenario_info(parse_tfrecords(args.file))
