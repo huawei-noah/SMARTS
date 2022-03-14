@@ -262,39 +262,7 @@ if __name__ == "__main__":
         prog="waymo_scenario_gen.py",
         description="Extract map data from Waymo dataset, plot the scenarios and save their ids.",
     )
-    parser.add_argument("file path", help="TFRecord file path")
-    parser.add_argument("--outdir", help="output directory for screenshots", type=str)
-    parser.add_argument(
-        "--get-hash",
-        help="get all scenario ids for the given TfRecord file",
-        is_flag=True,
-        default=False,
-    )
-    parser.add_argument(
-        "--gen-all",
-        help="generate all scenarios",
-        is_flag=True,
-        default=False,
-    )
-    parser.add_argument(
-        "--plot",
-        help="plot scenario map",
-        type=str,
-        nargs=1,
-        metavar="SCENARIO_ID",
-    )
-    parser.add_argument(
-        "--gen",
-        help="generate scenario",
-        type=str,
-        nargs=1,
-        metavar="SCENARIO_ID",
-    )
+    parser.add_argument("file/folder path", help="TFRecord file/folder path")
     args = parser.parse_args()
-    if args.outdir:
-        scenario_hashes = dump_plots(args.outdir, args.file)
-    if args.plot:
-        plot(args.file, args.plot[0])
-    if args.gen:
-        generate_scenario(args.file, args.gen[0])
+
     display_scenario_info(parse_tfrecords(args.file))
