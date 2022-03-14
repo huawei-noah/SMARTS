@@ -28,8 +28,8 @@ import json
 import os
 from unittest import TestCase
 
-import rospy  # type: ignore
-from smarts_ros.msg import (  # type: ignore
+import rospy
+from smarts_ros.msg import (
     AgentSpec,
     AgentsStamped,
     AgentTask,
