@@ -228,7 +228,7 @@ def export_scenario(
         os.makedirs(subfolder_path)
     except FileExistsError:
         print(f"Folder already exists at path {subfolder_path}")
-    scenario_py = os.path.join(target_base_path, "scenario.py")
+    scenario_py = os.path.join(subfolder_path, "scenario.py")
     if os.path.exists(scenario_py):
         print(f"scenario.py already exists in {subfolder_path}.")
     else:
@@ -245,7 +245,7 @@ def export_scenario(
             "scenario_id": scenario_id,
         }
     }
-    with open(os.path.join(target_base_path, "waymo.yaml"), "w") as yaml_file:
+    with open(os.path.join(subfolder_path, "waymo.yaml"), "w") as yaml_file:
         yaml.dump(yaml_dataspec, yaml_file, default_flow_style=False)
 
 
