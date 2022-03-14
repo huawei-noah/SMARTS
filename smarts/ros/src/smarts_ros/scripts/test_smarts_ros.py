@@ -36,7 +36,7 @@ from smarts_ros.msg import (
     EntitiesStamped,
     SmartsReset,
 )
-from smarts_ros.srv import SmartsInfo  # type: ignore
+from smarts_ros.srv import SmartsInfo
 
 from smarts.core.coordinates import fast_quaternion_from_angle
 
