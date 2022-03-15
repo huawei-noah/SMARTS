@@ -22,7 +22,7 @@ import logging
 import os
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Tuple, Optional, Sequence, Union
 
 import numpy as np
 
@@ -31,7 +31,7 @@ from smarts.core.plan import Mission, Plan
 
 from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
-from .colors import SceneColors
+from .colors import SceneColors, Colors
 from .coordinates import Dimensions, Heading, Pose
 from .sensors import (
     AccelerometerSensor,
@@ -249,7 +249,7 @@ class Vehicle:
     #     self._chassis.speed = speed
 
     @property
-    def vehicle_color(self) -> Optional[SceneColors]:
+    def vehicle_color(self) -> Union[SceneColors, Tuple, None]:
         """The color of this vehicle (generally used for rendering purposes.)"""
         self._assert_initialized()
         return self._color
@@ -265,7 +265,9 @@ class Vehicle:
             pose=self.pose,
             dimensions=self._chassis.dimensions,
             speed=self.speed,
+            # pytype: disable=attribute-error
             steering=self._chassis.steering,
+            # pytype: enable=attribute-error
             yaw_rate=self._chassis.yaw_rate,
             source="SMARTS",
             linear_velocity=self._chassis.velocity_vectors[0],
@@ -380,9 +382,7 @@ class Vehicle:
         else:
             start_pose = Pose.from_center(start.position, start.heading)
 
-        vehicle_color = (
-            SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value
-        )
+        vehicle_color = SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value     
 
         if agent_interface.vehicle_type == "sedan":
             urdf_name = "vehicle"
@@ -616,7 +616,9 @@ class Vehicle:
         This may disrupt physics simulation of the chassis physics body for a few steps after use.
         """
         self._warn_AckermannChassis_set_pose()
+        # pytype: disable=attribute-error
         self._chassis.set_pose(pose)
+        # pytype: enable=attribute-error
 
     def swap_chassis(self, chassis: Chassis):
         """Swap the current chassis with the given chassis. Apply the GCD of the previous chassis
@@ -631,11 +633,13 @@ class Vehicle:
         for sensor in [
             sensor
             for sensor in [
+                # pytype: disable=attribute-error
                 self._drivable_area_grid_map_sensor,
                 self._ogm_sensor,
                 self._rgb_sensor,
                 self._lidar_sensor,
                 self._driven_path_sensor,
+                # pytype: enable=attribute-error
             ]
             if sensor is not None
         ]:

@@ -57,7 +57,7 @@ class Start:
     def from_pose(cls, pose: Pose):
         """Convert to a starting location from a pose."""
         return cls(
-            position=pose.as_position2d(),
+            position=tuple(pose.as_position2d()),
             heading=pose.heading,
             from_front_bumper=False,
         )

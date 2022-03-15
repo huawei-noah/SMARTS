@@ -231,9 +231,9 @@ class BoxChassis(Chassis):
                 linearVelocity=linear_velocity,
                 angularVelocity=angular_velocity,
             )
-        self._set_pose(force_pose)
+        self.set_pose(force_pose)
 
-    def _set_pose(self, pose: Pose):
+    def set_pose(self, pose: Pose):
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self.bullet_id, position, orientation
