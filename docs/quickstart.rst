@@ -76,10 +76,10 @@ This is done by implementing the :class:`smarts.core.agent.Agent` interface:
 Here we are implementing a simple lane following agent using the BezierMotionPlanner. The `obs` argument to `ExampleAgent.act()` will contain the observations specified in the `AgentInterface` above, and it's expected that the return value of the `act` method matches the `ActionSpaceType` chosen as well. (This constraint is relaxed when adapters are introduced.)
 
 
-AgentSpec :class:`smarts.core.agent.AgentSpec`
+AgentSpec :class:`smarts.zoo.agent_spec.AgentSpec`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-These pieces are brought together by the :class:`smarts.core.agent.AgentSpec`:
+These pieces are brought together by the :class:`smarts.zoo.agent_spec.AgentSpec`:
 
 .. code-block:: python
 
@@ -90,7 +90,7 @@ These pieces are brought together by the :class:`smarts.core.agent.AgentSpec`:
        agent_builder=ExampleAgent
    )
 
-The :class:`smarts.core.agent.AgentSpec` acts as a container to store the information we need to build an agent, we can distribute this spec safely between process' to aid in parallelism and once we have it in the right spot, we can instantiate the :class:`smarts.core.agent.Agent` with
+The :class:`smarts.zoo.agent_spec.AgentSpec` acts as a container to store the information we need to build an agent, we can distribute this spec safely between process' to aid in parallelism and once we have it in the right spot, we can instantiate the :class:`smarts.core.agent.Agent` with
 
 .. code-block:: python
 
@@ -104,10 +104,11 @@ We can run this agent with "scenarios/loop", one of the scenarios packaged with 
 .. code-block:: python
 
    import gym
-   from smarts.core.agent import AgentSpec, Agent
+   from smarts.core.agent import Agent
    from smarts.core.agent_interface import AgentInterface, AgentType
    from smarts.core.bezier_motion_planner import BezierMotionPlanner
    from smarts.core.utils.episodes import episodes
+   from smarts.zoo.agent_spec import AgentSpec
 
    class ExampleAgent(Agent):
        def __init__(self, target_speed = 10):

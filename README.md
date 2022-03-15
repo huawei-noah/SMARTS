@@ -14,7 +14,8 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 import gym
 
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, Agent
+from smarts.core.agent import Agent
+from smarts.zoo.agent_spec import AgentSpec
 
 class SimpleAgent(Agent):
     def act(self, obs):
@@ -51,27 +52,30 @@ for _ in range(1000):
 ```
 
 # Contents
-1. [Documentation](#Documentation)
-1. [Setup](#Setup)
-    + [Installation](#Installation)
-    + [Running](#Running)
-1. [Examples](#Examples)
-    + [Usage](#Usage)
-    + [Reinforcement Learning](#Reinforcement-Learning)
-1. [CLI Tool](#CLI-Tool)  
-    + [CLI Usage](#CLI-Usage)
-    + [CLI Examples](#CLI-Examples)
-1. [Visualizing Observations](#Visualizing-Observations)
-1. [PyMARL and MALib](#PyMARL-and-MALib)
-1. [Containers](#Containers)
-    + [Docker](#Docker)
-    + [Singularity](#Singularity)
-1. [Troubleshooting](#Troubleshooting)
-    + [General](#General)
-    + [SUMO](#SUMO)
-1. [Bug Reports](#Bug-Reports)
-1. [Contributing](#Contributing)
-1. [Citing](#Citing)
+- [SMARTS](#smarts)
+- [Multi-agent experiment as simple as ...](#multi-agent-experiment-as-simple-as-)
+- [Contents](#contents)
+- [Documentation](#documentation)
+- [Setup](#setup)
+    - [Installation](#installation)
+    - [Running](#running)
+- [Examples](#examples)
+    - [Usage](#usage)
+    - [Reinforcement Learning](#reinforcement-learning)
+- [CLI Tool](#cli-tool)
+    - [CLI Usage](#cli-usage)
+    - [CLI Examples](#cli-examples)
+- [Visualizing Observations](#visualizing-observations)
+- [PyMARL and MALib](#pymarl-and-malib)
+- [Containers](#containers)
+    - [Docker](#docker)
+    - [Singularity](#singularity)
+- [Troubleshooting](#troubleshooting)
+    - [General](#general)
+    - [SUMO](#sumo)
+- [Bug Reports](#bug-reports)
+- [Contributing](#contributing)
+- [Citing](#citing)
 
 # Documentation
 Documentation is available at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest).

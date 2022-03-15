@@ -18,10 +18,11 @@ except Exception as e:
 
     raise RayException.required_to("regression_rllib.py")
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.env.custom_observations import lane_ttc_observation_adapter
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
+from smarts.zoo.agent_spec import AgentSpec
 
 from ..rllib.rllib_agent import TrainingModel
 
