@@ -32,9 +32,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AgentSpec:
-    from smarts.core.agent import Agent
-    from smarts.core.agent_interface import AgentInterface
-
     """A configuration that is used by SMARTS environments.
 
     .. code-block:: python
@@ -55,6 +52,9 @@ class AgentSpec:
 
     Refer to the Agent documentation.
     """
+
+    from smarts.core.agent import Agent
+    from smarts.core.agent_interface import AgentInterface
 
     # This is optional because sometimes when building re-useable specs,
     # you don't know the agent interface ahead of time.
