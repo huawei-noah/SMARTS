@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass, field
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from smarts.core.agent import AgentSpec
 from smarts.zoo.registry import make
@@ -34,7 +34,7 @@ class SocialAgent:
     is_boid_keep_alive: bool
     agent_locator: str
     policy_kwargs: Dict[str, Any] = field(default_factory=dict)
-    initial_speed: float = None
+    initial_speed: Optional[float] = None
 
     def to_agent_spec(self) -> AgentSpec:
         """Generate an agent spec."""
