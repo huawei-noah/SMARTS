@@ -84,14 +84,16 @@ setup(
             "pytest-notebook>=0.7.0",
             "pytest-xdist>=2.4.0",
         ],
-        "train": [
-            "opencv-python==4.1.2.30",
-            "opencv-python-headless==4.1.2.30",
-            "ray[rllib]==1.0.1.post1",
-            "tensorflow>=2.4.0",
+        "torch": [
             "torch==1.4.0",
             "torchvision==0.5.0",
         ],
+        "train": [
+            "opencv-python==4.1.2.30",
+            "opencv-python-headless==4.1.2.30",
+            "tensorflow>=2.4.0",
+        ],
+        "rllib": ["ray[rllib]==1.0.1.post1"],
         "waymo": ["waymo-open-dataset-tf-2-4-0"],
         "opendrive": ["opendrive2lanelet>=1.2.1"],
     },
