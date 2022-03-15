@@ -49,6 +49,7 @@ from smarts.core.utils.math import rotate_around_point
 class _SUMO_PARAMS_MODE(IntEnum):
     TITLE_CASE = 0
     KEEP_SNAKE_CASE = 1
+    SAME_AS_SUMO = 2
 
 
 def _pickle_hash(obj) -> int:
@@ -80,6 +81,8 @@ class _SumoParams(collections_abc.Mapping):
             pass
         elif mode == _SUMO_PARAMS_MODE.KEEP_SNAKE_CASE:
             func = keep_snake_case
+        elif mode == _SUMO_PARAMS_MODE.SAME_AS_SUMO:
+            func = lambda x: x
 
         # XXX: On rare occasions sumo doesn't respect their own conventions
         #      (e.x. junction model's impatience).
@@ -116,6 +119,15 @@ class JunctionModel(_SumoParams):
 
     def __init__(self, **kwargs):
         super().__init__("jm", whitelist=["impatience"], **kwargs)
+
+
+class SumoActorModelOverride(_SumoParams):
+    """Allows overriding vehicle configuration."""
+
+    def __init__(
+        self, prefix="", whitelist=[], mode=_SUMO_PARAMS_MODE.SAME_AS_SUMO, **kwargs
+    ):
+        super().__init__(prefix, whitelist, mode, **kwargs)
 
 
 @dataclass(frozen=True)
@@ -212,7 +224,13 @@ class TrafficActor(Actor):
     lane_changing_model: LaneChangingModel = field(
         default_factory=LaneChangingModel, hash=False
     )
+    """Configure sumo options for the lane changing model."""
     junction_model: JunctionModel = field(default_factory=JunctionModel, hash=False)
+    """Configure sumo options for the junction model."""
+    model_override: Optional[SumoActorModelOverride] = field(
+        default_factory=SumoActorModelOverride, hash=False
+    )
+    """Configure any sumo options."""
 
     def __hash__(self) -> int:
         return _pickle_hash(self)

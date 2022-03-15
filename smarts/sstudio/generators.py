@@ -216,6 +216,13 @@ class TrafficGenerator:
             for actor in {
                 actor for flow in traffic.flows for actor in flow.actors.keys()
             }:
+
+                model_override = (
+                    actor.model_override
+                    if isinstance(actor.model_override, types.SumoActorModelOverride)
+                    else {}
+                )
+
                 sigma = min(1, max(0, actor.imperfection.sample()))  # range [0,1]
                 min_gap = max(0, actor.min_gap.sample())  # range >= 0
                 doc.stag(
@@ -231,6 +238,7 @@ class TrafficGenerator:
                     maxSpeed=actor.max_speed,
                     **actor.lane_changing_model,
                     **actor.junction_model,
+                    **model_override,
                 )
 
             # Make sure all routes are "resolved" (e.g. `RandomRoute` are converted to
