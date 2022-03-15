@@ -108,9 +108,9 @@ def run(env: gym.Env, eval_env:gym.Env, config: Dict[str, Any]):
             use_sde=True,
         )
         model.learn(total_timesteps=config["train_steps"], callback=checkpoint_callback)
-        eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/',
-                                    log_path='./logs/', eval_freq=500,
-                                    deterministic=True, render=False)
+        # eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/',
+                                    # log_path='./logs/', eval_freq=500,
+                                    # deterministic=True, render=False)
 
     # print("Evaluate policy")
     # evaluate_policy(model, env, n_eval_episodes=config["eval_eps"], deterministic=True)
