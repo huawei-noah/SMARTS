@@ -342,19 +342,27 @@ def tfrecords_browser(tfrecord_path: str):
 
 def explore_tf_record(tfrecord: str, scenario_dict):
     scenario_ids = display_scenarios_in_tfrecord(tfrecord, scenario_dict)
-    print("\n")
-    print(
-        "You can use the following commands to further explore these scenarios:\n"
-        "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid.\n"
-        f"2. `export <index> <target_base_path>' --> Export the scenario at this index of the table to a target path. The index should be an integer between 1 and {len(scenario_ids)} and path should be valid.\n"
-        "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path. Path should be valid.\n"
-        f"4. `preview <index>` --> Plot and display the map of the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
-        f"5. `select <index>` --> Select and explore further the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
-        "6. `go back` --> Go back to the tfrecords browser\n"
-        "7. `exit` --> Exit the program\n"
-    )
-    print("\n")
-    raw_input = input("Command: ").lower()
+    stop_exploring = False
+    while not stop_exploring:
+        print("\n")
+        print(
+            "You can use the following commands to further explore these scenarios:\n"
+            "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid.\n"
+            f"2. `export <index> <target_base_path>' --> Export the scenario at this index of the table to a target path. The index should be an integer between 1 and {len(scenario_ids)} and path should be valid.\n"
+            "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path. Path should be valid.\n"
+            f"4. `preview <index>` --> Plot and display the map of the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
+            f"5. `select <index>` --> Select and explore further the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
+            "6. `go back` --> Go back to the tfrecords browser\n"
+            "7. `exit` --> Exit the program\n"
+        )
+        print("\n")
+        raw_input = input("Command: ").lower()
+        user_input = raw_input.strip()
+        if user_input == "go back":
+            stop_exploring = True
+        elif user_input == "exit":
+            return True
+
     return False
 
 
