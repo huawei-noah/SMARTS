@@ -237,9 +237,7 @@ def display_scenarios_in_tfrecord(tfrecord_path, scenario_dict) -> List[str]:
         scenario_counter += 1
     print("                                               ")
     print("-----------------------------------------------")
-    print(
-        f"{len(scenario_dict)} scenarios in {tfrecord_path}:\n"
-    )
+    print(f"{len(scenario_dict)} scenarios in {tfrecord_path}:\n")
     print(
         tabulate(
             scenario_data_lst,
@@ -256,9 +254,7 @@ def display_scenarios_in_tfrecord(tfrecord_path, scenario_dict) -> List[str]:
     return scenario_ids
 
 
-def export_scenario(
-    target_base_path: str, tfrecord_file_path: str, scenario_id
-):
+def export_scenario(target_base_path: str, tfrecord_file_path: str, scenario_id):
     subfolder_path = os.path.join(target_base_path, scenario_id)
     try:
         os.makedirs(subfolder_path)
@@ -294,27 +290,39 @@ def tfrecords_browser(tfrecord_path: str):
         tf_counter += 1
     stop_browser = False
     while not stop_browser:
+        print("\n")
         print("-----------------------------------------------")
         print("Waymo tfRecords:\n")
-        print(tabulate(tf_records, headers=["Index", "TfRecords"],))
+        print(
+            tabulate(
+                tf_records,
+                headers=["Index", "TfRecords"],
+            )
+        )
         print("\n")
-        print("You can use the following commands to further explore these datasets:\n"
-              "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
-              f"2. `explore <index>` --> Explore the tfRecord file at this index of the table. The index should be an integer between 1 and {tf_counter}\n"
-              "3. `exit` --> Exit the program\n")
-
+        print(
+            "You can use the following commands to further explore these datasets:\n"
+            "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
+            f"2. `explore <index>` --> Explore the tfRecord file at this index of the table. The index should be an integer between 1 and {tf_counter}\n"
+            "3. `exit` --> Exit the program\n"
+        )
+        print("\n")
         raw_input = input("Command: ").lower()
         user_input = raw_input.strip()
         if user_input == "display all":
             for tf_record in tf_records:
-                display_scenarios_in_tfrecord(tf_record, scenarios_per_tfrecords[tf_record])
+                display_scenarios_in_tfrecord(
+                    tf_record, scenarios_per_tfrecords[tf_record]
+                )
         elif user_input == "exit":
             stop_browser = True
             print("Exiting Browser")
         elif "explore" in user_input:
             input_lst = user_input.split()
             if len(input_lst) != 2:
-                print("Please enter only one number as an index for the `explore` command")
+                print(
+                    "Please enter only one number as an index for the `explore` command"
+                )
                 continue
             try:
                 idx = int(input_lst[1])
@@ -322,7 +330,9 @@ def tfrecords_browser(tfrecord_path: str):
                     print(f"Please enter an index between 1 and {tf_counter}.")
                     continue
                 tf_path = tf_records[idx][1]
-                stop_browser = explore_tf_record(tf_path, scenarios_per_tfrecords[tf_path])
+                stop_browser = explore_tf_record(
+                    tf_path, scenarios_per_tfrecords[tf_path]
+                )
             except Exception:
                 print("Please input an integer for the `explore` command")
                 continue
@@ -333,15 +343,17 @@ def tfrecords_browser(tfrecord_path: str):
 def explore_tf_record(tfrecord: str, scenario_dict):
     scenario_ids = display_scenarios_in_tfrecord(tfrecord, scenario_dict)
     print("\n")
-    print("You can use the following commands to further explore these scenarios:\n"
-          "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid.\n"
-          f"2. `export <index> <target_base_path>' --> Export the scenario at this index of the table to a target path. The index should be an integer between 1 and {len(scenario_ids)} and path should be valid.\n"
-          "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path. Path should be valid.\n"
-          f"4. `preview <index>` --> Plot and display the map of the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
-          f"5. `select <index>` --> Select and explore further the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
-          "6. `go back` --> Go back to the tfrecords browser\n"
-          "7. `exit` --> Exit the program\n")
-
+    print(
+        "You can use the following commands to further explore these scenarios:\n"
+        "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid.\n"
+        f"2. `export <index> <target_base_path>' --> Export the scenario at this index of the table to a target path. The index should be an integer between 1 and {len(scenario_ids)} and path should be valid.\n"
+        "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path. Path should be valid.\n"
+        f"4. `preview <index>` --> Plot and display the map of the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
+        f"5. `select <index>` --> Select and explore further the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
+        "6. `go back` --> Go back to the tfrecords browser\n"
+        "7. `exit` --> Exit the program\n"
+    )
+    print("\n")
     raw_input = input("Command: ").lower()
     return False
 
