@@ -434,4 +434,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # display_scenario_info(parse_tfrecords(args.file))
-    export_scenario("scenarios/waymo_motion", args.file, "4f30f060069bbeb9")
+    # export_scenario("scenarios/waymo_motion", args.file, "4f30f060069bbeb9")
+    tfrecords_browser(args.file)
