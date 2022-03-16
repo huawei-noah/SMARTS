@@ -146,15 +146,9 @@ def plot_scenario(scenario):
     plt.show()
 
 
-def dump_plots(out_dir: str, path: str) -> List[str]:
-    scenarios = []
-    dataset = read_tfrecord_file(path)
-    for record in dataset:
-        scenario = scenario_pb2.Scenario()
-        scenario.ParseFromString(bytearray(record))
-
-        scenario_id = scenario.scenario_id
-        scenarios.append(scenario_id)
+def dump_plots(out_dir: str, scenario_dict):
+    for scenario_id in scenario_dict:
+        scenario = scenario_dict[scenario_id]
         map_features = get_map_features_for_scenario(scenario)
 
         fig, ax = plt.subplots()
@@ -166,7 +160,6 @@ def dump_plots(out_dir: str, path: str) -> List[str]:
         w = 1000
         h = 1000
         mng.resize(w, h)
-        # plt.show()
 
         filename = f"scenario-{scenario_id}.png"
         out_path = os.path.join(out_dir, filename)
@@ -177,7 +170,7 @@ def dump_plots(out_dir: str, path: str) -> List[str]:
         print(f"Saving {out_path}")
         fig.savefig(out_path, dpi=100)
         plt.close("all")
-    return scenarios
+    print(f"All map images saved at {out_dir}")
 
 
 def get_scenario_dict(tfrecord_file: str) -> List[str]:
@@ -399,7 +392,8 @@ def explore_tf_record(tfrecord: str, scenario_dict):
                 )
                 continue
             # Dump all the scenario plots of this tfrecord file to this target base path
-            dump_plots(target_base_path, tfrecord)
+            print(f"Plotting all the scenario in {tfrecord} tfrecord file")
+            dump_plots(target_base_path, scenario_dict)
 
         elif re.compile("^preview [\d]+$").match(user_input):
             input_lst = user_input.split()
