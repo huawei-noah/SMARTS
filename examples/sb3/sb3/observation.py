@@ -1,7 +1,7 @@
+from collections import deque
+
 import gym
 import numpy as np
-
-from collections import deque
 
 
 class Observation(gym.Wrapper):
@@ -9,7 +9,9 @@ class Observation(gym.Wrapper):
         super().__init__(env)
         self._num_stack = num_stack
         self._frames = deque(maxlen=self._num_stack)
-        self.observation_space = gym.spaces.Box(low=0, high=255, shape=(256, 256, 3), dtype=np.uint8)
+        self.observation_space = gym.spaces.Box(
+            low=0, high=255, shape=(256, 256, 3), dtype=np.uint8
+        )
 
     def _stack_obs(self, obs: np.ndarray):
         self._frames.appendleft(obs)
@@ -24,7 +26,7 @@ class Observation(gym.Wrapper):
             actions (Any): Agent's action.
 
         Returns:
-            Tuple[ np.ndarray, float, bool, Dict[str, Any] ]: 
+            Tuple[ np.ndarray, float, bool, Dict[str, Any] ]:
                 Observation, reward, done, info, of the agent.
         """
         obs, rewards, dones, infos = self.env.step(action)
@@ -52,7 +54,7 @@ class Observation(gym.Wrapper):
 
 def normalize_img(img: np.ndarray) -> np.ndarray:
     from smarts.core import colors as smarts_colors
-    
+
     # Repaint self
     clr = (122, 140, 153)
     repainted = img.copy()
@@ -62,15 +64,15 @@ def normalize_img(img: np.ndarray) -> np.ndarray:
 
     # Convert to grayscale
     R, G, B = repainted[:, :, 0], repainted[:, :, 1], repainted[:, :, 2]
-    gray = 0.2989 * R + 0.587 * G + 0.114 * B # from
+    gray = 0.2989 * R + 0.587 * G + 0.114 * B
 
     # Expand dims
     expanded = np.expand_dims(gray, -1)
 
     return np.uint8(expanded)
 
- 
-def plotter(obs:np.ndarray, rgb_gray=1, name:str="Graph"):
+
+def plotter(obs: np.ndarray, rgb_gray=1, name: str = "Graph"):
     """Plot images
 
     Args:
@@ -81,14 +83,14 @@ def plotter(obs:np.ndarray, rgb_gray=1, name:str="Graph"):
     import matplotlib.pyplot as plt
 
     rows = 1
-    columns = obs.shape[2]//rgb_gray   
+    columns = obs.shape[2] // rgb_gray
     # cmap = 'gray' if rgb_gray == 1 else 'viridis'
     fig, axs = plt.subplots(nrows=rows, ncols=columns, squeeze=False)
-    fig.suptitle('Observation')
+    fig.suptitle("Observation")
 
     for row in range(0, rows):
         for col in range(0, columns):
-            img = obs[:,:,col*rgb_gray:col*rgb_gray+rgb_gray]
+            img = obs[:, :, col * rgb_gray : col * rgb_gray + rgb_gray]
             axs[row, col].imshow(img)
             axs[row, col].set_title(f"{name}")
     plt.show()

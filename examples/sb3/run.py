@@ -16,11 +16,10 @@ from sb3 import action as sb3_action
 from sb3 import observation as sb3_observation
 from sb3 import reward as sb3_reward
 from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMonitor
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 yaml = YAML(typ="safe")
@@ -51,18 +50,21 @@ def main(args: argparse.Namespace):
             f'Expected \'train\' or \'evaluate\', but got {config_env["mode"]}.'
         )
     logdir.mkdir(parents=True, exist_ok=True)
-    config_env["logdir"]=logdir
+    config_env["logdir"] = logdir
     print("Logdir:", logdir)
 
     # Make training and evaluation environments.
     env = make_env(config_env)
     eval_env = make_env(config_env)
 
+    # env.sample
+
     # Run training or evaluation.
     run(env=env, eval_env=eval_env, config=config_env)
     env.close()
 
-def make_env(config: Dict[str,Any])->gym.Env:
+
+def make_env(config: Dict[str, Any]) -> gym.Env:
     # Create environment
     env = gym.make(
         "smarts.env:intersection-v0",
@@ -76,13 +78,32 @@ def make_env(config: Dict[str,Any])->gym.Env:
     env = sb3_reward.Reward(env=env)
     env = sb3_observation.Observation(env=env, num_stack=3)
 
-    # Check our custom environment compatibility with SB3
-    env = Monitor(env=env, filename=str(config["logdir"]))
+    # Check custom environment
     check_env(env)
+
+    #  Wrap env with SB3 wrappers
+    env = DummyVecEnv([lambda: env])
+    env = VecFrameStack(venv=env, n_stack=5, channels_order="last")
+    env = VecMonitor(venv=env, filename=str(config["logdir"]))
+
+    # print(env.stackedobs,"dddddddddddddddddddddddddddddddddddd")
 
     return env
 
-def run(env: gym.Env, eval_env:gym.Env, config: Dict[str, Any]):
+
+# cnn policy
+# self.cnn = nn.Sequential(
+#     nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
+#     nn.ReLU(),
+#     nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+#     nn.ReLU(),
+#     nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+#     nn.ReLU(),
+#     nn.Flatten(),
+# )
+
+
+def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
 
     checkpoint_callback = CheckpointCallback(
         save_freq=config["checkpoint_freq"],
@@ -109,8 +130,8 @@ def run(env: gym.Env, eval_env:gym.Env, config: Dict[str, Any]):
         )
         model.learn(total_timesteps=config["train_steps"], callback=checkpoint_callback)
         # eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/',
-                                    # log_path='./logs/', eval_freq=500,
-                                    # deterministic=True, render=False)
+        # log_path='./logs/', eval_freq=500,
+        # deterministic=True, render=False)
 
     # print("Evaluate policy")
     # evaluate_policy(model, env, n_eval_episodes=config["eval_eps"], deterministic=True)
