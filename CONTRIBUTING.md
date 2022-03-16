@@ -109,7 +109,7 @@ Things inevitably become slow, when this happens, Flame Graph is a great tool to
 ```bash
 # You will need python-flamegraph to generate flamegraphs
 pip install git+https://github.com/asokoloski/python-flamegraph.git
-flamegraph_dir = ./utils/third_party/tools
+flamegraph_dir=./utils/third_party/tools
 mkdir flamegraph_dir
 curl https://raw.githubusercontent.com/brendangregg/FlameGraph/master/flamegraph.pl > ./utils/third_party/tools/flamegraph.pl
 chmod 777 {$flamegraph_dir}/flamegraph.pl
