@@ -309,7 +309,6 @@ def tfrecords_browser(tfrecord_path: str):
                 )
         elif user_input == "exit":
             stop_browser = True
-            print("Exiting the Browser")
 
         elif re.compile("^explore [\d]+$").match(user_input):
             input_lst = user_input.split()
@@ -327,6 +326,8 @@ def tfrecords_browser(tfrecord_path: str):
             )
         else:
             print("Please enter a valid command. See command formats above")
+
+    print("Exiting the Browser")
 
 
 def explore_tf_record(tfrecord: str, scenario_dict):
