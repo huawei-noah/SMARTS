@@ -76,17 +76,24 @@ def make_env(config: Dict[str, Any]) -> gym.Env:
     # Wrap env with action, reward, and observation wrapper
     env = sb3_action.Action(env=env)
     env = sb3_reward.Reward(env=env)
-    env = sb3_observation.Observation(env=env, num_stack=3)
+    env = sb3_observation.Observation(env=env, num_stack=1)
 
     # Check custom environment
     check_env(env)
 
     #  Wrap env with SB3 wrappers
     env = DummyVecEnv([lambda: env])
-    env = VecFrameStack(venv=env, n_stack=5, channels_order="last")
+    env = VecFrameStack(venv=env, n_stack=4, channels_order="last")
     env = VecMonitor(venv=env, filename=str(config["logdir"]))
 
-    # print(env.stackedobs,"dddddddddddddddddddddddddddddddddddd")
+    print(env.observation_space.shape, "<<<----- observation_space")
+    fd = env.reset()
+    from sb3.observation import plotter
+    plotter(fd,1)
+
+
+    import sys
+    sys.exit(3)
 
     return env
 
