@@ -25,6 +25,7 @@ import argparse
 import os
 import shutil
 import yaml
+import re
 from typing import Dict, List, Tuple, Union
 from tabulate import tabulate
 from pathlib import Path
@@ -43,7 +44,6 @@ def convert_polyline(polyline) -> Tuple[List[float], List[float]]:
 
 
 def get_map_features_for_scenario(scenario) -> Dict:
-    lanes = []
     map_features = {
         "lane": [],
         "road_line": [],
@@ -56,21 +56,10 @@ def get_map_features_for_scenario(scenario) -> Dict:
         map_feature = scenario.map_features[i]
         key = map_feature.WhichOneof("feature_data")
         if key is not None:
-            map_features[key].append(getattr(map_feature, key))
-            if key == "lane":
-                lanes.append((getattr(map_feature, key), map_feature.id))
-    # tls_lanes = get_traffic_light_lanes(scenario)
-    return map_features, lanes
-
-
-def edit_scenario_yaml(yaml_path: str, file_path: str, scenario_id: str):
-    with open(yaml_path) as f:
-        data_spec = yaml.safe_load(f)
-    data_spec["trajectory_dataset"]["input_path"] = file_path
-    data_spec["trajectory_dataset"]["scenario_id"] = scenario_id
-
-    with open(yaml_path, "w") as f:
-        yaml.dump(data_spec, f, default_flow_style=False)
+            map_features[key].append(
+                getattr(map_feature, key)
+            )  # tls_lanes = get_traffic_light_lanes(scenario)
+    return map_features
 
 
 def get_traffic_light_lanes(scenario) -> List[str]:
@@ -84,10 +73,9 @@ def get_traffic_light_lanes(scenario) -> List[str]:
     return tls_lanes
 
 
-def plot_map(map_features):
+def plot_map_features(map_features):
     lanes = map_features["lane"][:1]
     lane_points = [convert_polyline(lane.polyline) for lane in lanes]
-    # lanes = list(filter(lambda lane: max(lane[1]) > 8150, lanes))
     for xs, ys in lane_points:
         plt.plot(xs, ys, linestyle=":", color="gray")
     for road_line in map_features["road_line"]:
@@ -99,12 +87,12 @@ def plot_map(map_features):
     for road_edge in map_features["road_edge"]:
         xs, ys = convert_polyline(road_edge.polyline)
         plt.plot(xs, ys, "k-")
-    # for crosswalk in map_features["crosswalk"]:
-    #     xs, ys = convert_polyline(crosswalk.polygon)
-    #     plt.plot(xs, ys, 'k--')
-    # for speed_bump in map_features["speed_bump"]:
-    #     xs, ys = convert_polyline(speed_bump.polygon)
-    #     plt.plot(xs, ys, 'k:')
+    for crosswalk in map_features["crosswalk"]:
+        xs, ys = convert_polyline(crosswalk.polygon)
+        plt.plot(xs, ys, "k--")
+    for speed_bump in map_features["speed_bump"]:
+        xs, ys = convert_polyline(speed_bump.polygon)
+        plt.plot(xs, ys, "k:")
     for stop_sign in map_features["stop_sign"]:
         plt.scatter(
             stop_sign.position.x, stop_sign.position.y, marker="o", c="#ff0000", alpha=1
@@ -114,46 +102,29 @@ def plot_map(map_features):
 def plot_lane(lane):
     xs, ys = convert_polyline(lane.polyline)
     plt.plot(xs, ys, linestyle="-", c="gray")
-    # plt.scatter(xs, ys, s=12, c="gray")
-    # plt.scatter(xs[0], ys[0], s=12, c="red")
 
 
 def plot_road_line(road_line):
     xs, ys = convert_polyline(road_line.polyline)
     plt.plot(xs, ys, "y-")
     plt.scatter(xs, ys, s=12, c="y")
-    # plt.scatter(xs[0], ys[0], s=12, c="red")
 
 
 def plot_road_edge(road_edge):
     xs, ys = convert_polyline(road_edge.polyline)
     plt.plot(xs, ys, "k-")
     plt.scatter(xs, ys, s=12, c="black")
-    # plt.scatter(xs[0], ys[0], s=12, c="red")
 
 
-def plot(path: str, scenario_id: str):
-    # Find scenario from path with given scenario_id
-    dataset = read_tfrecord_file(path)
-    scenario = None
-    for record in dataset:
-        parsed_scenario = scenario_pb2.Scenario()
-        parsed_scenario.ParseFromString(bytearray(record))
-        if parsed_scenario.scenario_id == scenario_id:
-            scenario = parsed_scenario
-            break
-    if scenario is None:
-        errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
-        raise ValueError(errmsg)
-
-    # Get data
+def plot_scenario(scenario):
+    # Get map feature data from map proto
     map_features = get_map_features_for_scenario(scenario)
 
     # Plot map
     fig, ax = plt.subplots()
-    ax.set_title(f"Scenario {scenario_id}")
+    ax.set_title(f"Scenario {scenario.scenario_id}")
     ax.axis("equal")
-    plot_map(map_features)
+    plot_map_features(map_features)
 
     mng = plt.get_current_fig_manager()
     mng.resize(1000, 1000)
@@ -174,7 +145,7 @@ def dump_plots(out_dir: str, path: str) -> List[str]:
 
         fig, ax = plt.subplots()
         ax.set_title(f"Scenario {scenario_id}")
-        plot_map(map_features)
+        plot_map_features(map_features)
         mng = plt.get_current_fig_manager()
         # mng.resize(*mng.window.maxsize())
         w = 1000
@@ -254,12 +225,18 @@ def display_scenarios_in_tfrecord(tfrecord_path, scenario_dict) -> List[str]:
     return scenario_ids
 
 
-def export_scenario(target_base_path: str, tfrecord_file_path: str, scenario_id):
+def export_scenario(
+    target_base_path: str, tfrecord_file_path: str, scenario_id
+) -> None:
     subfolder_path = os.path.join(target_base_path, scenario_id)
     try:
         os.makedirs(subfolder_path)
+        print(f"Created folder {scenario_id} at path {target_base_path}")
     except FileExistsError:
         print(f"Folder already exists at path {subfolder_path}")
+    except (OSError, RuntimeError):
+        print(f"{target_base_path} is an invalid path. Please enter a valid path")
+        return
     scenario_py = os.path.join(subfolder_path, "scenario.py")
     if os.path.exists(scenario_py):
         print(f"scenario.py already exists in {subfolder_path}.")
@@ -279,6 +256,7 @@ def export_scenario(target_base_path: str, tfrecord_file_path: str, scenario_id)
     }
     with open(os.path.join(subfolder_path, "waymo.yaml"), "w") as yaml_file:
         yaml.dump(yaml_dataspec, yaml_file, default_flow_style=False)
+        print(f"waymo.yaml created in {subfolder_path}")
 
 
 def tfrecords_browser(tfrecord_path: str):
@@ -347,7 +325,7 @@ def explore_tf_record(tfrecord: str, scenario_dict):
         print("\n")
         print(
             "You can use the following commands to further explore these scenarios:\n"
-            "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid.\n"
+            "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid directory path.\n"
             f"2. `export <index> <target_base_path>' --> Export the scenario at this index of the table to a target path. The index should be an integer between 1 and {len(scenario_ids)} and path should be valid.\n"
             "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path. Path should be valid.\n"
             f"4. `preview <index>` --> Plot and display the map of the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
@@ -358,11 +336,91 @@ def explore_tf_record(tfrecord: str, scenario_dict):
         print("\n")
         raw_input = input("Command: ").lower()
         user_input = raw_input.strip()
-        if user_input == "go back":
+        if re.compile("^export all [^\n ]+$").match(user_input):
+            target_base_path = user_input.split()[2]
+            # Check if target base path is valid
+            try:
+                Path(target_base_path).resolve()
+            except (OSError, RuntimeError):
+                print(
+                    f"{target_base_path} is an invalid path. Please enter a valid directory path"
+                )
+                continue
+            # Try exporting all the scenarios
+            for id in scenario_ids:
+                export_scenario(target_base_path, tfrecord, id)
+
+        elif re.compile("^export [\d]+ [^\n ]+$").match(user_input):
+            input_lst = user_input.split()
+
+            # Check if index passed is valid
+            scenario_idx = int(input_lst[1])
+            if not (1 <= scenario_idx <= len(scenario_ids)):
+                print(f"Please enter an index between 1 and {len(scenario_ids)}.")
+                continue
+
+            # Check if target base path is valid
+            target_base_path = input_lst[2]
+            try:
+                Path(target_base_path).resolve()
+            except (OSError, RuntimeError):
+                print(
+                    f"{target_base_path} is an invalid path. Please enter a valid directory path"
+                )
+                continue
+            # Try exporting the scenario
+            export_scenario(target_base_path, tfrecord, scenario_ids[scenario_idx])
+
+        elif re.compile("^preview all [^\n ]+$").match(user_input):
+            input_lst = user_input.split()
+
+            # Check if target base path is valid
+            target_base_path = input_lst[2]
+            try:
+                Path(target_base_path).resolve()
+            except (OSError, RuntimeError):
+                print(
+                    f"{target_base_path} is an invalid path. Please enter a valid path"
+                )
+                continue
+            # Dump all the scenario plots of this tfrecord file to this target base path
+            dump_plots(target_base_path, tfrecord)
+
+        elif re.compile("^preview [\d]+$").match(user_input):
+            input_lst = user_input.split()
+
+            # Check if index passed is valid
+            scenario_idx = int(input_lst[1])
+            if not (1 <= scenario_idx <= len(scenario_ids)):
+                print(f"Please enter an index between 1 and {len(scenario_ids)}.")
+                continue
+
+            # Dump all the scenario plots of this tfrecord file to this target base path
+            scenario_id = scenario_ids[scenario_idx]
+            plot_scenario(scenario_dict[scenario_id])
+
+        elif re.compile("^select [\d]+$").match(user_input):
+            input_lst = user_input.split()
+
+            # Check if index passed is valid
+            scenario_idx = int(input_lst[1])
+            if not (1 <= scenario_idx <= len(scenario_ids)):
+                print(f"Please enter an index between 1 and {len(scenario_ids)}.")
+                continue
+
+            # Explore further the scenario at this index
+            scenario_id = scenario_ids[scenario_idx]
+            # stop_exploring = explore_scenario(scenario_dict[scenario_id])
+
+        elif user_input == "go back":
             stop_exploring = True
+            print("Going back to the tfRecords browser")
+            continue
+
         elif user_input == "exit":
             return True
-
+        else:
+            print("Please enter a valid command. See command formats above")
     return False
 
 
