@@ -57,6 +57,7 @@ class Agent:
 
 
 def deprecated_agent_spec(*args, **kwargs):
+    """Deprecated version of AgentSpec, see smarts.zoo.agent_spec"""
     from smarts.zoo.agent_spec import AgentSpec as AgentSpecAlias
 
     warnings.warn(
