@@ -28,7 +28,6 @@ import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
-from smarts.core.renderer import Renderer
 
 from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
@@ -47,6 +46,7 @@ from .sensors import (
     ViaSensor,
     WaypointsSensor,
 )
+from .utils.custom_exceptions import RendererException
 from .utils.math import rotate_around_point
 
 
@@ -57,17 +57,17 @@ class VehicleState:
     vehicle_id: str
     pose: Pose
     dimensions: Dimensions
-    vehicle_type: str = None
-    vehicle_config_type: str = None  # key into VEHICLE_CONFIGS
+    vehicle_type: Optional[str] = None
+    vehicle_config_type: Optional[str] = None  # key into VEHICLE_CONFIGS
     updated: bool = False
-    speed: float = 0
-    steering: float = None
-    yaw_rate: float = None
-    source: str = None  # the source of truth for this vehicle state
-    linear_velocity: np.ndarray = None
-    angular_velocity: np.ndarray = None
-    linear_acceleration: np.ndarray = None
-    angular_acceleration: np.ndarray = None
+    speed: float = 0.0
+    steering: Optional[float] = None
+    yaw_rate: Optional[float] = None
+    source: Optional[str] = None  # the source of truth for this vehicle state
+    linear_velocity: Optional[np.ndarray] = None
+    angular_velocity: Optional[np.ndarray] = None
+    linear_acceleration: Optional[np.ndarray] = None
+    angular_acceleration: Optional[np.ndarray] = None
     _privileged: bool = False
 
     def set_privileged(self):
@@ -139,17 +139,6 @@ VEHICLE_CONFIGS = {
     ),
 }
 
-# XXX: This is the wrong place for this exception.
-class RendererException(Exception):
-    """An exception raised if a renderer is required but not available."""
-
-    @classmethod
-    def required_to(cls, thing: str) -> "RendererException":
-        """Generate a `RenderException` requiring a render to do `thing`."""
-        return cls(
-            f"""A renderer is required to {thing}. You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. Install them first using the command `pip install -e .[camera-obs]` at the source directory."""
-        )
-
 
 class Vehicle:
     """Represents a single vehicle."""
@@ -159,7 +148,7 @@ class Vehicle:
         id: str,
         chassis: Chassis,
         vehicle_config_type: str = "passenger",
-        color=None,
+        color: Optional[SceneColors] = None,
         action_space=None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -249,8 +238,9 @@ class Vehicle:
         return self._sensors
 
     @property
-    def renderer(self) -> Optional[Renderer]:
+    def renderer(self):  # type: ignore
         """The renderer this vehicle is rendered to."""
+        # Returns: Optional[Renderer]
         return self._renderer
 
     # # TODO: See issue #898 This is a currently a no-op
@@ -259,7 +249,7 @@ class Vehicle:
     #     self._chassis.speed = speed
 
     @property
-    def vehicle_color(self) -> SceneColors:
+    def vehicle_color(self) -> Optional[SceneColors]:
         """The color of this vehicle (generally used for rendering purposes.)"""
         self._assert_initialized()
         return self._color

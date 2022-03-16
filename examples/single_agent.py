@@ -10,6 +10,7 @@ from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
 from smarts.env import build_scenario
 from smarts.env.wrappers.single_agent import SingleAgent
+from smarts.sstudio import build_scenario
 
 logging.basicConfig(level=logging.INFO)
 
