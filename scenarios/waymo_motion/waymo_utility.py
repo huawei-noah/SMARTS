@@ -81,7 +81,7 @@ def plot_map_features(map_features) -> List[Line2D]:
     # lanes = list(filter(lambda lane: max(lane[1]) > 8150, lanes))
     for xs, ys in lane_points:
         plt.plot(xs, ys, linestyle=":", color="gray")
-    handles.append(Line2D([0], [0], linestyle=":", color="gray", label='Lane Polyline'))
+    handles.append(Line2D([0], [0], linestyle=":", color="gray", label="Lane Polyline"))
 
     for road_line in map_features["road_line"]:
         xs, ys = convert_polyline(road_line.polyline)
@@ -89,29 +89,43 @@ def plot_map_features(map_features) -> List[Line2D]:
             plt.plot(xs, ys, "y--")
         else:
             plt.plot(xs, ys, "y-")
-    handles.append(Line2D([0], [0], linestyle="-", color="yellow", label='Single Road Line'))
-    handles.append(Line2D([0], [0], linestyle="--", color="yellow", label='Double Road Line'))
+    handles.append(
+        Line2D([0], [0], linestyle="-", color="yellow", label="Single Road Line")
+    )
+    handles.append(
+        Line2D([0], [0], linestyle="--", color="yellow", label="Double Road Line")
+    )
 
     for road_edge in map_features["road_edge"]:
         xs, ys = convert_polyline(road_edge.polyline)
         plt.plot(xs, ys, "k-")
-    handles.append(Line2D([0], [0], linestyle="-", color="black", label='Road Edge'))
+    handles.append(Line2D([0], [0], linestyle="-", color="black", label="Road Edge"))
 
     for crosswalk in map_features["crosswalk"]:
         xs, ys = convert_polyline(crosswalk.polygon)
-        plt.plot(xs, ys, 'k--')
-    handles.append(Line2D([0], [0], linestyle="--", color="black", label='Crosswalk'))
+        plt.plot(xs, ys, "k--")
+    handles.append(Line2D([0], [0], linestyle="--", color="black", label="Crosswalk"))
 
     for speed_bump in map_features["speed_bump"]:
         xs, ys = convert_polyline(speed_bump.polygon)
-        plt.plot(xs, ys, 'k:')
-    handles.append(Line2D([0], [0], linestyle=":", color="black", label='Speed Bump'))
+        plt.plot(xs, ys, "k:")
+    handles.append(Line2D([0], [0], linestyle=":", color="black", label="Speed Bump"))
 
     for stop_sign in map_features["stop_sign"]:
         plt.scatter(
             stop_sign.position.x, stop_sign.position.y, marker="o", c="#ff0000", alpha=1
         )
-    handles.append(Line2D([], [], color='red', marker='o', linestyle='None', markersize=5, label='Stop Sign'))
+    handles.append(
+        Line2D(
+            [],
+            [],
+            color="red",
+            marker="o",
+            linestyle="None",
+            markersize=5,
+            label="Stop Sign",
+        )
+    )
     return handles
 
 
@@ -282,7 +296,7 @@ def tfrecords_browser(tfrecord_path: str):
         print(
             "You can use the following commands to further explore these datasets:\n"
             "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
-            f"2. `explore <index>` --> Explore the tfRecord file at this index of the table. The index should be an integer between 1 and {tf_counter}\n"
+            f"2. `explore <index>` --> Explore the tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
             "3. `exit` --> Exit the program\n"
         )
         print("\n")
@@ -291,30 +305,26 @@ def tfrecords_browser(tfrecord_path: str):
         if user_input == "display all":
             for tf_record in tf_records:
                 display_scenarios_in_tfrecord(
-                    tf_record, scenarios_per_tfrecords[tf_record]
+                    tf_record[1], scenarios_per_tfrecords[tf_record[1]]
                 )
         elif user_input == "exit":
             stop_browser = True
-            print("Exiting Browser")
-        elif "explore" in user_input:
+            print("Exiting the Browser")
+
+        elif re.compile("^explore [\d]+$").match(user_input):
             input_lst = user_input.split()
-            if len(input_lst) != 2:
-                print(
-                    "Please enter only one number as an index for the `explore` command"
-                )
-                continue
             try:
                 idx = int(input_lst[1])
                 if not (1 <= idx <= len(tf_records)):
-                    print(f"Please enter an index between 1 and {tf_counter}.")
+                    print(f"Please enter an index between 1 and {len(tf_records)}.")
                     continue
-                tf_path = tf_records[idx][1]
-                stop_browser = explore_tf_record(
-                    tf_path, scenarios_per_tfrecords[tf_path]
-                )
             except Exception:
-                print("Please input an integer for the `explore` command")
+                print("Please input an integer for the the `explore` command")
                 continue
+            tf_path = tf_records[idx][1]
+            stop_browser = explore_tf_record(
+                tf_path, scenarios_per_tfrecords[tf_path]
+            )
         else:
             print("Please enter a valid command. See command formats above")
 
@@ -355,11 +365,14 @@ def explore_tf_record(tfrecord: str, scenario_dict):
             input_lst = user_input.split()
 
             # Check if index passed is valid
-            scenario_idx = int(input_lst[1])
-            if not (1 <= scenario_idx <= len(scenario_ids)):
-                print(f"Please enter an index between 1 and {len(scenario_ids)}.")
+            try:
+                scenario_idx = int(input_lst[1])
+                if not (1 <= scenario_idx <= len(scenario_ids)):
+                    print(f"Please enter an index between 1 and {len(scenario_ids)}.")
+                    continue
+            except Exception:
+                print("Please input an integer for the index argument of `export` command")
                 continue
-
             # Check if target base path is valid
             target_base_path = input_lst[2]
             try:
@@ -391,11 +404,14 @@ def explore_tf_record(tfrecord: str, scenario_dict):
             input_lst = user_input.split()
 
             # Check if index passed is valid
-            scenario_idx = int(input_lst[1])
-            if not (1 <= scenario_idx <= len(scenario_ids)):
-                print(f"Please enter an index between 1 and {len(scenario_ids)}.")
+            try:
+                scenario_idx = int(input_lst[1])
+                if not (1 <= scenario_idx <= len(scenario_ids)):
+                    print(f"Please enter an index between 1 and {len(scenario_ids)}.")
+                    continue
+            except Exception:
+                print("Please input an integer for the index argument of `export` command")
                 continue
-
             # Dump all the scenario plots of this tfrecord file to this target base path
             scenario_id = scenario_ids[scenario_idx]
             plot_scenario(scenario_dict[scenario_id])
