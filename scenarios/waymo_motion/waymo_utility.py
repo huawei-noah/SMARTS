@@ -321,7 +321,7 @@ def tfrecords_browser(tfrecord_path: str):
             except Exception:
                 print("Please input an integer for the the `explore` command")
                 continue
-            tf_path = tf_records[idx][1]
+            tf_path = tf_records[idx - 1][1]
             stop_browser = explore_tf_record(
                 tf_path, scenarios_per_tfrecords[tf_path]
             )
@@ -383,7 +383,7 @@ def explore_tf_record(tfrecord: str, scenario_dict):
                 )
                 continue
             # Try exporting the scenario
-            export_scenario(target_base_path, tfrecord, scenario_ids[scenario_idx])
+            export_scenario(target_base_path, tfrecord, scenario_ids[scenario_idx - 1])
 
         elif re.compile("^preview all [^\n ]+$").match(user_input):
             input_lst = user_input.split()
@@ -413,7 +413,7 @@ def explore_tf_record(tfrecord: str, scenario_dict):
                 print("Please input an integer for the index argument of `export` command")
                 continue
             # Dump all the scenario plots of this tfrecord file to this target base path
-            scenario_id = scenario_ids[scenario_idx]
+            scenario_id = scenario_ids[scenario_idx - 1]
             plot_scenario(scenario_dict[scenario_id])
 
         elif re.compile("^select [\d]+$").match(user_input):
@@ -426,7 +426,7 @@ def explore_tf_record(tfrecord: str, scenario_dict):
                 continue
 
             # Explore further the scenario at this index
-            scenario_id = scenario_ids[scenario_idx]
+            scenario_id = scenario_ids[scenario_idx - 1]
             # stop_exploring = explore_scenario(scenario_dict[scenario_id])
 
         elif user_input == "go back":
