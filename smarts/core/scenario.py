@@ -95,7 +95,7 @@ class Scenario:
 
         if traffic_history:
             self._traffic_history = TrafficHistory(traffic_history)
-            default_lane_width = self.traffic_history.lane_width
+            default_lane_width = self._traffic_history.lane_width
         else:
             self._traffic_history = None
             default_lane_width = None
@@ -348,7 +348,7 @@ class Scenario:
         agent_bucketer = []
 
         # like dict.setdefault
-        def setdefault(l: Sequence[Any], index: int, default):
+        def setdefault(l: list, index: int, default):
             while len(l) < index + 1:
                 l.append([])
             return l[index]
@@ -397,8 +397,9 @@ class Scenario:
             social_agents_info.append(
                 {agent.id: (agent, mission) for agent, mission in l}
             )
-
+        # pytype: disable=bad-return-type
         return social_agents_info
+        # pytype: enable=bad-return-type
 
     @staticmethod
     def discover_scenarios(scenario_or_scenarios_dir):
@@ -427,7 +428,7 @@ class Scenario:
         return discovered_scenarios
 
     @staticmethod
-    def build_map(scenario_root: str) -> Tuple[RoadMap, str]:
+    def build_map(scenario_root: str) -> Tuple[Optional[RoadMap], Optional[str]]:
         """Builds a road map from the given scenario's resources."""
         # XXX: using a map builder_fn supplied by users is a security risk
         # as SMARTS will be executing the code "as is".  We are currently
@@ -799,7 +800,7 @@ class Scenario:
         return os.path.join(self._root, "plane.urdf")
 
     @property
-    def vehicle_filepath(self) -> str:
+    def vehicle_filepath(self) -> Optional[str]:
         """The filepath of the vehicle's physics model."""
         if not os.path.isdir(self._root):
             return None

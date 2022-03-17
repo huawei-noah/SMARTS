@@ -173,7 +173,7 @@ class VehicleIndex:
         return set(vehicle_ids)
 
     @cache
-    def social_vehicle_ids(self, vehicle_types: FrozenSet[str] = None):
+    def social_vehicle_ids(self, vehicle_types: Optional[FrozenSet[str]] = None):
         """A set of vehicle ids associated with traffic vehicles."""
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Social
@@ -284,7 +284,7 @@ class VehicleIndex:
 
     def vehicleitems(self) -> Tuple[str, Vehicle]:
         """A list of all vehicle IDs paired with their vehicle."""
-        return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._vehicles.items())
+        return tuple(map(lambda x: (self._2id_to_id[x[0]], x[1]), self._vehicles.items()))
 
     def vehicle_by_id(self, vehicle_id):
         """Get a vehicle by its id."""
@@ -378,7 +378,9 @@ class VehicleIndex:
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = _ControlEntity(*self._controlled_by[v_index][0])
         self._controlled_by[v_index] = tuple(
+            # pytype: disable=wrong-arg-types
             entity._replace(shadow_actor_id=agent_id, is_boid=boid)
+            # pytype: enable=wrong-arg-types
         )
 
         # XXX: We are not giving the vehicle an AckermannChassis here but rather later
@@ -445,6 +447,7 @@ class VehicleIndex:
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = _ControlEntity(*self._controlled_by[v_index][0])
         self._controlled_by[v_index] = tuple(
+            # pytype: disable=wrong-arg-types
             entity._replace(
                 actor_type=_ActorType.Agent,
                 actor_id=agent_id,
@@ -452,6 +455,7 @@ class VehicleIndex:
                 is_boid=boid,
                 is_hijacked=hijacking,
             )
+            # pytype: enable=wrong-arg-types
         )
 
         return vehicle
@@ -462,7 +466,7 @@ class VehicleIndex:
         vehicle_id = _2id(vehicle_id)
 
         vehicle = self._vehicles[vehicle_id]
-        Vehicle.detach_all_sensors_from_vehicle(vehicle)
+        vehicle.detach_all_sensors_from_vehicle(vehicle)
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = self._controlled_by[v_index][0]
@@ -664,8 +668,8 @@ class VehicleIndex:
         self._2id_to_id[agent_id] = original_agent_id
 
         entity = _ControlEntity(
-            vehicle_id=vehicle_id,
-            actor_id=agent_id,
+            vehicle_id=str(vehicle_id),
+            actor_id=str(agent_id),
             actor_type=_ActorType.Agent,
             shadow_actor_id="",
             is_boid=boid,
@@ -693,14 +697,15 @@ class VehicleIndex:
 
         self._vehicles[vehicle_id] = vehicle
         self._2id_to_id[vehicle_id] = vehicle.id
+
         entity = _ControlEntity(
-            vehicle_id=vehicle_id,
-            actor_id=actor_id,
+            vehicle_id=str(vehicle_id),
+            actor_id=str(actor_id),
             actor_type=_ActorType.Social,
             shadow_actor_id="",
             is_boid=False,
             is_hijacked=False,
-            position=vehicle.position,
+            position=np.asarray(vehicle.position),
         )
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
