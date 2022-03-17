@@ -26,7 +26,9 @@ import tempfile
 import gym
 import importlib_resources
 import pytest
+# pytype: disable=import-error
 import pytest_notebook.nb_regression as nb
+# pytype: enable=import-error
 
 from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
@@ -91,7 +93,6 @@ def notebook():
     _, tmppath = tempfile.mkstemp(suffix=".ipynb")
     with open(tmppath, "w") as f:
         import smarts.core.tests
-
         f.write(importlib_resources.read_text(smarts.core.tests, NOTEBOOK_NAME))
     yield tmppath
     os.remove(tmppath)
