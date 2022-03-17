@@ -87,7 +87,11 @@ class TrafficHistoryProvider(Provider):
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
+        # What should be here?
+        # pytype: disable=bad-return-type
         return {}
+        # pytype: enable=bad-return-type
+
 
     def sync(self, provider_state):
         # Ignore other sim state

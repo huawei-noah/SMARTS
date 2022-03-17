@@ -52,7 +52,10 @@ class ExternalProvider(Provider):
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
+        # What should be here?
+        # pytype: disable=bad-return-type
         return {}
+        # pytype: enable=bad-return-type
 
     @property
     def _provider_state(self):

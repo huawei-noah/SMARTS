@@ -70,7 +70,7 @@ class Bubble:
         bubble_limit = (
             bubble.limit or BubbleLimits()
             if bubble.limit is None or isinstance(bubble.limit, BubbleLimits)
-            else BubbleLimits(bubble.limit, bubble.limit + 1)
+            else BubbleLimits(bubble.limit.hijack_limit, bubble.limit.shadow_limit + 1)
         )
 
         if isinstance(bubble.actor, BoidAgentActor):
@@ -184,15 +184,17 @@ class Bubble:
                 )
             )
 
+            # pytype: disable=unsupported-operands
             all_hijacked_vehicle_ids = (
                 current_hijacked_vehicle_ids
-                | vehicle_ids_by_bubble_state[BubbleState.InAirlock][self]
+                | vehicle_ids_by_bubble_state[BubbleState.InAirlock][self] 
             ) - {vehicle_id}
 
             all_shadowed_vehicle_ids = (
                 current_shadowed_vehicle_ids
-                | vehicle_ids_by_bubble_state[BubbleState.InBubble][self]
+                | vehicle_ids_by_bubble_state[BubbleState.InBubble][self] 
             ) - {vehicle_id}
+            # pytype: enable=unsupported-operands
 
             hijackable = len(all_hijacked_vehicle_ids) < (
                 self._limit.hijack_limit or maxsize
@@ -203,12 +205,12 @@ class Bubble:
 
         return hijackable, shadowable
 
-    def in_bubble_or_airlock(self, position: Union[Point, list]):
+    def in_bubble_or_airlock(self, position: Point):
         """Test if the position is within the bubble or airlock around the bubble."""
         if not isinstance(position, Point):
             position = Point(position)
 
-        in_airlock = position.within(self._cached_airlock_geometry)
+        in_airlock = position.within(self._cached_airlock_geometry) #
         if not in_airlock:
             return False, False
 
@@ -368,7 +370,7 @@ class BubbleManager:
     @staticmethod
     def _vehicle_ids_divided_by_bubble_state(
         cursors: FrozenSet[Cursor],
-    ) -> Dict[Bubble, Set[str]]:
+    ) -> Dict[Bubble, Set[Bubble]]:
         vehicle_ids_grouped_by_cursor = defaultdict(lambda: defaultdict(set))
         for cursor in cursors:
             vehicle_ids_grouped_by_cursor[cursor.state][cursor.bubble].add(
@@ -475,7 +477,7 @@ class BubbleManager:
 
     def _airlock_social_vehicle_with_social_agent(
         self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor, bubble: Bubble
-    ) -> str:
+    ) -> None:
         """When airlocked. The social agent will receive observations and execute
         its policy, however it won't actually operate the vehicle's controller.
         """
@@ -508,7 +510,7 @@ class BubbleManager:
         )
 
         if social_agent is None:
-            return
+            return 
 
         self._start_social_agent(
             sim, agent_id, social_agent, social_agent_actor, bubble
@@ -516,7 +518,7 @@ class BubbleManager:
 
     def _hijack_social_vehicle_with_social_agent(
         self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor, bubble: Bubble
-    ) -> str:
+    ) -> None:
         """Upon hijacking the social agent is now in control of the vehicle. It will
         initialize the vehicle chassis (and by extension the controller) with a
         "greatest common denominator" state; that is: what's available via the vehicle
@@ -618,7 +620,7 @@ class BubbleManager:
 
     @staticmethod
     def _make_boid_social_agent_id(social_agent_actor):
-        return f"BUBBLE-AGENT-{truncate(social_agent_actor.id, 48)}"
+        return f"BUBBLE-AGENT-{truncate(social_agent_actor.name, 48)}"
 
     def teardown(self):
         """Clean up internal state."""

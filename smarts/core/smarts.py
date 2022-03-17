@@ -94,7 +94,7 @@ class SMARTS:
         traffic_sim,  # SumoTrafficSimulation
         envision: Optional[EnvisionClient] = None,
         visdom: Optional[VisdomClient] = None,
-        fixed_timestep_sec: float = 0.1,
+        fixed_timestep_sec: Optional[float] = 0.1,
         reset_agents_only: bool = False,
         zoo_addrs=None,
         external_provider: bool = False,
@@ -113,7 +113,7 @@ class SMARTS:
         self._reset_required = False
 
         assert fixed_timestep_sec is None or fixed_timestep_sec > 0
-        self.fixed_timestep_sec: float = fixed_timestep_sec
+        self.fixed_timestep_sec: Optional[float] = fixed_timestep_sec
         self._last_dt = fixed_timestep_sec
 
         self._elapsed_sim_time = 0
@@ -874,7 +874,9 @@ class SMARTS:
                     agent_interface = self._agent_manager.agent_interface_for_agent_id(
                         agent_id
                     )
+                    # pytype: disable=attribute-error
                     agent_action_space = agent_interface.action_space
+                    # pytype: enable=attribute-error
                     if agent_action_space not in self._dynamic_action_spaces:
                         # This is not a pybullet agent, but it has an avatar in this world
                         # to make it's observations. Update the avatar to match the new
@@ -1044,12 +1046,16 @@ class SMARTS:
 
         def matches_provider_action_spaces(agent_id, action_spaces):
             interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
+            # pytype: disable=attribute-error
             return interface.action_space in action_spaces
+            # pytype: enable=attribute-error
 
         def matches_no_provider_action_space(agent_id):
             interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
             for provider in self.providers:
+                # pytype: disable=attribute-error
                 if interface.action_space in provider.action_spaces:
+                # pytype: enable=attribute-error
                     return False
             return True
 
@@ -1246,8 +1252,10 @@ class SMARTS:
                     vehicle_action,
                     controller_state,
                     sensor_state,
+                    # pytype: disable=attribute-error
                     agent_interface.action_space,
                     agent_interface.vehicle_type,
+                    # pytype: enable=attribute-error
                 )
 
     def _sync_vehicles_to_renderer(self):

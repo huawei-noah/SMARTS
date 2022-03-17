@@ -23,7 +23,7 @@ import os
 import random
 import subprocess
 import time
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -206,8 +206,10 @@ class SumoTrafficSimulation(Provider):
 
         try:
             # It is mandatory to set order when using multiple clients.
+            # pytype: disable=attribute-error
             self._traci_conn.setOrder(0)
             self._traci_conn.getVersion()
+            # pytype: enable=attribute-error
         except Exception as e:
             logging.error(
                 f"""Failed to initialize SUMO
@@ -376,7 +378,7 @@ class SumoTrafficSimulation(Provider):
 
     def recover(
         self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
-    ) -> bool:
+    ) -> Tuple[ProviderState, bool]:
         if isinstance(error, (TraCIException, FatalTraCIError)):
             self._handle_traci_disconnect(error)
         elif isinstance(error, Exception):
@@ -599,7 +601,7 @@ class SumoTrafficSimulation(Provider):
         sub_results = self._traci_conn.simulation.getSubscriptionResults()
 
         if sub_results is None or sub_results == {}:
-            return {}
+            return []
 
         # New social vehicles that have entered the map
         newly_departed_sumo_traffic = [

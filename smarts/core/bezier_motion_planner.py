@@ -35,7 +35,7 @@ class BezierMotionPlanner:
             np.array([current_pose]), np.array([target_pose_at_t]), n, dt
         )[0]
 
-    def trajectory_batched(self, current_poses, target_poses_at_t, n, dt) -> np.array:
+    def trajectory_batched(self, current_poses, target_poses_at_t, n, dt) -> np.ndarray:
         """Generate a batch of trajectories
 
         Args:

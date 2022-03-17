@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 import logging
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, Set, Tuple, Optional
 
 import cloudpickle
 
@@ -102,7 +102,7 @@ class AgentManager:
         """A list of all agent to agent interface mappings."""
         return self._agent_interfaces
 
-    def agent_interface_for_agent_id(self, agent_id) -> AgentInterface:
+    def agent_interface_for_agent_id(self, agent_id) -> Optional[AgentInterface]:
         """Get the agent interface of a specific agent."""
         return self._agent_interfaces.get(agent_id, None)
 
@@ -223,7 +223,9 @@ class AgentManager:
                 else:
                     logging.log(
                         logging.DEBUG,
-                        f"Agent `{agent_id}` has raised done with {observations[agent_id].events}",
+                        # pytype: disable=attribute-error
+                        f"Agent `{agent_id}` has raised done with {observations[agent_id].events}", 
+                        # pytype: enable=attribute-error
                     )
 
                 rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
@@ -233,7 +235,9 @@ class AgentManager:
             dones = {agent_id: True for agent_id in self.agent_ids}
             dones["__sim__"] = True
 
-        return observations, rewards, scores, dones
+        # pytype: disable=bad-return-type
+        return observations, rewards, scores, dones 
+        # pytype: enable=bad-return-type
 
     def _vehicle_reward(self, vehicle_id, sim):
         return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor(
@@ -517,7 +521,7 @@ class AgentManager:
         self._social_agent_ids.add(agent_id)
         self._social_agent_data_models[agent_id] = agent_model
 
-    def teardown_ego_agents(self, filter_ids: Set = None):
+    def teardown_ego_agents(self, filter_ids: Optional[Set] = None):
         """Tears down all given ego agents passed through the filter.
         Args:
             filter_ids (Optional[Set[str]]): The whitelist of agent ids. If `None`, all ids are whitelisted.
@@ -526,7 +530,7 @@ class AgentManager:
         self._ego_agent_ids -= ids_
         return ids_
 
-    def teardown_social_agents(self, filter_ids: Set = None):
+    def teardown_social_agents(self, filter_ids: Optional[Set] = None):
         """Tears down all given social agents passed through the filter.
         Args:
             filter_ids (Optional[Set[str]]): The whitelist of agent ids. If `None`, all ids are whitelisted.

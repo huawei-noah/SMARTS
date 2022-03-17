@@ -30,6 +30,7 @@ from typing import NamedTuple
 
 import gltf
 from direct.showbase.ShowBase import ShowBase
+# pytype: disable=import-error
 from panda3d.core import (
     FrameBufferProperties,
     GraphicsOutput,
@@ -41,6 +42,7 @@ from panda3d.core import (
     WindowProperties,
     loadPrcFileData,
 )
+# pytype: enable=import-error
 
 from . import glsl, models
 from .colors import SceneColors
@@ -261,9 +263,11 @@ class Renderer:
             for i in range(retries):
                 if self.tex.mightHaveRamImage():
                     break
-                self.renderer._log.debug(
+                # pytype: disable=attribute-error
+                self.renderer._log.debug( 
                     f"No image available (attempt {i}/{retries}), forcing a render"
                 )
+                # pytype: enable=attribute-error
                 region = self.buffer.getDisplayRegion(0)
                 region.window.engine.renderFrame()
 
@@ -291,7 +295,9 @@ class Renderer:
             region = self.buffer.getDisplayRegion(0)
             region.window.clearRenderTextures()
             self.buffer.removeAllDisplayRegions()
+            # pytype: disable=attribute-error
             self.renderer._showbase_instance.graphicsEngine.removeWindow(self.buffer)
+            # pytype: enable=attribute-error
 
     def build_offscreen_camera(
         self,
