@@ -19,7 +19,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMonitor
+from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMonitor, VecNormalize
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 yaml = YAML(typ="safe")
@@ -32,39 +32,37 @@ def main(args: argparse.Namespace):
     )
 
     # Load env config.
-    config_env = config_file["smarts"]
-    config_env["mode"] = args.mode
+    config = config_file["smarts"]
+    config["mode"] = args.mode
 
     # Setup logdir.
-    if config_env["mode"] == "train" and not args.logdir:
+    if config["mode"] == "train" and not args.logdir:
         # Begin training from scratch.
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
-    elif (config_env["mode"] == "train" and args.logdir) or (
-        config_env["mode"] == "evaluate"
+    elif (config["mode"] == "train" and args.logdir) or (
+        config["mode"] == "evaluate"
     ):
         # Begin training from a pretrained model.
         logdir = pathlib.Path(args.logdir)
     else:
         raise KeyError(
-            f'Expected \'train\' or \'evaluate\', but got {config_env["mode"]}.'
+            f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.'
         )
     logdir.mkdir(parents=True, exist_ok=True)
-    config_env["logdir"] = logdir
+    config["logdir"] = logdir
     print("Logdir:", logdir)
 
     # Make training and evaluation environments.
-    env = make_env(config_env)
-    eval_env = make_env(config_env)
-
-    # env.sample
+    env = make_env(config=config, training=True)
+    eval_env = make_env(config=config, training=False)
 
     # Run training or evaluation.
-    run(env=env, eval_env=eval_env, config=config_env)
+    run(env=env, eval_env=eval_env, config=config)
     env.close()
 
 
-def make_env(config: Dict[str, Any]) -> gym.Env:
+def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
     # Create environment
     env = gym.make(
         "smarts.env:intersection-v0",
@@ -83,17 +81,13 @@ def make_env(config: Dict[str, Any]) -> gym.Env:
 
     #  Wrap env with SB3 wrappers
     env = DummyVecEnv([lambda: env])
-    env = VecFrameStack(venv=env, n_stack=4, channels_order="last")
-    # env = VecMonitor(venv=env, filename=str(config["logdir"]))
+    env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="last")
+    # env = VecNormalize(venv=env, training=training)
+    env = VecMonitor(venv=env, filename=str(config["logdir"]))
 
-    print(env.observation_space.shape, "<<<----- observation_space")
-    fd = env.reset()
-    from sb3.observation import plotter
-    plotter(fd,1)
-
-
-    import sys
-    sys.exit(3)
+    # ------------------------------------------------
+    # set deterministic=True when calling the .predict() in evaluating PPO
+    # ------------------------------------------------
 
     return env
 
@@ -140,12 +134,14 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         # log_path='./logs/', eval_freq=500,
         # deterministic=True, render=False)
 
-    # print("Evaluate policy")
-    # evaluate_policy(model, env, n_eval_episodes=config["eval_eps"], deterministic=True)
-    # print("Finished evaluating")
-
     if config["mode"] == "train":
         model.save(config["logdir"] / "model")
+        print("Saved trained model.")
+
+    print("Evaluate policy.")
+    mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=config["eval_eps"], deterministic=True)
+    print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
+    print("Finished evaluating.")
 
 
 if __name__ == "__main__":

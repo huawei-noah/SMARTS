@@ -90,7 +90,6 @@ def plotter(obs: np.ndarray, rgb_gray=1, name: str = "Graph"):
     for row in range(0, rows):
         for col in range(0, columns):
             img = obs[:, :, col * rgb_gray : col * rgb_gray + rgb_gray]
-            print(img.shape, "_==============shapeeeee")
             axs[row, col].imshow(img)
             axs[row, col].set_title(f"{name}")
     plt.show()
