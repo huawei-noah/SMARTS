@@ -80,9 +80,7 @@ def get_map_features_for_scenario(scenario) -> Dict:
         map_feature = scenario.map_features[i]
         key = map_feature.WhichOneof("feature_data")
         if key is not None:
-            map_features[key].append(
-                (getattr(map_feature, key), map_feature.id)
-            )
+            map_features[key].append((getattr(map_feature, key), int(map_feature.id)))
 
     return map_features
 
@@ -98,44 +96,134 @@ def get_traffic_light_lanes(scenario) -> List[str]:
     return tls_lanes
 
 
-def plot_map_features(map_features, feature_id=None):
+def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
+    handle = []
     for lane in map_features["lane"]:
         xs, ys = convert_polyline(lane[0].polyline)
         if lane[1] == feature_id:
             plt.plot(xs, ys, linestyle=":", color="blue")
+            handle.append(
+                Line2D(
+                    [0],
+                    [0],
+                    linestyle=":",
+                    color="blue",
+                    label=f"Lane Polyline {feature_id}",
+                ),
+            )
         else:
             plt.plot(xs, ys, linestyle=":", color="gray")
 
     for road_line in map_features["road_line"]:
         xs, ys = convert_polyline(road_line[0].polyline)
         if road_line[0].type in [1, 4, 5]:
-            plt.plot(xs, ys, "y--")
+            if road_line[1] == feature_id:
+                plt.plot(xs, ys, "b--")
+                handle.append(
+                    Line2D(
+                        [0],
+                        [0],
+                        linestyle="-",
+                        color="blue",
+                        label=f"Single Road Line {feature_id}",
+                    )
+                )
+            else:
+                plt.plot(xs, ys, "y--")
         else:
-            plt.plot(xs, ys, "y-")
+            if road_line[1] == feature_id:
+                plt.plot(xs, ys, "b-")
+                handle.append(
+                    Line2D(
+                        [0],
+                        [0],
+                        linestyle="-",
+                        color="blue",
+                        label=f"Double Road Line {feature_id}",
+                    )
+                )
+            else:
+                plt.plot(xs, ys, "y-")
 
     for road_edge in map_features["road_edge"]:
         xs, ys = convert_polyline(road_edge[0].polyline)
-        plt.plot(xs, ys, "k-")
+        if road_edge[1] == feature_id:
+            plt.plot(xs, ys, "b-")
+            handle.append(
+                Line2D(
+                    [0],
+                    [0],
+                    linestyle="-",
+                    color="blue",
+                    label=f"Road Edge {feature_id}",
+                )
+            )
+        else:
+            plt.plot(xs, ys, "k-")
 
     for crosswalk in map_features["crosswalk"]:
         xs, ys = convert_polyline(crosswalk[0].polygon)
-        plt.plot(xs, ys, "k--")
+        if crosswalk[1] == feature_id:
+            plt.plot(xs, ys, "b--")
+            handle.append(
+                Line2D(
+                    [0],
+                    [0],
+                    linestyle="--",
+                    color="blue",
+                    label=f"Crosswalk {feature_id}",
+                )
+            )
+        else:
+            plt.plot(xs, ys, "k--")
 
     for speed_bump in map_features["speed_bump"]:
         xs, ys = convert_polyline(speed_bump[0].polygon)
-        plt.plot(xs, ys, "k:")
+        if speed_bump[1] == feature_id:
+            plt.plot(xs, ys, "b:")
+            handle.append(
+                Line2D(
+                    [0],
+                    [0],
+                    linestyle=":",
+                    color="blue",
+                    label=f"Speed Bump {feature_id}",
+                )
+            )
+        else:
+            plt.plot(xs, ys, "k:")
 
     for stop_sign in map_features["stop_sign"]:
-        plt.scatter(
-            stop_sign[0].position.x,
-            stop_sign[0].position.y,
-            marker="o",
-            c="#ff0000",
-            alpha=1,
-        )
+        if stop_sign[1] == feature_id:
+            plt.scatter(
+                stop_sign[0].position.x,
+                stop_sign[0].position.y,
+                marker="o",
+                c="blue",
+                alpha=1,
+            )
+            handle.append(
+                Line2D(
+                    [],
+                    [],
+                    color="blue",
+                    marker="o",
+                    markersize=5,
+                    label=f"Stop Sign {feature_id}",
+                )
+            )
+        else:
+            plt.scatter(
+                stop_sign[0].position.x,
+                stop_sign[0].position.y,
+                marker="o",
+                c="#ff0000",
+                alpha=1,
+            )
+    return handle
 
 
-def plot_scenario(scenario):
+def plot_scenario(scenario, feature_id: Optional[int] = None):
     # Get map feature data from map proto
     map_features = get_map_features_for_scenario(scenario)
 
@@ -143,8 +231,14 @@ def plot_scenario(scenario):
     fig, ax = plt.subplots()
     ax.set_title(f"Scenario {scenario.scenario_id}")
     ax.axis("equal")
-    plot_map_features(map_features)
-    plt.legend(handles=get_legend_handles())
+    if not feature_id:
+        fid = -1
+    else:
+        fid = feature_id
+    highlighted_handle = plot_map_features(map_features, fid)
+    all_handles = get_legend_handles()
+    all_handles.extend(highlighted_handle)
+    plt.legend(handles=all_handles)
 
     mng = plt.get_current_fig_manager()
     mng.resize(1000, 1000)
@@ -167,7 +261,7 @@ def dump_plots(target_base_path: str, scenario_dict):
 
         fig, ax = plt.subplots()
         ax.set_title(f"Scenario {scenario_id}")
-        plot_map_features(map_features)
+        plot_map_features(map_features, -1)
         plt.legend(handles=get_legend_handles())
         mng = plt.get_current_fig_manager()
         # mng.resize(*mng.window.maxsize())
@@ -282,14 +376,18 @@ def export_scenario(
     print("\n")
 
 
-def check_index_validity(input_arg: str, upper_limit: int, command_type: str) -> Optional[int]:
+def check_index_validity(
+    input_arg: str, upper_limit: int, command_type: str
+) -> Optional[int]:
     try:
         idx = int(input_arg)
         if not (1 <= idx <= upper_limit):
             print(f"Invalid index. Please enter an index between 1 and {upper_limit}.")
             return
     except Exception:
-        print(f"Invalid index. Please input an integer for the the `{command_type}` command")
+        print(
+            f"Invalid index. Please input an integer for the the `{command_type}` command"
+        )
         return
     return idx
 
@@ -339,13 +437,13 @@ def tfrecords_browser(tfrecord_path: str):
         print("\n")
         raw_input = input("Command: ").lower()
         user_input = raw_input.strip()
-        if user_input == "display all":
+        if re.compile("^display[\s]+all$").match(user_input):
             for tf_record in tf_records:
                 display_scenarios_in_tfrecord(
                     tf_record[1], scenarios_per_tfrecords[tf_record[1]]
                 )
 
-        elif re.compile("^display [\d]+$").match(user_input):
+        elif re.compile("^display[\s]+[\d]+$").match(user_input):
             input_lst = user_input.split()
             idx = check_index_validity(input_lst[1], len(tf_records), "display")
             if not idx:
@@ -353,7 +451,7 @@ def tfrecords_browser(tfrecord_path: str):
             tf_path = tf_records[idx - 1][1]
             display_scenarios_in_tfrecord(tf_path, scenarios_per_tfrecords[tf_path])
 
-        elif re.compile("^explore [\d]+$").match(user_input):
+        elif re.compile("^explore[\s]+[\d]+$").match(user_input):
             input_lst = user_input.split()
             idx = check_index_validity(input_lst[1], len(tf_records), "explore")
             if not idx:
@@ -366,7 +464,9 @@ def tfrecords_browser(tfrecord_path: str):
             stop_browser = True
 
         else:
-            print("Invalid command. Please enter a valid command. See command formats above")
+            print(
+                "Invalid command. Please enter a valid command. See command formats above"
+            )
 
     print("Exiting the Browser")
 
@@ -394,7 +494,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
         print("\n")
         raw_input = input("Command: ").lower()
         user_input = raw_input.strip()
-        if re.compile("^export all [^\n ]+$").match(user_input):
+        if re.compile("^export[\s]+all[\s]+[^\n ]+$").match(user_input):
             target_base_path = user_input.split()[2]
             # Check if target base path is valid
             if not check_path_validity(target_base_path):
@@ -404,7 +504,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             for id in scenario_ids:
                 export_scenario(target_base_path, tfrecord, id)
 
-        elif re.compile("^export [\d]+ [^\n ]+$").match(user_input):
+        elif re.compile("^export[\s]+[\d]+[\s]+[^\n ]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
@@ -420,7 +520,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             # Try exporting the scenario
             export_scenario(target_base_path, tfrecord, scenario_ids[idx - 1])
 
-        elif re.compile("^preview all [^\n ]+$").match(user_input):
+        elif re.compile("^preview[\s]+all[\s]+[^\n ]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if target base path is valid
@@ -432,11 +532,13 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             print(f"Plotting and all the scenario in {tfrecord} tfrecord file")
             dump_plots(target_base_path, scenario_dict)
 
-        elif re.compile("^preview [\d]+$").match(user_input):
+        elif re.compile("^preview[\s]+[\d]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
-            scenario_idx = check_index_validity(input_lst[1], len(scenario_ids), "preview")
+            scenario_idx = check_index_validity(
+                input_lst[1], len(scenario_ids), "preview"
+            )
             if not scenario_idx:
                 continue
 
@@ -444,11 +546,13 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             scenario_id = scenario_ids[scenario_idx - 1]
             plot_scenario(scenario_dict[scenario_id])
 
-        elif re.compile("^select [\d]+$").match(user_input):
+        elif re.compile("^select[\s]+[\d]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
-            scenario_idx = check_index_validity(input_lst[1], len(scenario_ids), "select")
+            scenario_idx = check_index_validity(
+                input_lst[1], len(scenario_ids), "select"
+            )
             if not scenario_idx:
                 continue
 
@@ -459,7 +563,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 return True
             print_commands = True
 
-        elif user_input == "go back":
+        elif re.compile("^go[\s]+back$").match(user_input):
             stop_exploring = True
             print("Going back to the tfRecords browser")
             continue
@@ -467,7 +571,9 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
         elif user_input == "exit":
             return True
         else:
-            print("Invalid command. Please enter a valid command. See command formats above")
+            print(
+                "Invalid command. Please enter a valid command. See command formats above"
+            )
     return False
 
 
@@ -518,47 +624,40 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
             ],
         )
     )
-    print("Lane Ids: ", [lane[1] for lane in scenario_map_features["lane"]])
-    print("\n")
+    print("\nLane Ids: ", [lane[1] for lane in scenario_map_features["lane"]])
     print(
-        "Road Line Ids: ",
+        "\nRoad Line Ids: ",
         [road_line[1] for road_line in scenario_map_features["road_line"]],
     )
-    print("\n")
     print(
-        "Road Edge Ids: ",
+        "\nRoad Edge Ids: ",
         [road_edge[1] for road_edge in scenario_map_features["road_edge"]],
     )
-    print("\n")
     print(
-        "Stop Sign Ids: ",
+        "\nStop Sign Ids: ",
         [stop_sign[1] for stop_sign in scenario_map_features["stop_sign"]],
     )
-    print("\n")
     print(
-        "Crosswalk Ids: ",
+        "\nCrosswalk Ids: ",
         [crosswalk[1] for crosswalk in scenario_map_features["crosswalk"]],
     )
-    print("\n")
     print(
-        "Speed Bumps Ids: ",
+        "\nSpeed Bumps Ids: ",
         [speed_bump[1] for speed_bump in scenario_map_features["speed_bump"]],
     )
-    print("\n")
     print(
-        f"Scenario {scenario.scenario_id}.\n"
+        f"\nScenario {scenario.scenario_id}.\n"
         "You can use the following commands to further this scenario:\n"
         f"1. `export <target_base_path>' --> Export the scenario to a target path. The path should be valid.\n"
-        f"4. `preview` --> Plot and display the map of the scenario.\n"
+        f"4. `preview` or `preview <feature_id>` --> Plot and display the map of the scenario with the feature id highlighted in Blue if passed. The feature id needs to be a number from the ids mentioned above and will not be highlighted if it doesnt exist.\n"
         "6. `go back` --> Go back to this scenario's tfrecord browser.\n"
         "7. `exit` --> Exit the program\n"
     )
-    print("\n")
     stop_exploring = False
     while not stop_exploring:
-        raw_input = input("Command: ").lower()
+        raw_input = input("\nCommand: ").lower()
         user_input = raw_input.strip()
-        if re.compile("^export [^\n ]+$").match(user_input):
+        if re.compile("^export[\s]+[^\n ]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if target base path is valid
@@ -568,11 +667,15 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
             # Try exporting the scenario to the target_base_path
             export_scenario(target_base_path, tfrecord_file_path, scenario.scenario_id)
 
-        elif re.compile("^preview$").match(user_input):
-            # Plot this scenario
-            plot_scenario(scenario)
+        elif re.compile("^preview([\s]+[\d]+)?$").match(user_input):
+            input_lst = user_input.split()
+            if len(input_lst) == 1:
+                # Plot this scenario
+                plot_scenario(scenario)
+            else:
+                plot_scenario(scenario, int(input_lst[1]))
 
-        elif user_input == "go back":
+        elif re.compile("^go[\s]+back$").match(user_input):
             stop_exploring = True
             print("Going back to the tfRecord Explorer")
             continue
@@ -580,7 +683,9 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
         elif user_input == "exit":
             return True
         else:
-            print("Invalid command. Please enter a valid command. See command formats above")
+            print(
+                "Invalid command. Please enter a valid command. See command formats above"
+            )
     return False
 
 
