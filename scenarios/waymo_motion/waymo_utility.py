@@ -323,15 +323,19 @@ def tfrecords_browser(tfrecord_path: str):
             headers=["Index", "TfRecords"],
         )
     )
+    print_commands = True
     while not stop_browser:
-        print(
-            "TfRecords Browser.\n"
-            "You can use the following commands to further explore these datasets:\n"
-            "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
-            f"2. `display <index>` --> Displays the info of tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
-            f"2. `explore <index>` --> Explore the tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
-            "3. `exit` --> Exit the program\n"
-        )
+        if print_commands:
+            print(
+                "TfRecords Browser.\n"
+                "You can use the following commands to further explore these datasets:\n"
+                "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
+                f"2. `display <index>` --> Displays the info of tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
+                f"2. `explore <index>` --> Explore the tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
+                "3. `exit` --> Exit the program\n"
+            )
+
+            print_commands = False
         print("\n")
         raw_input = input("Command: ").lower()
         user_input = raw_input.strip()
@@ -356,6 +360,7 @@ def tfrecords_browser(tfrecord_path: str):
                 continue
             tf_path = tf_records[idx - 1][1]
             stop_browser = explore_tf_record(tf_path, scenarios_per_tfrecords[tf_path])
+            print_commands = True
 
         elif user_input == "exit":
             stop_browser = True
@@ -369,19 +374,23 @@ def tfrecords_browser(tfrecord_path: str):
 def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
     scenario_ids = display_scenarios_in_tfrecord(tfrecord, scenario_dict)
     stop_exploring = False
+    print_commands = True
     while not stop_exploring:
-        print("\n")
-        print(
-            f"{os.path.basename(tfrecord)} TfRecord Browser.\n"
-            f"You can use the following commands to further explore these scenarios:\n"
-            "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid directory path.\n"
-            f"2. `export <index> <target_base_path>' --> Export the scenario at this index of the table to a target path. The index should be an integer between 1 and {len(scenario_ids)} and path should be valid.\n"
-            "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path. Path should be valid.\n"
-            f"4. `preview <index>` --> Plot and display the map of the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
-            f"5. `select <index>` --> Select and explore further the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
-            "6. `go back` --> Go back to the tfrecords browser\n"
-            "7. `exit` --> Exit the program\n"
-        )
+        if print_commands:
+            print("\n")
+            print(
+                f"{os.path.basename(tfrecord)} TfRecord Browser.\n"
+                f"You can use the following commands to further explore these scenarios:\n"
+                "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid directory path.\n"
+                f"2. `export <index> <target_base_path>' --> Export the scenario at this index of the table to a target path. The index should be an integer between 1 and {len(scenario_ids)} and path should be valid.\n"
+                "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path. Path should be valid.\n"
+                f"4. `preview <index>` --> Plot and display the map of the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
+                f"5. `select <index>` --> Select and explore further the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
+                "6. `go back` --> Go back to the tfrecords browser\n"
+                "7. `exit` --> Exit the program\n"
+            )
+            print_commands = False
+
         print("\n")
         raw_input = input("Command: ").lower()
         user_input = raw_input.strip()
@@ -448,6 +457,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             exit_browser = explore_scenario(tfrecord, scenario_dict[scenario_id])
             if exit_browser:
                 return True
+            print_commands = True
 
         elif user_input == "go back":
             stop_exploring = True
@@ -535,18 +545,17 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
         [speed_bump[1] for speed_bump in scenario_map_features["speed_bump"]],
     )
     print("\n")
+    print(
+        f"Scenario {scenario.scenario_id}.\n"
+        "You can use the following commands to further this scenario:\n"
+        f"1. `export <target_base_path>' --> Export the scenario to a target path. The path should be valid.\n"
+        f"4. `preview` --> Plot and display the map of the scenario.\n"
+        "6. `go back` --> Go back to this scenario's tfrecord browser.\n"
+        "7. `exit` --> Exit the program\n"
+    )
+    print("\n")
     stop_exploring = False
     while not stop_exploring:
-        print("\n")
-        print(
-            f"Scenario {scenario.scenario_id}.\n"
-            "You can use the following commands to further this scenario:\n"
-            f"1. `export <target_base_path>' --> Export the scenario to a target path. The path should be valid.\n"
-            f"4. `preview` --> Plot and display the map of the scenario.\n"
-            "6. `go back` --> Go back to this scenario's tfrecord browser.\n"
-            "7. `exit` --> Exit the program\n"
-        )
-        print("\n")
         raw_input = input("Command: ").lower()
         user_input = raw_input.strip()
         if re.compile("^export [^\n ]+$").match(user_input):
