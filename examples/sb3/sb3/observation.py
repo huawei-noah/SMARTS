@@ -5,12 +5,12 @@ import numpy as np
 
 
 class Observation(gym.Wrapper):
-    def __init__(self, env: gym.Env, num_stack: int):
+    def __init__(self, env: gym.Env, n_stack: int):
         super().__init__(env)
-        self._num_stack = num_stack
-        self._frames = deque(maxlen=self._num_stack)
+        self._n_stack = n_stack
+        self._frames = deque(maxlen=self._n_stack)
         self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(256, 256, 3), dtype=np.uint8
+            low=0, high=255, shape=(256, 256, n_stack), dtype=np.uint8
         )
 
     def _stack_obs(self, obs: np.ndarray):
@@ -46,14 +46,13 @@ class Observation(gym.Wrapper):
         """
         obs = self.env.reset()
         converted = normalize_img(obs.rgb)
-        for _ in range(self._num_stack - 1):
+        for _ in range(self._n_stack - 1):
             self._frames.appendleft(converted)
 
         return self._stack_obs(converted)
 
 
 def normalize_img(img: np.ndarray) -> np.ndarray:
-    from smarts.core import colors as smarts_colors
 
     # Repaint self
     clr = (122, 140, 153)
@@ -91,7 +90,7 @@ def plotter(obs: np.ndarray, rgb_gray=1, name: str = "Graph"):
     for row in range(0, rows):
         for col in range(0, columns):
             img = obs[:, :, col * rgb_gray : col * rgb_gray + rgb_gray]
-            print(img.shape())
+            print(img.shape, "_==============shapeeeee")
             axs[row, col].imshow(img)
             axs[row, col].set_title(f"{name}")
     plt.show()
