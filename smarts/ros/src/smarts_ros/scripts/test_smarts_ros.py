@@ -153,7 +153,9 @@ class TestSmartsRos(TestCase):
         if not self._agents:
             self._create_agent()
         for agent_spec in self._agents.values():
-            self._agent_publisher.publish(agent_spec) # pytype: disable=attribute-error
+            # pytype: disable=attribute-error
+            self._agent_publisher.publish(agent_spec) 
+            # pytype: enable=attribute-error
 
     def run_forever(self):
         """Publish the SMARTS ros test node and run indefinitely."""

@@ -640,7 +640,9 @@ class ROSDriver:
         if not self._smarts:
             raise RuntimeError("must call setup_smarts() first.")
 
-        rospy.Service(self._service_name, SmartsInfo, self._get_smarts_info) # pytype: disable=attribute-error
+        # pytype: disable=attribute-error
+        rospy.Service(self._service_name, SmartsInfo, self._get_smarts_info) 
+        # pytype: enable=attribute-error
 
         warned_scenario = False
         observations = {}
