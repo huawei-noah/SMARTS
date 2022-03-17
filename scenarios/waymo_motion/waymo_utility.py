@@ -28,7 +28,6 @@ import yaml
 import re
 from typing import Dict, List, Tuple, Union, Optional
 from tabulate import tabulate
-from functools import lru_cache
 from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -45,7 +44,6 @@ def convert_polyline(polyline) -> Tuple[List[float], List[float]]:
     return xs, ys
 
 
-@lru_cache(maxsize=None)
 def get_legend_handles() -> List[Line2D]:
     handles = [
         Line2D([0], [0], linestyle=":", color="gray", label="Lane Polyline"),
@@ -123,7 +121,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
                     Line2D(
                         [0],
                         [0],
-                        linestyle="-",
+                        linestyle="--",
                         color="blue",
                         label=f"Single Road Line {feature_id}",
                     )
