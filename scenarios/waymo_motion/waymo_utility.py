@@ -496,7 +496,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
     )
     scenario_map_features = get_map_features_for_scenario(scenario)
     map_features = [
-        len(scenario_map_features["lanes"]),
+        len(scenario_map_features["lane"]),
         len(scenario_map_features["road_line"]),
         len(scenario_map_features["road_edge"]),
         len(scenario_map_features["stop_sign"]),
@@ -518,7 +518,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
             ],
         )
     )
-    print("Lane Ids: ", [lane[1] for lane in scenario_map_features["lanes"]])
+    print("Lane Ids: ", [lane[1] for lane in scenario_map_features["lane"]])
     print("\n")
     print(
         "Road Line Ids: ",
