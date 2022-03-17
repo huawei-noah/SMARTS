@@ -26,7 +26,7 @@ import os
 import shutil
 import yaml
 import re
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union, Optional
 from tabulate import tabulate
 from functools import lru_cache
 from pathlib import Path
@@ -82,7 +82,8 @@ def get_map_features_for_scenario(scenario) -> Dict:
         if key is not None:
             map_features[key].append(
                 (getattr(map_feature, key), map_feature.id)
-            )  # tls_lanes = get_traffic_light_lanes(scenario)
+            )
+
     return map_features
 
 
@@ -151,7 +152,15 @@ def plot_scenario(scenario):
     plt.show()
 
 
-def dump_plots(out_dir: str, scenario_dict):
+def dump_plots(target_base_path: str, scenario_dict):
+    try:
+        os.makedirs(target_base_path)
+        print(f"Created directory {target_base_path}")
+    except FileExistsError:
+        pass
+    except (OSError, RuntimeError):
+        print(f"{target_base_path} is an invalid path. Please enter a valid path")
+        return
     for scenario_id in scenario_dict:
         scenario = scenario_dict[scenario_id]
         map_features = get_map_features_for_scenario(scenario)
@@ -167,7 +176,7 @@ def dump_plots(out_dir: str, scenario_dict):
         mng.resize(w, h)
 
         filename = f"scenario-{scenario_id}.png"
-        out_path = os.path.join(out_dir, filename)
+        out_path = os.path.join(target_base_path, filename)
         fig = plt.gcf()
         # w, h = mng.window.maxsize()
         dpi = 100
@@ -175,10 +184,10 @@ def dump_plots(out_dir: str, scenario_dict):
         print(f"Saving {out_path}")
         fig.savefig(out_path, dpi=100)
         plt.close("all")
-    print(f"All map images saved at {out_dir}")
+    print(f"All map images saved at {target_base_path}")
 
 
-def get_scenario_dict(tfrecord_file: str) -> List[str]:
+def get_scenario_dict(tfrecord_file: str):
     scenario_dict = {}
     dataset = read_tfrecord_file(tfrecord_file)
     for record in dataset:
@@ -273,6 +282,30 @@ def export_scenario(
     print("\n")
 
 
+def check_index_validity(input_arg: str, upper_limit: int, command_type: str) -> Optional[int]:
+    try:
+        idx = int(input_arg)
+        if not (1 <= idx <= upper_limit):
+            print(f"Invalid index. Please enter an index between 1 and {upper_limit}.")
+            return
+    except Exception:
+        print(f"Invalid index. Please input an integer for the the `{command_type}` command")
+        return
+    return idx
+
+
+def check_path_validity(target_base_path: str) -> bool:
+    # Check if target base path is valid
+    try:
+        Path(target_base_path).resolve()
+    except (OSError, RuntimeError):
+        print(
+            f"{target_base_path} is an invalid path. Please enter a valid directory path"
+        )
+        return False
+    return True
+
+
 def tfrecords_browser(tfrecord_path: str):
     scenarios_per_tfrecords = parse_tfrecords(tfrecord_path)
     tf_records = []
@@ -281,19 +314,18 @@ def tfrecords_browser(tfrecord_path: str):
         tf_records.append([tf_counter, tf])
         tf_counter += 1
     stop_browser = False
-    while not stop_browser:
-        print("\n")
-        print("-----------------------------------------------")
-        print("Waymo tfRecords:\n")
-        print(
-            tabulate(
-                tf_records,
-                headers=["Index", "TfRecords"],
-            )
+    print("\n")
+    print("-----------------------------------------------")
+    print("Waymo tfRecords:\n")
+    print(
+        tabulate(
+            tf_records,
+            headers=["Index", "TfRecords"],
         )
-        print("\n")
+    )
+    while not stop_browser:
         print(
-            "TfRecords Browser."
+            "TfRecords Browser.\n"
             "You can use the following commands to further explore these datasets:\n"
             "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
             f"2. `display <index>` --> Displays the info of tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
@@ -311,34 +343,25 @@ def tfrecords_browser(tfrecord_path: str):
 
         elif re.compile("^display [\d]+$").match(user_input):
             input_lst = user_input.split()
-            try:
-                idx = int(input_lst[1])
-                if not (1 <= idx <= len(tf_records)):
-                    print(f"Please enter an index between 1 and {len(tf_records)}.")
-                    continue
-            except Exception:
-                print("Please input an integer for the the `display` command")
+            idx = check_index_validity(input_lst[1], len(tf_records), "display")
+            if not idx:
                 continue
             tf_path = tf_records[idx - 1][1]
             display_scenarios_in_tfrecord(tf_path, scenarios_per_tfrecords[tf_path])
 
-        elif user_input == "exit":
-            stop_browser = True
-
         elif re.compile("^explore [\d]+$").match(user_input):
             input_lst = user_input.split()
-            try:
-                idx = int(input_lst[1])
-                if not (1 <= idx <= len(tf_records)):
-                    print(f"Please enter an index between 1 and {len(tf_records)}.")
-                    continue
-            except Exception:
-                print("Please input an integer for the the `explore` command")
+            idx = check_index_validity(input_lst[1], len(tf_records), "explore")
+            if not idx:
                 continue
             tf_path = tf_records[idx - 1][1]
             stop_browser = explore_tf_record(tf_path, scenarios_per_tfrecords[tf_path])
+
+        elif user_input == "exit":
+            stop_browser = True
+
         else:
-            print("Please enter a valid command. See command formats above")
+            print("Invalid command. Please enter a valid command. See command formats above")
 
     print("Exiting the Browser")
 
@@ -349,7 +372,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
     while not stop_exploring:
         print("\n")
         print(
-            f"{tfrecord} TfRecord Browser."
+            f"{os.path.basename(tfrecord)} TfRecord Browser.\n"
             f"You can use the following commands to further explore these scenarios:\n"
             "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid directory path.\n"
             f"2. `export <index> <target_base_path>' --> Export the scenario at this index of the table to a target path. The index should be an integer between 1 and {len(scenario_ids)} and path should be valid.\n"
@@ -365,13 +388,9 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
         if re.compile("^export all [^\n ]+$").match(user_input):
             target_base_path = user_input.split()[2]
             # Check if target base path is valid
-            try:
-                Path(target_base_path).resolve()
-            except (OSError, RuntimeError):
-                print(
-                    f"{target_base_path} is an invalid path. Please enter a valid directory path"
-                )
+            if not check_path_validity(target_base_path):
                 continue
+
             # Try exporting all the scenarios
             for id in scenario_ids:
                 export_scenario(target_base_path, tfrecord, id)
@@ -380,57 +399,36 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             input_lst = user_input.split()
 
             # Check if index passed is valid
-            try:
-                scenario_idx = int(input_lst[1])
-                if not (1 <= scenario_idx <= len(scenario_ids)):
-                    print(f"Please enter an index between 1 and {len(scenario_ids)}.")
-                    continue
-            except Exception:
-                print(
-                    "Please input an integer for the index argument of `export` command"
-                )
+            idx = check_index_validity(input_lst[1], len(scenario_ids), "export")
+            if not idx:
                 continue
+
             # Check if target base path is valid
             target_base_path = input_lst[2]
-            try:
-                Path(target_base_path).resolve()
-            except (OSError, RuntimeError):
-                print(
-                    f"{target_base_path} is an invalid path. Please enter a valid directory path"
-                )
+            if not check_path_validity(target_base_path):
                 continue
+
             # Try exporting the scenario
-            export_scenario(target_base_path, tfrecord, scenario_ids[scenario_idx - 1])
+            export_scenario(target_base_path, tfrecord, scenario_ids[idx - 1])
 
         elif re.compile("^preview all [^\n ]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if target base path is valid
             target_base_path = input_lst[2]
-            try:
-                Path(target_base_path).resolve()
-            except (OSError, RuntimeError):
-                print(
-                    f"{target_base_path} is an invalid path. Please enter a valid path"
-                )
+            if not check_path_validity(target_base_path):
                 continue
+
             # Dump all the scenario plots of this tfrecord file to this target base path
-            print(f"Plotting all the scenario in {tfrecord} tfrecord file")
+            print(f"Plotting and all the scenario in {tfrecord} tfrecord file")
             dump_plots(target_base_path, scenario_dict)
 
         elif re.compile("^preview [\d]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
-            try:
-                scenario_idx = int(input_lst[1])
-                if not (1 <= scenario_idx <= len(scenario_ids)):
-                    print(f"Please enter an index between 1 and {len(scenario_ids)}.")
-                    continue
-            except Exception:
-                print(
-                    "Please input an integer for the index argument of `preview` command"
-                )
+            scenario_idx = check_index_validity(input_lst[1], len(scenario_ids), "preview")
+            if not scenario_idx:
                 continue
 
             # Plot the map of this scenario
@@ -441,14 +439,13 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             input_lst = user_input.split()
 
             # Check if index passed is valid
-            scenario_idx = int(input_lst[1])
-            if not (1 <= scenario_idx <= len(scenario_ids)):
-                print(f"Please enter an index between 1 and {len(scenario_ids)}.")
+            scenario_idx = check_index_validity(input_lst[1], len(scenario_ids), "select")
+            if not scenario_idx:
                 continue
 
             # Explore further the scenario at this index
             scenario_id = scenario_ids[scenario_idx - 1]
-            exit_browser = explore_scenario(scenario_dict[scenario_id])
+            exit_browser = explore_scenario(tfrecord, scenario_dict[scenario_id])
             if exit_browser:
                 return True
 
@@ -460,11 +457,11 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
         elif user_input == "exit":
             return True
         else:
-            print("Please enter a valid command. See command formats above")
+            print("Invalid command. Please enter a valid command. See command formats above")
     return False
 
 
-def explore_scenario(tfrecord_file_path: str, scenario) -> Tuple[bool]:
+def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
     scenario_data = [
         scenario.scenario_id,
         len(scenario.timestamps_seconds),
@@ -542,7 +539,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> Tuple[bool]:
     while not stop_exploring:
         print("\n")
         print(
-            f"Scenario {scenario.scenario_id}."
+            f"Scenario {scenario.scenario_id}.\n"
             "You can use the following commands to further this scenario:\n"
             f"1. `export <target_base_path>' --> Export the scenario to a target path. The path should be valid.\n"
             f"4. `preview` --> Plot and display the map of the scenario.\n"
@@ -557,12 +554,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> Tuple[bool]:
 
             # Check if target base path is valid
             target_base_path = input_lst[2]
-            try:
-                Path(target_base_path).resolve()
-            except (OSError, RuntimeError):
-                print(
-                    f"{target_base_path} is an invalid path. Please enter a valid directory path"
-                )
+            if not check_path_validity(target_base_path):
                 continue
             # Try exporting the scenario to the target_base_path
             export_scenario(target_base_path, tfrecord_file_path, scenario.scenario_id)
@@ -579,7 +571,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> Tuple[bool]:
         elif user_input == "exit":
             return True
         else:
-            print("Please enter a valid command. See command formats above")
+            print("Invalid command. Please enter a valid command. See command formats above")
     return False
 
 
