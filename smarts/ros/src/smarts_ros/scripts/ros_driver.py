@@ -28,9 +28,10 @@ import sys
 import time
 from collections import deque
 from threading import Lock
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple, Optional
 
 import numpy as np
+# pytype: disable=import-error 
 import rospy
 from smarts_ros.msg import (
     AgentReport,
@@ -41,10 +42,11 @@ from smarts_ros.msg import (
     SmartsReset,
 )
 from smarts_ros.srv import SmartsInfo, SmartsInfoRequest, SmartsInfoResponse
+# pytype: enable=import-error
 
 from envision.client import Client as Envision
 from smarts.core.agent import Agent
-from smarts.core.coordinates import Dimensions, Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Pose, Point
 from smarts.core.plan import (
     EndlessGoal,
     Mission,
@@ -101,7 +103,7 @@ class ROSDriver:
         node_name: str = "SMARTS",
         def_namespace: str = "SMARTS/",
         buffer_size: int = 3,
-        target_freq: float = None,
+        target_freq: Optional[float] = None,
         time_ratio: float = 1.0,
         pub_queue_size: int = 10,
     ):
@@ -276,13 +278,13 @@ class ROSDriver:
     @staticmethod
     def _pose_from_ros(ros_pose) -> Pose:
         return Pose(
-            position=(ros_pose.position.x, ros_pose.position.y, ros_pose.position.z),
-            orientation=(
+            position=np.ndarray((ros_pose.position.x, ros_pose.position.y, ros_pose.position.z)),
+            orientation=np.ndarray((
                 ros_pose.orientation.x,
                 ros_pose.orientation.y,
                 ros_pose.orientation.z,
                 ros_pose.orientation.w,
-            ),
+            )),
         )
 
     def _agent_spec_callback(self, ros_agent_spec: AgentSpec):
@@ -292,7 +294,7 @@ class ROSDriver:
         task = ros_agent_spec.tasks[0]
         task_params = json.loads(task.params_json) if task.params_json else {}
         task_version = task.task_ver or "latest"
-        agent_locator = f"{self._zoo_module}:{task.task_ref}-{task_version}"
+        agent_locator = f"{self._zoo_module}:{task.task_ref}-{task_version}" # pytype: disable=attribute-error
         agent_spec = None
         try:
             agent_spec = registry.make(agent_locator, **task_params)
@@ -308,7 +310,7 @@ class ROSDriver:
             or ros_agent_spec.end_pose.position.y != 0.0
         ):
             goal = PositionalGoal(
-                (
+                Point(
                     ros_agent_spec.end_pose.position.x,
                     ros_agent_spec.end_pose.position.y,
                 ),
@@ -483,7 +485,7 @@ class ROSDriver:
         vs.linear_acceleration += staleness * lin_acc_slope
         vs.angular_acceleration += staleness * ang_acc_slope
 
-    def _update_smarts_state(self) -> float:
+    def _update_smarts_state(self) -> Optional[float]:
         with self._state_lock:
             if (
                 not self._recent_state
@@ -607,7 +609,7 @@ class ROSDriver:
             self._agents_to_add = {}
             return actions
 
-    def _get_map_spec(self) -> MapSpec:
+    def _get_map_spec(self) -> Optional[MapSpec]:
         """SMARTS ROS nodes can extend from this ROSDriver base class
         and implement this method to return an alternative MapSpec object
         designating the map builder to use in the Scenario (returning None
@@ -615,7 +617,7 @@ class ROSDriver:
         self._scenario_path can be used to construct a MapSpec object."""
         return None
 
-    def _check_reset(self) -> Dict[str, Observation]:
+    def _check_reset(self) -> Optional[Dict[str, Observation]]:
         with self._reset_lock:
             if self._reset_msg:
                 self._scenario_path = self._reset_msg.scenario
@@ -638,7 +640,7 @@ class ROSDriver:
         if not self._smarts:
             raise RuntimeError("must call setup_smarts() first.")
 
-        rospy.Service(self._service_name, SmartsInfo, self._get_smarts_info)
+        rospy.Service(self._service_name, SmartsInfo, self._get_smarts_info) # pytype: disable=attribute-error
 
         warned_scenario = False
         observations = {}

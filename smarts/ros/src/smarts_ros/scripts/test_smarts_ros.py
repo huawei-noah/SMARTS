@@ -29,6 +29,7 @@ import os
 import sys
 from unittest import TestCase
 
+# pytype: disable=import-error
 import rospy
 from smarts_ros.msg import (
     AgentReport,
@@ -40,6 +41,7 @@ from smarts_ros.msg import (
     SmartsReset,
 )
 from smarts_ros.srv import SmartsInfo
+# pytype: enable=import-error
 
 from smarts.core.coordinates import fast_quaternion_from_angle
 
@@ -151,7 +153,7 @@ class TestSmartsRos(TestCase):
         if not self._agents:
             self._create_agent()
         for agent_spec in self._agents.values():
-            self._agent_publisher.publish(agent_spec)
+            self._agent_publisher.publish(agent_spec) # pytype: disable=attribute-error
 
     def run_forever(self):
         """Publish the SMARTS ros test node and run indefinitely."""
