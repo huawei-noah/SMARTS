@@ -28,6 +28,7 @@ import yaml
 import re
 from typing import Dict, List, Tuple, Union
 from tabulate import tabulate
+from functools import lru_cache
 from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -44,6 +45,28 @@ def convert_polyline(polyline) -> Tuple[List[float], List[float]]:
     return xs, ys
 
 
+@lru_cache(maxsize=None)
+def get_legend_handles() -> List[Line2D]:
+    handles = [
+        Line2D([0], [0], linestyle=":", color="gray", label="Lane Polyline"),
+        Line2D([0], [0], linestyle="-", color="yellow", label="Single Road Line"),
+        Line2D([0], [0], linestyle="--", color="yellow", label="Double Road Line"),
+        Line2D([0], [0], linestyle="-", color="black", label="Road Edge"),
+        Line2D([0], [0], linestyle="--", color="black", label="Crosswalk"),
+        Line2D([0], [0], linestyle=":", color="black", label="Speed Bump"),
+        Line2D(
+            [],
+            [],
+            color="red",
+            marker="o",
+            linestyle="None",
+            markersize=5,
+            label="Stop Sign",
+        ),
+    ]
+    return handles
+
+
 def get_map_features_for_scenario(scenario) -> Dict:
     map_features = {
         "lane": [],
@@ -58,7 +81,7 @@ def get_map_features_for_scenario(scenario) -> Dict:
         key = map_feature.WhichOneof("feature_data")
         if key is not None:
             map_features[key].append(
-                getattr(map_feature, key)
+                (getattr(map_feature, key), map_feature.id)
             )  # tls_lanes = get_traffic_light_lanes(scenario)
     return map_features
 
@@ -74,59 +97,41 @@ def get_traffic_light_lanes(scenario) -> List[str]:
     return tls_lanes
 
 
-def plot_map_features(map_features) -> List[Line2D]:
-    handles = []
-    lanes = map_features["lane"]
-    lane_points = [convert_polyline(lane.polyline) for lane in lanes]
-    # lanes = list(filter(lambda lane: max(lane[1]) > 8150, lanes))
-    for xs, ys in lane_points:
-        plt.plot(xs, ys, linestyle=":", color="gray")
-    handles.append(Line2D([0], [0], linestyle=":", color="gray", label="Lane Polyline"))
+def plot_map_features(map_features, feature_id=None):
+    for lane in map_features["lane"]:
+        xs, ys = convert_polyline(lane[0].polyline)
+        if lane[1] == feature_id:
+            plt.plot(xs, ys, linestyle=":", color="blue")
+        else:
+            plt.plot(xs, ys, linestyle=":", color="gray")
 
     for road_line in map_features["road_line"]:
-        xs, ys = convert_polyline(road_line.polyline)
-        if road_line.type in [1, 4, 5]:
+        xs, ys = convert_polyline(road_line[0].polyline)
+        if road_line[0].type in [1, 4, 5]:
             plt.plot(xs, ys, "y--")
         else:
             plt.plot(xs, ys, "y-")
-    handles.append(
-        Line2D([0], [0], linestyle="-", color="yellow", label="Single Road Line")
-    )
-    handles.append(
-        Line2D([0], [0], linestyle="--", color="yellow", label="Double Road Line")
-    )
 
     for road_edge in map_features["road_edge"]:
-        xs, ys = convert_polyline(road_edge.polyline)
+        xs, ys = convert_polyline(road_edge[0].polyline)
         plt.plot(xs, ys, "k-")
-    handles.append(Line2D([0], [0], linestyle="-", color="black", label="Road Edge"))
 
     for crosswalk in map_features["crosswalk"]:
-        xs, ys = convert_polyline(crosswalk.polygon)
+        xs, ys = convert_polyline(crosswalk[0].polygon)
         plt.plot(xs, ys, "k--")
-    handles.append(Line2D([0], [0], linestyle="--", color="black", label="Crosswalk"))
 
     for speed_bump in map_features["speed_bump"]:
-        xs, ys = convert_polyline(speed_bump.polygon)
+        xs, ys = convert_polyline(speed_bump[0].polygon)
         plt.plot(xs, ys, "k:")
-    handles.append(Line2D([0], [0], linestyle=":", color="black", label="Speed Bump"))
 
     for stop_sign in map_features["stop_sign"]:
         plt.scatter(
-            stop_sign.position.x, stop_sign.position.y, marker="o", c="#ff0000", alpha=1
-        )
-    handles.append(
-        Line2D(
-            [],
-            [],
-            color="red",
+            stop_sign[0].position.x,
+            stop_sign[0].position.y,
             marker="o",
-            linestyle="None",
-            markersize=5,
-            label="Stop Sign",
+            c="#ff0000",
+            alpha=1,
         )
-    )
-    return handles
 
 
 def plot_scenario(scenario):
@@ -137,8 +142,8 @@ def plot_scenario(scenario):
     fig, ax = plt.subplots()
     ax.set_title(f"Scenario {scenario.scenario_id}")
     ax.axis("equal")
-    handles = plot_map_features(map_features)
-    plt.legend(handles=handles)
+    plot_map_features(map_features)
+    plt.legend(handles=get_legend_handles())
 
     mng = plt.get_current_fig_manager()
     mng.resize(1000, 1000)
@@ -153,8 +158,8 @@ def dump_plots(out_dir: str, scenario_dict):
 
         fig, ax = plt.subplots()
         ax.set_title(f"Scenario {scenario_id}")
-        handles = plot_map_features(map_features)
-        plt.legend(handles=handles)
+        plot_map_features(map_features)
+        plt.legend(handles=get_legend_handles())
         mng = plt.get_current_fig_manager()
         # mng.resize(*mng.window.maxsize())
         w = 1000
@@ -191,7 +196,7 @@ def parse_tfrecords(tfrecord_path: str):
         for f in os.listdir(tfrecord_path):
             if ".tfrecord" in f and os.path.isfile(os.path.join(tfrecord_path, f)):
                 scenario_dict = get_scenario_dict(os.path.join(tfrecord_path, f))
-                scenarios_per_tfrecord[f] = scenario_dict
+                scenarios_per_tfrecord[os.path.join(tfrecord_path, f)] = scenario_dict
     else:
         scenarios_per_tfrecord[tfrecord_path] = get_scenario_dict(tfrecord_path)
     return scenarios_per_tfrecord
@@ -226,7 +231,7 @@ def display_scenarios_in_tfrecord(tfrecord_path, scenario_dict) -> List[str]:
                 "Timestamps",
                 "Track Objects",
                 "Traffic Lights",
-                "Object of Interest",
+                "Objects of Interest",
             ],
         )
     )
@@ -241,7 +246,7 @@ def export_scenario(
         os.makedirs(subfolder_path)
         print(f"Created folder {scenario_id} at path {target_base_path}")
     except FileExistsError:
-        print(f"Folder already exists at path {subfolder_path}")
+        print(f"Folder {scenario_id} already exists at path {target_base_path}")
     except (OSError, RuntimeError):
         print(f"{target_base_path} is an invalid path. Please enter a valid path")
         return
@@ -265,6 +270,7 @@ def export_scenario(
     with open(os.path.join(subfolder_path, "waymo.yaml"), "w") as yaml_file:
         yaml.dump(yaml_dataspec, yaml_file, default_flow_style=False)
         print(f"waymo.yaml created in {subfolder_path}")
+    print("\n")
 
 
 def tfrecords_browser(tfrecord_path: str):
@@ -287,8 +293,10 @@ def tfrecords_browser(tfrecord_path: str):
         )
         print("\n")
         print(
+            "TfRecords Browser."
             "You can use the following commands to further explore these datasets:\n"
             "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
+            f"2. `display <index>` --> Displays the info of tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
             f"2. `explore <index>` --> Explore the tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
             "3. `exit` --> Exit the program\n"
         )
@@ -300,6 +308,20 @@ def tfrecords_browser(tfrecord_path: str):
                 display_scenarios_in_tfrecord(
                     tf_record[1], scenarios_per_tfrecords[tf_record[1]]
                 )
+
+        elif re.compile("^display [\d]+$").match(user_input):
+            input_lst = user_input.split()
+            try:
+                idx = int(input_lst[1])
+                if not (1 <= idx <= len(tf_records)):
+                    print(f"Please enter an index between 1 and {len(tf_records)}.")
+                    continue
+            except Exception:
+                print("Please input an integer for the the `display` command")
+                continue
+            tf_path = tf_records[idx - 1][1]
+            display_scenarios_in_tfrecord(tf_path, scenarios_per_tfrecords[tf_path])
+
         elif user_input == "exit":
             stop_browser = True
 
@@ -314,22 +336,21 @@ def tfrecords_browser(tfrecord_path: str):
                 print("Please input an integer for the the `explore` command")
                 continue
             tf_path = tf_records[idx - 1][1]
-            stop_browser = explore_tf_record(
-                tf_path, scenarios_per_tfrecords[tf_path]
-            )
+            stop_browser = explore_tf_record(tf_path, scenarios_per_tfrecords[tf_path])
         else:
             print("Please enter a valid command. See command formats above")
 
     print("Exiting the Browser")
 
 
-def explore_tf_record(tfrecord: str, scenario_dict):
+def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
     scenario_ids = display_scenarios_in_tfrecord(tfrecord, scenario_dict)
     stop_exploring = False
     while not stop_exploring:
         print("\n")
         print(
-            "You can use the following commands to further explore these scenarios:\n"
+            f"{tfrecord} TfRecord Browser."
+            f"You can use the following commands to further explore these scenarios:\n"
             "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid directory path.\n"
             f"2. `export <index> <target_base_path>' --> Export the scenario at this index of the table to a target path. The index should be an integer between 1 and {len(scenario_ids)} and path should be valid.\n"
             "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path. Path should be valid.\n"
@@ -365,7 +386,9 @@ def explore_tf_record(tfrecord: str, scenario_dict):
                     print(f"Please enter an index between 1 and {len(scenario_ids)}.")
                     continue
             except Exception:
-                print("Please input an integer for the index argument of `export` command")
+                print(
+                    "Please input an integer for the index argument of `export` command"
+                )
                 continue
             # Check if target base path is valid
             target_base_path = input_lst[2]
@@ -405,9 +428,12 @@ def explore_tf_record(tfrecord: str, scenario_dict):
                     print(f"Please enter an index between 1 and {len(scenario_ids)}.")
                     continue
             except Exception:
-                print("Please input an integer for the index argument of `export` command")
+                print(
+                    "Please input an integer for the index argument of `preview` command"
+                )
                 continue
-            # Dump all the scenario plots of this tfrecord file to this target base path
+
+            # Plot the map of this scenario
             scenario_id = scenario_ids[scenario_idx - 1]
             plot_scenario(scenario_dict[scenario_id])
 
@@ -422,11 +448,132 @@ def explore_tf_record(tfrecord: str, scenario_dict):
 
             # Explore further the scenario at this index
             scenario_id = scenario_ids[scenario_idx - 1]
-            # stop_exploring = explore_scenario(scenario_dict[scenario_id])
+            exit_browser = explore_scenario(scenario_dict[scenario_id])
+            if exit_browser:
+                return True
 
         elif user_input == "go back":
             stop_exploring = True
             print("Going back to the tfRecords browser")
+            continue
+
+        elif user_input == "exit":
+            return True
+        else:
+            print("Please enter a valid command. See command formats above")
+    return False
+
+
+def explore_scenario(tfrecord_file_path: str, scenario) -> Tuple[bool]:
+    scenario_data = [
+        scenario.scenario_id,
+        len(scenario.timestamps_seconds),
+        len(scenario.tracks),
+        len(scenario.dynamic_map_states),
+        len(scenario.objects_of_interest),
+    ]
+    print("                                               ")
+    print("-----------------------------------------------")
+    print(f"Scenario {scenario.scenario_id}:\n")
+    print(
+        tabulate(
+            [scenario_data],
+            headers=[
+                "Scenario ID",
+                "Timestamps",
+                "Track Objects",
+                "Traffic Lights",
+                "Objects of Interest",
+            ],
+        )
+    )
+    scenario_map_features = get_map_features_for_scenario(scenario)
+    map_features = [
+        len(scenario_map_features["lanes"]),
+        len(scenario_map_features["road_line"]),
+        len(scenario_map_features["road_edge"]),
+        len(scenario_map_features["stop_sign"]),
+        len(scenario_map_features["crosswalk"]),
+        len(scenario_map_features["speed_bump"]),
+    ]
+    print("-----------------------------------------------")
+    print(f"Scenario {scenario.scenario_id} map data:\n")
+    print(
+        tabulate(
+            [map_features],
+            headers=[
+                "Lanes",
+                "Road Lines",
+                "Road Edges",
+                "Stop Signs",
+                "Crosswalks",
+                "Speed Bumps",
+            ],
+        )
+    )
+    print("Lane Ids: ", [lane[1] for lane in scenario_map_features["lanes"]])
+    print("\n")
+    print(
+        "Road Line Ids: ",
+        [road_line[1] for road_line in scenario_map_features["road_line"]],
+    )
+    print("\n")
+    print(
+        "Road Edge Ids: ",
+        [road_edge[1] for road_edge in scenario_map_features["road_edge"]],
+    )
+    print("\n")
+    print(
+        "Stop Sign Ids: ",
+        [stop_sign[1] for stop_sign in scenario_map_features["stop_sign"]],
+    )
+    print("\n")
+    print(
+        "Crosswalk Ids: ",
+        [crosswalk[1] for crosswalk in scenario_map_features["crosswalk"]],
+    )
+    print("\n")
+    print(
+        "Speed Bumps Ids: ",
+        [speed_bump[1] for speed_bump in scenario_map_features["speed_bump"]],
+    )
+    print("\n")
+    stop_exploring = False
+    while not stop_exploring:
+        print("\n")
+        print(
+            f"Scenario {scenario.scenario_id}."
+            "You can use the following commands to further this scenario:\n"
+            f"1. `export <target_base_path>' --> Export the scenario to a target path. The path should be valid.\n"
+            f"4. `preview` --> Plot and display the map of the scenario.\n"
+            "6. `go back` --> Go back to this scenario's tfrecord browser.\n"
+            "7. `exit` --> Exit the program\n"
+        )
+        print("\n")
+        raw_input = input("Command: ").lower()
+        user_input = raw_input.strip()
+        if re.compile("^export [^\n ]+$").match(user_input):
+            input_lst = user_input.split()
+
+            # Check if target base path is valid
+            target_base_path = input_lst[2]
+            try:
+                Path(target_base_path).resolve()
+            except (OSError, RuntimeError):
+                print(
+                    f"{target_base_path} is an invalid path. Please enter a valid directory path"
+                )
+                continue
+            # Try exporting the scenario to the target_base_path
+            export_scenario(target_base_path, tfrecord_file_path, scenario.scenario_id)
+
+        elif re.compile("^preview$").match(user_input):
+            # Plot this scenario
+            plot_scenario(scenario)
+
+        elif user_input == "go back":
+            stop_exploring = True
+            print("Going back to the tfRecord Explorer")
             continue
 
         elif user_input == "exit":
@@ -444,6 +591,4 @@ if __name__ == "__main__":
     parser.add_argument("file", help="TFRecord file/folder path")
     args = parser.parse_args()
 
-    # display_scenario_info(parse_tfrecords(args.file))
-    # export_scenario("scenarios/waymo_motion", args.file, "4f30f060069bbeb9")
     tfrecords_browser(args.file)

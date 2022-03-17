@@ -13,8 +13,10 @@ dataset_path = dataset_spec["input_path"]
 scenario_id = dataset_spec["scenario_id"]
 
 gen_scenario(
-    Scenario(map_spec=MapSpec(source=f"{dataset_path}#{scenario_id}", lanepoint_spacing=1.0),
-             traffic_histories=["waymo.yaml"]),
+    Scenario(
+        map_spec=MapSpec(source=f"{dataset_path}#{scenario_id}", lanepoint_spacing=1.0),
+        traffic_histories=["waymo.yaml"],
+    ),
     output_dir=str(Path(__file__).parent),
     overwrite=True,
 )
