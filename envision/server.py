@@ -61,6 +61,7 @@ class AllowCORSMixin:
         """Setup the default headers.
         In this case they are the minimum required CORS releated headers.
         """
+        # pytype: disable=attribute-error
         self.set_header("Access-Control-Allow-Origin", "*")
         self.set_header("Access-Control-Allow-Headers", "x-requested-with")
         self.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
