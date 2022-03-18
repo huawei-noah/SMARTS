@@ -427,8 +427,8 @@ def tfrecords_browser(tfrecord_path: str):
                 "You can use the following commands to further explore these datasets:\n"
                 "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
                 f"2. `display <index>` --> Displays the info of tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
-                f"2. `explore <index>` --> Explore the tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
-                "3. `exit` --> Exit the program\n"
+                f"3. `explore <index>` --> Explore the tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
+                "4. `exit` --> Exit the program\n"
             )
 
             print_commands = False
@@ -501,6 +501,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             # Try exporting all the scenarios
             for id in scenario_ids:
                 export_scenario(target_base_path, tfrecord, id)
+            print_commands = True
 
         elif re.compile("^export[\s]+[\d]+[\s]+[^\n ]+$").match(user_input):
             input_lst = user_input.split()
@@ -529,6 +530,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             # Dump all the scenario plots of this tfrecord file to this target base path
             print(f"Plotting and all the scenario in {tfrecord} tfrecord file")
             dump_plots(target_base_path, scenario_dict)
+            print_commands = True
 
         elif re.compile("^preview[\s]+[\d]+$").match(user_input):
             input_lst = user_input.split()
@@ -647,9 +649,9 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
         f"\nScenario {scenario.scenario_id}.\n"
         "You can use the following commands to further this scenario:\n"
         f"1. `export <target_base_path>' --> Export the scenario to a target path. The path should be valid.\n"
-        f"4. `preview` or `preview <feature_id>` --> Plot and display the map of the scenario with the feature id highlighted in Blue if passed. The feature id needs to be a number from the ids mentioned above and will not be highlighted if it doesnt exist.\n"
-        "6. `go back` --> Go back to this scenario's tfrecord browser.\n"
-        "7. `exit` --> Exit the program\n"
+        f"2. `preview` or `preview <feature_id>` --> Plot and display the map of the scenario with the feature id highlighted in Blue if passed. The feature id needs to be a number from the ids mentioned above and will not be highlighted if it doesnt exist.\n"
+        "3. `go back` --> Go back to this scenario's tfrecord browser.\n"
+        "4. `exit` --> Exit the program\n"
     )
     stop_exploring = False
     while not stop_exploring:
