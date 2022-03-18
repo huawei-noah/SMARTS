@@ -465,7 +465,8 @@ def tfrecords_browser(tfrecord_path: str):
             print(
                 "Invalid command. Please enter a valid command. See command formats above"
             )
-
+    print("If you exported any scenarios, you can build them using the command `scl scenario build <target_base_path>`.\n"
+          "Have a look at README.md at the root level of this repo for more info on how to build scenarios.")
     print("Exiting the Browser")
 
 
@@ -501,6 +502,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             # Try exporting all the scenarios
             for id in scenario_ids:
                 export_scenario(target_base_path, tfrecord, id)
+            print(f"\nYou can build the scenarios exported using the command `scl scenario build-all {target_base_path}`")
             print_commands = True
 
         elif re.compile("^export[\s]+[\d]+[\s]+[^\n ]+$").match(user_input):
@@ -518,7 +520,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
 
             # Try exporting the scenario
             export_scenario(target_base_path, tfrecord, scenario_ids[idx - 1])
-
+            print(f"\nYou can build the scenario exported using the command `scl scenario build {target_base_path}`")
         elif re.compile("^preview[\s]+all[\s]+[^\n ]+$").match(user_input):
             input_lst = user_input.split()
 
@@ -666,6 +668,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
                 continue
             # Try exporting the scenario to the target_base_path
             export_scenario(target_base_path, tfrecord_file_path, scenario.scenario_id)
+            print(f"\nYou can build the scenario exported using the command `scl scenario build {target_base_path}`")
 
         elif re.compile("^preview([\s]+[\d]+)?$").match(user_input):
             input_lst = user_input.split()
