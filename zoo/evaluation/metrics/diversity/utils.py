@@ -280,6 +280,8 @@ def count_intersection_point(curve1, curve2):
     c2_x, c2_y = curve2[0].x, curve2[0].y
     b2_x, b2_y = curve2[1].x, curve2[1].y
     a2_x, a2_y = curve2[2].x, curve2[2].y
+    # Where is Symbol() or solve() from?
+    # pytype: disable=name-error
     x = Symbol("x")
     y = Symbol("y")
     T_raw = solve(
@@ -289,6 +291,7 @@ def count_intersection_point(curve1, curve2):
         ],
         [x, y],
     )
+    # pytype: enable=name-error
     t1, t2 = None, None
     for TT in T_raw:
         if TT[0] >= -eps and TT[1] >= -eps:

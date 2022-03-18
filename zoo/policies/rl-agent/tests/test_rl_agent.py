@@ -1,4 +1,4 @@
-from rl_agent import entrypoint
+from rl_agent import entrypoint # pytype: disable=import-error
 
 
 def test_building():
