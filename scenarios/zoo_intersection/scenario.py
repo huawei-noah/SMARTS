@@ -6,7 +6,7 @@ from smarts.sstudio.types import (
     Distribution,
     EndlessMission,
     Flow,
-    LaneChangingModel,
+    SumoVTypeOverride,
     Mission,
     RandomRoute,
     Route,
@@ -26,13 +26,23 @@ car = TrafficActor(
 cooperative_car = TrafficActor(
     name="cooperative_car",
     speed=Distribution(sigma=0.2, mean=1.0),
-    lane_changing_model=LaneChangingModel(impatience=0.1, cooperative=1),
+    model_overrides=(
+        SumoVTypeOverride(
+            lcImpatience=0.1,
+            lcCooperative=1,
+        ),
+    ),
 )
 
 aggressive_car = TrafficActor(
     name="aggressive_car",
     speed=Distribution(sigma=0.2, mean=1.0),
-    lane_changing_model=LaneChangingModel(impatience=1, cooperative=0.1),
+    model_overrides=(
+        SumoVTypeOverride(
+            lcImpatience=1,
+            lcCooperative=0.1,
+        ),
+    ),
 )
 
 horizontal_routes = [("west-WE", "east-WE"), ("east-EW", "west-EW")]

@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 from sys import maxsize
 from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
+import warnings
 
 import numpy as np
 from shapely.geometry import (
@@ -111,6 +112,10 @@ class LaneChangingModel(_SumoParams):
     """Models how the actor acts with respect to lane changes."""
 
     def __init__(self, **kwargs):
+        warnings.warn(
+            f"The LaneChangingModel has has replaced by {SumoVTypeOverride.__name__}. Instantiating this object type is deprecated.",
+            DeprecationWarning,
+        )
         super().__init__("lc", mode=_SUMO_PARAMS_MODE.KEEP_SNAKE_CASE, **kwargs)
 
 
@@ -118,16 +123,18 @@ class JunctionModel(_SumoParams):
     """Models how the actor acts with respect to waiting at junctions."""
 
     def __init__(self, **kwargs):
+        warnings.warn(
+            f"The JunctionModel has replaced by {SumoVTypeOverride.__name__}. Instantiating this object type is deprecated.",
+            DeprecationWarning,
+        )
         super().__init__("jm", whitelist=["impatience"], **kwargs)
 
 
-class SumoActorModelOverride(_SumoParams):
+class SumoVTypeOverride(_SumoParams):
     """Allows overriding vehicle configuration."""
 
-    def __init__(
-        self, prefix="", whitelist=[], mode=_SUMO_PARAMS_MODE.SAME_AS_SUMO, **kwargs
-    ):
-        super().__init__(prefix, whitelist, mode, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__("", [], _SUMO_PARAMS_MODE.SAME_AS_SUMO, **kwargs)
 
 
 @dataclass(frozen=True)
@@ -221,15 +228,13 @@ class TrafficActor(Actor):
     """The vehicle's maximum velocity (in m/s), defaults 200 km/h for vehicles"""
     vehicle_type: str = "passenger"
     """The configured vehicle type this actor will perform as. ("passenger", "bus", "coach", "truck", "trailer")"""
-    lane_changing_model: LaneChangingModel = field(
+    lane_changing_model: _SumoParams = field(
         default_factory=LaneChangingModel, hash=False
     )
     """Configure sumo options for the lane changing model."""
-    junction_model: JunctionModel = field(default_factory=JunctionModel, hash=False)
+    junction_model: _SumoParams = field(default_factory=JunctionModel, hash=False)
     """Configure sumo options for the junction model."""
-    model_override: Optional[SumoActorModelOverride] = field(
-        default_factory=SumoActorModelOverride, hash=False
-    )
+    model_overrides: Tuple[_SumoParams] = field(default_factory=tuple, hash=False)
     """Configure any sumo options."""
 
     def __hash__(self) -> int:

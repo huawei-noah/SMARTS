@@ -24,7 +24,7 @@ from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
     Distribution,
     Flow,
-    LaneChangingModel,
+    SumoVTypeOverride,
     Mission,
     RandomRoute,
     Route,
@@ -46,7 +46,11 @@ ego_missions = [
 left_traffic_actor = TrafficActor(
     name="car",
     speed=Distribution(sigma=0.2, mean=1),
-    lane_changing_model=LaneChangingModel(impatience=0),
+    model_overrides=(
+        SumoVTypeOverride(
+            lcImpatience=0,
+        ),
+    ),
 )
 scenario = Scenario(
     traffic={

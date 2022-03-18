@@ -31,8 +31,7 @@ from smarts.sstudio import gen_map, gen_missions, gen_traffic
 from smarts.sstudio.types import (
     Distribution,
     Flow,
-    JunctionModel,
-    LaneChangingModel,
+    SumoVTypeOverride,
     MapSpec,
     Mission,
     Route,
@@ -50,8 +49,14 @@ def traffic() -> Traffic:
     car2 = TrafficActor(
         name="car",
         speed=Distribution(sigma=0.2, mean=0.8),
-        lane_changing_model=LaneChangingModel(impatience=1, cooperative=0.25),
-        junction_model=JunctionModel(drive_after_yellow_time=1.0, impatience=0.5),
+        model_overrides=(
+            SumoVTypeOverride(
+                lcImpatience=1,
+                lcCooperative=0.25,
+                jmDriveAfterYellowTime=1.0,
+                impatience=0.5,
+            ),
+        ),
     )
 
     return Traffic(

@@ -11,7 +11,13 @@ traffic = t.Traffic(
         t.Flow(
             route=t.RandomRoute(),
             rate=60 * 60,
-            actors={t.TrafficActor(name="car", vehicle_type=vehicle_type): 1},
+            actors={
+                t.TrafficActor(
+                    name="car",
+                    model_overrides=(t.SumoVTypeOverride(impatience="100"),),
+                    vehicle_type=vehicle_type,
+                ): 1
+            },
         )
         for vehicle_type in [
             "passenger",

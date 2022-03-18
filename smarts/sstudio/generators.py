@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from collections import ChainMap
 import logging
 import os
 import random
@@ -211,17 +212,19 @@ class TrafficGenerator:
             ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"),
             ("xsi:noNamespaceSchemaLocation", "http://sumo.sf.net/xsd/routes_file.xsd"),
         ):
+            sumo_override_types = (types.SumoVTypeOverride.__base__,)
             # Actors and routes may be declared once then reused. To prevent creating
             # duplicates we unique them here.
             for actor in {
                 actor for flow in traffic.flows for actor in flow.actors.keys()
             }:
 
-                model_override = (
-                    actor.model_override
-                    if isinstance(actor.model_override, types.SumoActorModelOverride)
-                    else {}
-                )
+                model_overrides = [
+                    override
+                    for override in actor.model_overrides
+                    if isinstance(override, sumo_override_types)
+                ]
+                model_overrides = dict(ChainMap(*model_overrides[::-1]))
 
                 sigma = min(1, max(0, actor.imperfection.sample()))  # range [0,1]
                 min_gap = max(0, actor.min_gap.sample())  # range >= 0
@@ -238,7 +241,7 @@ class TrafficGenerator:
                     maxSpeed=actor.max_speed,
                     **actor.lane_changing_model,
                     **actor.junction_model,
-                    **model_override,
+                    **model_overrides,
                 )
 
             # Make sure all routes are "resolved" (e.g. `RandomRoute` are converted to

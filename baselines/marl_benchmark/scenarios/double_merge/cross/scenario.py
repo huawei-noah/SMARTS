@@ -34,13 +34,13 @@ missions = [
 impatient_car = t.TrafficActor(
     name="car",
     speed=t.Distribution(sigma=0.2, mean=1.0),
-    lane_changing_model=t.LaneChangingModel(impatience=1, cooperative=0.25),
+    model_overrides=(t.SumoVTypeOverride(impatience=1, lcCooperative=0.25),),
 )
 
 patient_car = t.TrafficActor(
     name="car",
     speed=t.Distribution(sigma=0.2, mean=0.8),
-    lane_changing_model=t.LaneChangingModel(impatience=0, cooperative=0.5),
+    model_overrides=(t.SumoVTypeOverride(impatience=0, lcCooperative=0.5),),
 )
 
 

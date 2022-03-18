@@ -4,8 +4,7 @@ from smarts.sstudio import gen_traffic
 from smarts.sstudio.types import (
     Distribution,
     Flow,
-    JunctionModel,
-    LaneChangingModel,
+    SumoVTypeOverride,
     Route,
     Traffic,
     TrafficActor,
@@ -16,17 +15,28 @@ scenario = os.path.dirname(os.path.realpath(__file__))
 impatient_car = TrafficActor(
     name="car",
     speed=Distribution(sigma=0.2, mean=1.0),
-    lane_changing_model=LaneChangingModel(impatience=1, cooperative=0.25),
-    junction_model=JunctionModel(
-        drive_after_red_time=1.5, drive_after_yellow_time=1.0, impatience=1.0
+    model_overrides=(
+        SumoVTypeOverride(
+            lcImpatience=1,
+            lcCooperative=0.25,
+            jmDriveAfterRedTime=1.5,
+            jmDriveAfterYellowTime=1.0,
+            impatience=1.0,
+        ),
     ),
 )
 
 patient_car = TrafficActor(
     name="car",
     speed=Distribution(sigma=0.2, mean=0.8),
-    lane_changing_model=LaneChangingModel(impatience=0, cooperative=0.5),
-    junction_model=JunctionModel(drive_after_yellow_time=1.0, impatience=0.5),
+    model_overrides=(
+        SumoVTypeOverride(
+            lcImpatience=0,
+            lcCooperative=0.5,
+            jmDriveAfterYellowTime=1.0,
+            impatience=0.5,
+        ),
+    ),
 )
 
 vertical_routes = [
