@@ -10,7 +10,7 @@ class Observation(gym.Wrapper):
         self._n_stack = n_stack
         self._frames = deque(maxlen=self._n_stack)
         self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(256, 256, n_stack), dtype=np.uint8
+            low=0, high=255, shape=(n_stack, 256, 256), dtype=np.uint8
         )
 
     def _stack_obs(self, obs: np.ndarray):
@@ -30,7 +30,7 @@ class Observation(gym.Wrapper):
                 Observation, reward, done, info, of the agent.
         """
         obs, rewards, dones, infos = self.env.step(action)
-        converted = normalize_img(obs.rgb)
+        converted = format_img(obs.rgb)
         stacked = self._stack_obs(converted)
 
         # plotter(obs.rgb, rgb_gray=3, name="Original RGB")
@@ -45,30 +45,33 @@ class Observation(gym.Wrapper):
             np.ndarray: Agent's observation after reset.
         """
         obs = self.env.reset()
-        converted = normalize_img(obs.rgb)
+        converted = format_img(obs.rgb)
         for _ in range(self._n_stack - 1):
             self._frames.appendleft(converted)
 
         return self._stack_obs(converted)
 
 
-def normalize_img(img: np.ndarray) -> np.ndarray:
+def format_img(img: np.ndarray) -> np.ndarray:
 
-    # Repaint self
+    # Repaint ego
     clr = (122, 140, 153)
     repainted = img.copy()
     repainted[123:132, 126:130, 0] = clr[0]
     repainted[123:132, 126:130, 1] = clr[1]
     repainted[123:132, 126:130, 2] = clr[2]
 
-    # Convert to grayscale
+    # RGB to grayscale
     R, G, B = repainted[:, :, 0], repainted[:, :, 1], repainted[:, :, 2]
     gray = 0.2989 * R + 0.587 * G + 0.114 * B
 
     # Expand dims
     expanded = np.expand_dims(gray, -1)
 
-    return np.uint8(expanded)
+    # Channel first
+    transposed = expanded.transpose(2, 0, 1)
+
+    return np.uint8(transposed)
 
 
 def plotter(obs: np.ndarray, rgb_gray=1, name: str = "Graph"):
