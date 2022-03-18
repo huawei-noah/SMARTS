@@ -24,7 +24,7 @@ import sys
 from multiprocessing import Process, Semaphore
 from pathlib import Path
 from threading import Thread
-from typing import Sequence
+from typing import Sequence, Callable
 
 import click
 
@@ -84,7 +84,7 @@ def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
 
 
 def _build_single_scenario_proc(
-    clean: bool, allow_offset_map: bool, scenario: str, semaphore: Semaphore
+    clean: bool, allow_offset_map: bool, scenario: str, semaphore: Semaphore # pytype: disable=invalid-annotation
 ):
     semaphore.acquire()
     try:
