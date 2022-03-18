@@ -36,7 +36,7 @@ seed = 2
 task_id = "00"
 task_level = "easy"
 
-
+# pytype: disable=name-error
 class EpisodeTest(unittest.TestCase):
     # Put generated files and folders in this directory.
     OUTPUT_DIRECTORY = "tests/episode_test/"
@@ -114,9 +114,10 @@ class EpisodeTest(unittest.TestCase):
             #     # self.assertTrue(
             #     #     abs(result[key] - episode_info["Train"][AGENT_ID].data[key]) <= 0.001
             #     # )
-
-    @unittest.skip
-    def test_episode_counter(self):
+    # pytype: disable=wrong-arg-types
+    @unittest.skip 
+    def test_episode_counter(self): 
+    # pytype: enable=wrong-arg-types
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
         def run_experiment():
             agent, env = prepare_test_env_agent()
@@ -141,11 +142,11 @@ class EpisodeTest(unittest.TestCase):
                         info=infos[AGENT_ID],
                     )
                     episode.record_step(
-                        agent_id=AGENT_ID,
+                        agent_ids_to_record=AGENT_ID,
                         infos=infos,
                         rewards=rewards,
                         total_step=total_step,
-                        loss_output=loss_output,
+                        loss_outputs=loss_output,
                     )
                     state = next_state
                     total_step += 1

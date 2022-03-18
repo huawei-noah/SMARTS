@@ -262,8 +262,10 @@ class EvaluateTest(unittest.TestCase):
     # This test performs evaluation on multiple agents, but the test map
     # that is created can only support one agent. Skip this for now until
     # we can specify a map to use that supports multiple agents.
+    # pytype: disable=wrong-arg-types
     @unittest.skip
     def test_evaluate_multiagent(self):
+    # pytype: enable=wrong-arg-types
         seed = 2
         models_directory = glob.glob(
             os.path.join(
@@ -378,7 +380,7 @@ class EvaluateTest(unittest.TestCase):
             )
 
             try:
-                policy_class = m.group(0)
+                policy_class = m.group(0) # pytype: disable=attribute-error
             except AttributeError as e:
                 self.assertTrue(False)
 
