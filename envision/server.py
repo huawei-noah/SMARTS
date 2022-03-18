@@ -422,6 +422,7 @@ class ModelFileHandler(FileHandler):
     def initialize(self):
         # We store the resource filenames as values in `path_map` and route them
         # through `importlib.resources` for resolution.
+        # pytype: disable=wrong-arg-types
         super().initialize(
             {
                 "muscle_car_agent.glb": "muscle_car.glb",
@@ -435,6 +436,7 @@ class ModelFileHandler(FileHandler):
                 "motorcycle.glb": "motorcycle.glb",
             }
         )
+        # pytype: enable=wrong-arg-types
 
     async def get(self, id_):
         """Serve the requested model geometry."""
