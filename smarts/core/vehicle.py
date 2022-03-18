@@ -703,7 +703,7 @@ class Vehicle:
                 detach_sensor_func()
 
         setattr(
-            self,
+            Vehicle,
             "detach_all_sensors_from_vehicle",
             staticmethod(detach_all_sensors_from_vehicle),
         )

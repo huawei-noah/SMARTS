@@ -55,8 +55,8 @@ class _ActorType(IntEnum):
 
 
 class _ControlEntity(NamedTuple):
-    vehicle_id: str
-    actor_id: str
+    vehicle_id: bytes
+    actor_id: bytes
     actor_type: _ActorType
     shadow_actor_id: str
     # Applies to shadowing and controlling actor
@@ -466,7 +466,9 @@ class VehicleIndex:
         vehicle_id = _2id(vehicle_id)
 
         vehicle = self._vehicles[vehicle_id]
-        vehicle.detach_all_sensors_from_vehicle(vehicle)
+        # pytype: disable=attribute-error
+        Vehicle.detach_all_sensors_from_vehicle(vehicle) 
+        # pytype: enable=attribute-error
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = self._controlled_by[v_index][0]
@@ -668,8 +670,8 @@ class VehicleIndex:
         self._2id_to_id[agent_id] = original_agent_id
 
         entity = _ControlEntity(
-            vehicle_id=str(vehicle_id),
-            actor_id=str(agent_id),
+            vehicle_id=vehicle_id,
+            actor_id=agent_id,
             actor_type=_ActorType.Agent,
             shadow_actor_id="",
             is_boid=boid,
@@ -699,8 +701,8 @@ class VehicleIndex:
         self._2id_to_id[vehicle_id] = vehicle.id
 
         entity = _ControlEntity(
-            vehicle_id=str(vehicle_id),
-            actor_id=str(actor_id),
+            vehicle_id=vehicle_id,
+            actor_id=actor_id,
             actor_type=_ActorType.Social,
             shadow_actor_id="",
             is_boid=False,
