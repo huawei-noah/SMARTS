@@ -509,7 +509,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             return True
         user_input = raw_input.strip()
         if re.compile("^(?i)export[\s]+(?i)all[\s]+[^\n ]+$").match(user_input):
-            target_base_path = user_input.split()[2].strip('[\"\']')
+            target_base_path = user_input.split()[2].strip("[\"']")
             # Check if target base path is valid
             if not check_path_validity(target_base_path):
                 continue
@@ -532,7 +532,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 continue
 
             # Check if target base path is valid
-            target_base_path = input_lst[2].strip('[\"\']')
+            target_base_path = input_lst[2].strip("[\"']")
             if not check_path_validity(target_base_path):
                 continue
 
@@ -547,7 +547,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             input_lst = user_input.split()
 
             # Check if target base path is valid
-            target_base_path = input_lst[2].strip('[\"\']')
+            target_base_path = input_lst[2].strip("[\"']")
             if not check_path_validity(target_base_path):
                 continue
 
@@ -690,7 +690,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
             input_lst = user_input.split()
 
             # Check if target base path is valid
-            target_base_path = input_lst[2].strip('[\"\']')
+            target_base_path = input_lst[2].strip("[\"']")
             if not check_path_validity(target_base_path):
                 continue
             # Try exporting the scenario to the target_base_path
