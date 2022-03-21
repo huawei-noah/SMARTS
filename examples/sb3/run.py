@@ -10,6 +10,7 @@ import warnings
 from datetime import datetime
 from typing import Any, Dict
 
+import torch as th
 import gym
 from ruamel.yaml import YAML
 from sb3 import action as sb3_action
@@ -82,26 +83,10 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
     #  Wrap env with SB3 wrappers
     env = DummyVecEnv([lambda: env])
     env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="last")
-    # env = VecNormalize(venv=env, training=training)
+    #Not needed# env = VecNormalize(venv=env, training=training)
     env = VecMonitor(venv=env, filename=str(config["logdir"]))
 
-    # ------------------------------------------------
-    # set deterministic=True when calling the .predict() in evaluating PPO
-    # ------------------------------------------------
-
     return env
-
-
-# cnn policy
-# self.cnn = nn.Sequential(
-#     nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
-#     nn.ReLU(),
-#     nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
-#     nn.ReLU(),
-#     nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
-#     nn.ReLU(),
-#     nn.Flatten(),
-# )
 
 
 def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
@@ -122,13 +107,30 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         model.learn(total_timesteps=config["train_steps"], callback=checkpoint_callback)
     else:
         print("Start training from scratch.")
+        policy_kwargs = dict(
+            # activation_fn=th.nn.ReLU,
+            # activation_fn=th.nn.Tanh, # default activation used
+            net_arch=[[128], dict(pi=[32, 32], vf=[32, 32])]
+        )
+        # Default CNN policy used
+        # self.cnn = nn.Sequential(
+        #     nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
+        #     nn.ReLU(),
+        #     nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+        #     nn.ReLU(),
+        #     nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+        #     nn.ReLU(),
+        #     nn.Flatten(),
+        # )
         model = PPO(
             "CnnPolicy",
             env,
+            policy_kwargs=policy_kwargs,
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
-            use_sde=True,
+            seed = config["seed"]
         )
+
         model.learn(total_timesteps=config["train_steps"], callback=checkpoint_callback)
         # eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/',
         # log_path='./logs/', eval_freq=500,
@@ -139,6 +141,9 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         print("Saved trained model.")
 
     print("Evaluate policy.")
+    # ------------------------------------------------
+    # set deterministic=True when calling the .predict() in evaluating PPO
+    # ------------------------------------------------
     mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=config["eval_eps"], deterministic=True)
     print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
     print("Finished evaluating.")
