@@ -4,6 +4,7 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import register
 
+
 class KeepLaneAgent(Agent):
     def act(self, obs):
         return "keep_lane"

@@ -23,6 +23,7 @@ import warnings
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 import gym
+
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
 from smarts.core.scenario import Scenario
