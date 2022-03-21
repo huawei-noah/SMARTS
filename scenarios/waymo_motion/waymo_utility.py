@@ -370,19 +370,21 @@ def export_scenario(
 
 
 def check_index_validity(
-    input_arg: str, upper_limit: int, command_type: str
-) -> Optional[int]:
-    try:
-        idx = int(input_arg)
-        if not (1 <= idx <= upper_limit):
-            print(f"Invalid index. Please enter an index between 1 and {upper_limit}.")
-            return
-    except Exception:
-        print(
-            f"Invalid index. Please input an integer for the the `{command_type}` command"
-        )
-        return
-    return idx
+    input_arg: List[str], upper_limit: int, command_type: str
+) -> List[int]:
+    valid_indexes = []
+    for input_index in input_arg:
+        try:
+            idx = int(input_index)
+            if not (1 <= idx <= upper_limit):
+                print(f"{input_index} is out of bound. Please enter an index between 1 and {upper_limit}.")
+            valid_indexes.append(idx)
+
+        except Exception:
+            print(
+                f"{valid_indexes} is Invalid index. Please input integers as index for the `{command_type}` command"
+            )
+    return valid_indexes
 
 
 def check_path_validity(target_base_path: str) -> bool:
@@ -425,7 +427,7 @@ def tfrecords_browser(tfrecord_path: str):
                 "TfRecords Browser.\n"
                 "You can use the following commands to further explore these datasets:\n"
                 "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
-                f"2. `display <index>` --> Displays the info of tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
+                f"2. `display <indexes>` --> Displays the info of tfRecord files at these indexes of the table. The indexes should be an integer between 1 and {len(tf_records)} and space separated\n"
                 f"3. `explore <index>` --> Explore the tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
                 "4. `exit` --> Exit the program\n"
             )
@@ -440,7 +442,7 @@ def tfrecords_browser(tfrecord_path: str):
             continue
 
         user_input = raw_input.strip()
-        if re.compile("^(?i)display[\s]+all$").match(user_input):
+        if re.compile("^(?i)display[\s]+all\s*$").match(user_input):
             for tf_record in tf_records:
                 display_scenarios_in_tfrecord(
                     tf_record[1], scenarios_per_tfrecords[tf_record[1]]
@@ -448,21 +450,23 @@ def tfrecords_browser(tfrecord_path: str):
             display_tf_records(tf_records)
             print_commands = True
 
-        elif re.compile("^(?i)display[\s]+[\d]+$").match(user_input):
+        elif re.compile("^(?i)display[\s]+(?:\s*(\d+))+\s*$").match(user_input):
             input_lst = user_input.split()
-            idx = check_index_validity(input_lst[1], len(tf_records), "display")
-            if not idx:
+            valid_indexes = check_index_validity(input_lst[1:], len(tf_records), "display")
+            if len(valid_indexes) == 0:
                 continue
-            tf_path = tf_records[idx - 1][1]
-            display_scenarios_in_tfrecord(tf_path, scenarios_per_tfrecords[tf_path])
+            for idx in valid_indexes:
+                tf_path = tf_records[idx - 1][1]
+                display_scenarios_in_tfrecord(tf_path, scenarios_per_tfrecords[tf_path])
+                print("\n")
             print_commands = True
 
-        elif re.compile("^(?i)explore[\s]+[\d]+$").match(user_input):
+        elif re.compile("^(?i)explore[\s]+[\d]+\s*$").match(user_input):
             input_lst = user_input.split()
-            idx = check_index_validity(input_lst[1], len(tf_records), "explore")
-            if not idx:
+            valid_indexes = check_index_validity([input_lst[1]], len(tf_records), "explore")
+            if len(valid_indexes) == 0:
                 continue
-            tf_path = tf_records[idx - 1][1]
+            tf_path = tf_records[valid_indexes[0] - 1][1]
             stop_browser = explore_tf_record(tf_path, scenarios_per_tfrecords[tf_path])
             display_tf_records(tf_records)
             print_commands = True
@@ -492,7 +496,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 f"{os.path.basename(tfrecord)} TfRecord Browser.\n"
                 f"You can use the following commands to further explore these scenarios:\n"
                 "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid directory path.\n"
-                f"2. `export <index> <target_base_path>' --> Export the scenario at this index of the table to a target path. The index should be an integer between 1 and {len(scenario_ids)} and path should be valid.\n"
+                f"2. `export <indexes> <target_base_path>' --> Export the scenarios at these indexes of the table to a target path. The indexes should be an integer between 1 and {len(scenario_ids)} separated by space and path should be valid.\n"
                 "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path. Path should be valid.\n"
                 f"4. `preview <index>` --> Plot and display the map of the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
                 f"5. `select <index>` --> Select and explore further the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
@@ -523,12 +527,12 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
 
-        elif re.compile("^(?i)export[\s]+[\d]+[\s]+[^\n ]+$").match(user_input):
+        elif re.compile("^\s*(?i)export[\s]+(?:\s*(\d+))+[\s]+[^\n ]+\s*$").match(user_input):
             input_lst = user_input.split()
 
-            # Check if index passed is valid
-            idx = check_index_validity(input_lst[1], len(scenario_ids), "export")
-            if not idx:
+            # Check if indexes passed are valid
+            valid_indexes = check_index_validity(input_lst[1:-1], len(scenario_ids), "export")
+            if len(valid_indexes) == 0:
                 continue
 
             # Check if target base path is valid
@@ -537,13 +541,15 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 continue
 
             # Try exporting the scenario
-            export_scenario(target_base_path, tfrecord, scenario_ids[idx - 1])
+            for idx in valid_indexes:
+                export_scenario(target_base_path, tfrecord, scenario_ids[idx - 1])
+
             print(
-                f"\nYou can build the scenario exported using the command `scl scenario build {target_base_path}`"
+                f"\nYou can build these scenarios exported using the command `scl scenario build-all {target_base_path}`"
             )
             print_commands = True
 
-        elif re.compile("^(?i)preview[\s]+all[\s]+[^\n ]+$").match(user_input):
+        elif re.compile("^\s*(?i)preview[\s]+all[\s]+[^\n ]+\s*$").match(user_input):
             input_lst = user_input.split()
 
             # Check if target base path is valid
@@ -557,32 +563,32 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
 
-        elif re.compile("^(?i)preview[\s]+[\d]+$").match(user_input):
+        elif re.compile("\s*^(?i)preview[\s]+[\d]+\s*$").match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
-            scenario_idx = check_index_validity(
-                input_lst[1], len(scenario_ids), "preview"
+            valid_indexes = check_index_validity(
+                input_lst[1:], len(scenario_ids), "preview"
             )
-            if not scenario_idx:
+            if len(valid_indexes) == 0:
                 continue
 
             # Plot the map of this scenario
-            scenario_id = scenario_ids[scenario_idx - 1]
+            scenario_id = scenario_ids[valid_indexes[0] - 1]
             plot_scenario(scenario_dict[scenario_id])
 
-        elif re.compile("^(?i)select[\s]+[\d]+$").match(user_input):
+        elif re.compile("^\s*(?i)select[\s]+[\d]+\s*$").match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
-            scenario_idx = check_index_validity(
-                input_lst[1], len(scenario_ids), "select"
+            valid_indexes = check_index_validity(
+                input_lst[1:], len(scenario_ids), "select"
             )
-            if not scenario_idx:
+            if len(valid_indexes) == 0:
                 continue
 
             # Explore further the scenario at this index
-            scenario_id = scenario_ids[scenario_idx - 1]
+            scenario_id = scenario_ids[valid_indexes[0] - 1]
             exit_browser = explore_scenario(tfrecord, scenario_dict[scenario_id])
             if exit_browser:
                 return True
