@@ -67,7 +67,7 @@ class DEBUG_MODE(IntEnum):
 class _ShowBaseInstance(ShowBase):
     """ Wraps a singleton instance of ShowBase from Panda3D. """
 
-    _debug_mode: DEBUG_MODE = DEBUG_MODE.ERROR
+    _debug_mode: DEBUG_MODE = DEBUG_MODE.WARNING
     _rendering_backend: str = "p3headlessgl"
 
     def __new__(cls):

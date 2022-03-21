@@ -106,9 +106,9 @@ class RenderThread(threading.Thread):
                 self._rid, RENDERER_DEBUG_MODE[renderer_debug_mode.upper()]
             )
         except ImportError as e:
-            raise e
-        except Exception:
             raise RendererException.required_to("run test_renderer.py")
+        except Exception:
+            raise e
 
         self._scenario = scenario
         self._num_steps = num_steps
