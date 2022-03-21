@@ -410,15 +410,19 @@ def tfrecords_browser(tfrecord_path: str):
         tf_records.append([tf_counter, tf])
         tf_counter += 1
     stop_browser = False
-    print("\n")
-    print("-----------------------------------------------")
-    print("Waymo tfRecords:\n")
-    print(
-        tabulate(
-            tf_records,
-            headers=["Index", "TfRecords"],
+
+    def display_tf_records(records: List[str]):
+        print("\n")
+        print("-----------------------------------------------")
+        print("Waymo tfRecords:\n")
+        print(
+            tabulate(
+                records,
+                headers=["Index", "TfRecords"],
+            )
         )
-    )
+
+    display_tf_records(tf_records)
     print_commands = True
     while not stop_browser:
         if print_commands:
@@ -433,29 +437,39 @@ def tfrecords_browser(tfrecord_path: str):
 
             print_commands = False
         print("\n")
-        raw_input = input("Command: ").lower()
+        try:
+            raw_input = input("\nCommand: ")
+        except EOFError:
+            print("Raised EOF. Attempting to exit browser.")
+            stop_browser = True
+            continue
+
         user_input = raw_input.strip()
-        if re.compile("^display[\s]+all$").match(user_input):
+        if re.compile("^(?i)display[\s]+all$").match(user_input):
             for tf_record in tf_records:
                 display_scenarios_in_tfrecord(
                     tf_record[1], scenarios_per_tfrecords[tf_record[1]]
                 )
+            display_tf_records(tf_records)
+            print_commands = True
 
-        elif re.compile("^display[\s]+[\d]+$").match(user_input):
+        elif re.compile("^(?i)display[\s]+[\d]+$").match(user_input):
             input_lst = user_input.split()
             idx = check_index_validity(input_lst[1], len(tf_records), "display")
             if not idx:
                 continue
             tf_path = tf_records[idx - 1][1]
             display_scenarios_in_tfrecord(tf_path, scenarios_per_tfrecords[tf_path])
+            print_commands = True
 
-        elif re.compile("^explore[\s]+[\d]+$").match(user_input):
+        elif re.compile("^(?i)explore[\s]+[\d]+$").match(user_input):
             input_lst = user_input.split()
             idx = check_index_validity(input_lst[1], len(tf_records), "explore")
             if not idx:
                 continue
             tf_path = tf_records[idx - 1][1]
             stop_browser = explore_tf_record(tf_path, scenarios_per_tfrecords[tf_path])
+            display_tf_records(tf_records)
             print_commands = True
 
         elif user_input == "exit":
@@ -465,8 +479,10 @@ def tfrecords_browser(tfrecord_path: str):
             print(
                 "Invalid command. Please enter a valid command. See command formats above"
             )
-    print("If you exported any scenarios, you can build them using the command `scl scenario build <target_base_path>`.\n"
-          "Have a look at README.md at the root level of this repo for more info on how to build scenarios.")
+    print(
+        "If you exported any scenarios, you can build them using the command `scl scenario build <target_base_path>`.\n"
+        "Have a look at README.md at the root level of this repo for more info on how to build scenarios."
+    )
     print("Exiting the Browser")
 
 
@@ -491,9 +507,13 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             print_commands = False
 
         print("\n")
-        raw_input = input("Command: ").lower()
+        try:
+            raw_input = input("\nCommand: ")
+        except EOFError:
+            print("Raised EOF. Attempting to exit browser.")
+            return True
         user_input = raw_input.strip()
-        if re.compile("^export[\s]+all[\s]+[^\n ]+$").match(user_input):
+        if re.compile("^(?i)export[\s]+(?i)all[\s]+[^\n ]+$").match(user_input):
             target_base_path = user_input.split()[2]
             # Check if target base path is valid
             if not check_path_validity(target_base_path):
@@ -502,10 +522,13 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             # Try exporting all the scenarios
             for id in scenario_ids:
                 export_scenario(target_base_path, tfrecord, id)
-            print(f"\nYou can build the scenarios exported using the command `scl scenario build-all {target_base_path}`")
+            print(
+                f"\nYou can build the scenarios exported using the command `scl scenario build-all {target_base_path}`\n"
+            )
+            display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
 
-        elif re.compile("^export[\s]+[\d]+[\s]+[^\n ]+$").match(user_input):
+        elif re.compile("^(?i)export[\s]+[\d]+[\s]+[^\n ]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
@@ -520,8 +543,12 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
 
             # Try exporting the scenario
             export_scenario(target_base_path, tfrecord, scenario_ids[idx - 1])
-            print(f"\nYou can build the scenario exported using the command `scl scenario build {target_base_path}`")
-        elif re.compile("^preview[\s]+all[\s]+[^\n ]+$").match(user_input):
+            print(
+                f"\nYou can build the scenario exported using the command `scl scenario build {target_base_path}`"
+            )
+            print_commands = True
+
+        elif re.compile("^(?i)preview[\s]+all[\s]+[^\n ]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if target base path is valid
@@ -532,9 +559,10 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             # Dump all the scenario plots of this tfrecord file to this target base path
             print(f"Plotting and all the scenario in {tfrecord} tfrecord file")
             dump_plots(target_base_path, scenario_dict)
+            display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
 
-        elif re.compile("^preview[\s]+[\d]+$").match(user_input):
+        elif re.compile("^(?i)preview[\s]+[\d]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
@@ -548,7 +576,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             scenario_id = scenario_ids[scenario_idx - 1]
             plot_scenario(scenario_dict[scenario_id])
 
-        elif re.compile("^select[\s]+[\d]+$").match(user_input):
+        elif re.compile("^(?i)select[\s]+[\d]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
@@ -563,9 +591,10 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             exit_browser = explore_scenario(tfrecord, scenario_dict[scenario_id])
             if exit_browser:
                 return True
+            display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
 
-        elif re.compile("^go[\s]+back$").match(user_input):
+        elif re.compile("^(?i)go[\s]+back$").match(user_input):
             stop_exploring = True
             print("Going back to the tfRecords browser")
             continue
@@ -611,8 +640,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
         len(scenario_map_features["crosswalk"]),
         len(scenario_map_features["speed_bump"]),
     ]
-    print("-----------------------------------------------")
-    print(f"Scenario {scenario.scenario_id} map data:\n")
+    print(f"\n\nScenario {scenario.scenario_id} map data:\n")
     print(
         tabulate(
             [map_features],
@@ -626,7 +654,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
             ],
         )
     )
-    print("\nLane Ids: ", [lane[1] for lane in scenario_map_features["lane"]])
+    print("\n\nLane Ids: ", [lane[1] for lane in scenario_map_features["lane"]])
     print(
         "\nRoad Line Ids: ",
         [road_line[1] for road_line in scenario_map_features["road_line"]],
@@ -657,9 +685,13 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
     )
     stop_exploring = False
     while not stop_exploring:
-        raw_input = input("\nCommand: ").lower()
+        try:
+            raw_input = input("\nCommand: ")
+        except EOFError:
+            print("Raised EOF. Attempting to exit browser.")
+            return True
         user_input = raw_input.strip()
-        if re.compile("^export[\s]+[^\n ]+$").match(user_input):
+        if re.compile("^(?i)export[\s]+[^\n ]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if target base path is valid
@@ -668,9 +700,11 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
                 continue
             # Try exporting the scenario to the target_base_path
             export_scenario(target_base_path, tfrecord_file_path, scenario.scenario_id)
-            print(f"\nYou can build the scenario exported using the command `scl scenario build {target_base_path}`")
+            print(
+                f"\nYou can build the scenario exported using the command `scl scenario build {target_base_path}`"
+            )
 
-        elif re.compile("^preview([\s]+[\d]+)?$").match(user_input):
+        elif re.compile("^(?i)preview([\s]+[\d]+)?$").match(user_input):
             input_lst = user_input.split()
             if len(input_lst) == 1:
                 # Plot this scenario
@@ -678,7 +712,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
             else:
                 plot_scenario(scenario, int(input_lst[1]))
 
-        elif re.compile("^go[\s]+back$").match(user_input):
+        elif re.compile("^(?i)go[\s]+back$").match(user_input):
             stop_exploring = True
             print("Going back to the tfRecord Explorer")
             continue
