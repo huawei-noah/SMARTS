@@ -64,7 +64,10 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           CHANGED=$(git diff --diff-filter="AM" --name-only --ignore-submodules=all origin/develop... | awk -v d=" " '{s=(NR==1?s:s d)$0}END{print s}')
-          echo "::set-output name=changed_files::$CHANGED"
+          declare -A SEEN
+          UNIQUE=()
+          for file in ${CHANGED[@]}; do if [ ! -v SEEN['$(basename $file)'] ]; then SEEN['$(basename $file)']=1; UNIQUE+=$file; fi; done 
+          echo "::set-output name=changed_files::$UNIQUE"
       - name: Check types
         if: contains(steps.changed-files.outputs.changed_files, '.py')
         run: |
