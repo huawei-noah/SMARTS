@@ -23,15 +23,14 @@ import warnings
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 import gym
-
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
-from smarts.core.agent import AgentSpec
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.visdom_client import VisdomClient
+from smarts.zoo.agent_spec import AgentSpec
 
 
 class HiWayEnv(gym.Env):

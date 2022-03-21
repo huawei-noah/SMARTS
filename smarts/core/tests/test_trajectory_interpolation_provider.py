@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 
 import smarts.sstudio.types as t
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.provider import ProviderState
@@ -38,6 +38,7 @@ from smarts.core.trajectory_interpolation_provider import (
     TrajectoryWithTime,
 )
 from smarts.sstudio import gen_scenario
+from smarts.zoo.agent_spec import AgentSpec
 
 AGENT_ID = "Agent-007"
 
