@@ -27,7 +27,7 @@ import shutil
 import time
 import unittest
 
-import dill
+import dill # pytype: disable=import-error
 import gym
 import ray
 
@@ -466,13 +466,16 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
             collect_evaluations(evaluation_task_ids=evaluation_task_ids)
 
             actions = {
+                # pytype: disable=wrong-keyword-args
                 agent_id: agents[agent_id].act(observation, explore=True)
+                # pytype: enable=wrong-keyword-args
                 for agent_id, observation in observations.items()
             }
             next_observations, rewards, dones, infos = env.step(actions)
 
             active_agent_ids = observations.keys() & next_observations.keys()
             loss_outputs = {
+                # pytype: disable=attribute-error
                 agent_id: agents[agent_id].step(
                     state=observations[agent_id],
                     action=actions[agent_id],
@@ -481,6 +484,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                     done=dones[agent_id],
                     info=infos[agent_id],
                 )
+                # pytype: enable=attribute-error
                 for agent_id in active_agent_ids
             }
 

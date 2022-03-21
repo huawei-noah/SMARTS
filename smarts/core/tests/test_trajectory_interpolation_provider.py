@@ -32,7 +32,7 @@ from smarts.core.provider import ProviderState
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.tests.helpers.scenario import temp_scenario
+from smarts.core.tests.helpers.scenario import temp_scenario # pytype: disable=import-error
 from smarts.core.trajectory_interpolation_provider import (
     TrajectoryInterpolationProvider,
     TrajectoryWithTime,
@@ -304,7 +304,7 @@ def test_trajectory_interpolation_provider_in_smarts(smarts, agent_spec, scenari
     curr_position = agent_obs.ego_vehicle_state.position
     curr_heading = agent_obs.ego_vehicle_state.heading
     curr_speed = agent_obs.ego_vehicle_state.speed
-    # pytype: eable=attribute-error
+    # pytype: enable=attribute-error
 
     init_position = init_ego_state.position
     init_heading = init_ego_state.heading

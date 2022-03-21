@@ -23,7 +23,7 @@ from unittest import mock
 
 import numpy as np
 import pytest
-from helpers.scenario import temp_scenario
+from helpers.scenario import temp_scenario #pytype: disable=import-error
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.coordinates import Heading, Pose
