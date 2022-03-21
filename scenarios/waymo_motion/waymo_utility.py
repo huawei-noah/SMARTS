@@ -377,7 +377,9 @@ def check_index_validity(
         try:
             idx = int(input_index)
             if not (1 <= idx <= upper_limit):
-                print(f"{input_index} is out of bound. Please enter an index between 1 and {upper_limit}.")
+                print(
+                    f"{input_index} is out of bound. Please enter an index between 1 and {upper_limit}."
+                )
             valid_indexes.append(idx)
 
         except Exception:
@@ -452,7 +454,9 @@ def tfrecords_browser(tfrecord_path: str):
 
         elif re.compile("^(?i)display[\s]+(?:\s*(\d+))+\s*$").match(user_input):
             input_lst = user_input.split()
-            valid_indexes = check_index_validity(input_lst[1:], len(tf_records), "display")
+            valid_indexes = check_index_validity(
+                input_lst[1:], len(tf_records), "display"
+            )
             if len(valid_indexes) == 0:
                 continue
             for idx in valid_indexes:
@@ -463,7 +467,9 @@ def tfrecords_browser(tfrecord_path: str):
 
         elif re.compile("^(?i)explore[\s]+[\d]+\s*$").match(user_input):
             input_lst = user_input.split()
-            valid_indexes = check_index_validity([input_lst[1]], len(tf_records), "explore")
+            valid_indexes = check_index_validity(
+                [input_lst[1]], len(tf_records), "explore"
+            )
             if len(valid_indexes) == 0:
                 continue
             tf_path = tf_records[valid_indexes[0] - 1][1]
@@ -527,11 +533,15 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
 
-        elif re.compile("^\s*(?i)export[\s]+(?:\s*(\d+))+[\s]+[^\n ]+\s*$").match(user_input):
+        elif re.compile("^\s*(?i)export[\s]+(?:\s*(\d+))+[\s]+[^\n ]+\s*$").match(
+            user_input
+        ):
             input_lst = user_input.split()
 
             # Check if indexes passed are valid
-            valid_indexes = check_index_validity(input_lst[1:-1], len(scenario_ids), "export")
+            valid_indexes = check_index_validity(
+                input_lst[1:-1], len(scenario_ids), "export"
+            )
             if len(valid_indexes) == 0:
                 continue
 
