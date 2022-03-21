@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
+# pytype: disable=import-error
 import casadi.casadi as cs
 import numpy as np
 import opengen as og
