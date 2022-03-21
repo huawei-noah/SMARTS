@@ -99,13 +99,13 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
     for lane in map_features["lane"]:
         xs, ys = convert_polyline(lane[0].polyline)
         if lane[1] == feature_id:
-            plt.plot(xs, ys, linestyle=":", color="blue")
+            plt.plot(xs, ys, linestyle=":", color="blue", linewidth=5.0)
             handle.append(
                 Line2D(
                     [0],
                     [0],
                     linestyle=":",
-                    color="blue",
+                    color="magenta",
                     label=f"Lane Polyline {feature_id}",
                 ),
             )
@@ -116,7 +116,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
         xs, ys = convert_polyline(road_line[0].polyline)
         if road_line[0].type in [1, 4, 5]:
             if road_line[1] == feature_id:
-                plt.plot(xs, ys, "b--")
+                plt.plot(xs, ys, "b--", linewidth=5.0)
                 handle.append(
                     Line2D(
                         [0],
@@ -130,7 +130,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
                 plt.plot(xs, ys, "y--")
         else:
             if road_line[1] == feature_id:
-                plt.plot(xs, ys, "b-")
+                plt.plot(xs, ys, "b-", linewidth=5.0)
                 handle.append(
                     Line2D(
                         [0],
@@ -146,7 +146,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
     for road_edge in map_features["road_edge"]:
         xs, ys = convert_polyline(road_edge[0].polyline)
         if road_edge[1] == feature_id:
-            plt.plot(xs, ys, "b-")
+            plt.plot(xs, ys, "b-", linewidth=5.0)
             handle.append(
                 Line2D(
                     [0],
@@ -162,7 +162,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
     for crosswalk in map_features["crosswalk"]:
         xs, ys = convert_polyline(crosswalk[0].polygon)
         if crosswalk[1] == feature_id:
-            plt.plot(xs, ys, "b--")
+            plt.plot(xs, ys, "b--", linewidth=5.0)
             handle.append(
                 Line2D(
                     [0],
@@ -178,7 +178,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
     for speed_bump in map_features["speed_bump"]:
         xs, ys = convert_polyline(speed_bump[0].polygon)
         if speed_bump[1] == feature_id:
-            plt.plot(xs, ys, "b:")
+            plt.plot(xs, ys, "b:", linewidth=5.0)
             handle.append(
                 Line2D(
                     [0],
@@ -193,13 +193,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
 
     for stop_sign in map_features["stop_sign"]:
         if stop_sign[1] == feature_id:
-            plt.scatter(
-                stop_sign[0].position.x,
-                stop_sign[0].position.y,
-                marker="o",
-                c="blue",
-                alpha=1,
-            )
+            s_color = "blue"
             handle.append(
                 Line2D(
                     [],
@@ -211,13 +205,14 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
                 )
             )
         else:
-            plt.scatter(
-                stop_sign[0].position.x,
-                stop_sign[0].position.y,
-                marker="o",
-                c="#ff0000",
-                alpha=1,
-            )
+            s_color = "#ff0000"
+        plt.scatter(
+            stop_sign[0].position.x,
+            stop_sign[0].position.y,
+            marker="o",
+            c=s_color,
+            alpha=1,
+        )
     return handle
 
 
@@ -246,7 +241,7 @@ def plot_scenario(scenario, feature_id: Optional[int] = None):
 
 def dump_plots(target_base_path: str, scenario_dict):
     try:
-        os.makedirs(target_base_path)
+        os.makedirs(os.path.abspath(target_base_path))
         print(f"Created directory {target_base_path}")
     except FileExistsError:
         pass
@@ -268,7 +263,7 @@ def dump_plots(target_base_path: str, scenario_dict):
         mng.resize(w, h)
 
         filename = f"scenario-{scenario_id}.png"
-        out_path = os.path.join(target_base_path, filename)
+        out_path = os.path.join(os.path.abspath(target_base_path), filename)
         fig = plt.gcf()
         # w, h = mng.window.maxsize()
         dpi = 100
@@ -342,7 +337,7 @@ def display_scenarios_in_tfrecord(tfrecord_path, scenario_dict) -> List[str]:
 def export_scenario(
     target_base_path: str, tfrecord_file_path: str, scenario_id
 ) -> None:
-    subfolder_path = os.path.join(target_base_path, scenario_id)
+    subfolder_path = os.path.join(os.path.abspath(target_base_path), scenario_id)
     try:
         os.makedirs(subfolder_path)
         print(f"Created folder {scenario_id} at path {target_base_path}")
@@ -411,7 +406,7 @@ def tfrecords_browser(tfrecord_path: str):
         tf_counter += 1
     stop_browser = False
 
-    def display_tf_records(records: List[str]):
+    def display_tf_records(records: List[List[int, str]]):
         print("\n")
         print("-----------------------------------------------")
         print("Waymo tfRecords:\n")
@@ -514,7 +509,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             return True
         user_input = raw_input.strip()
         if re.compile("^(?i)export[\s]+(?i)all[\s]+[^\n ]+$").match(user_input):
-            target_base_path = user_input.split()[2]
+            target_base_path = user_input.split()[2].strip('[\"\']')
             # Check if target base path is valid
             if not check_path_validity(target_base_path):
                 continue
@@ -537,7 +532,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 continue
 
             # Check if target base path is valid
-            target_base_path = input_lst[2]
+            target_base_path = input_lst[2].strip('[\"\']')
             if not check_path_validity(target_base_path):
                 continue
 
@@ -552,7 +547,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             input_lst = user_input.split()
 
             # Check if target base path is valid
-            target_base_path = input_lst[2]
+            target_base_path = input_lst[2].strip('[\"\']')
             if not check_path_validity(target_base_path):
                 continue
 
@@ -695,7 +690,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
             input_lst = user_input.split()
 
             # Check if target base path is valid
-            target_base_path = input_lst[2]
+            target_base_path = input_lst[2].strip('[\"\']')
             if not check_path_validity(target_base_path):
                 continue
             # Try exporting the scenario to the target_base_path
