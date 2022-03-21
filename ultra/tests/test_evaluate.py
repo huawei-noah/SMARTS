@@ -468,8 +468,8 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
             actions = {
                 # pytype: disable=wrong-keyword-args
                 agent_id: agents[agent_id].act(observation, explore=True)
-                # pytype: enable=wrong-keyword-args
                 for agent_id, observation in observations.items()
+                # pytype: enable=wrong-keyword-args
             }
             next_observations, rewards, dones, infos = env.step(actions)
 
@@ -484,8 +484,8 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                     done=dones[agent_id],
                     info=infos[agent_id],
                 )
-                # pytype: enable=attribute-error
                 for agent_id in active_agent_ids
+                # pytype: enable=attribute-error
             }
 
             episode.record_step(
