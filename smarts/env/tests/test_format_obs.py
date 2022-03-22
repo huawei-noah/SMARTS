@@ -23,10 +23,11 @@ import dataclasses
 import gym
 import pytest
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, Waypoints
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.wrappers.format_obs import FormatObs, get_spaces, intrfc_to_stdobs
+from smarts.zoo.agent_spec import AgentSpec
 
 
 def _intrfcs_init():

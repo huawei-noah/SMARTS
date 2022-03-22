@@ -1,6 +1,7 @@
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from smarts.core.controllers import ActionSpaceType
+from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import register
 
 
