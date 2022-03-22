@@ -73,5 +73,5 @@ jobs:
         if: contains(steps.changed-files.outputs.changed_files, '.py')
         run: |
           . ${{env.venv_dir}}/bin/activate
-          pytype -d pyi-error -d import-error ${{steps.changed-files.outputs.changed_files}}
+          pytype -d pyi-error import-error ${{steps.changed-files.outputs.changed_files}}
 
