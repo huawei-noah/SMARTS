@@ -10,7 +10,6 @@ import warnings
 from datetime import datetime
 from typing import Any, Dict
 
-import torch as th
 import gym
 from ruamel.yaml import YAML
 from sb3 import action as sb3_action
@@ -20,7 +19,12 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMonitor, VecNormalize
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import (
+    DummyVecEnv,
+    VecFrameStack,
+    VecMonitor,
+)
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 yaml = YAML(typ="safe")
@@ -41,15 +45,11 @@ def main(args: argparse.Namespace):
         # Begin training from scratch.
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
-    elif (config["mode"] == "train" and args.logdir) or (
-        config["mode"] == "evaluate"
-    ):
+    elif (config["mode"] == "train" and args.logdir) or (config["mode"] == "evaluate"):
         # Begin training from a pretrained model.
         logdir = pathlib.Path(args.logdir)
     else:
-        raise KeyError(
-            f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.'
-        )
+        raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
     logdir.mkdir(parents=True, exist_ok=True)
     config["logdir"] = logdir
     print("Logdir:", logdir)
@@ -80,10 +80,10 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
     # Check custom environment
     check_env(env)
 
-    #  Wrap env with SB3 wrappers
+    # Wrap env with SB3 wrappers
+    # env = Monitor(env=env, filename=str(config["logdir"]))
     env = DummyVecEnv([lambda: env])
     env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="last")
-    #Not needed# env = VecNormalize(venv=env, training=training)
     env = VecMonitor(venv=env, filename=str(config["logdir"]))
 
     return env
@@ -96,15 +96,26 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         save_path=config["logdir"],
         name_prefix="model",
     )
+    eval_callback = EvalCallback(
+        eval_env=eval_env,
+        n_eval_episodes=config["eval_eps"],
+        eval_freq=config["eval_freq"], 
+        log_path=config["logdir"],
+        best_model_save_path=config["logdir"],
+        deterministic=True,
+    )
 
     if config["mode"] == "evaluate":
         print("Start evaluation.")
-        model = PPO.load(config["logdir"] / "model.zip")
+        model = PPO.load(config["logdir"] / "model.zip", print_system_info=True)
     elif config["mode"] == "train" and args.logdir:
         print("Start training from existing model.")
-        model = PPO.load(config["logdir"] / "model.zip")
+        model = PPO.load(config["logdir"] / "model.zip", print_system_info=True)
         model.set_env(env)
-        model.learn(total_timesteps=config["train_steps"], callback=checkpoint_callback)
+        model.learn(
+            total_timesteps=config["train_steps"],
+            callback=[checkpoint_callback, eval_callback],
+        )
     else:
         print("Start training from scratch.")
         policy_kwargs = dict(
@@ -112,8 +123,8 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             # activation_fn=th.nn.Tanh, # default activation used
             net_arch=[[128], dict(pi=[32, 32], vf=[32, 32])]
         )
-        # Default CNN policy used
-        # self.cnn = nn.Sequential(
+        # Default `CnnPolicy` used:
+        # cnn = nn.Sequential(
         #     nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
         #     nn.ReLU(),
         #     nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
@@ -122,29 +133,30 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         #     nn.ReLU(),
         #     nn.Flatten(),
         # )
+        # features_dim = 512
+        # linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
+        # return linear(cnn(observations))
         model = PPO(
             "CnnPolicy",
             env,
             policy_kwargs=policy_kwargs,
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
-            seed = config["seed"]
+            seed=config["seed"],
         )
-
-        model.learn(total_timesteps=config["train_steps"], callback=checkpoint_callback)
-        # eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/',
-        # log_path='./logs/', eval_freq=500,
-        # deterministic=True, render=False)
+        model.learn(
+            total_timesteps=config["train_steps"],
+            callback=[checkpoint_callback, eval_callback],
+        )
 
     if config["mode"] == "train":
         model.save(config["logdir"] / "model")
         print("Saved trained model.")
 
     print("Evaluate policy.")
-    # ------------------------------------------------
-    # set deterministic=True when calling the .predict() in evaluating PPO
-    # ------------------------------------------------
-    mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=config["eval_eps"], deterministic=True)
+    mean_reward, std_reward = evaluate_policy(
+        model, eval_env, n_eval_episodes=config["eval_eps"], deterministic=True
+    )
     print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
     print("Finished evaluating.")
 
