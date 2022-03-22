@@ -67,8 +67,8 @@ jobs:
           declare -A SEEN
           UNIQUE=()
           for file in ${CHANGED[@]}; do filename=$(basename $file); if [ ! -v "SEEN[$filename]" ]; then SEEN[$filename]+=1; UNIQUE+=($file); fi; done 
-          echo $UNIQUE
-          echo "::set-output name=changed_files::$UNIQUE"
+          OUT=$( IFS=$' '; echo "${UNIQUE[*]}")
+          echo "::set-output name=changed_files::$OUT"
       - name: Check types
         if: contains(steps.changed-files.outputs.changed_files, '.py')
         run: |
