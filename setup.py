@@ -13,7 +13,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.5.1",
+    version="0.5.1.post1",
     packages=find_packages(exclude=("tests", "examples")),
     include_package_data=True,
     zip_safe=True,
@@ -35,7 +35,6 @@ setup(
         "Rtree>=0.9.7",
         "sh>=1.14.2",
         "shapely>=1.8.1",
-        "scikit-learn>=1.0.1",  # KDTree from scikit-learn is used by sumo lanepoints
         "tableprint>=0.9.1",
         "trimesh==3.9.29",  # Used for writing .glb files
         "visdom>=0.1.8.9",
@@ -50,7 +49,6 @@ setup(
         "ijson>=3.1.4",
         # The following are for the /smarts/algorithms
         "matplotlib>=3.4.3",
-        "scikit-image>=0.18.3",
         # The following are for /smarts/zoo and remote agents
         "grpcio==1.32.0",
         "protobuf>=3.19.1",

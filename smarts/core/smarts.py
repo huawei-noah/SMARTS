@@ -24,16 +24,12 @@ import os
 import warnings
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from scipy.spatial.distance import cdist
 
 import numpy as np
 
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
-
-with warnings.catch_warnings():
-    # XXX: Benign warning, seems no other way to "properly" fix
-    warnings.filterwarnings("ignore", "numpy.ufunc size changed")
-    from sklearn.metrics.pairwise import euclidean_distances
 
 from smarts import VERSION
 from smarts.core.chassis import AckermannChassis, BoxChassis
@@ -1189,9 +1185,9 @@ class SMARTS:
         if not other_positions:
             return []
 
-        distances = euclidean_distances(other_positions, [vehicle.position]).reshape(
-            -1,
-        )
+        # calculate euclidean distances
+        distances = cdist(other_positions, [vehicle.position], metric="euclidean").reshape(-1)
+
         indices = np.argwhere(distances <= radius).flatten()
         return [other_states[i] for i in indices]
 

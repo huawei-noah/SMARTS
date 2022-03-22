@@ -21,6 +21,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Use `Process` to replace `Thread` to speed up the `scl scenario build-all --clean <scenario_dir>` runtime.
 - Modified the repository's front page to be more informative and better organised.
 ### Deprecated
+- Moved the `AgentSpec` class out of `smarts.core.agent` to `smarts.zoo.agent_spec`.
 ### Fixed
 - Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error.
 - Ensure that `smarts.core.coordinates.Pose` attribute `position` is an [x, y, z] numpy array, and attribute `orientation` is a quaternion length 4 numpy array. 
@@ -28,6 +29,13 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Removed
 - Removed the unconditional import of `Renderer` from `smarts/core/vehicle.py` to make `Panda3D` optional dependency regression. See Issue #1310.
 ### Security
+
+
+# [0.5.1.post1] 2022-03-11
+### Fixed
+- Fixed an issue involving relative imports in `examples/rllib/rllib.py`.
+- Fixed an issue with uncapped `opencv` causing an error within `ray.rllib`.
+- Fixed a longstanding issue that did not allow camera observations unless you had windowing.
 
 # [0.5.1] 2022-01-25
 ### Added

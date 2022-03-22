@@ -20,7 +20,10 @@ try:
     from ray.rllib.utils.typing import PolicyID
     from ray.tune.schedulers import PopulationBasedTraining
 except Exception as e:
-    from .. import RayException
+    if __name__ == "__main__":
+        from examples import RayException
+    else:
+        from .. import RayException
 
     raise RayException.required_to("rllib.py")
 
@@ -28,7 +31,10 @@ import smarts
 from smarts.core.utils.file import copy_tree
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 
-from .rllib_agent import TrainingModel, rllib_agent
+if __name__ == "__main__":
+    from rllib_agent import TrainingModel, rllib_agent
+else:
+    from .rllib_agent import TrainingModel, rllib_agent
 
 logging.basicConfig(level=logging.INFO)
 
