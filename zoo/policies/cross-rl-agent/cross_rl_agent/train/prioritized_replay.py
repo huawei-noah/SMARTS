@@ -66,7 +66,7 @@ class SumTree(object):
 
         # then propagate the change through the tree // update whole tree
         while tree_index != 0:
-            """
+            r"""
                         Here we want to access the line above
                         THE NUMBERS IN THIS TREE ARE THE INDEXES NOT THE PRIORITY VALUES
                             0
@@ -85,7 +85,7 @@ class SumTree(object):
 
     def get_leaf(self, v):
         # here we get the leaf_index, priority value of that leaf and experience associated with that index
-        """
+        r"""
                         Tree structure and array storage:
                         Tree index:
                              0         -> storing priority sum

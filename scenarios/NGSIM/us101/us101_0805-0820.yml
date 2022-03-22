@@ -1,0 +1,42 @@
+trajectory_dataset:
+    name: us101_0805-0820
+    source: NGSIM
+
+    # Specify absolute or relative path to where dataset resides on your filesystem
+    # For example, you could use:
+    # input_path: ./trajectories-0400-0415.txt
+    input_path: <PATH TO FILE GOES HERE>
+
+    # Used by SMARTS for the initial speed of new agents being added to dataset.
+    # 55mph is roughly 25m/s.  100km/h is roughly 28m/s.
+    speed_limit_mps: 28
+
+    # Averge width in meters of the dataset's lanes in the real world.
+    # US highway lanes are about 12 feet (or ~3.7m, the default) wide.
+    #real_lane_width_m: 3.6576
+
+    #flip_y: True
+    #swap_xy: True
+
+    #x_margin_px: 60
+
+    #max_angular_velocity: 4
+    #heading_inference_window: 5
+    #heading_inference_min_speed: 0.22
+
+    map_net:
+        # These are dimensions of the Sumo network in map.net.xml.
+        # We map the coordinates in the input dataset onto this space.
+
+        # max_y is required since flip_y is True.
+        #max_y: 25.02
+
+        # The map width is used to filter position_x values
+        # to ensure they're in range.
+        width: 641.63
+
+        # lane_width is used to figure out the map scale,
+        # which is lane_width / real_lane_width_m.
+        # (So use `real_lane_width_m` here for 1:1 scale - the default.)
+        # It's also used in SMARTS for detecting off-road, etc.
+        #lane_width: 3.7

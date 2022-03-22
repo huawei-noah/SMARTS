@@ -442,13 +442,16 @@ class Sensors:
     def _is_done_with_events(cls, sim, agent_id, vehicle, sensor_state):
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
+        event_config = interface.event_configuration
 
         # TODO:  the following calls nearest_lanes (expensive) 6 times
         reached_goal = cls._agent_reached_goal(sim, vehicle)
         collided = sim.vehicle_did_collide(vehicle.id)
         is_off_road = cls._vehicle_is_off_road(sim, vehicle)
         is_on_shoulder = cls._vehicle_is_on_shoulder(sim, vehicle)
-        is_not_moving = cls._vehicle_is_not_moving(sim, vehicle)
+        is_not_moving = cls._vehicle_is_not_moving(
+            sim, vehicle, event_config.not_moving_time, event_config.not_moving_distance
+        )
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
             sim, vehicle
@@ -457,7 +460,7 @@ class Sensors:
             sim.agent_manager, done_criteria.agents_alive
         )
 
-        done = (
+        done = not sim.resetting and (
             (is_off_road and done_criteria.off_road)
             or reached_goal
             or reached_max_episode_steps
@@ -504,10 +507,10 @@ class Sensors:
         return False
 
     @classmethod
-    def _vehicle_is_not_moving(cls, sim, vehicle):
-        last_n_seconds_considered = 60
-
-        # Flag if the vehicle has been immobile for the past 60 seconds
+    def _vehicle_is_not_moving(
+        cls, sim, vehicle, last_n_seconds_considered, min_distance_moved
+    ):
+        # Flag if the vehicle has been immobile for the past 'last_n_seconds_considered' seconds
         if sim.elapsed_sim_time < last_n_seconds_considered:
             return False
 
@@ -516,8 +519,8 @@ class Sensors:
         )
 
         # Due to controller instabilities there may be some movement even when a
-        # vehicle is "stopped". Here we allow 1m of total distance in 60 seconds.
-        return distance < 1
+        # vehicle is "stopped".
+        return distance < min_distance_moved
 
     @classmethod
     def _vehicle_is_off_route_and_wrong_way(cls, sim, vehicle):

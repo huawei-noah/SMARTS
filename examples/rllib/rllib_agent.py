@@ -16,9 +16,10 @@ except Exception as e:
     raise RayException.required_to("rllib_agent.py")
 
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.env.custom_observations import lane_ttc_observation_adapter
+from smarts.zoo.agent_spec import AgentSpec
 
 tf = try_import_tf()
 

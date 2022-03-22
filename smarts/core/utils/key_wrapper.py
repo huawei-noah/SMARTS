@@ -19,9 +19,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE
-class KeyWrapper:
+from typing import Sequence
+
+
+class KeyWrapper(Sequence):
     """A sequence that transforms the selected in an underlying sequence using the given
-    tranformation key."""
+    transformation key."""
 
     def __init__(self, iterable, key):
         self.it = iterable
@@ -36,5 +39,4 @@ class KeyWrapper:
     def insert(self, index: int, item):
         """Insert an item into the sequence."""
         print("asked to insert %s at index%d" % (item, index))
-        # XXX: What this is inserting seems overly specific for a general utility.
-        self.it.insert(index, {"time": item})
+        self.it.insert(index, item)
