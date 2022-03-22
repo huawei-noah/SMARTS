@@ -446,7 +446,7 @@ def tfrecords_browser(tfrecord_path: str):
             continue
 
         user_input = raw_input.strip()
-        if re.compile("^(?i)display[\s]+all$").match(user_input):
+        if re.compile("^display[\s]+all$", flags=re.IGNORECASE).match(user_input):
             for tf_record in tf_records:
                 display_scenarios_in_tfrecord(
                     tf_record[1], scenarios_per_tfrecords[tf_record[1]]
@@ -454,7 +454,9 @@ def tfrecords_browser(tfrecord_path: str):
             display_tf_records(tf_records)
             print_commands = True
 
-        elif re.compile("^(?i)display[\s]+(?:\s*(\d+))+$").match(user_input):
+        elif re.compile("^display[\s]+(?:\s*(\d+))+$", flags=re.IGNORECASE).match(
+            user_input
+        ):
             input_lst = user_input.split()
             valid_indexes = check_index_validity(
                 input_lst[1:], len(tf_records), "display"
@@ -467,7 +469,7 @@ def tfrecords_browser(tfrecord_path: str):
                 print("\n")
             print_commands = True
 
-        elif re.compile("^(?i)explore[\s]+[\d]+$").match(user_input):
+        elif re.compile("^explore[\s]+[\d]+$", flags=re.IGNORECASE).match(user_input):
             input_lst = user_input.split()
             valid_indexes = check_index_validity(
                 [input_lst[1]], len(tf_records), "explore"
@@ -479,7 +481,7 @@ def tfrecords_browser(tfrecord_path: str):
             display_tf_records(tf_records)
             print_commands = True
 
-        elif user_input == "exit":
+        elif user_input.lower() == "exit":
             stop_browser = True
 
         else:
@@ -520,7 +522,9 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             print("Raised EOF. Attempting to exit browser.")
             return True
         user_input = raw_input.strip()
-        if re.compile("^(?i)export[\s]+(?i)all[\s]+[^\n ]+$").match(user_input):
+        if re.compile("^export[\s]+(?i)all[\s]+[^\n ]+$", flags=re.IGNORECASE).match(
+            user_input
+        ):
             target_base_path = user_input.split()[2].strip("[\"']")
             # Check if target base path is valid
             if not check_path_validity(target_base_path):
@@ -535,7 +539,9 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
 
-        elif re.compile("^(?i)export[\s]+(?:\s*(\d+))+[\s]+[^\n ]+$").match(user_input):
+        elif re.compile(
+            "^export[\s]+(?:\s*(\d+))+[\s]+[^\n ]+$", flags=re.IGNORECASE
+        ).match(user_input):
             input_lst = user_input.split()
 
             # Check if indexes passed are valid
@@ -559,7 +565,9 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             )
             print_commands = True
 
-        elif re.compile("^(?i)preview[\s]+all[\s]+[^\n ]+$").match(user_input):
+        elif re.compile("^preview[\s]+all[\s]+[^\n ]+$", flags=re.IGNORECASE).match(
+            user_input
+        ):
             input_lst = user_input.split()
 
             # Check if target base path is valid
@@ -573,7 +581,9 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
 
-        elif re.compile("^(?i)preview[\s]+(?:\s*(\d+))+$").match(user_input):
+        elif re.compile("^preview[\s]+(?:\s*(\d+))+$", flags=re.IGNORECASE).match(
+            user_input
+        ):
             input_lst = user_input.split()
 
             # Check if index passed is valid
@@ -591,7 +601,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             with Pool(min(cpu_count(), len(valid_indexes))) as pool:
                 pool.starmap(plot_scenario, scenarios_to_plot)
 
-        elif re.compile("^(?i)select[\s]+[\d]+$").match(user_input):
+        elif re.compile("^select[\s]+[\d]+$", flags=re.IGNORECASE).match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
@@ -609,12 +619,12 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
 
-        elif re.compile("^(?i)go[\s]+back$").match(user_input):
+        elif re.compile("^go[\s]+back$", flags=re.IGNORECASE).match(user_input):
             stop_exploring = True
             print("Going back to the tfRecords browser")
             continue
 
-        elif user_input == "exit":
+        elif user_input.lower() == "exit":
             return True
         else:
             print(
@@ -706,7 +716,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
             print("Raised EOF. Attempting to exit browser.")
             return True
         user_input = raw_input.strip()
-        if re.compile("^(?i)export[\s]+[^\n ]+$").match(user_input):
+        if re.compile("^export[\s]+[^\n ]+$", flags=re.IGNORECASE).match(user_input):
             input_lst = user_input.split()
 
             # Check if target base path is valid
@@ -719,7 +729,9 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
                 f"\nYou can build the scenario exported using the command `scl scenario build {target_base_path}`"
             )
 
-        elif re.compile("^(?i)preview([\s]+[\d]+)?$").match(user_input):
+        elif re.compile("^preview([\s]+[\d]+)?$", flags=re.IGNORECASE).match(
+            user_input
+        ):
             input_lst = user_input.split()
             if len(input_lst) == 1:
                 # Plot this scenario
@@ -727,12 +739,12 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
             else:
                 plot_scenario(scenario, int(input_lst[1]))
 
-        elif re.compile("^(?i)go[\s]+back$").match(user_input):
+        elif re.compile("^go[\s]+back$", flags=re.IGNORECASE).match(user_input):
             stop_exploring = True
             print("Going back to the tfRecord Explorer")
             continue
 
-        elif user_input == "exit":
+        elif user_input.lower() == "exit":
             return True
         else:
             print(
