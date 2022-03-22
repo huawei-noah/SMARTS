@@ -26,13 +26,11 @@ import os
 import shutil
 import yaml
 import re
-from itertools import product
 from typing import Dict, List, Tuple, Union, Optional
 from tabulate import tabulate
 from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from multiprocessing import Pool, cpu_count
 from waymo_open_dataset.protos import scenario_pb2
 
 from smarts.core.utils.file import read_tfrecord_file
@@ -310,6 +308,7 @@ def display_tf_records(records):
             headers=["Index", "TfRecords"],
         )
     )
+    print("\n\n")
 
 
 def display_scenarios_in_tfrecord(tfrecord_path, scenario_dict) -> List[str]:
@@ -400,6 +399,8 @@ def check_index_validity(
             print(
                 f"{valid_indexes} is Invalid index. Please input integers as index for the `{command_type}` command"
             )
+    if not valid_indexes:
+        print("no valid indexes passed. Please check the command info for valid index values")
     return list(set(valid_indexes))
 
 
@@ -519,7 +520,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
 
         print("\n")
         try:
-            raw_input = input("\nCommand: ")
+            raw_input = input("Command: ")
         except EOFError:
             print("Raised EOF. Attempting to exit browser.")
             return True
@@ -758,6 +759,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
 
 if __name__ == "__main__":
     import warnings
+
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
     parser = argparse.ArgumentParser(
