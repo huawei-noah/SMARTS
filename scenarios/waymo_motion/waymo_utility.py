@@ -218,25 +218,27 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
     return handle
 
 
-def plot_scenario(scenario, feature_id: Optional[int] = None):
-    # Get map feature data from map proto
-    map_features = get_map_features_for_scenario(scenario)
+def plot_scenarios(scenarios, feature_id: Optional[int] = None):
+    for i in range(len(scenarios)):
+        plt.figure(i)
+        # Get map feature data from map proto
+        map_features = get_map_features_for_scenario(scenarios[i])
 
-    # Plot map
-    fig, ax = plt.subplots()
-    ax.set_title(f"Scenario {scenario.scenario_id}")
-    ax.axis("equal")
-    if not feature_id:
-        fid = -1
-    else:
-        fid = feature_id
-    highlighted_handle = plot_map_features(map_features, fid)
-    all_handles = get_legend_handles()
-    all_handles.extend(highlighted_handle)
-    plt.legend(handles=all_handles)
+        # Plot map
+        fig, ax = plt.subplots()
+        ax.set_title(f"Scenario {scenarios[i].scenario_id}")
+        ax.axis("equal")
+        if not feature_id:
+            fid = -1
+        else:
+            fid = feature_id
+        highlighted_handle = plot_map_features(map_features, fid)
+        all_handles = get_legend_handles()
+        all_handles.extend(highlighted_handle)
+        plt.legend(handles=all_handles)
 
-    mng = plt.get_current_fig_manager()
-    mng.resize(1000, 1000)
+        mng = plt.get_current_fig_manager()
+        mng.resize(1000, 1000)
     # mng.resize(*mng.window.maxsize())
     plt.show()
 
@@ -599,8 +601,9 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             for i in range(len(valid_indexes)):
                 scenario_idx = scenario_ids[valid_indexes[i] - 1]
                 scenarios_to_plot.append(scenario_dict[scenario_idx])
-            with Pool(min(cpu_count(), len(valid_indexes))) as pool:
-                pool.starmap(plot_scenario, list(product(scenarios_to_plot)))
+            # with Pool(min(cpu_count(), len(valid_indexes))) as pool:
+            #     pool.starmap(plot_scenario, list(product(scenarios_to_plot)))
+            plot_scenarios(scenarios_to_plot)
 
         elif re.compile("^select[\s]+[\d]+$", flags=re.IGNORECASE).match(user_input):
             input_lst = user_input.split()
@@ -736,9 +739,9 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
             input_lst = user_input.split()
             if len(input_lst) == 1:
                 # Plot this scenario
-                plot_scenario(scenario)
+                plot_scenarios(scenario)
             else:
-                plot_scenario(scenario, int(input_lst[1]))
+                plot_scenarios(scenario, int(input_lst[1]))
 
         elif re.compile("^go[\s]+back$", flags=re.IGNORECASE).match(user_input):
             stop_exploring = True
@@ -755,6 +758,9 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
 
 
 if __name__ == "__main__":
+    import warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
     parser = argparse.ArgumentParser(
         prog="waymo_utility.py",
         description="Text based TfRecords Browser.",
