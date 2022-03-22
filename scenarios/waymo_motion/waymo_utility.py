@@ -26,6 +26,7 @@ import os
 import shutil
 import yaml
 import re
+from itertools import product
 from typing import Dict, List, Tuple, Union, Optional
 from tabulate import tabulate
 from pathlib import Path
@@ -594,12 +595,12 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 continue
 
             # Plot the maps of these scenarios
-            scenarios_to_plot = [
-                tuple(scenario_dict[scenario_ids[valid_indexes[i] - 1]])
-                for i in range(len(valid_indexes))
-            ]
+            scenarios_to_plot = []
+            for i in range(len(valid_indexes)):
+                scenario_idx = scenario_ids[valid_indexes[i] - 1]
+                scenarios_to_plot.append(scenario_dict[scenario_idx])
             with Pool(min(cpu_count(), len(valid_indexes))) as pool:
-                pool.starmap(plot_scenario, scenarios_to_plot)
+                pool.starmap(plot_scenario, list(product(scenarios_to_plot)))
 
         elif re.compile("^select[\s]+[\d]+$", flags=re.IGNORECASE).match(user_input):
             input_lst = user_input.split()
