@@ -144,9 +144,7 @@ def copy_source_code(srcs, dst):
 
 
 def resize_im(im, size):
-    im = (cv2.resize(im, size) * 255.0).astype(
-        np.uint8
-    )
+    im = (cv2.resize(im, size) * 255.0).astype(np.uint8)
     return im
 
 
