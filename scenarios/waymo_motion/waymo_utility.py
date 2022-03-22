@@ -595,7 +595,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
 
             # Plot the maps of these scenarios
             scenarios_to_plot = [
-                scenario_dict[scenario_ids[valid_indexes[i] - 1]]
+                tuple(scenario_dict[scenario_ids[valid_indexes[i] - 1]])
                 for i in range(len(valid_indexes))
             ]
             with Pool(min(cpu_count(), len(valid_indexes))) as pool:
