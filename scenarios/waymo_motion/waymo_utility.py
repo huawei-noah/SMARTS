@@ -299,6 +299,18 @@ def parse_tfrecords(tfrecord_path: str):
     return scenarios_per_tfrecord
 
 
+def display_tf_records(records):
+    print("\n")
+    print("-----------------------------------------------")
+    print("Waymo tfRecords:\n")
+    print(
+        tabulate(
+            records,
+            headers=["Index", "TfRecords"],
+        )
+    )
+
+
 def display_scenarios_in_tfrecord(tfrecord_path, scenario_dict) -> List[str]:
     scenario_data_lst = []
     scenario_counter = 1
@@ -410,17 +422,6 @@ def tfrecords_browser(tfrecord_path: str):
         tf_records.append([tf_counter, tf])
         tf_counter += 1
     stop_browser = False
-
-    def display_tf_records(records: List[List[int, str]]):
-        print("\n")
-        print("-----------------------------------------------")
-        print("Waymo tfRecords:\n")
-        print(
-            tabulate(
-                records,
-                headers=["Index", "TfRecords"],
-            )
-        )
 
     display_tf_records(tf_records)
     print_commands = True
