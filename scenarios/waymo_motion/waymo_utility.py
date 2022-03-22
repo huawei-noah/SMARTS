@@ -220,7 +220,6 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
 
 def plot_scenarios(scenarios, feature_id: Optional[int] = None):
     for i in range(len(scenarios)):
-        plt.figure(i)
         # Get map feature data from map proto
         map_features = get_map_features_for_scenario(scenarios[i])
 
@@ -229,10 +228,9 @@ def plot_scenarios(scenarios, feature_id: Optional[int] = None):
             fid = -1
         else:
             fid = feature_id
+        plt.figure()
         highlighted_handle = plot_map_features(map_features, fid)
-        fig, ax = plt.subplots()
-        ax.set_title(f"Scenario {scenarios[i].scenario_id}")
-        ax.axis("equal")
+        plt.title(f"Scenario {scenarios[i].scenario_id}")
         all_handles = get_legend_handles()
         all_handles.extend(highlighted_handle)
         plt.legend(handles=all_handles)
@@ -481,7 +479,8 @@ def tfrecords_browser(tfrecord_path: str):
                 continue
             tf_path = tf_records[valid_indexes[0] - 1][1]
             stop_browser = explore_tf_record(tf_path, scenarios_per_tfrecords[tf_path])
-            display_tf_records(tf_records)
+            if not stop_browser:
+                display_tf_records(tf_records)
             print_commands = True
 
         elif user_input.lower() == "exit":
@@ -655,7 +654,7 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
                 "Scenario ID",
                 "Timestamps",
                 "Track Objects",
-                "Traffic Lights",
+                "Traffic Light States",
                 "Objects of Interest",
             ],
         )
