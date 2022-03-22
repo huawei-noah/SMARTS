@@ -240,7 +240,7 @@ def plot_scenarios(scenarios, feature_id: Optional[int] = None):
         mng = plt.get_current_fig_manager()
         mng.resize(1000, 1000)
     # mng.resize(*mng.window.maxsize())
-    plt.show()
+        plt.show()
 
 
 def dump_plots(target_base_path: str, scenario_dict):
