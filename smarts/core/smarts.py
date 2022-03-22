@@ -24,13 +24,12 @@ import os
 import warnings
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
-from scipy.spatial.distance import cdist
 
 import numpy as np
+from scipy.spatial.distance import cdist
 
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
-
 from smarts import VERSION
 from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.plan import Plan
@@ -1186,7 +1185,9 @@ class SMARTS:
             return []
 
         # calculate euclidean distances
-        distances = cdist(other_positions, [vehicle.position], metric="euclidean").reshape(-1)
+        distances = cdist(
+            other_positions, [vehicle.position], metric="euclidean"
+        ).reshape(-1)
 
         indices = np.argwhere(distances <= radius).flatten()
         return [other_states[i] for i in indices]
