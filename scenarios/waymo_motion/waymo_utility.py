@@ -225,14 +225,14 @@ def plot_scenarios(scenarios, feature_id: Optional[int] = None):
         map_features = get_map_features_for_scenario(scenarios[i])
 
         # Plot map
-        fig, ax = plt.subplots()
-        ax.set_title(f"Scenario {scenarios[i].scenario_id}")
-        ax.axis("equal")
         if not feature_id:
             fid = -1
         else:
             fid = feature_id
         highlighted_handle = plot_map_features(map_features, fid)
+        fig, ax = plt.subplots()
+        ax.set_title(f"Scenario {scenarios[i].scenario_id}")
+        ax.axis("equal")
         all_handles = get_legend_handles()
         all_handles.extend(highlighted_handle)
         plt.legend(handles=all_handles)
@@ -240,7 +240,7 @@ def plot_scenarios(scenarios, feature_id: Optional[int] = None):
         mng = plt.get_current_fig_manager()
         mng.resize(1000, 1000)
     # mng.resize(*mng.window.maxsize())
-        plt.show()
+    plt.show()
 
 
 def dump_plots(target_base_path: str, scenario_dict):
