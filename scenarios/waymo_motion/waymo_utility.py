@@ -20,7 +20,7 @@
 
 # type: ignore
 
-# Visualization and prototyping script for the Waymo motion dataset.
+# Text based Waymo Dataset Browser.
 import argparse
 import os
 import shutil
@@ -31,6 +31,7 @@ from tabulate import tabulate
 from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from multiprocessing import Pool, cpu_count
 from waymo_open_dataset.protos import scenario_pb2
 
 from smarts.core.utils.file import read_tfrecord_file
@@ -444,7 +445,7 @@ def tfrecords_browser(tfrecord_path: str):
             continue
 
         user_input = raw_input.strip()
-        if re.compile("^(?i)display[\s]+all\s*$").match(user_input):
+        if re.compile("^(?i)display[\s]+all$").match(user_input):
             for tf_record in tf_records:
                 display_scenarios_in_tfrecord(
                     tf_record[1], scenarios_per_tfrecords[tf_record[1]]
@@ -452,7 +453,7 @@ def tfrecords_browser(tfrecord_path: str):
             display_tf_records(tf_records)
             print_commands = True
 
-        elif re.compile("^(?i)display[\s]+(?:\s*(\d+))+\s*$").match(user_input):
+        elif re.compile("^(?i)display[\s]+(?:\s*(\d+))+$").match(user_input):
             input_lst = user_input.split()
             valid_indexes = check_index_validity(
                 input_lst[1:], len(tf_records), "display"
@@ -465,7 +466,7 @@ def tfrecords_browser(tfrecord_path: str):
                 print("\n")
             print_commands = True
 
-        elif re.compile("^(?i)explore[\s]+[\d]+\s*$").match(user_input):
+        elif re.compile("^(?i)explore[\s]+[\d]+$").match(user_input):
             input_lst = user_input.split()
             valid_indexes = check_index_validity(
                 [input_lst[1]], len(tf_records), "explore"
@@ -504,7 +505,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid directory path.\n"
                 f"2. `export <indexes> <target_base_path>' --> Export the scenarios at these indexes of the table to a target path. The indexes should be an integer between 1 and {len(scenario_ids)} separated by space and path should be valid.\n"
                 "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path. Path should be valid.\n"
-                f"4. `preview <index>` --> Plot and display the map of the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
+                f"4. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table. The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space\n"
                 f"5. `select <index>` --> Select and explore further the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
                 "6. `go back` --> Go back to the tfrecords browser\n"
                 "7. `exit` --> Exit the program\n"
@@ -533,9 +534,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
 
-        elif re.compile("^\s*(?i)export[\s]+(?:\s*(\d+))+[\s]+[^\n ]+\s*$").match(
-            user_input
-        ):
+        elif re.compile("^(?i)export[\s]+(?:\s*(\d+))+[\s]+[^\n ]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if indexes passed are valid
@@ -559,7 +558,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             )
             print_commands = True
 
-        elif re.compile("^\s*(?i)preview[\s]+all[\s]+[^\n ]+\s*$").match(user_input):
+        elif re.compile("^(?i)preview[\s]+all[\s]+[^\n ]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if target base path is valid
@@ -573,7 +572,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
 
-        elif re.compile("\s*^(?i)preview[\s]+[\d]+\s*$").match(user_input):
+        elif re.compile("^(?i)preview[\s]+(?:\s*(\d+))+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
@@ -583,11 +582,15 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             if len(valid_indexes) == 0:
                 continue
 
-            # Plot the map of this scenario
-            scenario_id = scenario_ids[valid_indexes[0] - 1]
-            plot_scenario(scenario_dict[scenario_id])
+            # Plot the maps of these scenarios
+            scenarios_to_plot = [
+                scenario_dict[scenario_ids[valid_indexes[i] - 1]]
+                for i in range(len(valid_indexes))
+            ]
+            with Pool(min(cpu_count(), len(valid_indexes))) as pool:
+                pool.starmap(plot_scenario, scenarios_to_plot)
 
-        elif re.compile("^\s*(?i)select[\s]+[\d]+\s*$").match(user_input):
+        elif re.compile("^(?i)select[\s]+[\d]+$").match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
@@ -739,8 +742,8 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="waymo_scenario_gen.py",
-        description="Extract map data from Waymo dataset, plot the scenarios and save their ids.",
+        prog="waymo_utility.py",
+        description="Text based TfRecords Browser.",
     )
     parser.add_argument("file", help="TFRecord file/folder path")
     args = parser.parse_args()
