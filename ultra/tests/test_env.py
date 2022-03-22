@@ -26,7 +26,7 @@ import gym
 import numpy as np
 import ray
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import (
     RGB,
     AgentInterface,
@@ -35,6 +35,7 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.sensors import TopDownRGB
+from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import make
 from ultra.baselines.agent_spec import BaselineAgentSpec
 from ultra.baselines.ppo.ppo.policy import PPOPolicy

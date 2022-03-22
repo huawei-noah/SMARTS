@@ -41,8 +41,8 @@ from config import HyperParameters
 from prioritized_replay import Buffer
 from soc_mt_ac_network import SocMtActorNetwork, SocMtCriticNetwork
 
-from smarts.core.agent import AgentSpec
 from smarts.core.utils.episodes import episodes
+from smarts.zoo.agent_spec import AgentSpec
 from utils import get_split_batch
 
 warnings.filterwarnings("ignore")

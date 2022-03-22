@@ -64,7 +64,7 @@ def make(locator: str, **kwargs):
             Additional arguments to be passed to the constructed class.
     """
 
-    from smarts.core.agent import AgentSpec
+    from smarts.zoo.agent_spec import AgentSpec
 
     agent_spec = agent_registry.make(locator, **kwargs)
     assert isinstance(

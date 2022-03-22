@@ -28,7 +28,7 @@ import pytest
 from panda3d.core import OrthographicLens, Point2, Point3 
 # pytype: enable=import-error
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import (
     OGM,
     RGB,
@@ -39,6 +39,7 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.colors import SceneColors
 from smarts.core.controllers import ActionSpaceType
+from smarts.zoo.agent_spec import AgentSpec
 
 logging.basicConfig(level=logging.INFO)
 

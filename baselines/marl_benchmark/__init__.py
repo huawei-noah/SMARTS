@@ -24,8 +24,8 @@ from pathlib import Path
 import gym
 from benchmark.agents import load_config
 
-from smarts.core.agent import AgentSpec
 from smarts.core.scenario import Scenario
+from smarts.zoo.agent_spec import AgentSpec
 
 
 def gen_config(**kwargs):

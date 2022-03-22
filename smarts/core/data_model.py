@@ -20,7 +20,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-from smarts.core.agent import AgentSpec
+from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import make
 
 

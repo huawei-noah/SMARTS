@@ -59,6 +59,7 @@ class _ShowBaseInstance(ShowBase):
         if "__it__" not in cls.__dict__:
             loadPrcFileData("", "load-display p3headlessgl")
             loadPrcFileData("", "aux-display p3headlessgl")
+            loadPrcFileData("", "aux-display p3tinydisplay")
             # disable vsync otherwise we are limited to refresh-rate of screen
             loadPrcFileData("", "sync-video false")
             loadPrcFileData("", "model-path %s" % os.getcwd())
