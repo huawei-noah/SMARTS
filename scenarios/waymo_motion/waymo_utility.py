@@ -386,7 +386,7 @@ def check_index_validity(
             print(
                 f"{valid_indexes} is Invalid index. Please input integers as index for the `{command_type}` command"
             )
-    return valid_indexes
+    return list(set(valid_indexes))
 
 
 def check_path_validity(target_base_path: str) -> bool:
