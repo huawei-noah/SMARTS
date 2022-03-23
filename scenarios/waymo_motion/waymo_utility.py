@@ -167,98 +167,103 @@ def get_object_type_count(trajectories):
     return ego, cars, pedestrian, cyclist, other
 
 
-def get_trajectory_data(scenario):
+def get_trajectory_data(waymo_scenario):
+    def generate_trajectory_rows(scenario):
+        for i in range(len(scenario.tracks)):
+            vehicle_id = scenario.tracks[i].id
+            num_steps = len(scenario.timestamps_seconds)
+            rows = []
+
+            # First pass -- extract data
+            for j in range(num_steps):
+                obj_state = scenario.tracks[i].states[j]
+                row = dict()
+                row["vehicle_id"] = vehicle_id
+                row["type"] = scenario.tracks[i].object_type
+                row["valid"] = obj_state.valid
+                row["sim_time"] = scenario.timestamps_seconds[j]
+                row["position_x"] = obj_state.center_x
+                row["position_y"] = obj_state.center_y
+                rows.append(row)
+
+            # Second pass -- align timesteps to 10 Hz and interpolate trajectory data if needed
+            interp_rows = [None] * num_steps
+            for j in range(num_steps):
+                row = rows[j]
+                timestep = 0.1
+                time_current = row["sim_time"]
+                time_expected = round(j * timestep, 3)
+                time_error = time_current - time_expected
+
+                if not row["valid"] or time_error == 0:
+                    continue
+
+                if time_error > 0:
+                    # We can't interpolate if the previous element doesn't exist or is invalid
+                    if j == 0 or not rows[j - 1]["valid"]:
+                        continue
+
+                    # Interpolate backwards using previous timestep
+                    interp_row = {"sim_time": time_expected}
+
+                    prev_row = rows[j - 1]
+                    prev_time = prev_row["sim_time"]
+
+                    t = (time_expected - prev_time) / (time_current - prev_time)
+                    interp_row["position_x"] = lerp(
+                        prev_row["position_x"], row["position_x"], t
+                    )
+                    interp_row["position_y"] = lerp(
+                        prev_row["position_y"], row["position_y"], t
+                    )
+                    interp_rows[j] = interp_row
+                else:
+                    # We can't interpolate if the next element doesn't exist or is invalid
+                    if (
+                        j == len(scenario.timestamps_seconds) - 1
+                        or not rows[j + 1]["valid"]
+                    ):
+                        continue
+
+                    # Interpolate forwards using next timestep
+                    interp_row = {"sim_time": time_expected}
+
+                    next_row = rows[j + 1]
+                    next_time = next_row["sim_time"]
+
+                    t = (time_expected - time_current) / (next_time - time_current)
+                    interp_row["position_x"] = lerp(
+                        row["position_x"], next_row["position_x"], t
+                    )
+                    interp_row["position_y"] = lerp(
+                        row["position_y"], next_row["position_y"], t
+                    )
+                    interp_rows[j] = interp_row
+
+            # Third pass -- filter invalid states, replace interpolated values
+            for j in range(num_steps):
+                if not rows[j]["valid"]:
+                    continue
+                if interp_rows[j] is not None:
+                    rows[j]["sim_time"] = interp_rows[j]["sim_time"]
+                    rows[j]["position_x"] = interp_rows[j]["position_x"]
+                    rows[j]["position_y"] = interp_rows[j]["position_y"]
+                yield rows[j]
+
     trajectories = {}
-    counter = 1
-    for i in range(len(scenario.tracks)):
-        vehicle_id = scenario.tracks[i].id
-        print(counter)
-        counter += 1
-        num_steps = len(scenario.timestamps_seconds)
-        trajectories[vehicle_id] = [
-            [],
-            [],
-            1 if i == scenario.sdc_track_index else 0,
-            scenario.tracks[i].object_type,
-        ]
-
-        rows = []
-
-        # First pass -- extract data
-        for j in range(num_steps):
-            obj_state = scenario.tracks[i].states[j]
-            row = dict()
-            row["valid"] = obj_state.valid
-            row["sim_time"] = scenario.timestamps_seconds[j]
-            row["position_x"] = obj_state.center_x
-            row["position_y"] = obj_state.center_y
-            rows.append(row)
-
-        # Second pass -- align timesteps to 10 Hz and interpolate trajectory data if needed
-        interp_rows = [None] * num_steps
-        for j in range(num_steps):
-            row = rows[j]
-            timestep = 0.1
-            time_current = row["sim_time"]
-            time_expected = round(j * timestep, 3)
-            time_error = time_current - time_expected
-
-            if not row["valid"] or time_error == 0:
-                continue
-
-            if time_error > 0:
-                # We can't interpolate if the previous element doesn't exist or is invalid
-                if j == 0 or not rows[j - 1]["valid"]:
-                    continue
-
-                # Interpolate backwards using previous timestep
-                interp_row = {"sim_time": time_expected}
-
-                prev_row = rows[j - 1]
-                prev_time = prev_row["sim_time"]
-
-                t = (time_expected - prev_time) / (time_current - prev_time)
-                interp_row["position_x"] = lerp(
-                    prev_row["position_x"], row["position_x"], t
-                )
-                interp_row["position_y"] = lerp(
-                    prev_row["position_y"], row["position_y"], t
-                )
-                interp_rows[j] = interp_row
-            else:
-                # We can't interpolate if the next element doesn't exist or is invalid
-                if (
-                    j == len(scenario.timestamps_seconds) - 1
-                    or not rows[j + 1]["valid"]
-                ):
-                    continue
-
-                # Interpolate forwards using next timestep
-                interp_row = {"sim_time": time_expected}
-
-                next_row = rows[j + 1]
-                next_time = next_row["sim_time"]
-
-                t = (time_expected - time_current) / (next_time - time_current)
-                interp_row["position_x"] = lerp(
-                    row["position_x"], next_row["position_x"], t
-                )
-                interp_row["position_y"] = lerp(
-                    row["position_y"], next_row["position_y"], t
-                )
-                interp_rows[j] = interp_row
-
-        # Third pass -- filter invalid states, replace interpolated values
-        for j in range(num_steps):
-            if not rows[j]["valid"]:
-                continue
-            # if interp_rows[j] is not None:
-            #     rows[j]["position_x"] = interp_rows[j]["position_x"]
-            #     rows[j]["position_y"] = interp_rows[j]["position_y"]
-            trajectories[vehicle_id][0].append(rows[j]["position_x"])
-            trajectories[vehicle_id][1].append(rows[j]["position_y"])
-
-        return trajectories
+    agent_id = None
+    for row in generate_trajectory_rows(waymo_scenario):
+        if agent_id != row["vehicle_id"]:
+            agent_id = row["vehicle_id"]
+            trajectories[agent_id] = [
+                [],
+                [],
+                1 if row["is_ego_vehicle"] == 1 else 0,
+                row["type"],
+            ]
+        trajectories[agent_id][0].append(row["position_x"])
+        trajectories[agent_id][1].append(row["position_y"])
+    return trajectories
 
 
 def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
@@ -973,11 +978,11 @@ def explore_scenario(tfrecord_file_path: str, scenario_info) -> bool:
         len(cyclist),
         len(others),
     ]
-    print("\n")
     print(
         tabulate(
             [trajectory_data],
             headers=[
+                "Scenario ID",
                 "Cars",
                 "Pedestrians",
                 "Cyclists",
@@ -1060,5 +1065,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("file", help="TFRecord file/folder path")
     args = parser.parse_args()
-
+    # sptf = parse_tfrecords("waymo_data")
+    # for tf_record in sptf:
+    #     scenario_dict = sptf[tf_record]
+    #     for scenario_id in scenario_dict:
+    #         scenario = scenario_dict[scenario_id][0]
+    #         get_trajectory_data(scenario)
     tfrecords_browser(args.file)
