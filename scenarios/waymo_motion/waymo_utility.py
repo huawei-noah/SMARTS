@@ -180,6 +180,7 @@ def get_trajectory_data(waymo_scenario):
                 row = dict()
                 row["vehicle_id"] = vehicle_id
                 row["type"] = scenario.tracks[i].object_type
+                row["is_ego_vehicle"] = 1 if i == scenario.sdc_track_index else 0
                 row["valid"] = obj_state.valid
                 row["sim_time"] = scenario.timestamps_seconds[j]
                 row["position_x"] = obj_state.center_x
@@ -258,7 +259,7 @@ def get_trajectory_data(waymo_scenario):
             trajectories[agent_id] = [
                 [],
                 [],
-                1 if row["is_ego_vehicle"] == 1 else 0,
+                row["is_ego_vehicle"],
                 row["type"],
             ]
         trajectories[agent_id][0].append(row["position_x"])
