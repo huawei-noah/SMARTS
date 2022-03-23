@@ -469,9 +469,9 @@ def dump_plots(target_base_path: str, scenario_dict):
         return
     for scenario_id in scenario_dict:
         scenario = scenario_dict[scenario_id][0]
-        if scenario_dict[scenario_id[1]] is None:
-            scenario_dict[scenario_id[1]] = get_map_features_for_scenario(scenario)
-        map_features = scenario_dict[scenario_id[1]]
+        if scenario_dict[scenario_id][1] is None:
+            scenario_dict[scenario_id][1] = get_map_features_for_scenario(scenario)
+        map_features = scenario_dict[scenario_id][1]
         fig, ax = plt.subplots()
         ax.set_title(f"Scenario {scenario_id}")
         plot_map_features(map_features, -1)
@@ -826,7 +826,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 scenario_idx = scenario_ids[valid_indexes[i] - 1]
                 if scenario_dict[scenario_idx][1] is None:
                     scenario_dict[scenario_idx][1] = get_map_features_for_scenario(
-                        scenario_dict[scenario_idx]
+                        scenario_dict[scenario_idx][0]
                     )
                 scenarios_to_plot.append(scenario_dict[scenario_idx])
 
@@ -846,11 +846,11 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             scenario_id = scenario_ids[valid_indexes[0] - 1]
             if scenario_dict[scenario_id][1] is None:
                 scenario_dict[scenario_id][1] = get_map_features_for_scenario(
-                    scenario_dict[scenario_id]
+                    scenario_dict[scenario_id][0]
                 )
             if scenario_dict[scenario_id][2] is None:
                 scenario_dict[scenario_id][2] = get_trajectory_data(
-                    scenario_dict[scenario_id]
+                    scenario_dict[scenario_id][0]
                 )
             animate_trajectories(scenario_dict[scenario_id])
 
@@ -868,11 +868,11 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             scenario_id = scenario_ids[valid_indexes[0] - 1]
             if scenario_dict[scenario_id][1] is None:
                 scenario_dict[scenario_id][1] = get_map_features_for_scenario(
-                    scenario_dict[scenario_id]
+                    scenario_dict[scenario_id][0]
                 )
             if scenario_dict[scenario_id][2] is None:
                 scenario_dict[scenario_id][2] = get_trajectory_data(
-                    scenario_dict[scenario_id]
+                    scenario_dict[scenario_id][0]
                 )
             exit_browser = explore_scenario(tfrecord, scenario_dict[scenario_id])
             if exit_browser:
