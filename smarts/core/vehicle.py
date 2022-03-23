@@ -142,6 +142,7 @@ VEHICLE_CONFIGS = {
 
 class Vehicle:
     """Represents a single vehicle."""
+    _HAS_DYNAMIC_ATTRIBUTES=True
 
     def __init__(
         self,
@@ -265,9 +266,7 @@ class Vehicle:
             pose=self.pose,
             dimensions=self._chassis.dimensions,
             speed=self.speed,
-            # pytype: disable=attribute-error
             steering=self._chassis.steering,
-            # pytype: enable=attribute-error
             yaw_rate=self._chassis.yaw_rate,
             source="SMARTS",
             linear_velocity=self._chassis.velocity_vectors[0],
@@ -616,9 +615,7 @@ class Vehicle:
         This may disrupt physics simulation of the chassis physics body for a few steps after use.
         """
         self._warn_AckermannChassis_set_pose()
-        # pytype: disable=attribute-error
         self._chassis.set_pose(pose)
-        # pytype: enable=attribute-error
 
     def swap_chassis(self, chassis: Chassis):
         """Swap the current chassis with the given chassis. Apply the GCD of the previous chassis
@@ -633,13 +630,11 @@ class Vehicle:
         for sensor in [
             sensor
             for sensor in [
-                # pytype: disable=attribute-error
                 self._drivable_area_grid_map_sensor,
                 self._ogm_sensor,
                 self._rgb_sensor,
                 self._lidar_sensor,
                 self._driven_path_sensor,
-                # pytype: enable=attribute-error
             ]
             if sensor is not None
         ]:

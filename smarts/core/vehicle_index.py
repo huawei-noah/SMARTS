@@ -378,9 +378,7 @@ class VehicleIndex:
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = _ControlEntity(*self._controlled_by[v_index][0])
         self._controlled_by[v_index] = tuple(
-            # pytype: disable=wrong-arg-types
             entity._replace(shadow_actor_id=agent_id, is_boid=boid)
-            # pytype: enable=wrong-arg-types
         )
 
         # XXX: We are not giving the vehicle an AckermannChassis here but rather later
@@ -447,7 +445,6 @@ class VehicleIndex:
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = _ControlEntity(*self._controlled_by[v_index][0])
         self._controlled_by[v_index] = tuple(
-            # pytype: disable=wrong-arg-types
             entity._replace(
                 actor_type=_ActorType.Agent,
                 actor_id=agent_id,
@@ -455,7 +452,6 @@ class VehicleIndex:
                 is_boid=boid,
                 is_hijacked=hijacking,
             )
-            # pytype: enable=wrong-arg-types
         )
 
         return vehicle

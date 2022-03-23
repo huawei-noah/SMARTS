@@ -210,7 +210,7 @@ class Bubble:
         if not isinstance(position, Point):
             position = Point(position)
 
-        in_airlock = position.within(self._cached_airlock_geometry) #
+        in_airlock = position.within(self._cached_airlock_geometry)
         if not in_airlock:
             return False, False
 
