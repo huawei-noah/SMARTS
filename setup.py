@@ -71,6 +71,11 @@ setup(
             "sphinxcontrib-apidoc>=0.3.0",
         ],
         "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
+        "rllib": [
+            "opencv-python==4.1.2.30",
+            "opencv-python-headless==4.1.2.30",
+            "ray[rllib]==1.0.1.post1",            
+        ],
         "ros": ["catkin_pkg", "rospkg"],
         "test": [
             # The following are for testing
@@ -88,11 +93,6 @@ setup(
         ],
         "train": [
             "tensorflow>=2.4.0",
-        ],
-        "rllib": [
-            "opencv-python==4.1.2.30",
-            "opencv-python-headless==4.1.2.30",
-            "ray[rllib]==1.0.1.post1",            
         ],
         "waymo": ["waymo-open-dataset-tf-2-4-0"],
         "opendrive": ["opendrive2lanelet>=1.2.1"],
