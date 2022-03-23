@@ -33,9 +33,6 @@ class Observation(gym.Wrapper):
         converted = format_img(obs.rgb)
         stacked = self._stack_obs(converted)
 
-        # plotter(obs.rgb, rgb_gray=3, name="Original RGB")
-        # plotter(stacked, rgb_gray=1, name="Stacked Grayscale")
-
         return stacked, rewards, dones, infos
 
     def reset(self):
@@ -86,7 +83,6 @@ def plotter(obs: np.ndarray, rgb_gray=1, name: str = "Graph"):
 
     rows = 1
     columns = obs.shape[0] // rgb_gray
-    # cmap = 'gray' if rgb_gray == 1 else 'viridis'
     fig, axs = plt.subplots(nrows=rows, ncols=columns, squeeze=False)
     fig.suptitle("Observation")
 
@@ -97,5 +93,5 @@ def plotter(obs: np.ndarray, rgb_gray=1, name: str = "Graph"):
             axs[row, col].imshow(img)
             axs[row, col].set_title(f"{name}")
     plt.show()
-    # plt.pause(3)
+    plt.pause(3)
     plt.close()
