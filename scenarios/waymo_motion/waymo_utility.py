@@ -29,11 +29,16 @@ import re
 from typing import Dict, List, Tuple, Union, Optional
 from tabulate import tabulate
 from pathlib import Path
+from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from waymo_open_dataset.protos import scenario_pb2
 
 from smarts.core.utils.file import read_tfrecord_file
+
+
+def lerp(a: float, b: float, t: float) -> float:
+    return t * (b - a) + a
 
 
 def convert_polyline(polyline) -> Tuple[List[float], List[float]]:
@@ -44,7 +49,58 @@ def convert_polyline(polyline) -> Tuple[List[float], List[float]]:
     return xs, ys
 
 
-def get_legend_handles() -> List[Line2D]:
+def get_trajectory_handles() -> List[Line2D]:
+    handles = [
+        Line2D(
+            [],
+            [],
+            color="cyan",
+            marker="^",
+            linestyle="None",
+            markersize=5,
+            label="Ego Vehicle",
+        ),
+        Line2D(
+            [],
+            [],
+            color="black",
+            marker="^",
+            linestyle="None",
+            markersize=5,
+            label="Car",
+        ),
+        Line2D(
+            [],
+            [],
+            color="magenta",
+            marker="d",
+            linestyle="None",
+            markersize=5,
+            label="Pedestrian",
+        ),
+        Line2D(
+            [],
+            [],
+            color="magenta",
+            marker="*",
+            linestyle="None",
+            markersize=5,
+            label="Cyclist",
+        ),
+        Line2D(
+            [],
+            [],
+            color="black",
+            marker="8",
+            linestyle="None",
+            markersize=5,
+            label="Other",
+        ),
+    ]
+    return handles
+
+
+def get_map_handles() -> List[Line2D]:
     handles = [
         Line2D([0], [0], linestyle=":", color="gray", label="Lane Polyline"),
         Line2D([0], [0], linestyle="-", color="yellow", label="Single Road Line"),
@@ -92,6 +148,115 @@ def get_traffic_light_lanes(scenario) -> List[str]:
             lane_state = dynamic_states.lane_states[j]
             tls_lanes.append(lane_state.lane)
     return tls_lanes
+
+
+def get_object_type_count(trajectories):
+    cars, pedestrian, cyclist, other = [], [], [], []
+    ego = None
+    for vehicle_id in trajectories:
+        if trajectories[vehicle_id][2] == 1:
+            ego = vehicle_id
+        elif trajectories[vehicle_id][3] == 1:
+            cars.append(vehicle_id)
+        elif trajectories[vehicle_id][3] == 2:
+            pedestrian.append(vehicle_id)
+        elif trajectories[vehicle_id][3] == 3:
+            cyclist.append(vehicle_id)
+        else:
+            other.append(vehicle_id)
+    return ego, cars, pedestrian, cyclist, other
+
+
+def get_trajectory_data(scenario):
+    trajectories = {}
+    for i in range(len(scenario.tracks)):
+
+        vehicle_id = scenario.tracks[i].id
+        num_steps = len(scenario.timestamps_seconds)
+        trajectories[vehicle_id] = [
+            [],
+            [],
+            1 if i == scenario.sdc_track_index else 0,
+            scenario.tracks[i].object_type,
+        ]
+
+        rows = []
+
+        # First pass -- extract data
+        for j in range(num_steps):
+            obj_state = scenario.tracks[i].states[j]
+            row = dict()
+            row["valid"] = obj_state.valid
+            row["sim_time"] = scenario.timestamps_seconds[j]
+            row["position_x"] = obj_state.center_x
+            row["position_y"] = obj_state.center_y
+            rows.append(row)
+
+        # Second pass -- align timesteps to 10 Hz and interpolate trajectory data if needed
+        interp_rows = [None] * num_steps
+        for j in range(num_steps):
+            row = rows[j]
+            timestep = 0.1
+            time_current = row["sim_time"]
+            time_expected = round(j * timestep, 3)
+            time_error = time_current - time_expected
+
+            if not row["valid"] or time_error == 0:
+                continue
+
+            if time_error > 0:
+                # We can't interpolate if the previous element doesn't exist or is invalid
+                if j == 0 or not rows[j - 1]["valid"]:
+                    continue
+
+                # Interpolate backwards using previous timestep
+                interp_row = {"sim_time": time_expected}
+
+                prev_row = rows[j - 1]
+                prev_time = prev_row["sim_time"]
+
+                t = (time_expected - prev_time) / (time_current - prev_time)
+                interp_row["position_x"] = lerp(
+                    prev_row["position_x"], row["position_x"], t
+                )
+                interp_row["position_y"] = lerp(
+                    prev_row["position_y"], row["position_y"], t
+                )
+                interp_rows[j] = interp_row
+            else:
+                # We can't interpolate if the next element doesn't exist or is invalid
+                if (
+                    j == len(scenario.timestamps_seconds) - 1
+                    or not rows[j + 1]["valid"]
+                ):
+                    continue
+
+                # Interpolate forwards using next timestep
+                interp_row = {"sim_time": time_expected}
+
+                next_row = rows[j + 1]
+                next_time = next_row["sim_time"]
+
+                t = (time_expected - time_current) / (next_time - time_current)
+                interp_row["position_x"] = lerp(
+                    row["position_x"], next_row["position_x"], t
+                )
+                interp_row["position_y"] = lerp(
+                    row["position_y"], next_row["position_y"], t
+                )
+                interp_rows[j] = interp_row
+
+        # Third pass -- filter invalid states, replace interpolated values
+        for j in range(num_steps):
+            if not rows[j]["valid"]:
+                continue
+            if interp_rows[j] is not None:
+                rows[j]["position_x"] = interp_rows[j]["position_x"]
+                rows[j]["position_y"] = interp_rows[j]["position_y"]
+            trajectories[vehicle_id][0].append(rows[j]["position_x"])
+            trajectories[vehicle_id][1].append(rows[j]["position_y"])
+
+        return trajectories
 
 
 def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
@@ -216,10 +381,35 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
     return handle
 
 
-def plot_scenarios(scenarios, feature_id: Optional[int] = None):
-    for i in range(len(scenarios)):
+def plot_trajectories(trajectories):
+    max_len = 0
+    data, points = [], []
+    for k, v in trajectories.items():
+        xs, ys = v[0], v[1]
+        is_ego = v[2]
+        object_type = v[3]
+        if len(xs) > max_len:
+            max_len = len(xs)
+        if is_ego:
+            (point,) = plt.plot(xs[0], ys[0], "c^")
+        elif object_type == 1:
+            (point,) = plt.plot(xs[0], ys[0], "k^")
+        elif object_type == 2:
+            (point,) = plt.plot(xs[0], ys[0], "md")
+        elif object_type == 3:
+            (point,) = plt.plot(xs[0], ys[0], "m*")
+        else:
+            (point,) = plt.plot(xs[0], ys[0], "k8")
+        data.append((xs, ys))
+        points.append(point)
+
+    return data, points, max_len
+
+
+def plot_scenarios(scenario_infos, feature_id: Optional[int] = None):
+    for scenario_info in scenario_infos:
         # Get map feature data from map proto
-        map_features = get_map_features_for_scenario(scenarios[i])
+        map_features = scenario_info[1]
 
         # Plot map
         if not feature_id:
@@ -228,8 +418,8 @@ def plot_scenarios(scenarios, feature_id: Optional[int] = None):
             fid = feature_id
         plt.figure()
         highlighted_handle = plot_map_features(map_features, fid)
-        plt.title(f"Scenario {scenarios[i].scenario_id}")
-        all_handles = get_legend_handles()
+        plt.title(f"Scenario {scenario_info[0].scenario_id}")
+        all_handles = get_map_handles()
         all_handles.extend(highlighted_handle)
         plt.legend(handles=all_handles)
 
@@ -237,6 +427,35 @@ def plot_scenarios(scenarios, feature_id: Optional[int] = None):
         mng.resize(1000, 1000)
     # mng.resize(*mng.window.maxsize())
     plt.show()
+
+
+def animate_trajectories(scenario_info):
+    fig = plt.figure()
+    plt.title(f"Scenario {scenario_info[0].scenario_id}")
+    # Plot map
+    plot_map_features(scenario_info[1], -1)
+
+    # Plot Trajectories
+    data, points, max_len = plot_trajectories(scenario_info[2])
+
+    def update(i):
+        drawn_pts = []
+        for (xs, ys), point in zip(data, points):
+            if i < len(xs):
+                point.set_data(xs[i], ys[i])
+                drawn_pts.append(point)
+        return drawn_pts
+
+    all_handles = get_map_handles()
+    all_handles.extend(get_trajectory_handles())
+    plt.legend(handles=all_handles)
+
+    mng = plt.get_current_fig_manager()
+    mng.resize(1000, 1000)
+    anim = FuncAnimation(fig, update, frames=max_len, blit=True, interval=100)
+    plt.show()
+    # writer = FFMpegWriter(fps=15)
+    # anim.save(f'{scenario_id}.mp4', writer=1writer)
 
 
 def dump_plots(target_base_path: str, scenario_dict):
@@ -249,13 +468,14 @@ def dump_plots(target_base_path: str, scenario_dict):
         print(f"{target_base_path} is an invalid path. Please enter a valid path")
         return
     for scenario_id in scenario_dict:
-        scenario = scenario_dict[scenario_id]
-        map_features = get_map_features_for_scenario(scenario)
-
+        scenario = scenario_dict[scenario_id][0]
+        if scenario_dict[scenario_id[1]] is None:
+            scenario_dict[scenario_id[1]] = get_map_features_for_scenario(scenario)
+        map_features = scenario_dict[scenario_id[1]]
         fig, ax = plt.subplots()
         ax.set_title(f"Scenario {scenario_id}")
         plot_map_features(map_features, -1)
-        plt.legend(handles=get_legend_handles())
+        plt.legend(handles=get_map_handles())
         mng = plt.get_current_fig_manager()
         # mng.resize(*mng.window.maxsize())
         w = 1000
@@ -281,7 +501,7 @@ def get_scenario_dict(tfrecord_file: str):
         scenario = scenario_pb2.Scenario()
         scenario.ParseFromString(bytearray(record))
         scenario_id = scenario.scenario_id
-        scenario_dict[scenario_id] = scenario
+        scenario_dict[scenario_id] = [scenario, None, None]
 
     return scenario_dict
 
@@ -291,8 +511,9 @@ def parse_tfrecords(tfrecord_path: str):
     if os.path.isdir(tfrecord_path):
         for f in os.listdir(tfrecord_path):
             if ".tfrecord" in f and os.path.isfile(os.path.join(tfrecord_path, f)):
-                scenario_dict = get_scenario_dict(os.path.join(tfrecord_path, f))
-                scenarios_per_tfrecord[os.path.join(tfrecord_path, f)] = scenario_dict
+                scenarios_per_tfrecord[
+                    os.path.join(tfrecord_path, f)
+                ] = get_scenario_dict(os.path.join(tfrecord_path, f))
     else:
         scenarios_per_tfrecord[tfrecord_path] = get_scenario_dict(tfrecord_path)
     return scenarios_per_tfrecord
@@ -316,7 +537,7 @@ def display_scenarios_in_tfrecord(tfrecord_path, scenario_dict) -> List[str]:
     scenario_counter = 1
     scenario_ids = []
     for scenario_id in scenario_dict:
-        scenario = scenario_dict[scenario_id]
+        scenario = scenario_dict[scenario_id][0]
         scenario_data = [
             scenario_counter,
             scenario_id,
@@ -339,7 +560,7 @@ def display_scenarios_in_tfrecord(tfrecord_path, scenario_dict) -> List[str]:
                 "Scenario ID",
                 "Timestamps",
                 "Track Objects",
-                "Traffic Lights",
+                "Traffic Light States",
                 "Objects of Interest",
             ],
         )
@@ -400,7 +621,9 @@ def check_index_validity(
                 f"{valid_indexes} is Invalid index. Please input integers as index for the `{command_type}` command"
             )
     if not valid_indexes:
-        print("no valid indexes passed. Please check the command info for valid index values")
+        print(
+            "no valid indexes passed. Please check the command info for valid index values"
+        )
     return list(set(valid_indexes))
 
 
@@ -511,10 +734,11 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid directory path.\n"
                 f"2. `export <indexes> <target_base_path>' --> Export the scenarios at these indexes of the table to a target path. The indexes should be an integer between 1 and {len(scenario_ids)} separated by space and path should be valid.\n"
                 "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path. Path should be valid.\n"
-                f"4. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table. The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space\n"
+                f"4. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table. The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
                 f"5. `select <index>` --> Select and explore further the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
-                "6. `go back` --> Go back to the tfrecords browser\n"
-                "7. `exit` --> Exit the program\n"
+                f"6. `animate <index>` --> Plot the map and animate the trajectories of objects of scenario at this index of the table . The index should be an integer between 1 and {len(scenario_ids)}\n"
+                "7. `go back` --> Go back to the tfrecords browser\n"
+                "8. `exit` --> Exit the program\n"
             )
             print_commands = False
 
@@ -600,10 +824,35 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             scenarios_to_plot = []
             for i in range(len(valid_indexes)):
                 scenario_idx = scenario_ids[valid_indexes[i] - 1]
+                if scenario_dict[scenario_idx][1] is None:
+                    scenario_dict[scenario_idx][1] = get_map_features_for_scenario(
+                        scenario_dict[scenario_idx]
+                    )
                 scenarios_to_plot.append(scenario_dict[scenario_idx])
-            # with Pool(min(cpu_count(), len(valid_indexes))) as pool:
-            #     pool.starmap(plot_scenario, list(product(scenarios_to_plot)))
+
             plot_scenarios(scenarios_to_plot)
+
+        elif re.compile("^animate[\s]+[\d]+$", flags=re.IGNORECASE).match(user_input):
+            input_lst = user_input.split()
+
+            # Check if index passed is valid
+            valid_indexes = check_index_validity(
+                input_lst[1:], len(scenario_ids), "select"
+            )
+            if len(valid_indexes) == 0:
+                continue
+
+            # Explore further the scenario at this index
+            scenario_id = scenario_ids[valid_indexes[0] - 1]
+            if scenario_dict[scenario_id][1] is None:
+                scenario_dict[scenario_id][1] = get_map_features_for_scenario(
+                    scenario_dict[scenario_id]
+                )
+            if scenario_dict[scenario_id][2] is None:
+                scenario_dict[scenario_id][2] = get_trajectory_data(
+                    scenario_dict[scenario_id]
+                )
+            animate_trajectories(scenario_dict[scenario_id])
 
         elif re.compile("^select[\s]+[\d]+$", flags=re.IGNORECASE).match(user_input):
             input_lst = user_input.split()
@@ -617,6 +866,14 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
 
             # Explore further the scenario at this index
             scenario_id = scenario_ids[valid_indexes[0] - 1]
+            if scenario_dict[scenario_id][1] is None:
+                scenario_dict[scenario_id][1] = get_map_features_for_scenario(
+                    scenario_dict[scenario_id]
+                )
+            if scenario_dict[scenario_id][2] is None:
+                scenario_dict[scenario_id][2] = get_trajectory_data(
+                    scenario_dict[scenario_id]
+                )
             exit_browser = explore_scenario(tfrecord, scenario_dict[scenario_id])
             if exit_browser:
                 return True
@@ -637,7 +894,10 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
     return False
 
 
-def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
+def explore_scenario(tfrecord_file_path: str, scenario_info) -> bool:
+    scenario = scenario_info[0]
+    scenario_map_features = scenario_info[1]
+    trajectories = scenario_info[2]
     scenario_data = [
         scenario.scenario_id,
         len(scenario.timestamps_seconds),
@@ -660,7 +920,6 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
             ],
         )
     )
-    scenario_map_features = get_map_features_for_scenario(scenario)
     map_features = [
         len(scenario_map_features["lane"]),
         len(scenario_map_features["road_line"]),
@@ -704,13 +963,45 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
         "\nSpeed Bumps Ids: ",
         [speed_bump[1] for speed_bump in scenario_map_features["speed_bump"]],
     )
+    print("\n")
+    print("-----------------------------------------------")
+    ego, cars, pedestrian, cyclist, others = get_object_type_count(trajectories)
+    print("Trajectory Data")
+    trajectory_data = [
+        scenario.scenario_id,
+        len(cars) + 1,
+        len(pedestrian),
+        len(cyclist),
+        len(others),
+    ]
+    print("                                               ")
+    print("-----------------------------------------------")
     print(
-        f"\nScenario {scenario.scenario_id}.\n"
+        tabulate(
+            [trajectory_data],
+            headers=[
+                "Cars",
+                "Pedestrians",
+                "Cyclists",
+                "Others",
+            ],
+        )
+    )
+    print("\n\nTrack Object Ids: ")
+    print("\nEgo Id: ", ego)
+    print("\nCar Ids: ", cars)
+    print("\nPedestrian Ids: ", pedestrian)
+    print("\nCyclist Ids: ", cyclist)
+    print("\nOther Ids: ", others)
+
+    print(
+        f"\n\nScenario {scenario.scenario_id}.\n"
         "You can use the following commands to further this scenario:\n"
         f"1. `export <target_base_path>' --> Export the scenario to a target path. The path should be valid.\n"
         f"2. `preview` or `preview <feature_id>` --> Plot and display the map of the scenario with the feature id highlighted in Blue if passed. The feature id needs to be a number from the ids mentioned above and will not be highlighted if it doesnt exist.\n"
-        "3. `go back` --> Go back to this scenario's tfrecord browser.\n"
-        "4. `exit` --> Exit the program\n"
+        "3. `animate` --> Animate the trajectories of track objects on the map of this scenario.\n"
+        "4. `go back` --> Go back to this scenario's tfrecord browser.\n"
+        "5. `exit` --> Exit the program\n"
     )
     stop_exploring = False
     while not stop_exploring:
@@ -739,9 +1030,12 @@ def explore_scenario(tfrecord_file_path: str, scenario) -> bool:
             input_lst = user_input.split()
             if len(input_lst) == 1:
                 # Plot this scenario
-                plot_scenarios(scenario)
+                plot_scenarios(scenario_info)
             else:
-                plot_scenarios(scenario, int(input_lst[1]))
+                plot_scenarios(scenario_info, int(input_lst[1]))
+
+        elif re.compile("^animate?$", flags=re.IGNORECASE).match(user_input):
+            animate_trajectories(scenario_info)
 
         elif re.compile("^go[\s]+back$", flags=re.IGNORECASE).match(user_input):
             stop_exploring = True
