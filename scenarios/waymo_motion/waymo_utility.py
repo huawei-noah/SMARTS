@@ -169,9 +169,10 @@ def get_object_type_count(trajectories):
 
 def get_trajectory_data(scenario):
     trajectories = {}
+    print(len(scenario.tracks))
     for i in range(len(scenario.tracks)):
-
         vehicle_id = scenario.tracks[i].id
+        print(vehicle_id)
         num_steps = len(scenario.timestamps_seconds)
         trajectories[vehicle_id] = [
             [],
@@ -192,67 +193,67 @@ def get_trajectory_data(scenario):
             row["position_y"] = obj_state.center_y
             rows.append(row)
 
-        # Second pass -- align timesteps to 10 Hz and interpolate trajectory data if needed
-        interp_rows = [None] * num_steps
-        for j in range(num_steps):
-            row = rows[j]
-            timestep = 0.1
-            time_current = row["sim_time"]
-            time_expected = round(j * timestep, 3)
-            time_error = time_current - time_expected
-
-            if not row["valid"] or time_error == 0:
-                continue
-
-            if time_error > 0:
-                # We can't interpolate if the previous element doesn't exist or is invalid
-                if j == 0 or not rows[j - 1]["valid"]:
-                    continue
-
-                # Interpolate backwards using previous timestep
-                interp_row = {"sim_time": time_expected}
-
-                prev_row = rows[j - 1]
-                prev_time = prev_row["sim_time"]
-
-                t = (time_expected - prev_time) / (time_current - prev_time)
-                interp_row["position_x"] = lerp(
-                    prev_row["position_x"], row["position_x"], t
-                )
-                interp_row["position_y"] = lerp(
-                    prev_row["position_y"], row["position_y"], t
-                )
-                interp_rows[j] = interp_row
-            else:
-                # We can't interpolate if the next element doesn't exist or is invalid
-                if (
-                    j == len(scenario.timestamps_seconds) - 1
-                    or not rows[j + 1]["valid"]
-                ):
-                    continue
-
-                # Interpolate forwards using next timestep
-                interp_row = {"sim_time": time_expected}
-
-                next_row = rows[j + 1]
-                next_time = next_row["sim_time"]
-
-                t = (time_expected - time_current) / (next_time - time_current)
-                interp_row["position_x"] = lerp(
-                    row["position_x"], next_row["position_x"], t
-                )
-                interp_row["position_y"] = lerp(
-                    row["position_y"], next_row["position_y"], t
-                )
-                interp_rows[j] = interp_row
-
-        # Third pass -- filter invalid states, replace interpolated values
+        # # Second pass -- align timesteps to 10 Hz and interpolate trajectory data if needed
+        # interp_rows = [None] * num_steps
+        # for j in range(num_steps):
+        #     row = rows[j]
+        #     timestep = 0.1
+        #     time_current = row["sim_time"]
+        #     time_expected = round(j * timestep, 3)
+        #     time_error = time_current - time_expected
+        #
+        #     if not row["valid"] or time_error == 0:
+        #         continue
+        #
+        #     if time_error > 0:
+        #         # We can't interpolate if the previous element doesn't exist or is invalid
+        #         if j == 0 or not rows[j - 1]["valid"]:
+        #             continue
+        #
+        #         # Interpolate backwards using previous timestep
+        #         interp_row = {"sim_time": time_expected}
+        #
+        #         prev_row = rows[j - 1]
+        #         prev_time = prev_row["sim_time"]
+        #
+        #         t = (time_expected - prev_time) / (time_current - prev_time)
+        #         interp_row["position_x"] = lerp(
+        #             prev_row["position_x"], row["position_x"], t
+        #         )
+        #         interp_row["position_y"] = lerp(
+        #             prev_row["position_y"], row["position_y"], t
+        #         )
+        #         interp_rows[j] = interp_row
+        #     else:
+        #         # We can't interpolate if the next element doesn't exist or is invalid
+        #         if (
+        #             j == len(scenario.timestamps_seconds) - 1
+        #             or not rows[j + 1]["valid"]
+        #         ):
+        #             continue
+        #
+        #         # Interpolate forwards using next timestep
+        #         interp_row = {"sim_time": time_expected}
+        #
+        #         next_row = rows[j + 1]
+        #         next_time = next_row["sim_time"]
+        #
+        #         t = (time_expected - time_current) / (next_time - time_current)
+        #         interp_row["position_x"] = lerp(
+        #             row["position_x"], next_row["position_x"], t
+        #         )
+        #         interp_row["position_y"] = lerp(
+        #             row["position_y"], next_row["position_y"], t
+        #         )
+        #         interp_rows[j] = interp_row
+        #
+        # # Third pass -- filter invalid states, replace interpolated values
         for j in range(num_steps):
             if not rows[j]["valid"]:
                 continue
-            if interp_rows[j] is not None:
-                rows[j]["position_x"] = interp_rows[j]["position_x"]
-                rows[j]["position_y"] = interp_rows[j]["position_y"]
+            # if interp_rows[j] is not None:
+            #     rows[j]["position_x"] = interp_rows[j]["position_x"]
+            #     rows[j]["position_y"] = interp_rows[j]["position_y"]
             trajectories[vehicle_id][0].append(rows[j]["position_x"])
             trajectories[vehicle_id][1].append(rows[j]["position_y"])
 
