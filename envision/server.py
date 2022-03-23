@@ -489,7 +489,6 @@ def on_shutdown():
 def run(scenario_dirs, max_capacity_mb=500, port=8081):
     """Create and run an envision web server."""
     app = make_app(scenario_dirs, max_capacity_mb)
-    # app.listen(port=port, address="0.0.0.0")
     app.listen(port)
     logging.debug(f"Envision listening on port={port}")
 
