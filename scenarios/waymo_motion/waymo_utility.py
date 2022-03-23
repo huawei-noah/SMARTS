@@ -29,7 +29,7 @@ import re
 from typing import Dict, List, Tuple, Union, Optional
 from tabulate import tabulate
 from pathlib import Path
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, FFMpegWriter
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from waymo_open_dataset.protos import scenario_pb2
@@ -267,11 +267,11 @@ def get_trajectory_data(waymo_scenario):
     return trajectories
 
 
-def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
+def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
     handle = []
     for lane in map_features["lane"]:
         xs, ys = convert_polyline(lane[0].polyline)
-        if lane[1] == feature_id:
+        if str(lane[1]) in feature_ids:
             plt.plot(xs, ys, linestyle=":", color="blue", linewidth=5.0)
             handle.append(
                 Line2D(
@@ -279,7 +279,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
                     [0],
                     linestyle=":",
                     color="blue",
-                    label=f"Lane Polyline {feature_id}",
+                    label=f"Lane Polyline {lane[1]}",
                 ),
             )
         else:
@@ -288,7 +288,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
     for road_line in map_features["road_line"]:
         xs, ys = convert_polyline(road_line[0].polyline)
         if road_line[0].type in [1, 4, 5]:
-            if road_line[1] == feature_id:
+            if str(road_line[1]) in feature_ids:
                 plt.plot(xs, ys, "b--", linewidth=5.0)
                 handle.append(
                     Line2D(
@@ -296,13 +296,13 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
                         [0],
                         linestyle="--",
                         color="blue",
-                        label=f"Single Road Line {feature_id}",
+                        label=f"Single Road Line {road_line[1]}",
                     )
                 )
             else:
                 plt.plot(xs, ys, "y--")
         else:
-            if road_line[1] == feature_id:
+            if str(road_line[1]) == feature_ids:
                 plt.plot(xs, ys, "b-", linewidth=5.0)
                 handle.append(
                     Line2D(
@@ -310,7 +310,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
                         [0],
                         linestyle="-",
                         color="blue",
-                        label=f"Double Road Line {feature_id}",
+                        label=f"Double Road Line {road_line[1]}",
                     )
                 )
             else:
@@ -318,7 +318,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
 
     for road_edge in map_features["road_edge"]:
         xs, ys = convert_polyline(road_edge[0].polyline)
-        if road_edge[1] == feature_id:
+        if str(road_edge[1]) in feature_ids:
             plt.plot(xs, ys, "b-", linewidth=5.0)
             handle.append(
                 Line2D(
@@ -326,7 +326,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
                     [0],
                     linestyle="-",
                     color="blue",
-                    label=f"Road Edge {feature_id}",
+                    label=f"Road Edge {road_edge[1]}",
                 )
             )
         else:
@@ -334,7 +334,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
 
     for crosswalk in map_features["crosswalk"]:
         xs, ys = convert_polyline(crosswalk[0].polygon)
-        if crosswalk[1] == feature_id:
+        if str(crosswalk[1]) in feature_ids:
             plt.plot(xs, ys, "b--", linewidth=5.0)
             handle.append(
                 Line2D(
@@ -342,7 +342,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
                     [0],
                     linestyle="--",
                     color="blue",
-                    label=f"Crosswalk {feature_id}",
+                    label=f"Crosswalk {crosswalk[1]}",
                 )
             )
         else:
@@ -350,7 +350,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
 
     for speed_bump in map_features["speed_bump"]:
         xs, ys = convert_polyline(speed_bump[0].polygon)
-        if speed_bump[1] == feature_id:
+        if str(speed_bump[1]) in feature_ids:
             plt.plot(xs, ys, "b:", linewidth=5.0)
             handle.append(
                 Line2D(
@@ -358,14 +358,14 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
                     [0],
                     linestyle=":",
                     color="blue",
-                    label=f"Speed Bump {feature_id}",
+                    label=f"Speed Bump {speed_bump[1]}",
                 )
             )
         else:
             plt.plot(xs, ys, "k:")
 
     for stop_sign in map_features["stop_sign"]:
-        if stop_sign[1] == feature_id:
+        if str(stop_sign[1]) in feature_ids:
             s_color = "blue"
             handle.append(
                 Line2D(
@@ -374,7 +374,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
                     color="blue",
                     marker="o",
                     markersize=5,
-                    label=f"Stop Sign {feature_id}",
+                    label=f"Stop Sign {stop_sign[1]}",
                 )
             )
         else:
@@ -414,59 +414,52 @@ def plot_trajectories(trajectories):
     return data, points, max_len
 
 
-def plot_scenarios(scenario_infos, feature_id: Optional[int] = None):
+def plot_scenarios(
+    scenario_infos, animate: bool, feature_ids: Optional[List[str]] = None
+):
     for scenario_info in scenario_infos:
         # Get map feature data from map proto
         map_features = scenario_info[1]
 
         # Plot map
-        if not feature_id:
-            fid = -1
+        if not feature_ids:
+            fids = []
         else:
-            fid = feature_id
-        plt.figure()
-        highlighted_handle = plot_map_features(map_features, fid)
+            fids = feature_ids
+        fig = plt.figure()
+        highlighted_handle = plot_map_features(map_features, fids)
         plt.title(f"Scenario {scenario_info[0].scenario_id}")
+
+        # Set Legend Handles
         all_handles = get_map_handles()
         all_handles.extend(highlighted_handle)
-        plt.legend(handles=all_handles)
 
+        # Resize figure
         mng = plt.get_current_fig_manager()
         mng.resize(1000, 1000)
+
+        if animate:
+            # Plot Trajectories
+            data, points, max_len = plot_trajectories(scenario_info[2])
+            all_handles.extend(get_trajectory_handles())
+
+            def update(i):
+                drawn_pts = []
+                for (xs, ys), point in zip(data, points):
+                    if i < len(xs):
+                        point.set_data(xs[i], ys[i])
+                        drawn_pts.append(point)
+                return drawn_pts
+
+            # Set Animation
+            anim = FuncAnimation(fig, update, frames=max_len, blit=True, interval=100)
+        plt.legend(handles=all_handles)
+
     # mng.resize(*mng.window.maxsize())
     plt.show()
 
 
-def animate_trajectories(scenario_info):
-    fig = plt.figure()
-    plt.title(f"Scenario {scenario_info[0].scenario_id}")
-    # Plot map
-    plot_map_features(scenario_info[1], -1)
-
-    # Plot Trajectories
-    data, points, max_len = plot_trajectories(scenario_info[2])
-
-    def update(i):
-        drawn_pts = []
-        for (xs, ys), point in zip(data, points):
-            if i < len(xs):
-                point.set_data(xs[i], ys[i])
-                drawn_pts.append(point)
-        return drawn_pts
-
-    all_handles = get_map_handles()
-    all_handles.extend(get_trajectory_handles())
-    plt.legend(handles=all_handles)
-
-    mng = plt.get_current_fig_manager()
-    mng.resize(1000, 1000)
-    anim = FuncAnimation(fig, update, frames=max_len, blit=True, interval=100)
-    plt.show()
-    # writer = FFMpegWriter(fps=15)
-    # anim.save(f'{scenario_id}.mp4', writer=1writer)
-
-
-def dump_plots(target_base_path: str, scenario_dict):
+def dump_plots(target_base_path: str, scenario_dict, animate=False):
     try:
         os.makedirs(os.path.abspath(target_base_path))
         print(f"Created directory {target_base_path}")
@@ -477,27 +470,56 @@ def dump_plots(target_base_path: str, scenario_dict):
         return
     for scenario_id in scenario_dict:
         scenario = scenario_dict[scenario_id][0]
-        if scenario_dict[scenario_id][1] is None:
-            scenario_dict[scenario_id][1] = get_map_features_for_scenario(scenario)
-        map_features = scenario_dict[scenario_id][1]
-        fig, ax = plt.subplots()
-        ax.set_title(f"Scenario {scenario_id}")
-        plot_map_features(map_features, -1)
-        plt.legend(handles=get_map_handles())
+
+        fig = plt.figure()
+        plt.title(f"Scenario {scenario_id}")
+
+        # Resize figure
         mng = plt.get_current_fig_manager()
         # mng.resize(*mng.window.maxsize())
         w = 1000
         h = 1000
         mng.resize(w, h)
 
-        filename = f"scenario-{scenario_id}.png"
-        out_path = os.path.join(os.path.abspath(target_base_path), filename)
-        fig = plt.gcf()
-        # w, h = mng.window.maxsize()
-        dpi = 100
-        fig.set_size_inches(w / dpi, h / dpi)
+        # Plot map
+        if scenario_dict[scenario_id][1] is None:
+            scenario_dict[scenario_id][1] = get_map_features_for_scenario(scenario)
+        plot_map_features(scenario_dict[scenario_id][1], [])
+        all_handles = get_map_handles()
+
+        if animate:
+            # Plot Trajectories
+            if scenario_dict[scenario_id][2] is None:
+                scenario_dict[scenario_id][2] = get_map_features_for_scenario(scenario)
+            data, points, max_len = plot_trajectories(scenario_dict[scenario_id][2])
+            all_handles.extend(get_trajectory_handles())
+            plt.legend(handles=all_handles)
+
+            def update(i):
+                drawn_pts = []
+                for (xs, ys), point in zip(data, points):
+                    if i < len(xs):
+                        point.set_data(xs[i], ys[i])
+                        drawn_pts.append(point)
+                return drawn_pts
+
+            # Set Animation
+            anim = FuncAnimation(fig, update, frames=max_len, blit=True, interval=100)
+            out_path = os.path.join(
+                os.path.abspath(target_base_path), f"scenario-{scenario_id}.mp4"
+            )
+            anim.save(out_path, writer=FFMpegWriter(fps=15))
+
+        else:
+            plt.legend(handles=all_handles)
+            out_path = os.path.join(
+                os.path.abspath(target_base_path), f"scenario-{scenario_id}.png"
+            )
+            fig = plt.gcf()
+            fig.set_size_inches(w / 100, h / 100)
+            fig.savefig(out_path, dpi=100)
+
         print(f"Saving {out_path}")
-        fig.savefig(out_path, dpi=100)
         plt.close("all")
     print(f"All map images saved at {target_base_path}")
 
@@ -662,8 +684,10 @@ def tfrecords_browser(tfrecord_path: str):
                 "TfRecords Browser.\n"
                 "You can use the following commands to further explore these datasets:\n"
                 "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
-                f"2. `display <indexes>` --> Displays the info of tfRecord files at these indexes of the table. The indexes should be an integer between 1 and {len(tf_records)} and space separated\n"
-                f"3. `explore <index>` --> Explore the tfRecord file at this index of the table. The index should be an integer between 1 and {len(tf_records)}\n"
+                f"2. `display <indexes>` --> Displays the info of tfRecord files at these indexes of the table. "
+                f"                           The indexes should be an integer between 1 and {len(tf_records)} and space separated\n"
+                f"3. `explore <index>` --> Explore the tfRecord file at this index of the table. "
+                f"                         The index should be an integer between 1 and {len(tf_records)}\n"
                 "4. `exit` --> Exit the program\n"
             )
 
@@ -737,14 +761,23 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             print(
                 f"{os.path.basename(tfrecord)} TfRecord Browser.\n"
                 f"You can use the following commands to further explore these scenarios:\n"
-                "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path. Path should be valid directory path.\n"
-                f"2. `export <indexes> <target_base_path>' --> Export the scenarios at these indexes of the table to a target path. The indexes should be an integer between 1 and {len(scenario_ids)} separated by space and path should be valid.\n"
-                "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path. Path should be valid.\n"
-                f"4. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table. The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
-                f"5. `select <index>` --> Select and explore further the scenario at this index of the table. The index should be an integer between 1 and {len(scenario_ids)}\n"
-                f"6. `animate <index>` --> Plot the map and animate the trajectories of objects of scenario at this index of the table . The index should be an integer between 1 and {len(scenario_ids)}\n"
-                "7. `go back` --> Go back to the tfrecords browser\n"
-                "8. `exit` --> Exit the program\n"
+                "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path."
+                "                                       Path should be valid directory path.\n"
+                f"2. `export <indexes> <target_base_path>' --> Export the scenarios at these indexes of the table to a target path."
+                f"                                             The indexes should be an integer between 1 and {len(scenario_ids)} separated by space and path should be valid.\n"
+                "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path."
+                "                                        Path should be valid.\n"
+                f"4. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table."
+                f"                           The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
+                f"5. `select <index>` --> Select and explore further the scenario at this index of the table. "
+                f"                        The index should be an integer between 1 and {len(scenario_ids)}\n"
+                "6. `animate all <target_base_path>` --> Plot and dump the animations the trajectories of objects on map of all scenarios in this tf_record to a target path."
+                "                                        Path should be valid.\n"
+                f"7. `animate <indexes>` --> Plot the map and animate the trajectories of objects of scenario at this index of the table."
+                f"                           The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
+                f"                         The index should be an integer between 1 and {len(scenario_ids)}\n"
+                "8. `go back` --> Go back to the tfrecords browser\n"
+                "9. `exit` --> Exit the program\n"
             )
             print_commands = False
 
@@ -809,7 +842,9 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 continue
 
             # Dump all the scenario plots of this tfrecord file to this target base path
-            print(f"Plotting and all the scenario in {tfrecord} tfrecord file")
+            print(
+                f"Plotting and dumping all the scenario maps in {tfrecord} tfrecord file"
+            )
             dump_plots(target_base_path, scenario_dict)
             display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
@@ -836,29 +871,54 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                     )
                 scenarios_to_plot.append(scenario_dict[scenario_idx])
 
-            plot_scenarios(scenarios_to_plot)
+            plot_scenarios(scenarios_to_plot, False)
 
-        elif re.compile("^animate[\s]+[\d]+$", flags=re.IGNORECASE).match(user_input):
+        elif re.compile("^animate[\s]+all[\s]+[^\n ]+$", flags=re.IGNORECASE).match(
+            user_input
+        ):
+            input_lst = user_input.split()
+
+            # Check if target base path is valid
+            target_base_path = input_lst[2].strip("[\"']")
+            if not check_path_validity(target_base_path):
+                continue
+
+            # Dump all the scenario plots of this tfrecord file to this target base path
+            print(
+                f"Plotting and dumping all the scenarios animations in {tfrecord} tfrecord file"
+            )
+            dump_plots(target_base_path, scenario_dict, animate=True)
+            display_scenarios_in_tfrecord(tfrecord, scenario_dict)
+            print_commands = True
+
+        elif re.compile("^animate[\s]+(?:\s*(\d+))+$", flags=re.IGNORECASE).match(
+            user_input
+        ):
             input_lst = user_input.split()
 
             # Check if index passed is valid
             valid_indexes = check_index_validity(
-                input_lst[1:], len(scenario_ids), "select"
+                input_lst[1:], len(scenario_ids), "animate"
             )
             if len(valid_indexes) == 0:
                 continue
 
-            # Explore further the scenario at this index
-            scenario_id = scenario_ids[valid_indexes[0] - 1]
-            if scenario_dict[scenario_id][1] is None:
-                scenario_dict[scenario_id][1] = get_map_features_for_scenario(
-                    scenario_dict[scenario_id][0]
-                )
-            if scenario_dict[scenario_id][2] is None:
-                scenario_dict[scenario_id][2] = get_trajectory_data(
-                    scenario_dict[scenario_id][0]
-                )
-            animate_trajectories(scenario_dict[scenario_id])
+            # Animate the maps of these scenarios
+            scenarios_to_animate = []
+            for i in range(len(valid_indexes)):
+                scenario_idx = scenario_ids[valid_indexes[i] - 1]
+                if scenario_dict[scenario_idx][1] is None:
+                    scenario_dict[scenario_idx][1] = get_map_features_for_scenario(
+                        scenario_dict[scenario_idx][0]
+                    )
+
+                if scenario_dict[scenario_idx][2] is None:
+                    scenario_dict[scenario_idx][2] = get_trajectory_data(
+                        scenario_dict[scenario_idx][0]
+                    )
+                scenarios_to_animate.append(scenario_dict[scenario_idx])
+
+            plot_scenarios(scenarios_to_animate, True)
 
         elif re.compile("^select[\s]+[\d]+$", flags=re.IGNORECASE).match(user_input):
             input_lst = user_input.split()
@@ -1002,7 +1062,8 @@ def explore_scenario(tfrecord_file_path: str, scenario_info) -> bool:
         f"\n\nScenario {scenario.scenario_id}.\n"
         "You can use the following commands to further this scenario:\n"
         f"1. `export <target_base_path>' --> Export the scenario to a target path. The path should be valid.\n"
-        f"2. `preview` or `preview <feature_id>` --> Plot and display the map of the scenario with the feature id highlighted in Blue if passed. The feature id needs to be a number from the ids mentioned above and will not be highlighted if it doesnt exist.\n"
+        f"2. `preview` or `preview <feature_ids>` --> Plot and display the map of the scenario with the feature ids highlighted in Blue if passed. \n"
+        f"                                            The feature ids need to be separated by space, be numbers from the map feature ids mentioned above and will not be highlighted if they doesnt exist.\n"
         "3. `animate` --> Animate the trajectories of track objects on the map of this scenario.\n"
         "4. `go back` --> Go back to this scenario's tfrecord browser.\n"
         "5. `exit` --> Exit the program\n"
@@ -1028,18 +1089,18 @@ def explore_scenario(tfrecord_file_path: str, scenario_info) -> bool:
                 f"\nYou can build the scenario exported using the command `scl scenario build {target_base_path}`"
             )
 
-        elif re.compile("^preview([\s]+[\d]+)?$", flags=re.IGNORECASE).match(
-            user_input
-        ):
+        elif user_input.lower() == "preview" or re.compile(
+            "^preview[\s]+(?:\s*(\d+))+$", flags=re.IGNORECASE
+        ).match(user_input):
             input_lst = user_input.split()
             if len(input_lst) == 1:
                 # Plot this scenario
-                plot_scenarios(scenario_info)
+                plot_scenarios(scenario_info, False)
             else:
-                plot_scenarios(scenario_info, int(input_lst[1]))
+                plot_scenarios(scenario_info, False, input_lst[1:])
 
         elif re.compile("^animate?$", flags=re.IGNORECASE).match(user_input):
-            animate_trajectories(scenario_info)
+            plot_scenarios(scenario_info, True)
 
         elif re.compile("^go[\s]+back$", flags=re.IGNORECASE).match(user_input):
             stop_exploring = True
