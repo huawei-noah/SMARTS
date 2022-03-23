@@ -33,7 +33,7 @@ jobs:
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
-          pip install .[camera-obs,test,train]
+          pip install .[camera-obs,test,train,rllib,torch]
       - name: Update requirements
         run: |
           . ${{env.venv_dir}}/bin/activate

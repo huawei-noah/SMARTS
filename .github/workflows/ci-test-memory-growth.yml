@@ -28,7 +28,7 @@ jobs:
           pip install --upgrade pip
           pip install wheel
           pip install pympler
-          pip install -e .[train,test,camera-obs]
+          pip install -e .[train,torch,rllib,test,camera-obs]
       - name: Test memory growth
         run: |
           cd $GITHUB_WORKSPACE
