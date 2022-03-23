@@ -136,8 +136,6 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         )
     else:
         print("Start training from scratch.")
-        # Specify `net_arch` (i.e., `mlp_extractor`). 
-        # See https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html  
         policy_kwargs = dict(
             # activation_fn=th.nn.ReLU,
             # activation_fn=th.nn.Tanh, # default activation used

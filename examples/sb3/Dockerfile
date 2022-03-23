@@ -26,10 +26,6 @@ RUN python3.7 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip install --upgrade pip wheel
 
-# # Setup SUMO.
-# RUN pip install eclipse-sumo==1.10.0
-# ENV SUMO_HOME $VIRTUAL_ENV/lib64/python3.7/site-packages/sumo
-
 # Install requirements.txt .
 COPY ./examples/sb3/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
