@@ -74,7 +74,7 @@ setup(
         "rllib": [
             "opencv-python==4.1.2.30",
             "opencv-python-headless==4.1.2.30",
-            "ray[rllib]==1.0.1.post1",            
+            "ray[rllib]==1.0.1.post1",
         ],
         "ros": ["catkin_pkg", "rospkg"],
         "test": [
