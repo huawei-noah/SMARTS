@@ -8,5 +8,6 @@ smarts:
   train_steps: 1e4 # Number of training steps.
 
   checkpoint_freq: 1e3 # Save a model every checkpoint_freq calls to env.step().
-  eval_eps: 10 # Number of evaluation epsiodes.
-  eval_freq: 1e3 # Evaluate the trained every eval_freq steps and save the best model.
+  eval_eps: 2 # Number of evaluation epsiodes.
+  eval_freq: 4e3 # Evaluate the trained every eval_freq steps and save the best model.
+  video_length: 3e3 # Length of video in number of frames

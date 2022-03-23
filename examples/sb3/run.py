@@ -15,6 +15,8 @@ from ruamel.yaml import YAML
 from sb3 import action as sb3_action
 from sb3 import observation as sb3_observation
 from sb3 import reward as sb3_reward
+from sb3 import info as sb3_info
+from sb3 import callback as sb3_callback
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
@@ -24,6 +26,7 @@ from stable_baselines3.common.vec_env import (
     DummyVecEnv,
     VecFrameStack,
     VecMonitor,
+    VecVideoRecorder
 )
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -76,15 +79,30 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
     env = sb3_action.Action(env=env)
     env = sb3_reward.Reward(env=env)
     env = sb3_observation.Observation(env=env, n_stack=1)
+    env = sb3_info.Info(env=env)
 
     # Check custom environment
     check_env(env)
 
     # Wrap env with SB3 wrappers
-    # env = Monitor(env=env, filename=str(config["logdir"]))
+    # env = Monitor(env=env, filename=str(config["logdir"]), info_keywords=("is_success",))
     env = DummyVecEnv([lambda: env])
-    env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="last")
-    env = VecMonitor(venv=env, filename=str(config["logdir"]))
+    env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="first")
+    env = VecMonitor(
+        venv=env, 
+        filename=str(config["logdir"]),
+        info_keywords=("is_success",),
+    )
+
+    # Record evaluation video
+    # if not training:
+    env = VecVideoRecorder(
+        venv=env, 
+        video_folder=str(config["logdir"] / "videos"),
+        record_video_trigger=lambda x: x == 0, 
+        video_length=config["video_length"],
+        name_prefix=config["name"]+"-PPO"
+    )
 
     return env
 
@@ -93,24 +111,24 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
 
     checkpoint_callback = CheckpointCallback(
         save_freq=config["checkpoint_freq"],
-        save_path=config["logdir"],
+        save_path=config["logdir"] / "checkpoint",
         name_prefix="model",
     )
     eval_callback = EvalCallback(
         eval_env=eval_env,
         n_eval_episodes=config["eval_eps"],
         eval_freq=config["eval_freq"], 
-        log_path=config["logdir"],
-        best_model_save_path=config["logdir"],
+        log_path=config["logdir"] / "eval",
+        best_model_save_path=config["logdir"] / "eval",
         deterministic=True,
     )
 
     if config["mode"] == "evaluate":
         print("Start evaluation.")
-        model = PPO.load(config["logdir"] / "model.zip", print_system_info=True)
+        model = PPO.load(config["logdir"] / "train" /"model.zip", print_system_info=True)
     elif config["mode"] == "train" and args.logdir:
         print("Start training from existing model.")
-        model = PPO.load(config["logdir"] / "model.zip", print_system_info=True)
+        model = PPO.load(config["logdir"] / "train"/ "model.zip", print_system_info=True)
         model.set_env(env)
         model.learn(
             total_timesteps=config["train_steps"],
@@ -118,24 +136,29 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         )
     else:
         print("Start training from scratch.")
+        # Specify `net_arch` (i.e., `mlp_extractor`). 
+        # See https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html  
         policy_kwargs = dict(
             # activation_fn=th.nn.ReLU,
             # activation_fn=th.nn.Tanh, # default activation used
-            net_arch=[[128], dict(pi=[32, 32], vf=[32, 32])]
+            net_arch=[128, dict(pi=[32, 32], vf=[32, 32])]
         )
-        # Default `CnnPolicy` used:
-        # cnn = nn.Sequential(
-        #     nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
-        #     nn.ReLU(),
-        #     nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
-        #     nn.ReLU(),
-        #     nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
-        #     nn.ReLU(),
-        #     nn.Flatten(),
-        # )
-        # features_dim = 512
-        # linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
-        # return linear(cnn(observations))
+        '''
+        The default `CnnPolicy` feature extractor used is as follows:
+
+        cnn = nn.Sequential(
+            nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        )
+        features_dim = 512
+        linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
+        features_extractor=linear(cnn(observations))
+        '''
         model = PPO(
             "CnnPolicy",
             env,
@@ -150,7 +173,9 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         )
 
     if config["mode"] == "train":
-        model.save(config["logdir"] / "model")
+        save_dir = config["logdir"] / "train"
+        save_dir.mkdir(parents=True, exist_ok=True)
+        model.save(save_dir / "model")
         print("Saved trained model.")
 
     print("Evaluate policy.")

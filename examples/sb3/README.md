@@ -40,6 +40,11 @@ $ pip install -e .
     $ python3.7 run.py 
     ```
 1. Trained model is saved into `<path>/SMARTS/examples/sb3/logs/<folder_name>` folder.
+1. Monitor the RL agent during or after the training
+    ```bash
+    $ cd <path>/SMARTS/examples/sb3
+    $ tensorboard --logdir ./tensorboard/
+    ```
 
 ## Evaluate
 1. Evaluate
@@ -50,6 +55,7 @@ $ pip install -e .
     ```
 1. Go to `localhost:8081` to view the simulation in Envision.
 
+
 ## Docker
 1. Train a model inside docker
     ```bash
@@ -59,3 +65,4 @@ $ pip install -e .
     (container) $ cd /src/examples/sb3
     (container) $ python3.7 run.py
     ```
+

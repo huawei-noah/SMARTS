@@ -78,21 +78,22 @@ def plotter(obs: np.ndarray, rgb_gray=1, name: str = "Graph"):
     """Plot images
 
     Args:
-        obs (np.ndarray): Image.
+        obs (np.ndarray): Image in CxHxW format, i.e. channel first.
         rgb_gray (int, optional): 3 for rgb and 1 for grayscale. Defaults to 1.
     """
 
     import matplotlib.pyplot as plt
 
     rows = 1
-    columns = obs.shape[2] // rgb_gray
+    columns = obs.shape[0] // rgb_gray
     # cmap = 'gray' if rgb_gray == 1 else 'viridis'
     fig, axs = plt.subplots(nrows=rows, ncols=columns, squeeze=False)
     fig.suptitle("Observation")
 
     for row in range(0, rows):
         for col in range(0, columns):
-            img = obs[:, :, col * rgb_gray : col * rgb_gray + rgb_gray]
+            img = obs[col * rgb_gray : col * rgb_gray + rgb_gray, :, :]
+            img = img.transpose(1, 2, 0)
             axs[row, col].imshow(img)
             axs[row, col].set_title(f"{name}")
     plt.show()
