@@ -37,6 +37,8 @@ default_log_dir = smarts_log_dir()
 
 
 class RecordVideo(gym.Wrapper):
+    """Wraps the environment with a video record of agent camera observations."""
+
     def __init__(
         self,
         env: gym.Env,
@@ -54,6 +56,8 @@ class RecordVideo(gym.Wrapper):
         self._recording_dir = os.path.join(self._frame_directory, self._name)
 
     def step(self, action: Action) -> Tuple[Operation, float, bool, Dict[str, Any]]:
+        """Record a step."""
+        
         obs, rewards, dones, infos = super().step(action)
         if self._current_step % self._frequency == 0:
             obs_dict = obs
@@ -65,6 +69,8 @@ class RecordVideo(gym.Wrapper):
         return (obs, rewards, dones, infos)
 
     def reset(self) -> Any:
+        """Record the reset of the environment."""
+        
         try:
             os.mkdir(self._recording_dir)
         except:
@@ -76,7 +82,9 @@ class RecordVideo(gym.Wrapper):
         write_image(obs_dict, self._recording_dir, self._current_step)
         return obs
 
-    def close(self) -> None:
+    def close(self):
+        """Write out video. Shows the videos if running in a notebook."""
+        
         if self._render:
             make_gif(self._recording_dir)
             show_notebook_videos(self._recording_dir)
