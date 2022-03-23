@@ -27,6 +27,8 @@ import tableprint as tp
 
 
 class EpisodeLogs:
+    """An episode logging utility."""
+
     def __init__(self, col_width, total_episodes: Union[str, int] = "?") -> None:
         self._col_width = col_width
         self._table = self.context(col_width)
@@ -35,6 +37,8 @@ class EpisodeLogs:
         self._current_episode_num = 0
 
     def reset(self):
+        """Record an episode reset."""
+
         e = self._current_episode
         if e:
             self._write_row()
@@ -75,6 +79,8 @@ class EpisodeLogs:
 
     @staticmethod
     def context(col_width):
+        """Generate a formatted table context object."""
+
         return tp.TableContext(
             [
                 "Episode",
@@ -165,6 +171,8 @@ def episodes(n):
 
 @dataclass
 class Episodes:
+    """An episode counter utility."""
+
     current_step: int = 0
 
     def __enter__(self):
@@ -181,11 +189,15 @@ class Episode:
         self._episodes = episodes
 
     def register_step(self, observation, reward, done, info):
+        """Register the current step to the episode."""
+
         self._episodes.current_step += 1
         return not done
 
 
 def episode_range(max_steps):
-    with Episodes(0) as episodes:
+    """An iteration method that provides a range of episodes that meets the given max steps."""
+
+    with Episodes() as episodes:
         while episodes.current_step < max_steps:
             yield Episode(episodes=episodes)
