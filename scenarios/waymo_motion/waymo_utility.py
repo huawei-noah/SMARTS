@@ -81,7 +81,7 @@ def get_trajectory_handles() -> List[Line2D]:
         Line2D(
             [],
             [],
-            color="magenta",
+            color="green",
             marker="*",
             linestyle="None",
             markersize=5,
@@ -278,7 +278,7 @@ def plot_map_features(map_features, feature_id: int) -> List[Line2D]:
                     [0],
                     [0],
                     linestyle=":",
-                    color="magenta",
+                    color="blue",
                     label=f"Lane Polyline {feature_id}",
                 ),
             )
@@ -405,7 +405,7 @@ def plot_trajectories(trajectories):
         elif object_type == 2:
             (point,) = plt.plot(xs[0], ys[0], "md")
         elif object_type == 3:
-            (point,) = plt.plot(xs[0], ys[0], "m*")
+            (point,) = plt.plot(xs[0], ys[0], "g*")
         else:
             (point,) = plt.plot(xs[0], ys[0], "k8")
         data.append((xs, ys))
@@ -1066,10 +1066,4 @@ if __name__ == "__main__":
     )
     parser.add_argument("file", help="TFRecord file/folder path")
     args = parser.parse_args()
-    # sptf = parse_tfrecords("waymo_data")
-    # for tf_record in sptf:
-    #     scenario_dict = sptf[tf_record]
-    #     for scenario_id in scenario_dict:
-    #         scenario = scenario_dict[scenario_id][0]
-    #         get_trajectory_data(scenario)
     tfrecords_browser(args.file)
