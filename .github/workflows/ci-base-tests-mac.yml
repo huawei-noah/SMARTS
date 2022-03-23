@@ -47,7 +47,7 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade wheel
           pip install -r utils/setup/mac_requirements.txt
-          pip install .[camera-obs,opendrive,rllib,test,torch,train]
+          pip install -e .[camera-obs,opendrive,rllib,test,torch,train]
       - name: Run smoke tests
         run: |
           . ${{env.venv_dir}}/bin/activate
