@@ -22,7 +22,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
-          pip install -e .[train,torch,rllib,test,camera-obs]
+          pip install .[camera-obs,rllib,test,torch,train]
       - name: SMARTS benchmark
         run: |
           cd $GITHUB_WORKSPACE
@@ -32,6 +32,6 @@ jobs:
           scl scenario build-all --clean ./scenarios
           pytest --benchmark-save=previous --benchmark-min-rounds=10 --benchmark-timer=time.process_time ./smarts/env/tests/test_benchmark.py
           git checkout -
-          pip install -e .[train,torch,rllib,test,camera-obs]
+          pip install .[camera-obs,rllib,test,torch,train]
           scl scenario build-all --clean ./scenarios
           pytest --benchmark-compare=0001_previous --benchmark-compare-fail=mean:10% --benchmark-min-rounds=10 --benchmark-timer=time.process_time ./smarts/env/tests/test_benchmark.py
