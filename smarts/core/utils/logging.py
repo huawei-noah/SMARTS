@@ -44,7 +44,7 @@ def timeit(name: str, logger):
 def isnotebook():
     """Determines if executing in ipython (Jupyter Notebook)"""
     try:
-        shell = get_ipython().__class__.__name__ # pytype: disable=name-error
+        shell = get_ipython().__class__.__name__  # pytype: disable=name-error
         if shell == "ZMQInteractiveShell" or "google.colab" in sys.modules:
             return True  # Jupyter notebook or qtconsole or Google Colab
     except NameError:
