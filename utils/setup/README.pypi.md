@@ -63,7 +63,8 @@ Here is a simple example of how a single agent experiment can be built:
 ```python
 import gym
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, Agent
+from smarts.core.agent import Agent
+from smarts.zoo.agent_spec import AgentSpec
 
 class SimpleAgent(Agent):
     def act(self, obs):

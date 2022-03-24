@@ -11,14 +11,15 @@ try:
     from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
     from ray.rllib.utils import try_import_tf
 except Exception as e:
-    from .. import RayException
+    from examples.utility import RayException
 
     raise RayException.required_to("rllib_agent.py")
 
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.env.custom_observations import lane_ttc_observation_adapter
+from smarts.zoo.agent_spec import AgentSpec
 
 tf = try_import_tf()
 

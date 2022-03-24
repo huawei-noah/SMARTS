@@ -1,5 +1,6 @@
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import register
 
 
@@ -17,9 +18,9 @@ def demo_agent_callable(target_prefix=None, interface=None):
 
 register(
     locator="zoo-agent1-v0",
-    entry_point="smarts.core.agent:AgentSpec",
+    entry_point="smarts.zoo.agent_spec:AgentSpec",
     # Also works:
-    # entry_point=smarts.core.agent.AgentSpec
+    # entry_point=smarts.zoo.agent_spec.AgentSpec
     interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=20000),
 )
 

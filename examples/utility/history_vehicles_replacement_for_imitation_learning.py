@@ -7,18 +7,19 @@ from typing import Sequence, Tuple
 
 from envision.client import Client as Envision
 from smarts.core import seed as random_seed
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
 from smarts.core.utils.math import rounder_for_dt
+from smarts.zoo.agent_spec import AgentSpec
 
 # The following ugliness was made necessary because the `aiohttp` #
 # dependency has an "examples" module too.  (See PR #1120.)
 if __name__ == "__main__":
-    from argument_parser import default_argument_parser
+    from examples.utility.argument_parser import default_argument_parser
 else:
     from .argument_parser import default_argument_parser
 
