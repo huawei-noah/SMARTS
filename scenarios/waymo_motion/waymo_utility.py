@@ -1100,12 +1100,12 @@ def explore_scenario(tfrecord_file_path: str, scenario_info) -> bool:
             input_lst = user_input.split()
             if len(input_lst) == 1:
                 # Plot this scenario
-                plot_scenarios(scenario_info, False)
+                plot_scenarios([scenario_info], False)
             else:
-                plot_scenarios(scenario_info, False, input_lst[1:])
+                plot_scenarios([scenario_info], False, input_lst[1:])
 
         elif re.compile("^animate?$", flags=re.IGNORECASE).match(user_input):
-            plot_scenarios(scenario_info, True)
+            plot_scenarios([scenario_info], True)
 
         elif re.compile("^go[\s]+back$", flags=re.IGNORECASE).match(user_input):
             stop_exploring = True
