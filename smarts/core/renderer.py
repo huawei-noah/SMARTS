@@ -30,7 +30,6 @@ from typing import NamedTuple
 
 import gltf
 from direct.showbase.ShowBase import ShowBase
-# pytype: disable=import-error
 from panda3d.core import (
     FrameBufferProperties,
     GraphicsOutput,
@@ -42,7 +41,6 @@ from panda3d.core import (
     WindowProperties,
     loadPrcFileData,
 )
-# pytype: enable=import-error
 
 from . import glsl, models
 from .colors import SceneColors

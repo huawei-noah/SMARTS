@@ -24,9 +24,7 @@ import logging
 import gym
 import numpy as np
 import pytest
-# pytype: disable=import-error
 from panda3d.core import OrthographicLens, Point2, Point3 
-# pytype: enable=import-error
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import (

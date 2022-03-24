@@ -477,7 +477,7 @@ class BubbleManager:
 
     def _airlock_social_vehicle_with_social_agent(
         self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor, bubble: Bubble
-    ) -> None:
+    ):
         """When airlocked. The social agent will receive observations and execute
         its policy, however it won't actually operate the vehicle's controller.
         """
@@ -518,7 +518,7 @@ class BubbleManager:
 
     def _hijack_social_vehicle_with_social_agent(
         self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor, bubble: Bubble
-    ) -> None:
+    ):
         """Upon hijacking the social agent is now in control of the vehicle. It will
         initialize the vehicle chassis (and by extension the controller) with a
         "greatest common denominator" state; that is: what's available via the vehicle

@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 
 import copy
-from collections import deque
+from collections import defaultdict, deque
 from typing import Dict, List, Tuple, Union
 
 import gym
@@ -64,16 +64,14 @@ class FrameStack(gym.Wrapper):
     ) -> Dict[str, List[sensors.Observation]]:
         """Update and return frames stack with given latest single frame."""
 
-        new_frames = dict.fromkeys(frame)
+        new_frames = defaultdict(list)
 
         for agent_id, observation in frame.items():
             self._frames[agent_id].appendleft(observation)
             frames_list = list(self._frames[agent_id])
             new_frames[agent_id] = copy.deepcopy(frames_list)
 
-        # pytype: disable=bad-return-type
-        return new_frames 
-        # pytype: enable=bad-return-type
+        return dict(new_frames) 
 
     def step(
         self, agent_actions: Dict

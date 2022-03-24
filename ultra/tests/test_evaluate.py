@@ -27,7 +27,8 @@ import shutil
 import time
 import unittest
 
-import dill # pytype: disable=import-error
+# pytype: disable=import-error
+import dill 
 import gym
 import ray
 
@@ -262,10 +263,8 @@ class EvaluateTest(unittest.TestCase):
     # This test performs evaluation on multiple agents, but the test map
     # that is created can only support one agent. Skip this for now until
     # we can specify a map to use that supports multiple agents.
-    # pytype: disable=wrong-arg-types
-    @unittest.skip
+    @unittest.skip("Test map does not yet support multiple agents.")
     def test_evaluate_multiagent(self):
-    # pytype: enable=wrong-arg-types
         seed = 2
         models_directory = glob.glob(
             os.path.join(
@@ -466,10 +465,8 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
             collect_evaluations(evaluation_task_ids=evaluation_task_ids)
 
             actions = {
-                # pytype: disable=wrong-keyword-args
                 agent_id: agents[agent_id].act(observation, explore=True)
                 for agent_id, observation in observations.items()
-                # pytype: enable=wrong-keyword-args
             }
             next_observations, rewards, dones, infos = env.step(actions)
 

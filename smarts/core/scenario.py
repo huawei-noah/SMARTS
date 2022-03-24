@@ -328,7 +328,7 @@ class Scenario:
     @lru_cache(maxsize=16)
     def _discover_social_agents_info(
         scenario,
-    ) -> Sequence[Dict[str, SocialAgent]]:
+    ) -> Sequence[Dict[str, Tuple[SocialAgent, Mission]]]:
         """Loops through the social agent mission pickles, instantiating corresponding
         implementations for the given types. The output is a list of
         {agent_id: (mission, locator)}, where each dictionary corresponds to the
@@ -397,9 +397,7 @@ class Scenario:
             social_agents_info.append(
                 {agent.id: (agent, mission) for agent, mission in l}
             )
-        # pytype: disable=bad-return-type
         return social_agents_info
-        # pytype: enable=bad-return-type
 
     @staticmethod
     def discover_scenarios(scenario_or_scenarios_dir):

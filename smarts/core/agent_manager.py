@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 import logging
-from typing import Any, Dict, Set, Tuple, Optional
+from typing import Any, Dict, Set, Tuple, Optional, Union
 
 import cloudpickle
 
@@ -161,7 +161,7 @@ class AgentManager:
     def observe(
         self, sim
     ) -> Tuple[
-        Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]
+        Dict[str, Union[Dict[str, Observation], Observation]], Dict[str, Union[Dict[str, float], float]], Dict[str, Union[Dict[str, float], float]], Dict[str, Union[Dict[str, bool], bool]]
     ]:
         """Generate observations from all vehicles associated with an active agent."""
         observations = {}
@@ -228,24 +228,22 @@ class AgentManager:
                         # pytype: enable=attribute-error
                     )
 
-                rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
-                scores[agent_id] = vehicle.trip_meter_sensor()
+                rewards[agent_id] = float(vehicle.trip_meter_sensor(increment=True))
+                scores[agent_id] = float(vehicle.trip_meter_sensor())
 
         if sim.should_reset:
             dones = {agent_id: True for agent_id in self.agent_ids}
             dones["__sim__"] = True
 
-        # pytype: disable=bad-return-type
         return observations, rewards, scores, dones 
-        # pytype: enable=bad-return-type
 
-    def _vehicle_reward(self, vehicle_id, sim):
-        return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor(
+    def _vehicle_reward(self, vehicle_id, sim) -> float:
+        return float(sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor(
             increment=True
-        )
+        ))
 
-    def _vehicle_score(self, vehicle_id, sim):
-        return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
+    def _vehicle_score(self, vehicle_id, sim) -> float:
+        return float(sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor())
 
     def step_sensors(self, sim):
         """Update all known vehicle sensors."""

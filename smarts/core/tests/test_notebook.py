@@ -26,9 +26,7 @@ import tempfile
 import gym
 import importlib_resources
 import pytest
-# pytype: disable=import-error
 import pytest_notebook.nb_regression as nb
-# pytype: enable=import-error
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType

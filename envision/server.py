@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import abc
 import argparse
 import asyncio
 import bisect
@@ -29,7 +30,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Dict, Sequence
+from typing import Dict, Sequence, Union
 
 import ijson
 import tornado.gen
@@ -53,15 +54,27 @@ WEB_CLIENT_RUN_LOOPS = {}
 # Mapping of simulation ID to the Frames data store
 FRAMES = {}
 
+class AllowCORSMixinInterface(metaclass=abc.ABCMeta):
 
-class AllowCORSMixin:
+    @abc.abstractmethod
+    def set_header(self, *str):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def set_status(self, int):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def finish(self):
+        raise NotImplementedError
+
+class AllowCORSMixin(AllowCORSMixinInterface):
     """A mixin that adds CORS headers to the page."""
 
     def set_default_headers(self):
         """Setup the default headers.
         In this case they are the minimum required CORS releated headers.
         """
-        # pytype: disable=attribute-error
         self.set_header("Access-Control-Allow-Origin", "*")
         self.set_header("Access-Control-Allow-Headers", "x-requested-with")
         self.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
@@ -357,7 +370,7 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
 class FileHandler(AllowCORSMixin, tornado.web.RequestHandler):
     """This handler serves files to the given requestee."""
 
-    def initialize(self, path_map: Dict[str, Path] = {}):
+    def initialize(self, path_map: Dict[str, Union[str, Path]] = {}):
         """FileHandler that serves file for a given ID."""
         self._logger = logging.getLogger(self.__class__.__name__)
         self._path_map = path_map
@@ -422,7 +435,6 @@ class ModelFileHandler(FileHandler):
     def initialize(self):
         # We store the resource filenames as values in `path_map` and route them
         # through `importlib.resources` for resolution.
-        # pytype: disable=wrong-arg-types
         super().initialize(
             {
                 "muscle_car_agent.glb": "muscle_car.glb",
@@ -436,7 +448,6 @@ class ModelFileHandler(FileHandler):
                 "motorcycle.glb": "motorcycle.glb",
             }
         )
-        # pytype: enable=wrong-arg-types
 
     async def get(self, id_):
         """Serve the requested model geometry."""
