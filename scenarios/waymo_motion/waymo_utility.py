@@ -417,7 +417,7 @@ def plot_trajectories(trajectories):
 def plot_scenarios(
     scenario_infos, animate: bool, feature_ids: Optional[List[str]] = None
 ):
-    def plot_map_and_get_animate(scenario_info, show_trajectories, f_ids):
+    def plot_map_and_get_animate(scenario_info, show_trajectories, fig_num, f_ids):
         anim = None
         # Get map feature data from map proto
         map_features = scenario_info[1]
@@ -427,7 +427,7 @@ def plot_scenarios(
             fids = []
         else:
             fids = f_ids
-        fig = plt.figure()
+        fig = plt.figure(num=fig_num)
         highlighted_handle = plot_map_features(map_features, fids)
         plt.title(f"Scenario {scenario_info[0].scenario_id}")
 
@@ -458,8 +458,10 @@ def plot_scenarios(
         return anim
 
     animates = []
+    counter = 1
     for s_info in scenario_infos:
-        animates.append(plot_map_and_get_animate(s_info, animate, feature_ids))
+        animates.append(plot_map_and_get_animate(s_info, animate, counter, feature_ids))
+        counter += 1
     plt.show()
 
 
