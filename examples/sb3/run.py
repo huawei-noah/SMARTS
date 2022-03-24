@@ -26,7 +26,7 @@ from stable_baselines3.common.vec_env import (
     DummyVecEnv,
     VecFrameStack,
     VecMonitor,
-    VecVideoRecorder
+    VecVideoRecorder,
 )
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -89,7 +89,7 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
     env = DummyVecEnv([lambda: env])
     env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="first")
     env = VecMonitor(
-        venv=env, 
+        venv=env,
         filename=str(config["logdir"]),
         info_keywords=("is_success",),
     )
@@ -97,9 +97,9 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
     # Record evaluation video
     # if not training:
     # env = VecVideoRecorder(
-    #     venv=env, 
+    #     venv=env,
     #     video_folder=str(config["logdir"] / "videos"),
-    #     record_video_trigger=lambda x: x == 0, 
+    #     record_video_trigger=lambda x: x == 0,
     #     video_length=config["video_length"],
     #     name_prefix=config["name"]+"-PPO"
     # )
@@ -117,7 +117,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     eval_callback = EvalCallback(
         eval_env=eval_env,
         n_eval_episodes=config["eval_eps"],
-        eval_freq=config["eval_freq"], 
+        eval_freq=config["eval_freq"],
         log_path=config["logdir"] / "eval",
         best_model_save_path=config["logdir"] / "eval",
         deterministic=True,
@@ -128,10 +128,14 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
 
     if config["mode"] == "evaluate":
         print("Start evaluation.")
-        model = PPO.load(config["logdir"] / "train" /"model.zip", print_system_info=True)
+        model = PPO.load(
+            config["logdir"] / "train" / "model.zip", print_system_info=True
+        )
     elif config["mode"] == "train" and args.logdir:
         print("Start training from existing model.")
-        model = PPO.load(config["logdir"] / "train"/ "model.zip", print_system_info=True)
+        model = PPO.load(
+            config["logdir"] / "train" / "model.zip", print_system_info=True
+        )
         model.set_env(env)
         model.learn(
             total_timesteps=config["train_steps"],
@@ -144,7 +148,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             # activation_fn=th.nn.Tanh, # default activation used
             net_arch=[128, dict(pi=[32, 32], vf=[32, 32])]
         )
-        '''
+        """
         The default `CnnPolicy` feature extractor used is as follows:
 
         cnn = nn.Sequential(
@@ -159,7 +163,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         features_dim = 512
         linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
         features_extractor=linear(cnn(observations))
-        '''
+        """
         model = PPO(
             "CnnPolicy",
             env,

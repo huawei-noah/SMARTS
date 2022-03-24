@@ -6,10 +6,8 @@ class Info(gym.Wrapper):
     def __init__(self, env: gym.Env):
         super(Info, self).__init__(env)
 
-    def step(
-        self, action: Any
-    ) -> Tuple[Any, float, bool, Dict[str, Any] ]:
-        """Steps the environment. A new "is_success" key is added to the 
+    def step(self, action: Any) -> Tuple[Any, float, bool, Dict[str, Any]]:
+        """Steps the environment. A new "is_success" key is added to the
         returned `info`.
 
         Args:
