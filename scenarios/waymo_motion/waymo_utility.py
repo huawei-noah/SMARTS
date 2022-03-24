@@ -419,7 +419,6 @@ def plot_scenarios(
 ):
     def plot_map_and_get_animate(scenario_info, show_trajectories, f_ids):
         anim = None
-        counter = 1
         # Get map feature data from map proto
         map_features = scenario_info[1]
 
@@ -428,8 +427,7 @@ def plot_scenarios(
             fids = []
         else:
             fids = f_ids
-        fig = plt.figure(num=counter)
-        counter += 1
+        fig = plt.figure()
         highlighted_handle = plot_map_features(map_features, fids)
         plt.title(f"Scenario {scenario_info[0].scenario_id}")
 
