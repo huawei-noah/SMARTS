@@ -5,7 +5,7 @@ smarts:
   sumo_gui: False # If True, enables sumo-gui display.
 
   n_stack: 5 # Number of frames to stack as input to policy network
-  train_steps: 10e6 # Number of training steps.
+  train_steps: 1e8 # Number of training steps.
 
   checkpoint_freq: 1e5 # Save a model every checkpoint_freq calls to env.step().
   eval_eps: 80 # Number of evaluation epsiodes.

@@ -1,5 +1,5 @@
 # FROM tensorflow/tensorflow:2.4.0-gpu
-FROM stablebaselines/rl-baselines3-zoo
+FROM stablebaselines/stable-baselines3
 
 ARG DEBIAN_FRONTEND=noninteractive
 
