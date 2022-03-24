@@ -2,6 +2,11 @@ FROM tensorflow/tensorflow:2.4.0-gpu
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+# (Optional) Disable certificate verification
+RUN touch /etc/apt/apt.conf.d/99verify-peer.conf && \
+    echo >>/etc/apt/apt.conf.d/99verify-peer.conf 'Acquire::https::Verify-Peer "false";' && \
+    echo >>/etc/apt/apt.conf.d/99verify-peer.conf 'Acquire::https::Verify-Host "false";'
+
 # Install libraries.
 RUN apt-get update --fix-missing && \
     apt-get install -y \
