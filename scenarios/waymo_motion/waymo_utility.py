@@ -417,50 +417,51 @@ def plot_trajectories(trajectories):
 def plot_scenarios(
     scenario_infos, animate: bool, feature_ids: Optional[List[str]] = None
 ):
-    def get_animates(scenario_data, show_trajectories, f_ids):
-        animates = []
+    def plot_map_and_get_animate(scenario_info, show_trajectories, f_ids):
+        anim = None
         counter = 1
-        for scenario_info in scenario_data:
-            # Get map feature data from map proto
-            map_features = scenario_info[1]
+        # Get map feature data from map proto
+        map_features = scenario_info[1]
 
-            # Plot map
-            if not f_ids:
-                fids = []
-            else:
-                fids = f_ids
-            fig = plt.figure(counter)
-            counter += 1
-            highlighted_handle = plot_map_features(map_features, fids)
-            plt.title(f"Scenario {scenario_info[0].scenario_id}")
+        # Plot map
+        if not f_ids:
+            fids = []
+        else:
+            fids = f_ids
+        fig = plt.figure(num=counter)
+        counter += 1
+        highlighted_handle = plot_map_features(map_features, fids)
+        plt.title(f"Scenario {scenario_info[0].scenario_id}")
 
-            # Set Legend Handles
-            all_handles = get_map_handles()
-            all_handles.extend(highlighted_handle)
+        # Set Legend Handles
+        all_handles = get_map_handles()
+        all_handles.extend(highlighted_handle)
 
-            # Resize figure
-            mng = plt.get_current_fig_manager()
-            mng.resize(1000, 1000)
+        # Resize figure
+        mng = plt.get_current_fig_manager()
+        mng.resize(1000, 1000)
 
-            if show_trajectories:
-                # Plot Trajectories
-                data, points, max_len = plot_trajectories(scenario_info[2])
-                all_handles.extend(get_trajectory_handles())
+        if show_trajectories:
+            # Plot Trajectories
+            data, points, max_len = plot_trajectories(scenario_info[2])
+            all_handles.extend(get_trajectory_handles())
 
-                def update(i):
-                    drawn_pts = []
-                    for (xs, ys), point in zip(data, points):
-                        if i < len(xs):
-                            point.set_data(xs[i], ys[i])
-                            drawn_pts.append(point)
-                    return drawn_pts
+            def update(i):
+                drawn_pts = []
+                for (xs, ys), point in zip(data, points):
+                    if i < len(xs):
+                        point.set_data(xs[i], ys[i])
+                        drawn_pts.append(point)
+                return drawn_pts
 
-                # Set Animation
-                animates.append(FuncAnimation(fig, update, frames=max_len, blit=True, interval=100))
-            plt.legend(handles=all_handles)
-        return animates
+            # Set Animation
+            anim = FuncAnimation(fig, update, frames=max_len, blit=True, interval=100)
+        plt.legend(handles=all_handles)
+        return anim
 
-    my_animates = get_animates(scenario_infos, animate, feature_ids)
+    animates = []
+    for s_info in scenario_infos:
+        animates.append(plot_map_and_get_animate(s_info, animate, feature_ids))
     plt.show()
 
 
