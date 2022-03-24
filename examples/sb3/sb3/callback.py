@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 import gym
 import torch as th
@@ -9,23 +9,23 @@ from stable_baselines3.common.logger import Video
 
 
 class VideoRecorderCallback(BaseCallback):
-    def __init__(self, eval_env: gym.Env, render_freq: int, n_eval_episodes: int = 1, deterministic: bool = True):
+    def __init__(self, env: gym.Env, video_length: int, record_video_trigger: Callable[[int], bool], name_prefix: str = "rl-video"):
         """
-        Records a video of an agent's trajectory traversing ``eval_env`` and logs it to TensorBoard
+        Records a video of an agent's trajectory traversing `env` and logs it to TensorBoard
 
-        :param eval_env: A gym environment from which the trajectory is recorded
-        :param render_freq: Render the agent's trajectory every eval_freq call of the callback.
-        :param n_eval_episodes: Number of episodes to render
-        :param deterministic: Whether to use deterministic or stochastic policy
+        :param env: A gym environment from which the trajectory is recorded
+        :param video_length: Length of recorded videos
+        :param record_video_trigger: Function that defines when to start recording.
+            The function takes the current number of step, and returns whether we should start recording or not.
+        :param name_prefix: Prefix to the video name
         """
+
         super().__init__()
-        self._eval_env = eval_env
-        self._render_freq = render_freq
-        self._n_eval_episodes = n_eval_episodes
-        self._deterministic = deterministic
+        self._env = env
+        self._video_length = video_length
 
     def _on_step(self) -> bool:
-        if self.n_calls % self._render_freq == 0:
+        if self.n_calls < self._video_length:
             screens = []
 
             def grab_screens(_locals: Dict[str, Any], _globals: Dict[str, Any]) -> None:
@@ -39,13 +39,19 @@ class VideoRecorderCallback(BaseCallback):
                 # PyTorch uses CxHxW vs HxWxC gym (and tensorflow) image convention
                 screens.append(screen.transpose(2, 0, 1))
 
-            evaluate_policy(
-                self.model,
-                self._eval_env,
-                callback=grab_screens,
-                n_eval_episodes=self._n_eval_episodes,
-                deterministic=self._deterministic,
-            )
+            # evaluate_policy(
+            #     self.model,
+            #     self._eval_env,
+            #     callback=grab_screens,
+            #     n_eval_episodes=self._n_eval_episodes,
+            #     deterministic=self._deterministic,
+            # )
+
+            # self.locals
+            # self.globals
+            # import sys
+            # sys.exit(3)
+
             self.logger.record(
                 "trajectory/video",
                 Video(th.ByteTensor([screens]), fps=40),

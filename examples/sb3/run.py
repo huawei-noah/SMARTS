@@ -96,13 +96,13 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
 
     # Record evaluation video
     # if not training:
-    env = VecVideoRecorder(
-        venv=env, 
-        video_folder=str(config["logdir"] / "videos"),
-        record_video_trigger=lambda x: x == 0, 
-        video_length=config["video_length"],
-        name_prefix=config["name"]+"-PPO"
-    )
+    # env = VecVideoRecorder(
+    #     venv=env, 
+    #     video_folder=str(config["logdir"] / "videos"),
+    #     record_video_trigger=lambda x: x == 0, 
+    #     video_length=config["video_length"],
+    #     name_prefix=config["name"]+"-PPO"
+    # )
 
     return env
 
@@ -122,6 +122,9 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         best_model_save_path=config["logdir"] / "eval",
         deterministic=True,
     )
+    # video_recorder_callback = sb3_callback.VideoRecorderCallback(
+    #     env=eval_env,
+    # )
 
     if config["mode"] == "evaluate":
         print("Start evaluation.")
