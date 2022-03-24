@@ -417,6 +417,7 @@ def plot_trajectories(trajectories):
 def plot_scenarios(
     scenario_infos, animate: bool, feature_ids: Optional[List[str]] = None
 ):
+    animates = []
     for scenario_info in scenario_infos:
         # Get map feature data from map proto
         map_features = scenario_info[1]
@@ -452,7 +453,7 @@ def plot_scenarios(
                 return drawn_pts
 
             # Set Animation
-            anim = FuncAnimation(fig, update, frames=max_len, blit=True, interval=100)
+            animates.append(FuncAnimation(fig, update, frames=max_len, blit=True, interval=100))
         plt.legend(handles=all_handles)
 
     # mng.resize(*mng.window.maxsize())
@@ -765,7 +766,7 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 "                                       Path should be valid directory path.\n"
                 f"2. `export <indexes> <target_base_path>' --> Export the scenarios at these indexes of the table to a target path.\n"
                 f"                                             The indexes should be an integer between 1 and {len(scenario_ids)} separated by space and path should be valid.\n"
-                "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path."
+                "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path.\n"
                 "                                        Path should be valid.\n"
                 f"4. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table.\n"
                 f"                           The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
