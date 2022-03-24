@@ -134,7 +134,7 @@ def get_map_features_for_scenario(scenario) -> Dict:
         map_feature = scenario.map_features[i]
         key = map_feature.WhichOneof("feature_data")
         if key is not None:
-            map_features[key].append((getattr(map_feature, key), int(map_feature.id)))
+            map_features[key].append((getattr(map_feature, key), map_feature.id))
 
     return map_features
 
@@ -268,12 +268,12 @@ def get_trajectory_data(waymo_scenario):
 
 
 def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
-    handle = []
+    handles = []
     for lane in map_features["lane"]:
         xs, ys = convert_polyline(lane[0].polyline)
-        if str(lane[1]) in feature_ids:
-            plt.plot(xs, ys, linestyle=":", color="blue", linewidth=5.0)
-            handle.append(
+        if lane[1] in feature_ids:
+            plt.plot(xs, ys, linestyle=":", color="blue", linewidth=2.0)
+            handles.append(
                 Line2D(
                     [0],
                     [0],
@@ -288,9 +288,9 @@ def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
     for road_line in map_features["road_line"]:
         xs, ys = convert_polyline(road_line[0].polyline)
         if road_line[0].type in [1, 4, 5]:
-            if str(road_line[1]) in feature_ids:
-                plt.plot(xs, ys, "b--", linewidth=5.0)
-                handle.append(
+            if road_line[1] in feature_ids:
+                plt.plot(xs, ys, "b--", linewidth=2.0)
+                handles.append(
                     Line2D(
                         [0],
                         [0],
@@ -302,9 +302,9 @@ def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
             else:
                 plt.plot(xs, ys, "y--")
         else:
-            if str(road_line[1]) == feature_ids:
-                plt.plot(xs, ys, "b-", linewidth=5.0)
-                handle.append(
+            if road_line[1] in feature_ids:
+                plt.plot(xs, ys, "b-", linewidth=2.0)
+                handles.append(
                     Line2D(
                         [0],
                         [0],
@@ -318,9 +318,9 @@ def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
 
     for road_edge in map_features["road_edge"]:
         xs, ys = convert_polyline(road_edge[0].polyline)
-        if str(road_edge[1]) in feature_ids:
-            plt.plot(xs, ys, "b-", linewidth=5.0)
-            handle.append(
+        if road_edge[1] in feature_ids:
+            plt.plot(xs, ys, "b-", linewidth=2.0)
+            handles.append(
                 Line2D(
                     [0],
                     [0],
@@ -334,9 +334,9 @@ def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
 
     for crosswalk in map_features["crosswalk"]:
         xs, ys = convert_polyline(crosswalk[0].polygon)
-        if str(crosswalk[1]) in feature_ids:
-            plt.plot(xs, ys, "b--", linewidth=5.0)
-            handle.append(
+        if crosswalk[1] in feature_ids:
+            plt.plot(xs, ys, "b--", linewidth=2.0)
+            handles.append(
                 Line2D(
                     [0],
                     [0],
@@ -350,9 +350,9 @@ def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
 
     for speed_bump in map_features["speed_bump"]:
         xs, ys = convert_polyline(speed_bump[0].polygon)
-        if str(speed_bump[1]) in feature_ids:
-            plt.plot(xs, ys, "b:", linewidth=5.0)
-            handle.append(
+        if speed_bump[1] in feature_ids:
+            plt.plot(xs, ys, "b:", linewidth=2.0)
+            handles.append(
                 Line2D(
                     [0],
                     [0],
@@ -365,9 +365,9 @@ def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
             plt.plot(xs, ys, "k:")
 
     for stop_sign in map_features["stop_sign"]:
-        if str(stop_sign[1]) in feature_ids:
+        if stop_sign[1] in feature_ids:
             s_color = "blue"
-            handle.append(
+            handles.append(
                 Line2D(
                     [],
                     [],
@@ -386,7 +386,7 @@ def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
             c=s_color,
             alpha=1,
         )
-    return handle
+    return handles
 
 
 def plot_trajectories(trajectories):
