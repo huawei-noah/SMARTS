@@ -840,7 +840,6 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 "                                        Path should be valid.\n"
                 f"7. `animate <indexes>` --> Plot the map and animate the trajectories of objects of scenario at this index of the table.\n"
                 f"                           The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
-                f"                         The index should be an integer between 1 and {len(scenario_ids)}\n"
                 "8. `go back` --> Go back to the tfrecords browser\n"
                 "9. `exit` --> Exit the program\n"
             )
