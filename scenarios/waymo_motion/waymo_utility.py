@@ -389,7 +389,8 @@ def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
     return handles
 
 
-def plot_trajectories(trajectories):
+def plot_trajectories(trajectories, track_ids: List[str]):
+    handles = []
     max_len = 0
     data, points = [], []
     for k, v in trajectories.items():
@@ -401,17 +402,73 @@ def plot_trajectories(trajectories):
         if is_ego:
             (point,) = plt.plot(xs[0], ys[0], "c^")
         elif object_type == 1:
-            (point,) = plt.plot(xs[0], ys[0], "k^")
+            if str(k) in track_ids:
+                (point,) = plt.plot(xs[0], ys[0], "r^")
+                handles.append(
+                    Line2D(
+                        [],
+                        [],
+                        color="red",
+                        marker="^",
+                        linestyle="None",
+                        markersize=5,
+                        label=f"Car {k}",
+                    )
+                )
+            else:
+                (point,) = plt.plot(xs[0], ys[0], "k^")
         elif object_type == 2:
-            (point,) = plt.plot(xs[0], ys[0], "md")
+            if str(k) in track_ids:
+                (point,) = plt.plot(xs[0], ys[0], "rd")
+                handles.append(
+                    Line2D(
+                        [],
+                        [],
+                        color="red",
+                        marker="d",
+                        linestyle="None",
+                        markersize=5,
+                        label=f"Pedestrian {k}",
+                    )
+                )
+            else:
+                (point,) = plt.plot(xs[0], ys[0], "md")
         elif object_type == 3:
-            (point,) = plt.plot(xs[0], ys[0], "g*")
+            if str(k) in track_ids:
+                (point,) = plt.plot(xs[0], ys[0], "r*")
+                handles.append(
+                    Line2D(
+                        [],
+                        [],
+                        color="red",
+                        marker="*",
+                        linestyle="None",
+                        markersize=5,
+                        label=f"Cyclist {k}",
+                    )
+                )
+            else:
+                (point,) = plt.plot(xs[0], ys[0], "g*")
         else:
-            (point,) = plt.plot(xs[0], ys[0], "k8")
+            if str(k) in track_ids:
+                (point,) = plt.plot(xs[0], ys[0], "r8")
+                handles.append(
+                    Line2D(
+                        [],
+                        [],
+                        color="red",
+                        marker="8",
+                        linestyle="None",
+                        markersize=5,
+                        label=f"Other {k}",
+                    )
+                )
+            else:
+                (point,) = plt.plot(xs[0], ys[0], "k8")
         data.append((xs, ys))
         points.append(point)
 
-    return data, points, max_len
+    return data, points, max_len, handles
 
 
 def plot_scenarios(
@@ -423,12 +480,11 @@ def plot_scenarios(
         map_features = scenario_info[1]
 
         # Plot map
-        if not f_ids:
-            fids = []
-        else:
-            fids = f_ids
         fig = plt.figure(num=fig_num)
-        highlighted_handles = plot_map_features(map_features, fids)
+        if animate_trajectories or not f_ids:
+            highlighted_handles = plot_map_features(map_features, [])
+        else:
+            highlighted_handles = plot_map_features(map_features, f_ids)
         plt.title(f"Scenario {scenario_info[0].scenario_id}")
 
         # Set Legend Handles
@@ -441,8 +497,10 @@ def plot_scenarios(
 
         if animate_trajectories:
             # Plot Trajectories
-            data, points, max_len = plot_trajectories(scenario_info[2])
-            all_handles.extend(get_trajectory_handles())
+            data, points, max_len, t_handles = plot_trajectories(
+                scenario_info[2], f_ids if f_ids else []
+            )
+            all_handles.extend(get_trajectory_handles() + t_handles)
 
             def update(i):
                 drawn_pts = []
@@ -496,7 +554,9 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False):
             # Plot Trajectories
             if scenario_dict[scenario_id][2] is None:
                 scenario_dict[scenario_id][2] = get_map_features_for_scenario(scenario)
-            data, points, max_len = plot_trajectories(scenario_dict[scenario_id][2])
+            data, points, max_len, _ = plot_trajectories(
+                scenario_dict[scenario_id][2], []
+            )
             all_handles.extend(get_trajectory_handles())
             plt.legend(handles=all_handles)
 
@@ -1068,8 +1128,9 @@ def explore_scenario(tfrecord_file_path: str, scenario_info) -> bool:
         "You can use the following commands to further this scenario:\n"
         f"1. `export <target_base_path>' --> Export the scenario to a target path. The path should be valid.\n"
         f"2. `preview` or `preview <feature_ids>` --> Plot and display the map of the scenario with the feature ids highlighted in Blue if passed.\n"
-        f"                                            The feature ids need to be separated by space, be numbers from the map feature ids mentioned above and will not be highlighted if they doesnt exist.\n"
-        "3. `animate` --> Animate the trajectories of track objects on the map of this scenario.\n"
+        f"                                            The feature ids need to be separated by space, be numbers from the map feature ids mentioned above and will not be highlighted if they dont exist.\n"
+        "3. `animate` or `preview <track_ids> --> Animate the trajectories of track objects on the map of this scenario with the track ids highlighted in Red if passed.\n"
+        f"                                            The track ids need to be separated by space, be numbers from the track object ids mentioned above and will not be highlighted if they dont exist.\n"
         "4. `go back` --> Go back to this scenario's tfrecord browser.\n"
         "5. `exit` --> Exit the program\n"
     )
@@ -1104,8 +1165,16 @@ def explore_scenario(tfrecord_file_path: str, scenario_info) -> bool:
             else:
                 plot_scenarios([scenario_info], False, input_lst[1:])
 
-        elif re.compile("^animate?$", flags=re.IGNORECASE).match(user_input):
-            plot_scenarios([scenario_info], True)
+        elif user_input.lower() == "animate" or re.compile(
+            "^animate[\s]+(?:\s*(\d+))+?$", flags=re.IGNORECASE
+        ).match(user_input):
+            # Animate this scenario
+            input_lst = user_input.split()
+            if len(input_lst) == 1:
+                # Plot this scenario
+                plot_scenarios([scenario_info], True)
+            else:
+                plot_scenarios([scenario_info], True, input_lst[1:])
 
         elif re.compile("^go[\s]+back$", flags=re.IGNORECASE).match(user_input):
             stop_exploring = True
