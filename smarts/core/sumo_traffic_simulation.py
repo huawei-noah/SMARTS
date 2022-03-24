@@ -70,6 +70,8 @@ class SumoTrafficSimulation(Provider):
             vehicles when the traffic simulation calls teardown
     """
 
+    _HAS_DYNAMIC_ATTRIBUTES = True
+
     def __init__(
         self,
         headless=True,
@@ -206,10 +208,8 @@ class SumoTrafficSimulation(Provider):
 
         try:
             # It is mandatory to set order when using multiple clients.
-            # pytype: disable=attribute-error
             self._traci_conn.setOrder(0)
             self._traci_conn.getVersion()
-            # pytype: enable=attribute-error
         except Exception as e:
             logging.error(
                 f"""Failed to initialize SUMO

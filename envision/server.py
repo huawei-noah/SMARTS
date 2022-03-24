@@ -55,17 +55,21 @@ WEB_CLIENT_RUN_LOOPS = {}
 FRAMES = {}
 
 class AllowCORSMixinInterface(metaclass=abc.ABCMeta):
+    """Abstract Mixin Interface"""
 
     @abc.abstractmethod
     def set_header(self, *str):
+        """Setup the header"""
         raise NotImplementedError
 
     @abc.abstractmethod
     def set_status(self, int):
+        """Setup the status"""
         raise NotImplementedError
 
     @abc.abstractmethod
     def finish(self):
+        """Finish"""
         raise NotImplementedError
 
 class AllowCORSMixin(AllowCORSMixinInterface):
