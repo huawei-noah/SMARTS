@@ -15,6 +15,7 @@ RUN apt-get update --fix-missing && \
     apt-get update && \
     apt-get install -y \
         ffmpeg \
+        git \
         libspatialindex-dev \
         python3.7 \
         python3.7-venv \
