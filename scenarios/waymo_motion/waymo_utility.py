@@ -26,7 +26,7 @@ import os
 import shutil
 import yaml
 import re
-from typing import Dict, List, Tuple, Union, Optional
+from typing import Dict, List, Tuple, Optional
 from tabulate import tabulate
 from pathlib import Path
 from matplotlib.animation import FuncAnimation, FFMpegWriter
@@ -253,17 +253,17 @@ def get_trajectory_data(waymo_scenario):
 
     trajectories = {}
     agent_id = None
-    for row in generate_trajectory_rows(waymo_scenario):
-        if agent_id != row["vehicle_id"]:
-            agent_id = row["vehicle_id"]
+    for t_row in generate_trajectory_rows(waymo_scenario):
+        if agent_id != t_row["vehicle_id"]:
+            agent_id = t_row["vehicle_id"]
             trajectories[agent_id] = [
                 [],
                 [],
-                row["is_ego_vehicle"],
-                row["type"],
+                t_row["is_ego_vehicle"],
+                t_row["type"],
             ]
-        trajectories[agent_id][0].append(row["position_x"])
-        trajectories[agent_id][1].append(row["position_y"])
+        trajectories[agent_id][0].append(t_row["position_x"])
+        trajectories[agent_id][1].append(t_row["position_y"])
     return trajectories
 
 
@@ -478,11 +478,10 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False):
         scenario = scenario_dict[scenario_id][0]
 
         fig = plt.figure()
+        mng = plt.get_current_fig_manager()
         plt.title(f"Scenario {scenario_id}")
 
         # Resize figure
-        mng = plt.get_current_fig_manager()
-        # mng.resize(*mng.window.maxsize())
         w = 1000
         h = 1000
         mng.resize(w, h)
@@ -803,8 +802,8 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 continue
 
             # Try exporting all the scenarios
-            for id in scenario_ids:
-                export_scenario(target_base_path, tfrecord, id)
+            for s_id in scenario_ids:
+                export_scenario(target_base_path, tfrecord, s_id)
             print(
                 f"\nYou can build the scenarios exported using the command `scl scenario build-all {target_base_path}`\n"
             )
