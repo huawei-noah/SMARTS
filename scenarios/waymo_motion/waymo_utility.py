@@ -418,6 +418,7 @@ def plot_scenarios(
     scenario_infos, animate: bool, feature_ids: Optional[List[str]] = None
 ):
     animates = []
+    counter = 1
     for scenario_info in scenario_infos:
         # Get map feature data from map proto
         map_features = scenario_info[1]
@@ -427,7 +428,8 @@ def plot_scenarios(
             fids = []
         else:
             fids = feature_ids
-        fig = plt.figure()
+        fig = plt.figure(counter)
+        counter += 1
         highlighted_handle = plot_map_features(map_features, fids)
         plt.title(f"Scenario {scenario_info[0].scenario_id}")
 
@@ -454,10 +456,12 @@ def plot_scenarios(
 
             # Set Animation
             animates.append(FuncAnimation(fig, update, frames=max_len, blit=True, interval=100))
+            plt.legend(handles=all_handles)
+            plt.show()
         plt.legend(handles=all_handles)
 
-    # mng.resize(*mng.window.maxsize())
-    plt.show()
+    if not animate:
+        plt.show()
 
 
 def dump_plots(target_base_path: str, scenario_dict, animate=False):
