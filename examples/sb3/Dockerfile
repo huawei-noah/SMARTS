@@ -36,6 +36,9 @@ RUN pip install --upgrade pip wheel
 COPY ./examples/sb3/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
+# (Optional) Disable git certificate verification
+RUN git config --global http.sslVerify false
+
 # Copy source files and install.
 COPY . /src
 WORKDIR /src
