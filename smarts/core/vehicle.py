@@ -266,7 +266,9 @@ class Vehicle:
             pose=self.pose,
             dimensions=self._chassis.dimensions,
             speed=self.speed,
+            # pytype: disable=attribute-error
             steering=self._chassis.steering,
+            # pytype: enable=attribute-error
             yaw_rate=self._chassis.yaw_rate,
             source="SMARTS",
             linear_velocity=self._chassis.velocity_vectors[0],

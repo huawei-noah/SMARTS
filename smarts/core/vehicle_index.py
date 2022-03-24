@@ -21,7 +21,7 @@ import logging
 from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
-from typing import FrozenSet, NamedTuple, Optional, Tuple
+from typing import FrozenSet, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 import tableprint as tp
@@ -55,10 +55,10 @@ class _ActorType(IntEnum):
 
 
 class _ControlEntity(NamedTuple):
-    vehicle_id: bytes
-    actor_id: bytes
+    vehicle_id: Union[bytes, str]
+    actor_id: Union[bytes, str]
     actor_type: _ActorType
-    shadow_actor_id: str
+    shadow_actor_id: Union[bytes, str]
     # Applies to shadowing and controlling actor
     # TODO: Consider moving this to an _ActorType field
     is_boid: bool
