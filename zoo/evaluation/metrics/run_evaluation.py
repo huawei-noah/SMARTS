@@ -1,6 +1,5 @@
 import argparse
 
-# pytype: disable=import-error
 from zoo.evaluation.metrics.collision.collision_data_parse import CollisionEvaluation
 from zoo.evaluation.metrics.diversity.diversity_evaluation import DiversityEvaluation
 from zoo.evaluation.metrics.kinematics.kinematics_evaluation import KinematicsEvaluation

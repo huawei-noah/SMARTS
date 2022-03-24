@@ -30,8 +30,7 @@ from collections import deque
 from threading import Lock
 from typing import Any, Dict, List, Sequence, Tuple, Optional
 
-import numpy as np
-# pytype: disable=import-error 
+import numpy as npor 
 import rospy
 from smarts_ros.msg import (
     AgentReport,
@@ -42,7 +41,6 @@ from smarts_ros.msg import (
     SmartsReset,
 )
 from smarts_ros.srv import SmartsInfo, SmartsInfoRequest, SmartsInfoResponse
-# pytype: enable=import-error
 
 from envision.client import Client as Envision
 from smarts.core.agent import Agent

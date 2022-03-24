@@ -29,7 +29,6 @@ import os
 import sys
 from unittest import TestCase
 
-# pytype: disable=import-error
 import rospy
 from smarts_ros.msg import (
     AgentReport,
@@ -41,7 +40,6 @@ from smarts_ros.msg import (
     SmartsReset,
 )
 from smarts_ros.srv import SmartsInfo
-# pytype: enable=import-error
 
 from smarts.core.coordinates import fast_quaternion_from_angle
 

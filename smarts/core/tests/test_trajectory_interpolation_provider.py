@@ -32,7 +32,7 @@ from smarts.core.provider import ProviderState
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.tests.helpers.scenario import temp_scenario # pytype: disable=import-error
+from smarts.core.tests.helpers.scenario import temp_scenario
 from smarts.core.trajectory_interpolation_provider import (
     TrajectoryInterpolationProvider,
     TrajectoryWithTime,

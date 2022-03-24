@@ -38,7 +38,7 @@ from numpy.lib.stride_tricks import sliding_window_view
 from smarts.core.utils.math import vec_to_radians
 
 try:
-    from waymo_open_dataset.protos import scenario_pb2 # pytype: disable=import-error
+    from waymo_open_dataset.protos import scenario_pb2
 except ImportError:
     print(sys.exc_info())
     print(
