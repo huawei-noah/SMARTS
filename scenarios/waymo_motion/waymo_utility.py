@@ -134,7 +134,7 @@ def get_map_features_for_scenario(scenario) -> Dict:
         map_feature = scenario.map_features[i]
         key = map_feature.WhichOneof("feature_data")
         if key is not None:
-            map_features[key].append((getattr(map_feature, key), map_feature.id))
+            map_features[key].append((getattr(map_feature, key), str(map_feature.id)))
 
     return map_features
 
@@ -428,12 +428,12 @@ def plot_scenarios(
         else:
             fids = f_ids
         fig = plt.figure(num=fig_num)
-        highlighted_handle = plot_map_features(map_features, fids)
+        highlighted_handles = plot_map_features(map_features, fids)
         plt.title(f"Scenario {scenario_info[0].scenario_id}")
 
         # Set Legend Handles
         all_handles = get_map_handles()
-        all_handles.extend(highlighted_handle)
+        all_handles.extend(highlighted_handles)
 
         # Resize figure
         mng = plt.get_current_fig_manager()
