@@ -255,7 +255,7 @@ def browse_waymo_dataset(tfrecords):
         # if tfrecords is not given, set the known tfrecord directory as default
         tfrecords = [os.path.join("scenarios", "waymo_motion", "waymo_data")]
 
-    utility_path = os.path.join("scenarios", "waymo_motion", "waymo_utility")
+    utility_path = os.path.join("scenarios", "waymo_motion", "waymo_utility.py")
     subprocess_command = [sys.executable, utility_path] + list(tfrecords)
     click.echo(f"Executing {utility_path} with arguments {tfrecords}")
     subprocess.check_call(subprocess_command)
