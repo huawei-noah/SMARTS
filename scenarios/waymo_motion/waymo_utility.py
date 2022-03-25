@@ -586,7 +586,7 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False):
 
         print(f"Saving {out_path}")
         plt.close("all")
-    print(f"All map images saved at {target_base_path}")
+    print(f"All images or recordings saved at {target_base_path}")
 
 
 def get_scenario_dict(tfrecord_file: str):
@@ -663,7 +663,7 @@ def display_scenarios_in_tfrecord(tfrecord_path: str, scenario_dict) -> List[str
 
 def export_scenario(
     target_base_path: str, tfrecord_file_path: str, scenario_id: str
-) -> None:
+) -> bool:
     subfolder_path = os.path.join(os.path.abspath(target_base_path), scenario_id)
     try:
         os.makedirs(subfolder_path)
@@ -672,7 +672,7 @@ def export_scenario(
         print(f"Folder {scenario_id} already exists at path {target_base_path}")
     except (OSError, RuntimeError):
         print(f"{target_base_path} is an invalid path. Please enter a valid path")
-        return
+        return False
     scenario_py = os.path.join(subfolder_path, "scenario.py")
     if os.path.exists(scenario_py):
         print(f"scenario.py already exists in {subfolder_path}.")
@@ -694,6 +694,7 @@ def export_scenario(
         yaml.dump(yaml_dataspec, yaml_file, default_flow_style=False)
         print(f"waymo.yaml created in {subfolder_path}")
     print("\n")
+    return True
 
 
 def check_index_validity(
@@ -732,7 +733,9 @@ def check_path_validity(target_base_path: str) -> bool:
     return True
 
 
-def tfrecords_browser(tfrecord_paths: List[str]) -> None:
+def tfrecords_browser(
+    tfrecord_paths: List[str], default_target_path: Optional[str] = None
+) -> None:
     scenarios_per_tfrecords = parse_tfrecords(tfrecord_paths)
     if not scenarios_per_tfrecords:
         print("No .tfrecord files exist in paths provided. Please pass valid paths.")
@@ -792,10 +795,12 @@ def tfrecords_browser(tfrecord_paths: List[str]) -> None:
             if len(valid_indexes) == 0:
                 continue
             for idx in valid_indexes:
-                tf_path = tf_records[idx - 1][1]
-                if scenarios_per_tfrecords[tf_path] is None:
-                    scenarios_per_tfrecords[tf_path] = get_scenario_dict(tf_path)
-                display_scenarios_in_tfrecord(tf_path, scenarios_per_tfrecords[tf_path])
+                tfr_path = tf_records[idx - 1][1]
+                if scenarios_per_tfrecords[tfr_path] is None:
+                    scenarios_per_tfrecords[tfr_path] = get_scenario_dict(tfr_path)
+                display_scenarios_in_tfrecord(
+                    tfr_path, scenarios_per_tfrecords[tfr_path]
+                )
                 print("\n")
             print_commands = True
 
@@ -806,10 +811,12 @@ def tfrecords_browser(tfrecord_paths: List[str]) -> None:
             )
             if len(valid_indexes) == 0:
                 continue
-            tf_path = tf_records[valid_indexes[0] - 1][1]
-            if scenarios_per_tfrecords[tf_path] is None:
-                scenarios_per_tfrecords[tf_path] = get_scenario_dict(tf_path)
-            stop_browser = explore_tf_record(tf_path, scenarios_per_tfrecords[tf_path])
+            tfr_path = tf_records[valid_indexes[0] - 1][1]
+            if scenarios_per_tfrecords[tfr_path] is None:
+                scenarios_per_tfrecords[tfr_path] = get_scenario_dict(tfr_path)
+            stop_browser = explore_tf_record(
+                tfr_path, scenarios_per_tfrecords[tfr_path], default_target_path
+            )
             if not stop_browser:
                 display_tf_records(tf_records)
             print_commands = True
@@ -828,7 +835,9 @@ def tfrecords_browser(tfrecord_paths: List[str]) -> None:
     print("Exiting the Browser")
 
 
-def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
+def explore_tf_record(
+    tfrecord: str, scenario_dict, default_target_path: Optional[str] = None
+) -> bool:
     scenario_ids = display_scenarios_in_tfrecord(tfrecord, scenario_dict)
     stop_exploring = False
     print_commands = True
@@ -838,10 +847,11 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             print(
                 f"{os.path.basename(tfrecord)} TfRecord Browser.\n"
                 f"You can use the following commands to further explore these scenarios:\n"
-                "1. `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path.\n"
-                "                                       Path should be valid directory path.\n"
-                f"2. `export <indexes> <target_base_path>' --> Export the scenarios at these indexes of the table to a target path.\n"
+                "1. `export all` or `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path if passed.\n"
+                f"                                       Path passed should be valid directory path. If path is not passed all scenarios will be exported to default_target_path if passed.\n"
+                f"2. `export <indexes>` or `export <indexes> <target_base_path>' --> Export the scenarios at these indexes of the table to a target path if passed.\n"
                 f"                                             The indexes should be an integer between 1 and {len(scenario_ids)} separated by space and path should be valid.\n"
+                f"                                             If path is not passed the scenario will be exported to default_target_path if passed."
                 "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path.\n"
                 "                                        Path should be valid.\n"
                 f"4. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table.\n"
@@ -864,20 +874,34 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
             print("Raised EOF. Attempting to exit browser.")
             return True
         user_input = raw_input.strip()
-        if re.compile("^export[\s]+(?i)all[\s]+[^\n ]+$", flags=re.IGNORECASE).match(
+        if re.compile("^export[\s]+all", flags=re.IGNORECASE).match(
+            user_input
+        ) or re.compile("^export[\s]+all[\s]+[^\n ]+$", flags=re.IGNORECASE).match(
             user_input
         ):
-            target_base_path = user_input.split()[2].strip("[\"']")
+            input_lst = user_input.split()
+            if len(input_lst) == 2:
+                if default_target_path is None:
+                    print(
+                        "Cannot use `export all` command since default_target_path is None. Use the command with <target_path> mentioned."
+                    )
+                    continue
+                target_base_path = default_target_path
+            else:
+                target_base_path = input_lst[2].strip("[\"']")
+
             # Check if target base path is valid
             if not check_path_validity(target_base_path):
                 continue
 
             # Try exporting all the scenarios
+            exported = False
             for s_id in scenario_ids:
-                export_scenario(target_base_path, tfrecord, s_id)
-            print(
-                f"\nYou can build the scenarios exported using the command `scl scenario build-all {target_base_path}`\n"
-            )
+                exported = export_scenario(target_base_path, tfrecord, s_id) or exported
+            if exported:
+                print(
+                    f"\nYou can build the scenarios exported using the command `scl scenario build-all {target_base_path}`\n"
+                )
             display_scenarios_in_tfrecord(tfrecord, scenario_dict)
             print_commands = True
 
@@ -899,12 +923,48 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 continue
 
             # Try exporting the scenario
+            exported = False
             for idx in valid_indexes:
-                export_scenario(target_base_path, tfrecord, scenario_ids[idx - 1])
+                exported = (
+                    export_scenario(target_base_path, tfrecord, scenario_ids[idx - 1])
+                    or exported
+                )
+            if exported:
+                print(
+                    f"\nYou can build these scenarios exported using the command `scl scenario build-all {target_base_path}`"
+                )
+            print_commands = True
 
-            print(
-                f"\nYou can build these scenarios exported using the command `scl scenario build-all {target_base_path}`"
+        elif re.compile("^export[\s]+(?:\s*(\d+))+$", flags=re.IGNORECASE).match(
+            user_input
+        ):
+            if default_target_path is None:
+                print(
+                    "Cannot use `export <indexes>` command since default_target_path is None. Use the command with <target_path> mentioned."
+                )
+                continue
+            input_lst = user_input.split()
+
+            # Check if indexes passed are valid
+            valid_indexes = check_index_validity(
+                input_lst[1:], len(scenario_ids), "export"
             )
+            if len(valid_indexes) == 0:
+                continue
+
+            # Try exporting the scenario
+            exported = False
+            for idx in valid_indexes:
+                exported = (
+                    export_scenario(
+                        default_target_path, tfrecord, scenario_ids[idx - 1]
+                    )
+                    or exported
+                )
+            if exported:
+                print(
+                    f"\nYou can build these scenarios exported using the command `scl scenario build-all {default_target_path}`"
+                )
             print_commands = True
 
         elif re.compile("^preview[\s]+all[\s]+[^\n ]+$", flags=re.IGNORECASE).match(
@@ -1016,7 +1076,9 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
                 scenario_dict[scenario_id][2] = get_trajectory_data(
                     scenario_dict[scenario_id][0]
                 )
-            exit_browser = explore_scenario(tfrecord, scenario_dict[scenario_id])
+            exit_browser = explore_scenario(
+                tfrecord, scenario_dict[scenario_id], default_target_path
+            )
             if exit_browser:
                 return True
             display_scenarios_in_tfrecord(tfrecord, scenario_dict)
@@ -1036,7 +1098,9 @@ def explore_tf_record(tfrecord: str, scenario_dict) -> bool:
     return False
 
 
-def explore_scenario(tfrecord_file_path: str, scenario_info) -> bool:
+def explore_scenario(
+    tfrecord_file_path: str, scenario_info, default_target_path: Optional[str]
+) -> bool:
     scenario = scenario_info[0]
     scenario_map_features = scenario_info[1]
     trajectories = scenario_info[2]
@@ -1137,7 +1201,8 @@ def explore_scenario(tfrecord_file_path: str, scenario_info) -> bool:
     print(
         f"\n\nScenario {scenario.scenario_id}.\n"
         "You can use the following commands to further this scenario:\n"
-        f"1. `export <target_base_path>' --> Export the scenario to a target path. The path should be valid.\n"
+        f"1. `export` or `export <target_base_path>' --> Export the scenario to a target path is passed. The path should be valid.\n"
+        f"                                             If path is not passed the scenario will be exported to default_target_path if passed.\n"
         f"2. `preview` or `preview <feature_ids>` --> Plot and display the map of the scenario with the feature ids highlighted in Blue if passed.\n"
         f"                                            The feature ids need to be separated by space, be numbers from the map feature ids mentioned above and will not be highlighted if they dont exist.\n"
         "3. `animate` or `animate <track_ids> --> Animate the trajectories of track objects on the map of this scenario with the track ids highlighted in Red if passed.\n"
@@ -1153,11 +1218,21 @@ def explore_scenario(tfrecord_file_path: str, scenario_info) -> bool:
             print("Raised EOF. Attempting to exit browser.")
             return True
         user_input = raw_input.strip()
-        if re.compile("^export[\s]+[^\n ]+$", flags=re.IGNORECASE).match(user_input):
+        if user_input.lower() == "export" or re.compile(
+            "^export[\s]+[^\n ]+$", flags=re.IGNORECASE
+        ).match(user_input):
             input_lst = user_input.split()
+            if len(input_lst) == 1:
+                if default_target_path is None:
+                    print(
+                        "Cannot use `export all` command since default_target_path is None. Use the command with <target_path> mentioned."
+                    )
+                    continue
+                target_base_path = default_target_path
+            else:
+                target_base_path = input_lst[2].strip("[\"']")
 
             # Check if target base path is valid
-            target_base_path = input_lst[2].strip("[\"']")
             if not check_path_validity(target_base_path):
                 continue
             # Try exporting the scenario to the target_base_path
@@ -1217,8 +1292,21 @@ if __name__ == "__main__":
         type=str,
         nargs="+",
     )
+    parser.add_argument(
+        "--target-base-path",
+        help="Default target base path to export scenarios to",
+        type=str,
+        default=None,
+    )
     args = parser.parse_args()
     valid_tf_paths = []
+    if args.target_base_path is not None:
+        if not os.path.exists(os.path.abspath(args.target_base_path)):
+            print(
+                f"Default Target Base Path {args.target_base_path} does not exist.\n"
+                f"Please make sure Default Target Base path passed is valid and it exists if you pass it."
+            )
+            exit()
     for tf_path in args.files:
         if not os.path.exists(os.path.abspath(tf_path)):
             print(
@@ -1230,4 +1318,4 @@ if __name__ == "__main__":
     if not valid_tf_paths:
         print("No valid paths passed. Make sure all paths passed exist and are valid.")
     else:
-        tfrecords_browser(valid_tf_paths)
+        tfrecords_browser(valid_tf_paths, os.path.abspath(args.target_base_path))

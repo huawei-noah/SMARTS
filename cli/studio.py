@@ -249,14 +249,25 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
     nargs=-1,
     required=True,
 )
-def browse_waymo_dataset(tfrecords):
+@click.option(
+    "-t",
+    "--target-base-path",
+    type=click.Path(exists=True),
+    default="scenarios",
+    help="Default target base path to export scenarios to",
+)
+def browse_waymo_dataset(tfrecords, target_base_path):
     if not tfrecords:
         # nargs=-1 in combination with a default value is not supported
         # if tfrecords is not given, set the known tfrecord directory as default
         tfrecords = [os.path.join("scenarios", "waymo_motion", "waymo_data")]
 
     utility_path = os.path.join("scenarios", "waymo_motion", "waymo_utility.py")
-    subprocess_command = [sys.executable, utility_path] + list(tfrecords)
+    subprocess_command = [
+        sys.executable,
+        utility_path,
+        f"--target-base-path={target_base_path}",
+    ] + list(tfrecords)
     click.echo(f"Executing {utility_path} with arguments {tfrecords}")
     subprocess.check_call(subprocess_command)
 
