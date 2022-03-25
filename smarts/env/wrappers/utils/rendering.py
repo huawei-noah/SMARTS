@@ -53,27 +53,24 @@ def vis_sim_obs(sim_obs) -> Dict[str, np.ndarray]:
         drivable_area = getattr(agent_obs, "drivable_area_grid_map", None)
         if drivable_area is not None:
             image = drivable_area.data
-            # image = image.transpose(2, 0, 1)
+            image = image[:, :, [0, 0, 0]]
             image = image.astype(np.uint8)
             vis_images[f"{agent_id}-DrivableAreaGridMap"].append(image)
 
         ogm = getattr(agent_obs, "occupancy_grid_map", None)
         if ogm is not None:
-            image = ogm.data
-            image = image.reshape(image.shape[0], image.shape[1])
-            image = np.expand_dims(image, axis=0)
-            image = (image.astype(np.float32) / 100) * 255
+            image: np.ndarray = ogm.data
+            image = image[:, :, [0, 0, 0]]
             image = image.astype(np.uint8)
             vis_images[f"{agent_id}-OGM"].append(image)
 
         rgb = getattr(agent_obs, "top_down_rgb", None)
         if rgb is not None:
             image = rgb.data
-            # image = image.transpose(2, 0, 1)
             image = image.astype(np.uint8)
             vis_images[f"{agent_id}-Top-Down-RGB"].append(image)
 
-    return vis_images
+    return {key: np.array(images) for key, images in vis_images.items()}
 
 
 def write_image(sim_obs, frame_folder, tag_id):
