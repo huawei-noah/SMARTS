@@ -22,5 +22,6 @@ setup(
         "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@sb3-1",
         "stable-baselines3[extra]==1.4.0",
         "tensorflow==2.4.0",
+        "torchinfo==1.6.4",
     ],
 )

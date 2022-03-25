@@ -8,7 +8,7 @@ import argparse
 import pathlib
 import warnings
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import gym
 from ruamel.yaml import YAML
@@ -17,6 +17,7 @@ from sb3 import observation as sb3_observation
 from sb3 import reward as sb3_reward
 from sb3 import info as sb3_info
 from sb3 import callback as sb3_callback
+from sb3 import policy as sb3_policy
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
@@ -28,6 +29,9 @@ from stable_baselines3.common.vec_env import (
     VecMonitor,
     VecVideoRecorder,
 )
+from torchinfo import summary
+import torch.nn as nn
+import torch as th
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 yaml = YAML(typ="safe")
@@ -144,9 +148,12 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     else:
         print("Start training from scratch.")
         policy_kwargs = dict(
+            features_extractor_class=sb3_policy.CustomCNN,
+            features_extractor_kwargs=dict(features_dim=512),
             # activation_fn=th.nn.ReLU,
             # activation_fn=th.nn.Tanh, # default activation used
-            net_arch=[128, dict(pi=[32, 32], vf=[32, 32])]
+            # net_arch=[128, dict(pi=[32, 32], vf=[32, 32])],
+            net_arch=[],
         )
         """
         The default `CnnPolicy` feature extractor used is as follows:
@@ -172,6 +179,14 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             tensorboard_log=config["logdir"] / "tensorboard",
             seed=config["seed"],
         )
+
+        # Print model summary
+        print("\n\n")
+        network = Network(model.policy.features_extractor, model.policy.mlp_extractor)
+        print(network)
+        summary(network, (1,) + env.observation_space.shape)
+        print("\n\n")
+
         model.learn(
             total_timesteps=config["train_steps"],
             callback=[checkpoint_callback, eval_callback],
@@ -189,6 +204,17 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     )
     print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
     print("Finished evaluating.")
+
+
+class Network(nn.Module):
+    def __init__(self, feature_extractor: nn.Module, mlp_extractor: nn.Module):
+        super(Network, self).__init__()
+        self._feature_extractor = feature_extractor
+        self._mlp_extractor = mlp_extractor
+
+    def forward(self, obs: th.Tensor) -> th.Tensor:
+        feature_out = self._feature_extractor(obs)
+        return self._mlp_extractor(feature_out)
 
 
 if __name__ == "__main__":

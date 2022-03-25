@@ -18,6 +18,12 @@ class Reward(gym.Wrapper):
         """
         obs, reward, done, info = self.env.step(action)
         wrapped_reward = self._reward(obs, reward)
+
+        if obs.events["reached_goal"]:
+            print(f"***** Vehicle reached goal.")
+        if obs.events["reached_max_episode_steps"]:
+            print(f"##### Vehicle reached max episode steps.")
+
         return obs, wrapped_reward, done, info
 
     def _reward(self, obs: format_obs.StdObs, env_reward: np.float64) -> np.float64:
