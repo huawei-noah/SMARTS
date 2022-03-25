@@ -1206,18 +1206,21 @@ if __name__ == "__main__":
         prog="waymo_utility.py",
         description="Text based TfRecords Browser.",
     )
-    parser.add_argument("files",
-                        help="A list of TFRecord file/folder paths. Each element can be either the path to "
-                             "tfrecord file or a directory of tfrecord files to browse from.",
-                        type=str,
-                        nargs="+",
-                        )
+    parser.add_argument(
+        "files",
+        help="A list of TFRecord file/folder paths. Each element can be either the path to "
+        "tfrecord file or a directory of tfrecord files to browse from.",
+        type=str,
+        nargs="+",
+    )
     args = parser.parse_args()
     valid_tf_paths = []
     for tf_path in args.files:
         if not os.path.exists(os.path.abspath(tf_path)):
-            print(f"Path {args.file} does not exist and hence wont be browsed.\n"
-                  f"Please make sure path passed is valid and it exists.")
+            print(
+                f"Path {args.file} does not exist and hence wont be browsed.\n"
+                f"Please make sure path passed is valid and it exists."
+            )
         else:
             valid_tf_paths.append(os.path.abspath(tf_path))
     if not valid_tf_paths:
