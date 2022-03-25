@@ -472,7 +472,6 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
 
             active_agent_ids = observations.keys() & next_observations.keys()
             loss_outputs = {
-                # pytype: disable=attribute-error
                 agent_id: agents[agent_id].step(
                     state=observations[agent_id],
                     action=actions[agent_id],
@@ -482,7 +481,6 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                     info=infos[agent_id],
                 )
                 for agent_id in active_agent_ids
-                # pytype: enable=attribute-error
             }
 
             episode.record_step(

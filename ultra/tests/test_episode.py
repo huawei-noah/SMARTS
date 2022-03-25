@@ -28,7 +28,7 @@ import numpy as np
 import ray
 
 from smarts.zoo.registry import make
-from ultra.utils.episode import episodes
+from ultra.utils.episode import episodes, Episode
 
 AGENT_ID = "001"
 timestep_sec = 0.1
@@ -36,7 +36,6 @@ seed = 2
 task_id = "00"
 task_level = "easy"
 
-# pytype: disable=name-error
 class EpisodeTest(unittest.TestCase):
     # Put generated files and folders in this directory.
     OUTPUT_DIRECTORY = "tests/episode_test/"
@@ -59,6 +58,7 @@ class EpisodeTest(unittest.TestCase):
                 "off_route": 0,
                 "reached_goal": 0,
             }
+            episode = Episode(0)
             for episode in episodes(1, etag="Train", log_dir=log_dir):
                 observations = env.reset()
                 total_step = 0
@@ -114,14 +114,14 @@ class EpisodeTest(unittest.TestCase):
             #     # self.assertTrue(
             #     #     abs(result[key] - episode_info["Train"][AGENT_ID].data[key]) <= 0.001
             #     # )
-    # pytype: disable=wrong-arg-types
-    @unittest.skip 
+
+    @unittest.skip("Experiment test is not necessary at this time.") 
     def test_episode_counter(self): 
-    # pytype: enable=wrong-arg-types
         @ray.remote(max_calls=1, num_gpus=0, num_cpus=1)
         def run_experiment():
             agent, env = prepare_test_env_agent()
             log_dir = os.path.join(EpisodeTest.OUTPUT_DIRECTORY, "logs/")
+            episode = Episode(0)
             for episode in episodes(2, etag="Train", log_dir=log_dir):
                 observations = env.reset()
                 total_step = 0
