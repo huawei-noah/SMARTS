@@ -121,7 +121,7 @@ def get_map_handles() -> List[Line2D]:
     return handles
 
 
-def get_map_features_for_scenario(scenario) -> Dict:
+def get_map_features_for_scenario(scenario: scenario_pb2.Scenario) -> Dict:
     map_features = {
         "lane": [],
         "road_line": [],
@@ -139,7 +139,7 @@ def get_map_features_for_scenario(scenario) -> Dict:
     return map_features
 
 
-def get_traffic_light_lanes(scenario) -> List[str]:
+def get_traffic_light_lanes(scenario: scenario_pb2.Scenario) -> List[str]:
     num_steps = len(scenario.timestamps_seconds)
     tls_lanes = []
     for i in range(num_steps):
@@ -167,7 +167,7 @@ def get_object_type_count(trajectories):
     return ego, cars, pedestrian, cyclist, other
 
 
-def get_trajectory_data(waymo_scenario):
+def get_trajectory_data(waymo_scenario: scenario_pb2.Scenario):
     def generate_trajectory_rows(scenario):
         for i in range(len(scenario.tracks)):
             vehicle_id = scenario.tracks[i].id
@@ -624,7 +624,7 @@ def display_tf_records(records):
     print("\n\n")
 
 
-def display_scenarios_in_tfrecord(tfrecord_path, scenario_dict) -> List[str]:
+def display_scenarios_in_tfrecord(tfrecord_path: str, scenario_dict) -> List[str]:
     scenario_data_lst = []
     scenario_counter = 1
     scenario_ids = []
@@ -660,7 +660,7 @@ def display_scenarios_in_tfrecord(tfrecord_path, scenario_dict) -> List[str]:
 
 
 def export_scenario(
-    target_base_path: str, tfrecord_file_path: str, scenario_id
+    target_base_path: str, tfrecord_file_path: str, scenario_id: str
 ) -> None:
     subfolder_path = os.path.join(os.path.abspath(target_base_path), scenario_id)
     try:
@@ -1134,7 +1134,7 @@ def explore_scenario(tfrecord_file_path: str, scenario_info) -> bool:
         f"1. `export <target_base_path>' --> Export the scenario to a target path. The path should be valid.\n"
         f"2. `preview` or `preview <feature_ids>` --> Plot and display the map of the scenario with the feature ids highlighted in Blue if passed.\n"
         f"                                            The feature ids need to be separated by space, be numbers from the map feature ids mentioned above and will not be highlighted if they dont exist.\n"
-        "3. `animate` or `preview <track_ids> --> Animate the trajectories of track objects on the map of this scenario with the track ids highlighted in Red if passed.\n"
+        "3. `animate` or `animate <track_ids> --> Animate the trajectories of track objects on the map of this scenario with the track ids highlighted in Red if passed.\n"
         f"                                            The track ids need to be separated by space, be numbers from the track object ids mentioned above and will not be highlighted if they dont exist.\n"
         "4. `go back` --> Go back to this scenario's tfrecord browser.\n"
         "5. `exit` --> Exit the program\n"
