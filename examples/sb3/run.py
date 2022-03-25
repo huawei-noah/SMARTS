@@ -179,14 +179,12 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             tensorboard_log=config["logdir"] / "tensorboard",
             seed=config["seed"],
         )
-
         # Print model summary
         print("\n\n")
         network = Network(model.policy.features_extractor, model.policy.mlp_extractor)
         print(network)
         summary(network, (1,) + env.observation_space.shape)
         print("\n\n")
-
         model.learn(
             total_timesteps=config["train_steps"],
             callback=[checkpoint_callback, eval_callback],
