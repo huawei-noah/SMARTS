@@ -609,7 +609,7 @@ def parse_tfrecords(tfrecord_paths: List[str]):
                 for file in files:
                     if ".tfrecord" in file:
                         scenarios_per_tfrecord[os.path.join(root, file)] = None
-        else:
+        elif ".tfrecord" in tfrecord_path:
             scenarios_per_tfrecord[tfrecord_path] = None
     return scenarios_per_tfrecord
 
@@ -732,8 +732,12 @@ def check_path_validity(target_base_path: str) -> bool:
     return True
 
 
-def tfrecords_browser(tfrecord_paths: List[str]):
+def tfrecords_browser(tfrecord_paths: List[str]) -> None:
     scenarios_per_tfrecords = parse_tfrecords(tfrecord_paths)
+    if not scenarios_per_tfrecords:
+        print("No .tfrecord files exist in paths provided. Please pass valid paths.")
+        return
+
     tf_records = []
     tf_counter = 1
     for tf in scenarios_per_tfrecords:

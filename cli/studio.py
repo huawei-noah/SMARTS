@@ -131,7 +131,9 @@ def _install_requirements(scenario_root):
 
 
 def _is_scenario_folder_to_build(path: str) -> bool:
-    if os.path.exists(os.path.join(path, "waymo.yaml")) or path.endswith("waymo_motion"):
+    if os.path.exists(os.path.join(path, "waymo.yaml")) or path.endswith(
+        "waymo_motion"
+    ):
         # for now, don't try to build Waymo scenarios...
         return False
     if os.path.exists(os.path.join(path, "scenario.py")):
@@ -236,7 +238,32 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
             )
 
 
+@scenario_cli.command(
+    name="browse-waymo",
+    help="Browse Waymo TfRecord datasets using a Text based Browser Utility",
+)
+@click.argument(
+    "tfrecord_paths",
+    type=click.Path(exists=True),
+    metavar="<script>",
+    nargs=-1,
+    required=True,
+)
+def browse_waymo_dataset(tfrecords):
+    print(type(tfrecords))
+    if not tfrecords:
+        # nargs=-1 in combination with a default value is not supported
+        # if agent_paths is not given, set the known tfrecord directory as default
+        tfrecords = [os.path.join("scenarios", "waymo_motion", "waymo_data")]
+
+    utility_path = os.path.join("scenarios", "waymo_motion", "waymo_utility")
+    subprocess_command = [sys.executable, utility_path] + tfrecords
+    click.echo(f"Executing {utility_path} with arguments {tfrecords}")
+    subprocess.check_call(subprocess_command)
+
+
 scenario_cli.add_command(build_scenario)
 scenario_cli.add_command(build_all_scenarios)
 scenario_cli.add_command(clean_scenario)
 scenario_cli.add_command(replay)
+scenario_cli.add_command(browse_waymo_dataset)
