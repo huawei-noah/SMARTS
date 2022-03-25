@@ -250,14 +250,13 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
     required=True,
 )
 def browse_waymo_dataset(tfrecords):
-    print(type(tfrecords))
     if not tfrecords:
         # nargs=-1 in combination with a default value is not supported
         # if tfrecords is not given, set the known tfrecord directory as default
         tfrecords = [os.path.join("scenarios", "waymo_motion", "waymo_data")]
 
     utility_path = os.path.join("scenarios", "waymo_motion", "waymo_utility")
-    subprocess_command = [sys.executable, utility_path] + tfrecords
+    subprocess_command = [sys.executable, utility_path] + list(tfrecords)
     click.echo(f"Executing {utility_path} with arguments {tfrecords}")
     subprocess.check_call(subprocess_command)
 
