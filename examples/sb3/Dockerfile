@@ -1,5 +1,5 @@
 # FROM tensorflow/tensorflow:2.4.0-gpu
-FROM stablebaselines/stable-baselines3
+FROM pytorch/pytorch:1.7.1-cuda11.0-cudnn8-runtime
 
 ARG DEBIAN_FRONTEND=noninteractive
 

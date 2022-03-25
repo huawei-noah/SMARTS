@@ -118,14 +118,14 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         save_path=config["logdir"] / "checkpoint",
         name_prefix="model",
     )
-    eval_callback = EvalCallback(
-        eval_env=eval_env,
-        n_eval_episodes=config["eval_eps"],
-        eval_freq=config["eval_freq"],
-        log_path=config["logdir"] / "eval",
-        best_model_save_path=config["logdir"] / "eval",
-        deterministic=True,
-    )
+    # eval_callback = EvalCallback(
+    #     eval_env=eval_env,
+    #     n_eval_episodes=config["eval_eps"],
+    #     eval_freq=config["eval_freq"],
+    #     log_path=config["logdir"] / "eval",
+    #     best_model_save_path=config["logdir"] / "eval",
+    #     deterministic=True,
+    # )
     # video_recorder_callback = sb3_callback.VideoRecorderCallback(
     #     env=eval_env,
     # )
@@ -143,7 +143,8 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         model.set_env(env)
         model.learn(
             total_timesteps=config["train_steps"],
-            callback=[checkpoint_callback, eval_callback],
+            # callback=[checkpoint_callback, eval_callback],
+            callback=[checkpoint_callback],
         )
     else:
         print("Start training from scratch.")
@@ -187,7 +188,8 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         print("\n\n")
         model.learn(
             total_timesteps=config["train_steps"],
-            callback=[checkpoint_callback, eval_callback],
+            # callback=[checkpoint_callback, eval_callback],
+            callback=[checkpoint_callback],
         )
 
     if config["mode"] == "train":
