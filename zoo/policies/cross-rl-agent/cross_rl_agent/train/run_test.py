@@ -39,8 +39,8 @@ from adapters import (
 from config import HyperParameters
 from soc_mt_ac_network import SocMtActorNetwork, SocMtCriticNetwork
 
-from smarts.core.agent import AgentSpec
 from smarts.core.utils.episodes import episodes
+from smarts.zoo.agent_spec import AgentSpec
 
 warnings.filterwarnings("ignore")
 

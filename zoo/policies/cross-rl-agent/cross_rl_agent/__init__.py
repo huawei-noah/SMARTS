@@ -23,7 +23,7 @@ import importlib.resources as pkg_resources
 
 import cross_rl_agent
 
-from smarts.core.agent import AgentSpec
+from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import register
 
 from .agent import RLAgent

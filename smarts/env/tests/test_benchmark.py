@@ -22,9 +22,9 @@
 import gym
 import pytest
 
-from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ActionSpaceType
+from smarts.zoo.agent_spec import AgentSpec
 
 
 @pytest.fixture(params=[5, 10])
