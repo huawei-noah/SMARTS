@@ -54,26 +54,10 @@ WEB_CLIENT_RUN_LOOPS = {}
 # Mapping of simulation ID to the Frames data store
 FRAMES = {}
 
-class AllowCORSMixinInterface(metaclass=abc.ABCMeta):
-    """Abstract Mixin Interface"""
-
-    @abc.abstractmethod
-    def set_header(self, *str):
-        """Setup the header"""
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def set_status(self, int):
-        """Setup the status"""
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def finish(self):
-        """Finish"""
-        raise NotImplementedError
-
-class AllowCORSMixin(AllowCORSMixinInterface):
+class AllowCORSMixin():
     """A mixin that adds CORS headers to the page."""
+
+    _HAS_DYNAMIC_ATTRIBUTES = True
 
     def set_default_headers(self):
         """Setup the default headers.
