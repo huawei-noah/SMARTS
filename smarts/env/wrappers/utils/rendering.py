@@ -105,7 +105,7 @@ def make_gif(frame_folder):
         gif_num += 1
 
 
-def show_notebook_videos(path="videos"):
+def show_notebook_videos(path="videos", height="400px", split_html=""):
     if not isnotebook():
         return
     from IPython import display as ipythondisplay
@@ -115,10 +115,10 @@ def show_notebook_videos(path="videos"):
         video_b64 = base64.b64encode(mp4.read_bytes())
         html.append(
             """<video alt="{}" autoplay
-                      loop controls style="height: 400px;">
+                      loop controls style="height: {};">
                       <source src="data:video/mp4;base64,{}" type="video/mp4" />
                  </video>""".format(
-                mp4, video_b64.decode("ascii")
+                mp4, height, video_b64.decode("ascii")
             )
         )
-    ipythondisplay.display(ipythondisplay.HTML(data="<br>".join(html)))
+    ipythondisplay.display(ipythondisplay.HTML(data=split_html.join(html)))
