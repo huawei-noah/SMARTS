@@ -606,11 +606,9 @@ def parse_tfrecords(tfrecord_path: str):
     if os.path.isdir(tfrecord_path):
         for f in os.listdir(tfrecord_path):
             if ".tfrecord" in f and os.path.isfile(os.path.join(tfrecord_path, f)):
-                scenarios_per_tfrecord[
-                    os.path.join(tfrecord_path, f)
-                ] = get_scenario_dict(os.path.join(tfrecord_path, f))
+                scenarios_per_tfrecord[os.path.join(tfrecord_path, f)] = None
     else:
-        scenarios_per_tfrecord[tfrecord_path] = get_scenario_dict(tfrecord_path)
+        scenarios_per_tfrecord[tfrecord_path] = None
     return scenarios_per_tfrecord
 
 
@@ -709,7 +707,7 @@ def check_index_validity(
                 )
             valid_indexes.append(idx)
 
-        except Exception:
+        except ValueError:
             print(
                 f"{valid_indexes} is Invalid index. Please input integers as index for the `{command_type}` command"
             )
@@ -768,6 +766,10 @@ def tfrecords_browser(tfrecord_path: str):
         user_input = raw_input.strip()
         if re.compile("^display[\s]+all$", flags=re.IGNORECASE).match(user_input):
             for tf_record in tf_records:
+                if scenarios_per_tfrecords[tf_record[1]] is None:
+                    scenarios_per_tfrecords[tf_record[1]] = get_scenario_dict(
+                        tf_record[1]
+                    )
                 display_scenarios_in_tfrecord(
                     tf_record[1], scenarios_per_tfrecords[tf_record[1]]
                 )
@@ -785,6 +787,8 @@ def tfrecords_browser(tfrecord_path: str):
                 continue
             for idx in valid_indexes:
                 tf_path = tf_records[idx - 1][1]
+                if scenarios_per_tfrecords[tf_path] is None:
+                    scenarios_per_tfrecords[tf_path] = get_scenario_dict(tf_path)
                 display_scenarios_in_tfrecord(tf_path, scenarios_per_tfrecords[tf_path])
                 print("\n")
             print_commands = True
@@ -797,6 +801,8 @@ def tfrecords_browser(tfrecord_path: str):
             if len(valid_indexes) == 0:
                 continue
             tf_path = tf_records[valid_indexes[0] - 1][1]
+            if scenarios_per_tfrecords[tf_path] is None:
+                scenarios_per_tfrecords[tf_path] = get_scenario_dict(tf_path)
             stop_browser = explore_tf_record(tf_path, scenarios_per_tfrecords[tf_path])
             if not stop_browser:
                 display_tf_records(tf_records)
@@ -1200,4 +1206,4 @@ if __name__ == "__main__":
     )
     parser.add_argument("file", help="TFRecord file/folder path")
     args = parser.parse_args()
-    tfrecords_browser(args.file)
+    tfrecords_browser(os.path.abspath(args.file))
