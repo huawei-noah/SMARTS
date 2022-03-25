@@ -36,7 +36,7 @@ class EpisodeLogger(gym.Wrapper):
 
     def step(self, action: Action) -> Tuple[Operation, float, bool, Dict[str, Any]]:
         """Mark a step for logging."""
-        
+
         step_vals = super().step(action)
         self._current_episode.record_step(*step_vals)
         return step_vals
