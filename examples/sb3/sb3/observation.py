@@ -54,9 +54,9 @@ def format_img(img: np.ndarray) -> np.ndarray:
     # Repaint ego
     clr = (122, 140, 153)
     repainted = img.copy()
-    repainted[123:132, 126:130, 0] = clr[0]
-    repainted[123:132, 126:130, 1] = clr[1]
-    repainted[123:132, 126:130, 2] = clr[2]
+    repainted[126:130, 127:129, 0] = clr[0]
+    repainted[126:130, 127:129, 1] = clr[1]
+    repainted[126:130, 127:129, 2] = clr[2]
 
     # RGB to grayscale
     R, G, B = repainted[:, :, 0], repainted[:, :, 1], repainted[:, :, 2]
@@ -69,11 +69,11 @@ def format_img(img: np.ndarray) -> np.ndarray:
     transposed = expanded.transpose(2, 0, 1)
 
     # Resize image to 64x64
-    resize = transposed[:, 96:160, 96:160]
+    resized = transposed[:, 96:160, 96:160]
 
-    # plotter(resize,1)
+    # plotter(resized,1)
 
-    return np.uint8(resize)
+    return np.uint8(resized)
 
 
 def plotter(obs: np.ndarray, rgb_gray=1, name: str = "Graph"):
