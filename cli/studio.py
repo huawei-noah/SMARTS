@@ -243,7 +243,7 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
     help="Browse Waymo TfRecord datasets using a Text based Browser Utility",
 )
 @click.argument(
-    "tfrecord_paths",
+    "tfrecords",
     type=click.Path(exists=True),
     metavar="<script>",
     nargs=-1,
