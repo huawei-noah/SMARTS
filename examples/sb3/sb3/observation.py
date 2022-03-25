@@ -33,6 +33,9 @@ class Observation(gym.Wrapper):
         converted = format_img(obs.rgb)
         stacked = self._stack_obs(converted)
 
+        # if dones:
+        #     plotter(stacked,1)
+
         return stacked, rewards, dones, infos
 
     def reset(self):
