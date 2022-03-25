@@ -601,14 +601,16 @@ def get_scenario_dict(tfrecord_file: str):
     return scenario_dict
 
 
-def parse_tfrecords(tfrecord_path: str):
+def parse_tfrecords(tfrecord_paths: List[str]):
     scenarios_per_tfrecord = {}
-    if os.path.isdir(tfrecord_path):
-        for f in os.listdir(tfrecord_path):
-            if ".tfrecord" in f and os.path.isfile(os.path.join(tfrecord_path, f)):
-                scenarios_per_tfrecord[os.path.join(tfrecord_path, f)] = None
-    else:
-        scenarios_per_tfrecord[tfrecord_path] = None
+    for tfrecord_path in tfrecord_paths:
+        if os.path.isdir(tfrecord_path):
+            for root, dirs, files in os.walk(tfrecord_path):
+                for file in files:
+                    if ".tfrecord" in file:
+                        scenarios_per_tfrecord[os.path.join(root, file)] = None
+        else:
+            scenarios_per_tfrecord[tfrecord_path] = None
     return scenarios_per_tfrecord
 
 
@@ -730,8 +732,8 @@ def check_path_validity(target_base_path: str) -> bool:
     return True
 
 
-def tfrecords_browser(tfrecord_path: str):
-    scenarios_per_tfrecords = parse_tfrecords(tfrecord_path)
+def tfrecords_browser(tfrecord_paths: List[str]):
+    scenarios_per_tfrecords = parse_tfrecords(tfrecord_paths)
     tf_records = []
     tf_counter = 1
     for tf in scenarios_per_tfrecords:
@@ -1204,6 +1206,21 @@ if __name__ == "__main__":
         prog="waymo_utility.py",
         description="Text based TfRecords Browser.",
     )
-    parser.add_argument("file", help="TFRecord file/folder path")
+    parser.add_argument("files",
+                        help="A list of TFRecord file/folder paths. Each element can be either the path to "
+                             "tfrecord file or a directory of tfrecord files to browse from.",
+                        type=str,
+                        nargs="+",
+                        )
     args = parser.parse_args()
-    tfrecords_browser(os.path.abspath(args.file))
+    valid_tf_paths = []
+    for tf_path in args.files:
+        if not os.path.exists(os.path.abspath(tf_path)):
+            print(f"Path {args.file} does not exist and hence wont be browsed.\n"
+                  f"Please make sure path passed is valid and it exists.")
+        else:
+            valid_tf_paths.append(os.path.abspath(tf_path))
+    if not valid_tf_paths:
+        print("No valid paths passed. Make sure all paths passed exist and are valid.")
+    else:
+        tfrecords_browser(valid_tf_paths)
