@@ -253,7 +253,7 @@ def browse_waymo_dataset(tfrecords):
     print(type(tfrecords))
     if not tfrecords:
         # nargs=-1 in combination with a default value is not supported
-        # if agent_paths is not given, set the known tfrecord directory as default
+        # if tfrecords is not given, set the known tfrecord directory as default
         tfrecords = [os.path.join("scenarios", "waymo_motion", "waymo_data")]
 
     utility_path = os.path.join("scenarios", "waymo_motion", "waymo_utility")
