@@ -86,15 +86,15 @@ class AgentCameraRGBRender(gym.Wrapper):
             return
         if isinstance(obs, Observation):
             obs = {"default_agent": obs}
-        values = vis_sim_obs(obs).values()
-        images = np.stack(values, axis=0)[0]
-
-        if len(images.shape) == 0:
-            return
-        largest_image = max(images, key=lambda im: np.product(im.shape))
-
-        image = np.array([np.resize(im, largest_image.shape) for im in images])
+        values = list(vis_sim_obs(obs).values())
+        largest_image = max(values, key=lambda im: np.product(im.shape))
+        image = np.array([np.resize(im, largest_image.shape) for im in values])
         if len(image.shape) > 2:
             self._image_frame = np.reshape(
-                image, (image.shape[0] * image.shape[2], *image.shape[2:])
+                image,
+                (
+                    image.shape[0] * image.shape[2],
+                    image.shape[1] * image.shape[3],
+                    image.shape[4],
+                ),
             )
