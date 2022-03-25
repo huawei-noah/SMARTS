@@ -22,13 +22,11 @@ import gym
 import os
 from typing import Any, Dict, Tuple
 
+import numpy as np
+
 from smarts.core.sensors import Observation
 from smarts.core.utils.file import smarts_log_dir
-from smarts.env.wrappers.utils.rendering import (
-    make_gif,
-    write_image,
-    show_notebook_videos,
-)
+from smarts.env.wrappers.utils.rendering import vis_sim_obs
 
 Action = Any
 Operation = Any
@@ -36,56 +34,67 @@ Operation = Any
 default_log_dir = smarts_log_dir()
 
 
-class RecordVideo(gym.Wrapper):
-    """Wraps the environment with a video record of agent camera observations."""
+class AgentCameraRGBRender(gym.Wrapper):
+    """Wraps the environment with `rgb_array` render mode capabilities."""
 
-    def __init__(
-        self,
-        env: gym.Env,
-        frequency: int,
-        name: str,
-        render: bool = True,
-        frame_directory: str = default_log_dir,
-    ):
-        super(RecordVideo, self).__init__(env)
-        self._frequency: int = max(frequency, 1)
-        self._current_step: int = 0
-        self._frame_directory = frame_directory
-        self._name = name
-        self._render = render
-        self._recording_dir = os.path.join(self._frame_directory, self._name)
+    def __init__(self, env: gym.Env, max_agents: int = 1, enabled=True):
+        super().__init__(env)
+        self.env.metadata["render.modes"] = set(self.env.metadata["render.modes"]) | {
+            "rgb_array"
+        }
+        super(AgentCameraRGBRender, self).__init__(env)
+        self._max_agents = max_agents
+        self._current_agents = {}
+        self._enabled = enabled
+        self._image_frame = []
+        self.is_vector_env = getattr(env, "is_vector_env", False)
 
     def step(self, action: Action) -> Tuple[Operation, float, bool, Dict[str, Any]]:
         """Record a step."""
-        
+
         obs, rewards, dones, infos = super().step(action)
-        if self._current_step % self._frequency == 0:
-            obs_dict = obs
-            if isinstance(obs, Observation):
-                obs_dict = {"default_agent": obs}
-            write_image(obs_dict, self._recording_dir, self._current_step)
-        self._current_step += 1
+
+        single_env_obs = obs
+        if self.is_vector_env:
+            # For now only render one environment
+            single_env_obs = obs[0]
+
+        self._record_for_render(single_env_obs)
 
         return (obs, rewards, dones, infos)
 
+    def render(self, mode="rgb_array", **kwargs):
+        super().render(mode, **kwargs)
+
+        if mode == "rgb_array" and len(self._image_frame) > 0:
+            return self._image_frame
+
     def reset(self) -> Any:
         """Record the reset of the environment."""
-        
+
         try:
             os.mkdir(self._recording_dir)
         except:
             pass
         obs = super().reset()
-        obs_dict = obs
-        if isinstance(obs, Observation):
-            obs_dict = {"default_agent": obs}
-        write_image(obs_dict, self._recording_dir, self._current_step)
+        self._record_for_render(obs)
+        self._current_agents = set()
         return obs
 
-    def close(self):
-        """Write out video. Shows the videos if running in a notebook."""
-        
-        if self._render:
-            make_gif(self._recording_dir)
-            show_notebook_videos(self._recording_dir)
-        return super().close()
+    def _record_for_render(self, obs) -> Any:
+        if not self._enabled:
+            return
+        if isinstance(obs, Observation):
+            obs = {"default_agent": obs}
+        values = vis_sim_obs(obs).values()
+        images = np.stack(values, axis=0)[0]
+
+        if len(images.shape) == 0:
+            return
+        largest_image = max(images, key=lambda im: np.product(im.shape))
+
+        image = np.array([np.resize(im, largest_image.shape) for im in images])
+        if len(image.shape) > 2:
+            self._image_frame = np.reshape(
+                image, (image.shape[0] * image.shape[2], *image.shape[2:])
+            )
