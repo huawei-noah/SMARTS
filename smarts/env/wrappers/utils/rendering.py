@@ -17,7 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import base64
 import glob
+from typing import Dict
 import cv2
 import numpy as np
 from pathlib import Path
@@ -43,7 +45,7 @@ def flatten_obs(sim_obs):
     return obs
 
 
-def vis_sim_obs(sim_obs):
+def vis_sim_obs(sim_obs) -> Dict[str, np.ndarray]:
     vis_images = defaultdict(list)
 
     for agent_id, agent_obs in flatten_obs(sim_obs):
@@ -52,7 +54,7 @@ def vis_sim_obs(sim_obs):
         if drivable_area is not None:
             image = drivable_area.data
             # image = image.transpose(2, 0, 1)
-            image = image.astype(np.float32)
+            image = image.astype(np.uint8)
             vis_images[f"{agent_id}-DrivableAreaGridMap"].append(image)
 
         ogm = getattr(agent_obs, "occupancy_grid_map", None)
@@ -61,13 +63,14 @@ def vis_sim_obs(sim_obs):
             image = image.reshape(image.shape[0], image.shape[1])
             image = np.expand_dims(image, axis=0)
             image = (image.astype(np.float32) / 100) * 255
+            image = image.astype(np.uint8)
             vis_images[f"{agent_id}-OGM"].append(image)
 
         rgb = getattr(agent_obs, "top_down_rgb", None)
         if rgb is not None:
             image = rgb.data
             # image = image.transpose(2, 0, 1)
-            image = image.astype(np.float32)
+            image = image.astype(np.uint8)
             vis_images[f"{agent_id}-Top-Down-RGB"].append(image)
 
     return vis_images
@@ -110,6 +113,15 @@ def show_notebook_videos(path="videos"):
         return
     from IPython import display as ipythondisplay
 
-    for gif in Path(path).glob("*.gif"):
-        with open(gif, "rb") as f:
-            display(ipythondisplay.Image(data=f.read(), format="png"))
+    html = []
+    for mp4 in Path(path).glob("*.mp4"):
+        video_b64 = base64.b64encode(mp4.read_bytes())
+        html.append(
+            """<video alt="{}" autoplay
+                      loop controls style="height: 400px;">
+                      <source src="data:video/mp4;base64,{}" type="video/mp4" />
+                 </video>""".format(
+                mp4, video_b64.decode("ascii")
+            )
+        )
+    ipythondisplay.display(ipythondisplay.HTML(data="<br>".join(html)))
