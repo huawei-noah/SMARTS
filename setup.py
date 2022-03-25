@@ -13,7 +13,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.5.1",
+    version="0.5.1.post1",
     packages=find_packages(exclude=("tests", "examples")),
     include_package_data=True,
     zip_safe=True,
@@ -31,11 +31,10 @@ setup(
         "pandas>=1.3.4",
         "psutil>=5.8.0",
         "pybullet==3.0.6",
-        "rich>=10.13.0",
-        "rtree>=0.9.7",  # Used by sumolib
+        "rich>=11.2.0",
+        "Rtree>=0.9.7",
         "sh>=1.14.2",
-        "shapely>=1.8.0",
-        "scikit-learn>=1.0.1",  # KDTree from scikit-learn is used by sumo lanepoints
+        "shapely>=1.8.1",
         "tableprint>=0.9.1",
         "trimesh==3.9.29",  # Used for writing .glb files
         "visdom>=0.1.8.9",
@@ -50,7 +49,6 @@ setup(
         "ijson>=3.1.4",
         # The following are for the /smarts/algorithms
         "matplotlib>=3.4.3",
-        "scikit-image>=0.18.3",
         # The following are for /smarts/zoo and remote agents
         "grpcio==1.32.0",
         "protobuf>=3.19.1",
@@ -73,6 +71,11 @@ setup(
             "sphinxcontrib-apidoc>=0.3.0",
         ],
         "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
+        "rllib": [
+            "opencv-python==4.1.2.30",
+            "opencv-python-headless==4.1.2.30",
+            "ray[rllib]==1.0.1.post1",
+        ],
         "ros": ["catkin_pkg", "rospkg"],
         "test": [
             # The following are for testing
@@ -84,16 +87,14 @@ setup(
             "pytest-notebook>=0.7.0",
             "pytest-xdist>=2.4.0",
         ],
-        "train": [
-            "opencv-python==4.1.2.30",
-            "opencv-python-headless==4.1.2.30",
-            "ray[rllib]==1.0.1.post1",
-            "tensorflow>=2.4.0",
+        "torch": [
             "torch==1.4.0",
             "torchvision==0.5.0",
         ],
-        "waymo": ["waymo-open-dataset-tf-2-4-0",
-                  "tabulate==0.8.9"],
+        "train": [
+            "tensorflow>=2.4.0",
+        ],
+        "waymo": ["waymo-open-dataset-tf-2-4-0"],
         "opendrive": ["opendrive2lanelet>=1.2.1"],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},

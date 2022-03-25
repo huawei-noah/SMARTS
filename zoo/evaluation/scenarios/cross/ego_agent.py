@@ -1,6 +1,6 @@
-from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface
 from smarts.core.utils.episodes import episodes
+from smarts.zoo.agent_spec import AgentSpec
 from zoo.policies.non_interactive_agent import NonInteractiveAgent
 
 AGENT_ID = "Agent-007"

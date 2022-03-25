@@ -14,7 +14,8 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 import gym
 
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, Agent
+from smarts.core.agent import Agent
+from smarts.zoo.agent_spec import AgentSpec
 
 class SimpleAgent(Agent):
     def act(self, obs):

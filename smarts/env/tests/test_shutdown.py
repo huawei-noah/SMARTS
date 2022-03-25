@@ -24,9 +24,10 @@ from unittest import mock
 import gym
 import pytest
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.smarts import SMARTSNotSetupError
+from smarts.zoo.agent_spec import AgentSpec
 
 AGENT_ID = "AGENT-007"
 

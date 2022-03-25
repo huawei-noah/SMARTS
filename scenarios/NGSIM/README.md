@@ -9,7 +9,7 @@ SMARTS assumes that the data will be in tab-separated files.
 Its import scripts were tested on and work with the data downloaded from [here](http://bit.ly/PPUU-data),
 which is the same as was used by this [PPUU project](https://github.com/Atcold/pytorch-PPUU).
 
-After the dataset has been downloaded, you will need to update each of the `.yaml` files
+After the dataset has been downloaded, you will need to update each of the `.yml` files
 in the scenario folders to point the `input_path` field to its location on your filesystem.
 
 Once that is done, you should be able to build your scenarios in the normal way, for example:
@@ -17,7 +17,7 @@ Once that is done, you should be able to build your scenarios in the normal way,
 scl scenario build-all --clean scenarios/NGSIM
 ```
 
-For each traffic history `.yaml` file specified in your `scenario.py`, 
+For each traffic history `.yml` file specified in your `scenario.py`, 
 this will creates a cooresponding `.shf` file that SMARTS will use
 whenever this traffic will be added to a simulation.
 
