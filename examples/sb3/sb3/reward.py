@@ -19,10 +19,15 @@ class Reward(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         wrapped_reward = self._reward(obs, reward)
 
-        if obs.events["reached_goal"]:
-            print(f"***** Vehicle reached goal.")
-        if obs.events["reached_max_episode_steps"]:
-            print(f"##### Vehicle reached max episode steps.")
+        if done:
+            if obs.events["reached_goal"]:
+                print(f"***** Vehicle reached goal.")
+            elif obs.events["reached_max_episode_steps"]:
+                print(f"##### Vehicle reached max episode steps.")
+            elif obs.events["off_road"] | obs.events["on_shoulder"] | obs.events["collisions"] | obs.events["off_route"]:
+                pass
+            else:
+                raise Exception("Episode ended for unknown reason.")
 
         return obs, wrapped_reward, done, info
 

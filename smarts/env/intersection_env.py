@@ -112,7 +112,7 @@ def intersection_env(
         agents_alive=None,
     )
     max_episode_steps = 3000
-    img_meters = 100
+    img_meters = 256
     img_pixels = 256
     agent_specs = {
         "LeftTurnAgent": AgentSpec(
