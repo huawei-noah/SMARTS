@@ -50,7 +50,7 @@ setup(
         # The following are for the /smarts/algorithms
         "matplotlib>=3.2.2",
         # The following are for /smarts/zoo and remote agents
-        "grpcio==1.32.0",
+        "grpcio==1.32.0,<=1.44.0",
         "protobuf>=3.17.3",
         "PyYAML>=3.13",
         "twisted>=21.7.0",
@@ -74,9 +74,7 @@ setup(
             "sphinxcontrib-apidoc>=0.3.0",
         ],
         "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
-        "colab": [
-            "grpcio>=1.32.0"
-        ],
+        "colab": ["grpcio>=1.32.0"],
         "rllib": [
             "opencv-python==4.1.2.30",
             "opencv-python-headless==4.1.2.30",
