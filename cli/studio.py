@@ -22,8 +22,8 @@ import os
 import subprocess
 import sys
 from multiprocessing import Process, Semaphore
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from threading import Thread
 from typing import Sequence
 
 import click
@@ -229,7 +229,7 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
             f"timestep={timestep}s"
         )
 
-        with multiprocessing.pool.ThreadPool(len(jsonl_paths)) as pool:
+        with ThreadPool(len(jsonl_paths)) as pool:
             pool.starmap(
                 Envision.read_and_send,
                 [(jsonl, endpoint, timestep) for jsonl in jsonl_paths],

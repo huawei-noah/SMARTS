@@ -32,7 +32,6 @@ import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from scipy.spatial.distance import euclidean
-from skimage.transform import resize
 
 import ultra.utils.geometry as geometry
 
@@ -145,9 +144,7 @@ def copy_source_code(srcs, dst):
 
 
 def resize_im(im, size):
-    im = (resize(im, size, anti_aliasing=True, mode="constant") * 255.0).astype(
-        np.uint8
-    )
+    im = (cv2.resize(im, size) * 255.0).astype(np.uint8)
     return im
 
 
