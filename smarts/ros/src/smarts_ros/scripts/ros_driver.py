@@ -29,8 +29,8 @@ from threading import Lock
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
-import rospy  
-from smarts_ros.msg import (  
+import rospy
+from smarts_ros.msg import (
     AgentReport,
     AgentSpec,
     AgentsStamped,
@@ -38,11 +38,7 @@ from smarts_ros.msg import (
     EntityState,
     SmartsReset,
 )
-from smarts_ros.srv import (
-    SmartsInfo,
-    SmartsInfoRequest,
-    SmartsInfoResponse,
-)
+from smarts_ros.srv import SmartsInfo, SmartsInfoRequest, SmartsInfoResponse
 
 from envision.client import Client as Envision
 from smarts.core.coordinates import Dimensions, Heading, Pose
