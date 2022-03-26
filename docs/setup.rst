@@ -26,8 +26,11 @@ To setup the simulator, which is called SMARTS, run the following commands,
     # upgrade pip, a recent version of pip is needed for the version of tensorflow we depend on
     pip install --upgrade pip
 
+    # Recommended: install [remote-agent] version of python package that enables social agents.
+    pip install -e .[remote-agent]
+
     # install [train] version of python package with the rllib dependencies
-    pip install -e .[train]
+    pip install -e .[train,rllib]
 
     # OPTIONAL: install [camera-obs] version of python package with the panda3D dependencies if you want to render camera sensor observations in your simulations
     pip install -e .[camera-obs]

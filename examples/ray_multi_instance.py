@@ -7,7 +7,7 @@ import psutil
 import torch
 
 # ray[rllib] is not the part of main dependency of the SMARTS package. It needs to be installed separately
-# as a part of the smarts[train] dependency using the command "pip install -e .[train]. The following try block checks
+# as a part of the smarts[train] dependency using the command "pip install -e .[train,torch,rllib]. The following try block checks
 # whether ray[rllib] was installed by user and raises an Exception warning the user to install it if not so.
 try:
     import ray

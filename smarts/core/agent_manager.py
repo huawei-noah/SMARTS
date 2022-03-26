@@ -20,6 +20,7 @@
 
 import logging
 from typing import Any, Dict, Set, Tuple
+import warnings
 
 import cloudpickle
 
@@ -32,6 +33,8 @@ from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState
 from smarts.zoo.registry import make as make_social_agent
+
+warnings.simplefilter("once")
 
 
 class AgentManager:
@@ -115,6 +118,23 @@ class AgentManager:
     def active_agents(self) -> Set[str]:
         """A list of all active agents in the simulation (agents that have a vehicle.)"""
         return self.agent_ids - self.pending_agent_ids
+
+    @property
+    def remote_agent_buffer(self):
+        if not self._remote_agent_buffer:
+            try:
+                from smarts.core.remote_agent_buffer import RemoteAgentBuffer
+
+                self._remote_agent_buffer = RemoteAgentBuffer(
+                    zoo_manager_addrs=self._zoo_addrs
+                )
+            except ImportError:
+                from smarts.core.utils.custom_exceptions import RemoteAgentException
+
+                warnings.warn(
+                    str(RemoteAgentException.required_to("to use social agents"))
+                )
+        return self._remote_agent_buffer
 
     def is_ego(self, agent_id) -> bool:
         """Test if the agent is an ego agent."""
@@ -383,18 +403,11 @@ class AgentManager:
     def setup_social_agents(self, sim):
         """Initialize all social agents."""
         social_agents = sim.scenario.social_agents
-        if social_agents:
-            if not self._remote_agent_buffer:
-                from smarts.core.remote_agent_buffer import RemoteAgentBuffer
-
-                self._remote_agent_buffer = RemoteAgentBuffer(
-                    zoo_manager_addrs=self._zoo_addrs
-                )
-        else:
+        if not social_agents or not self.remote_agent_buffer:
             return
 
         self._remote_social_agents = {
-            agent_id: self._remote_agent_buffer.acquire_remote_agent()
+            agent_id: self.remote_agent_buffer.acquire_remote_agent()
             for agent_id in social_agents
         }
 
@@ -504,13 +517,9 @@ class AgentManager:
 
     def start_social_agent(self, agent_id, social_agent, agent_model):
         """Starts a managed social agent."""
-        if not self._remote_agent_buffer:
-            from smarts.core.remote_agent_buffer import RemoteAgentBuffer
-
-            self._remote_agent_buffer = RemoteAgentBuffer(
-                zoo_manager_addrs=self._zoo_addrs
-            )
-        remote_agent = self._remote_agent_buffer.acquire_remote_agent()
+        if not self.remote_agent_buffer:
+            return
+        remote_agent = self.remote_agent_buffer.acquire_remote_agent()
         remote_agent.start(social_agent)
         self._remote_social_agents[agent_id] = remote_agent
         self._agent_interfaces[agent_id] = social_agent.interface

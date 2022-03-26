@@ -53,7 +53,9 @@ setup(
         "grpcio==1.32.0,<=1.44.0",
         "protobuf>=3.17.3",
         "PyYAML>=3.13",
-        "twisted>=21.7.0",
+        # "twisted>=21.7.0",
+        # 3.7 compatibility
+        "typing_extensions",
     ],
     extras_require={
         "opendrive": [
@@ -74,13 +76,16 @@ setup(
             "sphinxcontrib-apidoc>=0.3.0",
         ],
         "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
-        "colab": ["grpcio>=1.32.0"],
+        "remote-agent": [
+            "grpcio==1.32.0",
+            "protobuf>=3.17.3",
+        ],
         "rllib": [
             "opencv-python==4.1.2.30",
             "opencv-python-headless==4.1.2.30",
             "ray[rllib]==1.0.1.post1",
         ],
-        "ros": ["catkin_pkg", "rospkg"],
+        "ros": ["catkin_pkg", "rospkg", "pyyaml==5.4.1"],
         "test": [
             # The following are for testing
             "pytest>=6.2.5",

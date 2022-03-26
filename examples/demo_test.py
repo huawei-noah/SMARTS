@@ -13,7 +13,6 @@ from smarts.env.wrappers.record import AgentCameraRGBRender
 from smarts.core.utils.episodes import episode_range
 from smarts.env.wrappers.record_video import RecordVideo
 
-
 if __name__ == "__main__":
     # FormatObs should already be applied
     env = gym.make("figure_eight-v0")

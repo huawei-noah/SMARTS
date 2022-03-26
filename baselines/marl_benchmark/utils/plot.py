@@ -51,7 +51,7 @@ def radar_plots(values, labels, features, title):
     plt.show()
 
 
-if __name__ == "__main":
+if __name__ == "__main__":
     radar_plots(
         values=np.random.randn(5, 5),
         labels=["PPO", "DQN", "MADDPG", "A2C", "DPG"],

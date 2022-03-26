@@ -26,5 +26,16 @@ class RendererException(Exception):
     def required_to(cls, thing: str) -> "RendererException":
         """Generate a `RenderException` requiring a render to do `thing`."""
         return cls(
-            f"""A renderer is required to {thing}. You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. Install them first using the command `pip install -e .[camera-obs]` at the source directory."""
+            f"""A renderer is required to {thing}. You may not have installed the [camera-obs] dependencies required to render the camera sensor observations. Install them first using the command `pip install -e .[camera-obs]` in the environment."""
+        )
+
+
+class RemoteAgentException(Exception):
+    """An exception for if a remote agent is required but not available."""
+
+    @classmethod
+    def required_to(cls, thing: str) -> "RemoteAgentException":
+        """Generate a `RemoteAgentException` requiring a render to do `thing`."""
+        return cls(
+            f"""A renderer is required to {thing}. You may not have installed the [remote-agent] dependencies required to use social agents. Install them first using the command `pip install -e .[remote-agent]` in the environment."""
         )

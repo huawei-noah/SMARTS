@@ -26,7 +26,7 @@ import numpy as np
 import psutil
 import pytest
 
-# Make sure to install rllib dependencies using the command "pip install -e .[test]" before running the test
+# Make sure to install rllib dependencies using the command "pip install -e .[test,train,rllib]" before running the test
 import ray
 from ray import tune
 from ray.rllib.models import ModelCatalog

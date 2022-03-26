@@ -529,6 +529,8 @@ class BubbleManager:
             agent_id = BubbleManager._make_social_agent_id(vehicle_id)
 
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
+        if not agent_interface:
+            return
         vehicle = sim.vehicle_index.switch_control_to_agent(
             sim,
             vehicle_id,

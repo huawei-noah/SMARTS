@@ -96,7 +96,8 @@ source .venv/bin/activate
 # Upgrade pip.
 pip install --upgrade pip
 
-# Install smarts with extras as needed. Extras include the following: 
+# Install smarts with extras as needed. Extras include the following:
+# `remote-agent` - needed for using social agents.
 # `camera-obs` - needed for rendering camera sensor observations, and for testing.
 # `test` - needed for testing.
 # `train` - needed for RL training and testing.
