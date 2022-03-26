@@ -149,29 +149,13 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     else:
         print("Start training from scratch.")
         policy_kwargs = dict(
-            features_extractor_class=sb3_policy.CustomCNN,
+            features_extractor_class=sb3_policy.CFEDreamer,
             features_extractor_kwargs=dict(features_dim=512),
             # activation_fn=th.nn.ReLU,
             # activation_fn=th.nn.Tanh, # default activation used
             # net_arch=[128, dict(pi=[32, 32], vf=[32, 32])],
             net_arch=[],
         )
-        """
-        The default `CnnPolicy` feature extractor used is as follows:
-
-        cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
-            nn.ReLU(),
-            nn.Flatten(),
-        )
-        features_dim = 512
-        linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
-        features_extractor=linear(cnn(observations))
-        """
         model = PPO(
             "CnnPolicy",
             env,
