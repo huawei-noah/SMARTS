@@ -40,7 +40,6 @@ from smarts.core.plan import (
     PositionalGoal,
     Start,
     TraverseGoal,
-    VehicleSpec,
     Via,
     default_entry_tactic,
 )
@@ -52,6 +51,7 @@ from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import MapSpec
 from smarts.sstudio.types import Via as SSVia
+from smarts.sstudio.types import VehicleSpec
 
 
 class Scenario:
@@ -689,7 +689,6 @@ class Scenario:
                 road_map,
             )
             goal = PositionalGoal(position, radius=2)
-
             return Mission(
                 start=start,
                 route_vias=mission.route.via,
@@ -697,6 +696,7 @@ class Scenario:
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
                 via=to_scenario_via(mission.via, road_map),
+                vehicle_spec=mission.vehicle_spec,
             )
         elif isinstance(mission, sstudio_types.EndlessMission):
             position, heading = to_position_and_heading(
@@ -711,6 +711,7 @@ class Scenario:
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
                 via=to_scenario_via(mission.via, road_map),
+                vehicle_spec=mission.vehicle_spec,
             )
         elif isinstance(mission, sstudio_types.LapMission):
             start_road_id, start_lane, start_road_offset = mission.route.begin
