@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<net version="1.9" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="0.00,0.00" convBoundary="0.00,-0.15,310.92,25.02" origBoundary="-10000000000.00,-10000000000.00,10000000000.00,10000000000.00" projParameter="!"/>
+
+    <edge id="gneE05a" from="gneJ00a" to="gneJ05" priority="-1">
+        <lane id="gneE05a_0" index="0" speed="13.89" acceleration="true" length="180.072" width="4.25" shape="0.00,-1.98 20.75,-1.75 49.11,-1.34 85.43,-0.53 132.38,1.40 165.10,2.52 180.00,2.57"/>
+    </edge>
+    <edge id="gneE05b" from="gneJ00b" to="gneJ05" priority="-1">
+        <lane id="gneE05b_0" index="0" speed="13.89" length="180.00" width="7.4738" shape="0.00,2.87 180.00,2.86"/>
+    </edge>
+
+    <edge id="gneE51" from="gneJ05" to="gneJ10b" priority="-1">
+      <lane id="gneE51_0" index="0" speed="13.89" length="130.91" width="6.21" shape="180.00,3.50 310.92,3.49"/> 
+    </edge>
+
+    <edge id="gneE01" from="gneJ00" to="gneJ10" priority="-1">
+        <lane id="gneE01_0" index="0" speed="13.89" length="310.92" width="3.6576" shape="0.00,8.43 310.92,8.41"/>
+        <lane id="gneE01_1" index="1" speed="13.89" length="310.92" width="3.6576" shape="0.00,12.12 310.92,12.10"/>
+        <lane id="gneE01_2" index="2" speed="13.89" length="310.92" width="3.6576" shape="0.00,15.81 310.92,15.79"/>
+        <lane id="gneE01_3" index="3" speed="13.89" length="310.92" width="3.6576" shape="0.00,19.50 310.92,19.48"/>
+        <lane id="gneE01_4" index="4" speed="13.89" length="310.92" width="3.6576" shape="0.00,23.19 310.92,23.17"/>
+    </edge>
+
+    <junction id="gneJ00" type="dead_end" x="0.00" y="23.20" incLanes="" intLanes="" shape="0.00,25.02 0.00,6.58"/>
+    <junction id="gneJ00a" type="dead_end" x="0.00" y="4.00" incLanes="" intLanes="" shape="0.00,4.00 0.00,-0.15"/>
+    <junction id="gneJ00b" type="dead_end" x="0.00" y="3.49" incLanes="" intLanes="" shape="0.00,3.49 0.00,0.385"/>
+    <junction id="gneJ10" type="dead_end" x="310.92" y="34.76" incLanes="gneE01_0 gneE01_1 gneE01_2 gneE01_3 gneE01_4" intLanes="" shape="310.92,8.41 310.92,23.20"/>
+    <junction id="gneJ10b" type="dead_end" x="310.92" y="15.3875" incLanes="gneE51_0" intLanes="" shape="310.92,-1.50 310.92,4.74"/>
+    <junction id="gneJ05" type="zipper" x="180.00" y="4.73" incLanes="gneE05a_0 gneE05b_0" intLanes="" shape="180.00,-2.7438 180.00,4.73">
+        <request index="0" response="10" foes="10" cont="0"/>
+        <request index="1" response="01" foes="01" cont="0"/>
+    </junction>
+
+</net>

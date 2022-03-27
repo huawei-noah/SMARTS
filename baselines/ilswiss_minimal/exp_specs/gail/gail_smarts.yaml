@@ -1,0 +1,91 @@
+meta_data:
+  script_path: run_scripts/adv_irl_exp_script.py
+  exp_name: gail_smarts_ngsim
+  description: Train an adversarial IRL model
+  num_workers: 1 # 64
+  using_gpus: true
+# -----------------------------------------------------------------------------
+variables:
+  adv_irl_params:
+    grad_pen_weight: [4.0] # [0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0]
+  sac_params:
+    reward_scale: [2.0] # [0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0]
+  seed: [0]
+
+# -----------------------------------------------------------------------------
+constants:
+  expert_name: 'smarts_i80'
+  expert_idx: 0
+  traj_num: -1
+  scale_env_with_demo_stats: true
+
+  disc_num_blocks: 2
+  disc_hid_dim: 128
+  disc_hid_act: tanh
+  disc_use_bn: false
+  disc_clamp_magnitude: 10.0
+
+  policy_net_size: 256
+  policy_num_hidden_layers: 2
+
+  adv_irl_params:
+    mode: 'gail'
+    state_only: false
+
+    num_epochs: 100
+    num_steps_per_epoch: 500000
+    num_steps_between_train_calls: 1000
+    max_path_length: 1000
+    min_steps_before_training: 5000
+
+    eval_deterministic: true
+
+    replay_buffer_size: 2000000
+    expert_buffer_size: 1000000
+    no_terminal: false
+    eval_no_terminal: false
+
+    num_update_loops_per_train_call: 100
+    num_disc_updates_per_loop_iter: 1
+    num_policy_updates_per_loop_iter: 1
+
+    disc_lr: 0.0003
+    disc_momentum: 0.9
+    use_grad_pen: true
+    disc_optim_batch_size: 256
+    policy_optim_batch_size: 256
+    policy_optim_batch_size_from_expert: 0
+
+    save_best: true
+    save_epoch: false
+    freq_saving: 20
+    save_replay_buffer: false
+    save_environment: false
+    save_algorithm: false
+
+  sac_params:
+    alpha: 1.0
+    discount: 0.99
+    soft_target_tau: 0.005
+    beta_1: 0.25
+    policy_lr: 0.0003
+    qf_lr: 0.0003
+    vf_lr: 0.0003
+    policy_mean_reg_weight: 0.001
+    policy_std_reg_weight: 0.001
+
+  env_specs:
+    env_creator: "smarts"
+    scenario_name: "NGSIM-I80"
+    env_kwargs:
+      neighbor_mode: "LANE"
+    training_env_specs:
+      env_num: 20
+      wait_num: 20
+      auto_reset: True
+      seed: 24491
+    eval_env_specs:
+      env_num: 20
+      wait_num: 20
+      auto_reset: True
+      seed: 24492

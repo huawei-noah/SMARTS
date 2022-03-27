@@ -1,0 +1,59 @@
+meta_data:
+  script_path: run_scripts/bc_exp_script.py # This assign the running script file
+  exp_name: test_bc_smarts_ngsim # This decides the name of the log dir
+  description: Train a Behavioural Cloning model # Just an annotation
+  num_workers: 1 # This decides how many sub-process will be run at the same time, the extra progress will fail after the resources of the machine are all occupied
+  using_gpus: true # Whether to use GPU
+# -----------------------------------------------------------------------------
+variables: # If you want to do grid search, take the constant variables to here and write down the grid value in a list, the run_experiment.py will split every combination of these varibles into small yaml files
+  seed: [0]
+
+# -----------------------------------------------------------------------------
+constants: # These are constant hyperparameters without tunning, and the name is defined by your algorithm, however there are many common hyperparameters
+  expert_name: 'smarts_ngsim'
+  expert_idx: 0
+  traj_num: -1
+  scale_env_with_demo_stats: true
+
+  policy_net_size: 256
+  policy_num_hidden_layers: 2
+
+  bc_params:
+    mode: 'MSE'
+
+    num_epochs: 200 # Running epoch 
+    num_steps_per_epoch: 100 # Sample steps per epoch (actually BC do not need sample)
+    num_steps_between_train_calls: 1 # How frequency to train the algorithm 
+    max_path_length: 1000 # The sample length in a episode
+    min_steps_before_training: 0 # Just as it names
+
+    eval_deterministic: true
+
+    replay_buffer_size: 2000000
+    expert_buffer_size: 1000000
+    no_terminal: false
+    eval_no_terminal: false
+
+    num_updates_per_train_call: 100
+    lr: 0.0003
+    momentum: 0.9
+    batch_size: 1024
+
+    save_best: true
+    save_best_starting_from_epoch: 0
+
+    freq_saving: 20
+    save_replay_buffer: false
+    save_environment: false
+    save_algorithm: false
+
+  env_specs:
+    env_creator: 'smarts'
+    scenario_name: 'ngsim'
+    env_kwargs: {}
+    eval_env_specs:
+      env_num: 30
+      wait_num: 30
+      auto_reset: True
+      seed: 24492
+

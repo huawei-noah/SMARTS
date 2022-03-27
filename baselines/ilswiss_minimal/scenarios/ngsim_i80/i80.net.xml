@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on Tue 20 Apr 2021 03:26:13 PM EDT by Eclipse SUMO netedit Version 1.9.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <output>
+        <output-file value="/home/steve/Repos/Huawei/smarts-imitation-learning-master/scenarios/ngsim/i80.net.xml"/>
+    </output>
+
+    <processing>
+        <offset.disable-normalization value="true"/>
+    </processing>
+
+    <junctions>
+        <no-turnarounds value="true"/>
+    </junctions>
+
+    <report>
+        <aggregate-warnings value="5"/>
+    </report>
+
+</configuration>
+-->
+
+<net version="1.9" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="0.00,0.00" convBoundary="0.00,100.00,503.00,100.00" origBoundary="10000000000.00,10000000000.00,-10000000000.00,-10000000000.00" projParameter="!"/>
+
+    <edge id="gneE0" from="gneJ0" to="gneJ1" priority="-1">
+        <lane id="gneE0_0" index="0" speed="13.89" length="503.00" width="3.66" shape="0.00,79.88 503.00,79.88"/>
+        <lane id="gneE0_1" index="1" speed="13.89" length="503.00" width="3.66" shape="0.00,83.54 503.00,83.54"/>
+        <lane id="gneE0_2" index="2" speed="13.89" length="503.00" width="3.66" shape="0.00,87.20 503.00,87.20"/>
+        <lane id="gneE0_3" index="3" speed="13.89" length="503.00" width="3.66" shape="0.00,90.86 503.00,90.86"/>
+        <lane id="gneE0_4" index="4" speed="13.89" length="503.00" width="3.66" shape="0.00,94.51 503.00,94.51"/>
+        <lane id="gneE0_5" index="5" speed="13.89" length="503.00" width="3.66" shape="0.00,98.17 503.00,98.17"/>
+    </edge>
+
+    <junction id="gneJ0" type="dead_end" x="0.00" y="100.00" incLanes="" intLanes="" shape="0.00,100.00 0.00,78.05"/>
+    <junction id="gneJ1" type="dead_end" x="503.00" y="100.00" incLanes="gneE0_0 gneE0_1 gneE0_2 gneE0_3 gneE0_4 gneE0_5" intLanes="" shape="503.00,78.05 503.00,100.00"/>
+
+</net>

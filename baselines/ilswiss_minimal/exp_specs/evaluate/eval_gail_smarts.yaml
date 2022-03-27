@@ -1,0 +1,39 @@
+meta_data:
+  script_path: run_scripts/evaluate_policy.py
+  exp_name: test_policy_eval
+  description: Evaluate a policy
+  num_workers: 1 # 64
+  using_gpus: true
+# -----------------------------------------------------------------------------
+variables:
+  seed: [0]
+
+# -----------------------------------------------------------------------------
+constants:
+  expert_name: 'smarts_i80'
+  expert_idx: 0
+  traj_num: -1
+  scale_env_with_demo_stats: true
+
+  log_path: "logs/gail-smarts-ngsim--scale--terminal--gp-4.0--rs-2.0--trajnum--1/gail_smarts_ngsim--scale--terminal--gp-4.0--rs-2.0--trajnum--1_2022_03_21_16_40_51_0000--s-0"
+
+  eval_deterministic: true
+
+  num_eval_steps: 2000  # not used in ngsim eval
+  max_path_length: 1000
+
+  no_terminal: false
+  render: true
+  render_kwargs: {}
+
+  save_samples: false  # true
+
+  env_specs:
+    env_creator: "smarts"
+    scenario_name: "NGSIM-I80"
+    env_kwargs: {}
+    eval_env_specs:
+      env_num: 15
+      wait_num: 15
+      auto_reset: True
+      seed: 24492

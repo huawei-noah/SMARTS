@@ -1,0 +1,21 @@
+meta_data:
+  script_path: run_scripts/gen_smarts_demos.py
+  exp_name: gen_smarts_demos_ngsim
+  description: Generate demonstrations for imitation learning algorithms
+  num_workers: 1
+  using_gpus: true
+# -----------------------------------------------------------------------------
+variables: {}
+
+# -----------------------------------------------------------------------------
+constants:
+
+  seed: 0
+  test_ratio: 0.15
+  neighbor_mode: "LANE"
+
+  env_specs:
+    env_creator: "smarts"
+    scenario_name: "NGSIM-I80"
+    env_kwargs:
+      obs_stack_size: 1
