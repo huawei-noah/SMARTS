@@ -85,7 +85,7 @@ class _TrajectoryDataset:
         if "input_path" not in dataset_spec:
             errmsg = "'input_path' field is required in dataset yaml."
         elif dataset_spec.get("flip_y"):
-            if dataset_spec.get("source") != "NGSIM":
+            if not dataset_spec.get("source").startswith("NGSIM"):
                 errmsg = "'flip_y' option only supported for NGSIM datasets."
             elif not dataset_spec.get("map_net", {}).get("max_y"):
                 errmsg = "'map_net:max_y' is required if 'flip_y' option used."
@@ -407,33 +407,39 @@ class NGSIM(_TrajectoryDataset):
 
     def _transform_all_data(self):
         self._log.debug("transforming NGSIM data")
-        df = pd.read_csv(
-            self._path,
-            sep=r"\s+",
-            header=None,
-            names=(
-                "vehicle_id",
-                "frame_id",  # 1 frame per .1s
-                "total_frames",
-                "global_time",  # msecs
-                # front center in feet from left lane edge
-                "position_x" if not self._swap_xy else "position_y",
-                # front center in feet from entry edge
-                "position_y" if not self._swap_xy else "position_x",
-                "global_x" if not self._swap_xy else "global_y",  # front center in feet
-                "global_y" if not self._swap_xy else "global_x",  # front center in feet
-                "length",  # feet
-                "width",  # feet
-                "type",  # 1 = motorcycle, 2 = auto, 3 = truck
-                "speed",  # feet / sec
-                "acceleration",  # feet / sec^2
-                "lane_id",  # lower is further left
-                "preceding_vehicle_id",
-                "following_vehicle_id",
-                "spacing",  # feet
-                "headway",  # secs
-            ),
+        cols = (
+            "vehicle_id",
+            "frame_id",  # 1 frame per .1s
+            "total_frames",
+            "global_time",  # msecs
+            # front center in feet from left lane edge
+            "position_x" if not self._swap_xy else "position_y",
+            # front center in feet from entry edge
+            "position_y" if not self._swap_xy else "position_x",
+            "global_x" if not self._swap_xy else "global_y",  # front center in feet
+            "global_y" if not self._swap_xy else "global_x",  # front center in feet
+            "length",  # feet
+            "width",  # feet
+            "type",  # 1 = motorcycle, 2 = auto, 3 = truck
+            "speed",  # feet / sec
+            "acceleration",  # feet / sec^2
+            "lane_id",  # lower is further left
+            "preceding_vehicle_id",
+            "following_vehicle_id",
+            "spacing",  # feet
+            "headway",  # secs
         )
+        if self._dataset_spec.get("source") == "NGSIM2":
+            extra_cols = (
+                "origin_zone",
+                "destination_zone",
+                "intersection",
+                "section",
+                "direction",
+                "movement",
+            )
+            cols = cols[:16] + extra_cols + cols[16:]
+        df = pd.read_csv(self._path, sep=r"\s+", header=None, names=cols)
 
         df["sim_time"] = df["global_time"] - min(df["global_time"])
 
@@ -446,11 +452,10 @@ class NGSIM(_TrajectoryDataset):
         df["speed"] *= METERS_PER_FOOT
         df["acceleration"] *= METERS_PER_FOOT
         df["spacing"] *= METERS_PER_FOOT
+        df["position_x"] *= METERS_PER_FOOT
         df["position_y"] *= METERS_PER_FOOT
-        # SMARTS uses center not front
-        df["position_x"] = (
-            df["position_x"] * METERS_PER_FOOT - 0.5 * df["length"] - x_margin
-        )
+        if x_margin:
+            df["position_x"] = df["position_x"] - x_margin
         if y_margin:
             df["position_x"] = df["position_y"] - y_margin
 
@@ -498,6 +503,15 @@ class NGSIM(_TrajectoryDataset):
                 for values in stride(v, (d0 - 2, 3, d1), (s0, s0, s1))
             ]
             df.loc[same_car, "speed_discrete"] = speeds + [None, None]
+
+        # since SMARTS' positions are the vehicle centerpoints, but NGSIM's are at the front,
+        # now adjust the vehicle position to its centerpoint based on its angle (+y = 0 rad)
+        df["position_x"] = df["position_x"] - 0.5 * df["length"] * np.cos(
+            df["heading_rad"] + 0.5 * math.pi
+        )
+        df["position_y"] = df["position_y"] - 0.5 * df["length"] * np.sin(
+            df["heading_rad"] + 0.5 * math.pi
+        )
 
         map_width = self._dataset_spec["map_net"].get("width")
         if map_width:
@@ -803,6 +817,11 @@ if __name__ == "__main__":
         with open(args.dataset, "r") as yf:
             dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
 
+    default_input_path = "<PATH TO FILE GOES HERE>"
+    if dataset_spec.get("input_path") == default_input_path:
+        print(f"skipping placeholder dataset spec at {args.dataset}.")
+        sys.exit(0)
+
     if args.x_offset:
         dataset_spec["x_offset"] = args.x_offset
 
@@ -810,7 +829,7 @@ if __name__ == "__main__":
         dataset_spec["y_offset"] = args.y_offset
 
     source = dataset_spec.get("source", "NGSIM")
-    if source == "NGSIM":
+    if source == "NGSIM" or source == "NGSIM2":
         dataset = NGSIM(dataset_spec, args.output)
     elif source == "Waymo":
         dataset = Waymo(dataset_spec, args.output)

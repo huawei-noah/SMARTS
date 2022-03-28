@@ -22,7 +22,7 @@
 import pytest
 
 import smarts.sstudio.types as t
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import LaneFollowingController
 from smarts.core.scenario import Scenario
@@ -30,6 +30,7 @@ from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.tests.helpers.scenario import temp_scenario
 from smarts.sstudio import gen_scenario
+from smarts.zoo.agent_spec import AgentSpec
 
 AGENT_ID = "Agent-007"
 

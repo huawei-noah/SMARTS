@@ -19,24 +19,18 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import logging
-import math
 import os
 import warnings
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
+from scipy.spatial.distance import cdist
 
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
-
-with warnings.catch_warnings():
-    # XXX: Benign warning, seems no other way to "properly" fix
-    warnings.filterwarnings("ignore", "numpy.ufunc size changed")
-    from sklearn.metrics.pairwise import euclidean_distances
-
 from smarts import VERSION
-from smarts.core.chassis import AckermannChassis, BoxChassis
+from smarts.core.chassis import BoxChassis
 from smarts.core.plan import Plan
 
 from . import models
@@ -105,7 +99,7 @@ class SMARTS:
         traffic_sim,  # SumoTrafficSimulation
         envision: Optional[EnvisionClient] = None,
         visdom: Optional[VisdomClient] = None,
-        fixed_timestep_sec: float = 0.1,
+        fixed_timestep_sec: Optional[float] = 0.1,
         reset_agents_only: bool = False,
         zoo_addrs: Optional[Tuple[str, int]] = None,
         external_provider: bool = False,
@@ -124,7 +118,7 @@ class SMARTS:
         self._reset_required = False
 
         assert fixed_timestep_sec is None or fixed_timestep_sec > 0
-        self.fixed_timestep_sec: float = fixed_timestep_sec
+        self.fixed_timestep_sec: Optional[float] = fixed_timestep_sec
         self._last_dt = fixed_timestep_sec
 
         self._elapsed_sim_time = 0
@@ -1205,9 +1199,11 @@ class SMARTS:
         if not other_positions:
             return []
 
-        distances = euclidean_distances(other_positions, [vehicle.position]).reshape(
-            -1,
-        )
+        # calculate euclidean distances
+        distances = cdist(
+            other_positions, [vehicle.position], metric="euclidean"
+        ).reshape(-1)
+
         indices = np.argwhere(distances <= radius).flatten()
         return [other_states[i] for i in indices]
 

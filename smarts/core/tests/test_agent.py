@@ -19,7 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
+from smarts.zoo.agent_spec import AgentSpec
 
 
 def test_building_agent_with_list_or_tuple_params():

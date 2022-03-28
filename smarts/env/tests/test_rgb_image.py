@@ -24,11 +24,12 @@ import gym
 import numpy as np
 import pytest
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import RGB, AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.rgb_image import RGBImage
+from smarts.zoo.agent_spec import AgentSpec
 
 
 def _make_agent_specs(topdown_rgb):
