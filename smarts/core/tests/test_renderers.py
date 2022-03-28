@@ -108,7 +108,7 @@ class RenderThread(threading.Thread):
             )
         except ImportError as e:
             raise RendererException.required_to("run test_renderer.py")
-        except Exception:
+        except Exception as e:
             raise e
 
         self._scenario = scenario
