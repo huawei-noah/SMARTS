@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import math
 import random
+import numpy as np
 from dataclasses import dataclass, field
 from typing import Optional, Tuple, Union
 
@@ -44,7 +45,7 @@ class PlanningError(Exception):
 class Start:
     """A starting state for a route or mission."""
 
-    position: Tuple[float, float]
+    position: np.ndarray
     heading: Heading
     from_front_bumper: Optional[bool] = True
 
@@ -57,7 +58,7 @@ class Start:
     def from_pose(cls, pose: Pose):
         """Convert to a starting location from a pose."""
         return cls(
-            position=tuple(pose.as_position2d()),
+            position=pose.as_position2d(),
             heading=pose.heading,
             from_front_bumper=False,
         )

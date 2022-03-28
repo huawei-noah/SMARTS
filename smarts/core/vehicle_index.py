@@ -21,7 +21,7 @@ import logging
 from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
-from typing import FrozenSet, NamedTuple, Optional, Tuple, Union
+from typing import FrozenSet, Iterator, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 import tableprint as tp
@@ -282,9 +282,9 @@ class VehicleIndex:
         # XXX: Order is not ensured
         return list(self._vehicles.values())
 
-    def vehicleitems(self) -> Tuple[str, Vehicle]:
+    def vehicleitems(self) -> Iterator[Tuple[str, Vehicle]]:
         """A list of all vehicle IDs paired with their vehicle."""
-        return tuple(map(lambda x: (self._2id_to_id[x[0]], x[1]), self._vehicles.items()))
+        return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._vehicles.items())
 
     def vehicle_by_id(self, vehicle_id):
         """Get a vehicle by its id."""

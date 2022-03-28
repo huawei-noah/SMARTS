@@ -21,7 +21,7 @@ import multiprocessing
 import os
 import subprocess
 import sys
-from multiprocessing import Process, Semaphore
+from multiprocessing import Process, Semaphore, synchronize
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from typing import Sequence
@@ -84,7 +84,7 @@ def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
 
 
 def _build_single_scenario_proc(
-    clean: bool, allow_offset_map: bool, scenario: str, semaphore: Semaphore # pytype: disable=invalid-annotation
+    clean: bool, allow_offset_map: bool, scenario: str, semaphore: synchronize.Semaphore
 ):
     semaphore.acquire()
     try:

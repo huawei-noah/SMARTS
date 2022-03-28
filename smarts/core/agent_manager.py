@@ -102,9 +102,9 @@ class AgentManager:
         """A list of all agent to agent interface mappings."""
         return self._agent_interfaces
 
-    def agent_interface_for_agent_id(self, agent_id) -> Optional[AgentInterface]:
+    def agent_interface_for_agent_id(self, agent_id) -> AgentInterface:
         """Get the agent interface of a specific agent."""
-        return self._agent_interfaces.get(agent_id, None)
+        return self._agent_interfaces[agent_id]
 
     @property
     def pending_agent_ids(self) -> Set[str]:
@@ -213,9 +213,10 @@ class AgentManager:
 
                 vehicle = sim.vehicle_index.vehicle_by_id(vehicle_ids[0])
                 sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
-                observations[agent_id], dones[agent_id] = Sensors.observe(
+                obs, dones[agent_id] = Sensors.observe(
                     sim, agent_id, sensor_state, vehicle
                 )
+                observations[agent_id] = obs
 
                 if sim.vehicle_index.vehicle_is_shadowed(vehicle.id):
                     # It is not a shadowing agent's fault if it is done
@@ -223,13 +224,11 @@ class AgentManager:
                 else:
                     logging.log(
                         logging.DEBUG,
-                        # pytype: disable=attribute-error
-                        f"Agent `{agent_id}` has raised done with {observations[agent_id].events}", 
-                        # pytype: enable=attribute-error
+                        f"Agent `{agent_id}` has raised done with {obs.events}", 
                     )
 
-                rewards[agent_id] = float(vehicle.trip_meter_sensor(increment=True))
-                scores[agent_id] = float(vehicle.trip_meter_sensor())
+                rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
+                scores[agent_id] = vehicle.trip_meter_sensor()
 
         if sim.should_reset:
             dones = {agent_id: True for agent_id in self.agent_ids}
@@ -238,12 +237,12 @@ class AgentManager:
         return observations, rewards, scores, dones 
 
     def _vehicle_reward(self, vehicle_id, sim) -> float:
-        return float(sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor(
+        return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor(
             increment=True
-        ))
+        )
 
     def _vehicle_score(self, vehicle_id, sim) -> float:
-        return float(sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor())
+        return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
 
     def step_sensors(self, sim):
         """Update all known vehicle sensors."""

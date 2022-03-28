@@ -65,16 +65,4 @@ You can now add it to the policy ultra if you want to make it available to scena
     )
 
 
-@ultra_cli.command(name="worker", help="Start the agent worker")
-@click.argument("auth_key", type=str, default=None)
-@click.argument("port", default=7432, type=int)
-def worker(auth_key, port):
-    from smarts.zoo.worker import serve
-
-    auth_key = auth_key if auth_key else ""
-    # listen() does not exist anymore, does serve() provide the same function?
-    serve(port)
-
-
 ultra_cli.add_command(build_policy)
-ultra_cli.add_command(worker)
