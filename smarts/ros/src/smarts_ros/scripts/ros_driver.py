@@ -283,13 +283,13 @@ class ROSDriver:
     @staticmethod
     def _pose_from_ros(ros_pose) -> Pose:
         return Pose(
-            position=np.ndarray((ros_pose.position.x, ros_pose.position.y, ros_pose.position.z)),
-            orientation=np.ndarray((
+            position=np.array([ros_pose.position.x, ros_pose.position.y, ros_pose.position.z]),
+            orientation=np.array([
                 ros_pose.orientation.x,
                 ros_pose.orientation.y,
                 ros_pose.orientation.z,
                 ros_pose.orientation.w,
-            )),
+            ]),
         )
 
     def _agent_spec_callback(self, ros_agent_spec: AgentSpec):
