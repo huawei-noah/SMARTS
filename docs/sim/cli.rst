@@ -54,6 +54,7 @@ In the requirements.txt file:
 Then in the scenario.py file:
 
 .. code-block:: bash
+
     t.SocialAgentActor(
         name="my-rl-agent",
         agent_locator="rl_agent:rl_agent-v0"
