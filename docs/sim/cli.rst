@@ -18,6 +18,7 @@ Commands:
 
 Each command and subcommand has a --help for more information about the subcommand and options
 
+
 scenario:
 ==========
 
@@ -69,6 +70,7 @@ ex. Start envision with custom port 1000
 
     scl envision start --port 1000
 
+
 zoo:
 =====
 
@@ -89,7 +91,6 @@ To use policies in scenarios, create a requirements.txt in the scenario root
 .. code-block:: bash
     --extra-index-url http://localhost:8080
     rl-agent==1.0.0
-
 
 
 run:
