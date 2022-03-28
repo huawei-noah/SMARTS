@@ -60,7 +60,7 @@ def smarts():
 @pytest.fixture
 def scenario():
     mission = Mission(
-        start=Start((71.65, 63.78), Heading(math.pi * 0.91)), goal=EndlessGoal()
+        start=Start(np.array([71.65, 63.78]), Heading(math.pi * 0.91)), goal=EndlessGoal()
     )
     scenario = Scenario(
         scenario_root="scenarios/loop",
