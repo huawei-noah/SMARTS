@@ -100,7 +100,8 @@ class RenderThread(threading.Thread):
         super().__init__(target=self.test_renderer, name=self._rid)
 
         try:
-            from smarts.core.renderer import Renderer, DEBUG_MODE as RENDERER_DEBUG_MODE
+            from smarts.core.renderer import DEBUG_MODE as RENDERER_DEBUG_MODE
+            from smarts.core.renderer import Renderer
 
             self._rdr = Renderer(
                 self._rid, RENDERER_DEBUG_MODE[renderer_debug_mode.upper()]

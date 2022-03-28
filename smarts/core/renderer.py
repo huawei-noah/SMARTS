@@ -45,13 +45,13 @@ from panda3d.core import (
     loadPrcFileData,
 )
 
-# pytype: enable=import-error
-
 from . import glsl, models
 from .colors import SceneColors
 from .coordinates import Pose
 from .masks import RenderMasks
 from .scenario import Scenario
+
+# pytype: enable=import-error
 
 
 class DEBUG_MODE(IntEnum):
