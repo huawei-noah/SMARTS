@@ -768,9 +768,7 @@ def eval_diversity(pos_ego, pos_agent, speed_ego, speed_agent, time_ego, time_ag
             pos_ego, pos_agent, speed_ego, speed_agent, time_ego, time_agent
         )
         pos_list1, pos_list2 = count_intersection_area(pos_ego, pos_agent)
-
-    A1, B1, A2, B2, P1, P2 = count_intersection_segment(pos_list1, pos_list2) 
-
+    A1, B1, A2, B2, P1, P2 = count_intersection_segment(pos_list1, pos_list2)
     # count points index
     idx_A1, idx_B1 = (
         pos_ego.tolist().index([A1.x, A1.y]),
