@@ -22,7 +22,7 @@ import logging
 import os
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Dict, List, Tuple, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -31,7 +31,7 @@ from smarts.core.plan import Mission, Plan
 
 from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
-from .colors import SceneColors, Colors
+from .colors import Colors, SceneColors
 from .coordinates import Dimensions, Heading, Pose
 from .sensors import (
     AccelerometerSensor,
@@ -142,7 +142,8 @@ VEHICLE_CONFIGS = {
 
 class Vehicle:
     """Represents a single vehicle."""
-    _HAS_DYNAMIC_ATTRIBUTES=True
+
+    _HAS_DYNAMIC_ATTRIBUTES = True
 
     _HAS_DYNAMIC_ATTRIBUTES = True  # pytype dynamic
 
@@ -385,7 +386,9 @@ class Vehicle:
         else:
             start_pose = Pose.from_center(start.position, start.heading)
 
-        vehicle_color = SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value     
+        vehicle_color = (
+            SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value
+        )
 
         if agent_interface.vehicle_type == "sedan":
             urdf_name = "vehicle"

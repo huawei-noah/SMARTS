@@ -463,7 +463,7 @@ class VehicleIndex:
 
         vehicle = self._vehicles[vehicle_id]
         # pytype: disable=attribute-error
-        Vehicle.detach_all_sensors_from_vehicle(vehicle) 
+        Vehicle.detach_all_sensors_from_vehicle(vehicle)
         # pytype: enable=attribute-error
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id

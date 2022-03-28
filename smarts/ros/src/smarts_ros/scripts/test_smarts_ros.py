@@ -150,7 +150,7 @@ class TestSmartsRos(TestCase):
             self._create_agent()
         for agent_spec in self._agents.values():
             # pytype: disable=attribute-error
-            self._agent_publisher.publish(agent_spec) 
+            self._agent_publisher.publish(agent_spec)
             # pytype: enable=attribute-error
 
     def run_forever(self):

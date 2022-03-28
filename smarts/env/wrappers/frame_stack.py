@@ -71,7 +71,7 @@ class FrameStack(gym.Wrapper):
             frames_list = list(self._frames[agent_id])
             new_frames[agent_id] = copy.deepcopy(frames_list)
 
-        return dict(new_frames) 
+        return dict(new_frames)
 
     def step(
         self, agent_actions: Dict

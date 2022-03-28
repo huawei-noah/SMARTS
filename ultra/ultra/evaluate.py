@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import os
 import pickle
-from typing import Sequence, Tuple, Optional
+from typing import Optional, Sequence, Tuple
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"

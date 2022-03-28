@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 import logging
-from typing import Any, Dict, Set, Tuple, Optional, Union
+from typing import Any, Dict, Optional, Set, Tuple, Union
 
 import cloudpickle
 
@@ -161,7 +161,10 @@ class AgentManager:
     def observe(
         self, sim
     ) -> Tuple[
-        Dict[str, Union[Dict[str, Observation], Observation]], Dict[str, Union[Dict[str, float], float]], Dict[str, Union[Dict[str, float], float]], Dict[str, Union[Dict[str, bool], bool]]
+        Dict[str, Union[Dict[str, Observation], Observation]],
+        Dict[str, Union[Dict[str, float], float]],
+        Dict[str, Union[Dict[str, float], float]],
+        Dict[str, Union[Dict[str, bool], bool]],
     ]:
         """Generate observations from all vehicles associated with an active agent."""
         observations = {}
@@ -224,7 +227,7 @@ class AgentManager:
                 else:
                     logging.log(
                         logging.DEBUG,
-                        f"Agent `{agent_id}` has raised done with {obs.events}", 
+                        f"Agent `{agent_id}` has raised done with {obs.events}",
                     )
 
                 rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
@@ -234,7 +237,7 @@ class AgentManager:
             dones = {agent_id: True for agent_id in self.agent_ids}
             dones["__sim__"] = True
 
-        return observations, rewards, scores, dones 
+        return observations, rewards, scores, dones
 
     def _vehicle_reward(self, vehicle_id, sim) -> float:
         return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor(

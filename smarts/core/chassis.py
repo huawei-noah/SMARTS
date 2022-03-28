@@ -183,6 +183,7 @@ class Chassis:
         chassis."""
         raise NotImplementedError
 
+
 class BoxChassis(Chassis):
     """Control a vehicle by setting its absolute position and heading. The collision
     shape of the vehicle is a box of the provided dimensions.

@@ -92,6 +92,7 @@ def notebook():
     _, tmppath = tempfile.mkstemp(suffix=".ipynb")
     with open(tmppath, "w") as f:
         import smarts.core.tests
+
         # pytype: disable=module-attr
         f.write(importlib_resources.read_text(smarts.core.tests, NOTEBOOK_NAME))
         # pytype: enable=module-attr

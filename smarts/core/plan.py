@@ -23,9 +23,10 @@ from __future__ import annotations
 
 import math
 import random
-import numpy as np
 from dataclasses import dataclass, field
 from typing import Optional, Tuple, Union
+
+import numpy as np
 
 from smarts.sstudio.types import EntryTactic, TrapEntryTactic
 

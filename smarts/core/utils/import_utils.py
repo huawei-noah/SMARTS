@@ -33,4 +33,4 @@ def import_module_from_file(module_name, path: Path):
     spec = importlib.util.spec_from_file_location(module_name, f"{path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
-    spec.loader.exec_module(module) # pytype: disable=attribute-error
+    spec.loader.exec_module(module)  # pytype: disable=attribute-error

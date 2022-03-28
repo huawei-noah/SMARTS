@@ -187,12 +187,12 @@ class Bubble:
             # pytype: disable=unsupported-operands
             all_hijacked_vehicle_ids = (
                 current_hijacked_vehicle_ids
-                | vehicle_ids_by_bubble_state[BubbleState.InAirlock][self] 
+                | vehicle_ids_by_bubble_state[BubbleState.InAirlock][self]
             ) - {vehicle_id}
 
             all_shadowed_vehicle_ids = (
                 current_shadowed_vehicle_ids
-                | vehicle_ids_by_bubble_state[BubbleState.InBubble][self] 
+                | vehicle_ids_by_bubble_state[BubbleState.InBubble][self]
             ) - {vehicle_id}
             # pytype: enable=unsupported-operands
 
@@ -510,7 +510,7 @@ class BubbleManager:
         )
 
         if social_agent is None:
-            return 
+            return
 
         self._start_social_agent(
             sim, agent_id, social_agent, social_agent_actor, bubble

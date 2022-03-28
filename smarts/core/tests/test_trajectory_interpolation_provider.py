@@ -299,7 +299,7 @@ def test_trajectory_interpolation_provider_in_smarts(smarts, agent_spec, scenari
         if agent_obs.events.reached_goal:
             reached_goal = True
             break
-    
+
     curr_position = agent_obs.ego_vehicle_state.position
     curr_heading = agent_obs.ego_vehicle_state.heading
     curr_speed = agent_obs.ego_vehicle_state.speed

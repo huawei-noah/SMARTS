@@ -53,7 +53,8 @@ WEB_CLIENT_RUN_LOOPS = {}
 # Mapping of simulation ID to the Frames data store
 FRAMES = {}
 
-class AllowCORSMixin():
+
+class AllowCORSMixin:
     """A mixin that adds CORS headers to the page."""
 
     _HAS_DYNAMIC_ATTRIBUTES = True

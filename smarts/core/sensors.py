@@ -217,7 +217,9 @@ class Sensors:
     _log = logging.getLogger("Sensors")
 
     @staticmethod
-    def observe_batch(sim, agent_id, sensor_states, vehicles) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
+    def observe_batch(
+        sim, agent_id, sensor_states, vehicles
+    ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
         """Operates all sensors on a batch of vehicles for a single agent."""
         # TODO: Replace this with a more efficient implementation that _actually_
         #       does batching
