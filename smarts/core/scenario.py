@@ -536,7 +536,7 @@ class Scenario:
         hhx, hhy = radians_to_vec(heading) * (0.5 * veh_dims.length)
         return (
             Start(
-                (pos_x + hhx, pos_y + hhy),
+                np.asarray(pos_x + hhx, pos_y + hhy),
                 Heading(heading),
             ),
             speed,
