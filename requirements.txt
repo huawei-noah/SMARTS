@@ -29,7 +29,7 @@ commonmark==0.9.1
 constantly==15.1.0
 coverage==6.3.2
 cycler==0.11.0
-debugpy==1.5.1
+debugpy==1.6.0
 decorator==5.1.1
 defusedxml==0.7.1
 dm-tree==0.1.6
@@ -58,13 +58,13 @@ hyperlink==21.0.0
 idna==3.3
 ijson==3.1.4
 importlib-metadata==4.11.3
-importlib-resources==5.4.0
+importlib-resources==5.6.0
 incremental==21.3.0
 iniconfig==1.1.1
 ipykernel==6.9.2
 ipython==7.32.0
 jedi==0.18.1
-Jinja2==3.0.3
+Jinja2==3.1.1
 jsonpatch==1.32
 jsonpointer==2.2
 jsonschema==4.4.0

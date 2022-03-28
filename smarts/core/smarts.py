@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import logging
-import math
 import os
 import warnings
 from collections import defaultdict
@@ -31,7 +30,7 @@ from scipy.spatial.distance import cdist
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
 from smarts import VERSION
-from smarts.core.chassis import AckermannChassis, BoxChassis
+from smarts.core.chassis import BoxChassis
 from smarts.core.plan import Plan
 
 from . import models
