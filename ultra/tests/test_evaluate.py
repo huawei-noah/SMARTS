@@ -32,7 +32,6 @@ import dill
 import gym
 import ray
 
-from smarts.core.controllers import ActionSpaceType
 from ultra.baselines.agent_spec import BaselineAgentSpec
 from ultra.baselines.sac.sac.policy import SACPolicy
 from ultra.evaluate import collect_evaluations, evaluate, evaluation_check
@@ -472,8 +471,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
 
             active_agent_ids = observations.keys() & next_observations.keys()
             loss_outputs = {
-                agent_id: agents[agent_id].act(
-                    obs=observations[agent_id],
+                agent_id: agents[agent_id].step(
                     state=observations[agent_id],
                     action=actions[agent_id],
                     reward=rewards[agent_id],
