@@ -21,7 +21,7 @@ import logging
 from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
-from typing import FrozenSet, NamedTuple, Optional, Tuple
+from typing import FrozenSet, Iterator, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 import tableprint as tp
@@ -55,10 +55,10 @@ class _ActorType(IntEnum):
 
 
 class _ControlEntity(NamedTuple):
-    vehicle_id: str
-    actor_id: str
+    vehicle_id: Union[bytes, str]
+    actor_id: Union[bytes, str]
     actor_type: _ActorType
-    shadow_actor_id: str
+    shadow_actor_id: Union[bytes, str]
     # Applies to shadowing and controlling actor
     # TODO: Consider moving this to an _ActorType field
     is_boid: bool
@@ -173,7 +173,7 @@ class VehicleIndex:
         return set(vehicle_ids)
 
     @cache
-    def social_vehicle_ids(self, vehicle_types: FrozenSet[str] = None):
+    def social_vehicle_ids(self, vehicle_types: Optional[FrozenSet[str]] = None):
         """A set of vehicle ids associated with traffic vehicles."""
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Social
@@ -282,7 +282,7 @@ class VehicleIndex:
         # XXX: Order is not ensured
         return list(self._vehicles.values())
 
-    def vehicleitems(self) -> Tuple[str, Vehicle]:
+    def vehicleitems(self) -> Iterator[Tuple[str, Vehicle]]:
         """A list of all vehicle IDs paired with their vehicle."""
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._vehicles.items())
 
@@ -462,7 +462,9 @@ class VehicleIndex:
         vehicle_id = _2id(vehicle_id)
 
         vehicle = self._vehicles[vehicle_id]
-        Vehicle.detach_all_sensors_from_vehicle(vehicle)
+        # pytype: disable=attribute-error
+        Vehicle.detach_all_sensors_from_vehicle(vehicle) 
+        # pytype: enable=attribute-error
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = self._controlled_by[v_index][0]
@@ -693,6 +695,7 @@ class VehicleIndex:
 
         self._vehicles[vehicle_id] = vehicle
         self._2id_to_id[vehicle_id] = vehicle.id
+
         entity = _ControlEntity(
             vehicle_id=vehicle_id,
             actor_id=actor_id,
@@ -700,7 +703,7 @@ class VehicleIndex:
             shadow_actor_id="",
             is_boid=False,
             is_hijacked=False,
-            position=vehicle.position,
+            position=np.asarray(vehicle.position),
         )
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 

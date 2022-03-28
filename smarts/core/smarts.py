@@ -1116,7 +1116,7 @@ class SMARTS:
 
         provider_actions = {}
         for agent_id, action in actions.items():
-            agent_interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
+            agent_interface = self._agent_manager.agent_interfaces.get(agent_id, None)
             if (
                 agent_interface
                 and agent_controls_vehicles(agent_id)

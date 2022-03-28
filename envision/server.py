@@ -29,7 +29,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Dict, Sequence
+from typing import Dict, Sequence, Union
 
 import ijson
 import tornado.gen
@@ -53,9 +53,10 @@ WEB_CLIENT_RUN_LOOPS = {}
 # Mapping of simulation ID to the Frames data store
 FRAMES = {}
 
-
-class AllowCORSMixin:
+class AllowCORSMixin():
     """A mixin that adds CORS headers to the page."""
+
+    _HAS_DYNAMIC_ATTRIBUTES = True
 
     def set_default_headers(self):
         """Setup the default headers.
@@ -356,7 +357,7 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
 class FileHandler(AllowCORSMixin, tornado.web.RequestHandler):
     """This handler serves files to the given requestee."""
 
-    def initialize(self, path_map: Dict[str, Path] = {}):
+    def initialize(self, path_map: Dict[str, Union[str, Path]] = {}):
         """FileHandler that serves file for a given ID."""
         self._logger = logging.getLogger(self.__class__.__name__)
         self._path_map = path_map

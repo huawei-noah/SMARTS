@@ -24,7 +24,7 @@ import threading
 
 import numpy as np
 import pytest
-from panda3d.core import Thread as p3dThread  # pytype: disable=import-error
+from panda3d.core import Thread as p3dThread
 
 from smarts.core.agent_interface import (
     ActionSpaceType,
@@ -84,7 +84,7 @@ def smarts_wo_renderer():
 @pytest.fixture
 def scenario():
     mission = Mission(
-        start=Start((71.65, 63.78), Heading(math.pi * 0.91)), goal=EndlessGoal()
+        start=Start(np.array([71.65, 63.78]), Heading(math.pi * 0.91)), goal=EndlessGoal()
     )
     scenario = Scenario(
         scenario_root="scenarios/loop",
@@ -108,7 +108,7 @@ class RenderThread(threading.Thread):
             )
         except ImportError as e:
             raise RendererException.required_to("run test_renderer.py")
-        except Exception:
+        except Exception as e:
             raise e
 
         self._scenario = scenario

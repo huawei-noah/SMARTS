@@ -85,7 +85,7 @@ class _TrajectoryDataset:
         if "input_path" not in dataset_spec:
             errmsg = "'input_path' field is required in dataset yaml."
         elif dataset_spec.get("flip_y"):
-            if not dataset_spec.get("source").startswith("NGSIM"):
+            if not dataset_spec["source"].startswith("NGSIM"):
                 errmsg = "'flip_y' option only supported for NGSIM datasets."
             elif not dataset_spec.get("map_net", {}).get("max_y"):
                 errmsg = "'map_net:max_y' is required if 'flip_y' option used."

@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import os
 import pickle
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Optional
 
 # Set environment to better support Ray
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -246,7 +246,7 @@ def evaluate_saved_models(
     num_episodes: int,
     scenario_info: Tuple[str, str],
     timestep: float,
-    models_to_evaluate: str = None,
+    models_to_evaluate: Optional[str] = None,
 ):
 
     # If no agents are explicitly given then by default all agents are

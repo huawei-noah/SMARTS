@@ -57,17 +57,21 @@ jobs:
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
-          pip install .[dev]
+          pip install -e .[dev,camera-obs,train,test] 
       - name: Get changed files on branch since branching
         id: changed-files
         shell: bash
         run: |
           cd $GITHUB_WORKSPACE
           CHANGED=$(git diff --diff-filter="AM" --name-only --ignore-submodules=all origin/develop... | awk -v d=" " '{s=(NR==1?s:s d)$0}END{print s}')
-          echo "::set-output name=changed_files::$CHANGED"
+          declare -A SEEN
+          UNIQUE=()
+          for file in ${CHANGED[@]}; do filename=$(basename $file); if [ ! -v "SEEN[$filename]" ]; then SEEN[$filename]+=1; UNIQUE+=($file); fi; done 
+          OUT=$( IFS=$' '; echo "${UNIQUE[*]}")
+          echo "::set-output name=changed_files::$OUT"
       - name: Check types
         if: contains(steps.changed-files.outputs.changed_files, '.py')
         run: |
           . ${{env.venv_dir}}/bin/activate
-          pytype -d pyi-error import-error ${{steps.changed-files.outputs.changed_files}}
+          pytype -d pyi-error,import-error ${{steps.changed-files.outputs.changed_files}}
 

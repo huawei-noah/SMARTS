@@ -24,7 +24,7 @@ import logging
 import gym
 import numpy as np
 import pytest
-from panda3d.core import OrthographicLens, Point2, Point3
+from panda3d.core import OrthographicLens, Point2, Point3 
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import (

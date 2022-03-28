@@ -21,6 +21,7 @@ from .version import SOLVER_VERSION, VERSION
 
 CONFIG_PATH = Path(__file__).parent / "config.json"
 
+# pytype: disable=attribute-error
 
 def angle_error(a, b):
 

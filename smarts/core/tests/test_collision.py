@@ -21,7 +21,6 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import math
-import time
 from pathlib import Path
 
 import numpy as np

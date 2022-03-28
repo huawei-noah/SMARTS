@@ -178,6 +178,10 @@ class Chassis:
         and may have unintended behavioral or performance consequences."""
         raise NotImplementedError
 
+    def set_pose(self, pose: Pose):
+        """Use with caution since it disrupts the physics simulation. Sets the pose of the
+        chassis."""
+        raise NotImplementedError
 
 class BoxChassis(Chassis):
     """Control a vehicle by setting its absolute position and heading. The collision

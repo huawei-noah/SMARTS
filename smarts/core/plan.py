@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import math
 import random
+import numpy as np
 from dataclasses import dataclass, field
 from typing import Optional, Tuple, Union
 
@@ -44,7 +45,7 @@ class PlanningError(Exception):
 class Start:
     """A starting state for a route or mission."""
 
-    position: Tuple[float, float]
+    position: np.ndarray
     heading: Heading
     from_front_bumper: Optional[bool] = True
 

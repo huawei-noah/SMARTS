@@ -112,9 +112,9 @@ class TrapManager:
 
     def reset_traps(self, used_traps):
         """Reset all used traps."""
-        logging.warning.warn(
+        logging.warning(
             "`TrapManager.reset_traps(..)` method has been deprecated in favor of `remove_traps(..)`.  Please update your code.",
-            category=DeprecationWarning,
+            DeprecationWarning,
         )
         self.remove_traps(used_traps)
 
