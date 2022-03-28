@@ -21,7 +21,7 @@ cachetools==5.0.0
 certifi==2021.10.8
 cffi==1.15.0
 charset-normalizer==2.0.12
-click==8.1.0
+click==8.0.4
 cloudpickle==1.3.0
 colorama==0.4.4
 colorful==0.5.4
