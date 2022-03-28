@@ -85,7 +85,7 @@ class VehicleConfig:
     """Vehicle configuration"""
 
     vehicle_type: str
-    color: tuple
+    color: SceneColors
     dimensions: Dimensions
     glb_model: str
 
@@ -144,6 +144,8 @@ class Vehicle:
     """Represents a single vehicle."""
     _HAS_DYNAMIC_ATTRIBUTES=True
 
+    _HAS_DYNAMIC_ATTRIBUTES = True  # pytype dynamic
+
     def __init__(
         self,
         id: str,
@@ -155,7 +157,7 @@ class Vehicle:
         self._log = logging.getLogger(self.__class__.__name__)
         self._id = id
 
-        self._chassis = chassis
+        self._chassis: Chassis = chassis
         self._vehicle_config_type = vehicle_config_type
         self._action_space = action_space
         self._speed = None
@@ -164,7 +166,7 @@ class Vehicle:
         self._sensors = {}
 
         # Color override
-        self._color = color
+        self._color: Optional[SceneColors] = color
         if self._color is None:
             config = VEHICLE_CONFIGS[vehicle_config_type]
             self._color = config.color

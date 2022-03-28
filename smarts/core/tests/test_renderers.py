@@ -29,6 +29,7 @@ from panda3d.core import Thread as p3dThread
 from smarts.core.agent_interface import (
     ActionSpaceType,
     AgentInterface,
+    DoneCriteria,
     NeighborhoodVehicles,
 )
 from smarts.core.colors import SceneColors
@@ -39,20 +40,43 @@ from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.custom_exceptions import RendererException
 
+AGENT_ID = "Agent-007"
 
-@pytest.fixture
-def smarts():
-    buddha = AgentInterface(
-        max_episode_steps=1000,
-        neighborhood_vehicles=NeighborhoodVehicles(radius=20),
-        action=ActionSpaceType.Lane,
-    )
-    agents = {"Agent-007": buddha}
-    smarts = SMARTS(
+
+def _smarts_with_agent(agent) -> SMARTS:
+    agents = {AGENT_ID: agent}
+    return SMARTS(
         agents,
         traffic_sim=SumoTrafficSimulation(headless=True),
         envision=None,
     )
+
+
+@pytest.fixture
+def smarts():
+    buddha = AgentInterface(
+        debug=True,
+        done_criteria=DoneCriteria(collision=False, off_road=False, off_route=False),
+        rgb=True,
+        ogm=True,
+        drivable_area_grid_map=True,
+        neighborhood_vehicles=NeighborhoodVehicles(radius=20),
+        action=ActionSpaceType.Lane,
+    )
+    smarts = _smarts_with_agent(buddha)
+    yield smarts
+    smarts.destroy()
+
+
+@pytest.fixture
+def smarts_wo_renderer():
+    buddha = AgentInterface(
+        debug=True,
+        done_criteria=DoneCriteria(collision=False, off_road=False, off_route=False),
+        neighborhood_vehicles=NeighborhoodVehicles(radius=20),
+        action=ActionSpaceType.Lane,
+    )
+    smarts = _smarts_with_agent(buddha)
     yield smarts
     smarts.destroy()
 
@@ -65,22 +89,27 @@ def scenario():
     scenario = Scenario(
         scenario_root="scenarios/loop",
         route="basic.rou.xml",
-        missions={"Agent-007": mission},
+        missions={AGENT_ID: mission},
     )
     return scenario
 
 
 class RenderThread(threading.Thread):
-    def __init__(self, r, scenario, num_steps=3):
+    def __init__(self, r, scenario, renderer_debug_mode: str, num_steps=3):
         self._rid = "r{}".format(r)
         super().__init__(target=self.test_renderer, name=self._rid)
 
         try:
+            from smarts.core.renderer import DEBUG_MODE as RENDERER_DEBUG_MODE
             from smarts.core.renderer import Renderer
 
-            self._rdr = Renderer(self._rid)
-        except Exception as e:
+            self._rdr = Renderer(
+                self._rid, RENDERER_DEBUG_MODE[renderer_debug_mode.upper()]
+            )
+        except ImportError as e:
             raise RendererException.required_to("run test_renderer.py")
+        except Exception:
+            raise e
 
         self._scenario = scenario
         self._num_steps = num_steps
@@ -105,26 +134,38 @@ class RenderThread(threading.Thread):
         self._rdr.remove_vehicle_node(self._vid)
 
 
-def test_multiple_renderers(scenario):
+def test_multiple_renderers(scenario, request):
     assert p3dThread.isThreadingSupported()
+    renderer_debug_mode = request.config.getoption("--renderer-debug-mode")
     num_renderers = 3
-    rts = [RenderThread(r, scenario) for r in range(num_renderers)]
+    rts = [RenderThread(r, scenario, renderer_debug_mode) for r in range(num_renderers)]
     for rt in rts:
         rt.start()
     for rt in rts:
         rt.join()
 
 
-def test_optional_renderer(smarts, scenario):
-    smarts.reset(scenario)
+def test_optional_renderer(smarts: SMARTS, scenario):
     assert not smarts.is_rendering
-    for _ in range(10):
-        smarts.step({})
-
     renderer = smarts.renderer
-    if not renderer:
-        raise RendererException.required_to("run test_renderer.py")
+    assert renderer
 
+    smarts._renderer = None
+    smarts.reset(scenario)
     assert smarts.is_rendering
+
+    smarts._renderer = None
     for _ in range(10):
-        smarts.step({})
+        smarts.step({AGENT_ID: "keep_lane"})
+
+    assert not smarts.is_rendering
+
+
+def test_no_renderer(smarts_wo_renderer: SMARTS, scenario):
+    assert not smarts_wo_renderer.is_rendering
+    smarts_wo_renderer.reset(scenario)
+    assert not smarts_wo_renderer.is_rendering
+    for _ in range(10):
+        smarts_wo_renderer.step({AGENT_ID: "keep_lane"})
+
+    assert not smarts_wo_renderer.is_rendering

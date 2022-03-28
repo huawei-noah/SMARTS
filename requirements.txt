@@ -61,7 +61,7 @@ importlib-metadata==4.11.3
 importlib-resources==5.6.0
 incremental==21.3.0
 iniconfig==1.1.1
-ipykernel==6.9.2
+ipykernel==6.10.0
 ipython==7.32.0
 jedi==0.18.1
 Jinja2==3.1.1
@@ -75,7 +75,7 @@ jupyter-server-mathjax==0.2.5
 jupyterlab-pygments==0.1.2
 keras==2.8.0
 Keras-Preprocessing==1.1.2
-kiwisolver==1.4.0
+kiwisolver==1.4.1
 libclang==13.0.0
 lz4==4.0.0
 Markdown==3.3.6
@@ -86,7 +86,7 @@ mistune==0.8.4
 msgpack==1.0.3
 multidict==6.0.2
 nbclient==0.5.13
-nbconvert==6.4.4
+nbconvert==6.4.5
 nbdime==3.1.1
 nbformat==5.2.0
 nest-asyncio==1.5.4
