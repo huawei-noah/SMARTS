@@ -509,8 +509,8 @@ class NGSIM(_TrajectoryDataset):
         adj_heading = df["heading_rad"] + 0.5 * math.pi
         x_hlen = 0.5 * df["length"] * np.cos(adj_heading)
         y_hlen = 0.5 * df["length"] * np.sin(adj_heading)
-        df["position_x"] = df["position_x"] - x_hlen
-        df["position_y"] = df["position_y"] - y_hlen
+        df["position_x"] -= x_hlen
+        df["position_y"] -= y_hlen
 
         map_width = self._dataset_spec["map_net"].get("width")
         if map_width:
@@ -521,7 +521,7 @@ class NGSIM(_TrajectoryDataset):
         map_height = self._dataset_spec["map_net"].get("height")
         if map_height:
             valid_y = (df["position_y"] * self.scale).between(
-                y_hlen, map_width - y_hlen
+                y_hlen, map_height - y_hlen
             )
             df = df[valid_y]
 
