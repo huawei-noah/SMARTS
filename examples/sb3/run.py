@@ -55,6 +55,7 @@ def main(args: argparse.Namespace):
     elif (config["mode"] == "train" and args.logdir) or (config["mode"] == "evaluate"):
         # Begin training from a pretrained model.
         logdir = pathlib.Path(args.logdir)
+        config["model"] = args.model
     else:
         raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
     logdir.mkdir(parents=True, exist_ok=True)
@@ -133,12 +134,12 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     if config["mode"] == "evaluate":
         print("Start evaluation.")
         model = PPO.load(
-            config["logdir"] / "train" / "model.zip", print_system_info=True
+            config["model"], print_system_info=True
         )
     elif config["mode"] == "train" and args.logdir:
         print("Start training from existing model.")
         model = PPO.load(
-            config["logdir"] / "train" / "model.zip", print_system_info=True
+            config["model"], print_system_info=True
         )
         model.set_env(env)
         model.learn(
@@ -179,7 +180,8 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     if config["mode"] == "train":
         save_dir = config["logdir"] / "train"
         save_dir.mkdir(parents=True, exist_ok=True)
-        model.save(save_dir / "model")
+        time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        model.save(save_dir / "model_"+time)
         print("Saved trained model.")
 
     print("Evaluate policy.")
@@ -222,7 +224,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.mode == "evaluate" and args.logdir is None:
-        raise Exception("When --mode=evaluate, --logdir option must be specified.")
+    if args.mode == "train" and args.logdir is not None and args.model is None:
+        raise Exception("When --mode=train, --logdir=<path>, --model option must be specified.")
+    if args.mode == "evaluate" and (args.logdir is None or args.model is None):
+        raise Exception("When --mode=evaluate, --logdir and --model option must be specified.")
 
     main(args)
