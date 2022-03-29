@@ -506,19 +506,24 @@ class NGSIM(_TrajectoryDataset):
 
         # since SMARTS' positions are the vehicle centerpoints, but NGSIM's are at the front,
         # now adjust the vehicle position to its centerpoint based on its angle (+y = 0 rad)
-        df["position_x"] = df["position_x"] - 0.5 * df["length"] * np.cos(
-            df["heading_rad"] + 0.5 * math.pi
-        )
-        df["position_y"] = df["position_y"] - 0.5 * df["length"] * np.sin(
-            df["heading_rad"] + 0.5 * math.pi
-        )
+        adj_heading = df["heading_rad"] + 0.5 * math.pi
+        x_hlen = 0.5 * df["length"] * np.cos(adj_heading)
+        y_hlen = 0.5 * df["length"] * np.sin(adj_heading)
+        df["position_x"] = df["position_x"] - x_hlen
+        df["position_y"] = df["position_y"] - y_hlen
 
         map_width = self._dataset_spec["map_net"].get("width")
         if map_width:
             valid_x = (df["position_x"] * self.scale).between(
-                df["length"] / 2, map_width - df["length"] / 2
+                x_hlen, map_width - x_hlen
             )
             df = df[valid_x]
+        map_height = self._dataset_spec["map_net"].get("height")
+        if map_height:
+            valid_y = (df["position_y"] * self.scale).between(
+                y_hlen, map_width - y_hlen
+            )
+            df = df[valid_y]
 
         return df
 
