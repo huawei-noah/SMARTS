@@ -512,13 +512,13 @@ class NGSIM(_TrajectoryDataset):
         df["position_x"] -= x_hlen
         df["position_y"] -= y_hlen
 
-        map_width = self._dataset_spec["map_net"].get("width")
+        map_width = self._dataset_spec.get("map_net", {}).get("width")
         if map_width:
             valid_x = (df["position_x"] * self.scale).between(
                 x_hlen, map_width - x_hlen
             )
             df = df[valid_x]
-        map_height = self._dataset_spec["map_net"].get("height")
+        map_height = self._dataset_spec.get("map_net", {}).get("height")
         if map_height:
             valid_y = (df["position_y"] * self.scale).between(
                 y_hlen, map_height - y_hlen
