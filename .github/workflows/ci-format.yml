@@ -1,6 +1,10 @@
 name: SMARTS CI Format
 
-on: [push, pull_request]
+on: 
+  push:
+    branches-ignore:
+      - master
+  pull_request:
 
 env:
   venv_dir: .venv
@@ -37,3 +41,41 @@ jobs:
             --ignore marl_benchmark,examples,scenarios,docs,manager_pb2_grpc.py,worker_pb2_grpc.py \
             --msg-template='{path}: line {line}: {msg_id}: {msg}' \
             ./smarts ./envision
+
+  test-types:
+    runs-on: ubuntu-18.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: huaweinoah/smarts:v0.4.18-minimal
+    steps:
+      - name: Install packages
+        run: |
+          add-apt-repository -y ppa:git-core/ppa
+          apt-get update
+          apt-get install -y git
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Install SMARTS
+        run: |
+          python3.7 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
+          pip install --upgrade pip wheel
+          pip install -e .[dev,camera-obs,train,test] 
+      - name: Get changed files on branch since branching
+        id: changed-files
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE
+          CHANGED=$(git diff --diff-filter="AM" --name-only --ignore-submodules=all origin/develop... | awk -v d=" " '{s=(NR==1?s:s d)$0}END{print s}')
+          declare -A SEEN
+          UNIQUE=()
+          for file in ${CHANGED[@]}; do filename=$(basename $file); if [ ! -v "SEEN[$filename]" ]; then SEEN[$filename]+=1; UNIQUE+=($file); fi; done 
+          OUT=$( IFS=$' '; echo "${UNIQUE[*]}")
+          echo "::set-output name=changed_files::$OUT"
+      - name: Check types
+        if: contains(steps.changed-files.outputs.changed_files, '.py')
+        run: |
+          . ${{env.venv_dir}}/bin/activate
+          pytype -d pyi-error,import-error ${{steps.changed-files.outputs.changed_files}}
+

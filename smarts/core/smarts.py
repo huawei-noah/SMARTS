@@ -19,24 +19,18 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import logging
-import math
 import os
 import warnings
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
+from scipy.spatial.distance import cdist
 
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
-
-with warnings.catch_warnings():
-    # XXX: Benign warning, seems no other way to "properly" fix
-    warnings.filterwarnings("ignore", "numpy.ufunc size changed")
-    from sklearn.metrics.pairwise import euclidean_distances
-
 from smarts import VERSION
-from smarts.core.chassis import AckermannChassis, BoxChassis
+from smarts.core.chassis import BoxChassis
 from smarts.core.plan import Plan
 
 from . import models
@@ -86,17 +80,28 @@ class SMARTSDestroyedError(Exception):
 
 
 class SMARTS:
-    """The core SMARTS simulator."""
+    """The core SMARTS simulator. This is the direct interface to all parts of the simulation.
+    Args:
+        agent_interfaces: The interfaces providing SMARTS with the understanding of what features each agent needs.
+        traffic_sim: The traffic simulator for providing non-agent traffic.
+        envision: An envision client for connecting to an envision visualization server.
+        visdom: A visdom client for connecting to a visdom visualization server.
+        fixed_timestep_sec: The fixed timestep that will be default if time is not otherwise specified at step.
+        reset_agents_only: When specified the simulation will continue use of the current scenario.
+        zoo_addrs: The (ip:port) values of remote agent workers for externally hosted agents.
+        external_provider: Creates a special provider `SMARTS.external_provider` that allows for inserting state.
+        config: The simulation configuration file for unexposed configuration.
+    """
 
     def __init__(
         self,
-        agent_interfaces,
+        agent_interfaces: Dict[str, AgentInterface],
         traffic_sim,  # SumoTrafficSimulation
         envision: Optional[EnvisionClient] = None,
         visdom: Optional[VisdomClient] = None,
-        fixed_timestep_sec: float = 0.1,
+        fixed_timestep_sec: Optional[float] = 0.1,
         reset_agents_only: bool = False,
-        zoo_addrs=None,
+        zoo_addrs: Optional[Tuple[str, int]] = None,
         external_provider: bool = False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -108,12 +113,12 @@ class SMARTS:
         self._envision: Optional[EnvisionClient] = envision
         self._visdom: Optional[VisdomClient] = visdom
         self._traffic_sim = traffic_sim
-        self._external_provider = None
+        self._external_provider: ExternalProvider = None
         self._resetting = False
         self._reset_required = False
 
         assert fixed_timestep_sec is None or fixed_timestep_sec > 0
-        self.fixed_timestep_sec: float = fixed_timestep_sec
+        self.fixed_timestep_sec: Optional[float] = fixed_timestep_sec
         self._last_dt = fixed_timestep_sec
 
         self._elapsed_sim_time = 0
@@ -743,16 +748,21 @@ class SMARTS:
     def renderer(self):
         """The renderer singleton. On call, the sim will attempt to create it if it does not exist."""
         if not self._renderer:
+            from .utils.custom_exceptions import RendererException
+
             try:
                 from .renderer import Renderer
 
                 self._renderer = Renderer(self._sim_id)
+            except ImportError as e:
+                raise RendererException.required_to("use camera observations")
+            except Exception as e:
+                self._renderer = None
+                raise RendererException("Unable to create renderer.")
+            if not self._renderer.is_setup:
                 if self._scenario:
                     self._renderer.setup(self._scenario)
                     self._vehicle_index.begin_rendering_vehicles(self._renderer)
-            except Exception as e:
-                self._log.warning("unable to create Renderer:  " + repr(e))
-                self._renderer = None
         return self._renderer
 
     @property
@@ -863,10 +873,11 @@ class SMARTS:
 
         # Update our pybullet world given this provider state
         dt = provider_state.dt or self._last_dt
+        agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         for vehicle in provider_state.vehicles:
             vehicle_id = vehicle.vehicle_id
             # either this is a pybullet agent vehicle, or it is a social vehicle
-            if vehicle_id in self._vehicle_index.agent_vehicle_ids():
+            if vehicle_id in agent_vehicle_ids:
                 if not vehicle.updated:
                     # this is an agent vehicle
                     agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
@@ -898,9 +909,15 @@ class SMARTS:
                         vehicle_id=vehicle_id,
                         vehicle_config_type=vehicle.vehicle_config_type,
                     )
-                # Update the social vehicle avatar to match the vehicle state
+
+                # Update social vehicle pose when no active agents are present
+                if not agent_vehicle_ids:
+                    social_vehicle.chassis.state_override(
+                        dt=dt, force_pose=vehicle.pose
+                    )
+
                 if not vehicle.updated:
-                    # Note:  update_state() happens *after* pybullet has been stepped.
+                    # Note: update_state() happens *after* pybullet has been stepped.
                     social_vehicle.update_state(vehicle, dt=dt)
 
     def _step_pybullet(self):
@@ -954,7 +971,7 @@ class SMARTS:
         # TODO: It's inconsistent that pybullet is not here
         return self._providers
 
-    def get_provider_by_type(self, requested_type) -> Provider:
+    def get_provider_by_type(self, requested_type) -> Optional[Provider]:
         """Get The first provider that matches the requested type."""
         self._check_valid()
         for provider in self._providers:
@@ -994,10 +1011,12 @@ class SMARTS:
             except Exception as provider_error:
                 self._handle_provider(provider, provider_error)
 
-    def _handle_provider(self, provider: Provider, provider_error) -> ProviderState:
+    def _handle_provider(
+        self, provider: Provider, provider_error
+    ) -> Optional[ProviderState]:
         provider_problem = bool(provider_error or not provider.connected)
         if not provider_problem:
-            return
+            return None
 
         recovery_flags = self._provider_recovery_flags.get(
             provider, ProviderRecoveryFlags.EXPERIMENT_REQUIRED
@@ -1075,6 +1094,7 @@ class SMARTS:
                     self._get_provider_state("OTHER", as_pred)
                 )
 
+        agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         for provider in self.providers:
             try:
                 provider_state = self._step_provider(provider, actions)
@@ -1083,7 +1103,7 @@ class SMARTS:
 
             if provider == self._traffic_sim:
                 # Remove agent vehicles from provider vehicles
-                provider_state.filter(self._vehicle_index.agent_vehicle_ids())
+                provider_state.filter(agent_vehicle_ids)
             accumulated_provider_state.merge(provider_state)
 
         self._harmonize_providers(accumulated_provider_state)
@@ -1096,7 +1116,7 @@ class SMARTS:
 
         provider_actions = {}
         for agent_id, action in actions.items():
-            agent_interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
+            agent_interface = self._agent_manager.agent_interfaces.get(agent_id, None)
             if (
                 agent_interface
                 and agent_controls_vehicles(agent_id)
@@ -1126,6 +1146,11 @@ class SMARTS:
     def should_reset(self):
         """If the simulation requires a reset."""
         return self._reset_required
+
+    @property
+    def resetting(self) -> bool:
+        """If the simulation is currently resetting"""
+        return self._resetting
 
     @property
     def scenario(self):
@@ -1174,9 +1199,11 @@ class SMARTS:
         if not other_positions:
             return []
 
-        distances = euclidean_distances(other_positions, [vehicle.position]).reshape(
-            -1,
-        )
+        # calculate euclidean distances
+        distances = cdist(
+            other_positions, [vehicle.position], metric="euclidean"
+        ).reshape(-1)
+
         indices = np.argwhere(distances <= radius).flatten()
         return [other_states[i] for i in indices]
 
@@ -1277,7 +1304,7 @@ class SMARTS:
         map_max = np.array(self._map_bb.max_pt[:2]) if self._map_bb else None
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            map_spot = np.array(vehicle.pose.position[:2])
+            map_spot = np.array(vehicle.pose.as_position2d())
             if map_min is None:
                 map_min = map_spot
                 rescale_plane = True
@@ -1313,8 +1340,9 @@ class SMARTS:
         speed = {}
         heading = {}
         lane_ids = {}
+        agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         for v in provider_state.vehicles:
-            if v.vehicle_id in self._vehicle_index.agent_vehicle_ids():
+            if v.vehicle_id in agent_vehicle_ids:
                 # this is an agent controlled vehicle
                 agent_id = self._vehicle_index.actor_id_from_vehicle_id(v.vehicle_id)
                 agent_obs = obs[agent_id]
@@ -1366,7 +1394,7 @@ class SMARTS:
                     mission_route_geometry=mission_route_geometry,
                 )
                 speed[agent_id] = v.speed
-                position[agent_id] = tuple(v.pose.position[:2])
+                position[agent_id] = tuple(v.pose.as_position2d())
                 heading[agent_id] = float(v.pose.heading)
                 if (
                     vehicle_obs.waypoint_paths

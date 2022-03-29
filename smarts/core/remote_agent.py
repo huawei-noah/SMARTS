@@ -25,8 +25,8 @@ from typing import Tuple
 import cloudpickle
 import grpc
 
-from smarts.core.agent import AgentSpec
 from smarts.zoo import manager_pb2, manager_pb2_grpc, worker_pb2, worker_pb2_grpc
+from smarts.zoo.agent_spec import AgentSpec
 
 
 class RemoteAgentException(Exception):

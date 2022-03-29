@@ -24,11 +24,9 @@ import json
 import logging
 import math
 import os
-import sys
-import time
 from collections import deque
 from threading import Lock
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
 import rospy
@@ -43,8 +41,7 @@ from smarts_ros.msg import (
 from smarts_ros.srv import SmartsInfo, SmartsInfoRequest, SmartsInfoResponse
 
 from envision.client import Client as Envision
-from smarts.core.agent import Agent
-from smarts.core.coordinates import Dimensions, Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Point, Pose
 from smarts.core.plan import (
     EndlessGoal,
     Mission,
@@ -56,11 +53,7 @@ from smarts.core.plan import (
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
-from smarts.core.utils.math import (
-    fast_quaternion_from_angle,
-    vec_to_radians,
-    yaw_from_quaternion,
-)
+from smarts.core.utils.math import fast_quaternion_from_angle, vec_to_radians
 from smarts.core.vehicle import VehicleState
 from smarts.ros.logging import log_everything_to_ROS
 from smarts.sstudio.types import MapSpec
@@ -78,6 +71,13 @@ class ROSDriver:
         self._smarts = None
         self._reset()
 
+    def _reset_smarts(self):
+        with self._reset_lock:
+            self._reset_msg = None
+            self._scenario_path = None
+            self._agents = {}
+            self._agents_to_add = {}
+
     def _reset(self):
         if self._smarts:
             self._smarts.destroy()
@@ -90,18 +90,14 @@ class ROSDriver:
         self._warned_about_freq = False
         with self._state_lock:
             self._recent_state = deque(maxlen=3)
-        with self._reset_lock:
-            self._reset_msg = None
-            self._scenario_path = None
-            self._agents = {}
-            self._agents_to_add = {}
+        self._reset_smarts()
 
     def setup_ros(
         self,
         node_name: str = "SMARTS",
         def_namespace: str = "SMARTS/",
         buffer_size: int = 3,
-        target_freq: float = None,
+        target_freq: Optional[float] = None,
         time_ratio: float = 1.0,
         pub_queue_size: int = 10,
     ):
@@ -148,7 +144,11 @@ class ROSDriver:
         log_everything_to_ROS(level=logging.WARNING)
 
     def setup_smarts(
-        self, headless: bool = True, seed: int = 42, time_ratio: float = 1.0
+        self,
+        headless: bool = True,
+        seed: int = 42,
+        time_ratio: float = 1.0,
+        sumo_traffic: bool = False,
     ):
         """Do the setup of the underlying SMARTS instance."""
         assert not self._smarts
@@ -163,20 +163,27 @@ class ROSDriver:
         assert time_ratio > 0.0
         self._time_ratio = time_ratio
 
+        traffic_sim = None
+        if rospy.get_param("~sumo_traffic", sumo_traffic):
+            from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
+            # Note that Sumo uses a fixed timestep, so if we have a highly-variable step rate,
+            # we may want to set time_resolution to a mutiple of the target_freq?
+            time_resolution = 1.0 / self._target_freq if self._target_freq else None
+            traffic_sim = SumoTrafficSimulation(
+                headless=headless,
+                time_resolution=time_resolution,
+            )
+
         self._smarts = SMARTS(
             agent_interfaces={},
-            traffic_sim=None,
+            traffic_sim=traffic_sim,
             fixed_timestep_sec=None,
             envision=None if headless else Envision(),
             external_provider=True,
         )
         assert self._smarts.external_provider
         self._last_step_time = None
-        with self._reset_lock:
-            self._reset_msg = None
-            self._scenario_path = None
-            self._agents = {}
-            self._agents_to_add = {}
 
     def _smarts_reset_callback(self, reset_msg: SmartsReset):
         with self._reset_lock:
@@ -276,12 +283,16 @@ class ROSDriver:
     @staticmethod
     def _pose_from_ros(ros_pose) -> Pose:
         return Pose(
-            position=(ros_pose.position.x, ros_pose.position.y, ros_pose.position.z),
-            orientation=(
-                ros_pose.orientation.x,
-                ros_pose.orientation.y,
-                ros_pose.orientation.z,
-                ros_pose.orientation.w,
+            position=np.array(
+                [ros_pose.position.x, ros_pose.position.y, ros_pose.position.z]
+            ),
+            orientation=np.array(
+                [
+                    ros_pose.orientation.x,
+                    ros_pose.orientation.y,
+                    ros_pose.orientation.z,
+                    ros_pose.orientation.w,
+                ]
             ),
         )
 
@@ -292,7 +303,7 @@ class ROSDriver:
         task = ros_agent_spec.tasks[0]
         task_params = json.loads(task.params_json) if task.params_json else {}
         task_version = task.task_ver or "latest"
-        agent_locator = f"{self._zoo_module}:{task.task_ref}-{task_version}"
+        agent_locator = f"{self._zoo_module}:{task.task_ref}-{task_version}"  # pytype: disable=attribute-error
         agent_spec = None
         try:
             agent_spec = registry.make(agent_locator, **task_params)
@@ -308,7 +319,7 @@ class ROSDriver:
             or ros_agent_spec.end_pose.position.y != 0.0
         ):
             goal = PositionalGoal(
-                (
+                Point(
                     ros_agent_spec.end_pose.position.x,
                     ros_agent_spec.end_pose.position.y,
                 ),
@@ -390,7 +401,7 @@ class ROSDriver:
             )
 
         @property
-        def stamp(self):
+        def stamp(self) -> float:
             """The estimated timestamp of this vehicle state."""
             return self.vector[0]
 
@@ -483,7 +494,7 @@ class ROSDriver:
         vs.linear_acceleration += staleness * lin_acc_slope
         vs.angular_acceleration += staleness * ang_acc_slope
 
-    def _update_smarts_state(self) -> float:
+    def _update_smarts_state(self) -> Optional[float]:
         with self._state_lock:
             if (
                 not self._recent_state
@@ -607,7 +618,7 @@ class ROSDriver:
             self._agents_to_add = {}
             return actions
 
-    def _get_map_spec(self) -> MapSpec:
+    def _get_map_spec(self) -> Optional[MapSpec]:
         """SMARTS ROS nodes can extend from this ROSDriver base class
         and implement this method to return an alternative MapSpec object
         designating the map builder to use in the Scenario (returning None
@@ -615,7 +626,7 @@ class ROSDriver:
         self._scenario_path can be used to construct a MapSpec object."""
         return None
 
-    def _check_reset(self) -> Dict[str, Observation]:
+    def _check_reset(self) -> Optional[Dict[str, Observation]]:
         with self._reset_lock:
             if self._reset_msg:
                 self._scenario_path = self._reset_msg.scenario
@@ -626,8 +637,9 @@ class ROSDriver:
                 self._most_recent_state_sent = None
                 self._warned_about_freq = False
                 map_spec = self._get_map_spec()
+                routes = Scenario.discover_routes(self._scenario_path) or [None]
                 return self._smarts.reset(
-                    Scenario(self._scenario_path, map_spec=map_spec)
+                    Scenario(self._scenario_path, map_spec=map_spec, route=routes[0])
                 )
         return None
 
@@ -638,7 +650,9 @@ class ROSDriver:
         if not self._smarts:
             raise RuntimeError("must call setup_smarts() first.")
 
+        # pytype: disable=attribute-error
         rospy.Service(self._service_name, SmartsInfo, self._get_smarts_info)
+        # pytype: enable=attribute-error
 
         warned_scenario = False
         observations = {}
@@ -682,6 +696,7 @@ class ROSDriver:
                     rospy.logerr(traceback.format_exc())
                     rospy.logerr("Will wait for next reset...")
                     self._smarts = None
+                    self._reset_smarts()
                     self.setup_smarts()
 
                 if self._target_freq:

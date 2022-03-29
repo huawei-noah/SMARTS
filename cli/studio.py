@@ -21,9 +21,9 @@ import multiprocessing
 import os
 import subprocess
 import sys
-from multiprocessing import Process, Semaphore
+from multiprocessing import Process, Semaphore, synchronize
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from threading import Thread
 from typing import Sequence
 
 import click
@@ -84,7 +84,7 @@ def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
 
 
 def _build_single_scenario_proc(
-    clean: bool, allow_offset_map: bool, scenario: str, semaphore: Semaphore
+    clean: bool, allow_offset_map: bool, scenario: str, semaphore: synchronize.Semaphore
 ):
     semaphore.acquire()
     try:
@@ -229,7 +229,7 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
             f"timestep={timestep}s"
         )
 
-        with multiprocessing.pool.ThreadPool(len(jsonl_paths)) as pool:
+        with ThreadPool(len(jsonl_paths)) as pool:
             pool.starmap(
                 Envision.read_and_send,
                 [(jsonl, endpoint, timestep) for jsonl in jsonl_paths],

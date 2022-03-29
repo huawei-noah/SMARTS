@@ -28,10 +28,11 @@ import importlib_resources
 import pytest
 import pytest_notebook.nb_regression as nb
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
+from smarts.zoo.agent_spec import AgentSpec
 
 logging.basicConfig(level=logging.INFO)
 
@@ -92,7 +93,9 @@ def notebook():
     with open(tmppath, "w") as f:
         import smarts.core.tests
 
+        # pytype: disable=module-attr
         f.write(importlib_resources.read_text(smarts.core.tests, NOTEBOOK_NAME))
+        # pytype: enable=module-attr
     yield tmppath
     os.remove(tmppath)
 

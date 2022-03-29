@@ -26,8 +26,9 @@ import gym
 import pytest
 from pympler import muppy, summary, tracker
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.zoo.agent_spec import AgentSpec
 
 SMARTS_MEMORY_GROWTH_LIMIT = 2e5
 EPISODE_MEMORY_GROWTH_LIMIT = 2e5

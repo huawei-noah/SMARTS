@@ -21,9 +21,10 @@
 import os
 import subprocess
 import sys
+from typing import Optional
 
 
-def _usage_error(msg: str = None):
+def _usage_error(msg: Optional[str] = None):
     if msg:
         print(f"ERROR:  {msg}")
     print("usage:  python -m smarts.ros setup_node [install_path]")

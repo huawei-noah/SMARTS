@@ -28,7 +28,7 @@ import unittest
 import gym
 import ray
 
-from smarts.core.agent import AgentSpec
+from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import make
 from ultra.baselines.sac.sac.policy import SACPolicy
 from ultra.train import train

@@ -87,7 +87,7 @@ class TrafficHistoryProvider(Provider):
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
-        return {}
+        return set()
 
     def sync(self, provider_state):
         # Ignore other sim state

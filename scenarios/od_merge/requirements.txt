@@ -1,0 +1,3 @@
+--extra-index-url http://localhost:8080
+
+opendrive2lanelet>=1.2.1

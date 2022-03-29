@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 import logging
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple, Union
 
 import cloudpickle
 
@@ -104,7 +104,7 @@ class AgentManager:
 
     def agent_interface_for_agent_id(self, agent_id) -> AgentInterface:
         """Get the agent interface of a specific agent."""
-        return self._agent_interfaces.get(agent_id, None)
+        return self._agent_interfaces[agent_id]
 
     @property
     def pending_agent_ids(self) -> Set[str]:
@@ -161,7 +161,10 @@ class AgentManager:
     def observe(
         self, sim
     ) -> Tuple[
-        Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]
+        Dict[str, Union[Dict[str, Observation], Observation]],
+        Dict[str, Union[Dict[str, float], float]],
+        Dict[str, Union[Dict[str, float], float]],
+        Dict[str, Union[Dict[str, bool], bool]],
     ]:
         """Generate observations from all vehicles associated with an active agent."""
         observations = {}
@@ -213,9 +216,10 @@ class AgentManager:
 
                 vehicle = sim.vehicle_index.vehicle_by_id(vehicle_ids[0])
                 sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
-                observations[agent_id], dones[agent_id] = Sensors.observe(
+                obs, dones[agent_id] = Sensors.observe(
                     sim, agent_id, sensor_state, vehicle
                 )
+                observations[agent_id] = obs
 
                 if sim.vehicle_index.vehicle_is_shadowed(vehicle.id):
                     # It is not a shadowing agent's fault if it is done
@@ -223,7 +227,7 @@ class AgentManager:
                 else:
                     logging.log(
                         logging.DEBUG,
-                        f"Agent `{agent_id}` has raised done with {observations[agent_id].events}",
+                        f"Agent `{agent_id}` has raised done with {obs.events}",
                     )
 
                 rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
@@ -235,12 +239,12 @@ class AgentManager:
 
         return observations, rewards, scores, dones
 
-    def _vehicle_reward(self, vehicle_id, sim):
+    def _vehicle_reward(self, vehicle_id, sim) -> float:
         return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor(
             increment=True
         )
 
-    def _vehicle_score(self, vehicle_id, sim):
+    def _vehicle_score(self, vehicle_id, sim) -> float:
         return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
 
     def step_sensors(self, sim):
@@ -517,7 +521,7 @@ class AgentManager:
         self._social_agent_ids.add(agent_id)
         self._social_agent_data_models[agent_id] = agent_model
 
-    def teardown_ego_agents(self, filter_ids: Set = None):
+    def teardown_ego_agents(self, filter_ids: Optional[Set] = None):
         """Tears down all given ego agents passed through the filter.
         Args:
             filter_ids (Optional[Set[str]]): The whitelist of agent ids. If `None`, all ids are whitelisted.
@@ -526,7 +530,7 @@ class AgentManager:
         self._ego_agent_ids -= ids_
         return ids_
 
-    def teardown_social_agents(self, filter_ids: Set = None):
+    def teardown_social_agents(self, filter_ids: Optional[Set] = None):
         """Tears down all given social agents passed through the filter.
         Args:
             filter_ids (Optional[Set[str]]): The whitelist of agent ids. If `None`, all ids are whitelisted.
