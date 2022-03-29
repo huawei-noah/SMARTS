@@ -69,7 +69,7 @@ class Lidar:
                     self._sensor_params.noise_mu, self._sensor_params.noise_sigma
                 )
             )
-        return np.array(static_lidar_noise, dtype=np.float)
+        return np.array(static_lidar_noise, dtype=np.float64)
 
     def compute_point_cloud(
         self,

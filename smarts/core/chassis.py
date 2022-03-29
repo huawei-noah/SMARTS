@@ -120,6 +120,12 @@ class Chassis:
         """The speed of the chassis in the facing direction of the chassis."""
         raise NotImplementedError
 
+    def set_pose(self, pose: Pose):
+        """Use with caution since it disrupts the physics simulation. Sets the pose of the
+        chassis.
+        """
+        raise NotImplementedError
+
     @speed.setter
     def speed(self, speed: float):
         """Apply GCD from front-end."""
@@ -131,8 +137,8 @@ class Chassis:
         raise NotImplementedError
 
     @property
-    def steering(self):
-        """The steering value of the chassis in radians [-math.pi, math.pi]."""
+    def steering(self) -> float:
+        """The steering value of the chassis in radians [-math.pi:math.pi]."""
         raise NotImplementedError
 
     @property
@@ -147,7 +153,7 @@ class Chassis:
     @property
     def to_polygon(self) -> Polygon:
         """Convert the chassis to a 2D shape."""
-        p = self.pose.position
+        p = self.pose.as_position2d()
         d = self.dimensions
         poly = shapely_box(
             p[0] - d.width * 0.5,
@@ -170,6 +176,11 @@ class Chassis:
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
         and may have unintended behavioral or performance consequences."""
+        raise NotImplementedError
+
+    def set_pose(self, pose: Pose):
+        """Use with caution since it disrupts the physics simulation. Sets the pose of the
+        chassis."""
         raise NotImplementedError
 
 
@@ -231,7 +242,14 @@ class BoxChassis(Chassis):
                 linearVelocity=linear_velocity,
                 angularVelocity=angular_velocity,
             )
-        self._bullet_constraint.move_to(force_pose)
+        self.set_pose(force_pose)
+
+    def set_pose(self, pose: Pose):
+        position, orientation = pose.as_bullet()
+        self._client.resetBasePositionAndOrientation(
+            self.bullet_id, position, orientation
+        )
+        self._bullet_constraint.move_to(pose)
 
     @property
     def dimensions(self) -> Dimensions:
@@ -486,9 +504,6 @@ class AckermannChassis(Chassis):
         )
 
     def set_pose(self, pose: Pose):
-        """Use with caution since it disrupts the physics simulation. Sets the pose of the
-        chassis.
-        """
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self._bullet_id, position, orientation
@@ -792,7 +807,6 @@ class AckermannChassis(Chassis):
         )
         self._log.debug(
             f"wheel_states: {state_summary}\t vehicle speed: {self.speed:.2f}",
-            end="\r",
         )
 
     def _load_joints(self, bullet_id):

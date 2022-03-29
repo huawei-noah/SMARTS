@@ -26,10 +26,8 @@ def test_examples(example):
     main = current_example.main
     main(
         scenarios=["scenarios/loop"],
-        sim_name=None,
         headless=True,
         num_episodes=1,
-        seed=42,
         max_episode_steps=100,
     )
 

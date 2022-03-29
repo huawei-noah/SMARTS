@@ -25,11 +25,12 @@ import gym
 gym.logger.set_level(40)
 import pytest
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import RGB, AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.parallel_env import ParallelEnv
+from smarts.zoo.agent_spec import AgentSpec
 
 
 @pytest.fixture(scope="module")
@@ -59,7 +60,7 @@ def single_env_actions(agent_specs):
 @pytest.fixture(scope="module")
 def env_constructor(agent_specs):
     env_constructor = lambda: HiWayEnv(
-        scenarios=["scenarios/loop"],
+        scenarios=["scenarios/figure_eight"],
         agent_specs=agent_specs,
         sim_name="Test_env",
         headless=True,

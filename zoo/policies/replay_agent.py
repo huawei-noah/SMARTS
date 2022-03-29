@@ -6,7 +6,8 @@ import os
 import pickle
 from pathlib import Path
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
+from smarts.zoo.agent_spec import AgentSpec
 
 agent_index = 0
 

@@ -41,8 +41,8 @@ from config import HyperParameters
 from prioritized_replay import Buffer
 from soc_mt_ac_network import SocMtActorNetwork, SocMtCriticNetwork
 
-from smarts.core.agent import AgentSpec
 from smarts.core.utils.episodes import episodes
+from smarts.zoo.agent_spec import AgentSpec
 from utils import get_split_batch
 
 warnings.filterwarnings("ignore")
@@ -176,7 +176,7 @@ def train(
                 if WITH_SOC_MT:
                     reward = rewards[AGENT_ID]
                 else:
-                    reward = np.sum(reward)
+                    reward = np.sum(rewards.values())
                 done = dones[AGENT_ID]
                 info = infos[AGENT_ID]
                 aux_info = get_aux_info(infos[AGENT_ID]["env_obs"])

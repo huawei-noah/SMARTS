@@ -90,7 +90,7 @@ flamegraph: $(scenario)/flamegraph.svg
 
 .PHONY: $(scenario)/flamegraph.svg
 $(scenario)/flamegraph.svg: $(scenario)/flamegraph-perf.log
-	./third_party/tools/flamegraph.pl --title "HiWay CPU ($(scenario))" $(scenario)/flamegraph-perf.log > $(scenario)/flamegraph.svg
+	./utils/third_party/tools/flamegraph.pl --title "HiWay CPU ($(scenario))" $(scenario)/flamegraph-perf.log > $(scenario)/flamegraph.svg
 
 .PHONY: $(scenario)/flamegraph-perf.log
 $(scenario)/flamegraph-perf.log: build-scenario $(script) smarts/core/* smarts/env/*

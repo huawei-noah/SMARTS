@@ -25,7 +25,7 @@ import sys
 import traceback
 import warnings
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Sequence, Tuple
 
 import cloudpickle
 import gym

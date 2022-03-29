@@ -22,9 +22,10 @@
 import gym
 import pytest
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
+from smarts.zoo.agent_spec import AgentSpec
 
 AGENT_ID = "Agent-007"
 SOCIAL_AGENT_ID = "Alec Trevelyan"

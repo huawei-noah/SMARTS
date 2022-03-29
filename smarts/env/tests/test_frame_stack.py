@@ -24,10 +24,11 @@ import gym
 import numpy as np
 import pytest
 
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import RGB, AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.wrappers.frame_stack import FrameStack
+from smarts.zoo.agent_spec import AgentSpec
 
 
 @pytest.fixture
@@ -53,7 +54,7 @@ def agent_specs():
 def env(agent_specs):
     env = gym.make(
         "smarts.env:hiway-v0",
-        scenarios=["scenarios/loop"],
+        scenarios=["scenarios/figure_eight"],
         agent_specs=agent_specs,
         headless=True,
         visdom=False,
