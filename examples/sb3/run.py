@@ -214,6 +214,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--logdir",
+        help="Directory path for saving logs. Required if `--mode=evaluate`, else optional.",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--model",
         help="Directory path to saved RL model. Required if `--mode=evaluate`, else optional.",
         type=str,
         default=None,
