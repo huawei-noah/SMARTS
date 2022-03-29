@@ -30,7 +30,7 @@ Subcommands:
 
 Options: (build and build-all)
 - clean: Clean previously generated artifacts first
-- allow-offset-map(s): Allopw road networks (maps) to be offset from the origin. If not specified,
+- allow-offset-map(s): Allow road networks (maps) to be offset from the origin. If not specified,
 creates a new network file if necessary
 
 ex. Build and clean a single scenario
@@ -66,7 +66,7 @@ envision:
 
 Subcommands:
 
-- start: Start envision server
+- start: Start Envision server
 
 Options:
 
@@ -74,7 +74,7 @@ Options:
 - -s, --scenarios TEXT: A list of directories where scenarios are stored
 - -c, --max_capacity FLOAT: Max capacity in MB of Envision's playback buffer.
 
-ex. Start envision with custom port 1000
+ex. Start Envision with custom port 1000
 
 .. code-block:: bash
 
@@ -88,6 +88,7 @@ Subcommands:
 
 - build <path-to-policy>: Build a policy
 - install TEXT: Attempt to install the specified agents from the given paths/url
+- manager: Start the manager process which instantiates workers
 
 ex. Build the rl-agent policy
 

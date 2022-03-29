@@ -29,7 +29,7 @@ from typing import Sequence
 import click
 
 
-@click.group(name="scenario")
+@click.group(name="scenario", help="Generate, replay or clean scenarios. See `scl scenario COMMAND --help` for further options")
 def scenario_cli():
     pass
 
@@ -186,7 +186,7 @@ def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
         proc.join()
 
 
-@scenario_cli.command(name="clean")
+@scenario_cli.command(name="clean", help="Clean previously generated artifacts")
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
 def clean_scenario(scenario: str):
     _clean(scenario)
@@ -215,7 +215,7 @@ def _clean(scenario: str):
             f.unlink()
 
 
-@scenario_cli.command(name="replay")
+@scenario_cli.command(name="replay", help="Replay data from previous runs")
 @click.option("-d", "--directory", multiple=True)
 @click.option("-t", "--timestep", default=0.01, help="Timestep in seconds")
 @click.option("--endpoint", default="ws://localhost:8081")
