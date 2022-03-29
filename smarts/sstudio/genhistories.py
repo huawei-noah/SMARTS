@@ -56,9 +56,7 @@ class _TrajectoryDataset:
         self._output = output
         self._path = dataset_spec["input_path"]
         real_lane_width_m = dataset_spec.get("real_lane_width_m", DEFAULT_LANE_WIDTH)
-        lane_width = dataset_spec.get("map_net", {}).get(
-            "lane_width", real_lane_width_m
-        )
+        lane_width = self._map_spec.get("lane_width", real_lane_width_m)
         self._scale = lane_width / real_lane_width_m
         self._flip_y = dataset_spec.get("flip_y", False)
         self._swap_xy = dataset_spec.get("swap_xy", False)
@@ -82,12 +80,13 @@ class _TrajectoryDataset:
     def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
         """Validate the form of the dataset specification."""
         errmsg = None
+        self._map_spec = dataset_spec.get("map_net") or {}
         if "input_path" not in dataset_spec:
             errmsg = "'input_path' field is required in dataset yaml."
         elif dataset_spec.get("flip_y"):
             if not dataset_spec["source"].startswith("NGSIM"):
                 errmsg = "'flip_y' option only supported for NGSIM datasets."
-            elif not dataset_spec.get("map_net", {}).get("max_y"):
+            elif not self._map_spec.get("max_y"):
                 errmsg = "'map_net:max_y' is required if 'flip_y' option used."
         if errmsg:
             self._log.error(errmsg)
@@ -460,7 +459,7 @@ class NGSIM(_TrajectoryDataset):
             df["position_x"] = df["position_y"] - y_margin
 
         if self._flip_y:
-            max_y = self._dataset_spec["map_net"]["max_y"]
+            max_y = self._map_spec["max_y"]
             df["position_y"] = (max_y / self.scale) - df["position_y"]
 
         # Use moving average to smooth positions...
@@ -512,13 +511,13 @@ class NGSIM(_TrajectoryDataset):
         df["position_x"] -= x_hlen
         df["position_y"] -= y_hlen
 
-        map_width = self._dataset_spec.get("map_net", {}).get("width")
+        map_width = self._map_spec.get("width")
         if map_width:
             valid_x = (df["position_x"] * self.scale).between(
                 x_hlen, map_width - x_hlen
             )
             df = df[valid_x]
-        map_height = self._dataset_spec.get("map_net", {}).get("height")
+        map_height = self._map_spec.get("height")
         if map_height:
             valid_y = (df["position_y"] * self.scale).between(
                 y_hlen, map_height - y_hlen
