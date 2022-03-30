@@ -28,6 +28,7 @@ import shutil
 import yaml
 import re
 import json
+import time
 from typing import Dict, List, Tuple, Optional
 from tabulate import tabulate
 from pathlib import Path
@@ -613,9 +614,11 @@ def merge_tags(new_imports, main_dict, display: bool = False):
             for scenario_id in new_imports[tf_file]:
                 if scenario_id in main_dict:
                     main_dict[tf_file][scenario_id].extend(
-                        tag.lower()
-                        for tag in new_imports[tf_file][scenario_id]
-                        if tag.lower() not in main_dict[tf_file][scenario_id]
+                        [
+                            tag.lower()
+                            for tag in new_imports[tf_file][scenario_id]
+                            if tag.lower() not in main_dict[tf_file][scenario_id]
+                        ]
                     )
                 else:
                     main_dict[tf_file][scenario_id] = new_imports[tf_file][scenario_id]
@@ -807,10 +810,9 @@ def tfrecords_browser(
                 f"2. `display <indexes>` --> Displays the info of tfRecord files at these indexes of the table.\n"
                 f"                           The indexes should be an integer between 1 and {len(tf_records)} and space separated\n"
                 f"3. `import tags` --> Import the tags of tfRecords from a previously saved .json file.\n"
-                f"                                      The path to the .json file should be valid and exist.\n"
-                f"                                      Only tags of tfRecords which are displayed above will be imported. Ensure the name of tfRecord match with the ones displayed above.\n"
+                f"                     Only tags of tfRecords which are displayed above will be imported. Ensure the name of tfRecord match with the ones displayed above.\n"
                 f"4. `export tags all/<indexes>` --> Export the tags of the tfRecords at these indexes to a .json file.\n"
-                f"                                                    Optionally if you can use all instead to export tags of all tfRecords. The path to the .json file should be valid.\n"
+                f"                                   Optionally if you can use all instead to export tags of all tfRecords. The path to the .json file should be valid.\n"
                 f"5. `explore <index>` --> Explore the tfRecord file at this index of the table.\n"
                 f"                         The index should be an integer between 1 and {len(tf_records)}\n"
                 "6. `exit` --> Exit the program\n"
@@ -913,7 +915,7 @@ def tfrecords_browser(
                 valid_indexes = [i + 1 for i in range(len(tf_records))]
             else:
                 valid_indexes = check_index_validity(
-                    input_lst[1:], len(tf_records), "display"
+                    input_lst[2:], len(tf_records), "display"
                 )
                 if len(valid_indexes) == 0:
                     continue
@@ -943,30 +945,36 @@ def tfrecords_browser(
                         if stripped_response == "1":
                             tags_to_dump.update(
                                 {
-                                    os.path.basename(tfr_path): imported_tags.get(
-                                        os.path.basename(tfr_path), {}
+                                    os.path.basename(tfr_path): copy.deepcopy(
+                                        imported_tags.get(
+                                            os.path.basename(tfr_path), {}
+                                        )
                                     )
                                 }
                             )
                         elif stripped_response == "2":
                             tags_to_dump.update(
                                 {
-                                    os.path.basename(tfr_path): tags_per_tfrecords.get(
-                                        os.path.basename(tfr_path), {}
+                                    os.path.basename(tfr_path): copy.deepcopy(
+                                        tags_per_tfrecords.get(
+                                            os.path.basename(tfr_path), {}
+                                        )
                                     )
                                 }
                             )
                         else:
                             tags_to_dump.update(
                                 {
-                                    os.path.basename(tfr_path): tags_per_tfrecords.get(
-                                        os.path.basename(tfr_path), {}
+                                    os.path.basename(tfr_path): copy.deepcopy(
+                                        tags_per_tfrecords.get(
+                                            os.path.basename(tfr_path), {}
+                                        )
                                     )
                                 }
                             )
                             scenario_imported_tags = {
-                                os.path.basename(tfr_path): imported_tags.get(
-                                    os.path.basename(tfr_path), {}
+                                os.path.basename(tfr_path): copy.deepcopy(
+                                    imported_tags.get(os.path.basename(tfr_path), {})
                                 )
                             }
                             merge_tags(scenario_imported_tags, tags_to_dump)
@@ -1179,6 +1187,7 @@ def explore_tf_record(
                 print(
                     f"\nYou can build these scenarios exported using the command `scl scenario build-all {target_base_path}`"
                 )
+            time.sleep(2.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1213,6 +1222,7 @@ def explore_tf_record(
                 f"Plotting and dumping all the scenario maps in {tfrecord} tfrecord file"
             )
             dump_plots(target_base_path, scenario_dict)
+            time.sleep(2.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1271,6 +1281,7 @@ def explore_tf_record(
                 f"Plotting and dumping all the scenarios animations in {tfrecord} tfrecord file"
             )
             dump_plots(target_base_path, scenario_dict, animate=True)
+            time.sleep(2.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1383,6 +1394,7 @@ def explore_tf_record(
                         [tag for tag in tags if tag not in tfrecord_tags[scenario_idx]]
                     )
                 print("Tags added to `Tags Added` list")
+            time.sleep(2.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1481,6 +1493,7 @@ def explore_tf_record(
                                 new_tags.append(tag)
                         tfrecord_tags[scenario_idx] = new_tags
                         print(f"Tags removed from `Tags Added` list of {scenario_idx}")
+            time.sleep(2.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1890,6 +1903,7 @@ if __name__ == "__main__":
     import warnings
     import readline
 
+    readline.parse_and_bind("tab: complete")
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
     parser = argparse.ArgumentParser(
