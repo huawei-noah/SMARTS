@@ -27,11 +27,19 @@ Subcommands:
 - build-all <path-to-scenarios>: Generate all scenarios under the given directories
 - build <path-to-scenario>: Generate a single scenario
 - clean <path-to-scenario(s)>: Clean generated artifacts 
+- replay <path-to-replay-data>: Replay data from previous runs
 
-Options: (build and build-all)
-- clean: Clean previously generated artifacts first
-- allow-offset-map(s): Allow road networks (maps) to be offset from the origin. If not specified,
+Options: 
+
+(build and build-all)
+- --clean: Clean previously generated artifacts first
+- --allow-offset-map(s): Allow road networks (maps) to be offset from the origin. If not specified,
 creates a new network file if necessary
+
+(replay)
+- -d, --directory TEXT: Location of replay data
+- -t, --timestep FLOAT: Timestep in seconds
+- --endpoint TEXT: Default="ws://localhost:8081"
 
 ex. Build and clean a single scenario
 
