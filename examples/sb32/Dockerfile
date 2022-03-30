@@ -34,7 +34,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip install --upgrade pip wheel
 
 # Install requirements.txt .
-COPY ./examples/sb3/requirements.txt /tmp/requirements.txt
+COPY ./examples/sb32/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # (Optional) Disable git certificate verification
@@ -43,7 +43,7 @@ RUN git config --global http.sslVerify false
 # Copy source files and install.
 COPY . /src
 WORKDIR /src
-RUN pip install --no-cache-dir -e ./examples/sb3
+RUN pip install --no-cache-dir -e ./examples/sb32
 
 # For Envision.
 EXPOSE 8081
