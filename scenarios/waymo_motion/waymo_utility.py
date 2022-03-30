@@ -876,7 +876,7 @@ def tfrecords_browser(
             if not check_path_validity(json_file_path):
                 continue
             try:
-                with open(json_file_path, "r") as f:
+                with open(os.path.abspath(json_file_path), "r") as f:
                     new_tags = json.load(f)
             except (FileNotFoundError, IOError, OSError, json.decoder.JSONDecodeError):
                 print(
@@ -940,7 +940,7 @@ def tfrecords_browser(
                 )
                 continue
             try:
-                with open(json_file_path, "w") as f:
+                with open(os.path.abspath(json_file_path), "w") as f:
                     json.dump(tags_to_dump, f, ensure_ascii=False, indent=4)
                     print(f"Dumped the tags at {json_file_path}")
             except (FileNotFoundError, IOError, OSError, json.decoder.JSONDecodeError):
