@@ -22,7 +22,7 @@ import logging
 import os
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -31,7 +31,7 @@ from smarts.core.plan import Mission, Plan
 
 from . import models
 from .chassis import AckermannChassis, BoxChassis, Chassis
-from .colors import SceneColors
+from .colors import Colors, SceneColors
 from .coordinates import Dimensions, Heading, Pose
 from .sensors import (
     AccelerometerSensor,
@@ -85,7 +85,7 @@ class VehicleConfig:
     """Vehicle configuration"""
 
     vehicle_type: str
-    color: tuple
+    color: SceneColors
     dimensions: Dimensions
     glb_model: str
 
@@ -143,6 +143,10 @@ VEHICLE_CONFIGS = {
 class Vehicle:
     """Represents a single vehicle."""
 
+    _HAS_DYNAMIC_ATTRIBUTES = True
+
+    _HAS_DYNAMIC_ATTRIBUTES = True  # pytype dynamic
+
     def __init__(
         self,
         id: str,
@@ -154,7 +158,7 @@ class Vehicle:
         self._log = logging.getLogger(self.__class__.__name__)
         self._id = id
 
-        self._chassis = chassis
+        self._chassis: Chassis = chassis
         self._vehicle_config_type = vehicle_config_type
         self._action_space = action_space
         self._speed = None
@@ -163,7 +167,7 @@ class Vehicle:
         self._sensors = {}
 
         # Color override
-        self._color = color
+        self._color: Optional[SceneColors] = color
         if self._color is None:
             config = VEHICLE_CONFIGS[vehicle_config_type]
             self._color = config.color
@@ -249,7 +253,7 @@ class Vehicle:
     #     self._chassis.speed = speed
 
     @property
-    def vehicle_color(self) -> Optional[SceneColors]:
+    def vehicle_color(self) -> Union[SceneColors, Tuple, None]:
         """The color of this vehicle (generally used for rendering purposes.)"""
         self._assert_initialized()
         return self._color
@@ -265,7 +269,9 @@ class Vehicle:
             pose=self.pose,
             dimensions=self._chassis.dimensions,
             speed=self.speed,
+            # pytype: disable=attribute-error
             steering=self._chassis.steering,
+            # pytype: enable=attribute-error
             yaw_rate=self._chassis.yaw_rate,
             source="SMARTS",
             linear_velocity=self._chassis.velocity_vectors[0],

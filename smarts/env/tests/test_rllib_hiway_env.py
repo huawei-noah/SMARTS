@@ -32,10 +32,10 @@ from ray import tune
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 
-from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
+from smarts.zoo.agent_spec import AgentSpec
 
 AGENT_ID = "Agent-007"
 INFO_EXTRA_KEY = "__test_extra__"

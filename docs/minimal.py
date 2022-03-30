@@ -1,6 +1,7 @@
 import gym
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import AgentSpec, Agent
+from smarts.zoo.agent_spec import AgentSpec
 
 agent_id = "Agent-007"
 agent_spec = AgentSpec(

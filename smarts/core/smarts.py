@@ -19,24 +19,18 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import logging
-import math
 import os
 import warnings
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
+from scipy.spatial.distance import cdist
 
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
-
-with warnings.catch_warnings():
-    # XXX: Benign warning, seems no other way to "properly" fix
-    warnings.filterwarnings("ignore", "numpy.ufunc size changed")
-    from sklearn.metrics.pairwise import euclidean_distances
-
 from smarts import VERSION
-from smarts.core.chassis import AckermannChassis, BoxChassis
+from smarts.core.chassis import BoxChassis
 from smarts.core.plan import Plan
 
 from . import models
@@ -86,17 +80,28 @@ class SMARTSDestroyedError(Exception):
 
 
 class SMARTS:
-    """The core SMARTS simulator."""
+    """The core SMARTS simulator. This is the direct interface to all parts of the simulation.
+    Args:
+        agent_interfaces: The interfaces providing SMARTS with the understanding of what features each agent needs.
+        traffic_sim: The traffic simulator for providing non-agent traffic.
+        envision: An envision client for connecting to an envision visualization server.
+        visdom: A visdom client for connecting to a visdom visualization server.
+        fixed_timestep_sec: The fixed timestep that will be default if time is not otherwise specified at step.
+        reset_agents_only: When specified the simulation will continue use of the current scenario.
+        zoo_addrs: The (ip:port) values of remote agent workers for externally hosted agents.
+        external_provider: Creates a special provider `SMARTS.external_provider` that allows for inserting state.
+        config: The simulation configuration file for unexposed configuration.
+    """
 
     def __init__(
         self,
-        agent_interfaces,
+        agent_interfaces: Dict[str, AgentInterface],
         traffic_sim,  # SumoTrafficSimulation
         envision: Optional[EnvisionClient] = None,
         visdom: Optional[VisdomClient] = None,
-        fixed_timestep_sec: float = 0.1,
+        fixed_timestep_sec: Optional[float] = 0.1,
         reset_agents_only: bool = False,
-        zoo_addrs=None,
+        zoo_addrs: Optional[Tuple[str, int]] = None,
         external_provider: bool = False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -108,12 +113,12 @@ class SMARTS:
         self._envision: Optional[EnvisionClient] = envision
         self._visdom: Optional[VisdomClient] = visdom
         self._traffic_sim = traffic_sim
-        self._external_provider = None
+        self._external_provider: ExternalProvider = None
         self._resetting = False
         self._reset_required = False
 
         assert fixed_timestep_sec is None or fixed_timestep_sec > 0
-        self.fixed_timestep_sec: float = fixed_timestep_sec
+        self.fixed_timestep_sec: Optional[float] = fixed_timestep_sec
         self._last_dt = fixed_timestep_sec
 
         self._elapsed_sim_time = 0
@@ -743,16 +748,21 @@ class SMARTS:
     def renderer(self):
         """The renderer singleton. On call, the sim will attempt to create it if it does not exist."""
         if not self._renderer:
+            from .utils.custom_exceptions import RendererException
+
             try:
                 from .renderer import Renderer
 
                 self._renderer = Renderer(self._sim_id)
+            except ImportError as e:
+                raise RendererException.required_to("use camera observations")
+            except Exception as e:
+                self._renderer = None
+                raise RendererException("Unable to create renderer.")
+            if not self._renderer.is_setup:
                 if self._scenario:
                     self._renderer.setup(self._scenario)
                     self._vehicle_index.begin_rendering_vehicles(self._renderer)
-            except Exception as e:
-                self._log.warning("unable to create Renderer:  " + repr(e))
-                self._renderer = None
         return self._renderer
 
     @property
@@ -1106,7 +1116,7 @@ class SMARTS:
 
         provider_actions = {}
         for agent_id, action in actions.items():
-            agent_interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
+            agent_interface = self._agent_manager.agent_interfaces.get(agent_id, None)
             if (
                 agent_interface
                 and agent_controls_vehicles(agent_id)
@@ -1189,9 +1199,11 @@ class SMARTS:
         if not other_positions:
             return []
 
-        distances = euclidean_distances(other_positions, [vehicle.position]).reshape(
-            -1,
-        )
+        # calculate euclidean distances
+        distances = cdist(
+            other_positions, [vehicle.position], metric="euclidean"
+        ).reshape(-1)
+
         indices = np.argwhere(distances <= radius).flatten()
         return [other_states[i] for i in indices]
 

@@ -217,7 +217,9 @@ class Sensors:
     _log = logging.getLogger("Sensors")
 
     @staticmethod
-    def observe_batch(sim, agent_id, sensor_states, vehicles):
+    def observe_batch(
+        sim, agent_id, sensor_states, vehicles
+    ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
         """Operates all sensors on a batch of vehicles for a single agent."""
         # TODO: Replace this with a more efficient implementation that _actually_
         #       does batching
@@ -233,7 +235,7 @@ class Sensors:
         return observations, dones
 
     @staticmethod
-    def observe(sim, agent_id, sensor_state, vehicle):
+    def observe(sim, agent_id, sensor_state, vehicle) -> Tuple[Observation, bool]:
         """Generate observations for the given agent around the given vehicle."""
         neighborhood_vehicles = None
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:

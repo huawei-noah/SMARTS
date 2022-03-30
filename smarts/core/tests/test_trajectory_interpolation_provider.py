@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 
 import smarts.sstudio.types as t
-from smarts.core.agent import Agent, AgentSpec
+from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.provider import ProviderState
@@ -38,6 +38,7 @@ from smarts.core.trajectory_interpolation_provider import (
     TrajectoryWithTime,
 )
 from smarts.sstudio import gen_scenario
+from smarts.zoo.agent_spec import AgentSpec
 
 AGENT_ID = "Agent-007"
 
@@ -289,7 +290,6 @@ def test_trajectory_interpolation_provider_in_smarts(smarts, agent_spec, scenari
     observations = smarts.reset(scenario)
     init_ego_state = observations[AGENT_ID].ego_vehicle_state
 
-    agent_obs = None
     reached_goal = False
     for _ in range(5):
         agent_obs = observations[AGENT_ID]
