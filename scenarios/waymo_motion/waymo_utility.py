@@ -612,7 +612,7 @@ def merge_tags(new_imports, main_dict, display: bool = False):
     for tf_file in new_imports:
         if tf_file in main_dict:
             for scenario_id in new_imports[tf_file]:
-                if scenario_id in main_dict:
+                if scenario_id in main_dict[tf_file]:
                     main_dict[tf_file][scenario_id].extend(
                         [
                             tag.lower()
@@ -1187,7 +1187,7 @@ def explore_tf_record(
                 print(
                     f"\nYou can build these scenarios exported using the command `scl scenario build-all {target_base_path}`"
                 )
-            time.sleep(2.5)
+            time.sleep(1.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1222,7 +1222,7 @@ def explore_tf_record(
                 f"Plotting and dumping all the scenario maps in {tfrecord} tfrecord file"
             )
             dump_plots(target_base_path, scenario_dict)
-            time.sleep(2.5)
+            time.sleep(1.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1281,7 +1281,7 @@ def explore_tf_record(
                 f"Plotting and dumping all the scenarios animations in {tfrecord} tfrecord file"
             )
             dump_plots(target_base_path, scenario_dict, animate=True)
-            time.sleep(2.5)
+            time.sleep(1.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1394,7 +1394,7 @@ def explore_tf_record(
                         [tag for tag in tags if tag not in tfrecord_tags[scenario_idx]]
                     )
                 print("Tags added to `Tags Added` list")
-            time.sleep(2.5)
+            time.sleep(1.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1493,7 +1493,7 @@ def explore_tf_record(
                                 new_tags.append(tag)
                         tfrecord_tags[scenario_idx] = new_tags
                         print(f"Tags removed from `Tags Added` list of {scenario_idx}")
-            time.sleep(2.5)
+            time.sleep(1.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
