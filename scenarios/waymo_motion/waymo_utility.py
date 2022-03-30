@@ -806,10 +806,11 @@ def tfrecords_browser(
                 "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
                 f"2. `display <indexes>` --> Displays the info of tfRecord files at these indexes of the table.\n"
                 f"                           The indexes should be an integer between 1 and {len(tf_records)} and space separated\n"
-                f"3. `import tags <json_file_path>` --> Import the tags of all the tfRecords from a previously saved .json file.\n"
-                f"                                        The path to the .json file should be valid and exist.\n"
-                f"4. `export tags <json_file_path>` --> Export the tags of all the tfRecords to a .json file.\n"
-                f"                                        The path to the .json file should be valid.\n"
+                f"3. `import tags` --> Import the tags of tfRecords from a previously saved .json file.\n"
+                f"                                      The path to the .json file should be valid and exist.\n"
+                f"                                      Only tags of tfRecords which are displayed above will be imported. Ensure the name of tfRecord match with the ones displayed above.\n"
+                f"4. `export tags all/<indexes>` --> Export the tags of the tfRecords at these indexes to a .json file.\n"
+                f"                                                    Optionally if you can use all instead to export tags of all tfRecords. The path to the .json file should be valid.\n"
                 f"5. `explore <index>` --> Explore the tfRecord file at this index of the table.\n"
                 f"                         The index should be an integer between 1 and {len(tf_records)}\n"
                 "6. `exit` --> Exit the program\n"
@@ -825,31 +826,18 @@ def tfrecords_browser(
             stop_browser = True
             continue
 
-        if re.compile("^display[\s]+all$", flags=re.IGNORECASE).match(user_input):
-            for tf_record in tf_records:
-                if scenarios_per_tfrecords[tf_record[1]] is None:
-                    (
-                        scenarios_per_tfrecords[tf_record[1]],
-                        tags_per_tfrecords[os.path.basename(tf_record[1])],
-                    ) = get_scenario_and_tag_dict(tf_record[1])
-                display_scenarios_in_tfrecord(
-                    tf_record[1],
-                    scenarios_per_tfrecords[tf_record[1]],
-                    tags_per_tfrecords[os.path.basename(tf_record[1])],
-                    imported_tags.get(os.path.basename(tf_record[1]), {}),
-                )
-            display_tf_records(tf_records)
-            print_commands = True
-
-        elif re.compile("^display[\s]+(?:\s*(\d+))+$", flags=re.IGNORECASE).match(
+        if re.compile("^display[\s]+(all|(?:\s*(\d+))+)$", flags=re.IGNORECASE).match(
             user_input
         ):
             input_lst = user_input.split()
-            valid_indexes = check_index_validity(
-                input_lst[1:], len(tf_records), "display"
-            )
-            if len(valid_indexes) == 0:
-                continue
+            if input_lst[1].lower() == "all":
+                valid_indexes = [i + 1 for i in len(tf_records)]
+            else:
+                valid_indexes = check_index_validity(
+                    input_lst[1:], len(tf_records), "display"
+                )
+                if len(valid_indexes) == 0:
+                    continue
             for idx in valid_indexes:
                 tfr_path = tf_records[idx - 1][1]
                 if scenarios_per_tfrecords[tfr_path] is None:
@@ -866,88 +854,172 @@ def tfrecords_browser(
                 print("\n")
             print_commands = True
 
-        elif re.compile("^import[\s]+tags[\s]+[^\n ]+$", flags=re.IGNORECASE).match(
-            user_input
-        ):
-            input_lst = user_input.split()
-
-            # Check if .json file path is valid
-            json_file_path = input_lst[2].strip("[\"']")
-            if not check_path_validity(json_file_path):
-                continue
-            try:
-                with open(os.path.abspath(json_file_path), "r") as f:
-                    new_tags = json.load(f)
-            except (FileNotFoundError, IOError, OSError, json.decoder.JSONDecodeError):
-                print(
-                    f"{json_file_path} does not exist or doesnt have the right permissions to read.\n"
-                    f"Please check the file path."
-                )
-                continue
-            if len(new_tags) == 0:
-                print(
-                    f"No data found in {json_file_path}. Please check the path of the file passed"
-                )
-                continue
-            print(f"Displaying the tags imported from {json_file_path}")
-            merge_tags(new_tags, imported_tags)
-
-        elif re.compile("^export[\s]+tags[\s]+[^\n ]+$", flags=re.IGNORECASE).match(
-            user_input
-        ):
-            input_lst = user_input.split()
-
-            # Check if .json file path is valid
-            json_file_path = input_lst[2].strip("[\"']")
-            if not check_path_validity(json_file_path):
-                continue
-            tags_to_dump = {}
-            valid_response = False
+        elif re.compile("^import[\s]+tags$", flags=re.IGNORECASE).match(user_input):
+            valid_path = False
             print(
-                "What do you want to export?:\n"
-                "1. `Imported Tags` --> Tags imported from .json files.\n"
-                f"2. `Tags Added` --> Tags added by you.\n"
-                f"3. `Both Merged Together` --> Tags added by you and tags imported merged together.\n"
-                "Choose your response by entering 1, 2 or 3.\n"
+                "Enter the path to .json file to which you want to import the tags from?:\n"
             )
-            while not valid_response:
+            new_tags = {}
+            stripped_path = None
+            while not valid_path:
                 try:
-                    response = input("\nResponse: ")
-                    stripped_response = response.strip()
+                    response = input("\nEnter Path: ")
+                    stripped_path = response.strip("[ \"']")
                 except EOFError:
                     print("Raised EOF. Attempting to exit browser.")
                     stop_browser = True
                     break
-                if re.compile("^[1-3]$", re.IGNORECASE).match(stripped_response):
-                    if stripped_response == "1":
-                        tags_to_dump = imported_tags
-                    elif stripped_response == "2":
-                        tags_to_dump = tags_per_tfrecords
-                    else:
-                        tags_to_dump = copy.deepcopy(tags_per_tfrecords)
-                        merge_tags(imported_tags, tags_per_tfrecords)
-                    valid_response = True
-                else:
-                    print(
-                        "Invalid Response. Please choose your response by entering 1, 2, or 3.\n"
-                    )
 
-            if not valid_response:
+                # Check if .json file path is valid
+                if not check_path_validity(stripped_path) or not stripped_path.endswith(
+                    ".json"
+                ):
+                    print("Please enter a valid .json file path\n")
+                    continue
+
+                try:
+                    with open(os.path.abspath(stripped_path), "r") as f:
+                        new_tags = json.load(f)
+                        valid_path = True
+
+                except (
+                    FileNotFoundError,
+                    IOError,
+                    OSError,
+                    json.decoder.JSONDecodeError,
+                ):
+                    print(
+                        f"{stripped_path} does not exist or doesnt have the right permissions to read.\n"
+                        f"Please enter a valid .json file path."
+                    )
+                    continue
+
+            if not valid_path:
                 continue
-            if len(tags_to_dump) == 0:
+
+            if len(new_tags) == 0:
                 print(
-                    f"The option selected is empty. No data will be dumped to {json_file_path}"
+                    f"No data found in {stripped_path}. Please check the path of the file passed"
                 )
                 continue
-            try:
-                with open(os.path.abspath(json_file_path), "w") as f:
-                    json.dump(tags_to_dump, f, ensure_ascii=False, indent=4)
-                    print(f"Dumped the tags at {json_file_path}")
-            except (FileNotFoundError, IOError, OSError, json.decoder.JSONDecodeError):
-                print(
-                    f"{json_file_path} is not valid json file or doesnt have the right permissions to write.\n"
-                    f"Please check the file path."
+            print(f"Displaying the tags imported from {stripped_path}")
+            merge_tags(new_tags, imported_tags, True)
+
+        elif re.compile(
+            "^export[\s]+tags[\s]+(all|(?:\s*(\d+))+)$", flags=re.IGNORECASE
+        ).match(user_input):
+            input_lst = user_input.split()
+            if input_lst[2].lower() == "all":
+                valid_indexes = [i + 1 for i in len(tf_records)]
+            else:
+                valid_indexes = check_index_validity(
+                    input_lst[1:], len(tf_records), "display"
                 )
+                if len(valid_indexes) == 0:
+                    continue
+
+            tags_to_dump = {}
+            for idx in valid_indexes:
+                tfr_path = tf_records[idx - 1][1]
+                tags_per_tfrecords.get(os.path.basename(tfr_path), {}),
+                imported_tags.get(os.path.basename(tfr_path), {})
+                valid_response = False
+                print(
+                    f"Which tags do you want to export from {os.path.basename(tfr_path)}?:\n"
+                    "1. `Imported Tags` --> Tags imported from .json files.\n"
+                    f"2. `Tags Added` --> Tags added by you.\n"
+                    f"3. `Both Merged Together` --> Tags added by you and tags imported merged together.\n"
+                    "Choose your response by entering 1, 2 or 3.\n"
+                )
+                while not valid_response:
+                    try:
+                        response = input("\nResponse: ")
+                        stripped_response = response.strip()
+                    except EOFError:
+                        print("Raised EOF. Attempting to exit browser.")
+                        stop_browser = True
+                        break
+                    if re.compile("^[1-3]$", re.IGNORECASE).match(stripped_response):
+                        if stripped_response == "1":
+                            tags_to_dump.update(
+                                {
+                                    os.path.basename(tfr_path): imported_tags.get(
+                                        os.path.basename(tfr_path), {}
+                                    )
+                                }
+                            )
+                        elif stripped_response == "2":
+                            tags_to_dump.update(
+                                {
+                                    os.path.basename(tfr_path): tags_per_tfrecords.get(
+                                        os.path.basename(tfr_path), {}
+                                    )
+                                }
+                            )
+                        else:
+                            tags_to_dump.update(
+                                {
+                                    os.path.basename(tfr_path): tags_per_tfrecords.get(
+                                        os.path.basename(tfr_path), {}
+                                    )
+                                }
+                            )
+                            scenario_imported_tags = {
+                                os.path.basename(tfr_path): imported_tags.get(
+                                    os.path.basename(tfr_path), {}
+                                )
+                            }
+                            merge_tags(scenario_imported_tags, tags_to_dump)
+                        valid_response = True
+                    else:
+                        print(
+                            "Invalid Response. Please choose your response by entering 1, 2, or 3.\n"
+                        )
+
+                if not valid_response:
+                    break
+
+            if stop_browser:
+                continue
+
+            valid_path = False
+            print(
+                "Enter the path to .json file to which you want to export the tags to?:\n"
+            )
+            while not valid_path:
+                try:
+                    response = input("\nEnter Path: ")
+                    stripped_path = response.strip("[ \"']")
+                except EOFError:
+                    print("Raised EOF. Attempting to exit browser.")
+                    stop_browser = True
+                    break
+
+                # Check if .json file path is valid
+                if not check_path_validity(stripped_path) or not stripped_path.endswith(
+                    ".json"
+                ):
+                    print("Please enter a valid .json file path\n")
+                    continue
+
+                try:
+                    with open(os.path.abspath(stripped_path), "w") as f:
+                        json.dump(tags_to_dump, f, ensure_ascii=False, indent=4)
+                        print(f"Dumped the tags at {stripped_path}")
+                        valid_path = True
+                except (
+                    FileNotFoundError,
+                    IOError,
+                    OSError,
+                    json.decoder.JSONDecodeError,
+                ):
+                    print(
+                        f"{stripped_path} is not valid json file or doesnt have the right permissions to write to this file.\n"
+                        f"Please enter a valid .json path."
+                    )
+                    continue
+
+            if not valid_path:
                 continue
 
         elif re.compile("^explore[\s]+[\d]+$", flags=re.IGNORECASE).match(user_input):
@@ -1009,25 +1081,21 @@ def explore_tf_record(
             print(
                 f"{os.path.basename(tfrecord)} TfRecord Browser.\n"
                 f"You can use the following commands to further explore these scenarios:\n"
-                "1. `export all` or `export all <target_base_path>` --> Export all scenarios in this tf_record to a target path if passed.\n"
-                f"                                       Path passed should be valid directory path. If path is not passed all scenarios will be exported to default_target_path if passed.\n"
-                f"2. `export <indexes>` or `export <indexes> <target_base_path>' --> Export the scenarios at these indexes of the table to a target path if passed.\n"
-                f"                                             The indexes should be an integer between 1 and {len(scenario_ids)} separated by space and path should be valid.\n"
-                f"                                             If path is not passed the scenario will be exported to default_target_path if passed."
-                "3. `preview all <target_base_path>` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path.\n"
-                "                                        Path should be valid.\n"
-                f"4. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table.\n"
-                f"                           The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
+                "1. `export all/<indexes>` --> Export the scenarios at these indexes of the table to a target path\n"
+                f"                             The indexes should be an integer between 1 and {len(scenario_ids)} separated by space"
+                f"                             Optionally you can use 'export all` command to export all the scenarios.\n"
+                "3. `preview all` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path.\n"
+                "4. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table.\n"
+                f"                          The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
                 f"5. `tag all/<indexes>` or `tag imported all/<indexes>` --> Tag the scenario at these indexes of the table or all with tags mentioned.\n"
-                f"                                                   Optionally if you call with `tag imported` then the tags for these scenarios will be added to imported tag list.\n"
-                f"                                                   If indexes, then they be integers between 1 and {len(scenario_ids)} and should be separated by space.\n"
+                f"                                                           Optionally if you call with `tag imported` then the tags for these scenarios will be added to imported tag list.\n"
+                f"                                                           If indexes, then they be integers between 1 and {len(scenario_ids)} and should be separated by space.\n"
                 f"6. `untag all/<indexes>` or `untag imported all/<indexes>` --> Untag the scenario at theses index of the table or all with tags mentioned.\n"
-                f"                                                   Optionally if you call with `tag imported` then the tags for these scenarios will be removed from imported tag list.\n"
-                f"                                                   If indexes, then they be integers between 1 and {len(scenario_ids)} and should be separated by space.\n"
+                f"                                                               Optionally if you call with `tag imported` then the tags for these scenarios will be removed from imported tag list.\n"
+                f"                                                               If indexes, then they be integers between 1 and {len(scenario_ids)} and should be separated by space.\n"
                 f"7. `select <index>` --> Select and explore further the scenario at this index of the table.\n"
                 f"                        The index should be an integer between 1 and {len(scenario_ids)}\n"
-                "8. `animate all <target_base_path>` --> Plot and dump the animations the trajectories of objects on map of all scenarios in this tf_record to a target path.\n"
-                "                                        Path should be valid.\n"
+                "8. `animate all` --> Plot and dump the animations the trajectories of objects on map of all scenarios in this tf_record to a target path.\n"
                 f"9. `animate <indexes>` --> Plot the map and animate the trajectories of objects of scenario at this index of the table.\n"
                 f"                           The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
                 "10. `go back` --> Go back to the tfrecords browser\n"
@@ -1042,58 +1110,63 @@ def explore_tf_record(
         except EOFError:
             print("Raised EOF. Attempting to exit browser.")
             return True
-        if re.compile("^export[\s]+all", flags=re.IGNORECASE).match(
-            user_input
-        ) or re.compile("^export[\s]+all[\s]+[^\n ]+$", flags=re.IGNORECASE).match(
+
+        if re.compile("^export[\s]+(all|(?:\s*(\d+))+)", flags=re.IGNORECASE).match(
             user_input
         ):
             input_lst = user_input.split()
-            if len(input_lst) == 2:
-                if default_target_path is None:
-                    print(
-                        "Cannot use `export all` command since default_target_path is None. Use the command with <target_path> mentioned."
-                    )
-                    continue
-                target_base_path = default_target_path
+            if input_lst[1].lower() == "all":
+                valid_indexes = [i + 1 for i in len(scenario_ids)]
             else:
-                target_base_path = input_lst[2].strip("[\"']")
-
-            # Check if target base path is valid
-            if not check_path_validity(target_base_path):
-                continue
-
-            # Try exporting all the scenarios
-            exported = False
-            for s_id in scenario_ids:
-                exported = export_scenario(target_base_path, tfrecord, s_id) or exported
-            if exported:
-                print(
-                    f"\nYou can build the scenarios exported using the command `scl scenario build-all {target_base_path}`\n"
+                valid_indexes = check_index_validity(
+                    input_lst[1:], len(scenario_ids), "export"
                 )
-            display_scenarios_in_tfrecord(
-                tfrecord,
-                scenario_dict,
-                tfrecord_tags,
-                imported_tags.get(os.path.basename(tfrecord), {}),
-            )
-            print_commands = True
+                if len(valid_indexes) == 0:
+                    continue
+            target_base_path = None
+            valid_path = False
+            if default_target_path is not None:
+                print(
+                    f"Which path do you want to export scenarios to?:\n"
+                    "1. Default Target Path.\n"
+                    f"2. Custom Target Path.\n"
+                    "Choose your response by entering 1,or 2.\n"
+                )
+                valid_response = False
+                while not valid_response:
+                    try:
+                        response = input("\nResponse: ")
+                        stripped_response = response.strip()
+                    except EOFError:
+                        print("Raised EOF. Attempting to exit browser.")
+                        return True
+                    if re.compile("^[1-2]$", re.IGNORECASE).match(stripped_response):
+                        if stripped_response == "1":
+                            target_base_path = default_target_path
+                            valid_path = True
+                        valid_response = True
+                    else:
+                        print(
+                            "Invalid Response. Please choose your response by entering 1 or 2.\n"
+                        )
 
-        elif re.compile(
-            "^export[\s]+(?:\s*(\d+))+[\s]+[^\n ]+$", flags=re.IGNORECASE
-        ).match(user_input):
-            input_lst = user_input.split()
+            while not valid_path:
+                print(
+                    "Enter the path to directory to which you want to export the scenarios?:\n"
+                )
+                try:
+                    response = input("\nEnter Path: ")
+                    stripped_path = response.strip("[ \"']")
+                except EOFError:
+                    print("Raised EOF. Attempting to exit browser.")
+                    return True
 
-            # Check if indexes passed are valid
-            valid_indexes = check_index_validity(
-                input_lst[1:-1], len(scenario_ids), "export"
-            )
-            if len(valid_indexes) == 0:
-                continue
-
-            # Check if target base path is valid
-            target_base_path = input_lst[2].strip("[\"']")
-            if not check_path_validity(target_base_path):
-                continue
+                # Check if directory path is valid
+                if not check_path_validity(stripped_path):
+                    print("Please enter a valid directory path\n")
+                    continue
+                target_base_path = stripped_path
+                valid_path = True
 
             # Try exporting the scenario
             exported = False
@@ -1106,49 +1179,34 @@ def explore_tf_record(
                 print(
                     f"\nYou can build these scenarios exported using the command `scl scenario build-all {target_base_path}`"
                 )
-            print_commands = True
-
-        elif re.compile("^export[\s]+(?:\s*(\d+))+$", flags=re.IGNORECASE).match(
-            user_input
-        ):
-            if default_target_path is None:
-                print(
-                    "Cannot use `export <indexes>` command since default_target_path is None. Use the command with <target_path> mentioned."
-                )
-                continue
-            input_lst = user_input.split()
-
-            # Check if indexes passed are valid
-            valid_indexes = check_index_validity(
-                input_lst[1:], len(scenario_ids), "export"
+            display_scenarios_in_tfrecord(
+                tfrecord,
+                scenario_dict,
+                tfrecord_tags,
+                imported_tags.get(os.path.basename(tfrecord), {}),
             )
-            if len(valid_indexes) == 0:
-                continue
-
-            # Try exporting the scenario
-            exported = False
-            for idx in valid_indexes:
-                exported = (
-                    export_scenario(
-                        default_target_path, tfrecord, scenario_ids[idx - 1]
-                    )
-                    or exported
-                )
-            if exported:
-                print(
-                    f"\nYou can build these scenarios exported using the command `scl scenario build-all {default_target_path}`"
-                )
             print_commands = True
 
-        elif re.compile("^preview[\s]+all[\s]+[^\n ]+$", flags=re.IGNORECASE).match(
-            user_input
-        ):
-            input_lst = user_input.split()
+        elif re.compile("^preview[\s]+all$", flags=re.IGNORECASE).match(user_input):
+            print(
+                "Enter the path to directory to which you want to dump the images of the maps of scenarios?:\n"
+            )
+            valid_path = False
+            target_base_path = None
+            while not valid_path:
+                try:
+                    response = input("\nEnter Path: ")
+                    stripped_path = response.strip("[ \"']")
+                except EOFError:
+                    print("Raised EOF. Attempting to exit browser.")
+                    return True
 
-            # Check if target base path is valid
-            target_base_path = input_lst[2].strip("[\"']")
-            if not check_path_validity(target_base_path):
-                continue
+                # Check if directory path is valid
+                if not check_path_validity(stripped_path):
+                    print("Please enter a valid directory path\n")
+                    continue
+                target_base_path = stripped_path
+                valid_path = True
 
             # Dump all the scenario plots of this tfrecord file to this target base path
             print(
@@ -1187,15 +1245,26 @@ def explore_tf_record(
 
             plot_scenarios(scenarios_to_plot, False)
 
-        elif re.compile("^animate[\s]+all[\s]+[^\n ]+$", flags=re.IGNORECASE).match(
-            user_input
-        ):
-            input_lst = user_input.split()
+        elif re.compile("^animate[\s]+all$", flags=re.IGNORECASE).match(user_input):
+            print(
+                "Enter the path to directory to which you want to dump the animations of the track objects of scenarios?:\n"
+            )
+            valid_path = False
+            target_base_path = None
+            while not valid_path:
+                try:
+                    response = input("\nEnter Path: ")
+                    stripped_path = response.strip("[ \"']")
+                except EOFError:
+                    print("Raised EOF. Attempting to exit browser.")
+                    return True
 
-            # Check if target base path is valid
-            target_base_path = input_lst[2].strip("[\"']")
-            if not check_path_validity(target_base_path):
-                continue
+                # Check if directory path is valid
+                if not check_path_validity(stripped_path):
+                    print("Please enter a valid directory path\n")
+                    continue
+                target_base_path = stripped_path
+                valid_path = True
 
             # Dump all the scenario plots of this tfrecord file to this target base path
             print(
@@ -1260,7 +1329,7 @@ def explore_tf_record(
                 continue
             print(
                 "What Tags do you want to add?\n"
-                "Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma."
+                "Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma.\n"
             )
             valid_response = False
             stripped_response = None
@@ -1326,7 +1395,7 @@ def explore_tf_record(
             "^untag([\s]+imported)?[\s]+(all|(?:\s*(\d+))+)$", flags=re.IGNORECASE
         ).match(user_input):
             input_lst = user_input.lower().split()
-            imported = True if "imported" in input_lst else False
+            imported = True if input_lst[1] == "imported" else False
             if "all" in input_lst:
                 valid_indexes = [i + 1 for i in range(len(scenario_ids))]
             else:
@@ -1343,7 +1412,8 @@ def explore_tf_record(
                 continue
             print(
                 "What Tags do you want to remove? Tags that dont exist won't be removed.\n"
-                "Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma."
+                "Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma.\n"
+                "Optionally you can respond `remove all`, to remove all tags from these scenarios."
             )
             valid_response = False
             stripped_response = None
@@ -1363,20 +1433,34 @@ def explore_tf_record(
                     valid_response = True
 
             tags = [tag.strip() for tag in stripped_response.lower().split(",")]
+
+            # if response is remove all, remove all the tags from the scenarios mentioned
+            remove_all = False
+            if "remove all" in tags:
+                remove_all = True
+
             if imported:
                 if os.path.basename(tfrecord) in imported_tags:
                     for i in range(len(valid_indexes)):
                         scenario_idx = scenario_ids[valid_indexes[i] - 1]
                         if scenario_idx in imported_tags[os.path.basename(tfrecord)]:
-                            new_tags = []
-                            for tag in imported_tags[os.path.basename(tfrecord)][
-                                scenario_idx
-                            ]:
-                                if tag not in tags:
-                                    new_tags.append(tag)
-                            imported_tags[os.path.basename(tfrecord)][
-                                scenario_idx
-                            ] = new_tags
+                            if remove_all:
+                                imported_tags[os.path.basename(tfrecord)][
+                                    scenario_idx
+                                ] = []
+                            else:
+                                new_tags = []
+                                for tag in imported_tags[os.path.basename(tfrecord)][
+                                    scenario_idx
+                                ]:
+                                    if tag not in tags:
+                                        new_tags.append(tag)
+                                imported_tags[os.path.basename(tfrecord)][
+                                    scenario_idx
+                                ] = new_tags
+                                print(
+                                    f"Tags removed from `Imported Tags` list of {scenario_idx}"
+                                )
                         else:
                             print(f"no imported tags for {scenario_idx}")
                 else:
@@ -1384,7 +1468,7 @@ def explore_tf_record(
                         f"No tags for {os.path.basename(tfrecord)} in imported tags list"
                     )
                     continue
-                print("Tags removed from `Imported Tags` list")
+
             else:
                 for i in range(len(valid_indexes)):
                     scenario_idx = scenario_ids[valid_indexes[i] - 1]
@@ -1396,7 +1480,7 @@ def explore_tf_record(
                             if tag not in tags:
                                 new_tags.append(tag)
                         tfrecord_tags[scenario_idx] = new_tags
-                print("Tags removed from `Tags Added` list")
+                        print(f"Tags removed from `Tags Added` list of {scenario_idx}")
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1478,21 +1562,28 @@ def explore_scenario(
         scenario_tags,
         imported_scenario_tags,
     ]
-    print("\n")
-    print("-----------------------------------------------")
-    print(f"Scenario {scenario.scenario_id}:\n")
-    print(
-        tabulate(
-            [scenario_data],
-            headers=[
-                "Scenario ID",
-                "Timestamps",
-                "Track Objects",
-                "Traffic Light States",
-                "Objects of Interest",
-            ],
+
+    def display_scenario_data_info():
+        print("\n")
+        print("-----------------------------------------------")
+        print(f"Scenario {scenario.scenario_id}:\n")
+        print(
+            tabulate(
+                [scenario_data],
+                headers=[
+                    "Scenario ID",
+                    "Timestamps",
+                    "Track Objects",
+                    "Traffic Light States",
+                    "Objects of Interest",
+                    "Tags Added",
+                    "Tags Imported",
+                ],
+            )
         )
-    )
+
+    display_scenario_data_info()
+
     map_features = [
         len(scenario_map_features["lane"]),
         len(scenario_map_features["road_line"]),
@@ -1568,8 +1659,7 @@ def explore_scenario(
     print(
         f"\n\nScenario {scenario.scenario_id}.\n"
         "You can use the following commands to further this scenario:\n"
-        f"1. `export` or `export <target_base_path>' --> Export the scenario to a target path is passed. The path should be valid.\n"
-        f"                                               If path is not passed the scenario will be exported to default_target_path if passed.\n"
+        f"1. `export` --> Export the scenario to a target base path is passed.\n"
         f"2. `preview` or `preview <feature_ids>` --> Plot and display the map of the scenario with the feature ids highlighted in Blue if passed.\n"
         f"                                            The feature ids need to be separated by space, be numbers from the map feature ids mentioned above and will not be highlighted if they dont exist.\n"
         "3. `animate` or `animate <track_ids> --> Animate the trajectories of track objects on the map of this scenario with the track ids highlighted in Red if passed.\n"
@@ -1589,23 +1679,52 @@ def explore_scenario(
         except EOFError:
             print("Raised EOF. Attempting to exit browser.")
             return True
-        if user_input.lower() == "export" or re.compile(
-            "^export[\s]+[^\n ]+$", flags=re.IGNORECASE
-        ).match(user_input):
-            input_lst = user_input.split()
-            if len(input_lst) == 1:
-                if default_target_path is None:
-                    print(
-                        "Cannot use `export all` command since default_target_path is None. Use the command with <target_path> mentioned."
-                    )
-                    continue
-                target_base_path = default_target_path
-            else:
-                target_base_path = input_lst[2].strip("[\"']")
+        if user_input.lower() == "export":
+            target_base_path = None
+            valid_path = False
+            if default_target_path is not None:
+                print(
+                    f"Which path do you want to export scenario to?:\n"
+                    "1. Default Target Path.\n"
+                    f"2. Custom Target Path.\n"
+                    "Choose your response by entering 1 or 2.\n"
+                )
+                valid_response = False
+                while not valid_response:
+                    try:
+                        response = input("\nResponse: ")
+                        stripped_response = response.strip()
+                    except EOFError:
+                        print("Raised EOF. Attempting to exit browser.")
+                        return True
+                    if re.compile("^[1-2]$", re.IGNORECASE).match(stripped_response):
+                        if stripped_response == "1":
+                            target_base_path = default_target_path
+                            valid_path = True
+                        valid_response = True
+                    else:
+                        print(
+                            "Invalid Response. Please choose your response by entering 1 or 2.\n"
+                        )
 
-            # Check if target base path is valid
-            if not check_path_validity(target_base_path):
-                continue
+            while not valid_path:
+                print(
+                    "Enter the path to directory to which you want to export the scenarios?:\n"
+                )
+                try:
+                    response = input("\nEnter Path: ")
+                    stripped_path = response.strip("[ \"']")
+                except EOFError:
+                    print("Raised EOF. Attempting to exit browser.")
+                    return True
+
+                # Check if directory path is valid
+                if not check_path_validity(stripped_path):
+                    print("Please enter a valid directory path\n")
+                    continue
+                target_base_path = stripped_path
+                valid_path = True
+
             # Try exporting the scenario to the target_base_path
             export_scenario(target_base_path, tfrecord_file_path, scenario.scenario_id)
             print(
@@ -1688,6 +1807,7 @@ def explore_scenario(
             else:
                 scenario_tags.extend([tag for tag in tags if tag not in scenario_tags])
                 print("Tags added to `Tags Added` list")
+            display_scenario_data_info()
 
         elif re.compile("^untag([\s]+imported)?$", flags=re.IGNORECASE).match(
             user_input
@@ -1750,6 +1870,7 @@ def explore_scenario(
                             new_tags.append(tag)
                     scenario_tags = new_tags
                     print("Tags removed from `Tags Added` list")
+            display_scenario_data_info()
 
         elif re.compile("^go[\s]+back$", flags=re.IGNORECASE).match(user_input):
             stop_exploring = True
@@ -1767,6 +1888,7 @@ def explore_scenario(
 
 if __name__ == "__main__":
     import warnings
+    import readline
 
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
