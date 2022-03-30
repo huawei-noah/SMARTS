@@ -1807,4 +1807,7 @@ if __name__ == "__main__":
     if not valid_tf_paths:
         print("No valid paths passed. Make sure all paths passed exist and are valid.")
     else:
-        tfrecords_browser(valid_tf_paths, os.path.abspath(args.target_base_path))
+        tfrecords_browser(
+            valid_tf_paths,
+            os.path.abspath(args.target_base_path) if args.target_base_path else None,
+        )
