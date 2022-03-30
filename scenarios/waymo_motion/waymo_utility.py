@@ -831,7 +831,7 @@ def tfrecords_browser(
         ):
             input_lst = user_input.split()
             if input_lst[1].lower() == "all":
-                valid_indexes = [i + 1 for i in len(tf_records)]
+                valid_indexes = [i + 1 for i in range(len(tf_records))]
             else:
                 valid_indexes = check_index_validity(
                     input_lst[1:], len(tf_records), "display"
@@ -910,7 +910,7 @@ def tfrecords_browser(
         ).match(user_input):
             input_lst = user_input.split()
             if input_lst[2].lower() == "all":
-                valid_indexes = [i + 1 for i in len(tf_records)]
+                valid_indexes = [i + 1 for i in range(len(tf_records))]
             else:
                 valid_indexes = check_index_validity(
                     input_lst[1:], len(tf_records), "display"
@@ -1116,7 +1116,7 @@ def explore_tf_record(
         ):
             input_lst = user_input.split()
             if input_lst[1].lower() == "all":
-                valid_indexes = [i + 1 for i in len(scenario_ids)]
+                valid_indexes = [i + 1 for i in range(len(scenario_ids))]
             else:
                 valid_indexes = check_index_validity(
                     input_lst[1:], len(scenario_ids), "export"
