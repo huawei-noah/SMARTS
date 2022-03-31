@@ -526,7 +526,7 @@ def plot_scenarios(
     plt.show()
 
 
-def dump_plots(target_base_path: str, scenario_dict, animate=False):
+def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=None):
     try:
         os.makedirs(os.path.abspath(target_base_path))
         print(f"Created directory {target_base_path}")
@@ -535,7 +535,19 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False):
     except (OSError, RuntimeError):
         print(f"{target_base_path} is an invalid path. Please enter a valid path")
         return
+    count_saved = 0
     for scenario_id in scenario_dict:
+        if filter_tags:
+            tags, filter_preview, tfrecord_tags, imported_tfrecord_tags = filter_tags
+            if filter_scenario(
+                tfrecord_tags.get(scenario_id, []),
+                imported_tfrecord_tags.get(scenario_id, []),
+                (tags, filter_preview),
+            ):
+                count_saved += 1
+                pass
+            else:
+                continue
         scenario = scenario_dict[scenario_id][0]
 
         fig = plt.figure()
@@ -589,7 +601,77 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False):
 
         print(f"Saving {out_path}")
         plt.close("all")
-    print(f"All images or recordings saved at {target_base_path}")
+    if count_saved > 0:
+        print(f"All images or recordings saved at {target_base_path}")
+    else:
+        print(f"No images or recordings saved as no tags matched")
+
+
+def filter_scenario(scenario_tags, imported_tags, filter_tags) -> bool:
+    tags, filter_display = filter_tags
+    if filter_display == 1:
+        return all(x in scenario_tags for x in tags)
+    elif filter_display == 2:
+        return all(x in imported_tags for x in tags)
+    else:
+        return all(x in imported_tags + scenario_tags for x in tags)
+
+
+def filter_with_tags() -> Tuple[Optional[List[str]], Optional[int], bool]:
+    filter_response = None
+    print(
+        f"\nDo you want to filter the action with scenario tags?:\n"
+        "1. Yes, based on Tags Added\n"
+        f"2. Yes, based on Imported Tags.\n"
+        f"3. Yes, based on both tags merged.\n"
+        f"4. No.\n"
+        "Choose your response by entering 1, 2, 3 or 4.\n"
+    )
+    while filter_response is None:
+        try:
+            response = input("\nResponse: ")
+            stripped_response = response.strip()
+        except EOFError:
+            print("Raised EOF. Attempting to exit browser.")
+            break
+        if re.compile("^[1-4]$", re.IGNORECASE).match(stripped_response):
+            filter_response = int(stripped_response)
+        else:
+            print(
+                "Invalid Response. Please choose your response by entering 1, 2, 3 or 4.\n"
+            )
+    if filter_response is None:
+        return None, None, True
+
+    stripped_tags = None
+    if filter_response < 4:
+        print(
+            "What Tags do you want to filter the response with?\n"
+            "Your response should have tags that are alphanumerical separated by Comma and can have special characters.\n"
+        )
+        valid_tags = False
+
+        while not valid_tags:
+            try:
+                response = input("\nResponse: ")
+                stripped_tags = response.strip()
+            except EOFError:
+                print("Raised EOF. Attempting to exit browser.")
+                break
+            if stripped_tags == "":
+                print(
+                    "Invalid response. Your response should have tags that are alphanumerical separated by Comma and can have special characters."
+                )
+                continue
+            valid_tags = True
+
+        if not valid_tags:
+            return None, None, True
+    if stripped_tags:
+        tags = [tag.strip() for tag in stripped_tags.lower().split(",")]
+    else:
+        tags = None
+    return tags, filter_response, False
 
 
 def display_scenario_tags(tags_per_scenarios: Dict[str, List[str]]):
@@ -622,12 +704,12 @@ def merge_tags(new_imports, main_dict, display: bool = False):
                     )
                 else:
                     main_dict[tf_file][scenario_id] = new_imports[tf_file][scenario_id]
+            if display:
+                print("\n-----------------------------------------------")
+                print(f"Scenario Tags imported for {tf_file}:\n")
+                display_scenario_tags(new_imports[tf_file])
         else:
             main_dict[tf_file] = new_imports[tf_file]
-        if display:
-            print("\n-----------------------------------------------")
-            print(f"Scenario Tags imported for {tf_file}:\n")
-            display_scenario_tags(new_imports[tf_file])
 
 
 def get_scenario_and_tag_dict(tfrecord_file: str):
@@ -671,12 +753,21 @@ def display_tf_records(records):
 
 
 def display_scenarios_in_tfrecord(
-    tfrecord_path: str, scenario_dict, tfrecord_tags, tags_imported
+    tfrecord_path: str, scenario_dict, tfrecord_tags, tags_imported, filter_tags=None
 ) -> List[str]:
     scenario_data_lst = []
     scenario_counter = 1
     scenario_ids = []
     for scenario_id in scenario_dict:
+        if filter_tags:
+            if filter_scenario(
+                tfrecord_tags.get(scenario_id, []),
+                tags_imported.get(scenario_id, []),
+                filter_tags,
+            ):
+                pass
+            else:
+                continue
         scenario = scenario_dict[scenario_id][0]
         scenario_data = [
             scenario_counter,
@@ -708,6 +799,8 @@ def display_scenarios_in_tfrecord(
             ],
         )
     )
+    if scenario_counter == 1 and filter_tags is not None:
+        print(f"No scenarios in {tfrecord_path} have the tags {filter_tags[0]}\n")
     return scenario_ids
 
 
@@ -807,8 +900,10 @@ def tfrecords_browser(
                 "TfRecords Browser.\n"
                 "You can use the following commands to further explore these datasets:\n"
                 "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
+                "                     Displays can be filtered on the basis of tags.\n"
                 f"2. `display <indexes>` --> Displays the info of tfRecord files at these indexes of the table.\n"
                 f"                           The indexes should be an integer between 1 and {len(tf_records)} and space separated\n"
+                "                            Displays can be filtered on the basis of tags.\n"
                 f"3. `import tags` --> Import the tags of tfRecords from a previously saved .json file.\n"
                 f"                     Only tags of tfRecords which are displayed above will be imported. Ensure the name of tfRecord match with the ones displayed above.\n"
                 f"4. `export tags all/<indexes>` --> Export the tags of the tfRecords at these indexes to a .json file.\n"
@@ -840,6 +935,11 @@ def tfrecords_browser(
                 )
                 if len(valid_indexes) == 0:
                     continue
+
+            tags, filter_display, stop_browser = filter_with_tags()
+            if stop_browser:
+                continue
+
             for idx in valid_indexes:
                 tfr_path = tf_records[idx - 1][1]
                 if scenarios_per_tfrecords[tfr_path] is None:
@@ -847,11 +947,13 @@ def tfrecords_browser(
                         scenarios_per_tfrecords[tfr_path],
                         tags_per_tfrecords[os.path.basename(tfr_path)],
                     ) = get_scenario_and_tag_dict(tfr_path)
+
                 display_scenarios_in_tfrecord(
                     tfr_path,
                     scenarios_per_tfrecords[tfr_path],
                     tags_per_tfrecords[os.path.basename(tfr_path)],
                     imported_tags.get(os.path.basename(tfr_path), {}),
+                    (tags, filter_display) if tags is not None else None,
                 )
                 print("\n")
             print_commands = True
@@ -1043,11 +1145,15 @@ def tfrecords_browser(
                     scenarios_per_tfrecords[tfr_path],
                     tags_per_tfrecords[os.path.basename(tfr_path)],
                 ) = get_scenario_and_tag_dict(tfr_path)
+
+            imported_tags[os.path.basename(tfr_path)] = imported_tags.get(
+                os.path.basename(tfr_path), {}
+            )
             stop_browser = explore_tf_record(
                 tfr_path,
                 scenarios_per_tfrecords[tfr_path],
                 tags_per_tfrecords[os.path.basename(tfr_path)],
-                imported_tags,
+                imported_tags[os.path.basename(tfr_path)],
                 default_target_path,
             )
             if not stop_browser:
@@ -1072,14 +1178,14 @@ def explore_tf_record(
     tfrecord: str,
     scenario_dict,
     tfrecord_tags,
-    imported_tags,
+    imported_tfrecord_tags,
     default_target_path: Optional[str] = None,
 ) -> bool:
     scenario_ids = display_scenarios_in_tfrecord(
         tfrecord,
         scenario_dict,
         tfrecord_tags,
-        imported_tags.get(os.path.basename(tfrecord), {}),
+        imported_tfrecord_tags,
     )
     stop_exploring = False
     print_commands = True
@@ -1089,25 +1195,26 @@ def explore_tf_record(
             print(
                 f"{os.path.basename(tfrecord)} TfRecord Browser.\n"
                 f"You can use the following commands to further explore these scenarios:\n"
-                "1. `export all/<indexes>` --> Export the scenarios at these indexes of the table to a target path\n"
+                "1. `display` --> Display the scenarios in this tfrecord filtered based on the tags chosen in a subsequent option. `"
+                "2. `export all/<indexes>` --> Export the scenarios at these indexes or all of the table to a target path\n"
                 f"                             The indexes should be an integer between 1 and {len(scenario_ids)} separated by space\n"
-                f"                             Optionally you can use 'export all` command to export all the scenarios.\n"
-                "2. `preview all` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path.\n"
-                "3. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table.\n"
+                f"                             The exports can be filtered based on the tags chosen in a subsequent option.\n"
+                "3. `preview all` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path.\n"
+                "4. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table.\n"
                 f"                          The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
-                f"4. `tag all/<indexes>` or `tag imported all/<indexes>` --> Tag the scenario at these indexes of the table or all with tags mentioned.\n"
+                f"5. `tag all/<indexes>` or `tag imported all/<indexes>` --> Tag the scenario at these indexes of the table or all with tags mentioned.\n"
                 f"                                                           Optionally if you call with `tag imported` then the tags for these scenarios will be added to imported tag list.\n"
                 f"                                                           If indexes, then they need to be integers between 1 and {len(scenario_ids)} and should be separated by space.\n"
-                f"5. `untag all/<indexes>` or `untag imported all/<indexes>` --> Untag the scenario at theses index of the table or all with tags mentioned.\n"
+                f"6. `untag all/<indexes>` or `untag imported all/<indexes>` --> Untag the scenario at theses index of the table or all with tags mentioned.\n"
                 f"                                                               Optionally if you call with `tag imported` then the tags for these scenarios will be removed from imported tag list.\n"
                 f"                                                               If indexes, then they need to be integers between 1 and {len(scenario_ids)} and should be separated by space.\n"
-                f"6. `select <index>` --> Select and explore further the scenario at this index of the table.\n"
+                f"7. `select <index>` --> Select and explore further the scenario at this index of the table.\n"
                 f"                        The index should be an integer between 1 and {len(scenario_ids)}\n"
-                "7. `animate all` --> Plot and dump the animations the trajectories of objects on map of all scenarios in this tf_record to a target path.\n"
-                f"8. `animate <indexes>` --> Plot the map and animate the trajectories of objects of scenario at this index of the table.\n"
+                "8. `animate all` --> Plot and dump the animations the trajectories of objects on map of all scenarios in this tf_record to a target path.\n"
+                f"9. `animate <indexes>` --> Plot the map and animate the trajectories of objects of scenario at this index of the table.\n"
                 f"                           The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
-                "9. `go back` --> Go back to the tfrecords browser\n"
-                "10. `exit` --> Exit the program\n"
+                "10. `go back` --> Go back to the tfrecords browser\n"
+                "11. `exit` --> Exit the program\n"
             )
             print_commands = False
 
@@ -1119,7 +1226,20 @@ def explore_tf_record(
             print("Raised EOF. Attempting to exit browser.")
             return True
 
-        if re.compile("^export[\s]+(all|(?:\s*(\d+))+)", flags=re.IGNORECASE).match(
+        if user_input.lower() == "display":
+            tags, filter_display, stop_browser = filter_with_tags()
+            if stop_browser:
+                continue
+
+            display_scenarios_in_tfrecord(
+                tfrecord,
+                scenario_dict,
+                tfrecord_tags,
+                imported_tfrecord_tags,
+                (tags, filter_display) if tags is not None else None,
+            )
+
+        elif re.compile("^export[\s]+(all|(?:\s*(\d+))+)", flags=re.IGNORECASE).match(
             user_input
         ):
             input_lst = user_input.split()
@@ -1131,6 +1251,11 @@ def explore_tf_record(
                 )
                 if len(valid_indexes) == 0:
                     continue
+
+            tags, filter_export, stop_browser = filter_with_tags()
+            if stop_browser:
+                return True
+
             target_base_path = None
             valid_path = False
             if default_target_path is not None:
@@ -1179,6 +1304,15 @@ def explore_tf_record(
             # Try exporting the scenario
             exported = False
             for idx in valid_indexes:
+                if tags is not None:
+                    if filter_scenario(
+                        tfrecord_tags.get(scenario_ids[idx - 1], []),
+                        imported_tfrecord_tags.get(scenario_ids[idx - 1], []),
+                        (tags, filter_export),
+                    ):
+                        pass
+                    else:
+                        continue
                 exported = (
                     export_scenario(target_base_path, tfrecord, scenario_ids[idx - 1])
                     or exported
@@ -1187,12 +1321,15 @@ def explore_tf_record(
                 print(
                     f"\nYou can build these scenarios exported using the command `scl scenario build-all {target_base_path}`"
                 )
+            else:
+                if tags:
+                    print("No scenarios were exported since no tags matched\n")
             time.sleep(1.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
                 tfrecord_tags,
-                imported_tags.get(os.path.basename(tfrecord), {}),
+                imported_tfrecord_tags,
             )
             print_commands = True
 
@@ -1217,17 +1354,27 @@ def explore_tf_record(
                 target_base_path = stripped_path
                 valid_path = True
 
+            tags, filter_preview, stop_browser = filter_with_tags()
+            if stop_browser:
+                return True
+
             # Dump all the scenario plots of this tfrecord file to this target base path
             print(
                 f"Plotting and dumping all the scenario maps in {tfrecord} tfrecord file"
             )
-            dump_plots(target_base_path, scenario_dict)
+            dump_plots(
+                target_base_path,
+                scenario_dict,
+                (tags, filter_preview, tfrecord_tags, imported_tfrecord_tags)
+                if tags
+                else None,
+            )
             time.sleep(1.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
                 tfrecord_tags,
-                imported_tags.get(os.path.basename(tfrecord), {}),
+                imported_tfrecord_tags,
             )
             print_commands = True
 
@@ -1243,17 +1390,32 @@ def explore_tf_record(
             if len(valid_indexes) == 0:
                 continue
 
+            tags, filter_preview, stop_browser = filter_with_tags()
+            if stop_browser:
+                return True
+
             # Plot the maps of these scenarios
             scenarios_to_plot = []
             for i in range(len(valid_indexes)):
                 scenario_idx = scenario_ids[valid_indexes[i] - 1]
+                if tags is not None:
+                    if filter_scenario(
+                        tfrecord_tags.get(scenario_idx, []),
+                        imported_tfrecord_tags.get(scenario_idx, []),
+                        (tags, filter_preview),
+                    ):
+                        pass
+                    else:
+                        continue
                 if scenario_dict[scenario_idx][1] is None:
                     scenario_dict[scenario_idx][1] = get_map_features_for_scenario(
                         scenario_dict[scenario_idx][0]
                     )
                 scenarios_to_plot.append(scenario_dict[scenario_idx])
-
-            plot_scenarios(scenarios_to_plot, False)
+            if len(scenarios_to_plot) > 0:
+                plot_scenarios(scenarios_to_plot, False)
+            else:
+                print("No map images were plotted as no filter tags matched\n")
 
         elif re.compile("^animate[\s]+all$", flags=re.IGNORECASE).match(user_input):
             print(
@@ -1276,17 +1438,28 @@ def explore_tf_record(
                 target_base_path = stripped_path
                 valid_path = True
 
+            tags, filter_animate, stop_browser = filter_with_tags()
+            if stop_browser:
+                return True
+
             # Dump all the scenario plots of this tfrecord file to this target base path
             print(
                 f"Plotting and dumping all the scenarios animations in {tfrecord} tfrecord file"
             )
-            dump_plots(target_base_path, scenario_dict, animate=True)
+            dump_plots(
+                target_base_path,
+                scenario_dict,
+                True,
+                (tags, filter_animate, tfrecord_tags, imported_tfrecord_tags)
+                if tags
+                else None,
+            )
             time.sleep(1.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
                 tfrecord_tags,
-                imported_tags.get(os.path.basename(tfrecord), {}),
+                imported_tfrecord_tags,
             )
             print_commands = True
 
@@ -1302,10 +1475,22 @@ def explore_tf_record(
             if len(valid_indexes) == 0:
                 continue
 
+            tags, filter_animate, stop_browser = filter_with_tags()
+            if stop_browser:
+                return True
+
             # Animate the maps of these scenarios
             scenarios_to_animate = []
             for i in range(len(valid_indexes)):
                 scenario_idx = scenario_ids[valid_indexes[i] - 1]
+                if filter_scenario(
+                    tfrecord_tags.get(scenario_idx, []),
+                    imported_tfrecord_tags.get(scenario_idx, []),
+                    (tags, filter_animate),
+                ):
+                    pass
+                else:
+                    continue
                 if scenario_dict[scenario_idx][1] is None:
                     scenario_dict[scenario_idx][1] = get_map_features_for_scenario(
                         scenario_dict[scenario_idx][0]
@@ -1317,7 +1502,10 @@ def explore_tf_record(
                     )
                 scenarios_to_animate.append(scenario_dict[scenario_idx])
 
-            plot_scenarios(scenarios_to_animate, True)
+            if len(scenarios_to_animate) > 0:
+                plot_scenarios(scenarios_to_animate, True)
+            else:
+                print("No animations were shown as no filter tags matched\n")
 
         elif re.compile(
             "^tag([\s]+imported)?[\s]+(all|(?:\s*(\d+))+)$", flags=re.IGNORECASE
@@ -1353,7 +1541,7 @@ def explore_tf_record(
                     return True
                 if stripped_response == "":
                     print(
-                        "Invalid response. Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma."
+                        "Invalid response. Your response should have tags that are alphanumerical separated by Comma and can have special characters.."
                     )
                     continue
                 else:
@@ -1361,32 +1549,20 @@ def explore_tf_record(
 
             tags = [tag.strip() for tag in stripped_response.lower().split(",")]
             if imported:
-                if os.path.basename(tfrecord) in imported_tags:
-                    for i in range(len(valid_indexes)):
-                        scenario_idx = scenario_ids[valid_indexes[i] - 1]
-                        if scenario_idx in imported_tags[os.path.basename(tfrecord)]:
-                            imported_tags[os.path.basename(tfrecord)][
-                                scenario_idx
-                            ].extend(
-                                [
-                                    tag
-                                    for tag in tags
-                                    if tag
-                                    not in imported_tags[os.path.basename(tfrecord)][
-                                        scenario_idx
-                                    ]
-                                ]
-                            )
-                        else:
-                            imported_tags[os.path.basename(tfrecord)][
-                                scenario_idx
-                            ] = tags
-                else:
-                    imported_tags[os.path.basename(tfrecord)] = {
-                        scenario_ids[valid_indexes[i] - 1]: tags
-                        for i in range(len(valid_indexes))
-                    }
+                for i in range(len(valid_indexes)):
+                    scenario_idx = scenario_ids[valid_indexes[i] - 1]
+                    if scenario_idx in imported_tfrecord_tags:
+                        imported_tfrecord_tags[scenario_idx].extend(
+                            [
+                                tag
+                                for tag in tags
+                                if tag not in imported_tfrecord_tags[scenario_idx]
+                            ]
+                        )
+                    else:
+                        imported_tfrecord_tags[scenario_idx] = tags
                 print("Tags added to `Imported Tags` list")
+
             else:
                 for i in range(len(valid_indexes)):
                     scenario_idx = scenario_ids[valid_indexes[i] - 1]
@@ -1394,12 +1570,13 @@ def explore_tf_record(
                         [tag for tag in tags if tag not in tfrecord_tags[scenario_idx]]
                     )
                 print("Tags added to `Tags Added` list")
+
             time.sleep(1.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
                 tfrecord_tags,
-                imported_tags.get(os.path.basename(tfrecord), {}),
+                imported_tfrecord_tags,
             )
             print_commands = True
 
@@ -1438,7 +1615,7 @@ def explore_tf_record(
                     return True
                 if stripped_response == "":
                     print(
-                        "Invalid response. Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma."
+                        "Invalid response. Your response should have tags that are alphanumerical separated by Comma and can have special characters.."
                     )
                     continue
                 else:
@@ -1452,34 +1629,22 @@ def explore_tf_record(
                 remove_all = True
 
             if imported:
-                if os.path.basename(tfrecord) in imported_tags:
-                    for i in range(len(valid_indexes)):
-                        scenario_idx = scenario_ids[valid_indexes[i] - 1]
-                        if scenario_idx in imported_tags[os.path.basename(tfrecord)]:
-                            if remove_all:
-                                imported_tags[os.path.basename(tfrecord)][
-                                    scenario_idx
-                                ] = []
-                            else:
-                                new_tags = []
-                                for tag in imported_tags[os.path.basename(tfrecord)][
-                                    scenario_idx
-                                ]:
-                                    if tag not in tags:
-                                        new_tags.append(tag)
-                                imported_tags[os.path.basename(tfrecord)][
-                                    scenario_idx
-                                ] = new_tags
-                                print(
-                                    f"Tags removed from `Imported Tags` list of {scenario_idx}"
-                                )
+                for i in range(len(valid_indexes)):
+                    scenario_idx = scenario_ids[valid_indexes[i] - 1]
+                    if scenario_idx in imported_tfrecord_tags:
+                        if remove_all:
+                            imported_tfrecord_tags[scenario_idx] = []
                         else:
-                            print(f"no imported tags for {scenario_idx}")
-                else:
-                    print(
-                        f"No tags for {os.path.basename(tfrecord)} in imported tags list"
-                    )
-                    continue
+                            imported_tfrecord_tags[scenario_idx] = [
+                                tag
+                                for tag in imported_tfrecord_tags[scenario_idx]
+                                if tag not in tags
+                            ]
+                            print(
+                                f"Tags removed from `Imported Tags` list of {scenario_idx}"
+                            )
+                    else:
+                        print(f"no imported tags for {scenario_idx}")
 
             else:
                 for i in range(len(valid_indexes)):
@@ -1487,18 +1652,18 @@ def explore_tf_record(
                     if len(tfrecord_tags[scenario_idx]) == 0:
                         print(f"No tags added for {scenario_idx} that can be removed")
                     else:
-                        new_tags = []
-                        for tag in tfrecord_tags[scenario_idx]:
-                            if tag not in tags:
-                                new_tags.append(tag)
-                        tfrecord_tags[scenario_idx] = new_tags
+                        tfrecord_tags[scenario_idx] = [
+                            tag
+                            for tag in tfrecord_tags[scenario_idx]
+                            if tag not in tags
+                        ]
                         print(f"Tags removed from `Tags Added` list of {scenario_idx}")
             time.sleep(1.5)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
                 tfrecord_tags,
-                imported_tags.get(os.path.basename(tfrecord), {}),
+                imported_tfrecord_tags,
             )
             print_commands = True
 
@@ -1522,11 +1687,14 @@ def explore_tf_record(
                 scenario_dict[scenario_id][2] = get_trajectory_data(
                     scenario_dict[scenario_id][0]
                 )
+            imported_tfrecord_tags[scenario_id] = imported_tfrecord_tags.get(
+                scenario_id, []
+            )
             exit_browser = explore_scenario(
                 tfrecord,
                 scenario_dict[scenario_id],
                 tfrecord_tags[scenario_id],
-                imported_tags,
+                imported_tfrecord_tags[scenario_id],
                 default_target_path,
             )
             if exit_browser:
@@ -1535,7 +1703,7 @@ def explore_tf_record(
                 tfrecord,
                 scenario_dict,
                 tfrecord_tags,
-                imported_tags.get(os.path.basename(tfrecord), {}),
+                imported_tfrecord_tags,
             )
             print_commands = True
 
@@ -1557,13 +1725,10 @@ def explore_scenario(
     tfrecord_file_path: str,
     scenario_info,
     scenario_tags,
-    imported_tags,
+    imported_scenario_tags,
     default_target_path: Optional[str],
 ) -> bool:
-
     scenario = scenario_info[0]
-    imported_tfrecord_tags = imported_tags.get(os.path.basename(tfrecord_file_path), {})
-    imported_scenario_tags = imported_tfrecord_tags.get(scenario.scenario_id, [])
     scenario_map_features = scenario_info[1]
     trajectories = scenario_info[2]
     scenario_data = [
@@ -1783,7 +1948,7 @@ def explore_scenario(
                     return True
                 if stripped_response == "":
                     print(
-                        "Invalid response. Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma."
+                        "Invalid response. Your response should have tags that are alphanumerical separated by Comma and can have special characters."
                     )
                     continue
                 else:
@@ -1791,35 +1956,14 @@ def explore_scenario(
 
             tags = [tag.strip() for tag in stripped_response.lower().split(",")]
             if imported:
-                if os.path.basename(tfrecord_file_path) in imported_tags:
-                    if (
-                        scenario.scenario_id
-                        in imported_tags[os.path.basename(tfrecord_file_path)]
-                    ):
-                        imported_tags[os.path.basename(tfrecord_file_path)][
-                            scenario.scenario_id
-                        ].extend(
-                            [
-                                tag
-                                for tag in tags
-                                if tag
-                                not in imported_tags[
-                                    os.path.basename(tfrecord_file_path)
-                                ][scenario.scenario_id]
-                            ]
-                        )
-                    else:
-                        imported_tags[os.path.basename(tfrecord_file_path)][
-                            scenario.scenario_id
-                        ] = tags
-                else:
-                    imported_tags[os.path.basename(tfrecord_file_path)] = {
-                        scenario.scenario_id: tags
-                    }
+                imported_scenario_tags.extend(
+                    [tag for tag in tags if tag not in imported_scenario_tags]
+                )
                 print("Tags added to `Imported Tags` list")
             else:
                 scenario_tags.extend([tag for tag in tags if tag not in scenario_tags])
                 print("Tags added to `Tags Added` list")
+
             display_scenario_data_info()
 
         elif re.compile("^untag([\s]+imported)?$", flags=re.IGNORECASE).match(
@@ -1842,7 +1986,7 @@ def explore_scenario(
                     return True
                 if stripped_response == "":
                     print(
-                        "Invalid response. Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma."
+                        "Invalid response. Your response should have tags that are alphanumerical separated by Comma and can have special characters."
                     )
                 else:
                     valid_response = True
@@ -1850,38 +1994,18 @@ def explore_scenario(
             tags = [tag.strip() for tag in stripped_response.lower().split(",")]
             scenario_idx = scenario.scenario_id
             if imported:
-                if os.path.basename(tfrecord_file_path) in imported_tags:
-                    if (
-                        scenario_idx
-                        in imported_tags[os.path.basename(tfrecord_file_path)]
-                    ):
-                        new_tags = []
-                        for tag in imported_tags[os.path.basename(tfrecord_file_path)][
-                            scenario_idx
-                        ]:
-                            if tag not in tags:
-                                new_tags.append(tag)
-                        imported_tags[os.path.basename(tfrecord_file_path)][
-                            scenario_idx
-                        ] = new_tags
-                    else:
-                        print(f"no imported tags for {scenario_idx}")
-                        continue
+                if len(imported_scenario_tags) == 0:
+                    print(f"No tags added for {scenario_idx} that can be removed")
                 else:
-                    print(
-                        f"No tags for {os.path.basename(tfrecord_file_path)} in imported tags list"
-                    )
-                    continue
-                print("Tags removed from `Imported Tags` list")
+                    imported_scenario_tags = [
+                        tag for tag in imported_scenario_tags if tag not in tags
+                    ]
+                    print("Tags removed from `Imported Tags` list")
             else:
                 if len(scenario_tags) == 0:
                     print(f"No tags added for {scenario_idx} that can be removed")
                 else:
-                    new_tags = []
-                    for tag in scenario_tags:
-                        if tag not in tags:
-                            new_tags.append(tag)
-                    scenario_tags = new_tags
+                    scenario_tags = [tag for tag in scenario_tags if tag not in tags]
                     print("Tags removed from `Tags Added` list")
             display_scenario_data_info()
 
