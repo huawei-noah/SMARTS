@@ -23,7 +23,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import gym
 
-from smarts.core.agent import AgentSpec
+from smarts.zoo.agent_spec import AgentSpec
 from smarts.core.agent_interface import (
     OGM,
     RGB,
@@ -111,9 +111,9 @@ def intersection_env(
         not_moving=False,
         agents_alive=None,
     )
-    max_episode_steps = 3000
-    img_meters = 256
-    img_pixels = 256
+    max_episode_steps = 1e4
+    img_meters = 64
+    img_pixels = 128
     agent_specs = {
         "LeftTurnAgent": AgentSpec(
             interface=AgentInterface(

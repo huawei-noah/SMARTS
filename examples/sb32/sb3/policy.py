@@ -60,52 +60,29 @@ class CFEL5Kit(BaseFeaturesExtractor):
     :param model_arch: the model architecture used to extract the features
     """
 
-    def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 256,
-                 model_arch: str = "simple_gn"):
+    def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
         super(CFEL5Kit, self).__init__(observation_space, features_dim)
 
         # We assume CxHxW images (channels first)
         # Re-ordering will be done by pre-preprocessing or wrapper
-        num_input_channels = observation_space["image"].shape[0]
+        num_input_channels = observation_space.shape[0]
 
-        if model_arch == 'simple_gn':
-            # A simplified feature extractor with GroupNorm.
-            model = SimpleCNN_GN(num_input_channels, features_dim)
-        else:
-            raise NotImplementedError
+        # A simplified feature extractor with GroupNorm.
+        self.model = nn.Sequential(
+            nn.Conv2d(num_input_channels, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
+            nn.GroupNorm(4, 64),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(64, 32, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
+            nn.GroupNorm(2, 32),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Flatten(),
+            nn.Linear(in_features=1568, out_features=features_dim),
+        )
 
-        extractors = {"image": model}
-        self.extractors = nn.ModuleDict(extractors)
-        self._features_dim = features_dim
-
-    def forward(self, observations: gym.spaces.Dict) -> torch.Tensor:
-        encoded_tensor_list = []
-
-        # self.extractors contain nn.Modules that do all the processing.
-        for key, extractor in self.extractors.items():
-            encoded_tensor_list.append(extractor(observations[key]))
-        # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
-        return torch.cat(encoded_tensor_list, dim=1)
-
-def SimpleCNN_GN(num_input_channels: int, features_dim: int) -> nn.Module:
-    """A simplified feature extractor with GroupNorm.
-    :param num_input_channels: the number of input channels in the input
-    :param features_dim: the number of features to extract from input
-    """
-    model = nn.Sequential(
-        nn.Conv2d(num_input_channels, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
-        nn.GroupNorm(4, 64),
-        nn.ReLU(),
-        nn.MaxPool2d(kernel_size=2, stride=2),
-        nn.Conv2d(64, 32, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
-        nn.GroupNorm(2, 32),
-        nn.ReLU(),
-        nn.MaxPool2d(kernel_size=2, stride=2),
-        nn.Flatten(),
-        nn.Linear(in_features=1568, out_features=features_dim),
-    )
-
-    return model
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        return self.model(observations)
 
 
 # class NatureCNN(BaseFeaturesExtractor):

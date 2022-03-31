@@ -151,7 +151,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         print("Start training from scratch.")
         policy_kwargs = dict(
             features_extractor_class=sb3_policy.CFEDreamer,
-            features_extractor_kwargs=dict(features_dim=512),
+            # features_extractor_kwargs=dict(features_dim=512),
             # activation_fn=th.nn.ReLU,
             # activation_fn=th.nn.Tanh, # default activation used
             # net_arch=[128, dict(pi=[32, 32], vf=[32, 32])],
