@@ -10,7 +10,7 @@ class Observation(gym.Wrapper):
         self._n_stack = n_stack
         self._frames = deque(maxlen=self._n_stack)
         self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(n_stack, 64, 64), dtype=np.uint8
+            low=0, high=255, shape=(n_stack, 256, 256), dtype=np.uint8
         )
 
     def _stack_obs(self, obs: np.ndarray):
@@ -72,12 +72,12 @@ def format_img(img: np.ndarray) -> np.ndarray:
     transposed = expanded.transpose(2, 0, 1)
 
     # Resize image to 64x64
-    resized = transposed[:, 96:160, 96:160]
+    # resized = transposed[:, 96:160, 96:160]
 
     plotter(transposed,1)
-    plotter(resized,1)
+    # plotter(resized,1)
 
-    return np.uint8(resized)
+    return np.uint8(transposed)
 
 
 def plotter(obs: np.ndarray, rgb_gray=1, name: str = "Graph"):
