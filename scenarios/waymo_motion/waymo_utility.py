@@ -1238,6 +1238,8 @@ def explore_tf_record(
                 imported_tfrecord_tags,
                 (tags, filter_display) if tags is not None else None,
             )
+            print("\nIf filtered by tags, the indexes above should not be used with other commands. Use indexes from main table.\n")
+            print_commands = True
 
         elif re.compile("^export[\s]+(all|(?:\s*(\d+))+)", flags=re.IGNORECASE).match(
             user_input
