@@ -26,6 +26,8 @@ import random
 from dataclasses import dataclass, field
 from typing import Optional, Tuple, Union
 
+import numpy as np
+
 from smarts.sstudio.types import EntryTactic, TrapEntryTactic
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
@@ -44,7 +46,7 @@ class PlanningError(Exception):
 class Start:
     """A starting state for a route or mission."""
 
-    position: Tuple[float, float]
+    position: np.ndarray
     heading: Heading
     from_front_bumper: Optional[bool] = True
 

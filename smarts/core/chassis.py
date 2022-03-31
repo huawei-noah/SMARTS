@@ -120,6 +120,12 @@ class Chassis:
         """The speed of the chassis in the facing direction of the chassis."""
         raise NotImplementedError
 
+    def set_pose(self, pose: Pose):
+        """Use with caution since it disrupts the physics simulation. Sets the pose of the
+        chassis.
+        """
+        raise NotImplementedError
+
     @speed.setter
     def speed(self, speed: float):
         """Apply GCD from front-end."""
@@ -131,8 +137,8 @@ class Chassis:
         raise NotImplementedError
 
     @property
-    def steering(self):
-        """The steering value of the chassis in radians [-math.pi, math.pi]."""
+    def steering(self) -> float:
+        """The steering value of the chassis in radians [-math.pi:math.pi]."""
         raise NotImplementedError
 
     @property
@@ -170,6 +176,11 @@ class Chassis:
     ):
         """Use with care!  In essence, this is tinkering with the physics of the world,
         and may have unintended behavioral or performance consequences."""
+        raise NotImplementedError
+
+    def set_pose(self, pose: Pose):
+        """Use with caution since it disrupts the physics simulation. Sets the pose of the
+        chassis."""
         raise NotImplementedError
 
 
@@ -231,9 +242,9 @@ class BoxChassis(Chassis):
                 linearVelocity=linear_velocity,
                 angularVelocity=angular_velocity,
             )
-        self._set_pose(force_pose)
+        self.set_pose(force_pose)
 
-    def _set_pose(self, pose: Pose):
+    def set_pose(self, pose: Pose):
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self.bullet_id, position, orientation
@@ -493,9 +504,6 @@ class AckermannChassis(Chassis):
         )
 
     def set_pose(self, pose: Pose):
-        """Use with caution since it disrupts the physics simulation. Sets the pose of the
-        chassis.
-        """
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self._bullet_id, position, orientation

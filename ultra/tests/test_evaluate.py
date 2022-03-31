@@ -31,7 +31,6 @@ import dill
 import gym
 import ray
 
-from smarts.core.controllers import ActionSpaceType
 from ultra.baselines.agent_spec import BaselineAgentSpec
 from ultra.baselines.sac.sac.policy import SACPolicy
 from ultra.evaluate import collect_evaluations, evaluate, evaluation_check
@@ -262,7 +261,7 @@ class EvaluateTest(unittest.TestCase):
     # This test performs evaluation on multiple agents, but the test map
     # that is created can only support one agent. Skip this for now until
     # we can specify a map to use that supports multiple agents.
-    @unittest.skip
+    @unittest.skip("Test map does not yet support multiple agents.")
     def test_evaluate_multiagent(self):
         seed = 2
         models_directory = glob.glob(
@@ -378,7 +377,7 @@ class EvaluateTest(unittest.TestCase):
             )
 
             try:
-                policy_class = m.group(0)
+                policy_class = m.group(0)  # pytype: disable=attribute-error
             except AttributeError as e:
                 self.assertTrue(False)
 
@@ -470,6 +469,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
             next_observations, rewards, dones, infos = env.step(actions)
 
             active_agent_ids = observations.keys() & next_observations.keys()
+            # pytype: disable=attribute-error
             loss_outputs = {
                 agent_id: agents[agent_id].step(
                     state=observations[agent_id],
@@ -481,6 +481,7 @@ def run_experiment(scenario_info, num_agents, log_dir, headless=True):
                 )
                 for agent_id in active_agent_ids
             }
+            # pytype: enable=attribute-error
 
             episode.record_step(
                 agent_ids_to_record=active_agent_ids,
