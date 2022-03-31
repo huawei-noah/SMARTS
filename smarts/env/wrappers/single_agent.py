@@ -58,7 +58,7 @@ class SingleAgent(gym.Wrapper):
         return (
             obs[self._agent_id],
             reward[self._agent_id],
-            done[self._agent_id],
+            done,
             info[self._agent_id],
         )
 

@@ -17,8 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
 import logging
+import numpy as np
 import warnings
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
@@ -31,8 +31,15 @@ from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.visdom_client import VisdomClient
+from smarts.env.wrappers.format_obs import _make_space, get_spaces
 from smarts.zoo.agent_spec import AgentSpec
 
+
+ACTION_SPACES = {"Continuous": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+                "ActuatorDynamic": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+                "Lane": gym.spaces.Discrete(4),
+                "LaneWithContinuousSpeed": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,), dtype=np.float32),
+                }                
 
 class GymBaseEnv(gym.Env):
     """A generic environment for various driving tasks simulated by SMARTS."""
@@ -61,8 +68,6 @@ class GymBaseEnv(gym.Env):
         timestep_sec: Optional[
             float
         ] = None,  # for backwards compatibility (deprecated)
-        action_space: Optional[gym.Space] = None,
-        observation_space: Optional[gym.Space] = None
     ):
         """
         Args:
@@ -105,8 +110,6 @@ class GymBaseEnv(gym.Env):
 
         self._log = logging.getLogger(self.__class__.__name__)
         self.seed(seed)
-        self._action_space = action_space
-        self._observation_space = observation_space
 
         if timestep_sec and not fixed_timestep_sec:
             warnings.warn(
@@ -117,6 +120,30 @@ class GymBaseEnv(gym.Env):
             fixed_timestep_sec = timestep_sec or 0.1
 
         self._agent_specs = agent_specs
+
+        act_spaces = {}
+        obs_spaces = {}
+        for agent_id in self.agent_specs.keys():
+            interfaces = {}
+            for interface in {
+                "accelerometer",
+                "drivable_area_grid_map",
+                "lidar",
+                "neighborhood_vehicles",
+                "ogm",
+                "rgb",
+                "waypoints",
+            }:
+                val = getattr(self.agent_specs[agent_id].interface, interface)
+                if val:
+                    interfaces.update({interface: val})
+
+            obs_spaces[agent_id] = gym.spaces.Dict(_make_space(interfaces))
+            act_spaces[agent_id] = ACTION_SPACES[self.agent_specs[agent_id].interface.action.name]
+        
+        self.observation_space = gym.spaces.Dict(obs_spaces)
+        self.action_space = gym.spaces.Dict(act_spaces)
+    
         self._dones_registered = 0
 
         self._scenarios_iterator = Scenario.scenario_variations(
@@ -320,13 +347,3 @@ class GymBaseEnv(gym.Env):
         if self._smarts is not None:
             self._smarts.destroy()
             self._smarts = None
-
-    def action_space(self):
-        """Return the action space"""
-
-        return self._action_space
-
-    def observation_space(self):
-        """Return the observation space"""
-
-        return self._observation_space

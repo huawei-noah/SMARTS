@@ -36,6 +36,11 @@ from smarts.zoo.agent_spec import AgentSpec
 
 class HiWayEnv(gym.Env):
     """A generic environment for various driving tasks simulated by SMARTS."""
+    """Deprecated. Use `GymBaseEnv`."""
+    warnings.warn(
+        "HiWayEnv has been deprecated in favor of GymBaseEnv.  Please update your code.",
+        category=DeprecationWarning,
+    )
 
     metadata = {"render.modes": ["human"]}
     """Metadata for gym's use"""

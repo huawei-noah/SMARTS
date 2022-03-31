@@ -74,7 +74,7 @@ class EpisodeLog:
                 observations, rewards, dones, infos
             )
 
-        if dones.get("__all__", False) and infos is not None:
+        if dones and infos is not None:
             for agent, score in infos.items():
                 self.scores[agent] = score["score"]
 
