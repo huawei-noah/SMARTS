@@ -176,7 +176,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         save_dir = config["logdir"] / "train"
         save_dir.mkdir(parents=True, exist_ok=True)
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        model.save(save_dir / "model_"+time)
+        model.save(save_dir / ("model_"+time))
         print("Saved trained model.")
 
     print("Evaluate policy.")
