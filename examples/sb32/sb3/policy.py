@@ -15,7 +15,6 @@ class CFEDreamer(BaseFeaturesExtractor):
     def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 512):
         super(CFEDreamer, self).__init__(observation_space, features_dim)
         # We assume CxHxW images (channels first)
-        # Re-ordering will be done by pre-preprocessing or wrapper
         n_input_channels = observation_space.shape[0]
         self.cnn = nn.Sequential(
             nn.Conv2d(
@@ -64,12 +63,9 @@ class CFEL5Kit(BaseFeaturesExtractor):
         super(CFEL5Kit, self).__init__(observation_space, features_dim)
 
         # We assume CxHxW images (channels first)
-        # Re-ordering will be done by pre-preprocessing or wrapper
-        num_input_channels = observation_space.shape[0]
-
-        # A simplified feature extractor with GroupNorm.
-        self.model = nn.Sequential(
-            nn.Conv2d(num_input_channels, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
+        n_input_channels = observation_space.shape[0]
+        self.cnn = nn.Sequential(
+            nn.Conv2d(n_input_channels, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
             nn.GroupNorm(4, 64),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
@@ -77,12 +73,20 @@ class CFEL5Kit(BaseFeaturesExtractor):
             nn.GroupNorm(2, 32),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Flatten(),
-            nn.Linear(in_features=1568, out_features=features_dim),
+            nn.Flatten()
         )
 
+        # Compute shape by doing one forward pass
+        with torch.no_grad():
+            n_flatten = self.cnn(
+                torch.as_tensor(observation_space.sample()[None]).float()
+            ).shape[1]
+
+        # nn.Linear(in_features=1568, out_features=features_dim)
+        self.linear = nn.Sequential(nn.Linear(in_features = n_flatten, out_features = features_dim))
+
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        return self.model(observations)
+        return self.linear(self.cnn(observations))
 
 
 # class NatureCNN(BaseFeaturesExtractor):

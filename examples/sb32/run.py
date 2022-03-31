@@ -48,14 +48,14 @@ def main(args: argparse.Namespace):
     config["mode"] = args.mode
 
     # Setup logdir.
-    if config["mode"] == "train" and not args.logdir:
-        # Begin training from scratch.
-        time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
-    elif (config["mode"] == "train" and args.logdir) or (config["mode"] == "evaluate"):
+    if (config["mode"] == "train" and args.model) or (config["mode"] == "evaluate"):
         # Begin training from a pretrained model.
         logdir = pathlib.Path(args.logdir)
         config["model"] = args.model
+    elif config["mode"] == "train" and not args.model:
+        # Begin training from scratch.
+        time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
     else:
         raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
     logdir.mkdir(parents=True, exist_ok=True)
@@ -119,14 +119,14 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         save_path=config["logdir"] / "checkpoint",
         name_prefix="model",
     )
-    # eval_callback = EvalCallback(
-    #     eval_env=eval_env,
-    #     n_eval_episodes=config["eval_eps"],
-    #     eval_freq=config["eval_freq"],
-    #     log_path=config["logdir"] / "eval",
-    #     best_model_save_path=config["logdir"] / "eval",
-    #     deterministic=True,
-    # )
+    eval_callback = EvalCallback(
+        eval_env=eval_env,
+        n_eval_episodes=config["eval_eps"],
+        eval_freq=config["eval_freq"],
+        log_path=config["logdir"] / "eval",
+        best_model_save_path=config["logdir"] / "eval",
+        deterministic=True,
+    )
     # video_recorder_callback = sb3_callback.VideoRecorderCallback(
     #     env=eval_env,
     # )
@@ -136,21 +136,22 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         model = PPO.load(
             config["model"], print_system_info=True
         )
-    elif config["mode"] == "train" and args.logdir:
+        print_model(model)
+    elif config["mode"] == "train" and args.model:
         print("Start training from existing model.")
         model = PPO.load(
             config["model"], print_system_info=True
         )
         model.set_env(env)
+        print_model(model)
         model.learn(
             total_timesteps=config["train_steps"],
-            # callback=[checkpoint_callback, eval_callback],
-            callback=[checkpoint_callback],
+            callback=[checkpoint_callback, eval_callback],
         )
     else:
         print("Start training from scratch.")
         policy_kwargs = dict(
-            features_extractor_class=sb3_policy.CFEDreamer,
+            features_extractor_class=getattr(sb3_policy,config["feature_extractor_class"]),
             # features_extractor_kwargs=dict(features_dim=512),
             # activation_fn=th.nn.ReLU,
             # activation_fn=th.nn.Tanh, # default activation used
@@ -165,16 +166,10 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             tensorboard_log=config["logdir"] / "tensorboard",
             seed=config["seed"],
         )
-        # Print model summary
-        print("\n\n")
-        network = Network(model.policy.features_extractor, model.policy.mlp_extractor)
-        print(network)
-        summary(network, (1,) + env.observation_space.shape)
-        print("\n\n")
+        print_model(model)
         model.learn(
             total_timesteps=config["train_steps"],
-            # callback=[checkpoint_callback, eval_callback],
-            callback=[checkpoint_callback],
+            callback=[checkpoint_callback, eval_callback],
         )
 
     if config["mode"] == "train":
@@ -191,6 +186,14 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
     print("Finished evaluating.")
 
+
+def print_model(model):
+    # Print model summary
+    print("\n\n")
+    network = Network(model.policy.features_extractor, model.policy.mlp_extractor)
+    print(network)
+    summary(network, (1,) + model.get_env().observation_space.shape)
+    print("\n\n")
 
 class Network(nn.Module):
     def __init__(self, feature_extractor: nn.Module, mlp_extractor: nn.Module):
@@ -230,8 +233,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.mode == "train" and args.logdir is not None and args.model is None:
-        raise Exception("When --mode=train, --logdir=<path>, --model option must be specified.")
+    if args.mode == "train" and args.model is not None and args.logdir is None:
+        raise Exception("When --mode=train, --model=<path>, --logdir option must be specified.")
     if args.mode == "evaluate" and (args.logdir is None or args.model is None):
         raise Exception("When --mode=evaluate, --logdir and --model option must be specified.")
 
