@@ -18,7 +18,8 @@ from sb3 import reward as sb3_reward
 from sb3 import info as sb3_info
 from sb3 import callback as sb3_callback
 from sb3 import policy as sb3_policy
-from stable_baselines3 import PPO
+from sb3 import sb3_config
+import stable_baselines3 as sb3lib
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -44,7 +45,7 @@ def main(args: argparse.Namespace):
     )
 
     # Load env config.
-    config = config_file["smarts"]
+    config = sb3_config.Config(config_file["smarts"])
     config["mode"] = args.mode
 
     # Setup logdir.
@@ -117,7 +118,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     checkpoint_callback = CheckpointCallback(
         save_freq=config["checkpoint_freq"],
         save_path=config["logdir"] / "checkpoint",
-        name_prefix="model",
+        name_prefix=config["alg"],
     )
     eval_callback = EvalCallback(
         eval_env=eval_env,
@@ -133,13 +134,13 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
 
     if config["mode"] == "evaluate":
         print("Start evaluation.")
-        model = PPO.load(
+        model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
         print_model(model)
     elif config["mode"] == "train" and args.model:
         print("Start training from existing model.")
-        model = PPO.load(
+        model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
         model.set_env(env)
@@ -158,13 +159,13 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             # net_arch=[128, dict(pi=[32, 32], vf=[32, 32])],
             net_arch=[],
         )
-        model = PPO(
+        model = getattr(sb3lib, config["alg"])(
             "CnnPolicy",
             env,
             policy_kwargs=policy_kwargs,
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
-            seed=config["seed"],
+            *config["hyperparameter"]
         )
         print_model(model)
         model.learn(
