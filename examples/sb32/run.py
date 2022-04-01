@@ -14,7 +14,6 @@ from typing import Any, Dict, List
 import gym
 import stable_baselines3 as sb3lib
 import torch as th
-import torch.nn as nn
 from ruamel.yaml import YAML
 from sb3 import action as sb3_action
 from sb3 import callback as sb3_callback
@@ -22,6 +21,7 @@ from sb3 import info as sb3_info
 from sb3 import observation as sb3_observation
 from sb3 import policy as sb3_policy
 from sb3 import reward as sb3_reward
+from sb3 import util as sb3_util
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -33,7 +33,7 @@ from stable_baselines3.common.vec_env import (
     VecMonitor,
     VecVideoRecorder,
 )
-from torchinfo import summary
+
 
 print("Torch cuda is available: ", th.cuda.is_available())
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -144,14 +144,14 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
-        print_model(model, eval_env)
+        sb3_util.print_model(model, eval_env)
     elif config["mode"] == "train" and config.get("model", None):
         print("Start training from existing model.")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
         model.set_env(env)
-        print_model(model, env)
+        sb3_util.print_model(model, env)
         model.learn(
             total_timesteps=config["train_steps"],
             callback=[checkpoint_callback, eval_callback],
@@ -165,7 +165,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             tensorboard_log=config["logdir"] / "tensorboard",
             **(getattr(sb3_policy, config["policy"])()),
         )
-        print_model(model, env)
+        sb3_util.print_model(model, env)
         model.learn(
             total_timesteps=config["train_steps"],
             callback=[checkpoint_callback, eval_callback],
@@ -184,26 +184,6 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     )
     print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
     print("Finished evaluating.")
-
-
-def print_model(model, env):
-    # Print model summary
-    print("\n\n")
-    network = Network(model.policy.features_extractor, model.policy.mlp_extractor)
-    print(network)
-    summary(network, (1,) + env.observation_space.shape)
-    print("\n\n")
-
-
-class Network(nn.Module):
-    def __init__(self, feature_extractor: nn.Module, mlp_extractor: nn.Module):
-        super(Network, self).__init__()
-        self._feature_extractor = feature_extractor
-        self._mlp_extractor = mlp_extractor
-
-    def forward(self, obs: th.Tensor) -> th.Tensor:
-        feature_out = self._feature_extractor(obs)
-        return self._mlp_extractor(feature_out)
 
 
 if __name__ == "__main__":
