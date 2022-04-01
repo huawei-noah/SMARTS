@@ -51,10 +51,12 @@ def main(args: argparse.Namespace):
     config["mode"] = args.mode
 
     # Setup logdir.
+    print("\n\n")
     if (config["mode"] == "train" and args.model) or (config["mode"] == "evaluate"):
         # Begin training from a pretrained model.
         logdir = Path(args.logdir)
         config["model"] = args.model
+        print("Model:", config["model"])
     elif config["mode"] == "train" and not args.model:
         # Begin training from scratch.
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -64,6 +66,7 @@ def main(args: argparse.Namespace):
     logdir.mkdir(parents=True, exist_ok=True)
     config["logdir"] = logdir
     print("Logdir:", logdir)
+    print("\n\n")
 
     # Make training and evaluation environments.
     env = make_env(config=config, training=True)
@@ -135,18 +138,19 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     # )
 
     if config["mode"] == "evaluate":
+        print("\n\n")
         print("Start evaluation.")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
-        print_model(model)
+        print_model(model, eval_env)
     elif config["mode"] == "train" and config.get("model", None):
         print("Start training from existing model.")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
         model.set_env(env)
-        print_model(model)
+        print_model(model, env)
         model.learn(
             total_timesteps=config["train_steps"],
             callback=[checkpoint_callback, eval_callback],
@@ -160,7 +164,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             tensorboard_log=config["logdir"] / "tensorboard",
             **(getattr(sb3_policy, config["policy"])()),
         )
-        print_model(model)
+        print_model(model, env)
         model.learn(
             total_timesteps=config["train_steps"],
             callback=[checkpoint_callback, eval_callback],
@@ -181,12 +185,12 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     print("Finished evaluating.")
 
 
-def print_model(model):
+def print_model(model, env):
     # Print model summary
     print("\n\n")
     network = Network(model.policy.features_extractor, model.policy.mlp_extractor)
     print(network)
-    summary(network, (1,) + model.get_env().observation_space.shape)
+    summary(network, (1,) + env.observation_space.shape)
     print("\n\n")
 
 

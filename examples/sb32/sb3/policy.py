@@ -187,7 +187,7 @@ def l5kit():
     start_val = 0.1
     end_val = 0.01
     training_progress_ratio = 1.0
-    kwargs["clip_schedule"] = get_linear_fn(start_val, end_val, training_progress_ratio)
+    kwargs["clip_range"] = get_linear_fn(start_val, end_val, training_progress_ratio)
 
     # Hyperparameter
     kwargs["learning_rate"] = 3e-4
