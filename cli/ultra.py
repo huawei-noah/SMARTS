@@ -28,7 +28,7 @@ import click
 from rich import print
 
 
-@click.group(name="ultra", help="Build policies or start agent workers")
+@click.group(name="ultra", help="Utilites for working with the ULTRA benchmark.")
 def ultra_cli():
     pass
 
