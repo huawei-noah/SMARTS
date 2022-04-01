@@ -100,6 +100,47 @@ class L5Kit(BaseFeaturesExtractor):
         return self.linear(self.cnn(observations))
 
 
+class ResNet(BaseFeaturesExtractor):
+    def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
+        super().__init__(observation_space, features_dim)
+
+        # We assume CxHxW images (channels first)
+        n_input_channels = observation_space.shape[0]
+        self.cnn = nn.Sequential(
+            nn.Conv2d(
+                n_input_channels,
+                64,
+                kernel_size=(7, 7),
+                stride=(2, 2),
+                padding=(3, 3),
+                bias=False,
+            ),
+            nn.GroupNorm(4, 64),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(
+                64, 32, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False
+            ),
+            nn.GroupNorm(2, 32),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Flatten(),
+        )
+
+        # Compute shape by doing one forward pass
+        with torch.no_grad():
+            n_flatten = self.cnn(
+                torch.as_tensor(observation_space.sample()[None]).float()
+            ).shape[1]
+
+        # nn.Linear(in_features=1568, out_features=features_dim)
+        self.linear = nn.Sequential(
+            nn.Linear(in_features=n_flatten, out_features=features_dim)
+        )
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        return self.linear(self.cnn(observations))
+
 # class NatureCNN(BaseFeaturesExtractor):
 #     """
 #     CNN from DQN nature paper:
@@ -180,6 +221,32 @@ def l5kit():
         features_extractor_class=L5Kit,
         features_extractor_kwargs=dict(features_dim=128),
         normalize_images=False,
+        net_arch=[],
+    )
+
+    # Clipping schedule of PPO epsilon parameter
+    start_val = 0.1
+    end_val = 0.01
+    training_progress_ratio = 1.0
+    kwargs["clip_range"] = get_linear_fn(start_val, end_val, training_progress_ratio)
+
+    # Hyperparameter
+    kwargs["learning_rate"] = 3e-4
+    kwargs["n_steps"] = 256
+    kwargs["gamma"] = 0.8
+    kwargs["gae_lambda"] = 0.9
+    kwargs["n_epochs"] = 10
+    kwargs["seed"] = 42
+    kwargs["batch_size"] = 64
+
+    return kwargs
+
+def resnet():
+    import torchvision.models as th_models
+    kwargs = {}
+    kwargs["policy_kwargs"] = dict(
+        features_extractor_class=ResNet,
+        features_extractor_kwargs=dict(features_dim=256),
         net_arch=[],
     )
 

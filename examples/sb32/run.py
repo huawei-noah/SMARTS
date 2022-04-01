@@ -35,6 +35,7 @@ from stable_baselines3.common.vec_env import (
 )
 from torchinfo import summary
 
+print("Torch cuda is available: ", th.cuda.is_available())
 warnings.simplefilter("ignore", category=DeprecationWarning)
 yaml = YAML(typ="safe")
 
