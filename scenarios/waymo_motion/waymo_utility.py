@@ -24,7 +24,6 @@
 import argparse
 import copy
 import os
-import shutil
 import yaml
 import re
 import json
@@ -617,7 +616,27 @@ def filter_scenario(scenario_tags, imported_tags, filter_tags) -> bool:
         return all(x in imported_tags + scenario_tags for x in tags)
 
 
-def filter_with_tags() -> Tuple[Optional[List[str]], Optional[int], bool]:
+def prompt_tags() -> Tuple[Optional[str], bool]:
+    valid_response = False
+    stripped_response = None
+    while not valid_response:
+        try:
+            response = input("\nResponse: ")
+            stripped_response = response.strip()
+        except EOFError:
+            print("Raised EOF. Attempting to exit browser.")
+            return None, True
+        if stripped_response == "":
+            print(
+                "Invalid response. Your response should have tags that are alphanumerical separated by Comma and can have special characters."
+            )
+        else:
+            valid_response = True
+
+    return stripped_response, False
+
+
+def prompt_filter_tags() -> Tuple[Optional[List[str]], Optional[int], bool]:
     filter_response = None
     print(
         f"\nDo you want to filter the action with scenario tags?:\n"
@@ -643,35 +662,68 @@ def filter_with_tags() -> Tuple[Optional[List[str]], Optional[int], bool]:
     if filter_response is None:
         return None, None, True
 
-    stripped_tags = None
     if filter_response < 4:
         print(
             "What Tags do you want to filter the response with?\n"
             "Your response should have tags that are alphanumerical separated by Comma and can have special characters.\n"
         )
-        valid_tags = False
-
-        while not valid_tags:
-            try:
-                response = input("\nResponse: ")
-                stripped_tags = response.strip()
-            except EOFError:
-                print("Raised EOF. Attempting to exit browser.")
-                break
-            if stripped_tags == "":
-                print(
-                    "Invalid response. Your response should have tags that are alphanumerical separated by Comma and can have special characters."
-                )
-                continue
-            valid_tags = True
-
-        if not valid_tags:
+        stripped_tags, stop_browser = prompt_tags()
+        if stop_browser:
             return None, None, True
-    if stripped_tags:
         tags = [tag.strip() for tag in stripped_tags.lower().split(",")]
     else:
         tags = None
     return tags, filter_response, False
+
+
+def prompt_target_path(
+    default_target_path: Optional[str] = None,
+) -> Tuple[Optional[str], bool]:
+    target_base_path = None
+    valid_path = False
+    if default_target_path is not None:
+        print(
+            f"Which path do you want to export scenario to?:\n"
+            "1. Default Target Path.\n"
+            f"2. Custom Target Path.\n"
+            "Choose your response by entering 1 or 2.\n"
+        )
+        valid_response = False
+        while not valid_response:
+            try:
+                response = input("\nResponse: ")
+                stripped_response = response.strip()
+            except EOFError:
+                print("Raised EOF. Attempting to exit browser.")
+                return None, True
+            if re.compile("^[1-2]$", re.IGNORECASE).match(stripped_response):
+                if stripped_response == "1":
+                    target_base_path = default_target_path
+                    valid_path = True
+                valid_response = True
+            else:
+                print(
+                    "Invalid Response. Please choose your response by entering 1 or 2.\n"
+                )
+
+    while not valid_path:
+        print(
+            "Enter the path to directory to which you want to export the scenarios?:\n"
+        )
+        try:
+            response = input("\nEnter Path: ")
+            stripped_path = response.strip("[ \"']")
+        except EOFError:
+            print("Raised EOF. Attempting to exit browser.")
+            return None, True
+
+        # Check if directory path is valid
+        if not check_path_validity(stripped_path):
+            print("Please enter a valid directory path\n")
+            continue
+        target_base_path = stripped_path
+        valid_path = True
+    return target_base_path, False
 
 
 def display_scenario_tags(tags_per_scenarios: Dict[str, List[str]]):
@@ -936,7 +988,7 @@ def tfrecords_browser(
                 if len(valid_indexes) == 0:
                     continue
 
-            tags, filter_display, stop_browser = filter_with_tags()
+            tags, filter_display, stop_browser = prompt_filter_tags()
             if stop_browser:
                 continue
 
@@ -1195,7 +1247,7 @@ def explore_tf_record(
             print(
                 f"{os.path.basename(tfrecord)} TfRecord Browser.\n"
                 f"You can use the following commands to further explore these scenarios:\n"
-                "1. `display` --> Display the scenarios in this tfrecord filtered based on the tags chosen in a subsequent option. `"
+                "1. `display` --> Display the scenarios in this tfrecord filtered based on the tags chosen in a subsequent option.\n"
                 "2. `export all/<indexes>` --> Export the scenarios at these indexes or all of the table to a target path\n"
                 f"                             The indexes should be an integer between 1 and {len(scenario_ids)} separated by space\n"
                 f"                             The exports can be filtered based on the tags chosen in a subsequent option.\n"
@@ -1227,7 +1279,7 @@ def explore_tf_record(
             return True
 
         if user_input.lower() == "display":
-            tags, filter_display, stop_browser = filter_with_tags()
+            tags, filter_display, stop_browser = prompt_filter_tags()
             if stop_browser:
                 continue
 
@@ -1238,7 +1290,16 @@ def explore_tf_record(
                 imported_tfrecord_tags,
                 (tags, filter_display) if tags is not None else None,
             )
-            print("\nIf filtered by tags, the indexes above should not be used with other commands. Use indexes from main table.\n")
+            print(
+                "\nIf filtered by tags, the indexes above should not be used with other commands. Use indexes from main table.\n"
+            )
+            time.sleep(1.5)
+            display_scenarios_in_tfrecord(
+                tfrecord,
+                scenario_dict,
+                tfrecord_tags,
+                imported_tfrecord_tags,
+            )
             print_commands = True
 
         elif re.compile("^export[\s]+(all|(?:\s*(\d+))+)", flags=re.IGNORECASE).match(
@@ -1254,54 +1315,13 @@ def explore_tf_record(
                 if len(valid_indexes) == 0:
                     continue
 
-            tags, filter_export, stop_browser = filter_with_tags()
+            tags, filter_export, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
 
-            target_base_path = None
-            valid_path = False
-            if default_target_path is not None:
-                print(
-                    f"Which path do you want to export scenarios to?:\n"
-                    "1. Default Target Path.\n"
-                    f"2. Custom Target Path.\n"
-                    "Choose your response by entering 1,or 2.\n"
-                )
-                valid_response = False
-                while not valid_response:
-                    try:
-                        response = input("\nResponse: ")
-                        stripped_response = response.strip()
-                    except EOFError:
-                        print("Raised EOF. Attempting to exit browser.")
-                        return True
-                    if re.compile("^[1-2]$", re.IGNORECASE).match(stripped_response):
-                        if stripped_response == "1":
-                            target_base_path = default_target_path
-                            valid_path = True
-                        valid_response = True
-                    else:
-                        print(
-                            "Invalid Response. Please choose your response by entering 1 or 2.\n"
-                        )
-
-            while not valid_path:
-                print(
-                    "Enter the path to directory to which you want to export the scenarios?:\n"
-                )
-                try:
-                    response = input("\nEnter Path: ")
-                    stripped_path = response.strip("[ \"']")
-                except EOFError:
-                    print("Raised EOF. Attempting to exit browser.")
-                    return True
-
-                # Check if directory path is valid
-                if not check_path_validity(stripped_path):
-                    print("Please enter a valid directory path\n")
-                    continue
-                target_base_path = stripped_path
-                valid_path = True
+            target_base_path, stop_browser = prompt_target_path(default_target_path)
+            if stop_browser:
+                return True
 
             # Try exporting the scenario
             exported = False
@@ -1326,7 +1346,7 @@ def explore_tf_record(
             else:
                 if tags:
                     print("No scenarios were exported since no tags matched\n")
-            time.sleep(1.5)
+            time.sleep(1)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1339,24 +1359,11 @@ def explore_tf_record(
             print(
                 "Enter the path to directory to which you want to dump the images of the maps of scenarios?:\n"
             )
-            valid_path = False
-            target_base_path = None
-            while not valid_path:
-                try:
-                    response = input("\nEnter Path: ")
-                    stripped_path = response.strip("[ \"']")
-                except EOFError:
-                    print("Raised EOF. Attempting to exit browser.")
-                    return True
+            target_base_path, stop_browser = prompt_target_path(default_target_path)
+            if stop_browser:
+                return True
 
-                # Check if directory path is valid
-                if not check_path_validity(stripped_path):
-                    print("Please enter a valid directory path\n")
-                    continue
-                target_base_path = stripped_path
-                valid_path = True
-
-            tags, filter_preview, stop_browser = filter_with_tags()
+            tags, filter_preview, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
 
@@ -1371,7 +1378,7 @@ def explore_tf_record(
                 if tags
                 else None,
             )
-            time.sleep(1.5)
+            time.sleep(1)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1392,7 +1399,7 @@ def explore_tf_record(
             if len(valid_indexes) == 0:
                 continue
 
-            tags, filter_preview, stop_browser = filter_with_tags()
+            tags, filter_preview, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
 
@@ -1423,24 +1430,11 @@ def explore_tf_record(
             print(
                 "Enter the path to directory to which you want to dump the animations of the track objects of scenarios?:\n"
             )
-            valid_path = False
-            target_base_path = None
-            while not valid_path:
-                try:
-                    response = input("\nEnter Path: ")
-                    stripped_path = response.strip("[ \"']")
-                except EOFError:
-                    print("Raised EOF. Attempting to exit browser.")
-                    return True
+            target_base_path, stop_browser = prompt_target_path(default_target_path)
+            if stop_browser:
+                return True
 
-                # Check if directory path is valid
-                if not check_path_validity(stripped_path):
-                    print("Please enter a valid directory path\n")
-                    continue
-                target_base_path = stripped_path
-                valid_path = True
-
-            tags, filter_animate, stop_browser = filter_with_tags()
+            tags, filter_animate, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
 
@@ -1456,7 +1450,7 @@ def explore_tf_record(
                 if tags
                 else None,
             )
-            time.sleep(1.5)
+            time.sleep(1)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1477,7 +1471,7 @@ def explore_tf_record(
             if len(valid_indexes) == 0:
                 continue
 
-            tags, filter_animate, stop_browser = filter_with_tags()
+            tags, filter_animate, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
 
@@ -1532,22 +1526,9 @@ def explore_tf_record(
                 "What Tags do you want to add?\n"
                 "Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma.\n"
             )
-            valid_response = False
-            stripped_response = None
-            while not valid_response:
-                try:
-                    response = input("\nResponse: ")
-                    stripped_response = response.strip()
-                except EOFError:
-                    print("Raised EOF. Attempting to exit browser.")
-                    return True
-                if stripped_response == "":
-                    print(
-                        "Invalid response. Your response should have tags that are alphanumerical separated by Comma and can have special characters.."
-                    )
-                    continue
-                else:
-                    valid_response = True
+            stripped_response, stop_browser = prompt_tags()
+            if stop_browser:
+                return True
 
             tags = [tag.strip() for tag in stripped_response.lower().split(",")]
             if imported:
@@ -1573,7 +1554,7 @@ def explore_tf_record(
                     )
                 print("Tags added to `Tags Added` list")
 
-            time.sleep(1.5)
+            time.sleep(1)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1606,22 +1587,9 @@ def explore_tf_record(
                 "Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma.\n"
                 "Optionally you can respond `remove all`, to remove all tags from these scenarios."
             )
-            valid_response = False
-            stripped_response = None
-            while not valid_response:
-                try:
-                    response = input("\nResponse: ")
-                    stripped_response = response.strip()
-                except EOFError:
-                    print("Raised EOF. Attempting to exit browser.")
-                    return True
-                if stripped_response == "":
-                    print(
-                        "Invalid response. Your response should have tags that are alphanumerical separated by Comma and can have special characters.."
-                    )
-                    continue
-                else:
-                    valid_response = True
+            stripped_response, stop_browser = prompt_tags()
+            if stop_browser:
+                return True
 
             tags = [tag.strip() for tag in stripped_response.lower().split(",")]
 
@@ -1660,7 +1628,7 @@ def explore_tf_record(
                             if tag not in tags
                         ]
                         print(f"Tags removed from `Tags Added` list of {scenario_idx}")
-            time.sleep(1.5)
+            time.sleep(1)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1860,50 +1828,9 @@ def explore_scenario(
             print("Raised EOF. Attempting to exit browser.")
             return True
         if user_input.lower() == "export":
-            target_base_path = None
-            valid_path = False
-            if default_target_path is not None:
-                print(
-                    f"Which path do you want to export scenario to?:\n"
-                    "1. Default Target Path.\n"
-                    f"2. Custom Target Path.\n"
-                    "Choose your response by entering 1 or 2.\n"
-                )
-                valid_response = False
-                while not valid_response:
-                    try:
-                        response = input("\nResponse: ")
-                        stripped_response = response.strip()
-                    except EOFError:
-                        print("Raised EOF. Attempting to exit browser.")
-                        return True
-                    if re.compile("^[1-2]$", re.IGNORECASE).match(stripped_response):
-                        if stripped_response == "1":
-                            target_base_path = default_target_path
-                            valid_path = True
-                        valid_response = True
-                    else:
-                        print(
-                            "Invalid Response. Please choose your response by entering 1 or 2.\n"
-                        )
-
-            while not valid_path:
-                print(
-                    "Enter the path to directory to which you want to export the scenarios?:\n"
-                )
-                try:
-                    response = input("\nEnter Path: ")
-                    stripped_path = response.strip("[ \"']")
-                except EOFError:
-                    print("Raised EOF. Attempting to exit browser.")
-                    return True
-
-                # Check if directory path is valid
-                if not check_path_validity(stripped_path):
-                    print("Please enter a valid directory path\n")
-                    continue
-                target_base_path = stripped_path
-                valid_path = True
+            target_base_path, stop_browser = prompt_target_path(default_target_path)
+            if stop_browser:
+                return True
 
             # Try exporting the scenario to the target_base_path
             export_scenario(target_base_path, tfrecord_file_path, scenario.scenario_id)
@@ -1939,22 +1866,9 @@ def explore_scenario(
             )
             input_lst = user_input.lower().split()
             imported = True if "imported" in input_lst else False
-            valid_response = False
-            stripped_response = None
-            while not valid_response:
-                try:
-                    response = input("\nResponse: ")
-                    stripped_response = response.strip()
-                except EOFError:
-                    print("Raised EOF. Attempting to exit browser.")
-                    return True
-                if stripped_response == "":
-                    print(
-                        "Invalid response. Your response should have tags that are alphanumerical separated by Comma and can have special characters."
-                    )
-                    continue
-                else:
-                    valid_response = True
+            stripped_response, stop_browser = prompt_tags()
+            if stop_browser:
+                return True
 
             tags = [tag.strip() for tag in stripped_response.lower().split(",")]
             if imported:
@@ -1977,21 +1891,9 @@ def explore_scenario(
             )
             input_lst = user_input.lower().split()
             imported = True if "imported" in input_lst else False
-            valid_response = False
-            stripped_response = None
-            while not valid_response:
-                try:
-                    response = input("\nResponse: ")
-                    stripped_response = response.strip()
-                except EOFError:
-                    print("Raised EOF. Attempting to exit browser.")
-                    return True
-                if stripped_response == "":
-                    print(
-                        "Invalid response. Your response should have tags that are alphanumerical separated by Comma and can have special characters."
-                    )
-                else:
-                    valid_response = True
+            stripped_response, stop_browser = prompt_tags()
+            if stop_browser:
+                return True
 
             tags = [tag.strip() for tag in stripped_response.lower().split(",")]
             scenario_idx = scenario.scenario_id
