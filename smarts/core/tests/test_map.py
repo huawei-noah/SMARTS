@@ -996,6 +996,7 @@ if __name__ == "__main__":
 
     map_spec = MapSpec(source=source_str, lanepoint_spacing=1.0)
     road_map = WaymoMap.from_spec(map_spec)
+    assert road_map is not None
 
     # Plot waypoints on nearest lanes of road for a given lanepoint
     # lp_101_0 = road_map._lanepoints._lanepoints_by_lane_id["101_0"]
