@@ -137,6 +137,9 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
         _clear_cache()
 
     road_map = map_class.from_spec(map_spec)
+    if road_map is None:
+        return None, None
+
     if os.path.isfile(road_map.source):
         road_map_hash = file_md5_hash(road_map.source)
     else:
