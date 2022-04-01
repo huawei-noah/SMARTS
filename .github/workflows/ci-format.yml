@@ -5,6 +5,8 @@ on:
     branches-ignore:
       - master
   pull_request:
+    branches-ignore:
+      - master
 
 env:
   venv_dir: .venv
@@ -40,7 +42,7 @@ jobs:
             -s n \
             --ignore marl_benchmark,examples,scenarios,docs,manager_pb2_grpc.py,worker_pb2_grpc.py \
             --msg-template='{path}: line {line}: {msg_id}: {msg}' \
-            ./smarts ./envision
+            ./smarts ./envision ./baselines
 
   test-types:
     runs-on: ubuntu-18.04
