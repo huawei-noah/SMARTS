@@ -24,7 +24,12 @@ class Reward(gym.Wrapper):
                 print(f"***** Vehicle reached goal.")
             elif obs.events["reached_max_episode_steps"]:
                 print(f"##### Vehicle reached max episode steps.")
-            elif obs.events["off_road"] | obs.events["on_shoulder"] | obs.events["collisions"] | obs.events["off_route"]:
+            elif (
+                obs.events["off_road"]
+                | obs.events["on_shoulder"]
+                | obs.events["collisions"]
+                | obs.events["off_route"]
+            ):
                 pass
             else:
                 print(obs.events)

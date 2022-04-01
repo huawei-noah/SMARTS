@@ -75,7 +75,7 @@ def format_img(img: np.ndarray) -> np.ndarray:
     # resized = transposed[:, 96:160, 96:160]
 
     # plotter(transposed,1)
-    
+
     return np.uint8(transposed)
 
 

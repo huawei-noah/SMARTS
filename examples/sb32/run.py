@@ -5,33 +5,35 @@ import tensorflow
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # Silence the TF logs
 
 import argparse
-from pathlib import Path
+import multiprocessing as mp
 import warnings
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List
 
 import gym
+import stable_baselines3 as sb3lib
+import torch as th
+import torch.nn as nn
 from ruamel.yaml import YAML
 from sb3 import action as sb3_action
-from sb3 import observation as sb3_observation
-from sb3 import reward as sb3_reward
-from sb3 import info as sb3_info
 from sb3 import callback as sb3_callback
+from sb3 import info as sb3_info
+from sb3 import observation as sb3_observation
 from sb3 import policy as sb3_policy
-import stable_baselines3 as sb3lib
+from sb3 import reward as sb3_reward
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import (
     DummyVecEnv,
+    SubprocVecEnv,
     VecFrameStack,
     VecMonitor,
     VecVideoRecorder,
 )
 from torchinfo import summary
-import torch.nn as nn
-import torch as th
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 yaml = YAML(typ="safe")
@@ -151,21 +153,12 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         )
     else:
         print("Start training from scratch.")
-        policy_kwargs = dict(
-            features_extractor_class=getattr(sb3_policy,config["feature_extractor_class"]),
-            # features_extractor_kwargs=dict(features_dim=512),
-            # activation_fn=th.nn.ReLU,
-            # activation_fn=th.nn.Tanh, # default activation used
-            # net_arch=[128, dict(pi=[32, 32], vf=[32, 32])],
-            net_arch=[],
-        )
         model = getattr(sb3lib, config["alg"])(
             "CnnPolicy",
-            env,
-            policy_kwargs=policy_kwargs,
+            env=env,
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
-            **config["hyperparameter"]
+            **(getattr(sb3_policy, config["policy"])()),
         )
         print_model(model)
         model.learn(
@@ -177,7 +170,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         save_dir = config["logdir"] / "train"
         save_dir.mkdir(parents=True, exist_ok=True)
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        model.save(save_dir / ("model_"+time))
+        model.save(save_dir / ("model_" + time))
         print("Saved trained model.")
 
     print("Evaluate policy.")
@@ -195,6 +188,7 @@ def print_model(model):
     print(network)
     summary(network, (1,) + model.get_env().observation_space.shape)
     print("\n\n")
+
 
 class Network(nn.Module):
     def __init__(self, feature_extractor: nn.Module, mlp_extractor: nn.Module):
@@ -235,8 +229,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.mode == "train" and args.model is not None and args.logdir is None:
-        raise Exception("When --mode=train, --model=<path>, --logdir option must be specified.")
+        raise Exception(
+            "When --mode=train, --model=<path>, --logdir option must be specified."
+        )
     if args.mode == "evaluate" and (args.logdir is None or args.model is None):
-        raise Exception("When --mode=evaluate, --logdir and --model option must be specified.")
+        raise Exception(
+            "When --mode=evaluate, --logdir and --model option must be specified."
+        )
 
     main(args)

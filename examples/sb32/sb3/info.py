@@ -1,5 +1,6 @@
-import gym
 from typing import Any, Dict, Tuple
+
+import gym
 
 
 class Info(gym.Wrapper):

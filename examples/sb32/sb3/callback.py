@@ -2,7 +2,6 @@ from typing import Any, Callable, Dict
 
 import gym
 import torch as th
-
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.logger import Video
