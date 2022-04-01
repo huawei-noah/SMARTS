@@ -1,6 +1,7 @@
 import gym
 import torch
 import torch.nn as nn
+import torchvision.models as th_models
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.utils import get_linear_fn
 
@@ -242,7 +243,6 @@ def l5kit():
     return kwargs
 
 def resnet():
-    import torchvision.models as th_models
     kwargs = {}
     kwargs["policy_kwargs"] = dict(
         features_extractor_class=ResNet,

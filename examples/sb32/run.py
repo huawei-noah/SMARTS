@@ -222,4 +222,16 @@ if __name__ == "__main__":
             "When --mode=evaluate, --logdir and --model option must be specified."
         )
 
-    main(args)
+    # main(args)
+
+    import torch as th
+    import torch.nn as nn
+    from torchinfo import summary
+    import torchvision.models as th_models
+
+    thmodel = th_models.resnet50(
+        pretrained = True, 
+        progress = True
+    )
+    print(thmodel)
+    summary(thmodel,(1,3,256,256))
