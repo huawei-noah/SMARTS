@@ -1,9 +1,3 @@
-import os
-
-import tensorflow
-
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # Silence the TF logs
-
 import argparse
 import multiprocessing as mp
 import warnings
