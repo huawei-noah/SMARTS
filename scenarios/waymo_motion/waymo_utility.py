@@ -29,7 +29,8 @@ import yaml
 import re
 import json
 import time
-from typing import Dict, List, Tuple, Optional
+import struct
+from typing import Dict, List, Tuple, Optional, Generator
 from tabulate import tabulate
 from pathlib import Path
 from matplotlib.animation import FuncAnimation, FFMpegWriter
@@ -37,11 +38,26 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from waymo_open_dataset.protos import scenario_pb2
 
-from smarts.core.utils.file import read_tfrecord_file
-
 
 def lerp(a: float, b: float, t: float) -> float:
     return t * (b - a) + a
+
+
+def read_tfrecord_file(path: str) -> Generator[bytes, None, None]:
+    """Iterate over the records in a TFRecord file and return the bytes of each record.
+
+    path: The path to the TFRecord file
+    """
+    with open(path, "rb") as f:
+        while True:
+            length_bytes = f.read(8)
+            if len(length_bytes) != 8:
+                return
+            record_len = int(struct.unpack("Q", length_bytes)[0])
+            _ = f.read(4)  # masked_crc32_of_length (ignore)
+            record_data = f.read(record_len)
+            _ = f.read(4)  # masked_crc32_of_data (ignore)
+            yield record_data
 
 
 def convert_polyline(polyline) -> Tuple[List[float], List[float]]:
