@@ -10,15 +10,15 @@ smarts:
   checkpoint_freq: 1e5 # Save a model every checkpoint_freq calls to env.step().
   eval_eps: 3 # Number of evaluation epsiodes.
   eval_freq: 1e5 # Evaluate the trained model every eval_freq steps and save the best model.
-  
+
   # Policy
   feature_extractor_class: CFEL5Kit
 
   # PPO hyperparameter
   alg: PPO
   hyperparameter:
-    lr: 3e-4
-    num_rollout_steps: 256
+    learning_rate: 3e-4
+    n_steps: 256
     gamma: 0.8
     gae_lambda: 0.9
     n_epochs: 10

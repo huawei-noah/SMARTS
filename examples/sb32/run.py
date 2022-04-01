@@ -5,7 +5,7 @@ import tensorflow
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # Silence the TF logs
 
 import argparse
-import pathlib
+from pathlib import Path
 import warnings
 from datetime import datetime
 from typing import Any, Dict, List
@@ -18,7 +18,6 @@ from sb3 import reward as sb3_reward
 from sb3 import info as sb3_info
 from sb3 import callback as sb3_callback
 from sb3 import policy as sb3_policy
-from sb3 import sb3_config
 import stable_baselines3 as sb3lib
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
@@ -41,22 +40,23 @@ yaml = YAML(typ="safe")
 def main(args: argparse.Namespace):
     # Load config file.
     config_file = yaml.load(
-        (pathlib.Path(__file__).absolute().parent / "config.yaml").read_text()
+        (Path(__file__).absolute().parent / "config.yaml").read_text()
     )
 
     # Load env config.
-    config = sb3_config.Config(config_file["smarts"])
+    config = config_file["smarts"]
+    config["head"] = args.head
     config["mode"] = args.mode
 
     # Setup logdir.
     if (config["mode"] == "train" and args.model) or (config["mode"] == "evaluate"):
         # Begin training from a pretrained model.
-        logdir = pathlib.Path(args.logdir)
+        logdir = Path(args.logdir)
         config["model"] = args.model
     elif config["mode"] == "train" and not args.model:
         # Begin training from scratch.
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
+        logdir = Path(__file__).absolute().parents[0] / "logs" / time
     else:
         raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
     logdir.mkdir(parents=True, exist_ok=True)
@@ -76,7 +76,7 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
     # Create environment
     env = gym.make(
         "smarts.env:intersection-v0",
-        headless=not args.head,  # If False, enables Envision display.
+        headless=not config["head"],  # If False, enables Envision display.
         visdom=config["visdom"],  # If True, enables Visdom display.
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
     )
@@ -138,7 +138,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             config["model"], print_system_info=True
         )
         print_model(model)
-    elif config["mode"] == "train" and args.model:
+    elif config["mode"] == "train" and config.get("model", None):
         print("Start training from existing model.")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
@@ -165,7 +165,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             policy_kwargs=policy_kwargs,
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
-            *config["hyperparameter"]
+            **config["hyperparameter"]
         )
         print_model(model)
         model.learn(
@@ -208,7 +208,7 @@ class Network(nn.Module):
 
 
 if __name__ == "__main__":
-    program = pathlib.Path(__file__).stem
+    program = Path(__file__).stem
     parser = argparse.ArgumentParser(program)
     parser.add_argument(
         "--mode",
