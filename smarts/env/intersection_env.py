@@ -111,7 +111,7 @@ def intersection_env(
         not_moving=False,
         agents_alive=None,
     )
-    max_episode_steps = 1e4
+    max_episode_steps = 5000
     img_meters = 64
     img_pixels = 256
     agent_specs = {
