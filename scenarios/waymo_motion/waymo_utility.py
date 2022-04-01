@@ -727,6 +727,30 @@ def prompt_target_path(
     return target_base_path, False
 
 
+def import_tags_from_path(imported_tags: Dict[str, Dict[str, List[str]]], json_filepath: str):
+    try:
+        with open(json_filepath, "r") as f:
+            new_tags = json.load(f)
+
+    except (
+            FileNotFoundError,
+            IOError,
+            OSError,
+            json.decoder.JSONDecodeError,
+    ):
+        print(
+            f"{json_filepath} does not exist or doesnt have the right permissions to read.\n"
+            f"No tags will be imported from this filepath.\n"
+        )
+        return
+    if len(new_tags) == 0:
+        print(
+            f"No data found in {json_filepath}. No tags will be imported from this filepath.\n"
+        )
+        return
+    merge_tags(new_tags, imported_tags, True)
+
+
 def display_scenario_tags(tags_per_scenarios: Dict[str, List[str]]):
     tag_data = []
     for scenario_id in tags_per_scenarios:
@@ -930,10 +954,12 @@ def check_path_validity(target_base_path: str) -> bool:
 
 
 def tfrecords_browser(
-    tfrecord_paths: List[str], default_target_path: Optional[str] = None
+    tfrecord_paths: List[str], default_target_path: Optional[str] = None, tags_json: Optional[str] = None,
 ) -> None:
     scenarios_per_tfrecords, tags_per_tfrecords = parse_tfrecords(tfrecord_paths)
     imported_tags = {}
+    if tags_json:
+        import_tags_from_path(imported_tags, tags_json)
     if not scenarios_per_tfrecords:
         print("No .tfrecord files exist in paths provided. Please pass valid paths.")
         return
@@ -1952,13 +1978,26 @@ if __name__ == "__main__":
         type=str,
         default=None,
     )
+    parser.add_argument(
+        "--import-tags",
+        help="Import tags for tfRecord scenarios from this .json file",
+        type=str,
+        default=None,
+    )
     args = parser.parse_args()
     valid_tf_paths = []
     if args.target_base_path is not None:
         if not os.path.exists(os.path.abspath(args.target_base_path)):
             print(
                 f"Default Target Base Path {args.target_base_path} does not exist.\n"
-                f"Please make sure Default Target Base path passed is valid and it exists if you pass it."
+                f"Please make sure Default Target Base path passed is valid and it exists."
+            )
+            exit()
+    if args.import_tags is not None:
+        if not os.path.exists(os.path.abspath(args.import_tags)) or not args.import_tags.endswith(".json"):
+            print(
+                f".json file  {args.import_tags} does not exist.\n"
+                f"Please make sure .json file path passed is valid and it exists."
             )
             exit()
     for tf_path in args.files:
@@ -1975,4 +2014,5 @@ if __name__ == "__main__":
         tfrecords_browser(
             valid_tf_paths,
             os.path.abspath(args.target_base_path) if args.target_base_path else None,
+            os.path.abspath(args.import_tags) if args.import_tags else None,
         )
