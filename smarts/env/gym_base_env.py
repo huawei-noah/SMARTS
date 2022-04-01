@@ -269,6 +269,15 @@ class GymBaseEnv(gym.Env):
             isinstance(key, str) for key in agent_actions.keys()
         ), "Expected Dict[str, any]"
 
+        for agent_id in agent_actions:            
+            assert np.shape(agent_actions[agent_id]) == self.action_space[agent_id].shape \
+            , "Action shape does not correspond to action space"
+
+            if type(self.action_space[agent_id]) == gym.spaces.Box:
+                for i in range(len(agent_actions[agent_id])):
+                    assert (self.action_space[agent_id].low[i] <= agent_actions[agent_id][i] <= self.action_space[agent_id].high[i]) \
+                    , "Action is out of range"
+
         observations, rewards, dones, extras = None, None, None, None
         with timeit("SMARTS Simulation/Scenario Step", self._log):
             observations, rewards, dones, extras = self._smarts.step(agent_actions)
