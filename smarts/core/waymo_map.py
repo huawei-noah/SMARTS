@@ -146,6 +146,7 @@ class WaymoMap(RoadMap):
 
         @cached_property
         def seg_id(self) -> str:
+            """Segment ID."""
             seg_id = f"{self.feat_id}"
             if self.start_pt > 0:
                 # try to keep seg_ids the same as lane ids when not doing segmentation
