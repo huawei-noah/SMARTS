@@ -727,16 +727,18 @@ def prompt_target_path(
     return target_base_path, False
 
 
-def import_tags_from_path(imported_tags: Dict[str, Dict[str, List[str]]], json_filepath: str):
+def import_tags_from_path(
+    imported_tags: Dict[str, Dict[str, List[str]]], json_filepath: str
+):
     try:
         with open(json_filepath, "r") as f:
             new_tags = json.load(f)
 
     except (
-            FileNotFoundError,
-            IOError,
-            OSError,
-            json.decoder.JSONDecodeError,
+        FileNotFoundError,
+        IOError,
+        OSError,
+        json.decoder.JSONDecodeError,
     ):
         print(
             f"{json_filepath} does not exist or doesnt have the right permissions to read.\n"
@@ -954,7 +956,9 @@ def check_path_validity(target_base_path: str) -> bool:
 
 
 def tfrecords_browser(
-    tfrecord_paths: List[str], default_target_path: Optional[str] = None, tags_json: Optional[str] = None,
+    tfrecord_paths: List[str],
+    default_target_path: Optional[str] = None,
+    tags_json: Optional[str] = None,
 ) -> None:
     scenarios_per_tfrecords, tags_per_tfrecords = parse_tfrecords(tfrecord_paths)
     imported_tags = {}
@@ -1994,7 +1998,9 @@ if __name__ == "__main__":
             )
             exit()
     if args.import_tags is not None:
-        if not os.path.exists(os.path.abspath(args.import_tags)) or not args.import_tags.endswith(".json"):
+        if not os.path.exists(
+            os.path.abspath(args.import_tags)
+        ) or not args.import_tags.endswith(".json"):
             print(
                 f".json file  {args.import_tags} does not exist.\n"
                 f"Please make sure .json file path passed is valid and it exists."
