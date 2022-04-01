@@ -137,8 +137,8 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     #     env=eval_env,
     # )
 
+    print("\n\n")
     if config["mode"] == "evaluate":
-        print("\n\n")
         print("Start evaluation.")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
