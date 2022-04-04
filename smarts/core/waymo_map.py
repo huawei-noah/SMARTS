@@ -146,6 +146,7 @@ class WaymoMap(RoadMap):
 
         @cached_property
         def seg_id(self) -> str:
+            """Segment ID."""
             seg_id = f"{self.feat_id}"
             if self.start_pt > 0:
                 # try to keep seg_ids the same as lane ids when not doing segmentation
@@ -596,6 +597,8 @@ class WaymoMap(RoadMap):
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
         """Generate a road network from the given specification."""
+        if len(map_spec.source.split("#")) != 2:
+            return None
         waymo_scenario = cls._parse_source_to_scenario(map_spec.source)
         assert waymo_scenario
         return cls(map_spec, waymo_scenario)
