@@ -27,10 +27,7 @@ from cli.run import run_experiment
 from cli.studio import scenario_cli
 from cli.ultra import ultra_cli
 from cli.zoo import zoo_cli
-import sys
-import os
-# sys.path.insert(0, os.path.abspath("."))
-
+from pathlib import Path
 
 @click.group()
 def scl():
@@ -51,7 +48,8 @@ def recursive_help(cmd, file, parent=None):
 
 @scl.command(name="document-help",help="Write SCL help information to docs.")
 def document():
-    f = open(sys.path[-1] + "/docs/sim/cli.rst", "w")
+    directory = str(Path(__file__).parent.parent)
+    f = open(directory + "/docs/sim/cli.rst", "w")
     recursive_help(scl, f)
     f.close
 
