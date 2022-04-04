@@ -131,9 +131,7 @@ def _install_requirements(scenario_root):
 
 
 def _is_scenario_folder_to_build(path: str) -> bool:
-    if os.path.exists(os.path.join(path, "waymo.yaml")) or path.endswith(
-        "waymo_motion"
-    ):
+    if os.path.exists(os.path.join(path, "waymo.yaml")) or "waymo_motion" in path:
         # for now, don't try to build Waymo scenarios...
         return False
     if os.path.exists(os.path.join(path, "scenario.py")):
