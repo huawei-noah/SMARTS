@@ -27,6 +27,9 @@ from cli.run import run_experiment
 from cli.studio import scenario_cli
 from cli.ultra import ultra_cli
 from cli.zoo import zoo_cli
+import sys
+import os
+# sys.path.insert(0, os.path.abspath("."))
 
 
 @click.group()
@@ -37,12 +40,27 @@ def scl():
     """
     pass
 
+def recursive_help(cmd, file, parent=None):
+    ctx = click.core.Context(cmd, info_name=cmd.name, parent=parent)
+    line = "=" * len(cmd.name)
+    file.write(line + "\n" + cmd.name + "\n" + line + "\n\n")
+    file.write(cmd.get_help(ctx) + "\n\n")
+    commands = getattr(cmd, 'commands', {})
+    for sub in commands.values():
+        recursive_help(sub, file, ctx)
+
+@scl.command(name="document-help",help="Write SCL help information to docs.")
+def document():
+    f = open(sys.path[-1] + "/docs/sim/cli.rst", "w")
+    recursive_help(scl, f)
+    f.close
 
 scl.add_command(envision_cli)
 scl.add_command(scenario_cli)
 scl.add_command(ultra_cli)
 scl.add_command(zoo_cli)
 scl.add_command(run_experiment)
+scl.add_command(document)
 
 if __name__ == "__main__":
     scl()

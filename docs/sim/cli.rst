@@ -1,132 +1,236 @@
-SMARTS Command Line 
-====================
+===
+scl
+===
 
-SMARTS provides a command-line tool to interact with scenario studio and Envision.
+Usage: scl [OPTIONS] COMMAND [ARGS]...
 
-Usage
+  The SMARTS command line interface. Use --help with each command for further
+  information.
 
-.. code-block:: bash
-
-    scl COMMAND SUBCOMMAND [OPTIONS] [ARGS]...
+Options:
+  --help  Show this message and exit.
 
 Commands:
+  document-help  Write SCL help information to docs.
+  envision       Commands to utilize an Envision server.
+  run            Run an experiment on a scenario
+  scenario       Generate, replay or clean scenarios.
+  ultra          Utilites for working with the ULTRA benchmark.
+  zoo            Build, install, or instantiate workers.
 
-- envision
-- scenario
-- zoo
-- run
+=============
+document-help
+=============
 
-Each command and subcommand has a --help for more information about the subcommand and options
+Usage: scl document-help [OPTIONS]
 
-
-scenario:
-==========
-
-Subcommands:
-
-- build-all <path-to-scenarios>: Generate all scenarios under the given directories
-- build <path-to-scenario>: Generate a single scenario
-- clean <path-to-scenario(s)>: Clean generated artifacts 
-- replay <path-to-replay-data>: Replay data from previous runs
-
-Options: 
-
-(build and build-all)
-
-- --clean: Clean previously generated artifacts first
-- --allow-offset-map(s): Allow road networks (maps) to be offset from the origin. If not specified,
-creates a new network file if necessary
-
-(replay)
-
-- -d, --directory TEXT: Location of replay data
-- -t, --timestep FLOAT: Timestep in seconds
-- --endpoint TEXT: Endpoint to display replay at. Default="ws://localhost:8081"
-
-ex. Build and clean a single scenario
-
-.. code-block:: bash
-
-    scl scenario build --clean path/to/scenario/directory
-
-Scenarios can reference remote packages or local zoo agent packages by including a requirements.txt 
-file in the root of the scenario directory. Packages will be installed during the build.
-
-In the requirements.txt file:
-
-.. code-block:: bash
-
-    --extra-index-url http://localhost:8080
-    <dependency>==1.0.0
-    rl-agent==1.0.0
-    ...
-
-Then in the scenario.py file:
-
-.. code-block:: bash
-
-    t.SocialAgentActor(
-        name="my-rl-agent",
-        agent_locator="rl_agent:rl_agent-v0"
-    )
-
-
-envision:
-==========
-
-Subcommands:
-
-- start: Start Envision server
+  Write SCL help information to docs.
 
 Options:
+  --help  Show this message and exit.
 
-- -p, --port INTEGER: Specify envision port to use (default=8081)
-- -s, --scenarios TEXT: A list of directories where scenarios are stored
-- -c, --max_capacity FLOAT: Max capacity in MB of Envision's playback buffer.
+========
+envision
+========
 
-ex. Start Envision with custom port 1000
+Usage: scl envision [OPTIONS] COMMAND [ARGS]...
 
-.. code-block:: bash
-
-    scl envision start --port 1000
-
-
-zoo:
-=====
-
-Subcommands:
-
-- build <path-to-policy>: Build a policy
-- install TEXT: Attempt to install the specified agents from the given paths/url
-- manager: Start the manager process which instantiates workers
-
-ex. Build the rl-agent policy
-
-.. code-block:: bash
-
-    scl zoo build SMARTS/zoo/policies/rl-agent
-
-Local zoo agent packages can be built into wheels using a setup.py and requirements.txt file.
-To use policies in scenarios, create a requirements.txt in the scenario root
-
-.. code-block:: bash
-    --extra-index-url http://localhost:8080
-    rl-agent==1.0.0
-
-
-run:
-=====
-
-Subcommands:
-No subcommands of `run`. You can directly use `run` to simulate an experiment as mentioned in the example above.
+  Commands to utilize an Envision server. The Envision web server is used for
+  visualization purposes. See `scl envision COMMAND --help` for further
+  options.
 
 Options:
+  --help  Show this message and exit.
 
-- --envision: start up with an Envision server
-- -p, --envision_port TEXT: Port on which Envision will run
+Commands:
+  start  Start an Envision server
 
-ex. Run an experiment with Envision enabled
+=====
+start
+=====
 
-.. code-block:: bash
+Usage: scl envision start [OPTIONS]
 
-    scl run examples/single_agent.py scenarios/loop --envision
+  Start an Envision server
+
+Options:
+  -p, --port INTEGER        Port Envision will run on.
+  -s, --scenarios TEXT      A list of directories where scenarios are stored.
+  -c, --max_capacity FLOAT  Max capacity in MB of Envision's playback buffer.
+                            The larger the more contiguous history Envision
+                            can store.
+  --help                    Show this message and exit.
+
+========
+scenario
+========
+
+Usage: scl scenario [OPTIONS] COMMAND [ARGS]...
+
+  Generate, replay or clean scenarios. See `scl scenario COMMAND --help` for
+  further options.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  build      Generate a single scenario
+  build-all  Generate all scenarios under the given directories
+  clean      Remove previously generated scenario artifacts.
+  replay     Play saved Envision data files in Envision.
+
+=====
+build
+=====
+
+Usage: scl scenario build [OPTIONS] <scenario>
+
+  Generate a single scenario
+
+Options:
+  --clean             Clean previously generated artifacts first
+  --allow-offset-map  Allows road network to be offset from the origin. If not
+                      specified, creates a new network file if necessary.
+  --help              Show this message and exit.
+
+=========
+build-all
+=========
+
+Usage: scl scenario build-all [OPTIONS] <scenarios>
+
+  Generate all scenarios under the given directories
+
+Options:
+  --clean              Clean previously generated artifacts first
+  --allow-offset-maps  Allows road networks (maps) to be offset from the
+                       origin. If not specified, creates creates a new network
+                       file if necessary.
+  --help               Show this message and exit.
+
+=====
+clean
+=====
+
+Usage: scl scenario clean [OPTIONS] <scenario>
+
+  Remove previously generated scenario artifacts.
+
+Options:
+  --help  Show this message and exit.
+
+======
+replay
+======
+
+Usage: scl scenario replay [OPTIONS]
+
+  Play saved Envision data files in Envision.
+
+Options:
+  -d, --directory TEXT
+  -t, --timestep FLOAT  Timestep in seconds
+  --endpoint TEXT
+  --help                Show this message and exit.
+
+=====
+ultra
+=====
+
+Usage: scl ultra [OPTIONS] COMMAND [ARGS]...
+
+  Utilites for working with the ULTRA benchmark.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  build   Build a policy
+  worker  Start the agent worker
+
+=====
+build
+=====
+
+Usage: scl ultra build [OPTIONS] <policy>
+
+  Build a policy
+
+Options:
+  --help  Show this message and exit.
+
+======
+worker
+======
+
+Usage: scl ultra worker [OPTIONS] AUTH_KEY [PORT]
+
+  Start the agent worker
+
+Options:
+  --help  Show this message and exit.
+
+===
+zoo
+===
+
+Usage: scl zoo [OPTIONS] COMMAND [ARGS]...
+
+  Build, install, or instantiate workers.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  build    Build a policy
+  install  Attempt to install the specified agents from the given paths/url
+  manager  Start the manager process which instantiates workers.
+
+=====
+build
+=====
+
+Usage: scl zoo build [OPTIONS] <policy>
+
+  Build a policy
+
+Options:
+  --help  Show this message and exit.
+
+=======
+manager
+=======
+
+Usage: scl zoo manager [OPTIONS] [PORT]
+
+  Start the manager process which instantiates workers. Workers execute remote
+  agents.
+
+Options:
+  --help  Show this message and exit.
+
+=======
+install
+=======
+
+Usage: scl zoo install [OPTIONS] <script>
+
+  Attempt to install the specified agents from the given paths/url
+
+Options:
+  --help  Show this message and exit.
+
+===
+run
+===
+
+Usage: scl run [OPTIONS] <script> [SCRIPT_ARGS]...
+
+  Run an experiment on a scenario
+
+Options:
+  --envision                Start up Envision server at the specified port
+                            when running an experiment
+  -p, --envision_port TEXT  Port on which Envision will run.
+  --help                    Show this message and exit.
+
