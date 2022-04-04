@@ -751,6 +751,184 @@ def prompt_target_path(
     return target_base_path, False
 
 
+def prompt_export_before_exiting(
+    tfrecords: List[List[int, str]],
+    tags_per_tfrecords: Dict[str, Dict[str, List[str]]],
+    imported_tags: Dict[str, Dict[str, List[str]]],
+) -> bool:
+    filter_response = None
+    print(
+        f"\nDo you want to export the tags before exiting the browser?:\n"
+        "1. Yes, for all TfRecords.\n"
+        f"2. Yes, for select few.\n"
+        f"3. No.\n"
+        "Choose your response by entering 1, 2 or 3.\n"
+    )
+    while filter_response is None:
+        try:
+            response = input("\nResponse: ")
+            stripped_response = response.strip()
+        except EOFError:
+            print("Raised EOF. Your tags won't be saved. Attempting to exit browser.")
+            return True
+        if re.compile("^[1-3]$", re.IGNORECASE).match(stripped_response):
+            filter_response = int(stripped_response)
+        else:
+            print(
+                "Invalid Response. Please choose your response by entering 1, 2, or 3.\n"
+            )
+
+    if filter_response == 3:
+        print("Any tags added in this session won't be saved. Exiting the browser.\n")
+    else:
+        tfr_paths = None
+        if filter_response == 1:
+            tfr_paths = [tfrecords[i][1] for i in range(len(tfrecords))]
+        else:
+            display_tf_records(tfrecords)
+            print(
+                "Enter the indexes of the tfrecords whose tags you want to export.\n"
+                f"The indexes should be integers between between 1 and {len(tfrecords)} and should be separated by space.\n"
+            )
+            while True:
+                try:
+                    response = input("\nResponse: ")
+                    stripped_response = response.strip()
+                except EOFError:
+                    print(
+                        "Raised EOF. Your tags won't be saved. Attempting to exit browser.\n"
+                    )
+                    return True
+                if re.compile("^(\s*(\d+))+$", re.IGNORECASE).match(stripped_response):
+                    input_lst = stripped_response.split()
+                    valid_indexes = check_index_validity(
+                        input_lst, len(tfrecords), "export"
+                    )
+                    if len(valid_indexes) == 0:
+                        print(
+                            f"Please enter valid indexes between 1 and {len(tfrecords)}.\n"
+                        )
+                        continue
+                    tfr_paths = [tfrecords[i - 1][1] for i in valid_indexes]
+                    break
+                else:
+                    print(
+                        f"Invalid Response. Please enter indexes that should be integers between between 1 and {len(tfrecords)} and should be separated by space.\n"
+                    )
+
+        return export_tags_to_path(tfr_paths, tags_per_tfrecords, imported_tags)
+
+
+def export_tags_to_path(
+    tf_records: List[str],
+    tags_per_tfrecords: Dict[str, Dict[str, List[str]]],
+    imported_tags: Dict[str, Dict[str, List[str]]],
+) -> bool:
+    tags_to_dump = {}
+    for tfr_path in tf_records:
+        tags_per_tfrecords.get(os.path.basename(tfr_path), {}),
+        imported_tags.get(os.path.basename(tfr_path), {})
+
+        if len(tags_per_tfrecords) == 0 and len(imported_tags) == 0:
+            print(
+                f"No tags for {os.path.basename(tfr_path)}. This TfRecord will be skipped."
+            )
+            continue
+
+        print(
+            f"Which tags do you want to export from {os.path.basename(tfr_path)}?:\n"
+            "1. `Imported Tags` --> Tags imported from .json files.\n"
+            f"2. `Tags Added` --> Tags added by you.\n"
+            f"3. `Both Merged Together` --> Tags added by you and tags imported merged together.\n"
+            "Choose your response by entering 1, 2 or 3.\n"
+        )
+        while True:
+            try:
+                response = input("\nResponse: ")
+                stripped_response = response.strip()
+            except EOFError:
+                print(
+                    "Raised EOF. Your tags won't be saved. Attempting to exit browser."
+                )
+                return True
+            if re.compile("^[1-3]$", re.IGNORECASE).match(stripped_response):
+                if stripped_response == "1":
+                    tags_to_dump.update(
+                        {
+                            os.path.basename(tfr_path): copy.deepcopy(
+                                imported_tags.get(os.path.basename(tfr_path), {})
+                            )
+                        }
+                    )
+                elif stripped_response == "2":
+                    tags_to_dump.update(
+                        {
+                            os.path.basename(tfr_path): copy.deepcopy(
+                                tags_per_tfrecords.get(os.path.basename(tfr_path), {})
+                            )
+                        }
+                    )
+                else:
+                    tags_to_dump.update(
+                        {
+                            os.path.basename(tfr_path): copy.deepcopy(
+                                tags_per_tfrecords.get(os.path.basename(tfr_path), {})
+                            )
+                        }
+                    )
+                    scenario_imported_tags = {
+                        os.path.basename(tfr_path): copy.deepcopy(
+                            imported_tags.get(os.path.basename(tfr_path), {})
+                        )
+                    }
+                    merge_tags(scenario_imported_tags, tags_to_dump)
+                break
+            else:
+                print(
+                    "Invalid Response. Please choose your response by entering 1, 2, or 3.\n"
+                )
+
+    if len(tags_to_dump) == 0:
+        print("No tags available in any of the tfRecords to export.")
+        return False
+
+    print(
+        "Enter the path to .json file to which you want to export the tags to?. If the file already exists, its data will be overwritten.:\n"
+    )
+    while True:
+        try:
+            response = input("\nEnter Path: ")
+            stripped_path = response.strip("[ \"']")
+        except EOFError:
+            print("Raised EOF. Your tags won't be saved. Attempting to exit browser.")
+            return True
+
+        # Check if .json file path is valid
+        if not check_path_validity(stripped_path) or not stripped_path.endswith(
+            ".json"
+        ):
+            print("Please enter a valid .json file path\n")
+            continue
+
+        try:
+            with open(os.path.abspath(stripped_path), "w") as f:
+                json.dump(tags_to_dump, f, ensure_ascii=False, indent=4)
+                print(f"All tags saved at {stripped_path}")
+                break
+        except (
+            FileNotFoundError,
+            IOError,
+            OSError,
+            json.decoder.JSONDecodeError,
+        ):
+            print(
+                f"{stripped_path} is not valid json file or doesnt have the right permissions to write to this file.\n"
+                f"Please enter a valid .json path."
+            )
+            continue
+    return False
+
+
 def import_tags_from_path(
     imported_tags: Dict[str, Dict[str, List[str]]], json_filepath: str
 ):
@@ -1001,6 +1179,7 @@ def tfrecords_browser(
 
     display_tf_records(tf_records)
     print_commands = True
+
     while not stop_browser:
         if print_commands:
             print(
@@ -1121,123 +1300,18 @@ def tfrecords_browser(
         ).match(user_input):
             input_lst = user_input.split()
             if input_lst[2].lower() == "all":
-                valid_indexes = [i + 1 for i in range(len(tf_records))]
+                tfr_paths = [tf_records[i][1] for i in len(range(tf_records))]
             else:
                 valid_indexes = check_index_validity(
-                    input_lst[2:], len(tf_records), "display"
+                    input_lst[2:], len(tf_records), "export"
                 )
                 if len(valid_indexes) == 0:
                     continue
+                tfr_paths = [tf_records[i - 1][1] for i in valid_indexes]
 
-            tags_to_dump = {}
-            for idx in valid_indexes:
-                tfr_path = tf_records[idx - 1][1]
-                tags_per_tfrecords.get(os.path.basename(tfr_path), {}),
-                imported_tags.get(os.path.basename(tfr_path), {})
-                valid_response = False
-                print(
-                    f"Which tags do you want to export from {os.path.basename(tfr_path)}?:\n"
-                    "1. `Imported Tags` --> Tags imported from .json files.\n"
-                    f"2. `Tags Added` --> Tags added by you.\n"
-                    f"3. `Both Merged Together` --> Tags added by you and tags imported merged together.\n"
-                    "Choose your response by entering 1, 2 or 3.\n"
-                )
-                while not valid_response:
-                    try:
-                        response = input("\nResponse: ")
-                        stripped_response = response.strip()
-                    except EOFError:
-                        print("Raised EOF. Attempting to exit browser.")
-                        stop_browser = True
-                        break
-                    if re.compile("^[1-3]$", re.IGNORECASE).match(stripped_response):
-                        if stripped_response == "1":
-                            tags_to_dump.update(
-                                {
-                                    os.path.basename(tfr_path): copy.deepcopy(
-                                        imported_tags.get(
-                                            os.path.basename(tfr_path), {}
-                                        )
-                                    )
-                                }
-                            )
-                        elif stripped_response == "2":
-                            tags_to_dump.update(
-                                {
-                                    os.path.basename(tfr_path): copy.deepcopy(
-                                        tags_per_tfrecords.get(
-                                            os.path.basename(tfr_path), {}
-                                        )
-                                    )
-                                }
-                            )
-                        else:
-                            tags_to_dump.update(
-                                {
-                                    os.path.basename(tfr_path): copy.deepcopy(
-                                        tags_per_tfrecords.get(
-                                            os.path.basename(tfr_path), {}
-                                        )
-                                    )
-                                }
-                            )
-                            scenario_imported_tags = {
-                                os.path.basename(tfr_path): copy.deepcopy(
-                                    imported_tags.get(os.path.basename(tfr_path), {})
-                                )
-                            }
-                            merge_tags(scenario_imported_tags, tags_to_dump)
-                        valid_response = True
-                    else:
-                        print(
-                            "Invalid Response. Please choose your response by entering 1, 2, or 3.\n"
-                        )
-
-                if not valid_response:
-                    break
-
-            if stop_browser:
-                continue
-
-            valid_path = False
-            print(
-                "Enter the path to .json file to which you want to export the tags to?:\n"
+            stop_browser = export_tags_to_path(
+                tfr_paths, tags_per_tfrecords, imported_tags
             )
-            while not valid_path:
-                try:
-                    response = input("\nEnter Path: ")
-                    stripped_path = response.strip("[ \"']")
-                except EOFError:
-                    print("Raised EOF. Attempting to exit browser.")
-                    stop_browser = True
-                    break
-
-                # Check if .json file path is valid
-                if not check_path_validity(stripped_path) or not stripped_path.endswith(
-                    ".json"
-                ):
-                    print("Please enter a valid .json file path\n")
-                    continue
-
-                try:
-                    with open(os.path.abspath(stripped_path), "w") as f:
-                        json.dump(tags_to_dump, f, ensure_ascii=False, indent=4)
-                        print(f"Dumped the tags at {stripped_path}")
-                        valid_path = True
-                except (
-                    FileNotFoundError,
-                    IOError,
-                    OSError,
-                    json.decoder.JSONDecodeError,
-                ):
-                    print(
-                        f"{stripped_path} is not valid json file or doesnt have the right permissions to write to this file.\n"
-                        f"Please enter a valid .json path."
-                    )
-                    continue
-
-            if not valid_path:
-                continue
 
         elif re.compile("^explore[\s]+[\d]+$", flags=re.IGNORECASE).match(user_input):
             input_lst = user_input.split()
@@ -1274,6 +1348,8 @@ def tfrecords_browser(
             print(
                 "Invalid command. Please enter a valid command. See command formats above"
             )
+    if len(tags_per_tfrecords) or len(imported_tags):
+        prompt_export_before_exiting(tf_records, tags_per_tfrecords, imported_tags)
     print(
         "If you exported any scenarios, you can build them using the command `scl scenario build <target_base_path>`.\n"
         "Have a look at README.md at the root level of this repo for more info on how to build scenarios."
