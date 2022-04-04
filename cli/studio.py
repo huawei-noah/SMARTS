@@ -215,8 +215,7 @@ def _clean(scenario: str):
             f.unlink()
 
 
-@scenario_cli.command(name="replay", help="Play saved Envision 
- data files in Envision.")
+@scenario_cli.command(name="replay", help="Play saved Envision data files in Envision.")
 @click.option("-d", "--directory", multiple=True)
 @click.option("-t", "--timestep", default=0.01, help="Timestep in seconds")
 @click.option("--endpoint", default="ws://localhost:8081")
