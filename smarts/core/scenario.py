@@ -26,7 +26,7 @@ import uuid
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple
 
 import cloudpickle
 import numpy as np
@@ -328,7 +328,7 @@ class Scenario:
     @lru_cache(maxsize=16)
     def _discover_social_agents_info(
         scenario,
-    ) -> List[Dict[str, Tuple[SocialAgent, Union[Mission, LapMission]]]]:
+    ) -> Sequence[Dict[str, Tuple[SocialAgent, Mission]]]:
         """Loops through the social agent mission pickles, instantiating corresponding
         implementations for the given types. The output is a list of
         {agent_id: (mission, locator)}, where each dictionary corresponds to the
@@ -348,7 +348,7 @@ class Scenario:
         agent_bucketer = []
 
         # like dict.setdefault
-        def setdefault(l: List[Any], index: int, default):
+        def setdefault(l: list, index: int, default):
             while len(l) < index + 1:
                 l.append([])
             return l[index]
@@ -397,7 +397,6 @@ class Scenario:
             social_agents_info.append(
                 {agent.id: (agent, mission) for agent, mission in l}
             )
-
         return social_agents_info
 
     @staticmethod
@@ -537,7 +536,7 @@ class Scenario:
         hhx, hhy = radians_to_vec(heading) * (0.5 * veh_dims.length)
         return (
             Start(
-                (pos_x + hhx, pos_y + hhy),
+                np.array([pos_x + hhx, pos_y + hhy]),
                 Heading(heading),
             ),
             speed,
@@ -656,7 +655,7 @@ class Scenario:
             for via in vias:
                 road = road_map.road_by_id(via.road_id)
                 lane = road.lane_at_index(via.lane_index)
-                lane_width, _ = lane.width_at_offset(via.lane_offset)
+                lane_width = lane.width_at_offset(via.lane_offset)
                 hit_distance = (
                     via.hit_distance if via.hit_distance > 0 else lane_width / 2
                 )

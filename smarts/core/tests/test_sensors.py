@@ -86,7 +86,7 @@ def test_waypoints_sensor(scenarios):
     vehicle = mock.Mock()
     vehicle.pose = Pose(
         position=np.array([33, -65, 0]),
-        orientation=[0, 0, 0, 0],
+        orientation=np.array([0, 0, 0, 0]),
         heading_=Heading(0),
     )
 

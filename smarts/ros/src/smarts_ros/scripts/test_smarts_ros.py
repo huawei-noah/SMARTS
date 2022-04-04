@@ -26,17 +26,14 @@
 
 import json
 import os
-import sys
 from unittest import TestCase
 
 import rospy
 from smarts_ros.msg import (
-    AgentReport,
     AgentSpec,
     AgentsStamped,
     AgentTask,
     EntitiesStamped,
-    EntityState,
     SmartsReset,
 )
 from smarts_ros.srv import SmartsInfo
@@ -51,6 +48,7 @@ class TestSmartsRos(TestCase):
         super().__init__()
         self._smarts_info_srv = None
         self._reset_publisher = None
+        self._agent_publisher = None
         self._agents = {}
 
     def setup_ros(
@@ -151,7 +149,9 @@ class TestSmartsRos(TestCase):
         if not self._agents:
             self._create_agent()
         for agent_spec in self._agents.values():
+            # pytype: disable=attribute-error
             self._agent_publisher.publish(agent_spec)
+            # pytype: enable=attribute-error
 
     def run_forever(self):
         """Publish the SMARTS ros test node and run indefinitely."""
