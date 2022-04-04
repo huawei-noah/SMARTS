@@ -94,7 +94,10 @@ setup(
         "train": [
             "tensorflow>=2.4.0",
         ],
-        "waymo": ["waymo-open-dataset-tf-2-4-0"],
+        "waymo": [
+            "waymo-open-dataset-tf-2-4-0",
+            "tabulate==0.8.9",
+        ],
         "opendrive": ["opendrive2lanelet>=1.2.1"],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},

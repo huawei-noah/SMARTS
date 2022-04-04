@@ -23,7 +23,7 @@
 # Text based Waymo Dataset Browser.
 import argparse
 import copy
-import os
+import os, sys
 import shutil
 import yaml
 import re
@@ -31,12 +31,20 @@ import json
 import time
 import struct
 from typing import Dict, List, Tuple, Optional, Generator
-from tabulate import tabulate
-from pathlib import Path
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from waymo_open_dataset.protos import scenario_pb2
+from pathlib import Path
+
+try:
+    from tabulate import tabulate
+    from waymo_open_dataset.protos import scenario_pb2
+except (ModuleNotFoundError, ImportError):
+    print(sys.exc_info())
+    print(
+        "You may not have installed the [waymo] dependencies required to run this Waymo Utility. Install them first using the command `pip install -e .[waymo]` at the source directory."
+    )
+    exit()
 
 
 def lerp(a: float, b: float, t: float) -> float:
