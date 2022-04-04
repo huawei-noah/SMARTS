@@ -43,7 +43,7 @@ logger = logging.getLogger(__file__)
 
 def gen_scenario(
     scenario: types.Scenario,
-    output_dir: Path,
+    output_dir: str,
     seed: int = 42,
     overwrite: bool = False,
 ):
