@@ -253,10 +253,17 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
     "-t",
     "--target-base-path",
     type=click.Path(exists=True),
-    default="scenarios",
+    default=None,
     help="Default target base path to export scenarios to",
 )
-def browse_waymo_dataset(tfrecords, target_base_path):
+@click.option(
+    "-i",
+    "--import-tags",
+    type=click.Path(exists=True),
+    default=None,
+    help=".json file to import tags for tfRecord scenarios from",
+)
+def browse_waymo_dataset(tfrecords, target_base_path, import_tags):
     if not tfrecords:
         # nargs=-1 in combination with a default value is not supported
         # if tfrecords is not given, set the known tfrecord directory as default
@@ -266,10 +273,15 @@ def browse_waymo_dataset(tfrecords, target_base_path):
     subprocess_command = [
         sys.executable,
         utility_path,
-        f"--target-base-path={target_base_path}",
-    ] + list(tfrecords)
+    ]
+
+    if target_base_path is not None:
+        subprocess_command.append(f"--target-base-path={target_base_path}")
+    if import_tags is not None:
+        subprocess_command.append(f"--import-tags={import_tags}")
+
     click.echo(f"Executing {utility_path} with arguments {tfrecords}")
-    subprocess.check_call(subprocess_command)
+    subprocess.check_call(subprocess_command + list(tfrecords))
 
 
 scenario_cli.add_command(build_scenario)

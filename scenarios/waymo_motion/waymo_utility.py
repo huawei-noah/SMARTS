@@ -1526,14 +1526,15 @@ def explore_tf_record(
             scenarios_to_animate = []
             for i in range(len(valid_indexes)):
                 scenario_idx = scenario_ids[valid_indexes[i] - 1]
-                if filter_scenario(
-                    tfrecord_tags.get(scenario_idx, []),
-                    imported_tfrecord_tags.get(scenario_idx, []),
-                    (tags, filter_animate),
-                ):
-                    pass
-                else:
-                    continue
+                if tags is not None:
+                    if filter_scenario(
+                        tfrecord_tags.get(scenario_idx, []),
+                        imported_tfrecord_tags.get(scenario_idx, []),
+                        (tags, filter_animate),
+                    ):
+                        pass
+                    else:
+                        continue
                 if scenario_dict[scenario_idx][1] is None:
                     scenario_dict[scenario_idx][1] = get_map_features_for_scenario(
                         scenario_dict[scenario_idx][0]
@@ -1776,80 +1777,80 @@ def explore_scenario(
                 ],
             )
         )
+        map_features = [
+            len(scenario_map_features["lane"]),
+            len(scenario_map_features["road_line"]),
+            len(scenario_map_features["road_edge"]),
+            len(scenario_map_features["stop_sign"]),
+            len(scenario_map_features["crosswalk"]),
+            len(scenario_map_features["speed_bump"]),
+        ]
+        print(f"\n\nScenario {scenario.scenario_id} map data:\n")
+        print(
+            tabulate(
+                [map_features],
+                headers=[
+                    "Lanes",
+                    "Road Lines",
+                    "Road Edges",
+                    "Stop Signs",
+                    "Crosswalks",
+                    "Speed Bumps",
+                ],
+            )
+        )
+        print("\n\nLane Ids: ", [lane[1] for lane in scenario_map_features["lane"]])
+        print(
+            "\nRoad Line Ids: ",
+            [road_line[1] for road_line in scenario_map_features["road_line"]],
+        )
+        print(
+            "\nRoad Edge Ids: ",
+            [road_edge[1] for road_edge in scenario_map_features["road_edge"]],
+        )
+        print(
+            "\nStop Sign Ids: ",
+            [stop_sign[1] for stop_sign in scenario_map_features["stop_sign"]],
+        )
+        print(
+            "\nCrosswalk Ids: ",
+            [crosswalk[1] for crosswalk in scenario_map_features["crosswalk"]],
+        )
+        print(
+            "\nSpeed Bumps Ids: ",
+            [speed_bump[1] for speed_bump in scenario_map_features["speed_bump"]],
+        )
+        print("\n-----------------------------------------------")
+        ego, cars, pedestrian, cyclist, others = get_object_type_count(trajectories)
+        print("Trajectory Data")
+        trajectory_data = [
+            scenario.scenario_id,
+            len(cars) + 1,
+            len(pedestrian),
+            len(cyclist),
+            len(others),
+        ]
+        print(
+            tabulate(
+                [trajectory_data],
+                headers=[
+                    "Scenario ID",
+                    "Cars",
+                    "Pedestrians",
+                    "Cyclists",
+                    "Others",
+                ],
+            )
+        )
+        print("\n\nTrack Object Ids: ")
+        print("\nEgo Id: ", ego)
+        print("\nCar Ids: ", cars)
+        print("\nPedestrian Ids: ", pedestrian)
+        print("\nCyclist Ids: ", cyclist)
+        print("\nOther Ids: ", others)
+        print("\nObject of Interest Ids: ", [i for i in scenario.objects_of_interest])
 
     display_scenario_data_info()
-
-    map_features = [
-        len(scenario_map_features["lane"]),
-        len(scenario_map_features["road_line"]),
-        len(scenario_map_features["road_edge"]),
-        len(scenario_map_features["stop_sign"]),
-        len(scenario_map_features["crosswalk"]),
-        len(scenario_map_features["speed_bump"]),
-    ]
-    print(f"\n\nScenario {scenario.scenario_id} map data:\n")
-    print(
-        tabulate(
-            [map_features],
-            headers=[
-                "Lanes",
-                "Road Lines",
-                "Road Edges",
-                "Stop Signs",
-                "Crosswalks",
-                "Speed Bumps",
-            ],
-        )
-    )
-    print("\n\nLane Ids: ", [lane[1] for lane in scenario_map_features["lane"]])
-    print(
-        "\nRoad Line Ids: ",
-        [road_line[1] for road_line in scenario_map_features["road_line"]],
-    )
-    print(
-        "\nRoad Edge Ids: ",
-        [road_edge[1] for road_edge in scenario_map_features["road_edge"]],
-    )
-    print(
-        "\nStop Sign Ids: ",
-        [stop_sign[1] for stop_sign in scenario_map_features["stop_sign"]],
-    )
-    print(
-        "\nCrosswalk Ids: ",
-        [crosswalk[1] for crosswalk in scenario_map_features["crosswalk"]],
-    )
-    print(
-        "\nSpeed Bumps Ids: ",
-        [speed_bump[1] for speed_bump in scenario_map_features["speed_bump"]],
-    )
-    print("\n-----------------------------------------------")
-    ego, cars, pedestrian, cyclist, others = get_object_type_count(trajectories)
-    print("Trajectory Data")
-    trajectory_data = [
-        scenario.scenario_id,
-        len(cars) + 1,
-        len(pedestrian),
-        len(cyclist),
-        len(others),
-    ]
-    print(
-        tabulate(
-            [trajectory_data],
-            headers=[
-                "Scenario ID",
-                "Cars",
-                "Pedestrians",
-                "Cyclists",
-                "Others",
-            ],
-        )
-    )
-    print("\n\nTrack Object Ids: ")
-    print("\nEgo Id: ", ego)
-    print("\nCar Ids: ", cars)
-    print("\nPedestrian Ids: ", pedestrian)
-    print("\nCyclist Ids: ", cyclist)
-    print("\nOther Ids: ", others)
 
     print(
         f"\n\nScenario {scenario.scenario_id}.\n"

@@ -123,7 +123,13 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
         map_class = OpenDriveRoadNetwork
 
     elif map_type == _WAYMO_MAP:
-        from smarts.core.waymo_map import WaymoMap
+        try:
+            from smarts.core.waymo_map import WaymoMap
+        except (ModuleNotFoundError, ImportError):
+            print(
+                "You may not have installed the [waymo] dependencies required to use `WaymoMap` scenarios. Install them first using the command `pip install -e .[waymo]` at the source directory."
+            )
+            return None, None
 
         map_class = WaymoMap
     else:
