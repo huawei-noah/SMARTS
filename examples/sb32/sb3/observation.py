@@ -10,7 +10,7 @@ class Observation(gym.Wrapper):
         self._n_stack = n_stack
         self._frames = deque(maxlen=self._n_stack)
         self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(n_stack, 256, 256), dtype=np.uint8
+            low=0, high=255, shape=(3, 256, 256), dtype=np.uint8
         )
 
     def _stack_obs(self, obs: np.ndarray):
@@ -54,6 +54,9 @@ class Observation(gym.Wrapper):
 
 def format_img(img: np.ndarray) -> np.ndarray:
 
+    # Ego vehicle is 2mx4m
+    # We want resolution of 
+
     # Repaint ego
     clr = (122, 140, 153)
     repainted = img.copy()
@@ -62,19 +65,20 @@ def format_img(img: np.ndarray) -> np.ndarray:
     repainted[120:135, 125:131, 2] = clr[2]
 
     # RGB to grayscale
-    R, G, B = repainted[:, :, 0], repainted[:, :, 1], repainted[:, :, 2]
-    gray = 0.2989 * R + 0.587 * G + 0.114 * B
+    # R, G, B = repainted[:, :, 0], repainted[:, :, 1], repainted[:, :, 2]
+    # gray = 0.2989 * R + 0.587 * G + 0.114 * B
 
     # Expand dims
-    expanded = np.expand_dims(gray, -1)
+    # expanded = np.expand_dims(gray, -1)
 
     # Channel first
-    transposed = expanded.transpose(2, 0, 1)
+    transposed = repainted.transpose(2, 0, 1)
 
     # Resize image to 64x64
     # resized = transposed[:, 96:160, 96:160]
 
-    # plotter(transposed,1)
+    # rep = repainted.transpose(2, 0, 1)
+    # plotter(rep, 3)
 
     return np.uint8(transposed)
 

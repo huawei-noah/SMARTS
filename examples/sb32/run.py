@@ -79,6 +79,8 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
         headless=not config["head"],  # If False, enables Envision display.
         visdom=config["visdom"],  # If True, enables Visdom display.
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
+        img_meters = config["img_meters"],
+        img_pixels = config["img_pixels"],
     )
 
     # Wrap env with action, reward, and observation wrapper
@@ -216,16 +218,18 @@ if __name__ == "__main__":
             "When --mode=evaluate, --logdir and --model option must be specified."
         )
 
-    # main(args)
+    main(args)
 
-    import torch as th
-    import torch.nn as nn
-    from torchinfo import summary
-    import torchvision.models as th_models
+    # import torch as th
+    # import torch.nn as nn
+    # from torchinfo import summary
+    # import torchvision.models as th_models
 
-    thmodel = th_models.resnet50(
-        pretrained = True, 
-        progress = True
-    )
-    print(thmodel)
-    summary(thmodel,(1,3,256,256))
+
+    # thmodel = th_models.video.r2plus1d_18(
+    #     pretrained = True, 
+    #     progress = True 
+    # )
+
+    # print(thmodel)
+    # summary(thmodel,(1,3,4,112,112))

@@ -1,3 +1,4 @@
+import time
 import gym
 import torch
 import torch.nn as nn
@@ -98,6 +99,12 @@ class L5Kit(BaseFeaturesExtractor):
         )
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
+
+        print(observations.shape,"dddddddddddddddddddddddddddddddddd")
+        import time
+        time.sleep(5)
+
+
         return self.linear(self.cnn(observations))
 
 
@@ -107,6 +114,41 @@ class ResNet(BaseFeaturesExtractor):
 
         # We assume CxHxW images (channels first)
         n_input_channels = observation_space.shape[0]
+
+        import torch as th
+        import torch.nn as nn
+        from torchinfo import summary
+        import torchvision.models as th_models
+
+        thmodel = th_models.video.r2plus1d_18(
+            pretrained = True, 
+            progress = True 
+        )
+        print(thmodel)
+        summary(thmodel,(1,)+n_input_channels)
+
+        self.cnn = thmodel
+
+        # Compute shape by doing one forward pass
+        # with torch.no_grad():
+        #     n_flatten = self.cnn(
+        #         torch.as_tensor(observation_space.sample()[None]).float()
+        #     ).shape[1]
+
+        # nn.Linear(in_features=1568, out_features=features_dim)
+        # self.linear = nn.Sequential(
+        #     nn.Linear(in_features=n_flatten, out_features=features_dim)
+        # )
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        
+        print(observations.shape, "dddddddddddddddddd")
+        
+        return self.linear(self.cnn(observations))
+
+
+
+
         self.cnn = nn.Sequential(
             nn.Conv2d(
                 n_input_channels,

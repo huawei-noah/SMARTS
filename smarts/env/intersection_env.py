@@ -45,6 +45,8 @@ def intersection_env(
     visdom: bool = False,
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
+    img_meters = 64,
+    img_pixels = 256,
 ):
     """An intersection environment where a single agent needs to make an
     unprotected left turn in the presence of traffic and without traffic
@@ -111,9 +113,7 @@ def intersection_env(
         not_moving=False,
         agents_alive=None,
     )
-    max_episode_steps = 5000
-    img_meters = 64
-    img_pixels = 256
+    max_episode_steps = 6000
     agent_specs = {
         "LeftTurnAgent": AgentSpec(
             interface=AgentInterface(
