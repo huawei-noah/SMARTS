@@ -108,7 +108,7 @@ def get_trajectory_handles() -> List[Line2D]:
         Line2D(
             [],
             [],
-            color="green",
+            color="yellow",
             marker="*",
             linestyle="None",
             markersize=5,
@@ -445,12 +445,12 @@ def plot_trajectories(
                     )
                 )
             elif int(k) in objects_of_interest:
-                (point,) = plt.plot(xs[0], ys[0], "y^")
+                (point,) = plt.plot(xs[0], ys[0], "g^")
                 handles.append(
                     Line2D(
                         [],
                         [],
-                        color="yellow",
+                        color="green",
                         marker="^",
                         linestyle="None",
                         markersize=5,
@@ -474,12 +474,12 @@ def plot_trajectories(
                     )
                 )
             elif int(k) in objects_of_interest:
-                (point,) = plt.plot(xs[0], ys[0], "yd")
+                (point,) = plt.plot(xs[0], ys[0], "gd")
                 handles.append(
                     Line2D(
                         [],
                         [],
-                        color="yellow",
+                        color="green",
                         marker="d",
                         linestyle="None",
                         markersize=5,
@@ -503,12 +503,12 @@ def plot_trajectories(
                     )
                 )
             elif int(k) in objects_of_interest:
-                (point,) = plt.plot(xs[0], ys[0], "y*")
+                (point,) = plt.plot(xs[0], ys[0], "g*")
                 handles.append(
                     Line2D(
                         [],
                         [],
-                        color="yellow",
+                        color="green",
                         marker="*",
                         linestyle="None",
                         markersize=5,
@@ -516,7 +516,7 @@ def plot_trajectories(
                     )
                 )
             else:
-                (point,) = plt.plot(xs[0], ys[0], "g*")
+                (point,) = plt.plot(xs[0], ys[0], "y*")
         else:
             if str(k) in track_ids:
                 (point,) = plt.plot(xs[0], ys[0], "r8")
@@ -532,12 +532,12 @@ def plot_trajectories(
                     )
                 )
             elif int(k) in objects_of_interest:
-                (point,) = plt.plot(xs[0], ys[0], "y8")
+                (point,) = plt.plot(xs[0], ys[0], "g8")
                 handles.append(
                     Line2D(
                         [],
                         [],
-                        color="yellow",
+                        color="green",
                         marker="8",
                         linestyle="None",
                         markersize=5,
@@ -837,7 +837,7 @@ def prompt_export_before_exiting(
             )
 
     if filter_response == 3:
-        print("Any tags added in this session won't be saved. Exiting the browser.\n")
+        print("Any tags added in this session won't be saved.\n")
     else:
         tfr_paths = None
         if filter_response == 1:
