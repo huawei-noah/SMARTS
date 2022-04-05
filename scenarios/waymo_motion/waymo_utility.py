@@ -416,7 +416,9 @@ def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
     return handles
 
 
-def plot_trajectories(trajectories, track_ids: List[str]):
+def plot_trajectories(
+    trajectories, objects_of_interest: List[int], track_ids: List[str]
+):
     handles = []
     max_len = 0
     data, points = [], []
@@ -442,6 +444,19 @@ def plot_trajectories(trajectories, track_ids: List[str]):
                         label=f"Car {k}",
                     )
                 )
+            elif int(k) in objects_of_interest:
+                (point,) = plt.plot(xs[0], ys[0], "y^")
+                handles.append(
+                    Line2D(
+                        [],
+                        [],
+                        color="yellow",
+                        marker="^",
+                        linestyle="None",
+                        markersize=5,
+                        label=f"Interactive Car {k}",
+                    )
+                )
             else:
                 (point,) = plt.plot(xs[0], ys[0], "k^")
         elif object_type == 2:
@@ -456,6 +471,19 @@ def plot_trajectories(trajectories, track_ids: List[str]):
                         linestyle="None",
                         markersize=5,
                         label=f"Pedestrian {k}",
+                    )
+                )
+            elif int(k) in objects_of_interest:
+                (point,) = plt.plot(xs[0], ys[0], "yd")
+                handles.append(
+                    Line2D(
+                        [],
+                        [],
+                        color="yellow",
+                        marker="d",
+                        linestyle="None",
+                        markersize=5,
+                        label=f"Interactive Pedestrian {k}",
                     )
                 )
             else:
@@ -474,6 +502,19 @@ def plot_trajectories(trajectories, track_ids: List[str]):
                         label=f"Cyclist {k}",
                     )
                 )
+            elif int(k) in objects_of_interest:
+                (point,) = plt.plot(xs[0], ys[0], "y*")
+                handles.append(
+                    Line2D(
+                        [],
+                        [],
+                        color="yellow",
+                        marker="*",
+                        linestyle="None",
+                        markersize=5,
+                        label=f"Interactive Cyclist {k}",
+                    )
+                )
             else:
                 (point,) = plt.plot(xs[0], ys[0], "g*")
         else:
@@ -488,6 +529,19 @@ def plot_trajectories(trajectories, track_ids: List[str]):
                         linestyle="None",
                         markersize=5,
                         label=f"Other {k}",
+                    )
+                )
+            elif int(k) in objects_of_interest:
+                (point,) = plt.plot(xs[0], ys[0], "y8")
+                handles.append(
+                    Line2D(
+                        [],
+                        [],
+                        color="yellow",
+                        marker="8",
+                        linestyle="None",
+                        markersize=5,
+                        label=f"Interactive Other {k}",
                     )
                 )
             else:
@@ -525,7 +579,9 @@ def plot_scenarios(
         if animate_trajectories:
             # Plot Trajectories
             data, points, max_len, t_handles = plot_trajectories(
-                scenario_info[2], f_ids if f_ids else []
+                scenario_info[2],
+                scenario_info[0].objects_of_interest,
+                f_ids if f_ids else [],
             )
             all_handles.extend(get_trajectory_handles() + t_handles)
 
@@ -594,7 +650,9 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=
             if scenario_dict[scenario_id][2] is None:
                 scenario_dict[scenario_id][2] = get_map_features_for_scenario(scenario)
             data, points, max_len, _ = plot_trajectories(
-                scenario_dict[scenario_id][2], []
+                scenario_dict[scenario_id][2],
+                scenario_dict[scenario_id][0].objects_of_interest,
+                [],
             )
             all_handles.extend(get_trajectory_handles())
             plt.legend(handles=all_handles)
