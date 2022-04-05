@@ -810,7 +810,7 @@ def prompt_target_path(
 
 
 def prompt_export_before_exiting(
-    tfrecords: List[List[int, str]],
+    tfrecords: List[Tuple[int, str]],
     tags_per_tfrecords: Dict[str, Dict[str, List[str]]],
     imported_tags: Dict[str, Dict[str, List[str]]],
 ) -> bool:
@@ -1231,7 +1231,7 @@ def tfrecords_browser(
     tf_records = []
     tf_counter = 1
     for tf in scenarios_per_tfrecords:
-        tf_records.append([tf_counter, tf])
+        tf_records.append((tf_counter, tf))
         tf_counter += 1
     stop_browser = False
 
