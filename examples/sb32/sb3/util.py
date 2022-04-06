@@ -24,7 +24,7 @@ class Network(nn.Module):
         return self._mlp_extractor(feature_out)
 
 
-def plotter3d(observation: th.Tensor, rgb_gray=3, name: str = "Plotter3D"):
+def plotter3d(observation: th.Tensor, rgb_gray=3, name: str = "Plotter3D", block=True):
     """Plot images
 
     Args:
@@ -97,6 +97,6 @@ def plotter3d(observation: th.Tensor, rgb_gray=3, name: str = "Plotter3D"):
             axs[row, col].imshow(img, cmap="viridis")
             axs[row, col].set_title(f"{name}")
 
-    plt.show()
-    plt.pause(3)
+    plt.show(block=block)
+    plt.pause(2)
     plt.close()
