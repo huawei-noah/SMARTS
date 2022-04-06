@@ -1,10 +1,8 @@
 import time
 
 import gym
-import numpy as np
 import torch
 import torch.nn as nn
-import torchvision.models as th_models
 from sb3 import util as sb3_util
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.utils import get_linear_fn
@@ -124,7 +122,6 @@ class R2plus1D_18(BaseFeaturesExtractor):
         )
 
         import torchvision.models as th_models
-        from torchinfo import summary
         self.thmodel = th_models.video.r2plus1d_18(pretrained=True, progress=True)
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
@@ -160,7 +157,7 @@ class R2plus1D_18(BaseFeaturesExtractor):
         )
         obs = torch.swapaxes(obs, 1, 2)
 
-        sb3_util.plotter3d(obs, rgb_gray=3, name="R2plus1D_18")
+        # sb3_util.plotter3d(obs, rgb_gray=3, name="R2plus1D_18")
 
         return obs
 
