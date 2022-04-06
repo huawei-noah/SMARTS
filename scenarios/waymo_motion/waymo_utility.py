@@ -23,18 +23,20 @@
 # Text based Waymo Dataset Browser.
 import argparse
 import copy
-import os, sys
-import shutil
-import yaml
-import re
 import json
-import time
+import os
+import re
+import shutil
 import struct
-from typing import Dict, List, Tuple, Optional, Generator
-from matplotlib.animation import FuncAnimation, FFMpegWriter
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
+import sys
+import time
 from pathlib import Path
+from typing import Dict, List, Tuple, Optional, Generator
+
+import matplotlib.pyplot as plt
+import yaml
+from matplotlib.animation import FuncAnimation, FFMpegWriter
+from matplotlib.lines import Line2D
 
 try:
     from tabulate import tabulate
@@ -1080,8 +1082,7 @@ def parse_tfrecords(tfrecord_paths: List[str]):
 
 
 def display_tf_records(records):
-    print("\n-----------------------------------------------")
-    print("Waymo tfRecords:\n")
+    print("\nWaymo tfRecords:\n")
     print(
         tabulate(
             records,
@@ -1106,6 +1107,7 @@ def display_scenarios_in_tfrecord(
             ):
                 pass
             else:
+                scenario_counter += 1
                 continue
         scenario = scenario_dict[scenario_id][0]
         scenario_data = [
@@ -1121,25 +1123,29 @@ def display_scenarios_in_tfrecord(
         scenario_ids.append(scenario_id)
         scenario_data_lst.append(scenario_data)
         scenario_counter += 1
-    print("\n-----------------------------------------------")
-    print(f"{len(scenario_dict)} scenarios in {tfrecord_path}:\n")
-    print(
-        tabulate(
-            scenario_data_lst,
-            headers=[
-                "Index",
-                "Scenario ID",
-                "Timestamps",
-                "Track Objects",
-                "Traffic Light States",
-                "Objects of Interest",
-                "Tags Added",
-                "Tags Imported",
-            ],
+    if len(scenario_data_lst):
+        print("\n-----------------------------------------------")
+        print(f"{len(scenario_dict)} scenarios in {tfrecord_path}:\n")
+        print(
+            tabulate(
+                scenario_data_lst,
+                headers=[
+                    "Index",
+                    "Scenario ID",
+                    "Timestamps",
+                    "Track Objects",
+                    "Traffic Light States",
+                    "Objects of Interest",
+                    "Tags Added",
+                    "Tags Imported",
+                ],
+            )
         )
-    )
-    if scenario_counter == 1 and filter_tags is not None:
-        print(f"No scenarios in {tfrecord_path} have the tags {filter_tags[0]}\n")
+    if len(scenario_data_lst) == 0:
+        if filter_tags is not None:
+            print(f"No scenarios in {tfrecord_path} have the tags {filter_tags[0]}")
+        else:
+            print(f"No scenarios found in {tfrecord_path}")
     return scenario_ids
 
 
@@ -1246,14 +1252,14 @@ def tfrecords_browser(
                 "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
                 "                     Displays can be filtered on the basis of tags.\n"
                 f"2. `display <indexes>` --> Displays the info of tfRecord files at these indexes of the table.\n"
-                f"                           The indexes should be an integer between 1 and {len(tf_records)} and space separated\n"
+                f"                           The indexes should be an integer between 1 and {len(tf_records)} and space separated.\n"
                 "                            Displays can be filtered on the basis of tags.\n"
-                f"3. `import tags` --> Import the tags of tfRecords from a previously saved .json file.\n"
-                f"                     Only tags of tfRecords which are displayed above will be imported. Ensure the name of tfRecord match with the ones displayed above.\n"
-                f"4. `export tags all/<indexes>` --> Export the tags of the tfRecords at these indexes to a .json file.\n"
-                f"                                   Optionally if you can use all instead to export tags of all tfRecords. The path to the .json file should be valid.\n"
-                f"5. `explore <index>` --> Explore the tfRecord file at this index of the table.\n"
+                f"3. `explore <index>` --> Explore the tfRecord file at this index of the table.\n"
                 f"                         The index should be an integer between 1 and {len(tf_records)}\n"
+                f"4. `import tags` --> Import the tags of tfRecords from a previously saved .json file.\n"
+                f"                     Only tags of tfRecords which are displayed above will be imported. Ensure the name of tfRecord match with the ones displayed above.\n"
+                f"5. `export tags all/<indexes>` --> Export the tags of the tfRecords at these indexes to a .json file.\n"
+                f"                                   Optionally if you can use all instead to export tags of all tfRecords. The path to the .json file should be valid.\n"
                 "6. `exit` --> Exit the program\n"
             )
 
@@ -1358,7 +1364,7 @@ def tfrecords_browser(
         ).match(user_input):
             input_lst = user_input.split()
             if input_lst[2].lower() == "all":
-                tfr_paths = [tf_records[i][1] for i in len(range(tf_records))]
+                tfr_paths = [tf_records[i][1] for i in range(len(tf_records))]
             else:
                 valid_indexes = check_index_validity(
                     input_lst[2:], len(tf_records), "export"
@@ -1437,24 +1443,24 @@ def explore_tf_record(
                 f"{os.path.basename(tfrecord)} TfRecord Browser.\n"
                 f"You can use the following commands to further explore these scenarios:\n"
                 "1. `display` --> Display the scenarios in this tfrecord filtered based on the tags chosen in a subsequent option.\n"
-                "2. `export all/<indexes>` --> Export the scenarios at these indexes or all of the table to a target path\n"
+                "2. `explore <index>` --> Select and explore further the scenario at this index of the table.\n"
+                f"                        The index should be an integer between 1 and {len(scenario_ids)}\n"
+                "3. `export all/<indexes>` --> Export the scenarios at these indexes or all of the table to a target path\n"
                 f"                             The indexes should be an integer between 1 and {len(scenario_ids)} separated by space\n"
                 f"                             The exports can be filtered based on the tags chosen in a subsequent option.\n"
-                "3. `preview all` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path.\n"
-                "4. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table.\n"
+                "4. `preview all` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path.\n"
+                "5. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table.\n"
                 f"                          The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
-                f"5. `tag all/<indexes>` or `tag imported all/<indexes>` --> Tag the scenario at these indexes of the table or all with tags mentioned.\n"
+                f"6. `animate all` --> Plot and dump the animations the trajectories of objects on map of all scenarios in this tf_record to a target path.\n"
+                f"7. `animate <indexes>` --> Plot the map and animate the trajectories of objects of scenario at this index of the table.\n"
+                f"                           The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
+                f"8. `tag all/<indexes>` or `tag imported all/<indexes>` --> Tag the scenario at these indexes of the table or all with tags mentioned.\n"
                 f"                                                           Optionally if you call with `tag imported` then the tags for these scenarios will be added to imported tag list.\n"
                 f"                                                           If indexes, then they need to be integers between 1 and {len(scenario_ids)} and should be separated by space.\n"
-                f"6. `untag all/<indexes>` or `untag imported all/<indexes>` --> Untag the scenario at theses index of the table or all with tags mentioned.\n"
+                f"9. `untag all/<indexes>` or `untag imported all/<indexes>` --> Untag the scenario at theses index of the table or all with tags mentioned.\n"
                 f"                                                               Optionally if you call with `tag imported` then the tags for these scenarios will be removed from imported tag list.\n"
                 f"                                                               If indexes, then they need to be integers between 1 and {len(scenario_ids)} and should be separated by space.\n"
-                f"7. `select <index>` --> Select and explore further the scenario at this index of the table.\n"
-                f"                        The index should be an integer between 1 and {len(scenario_ids)}\n"
-                "8. `animate all` --> Plot and dump the animations the trajectories of objects on map of all scenarios in this tf_record to a target path.\n"
-                f"9. `animate <indexes>` --> Plot the map and animate the trajectories of objects of scenario at this index of the table.\n"
-                f"                           The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
-                "10. `go back` --> Go back to the tfrecords browser\n"
+                "10. `back` --> Go back to the tfrecords browser\n"
                 "11. `exit` --> Exit the program\n"
             )
             print_commands = False
@@ -1479,16 +1485,7 @@ def explore_tf_record(
                 imported_tfrecord_tags,
                 (tags, filter_display) if tags is not None else None,
             )
-            print(
-                "\nIf filtered by tags, the indexes above should not be used with other commands. Use indexes from main table.\n"
-            )
-            time.sleep(1.5)
-            display_scenarios_in_tfrecord(
-                tfrecord,
-                scenario_dict,
-                tfrecord_tags,
-                imported_tfrecord_tags,
-            )
+            time.sleep(1.2)
             print_commands = True
 
         elif re.compile("^export[\s]+(all|(?:\s*(\d+))+)", flags=re.IGNORECASE).match(
@@ -1827,12 +1824,12 @@ def explore_tf_record(
             )
             print_commands = True
 
-        elif re.compile("^select[\s]+[\d]+$", flags=re.IGNORECASE).match(user_input):
+        elif re.compile("^explore[\s]+[\d]+$", flags=re.IGNORECASE).match(user_input):
             input_lst = user_input.split()
 
             # Check if index passed is valid
             valid_indexes = check_index_validity(
-                input_lst[1:], len(scenario_ids), "select"
+                input_lst[1:], len(scenario_ids), "explore"
             )
             if len(valid_indexes) == 0:
                 continue
@@ -1867,7 +1864,7 @@ def explore_tf_record(
             )
             print_commands = True
 
-        elif re.compile("^go[\s]+back$", flags=re.IGNORECASE).match(user_input):
+        elif user_input.lower() == "back":
             stop_exploring = True
             print("Going back to the tfRecords browser")
             continue
@@ -2006,7 +2003,7 @@ def explore_scenario(
         "                                Optionally if you call with `tag imported` then the tags will be added to imported tag list.\n"
         f"5. `untag` or `untag imported` --> Untag the scenario with tags mentioned.\n"
         "                                    Optionally if you call with `untag imported` then the tags will be removed to imported tag list.\n"
-        "6. `go back` --> Go back to this scenario's tfrecord browser.\n"
+        "6. `back` --> Go back to this scenario's tfrecord browser.\n"
         "7. `exit` --> Exit the program\n"
     )
     stop_exploring = False
@@ -2103,7 +2100,7 @@ def explore_scenario(
                     print("Tags removed from `Tags Added` list")
             display_scenario_data_info()
 
-        elif re.compile("^go[\s]+back$", flags=re.IGNORECASE).match(user_input):
+        elif user_input.lower() == "back":
             stop_exploring = True
             print("Going back to the tfRecord Explorer")
             continue
