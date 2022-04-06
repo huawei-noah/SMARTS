@@ -1,17 +1,19 @@
 import gym
 import numpy as np
+from sb3 import util as sb3_util
+
 from smarts.env.wrappers import format_obs
+
 
 class Observation(gym.Wrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
         old_space = env.observation_space["rgb"]
         self.observation_space = gym.spaces.Box(
-            low=0, 
-            high=255, 
-            shape=(old_space.shape[-1],) + old_space.shape[:-1], 
-            # shape=old_space.shape, 
-            dtype=np.uint8
+            low=0,
+            high=255,
+            shape=(old_space.shape[-1],) + old_space.shape[:-1],
+            dtype=np.uint8,
         )
 
     def step(self, action):
@@ -26,7 +28,6 @@ class Observation(gym.Wrapper):
         """
         obs, rewards, dones, infos = self.env.step(action)
         filtered = filter_obs(obs)
-
         return filtered, rewards, dones, infos
 
     def reset(self):
@@ -37,7 +38,6 @@ class Observation(gym.Wrapper):
         """
         obs = self.env.reset()
         filtered = filter_obs(obs)
-
         return filtered
 
 
@@ -46,7 +46,6 @@ def filter_obs(obs: format_obs.StdObs) -> np.ndarray:
 
     # Ego vehicle is 1.5mx3.75m
     # Road width = 6.25m
-    # We want resolution of 
 
     # Repaint ego
     # clr = (122, 140, 153)
@@ -71,34 +70,6 @@ def filter_obs(obs: format_obs.StdObs) -> np.ndarray:
     # rep = repainted.transpose(2, 0, 1)
     # plotter(rgb, 3, name="from obs")
 
-    rgb = np.uint8(rgb)
+    # sb3_util.plotter3d(rgb, rgb_gray=3, name="From Obs")
 
-    plotter1(rgb, rgb_gray=3, name="From Obs")
-
-    return rgb
-
-
-def plotter1(obs: np.ndarray, rgb_gray=3, name: str = "Graph"):
-    """Plot images
-
-    Args:
-        obs (np.ndarray): Image in CxHxW format, i.e. channel first.
-        rgb_gray (int, optional): 3 for rgb and 1 for grayscale. Defaults to 1.
-    """
-
-    import matplotlib.pyplot as plt
-
-    rows = 1
-    columns = obs.shape[0] // rgb_gray
-    fig, axs = plt.subplots(nrows=rows, ncols=columns, squeeze=False)
-    fig.suptitle("Observation")
-
-    for row in range(0, rows):
-        for col in range(0, columns):
-            img = obs[col * rgb_gray : col * rgb_gray + rgb_gray, :, :]
-            img = img.transpose(1, 2, 0)
-            axs[row, col].imshow(img)
-            axs[row, col].set_title(f"{name}")
-    plt.show(block=False)
-    plt.pause(1)
-    plt.close()
+    return np.uint8(rgb)

@@ -6,7 +6,7 @@ smarts:
   sumo_gui: False # If True, enables sumo-gui display.
   img_meters: 64
   img_pixels: 112
-  n_stack: 1 # Number of frames to stack as input to policy network
+  n_stack: 5 # Number of frames to stack as input to policy network
   
   # Training
   train_steps: 1e8 # Number of training steps.
@@ -16,8 +16,8 @@ smarts:
 
   # Policy
   alg: PPO
-  policy: l5kit
+  # policy: l5kit
   # policy: dreamer
   # policy: naturecnn
   # policy: customnaturecnn
-  # policy: r2plus1d_18
+  policy: r2plus1d_18

@@ -9,7 +9,6 @@ import stable_baselines3 as sb3lib
 import torch as th
 from ruamel.yaml import YAML
 from sb3 import action as sb3_action
-from sb3 import callback as sb3_callback
 from sb3 import info as sb3_info
 from sb3 import observation as sb3_observation
 from sb3 import policy as sb3_policy
@@ -19,13 +18,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.vec_env import (
-    DummyVecEnv,
-    VecFrameStack,
-    VecMonitor,
-    VecVideoRecorder,
-)
-
+from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMonitor
 
 print("Torch cuda is available: ", th.cuda.is_available())
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -77,8 +70,8 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
         headless=not config["head"],  # If False, enables Envision display.
         visdom=config["visdom"],  # If True, enables Visdom display.
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
-        img_meters = config["img_meters"],
-        img_pixels = config["img_pixels"],
+        img_meters=config["img_meters"],
+        img_pixels=config["img_pixels"],
     )
 
     # Wrap env with action, reward, and observation wrapper
@@ -89,9 +82,6 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
 
     # Check custom environment
     check_env(env)
-
-    # Wrap with gym wrappers
-    # env = gym.wrappers.FrameStack(env=env,num_stack=config["n_stack"])
 
     # Wrap env with SB3 wrappers
     env = DummyVecEnv([lambda: env])
@@ -219,17 +209,3 @@ if __name__ == "__main__":
         )
 
     main(args)
-
-    # import torch as th
-    # import torch.nn as nn
-    # from torchinfo import summary
-    # import torchvision.models as th_models
-
-
-    # thmodel = th_models.video.r2plus1d_18(
-    #     pretrained = True, 
-    #     progress = True 
-    # )
-
-    # print(thmodel)
-    # summary(thmodel,(1,3,4,112,112))
