@@ -257,8 +257,8 @@ def l5kit(config):
     kwargs["gamma"] = 0.8
     kwargs["gae_lambda"] = 0.9
     kwargs["n_epochs"] = 10
-    kwargs["seed"] = 42
     kwargs["batch_size"] = 64
+    kwargs["seed"] = 42
 
     return kwargs
 
@@ -270,5 +270,10 @@ def r2plus1d_18(config):
         features_extractor_kwargs=dict(config=config, features_dim=400),
         net_arch=[],
     )
+
+    # Hyperparameter
+    kwargs["n_steps"] = 256
+    kwargs["batch_size"] = 64
+    kwargs["seed"] = 42
 
     return kwargs
