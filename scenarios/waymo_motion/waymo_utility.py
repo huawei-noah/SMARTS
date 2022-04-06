@@ -1125,7 +1125,7 @@ def display_scenarios_in_tfrecord(
         scenario_counter += 1
     if len(scenario_data_lst):
         print("\n-----------------------------------------------")
-        print(f"{len(scenario_dict)} scenarios in {tfrecord_path}:\n")
+        print(f"{len(scenario_dict)} scenarios in {os.path.basename(tfrecord_path)}:\n")
         print(
             tabulate(
                 scenario_data_lst,
@@ -1259,7 +1259,7 @@ def tfrecords_browser(
                 f"4. `import tags` --> Import the tags of tfRecords from a previously saved .json file.\n"
                 f"                     Only tags of tfRecords which are displayed above will be imported. Ensure the name of tfRecord match with the ones displayed above.\n"
                 f"5. `export tags all/<indexes>` --> Export the tags of the tfRecords at these indexes to a .json file.\n"
-                f"                                   Optionally if you can use all instead to export tags of all tfRecords. The path to the .json file should be valid.\n"
+                f"                                   Optionally you can use all instead to export tags of all tfRecords. The path to the .json file should be valid.\n"
                 "6. `exit` --> Exit the program\n"
             )
 
@@ -1428,6 +1428,7 @@ def explore_tf_record(
     imported_tfrecord_tags,
     default_target_path: Optional[str] = None,
 ) -> bool:
+    print("TfRecord Explorer")
     scenario_ids = display_scenarios_in_tfrecord(
         tfrecord,
         scenario_dict,
@@ -1449,16 +1450,16 @@ def explore_tf_record(
                 f"                             The indexes should be an integer between 1 and {len(scenario_ids)} separated by space\n"
                 f"                             The exports can be filtered based on the tags chosen in a subsequent option.\n"
                 "4. `preview all` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path.\n"
-                "5. `preview <indexes>` --> Plot and display the maps of these scenario at these index of the table.\n"
+                "5. `preview <indexes>` --> Plot and display the maps of these scenarios at these index of the table.\n"
                 f"                          The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
                 f"6. `animate all` --> Plot and dump the animations the trajectories of objects on map of all scenarios in this tf_record to a target path.\n"
                 f"7. `animate <indexes>` --> Plot the map and animate the trajectories of objects of scenario at this index of the table.\n"
                 f"                           The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
-                f"8. `tag all/<indexes>` or `tag imported all/<indexes>` --> Tag the scenario at these indexes of the table or all with tags mentioned.\n"
+                f"8. `tag all/<indexes>` or `tag imported all/<indexes>` --> Tag the scenarios at these indexes of the table or all with tags mentioned.\n"
                 f"                                                           Optionally if you call with `tag imported` then the tags for these scenarios will be added to imported tag list.\n"
                 f"                                                           If indexes, then they need to be integers between 1 and {len(scenario_ids)} and should be separated by space.\n"
-                f"9. `untag all/<indexes>` or `untag imported all/<indexes>` --> Untag the scenario at theses index of the table or all with tags mentioned.\n"
-                f"                                                               Optionally if you call with `tag imported` then the tags for these scenarios will be removed from imported tag list.\n"
+                f"9. `untag all/<indexes>` or `untag imported all/<indexes>` --> Untag the scenarios at theses indexes of the table or all with tags mentioned.\n"
+                f"                                                               Optionally if you call with `untag imported` then the tags for these scenarios will be removed from imported tag list.\n"
                 f"                                                               If indexes, then they need to be integers between 1 and {len(scenario_ids)} and should be separated by space.\n"
                 "10. `back` --> Go back to the tfrecords browser\n"
                 "11. `exit` --> Exit the program\n"
@@ -1897,11 +1898,12 @@ def explore_scenario(
         scenario_tags,
         imported_scenario_tags,
     ]
+    print("Scenario Explorer")
 
     def display_scenario_data_info():
         print("\n")
         print("-----------------------------------------------")
-        print(f"Scenario {scenario.scenario_id}:\n")
+        print(f"Scenario {scenario.scenario_id} Map Features:\n")
         print(
             tabulate(
                 [scenario_data],
@@ -1994,7 +1996,7 @@ def explore_scenario(
     print(
         f"\n\nScenario {scenario.scenario_id}.\n"
         "You can use the following commands to further this scenario:\n"
-        f"1. `export` --> Export the scenario to a target base path is passed.\n"
+        f"1. `export` --> Export the scenario to a target base path asked to input in a subsequent option.\n"
         f"2. `preview` or `preview <feature_ids>` --> Plot and display the map of the scenario with the feature ids highlighted in Blue if passed.\n"
         f"                                            The feature ids need to be separated by space, be numbers from the map feature ids mentioned above and will not be highlighted if they dont exist.\n"
         "3. `animate` or `animate <track_ids> --> Animate the trajectories of track objects on the map of this scenario with the track ids highlighted in Red if passed.\n"
