@@ -102,6 +102,7 @@ class L5Kit(BaseFeaturesExtractor):
         )
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        # sb3_util.plotter3d(observations, rgb_gray=3, name="L5KIT")
         return self.linear(self.cnn(observations))
 
 
@@ -110,23 +111,20 @@ class R2plus1D_18(BaseFeaturesExtractor):
         self, observation_space: gym.spaces.Box, config, features_dim: int = 400
     ):
         super().__init__(observation_space, features_dim)
-
+        self._input_channel = 3
+        self._input_frames = config["n_stack"]
+        self._input_height = config["img_pixels"]
+        self._input_width = config["img_pixels"]
+        
         # We assume CxHxW images (channels first)
         assert observation_space.shape == (
-            3 * config["n_stack"],
-            config["img_pixels"],
-            config["img_pixels"],
-        )
-        self.des_shape = (
-            3,
-            config["n_stack"],
-            config["img_pixels"],
-            config["img_pixels"],
+            self._input_channel * self._input_frames,
+            self._input_height,
+            self._input_width,
         )
 
         import torchvision.models as th_models
         from torchinfo import summary
-
         self.thmodel = th_models.video.r2plus1d_18(pretrained=True, progress=True)
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
@@ -137,7 +135,7 @@ class R2plus1D_18(BaseFeaturesExtractor):
         """
         All pre-trained models expect input images normalized in the
         same way, i.e. mini-batches of 3-channel RGB videos of shape
-        (3 x T x H x W), where H and W are expected to be 112, and T
+        (C x F x H x W), where H and W are expected to be 112, and F
         is a number of video frames in a clip. The images have to be
         loaded in to a range of [0, 1].
 
@@ -149,10 +147,20 @@ class R2plus1D_18(BaseFeaturesExtractor):
         """
 
         if torch.any(obs > 1.0) or torch.any(obs < 0.0):
-            raise Exception("!!!!! WARNING: IMAGES NORMALIZED MANUALLY.")
+            raise Exception("Image is not normalized.")
 
-        obs = torch.reshape(obs, (obs.shape[0],) + self.des_shape)
-        sb3_util.plotter3d(obs, rgb_gray=3, name="R2plus1D_18 AFTER")
+        # Reshape and swap axes of input image
+        obs = torch.reshape(obs, (
+            obs.shape[0], 
+            self._input_frames,
+            self._input_channel,
+            self._input_height,
+            self._input_width,
+            )
+        )
+        obs = torch.swapaxes(obs, 1, 2)
+
+        sb3_util.plotter3d(obs, rgb_gray=3, name="R2plus1D_18")
 
         return obs
 
