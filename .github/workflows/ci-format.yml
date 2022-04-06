@@ -1,10 +1,6 @@
 name: SMARTS CI Format
 
-on: 
-  push:
-    branches-ignore:
-      - master
-  pull_request:
+on: [push, pull_request]
 
 env:
   venv_dir: .venv
@@ -40,11 +36,11 @@ jobs:
             -s n \
             --ignore marl_benchmark,examples,scenarios,docs,manager_pb2_grpc.py,worker_pb2_grpc.py \
             --msg-template='{path}: line {line}: {msg_id}: {msg}' \
-            ./smarts ./envision
+            ./smarts ./envision ./baselines
 
   test-types:
     runs-on: ubuntu-18.04
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) && (github.ref != 'refs/heads/master')
     container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Install packages
