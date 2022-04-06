@@ -1,23 +1,18 @@
-from collections import deque
-
 import gym
 import numpy as np
-
+from smarts.env.wrappers import format_obs
 
 class Observation(gym.Wrapper):
-    def __init__(self, env: gym.Env, n_stack: int):
+    def __init__(self, env: gym.Env):
         super().__init__(env)
-        self._n_stack = n_stack
-        self._frames = deque(maxlen=self._n_stack)
+        old_space = env.observation_space["rgb"]
         self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(3, 256, 256), dtype=np.uint8
+            low=0, 
+            high=255, 
+            shape=(old_space.shape[-1],) + old_space.shape[:-1], 
+            # shape=old_space.shape, 
+            dtype=np.uint8
         )
-
-    def _stack_obs(self, obs: np.ndarray):
-        self._frames.appendleft(obs)
-        stacked_obs = np.dstack(self._frames)
-
-        return stacked_obs
 
     def step(self, action):
         """Steps the environment by one step.
@@ -30,13 +25,9 @@ class Observation(gym.Wrapper):
                 Observation, reward, done, info, of the agent.
         """
         obs, rewards, dones, infos = self.env.step(action)
-        converted = format_img(obs.rgb)
-        stacked = self._stack_obs(converted)
+        filtered = filter_obs(obs)
 
-        # if dones:
-        #     plotter(stacked,1)
-
-        return stacked, rewards, dones, infos
+        return filtered, rewards, dones, infos
 
     def reset(self):
         """Resets the environment.
@@ -45,24 +36,24 @@ class Observation(gym.Wrapper):
             np.ndarray: Agent's observation after reset.
         """
         obs = self.env.reset()
-        converted = format_img(obs.rgb)
-        for _ in range(self._n_stack - 1):
-            self._frames.appendleft(converted)
+        filtered = filter_obs(obs)
 
-        return self._stack_obs(converted)
+        return filtered
 
 
-def format_img(img: np.ndarray) -> np.ndarray:
+def filter_obs(obs: format_obs.StdObs) -> np.ndarray:
+    rgb = obs.rgb
 
-    # Ego vehicle is 2mx4m
+    # Ego vehicle is 1.5mx3.75m
+    # Road width = 6.25m
     # We want resolution of 
 
     # Repaint ego
-    clr = (122, 140, 153)
-    repainted = img.copy()
-    repainted[120:135, 125:131, 0] = clr[0]
-    repainted[120:135, 125:131, 1] = clr[1]
-    repainted[120:135, 125:131, 2] = clr[2]
+    # clr = (122, 140, 153)
+    # repainted = img.copy()
+    # repainted[120:135, 125:131, 0] = clr[0]
+    # repainted[120:135, 125:131, 1] = clr[1]
+    # repainted[120:135, 125:131, 2] = clr[2]
 
     # RGB to grayscale
     # R, G, B = repainted[:, :, 0], repainted[:, :, 1], repainted[:, :, 2]
@@ -72,18 +63,22 @@ def format_img(img: np.ndarray) -> np.ndarray:
     # expanded = np.expand_dims(gray, -1)
 
     # Channel first
-    transposed = repainted.transpose(2, 0, 1)
+    rgb = rgb.transpose(2, 0, 1)
 
     # Resize image to 64x64
     # resized = transposed[:, 96:160, 96:160]
 
     # rep = repainted.transpose(2, 0, 1)
-    # plotter(rep, 3)
+    # plotter(rgb, 3, name="from obs")
 
-    return np.uint8(transposed)
+    rgb = np.uint8(rgb)
+
+    plotter1(rgb, rgb_gray=3, name="From Obs")
+
+    return rgb
 
 
-def plotter(obs: np.ndarray, rgb_gray=1, name: str = "Graph"):
+def plotter1(obs: np.ndarray, rgb_gray=3, name: str = "Graph"):
     """Plot images
 
     Args:
@@ -104,6 +99,6 @@ def plotter(obs: np.ndarray, rgb_gray=1, name: str = "Graph"):
             img = img.transpose(1, 2, 0)
             axs[row, col].imshow(img)
             axs[row, col].set_title(f"{name}")
-    plt.show()
-    plt.pause(3)
+    plt.show(block=False)
+    plt.pause(1)
     plt.close()

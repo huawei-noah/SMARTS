@@ -1,4 +1,5 @@
 import time
+import numpy as np
 import gym
 import torch
 import torch.nn as nn
@@ -87,88 +88,9 @@ class L5Kit(BaseFeaturesExtractor):
             nn.Flatten(),
         )
 
-        # Compute shape by doing one forward pass
-        with torch.no_grad():
-            n_flatten = self.cnn(
-                torch.as_tensor(observation_space.sample()[None]).float()
-            ).shape[1]
-
-        # nn.Linear(in_features=1568, out_features=features_dim)
-        self.linear = nn.Sequential(
-            nn.Linear(in_features=n_flatten, out_features=features_dim)
-        )
-
-    def forward(self, observations: torch.Tensor) -> torch.Tensor:
-
-        print(observations.shape,"dddddddddddddddddddddddddddddddddd")
-        import time
-        time.sleep(5)
-
-
-        return self.linear(self.cnn(observations))
-
-
-class ResNet(BaseFeaturesExtractor):
-    def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
-        super().__init__(observation_space, features_dim)
-
-        # We assume CxHxW images (channels first)
-        n_input_channels = observation_space.shape[0]
-
-        import torch as th
-        import torch.nn as nn
-        from torchinfo import summary
-        import torchvision.models as th_models
-
-        thmodel = th_models.video.r2plus1d_18(
-            pretrained = True, 
-            progress = True 
-        )
-        print(thmodel)
-        summary(thmodel,(1,)+n_input_channels)
-
-        self.cnn = thmodel
-
-        # Compute shape by doing one forward pass
-        # with torch.no_grad():
-        #     n_flatten = self.cnn(
-        #         torch.as_tensor(observation_space.sample()[None]).float()
-        #     ).shape[1]
-
-        # nn.Linear(in_features=1568, out_features=features_dim)
-        # self.linear = nn.Sequential(
-        #     nn.Linear(in_features=n_flatten, out_features=features_dim)
-        # )
-
-    def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        
-        print(observations.shape, "dddddddddddddddddd")
-        
-        return self.linear(self.cnn(observations))
-
-
-
-
-        self.cnn = nn.Sequential(
-            nn.Conv2d(
-                n_input_channels,
-                64,
-                kernel_size=(7, 7),
-                stride=(2, 2),
-                padding=(3, 3),
-                bias=False,
-            ),
-            nn.GroupNorm(4, 64),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(
-                64, 32, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False
-            ),
-            nn.GroupNorm(2, 32),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Flatten(),
-        )
+        print("OBSERVATION SPACE INSIDE L5KIT", observation_space)
+        sample = observation_space.sample()[None]
+        plotter3(sample, rgb_gray=3, name="L5KIT INIT")
 
         # Compute shape by doing one forward pass
         with torch.no_grad():
@@ -182,7 +104,143 @@ class ResNet(BaseFeaturesExtractor):
         )
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        print("GOING TO PLOT FROM L5KIT")
+        plotter3(observations, rgb_gray=3, name="L5KIT FORWARD")
+
         return self.linear(self.cnn(observations))
+
+
+# class R2plus1D_18(BaseFeaturesExtractor):
+#     def __init__(self, observation_space: gym.spaces.Box, config, features_dim: int = 400):
+#         super().__init__(observation_space, features_dim)
+
+#         # We assume CxHxW images (channels first)
+#         space = observation_space.shape
+#         assert( space == ( 3*config["n_stack"], config["img_pixels"], config["img_pixels"]) )
+#         self.des_shape = (3, config["n_stack"], config["img_pixels"], config["img_pixels"])
+
+#         from torchinfo import summary
+#         import torchvision.models as th_models
+
+#         self.thmodel = th_models.video.r2plus1d_18(
+#             pretrained = True, 
+#             progress = True 
+#         )
+#         print(self.thmodel)
+#         summary(self.thmodel,(1,)+self.des_shape)
+
+#     def forward(self, obs: torch.Tensor) -> torch.Tensor:
+#         obs = self.modify_obs(obs)       
+#         return self.thmodel(obs)
+
+
+#     def modify_obs(self, obs: torch.Tensor) -> torch.Tensor:
+#         """
+#         All pre-trained models expect input images normalized in the 
+#         same way, i.e. mini-batches of 3-channel RGB videos of shape 
+#         (3 x T x H x W), where H and W are expected to be 112, and T 
+#         is a number of video frames in a clip. The images have to be 
+#         loaded in to a range of [0, 1].
+
+#         Args:
+#             obs (torch.Tensor): _description_
+
+#         Returns:
+#             torch.Tensor: _description_
+#         """
+
+
+#         if torch.any(obs > 1.0):
+#             obs = obs / 255.0
+#             print("NORMALIZED IMAGES")
+#         else:
+#             print("NO NO norm NO NO")
+
+
+#         print("Before++++++ ", obs.shape)
+#         plotter3(obs, rgb_gray=3, name="pytorch before")
+#         obs = torch.reshape(obs, (obs.shape[0],)+self.des_shape)
+#         print("After++++++ ", obs.shape)
+#         plotter3(obs, rgb_gray=3, name="pytorch AFTER")
+
+#         assert(False)
+
+#         # mod_obs = torch.swapaxes(obs, 1, 2)
+
+#         assert(torch.all(mod_obs >= 0) and torch.all(mod_obs <= 1.0 ))
+
+#         return mod_obs
+
+
+def plotter3(observation:torch.Tensor, rgb_gray=3, name: str = "PLotter"):
+    """Plot images
+
+    Args:
+        obs (np.ndarray): Image in 3d, 4d, or 5d format.
+            3d image format =(rgb*n_stack, height, width)
+            4d image format =(batch, rgb*n_stack, height, width)
+            5d image format =(batch, rgb, n_stack, height, width)
+        rgb_gray (int, optional): 3 for rgb and 1 for grayscale. Defaults to 1.
+    """
+
+    import matplotlib.pyplot as plt
+
+    dim = len(observation.shape)
+    assert(dim in [3,4,5])
+
+    print("TYPE OF OBSERVATION OBJECT=",type(observation))
+    print("OBSERVATION SHAPE INSIDE PLOTTER=",observation.shape)
+
+    if torch.is_tensor(observation):
+        print("CONVERTED TENSOR TO NUMPY")
+        obs = observation.detach().cpu().numpy()
+    elif isinstance(observation, np.ndarray):
+        print("OBJECT IS ALREADY IS NUMPY FORMAT")
+        obs = observation.copy()
+    else:
+        raise Exception("INCORRECT FORMAT")
+
+    if dim==3:
+        rows = 1
+        columns = obs.shape[0] // rgb_gray
+        print("3-rows",rows, "3-columns",columns)
+    elif dim==4:
+        rows = obs.shape[0]
+        columns = obs.shape[1] // rgb_gray
+        print("4-rows",rows, "4-columns",columns)
+    else: # dim==5
+        rows = obs.shape[0]
+        columns = obs.shape[2]
+        print("5-rows",rows, "5-columns",columns)
+
+
+    fig, axs = plt.subplots(nrows=rows, ncols=columns, squeeze=False)
+    fig.suptitle("Observation PLOTTER3D")
+
+    for row in range(0, rows):
+        for col in range(0, columns):
+            if dim==3:
+                print("DIM3")
+                img = obs[col * rgb_gray : col * rgb_gray + rgb_gray, :, :]
+            elif dim==4:
+                print("DIM4")
+                img = obs[row, col * rgb_gray : col * rgb_gray + rgb_gray, :, :]
+            elif dim==5:
+                print("DIM5")
+                img = obs[row, :, col, :, :]
+            else:
+                raise Exception("NO SUCH DIMENSION")
+
+            print("IMG SHAPE BEFORE PLOTTER3D", img.shape)
+            img = img.transpose(1, 2, 0)
+            print("IMG SHAPE AFTER TRANSPOSE IN PLOTTER3D", img.shape)
+            axs[row, col].imshow(img)
+            axs[row, col].set_title(f"{name}")
+       
+    plt.show()
+    plt.pause(3)
+    plt.close()
+
 
 # class NatureCNN(BaseFeaturesExtractor):
 #     """
@@ -229,7 +287,7 @@ class ResNet(BaseFeaturesExtractor):
 #         return self.linear(self.cnn(observations))
 
 
-def naturecnn():
+def naturecnn(config):
     kwargs = {}
     kwargs["policy_kwargs"] = dict(
         # activation_fn=th.nn.Tanh, # default activation used
@@ -238,7 +296,7 @@ def naturecnn():
     return kwargs
 
 
-def customnaturecnn():
+def customnaturecnn(config):
     kwargs = {}
     kwargs["policy_kwargs"] = dict(
         # features_extractor_class=NatureCNN,
@@ -248,7 +306,7 @@ def customnaturecnn():
     return kwargs
 
 
-def dreamer():
+def dreamer(config):
     kwargs = {}
     kwargs["policy_kwargs"] = dict(
         features_extractor_class=Dreamer,
@@ -258,7 +316,7 @@ def dreamer():
     return kwargs
 
 
-def l5kit():
+def l5kit(config):
     kwargs = {}
     kwargs["policy_kwargs"] = dict(
         features_extractor_class=L5Kit,
@@ -284,27 +342,12 @@ def l5kit():
 
     return kwargs
 
-def resnet():
+def r2plus1d_18(config):
     kwargs = {}
     kwargs["policy_kwargs"] = dict(
-        features_extractor_class=ResNet,
-        features_extractor_kwargs=dict(features_dim=256),
+        features_extractor_class=R2plus1D_18,
+        features_extractor_kwargs=dict(features_dim=400, config=config),
         net_arch=[],
     )
-
-    # Clipping schedule of PPO epsilon parameter
-    start_val = 0.1
-    end_val = 0.01
-    training_progress_ratio = 1.0
-    kwargs["clip_range"] = get_linear_fn(start_val, end_val, training_progress_ratio)
-
-    # Hyperparameter
-    kwargs["learning_rate"] = 3e-4
-    kwargs["n_steps"] = 256
-    kwargs["gamma"] = 0.8
-    kwargs["gae_lambda"] = 0.9
-    kwargs["n_epochs"] = 10
-    kwargs["seed"] = 42
-    kwargs["batch_size"] = 64
 
     return kwargs

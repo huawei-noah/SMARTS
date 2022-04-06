@@ -1,9 +1,8 @@
 import argparse
-import multiprocessing as mp
 import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import gym
 import stable_baselines3 as sb3lib
@@ -22,7 +21,6 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import (
     DummyVecEnv,
-    SubprocVecEnv,
     VecFrameStack,
     VecMonitor,
     VecVideoRecorder,
@@ -84,16 +82,18 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
     )
 
     # Wrap env with action, reward, and observation wrapper
+    env = sb3_info.Info(env=env)
     env = sb3_action.Action(env=env)
     env = sb3_reward.Reward(env=env)
-    env = sb3_observation.Observation(env=env, n_stack=1)
-    env = sb3_info.Info(env=env)
+    env = sb3_observation.Observation(env=env)
 
     # Check custom environment
     check_env(env)
 
+    # Wrap with gym wrappers
+    # env = gym.wrappers.FrameStack(env=env,num_stack=config["n_stack"])
+
     # Wrap env with SB3 wrappers
-    # env = Monitor(env=env, filename=str(config["logdir"]), info_keywords=("is_success",))
     env = DummyVecEnv([lambda: env])
     env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="first")
     env = VecMonitor(
@@ -159,7 +159,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             env=env,
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
-            **(getattr(sb3_policy, config["policy"])()),
+            **(getattr(sb3_policy, config["policy"])(config)),
         )
         sb3_util.print_model(model, env)
         model.learn(
