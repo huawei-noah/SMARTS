@@ -143,8 +143,8 @@ class R2plus1D_18(BaseFeaturesExtractor):
             torch.Tensor: _description_
         """
 
-        if torch.any(obs > 1.0) or torch.any(obs < 0.0):
-            raise Exception("Image is not normalized.")
+        # if torch.any(obs > 1.0) or torch.any(obs < 0.0):
+        #     raise Exception("Image is not normalized.")
 
         # Reshape and swap axes of input image
         obs = torch.reshape(obs, (
