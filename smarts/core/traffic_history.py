@@ -39,7 +39,7 @@ T = TypeVar("T")
 class TrafficHistory:
     """Traffic history for use with converted datasets."""
 
-    def __init__(self, db: str):
+    def __init__(self, db):
         self._log = logging.getLogger(self.__class__.__name__)
         self._db = db
         self._db_cnxn = None
@@ -184,7 +184,7 @@ class TrafficHistory:
 
     def vehicle_pose_at_time(
         self, vehicle_id: str, sim_time: float
-    ) -> Tuple[float, float, float, float]:
+    ) -> Optional[Tuple[float, float, float, float]]:
         """Get the pose of the specified vehicle at the specified history time."""
         query = """SELECT position_x, position_y, heading_rad, speed
                    FROM Trajectory
@@ -193,7 +193,7 @@ class TrafficHistory:
 
     def vehicle_ids_active_between(
         self, start_time: float, end_time: float
-    ) -> Generator[int, None, None]:
+    ) -> Generator[Tuple, None, None]:
         """Find the ids of all active vehicles between the given history times.
 
         XXX: For now, limited to just passenger cars (V.type = 2)

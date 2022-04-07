@@ -52,7 +52,7 @@ class ExternalProvider(Provider):
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
-        return {}
+        return set()
 
     @property
     def _provider_state(self):

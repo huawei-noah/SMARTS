@@ -290,7 +290,6 @@ def test_trajectory_interpolation_provider_in_smarts(smarts, agent_spec, scenari
     observations = smarts.reset(scenario)
     init_ego_state = observations[AGENT_ID].ego_vehicle_state
 
-    agent_obs = None
     reached_goal = False
     for _ in range(5):
         agent_obs = observations[AGENT_ID]

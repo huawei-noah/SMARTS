@@ -41,7 +41,7 @@ from smarts_ros.msg import (
 from smarts_ros.srv import SmartsInfo, SmartsInfoRequest, SmartsInfoResponse
 
 from envision.client import Client as Envision
-from smarts.core.coordinates import Dimensions, Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Point, Pose
 from smarts.core.plan import (
     EndlessGoal,
     Mission,
@@ -283,12 +283,16 @@ class ROSDriver:
     @staticmethod
     def _pose_from_ros(ros_pose) -> Pose:
         return Pose(
-            position=(ros_pose.position.x, ros_pose.position.y, ros_pose.position.z),
-            orientation=(
-                ros_pose.orientation.x,
-                ros_pose.orientation.y,
-                ros_pose.orientation.z,
-                ros_pose.orientation.w,
+            position=np.array(
+                [ros_pose.position.x, ros_pose.position.y, ros_pose.position.z]
+            ),
+            orientation=np.array(
+                [
+                    ros_pose.orientation.x,
+                    ros_pose.orientation.y,
+                    ros_pose.orientation.z,
+                    ros_pose.orientation.w,
+                ]
             ),
         )
 
@@ -299,7 +303,7 @@ class ROSDriver:
         task = ros_agent_spec.tasks[0]
         task_params = json.loads(task.params_json) if task.params_json else {}
         task_version = task.task_ver or "latest"
-        agent_locator = f"{self._zoo_module}:{task.task_ref}-{task_version}"
+        agent_locator = f"{self._zoo_module}:{task.task_ref}-{task_version}"  # pytype: disable=attribute-error
         agent_spec = None
         try:
             agent_spec = registry.make(agent_locator, **task_params)
@@ -315,7 +319,7 @@ class ROSDriver:
             or ros_agent_spec.end_pose.position.y != 0.0
         ):
             goal = PositionalGoal(
-                (
+                Point(
                     ros_agent_spec.end_pose.position.x,
                     ros_agent_spec.end_pose.position.y,
                 ),
@@ -646,7 +650,9 @@ class ROSDriver:
         if not self._smarts:
             raise RuntimeError("must call setup_smarts() first.")
 
+        # pytype: disable=attribute-error
         rospy.Service(self._service_name, SmartsInfo, self._get_smarts_info)
+        # pytype: enable=attribute-error
 
         warned_scenario = False
         observations = {}

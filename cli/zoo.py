@@ -47,7 +47,7 @@ def build_policy(policy):
 
         wheel = Path(results[0])
         dst_path = cwd / wheel.name
-        shutil.move(wheel.resolve(), cwd / wheel.name)
+        shutil.move(str(wheel.resolve()), cwd / wheel.name)
         return dst_path
 
     os.chdir(policy)

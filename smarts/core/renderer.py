@@ -25,11 +25,14 @@ from __future__ import annotations
 import importlib.resources as pkg_resources
 import logging
 import os
+from enum import IntEnum
 from threading import Lock
 from typing import NamedTuple
 
 import gltf
 from direct.showbase.ShowBase import ShowBase
+
+# pytype: disable=import-error
 from panda3d.core import (
     FrameBufferProperties,
     GraphicsOutput,
@@ -48,15 +51,39 @@ from .coordinates import Pose
 from .masks import RenderMasks
 from .scenario import Scenario
 
+# pytype: enable=import-error
+
+
+class DEBUG_MODE(IntEnum):
+    """The rendering debug information level."""
+
+    SPAM = 1
+    DEBUG = 2
+    INFO = 3
+    WARNING = 4
+    ERROR = 5
+
 
 class _ShowBaseInstance(ShowBase):
     """ Wraps a singleton instance of ShowBase from Panda3D. """
 
+    _debug_mode: DEBUG_MODE = DEBUG_MODE.WARNING
+    _rendering_backend: str = "p3headlessgl"
+
     def __new__(cls):
         # Singleton pattern:  ensure only 1 ShowBase instance
         if "__it__" not in cls.__dict__:
-            loadPrcFileData("", "load-display p3headlessgl")
+            if cls._debug_mode <= DEBUG_MODE.INFO:
+                loadPrcFileData("", "gl-debug #t")
+            loadPrcFileData(
+                "",
+                f"load-display {cls._rendering_backend}",
+            )
             loadPrcFileData("", "aux-display p3headlessgl")
+            loadPrcFileData("", "aux-display pandagl")
+            loadPrcFileData("", "aux-display pandadx9")
+            loadPrcFileData("", "aux-display pandagles")
+            loadPrcFileData("", "aux-display pandagles2")
             loadPrcFileData("", "aux-display p3tinydisplay")
             # disable vsync otherwise we are limited to refresh-rate of screen
             loadPrcFileData("", "sync-video false")
@@ -65,8 +92,9 @@ class _ShowBaseInstance(ShowBase):
             # loadPrcFileData("", "model-cache-dir %s/.panda3d_cache" % os.getcwd())
             loadPrcFileData("", "audio-library-name null")
             loadPrcFileData("", "gl-version 3 3")
-            loadPrcFileData("", "notify-level error")
+            loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
             loadPrcFileData("", "print-pipe-types false")
+            # loadPrcFileData("", "basic-shaders-only #t")
             # https://www.panda3d.org/manual/?title=Multithreaded_Render_Pipeline
             # loadPrcFileData('', 'threading-model Cull/Draw')
             # have makeTextureBuffer create a visible window
@@ -95,6 +123,12 @@ class _ShowBaseInstance(ShowBase):
 
         except Exception as e:
             raise e
+
+    @classmethod
+    def set_rendering_verbosity(cls, debug_mode: DEBUG_MODE):
+        """Set rendering debug information verbosity."""
+        cls._debug_mode = debug_mode
+        loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
 
     def destroy(self):
         """Destroy this renderer and clean up all remaining resources."""
@@ -140,22 +174,37 @@ class _ShowBaseInstance(ShowBase):
 class Renderer:
     """The utility used to render simulation geometry."""
 
-    def __init__(self, simid: str):
-        self._log = logging.getLogger(self.__class__.__name__)
+    def __init__(self, simid: str, debug_mode: DEBUG_MODE = DEBUG_MODE.ERROR):
+        self._log: logging.Logger = logging.getLogger(self.__class__.__name__)
         self._is_setup = False
         self._simid = simid
         self._root_np = None
         self._vehicles_np = None
         self._road_map_np = None
         self._vehicle_nodes = {}
+        _ShowBaseInstance.set_rendering_verbosity(debug_mode=debug_mode)
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
-        self._showbase_instance = _ShowBaseInstance()
+        self._showbase_instance: _ShowBaseInstance = _ShowBaseInstance()
 
     @property
     def id(self):
         """The id of the simulation rendered."""
         return self._simid
+
+    @property
+    def is_setup(self) -> bool:
+        """If the renderer has been fully initialized."""
+        return self._is_setup
+
+    @property
+    def log(self) -> logging.Logger:
+        """The rendering logger."""
+        return self._log
+
+    def remove_buffer(self, buffer):
+        """Remove the rendering buffer."""
+        self._showbase_instance.graphicsEngine.removeWindow(buffer)
 
     def setup(self, scenario: Scenario):
         """Initialize this renderer."""
@@ -262,7 +311,7 @@ class Renderer:
             for i in range(retries):
                 if self.tex.mightHaveRamImage():
                     break
-                self.renderer._log.debug(
+                self.renderer.log.debug(
                     f"No image available (attempt {i}/{retries}), forcing a render"
                 )
                 region = self.buffer.getDisplayRegion(0)
@@ -292,7 +341,7 @@ class Renderer:
             region = self.buffer.getDisplayRegion(0)
             region.window.clearRenderTextures()
             self.buffer.removeAllDisplayRegions()
-            self.renderer._showbase_instance.graphicsEngine.removeWindow(self.buffer)
+            self.renderer.remove_buffer(self.buffer)
 
     def build_offscreen_camera(
         self,
