@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from collections import defaultdict
 import json
 import logging
 import multiprocessing
@@ -34,6 +35,7 @@ import numpy as np
 import websocket
 
 from envision import types
+from envision.client_config import EnvisionStateFilter, ToggleOverride
 from smarts.core.utils.file import unpack
 
 
@@ -79,9 +81,17 @@ class Client:
         output_dir: Optional[str] = None,
         sim_name: Optional[str] = None,
         headless: bool = False,
+        envision_state_filter: EnvisionStateFilter = None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._headless = headless
+
+        def default_toggle():
+            return ToggleOverride(True, None)
+
+        self._envision_state_filter = envision_state_filter or EnvisionStateFilter(
+            defaultdict(default_toggle), defaultdict(default_toggle)
+        )
 
         current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
         client_id = current_time
@@ -129,6 +139,10 @@ class Client:
     def headless(self):
         """Indicates if this client is disconnected from the remote."""
         return self._headless
+
+    @property
+    def envision_state_filter(self) -> EnvisionStateFilter:
+        return self._envision_state_filter
 
     @staticmethod
     def _write_log_state(queue, path):
