@@ -142,5 +142,5 @@ Commands you can execute at this level:
 * When downloading the dataset, make sure not to change the name of the TFRecord files as they are used for matching TFRecord names when importing tags.
 * .json file having the tags for TFRecords scenarios need to have the specific dictionary structure mentioned above.
 * `animate <indexes>` command is relatively slow so it is recommended to animate only a small number of scenarios together.
-* Do not modify files in `scenarios/waymo_motion/templates` as it contains the templates for `scenario.py` and `waymo.py` that are exported during the `export` command.
+* Do not modify files in `scenarios/waymo_motion/templates` as it contains the templates for `scenario.py` and `waymo.yaml` that are exported during the `export` command.
 ```
