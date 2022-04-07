@@ -1,5 +1,3 @@
-import time
-
 import gym
 import torch
 import torch.nn as nn
@@ -113,7 +111,7 @@ class R2plus1D_18(BaseFeaturesExtractor):
         self._input_frames = config["n_stack"]
         self._input_height = config["img_pixels"]
         self._input_width = config["img_pixels"]
-        
+
         # We assume CxHxW images (channels first)
         assert observation_space.shape == (
             self._input_channel * self._input_frames,
@@ -122,6 +120,7 @@ class R2plus1D_18(BaseFeaturesExtractor):
         )
 
         import torchvision.models as th_models
+
         self.thmodel = th_models.video.r2plus1d_18(pretrained=True, progress=True)
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
@@ -144,17 +143,16 @@ class R2plus1D_18(BaseFeaturesExtractor):
             torch.Tensor: _description_
         """
 
-        # if torch.any(obs > 1.0) or torch.any(obs < 0.0):
-        #     raise Exception("Image is not normalized.")
-
         # Reshape and swap axes of input image
-        obs = torch.reshape(obs, (
-            obs.shape[0], 
-            self._input_frames,
-            self._input_channel,
-            self._input_height,
-            self._input_width,
-            )
+        obs = torch.reshape(
+            obs,
+            (
+                obs.shape[0],
+                self._input_frames,
+                self._input_channel,
+                self._input_height,
+                self._input_width,
+            ),
         )
         obs = torch.swapaxes(obs, 1, 2)
 
@@ -273,9 +271,7 @@ def r2plus1d_18(config):
     )
 
     # Hyperparameter
-    kwargs["n_steps"] = 256
-    kwargs["batch_size"] = 64
-    kwargs["seed"] = 42
-    kwargs["device"]='cuda'
+    # kwargs["n_steps"] = 256
+    kwargs["batch_size"] = 16
 
     return kwargs
