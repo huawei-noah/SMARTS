@@ -104,7 +104,7 @@ class L5Kit(BaseFeaturesExtractor):
 
 class R2plus1D_18(BaseFeaturesExtractor):
     def __init__(
-        self, observation_space: gym.spaces.Box, config, features_dim: int = 400
+        self, observation_space: gym.spaces.Box, config, pretrained: bool, features_dim: int = 400
     ):
         super().__init__(observation_space, features_dim)
         self._input_channel = 3
@@ -121,7 +121,7 @@ class R2plus1D_18(BaseFeaturesExtractor):
 
         import torchvision.models as th_models
 
-        self.thmodel = th_models.video.r2plus1d_18(pretrained=True, progress=True)
+        self.thmodel = th_models.video.r2plus1d_18(pretrained=pretrained, progress=True)
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
         obs = self.modify_obs(obs)
@@ -266,7 +266,7 @@ def r2plus1d_18(config):
     kwargs = {}
     kwargs["policy_kwargs"] = dict(
         features_extractor_class=R2plus1D_18,
-        features_extractor_kwargs=dict(config=config, features_dim=400),
+        features_extractor_kwargs=dict(config=config, pretrained=False, features_dim=400),
         net_arch=[],
     )
 
