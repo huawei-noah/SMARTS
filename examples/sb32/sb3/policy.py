@@ -126,7 +126,8 @@ class R2plus1D_18(BaseFeaturesExtractor):
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
         obs = self.modify_obs(obs)
-        return self.thmodel(obs)
+        out = self.thmodel(obs)
+        return out
 
     def modify_obs(self, obs: torch.Tensor) -> torch.Tensor:
         """
@@ -275,5 +276,6 @@ def r2plus1d_18(config):
     kwargs["n_steps"] = 256
     kwargs["batch_size"] = 64
     kwargs["seed"] = 42
+    kwargs["device"]='cuda'
 
     return kwargs
