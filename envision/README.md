@@ -8,8 +8,7 @@ Envision is a visualization front-end for SMARTS providing real-time view of env
 
 ```bash
 # From SMARTS project root; starts SMARTS and the Envision server
-# ...if you want to change the startup command for SMARTS update the supervisord.conf file
-supervisord
+scl envision start -p 8081
 
 # Then to visit the Envision web app in your browser,
 http://localhost:8081/

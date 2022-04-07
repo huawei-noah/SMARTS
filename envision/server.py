@@ -29,7 +29,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Dict, Sequence, Union
+from typing import Dict, Optional, Sequence, Union
 
 import ijson
 import tornado.gen
@@ -182,10 +182,10 @@ class WebClientRunLoop:
 
     def __init__(self, frames, web_client_handler, fixed_timestep_sec, seek=None):
         self._log = logging.getLogger(__class__.__name__)
-        self._frames = frames
+        self._frames: Frames = frames
         self._client = web_client_handler
         self._fixed_timestep_sec = fixed_timestep_sec
-        self._seek = seek
+        self._seek: Optional[int] = seek
         self._thread = None
 
     def seek(self, offset_seconds):
@@ -201,7 +201,7 @@ class WebClientRunLoop:
     def run_forever(self):
         """Starts the connection loop to push frames to the connected web client."""
 
-        def run_loop():
+        async def run_loop():
             frame_ptr = None
             # wait until we have a start_frame...
             while frame_ptr is None:
@@ -249,7 +249,8 @@ class WebClientRunLoop:
                 }
                 for frame in frames
             ]
-            self._client.write_message(json.dumps(frames_formatted))
+            if len(frames_formatted) > 0:
+                self._client.write_message(json.dumps(frames_formatted))
             return False
         except WebSocketClosedError:
             return True
@@ -259,9 +260,9 @@ class WebClientRunLoop:
         return 0.5 * self._fixed_timestep_sec if not frame_ptr.next_ else 0
 
     def _wait_for_next_frame(self, frame_ptr):
-        FRAME_BATCH_SIZE = 100  # limit the batch size for bandwidth and to allow breaks for seeks to be handled
+        FRAME_BATCH_SIZE = 10  # limit the batch size for bandwidth and to allow breaks for seeks to be handled
         while True:
-            delay = self._calculate_frame_delay(frame_ptr)
+            delay = self._calculate_frame_delay(frame_ptr) * FRAME_BATCH_SIZE
             time.sleep(delay)
             frames_to_send = []
             while frame_ptr.next_ and len(frames_to_send) <= FRAME_BATCH_SIZE:
