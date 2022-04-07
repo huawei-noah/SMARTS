@@ -129,8 +129,8 @@ After selecting the scenario to explore further, the third browser you will see 
 
 Commands you can execute at this level:
 1. `export` &rarr; Export the scenario to a target base path asked to input in a subsequent prompt. If you have run the script with the `--target-base-path` option, the subsequent prompt will ask if you want to use custom path or use the default path passed.
-2. `preview` or `preview <feature_ids>` &rarr; Plot and display the map of the scenario with the feature IDs highlighted in **Blue** if provided. The feature IDs need to be separated by space, be numbers from the map feature IDs mentioned above and will not be highlighted if they don't exist.
-3. `animate` or `animate <track_ids>` &rarr; Animate the trajectories of track objects on the map of this scenario with the track IDs highlighted in **Red** if provided. The ego vehicle will be higlighted in **Cyan** and objects of interests in **Green**. The track IDs need to be separated by space, be numbers from the track object IDs mentioned above and will not be highlighted if they don't exist.
+2. `preview` or `preview <feature_ids>` &rarr; Plot and display the map of the scenario with the feature IDs highlighted in <span style="color:blue">**Blue**</span> if provided. The feature IDs need to be separated by space, be numbers from the map feature IDs mentioned above and will not be highlighted if they don't exist.
+3. `animate` or `animate <track_ids>` &rarr; Animate the trajectories of track objects on the map of this scenario with the track IDs highlighted in <span style="color:red">**Red**</span> if provided. The ego vehicle will be highlighted in <span style="color:cyan">**Cyan**</span> and objects of interests in <span style="color:green">**Green**</span>. The track IDs need to be separated by space, be numbers from the track object IDs mentioned above and will not be highlighted if they don't exist.
 4. `tag` or `tag imported` &rarr; Tag the scenario by adding the tags to `Tags Added` list. Optionally if you call with `tag imported` then the tags will be added to `Imported Tags` list seen above. You will be asked to input the tags in a subsequent prompt, and they should be separated by space.
 5. `untag` or `untag imported` &rarr; Untag the scenarios at these indexes of the table (or all the scenarios if used with `all`) by removing them from the `Tags Added` list. Optionally if you call with `tag imported` then the tags for these scenarios will be removed from the `Imported Tags` list seen above. You will be asked to input the tags in a subsequent prompt, and they should be separated by space.
 6. `back` &rarr; Go back to the TFRecord browser.
@@ -141,6 +141,6 @@ Commands you can execute at this level:
 * Space between words or parameters for commands can be variable but may lead to invalid command.
 * When downloading the dataset, make sure not to change the name of the TFRecord files as they are used for matching TFRecord names when importing tags.
 * .json file having the tags for TFRecords scenarios need to have the specific dictionary structure mentioned above.
-* `animate <indexes>` command is relatively slow so it is recommended to animate only a small number of scenarios together.
+* `animate <indexes>` command is relatively slow, so it is recommended to animate only a small number of scenarios together.
 * Do not modify files in `scenarios/waymo_motion/templates` as it contains the templates for `scenario.py` and `waymo.yaml` that are exported during the `export` command.
 ```
