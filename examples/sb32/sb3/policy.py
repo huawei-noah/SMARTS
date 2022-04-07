@@ -272,6 +272,6 @@ def r2plus1d_18(config):
 
     # Hyperparameter
     # kwargs["n_steps"] = 256
-    kwargs["batch_size"] = 16
+    kwargs["batch_size"] = 64
 
     return kwargs
