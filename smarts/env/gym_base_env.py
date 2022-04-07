@@ -31,7 +31,7 @@ from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.visdom_client import VisdomClient
-from smarts.env.wrappers.format_obs import _make_space, get_spaces
+from smarts.env.wrappers.format_obs import _make_space
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -39,6 +39,8 @@ ACTION_SPACES = {"Continuous": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), 
                 "ActuatorDynamic": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
                 "Lane": gym.spaces.Discrete(4),
                 "LaneWithContinuousSpeed": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,), dtype=np.float32),
+                "Trajectory": gym.spaces.Box(low=-1e10, high=1e10, shape=(4,50), dtype=np.float32),
+                "MPC": gym.spaces.Box(low=-1e10, high=1e10, shape=(4,50), dtype=np.float32),
                 }                
 
 class GymBaseEnv(gym.Env):
@@ -126,7 +128,6 @@ class GymBaseEnv(gym.Env):
         for agent_id in self.agent_specs.keys():
             interfaces = {}
             for interface in {
-                "accelerometer",
                 "drivable_area_grid_map",
                 "lidar",
                 "neighborhood_vehicles",
@@ -296,6 +297,19 @@ class GymBaseEnv(gym.Env):
             rewards[agent_id] = agent_spec.reward_adapter(observation, reward)
             observations[agent_id] = agent_spec.observation_adapter(observation)
             infos[agent_id] = agent_spec.info_adapter(observation, reward, info)
+
+        for agent_id in observations:
+            assert self.observation_space[agent_id], "Agent does not exist in observation space"
+            for interface in {
+                "drivable_area_grid_map",
+                "lidar",
+                "neighborhood_vehicles",
+                "ogm",
+                "rgb",
+                "waypoints",
+            }:
+                if getattr(self.agent_specs[agent_id].interface, interface, False):
+                    assert self.observation_space[agent_id][interface], "Sensor does not exist in observation space"
 
         for done in dones.values():
             self._dones_registered += 1 if done else 0
