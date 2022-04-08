@@ -18,14 +18,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# type: ignore
-
 import os
 import sys
 from typing import NamedTuple, Optional, Tuple
 
+# pytype: disable=import-error
+
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import file_md5_hash, path2hash
+
+# pytype: enable=import-error
 
 _existing_map = None
 

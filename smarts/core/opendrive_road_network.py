@@ -18,8 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# type: ignore
-
 import heapq
 import logging
 import math
@@ -30,6 +28,8 @@ from bisect import bisect
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Dict, List, Optional, Sequence, Set, Tuple
+
+# pytype: disable=import-error
 
 import numpy as np
 import rtree
@@ -91,6 +91,8 @@ from .coordinates import (
     position_at_shape_offset,
 )
 from .lanepoints import LanePoints, LinkedLanePoint
+
+# pytype: enable=import-error
 
 
 def _convert_camera(camera):

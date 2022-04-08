@@ -18,8 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# type: ignore
-
 import logging
 import math
 import time
@@ -28,6 +26,8 @@ import random
 from copy import deepcopy
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
+
+# pytype: disable=import-error
 
 import numpy as np
 import rtree
@@ -53,6 +53,8 @@ from .road_map import RoadMap, Waypoint
 from .utils.file import read_tfrecord_file
 from .utils.math import ray_boundary_intersect, inplace_unwrap, radians_to_vec, vec_2d
 from .utils.geometry import buffered_shape
+
+# pytype: enable=import-error
 
 
 class WaymoMap(RoadMap):
@@ -317,6 +319,7 @@ class WaymoMap(RoadMap):
                 waymo_lanedicts[prev_seg.seg_id] = prev_seg.lane_dict
                 if not first_seg:
                     first_seg = prev_seg
+                assert first_seg is not None
                 if split_pts[split_pt]:
                     if len(subs_since_comp) > 1:
                         comp = orig_seg.create_new_segment(
