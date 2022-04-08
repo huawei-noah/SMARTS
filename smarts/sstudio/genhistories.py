@@ -18,7 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# type: ignore
 
 import argparse
 import csv
@@ -28,6 +27,8 @@ import os
 import sqlite3
 import sys
 from typing import Any, Dict, Generator, Iterable, Optional, Tuple, Union
+
+# pytype: disable=import-error
 
 import ijson
 import numpy as np
@@ -46,6 +47,8 @@ except ImportError:
     print(
         "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
     )
+
+# pytype: enable=import-error
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
