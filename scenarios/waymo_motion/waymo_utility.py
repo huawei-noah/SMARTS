@@ -505,9 +505,6 @@ def plot_scenarios(
         all_handles = get_map_handles()
         all_handles.extend(highlighted_handles)
 
-        # Resize figure
-        mng = plt.get_current_fig_manager()
-
         if animate_trajectories:
             # Plot Trajectories
             data, points, max_len, t_handles = plot_trajectories(
@@ -593,7 +590,9 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=
                 return drawn_pts
 
             # Set Animation
-            anim = FuncAnimation(fig, update, frames=range(1, len(max_len)), blit=True, interval=100)
+            anim = FuncAnimation(
+                fig, update, frames=range(1, len(max_len)), blit=True, interval=100
+            )
             out_path = os.path.join(
                 os.path.abspath(target_base_path), f"scenario-{scenario_id}.mp4"
             )
