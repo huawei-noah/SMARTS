@@ -629,8 +629,7 @@ def filter_scenario(scenario_tags, imported_tags, filter_tags) -> bool:
         return all(x in scenario_tags for x in tags)
     elif filter_display == 2:
         return all(x in imported_tags for x in tags)
-    else:
-        return all(x in imported_tags + scenario_tags for x in tags)
+    return all(x in imported_tags + scenario_tags for x in tags)
 
 
 def prompt_tags() -> Tuple[Optional[str], bool]:
@@ -1047,13 +1046,11 @@ def display_scenarios_in_tfrecord(
     scenario_ids = []
     for scenario_id in scenario_dict:
         if filter_tags:
-            if filter_scenario(
+            if not filter_scenario(
                 tfrecord_tags.get(scenario_id, []),
                 tags_imported.get(scenario_id, []),
                 filter_tags,
             ):
-                pass
-            else:
                 scenario_counter += 1
                 continue
         scenario = scenario_dict[scenario_id][0]
@@ -1479,13 +1476,11 @@ def explore_tf_record(
             exported = False
             for idx in valid_indexes:
                 if tags is not None:
-                    if filter_scenario(
+                    if not filter_scenario(
                         tfrecord_tags.get(scenario_ids[idx - 1], []),
                         imported_tfrecord_tags.get(scenario_ids[idx - 1], []),
                         (tags, filter_export),
                     ):
-                        pass
-                    else:
                         continue
                 exported = (
                     export_scenario(target_base_path, tfrecord, scenario_ids[idx - 1])
@@ -1574,13 +1569,11 @@ def explore_tf_record(
             for i in range(len(valid_indexes)):
                 scenario_idx = scenario_ids[valid_indexes[i] - 1]
                 if tags is not None:
-                    if filter_scenario(
+                    if not filter_scenario(
                         tfrecord_tags.get(scenario_idx, []),
                         imported_tfrecord_tags.get(scenario_idx, []),
                         (tags, filter_preview),
                     ):
-                        pass
-                    else:
                         continue
                 if scenario_dict[scenario_idx][1] is None:
                     scenario_dict[scenario_idx][1] = get_map_features_for_scenario(
@@ -1677,13 +1670,11 @@ def explore_tf_record(
             for i in range(len(valid_indexes)):
                 scenario_idx = scenario_ids[valid_indexes[i] - 1]
                 if tags is not None:
-                    if filter_scenario(
+                    if not filter_scenario(
                         tfrecord_tags.get(scenario_idx, []),
                         imported_tfrecord_tags.get(scenario_idx, []),
                         (tags, filter_animate),
                     ):
-                        pass
-                    else:
                         continue
                 if scenario_dict[scenario_idx][1] is None:
                     scenario_dict[scenario_idx][1] = get_map_features_for_scenario(
