@@ -650,7 +650,7 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=
         if animate:
             # Plot Trajectories
             if scenario_dict[scenario_id][2] is None:
-                scenario_dict[scenario_id][2] = get_map_features_for_scenario(scenario)
+                scenario_dict[scenario_id][2] = get_trajectory_data(scenario)
             data, points, max_len, _ = plot_trajectories(
                 scenario_dict[scenario_id][2],
                 scenario_dict[scenario_id][0].objects_of_interest,
@@ -729,7 +729,8 @@ def prompt_filter_tags() -> Tuple[Optional[List[str]], Optional[int], bool]:
         f"2. Yes, based on Imported Tags.\n"
         f"3. Yes, based on both tags merged.\n"
         f"4. No.\n"
-        "Choose your response by entering 1, 2, 3 or 4.\n"
+        f"5. Go back to the Browser.\n"
+        "Choose your response by entering 1, 2, 3, 4, 5.\n"
     )
     while filter_response is None:
         try:
@@ -738,7 +739,7 @@ def prompt_filter_tags() -> Tuple[Optional[List[str]], Optional[int], bool]:
         except EOFError:
             print("Raised EOF. Attempting to exit browser.")
             break
-        if re.compile("^[1-4]$", re.IGNORECASE).match(stripped_response):
+        if re.compile("^[1-5]$", re.IGNORECASE).match(stripped_response):
             filter_response = int(stripped_response)
         else:
             print(
@@ -771,7 +772,8 @@ def prompt_target_path(
             f"Which path do you want to export scenario to?:\n"
             "1. Default Target Path.\n"
             f"2. Custom Target Path.\n"
-            "Choose your response by entering 1 or 2.\n"
+            "3. Go back to the Browser.\n"
+            "Choose your response by entering 1 ,2 or 3.\n"
         )
         valid_response = False
         while not valid_response:
@@ -781,10 +783,12 @@ def prompt_target_path(
             except EOFError:
                 print("Raised EOF. Attempting to exit browser.")
                 return None, True
-            if re.compile("^[1-2]$", re.IGNORECASE).match(stripped_response):
-                if stripped_response == "1":
+            if re.compile("^[1-3]$", re.IGNORECASE).match(stripped_response):
+                if int(stripped_response) == 1:
                     target_base_path = default_target_path
                     valid_path = True
+                if int(stripped_response) == 3:
+                    return None, False
                 valid_response = True
             else:
                 print(
@@ -839,7 +843,10 @@ def prompt_export_before_exiting(
             )
 
     if filter_response == 3:
-        print("Any tags added in this session won't be saved.\n")
+        print(
+            "Any tags added in this session won't be saved, unless you have explicitly exported them before.\n"
+        )
+        return True
     else:
         tfr_paths = None
         if filter_response == 1:
@@ -1045,12 +1052,13 @@ def merge_tags(new_imports, main_dict, display: bool = False):
                     )
                 else:
                     main_dict[tf_file][scenario_id] = new_imports[tf_file][scenario_id]
-            if display:
-                print("\n-----------------------------------------------")
-                print(f"Scenario Tags imported for {tf_file}:\n")
-                display_scenario_tags(new_imports[tf_file])
         else:
             main_dict[tf_file] = new_imports[tf_file]
+
+        if display:
+            print("\n-----------------------------------------------")
+            print(f"Scenario Tags imported for {tf_file}:\n")
+            display_scenario_tags(new_imports[tf_file])
 
 
 def get_scenario_and_tag_dict(tfrecord_file: str):
@@ -1250,7 +1258,7 @@ def tfrecords_browser(
                 "TfRecords Browser.\n"
                 "You can use the following commands to further explore these datasets:\n"
                 "1. `display all` --> Displays the info of all the scenarios from every tfRecord file together\n"
-                "                     Displays can be filtered on the basis of tags.\n"
+                "                     Displays can be filtered on the basis of tags in a subsequent option.\n"
                 f"2. `display <indexes>` --> Displays the info of tfRecord files at these indexes of the table.\n"
                 f"                           The indexes should be an integer between 1 and {len(tf_records)} and space separated.\n"
                 "                            Displays can be filtered on the basis of tags.\n"
@@ -1286,8 +1294,11 @@ def tfrecords_browser(
                 if len(valid_indexes) == 0:
                     continue
 
+            # Prompt user to filter response by tags
             tags, filter_display, stop_browser = prompt_filter_tags()
-            if stop_browser:
+            if stop_browser or filter_display == 5:
+                if filter_display:
+                    print_commands = True
                 continue
 
             for idx in valid_indexes:
@@ -1476,7 +1487,9 @@ def explore_tf_record(
 
         if user_input.lower() == "display":
             tags, filter_display, stop_browser = prompt_filter_tags()
-            if stop_browser:
+            if stop_browser or filter_display == 5:
+                if filter_display:
+                    print_commands = True
                 continue
 
             display_scenarios_in_tfrecord(
@@ -1502,13 +1515,21 @@ def explore_tf_record(
                 if len(valid_indexes) == 0:
                     continue
 
+            # Prompt to allow filtering response with tags
             tags, filter_export, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
+            if filter_export == 5:
+                print_commands = True
+                continue
 
+            # Prompt to input target base path
             target_base_path, stop_browser = prompt_target_path(default_target_path)
             if stop_browser:
                 return True
+            if not target_base_path:
+                print_commands = True
+                continue
 
             # Try exporting the scenario
             exported = False
@@ -1546,13 +1567,19 @@ def explore_tf_record(
             print(
                 "Enter the path to directory to which you want to dump the images of the maps of scenarios?:\n"
             )
-            target_base_path, stop_browser = prompt_target_path(default_target_path)
-            if stop_browser:
-                return True
-
             tags, filter_preview, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
+            if filter_preview == 5:
+                print_commands = True
+                continue
+
+            target_base_path, stop_browser = prompt_target_path(default_target_path)
+            if stop_browser:
+                return True
+            if not target_base_path:
+                print_commands = True
+                continue
 
             # Dump all the scenario plots of this tfrecord file to this target base path
             print(
@@ -1590,6 +1617,10 @@ def explore_tf_record(
             if stop_browser:
                 return True
 
+            if filter_preview == 5:
+                print_commands = True
+                continue
+
             # Plot the maps of these scenarios
             scenarios_to_plot = []
             for i in range(len(valid_indexes)):
@@ -1617,13 +1648,19 @@ def explore_tf_record(
             print(
                 "Enter the path to directory to which you want to dump the animations of the track objects of scenarios?:\n"
             )
-            target_base_path, stop_browser = prompt_target_path(default_target_path)
-            if stop_browser:
-                return True
-
             tags, filter_animate, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
+            if filter_animate == 5:
+                print_commands = True
+                continue
+
+            target_base_path, stop_browser = prompt_target_path(default_target_path)
+            if stop_browser:
+                return True
+            if not target_base_path:
+                print_commands = True
+                continue
 
             # Dump all the scenario plots of this tfrecord file to this target base path
             print(
@@ -1661,6 +1698,9 @@ def explore_tf_record(
             tags, filter_animate, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
+            if filter_animate == 5:
+                print_commands = True
+                continue
 
             # Animate the maps of these scenarios
             scenarios_to_animate = []
@@ -2016,10 +2056,14 @@ def explore_scenario(
         except EOFError:
             print("Raised EOF. Attempting to exit browser.")
             return True
+
         if user_input.lower() == "export":
+            # Prompt users to input target base path
             target_base_path, stop_browser = prompt_target_path(default_target_path)
             if stop_browser:
                 return True
+            if not target_base_path:
+                continue
 
             # Try exporting the scenario to the target_base_path
             export_scenario(target_base_path, tfrecord_file_path, scenario.scenario_id)
