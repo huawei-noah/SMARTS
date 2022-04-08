@@ -33,13 +33,14 @@ import time
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Generator
 from itertools import product
-from multiprocessing import Pool, cpu_count
+from multiprocessing import cpu_count
 import matplotlib.pyplot as plt
 import yaml
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 from matplotlib.lines import Line2D
 
 try:
+    from pathos.multiprocessing import ProcessingPool as Pool
     from tabulate import tabulate
     from waymo_open_dataset.protos import scenario_pb2
 except (ModuleNotFoundError, ImportError):
@@ -486,53 +487,45 @@ def plot_trajectories(
     return data, points, max_len, handles
 
 
-def plot_scenarios(
-    scenario_infos, animate: bool, feature_ids: Optional[List[str]] = None
+def plot_scenario(
+    scenario, animate_trajectories: bool, f_ids: Optional[List[str]] = None
 ):
-    def plot_map_and_get_animate(scenario_info, animate_trajectories, fig_num, f_ids):
-        anim = None
-        # Get map feature data from map proto
-        map_features = scenario_info[1]
+    scenario_info, fig_num = scenario
+    # Get map feature data from map proto
+    map_features = scenario_info[1]
 
-        # Plot map
-        fig = plt.figure(num=fig_num)
-        if animate_trajectories or not f_ids:
-            highlighted_handles = plot_map_features(map_features, [])
-        else:
-            highlighted_handles = plot_map_features(map_features, f_ids)
-        plt.title(f"Scenario {scenario_info[0].scenario_id}")
+    # Plot map
+    fig = plt.figure(num=fig_num)
+    if animate_trajectories or not f_ids:
+        highlighted_handles = plot_map_features(map_features, [])
+    else:
+        highlighted_handles = plot_map_features(map_features, f_ids)
+    plt.title(f"Scenario {scenario_info[0].scenario_id}")
 
-        # Set Legend Handles
-        all_handles = get_map_handles()
-        all_handles.extend(highlighted_handles)
+    # Set Legend Handles
+    all_handles = get_map_handles()
+    all_handles.extend(highlighted_handles)
 
-        if animate_trajectories:
-            # Plot Trajectories
-            data, points, max_len, t_handles = plot_trajectories(
-                scenario_info[2],
-                scenario_info[0].objects_of_interest,
-                f_ids if f_ids else [],
-            )
-            all_handles.extend(get_trajectory_handles() + t_handles)
+    if animate_trajectories:
+        # Plot Trajectories
+        data, points, max_len, t_handles = plot_trajectories(
+            scenario_info[2],
+            scenario_info[0].objects_of_interest,
+            f_ids if f_ids else [],
+        )
+        all_handles.extend(get_trajectory_handles() + t_handles)
 
-            def update(i):
-                drawn_pts = []
-                for (xs, ys), point in zip(data, points):
-                    if i < len(xs):
-                        point.set_data(xs[i], ys[i])
-                        drawn_pts.append(point)
-                return drawn_pts
+        def update(i):
+            drawn_pts = []
+            for (xs, ys), point in zip(data, points):
+                if i < len(xs):
+                    point.set_data(xs[i], ys[i])
+                    drawn_pts.append(point)
+            return drawn_pts
 
-            # Set Animation
-            anim = FuncAnimation(fig, update, frames=max_len, blit=True, interval=100)
-        plt.legend(handles=all_handles)
-        return anim
-
-    animates = []
-    counter = 1
-    for s_info in scenario_infos:
-        animates.append(plot_map_and_get_animate(s_info, animate, counter, feature_ids))
-        counter += 1
+        # Set Animation
+        anim = FuncAnimation(fig, update, frames=max_len, blit=True, interval=100)
+    plt.legend(handles=all_handles)
     plt.show()
 
 
@@ -622,7 +615,7 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=
         [filter_tags],
     )
     with Pool(min(cpu_count(), len(scenario_dict))) as pool:
-        plots_dumped = pool.starmap(save_plot, plot_parameters)
+        plots_dumped = pool.map(lambda x: save_plot(*x), list(plot_parameters))
 
     if any(plots_dumped):
         print(f"All images or recordings saved at {target_base_path}")
@@ -1594,8 +1587,19 @@ def explore_tf_record(
                         scenario_dict[scenario_idx][0]
                     )
                 scenarios_to_plot.append(scenario_dict[scenario_idx])
+
             if len(scenarios_to_plot) > 0:
-                plot_scenarios(scenarios_to_plot, False)
+                plot_parameters = product(
+                    [
+                        (scenarios_to_plot[i], i + 1)
+                        for i in range(len(scenarios_to_plot))
+                    ],
+                    [False],
+                    [None],
+                )
+                with Pool(min(cpu_count(), len(scenarios_to_plot))) as pool:
+                    pool.map(lambda x: plot_scenario(*x), list(plot_parameters))
+
             else:
                 print("No map images were plotted as no filter tags matched\n")
             display_scenarios_in_tfrecord(
@@ -1693,7 +1697,17 @@ def explore_tf_record(
                 scenarios_to_animate.append(scenario_dict[scenario_idx])
 
             if len(scenarios_to_animate) > 0:
-                plot_scenarios(scenarios_to_animate, True)
+                plot_parameters = product(
+                    [
+                        (scenarios_to_animate[i], i + 1)
+                        for i in range(len(scenarios_to_animate))
+                    ],
+                    [True],
+                    [None],
+                )
+                with Pool(min(cpu_count(), len(scenarios_to_animate))) as pool:
+                    pool.map(lambda x: plot_scenario(*x), list(plot_parameters))
+
             else:
                 print("No animations were shown as no filter tags matched\n")
             display_scenarios_in_tfrecord(
@@ -2050,23 +2064,22 @@ def explore_scenario(
         elif user_input.lower() == "preview" or re.compile(
             "^preview[\s]+(?:\s*(\d+))+$", flags=re.IGNORECASE
         ).match(user_input):
+            # Plot the map of this scenario
             input_lst = user_input.split()
-            if len(input_lst) == 1:
-                # Plot this scenario
-                plot_scenarios([scenario_info], False)
-            else:
-                plot_scenarios([scenario_info], False, input_lst[1:])
+            feature_ids = None
+            if len(input_lst) > 1:
+                feature_ids = input_lst[1:]
+            plot_scenario((scenario_info, 1), False, feature_ids)
 
         elif user_input.lower() == "animate" or re.compile(
             "^animate[\s]+(?:\s*(\d+))+?$", flags=re.IGNORECASE
         ).match(user_input):
-            # Animate this scenario
+            # Plot and animate this scenario
             input_lst = user_input.split()
-            if len(input_lst) == 1:
-                # Plot this scenario
-                plot_scenarios([scenario_info], True)
-            else:
-                plot_scenarios([scenario_info], True, input_lst[1:])
+            track_ids = None
+            if len(input_lst) > 1:
+                track_ids = input_lst[1:]
+            plot_scenario((scenario_info, 1), True, track_ids)
 
         elif re.compile("^tag([\s]+imported)?$", flags=re.IGNORECASE).match(user_input):
             print(
