@@ -724,7 +724,7 @@ def prompt_tags() -> Tuple[Optional[str], bool]:
 def prompt_filter_tags() -> Tuple[Optional[List[str]], Optional[int], bool]:
     filter_response = None
     print(
-        f"\nDo you want to filter the action with scenario tags?:\n"
+        f"\nDo you want to filter the output with scenario tags?:\n"
         "1. Yes, based on Tags Added\n"
         f"2. Yes, based on Imported Tags.\n"
         f"3. Yes, based on both tags merged.\n"
@@ -1022,16 +1022,18 @@ def import_tags_from_path(
     merge_tags(new_tags, imported_tags, True)
 
 
-def display_scenario_tags(tags_per_scenarios: Dict[str, List[str]]):
+def display_scenario_tags(tags_per_scenarios: Dict[str, List[str]], tags_imported: Dict[str, List[str]]):
     tag_data = []
+    print("--------------------------------\n")
     for scenario_id in tags_per_scenarios:
-        tag_data.append([scenario_id, tags_per_scenarios[scenario_id]])
+        tag_data.append([scenario_id, tags_per_scenarios.get(scenario_id, []), tags_imported.get(scenario_id, [])])
     print(
         tabulate(
             tag_data,
             headers=[
                 "Scenario ID",
-                "Tags",
+                "Tags Added",
+                "Tags Imported"
             ],
         )
     )
@@ -1058,7 +1060,7 @@ def merge_tags(new_imports, main_dict, display: bool = False):
         if display:
             print("\n-----------------------------------------------")
             print(f"Scenario Tags imported for {tf_file}:\n")
-            display_scenario_tags(new_imports[tf_file])
+            display_scenario_tags(new_imports[tf_file], {})
 
 
 def get_scenario_and_tag_dict(tfrecord_file: str):
@@ -1486,6 +1488,7 @@ def explore_tf_record(
             return True
 
         if user_input.lower() == "display":
+            display_scenario_tags(tfrecord_tags, imported_tfrecord_tags)
             tags, filter_display, stop_browser = prompt_filter_tags()
             if stop_browser or filter_display == 5:
                 if filter_display:
@@ -1516,6 +1519,7 @@ def explore_tf_record(
                     continue
 
             # Prompt to allow filtering response with tags
+            display_scenario_tags(tfrecord_tags, imported_tfrecord_tags)
             tags, filter_export, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
@@ -1567,6 +1571,7 @@ def explore_tf_record(
             print(
                 "Enter the path to directory to which you want to dump the images of the maps of scenarios?:\n"
             )
+            display_scenario_tags(tfrecord_tags, imported_tfrecord_tags)
             tags, filter_preview, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
@@ -1613,6 +1618,7 @@ def explore_tf_record(
             if len(valid_indexes) == 0:
                 continue
 
+            display_scenario_tags(tfrecord_tags, imported_tfrecord_tags)
             tags, filter_preview, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
@@ -1648,6 +1654,7 @@ def explore_tf_record(
             print(
                 "Enter the path to directory to which you want to dump the animations of the track objects of scenarios?:\n"
             )
+            display_scenario_tags(tfrecord_tags, imported_tfrecord_tags)
             tags, filter_animate, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
@@ -1695,6 +1702,7 @@ def explore_tf_record(
             if len(valid_indexes) == 0:
                 continue
 
+            display_scenario_tags(tfrecord_tags, imported_tfrecord_tags)
             tags, filter_animate, stop_browser = prompt_filter_tags()
             if stop_browser:
                 return True
