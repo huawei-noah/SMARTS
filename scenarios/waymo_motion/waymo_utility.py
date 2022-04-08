@@ -1022,19 +1022,23 @@ def import_tags_from_path(
     merge_tags(new_tags, imported_tags, True)
 
 
-def display_scenario_tags(tags_per_scenarios: Dict[str, List[str]], tags_imported: Dict[str, List[str]]):
+def display_scenario_tags(
+    tags_per_scenarios: Dict[str, List[str]], tags_imported: Dict[str, List[str]]
+):
     tag_data = []
     print("--------------------------------\n")
     for scenario_id in tags_per_scenarios:
-        tag_data.append([scenario_id, tags_per_scenarios.get(scenario_id, []), tags_imported.get(scenario_id, [])])
+        tag_data.append(
+            [
+                scenario_id,
+                tags_per_scenarios.get(scenario_id, []),
+                tags_imported.get(scenario_id, []),
+            ]
+        )
     print(
         tabulate(
             tag_data,
-            headers=[
-                "Scenario ID",
-                "Tags Added",
-                "Tags Imported"
-            ],
+            headers=["Scenario ID", "Tags Added", "Tags Imported"],
         )
     )
     print("\n")
@@ -1568,9 +1572,6 @@ def explore_tf_record(
             print_commands = True
 
         elif re.compile("^preview[\s]+all$", flags=re.IGNORECASE).match(user_input):
-            print(
-                "Enter the path to directory to which you want to dump the images of the maps of scenarios?:\n"
-            )
             display_scenario_tags(tfrecord_tags, imported_tfrecord_tags)
             tags, filter_preview, stop_browser = prompt_filter_tags()
             if stop_browser:
@@ -1579,6 +1580,9 @@ def explore_tf_record(
                 print_commands = True
                 continue
 
+            print(
+                "Enter the path to directory to which you want to dump the images of the maps of scenarios?:\n"
+            )
             target_base_path, stop_browser = prompt_target_path(default_target_path)
             if stop_browser:
                 return True
@@ -1651,9 +1655,6 @@ def explore_tf_record(
                 print("No map images were plotted as no filter tags matched\n")
 
         elif re.compile("^animate[\s]+all$", flags=re.IGNORECASE).match(user_input):
-            print(
-                "Enter the path to directory to which you want to dump the animations of the track objects of scenarios?:\n"
-            )
             display_scenario_tags(tfrecord_tags, imported_tfrecord_tags)
             tags, filter_animate, stop_browser = prompt_filter_tags()
             if stop_browser:
@@ -1662,6 +1663,9 @@ def explore_tf_record(
                 print_commands = True
                 continue
 
+            print(
+                "Enter the path to directory to which you want to dump the animations of the track objects of scenarios?:\n"
+            )
             target_base_path, stop_browser = prompt_target_path(default_target_path)
             if stop_browser:
                 return True
