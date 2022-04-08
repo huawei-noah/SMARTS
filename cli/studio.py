@@ -238,7 +238,7 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
 
 @scenario_cli.command(
     name="browse-waymo",
-    help="Browse Waymo TfRecord datasets using a Text based Browser Utility",
+    help="Browse Waymo TFRecord datasets using a text-based browser utility",
 )
 @click.argument(
     "tfrecords",
