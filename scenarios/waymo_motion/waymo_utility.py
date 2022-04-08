@@ -168,17 +168,6 @@ def get_map_features_for_scenario(scenario: scenario_pb2.Scenario) -> Dict:
     return map_features
 
 
-def get_traffic_light_lanes(scenario: scenario_pb2.Scenario) -> List[str]:
-    num_steps = len(scenario.timestamps_seconds)
-    tls_lanes = []
-    for i in range(num_steps):
-        dynamic_states = scenario.dynamic_map_states[i]
-        for j in range(len(dynamic_states.lane_states)):
-            lane_state = dynamic_states.lane_states[j]
-            tls_lanes.append(lane_state.lane)
-    return tls_lanes
-
-
 def get_object_type_count(trajectories):
     cars, pedestrian, cyclist, other = [], [], [], []
     ego = None
@@ -216,68 +205,10 @@ def get_trajectory_data(waymo_scenario: scenario_pb2.Scenario):
                 row["position_y"] = obj_state.center_y
                 rows.append(row)
 
-            # Second pass -- align timesteps to 10 Hz and interpolate trajectory data if needed
-            interp_rows = [None] * num_steps
-            for j in range(num_steps):
-                row = rows[j]
-                timestep = 0.1
-                time_current = row["sim_time"]
-                time_expected = round(j * timestep, 3)
-                time_error = time_current - time_expected
-
-                if not row["valid"] or time_error == 0:
-                    continue
-
-                if time_error > 0:
-                    # We can't interpolate if the previous element doesn't exist or is invalid
-                    if j == 0 or not rows[j - 1]["valid"]:
-                        continue
-
-                    # Interpolate backwards using previous timestep
-                    interp_row = {"sim_time": time_expected}
-
-                    prev_row = rows[j - 1]
-                    prev_time = prev_row["sim_time"]
-
-                    t = (time_expected - prev_time) / (time_current - prev_time)
-                    interp_row["position_x"] = lerp(
-                        prev_row["position_x"], row["position_x"], t
-                    )
-                    interp_row["position_y"] = lerp(
-                        prev_row["position_y"], row["position_y"], t
-                    )
-                    interp_rows[j] = interp_row
-                else:
-                    # We can't interpolate if the next element doesn't exist or is invalid
-                    if (
-                        j == len(scenario.timestamps_seconds) - 1
-                        or not rows[j + 1]["valid"]
-                    ):
-                        continue
-
-                    # Interpolate forwards using next timestep
-                    interp_row = {"sim_time": time_expected}
-
-                    next_row = rows[j + 1]
-                    next_time = next_row["sim_time"]
-
-                    t = (time_expected - time_current) / (next_time - time_current)
-                    interp_row["position_x"] = lerp(
-                        row["position_x"], next_row["position_x"], t
-                    )
-                    interp_row["position_y"] = lerp(
-                        row["position_y"], next_row["position_y"], t
-                    )
-                    interp_rows[j] = interp_row
-
-            # Third pass -- filter invalid states, replace interpolated values
+            # Second pass --remove invalid data
             for j in range(num_steps):
                 if not rows[j]["valid"]:
                     continue
-                if interp_rows[j] is not None:
-                    rows[j]["sim_time"] = interp_rows[j]["sim_time"]
-                    rows[j]["position_x"] = interp_rows[j]["position_x"]
-                    rows[j]["position_y"] = interp_rows[j]["position_y"]
                 yield rows[j]
 
     trajectories = {}
@@ -1471,8 +1402,8 @@ def explore_tf_record(
                 f"                             The indexes should be an integer between 1 and {len(scenario_ids)} separated by space\n"
                 f"                             The exports can be filtered based on the tags chosen in a subsequent option.\n"
                 "4. `preview all` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path.\n"
-                "5. `preview <indexes>` --> Plot and display the maps of these scenarios at these index of the table.\n"
-                f"                          The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
+                "5. `preview` or `preview <indexes>` --> Plot and display the maps of these scenarios at these indexes of the table  (or all the scenarios if just `preview`) .\n"
+                f"                                       The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
                 f"6. `animate all` --> Plot and dump the animations the trajectories of objects on map of all scenarios in this tf_record to a target path.\n"
                 f"7. `animate` or `animate <indexes>` --> Plot the map and animate the trajectories of objects of all scenarios if just `animate` or scenario at these indexes of the table.\n"
                 f"                                        The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
@@ -1614,15 +1545,17 @@ def explore_tf_record(
             )
             print_commands = True
 
-        elif re.compile("^preview[\s]+(?:\s*(\d+))+$", flags=re.IGNORECASE).match(
-            user_input
-        ):
+        elif user_input.lower() == "preview" or re.compile(
+            "^preview[\s]+(?:\s*(\d+))+$", flags=re.IGNORECASE
+        ).match(user_input):
             input_lst = user_input.split()
-
-            # Check if index passed is valid
-            valid_indexes = check_index_validity(
-                input_lst[1:], len(scenario_ids), "preview"
-            )
+            if len(input_lst) == 1:
+                valid_indexes = [i for i in range(len(scenario_ids))]
+            else:
+                # Check if index passed is valid
+                valid_indexes = check_index_validity(
+                    input_lst[1:], len(scenario_ids), "preview"
+                )
             if len(valid_indexes) == 0:
                 continue
 
