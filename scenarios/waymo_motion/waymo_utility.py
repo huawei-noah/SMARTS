@@ -507,7 +507,6 @@ def plot_scenarios(
 
         # Resize figure
         mng = plt.get_current_fig_manager()
-        mng.resize(1000, 1000)
 
         if animate_trajectories:
             # Plot Trajectories
@@ -567,11 +566,6 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=
         mng = plt.get_current_fig_manager()
         plt.title(f"Scenario {scenario_id}")
 
-        # Resize figure
-        w = 1000
-        h = 1000
-        mng.resize(w, h)
-
         # Plot map
         if scenario_dict[scenario_id][1] is None:
             scenario_dict[scenario_id][1] = get_map_features_for_scenario(scenario)
@@ -599,11 +593,11 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=
                 return drawn_pts
 
             # Set Animation
-            anim = FuncAnimation(fig, update, frames=max_len, blit=True, interval=100)
+            anim = FuncAnimation(fig, update, frames=range(1, len(max_len)), blit=True, interval=100)
             out_path = os.path.join(
                 os.path.abspath(target_base_path), f"scenario-{scenario_id}.mp4"
             )
-            anim.save(out_path, writer=FFMpegWriter(fps=15))
+            anim.save(out_path)
 
         else:
             plt.legend(handles=all_handles)
@@ -611,7 +605,7 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=
                 os.path.abspath(target_base_path), f"scenario-{scenario_id}.png"
             )
             fig = plt.gcf()
-            fig.set_size_inches(w / 100, h / 100)
+            fig.set_size_inches(1000 / 100, 1000 / 100)
             fig.savefig(out_path, dpi=100)
 
         print(f"Saving {out_path}")
@@ -727,9 +721,6 @@ def prompt_target_path(
                 )
 
     while not valid_path:
-        print(
-            "Enter the path to directory to which you want to save the command output?:\n"
-        )
         try:
             response = input("\nEnter Path: ")
             stripped_path = response.strip("[ \"']")
@@ -1466,6 +1457,9 @@ def explore_tf_record(
                 print_commands = True
                 continue
 
+            print(
+                "Enter the path to directory to which you want to export the scenarios:"
+            )
             # Prompt to input target base path
             target_base_path, stop_browser = prompt_target_path(default_target_path)
             if stop_browser:
@@ -1516,7 +1510,7 @@ def explore_tf_record(
                 continue
 
             print(
-                "Enter the path to directory to which you want to dump the images of the maps of scenarios?:\n"
+                "Enter the path to directory to which you want to dump the images of the maps of scenarios?:"
             )
             target_base_path, stop_browser = prompt_target_path(default_target_path)
             if stop_browser:
@@ -1608,7 +1602,7 @@ def explore_tf_record(
                 continue
 
             print(
-                "Enter the path to directory to which you want to dump the animations of the track objects of scenarios?:\n"
+                "Enter the path to directory to which you want to dump the animations of the track objects of scenarios?:"
             )
             target_base_path, stop_browser = prompt_target_path(default_target_path)
             if stop_browser:
@@ -2023,6 +2017,9 @@ def explore_scenario(
             return True
 
         if user_input.lower() == "export":
+            print(
+                "Enter the path to directory to which you want to export this scenario:"
+            )
             # Prompt users to input target base path
             target_base_path, stop_browser = prompt_target_path(default_target_path)
             if stop_browser:
