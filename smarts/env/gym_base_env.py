@@ -35,13 +35,19 @@ from smarts.env.wrappers.format_obs import _make_space
 from smarts.zoo.agent_spec import AgentSpec
 
 
-ACTION_SPACES = {"Continuous": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-                "ActuatorDynamic": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-                "Lane": gym.spaces.Discrete(4),
-                "LaneWithContinuousSpeed": gym.spaces.Box(low=-1e10, high=1e10, shape=(2,), dtype=np.float32),
-                "Trajectory": gym.spaces.Box(low=-1e10, high=1e10, shape=(4,50), dtype=np.float32),
-                "MPC": gym.spaces.Box(low=-1e10, high=1e10, shape=(4,50), dtype=np.float32),
-                }                
+ACTION_SPACES = {
+    "Continuous": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+    "ActuatorDynamic": gym.spaces.Box(
+        low=-1e10, high=1e10, shape=(3,), dtype=np.float32
+    ),
+    "Lane": gym.spaces.Discrete(4),
+    "LaneWithContinuousSpeed": gym.spaces.Box(
+        low=-1e10, high=1e10, shape=(2,), dtype=np.float32
+    ),
+    "Trajectory": gym.spaces.Box(low=-1e10, high=1e10, shape=(4, 50), dtype=np.float32),
+    "MPC": gym.spaces.Box(low=-1e10, high=1e10, shape=(4, 50), dtype=np.float32),
+}
+
 
 class GymBaseEnv(gym.Env):
     """A generic environment for various driving tasks simulated by SMARTS."""
@@ -140,11 +146,13 @@ class GymBaseEnv(gym.Env):
                     interfaces.update({interface: val})
 
             obs_spaces[agent_id] = gym.spaces.Dict(_make_space(interfaces))
-            act_spaces[agent_id] = ACTION_SPACES[self.agent_specs[agent_id].interface.action.name]
-        
+            act_spaces[agent_id] = ACTION_SPACES[
+                self.agent_specs[agent_id].interface.action.name
+            ]
+
         self.observation_space = gym.spaces.Dict(obs_spaces)
         self.action_space = gym.spaces.Dict(act_spaces)
-    
+
         self._dones_registered = 0
 
         self._scenarios_iterator = Scenario.scenario_variations(
@@ -247,9 +255,7 @@ class GymBaseEnv(gym.Env):
 
     def step(
         self, agent_actions
-    ) -> Tuple[
-        Dict[str, Observation], Dict[str, float], bool, Dict[str, Any]
-    ]:
+    ) -> Tuple[Dict[str, Observation], Dict[str, float], bool, Dict[str, Any]]:
         """Steps the environment.
 
         Args:
@@ -257,8 +263,8 @@ class GymBaseEnv(gym.Env):
 
         Returns:
             Tuple[ Dict[str, Observation], Dict[str, float], bool Dict[str, Any]]:
-                Observations, rewards, done and infos. 
-                Observations, rewards and infos are individual to an agent, 
+                Observations, rewards, done and infos.
+                Observations, rewards and infos are individual to an agent,
                 done is related to the end of an episode
         """
         agent_actions = {
@@ -270,14 +276,18 @@ class GymBaseEnv(gym.Env):
             isinstance(key, str) for key in agent_actions.keys()
         ), "Expected Dict[str, any]"
 
-        for agent_id in agent_actions:            
-            assert np.shape(agent_actions[agent_id]) == self.action_space[agent_id].shape \
-            , "Action shape does not correspond to action space"
+        for agent_id in agent_actions:
+            assert (
+                np.shape(agent_actions[agent_id]) == self.action_space[agent_id].shape
+            ), "Action shape does not correspond to action space"
 
             if type(self.action_space[agent_id]) == gym.spaces.Box:
                 for i in range(len(agent_actions[agent_id])):
-                    assert (self.action_space[agent_id].low[i] <= agent_actions[agent_id][i] <= self.action_space[agent_id].high[i]) \
-                    , "Action is out of range"
+                    assert (
+                        self.action_space[agent_id].low[i]
+                        <= agent_actions[agent_id][i]
+                        <= self.action_space[agent_id].high[i]
+                    ), "Action is out of range"
 
         observations, rewards, dones, extras = None, None, None, None
         with timeit("SMARTS Simulation/Scenario Step", self._log):
@@ -299,7 +309,9 @@ class GymBaseEnv(gym.Env):
             infos[agent_id] = agent_spec.info_adapter(observation, reward, info)
 
         for agent_id in observations:
-            assert self.observation_space[agent_id], "Agent does not exist in observation space"
+            assert self.observation_space[
+                agent_id
+            ], "Agent does not exist in observation space"
             for interface in {
                 "drivable_area_grid_map",
                 "lidar",
@@ -309,7 +321,9 @@ class GymBaseEnv(gym.Env):
                 "waypoints",
             }:
                 if getattr(self.agent_specs[agent_id].interface, interface, False):
-                    assert self.observation_space[agent_id][interface], "Sensor does not exist in observation space"
+                    assert self.observation_space[agent_id][
+                        interface
+                    ], "Sensor does not exist in observation space"
 
         for done in dones.values():
             self._dones_registered += 1 if done else 0
@@ -324,7 +338,7 @@ class GymBaseEnv(gym.Env):
         Returns:
             Dict[str, Observation]: Agents' observation.
         """
-        
+
         self._dones_registered = 0
 
         scenario = next(self._scenarios_iterator)
