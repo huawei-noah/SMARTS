@@ -769,7 +769,7 @@ def prompt_target_path(
     valid_path = False
     if default_target_path is not None:
         print(
-            f"Which path do you want to export scenario to?:\n"
+            f"Which path do you want to save the command output to?:\n"
             "1. Default Target Path.\n"
             f"2. Custom Target Path.\n"
             "3. Go back to the Browser.\n"
@@ -797,7 +797,7 @@ def prompt_target_path(
 
     while not valid_path:
         print(
-            "Enter the path to directory to which you want to export the scenarios?:\n"
+            "Enter the path to directory to which you want to save the command output?:\n"
         )
         try:
             response = input("\nEnter Path: ")
@@ -833,7 +833,9 @@ def prompt_export_before_exiting(
             response = input("\nResponse: ")
             stripped_response = response.strip()
         except EOFError:
-            print("Raised EOF. Your tags won't be saved. Attempting to exit browser.")
+            print(
+                "Raised EOF. Your tags won't be saved unless explicitly exported before. Attempting to exit browser."
+            )
             return True
         if re.compile("^[1-3]$", re.IGNORECASE).match(stripped_response):
             filter_response = int(stripped_response)
@@ -863,7 +865,7 @@ def prompt_export_before_exiting(
                     stripped_response = response.strip()
                 except EOFError:
                     print(
-                        "Raised EOF. Your tags won't be saved. Attempting to exit browser.\n"
+                        "Raised EOF. Your tags won't be saved unless explicitly exported before. Attempting to exit browser.\n"
                     )
                     return True
                 if re.compile("^(\s*(\d+))+$", re.IGNORECASE).match(stripped_response):
@@ -915,7 +917,7 @@ def export_tags_to_path(
                 stripped_response = response.strip()
             except EOFError:
                 print(
-                    "Raised EOF. Your tags won't be saved. Attempting to exit browser."
+                    "Raised EOF. Your tags won't be saved unless explicitly exported before. Attempting to exit browser."
                 )
                 return True
             if re.compile("^[1-3]$", re.IGNORECASE).match(stripped_response):
@@ -967,7 +969,9 @@ def export_tags_to_path(
             response = input("\nEnter Path: ")
             stripped_path = response.strip("[ \"']")
         except EOFError:
-            print("Raised EOF. Your tags won't be saved. Attempting to exit browser.")
+            print(
+                "Raised EOF. Your tags won't be saved unless explicitly exported before. Attempting to exit browser."
+            )
             return True
 
         # Check if .json file path is valid
