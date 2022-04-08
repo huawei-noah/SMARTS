@@ -1474,8 +1474,8 @@ def explore_tf_record(
                 "5. `preview <indexes>` --> Plot and display the maps of these scenarios at these index of the table.\n"
                 f"                          The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
                 f"6. `animate all` --> Plot and dump the animations the trajectories of objects on map of all scenarios in this tf_record to a target path.\n"
-                f"7. `animate <indexes>` --> Plot the map and animate the trajectories of objects of scenario at this index of the table.\n"
-                f"                           The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
+                f"7. `animate` or `animate <indexes>` --> Plot the map and animate the trajectories of objects of all scenarios if just `animate` or scenario at these indexes of the table.\n"
+                f"                                        The indexes should be an integer between 1 and {len(scenario_ids)} and should be separated by space.\n"
                 f"8. `tag all/<indexes>` or `tag imported all/<indexes>` --> Tag the scenarios at these indexes of the table or all with tags mentioned.\n"
                 f"                                                           Optionally if you call with `tag imported` then the tags for these scenarios will be added to imported tag list.\n"
                 f"                                                           If indexes, then they need to be integers between 1 and {len(scenario_ids)} and should be separated by space.\n"
@@ -1657,6 +1657,13 @@ def explore_tf_record(
                 plot_scenarios(scenarios_to_plot, False)
             else:
                 print("No map images were plotted as no filter tags matched\n")
+            display_scenarios_in_tfrecord(
+                tfrecord,
+                scenario_dict,
+                tfrecord_tags,
+                imported_tfrecord_tags,
+            )
+            print_commands = True
 
         elif re.compile("^animate[\s]+all$", flags=re.IGNORECASE).match(user_input):
             display_scenario_tags(tfrecord_tags, imported_tfrecord_tags)
@@ -1698,15 +1705,17 @@ def explore_tf_record(
             )
             print_commands = True
 
-        elif re.compile("^animate[\s]+(?:\s*(\d+))+$", flags=re.IGNORECASE).match(
-            user_input
-        ):
+        elif user_input.lower() == "animate" or re.compile(
+            "^animate[\s]+(?:\s*(\d+))+$", flags=re.IGNORECASE
+        ).match(user_input):
             input_lst = user_input.split()
-
-            # Check if index passed is valid
-            valid_indexes = check_index_validity(
-                input_lst[1:], len(scenario_ids), "animate"
-            )
+            if len(input_lst) == 1:
+                valid_indexes = [i for i in range(len(scenario_ids))]
+            else:
+                # Check if index passed is valid
+                valid_indexes = check_index_validity(
+                    input_lst[1:], len(scenario_ids), "animate"
+                )
             if len(valid_indexes) == 0:
                 continue
 
@@ -1746,6 +1755,13 @@ def explore_tf_record(
                 plot_scenarios(scenarios_to_animate, True)
             else:
                 print("No animations were shown as no filter tags matched\n")
+            display_scenarios_in_tfrecord(
+                tfrecord,
+                scenario_dict,
+                tfrecord_tags,
+                imported_tfrecord_tags,
+            )
+            print_commands = True
 
         elif re.compile(
             "^tag([\s]+imported)?[\s]+(all|(?:\s*(\d+))+)$", flags=re.IGNORECASE
