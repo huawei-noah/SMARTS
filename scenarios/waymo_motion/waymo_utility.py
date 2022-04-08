@@ -32,7 +32,8 @@ import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Generator
-
+from itertools import product
+from multiprocessing import Pool, cpu_count
 import matplotlib.pyplot as plt
 import yaml
 from matplotlib.animation import FuncAnimation, FFMpegWriter
@@ -535,6 +536,72 @@ def plot_scenarios(
     plt.show()
 
 
+def save_plot(scenario_id: str, target_path: str, scenario_dict, animate: bool, filter_tags):
+    if filter_tags:
+        tags, filter_preview, tfrecord_tags, imported_tfrecord_tags = filter_tags
+        if filter_scenario(
+            tfrecord_tags.get(scenario_id, []),
+            imported_tfrecord_tags.get(scenario_id, []),
+            (tags, filter_preview),
+        ):
+            return False
+
+    scenario = scenario_dict[scenario_id][0]
+
+    fig = plt.figure()
+    mng = plt.get_current_fig_manager()
+    mng.resize(1000, 1000)
+    plt.title(f"Scenario {scenario_id}")
+
+    # Plot map
+    if scenario_dict[scenario_id][1] is None:
+        scenario_dict[scenario_id][1] = get_map_features_for_scenario(scenario)
+    plot_map_features(scenario_dict[scenario_id][1], [])
+    all_handles = get_map_handles()
+
+    if animate:
+        # Plot Trajectories
+        if scenario_dict[scenario_id][2] is None:
+            scenario_dict[scenario_id][2] = get_trajectory_data(scenario)
+        data, points, max_len, _ = plot_trajectories(
+            scenario_dict[scenario_id][2],
+            scenario_dict[scenario_id][0].objects_of_interest,
+            [],
+        )
+        all_handles.extend(get_trajectory_handles())
+        plt.legend(handles=all_handles)
+
+        def update(i):
+            drawn_pts = []
+            for (xs, ys), point in zip(data, points):
+                if i < len(xs):
+                    point.set_data(xs[i], ys[i])
+                    drawn_pts.append(point)
+            return drawn_pts
+
+        # Set Animation
+        anim = FuncAnimation(
+            fig, update, frames=range(1, max_len), blit=True, interval=100
+        )
+        out_path = os.path.join(
+            os.path.abspath(target_path), f"scenario-{scenario_id}.mp4"
+        )
+        anim.save(out_path, writer=FFMpegWriter(fps=15))
+
+    else:
+        plt.legend(handles=all_handles)
+        out_path = os.path.join(
+            os.path.abspath(target_path), f"scenario-{scenario_id}.png"
+        )
+        fig = plt.gcf()
+        fig.set_size_inches(1000 / 100, 1000 / 100)
+        fig.savefig(out_path, dpi=100)
+
+    print(f"Saving {out_path}")
+    plt.close("all")
+    return True
+
+
 def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=None):
     try:
         os.makedirs(os.path.abspath(target_base_path))
@@ -544,72 +611,18 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=
     except (OSError, RuntimeError):
         print(f"{target_base_path} is an invalid path. Please enter a valid path")
         return
-    count_saved = 0
-    for scenario_id in scenario_dict:
-        if filter_tags:
-            tags, filter_preview, tfrecord_tags, imported_tfrecord_tags = filter_tags
-            if filter_scenario(
-                tfrecord_tags.get(scenario_id, []),
-                imported_tfrecord_tags.get(scenario_id, []),
-                (tags, filter_preview),
-            ):
-                count_saved += 1
-                pass
-            else:
-                continue
-        scenario = scenario_dict[scenario_id][0]
 
-        fig = plt.figure()
-        mng = plt.get_current_fig_manager()
-        plt.title(f"Scenario {scenario_id}")
+    plot_parameters = product(
+        [scenario_id for scenario_id in scenario_dict],
+        [target_base_path],
+        [scenario_dict],
+        [animate],
+        [filter_tags],
+    )
+    with Pool(min(cpu_count(), len(scenario_dict))) as pool:
+        plots_dumped = pool.starmap(save_plot, plot_parameters)
 
-        # Plot map
-        if scenario_dict[scenario_id][1] is None:
-            scenario_dict[scenario_id][1] = get_map_features_for_scenario(scenario)
-        plot_map_features(scenario_dict[scenario_id][1], [])
-        all_handles = get_map_handles()
-
-        if animate:
-            # Plot Trajectories
-            if scenario_dict[scenario_id][2] is None:
-                scenario_dict[scenario_id][2] = get_trajectory_data(scenario)
-            data, points, max_len, _ = plot_trajectories(
-                scenario_dict[scenario_id][2],
-                scenario_dict[scenario_id][0].objects_of_interest,
-                [],
-            )
-            all_handles.extend(get_trajectory_handles())
-            plt.legend(handles=all_handles)
-
-            def update(i):
-                drawn_pts = []
-                for (xs, ys), point in zip(data, points):
-                    if i < len(xs):
-                        point.set_data(xs[i], ys[i])
-                        drawn_pts.append(point)
-                return drawn_pts
-
-            # Set Animation
-            anim = FuncAnimation(
-                fig, update, frames=range(1, max_len), blit=True, interval=100
-            )
-            out_path = os.path.join(
-                os.path.abspath(target_base_path), f"scenario-{scenario_id}.mp4"
-            )
-            anim.save(out_path)
-
-        else:
-            plt.legend(handles=all_handles)
-            out_path = os.path.join(
-                os.path.abspath(target_base_path), f"scenario-{scenario_id}.png"
-            )
-            fig = plt.gcf()
-            fig.set_size_inches(1000 / 100, 1000 / 100)
-            fig.savefig(out_path, dpi=100)
-
-        print(f"Saving {out_path}")
-        plt.close("all")
-    if count_saved > 0:
+    if any(plots_dumped):
         print(f"All images or recordings saved at {target_base_path}")
     else:
         print(f"No images or recordings saved as no tags matched")
@@ -1520,7 +1533,7 @@ def explore_tf_record(
 
             # Dump all the scenario plots of this tfrecord file to this target base path
             print(
-                f"Plotting and dumping all the scenario maps in {tfrecord} tfrecord file"
+                f"Plotting and dumping all the scenario maps in {os.path.basename(tfrecord)} tfrecord file"
             )
             dump_plots(
                 target_base_path,
@@ -1612,7 +1625,7 @@ def explore_tf_record(
 
             # Dump all the scenario plots of this tfrecord file to this target base path
             print(
-                f"Plotting and dumping all the scenarios animations in {tfrecord} tfrecord file"
+                f"Plotting and dumping all the scenarios animations in {os.path.basename(tfrecord)} tfrecord file"
             )
             dump_plots(
                 target_base_path,

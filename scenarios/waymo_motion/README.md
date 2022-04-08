@@ -141,6 +141,7 @@ Commands you can execute at this level:
 * Space between words or parameters for commands can be variable but may lead to invalid command.
 * When downloading the dataset, make sure not to change the name of the TFRecord files as they are used for matching TFRecord names when importing tags.
 * .json file having the tags for TFRecords scenarios need to have the specific dictionary structure mentioned above.
+* `animate all` uses `ffmpeg` writer to save the animations which don't exist by default in linux and MACOS machines. So you can install it using `sudo apt install ffmpeg` in linux or `brew install ffmpeg` in MacOS. You can read more about this issue [here](https://github.com/kkroening/ffmpeg-python/issues/251).
 * `animate <indexes>` command is relatively slow, so it is recommended to animate only a small number of scenarios together.
 * Do not modify files in `scenarios/waymo_motion/templates` as it contains the templates for `scenario.py` and `waymo.yaml` that are exported during the `export` command.
 ```
