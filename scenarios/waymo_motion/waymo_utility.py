@@ -591,7 +591,7 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=
 
             # Set Animation
             anim = FuncAnimation(
-                fig, update, frames=range(1, len(max_len)), blit=True, interval=100
+                fig, update, frames=range(1, max_len), blit=True, interval=100
             )
             out_path = os.path.join(
                 os.path.abspath(target_base_path), f"scenario-{scenario_id}.mp4"
