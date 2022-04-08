@@ -536,7 +536,9 @@ def plot_scenarios(
     plt.show()
 
 
-def save_plot(scenario_id: str, target_path: str, scenario_dict, animate: bool, filter_tags):
+def save_plot(
+    scenario_id: str, target_path: str, scenario_dict, animate: bool, filter_tags
+) -> bool:
     if filter_tags:
         tags, filter_preview, tfrecord_tags, imported_tfrecord_tags = filter_tags
         if filter_scenario(
