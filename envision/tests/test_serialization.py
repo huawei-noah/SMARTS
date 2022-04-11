@@ -20,9 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from typing import Sequence
+
 import pytest
 
-from envision.serialization import _serialization_map, Context, EnvisionDataFormatter
+from envision.serialization import Context, EnvisionDataFormatter, _serialization_map
 from envision.types import State, TrafficActorState, TrafficActorType, VehicleType
 from smarts.core.coordinates import Heading
 from smarts.core.events import Events

@@ -20,13 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from collections import defaultdict
 import json
 import logging
 import multiprocessing
 import re
 import time
 import warnings
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Union
