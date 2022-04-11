@@ -7,7 +7,7 @@ smarts:
   img_meters: 64
   img_pixels: 112
   n_stack: 4 # Number of frames to stack as input to policy network
-  action_space: Lane # Either "Lane" or "Continuous"
+  action_space: Continuous # Either "Lane" or "Continuous"
   
   # Training
   train_steps: 1e8 # Number of training steps.
@@ -17,9 +17,17 @@ smarts:
 
   # Policy
   alg: PPO
-  # policy: l5kit
-  # policy: dreamer
   # policy: naturecnn
   # policy: customnaturecnn
-  policy: r2plus1d_18 
-  # img=pixels=112; img_meters=64; rgb; stack=4
+
+  # policy: l5kit
+  # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Continuous
+  # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Lane
+
+  # policy: dreamer
+  # img=pixels=64; img_meters=64; rgb; stack=4; action_space=Continuous
+  # img=pixels=64; img_meters=64; rgb; stack=4; action_space=Lane
+
+  policy: r2plus1d_18
+  # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Continuous
+  # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Lane

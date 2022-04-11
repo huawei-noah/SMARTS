@@ -47,7 +47,7 @@ def intersection_env(
     envision_record_data_replay_path: Optional[str] = None,
     img_meters=64,
     img_pixels=256,
-    action_space = "Continuous", # Either "Lane" or "Continuous".
+    action_space = "Continuous", # Either "Continuous" or "Lane".
 ):
     """An intersection environment where a single agent needs to make an
     unprotected left turn in the presence of traffic and without traffic
@@ -109,7 +109,8 @@ def intersection_env(
         collision=True,
         off_road=True,
         off_route=True,
-        on_shoulder=True,
+        # on_shoulder=True,
+        on_shoulder=False,
         wrong_way=False,
         not_moving=False,
         agents_alive=None,
