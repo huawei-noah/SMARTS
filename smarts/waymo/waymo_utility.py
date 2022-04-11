@@ -29,7 +29,6 @@ import re
 import shutil
 import struct
 import sys
-import time
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Generator
 from itertools import product
@@ -2146,7 +2145,7 @@ if __name__ == "__main__":
         description="Text based TfRecords Browser.",
     )
     parser.add_argument(
-        "files",
+        "tfrecords",
         help="A list of TFRecord file/folder paths. Each element can be either the path to "
         "tfrecord file or a directory of tfrecord files to browse from.",
         type=str,
@@ -2182,7 +2181,7 @@ if __name__ == "__main__":
                 f"Please make sure .json file path passed is valid and it exists."
             )
             exit()
-    for tf_path in args.files:
+    for tf_path in args.tfrecords:
         if not os.path.exists(os.path.abspath(tf_path)):
             print(
                 f"Path {args.file} does not exist and hence wont be browsed.\n"

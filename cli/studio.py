@@ -265,9 +265,9 @@ def browse_waymo_dataset(tfrecords, target_base_path, import_tags):
     if not tfrecords:
         # nargs=-1 in combination with a default value is not supported
         # if tfrecords is not given, set the known tfrecord directory as default
-        tfrecords = [os.path.join("scenarios", "waymo_motion", "waymo_data")]
+        tfrecords = [os.path.join("smarts", "waymo", "waymo_data")]
 
-    utility_path = os.path.join("scenarios", "waymo_motion", "waymo_utility.py")
+    utility_path = os.path.join("smarts", "waymo", "waymo_utility.py")
     subprocess_command = [
         sys.executable,
         utility_path,
