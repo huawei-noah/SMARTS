@@ -405,7 +405,11 @@ class WaymoMap(RoadMap):
         lane_dict["type"] = feat_dict["type"]
         lane_dict["speed_limit_mph"] = feat_dict["speed_limit_mph"]
         lane_dict["interpolating"] = feat_dict["interpolating"]
-        lane_dict["_normals"] = feat_dict["_normals"]
+        lane_dict["_normals"] = [
+            np
+            for i, np in enumerate(feat_dict["_normals"])
+            if linked_split.split.index <= i <= next_split_pt
+        ]
         lane_dict["_feature_id"] = feat_id
         lane_dict["lane_width"] = feat_dict["lane_width"]
         lane_dict["polyline"] = [
