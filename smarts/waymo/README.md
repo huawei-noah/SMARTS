@@ -10,7 +10,7 @@ The utility is independent of SMARTS and only has two dependencies.  You can ins
 pip install -e .[waymo]
 ```
 
-Next, download the dataset files from [Waymo Motion Dataset](https://waymo.com/open/download/#) to the folder `scenarios/waymo_motion/waymo_data` or your folder of choice. It is recommended to download the dataset files from the `uncompressed/scenario/training_20s` folder as they have the full traffic capture for each scenario.
+Next, download the dataset files from [Waymo Motion Dataset](https://waymo.com/open/download/#) to the folder `smarts/waymo/waymo_data` or your folder of choice. It is recommended to download the dataset files from the `uncompressed/scenario/training_20s` folder as they have the full traffic capture for each scenario.
 
 ## Running the Utility:
 It is recommended to run this script from the root or source level directory of the repo. The script can be run using the following command:
@@ -143,5 +143,5 @@ Commands you can execute at this level:
 * .json file having the tags for TFRecords scenarios need to have the specific dictionary structure mentioned above.
 * `animate all` uses `ffmpeg` writer to save the animations which don't exist by default in linux and MACOS machines. So you can install it using `sudo apt install ffmpeg` in linux or `brew install ffmpeg` in MacOS. You can read more about this issue [here](https://github.com/kkroening/ffmpeg-python/issues/251).
 * `animate <indexes>` command is relatively slow, so it is recommended to animate only a small number of scenarios together.
-* Do not modify files in `scenarios/waymo_motion/templates` as it contains the templates for `scenario.py` and `waymo.yaml` that are exported during the `export` command.
+* Do not modify files in `smarts/waymo/templates` contains the template for `scenario.py` that is exported during the `export` command.
 ```

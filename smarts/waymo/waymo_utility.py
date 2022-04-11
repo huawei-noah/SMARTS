@@ -2184,7 +2184,7 @@ if __name__ == "__main__":
     for tf_path in args.tfrecords:
         if not os.path.exists(os.path.abspath(tf_path)):
             print(
-                f"Path {args.file} does not exist and hence wont be browsed.\n"
+                f"Path {tf_path} does not exist and hence wont be browsed.\n"
                 f"Please make sure path passed is valid and it exists."
             )
         else:
