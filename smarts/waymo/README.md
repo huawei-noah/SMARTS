@@ -37,8 +37,30 @@ Some things to keep in mind:
 
 ## TFRecord Browser
 After running the program the first browser you will see is the `TFRecord Browser` which shows all the TFRecords you loaded in and the commands you can use to browse them further:
-![tfrecord_browser.png](extra/tfrecord_browser.png)
+```cmd
+Waymo tfRecords:
+  Index  TfRecords
+-------  -------------------------------------------------------------------------------------------------------------------------------------
+      1  /home/kyber/huawei/smarts_open/SMARTS/smarts/waymo/waymo_data/uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000
+  
+TfRecords Browser.
+You can use the following commands to further explore these datasets:
+1. `display all` --> Displays the info of all the scenarios from every tfRecord file together
+                     Displays can be filtered on the basis of tags in a subsequent option.
+2. `display <indexes>` --> Displays the info of tfRecord files at these indexes of the table.
+                           The indexes should be an integer between 1 and 1 and space separated.
+                            Displays can be filtered on the basis of tags.
+3. `explore <index>` --> Explore the tfRecord file at this index of the table.
+                         The index should be an integer between 1 and 1
+4. `import tags` --> Import the tags of tfRecords from a previously saved .json file.
+                     Only tags of tfRecords which are displayed above will be imported. Ensure the name of tfRecord match with the ones displayed above.
+5. `export tags all/<indexes>` --> Export the tags of the tfRecords at these indexes to a .json file.
+                                   Optionally you can use all instead to export tags of all tfRecords. The path to the .json file should be valid.
+6. `exit` --> Exit the program
 
+
+Command:
+```
 Commands you can execute at this level:
 1. `display all` &rarr; This displays the info of all the scenarios from every TFRecord file together. Displays can be filtered on the basis of tags which will be asked in the subsequent prompt.
 2. `display <indexes>` &rarr; This displays the info of TFRecord files at these indexes of the table. Displays can be filtered on the basis of tags which will be asked in the subsequent prompt.
@@ -70,11 +92,71 @@ Commands you can execute at this level:
 
 ## TFRecord Explorer
 After selecting the TFRecord to explore further, the second browser you will see is the `TFRecord Explorer` which shows the scenario info of all the scenarios in this file and the commands you can use to explore them further:
-![tfrecord_1](extra/tfrecord_1.png)
+```cmd
+TfRecord Explorer
+-----------------------------------------------
+61 scenarios in uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000:
+  Index  Scenario ID         Timestamps    Track Objects    Traffic Light States    Objects of Interest  Tags Added    Tags Imported
+-------  ----------------  ------------  ---------------  ----------------------  ---------------------  ------------  ---------------
+      1  c84cde79e51b087c           199              188                     199                      2  []            []
+      2  6cec26a9347e8574           199              178                     199                      2  []            []
+      3  fe6141aeb4061824           198               80                     198                      2  []            []
+      4  cc6e41f0505f273f           199               23                     199                      2  []            []
+      5  d9a14485bb4f49e8           199               51                     199                      2  []            []
+      6  e6cc567884b0e4f9           198              100                     198                      2  []            []
+      7  ef903b7abf6fc0fa           199               23                     199                      2  []            []
+      8  a7ea3da73ebb0ac7           199              152                     199                      2  []            []
+      9  4f30f060069bbeb9           199               74                     199                      2  []            []
+     10  20bf7bcc356ed3cd           198               30                     198                      2  []            []
+     11  979c88d4c48e80a1           199              130                     199                      2  []            []
+     12  570bd8a976d74b96           199               88                     199                      2  []            []
+     13  4b6f47123bc2c8ac           199               70                     199                      2  []            []
+     14  ea1fb0d50be9ae69           200              144                     200                      2  []            []
+     15  27f5fc6e3f44bdde           199              124                     199                      2  []            []
+     16  eaf07d60fa7bd546           199               47                     199                      2  []            []
+     17  4c311861c0fffa9a           199              119                     199                      2  []            []
+     18  1231c0c9a82e4f61           198              309                     198                      2  []            []
+     19  69ce11e9b69203e0           198               51                     198                      2  []            []
+     20  31e3acf12ee52d0c           198               77                     198                      2  []            []
+```
 .\
 .\
-.\
-![tfrecord_2.png](extra/tfrecord_2.png)
+.
+
+
+```cmd
+     58  b1b51cdb69de2d46           199              124                     199                      2  []            []
+     59  7e019d5f96e54dbd           198              117                     198                      2  []            []
+     60  7f625727984895a6           198              106                     198                      2  []            []
+     61  d4d4be8abeb61d17           198               35                     198                      2  []            []
+    
+
+uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000 TfRecord Browser.
+You can use the following commands to further explore these scenarios:
+1. `display` --> Display the scenarios in this tfrecord filtered based on the tags chosen in a subsequent option.
+2. `explore <index>` --> Select and explore further the scenario at this index of the table.
+                        The index should be an integer between 1 and 61
+3. `export all/<indexes>` --> Export the scenarios at these indexes or all of the table to a target path
+                             The indexes should be an integer between 1 and 61 separated by space
+                             The exports can be filtered based on the tags chosen in a subsequent option.
+4. `preview all` --> Plot and dump the images of the map of all scenarios in this tf_record to a target path.
+5. `preview` or `preview <indexes>` --> Plot and display the maps of these scenarios at these indexes of the table  (or all the scenarios if just `preview`) .
+                                       The indexes should be an integer between 1 and 61 and should be separated by space.
+6. `animate all` --> Plot and dump the animations the trajectories of objects on map of all scenarios in this tf_record to a target path.
+7. `animate` or `animate <indexes>` --> Plot the map and animate the trajectories of objects of all scenarios if just `animate` or scenario at these indexes of the table.
+                                        The indexes should be an integer between 1 and 61 and should be separated by space.
+8. `tag all/<indexes>` or `tag imported all/<indexes>` --> Tag the scenarios at these indexes of the table or all with tags mentioned.
+                                                           Optionally if you call with `tag imported` then the tags for these scenarios will be added to imported tag list.
+                                                           If indexes, then they need to be integers between 1 and 61 and should be separated by space.
+9. `untag all/<indexes>` or `untag imported all/<indexes>` --> Untag the scenarios at theses indexes of the table or all with tags mentioned.
+                                                               Optionally if you call with `untag imported` then the tags for these scenarios will be removed from imported tag list.
+                                                               If indexes, then they need to be integers between 1 and 61 and should be separated by space.
+10. `back` --> Go back to the tfrecords browser
+11. `exit` --> Exit the program
+
+
+Command:
+```
 
 Commands you can execute at this level:
 1. `display` &rarr; This displays the scenarios in this TFRecord filtered based on the tags chosen in a subsequent prompt.
@@ -124,8 +206,68 @@ Where the `input_path` and `scenario_id` will be modified accordingly.
 
 ## Scenario Explorer
 After selecting the scenario to explore further, the third browser you will see is the `Scenario Explorer` which shows the total number of different map features and their IDs, and the total number of different track objects and their IDs in the scenario:
-![scenario_1.png](extra/scenario_1.png)
-![scenario_2.png](extra/scenario_2.png)
+```cmd
+Scenario Explorer
+-----------------------------------------------
+Scenario c84cde79e51b087c Map Features:
+Scenario ID         Timestamps    Track Objects    Traffic Light States    Objects of Interest  Tags Added    Tags Imported
+----------------  ------------  ---------------  ----------------------  ---------------------  ------------  ---------------
+c84cde79e51b087c           199              188                     199                      2  []            []
+
+Scenario c84cde79e51b087c map data:
+  Lanes    Road Lines    Road Edges    Stop Signs    Crosswalks    Speed Bumps
+-------  ------------  ------------  ------------  ------------  -------------
+    180             2            32             6            14              2
+
+Lane Ids:  ['111', '129', '130', '131', '132', '133', '134', '135', '136', '137', '138', '139', '140', '141', '142', '143', '144', '145', '146', '147', '148', '180', '181', '182', '183', '184', '185', '186', '187', '188', '189', '190', '198', '202', '205', '238', '244', '245', '246', '248', '249', '250', '251', '252', '253', '254', '255', '256', '257', '258', '259', '260', '261', '262', '263', '264', '265', '266', '267', '268', '269', '270', '274', '291', '295', '296', '297', '298', '299', '300', '301', '302', '303', '304', '305', '306', '307', '308', '309', '310', '311', '312', '313', '314', '315', '316', '317', '318', '319', '320', '321', '322', '323', '324', '325', '326', '327', '328', '329', '330', '331', '332', '333', '334', '335', '336', '337', '338', '339', '340', '341', '342', '343', '344', '345', '346', '347', '348', '349', '350', '351', '352', '353', '354', '355', '356', '357', '358', '359', '360', '361', '362', '363', '364', '365', '366', '367', '368', '369', '370', '371', '372', '373', '374', '375', '376', '377', '378', '379', '380', '381', '382', '383', '384', '385', '386', '387', '388', '389', '390', '391', '392', '393', '394', '395', '396', '397', '398', '399', '400', '401', '402', '403', '404', '405', '406', '407', '436', '446', '451']
+
+Road Line Ids:  ['26', '63']
+
+Road Edge Ids:  ['3', '6', '14', '17', '25', '28', '29', '30', '38', '39', '42', '45', '46', '47', '48', '49', '50', '51', '52', '53', '55', '56', '57', '58', '59', '60', '61', '62', '64', '69', '77', '81']
+
+Stop Sign Ids:  ['512', '513', '514', '515', '516', '517']
+
+Crosswalk Ids:  ['496', '497', '498', '499', '500', '501', '502', '503', '504', '505', '506', '507', '508', '509']
+
+Speed Bumps Ids:  ['510', '511']
+
+-----------------------------------------------
+Trajectory Data
+Scenario ID         Cars    Pedestrians    Cyclists    Others
+----------------  ------  -------------  ----------  --------
+c84cde79e51b087c     151             37           0         0
+
+Track Object Ids:
+Ego Id:  6335
+
+Car Ids:  [3584, 3585, 3586, 3587, 3588, 3589, 3590, 3591, 3592, 3593, 3594, 3595, 3596, 3597, 3598, 3599, 3600, 3601, 3602, 3603, 3604, 3605, 3606, 3607, 3608, 3609, 3610, 3611, 3612, 3613, 3614, 3615, 3617, 3618, 3619, 3620, 3621, 3622, 3623, 3624, 3627, 3628, 3629, 3630, 3631, 3633, 3634, 3635, 3638, 3639, 3646, 3650, 3653, 3656, 3658, 3659, 3660, 3661, 3657, 3666, 3667, 3668, 3669, 3672, 3673, 3675, 3676, 3677, 3678, 3681, 3682, 3683, 3684, 3687, 3689, 3690, 3694, 3695, 3697, 3696, 3701, 3705, 3707, 3706, 3708, 3711, 3712, 3714, 3717, 3721, 3722, 3724, 3726, 3729, 3731, 3735, 3738, 3739, 3742, 3743, 3744, 3747, 3749, 3752, 3753, 3756, 3757, 3758, 3759, 3761, 3762, 3765, 3645, 3647, 3548, 3549, 3550, 3551, 3552, 3553, 3554, 3555, 3556, 3557, 3558, 3559, 3560, 3561, 3562, 3563, 3564, 3565, 3566, 3567, 3568, 3569, 3570, 3571, 3572, 3573, 3574, 3575, 3576, 3577, 3578, 3579, 3580, 3581, 3582, 3583]
+
+Pedestrian Ids:  [5178, 5179, 5180, 5181, 5182, 5183, 5184, 5185, 5186, 5187, 5188, 5189, 5191, 5210, 5211, 5220, 5212, 5213, 5231, 5233, 5238, 5242, 5246, 5195, 5252, 5254, 5255, 5222, 5223, 5225, 5234, 5235, 5241, 5201, 5248, 5202, 5207]
+
+Cyclist Ids:  []
+
+Other Ids:  []
+
+Object of Interest Ids:  [3562, 5207]
+
+
+Scenario c84cde79e51b087c.
+You can use the following commands to further this scenario:
+1. `export` --> Export the scenario to a target base path asked to input in a subsequent option.
+2. `preview` or `preview <feature_ids>` --> Plot and display the map of the scenario with the feature ids highlighted in Blue if passed.
+                                            The feature ids need to be separated by space, be numbers from the map feature ids mentioned above and will not be highlighted if they dont exist.
+3. `animate` or `animate <track_ids> --> Animate the trajectories of track objects on the map of this scenario with the track ids highlighted in Red if passed.
+                                        The track ids need to be separated by space, be numbers from the track object ids mentioned above and will not be highlighted if they dont exist.
+4. `tag` or `tag imported` --> Tag the scenario with tags mentioned.
+                                Optionally if you call with `tag imported` then the tags will be added to imported tag list.
+5. `untag` or `untag imported` --> Untag the scenario with tags mentioned.
+                                    Optionally if you call with `untag imported` then the tags will be removed to imported tag list.
+6. `back` --> Go back to this scenario's tfrecord browser.
+7. `exit` --> Exit the program
+
+
+Command:
+```
 
 Commands you can execute at this level:
 1. `export` &rarr; Export the scenario to a target base path asked to input in a subsequent prompt. If you have run the script with the `--target-base-path` option, the subsequent prompt will ask if you want to use custom path or use the default path passed.
