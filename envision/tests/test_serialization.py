@@ -19,15 +19,29 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Sequence
+import os
+from typing import Iterator, Sequence
+from unittest import mock
+from unittest.mock import MagicMock, Mock, PropertyMock
 
 import pytest
 
-from envision.serialization import Operation, EnvisionDataFormatter, _serialization_map
+import smarts.sstudio.types as t
+from envision.client import Client
+from envision.serialization import EnvisionDataFormatter, Operation, _serialization_map
 from envision.types import State, TrafficActorState, TrafficActorType, VehicleType
+from smarts.core import seed
+from smarts.core.agent_interface import AgentInterface
+from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading
 from smarts.core.events import Events
 from smarts.core.road_map import Waypoint
+from smarts.core.scenario import Scenario
+from smarts.core.smarts import SMARTS
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.core.tests.helpers.bubbles import bubble_geometry
+from smarts.core.tests.helpers.scenario import temp_scenario
+from smarts.sstudio.genscenario import gen_scenario
 
 
 @pytest.fixture
@@ -259,3 +273,168 @@ def test_complex_data(complex_data):
         data = es.resolve()
 
         assert data == item[1]
+
+
+@pytest.fixture
+def sim_data():
+    return [
+        0.1,
+        None,
+        "straight",
+        [
+            [
+                0,
+                0,
+                -1.84,
+                -3.2,
+                0.0,
+                -1.5707963267948966,
+                4.617184127478896,
+                None,
+                0,
+                [],
+                [],
+                [],
+                [],
+                0,
+                4,
+            ],
+            [
+                0,
+                0,
+                -1.84,
+                0.0,
+                0.0,
+                -1.5707963267948966,
+                5.000772908467668,
+                None,
+                0,
+                [],
+                [],
+                [],
+                [],
+                0,
+                4,
+            ],
+            [
+                0,
+                0,
+                -1.84,
+                3.2,
+                0.0,
+                -1.5707963267948966,
+                4.914008397602895,
+                None,
+                0,
+                [],
+                [],
+                [],
+                [],
+                0,
+                4,
+            ],
+        ],
+        [[90.0, -10.0, 90.0, 10.0, 110.0, 10.0, 110.0, -10.0, 90.0, -10.0]],
+        {0: None},
+        [],
+    ]
+
+
+@pytest.fixture
+def bubble():
+    return t.Bubble(
+        zone=t.PositionalZone(pos=(100, 0), size=(20, 20)),
+        margin=10,
+        actor=t.BoidAgentActor(
+            # TODO: Provide a more self-contained way to build agent locators for tests
+            name="hive-mind",
+            agent_locator="scenarios.straight.agent_prefabs:pose-boid-agent-v0",
+        ),
+    )
+
+
+@pytest.fixture
+def scenarios(bubble):
+    with temp_scenario(name="straight", map="maps/straight.net.xml") as scenario_root:
+        traffic = t.Traffic(
+            flows=[
+                t.Flow(
+                    route=t.Route(
+                        begin=("west", lane_idx, 0),
+                        end=("east", lane_idx, "max"),
+                    ),
+                    rate=50,
+                    actors={
+                        t.TrafficActor("car"): 1,
+                    },
+                )
+                for lane_idx in range(3)
+            ]
+        )
+
+        ego_mission = t.Mission(t.Route(begin=("west", 0, 1), end=("east", 0, 1)))
+
+        gen_scenario(
+            t.Scenario(
+                ego_missions=[ego_mission], traffic={"all": traffic}, bubbles=[bubble]
+            ),
+            output_dir=scenario_root,
+        )
+
+        yield Scenario.variations_for_all_scenario_roots(
+            [str(scenario_root)], ["AGENT_1"]
+        )
+
+
+@pytest.fixture
+def smarts():
+    laner = AgentInterface(
+        max_episode_steps=1000,
+        action=ActionSpaceType.Lane,
+    )
+
+    agents = {"AGENT_1": laner}
+    with mock.patch(
+        "envision.client.Client.headless", new_callable=PropertyMock
+    ) as envision_headless:
+        envision = Client(headless=True)
+        envision_headless.return_value = False
+        envision.read_and_send = MagicMock()
+        # envision.teardown = MagicMock()
+        smarts = SMARTS(
+            agents,
+            traffic_sim=SumoTrafficSimulation(),
+            envision=envision,
+        )
+        yield smarts
+
+        smarts.destroy()
+
+
+def test_client_with_smarts(smarts: SMARTS, scenarios: Iterator[Scenario], sim_data):
+    seed(int(os.getenv("PYTHONHASHSEED", 42)))
+
+    envision = smarts.envision
+
+    first_time = True
+
+    def side_effect(state: State):
+        nonlocal first_time
+        if not first_time:
+            return
+        first_time = False
+        es = EnvisionDataFormatter(None)
+        assert state.scenario_id is not None
+        with mock.patch(
+            "envision.types.State.scenario_id", new_callable=PropertyMock
+        ) as state_scenario_id:
+            state_scenario_id.return_value = None
+            es.add_any(state)
+
+            data = es.resolve()
+            assert sim_data == data
+
+    envision.send = MagicMock(side_effect=side_effect)
+    scenario = next(scenarios)
+    assert scenario.missions
+    smarts.reset(scenario)

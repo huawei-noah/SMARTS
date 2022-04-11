@@ -256,7 +256,9 @@ def _format_traffic_actor(obj, context: EnvisionDataFormatter):
                 with context.layer():
                     for route_point in geo:
                         context.add(route_point, "route_point", op=Operation.FLATTEN)
+    assert type(obj.actor_type) is TrafficActorType
     context.add(obj.actor_type, "actor_type", op=Operation.ONCE)
+    assert type(obj.vehicle_type) is VehicleType
     context.add(obj.vehicle_type, "vehicle_type", op=Operation.ONCE)
 
 
@@ -268,15 +270,20 @@ def _format_state(obj: State, context: EnvisionDataFormatter):
     with context.layer():
         for _id, t in obj.traffic.items():
             with context.layer():
-                # context.add(_id, "agent_id", op=Context.REDUCE)
+                # context.add(_id, "agent_id", op=Operation.REDUCE)
                 context.add(t, "traffic")
-    context.add(
-        obj.bubbles,
-        "bubbles",
-        select=lambda bbl: (bbl.geometry, bbl.pose),
-        alternate=lambda bbl: bbl.pose,
-        op=Operation.DELTA_ALTERNATE,
-    )  # On delta use alternative
+    # context.add(
+    #     obj.bubbles,
+    #     "bubbles",
+    #     select=lambda bbl: (bbl.geometry, bbl.pose),
+    #     alternate=lambda bbl: bbl.pose,
+    #     op=Operation.DELTA_ALTERNATE,
+    # )  # On delta use alternative
+    with context.layer():
+        for bubble in obj.bubbles:
+            with context.layer():
+                for p in bubble:
+                    context.add(p, "bubble_point", op=Operation.FLATTEN)
     # context.add(obj.ego_agent_ids, "ego_agent_ids", op=Context.DELTA)
 
 
