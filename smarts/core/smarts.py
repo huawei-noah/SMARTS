@@ -1351,6 +1351,13 @@ class SMARTS:
         heading = {}
         lane_ids = {}
         agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
+        vt_mapping = {
+            "passenger": envision_types.VehicleType.Car,
+            "bus": envision_types.VehicleType.Bus,
+            "coach": envision_types.VehicleType.Coach,
+            "truck": envision_types.VehicleType.Truck,
+            "trailer": envision_types.VehicleType.Trailer,
+        }
         for v in provider_state.vehicles:
             if v.vehicle_id in agent_vehicle_ids:
                 # this is an agent controlled vehicle
@@ -1371,7 +1378,10 @@ class SMARTS:
                     continue
 
                 waypoint_paths = []
-                if filter.actor_data_filter["waypoint_paths"].enabled:
+                if (
+                    filter.actor_data_filter["waypoint_paths"].enabled
+                    and vehicle_obs.waypoint_paths
+                ):
                     waypoint_paths = vehicle_obs.waypoint_paths
 
                 road_waypoints = []
@@ -1430,10 +1440,11 @@ class SMARTS:
             elif v.vehicle_id in self._vehicle_index.social_vehicle_ids():
                 # this is a social vehicle
                 if filter.simulation_data_filter["traffic"].enabled:
-                    veh_type = (
+                    veh_type = vt_mapping.get(
                         v.vehicle_config_type
                         if v.vehicle_config_type
-                        else v.vehicle_type
+                        else v.vehicle_type,
+                        envision_types.VehicleType.Car,
                     )
                     traffic[v.vehicle_id] = envision_types.TrafficActorState(
                         actor_type=envision_types.TrafficActorType.SocialVehicle,
