@@ -19,11 +19,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from collections import namedtuple
 from dataclasses import dc_replace, is_dataclass
-from typing import Any, Callable
+from typing import Any
 from smarts.core.coordinates import Heading
-from smarts.core.sensors import Observation, ViaPoint
+from smarts.core.sensors import Observation
 from smarts.core.utils.math import position_to_ego_frame
 import numpy as np
 
@@ -48,86 +47,75 @@ def _replace(obj, **kwargs):
     raise ValueError("Must be a namedtuple or dataclass.")
 
 
-class EgoCentricObservationAdapter(Callable[[Observation], Observation]):
-    def __init__(self, ego_agent_id) -> None:
-        super().__init__()
-        self.ego_agent_id = ego_agent_id  # TODO: is this needed?
+def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any) -> Any:
+    position = obs.ego_vehicle_state.position
+    heading = obs.ego_vehicle_state.heading
 
-    def __call__(self, obs: Observation, *args: Any, **kwds: Any) -> Any:
-        position = obs.ego_vehicle_state.position
-        heading = obs.ego_vehicle_state.heading
+    def ego_frame_dynamics(v):
+        return np.array([np.linalg.norm(v[:2]), 0, *v[2:]])
 
-        def ego_frame_dynamics(v):
-            return np.array([np.linalg.norm(v[:2]), 0, *v[2:]])
+    def transform(v):
+        return position_to_ego_frame(v, position, heading)
 
-        def transform(v):
-            return position_to_ego_frame(v, position, heading)
+    def adjust_heading(h):
+        return h - heading
 
-        def adjust_heading(h):
-            return h - heading
+    nvs = obs.neighborhood_vehicle_states or []
+    wpps = obs.waypoint_paths or []
 
-        nvs = obs.neighborhood_vehicle_states or []
-        wpps = obs.waypoint_paths or []
+    vd = None
+    if obs.via_data:
+        rpvp = lambda vps: [_replace(vp, position=transform(vp.position)) for vp in vps]
+        vd = _replace(
+            obs.via_data,
+            near_via_points=rpvp(obs.via_data.near_via_points),
+            hit_via_points=rpvp(obs.via_data.hit_via_points),
+        )
 
-        vd = None
-        if obs.via_data:
-            rpvp = lambda vps: [
-                _replace(vp, position=transform(vp.position)) for vp in vps
-            ]
-            vd = _replace(
-                obs.via_data,
-                near_via_points=rpvp(obs.via_data.near_via_points),
-                hit_via_points=rpvp(obs.via_data.hit_via_points),
-            )
-
-        replace_wps = lambda lwps: [
-            [
-                _replace(wp, pos=transform(wp.pos), heading=adjust_heading(wp.heading))
-                for wp in wps
-            ]
-            for wps in lwps
+    replace_wps = lambda lwps: [
+        [
+            _replace(wp, pos=transform(wp.pos), heading=adjust_heading(wp.heading))
+            for wp in wps
         ]
-        rwps = None
-        if obs.road_waypoints:
-            rwps = _replace(
-                obs.road_waypoints,
-                lanes={
-                    l_id: replace_wps(wps) for l_id, wps in obs.road_waypoints.lanes
-                },
-            )
+        for wps in lwps
+    ]
+    rwps = None
+    if obs.road_waypoints:
+        rwps = _replace(
+            obs.road_waypoints,
+            lanes={l_id: replace_wps(wps) for l_id, wps in obs.road_waypoints.lanes},
+        )
 
-        replace_metadata = lambda cam_obs: _replace(
-            cam_obs,
-            metadata=_replace(
-                cam_obs.metadata, camera_pos=(0, 0, 0), camera_heading_in_degrees=0
+    replace_metadata = lambda cam_obs: _replace(
+        cam_obs,
+        metadata=_replace(
+            cam_obs.metadata, camera_pos=(0, 0, 0), camera_heading_in_degrees=0
+        ),
+    )
+    return _replace(
+        obs,
+        ego_vehicle_state=_replace(
+            obs.ego_vehicle_state,
+            position=np.array([0, 0, 0]),
+            steering=Heading(0),
+            linear_velocity=ego_frame_dynamics(obs.ego_vehicle_state.linear_velocity),
+            linear_acceleration=ego_frame_dynamics(
+                obs.ego_vehicle_state.linear_acceleration
             ),
-        )
-        return _replace(
-            obs,
-            ego_vehicle_state=_replace(
-                obs.ego_vehicle_state,
-                position=np.array([0, 0, 0]),
-                steering=Heading(0),
-                linear_velocity=ego_frame_dynamics(
-                    obs.ego_vehicle_state.linear_velocity
-                ),
-                linear_acceleration=ego_frame_dynamics(
-                    obs.ego_vehicle_state.linear_acceleration
-                ),
-                linear_jerk=ego_frame_dynamics(obs.ego_vehicle_state.linear_jerk),
-            ),
-            neighborhood_vehicle_state=[
-                _replace(
-                    nv,
-                    position=transform(nv.position),
-                    heading=adjust_heading(nv.heading),
-                )
-                for nv in nvs
-            ],
-            waypoint_paths=replace_wps(wpps),
-            drivable_area_grid_map=replace_metadata(obs.drivable_area_grid_map),
-            occupancy_grid_map=replace_metadata(obs.occupancy_grid_map),
-            top_down_rgb=replace_metadata(obs.top_down_rgb),
-            road_wapoints=rwps,
-            via_data=vd,
-        )
+            linear_jerk=ego_frame_dynamics(obs.ego_vehicle_state.linear_jerk),
+        ),
+        neighborhood_vehicle_state=[
+            _replace(
+                nv,
+                position=transform(nv.position),
+                heading=adjust_heading(nv.heading),
+            )
+            for nv in nvs
+        ],
+        waypoint_paths=replace_wps(wpps),
+        drivable_area_grid_map=replace_metadata(obs.drivable_area_grid_map),
+        occupancy_grid_map=replace_metadata(obs.occupancy_grid_map),
+        top_down_rgb=replace_metadata(obs.top_down_rgb),
+        road_wapoints=rwps,
+        via_data=vd,
+    )
