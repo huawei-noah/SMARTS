@@ -65,8 +65,7 @@ function App({ client }) {
 
   let getSimIdsLength = async () => {
     let ids = await client.fetchSimulationIds();
-    if (ids.length != totalSimIds)
-      setTotalSimIds(ids.length);
+    if (ids.length != totalSimIds) setTotalSimIds(ids.length);
   };
   // setInterval(getSimIdsLength, 3000);
 
