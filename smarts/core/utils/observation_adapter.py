@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dc_replace, is_dataclass
-from typing import Any
+from typing import Any, NamedTuple, Union
 
 import numpy as np
 
@@ -40,7 +40,7 @@ def _isnamedtupleinstance(x):
     return all(type(n) == str for n in f)
 
 
-def _replace(obj, **kwargs):
+def _replace(obj: Any, **kwargs):
     if is_dataclass(obj):
         return dc_replace(obj, **kwargs)
     elif _isnamedtupleinstance(obj):
