@@ -39,6 +39,7 @@ from matplotlib.animation import FuncAnimation, FFMpegWriter
 from matplotlib.lines import Line2D
 
 try:
+    import readline
     from pathos.multiprocessing import ProcessingPool as Pool
     from tabulate import tabulate
     from waymo_open_dataset.protos import scenario_pb2
@@ -159,7 +160,9 @@ def get_map_features_for_scenario(scenario: scenario_pb2.Scenario) -> Dict:
     return map_features
 
 
-def get_object_type_count(trajectories: Dict) -> Tuple[Optional[int], List[int], List[int], List[int], List[int]]:
+def get_object_type_count(
+    trajectories: Dict,
+) -> Tuple[Optional[int], List[int], List[int], List[int], List[int]]:
     cars, pedestrian, cyclist, other = [], [], [], []
     ego = None
     for vehicle_id in trajectories:
@@ -2080,8 +2083,8 @@ def explore_scenario(
 
 if __name__ == "__main__":
     import warnings
-    import readline
 
+    readline.set_completer_delims(" \t\n;")
     readline.parse_and_bind("tab: complete")
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
