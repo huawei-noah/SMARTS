@@ -1,17 +1,17 @@
 # MIT License
-# 
+#
 # Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -88,25 +88,24 @@ from typing import (
 
 from envision.types import State, TrafficActorState, TrafficActorType, VehicleType
 from smarts.core.events import Events
+from smarts.core.road_map import Waypoint
 
 
 @unique
 class Context(IntEnum):
-    NONE = 0  # implemented
+    NONE = 0
     """No special operation. Value will be sent as is."""
     REDUCE = 1
     """Convert the value to an integer and centralize the value into a list."""
-    DELTA = 2
+    DELTA = 2  # TODO implement
     """Send value only if it has changed."""
-    FLATTEN = 4  # implemented
+    FLATTEN = 4
     """Convert value from list or dataclass to higher hierachy."""
     OPTIONAL = 8
-    """This is sent only sometimes."""
-    ONCE = 16
-    """This will be sent only the first time it occurs."""
-    LOCAL_DELTA = 32
-    """This value will only be sent."""
-    DELTA_ALTERNATE = 64
+    """Sending this value is togglable by option."""
+    ONCE = 16  # TODO implement
+    """This will be sent only if it was not sent in the previous reduction."""
+    DELTA_ALTERNATE = 64  # TODO implement
     """Similar to DELTA, this value will be sent as the base value the first time seen then as an alternate."""
 
 
@@ -115,17 +114,23 @@ _serialization_map: Dict[Type, Callable[[Any, "EnvisionDataFormatter"], None]] =
 _primitives = {int, float, str, VehicleType, TrafficActorType}
 
 
-@dataclass
 class ReductionContext:
-    current_count: int = 0
-    items = {}
-    removed = []
+    def __init__(
+        self,
+        current_count: int = 0,
+        items: Optional[Dict[Any, int]] = None,
+        removed: Optional[List[int]] = None,
+    ) -> None:
+        self.current_count = current_count
+        self.items = items or {}
+        self.removed = removed or []
 
-    def resolve_value(self, v):
-        cc = self.current_count
-        reduce = self.items.setdefault(v, cc)
-        if self.current_count == reduce:
-            self.current_count += 1
+    @staticmethod
+    def resolve_value(rc: "ReductionContext", v) -> int:
+        cc = rc.current_count
+        reduce = rc.items.setdefault(v, cc)
+        if rc.current_count == reduce:
+            rc.current_count += 1
         return reduce
 
 
@@ -133,12 +138,12 @@ class EnvisionDataFormatter:
     def __init__(
         self,
         id,
-        context: "EnvisionDataFormatter" = None,
+        formatter: "EnvisionDataFormatter" = None,
         serializer: Callable[[list], Any] = lambda d: d,
     ):
         # self.seen_objects = context.seen_objects if context else set()
-        self.layer_id: Any = id
-        self.parent_context: EnvisionDataFormatter = context
+        self.id: Any = id
+        self.parent_context: EnvisionDataFormatter = formatter
         self._children: Set[EnvisionDataFormatter] = set()
         self._data: List[Any] = []
         self._reduction_context = ReductionContext()
@@ -225,14 +230,32 @@ def _format_traffic_actor(obj, context: EnvisionDataFormatter):
     context.add(obj.position, "position", op=Context.FLATTEN)
     context.add_primitive(obj.heading)
     context.add_primitive(obj.speed)
-    context.add(obj.events, "events", op=Context.LOCAL_DELTA)
-    context.add(obj.score, "score", op=Context.OPTIONAL)
-    context.add(obj.waypoint_paths, "waypoint_paths", op=Context.OPTIONAL)
-    context.add(obj.driven_path, "driven_path", op=Context.OPTIONAL)
-    context.add(obj.point_cloud, "point_cloud", op=Context.OPTIONAL)
-    context.add(
-        obj.mission_route_geometry or [], "mission_route_geometry", op=Context.OPTIONAL
-    )
+    context.add(obj.events, "events", op=Context.DELTA)
+    context.add(obj.score, "score")
+    # context.add(obj.waypoint_paths, "waypoint_paths", op=Context.OPTIONAL)
+    with context.layer():
+        for lane in obj.waypoint_paths:
+            with context.layer():
+                for waypoint in lane:
+                    with context.layer():
+                        context.add(waypoint, "waypoint")
+    # context.add(obj.driven_path, "driven_path", op=Context.OPTIONAL)
+    with context.layer():
+        for dp in obj.driven_path:
+            context.add(dp, "driven_path_point", op=Context.FLATTEN)
+    # context.add(obj.point_cloud, "point_cloud", op=Context.OPTIONAL)
+    with context.layer():
+        for l_point in obj.point_cloud:
+            context.add(l_point, "lidar_point", op=Context.FLATTEN)
+    # context.add(
+    #     obj.mission_route_geometry or [], "mission_route_geometry", op=Context.OPTIONAL
+    # )
+    with context.layer():
+        if obj.mission_route_geometry:
+            for geo in obj.mission_route_geometry:
+                with context.layer():
+                    for route_point in geo:
+                        context.add(route_point, "route_point", op=Context.FLATTEN)
     context.add(obj.actor_type, "actor_type", op=Context.ONCE)
     context.add(obj.vehicle_type, "vehicle_type", op=Context.ONCE)
 
@@ -243,8 +266,9 @@ def _format_state(obj: State, context: EnvisionDataFormatter):
     context.add(obj.scenario_id, "scenario_id")
     context.add(obj.scenario_name, "scenario_name", op=Context.ONCE)
     with context.layer():
-        for t in obj.traffic:
+        for _id, t in obj.traffic.items():
             with context.layer():
+                # context.add(_id, "agent_id", op=Context.REDUCE)
                 context.add(t, "traffic")
     context.add(
         obj.bubbles,
@@ -286,8 +310,29 @@ def _format_events(obj: Events, context: EnvisionDataFormatter):
     context.add_primitive(tuple(obj))
 
 
+def _format_waypoint(obj: Waypoint, context: EnvisionDataFormatter):
+    t = type(obj)
+    assert t is Waypoint
+    context.add(obj.pos, "position", op=Context.FLATTEN)
+    context.add_primitive(float(obj.heading))
+    context.add(obj.lane_id, "lane_id", op=Context.REDUCE)
+    context.add_primitive(obj.lane_width)
+    context.add_primitive(obj.speed_limit)
+    context.add_primitive(obj.lane_index)
+
+
+# def _format_list(obj: list, context: EnvisionDataFormatter):
+#     t = type(obj)
+#     assert obj is list
+#     with context.layer():
+#         for e in obj:
+#             context.add(e, "")
+
+
 _serialization_map[TrafficActorState] = _format_traffic_actor
 _serialization_map[State] = _format_state
 _serialization_map[VehicleType] = _format_vehicle_type
 _serialization_map[TrafficActorType] = _format_traffic_actor_type
 _serialization_map[Events] = _format_events
+_serialization_map[Waypoint] = _format_waypoint
+# _serialization_map[list] = _format_list

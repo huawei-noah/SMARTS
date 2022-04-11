@@ -1,17 +1,17 @@
 # MIT License
-# 
+#
 # Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -24,7 +24,9 @@ import pytest
 
 from envision.serialization import _serialization_map, Context, EnvisionDataFormatter
 from envision.types import State, TrafficActorState, TrafficActorType, VehicleType
+from smarts.core.coordinates import Heading
 from smarts.core.events import Events
+from smarts.core.road_map import Waypoint
 
 
 @pytest.fixture
@@ -34,6 +36,17 @@ def covered_data():
         (VehicleType.Car, [4]),
         (TrafficActorType.SocialVehicle, [0]),
         (TrafficActorType.Agent, [2]),
+        (
+            Waypoint(
+                pos=[4, 5, 3],
+                heading=Heading(2.24),
+                lane_id="NE-NW",
+                lane_width=4,
+                speed_limit=10,
+                lane_index=0,
+            ),
+            [4, 5, 3, 2.24, 0, 4, 10, 0, {0: "NE-NW"}, []],
+        ),
         (
             TrafficActorState(
                 actor_type=TrafficActorType.Agent,
@@ -48,6 +61,31 @@ def covered_data():
                 events=Events(
                     [], False, False, False, False, False, False, False, True
                 ),
+                driven_path=[[4, 4], [2, 2]],
+                point_cloud=[[1, 3], [4, 2]],
+                mission_route_geometry=[[[0, 2.2], [9, 4.4]], [[3.1, 42]]],
+                waypoint_paths=[
+                    [
+                        Waypoint(
+                            pos=[4, 5, 3],
+                            heading=Heading(2.24),
+                            lane_id="NE-NW",
+                            lane_width=4,
+                            speed_limit=10,
+                            lane_index=0,
+                        )
+                    ],
+                    [
+                        Waypoint(
+                            pos=[9, 5, 3],
+                            heading=Heading(1.11),
+                            lane_id="NE-EW",
+                            lane_width=2,
+                            speed_limit=1.2,
+                            lane_index=1,
+                        )
+                    ],
+                ],
             ),
             [
                 0,  # actor id lookup into values
@@ -69,13 +107,16 @@ def covered_data():
                     True,
                 ),  # events
                 10,  # score
-                [],  # waypoints
-                [],  # driven path
-                [],  # point cloud positions
-                [],  # mission route geometry
+                [
+                    [[4, 5, 3, 2.24, 1, 4, 10, 0]],
+                    [[9, 5, 3, 1.11, 2, 2, 1.2, 1]],
+                ],  # waypoints [p_x, p_y, p_z, heading, reduced_lane_id, lane_width, speed_limit, lane_index]
+                [4, 4, 2, 2],  # driven path
+                [1, 3, 4, 2],  # point cloud positions
+                [[0, 2.2, 9, 4.4], [3.1, 42]],  # mission route geometry
                 2,
                 0,
-                {0: "agent_007", 1: "NE-NW"},  # added values
+                {0: "agent_007", 1: "NE-NW", 2: "NE-EW"},  # added values
                 [],  # removed values
             ],
         ),
@@ -92,8 +133,8 @@ def complex_data():
     return [
         (
             State(
-                traffic=[
-                    TrafficActorState(
+                traffic={
+                    f"agent_00{i}": TrafficActorState(
                         actor_type=TrafficActorType.Agent,
                         vehicle_type=VehicleType.Bus,
                         position=(4, 5, 2),
@@ -106,9 +147,9 @@ def complex_data():
                         events=Events(
                             [], False, False, False, False, False, False, False, True
                         ),
-                    ),
-                ]
-                * 2,
+                    )
+                    for i in range(2)
+                },
                 scenario_id="scene_id",
                 scenario_name="big blue",
                 bubbles=[],
@@ -162,8 +203,8 @@ def complex_data():
                     ],
                 ],
                 [],
-                [],
-                {0: "agent_007", 1: "NE-NW"},
+                # [], # ego agent ids
+                {0: "agent_007", 1: "NE-NW"},  # lookup for reduced values
                 [],
             ],
         ),
@@ -172,7 +213,7 @@ def complex_data():
 
 def test_covered_data_format(covered_data):
     for item in covered_data:
-        es: EnvisionDataFormatter = EnvisionDataFormatter(None)
+        es = EnvisionDataFormatter(None)
         vt = item[0]
         _serialization_map[type(vt)](vt, es)
 
