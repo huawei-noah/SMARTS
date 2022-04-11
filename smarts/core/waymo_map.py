@@ -1141,6 +1141,9 @@ class WaymoMap(RoadMap):
         @cached_property
         def length(self) -> float:
             return max(lane.length for lane in self.lanes)
+            # TAI: the more curved the road, the more the lane lengths diverge.
+            # TAI: consider using average here instead of max?
+            # return sum(lane.length for lane in self.lanes) / len(self.lanes)
 
         @cached_property
         def incoming_roads(self) -> List[RoadMap.Road]:

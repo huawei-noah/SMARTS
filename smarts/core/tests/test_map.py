@@ -1034,6 +1034,11 @@ if __name__ == "__main__":
     for lane_id, lane in road_map._lanes.items():
         if ids and lane_id not in ids:
             continue
+        if lane.is_composite:
+            # don't draw lanes twice...
+            continue
+        # color = "r-" if  lane.in_junction else "b-"
+        color = "b-"
         feature_id = int(lane._lane_dict["_feature_id"])
         feature = road_map._waymo_features[feature_id]
         plot_lane(lane._lane_dict)
@@ -1042,7 +1047,7 @@ if __name__ == "__main__":
         for x, y in lane._lane_polygon:
             xs.append(x)
             ys.append(y)
-        plt.plot(xs, ys, "b-")
+        plt.plot(xs, ys, color)
 
         # Plot lanepoints
         # if lane.is_drivable:
