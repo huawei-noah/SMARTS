@@ -64,7 +64,7 @@ jobs:
       - name: Commit cli.rst changes
         uses: EndBug/add-and-commit@v7
         with:
-          add: '*cli.rst'
+          add: '*/cli.rst'
           branch: develop
           default_author: user_info
           message: 'GitHub Actions: Update cli.rst'

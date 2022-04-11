@@ -27,7 +27,7 @@ def envision_cli():
     pass
 
 
-@envision_cli.command(name="start", help="Start an Envision server")
+@envision_cli.command(name="start", help="Start an Envision server.")
 @click.option("-p", "--port", help="Port Envision will run on.", default=8081)
 @click.option(
     "-s",
