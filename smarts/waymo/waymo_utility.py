@@ -49,6 +49,72 @@ except (ModuleNotFoundError, ImportError):
     )
     exit()
 
+TRAJECTORY_HANDLES = [
+    Line2D(
+        [],
+        [],
+        color="cyan",
+        marker="^",
+        linestyle="None",
+        markersize=5,
+        label="Ego Vehicle",
+    ),
+    Line2D(
+        [],
+        [],
+        color="black",
+        marker="^",
+        linestyle="None",
+        markersize=5,
+        label="Car",
+    ),
+    Line2D(
+        [],
+        [],
+        color="magenta",
+        marker="d",
+        linestyle="None",
+        markersize=5,
+        label="Pedestrian",
+    ),
+    Line2D(
+        [],
+        [],
+        color="yellow",
+        marker="*",
+        linestyle="None",
+        markersize=5,
+        label="Cyclist",
+    ),
+    Line2D(
+        [],
+        [],
+        color="black",
+        marker="8",
+        linestyle="None",
+        markersize=5,
+        label="Other",
+    ),
+]
+
+MAP_HANDLES = [
+    Line2D([0], [0], linestyle=":", color="gray", label="Lane Polyline"),
+    Line2D([0], [0], linestyle="-", color="yellow", label="Single Road Line"),
+    Line2D([0], [0], linestyle="--", color="yellow", label="Double Road Line"),
+    Line2D([0], [0], linestyle="-", color="black", label="Road Edge"),
+    Line2D([0], [0], linestyle="--", color="black", label="Crosswalk"),
+    Line2D([0], [0], linestyle=":", color="black", label="Speed Bump"),
+    Line2D(
+        [],
+        [],
+        color="red",
+        marker="o",
+        linestyle="None",
+        markersize=5,
+        label="Stop Sign",
+    ),
+]
+
 
 def lerp(a: float, b: float, t: float) -> float:
     return t * (b - a) + a
@@ -77,78 +143,6 @@ def convert_polyline(polyline) -> Tuple[List[float], List[float]]:
         xs.append(p.x)
         ys.append(p.y)
     return xs, ys
-
-
-def get_trajectory_handles() -> List[Line2D]:
-    handles = [
-        Line2D(
-            [],
-            [],
-            color="cyan",
-            marker="^",
-            linestyle="None",
-            markersize=5,
-            label="Ego Vehicle",
-        ),
-        Line2D(
-            [],
-            [],
-            color="black",
-            marker="^",
-            linestyle="None",
-            markersize=5,
-            label="Car",
-        ),
-        Line2D(
-            [],
-            [],
-            color="magenta",
-            marker="d",
-            linestyle="None",
-            markersize=5,
-            label="Pedestrian",
-        ),
-        Line2D(
-            [],
-            [],
-            color="yellow",
-            marker="*",
-            linestyle="None",
-            markersize=5,
-            label="Cyclist",
-        ),
-        Line2D(
-            [],
-            [],
-            color="black",
-            marker="8",
-            linestyle="None",
-            markersize=5,
-            label="Other",
-        ),
-    ]
-    return handles
-
-
-def get_map_handles() -> List[Line2D]:
-    handles = [
-        Line2D([0], [0], linestyle=":", color="gray", label="Lane Polyline"),
-        Line2D([0], [0], linestyle="-", color="yellow", label="Single Road Line"),
-        Line2D([0], [0], linestyle="--", color="yellow", label="Double Road Line"),
-        Line2D([0], [0], linestyle="-", color="black", label="Road Edge"),
-        Line2D([0], [0], linestyle="--", color="black", label="Crosswalk"),
-        Line2D([0], [0], linestyle=":", color="black", label="Speed Bump"),
-        Line2D(
-            [],
-            [],
-            color="red",
-            marker="o",
-            linestyle="None",
-            markersize=5,
-            label="Stop Sign",
-        ),
-    ]
-    return handles
 
 
 def get_map_features_for_scenario(scenario: scenario_pb2.Scenario) -> Dict:
@@ -191,26 +185,18 @@ def get_trajectory_data(waymo_scenario: scenario_pb2.Scenario):
         for i in range(len(scenario.tracks)):
             vehicle_id = scenario.tracks[i].id
             num_steps = len(scenario.timestamps_seconds)
-            rows = []
-
             # First pass -- extract data
             for j in range(num_steps):
                 obj_state = scenario.tracks[i].states[j]
+                if not obj_state.valid:
+                    continue
                 row = dict()
                 row["vehicle_id"] = vehicle_id
                 row["type"] = scenario.tracks[i].object_type
                 row["is_ego_vehicle"] = 1 if i == scenario.sdc_track_index else 0
-                row["valid"] = obj_state.valid
-                row["sim_time"] = scenario.timestamps_seconds[j]
                 row["position_x"] = obj_state.center_x
                 row["position_y"] = obj_state.center_y
-                rows.append(row)
-
-            # Second pass --remove invalid data
-            for j in range(num_steps):
-                if not rows[j]["valid"]:
-                    continue
-                yield rows[j]
+                yield row
 
     trajectories = {}
     agent_id = None
@@ -502,8 +488,8 @@ def plot_scenario(
     plt.title(f"Scenario {scenario_info[0].scenario_id}")
 
     # Set Legend Handles
-    all_handles = get_map_handles()
-    all_handles.extend(highlighted_handles)
+    all_handles = []
+    all_handles.extend(MAP_HANDLES + highlighted_handles)
 
     if animate_trajectories:
         # Plot Trajectories
@@ -512,7 +498,7 @@ def plot_scenario(
             scenario_info[0].objects_of_interest,
             f_ids if f_ids else [],
         )
-        all_handles.extend(get_trajectory_handles() + t_handles)
+        all_handles.extend(TRAJECTORY_HANDLES + t_handles)
 
         def update(i):
             drawn_pts = []
@@ -551,7 +537,8 @@ def save_plot(
     if scenario_dict[scenario_id][1] is None:
         scenario_dict[scenario_id][1] = get_map_features_for_scenario(scenario)
     plot_map_features(scenario_dict[scenario_id][1], [])
-    all_handles = get_map_handles()
+    all_handles = []
+    all_handles.extend(MAP_HANDLES)
 
     if animate:
         # Plot Trajectories
@@ -562,7 +549,7 @@ def save_plot(
             scenario_dict[scenario_id][0].objects_of_interest,
             [],
         )
-        all_handles.extend(get_trajectory_handles())
+        all_handles.extend(TRAJECTORY_HANDLES)
         plt.legend(handles=all_handles)
 
         def update(i):
