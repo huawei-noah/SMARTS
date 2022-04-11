@@ -55,7 +55,7 @@ export default class Client {
   async fetchSimulationIds() {
     let url = new URL(this.endpoint);
     url.pathname = "simulations";
-    try{
+    try {
       let response = await fetch(url);
       if (!response.ok) {
         console.error("Unable to fetch simulation IDs");
@@ -64,21 +64,20 @@ export default class Client {
         let data = await response.json();
         return data.simulations;
       }
-    }
-    catch(error){
+    } catch (error) {
       return [];
     }
   }
 
   seek(simulationId, seconds) {
-    if(this._lastSeek != null) {
-      return
+    if (this._lastSeek != null) {
+      return;
     }
 
     if (!(simulationId in this._sockets)) {
       this._sockets[simulationId] = null;
     }
-    
+
     if (
       !this._sockets[simulationId] ||
       !(this._sockets[simulationId].readyState == WebSocket.OPEN)
@@ -86,14 +85,18 @@ export default class Client {
       console.warn("Unable to seek because no connected socket exists");
       return;
     }
-      
+
 
     this._lastSeek = new Promise((resolve) =>
-      resolve(this._sockets[simulationId].send(JSON.stringify({ seek: seconds })))
-    ).then(wait(500)).finally(() => {
-      this._lastSeek = null;
-      console.log("Seek complete")
-    })
+      resolve(
+        this._sockets[simulationId].send(JSON.stringify({ seek: seconds }))
+      )
+    )
+      .then(wait(500))
+      .finally(() => {
+        this._lastSeek = null;
+        console.log("Seek complete");
+      });
   }
 
   async _obtainStream(simulationId, stateQueue, remainingRetries) {
@@ -127,7 +130,7 @@ export default class Client {
             if (
               stateQueue.length > 0 &&
               frame.current_elapsed_time <
-              stateQueue[stateQueue.length - 1].current_elapsed_time
+                stateQueue[stateQueue.length - 1].current_elapsed_time
             ) {
               // if it's moved back in time, it was from a seek and we're now
               // going to receive those frames again, so flush.
@@ -147,7 +150,9 @@ export default class Client {
                   // This allows for a "fast-forward-like catch up" to the most
                   // recent events in the simulation (when not in near-real-time
                   // playing mode).
-                  stateQueue = stateQueue.filter((frame, ind) => ind % 2 == 0 && ind > 5);
+                  stateQueue = stateQueue.filter(
+                    (frame, ind) => ind % 2 == 0 && ind > 5
+                  );
                   self._stateQueues[simulationId] = stateQueue;
                   break;
                 }
@@ -166,7 +171,7 @@ export default class Client {
                   let removeIndex = Math.floor(
                     stateQueue.length * Math.random()
                   );
-                    stateQueue.splice(removeIndex, 1);
+                  stateQueue.splice(removeIndex, 1);
                 }
               }
             }
