@@ -48,6 +48,8 @@ def _replace(obj, **kwargs):
 
 
 def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any) -> Any:
+    """An observation adapter that converts the observation to an ego-centric perspective."""
+    
     position = obs.ego_vehicle_state.position
     heading = obs.ego_vehicle_state.heading
 
