@@ -26,7 +26,6 @@ class Reward(gym.Wrapper):
                 print(f"##### Vehicle reached max episode steps.")
             elif (
                 obs.events["off_road"]
-                | obs.events["on_shoulder"]
                 | obs.events["collisions"]
                 | obs.events["off_route"]
             ):
@@ -47,10 +46,10 @@ class Reward(gym.Wrapper):
             return np.float64(reward)
 
         # Penalty for driving on road shoulder
-        if obs.events["on_shoulder"]:
-            reward -= 10
-            print(f"----- Vehicle went on shoulder.")
-            return np.float64(reward)
+        # if obs.events["on_shoulder"]:
+        #     reward -= 10
+        #     print(f"----- Vehicle went on shoulder.")
+        #     return np.float64(reward)
 
         # Penalty for colliding
         if obs.events["collisions"]:
