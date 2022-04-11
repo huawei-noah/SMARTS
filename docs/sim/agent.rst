@@ -69,7 +69,7 @@ You can move `max_episode_steps` control authority to RLlib with their config op
 different max_episode_len for each agent.
 
 `action` controls the agent action type used. There are multiple `ActionSpaceType` options: `ActionSpaceType.Continuous`, `ActionSpaceType.Lane`, `ActionSpaceType.LaneWithContinuousSpeed` 
-`ActionSpaceType.ActuatorDynamic`, `ActionSpaceType.Trajectory`, `ActionSpaceType.TrajectoryWithTime`, `ActionSpaceType.MPC`, `ActionSpaceType.MultiTargetPose`, and `ActionSpaceType.Imitation`.
+`ActionSpaceType.ActuatorDynamic`, `ActionSpaceType.Trajectory`, `ActionSpaceType.TrajectoryWithTime`, `ActionSpaceType.MPC`, `ActionSpaceType.TargetPose`, `ActionSpaceType.MultiTargetPose`, and `ActionSpaceType.Imitation`.
 
 - `ActionSpaceType.Continuous`: `(float, float, float)` continuous action space with throttle, brake, absolute steering angle. 
 - `ActionSpaceType.ActuatorDynamic`: `(float, float float)` continuous action space with throttle, brake, steering rate. Steering rate means the amount of steering angle change *per second* (either positive or negative) to be applied to the current steering angle.
@@ -78,7 +78,8 @@ different max_episode_len for each agent.
 - `ActionSpaceType.Trajectory`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space using trajectory as x coordinates, y coordinates, headings, and speeds to directly move a vehicle.
 - `ActionSpaceType.TrajectoryWithTime`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space using trajectory as times, x coordinates, y coordinates, headings, and speeds to interpolate the vehicle along the trajectory.
 - `ActionSpaceType.MPC`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space using trajectory as x coordinates, y coordinates, headings, and speeds to adaptively perform controls on the vehicle model in an attempt to match the given trajectory. 
-- `ActionSpaceType.MultiTargetPose`: `Dict[str, (float, float, float float)]` continuous action space with multiple vehicles with each vehicle id mapped to pose as x coordinate, y coordinate, heading, and future time of pose. 
+- `ActionSpaceType.TargetPose`: `Sequence[float, float, float, float]` continuous action space with a single vehiclex coordinate, y coordinate, heading, and time delta to reach the given pose.
+- `ActionSpaceType.MultiTargetPose`: `Dict[str, (float, float, float float)]` continuous action space that provides actions for multiple vehicles with each vehicle id mapped to pose as x coordinate, y coordinate, heading, and time delta to reach the given pose. 
 - `ActionSpaceType.Imitation``: `Union[float, (float,float)]` continuous action space where you can pass either (a) initial speed upon reset or (b) linear acceleration and angular velocity for other steps.
 
 

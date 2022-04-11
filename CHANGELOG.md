@@ -53,6 +53,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error.
 - Ensure that `smarts.core.coordinates.Pose` attribute `position` is an [x, y, z] numpy array, and attribute `orientation` is a quaternion length 4 numpy array. 
 - Update social vehicle pose in Bullet when no active agents are present.
+- Document missing action space type `ActionSpaceType.TargetPose`.
 ### Removed
 - Removed the unconditional import of `Renderer` from `smarts/core/vehicle.py` to make `Panda3D` optional dependency regression. See Issue #1310.
 ### Security
