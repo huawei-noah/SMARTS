@@ -19,8 +19,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from dataclasses import dc_replace, is_dataclass
-from typing import Any, NamedTuple, Union
+from dataclasses import is_dataclass
+from dataclasses import replace as dc_replace
+from typing import Any
 
 import numpy as np
 
@@ -44,7 +45,7 @@ def _replace(obj: Any, **kwargs):
     if is_dataclass(obj):
         return dc_replace(obj, **kwargs)
     elif _isnamedtupleinstance(obj):
-        return obj._replace(obj, **kwargs)
+        return obj._replace(**kwargs)
 
     raise ValueError("Must be a namedtuple or dataclass.")
 
@@ -75,10 +76,13 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
             near_via_points=rpvp(obs.via_data.near_via_points),
             hit_via_points=rpvp(obs.via_data.hit_via_points),
         )
-
     replace_wps = lambda lwps: [
         [
-            _replace(wp, pos=transform(wp.pos), heading=adjust_heading(wp.heading))
+            _replace(
+                wp,
+                pos=transform(np.append(wp.pos, [0]))[:2],
+                heading=adjust_heading(wp.heading),
+            )
             for wp in wps
         ]
         for wps in lwps
@@ -87,7 +91,9 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
     if obs.road_waypoints:
         rwps = _replace(
             obs.road_waypoints,
-            lanes={l_id: replace_wps(wps) for l_id, wps in obs.road_waypoints.lanes},
+            lanes={
+                l_id: replace_wps(wps) for l_id, wps in obs.road_waypoints.lanes.items()
+            },
         )
 
     replace_metadata = lambda cam_obs: _replace(
@@ -108,7 +114,7 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
             ),
             linear_jerk=ego_frame_dynamics(obs.ego_vehicle_state.linear_jerk),
         ),
-        neighborhood_vehicle_state=[
+        neighborhood_vehicle_states=[
             _replace(
                 nv,
                 position=transform(nv.position),
@@ -120,6 +126,6 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
         drivable_area_grid_map=replace_metadata(obs.drivable_area_grid_map),
         occupancy_grid_map=replace_metadata(obs.occupancy_grid_map),
         top_down_rgb=replace_metadata(obs.top_down_rgb),
-        road_wapoints=rwps,
+        road_waypoints=rwps,
         via_data=vd,
     )
