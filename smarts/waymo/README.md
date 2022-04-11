@@ -253,30 +253,32 @@ Object of Interest Ids:  [3562, 5207]
 
 Scenario c84cde79e51b087c.
 You can use the following commands to further this scenario:
-1. `export` --> Export the scenario to a target base path asked to input in a subsequent option.
-2. `preview` or `preview <feature_ids>` --> Plot and display the map of the scenario with the feature ids highlighted in Blue if passed.
+1. `display --> Display the scenario info which includes the map feature ids and track ids.
+2. `export` --> Export the scenario to a target base path asked to input in a subsequent option.
+3. `preview` or `preview <feature_ids>` --> Plot and display the map of the scenario with the feature ids highlighted in Blue if passed.
                                             The feature ids need to be separated by space, be numbers from the map feature ids mentioned above and will not be highlighted if they dont exist.
-3. `animate` or `animate <track_ids> --> Animate the trajectories of track objects on the map of this scenario with the track ids highlighted in Red if passed.
+4. `animate` or `animate <track_ids> --> Animate the trajectories of track objects on the map of this scenario with the track ids highlighted in Red if passed.
                                         The track ids need to be separated by space, be numbers from the track object ids mentioned above and will not be highlighted if they dont exist.
-4. `tag` or `tag imported` --> Tag the scenario with tags mentioned.
+5. `tag` or `tag imported` --> Tag the scenario with tags mentioned.
                                 Optionally if you call with `tag imported` then the tags will be added to imported tag list.
-5. `untag` or `untag imported` --> Untag the scenario with tags mentioned.
+6. `untag` or `untag imported` --> Untag the scenario with tags mentioned.
                                     Optionally if you call with `untag imported` then the tags will be removed to imported tag list.
-6. `back` --> Go back to this scenario's tfrecord browser.
-7. `exit` --> Exit the program
+7. `back` --> Go back to this scenario's tfrecord browser.
+8. `exit` --> Exit the program
 
 
 Command:
 ```
 
 Commands you can execute at this level:
-1. `export` &rarr; Export the scenario to a target base path asked to input in a subsequent prompt. If you have run the script with the `--target-base-path` option, the subsequent prompt will ask if you want to use custom path or use the default path passed.
-2. `preview` or `preview <feature_ids>` &rarr; Plot and display the map of the scenario with the feature IDs highlighted in <span style="color:blue">**Blue**</span> if provided. The feature IDs need to be separated by space, be numbers from the map feature IDs mentioned above and will not be highlighted if they don't exist.
-3. `animate` or `animate <track_ids>` &rarr; Animate the trajectories of track objects on the map of this scenario with the track IDs highlighted in <span style="color:red">**Red**</span> if provided. The ego vehicle will be highlighted in <span style="color:cyan">**Cyan**</span> and objects of interests in <span style="color:green">**Green**</span>. The track IDs need to be separated by space, be numbers from the track object IDs mentioned above and will not be highlighted if they don't exist.
-4. `tag` or `tag imported` &rarr; Tag the scenario by adding the tags to `Tags Added` list. Optionally if you call with `tag imported` then the tags will be added to `Imported Tags` list seen above. You will be asked to input the tags in a subsequent prompt, and they should be separated by space.
-5. `untag` or `untag imported` &rarr; Untag the scenarios at these indexes of the table (or all the scenarios if used with `all`) by removing them from the `Tags Added` list. Optionally if you call with `tag imported` then the tags for these scenarios will be removed from the `Imported Tags` list seen above. You will be asked to input the tags in a subsequent prompt, and they should be separated by space.
-6. `back` &rarr; Go back to the TFRecord browser.
-7. `exit` &rarr; Exit the program. You can also exit the program at any time by pressing `Ctrl + D`.
+1. `display --> Display the scenario info which includes the map feature ids and track ids like the one shown above.
+2. `export` &rarr; Export the scenario to a target base path asked to input in a subsequent prompt. If you have run the script with the `--target-base-path` option, the subsequent prompt will ask if you want to use custom path or use the default path passed.
+3. `preview` or `preview <feature_ids>` &rarr; Plot and display the map of the scenario with the feature IDs highlighted in <span style="color:blue">**Blue**</span> if provided. The feature IDs need to be separated by space, be numbers from the map feature IDs mentioned above and will not be highlighted if they don't exist.
+4. `animate` or `animate <track_ids>` &rarr; Animate the trajectories of track objects on the map of this scenario with the track IDs highlighted in <span style="color:red">**Red**</span> if provided. The ego vehicle will be highlighted in <span style="color:cyan">**Cyan**</span> and objects of interests in <span style="color:green">**Green**</span>. The track IDs need to be separated by space, be numbers from the track object IDs mentioned above and will not be highlighted if they don't exist.
+5. `tag` or `tag imported` &rarr; Tag the scenario by adding the tags to `Tags Added` list. Optionally if you call with `tag imported` then the tags will be added to `Imported Tags` list seen above. You will be asked to input the tags in a subsequent prompt, and they should be separated by space.
+6. `untag` or `untag imported` &rarr; Untag the scenarios at these indexes of the table (or all the scenarios if used with `all`) by removing them from the `Tags Added` list. Optionally if you call with `tag imported` then the tags for these scenarios will be removed from the `Imported Tags` list seen above. You will be asked to input the tags in a subsequent prompt, and they should be separated by space.
+7. `back` &rarr; Go back to the TFRecord browser.
+8. `exit` &rarr; Exit the program. You can also exit the program at any time by pressing `Ctrl + D`.
 
 ## Additional Notes:
 * All commands are case-sensitive but have specific rules to be matched with the user's input. 
