@@ -1436,7 +1436,6 @@ def explore_tf_record(
                 imported_tfrecord_tags,
                 (tags, filter_display) if tags is not None else None,
             )
-            time.sleep(1.2)
             print_commands = True
 
         elif re.compile("^export[\s]+(all|(?:\s*(\d+))+)", flags=re.IGNORECASE).match(
@@ -1493,7 +1492,6 @@ def explore_tf_record(
             else:
                 if tags:
                     print("No scenarios were exported since no tags matched\n")
-            time.sleep(1)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1532,7 +1530,6 @@ def explore_tf_record(
                 if tags
                 else None,
             )
-            time.sleep(1)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1634,7 +1631,6 @@ def explore_tf_record(
                 if tags
                 else None,
             )
-            time.sleep(1)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1760,7 +1756,6 @@ def explore_tf_record(
                     )
                 print("Tags added to `Tags Added` list")
 
-            time.sleep(1)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -1834,7 +1829,6 @@ def explore_tf_record(
                             if tag not in tags
                         ]
                         print(f"Tags removed from `Tags Added` list of {scenario_idx}")
-            time.sleep(1)
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
