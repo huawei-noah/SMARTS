@@ -223,6 +223,7 @@ class WaymoMap(RoadMap):
     class _SDict(Dict[int, _LinkedSplit]):
         @cached_property
         def sorted_keys(self) -> List[int]:
+            """@return the keys in ascending order; only to be used after dict contents are final"""
             return sorted(self.keys())
 
     _FeatureSplits = Dict[int, _SDict]
@@ -382,6 +383,7 @@ class WaymoMap(RoadMap):
                 self._last_pt = None
 
             def accum(self, pt: np.ndarray) -> float:
+                """@return accumulated distance so far"""
                 if self._last_pt is not None:
                     self._d += np.linalg.norm(pt - self._last_pt)
                 self._last_pt = pt
