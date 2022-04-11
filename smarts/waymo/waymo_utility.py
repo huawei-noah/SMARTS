@@ -30,7 +30,7 @@ import shutil
 import struct
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Generator
+from typing import Dict, List, Tuple, Optional, Union, Generator
 from itertools import product
 from multiprocessing import cpu_count
 import matplotlib.pyplot as plt
@@ -116,10 +116,6 @@ MAP_HANDLES = [
 ]
 
 
-def lerp(a: float, b: float, t: float) -> float:
-    return t * (b - a) + a
-
-
 def read_tfrecord_file(path: str) -> Generator[bytes, None, None]:
     """Iterate over the records in a TFRecord file and return the bytes of each record.
 
@@ -163,7 +159,7 @@ def get_map_features_for_scenario(scenario: scenario_pb2.Scenario) -> Dict:
     return map_features
 
 
-def get_object_type_count(trajectories):
+def get_object_type_count(trajectories: Dict):
     cars, pedestrian, cyclist, other = [], [], [], []
     ego = None
     for vehicle_id in trajectories:
@@ -180,12 +176,14 @@ def get_object_type_count(trajectories):
     return ego, cars, pedestrian, cyclist, other
 
 
-def get_trajectory_data(waymo_scenario: scenario_pb2.Scenario):
-    def generate_trajectory_rows(scenario):
+def get_trajectory_data(waymo_scenario: scenario_pb2.Scenario) -> Dict:
+    def generate_trajectory_rows(
+        scenario: scenario_pb2.Scenario,
+    ) -> Generator[Dict, None, None]:
         for i in range(len(scenario.tracks)):
             vehicle_id = scenario.tracks[i].id
             num_steps = len(scenario.timestamps_seconds)
-            # First pass -- extract data
+            # First pass -- extract data and yield trajectory at every timestep
             for j in range(num_steps):
                 obj_state = scenario.tracks[i].states[j]
                 if not obj_state.valid:
@@ -214,7 +212,7 @@ def get_trajectory_data(waymo_scenario: scenario_pb2.Scenario):
     return trajectories
 
 
-def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
+def plot_map_features(map_features: Dict, feature_ids: List[str]) -> List[Line2D]:
     handles = []
     for lane in map_features["lane"]:
         xs, ys = convert_polyline(lane[0].polyline)
@@ -337,7 +335,7 @@ def plot_map_features(map_features, feature_ids: List[str]) -> List[Line2D]:
 
 
 def plot_trajectories(
-    trajectories, objects_of_interest: List[int], track_ids: List[str]
+    trajectories: Dict, objects_of_interest: List[int], track_ids: List[str]
 ):
     handles = []
     max_len = 0
@@ -473,7 +471,9 @@ def plot_trajectories(
 
 
 def plot_scenario(
-    scenario, animate_trajectories: bool, f_ids: Optional[List[str]] = None
+    scenario: Tuple[List, int],
+    animate_trajectories: bool,
+    f_ids: Optional[List[str]] = None,
 ):
     scenario_info, fig_num = scenario
     # Get map feature data from map proto
@@ -515,7 +515,11 @@ def plot_scenario(
 
 
 def save_plot(
-    scenario_id: str, target_path: str, scenario_dict, animate: bool, filter_tags
+    scenario_id: str,
+    target_path: str,
+    scenario_dict: Dict,
+    animate: bool,
+    filter_tags: Optional[Tuple] = None,
 ) -> bool:
     if filter_tags:
         tags, filter_preview, tfrecord_tags, imported_tfrecord_tags = filter_tags
@@ -609,7 +613,11 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=
         print(f"No images or recordings saved as no tags matched")
 
 
-def filter_scenario(scenario_tags, imported_tags, filter_tags) -> bool:
+def filter_scenario(
+    scenario_tags: List[str],
+    imported_tags: List[str],
+    filter_tags: Tuple[List[str], int],
+) -> bool:
     tags, filter_display = filter_tags
     if filter_display == 1:
         return all(x in scenario_tags for x in tags)
@@ -618,10 +626,8 @@ def filter_scenario(scenario_tags, imported_tags, filter_tags) -> bool:
     return all(x in imported_tags + scenario_tags for x in tags)
 
 
-def prompt_tags() -> Tuple[Optional[str], bool]:
-    valid_response = False
-    stripped_response = None
-    while not valid_response:
+def prompt_tags() -> Tuple[Optional[List[str]], bool]:
+    while True:
         try:
             response = input("\nResponse: ")
             stripped_response = response.strip()
@@ -633,9 +639,11 @@ def prompt_tags() -> Tuple[Optional[str], bool]:
                 "Invalid response. Your response should have tags that are alphanumerical separated by Comma and can have special characters."
             )
         else:
-            valid_response = True
+            break
 
-    return stripped_response, False
+    tags = [tag.strip() for tag in stripped_response.lower().split(",")]
+
+    return tags, False
 
 
 def prompt_filter_tags() -> Tuple[Optional[List[str]], Optional[int], bool]:
@@ -670,10 +678,9 @@ def prompt_filter_tags() -> Tuple[Optional[List[str]], Optional[int], bool]:
             "What Tags do you want to filter the response with?\n"
             "Your response should have tags that are alphanumerical separated by Comma and can have special characters.\n"
         )
-        stripped_tags, stop_browser = prompt_tags()
+        tags, stop_browser = prompt_tags()
         if stop_browser:
             return None, None, True
-        tags = [tag.strip() for tag in stripped_tags.lower().split(",")]
     else:
         tags = None
     return tags, filter_response, False
@@ -962,7 +969,7 @@ def display_scenario_tags(
     print("\n")
 
 
-def merge_tags(new_imports, main_dict, display: bool = False):
+def merge_tags(new_imports: Dict, main_dict: Dict, display: bool = False):
     for tf_file in new_imports:
         if tf_file in main_dict:
             for scenario_id in new_imports[tf_file]:
@@ -985,7 +992,41 @@ def merge_tags(new_imports, main_dict, display: bool = False):
             display_scenario_tags(new_imports[tf_file], {})
 
 
-def get_scenario_and_tag_dict(tfrecord_file: str):
+def remove_tags(
+    scenario_id: str,
+    tags_to_remove: List[str],
+    scenario_tags: List[str],
+    imported: bool,
+    remove_all: bool,
+) -> List[str]:
+    if imported:
+        tags_list_name = "Imported Tags"
+    else:
+        tags_list_name = "Tags Added"
+
+    if remove_all:
+        print(f"All Tags removed from `{tags_list_name}` list of {scenario_id}")
+        return []
+
+    if len(scenario_tags) == 0:
+        print(
+            f"No tags added for {scenario_id} in `{tags_list_name}` list that can be removed"
+        )
+    else:
+        old_len = len(scenario_tags)
+        scenario_tags = [tag for tag in scenario_tags if tag not in tags_to_remove]
+        if len(scenario_tags) == old_len:
+            print(
+                f"{scenario_id} doesn't have {tags_to_remove} in its `{tags_list_name}` list"
+            )
+        else:
+            print(f"Tags removed from `{tags_list_name}` list of {scenario_id}")
+    return scenario_tags
+
+
+def get_scenario_and_tag_dict(
+    tfrecord_file: str,
+) -> Tuple[Dict[str, List[Union[scenario_pb2.Scenario, None]]], Dict[str, List]]:
     scenario_dict = {}
     tags_per_scenario = {}
     dataset = read_tfrecord_file(tfrecord_file)
@@ -998,7 +1039,9 @@ def get_scenario_and_tag_dict(tfrecord_file: str):
     return scenario_dict, tags_per_scenario
 
 
-def parse_tfrecords(tfrecord_paths: List[str]):
+def parse_tfrecords(
+    tfrecord_paths: List[str],
+) -> Tuple[Dict[str, None], Dict[str, None]]:
     scenarios_per_tfrecord, tags_per_tfrecord = {}, {}
     for tfrecord_path in tfrecord_paths:
         if os.path.isdir(tfrecord_path):
@@ -1025,7 +1068,11 @@ def display_tf_records(records):
 
 
 def display_scenarios_in_tfrecord(
-    tfrecord_path: str, scenario_dict, tfrecord_tags, tags_imported, filter_tags=None
+    tfrecord_path: str,
+    scenario_dict: Dict,
+    tfrecord_tags: Dict[str, List[str]],
+    tags_imported: Dict[str, List[str]],
+    filter_tags: Optional[Tuple[List[str], int]] = None,
 ) -> List[str]:
     scenario_data_lst = []
     scenario_counter = 1
@@ -1714,11 +1761,10 @@ def explore_tf_record(
                 "What Tags do you want to add?\n"
                 "Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma.\n"
             )
-            stripped_response, stop_browser = prompt_tags()
+            tags, stop_browser = prompt_tags()
             if stop_browser:
                 return True
 
-            tags = [tag.strip() for tag in stripped_response.lower().split(",")]
             if imported:
                 for i in range(len(valid_indexes)):
                     scenario_idx = scenario_ids[valid_indexes[i] - 1]
@@ -1772,13 +1818,11 @@ def explore_tf_record(
             print(
                 "What Tags do you want to remove? Tags that dont exist won't be removed.\n"
                 "Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma.\n"
-                "Optionally you can respond `remove all`, to remove all tags from these scenarios."
+                "Optionally you can respond `remove all`, to remove all tags from these scenarios.\n"
             )
-            stripped_response, stop_browser = prompt_tags()
+            tags, stop_browser = prompt_tags()
             if stop_browser:
                 return True
-
-            tags = [tag.strip() for tag in stripped_response.lower().split(",")]
 
             # if response is remove all, remove all the tags from the scenarios mentioned
             remove_all = False
@@ -1789,19 +1833,15 @@ def explore_tf_record(
                 for i in range(len(valid_indexes)):
                     scenario_idx = scenario_ids[valid_indexes[i] - 1]
                     if scenario_idx in imported_tfrecord_tags:
-                        if remove_all:
-                            imported_tfrecord_tags[scenario_idx] = []
-                        else:
-                            imported_tfrecord_tags[scenario_idx] = [
-                                tag
-                                for tag in imported_tfrecord_tags[scenario_idx]
-                                if tag not in tags
-                            ]
-                            print(
-                                f"Tags removed from `Imported Tags` list of {scenario_idx}"
-                            )
+                        imported_tfrecord_tags[scenario_idx] = remove_tags(
+                            scenario_idx,
+                            tags,
+                            imported_tfrecord_tags[scenario_idx],
+                            True,
+                            remove_all,
+                        )
                     else:
-                        print(f"no imported tags for {scenario_idx}")
+                        print(f"No imported tags for {scenario_idx}")
 
             else:
                 for i in range(len(valid_indexes)):
@@ -1809,12 +1849,14 @@ def explore_tf_record(
                     if len(tfrecord_tags[scenario_idx]) == 0:
                         print(f"No tags added for {scenario_idx} that can be removed")
                     else:
-                        tfrecord_tags[scenario_idx] = [
-                            tag
-                            for tag in tfrecord_tags[scenario_idx]
-                            if tag not in tags
-                        ]
-                        print(f"Tags removed from `Tags Added` list of {scenario_idx}")
+                        tfrecord_tags = remove_tags(
+                            scenario_idx,
+                            tags,
+                            tfrecord_tags[scenario_idx],
+                            False,
+                            remove_all,
+                        )
+
             display_scenarios_in_tfrecord(
                 tfrecord,
                 scenario_dict,
@@ -2053,17 +2095,17 @@ def explore_scenario(
             plot_scenario((scenario_info, 1), True, track_ids)
 
         elif re.compile("^tag([\s]+imported)?$", flags=re.IGNORECASE).match(user_input):
+            input_lst = user_input.lower().split()
+            imported = True if "imported" in input_lst else False
+
             print(
                 "What Tags do you want to add?\n"
                 "Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma."
             )
-            input_lst = user_input.lower().split()
-            imported = True if "imported" in input_lst else False
-            stripped_response, stop_browser = prompt_tags()
+            tags, stop_browser = prompt_tags()
             if stop_browser:
                 return True
 
-            tags = [tag.strip() for tag in stripped_response.lower().split(",")]
             if imported:
                 imported_scenario_tags.extend(
                     [tag for tag in tags if tag not in imported_scenario_tags]
@@ -2078,32 +2120,31 @@ def explore_scenario(
         elif re.compile("^untag([\s]+imported)?$", flags=re.IGNORECASE).match(
             user_input
         ):
+            input_lst = user_input.lower().split()
+            imported = True if "imported" in input_lst else False
+
             print(
                 "What Tags do you want to remove?. Tags that don't exist wont be removed.\n"
                 "Your response should have tags that are alphanumerical and can have special characters but need to be separated by Comma."
+                "Optionally you can respond `remove all`, to remove all tags from these scenarios.\n"
             )
-            input_lst = user_input.lower().split()
-            imported = True if "imported" in input_lst else False
-            stripped_response, stop_browser = prompt_tags()
+            tags, stop_browser = prompt_tags()
             if stop_browser:
                 return True
 
-            tags = [tag.strip() for tag in stripped_response.lower().split(",")]
+            remove_all = False
+            if "remove all" in tags:
+                remove_all = True
+
             scenario_idx = scenario.scenario_id
             if imported:
-                if len(imported_scenario_tags) == 0:
-                    print(f"No tags added for {scenario_idx} that can be removed")
-                else:
-                    imported_scenario_tags = [
-                        tag for tag in imported_scenario_tags if tag not in tags
-                    ]
-                    print("Tags removed from `Imported Tags` list")
+                imported_scenario_tags = remove_tags(
+                    scenario_idx, tags, imported_scenario_tags, True, remove_all
+                )
             else:
-                if len(scenario_tags) == 0:
-                    print(f"No tags added for {scenario_idx} that can be removed")
-                else:
-                    scenario_tags = [tag for tag in scenario_tags if tag not in tags]
-                    print("Tags removed from `Tags Added` list")
+                scenario_tags = remove_tags(
+                    scenario_idx, tags, scenario_tags, False, remove_all
+                )
             display_scenario_data_info()
 
         elif user_input.lower() == "back":
