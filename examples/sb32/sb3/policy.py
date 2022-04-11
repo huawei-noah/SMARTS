@@ -121,12 +121,11 @@ class R2plus1D_18(BaseFeaturesExtractor):
 
         import torchvision.models as th_models
 
-        self.thmodel = th_models.video.r2plus1d_18(pretrained=True, progress=True)
+        self.thmodel = th_models.video.r2plus1d_18(pretrained=False, progress=True)
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
         obs = self.modify_obs(obs)
-        out = self.thmodel(obs)
-        return out
+        return self.thmodel(obs)
 
     def modify_obs(self, obs: torch.Tensor) -> torch.Tensor:
         """
@@ -208,10 +207,10 @@ class R2plus1D_18(BaseFeaturesExtractor):
 
 def naturecnn(config):
     kwargs = {}
-    kwargs["policy_kwargs"] = dict(
-        # activation_fn=th.nn.Tanh, # default activation used
-        net_arch=[],
-    )
+    # kwargs["policy_kwargs"] = dict(
+    #     # activation_fn=th.nn.Tanh, # default activation used
+    #     net_arch=[],
+    # )
     return kwargs
 
 
@@ -242,6 +241,7 @@ def l5kit(config):
         features_extractor_kwargs=dict(features_dim=128),
         normalize_images=False,
         net_arch=[],
+        log_std_init=-10.0, # reduce exploration
     )
 
     # Clipping schedule of PPO epsilon parameter
@@ -268,6 +268,8 @@ def r2plus1d_18(config):
         features_extractor_class=R2plus1D_18,
         features_extractor_kwargs=dict(config=config, features_dim=400),
         net_arch=[],
+        # log_std_init=0.0, # default
+        log_std_init=-10.0, # reduce exploration
     )
 
     # Hyperparameter
