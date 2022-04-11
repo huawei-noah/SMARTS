@@ -446,7 +446,9 @@ class WaymoMap(RoadMap):
     ) -> Tuple[bool, bool]:
         structural_split = linked_split.split.structural
         # if there's more than one lane adjacent to this at the same point, it's in a junction
-        in_junction = len(linked_split.right_splits) > 1
+        in_junction = (
+            len(linked_split.right_splits) > 1 or len(linked_split.left_splits) > 1
+        )
         for rt_split in linked_split.right_splits:
             rfeat = feat_splits[rt_split.feat_id]
             rt_lsplit = rfeat[rt_split.index]
@@ -473,7 +475,10 @@ class WaymoMap(RoadMap):
     ) -> Tuple[bool, bool]:
         structural_split = linked_split.split.structural
         # if there's more than one lane adjacent to this at the same point, it's in a junction
-        in_junction = len(linked_split.left_splits) > 1
+        in_junction = (
+            len(linked_split.left_splits) > 1 or len(linked_split.right_splits) > 1
+        )
+        used = []
         for lft_split in linked_split.left_splits:
             lfeat = feat_splits[lft_split.feat_id]
             lft_lsplit = lfeat[lft_split.index]
@@ -483,17 +488,12 @@ class WaymoMap(RoadMap):
                 or lft_lsplit.used
             ):
                 continue
+            used.append(lft_split)
             lane = self._create_lane_from_split(lft_lsplit, feat_splits)
             lanes.append(lane)
-        for lft_split in linked_split.left_splits:
+        for lft_split in used:
             lfeat = feat_splits[lft_split.feat_id]
             lft_lsplit = lfeat[lft_split.index]
-            if (
-                not lft_lsplit.next_split
-                or lft_lsplit.split.index >= lfeat.sorted_keys[-1] - 1
-                or lft_lsplit.used
-            ):
-                continue
             lft_structural, lft_in_junction = self._add_left_lanes(
                 lft_lsplit, lanes, feat_splits
             )

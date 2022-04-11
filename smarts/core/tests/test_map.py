@@ -1037,8 +1037,8 @@ if __name__ == "__main__":
         if lane.is_composite:
             # don't draw lanes twice...
             continue
-        # color = "r-" if  lane.in_junction else "b-"
         color = "b-"
+        # color = "r-" if  lane.in_junction else "b-"
         feature_id = int(lane._lane_dict["_feature_id"])
         feature = road_map._waymo_features[feature_id]
         plot_lane(lane._lane_dict)
