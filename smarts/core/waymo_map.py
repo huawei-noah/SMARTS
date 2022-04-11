@@ -23,7 +23,9 @@ import math
 import time
 import heapq
 import random
+from collections import deque
 from copy import deepcopy
+from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
@@ -72,7 +74,6 @@ class WaymoMap(RoadMap):
         self._waymo_features: Dict[int, Any] = dict()
         self._default_lane_width = WaymoMap.DEFAULT_LANE_WIDTH
         self._lane_rtree = None
-        self._no_roads = False  # for debugging purposes
         self._no_composites = False  # for debugging purposes
         self._load_from_scenario(waymo_scenario)
 
@@ -85,327 +86,10 @@ class WaymoMap(RoadMap):
                 self, spacing=map_spec.lanepoint_spacing
             )
 
-    @staticmethod
-    def _find_lane_segments(
-        waymo_lane_feats, side: str, soft_too: bool
-    ) -> Dict[int, bool]:
-        split_pts = {}
-        if soft_too:
-            boundaries = getattr(waymo_lane_feats, f"{side}_boundaries")
-            for bd in range(1, len(boundaries)):
-                bdry = boundaries[bd]
-                if (
-                    bdry.boundary_type != boundaries[bd - 1].boundary_type
-                    and bdry.lane_start_index - boundaries[bd - 1].lane_end_index <= 1
-                ):
-                    split_pts[bdry.lane_start_index] = False
-        # overwrite any "soft" boundary splits with "hard" neighbor splits
-        for nb in getattr(waymo_lane_feats, f"{side}_neighbors"):
-            split_pts[nb.self_start_index] = True
-            split_pts[nb.self_end_index + 1] = True
-        return split_pts
-
-    def _waymo_pb_to_dict(self, waymo_lane_feats) -> Dict[str, Any]:
-        # we can't mutate the waymo protobuf objects, nor do they have a __dict__,
-        # so we just keep the fields we're going to use...
-        attribs = [
-            "type",
-            "interpolating",
-            "entry_lanes",
-            "exit_lanes",
-            "polyline",
-            "speed_limit_mph",
-            "left_boundaries",
-            "right_boundaries",
-            "left_neighbors",
-            "right_neighbors",
-        ]
-        return {attr: getattr(waymo_lane_feats, attr) for attr in attribs}
-
-    class _LaneSegment:
-        def __init__(
-            self,
-            feat_id: str,
-            lane_dict: Dict[str, Any] = {},
-            start_pt: int = 0,
-            end_pt: int = -1,
-            sub_segs: Sequence["WaymoMap._LaneSegment"] = [],
-        ):
-            self.feat_id = feat_id
-            self.start_pt = start_pt
-            if end_pt < 0:
-                self.end_pt = len(lane_dict.get("polyline", []))
-            else:
-                self.end_pt = end_pt
-            self.lane_dict = lane_dict
-            self.sub_segs = sub_segs
-            if sub_segs:
-                self.lane_dict["sublanes"] = [ss.seg_id for ss in sub_segs]
-                for ss in sub_segs:
-                    ss.lane_dict["composite"] = self.seg_id
-            self._shift_and_clip("left")
-            self._shift_and_clip("right")
-
-        @cached_property
-        def seg_id(self) -> str:
-            """Segment ID."""
-            seg_id = f"{self.feat_id}"
-            if self.start_pt > 0:
-                # try to keep seg_ids the same as lane ids when not doing segmentation
-                seg_id += f"_{self.start_pt}"
-            for ss in self.sub_segs:
-                seg_id += f"-{ss.start_pt}"
-            return seg_id
-
-        def _shift_and_clip(self, side: str):
-            offset = self.start_pt
-            new_neighbors = []
-            neighbors = self.lane_dict.get(f"{side}_neighbors", [])
-            for nb in neighbors:
-                if nb.self_start_index < offset or nb.self_start_index >= self.end_pt:
-                    continue
-                nb.self_start_index -= offset
-                nb.self_end_index -= offset
-                for nbbd in nb.boundaries:
-                    nbbd.lane_start_index -= offset
-                    nbbd.lane_end_index -= offset
-                # TAI:  end_pt off by 1? yes, doofus, count on your fingers again if you must!
-                # TODO:  should try to get nb's lane_dict here if I'm a composite
-                nb_seg = WaymoMap._LaneSegment(
-                    str(nb.feature_id),
-                    {},
-                    nb.neighbor_start_index,
-                    nb.neighbor_end_index + 1,
-                )
-                self.lane_dict.setdefault(f"_{side}_nb_segs", {}).setdefault(
-                    nb.feature_id, nb_seg.seg_id
-                )
-                nb.neighbor_end_index -= nb.neighbor_start_index
-                nb.neighbor_start_index = 0
-                new_neighbors.append(nb)
-            # assert len(new_neighbors) <= 1, f"{new_neighbors}"
-            self.lane_dict[f"{side}_neighbors"] = new_neighbors
-
-            if offset == 0 and self.end_pt == len(self.lane_dict.get("polyline", [])):
-                return
-
-            new_boundaries = []
-            boundaries = self.lane_dict.get(f"{side}_boundaries", [])
-            for bd in boundaries:
-                if bd.lane_start_index < offset or bd.lane_start_index >= self.end_pt:
-                    continue
-                bd.lane_start_index -= offset
-                bd.lane_end_index -= offset
-                new_boundaries.append(bd)
-            self.lane_dict[f"{side}_boundaries"] = new_boundaries
-
-        def create_new_segment(
-            self,
-            split_pt: int,
-            prev_seg: "WaymoMap._LaneSegment",
-            sub_segs: Optional[Sequence] = [],
-        ) -> "WaymoMap._LaneSegment":
-            """Create a new segment at a given split index"""
-
-            new_lane_dict = deepcopy(self.lane_dict)
-            seg_start = (
-                prev_seg.end_pt if prev_seg else sub_segs[0].start_pt if sub_segs else 0
-            )
-            # XXX: Here we'd like to do the following, but python protobuf seem to have a bug with slicing:
-            #    new_lane_dict["polyline"] = self.lane_dict["polyline"][seg_start:split_pt]
-            # XXX: So instead we use a list comprehension:
-            new_lane_dict["polyline"] = [
-                Point(p.x, p.y, p.z)
-                for i, p in enumerate(self.lane_dict["polyline"])
-                if seg_start <= i <= split_pt
-            ]
-            new_lane_dict["_normals"] = self.lane_dict["_normals"][
-                seg_start : split_pt + 1
-            ]
-            if prev_seg and prev_seg.seg_id:
-                new_lane_dict["entry_lanes"] = [prev_seg.seg_id]
-            new_seg = WaymoMap._LaneSegment(
-                self.feat_id, new_lane_dict, seg_start, split_pt, sub_segs
-            )
-            if prev_seg and prev_seg.lane_dict:
-                prev_seg.lane_dict["exit_lanes"] = [new_seg.seg_id]
-            return new_seg
-
-    def _add_lane(
-        self, lane_id: str, lane_dict: Dict[str, Any], allow_existing: bool
-    ) -> "WaymoMap.Lane":
-        existing = self._lanes.get(lane_id)
-        assert allow_existing or not existing
-        if allow_existing and existing:
-            return existing
-        lane = WaymoMap.Lane(self, lane_id, lane_dict)
-        self._lanes[lane_id] = lane
-        self._surfaces[lane_id] = lane
-        return lane
-
-    def _add_road_for_lane(
-        self, lane: "WaymoMap.Lane", waymo_lanedicts: Dict[str, Dict[str, Any]]
-    ):
-        road_lanes = [lane]
-        self._add_adj_lanes_to_road(lane._lane_dict, road_lanes, waymo_lanedicts)
-        road = WaymoMap.Road(self, road_lanes)
-        self._roads[road.road_id] = road
-        self._surfaces[road.road_id] = road
-
-    def _segment_lanes(
-        self, waymo_lanes: List[Tuple[str, Any]]
-    ) -> Dict[str, Dict[str, Any]]:
-        waymo_lanedicts = {}
-        for lane_id, lane_feat in waymo_lanes:
-            split_pts = None
-            if not self._no_roads:
-                rt_split_pts = WaymoMap._find_lane_segments(
-                    lane_feat, "right", not self._no_composites
-                )
-                lft_split_pts = WaymoMap._find_lane_segments(
-                    lane_feat, "left", not self._no_composites
-                )
-                split_pts = {
-                    k: rt_split_pts.get(k, False) or lft_split_pts.get(k, False)
-                    for k in rt_split_pts.keys() | lft_split_pts.keys()
-                }
-            waymo_lane_dict = self._waymo_pb_to_dict(lane_feat)
-            waymo_lane_dict["_feature_id"] = lane_id
-
-            if len(waymo_lane_dict["polyline"]) <= 1:
-                self._log.warning(
-                    f"skipping import of lane {lane_id} with polyline having {len(waymo_lane_dict['polyline'])} point(s)."
-                )
-                continue
-
-            # Geometry computations that require the original lane polylines
-            lane_pts = [np.array([p.x, p.y]) for p in waymo_lane_dict["polyline"]]
-            waymo_lane_dict["_normals"] = self._calculate_normals(lane_pts)
-            left_widths, right_widths = self._raycast_boundaries(
-                waymo_lane_dict, lane_pts
-            )
-            max_width = max(
-                left_widths[0],
-                left_widths[-1],
-                right_widths[0],
-                right_widths[-1],
-            )
-            if max_width < 0.5:
-                max_width = WaymoMap.DEFAULT_LANE_WIDTH / 2
-            max_width = min(max_width, WaymoMap.DEFAULT_LANE_WIDTH / 2)
-            waymo_lane_dict["lane_width"] = max_width * 2
-
-            orig_seg = WaymoMap._LaneSegment(lane_id, waymo_lane_dict)
-            if not split_pts:
-                waymo_lanedicts[orig_seg.seg_id] = waymo_lane_dict
-                continue
-
-            prev_split_pt = 0
-            first_seg = None
-            prev_seg = None
-            subs_since_comp = []
-            comp_segs = []
-            maxind = orig_seg.end_pt
-            split_pts[maxind] = True
-            for split_pt in sorted(split_pts.keys()):
-                if split_pt >= maxind and prev_split_pt >= maxind - 1:
-                    # avoid singleton-point polyline segments
-                    break
-                if prev_split_pt == split_pt:
-                    continue
-                prev_split_pt = split_pt
-                prev_seg = orig_seg.create_new_segment(split_pt, prev_seg)
-                subs_since_comp.append(prev_seg)
-                waymo_lanedicts[prev_seg.seg_id] = prev_seg.lane_dict
-                if not first_seg:
-                    first_seg = prev_seg
-                assert first_seg is not None
-                if split_pts[split_pt]:
-                    if len(subs_since_comp) > 1:
-                        comp = orig_seg.create_new_segment(
-                            split_pt, None, subs_since_comp
-                        )
-                        waymo_lanedicts[comp.seg_id] = comp.lane_dict
-                        comp_segs.append(comp)
-                    subs_since_comp = []
-            if not prev_seg:
-                continue
-            for xl in waymo_lane_dict["exit_lanes"]:
-                # TAI: what if we haven't encountered xl yet?
-                next_lane = waymo_lanedicts.get(str(xl))
-                if next_lane:
-                    next_lane["entry_lanes"] = [
-                        il if str(il) != lane_id else prev_seg.seg_id
-                        for il in next_lane["entry_lanes"]
-                    ]
-            for il in waymo_lane_dict["entry_lanes"]:
-                # TAI: what if we haven't encountered il yet?
-                prev_lane = waymo_lanedicts.get(str(il))
-                if prev_lane:
-                    prev_lane["exit_lanes"] = [
-                        xl if str(xl) != lane_id else first_seg.seg_id
-                        for xl in prev_lane["exit_lanes"]
-                    ]
-            for cs in comp_segs:
-                cs.lane_dict["entry_lanes"] = cs.sub_segs[0].lane_dict["entry_lanes"]
-                cs.lane_dict["exit_lanes"] = cs.sub_segs[-1].lane_dict["exit_lanes"]
-
-        return waymo_lanedicts
-
-    def _create_road_segments(self, waymo_lanedicts: Dict[str, Dict[str, Any]]):
-        if not self._no_roads and not self._no_composites:
-            # have to add composite lanes and roads first so that sublane references can be resolved
-            for lane_id, lane_dict in waymo_lanedicts.items():
-                if lane_dict["right_neighbors"] or not lane_dict.get("sublanes"):
-                    continue
-                lane = self._add_lane(lane_id, lane_dict, False)
-                if not self._no_roads:
-                    self._add_road_for_lane(lane, waymo_lanedicts)
-            # have to make another pass to get composites in the middle of roads
-            # (i.e. composite lanes whose right-most lanes are not-composite)
-            new_lanedicts = {}
-            sublanes_to_remove = []
-            for lane_id, lane_dict in waymo_lanedicts.items():
-                if lane_id in self._lanes or not lane_dict.get("sublanes"):
-                    continue
-                # A lane somewhere to the right of this one is not composite!
-                # We might try to split it at the same places as this one, but
-                # this is a PITA (b/c other adjacent lanes might have different splits)
-                # so instead we punt and just get rid of our sublanes here and pretend
-                # we weren't composite to begin with.
-                self._log.info(
-                    f"ignoring sublanes for composite interior lane {lane_id} on hybrid road."
-                )
-                sublanes_to_remove += lane_dict["sublanes"]
-                new_lane_id = lane_dict["sublanes"][0]
-                for il in lane_dict["entry_lanes"]:
-                    entry_lane = waymo_lanedicts[str(il)]
-                    entry_lane["exit_lanes"] = [
-                        new_lane_id if str(xl) == lane_id else xl
-                        for xl in entry_lane["exit_lanes"]
-                    ]
-                for xl in lane_dict["exit_lanes"]:
-                    exit_lane = waymo_lanedicts[str(xl)]
-                    exit_lane["entry_lanes"] = [
-                        new_lane_id if str(il) == lane_id else il
-                        for il in exit_lane["entry_lanes"]
-                    ]
-                new_lanedicts[new_lane_id] = lane_dict
-                lane_dict["sublanes"] = []
-            list(map(waymo_lanedicts.pop, sublanes_to_remove))
-            waymo_lanedicts.update(new_lanedicts)
-
-        for lane_id, lane_dict in waymo_lanedicts.items():
-            # TODO: consider case of soft segments in right lane but not left
-            if lane_id in self._lanes:
-                continue
-            if not self._no_roads and lane_dict["right_neighbors"]:
-                continue
-            lane = self._add_lane(lane_id, lane_dict, False)
-            if not self._no_roads:
-                self._add_road_for_lane(lane, waymo_lanedicts)
-
-    def _calculate_normals(self, pts) -> Union[List[None], Sequence[np.ndarray]]:
+    def _calculate_normals(
+        self, feat_id: int
+    ) -> Union[List[None], Sequence[np.ndarray]]:
+        pts = self._polyline_cache[feat_id][0]
         n_pts = len(pts)
 
         # Special case: return early to avoid division by zero
@@ -414,11 +98,11 @@ class WaymoMap(RoadMap):
 
         normals = [None] * n_pts
         for i in range(n_pts):
-            p = pts[i]
+            p = pts[i][:2]
             if i < n_pts - 1:
-                dp = pts[i + 1] - p
+                dp = pts[i + 1][:2] - p
             else:
-                dp = p - pts[i - 1]
+                dp = p - pts[i - 1][:2]
 
             dp /= np.linalg.norm(dp)
             angle = math.pi / 2
@@ -432,15 +116,16 @@ class WaymoMap(RoadMap):
         return normals
 
     def _raycast_boundaries(
-        self, lane_dict, lane_pts, ray_dist=20.0
+        self, lane_dict: Dict[str, Any], feat_id: int, ray_dist: float = 20.0
     ) -> Optional[Tuple[List[float], List[float]]]:
+        lane_pts = self._polyline_cache[feat_id][0]
         n_pts = len(lane_pts)
         left_widths = [0] * n_pts
         right_widths = [0] * n_pts
         normals = lane_dict["_normals"]
 
         for i in range(n_pts):
-            ray_start = lane_pts[i]
+            ray_start = lane_pts[i][:2]
             normal = normals[i]
 
             if lane_dict["left_neighbors"]:
@@ -479,7 +164,7 @@ class WaymoMap(RoadMap):
             return left_widths, right_widths
 
         for i in [0, n_pts - 1]:
-            ray_start = lane_pts[i]
+            ray_start = lane_pts[i][:2]
             normal = normals[i]
 
             if lane_dict["left_boundaries"]:
@@ -520,64 +205,461 @@ class WaymoMap(RoadMap):
 
         return left_widths, right_widths
 
-    def _adj_seg_id(
-        self,
-        rn_feature_id: str,
-        ln_feature_id: int,
-        lanedicts: Dict[str, Dict[str, Any]],
-    ) -> Optional[str]:
-        ln_dict = lanedicts[str(ln_feature_id)]
-        for rn in ln_dict["right_neighbors"]:
-            if str(rn.feature_id) == rn_feature_id:
-                assert rn.neighbor_start_index == 0, f"{rn}"
-                nb_seg = WaymoMap._LaneSegment(
-                    str(ln_feature_id), {}, rn.self_start_index, rn.self_end_index
+    @dataclass
+    class _Split:
+        feat_id: int
+        index: int
+        structural: bool
+
+    @dataclass
+    class _LinkedSplit:
+        split: "WaymoMap._Split"
+        left_splits: List["WaymoMap._Split"] = field(default_factory=lambda: [])
+        right_splits: List["WaymoMap._Split"] = field(default_factory=lambda: [])
+        next_split: Optional["WaymoMap._LinkedSplit"] = None
+        prev_split: Optional["WaymoMap._LinkedSplit"] = None
+        used: bool = False
+
+    class _SDict(Dict[int, _LinkedSplit]):
+        @cached_property
+        def sorted_keys(self) -> List[int]:
+            """@return the keys in ascending order; only to be used after dict contents are final"""
+            return sorted(self.keys())
+
+    _FeatureSplits = Dict[int, _SDict]
+
+    @staticmethod
+    def _lane_id(feat_id: int, index: int) -> str:
+        lane_id = f"{feat_id}"
+        if index > 0:
+            # try to keep seg_ids the same as lane ids when not doing segmentation
+            lane_id += f"_{index}"
+        return lane_id
+
+    def _interpolate_split(
+        self, split: _Split, neighbors: Sequence
+    ) -> Optional[_Split]:
+        pld = self._polyline_cache[split.feat_id][1]
+        split_dist = pld[split.index] if split.index < len(pld) else pld[-1]
+        # XXX:  not symmetric!
+        for nb in neighbors:
+            if not (nb.self_start_index <= split.index <= nb.self_end_index):
+                continue
+            start_dist = pld[nb.self_start_index]
+            assert split_dist >= start_dist
+            split_perc = (split_dist - start_dist) / (
+                pld[nb.self_end_index] - start_dist
+            )
+
+            nb_pld = self._polyline_cache[nb.feature_id][1]
+            nb_start_dist = nb_pld[nb.neighbor_start_index]
+            nb_end_dist = nb_pld[nb.neighbor_end_index]
+            nb_spot = nb.neighbor_start_index
+            nb_split_perc = prev_nb_split_perc = 0
+            while nb_spot <= nb.neighbor_end_index:
+                nb_split_perc = (nb_pld[nb_spot] - nb_start_dist) / (
+                    nb_end_dist - nb_start_dist
                 )
-                return nb_seg.seg_id
+                if nb_split_perc >= split_perc:
+                    break
+                prev_nb_split_perc = nb_split_perc
+                nb_spot += 1
+            if nb_split_perc - split_perc > split_perc - prev_nb_split_perc:
+                nb_spot = max(nb_spot - 1, 0)
+            self._log.info(
+                f"interpolating split point at {nb_spot} in neighbor {nb.feature_id} of {split.feat_id} w/ split={split}"
+            )
+            return WaymoMap._Split(nb.feature_id, nb_spot, split.structural)
         return None
 
-    def _add_adj_lanes_to_road(
-        self,
-        lane_dict: Dict[str, Any],
-        road_lane: List[RoadMap.Lane],
-        lanedicts: Dict[str, Dict[str, Any]],
-    ):
-        # XXX: there _should_ only be one left-neighbor at a time now,
-        # xXX: but we hit cases where there's more than one overlapping on a segment,
-        # XXX: so we loop here just in case...
-        lns_to_do = []
-        for ln in lane_dict["left_neighbors"]:
-            ln_seg_id = lane_dict.get("_left_nb_segs", {}).get(ln.feature_id)
-            if not ln_seg_id:
-                ln_seg_id = self._adj_seg_id(
-                    lane_dict["_feature_id"], ln.feature_id, lanedicts
+    def _find_lane_splits(self, feat_id: int) -> _SDict:
+        result = WaymoMap._SDict()
+        lane_feats = self._waymo_features[feat_id]
+        for side in ["left", "right"]:
+            for nb in getattr(lane_feats, f"{side}_neighbors"):
+                split = WaymoMap._Split(feat_id, nb.self_start_index, True)
+                nb_start = result.setdefault(
+                    nb.self_start_index, WaymoMap._LinkedSplit(split)
                 )
-            assert ln_seg_id, f"{ln.feature_id} {lane_dict}"
-            ln_lane_dict = lanedicts[ln_seg_id]
-            lns_to_do.append(ln_lane_dict)
-            lane = self._add_lane(ln_seg_id, ln_lane_dict, True)
-            road_lane.append(lane)
-        for adj_lane_dict in lns_to_do:
-            self._add_adj_lanes_to_road(adj_lane_dict, road_lane, lanedicts)
+                getattr(nb_start, f"{side}_splits").append(
+                    WaymoMap._Split(nb.feature_id, nb.neighbor_start_index, True)
+                )
+                split = WaymoMap._Split(feat_id, nb.self_end_index + 1, True)
+                nb_end = result.setdefault(
+                    nb.self_end_index + 1, WaymoMap._LinkedSplit(split)
+                )
+        result.setdefault(0, WaymoMap._LinkedSplit(WaymoMap._Split(feat_id, 0, True)))
+        last = len(self._polyline_cache[feat_id][0])
+        result.setdefault(
+            last, WaymoMap._LinkedSplit(WaymoMap._Split(feat_id, last, True))
+        )
+        for side in ["left", "right"]:
+            boundaries = getattr(lane_feats, f"{side}_boundaries")
+            prev_bdry = None
+            for bdry in boundaries:
+                bdry_idx = bdry.lane_start_index
+                if (
+                    prev_bdry
+                    and bdry.boundary_type != prev_bdry.boundary_type
+                    and bdry_idx - prev_bdry.lane_end_index <= 1
+                ):
+                    split = WaymoMap._Split(feat_id, bdry_idx, False)
+                    result.setdefault(bdry_idx, WaymoMap._LinkedSplit(split))
+                prev_bdry = bdry
+        # interpolate for any missing neighbors...
+        for linked_split in result.values():
+            for side in ["left", "right"]:
+                if getattr(linked_split, f"{side}_splits"):
+                    continue
+                neighbors = getattr(lane_feats, f"{side}_neighbors")
+                nb_split = self._interpolate_split(linked_split.split, neighbors)
+                if nb_split:
+                    getattr(linked_split, f"{side}_splits").append(nb_split)
+        return result
+
+    def _find_splits(self) -> _FeatureSplits:
+        # find splits for all lanes individually
+        feat_splits: WaymoMap._FeatureSplits = dict()
+        splits_stack = deque()
+        for lane_feat_id in self._lane_dicts.keys():
+            lane_splits = self._find_lane_splits(lane_feat_id)
+            assert len(lane_splits) >= 2
+            feat_splits[lane_feat_id] = lane_splits
+            for ls in lane_splits.values():
+                splits_stack.append(ls)
+        # then propagate them left and right...
+        while splits_stack:
+            linked_split = splits_stack.pop()
+            for side in ["left", "right"]:
+                # NOTE:  lanes in intersections can have two (or more!) neighbors on a side
+                for side_split in getattr(linked_split, f"{side}_splits"):
+                    side_feat_id = side_split.feat_id
+                    side_index = side_split.index
+                    side_lsplit = feat_splits.get(side_feat_id, WaymoMap._SDict()).get(
+                        side_index
+                    )
+                    if not side_lsplit:
+                        side_lsplit = feat_splits.setdefault(
+                            side_feat_id, WaymoMap._SDict()
+                        ).setdefault(side_index, WaymoMap._LinkedSplit(side_split))
+                        other_side = "right" if side == "left" else "left"
+                        refl_split = WaymoMap._Split(
+                            linked_split.split.feat_id,
+                            linked_split.split.index,
+                            side_split.structural,
+                        )
+                        getattr(side_lsplit, f"{other_side}_splits").append(refl_split)
+                        side_lane_feats = self._waymo_features[side_feat_id]
+                        neighbors = getattr(side_lane_feats, f"{side}_neighbors")
+                        nb_split = self._interpolate_split(side_split, neighbors)
+                        if nb_split:
+                            getattr(side_lsplit, f"{side}_splits").append(nb_split)
+                        splits_stack.append(side_lsplit)
+                    elif (
+                        linked_split.split.structural
+                        and not side_lsplit.split.structural
+                    ):
+                        side_lsplit.split.structural = True
+                        splits_stack.append(side_lsplit)
+        return feat_splits
+
+    def _link_splits(self, feat_splits: _FeatureSplits):
+        for linked_splits in feat_splits.values():
+            prev_linked_split = None
+            for split_ind in linked_splits.sorted_keys:
+                linked_split = linked_splits[split_ind]
+                if prev_linked_split:
+                    linked_split.prev_split = prev_linked_split
+                    prev_linked_split.next_split = linked_split
+                prev_linked_split = linked_split
+
+    @staticmethod
+    def _polyline_dists(polyline) -> Tuple[List[np.ndarray], np.ndarray]:
+        lane_pts = [np.array([p.x, p.y, p.z]) for p in polyline]
+
+        class _Accum:
+            def __init__(self):
+                self._d = 0.0
+                self._last_pt = None
+
+            def accum(self, pt: np.ndarray) -> float:
+                """@return accumulated distance so far"""
+                if self._last_pt is not None:
+                    self._d += np.linalg.norm(pt - self._last_pt)
+                self._last_pt = pt
+                return self._d
+
+        q = _Accum()
+        dists = np.array([q.accum(pt) for pt in lane_pts])
+        return lane_pts, dists
+
+    def _create_lane_from_split(
+        self, linked_split: _LinkedSplit, feat_splits: _FeatureSplits
+    ) -> "WaymoMap.Lane":
+        feat_id = linked_split.split.feat_id
+        feat_dict = self._lane_dicts[feat_id]
+        orig_polyline = self._polyline_cache[feat_id][0]
+        next_split_pt = linked_split.next_split.split.index
+
+        lane_dict = {}
+        lane_dict["type"] = feat_dict["type"]
+        lane_dict["speed_limit_mph"] = feat_dict["speed_limit_mph"]
+        lane_dict["interpolating"] = feat_dict["interpolating"]
+        lane_dict["_normals"] = feat_dict["_normals"]
+        lane_dict["_feature_id"] = feat_id
+        lane_dict["lane_width"] = feat_dict["lane_width"]
+        lane_dict["polyline"] = [
+            pt
+            for i, pt in enumerate(orig_polyline)
+            if linked_split.split.index <= i <= next_split_pt
+        ]
+        if linked_split.split.index > 0:
+            lane_dict["incoming_lane_ids"] = [
+                WaymoMap._lane_id(feat_id, linked_split.prev_split.split.index)
+            ]
+        else:
+            # XXX: there ought to be a better way than this!
+            lane_dict["incoming_lane_ids"] = [
+                WaymoMap._lane_id(el, feat_splits[el].sorted_keys[-2])
+                for el in feat_dict["entry_lanes"]
+            ]
+        if next_split_pt < len(orig_polyline) - 1:
+            lane_dict["outgoing_lane_ids"] = [WaymoMap._lane_id(feat_id, next_split_pt)]
+        else:
+            lane_dict["outgoing_lane_ids"] = [
+                WaymoMap._lane_id(xl, 0) for xl in feat_dict["exit_lanes"]
+            ]
+        lane_dict["lane_to_left_info"] = linked_split.left_splits
+        lane_dict["lane_to_right_info"] = linked_split.right_splits
+        lane_id = WaymoMap._lane_id(feat_id, linked_split.split.index)
+        lane = WaymoMap.Lane(self, lane_id, lane_dict)
+        self._lanes[lane_id] = lane
+        self._surfaces[lane_id] = lane
+        linked_split.used = True
+        return lane
+
+    def _add_right_lanes(
+        self,
+        linked_split: _LinkedSplit,
+        lanes: List["WaymoMap.Lane"],
+        feat_splits: _FeatureSplits,
+    ) -> Tuple[bool, bool]:
+        structural_split = linked_split.split.structural
+        # if there's more than one lane adjacent to this at the same point, it's in a junction
+        in_junction = len(linked_split.right_splits) > 1
+        for rt_split in linked_split.right_splits:
+            rfeat = feat_splits[rt_split.feat_id]
+            rt_lsplit = rfeat[rt_split.index]
+            if (
+                not rt_lsplit.next_split
+                or rt_lsplit.split.index >= rfeat.sorted_keys[-1] - 1
+                or rt_lsplit.used
+            ):
+                continue
+            rt_structural, rt_in_junction = self._add_right_lanes(
+                rt_lsplit, lanes, feat_splits
+            )
+            in_junction = in_junction or rt_in_junction
+            structural_split = structural_split or rt_structural
+        lane = self._create_lane_from_split(linked_split, feat_splits)
+        lanes.append(lane)
+        return structural_split, in_junction
+
+    def _add_left_lanes(
+        self,
+        linked_split: _LinkedSplit,
+        lanes: List["WaymoMap.Lane"],
+        feat_splits: _FeatureSplits,
+    ) -> Tuple[bool, bool]:
+        structural_split = linked_split.split.structural
+        # if there's more than one lane adjacent to this at the same point, it's in a junction
+        in_junction = len(linked_split.left_splits) > 1
+        for lft_split in linked_split.left_splits:
+            lfeat = feat_splits[lft_split.feat_id]
+            lft_lsplit = lfeat[lft_split.index]
+            if (
+                not lft_lsplit.next_split
+                or lft_lsplit.split.index >= lfeat.sorted_keys[-1] - 1
+                or lft_lsplit.used
+            ):
+                continue
+            lane = self._create_lane_from_split(lft_lsplit, feat_splits)
+            lanes.append(lane)
+        for lft_split in linked_split.left_splits:
+            lfeat = feat_splits[lft_split.feat_id]
+            lft_lsplit = lfeat[lft_split.index]
+            if (
+                not lft_lsplit.next_split
+                or lft_lsplit.split.index >= lfeat.sorted_keys[-1] - 1
+                or lft_lsplit.used
+            ):
+                continue
+            lft_structural, lft_in_junction = self._add_left_lanes(
+                lft_lsplit, lanes, feat_splits
+            )
+            in_junction = in_junction or lft_in_junction
+            structural_split = structural_split or lft_structural
+        return structural_split, in_junction
+
+    def _create_road_from_lanes(
+        self, lanes: Sequence["WaymoMap.Lane"], junction: bool
+    ) -> "WaymoMap.Road":
+        road = WaymoMap.Road(self, lanes, junction)
+        assert road.road_id not in self._roads, f"duplicate road_id={road.road_id}"
+        self._roads[road.road_id] = road
+        self._surfaces[road.road_id] = road
+        return road
+
+    def _create_composite(self, composite_roads: Sequence["WaymoMap.Road"]):
+        assert len(composite_roads) > 1
+        composite_lanes = []
+        for li in range(len(composite_roads[0].lanes)):
+            lane_dict = {}
+            composite_lane_id = "waymo_composite_lane:"
+            for road in composite_roads:
+                composite_lane_id += f":{road.lanes[li].lane_id}"
+            for road in composite_roads:
+                cl = road.lanes[li]
+                if not lane_dict:
+                    lane_dict = deepcopy(cl._lane_dict)
+                else:
+                    lane_dict["polyline"] += cl._lane_dict["polyline"]
+                    lane_dict["_normals"] += cl._lane_dict["_normals"]
+                lane_dict.setdefault("sublanes", []).append(cl.lane_id)
+                assert "composite" not in cl._lane_dict
+                cl._lane_dict["composite"] = composite_lane_id
+            lane_dict["incoming_lane_ids"] = (
+                composite_roads[0].lanes[li]._lane_dict["incoming_lane_ids"]
+            )
+            lane_dict["outgoing_lane_ids"] = (
+                composite_roads[-1].lanes[li]._lane_dict["outgoing_lane_ids"]
+            )
+            lane = WaymoMap.Lane(self, composite_lane_id, lane_dict)
+            self._lanes[composite_lane_id] = lane
+            self._surfaces[composite_lane_id] = lane
+            composite_lanes.append(lane)
+        for i, cl in enumerate(composite_lanes):
+            cl._lane_dict["lane_to_left_info"] = (
+                composite_lanes[i + 1].lane_id if i + 1 < len(composite_lanes) else None
+            )
+            cl._lane_dict["lane_to_right_info"] = (
+                composite_lanes[i - 1].lane_id if i > 0 else None
+            )
+        self._create_road_from_lanes(composite_lanes, False)
+
+    @staticmethod
+    def _can_merge_roads(
+        road: "WaymoMap.Road", prev_roads: Sequence["WaymoMap.Road"]
+    ) -> bool:
+        if not prev_roads:
+            return False
+        if len(road.lanes) != len(prev_roads[-1].lanes):
+            return False
+        for li in range(len(road.lanes)):
+            ld = road.lanes[li]._lane_dict
+            pld = prev_roads[-1].lanes[li]._lane_dict
+            if ld["type"] != pld["type"]:
+                return False
+            if ld["speed_limit_mph"] != pld["speed_limit_mph"]:
+                return False
+            if ld["interpolating"] != pld["interpolating"]:
+                return False
+        return True
+
+    def _create_roads_and_lanes(self, feat_splits: _FeatureSplits):
+        for feat_id, splits in feat_splits.items():
+            composite_roads = []
+            split_inds = splits.sorted_keys
+            assert len(split_inds) >= 2
+            last_valid = split_inds[-1] - 1
+            for s in range(len(split_inds) - 1):
+                split_ind = split_inds[s]
+                linked_split = splits[split_ind]
+                assert (
+                    linked_split.next_split
+                    and linked_split.split.index < linked_split.next_split.split.index
+                )
+                if linked_split.split.index >= last_valid:
+                    continue
+                if linked_split.used:
+                    continue
+                road_lanes = []
+                rt_structural, rt_junction = self._add_right_lanes(
+                    linked_split, road_lanes, feat_splits
+                )
+                lft_structural, lft_junction = self._add_left_lanes(
+                    linked_split, road_lanes, feat_splits
+                )
+                structural = rt_structural or lft_structural
+                junction = rt_junction or lft_junction
+                road = self._create_road_from_lanes(road_lanes, junction)
+                if self._no_composites:
+                    continue
+                if (
+                    structural
+                    or junction
+                    or not WaymoMap._can_merge_roads(road, composite_roads)
+                ):
+                    if len(composite_roads) > 1:
+                        self._create_composite(composite_roads)
+                    composite_roads = []
+                composite_roads.append(road)
+            if len(composite_roads) > 1:
+                self._create_composite(composite_roads)
+
+    def _waymo_pb_to_dict(self, waymo_lane_feats) -> Dict[str, Any]:
+        # we can't mutate the waymo protobuf objects, nor do they have a __dict__,
+        # so we just keep the fields we're going to use...
+        attribs = [
+            "type",
+            "interpolating",
+            "entry_lanes",
+            "exit_lanes",
+            "speed_limit_mph",
+            "left_boundaries",
+            "right_boundaries",
+            "left_neighbors",
+            "right_neighbors",
+        ]
+        return {attr: getattr(waymo_lane_feats, attr) for attr in attribs}
 
     def _load_from_scenario(self, waymo_scenario):
         start = time.time()
 
-        waymo_lanes: List[Tuple[str, Any]] = []
-        for i in range(len(waymo_scenario.map_features)):
-            map_feature = waymo_scenario.map_features[i]
+        # cache feature info about lanes
+        self._lane_dicts: Dict[int, Dict[str, Any]] = {}
+        self._polyline_cache: Dict[int, Tuple[List[np.ndarray], np.ndarray]] = {}
+        for map_feature in waymo_scenario.map_features:
             key = map_feature.WhichOneof("feature_data")
-            if key is not None:
-                self._waymo_features[map_feature.id] = getattr(map_feature, key)
-                if key == "lane":
-                    waymo_lanes.append((str(map_feature.id), getattr(map_feature, key)))
+            if key is None:
+                continue
+            feat_id = map_feature.id
+            map_feats = getattr(map_feature, key)
+            self._waymo_features[feat_id] = map_feats
+            if key != "lane":
+                continue
+            self._polyline_cache[feat_id] = WaymoMap._polyline_dists(map_feats.polyline)
+            self._lane_dicts[feat_id] = self._waymo_pb_to_dict(map_feats)
 
-        # first segment lanes based on their boundaries and neighbors
-        waymo_lanedicts = self._segment_lanes(waymo_lanes)
-        # then create a road segments out of adjacent lane segments
-        self._create_road_segments(waymo_lanedicts)
+        # use original lane polylines for geometry
+        for feat_id, lane_dict in self._lane_dicts.items():
+            lane_dict["_normals"] = self._calculate_normals(feat_id)
+            left_widths, right_widths = self._raycast_boundaries(lane_dict, feat_id)
+            max_width = max(
+                left_widths[0], left_widths[-1], right_widths[0], right_widths[-1]
+            )
+            if max_width < 0.5:
+                max_width = WaymoMap.DEFAULT_LANE_WIDTH / 2
+            max_width = min(max_width, WaymoMap.DEFAULT_LANE_WIDTH / 2)
+            lane_dict["lane_width"] = max_width * 2
 
-        self._waymo_scenario_id = waymo_scenario.scenario_id
+        feat_splits = self._find_splits()
+        self._link_splits(feat_splits)
+        self._create_roads_and_lanes(feat_splits)
+
+        # don't need these anymore
+        self._polyline_cache = None
+        self._lane_dicts = None
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
@@ -683,8 +765,8 @@ class WaymoMap(RoadMap):
             self._road = None  # set when lane is added to a Road
             self._index = None  # set when lane is added to a Road
             self._lane_dict = lane_dict
-            self._lane_pts = [np.array([p.x, p.y, p.z]) for p in lane_dict["polyline"]]
-            self._centerline_pts = [Point(p.x, p.y, p.z) for p in lane_dict["polyline"]]
+            self._lane_pts = lane_dict["polyline"]
+            self._centerline_pts = [Point(*p) for p in lane_dict["polyline"]]
             self._n_pts = len(self._lane_pts)
             self._lane_width = lane_dict["lane_width"]
             self._bounding_box = None
@@ -695,6 +777,8 @@ class WaymoMap(RoadMap):
             self._is_composite = bool(lane_dict.get("sublanes", None))
             self._lane_polygon = None
             self._create_polygon()
+            if self._map._no_composites:
+                del lane_dict["_normals"]
 
         def _create_polygon(self):
             new_left_pts = [None] * self._n_pts
@@ -722,6 +806,10 @@ class WaymoMap(RoadMap):
             return self._road
 
         @property
+        def in_junction(self) -> bool:
+            return self._road.is_junction
+
+        @property
         def index(self) -> int:
             return self._index
 
@@ -738,7 +826,7 @@ class WaymoMap(RoadMap):
         def is_drivable(self) -> bool:
             return self._lane_dict["type"] != LaneCenter.LaneType.TYPE_BIKE_LANE
 
-        @cached_property
+        @property
         def composite_lane(self) -> RoadMap.Lane:
             composite_id = self._lane_dict.get("composite")
             if composite_id:
@@ -765,13 +853,13 @@ class WaymoMap(RoadMap):
         @cached_property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
             return [
-                self._map.lane_by_id(str(el)) for el in self._lane_dict["entry_lanes"]
+                self._map.lane_by_id(il) for il in self._lane_dict["incoming_lane_ids"]
             ]
 
         @cached_property
         def outgoing_lanes(self) -> List[RoadMap.Lane]:
             return [
-                self._map.lane_by_id(str(xl)) for xl in self._lane_dict["exit_lanes"]
+                self._map.lane_by_id(ol) for ol in self._lane_dict["outgoing_lane_ids"]
             ]
 
         @cached_property
@@ -788,30 +876,40 @@ class WaymoMap(RoadMap):
         def lanes_in_same_direction(self) -> List[RoadMap.Lane]:
             return [l for l in self.road.lanes if l != self]
 
-        @staticmethod
-        def _check_boundaries(boundaries: Sequence[Any]) -> bool:
-            for bd in boundaries:
-                if bd.boundary_type >= RoadLine.RoadLineType.TYPE_SOLID_DOUBLE_YELLOW:
-                    return False
+        def _check_boundaries(self, split: "WaymoMap._Split", side: str) -> bool:
+            neighbor = self._map._waymo_features[split.feat_id]
+            for nb in getattr(neighbor, f"{side}_neighbors", []):
+                for bd in nb.boundaries:
+                    if (
+                        bd.boundary_type
+                        >= RoadLine.RoadLineType.TYPE_SOLID_DOUBLE_YELLOW
+                    ):
+                        return False
             return True
 
         @cached_property
         def lane_to_left(self) -> Tuple[Optional[RoadMap.Lane], bool]:
-            if not self._lane_dict["left_neighbors"]:
+            lli = self._lane_dict.get("lane_to_left_info")
+            if not lli:
                 return None, True
-            assert len(self._lane_dict["left_neighbors"]) == 1
-            ln = self._lane_dict["left_neighbors"][0]
-            same_dir = WaymoMap.Lane._check_boundaries(ln.boundaries)
-            return self._map.lane_by_id(str(ln.feature_id)), same_dir
+            if isinstance(lli, str):
+                return self._map.lane_id(lli), True
+            lli = lli[0]  # just use the first...
+            same_dir = self._check_boundaries(lli, "right")
+            llane_id = WaymoMap._lane_id(lli.feat_id, lli.index)
+            return self._map.lane_by_id(llane_id), same_dir
 
         @cached_property
         def lane_to_right(self) -> Tuple[Optional[RoadMap.Lane], bool]:
-            if not self._lane_dict["right_neighbors"]:
+            lri = self._lane_dict.get("lane_to_right_info")
+            if not lri:
                 return None, True
-            assert len(self._lane_dict["right_neighbors"]) == 1
-            rn = self._lane_dict["right_neighbors"][0]
-            same_dir = WaymoMap.Lane._check_boundaries(rn.boundaries)
-            return self._map.lane_by_id(str(rn.feature_id)), same_dir
+            if isinstance(lri, str):
+                return self._map.lane_id(lri), True
+            lri = lri[0]  # just use the first...
+            same_dir = self._check_boundaries(lri, "left")
+            rlane_id = WaymoMap._lane_id(lri.feat_id, lri.index)
+            return self._map.lane_by_id(rlane_id), same_dir
 
         @property
         def speed_limit(self) -> float:
@@ -949,9 +1047,12 @@ class WaymoMap(RoadMap):
         """This is akin to a 'road segment' in real life.
         Many of these might correspond to a single named road in reality."""
 
-        def __init__(self, road_map, road_lanes: Sequence[RoadMap.Lane]):
+        def __init__(
+            self, road_map, road_lanes: Sequence[RoadMap.Lane], is_junction: bool
+        ):
             self._composite = None
             self._is_composite = False
+            self._is_junction = is_junction
             self._road_id = "waymo_road"
             for ind, lane in enumerate(road_lanes):
                 self._road_id += f"-{lane.lane_id}"
@@ -1034,8 +1135,8 @@ class WaymoMap(RoadMap):
 
         @property
         def is_junction(self) -> bool:
-            # TODO: for now Waymo does not indicate whether a road is in junction or not, so we assume no junctions
-            return False
+            # XXX: Waymo does not indicate whether a road is in junction or not, but we can *sometimes* tell.
+            return self._is_junction
 
         @cached_property
         def length(self) -> float:

@@ -830,14 +830,15 @@ def test_waymo_map():
         "waymo_road-113_4",
         "waymo_road-113_23-114_30",
         "waymo_road-112",
-        "waymo_road-107-108-101-108",
-        "waymo_road-101_4",
+        "waymo_road-107-101-108",
+        "waymo_road-107_3-101_2-108_2",
+        "waymo_road-101_4-108_5",
         "waymo_road-101_8",
         "waymo_road-101_34-105_34",
-        "waymo_road-110_24-101_36",
+        "waymo_road-110_24-101_36-105_36",
         "waymo_road-100",
     ]
-    assert route_120_to_100[0].road_length == 223.15809203789289
+    assert route_120_to_100[0].road_length == 223.1937201998572
 
     # waypoints generation along route
     lp_120 = road_map._lanepoints._lanepoints_by_lane_id["120"]
@@ -845,14 +846,15 @@ def test_waymo_map():
     waypoints_for_route = road_map.waypoint_paths(
         lp_pose, 460, route=route_120_to_100[0]
     )
-    assert len(waypoints_for_route) == 1
-    assert len(waypoints_for_route[0]) == 459
+    assert len(waypoints_for_route) == 3
+    assert len(waypoints_for_route[0]) == 460
     lane_ids_under_wps = set()
     for wp in waypoints_for_route[0]:
         lane_ids_under_wps.add(wp.lane_id)
     assert lane_ids_under_wps == {
         "100",
         "101",
+        "101_2",
         "101_34",
         "101_36",
         "101_4",
@@ -868,7 +870,7 @@ def test_waymo_map():
     start_point = Point(x=2778.00, y=-2639.5, z=0)
     end_point = Point(2714.0, -2764.5, 0)
     assert (
-        round(route_120_to_100[0].distance_between(start_point, end_point), 2) == 142.1
+        round(route_120_to_100[0].distance_between(start_point, end_point), 2) == 142.14
     )
 
     # project along route
@@ -897,12 +899,12 @@ def test_waymo_map():
     lp_101_0 = road_map._lanepoints._lanepoints_by_lane_id["101"]
     lp_pose = lp_101_0[0].lp.pose
     waypoints_for_route = road_map.waypoint_paths(lp_pose, 100)
-    assert len(waypoints_for_route) == 4
+    assert len(waypoints_for_route) == 3
     assert len(waypoints_for_route[0]) == 101
     lane_ids_under_wps = set()
     for wp in waypoints_for_route[0]:
         lane_ids_under_wps.add(wp.lane_id)
-    assert lane_ids_under_wps == {"107", "107_19", "107_20", "107_3", "107_5", "111"}
+    assert lane_ids_under_wps == {"107", "107_3", "107_5", "107_19", "107_20", "111"}
 
     # try another scenario that has composite lanes
     scenario_id = "6cec26a9347e8574"
@@ -914,9 +916,15 @@ def test_waymo_map():
     assert not road_map._no_composites
 
     # basic composite tests
-    _check_composite(road_map, "184_11-11-18", ["184_11", "184_18"])
-    _check_composite(road_map, "216_22-22-49", ["216_22", "216_49"])
-    _check_composite(road_map, "309_13-13-40", ["309_13", "309_40"])
+    _check_composite(
+        road_map, "waymo_composite_lane::184_11:184_18", ["184_11", "184_18"]
+    )
+    _check_composite(
+        road_map, "waymo_composite_lane::216_22:216_49", ["216_22", "216_49"]
+    )
+    _check_composite(
+        road_map, "waymo_composite_lane::309_14:309_40", ["309_14", "309_40"]
+    )
 
 
 # XXX: The below is just for testing. Remove before merging.
@@ -925,8 +933,8 @@ def test_waymo_map():
 def convert_polyline(polyline):
     xs, ys = [], []
     for p in polyline:
-        xs.append(p.x)
-        ys.append(p.y)
+        xs.append(p[0])
+        ys.append(p[1])
     return xs, ys
 
 

@@ -289,7 +289,6 @@ class SumoRoadNetwork(RoadMap):
 
         @property
         def in_junction(self) -> bool:
-            """If this lane is part of a junction/intersection."""
             return self._road.is_junction
 
         @cached_property
