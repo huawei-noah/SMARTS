@@ -92,7 +92,7 @@ from smarts.core.road_map import Waypoint
 
 
 @unique
-class Context(IntEnum):
+class Operation(IntEnum):
     NONE = 0
     """No special operation. Value will be sent as is."""
     REDUCE = 1
@@ -176,14 +176,14 @@ class EnvisionDataFormatter:
         self,
         value: Any,
         id_: str,
-        op: Context = Context.NONE,
+        op: Operation = Operation.NONE,
         select: Callable[[Any], Any] = None,
         alternate: Callable[[Any], Any] = None,
     ):
         outval = value
-        if op & Context.REDUCE:
+        if op & Operation.REDUCE:
             outval = ReductionContext.resolve_value(self._reduction_context, outval)
-        if op & Context.FLATTEN:
+        if op & Operation.FLATTEN:
             if not isinstance(outval, (Sequence)):
                 assert False, "Must use flatten with Sequence or dataclass"
             for e in outval:
@@ -225,12 +225,12 @@ class EnvisionDataFormatter:
 
 def _format_traffic_actor(obj, context: EnvisionDataFormatter):
     assert type(obj) is TrafficActorState
-    context.add(obj.actor_id, "actor_id", op=Context.REDUCE)
-    context.add(obj.lane_id, "lane_id", op=Context.DELTA | Context.REDUCE)
-    context.add(obj.position, "position", op=Context.FLATTEN)
+    context.add(obj.actor_id, "actor_id", op=Operation.REDUCE)
+    context.add(obj.lane_id, "lane_id", op=Operation.DELTA | Operation.REDUCE)
+    context.add(obj.position, "position", op=Operation.FLATTEN)
     context.add_primitive(obj.heading)
     context.add_primitive(obj.speed)
-    context.add(obj.events, "events", op=Context.DELTA)
+    context.add(obj.events, "events", op=Operation.DELTA)
     context.add(obj.score, "score")
     # context.add(obj.waypoint_paths, "waypoint_paths", op=Context.OPTIONAL)
     with context.layer():
@@ -242,11 +242,11 @@ def _format_traffic_actor(obj, context: EnvisionDataFormatter):
     # context.add(obj.driven_path, "driven_path", op=Context.OPTIONAL)
     with context.layer():
         for dp in obj.driven_path:
-            context.add(dp, "driven_path_point", op=Context.FLATTEN)
+            context.add(dp, "driven_path_point", op=Operation.FLATTEN)
     # context.add(obj.point_cloud, "point_cloud", op=Context.OPTIONAL)
     with context.layer():
         for l_point in obj.point_cloud:
-            context.add(l_point, "lidar_point", op=Context.FLATTEN)
+            context.add(l_point, "lidar_point", op=Operation.FLATTEN)
     # context.add(
     #     obj.mission_route_geometry or [], "mission_route_geometry", op=Context.OPTIONAL
     # )
@@ -255,16 +255,16 @@ def _format_traffic_actor(obj, context: EnvisionDataFormatter):
             for geo in obj.mission_route_geometry:
                 with context.layer():
                     for route_point in geo:
-                        context.add(route_point, "route_point", op=Context.FLATTEN)
-    context.add(obj.actor_type, "actor_type", op=Context.ONCE)
-    context.add(obj.vehicle_type, "vehicle_type", op=Context.ONCE)
+                        context.add(route_point, "route_point", op=Operation.FLATTEN)
+    context.add(obj.actor_type, "actor_type", op=Operation.ONCE)
+    context.add(obj.vehicle_type, "vehicle_type", op=Operation.ONCE)
 
 
 def _format_state(obj: State, context: EnvisionDataFormatter):
     assert type(obj) is State
     context.add(obj.frame_time, "frame_time")
     context.add(obj.scenario_id, "scenario_id")
-    context.add(obj.scenario_name, "scenario_name", op=Context.ONCE)
+    context.add(obj.scenario_name, "scenario_name", op=Operation.ONCE)
     with context.layer():
         for _id, t in obj.traffic.items():
             with context.layer():
@@ -275,7 +275,7 @@ def _format_state(obj: State, context: EnvisionDataFormatter):
         "bubbles",
         select=lambda bbl: (bbl.geometry, bbl.pose),
         alternate=lambda bbl: bbl.pose,
-        op=Context.DELTA_ALTERNATE,
+        op=Operation.DELTA_ALTERNATE,
     )  # On delta use alternative
     # context.add(obj.ego_agent_ids, "ego_agent_ids", op=Context.DELTA)
 
@@ -313,9 +313,9 @@ def _format_events(obj: Events, context: EnvisionDataFormatter):
 def _format_waypoint(obj: Waypoint, context: EnvisionDataFormatter):
     t = type(obj)
     assert t is Waypoint
-    context.add(obj.pos, "position", op=Context.FLATTEN)
+    context.add(obj.pos, "position", op=Operation.FLATTEN)
     context.add_primitive(float(obj.heading))
-    context.add(obj.lane_id, "lane_id", op=Context.REDUCE)
+    context.add(obj.lane_id, "lane_id", op=Operation.REDUCE)
     context.add_primitive(obj.lane_width)
     context.add_primitive(obj.speed_limit)
     context.add_primitive(obj.lane_index)

@@ -23,7 +23,7 @@ from typing import Sequence
 
 import pytest
 
-from envision.serialization import Context, EnvisionDataFormatter, _serialization_map
+from envision.serialization import Operation, EnvisionDataFormatter, _serialization_map
 from envision.types import State, TrafficActorState, TrafficActorType, VehicleType
 from smarts.core.coordinates import Heading
 from smarts.core.events import Events
@@ -237,15 +237,15 @@ def test_primitive_data_format(primitive_data):
 def test_layer():
     expected_output = [2, 5, 6, [2, 5, 6], [8, 8], ["Time", ["for", "tea", 12, "noon"]]]
     es = EnvisionDataFormatter(None)
-    es.add([2, 5, 6], "", op=Context.FLATTEN)
+    es.add([2, 5, 6], "", op=Operation.FLATTEN)
     es.add([2, 5, 6], "")
     with es.layer():
-        es.add([8, 8], "", op=Context.FLATTEN)
+        es.add([8, 8], "", op=Operation.FLATTEN)
 
     with es.layer():
         es.add("Time", "")
         with es.layer():
-            es.add(["for", "tea", 12, "noon"], "", op=Context.FLATTEN)
+            es.add(["for", "tea", 12, "noon"], "", op=Operation.FLATTEN)
 
     assert es.resolve() == expected_output
 
