@@ -243,7 +243,7 @@ class WaymoMap(RoadMap):
         split_dist = pld[split.index] if split.index < len(pld) else pld[-1]
         # XXX:  not symmetric!
         for nb in neighbors:
-            if not (nb.self_start_index <= split.index <= nb.self_end_index):
+            if not (nb.self_start_index < split.index < nb.self_end_index):
                 continue
             start_dist = pld[nb.self_start_index]
             assert split_dist >= start_dist
@@ -309,8 +309,6 @@ class WaymoMap(RoadMap):
         # interpolate for any missing neighbors...
         for linked_split in result.values():
             for side in ["left", "right"]:
-                if getattr(linked_split, f"{side}_splits"):
-                    continue
                 neighbors = getattr(lane_feats, f"{side}_neighbors")
                 nb_split = self._interpolate_split(linked_split.split, neighbors)
                 if nb_split:
@@ -891,6 +889,17 @@ class WaymoMap(RoadMap):
                         return False
             return True
 
+        def _adj_lane_info(self, adj_lane_info):
+            if len(adj_lane_info) == 1:
+                return adj_lane_info[0]
+            min_fdelt = None
+            for li in adj_lane_info:
+                fdelt = abs(self._lane_dict["_feature_id"] - li.feat_id)
+                if not min_fdelt or fdelt < min_fdelt:
+                    min_fdelt = fdelt
+                    lane_info = li
+            return lane_info
+
         @cached_property
         def lane_to_left(self) -> Tuple[Optional[RoadMap.Lane], bool]:
             lli = self._lane_dict.get("lane_to_left_info")
@@ -898,7 +907,7 @@ class WaymoMap(RoadMap):
                 return None, True
             if isinstance(lli, str):
                 return self._map.lane_id(lli), True
-            lli = lli[0]  # just use the first...
+            lli = self._adj_lane_info(lli)
             same_dir = self._check_boundaries(lli, "right")
             llane_id = WaymoMap._lane_id(lli.feat_id, lli.index)
             return self._map.lane_by_id(llane_id), same_dir
@@ -910,7 +919,7 @@ class WaymoMap(RoadMap):
                 return None, True
             if isinstance(lri, str):
                 return self._map.lane_id(lri), True
-            lri = lri[0]  # just use the first...
+            lri = self._adj_lane_info(lri)
             same_dir = self._check_boundaries(lri, "left")
             rlane_id = WaymoMap._lane_id(lri.feat_id, lri.index)
             return self._map.lane_by_id(rlane_id), same_dir
