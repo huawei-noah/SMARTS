@@ -659,6 +659,8 @@ def filter_scenario(
 
 
 def prompt_tags() -> Tuple[Optional[List[str]], bool]:
+    """Prompt users to input the tags they want to add to the given scenarios
+    """
     while True:
         try:
             response = input("\nResponse: ")
@@ -1071,6 +1073,8 @@ def remove_tags(
 def get_scenario_and_tag_dict(
     tfrecord_file: str,
 ) -> Tuple[Dict[str, List[Union[scenario_pb2.Scenario, None]]], Dict[str, List]]:
+    """Get scenario and tag dictionary having info and tags for all scenarios in this tfrecord_file
+    """
     scenario_dict = {}
     tags_per_scenario = {}
     dataset = read_tfrecord_file(tfrecord_file)
@@ -1086,6 +1090,8 @@ def get_scenario_and_tag_dict(
 def parse_tfrecords(
     tfrecord_paths: List[str],
 ) -> Tuple[Dict[str, None], Dict[str, None]]:
+    """Parse every tfrecord paths passed by users and create hash tables of scenarios and tags for every tfrecord file found
+    """
     scenarios_per_tfrecord, tags_per_tfrecord = {}, {}
     for tfrecord_path in tfrecord_paths:
         if os.path.isdir(tfrecord_path):
@@ -1235,7 +1241,8 @@ def check_index_validity(
 
 
 def check_path_validity(target_base_path: str) -> bool:
-    # Check if target base path is valid
+    """Check if target base path is valid
+    """
     try:
         Path(target_base_path).resolve()
     except (IOError, OSError, RuntimeError):
