@@ -1770,7 +1770,7 @@ def explore_tf_record(
                         )
                     else:
                         if tags is not None:
-                            imported_tfrecord_tags[scenario_idx] = [tag for tag in tags]
+                            imported_tfrecord_tags[scenario_idx] = tags
                         else:
                             imported_tfrecord_tags[scenario_idx] = []
                 print("Tags added to `Imported Tags` list")
