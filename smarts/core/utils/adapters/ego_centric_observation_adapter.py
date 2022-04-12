@@ -247,7 +247,7 @@ def _ego_centric_imitation_adapter(
                 last_obs.ego_vehicle_state.heading,
             )[:2]
         )
-    assert issubclass(act, (float, int))
+    assert isinstance(act, (float, int))
     return act
 
 
