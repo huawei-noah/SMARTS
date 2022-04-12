@@ -165,14 +165,17 @@ def _trajectory_adaption(act, last_obs):
         ]
     ).T
     new_headings = np.array(
-        [wrap_value(h + last_obs.ego_vehicle_state.heading) for h in act[2]]
+        [
+            wrap_value(h + last_obs.ego_vehicle_state.heading, -math.pi, math.pi)
+            for h in act[2]
+        ]
     )
     return (*new_pos, new_headings, *act[3:])
 
 
 def _ego_centric_trajectory_adapter(
     act: Tuple[Sequence[float], Sequence[float], Sequence[float], Sequence[float]],
-    last_obs: Observation = None,
+    last_obs: Optional[Observation] = None,
 ):
     if last_obs:
         return _trajectory_adaption(act, last_obs)
@@ -187,7 +190,7 @@ def _ego_centric_trajectory_with_time_adapter(
         Sequence[float],
         Sequence[float],
     ],
-    last_obs: Observation = None,
+    last_obs: Optional[Observation] = None,
 ):
     if last_obs:
         return _trajectory_adaption(act, last_obs)
@@ -196,7 +199,7 @@ def _ego_centric_trajectory_with_time_adapter(
 
 def _ego_centric_mpc_adapter(
     act: Tuple[Sequence[float], Sequence[float], Sequence[float], Sequence[float]],
-    last_obs: Observation = None,
+    last_obs: Optional[Observation] = None,
 ):
     if last_obs:
         return _trajectory_adaption(act, last_obs)
@@ -204,7 +207,7 @@ def _ego_centric_mpc_adapter(
 
 
 def _ego_centric_target_pose_adapter(
-    act: Sequence[float, float, float, float], last_obs: Observation = None
+    act: Sequence[float, float, float, float], last_obs: Optional[Observation] = None
 ):
     if last_obs:
         out_pos = world_position_from_ego_frame(
@@ -225,7 +228,8 @@ def _ego_centric_target_pose_adapter(
 
 
 def _ego_centric_multi_target_pose_adapter(
-    act: Dict[str, Tuple[float, float, float, float]], last_obs: Observation = None
+    act: Dict[str, Tuple[float, float, float, float]],
+    last_obs: Optional[Observation] = None,
 ):
     assert ValueError(
         "Ego-centric assumes single vehicle and is ambiguous with multi-target-pose."
@@ -233,7 +237,7 @@ def _ego_centric_multi_target_pose_adapter(
 
 
 def _ego_centric_imitation_adapter(
-    act: Union[float, Tuple[float, float]], last_obs: Observation = None
+    act: Union[float, Tuple[float, float]], last_obs: Optional[Observation] = None
 ):
     if isinstance(act, Tuple):
         return tuple(
