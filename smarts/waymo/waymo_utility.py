@@ -1668,7 +1668,7 @@ def explore_tf_record(
 
             if len(scenarios_to_animate) > 0:
                 plot_parameters = product(
-                    [scenarios_to_animate],
+                    scenarios_to_animate,
                     [True],
                     [None],
                 )
