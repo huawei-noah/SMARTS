@@ -243,7 +243,7 @@ class WaymoMap(RoadMap):
         split_dist = pld[split.index] if split.index < len(pld) else pld[-1]
         # XXX:  not symmetric!
         for nb in neighbors:
-            if not (nb.self_start_index <= split.index <= nb.self_end_index):
+            if not (nb.self_start_index < split.index < nb.self_end_index):
                 continue
             start_dist = pld[nb.self_start_index]
             assert split_dist >= start_dist
@@ -309,8 +309,6 @@ class WaymoMap(RoadMap):
         # interpolate for any missing neighbors...
         for linked_split in result.values():
             for side in ["left", "right"]:
-                if getattr(linked_split, f"{side}_splits"):
-                    continue
                 neighbors = getattr(lane_feats, f"{side}_neighbors")
                 nb_split = self._interpolate_split(linked_split.split, neighbors)
                 if nb_split:
@@ -405,7 +403,11 @@ class WaymoMap(RoadMap):
         lane_dict["type"] = feat_dict["type"]
         lane_dict["speed_limit_mph"] = feat_dict["speed_limit_mph"]
         lane_dict["interpolating"] = feat_dict["interpolating"]
-        lane_dict["_normals"] = feat_dict["_normals"]
+        lane_dict["_normals"] = [
+            np
+            for i, np in enumerate(feat_dict["_normals"])
+            if linked_split.split.index <= i <= next_split_pt
+        ]
         lane_dict["_feature_id"] = feat_id
         lane_dict["lane_width"] = feat_dict["lane_width"]
         lane_dict["polyline"] = [
@@ -446,7 +448,9 @@ class WaymoMap(RoadMap):
     ) -> Tuple[bool, bool]:
         structural_split = linked_split.split.structural
         # if there's more than one lane adjacent to this at the same point, it's in a junction
-        in_junction = len(linked_split.right_splits) > 1
+        in_junction = (
+            len(linked_split.right_splits) > 1 or len(linked_split.left_splits) > 1
+        )
         for rt_split in linked_split.right_splits:
             rfeat = feat_splits[rt_split.feat_id]
             rt_lsplit = rfeat[rt_split.index]
@@ -473,7 +477,10 @@ class WaymoMap(RoadMap):
     ) -> Tuple[bool, bool]:
         structural_split = linked_split.split.structural
         # if there's more than one lane adjacent to this at the same point, it's in a junction
-        in_junction = len(linked_split.left_splits) > 1
+        in_junction = (
+            len(linked_split.left_splits) > 1 or len(linked_split.right_splits) > 1
+        )
+        used = []
         for lft_split in linked_split.left_splits:
             lfeat = feat_splits[lft_split.feat_id]
             lft_lsplit = lfeat[lft_split.index]
@@ -483,17 +490,12 @@ class WaymoMap(RoadMap):
                 or lft_lsplit.used
             ):
                 continue
+            used.append(lft_split)
             lane = self._create_lane_from_split(lft_lsplit, feat_splits)
             lanes.append(lane)
-        for lft_split in linked_split.left_splits:
+        for lft_split in used:
             lfeat = feat_splits[lft_split.feat_id]
             lft_lsplit = lfeat[lft_split.index]
-            if (
-                not lft_lsplit.next_split
-                or lft_lsplit.split.index >= lfeat.sorted_keys[-1] - 1
-                or lft_lsplit.used
-            ):
-                continue
             lft_structural, lft_in_junction = self._add_left_lanes(
                 lft_lsplit, lanes, feat_splits
             )
@@ -887,6 +889,17 @@ class WaymoMap(RoadMap):
                         return False
             return True
 
+        def _adj_lane_info(self, adj_lane_info):
+            if len(adj_lane_info) == 1:
+                return adj_lane_info[0]
+            min_fdelt = None
+            for li in adj_lane_info:
+                fdelt = abs(self._lane_dict["_feature_id"] - li.feat_id)
+                if not min_fdelt or fdelt < min_fdelt:
+                    min_fdelt = fdelt
+                    lane_info = li
+            return lane_info
+
         @cached_property
         def lane_to_left(self) -> Tuple[Optional[RoadMap.Lane], bool]:
             lli = self._lane_dict.get("lane_to_left_info")
@@ -894,7 +907,7 @@ class WaymoMap(RoadMap):
                 return None, True
             if isinstance(lli, str):
                 return self._map.lane_id(lli), True
-            lli = lli[0]  # just use the first...
+            lli = self._adj_lane_info(lli)
             same_dir = self._check_boundaries(lli, "right")
             llane_id = WaymoMap._lane_id(lli.feat_id, lli.index)
             return self._map.lane_by_id(llane_id), same_dir
@@ -906,7 +919,7 @@ class WaymoMap(RoadMap):
                 return None, True
             if isinstance(lri, str):
                 return self._map.lane_id(lri), True
-            lri = lri[0]  # just use the first...
+            lri = self._adj_lane_info(lri)
             same_dir = self._check_boundaries(lri, "left")
             rlane_id = WaymoMap._lane_id(lri.feat_id, lri.index)
             return self._map.lane_by_id(rlane_id), same_dir
@@ -1141,6 +1154,9 @@ class WaymoMap(RoadMap):
         @cached_property
         def length(self) -> float:
             return max(lane.length for lane in self.lanes)
+            # TAI: the more curved the road, the more the lane lengths diverge.
+            # TAI: consider using average here instead of max?
+            # return sum(lane.length for lane in self.lanes) / len(self.lanes)
 
         @cached_property
         def incoming_roads(self) -> List[RoadMap.Road]:

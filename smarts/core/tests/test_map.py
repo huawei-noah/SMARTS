@@ -720,7 +720,7 @@ def test_waymo_map():
     assert round(l1.length, 2) == 124.48
     assert l1.speed_limit == 13.4112
 
-    assert set(l.lane_id for l in l1.incoming_lanes) == {"101_36", "105_37", "110_25"}
+    assert set(l.lane_id for l in l1.incoming_lanes) == {"101_37", "105_37", "110_25"}
     assert set(l.lane_id for l in l1.outgoing_lanes) == set()
 
     right_lane, direction = l1.lane_to_right
@@ -803,6 +803,34 @@ def test_waymo_map():
     assert l86_4.incoming_lanes == [l86]
     assert l87_4.incoming_lanes == [l87]
 
+    # segmentation: lanes 97, 103 and 107 converge after intersection
+    l97_32 = road_map.lane_by_id("97_32")
+    l103_37 = road_map.lane_by_id("103_37")
+    assert l97_32.road == l103_37.road
+    l97_32r, rdir = l97_32.lane_to_right
+    assert l97_32r == l103_37, f"{l97_32r.lane_id}"
+    assert rdir
+    l103_37l, ldir = l103_37.lane_to_left
+    assert l103_37l == l97_32, f"{l103_37l.lane_id}"
+    assert ldir
+    l97_36 = road_map.lane_by_id("97_36")
+    l103_41 = road_map.lane_by_id("103_41")
+    l107_20 = road_map.lane_by_id("107_20")
+    assert l97_36.road == l103_41.road
+    assert l103_41.road == l107_20.road
+    l97_36r, rdir = l97_36.lane_to_right
+    assert l97_36r == l103_41, f"{l97_36r.lane_id}"
+    assert rdir
+    l103_41l, ldir = l103_41.lane_to_left
+    assert l103_41l == l97_36, f"{l103_41l.lane_id}"
+    assert ldir
+    l103_41r, rdir = l103_41.lane_to_right
+    assert l103_41r == l107_20, f"{l103_41r.lane_id}"
+    assert rdir
+    l107_20l, ldir = l107_20.lane_to_left
+    assert l107_20l == l103_41, f"{l107_20l.lane_id}"
+    assert ldir
+
     # basic composites
     assert l86.composite_lane == l86
     assert l87.composite_lane == l87
@@ -836,9 +864,10 @@ def test_waymo_map():
         "waymo_road-101_8",
         "waymo_road-101_34-105_34",
         "waymo_road-110_24-101_36-105_36",
+        "waymo_road-110_25-101_37-105_37",
         "waymo_road-100",
     ]
-    assert route_120_to_100[0].road_length == 223.1937201998572
+    assert route_120_to_100[0].road_length == 223.72998310771266
 
     # waypoints generation along route
     lp_120 = road_map._lanepoints._lanepoints_by_lane_id["120"]
@@ -847,7 +876,7 @@ def test_waymo_map():
         lp_pose, 460, route=route_120_to_100[0]
     )
     assert len(waypoints_for_route) == 3
-    assert len(waypoints_for_route[0]) == 460
+    assert len(waypoints_for_route[0]) == 461
     lane_ids_under_wps = set()
     for wp in waypoints_for_route[0]:
         lane_ids_under_wps.add(wp.lane_id)
@@ -857,6 +886,7 @@ def test_waymo_map():
         "101_2",
         "101_34",
         "101_36",
+        "101_37",
         "101_4",
         "101_8",
         "112",
@@ -870,7 +900,7 @@ def test_waymo_map():
     start_point = Point(x=2778.00, y=-2639.5, z=0)
     end_point = Point(2714.0, -2764.5, 0)
     assert (
-        round(route_120_to_100[0].distance_between(start_point, end_point), 2) == 142.14
+        round(route_120_to_100[0].distance_between(start_point, end_point), 2) == 142.67
     )
 
     # project along route
@@ -1034,6 +1064,11 @@ if __name__ == "__main__":
     for lane_id, lane in road_map._lanes.items():
         if ids and lane_id not in ids:
             continue
+        if lane.is_composite:
+            # don't draw lanes twice...
+            continue
+        color = "b-"
+        # color = "r-" if  lane.in_junction else "b-"
         feature_id = int(lane._lane_dict["_feature_id"])
         feature = road_map._waymo_features[feature_id]
         plot_lane(lane._lane_dict)
@@ -1042,7 +1077,7 @@ if __name__ == "__main__":
         for x, y in lane._lane_polygon:
             xs.append(x)
             ys.append(y)
-        plt.plot(xs, ys, "b-")
+        plt.plot(xs, ys, color)
 
         # Plot lanepoints
         # if lane.is_drivable:
