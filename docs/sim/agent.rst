@@ -79,7 +79,7 @@ different max_episode_len for each agent.
 - `ActionSpaceType.TrajectoryWithTime`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space using trajectory as times, x coordinates, y coordinates, headings, and speeds to interpolate the vehicle along the trajectory.
 - `ActionSpaceType.MPC`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space using trajectory as x coordinates, y coordinates, headings, and speeds to adaptively perform controls on the vehicle model in an attempt to match the given trajectory. 
 - `ActionSpaceType.TargetPose`: `Sequence[float, float, float, float]` continuous action space with a single vehiclex coordinate, y coordinate, heading, and time delta to reach the given pose.
-- `ActionSpaceType.MultiTargetPose`: `Dict[str, (float, float, float float)]` continuous action space that provides actions for multiple vehicles with each vehicle id mapped to pose as x coordinate, y coordinate, heading, and time delta to reach the given pose. 
+- `ActionSpaceType.MultiTargetPose`: `Dict[str, (float, float, float, float)]` continuous action space that provides actions for multiple vehicles with each vehicle id mapped to pose as x coordinate, y coordinate, heading, and time delta to reach the given pose. 
 - `ActionSpaceType.Imitation``: `Union[float, (float,float)]` continuous action space where you can pass either (a) initial speed upon reset or (b) linear acceleration and angular velocity for other steps.
 
 
