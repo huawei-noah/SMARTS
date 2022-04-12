@@ -19,15 +19,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import math
 from dataclasses import is_dataclass
 from dataclasses import replace as dc_replace
-from typing import Any
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
+from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading
 from smarts.core.sensors import Observation
-from smarts.core.utils.math import position_to_ego_frame
+from smarts.core.utils.math import (
+    position_to_ego_frame,
+    world_position_from_ego_frame,
+    wrap_value,
+)
 
 
 def _isnamedtupleinstance(x):
@@ -57,13 +63,13 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
     heading = obs.ego_vehicle_state.heading
 
     def ego_frame_dynamics(v):
-        return np.array([np.linalg.norm(v[:2]), 0, *v[2:]])
+        return np.array([np.linalg.norm(v[:2]), 0, *v[2:]])  # point to X
 
     def transform(v):
         return position_to_ego_frame(v, position, heading)
 
     def adjust_heading(h):
-        return h - heading
+        return wrap_value(h - heading, -math.pi, math.pi)
 
     nvs = obs.neighborhood_vehicle_states or []
     wpps = obs.waypoint_paths or []
@@ -81,7 +87,7 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
             _replace(
                 wp,
                 pos=transform(np.append(wp.pos, [0]))[:2],
-                heading=adjust_heading(wp.heading),
+                heading=Heading(adjust_heading(wp.heading)),
             )
             for wp in wps
         ]
@@ -118,7 +124,7 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
             _replace(
                 nv,
                 position=transform(nv.position),
-                heading=adjust_heading(nv.heading),
+                heading=Heading(adjust_heading(nv.heading)),
             )
             for nv in nvs
         ],
@@ -129,3 +135,157 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
         road_waypoints=rwps,
         via_data=vd,
     )
+
+
+def _ego_centric_continuous_action_adapter(act: Tuple[float, float, float], _=None):
+    return act
+
+
+def _ego_centric_actuator_dynamic_adapter(act: Tuple[float, float, float], _=None):
+    return act
+
+
+def _ego_centric_lane_adapter(act: str, _=None):
+    return act
+
+
+def _ego_centric_lane_with_continous_speed_adapter(act: Tuple[int, float], _=None):
+    return act
+
+
+def _trajectory_adaption(act, last_obs):
+    new_pos = np.array(
+        [
+            world_position_from_ego_frame(
+                [x, y, 0][:2],
+                last_obs.ego_vehicle_state.position,
+                last_obs.ego_vehicle_state.heading,
+            )
+            for x, y in zip(*act[:2])
+        ]
+    ).T
+    new_headings = np.array(
+        [wrap_value(h + last_obs.ego_vehicle_state.heading) for h in act[2]]
+    )
+    return (*new_pos, new_headings, *act[3:])
+
+
+def _ego_centric_trajectory_adapter(
+    act: Tuple[Sequence[float], Sequence[float], Sequence[float], Sequence[float]],
+    last_obs: Observation = None,
+):
+    if last_obs:
+        return _trajectory_adaption(act, last_obs)
+    return act
+
+
+def _ego_centric_trajectory_with_time_adapter(
+    act: Tuple[
+        Sequence[float],
+        Sequence[float],
+        Sequence[float],
+        Sequence[float],
+        Sequence[float],
+    ],
+    last_obs: Observation = None,
+):
+    if last_obs:
+        return _trajectory_adaption(act, last_obs)
+    return act
+
+
+def _ego_centric_mpc_adapter(
+    act: Tuple[Sequence[float], Sequence[float], Sequence[float], Sequence[float]],
+    last_obs: Observation = None,
+):
+    if last_obs:
+        return _trajectory_adaption(act, last_obs)
+    return act
+
+
+def _ego_centric_target_pose_adapter(
+    act: Sequence[float, float, float, float], last_obs: Observation = None
+):
+    if last_obs:
+        out_pos = world_position_from_ego_frame(
+            np.append(act[:2], [0]),
+            last_obs.ego_vehicle_state.position,
+            last_obs.ego_vehicle_state.heading,
+        )
+        return np.array(
+            [
+                *out_pos[:2],
+                wrap_value(
+                    last_obs.ego_vehicle_state.heading + act[2], -math.pi, math.pi
+                ),
+                act[3],
+            ]
+        )
+    return act
+
+
+def _ego_centric_multi_target_pose_adapter(
+    act: Dict[str, Tuple[float, float, float, float]], last_obs: Observation = None
+):
+    assert ValueError(
+        "Ego-centric assumes single vehicle and is ambiguous with multi-target-pose."
+    )
+
+
+def _ego_centric_imitation_adapter(
+    act: Union[float, Tuple[float, float]], last_obs: Observation = None
+):
+    if isinstance(act, Tuple):
+        return tuple(
+            world_position_from_ego_frame(
+                act + (0,),
+                last_obs.ego_vehicle_state.position,
+                last_obs.ego_vehicle_state.heading,
+            )[:2]
+        )
+    assert issubclass(act, (float, int))
+    return act
+
+
+def _pair_adapters(
+    ego_centric_observation_adapter: Callable[[Observation], Observation],
+    ego_centric_action_adapter: Callable[[Any, Optional[Observation]], Any],
+):
+    """Wrapper that shares the state between both adapters."""
+    last_obs = None
+
+    def oa_wrapper(obs: Observation):
+        nonlocal last_obs
+
+        last_obs = obs  # Store the unmodified observation
+        return ego_centric_observation_adapter(obs)
+
+    def aa_wrapper(act: Any):
+        nonlocal last_obs
+
+        # Pass the last unmodified obs to the action for conversion purposes
+        return ego_centric_action_adapter(act, last_obs)
+
+    return oa_wrapper, aa_wrapper
+
+
+def get_ego_centric_adapters(action_space: ActionSpaceType):
+    """Provides a set of adapters that share state information of the unmodified observation.
+    This will allow the action adapter to automatically convert back to world space for SMARTS.
+    Returns:
+        (obs_adapter, action_adapter)
+    """
+    m = {
+        ActionSpaceType.Continuous: _ego_centric_continuous_action_adapter,
+        ActionSpaceType.ActuatorDynamic: _ego_centric_actuator_dynamic_adapter,
+        ActionSpaceType.Lane: _ego_centric_lane_adapter,
+        ActionSpaceType.LaneWithContinuousSpeed: _ego_centric_lane_with_continous_speed_adapter,
+        ActionSpaceType.Trajectory: _ego_centric_trajectory_adapter,
+        ActionSpaceType.TrajectoryWithTime: _ego_centric_trajectory_with_time_adapter,
+        ActionSpaceType.MPC: _ego_centric_mpc_adapter,
+        ActionSpaceType.TargetPose: _ego_centric_target_pose_adapter,
+        ActionSpaceType.MultiTargetPose: _ego_centric_multi_target_pose_adapter,
+        ActionSpaceType.Imitation: _ego_centric_imitation_adapter,
+    }
+
+    return _pair_adapters(ego_centric_observation_adapter, m.get(action_space))
