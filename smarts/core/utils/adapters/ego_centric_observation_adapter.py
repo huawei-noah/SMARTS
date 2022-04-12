@@ -207,7 +207,7 @@ def _ego_centric_mpc_adapter(
 
 
 def _ego_centric_target_pose_adapter(
-    act: Sequence[float, float, float, float], last_obs: Optional[Observation] = None
+    act: Tuple[float, float, float, float], last_obs: Optional[Observation] = None
 ):
     if last_obs:
         out_pos = world_position_from_ego_frame(
@@ -239,7 +239,7 @@ def _ego_centric_multi_target_pose_adapter(
 def _ego_centric_imitation_adapter(
     act: Union[float, Tuple[float, float]], last_obs: Optional[Observation] = None
 ):
-    if isinstance(act, Tuple):
+    if last_obs and isinstance(act, Tuple):
         return tuple(
             world_position_from_ego_frame(
                 act + (0,),
