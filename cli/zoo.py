@@ -28,7 +28,7 @@ import click
 from rich import print
 
 
-@click.group(name="zoo")
+@click.group(name="zoo", help="Build, install, or instantiate workers.")
 def zoo_cli():
     pass
 
