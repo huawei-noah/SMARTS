@@ -1769,6 +1769,7 @@ def explore_tf_record(
                             ]
                         )
                     else:
+                        assert type(tags) == list
                         imported_tfrecord_tags[scenario_idx] = tags
                 print("Tags added to `Imported Tags` list")
 
