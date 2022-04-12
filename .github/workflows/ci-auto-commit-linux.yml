@@ -59,3 +59,12 @@ jobs:
           branch: develop
           default_author: user_info 
           message: 'GitHub Actions: Format'
+      - name: Update cli.rst documentation
+        run: python docs/create_cli_docs.py
+      - name: Commit cli.rst changes
+        uses: EndBug/add-and-commit@v7
+        with:
+          add: '*/cli.rst'
+          branch: develop
+          default_author: user_info
+          message: 'GitHub Actions: Update cli.rst'

@@ -28,9 +28,12 @@ from cli.studio import scenario_cli
 from cli.ultra import ultra_cli
 from cli.zoo import zoo_cli
 
-
 @click.group()
 def scl():
+    """
+    The SMARTS command line interface.
+    Use --help with each command for further information.
+    """
     pass
 
 
