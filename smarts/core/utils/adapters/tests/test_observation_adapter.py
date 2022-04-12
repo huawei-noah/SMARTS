@@ -31,7 +31,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.tests.helpers.scenario import temp_scenario
-from smarts.core.utils.adapters.ego_centric_observation_adapter import (
+from smarts.core.utils.adapters.ego_centric_adapters import (
     ego_centric_observation_adapter,
 )
 from smarts.sstudio.genscenario import gen_scenario
