@@ -483,12 +483,12 @@ def plot_scenario(
     map_features = scenario_info[1]
 
     # Plot map
-    fig = plt.figure(num=fig_num)
+    fig = plt.figure()
     if animate_trajectories or not f_ids:
         highlighted_handles = plot_map_features(map_features, [])
     else:
         highlighted_handles = plot_map_features(map_features, f_ids)
-    plt.title(f"Scenario {scenario_info[0].scenario_id}")
+    plt.title(f"Scenario {scenario_info[0].scenario_id}, idx {fig_num}")
 
     # Set Legend Handles
     all_handles = []
@@ -518,15 +518,16 @@ def plot_scenario(
 
 
 def save_plot(
-    scenario_id: str,
+    scenario_info: Tuple[int, str],
     target_path: str,
     scenario_dict: Dict,
     animate: bool,
     filter_tags: Optional[Tuple] = None,
 ) -> bool:
+    idx, scenario_id = scenario_info
     if filter_tags:
         tags, filter_preview, tfrecord_tags, imported_tfrecord_tags = filter_tags
-        if filter_scenario(
+        if not filter_scenario(
             tfrecord_tags.get(scenario_id, []),
             imported_tfrecord_tags.get(scenario_id, []),
             (tags, filter_preview),
@@ -538,7 +539,7 @@ def save_plot(
     fig = plt.figure()
     mng = plt.get_current_fig_manager()
     mng.resize(1000, 1000)
-    plt.title(f"Scenario {scenario_id}")
+    plt.title(f"Scenario {scenario_id}, index {idx}")
 
     # Plot map
     if scenario_dict[scenario_id][1] is None:
@@ -601,7 +602,7 @@ def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=
         return
 
     plot_parameters = product(
-        [scenario_id for scenario_id in scenario_dict],
+        [(i + 1, scenario_id) for i, scenario_id in enumerate(scenario_dict)],
         [target_base_path],
         [scenario_dict],
         [animate],
@@ -1406,7 +1407,7 @@ def explore_tf_record(
     print("TfRecord Explorer")
     stop_exploring = False
     print_commands = True
-
+    scenario_ids = None
     while not stop_exploring:
         if print_commands:
             scenario_ids = display_scenarios_in_tfrecord(
@@ -1574,14 +1575,13 @@ def explore_tf_record(
                     scenario_dict[scenario_idx][1] = get_map_features_for_scenario(
                         scenario_dict[scenario_idx][0]
                     )
-                scenarios_to_plot.append(scenario_dict[scenario_idx])
+                scenarios_to_plot.append(
+                    (scenario_dict[scenario_idx], valid_indexes[i])
+                )
 
             if len(scenarios_to_plot) > 0:
                 plot_parameters = product(
-                    [
-                        (scenarios_to_plot[i], i + 1)
-                        for i in range(len(scenarios_to_plot))
-                    ],
+                    scenarios_to_plot,
                     [False],
                     [None],
                 )
@@ -1662,14 +1662,13 @@ def explore_tf_record(
                     scenario_dict[scenario_idx][2] = get_trajectory_data(
                         scenario_dict[scenario_idx][0]
                     )
-                scenarios_to_animate.append(scenario_dict[scenario_idx])
+                scenarios_to_animate.append(
+                    (scenario_dict[scenario_idx], valid_indexes[i])
+                )
 
             if len(scenarios_to_animate) > 0:
                 plot_parameters = product(
-                    [
-                        (scenarios_to_animate[i], i + 1)
-                        for i in range(len(scenarios_to_animate))
-                    ],
+                    [scenarios_to_animate],
                     [True],
                     [None],
                 )
@@ -1815,6 +1814,7 @@ def explore_tf_record(
             )
             exit_browser = explore_scenario(
                 tfrecord,
+                scenario_ids.index(scenario_id),
                 scenario_dict[scenario_id],
                 tfrecord_tags[scenario_id],
                 imported_tfrecord_tags[scenario_id],
@@ -1841,9 +1841,10 @@ def explore_tf_record(
 
 def explore_scenario(
     tfrecord_file_path: str,
-    scenario_info,
-    scenario_tags,
-    imported_scenario_tags,
+    scenario_index: int,
+    scenario_info: List,
+    scenario_tags: List[str],
+    imported_scenario_tags: List[str],
     default_target_path: Optional[str],
 ) -> bool:
     scenario = scenario_info[0]
@@ -2011,7 +2012,7 @@ def explore_scenario(
             feature_ids = None
             if len(input_lst) > 1:
                 feature_ids = input_lst[1:]
-            plot_scenario((scenario_info, 1), False, feature_ids)
+            plot_scenario((scenario_info, scenario_index), False, feature_ids)
 
         elif user_input.lower() == "animate" or re.compile(
             "^animate[\s]+(?:\s*(\d+))+?$", flags=re.IGNORECASE
@@ -2021,7 +2022,7 @@ def explore_scenario(
             track_ids = None
             if len(input_lst) > 1:
                 track_ids = input_lst[1:]
-            plot_scenario((scenario_info, 1), True, track_ids)
+            plot_scenario((scenario_info, scenario_index), True, track_ids)
 
         elif re.compile("^tag([\s]+imported)?$", flags=re.IGNORECASE).match(user_input):
             input_lst = user_input.lower().split()
