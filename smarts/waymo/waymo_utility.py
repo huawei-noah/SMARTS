@@ -1453,9 +1453,9 @@ def tfrecords_browser(
 
 def explore_tf_record(
     tfrecord: str,
-    scenario_dict,
-    tfrecord_tags,
-    imported_tfrecord_tags,
+    scenario_dict: Dict,
+    tfrecord_tags: Dict[str, List[str]],
+    imported_tfrecord_tags: Dict[str, List[str]],
     default_target_path: Optional[str] = None,
 ) -> bool:
     """Tf Record Explorer, which shows all the scenarios and their info and
