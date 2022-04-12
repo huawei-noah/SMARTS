@@ -1769,7 +1769,10 @@ def explore_tf_record(
                             ]
                         )
                     else:
-                        imported_tfrecord_tags[scenario_idx] = tags  # ptype: disable=container-type-mismatch
+                        if tags is not None:
+                            imported_tfrecord_tags[scenario_idx] = [tag for tag in tags]
+                        else:
+                            imported_tfrecord_tags[scenario_idx] = []
                 print("Tags added to `Imported Tags` list")
 
             else:
