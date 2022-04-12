@@ -17,6 +17,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `EventConfiguration` dataclass in the agent interface to allow users to configure the conditions in which events are triggered
 - Added scenarios for "importing" the i80 and us101 NGSIM trajectory history datasets
 - Added an observation adapter that makes the observation ego-centric: `smarts.core.utils.ego_centric_observation_adapter`.
+- Added math utility `world_position_from_ego_frame` which allows converting from an ego frame to world frame.
+- Added math utility `wrap_value` which constrains a float between a `min` and `max` by wrapping around every time the value exceeds `max` or falls below `min`.
 ### Changed
 - If more than one qualifying map file exists in a the `map_spec.source` folder, `get_road_map()` in `default_map_builder.py` will prefer to return the default files (`map.net.xml` or `map.xodr`) if they exist.
 - Moved the `smarts_ros` ROS node from the `examples` area into the `smarts.ros` module so that it can be distributed with SMARTS packages.
