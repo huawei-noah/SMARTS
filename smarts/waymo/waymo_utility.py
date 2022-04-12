@@ -1761,7 +1761,9 @@ def explore_tf_record(
                 for i in range(len(valid_indexes)):
                     scenario_idx = scenario_ids[valid_indexes[i] - 1]
                     if scenario_idx in imported_tfrecord_tags:
-                        imported_tfrecord_tags[scenario_idx].extend(  # pytype: disable=attribute-error
+                        imported_tfrecord_tags[
+                            scenario_idx
+                        ].extend(  # pytype: disable=attribute-error
                             [
                                 tag
                                 for tag in tags
