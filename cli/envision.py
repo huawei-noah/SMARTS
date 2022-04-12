@@ -22,7 +22,10 @@ import click
 from envision.server import run
 
 
-@click.group(name="envision", help="Commands to utilize an Envision server. The Envision web server is used for visualization purposes. See `scl envision COMMAND --help` for further options.")
+@click.group(
+    name="envision",
+    help="Commands to utilize an Envision server. The Envision web server is used for visualization purposes. See `scl envision COMMAND --help` for further options.",
+)
 def envision_cli():
     pass
 

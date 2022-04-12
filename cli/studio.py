@@ -24,12 +24,15 @@ import sys
 from multiprocessing import Process, Semaphore, synchronize
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Optional
 
 import click
 
 
-@click.group(name="scenario", help="Generate, replay or clean scenarios. See `scl scenario COMMAND --help` for further options.")
+@click.group(
+    name="scenario",
+    help="Generate, replay or clean scenarios. See `scl scenario COMMAND --help` for further options.",
+)
 def scenario_cli():
     pass
 
@@ -186,7 +189,9 @@ def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
         proc.join()
 
 
-@scenario_cli.command(name="clean", help="Remove previously generated scenario artifacts.")
+@scenario_cli.command(
+    name="clean", help="Remove previously generated scenario artifacts."
+)
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
 def clean_scenario(scenario: str):
     _clean(scenario)
@@ -238,7 +243,7 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
 
 @scenario_cli.command(
     name="browse-waymo",
-    help="Browse Waymo TFRecord datasets using a text-based browser utility",
+    help="Browse Waymo TFRecord datasets using smarts/waymo/waymo_utility.py, a text-based browser utility",
 )
 @click.argument(
     "tfrecords",
@@ -261,7 +266,11 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
     default=None,
     help=".json file to import tags for tfRecord scenarios from",
 )
-def browse_waymo_dataset(tfrecords, target_base_path, import_tags):
+def browse_waymo_dataset(
+    tfrecords: Sequence[str],
+    target_base_path: Optional[str],
+    import_tags: Optional[str],
+):
     if not tfrecords:
         # nargs=-1 in combination with a default value is not supported
         # if tfrecords is not given, set the known tfrecord directory as default

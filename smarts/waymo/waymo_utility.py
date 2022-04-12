@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# type: ignore
+# pytype: disable=import-error
 
 # Text based Waymo Dataset Browser.
 import argparse
@@ -135,6 +135,10 @@ def read_tfrecord_file(path: str) -> Generator[bytes, None, None]:
 
 
 def convert_polyline(polyline) -> Tuple[List[float], List[float]]:
+    """Convert a MapFeature.MapPoint Waymo proto object to a tuple of x and y coordinates
+
+    polyline: MapFeature.MapPoint Waymo proto object
+    """
     xs, ys = [], []
     for p in polyline:
         xs.append(p.x)
@@ -143,6 +147,10 @@ def convert_polyline(polyline) -> Tuple[List[float], List[float]]:
 
 
 def get_map_features_for_scenario(scenario: scenario_pb2.Scenario) -> Dict:
+    """Extract all map features from Scenario object
+
+    scenario: scenario_pb2.Scenario waymo proto object
+    """
     map_features = {
         "lane": [],
         "road_line": [],
@@ -163,6 +171,10 @@ def get_map_features_for_scenario(scenario: scenario_pb2.Scenario) -> Dict:
 def get_object_type_count(
     trajectories: Dict,
 ) -> Tuple[Optional[int], List[int], List[int], List[int], List[int]]:
+    """Get count of all types of Track objects
+
+    trajectories: Dictionary containing trajectory info for all track objects
+    """
     cars, pedestrian, cyclist, other = [], [], [], []
     ego = None
     for vehicle_id in trajectories:
@@ -180,9 +192,15 @@ def get_object_type_count(
 
 
 def get_trajectory_data(waymo_scenario: scenario_pb2.Scenario) -> Dict:
+    """Get count of all types of Track objects
+
+    trajectories: Dictionary containing trajectory info for all track objects
+    """
+
     def generate_trajectory_rows(
         scenario: scenario_pb2.Scenario,
     ) -> Generator[Dict, None, None]:
+        """Generator to yield trajectory data of every track object at every timestep"""
         for i in range(len(scenario.tracks)):
             vehicle_id = scenario.tracks[i].id
             num_steps = len(scenario.timestamps_seconds)
@@ -216,6 +234,7 @@ def get_trajectory_data(waymo_scenario: scenario_pb2.Scenario) -> Dict:
 
 
 def plot_map_features(map_features: Dict, feature_ids: List[str]) -> List[Line2D]:
+    """Plot the map features with some feature_ids highlighted and return extended legend handles"""
     handles = []
     for lane in map_features["lane"]:
         xs, ys = convert_polyline(lane[0].polyline)
@@ -340,6 +359,7 @@ def plot_map_features(map_features: Dict, feature_ids: List[str]) -> List[Line2D
 def plot_trajectories(
     trajectories: Dict, objects_of_interest: List[int], track_ids: List[str]
 ) -> Tuple:
+    """Plot and animate the trajectories of track ids on map of scenario with some track_ids highlighted"""
     handles = []
     max_len = 0
     data, points = [], []
@@ -478,6 +498,7 @@ def plot_scenario(
     animate_trajectories: bool,
     f_ids: Optional[List[str]] = None,
 ):
+    """Plot the map of scenario and optionally animate trajectories of track ids with f_ids highlighted"""
     scenario_info, fig_num = scenario
     # Get map feature data from map proto
     map_features = scenario_info[1]
@@ -524,6 +545,9 @@ def save_plot(
     animate: bool,
     filter_tags: Optional[Tuple] = None,
 ) -> bool:
+    """Plot and save the map of scenario at the target_path optionally filtered with tags.
+    If animate is true, .mp4 video player showing the animation of trajectories of track objects will be saved
+    """
     idx, scenario_id = scenario_info
     if filter_tags:
         tags, filter_preview, tfrecord_tags, imported_tfrecord_tags = filter_tags
@@ -592,6 +616,9 @@ def save_plot(
 
 
 def dump_plots(target_base_path: str, scenario_dict, animate=False, filter_tags=None):
+    """Plot and dump the map of multiple scenarios together at the target_path optionally filtered with tags.
+    If animate is true, .mp4 video player files showing the animation of trajectories of track objects will be saved
+    """
     try:
         os.makedirs(os.path.abspath(target_base_path))
         print(f"Created directory {target_base_path}")
@@ -622,6 +649,7 @@ def filter_scenario(
     imported_tags: List[str],
     filter_tags: Tuple[List[str], int],
 ) -> bool:
+    """Check if all tags in filter_tags exist in scenario_tags or imported_tags"""
     tags, filter_display = filter_tags
     if filter_display == 1:
         return all(x in scenario_tags for x in tags)
@@ -651,6 +679,7 @@ def prompt_tags() -> Tuple[Optional[List[str]], bool]:
 
 
 def prompt_filter_tags() -> Tuple[Optional[List[str]], Optional[int], bool]:
+    """Prompt users to enter tags they want to filter their response with"""
     filter_response = None
     print(
         f"\nDo you want to filter the output with scenario tags?:\n"
@@ -693,6 +722,7 @@ def prompt_filter_tags() -> Tuple[Optional[List[str]], Optional[int], bool]:
 def prompt_target_path(
     default_target_path: Optional[str] = None,
 ) -> Tuple[Optional[str], bool]:
+    """Prompt users to enter the target path to which they want to save command output"""
     target_base_path = None
     valid_path = False
     if default_target_path is not None:
@@ -745,6 +775,7 @@ def prompt_export_before_exiting(
     tags_per_tfrecords: Dict[str, Dict[str, List[str]]],
     imported_tags: Dict[str, Dict[str, List[str]]],
 ) -> bool:
+    """Prompt users whether they want to save and export the tags before exiting the browser"""
     filter_response = None
     print(
         f"\nDo you want to export the tags before exiting the browser?:\n"
@@ -818,6 +849,7 @@ def export_tags_to_path(
     tags_per_tfrecords: Dict[str, Dict[str, List[str]]],
     imported_tags: Dict[str, Dict[str, List[str]]],
 ) -> bool:
+    """Prompt users to enter the target path to .json file to which they want to export their tags"""
     tags_to_dump = {}
     for tfr_path in tf_records:
         tags_per_tfrecords.get(os.path.basename(tfr_path), {}),
@@ -928,6 +960,9 @@ def export_tags_to_path(
 def import_tags_from_path(
     imported_tags: Dict[str, Dict[str, List[str]]], json_filepath: str
 ):
+    """
+    Import the tags from json_filepath to this session
+    """
     try:
         with open(json_filepath, "r") as f:
             new_tags = json.load(f)
@@ -954,6 +989,9 @@ def import_tags_from_path(
 def display_scenario_tags(
     tags_per_scenarios: Dict[str, List[str]], tags_imported: Dict[str, List[str]]
 ):
+    """
+    Display the scenario tags and imported tags of this scenario
+    """
     tag_data = []
     print("--------------------------------\n")
     for scenario_id in tags_per_scenarios:
@@ -974,6 +1012,7 @@ def display_scenario_tags(
 
 
 def merge_tags(new_imports: Dict, main_dict: Dict, display: bool = False):
+    """Merge the tags in new_imports to main_dict and optionally display the new_import tags"""
     for tf_file in new_imports:
         if tf_file in main_dict:
             for scenario_id in new_imports[tf_file]:
@@ -1003,6 +1042,7 @@ def remove_tags(
     imported: bool,
     remove_all: bool,
 ) -> List[str]:
+    """Remove tags_to_remove from scenario_tags"""
     if imported:
         tags_list_name = "Imported Tags"
     else:
@@ -1061,6 +1101,7 @@ def parse_tfrecords(
 
 
 def display_tf_records(records: List[Tuple[int, str]]):
+    """Display the tf_records that were loaded in a tabular format"""
     print("\nWaymo tfRecords:\n")
     print(
         tabulate(
@@ -1078,6 +1119,7 @@ def display_scenarios_in_tfrecord(
     tags_imported: Dict[str, List[str]],
     filter_tags: Optional[Tuple[List[str], int]] = None,
 ) -> List[str]:
+    """Display all the scenarios of a tf_record file and their info in tabular format"""
     scenario_data_lst = []
     scenario_counter = 1
     scenario_ids = []
@@ -1133,6 +1175,7 @@ def display_scenarios_in_tfrecord(
 def export_scenario(
     target_base_path: str, tfrecord_file_path: str, scenario_id: str
 ) -> bool:
+    """Export the scenario.py and waymo.yaml file of the scenario with scenario_id to target_base_path/<scenario_id> folder"""
     subfolder_path = os.path.join(os.path.abspath(target_base_path), scenario_id)
     try:
         os.makedirs(subfolder_path)
@@ -1169,6 +1212,7 @@ def export_scenario(
 def check_index_validity(
     input_arg: List[str], upper_limit: int, command_type: str
 ) -> List[int]:
+    """Check if input_arg passed by user is and integer and within the upper_limit"""
     valid_indexes = []
     for input_index in input_arg:
         try:
@@ -1207,6 +1251,9 @@ def tfrecords_browser(
     default_target_path: Optional[str] = None,
     tags_json: Optional[str] = None,
 ) -> None:
+    """TfRecord Browser, which shows all the tfrecord files loaded in and takes
+    in commands that can be run by the user at this level
+    """
     scenarios_per_tfrecords, tags_per_tfrecords = parse_tfrecords(tfrecord_paths)
     imported_tags = {}
     if tags_json:
@@ -1404,6 +1451,8 @@ def explore_tf_record(
     imported_tfrecord_tags,
     default_target_path: Optional[str] = None,
 ) -> bool:
+    """Tf Record Explorer, which shows all the scenarios and their info and
+    takes in command that can be run by the user at this level"""
     print("TfRecord Explorer")
     stop_exploring = False
     print_commands = True
@@ -1847,6 +1896,10 @@ def explore_scenario(
     imported_scenario_tags: List[str],
     default_target_path: Optional[str],
 ) -> bool:
+    """Scenario Explorer, which shows map features and track objects info of the scenario
+    and takes in commands that can be run by the user at this level
+    """
+
     scenario = scenario_info[0]
     scenario_map_features = scenario_info[1]
     trajectories = scenario_info[2]
