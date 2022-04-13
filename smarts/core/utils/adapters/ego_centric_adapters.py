@@ -28,7 +28,8 @@ import numpy as np
 
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading
-from smarts.core.sensors import Observation
+from smarts.core.plan import Goal, PositionalGoal, Via
+from smarts.core.sensors import Observation, ViaPoint, Vias
 from smarts.core.utils.math import (
     position_to_ego_frame,
     world_position_from_ego_frame,
@@ -74,9 +75,12 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
     nvs = obs.neighborhood_vehicle_states or []
     wpps = obs.waypoint_paths or []
 
+    def _replace_via(via: Union[Via, ViaPoint]):
+        return _replace(via, position=transform(via.position))
+
     vd = None
     if obs.via_data:
-        rpvp = lambda vps: [_replace(vp, position=transform(vp.position)) for vp in vps]
+        rpvp = lambda vps: [_replace_via(vp) for vp in vps]
         vd = _replace(
             obs.via_data,
             near_via_points=rpvp(obs.via_data.near_via_points),
@@ -108,6 +112,25 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
             cam_obs.metadata, camera_pos=(0, 0, 0), camera_heading_in_degrees=0
         ),
     )
+
+    def _optional_replace_goal(goal):
+        if isinstance(goal, PositionalGoal):
+            return {"goal": _replace(goal, position=transform(tuple(goal.position)))}
+
+        return {}
+
+    def _replace_lidar(lidar):
+        if len(lidar) == 0:
+            return []
+        return [
+            [transform(hit_point) for hit_point in lidar[0]],
+            lidar[1],
+            [
+                [transform(ray_start), transform(ray_end)]
+                for ray_start, ray_end in lidar[2]
+            ],
+        ]
+
     return _replace(
         obs,
         ego_vehicle_state=_replace(
@@ -128,6 +151,11 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
                     )[:2],
                     heading=adjust_heading(obs.ego_vehicle_state.mission.start.heading),
                 ),
+                via=tuple(
+                    _replace_via(via) for via in obs.ego_vehicle_state.mission.via
+                ),
+                **_optional_replace_goal(obs.ego_vehicle_state.mission.goal),
+                # TODO??: `entry_tactic.zone` zone.position?
             ),
         ),
         neighborhood_vehicle_states=[
@@ -138,12 +166,12 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
             )
             for nv in nvs
         ],
+        lidar_point_cloud=_replace_lidar(obs.lidar_point_cloud),
         waypoint_paths=replace_wps(wpps),
         drivable_area_grid_map=replace_metadata(obs.drivable_area_grid_map),
         occupancy_grid_map=replace_metadata(obs.occupancy_grid_map),
         top_down_rgb=replace_metadata(obs.top_down_rgb),
         road_waypoints=rwps,
-        # TODO: Lidar
         via_data=vd,
     )
 
