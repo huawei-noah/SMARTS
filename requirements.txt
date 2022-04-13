@@ -32,7 +32,7 @@ cycler==0.11.0
 debugpy==1.6.0
 decorator==5.1.1
 defusedxml==0.7.1
-dm-tree==0.1.6
+dm-tree==0.1.7
 eclipse-sumo==1.10.0
 entrypoints==0.4
 execnet==1.9.0
@@ -62,7 +62,7 @@ importlib-metadata==4.11.3
 importlib-resources==5.6.0
 incremental==21.3.0
 iniconfig==1.1.1
-ipykernel==6.12.1
+ipykernel==6.13.0
 ipython==7.32.0
 jedi==0.18.1
 Jinja2==3.1.1
@@ -73,7 +73,7 @@ jupyter-client==7.2.2
 jupyter-core==4.9.2
 jupyter-server==1.16.0
 jupyter-server-mathjax==0.2.5
-jupyterlab-pygments==0.2.0
+jupyterlab-pygments==0.2.1
 keras==2.8.0
 Keras-Preprocessing==1.1.2
 kiwisolver==1.4.2
@@ -87,11 +87,11 @@ mistune==0.8.4
 msgpack==1.0.3
 multidict==6.0.2
 nbclient==0.5.13
-nbconvert==6.4.5
+nbconvert==6.5.0
 nbdime==3.1.1
 nbformat==5.3.0
 nest-asyncio==1.5.5
-numpy==1.21.5
+numpy==1.21.6
 nvidia-ml-py3==7.352.0
 oauthlib==3.2.0
 opencensus==0.8.0
@@ -160,8 +160,8 @@ tensorflow==2.8.0
 tensorflow-io-gcs-filesystem==0.24.0
 termcolor==1.1.0
 terminado==0.13.3
-testpath==0.6.0
 tf-estimator-nightly==2.8.0.dev2021122109
+tinycss2==1.1.1
 tomli==2.0.1
 torch==1.4.0
 torchfile==0.1.0
@@ -169,7 +169,7 @@ torchvision==0.5.0
 tornado==6.1
 traitlets==5.1.1
 trimesh==3.9.29
-Twisted==22.2.0
+Twisted==22.4.0
 typing_extensions==4.1.1
 urllib3==1.26.9
 visdom==0.1.8.9
