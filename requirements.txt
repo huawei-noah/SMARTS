@@ -46,8 +46,8 @@ gast==0.5.3
 gitdb==4.0.9
 GitPython==3.1.27
 google==3.0.0
-google-api-core==2.7.1
-google-auth==2.6.3
+google-api-core==2.7.2
+google-auth==2.6.4
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 googleapis-common-protos==1.56.0
@@ -59,7 +59,7 @@ hyperlink==21.0.0
 idna==3.3
 ijson==3.1.4
 importlib-metadata==4.11.3
-importlib-resources==5.6.0
+importlib-resources==5.7.0
 incremental==21.3.0
 iniconfig==1.1.1
 ipykernel==6.13.0
