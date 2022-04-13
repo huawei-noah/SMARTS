@@ -24,12 +24,15 @@ import sys
 from multiprocessing import Process, Semaphore, synchronize
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Optional
 
 import click
 
 
-@click.group(name="scenario")
+@click.group(
+    name="scenario",
+    help="Generate, replay or clean scenarios. See `scl scenario COMMAND --help` for further options.",
+)
 def scenario_cli():
     pass
 
@@ -131,9 +134,7 @@ def _install_requirements(scenario_root):
 
 
 def _is_scenario_folder_to_build(path: str) -> bool:
-    if os.path.exists(os.path.join(path, "waymo.yaml")) or path.endswith(
-        "waymo_rd_map"
-    ):
+    if os.path.exists(os.path.join(path, "waymo.yaml")):
         # for now, don't try to build Waymo scenarios...
         return False
     if os.path.exists(os.path.join(path, "scenario.py")):
@@ -188,7 +189,9 @@ def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
         proc.join()
 
 
-@scenario_cli.command(name="clean")
+@scenario_cli.command(
+    name="clean", help="Remove previously generated scenario artifacts."
+)
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
 def clean_scenario(scenario: str):
     _clean(scenario)
@@ -217,7 +220,7 @@ def _clean(scenario: str):
             f.unlink()
 
 
-@scenario_cli.command(name="replay")
+@scenario_cli.command(name="replay", help="Play saved Envision data files in Envision.")
 @click.option("-d", "--directory", multiple=True)
 @click.option("-t", "--timestep", default=0.01, help="Timestep in seconds")
 @click.option("--endpoint", default="ws://localhost:8081")
@@ -238,7 +241,58 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
             )
 
 
+@scenario_cli.command(
+    name="browse-waymo",
+    help="Browse Waymo TFRecord datasets using smarts/waymo/waymo_utility.py, a text-based browser utility",
+)
+@click.argument(
+    "tfrecords",
+    type=click.Path(exists=True),
+    metavar="<script>",
+    nargs=-1,
+    required=True,
+)
+@click.option(
+    "-t",
+    "--target-base-path",
+    type=click.Path(exists=True),
+    default=None,
+    help="Default target base path to export scenarios to",
+)
+@click.option(
+    "-i",
+    "--import-tags",
+    type=click.Path(exists=True),
+    default=None,
+    help=".json file to import tags for tfRecord scenarios from",
+)
+def browse_waymo_dataset(
+    tfrecords: Sequence[str],
+    target_base_path: Optional[str],
+    import_tags: Optional[str],
+):
+    if not tfrecords:
+        # nargs=-1 in combination with a default value is not supported
+        # if tfrecords is not given, set the known tfrecord directory as default
+        tfrecords = [os.path.join("smarts", "waymo", "waymo_data")]
+
+    utility_path = os.path.join("smarts", "waymo", "waymo_utility.py")
+    subprocess_command = [
+        sys.executable,
+        utility_path,
+    ]
+
+    if target_base_path is not None:
+        subprocess_command.append(f"--target-base-path={target_base_path}")
+    if import_tags is not None:
+        subprocess_command.append(f"--import-tags={import_tags}")
+
+    click.echo(f"Executing {utility_path} with arguments {tfrecords}")
+    subprocess.check_call(subprocess_command + list(tfrecords))
+
+
 scenario_cli.add_command(build_scenario)
 scenario_cli.add_command(build_all_scenarios)
 scenario_cli.add_command(clean_scenario)
 scenario_cli.add_command(replay)
+scenario_cli.add_command(browse_waymo_dataset)

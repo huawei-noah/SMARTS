@@ -17,40 +17,28 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import click
 
-from envision.server import run
+# Template for Waymo scenario.py
 
+from pathlib import Path
+import yaml
+import os
 
-@click.group(
-    name="envision",
-    help="Commands to utilize an Envision server. The Envision web server is used for visualization purposes. See `scl envision COMMAND --help` for further options.",
-)
-def envision_cli():
-    pass
+from smarts.sstudio.genscenario import gen_scenario
+from smarts.sstudio.types import Scenario, MapSpec
 
+yaml_file = os.path.join(Path(__file__).parent, "waymo.yaml")
+with open(yaml_file, "r") as yf:
+    dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
 
-@envision_cli.command(name="start", help="Start an Envision server.")
-@click.option("-p", "--port", help="Port Envision will run on.", default=8081)
-@click.option(
-    "-s",
-    "--scenarios",
-    help="A list of directories where scenarios are stored.",
-    multiple=True,
-    default=["scenarios"],
-)
-@click.option(
-    "-c",
-    "--max_capacity",
-    help=(
-        "Max capacity in MB of Envision's playback buffer. The larger the more contiguous history "
-        "Envision can store."
+dataset_path = dataset_spec["input_path"]
+scenario_id = dataset_spec["scenario_id"]
+
+gen_scenario(
+    Scenario(
+        map_spec=MapSpec(source=f"{dataset_path}#{scenario_id}", lanepoint_spacing=1.0),
+        traffic_histories=["waymo.yaml"],
     ),
-    default=500,
-    type=float,
+    output_dir=str(Path(__file__).parent),
+    overwrite=True,
 )
-def start_server(port, scenarios, max_capacity):
-    run(scenario_dirs=scenarios, max_capacity_mb=max_capacity, port=port)
-
-
-envision_cli.add_command(start_server)
