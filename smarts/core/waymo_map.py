@@ -224,6 +224,7 @@ class WaymoMap(RoadMap):
         @cached_property
         def sorted_keys(self) -> List[int]:
             """@return the keys in ascending order; only to be used after dict contents are final"""
+            # if we want to add another dependency, it would probably be better to use SortedDict...
             return sorted(self.keys())
 
     _FeatureSplits = Dict[int, _SDict]
@@ -658,6 +659,8 @@ class WaymoMap(RoadMap):
         feat_splits = self._find_splits()
         self._link_splits(feat_splits)
         self._create_roads_and_lanes(feat_splits)
+
+        # possible heuristic:  for each feat_id, if first and last lane are in junction, then all lanes in b/w are
 
         # don't need these anymore
         self._polyline_cache = None
@@ -1153,10 +1156,8 @@ class WaymoMap(RoadMap):
 
         @cached_property
         def length(self) -> float:
-            return max(lane.length for lane in self.lanes)
-            # TAI: the more curved the road, the more the lane lengths diverge.
-            # TAI: consider using average here instead of max?
-            # return sum(lane.length for lane in self.lanes) / len(self.lanes)
+            # Note: the more curved the road, the more the lane lengths diverge.
+            return sum(lane.length for lane in self.lanes) / len(self.lanes)
 
         @cached_property
         def incoming_roads(self) -> List[RoadMap.Road]:
