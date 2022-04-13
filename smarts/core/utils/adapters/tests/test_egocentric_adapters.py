@@ -45,7 +45,7 @@ from smarts.core.sensors import (
 )
 from smarts.core.utils.adapters.ego_centric_adapters import (
     ego_centric_observation_adapter,
-    get_ego_centric_adapters,
+    get_egocentric_adapters,
 )
 
 
@@ -316,7 +316,7 @@ def observation():
     )
 
 
-def test_ego_centric_observation_adapter(observation: Observation):
+def test_egocentric_observation_adapter(observation: Observation):
     new_obs: Observation = ego_centric_observation_adapter(observation)
     assert not np.allclose(
         observation.ego_vehicle_state.position, new_obs.ego_vehicle_state.position
@@ -397,7 +397,7 @@ def _is_same(v1, v2):
 
 def test_adapters(adapter_data, observation: Observation):
     for action_space_type, action, expected_action in adapter_data:
-        obs_adapter, act_adapter = get_ego_centric_adapters(action_space_type)
+        obs_adapter, act_adapter = get_egocentric_adapters(action_space_type)
 
         _ = obs_adapter(observation)
         augmented_action = act_adapter(action)

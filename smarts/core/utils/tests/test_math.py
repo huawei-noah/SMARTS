@@ -3,7 +3,7 @@ import numpy as np
 from smarts.core.utils.math import position_to_ego_frame, world_position_from_ego_frame
 
 
-def test_ego_centric_conversion():
+def test_egocentric_conversion():
     p_start = [1, 2, 3]
     pe = [1, -5, 2]
     he = -3
