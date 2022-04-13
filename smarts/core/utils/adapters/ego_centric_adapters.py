@@ -113,12 +113,22 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
         ego_vehicle_state=_replace(
             obs.ego_vehicle_state,
             position=np.array([0, 0, 0]),
-            steering=Heading(0),
+            heading=Heading(0),
             linear_velocity=ego_frame_dynamics(obs.ego_vehicle_state.linear_velocity),
             linear_acceleration=ego_frame_dynamics(
                 obs.ego_vehicle_state.linear_acceleration
             ),
             linear_jerk=ego_frame_dynamics(obs.ego_vehicle_state.linear_jerk),
+            mission=_replace(
+                obs.ego_vehicle_state.mission,
+                start=_replace(
+                    obs.ego_vehicle_state.mission.start,
+                    position=transform(
+                        np.append(obs.ego_vehicle_state.mission.start.position, [0])
+                    )[:2],
+                    heading=adjust_heading(obs.ego_vehicle_state.mission.start.heading),
+                ),
+            ),
         ),
         neighborhood_vehicle_states=[
             _replace(
@@ -133,6 +143,7 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
         occupancy_grid_map=replace_metadata(obs.occupancy_grid_map),
         top_down_rgb=replace_metadata(obs.top_down_rgb),
         road_waypoints=rwps,
+        # TODO: Lidar
         via_data=vd,
     )
 
@@ -157,10 +168,10 @@ def _trajectory_adaption(act, last_obs):
     new_pos = np.array(
         [
             world_position_from_ego_frame(
-                [x, y, 0][:2],
+                [x, y, 0],
                 last_obs.ego_vehicle_state.position,
                 last_obs.ego_vehicle_state.heading,
-            )
+            )[:2]
             for x, y in zip(*act[:2])
         ]
     ).T
@@ -239,15 +250,6 @@ def _ego_centric_multi_target_pose_adapter(
 def _ego_centric_imitation_adapter(
     act: Union[float, Tuple[float, float]], last_obs: Optional[Observation] = None
 ):
-    if last_obs and isinstance(act, Tuple):
-        return tuple(
-            world_position_from_ego_frame(
-                act + (0,),
-                last_obs.ego_vehicle_state.position,
-                last_obs.ego_vehicle_state.heading,
-            )[:2]
-        )
-    assert isinstance(act, (float, int))
     return act
 
 
