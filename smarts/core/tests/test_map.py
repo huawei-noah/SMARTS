@@ -867,7 +867,7 @@ def test_waymo_map():
         "waymo_road-110_25-101_37-105_37",
         "waymo_road-100",
     ]
-    assert route_120_to_100[0].road_length == 223.72998310771266
+    assert route_120_to_100[0].road_length == 222.4712625756517
 
     # waypoints generation along route
     lp_120 = road_map._lanepoints._lanepoints_by_lane_id["120"]
@@ -900,7 +900,7 @@ def test_waymo_map():
     start_point = Point(x=2778.00, y=-2639.5, z=0)
     end_point = Point(2714.0, -2764.5, 0)
     assert (
-        round(route_120_to_100[0].distance_between(start_point, end_point), 2) == 142.67
+        round(route_120_to_100[0].distance_between(start_point, end_point), 2) == 141.42
     )
 
     # project along route
