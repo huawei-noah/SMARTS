@@ -105,7 +105,7 @@ def observation():
         neighborhood_vehicle_states=[
             VehicleObservation(
                 id="car-flow-route-west_0_0-east_0_max-7845114534199723832--7266489842092764092--0-0.0",
-                position=np.array([-1.33354215, -3.2, 0.0]),
+                position=(-1.33354215, -3.2, 0.0),
                 bounding_box=Dimensions(length=3.68, width=1.47, height=1.4),
                 heading=Heading(-1.5707963267948966),
                 speed=5.050372796758114,
@@ -115,7 +115,7 @@ def observation():
             ),
             VehicleObservation(
                 id="car-flow-route-west_1_0-east_1_max--852708111940723884--7266489842092764092--1-0.0",
-                position=np.array([-1.47159011, 0.0, 0.0]),
+                position=(-1.47159011, 0.0, 0.0),
                 bounding_box=Dimensions(length=3.68, width=1.47, height=1.4),
                 heading=Heading(-1.5707963267948966),
                 speed=3.6410559446059954,
