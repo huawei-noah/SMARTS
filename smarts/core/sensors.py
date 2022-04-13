@@ -193,7 +193,7 @@ class Observation:
     distance_travelled: float
     # TODO: Convert to `NamedTuple` or only return point cloud.
     lidar_point_cloud: Optional[
-        Tuple[List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]]
+        Tuple[List[np.ndarray], List[bool], List[Tuple[np.ndarray, np.ndarray]]]
     ]
     """Lidar point cloud consists of [points, hits, (ray_origin, ray_vector)]."""
     drivable_area_grid_map: Optional[DrivableAreaGridMap]
