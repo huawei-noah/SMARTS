@@ -213,3 +213,19 @@ if __name__ == "__main__":
         )
 
     main(args)
+
+
+    # import torchvision.models as th_models
+    # import torch
+    # pip install prefetch_generator tqdm yacs
+
+
+    # modelut = th_models.video.r2plus1d_18(pretrained=pretrained, progress=True)   
+    # modelut = th.hub.load('datvuthanh/hybridnets', 'hybridnets', pretrained=True)
+    # model = torch.hub.load('hustvl/yolop', 'yolop', pretrained=True)
+    # Print model summary
+    # print("\n\n")
+    # network = sb3_util.Network(modelut)
+    # print(model)
+    # sb3_util.summary(model=model, depth=10, input_size=(1,3,256,256))
+    # print("\n\n")
