@@ -148,19 +148,19 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
     )
 
 
-def _ego_centric_continuous_action_adapter(act: Tuple[float, float, float], _=None):
+def _egocentric_continuous_action_adapter(act: Tuple[float, float, float], _=None):
     return act
 
 
-def _ego_centric_actuator_dynamic_adapter(act: Tuple[float, float, float], _=None):
+def _egocentric_actuator_dynamic_adapter(act: Tuple[float, float, float], _=None):
     return act
 
 
-def _ego_centric_lane_adapter(act: str, _=None):
+def _egocentric_lane_adapter(act: str, _=None):
     return act
 
 
-def _ego_centric_lane_with_continous_speed_adapter(act: Tuple[int, float], _=None):
+def _egocentric_lane_with_continous_speed_adapter(act: Tuple[int, float], _=None):
     return act
 
 
@@ -184,7 +184,7 @@ def _trajectory_adaption(act, last_obs):
     return (*new_pos, new_headings, *act[3:])
 
 
-def _ego_centric_trajectory_adapter(
+def _egocentric_trajectory_adapter(
     act: Tuple[Sequence[float], Sequence[float], Sequence[float], Sequence[float]],
     last_obs: Optional[Observation] = None,
 ):
@@ -193,7 +193,7 @@ def _ego_centric_trajectory_adapter(
     return act
 
 
-def _ego_centric_trajectory_with_time_adapter(
+def _egocentric_trajectory_with_time_adapter(
     act: Tuple[
         Sequence[float],
         Sequence[float],
@@ -208,7 +208,7 @@ def _ego_centric_trajectory_with_time_adapter(
     return act
 
 
-def _ego_centric_mpc_adapter(
+def _egocentric_mpc_adapter(
     act: Tuple[Sequence[float], Sequence[float], Sequence[float], Sequence[float]],
     last_obs: Optional[Observation] = None,
 ):
@@ -217,7 +217,7 @@ def _ego_centric_mpc_adapter(
     return act
 
 
-def _ego_centric_target_pose_adapter(
+def _egocentric_target_pose_adapter(
     act: Tuple[float, float, float, float], last_obs: Optional[Observation] = None
 ):
     if last_obs:
@@ -238,7 +238,7 @@ def _ego_centric_target_pose_adapter(
     return act
 
 
-def _ego_centric_multi_target_pose_adapter(
+def _egocentric_multi_target_pose_adapter(
     act: Dict[str, Tuple[float, float, float, float]],
     last_obs: Optional[Observation] = None,
 ):
@@ -247,7 +247,7 @@ def _ego_centric_multi_target_pose_adapter(
     )
 
 
-def _ego_centric_imitation_adapter(
+def _egocentric_imitation_adapter(
     act: Union[float, Tuple[float, float]], last_obs: Optional[Observation] = None
 ):
     return act
@@ -275,23 +275,23 @@ def _pair_adapters(
     return oa_wrapper, aa_wrapper
 
 
-def get_ego_centric_adapters(action_space: ActionSpaceType):
+def get_egocentric_adapters(action_space: ActionSpaceType):
     """Provides a set of adapters that share state information of the unmodified observation.
     This will allow the action adapter to automatically convert back to world space for SMARTS.
     Returns:
         (obs_adapter, action_adapter)
     """
     m = {
-        ActionSpaceType.Continuous: _ego_centric_continuous_action_adapter,
-        ActionSpaceType.ActuatorDynamic: _ego_centric_actuator_dynamic_adapter,
-        ActionSpaceType.Lane: _ego_centric_lane_adapter,
-        ActionSpaceType.LaneWithContinuousSpeed: _ego_centric_lane_with_continous_speed_adapter,
-        ActionSpaceType.Trajectory: _ego_centric_trajectory_adapter,
-        ActionSpaceType.TrajectoryWithTime: _ego_centric_trajectory_with_time_adapter,
-        ActionSpaceType.MPC: _ego_centric_mpc_adapter,
-        ActionSpaceType.TargetPose: _ego_centric_target_pose_adapter,
-        ActionSpaceType.MultiTargetPose: _ego_centric_multi_target_pose_adapter,
-        ActionSpaceType.Imitation: _ego_centric_imitation_adapter,
+        ActionSpaceType.Continuous: _egocentric_continuous_action_adapter,
+        ActionSpaceType.ActuatorDynamic: _egocentric_actuator_dynamic_adapter,
+        ActionSpaceType.Lane: _egocentric_lane_adapter,
+        ActionSpaceType.LaneWithContinuousSpeed: _egocentric_lane_with_continous_speed_adapter,
+        ActionSpaceType.Trajectory: _egocentric_trajectory_adapter,
+        ActionSpaceType.TrajectoryWithTime: _egocentric_trajectory_with_time_adapter,
+        ActionSpaceType.MPC: _egocentric_mpc_adapter,
+        ActionSpaceType.TargetPose: _egocentric_target_pose_adapter,
+        ActionSpaceType.MultiTargetPose: _egocentric_multi_target_pose_adapter,
+        ActionSpaceType.Imitation: _egocentric_imitation_adapter,
     }
 
     return _pair_adapters(ego_centric_observation_adapter, m.get(action_space))
