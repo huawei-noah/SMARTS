@@ -19,6 +19,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added an observation adapter that makes the observation ego-centric: `smarts.core.utils.ego_centric_observation_adapter`.
 - Added math utility `world_position_from_ego_frame` which allows converting from an ego frame to world frame.
 - Added math utility `wrap_value` which constrains a float between a `min` and `max` by wrapping around every time the value exceeds `max` or falls below `min`.
+- Added ego-centric adapter utility `smarts.core.utils.adapters.ego_centric_adapters.get_egocentric_adapters(action_space)` which provide an ego-centric pair of observation and action adapters that are used together to provide an ego-centric interface.
 ### Changed
 - If more than one qualifying map file exists in a the `map_spec.source` folder, `get_road_map()` in `default_map_builder.py` will prefer to return the default files (`map.net.xml` or `map.xodr`) if they exist.
 - Moved the `smarts_ros` ROS node from the `examples` area into the `smarts.ros` module so that it can be distributed with SMARTS packages.
