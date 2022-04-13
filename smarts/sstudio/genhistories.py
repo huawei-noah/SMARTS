@@ -38,7 +38,7 @@ from numpy.lib.stride_tricks import sliding_window_view
 from smarts.core.utils.math import vec_to_radians
 
 try:
-    from waymo_open_dataset.protos import scenario_pb2
+    from waymo_open_dataset.protos import scenario_pb2  # pytype: disable=import-error
 except ImportError:
     print(sys.exc_info())
     print(
@@ -85,7 +85,7 @@ class _TrajectoryDataset:
         if "input_path" not in dataset_spec:
             errmsg = "'input_path' field is required in dataset yaml."
         elif dataset_spec.get("flip_y"):
-            if not dataset_spec.get("source").startswith("NGSIM"):
+            if not dataset_spec["source"].startswith("NGSIM"):
                 errmsg = "'flip_y' option only supported for NGSIM datasets."
             elif not dataset_spec.get("map_net", {}).get("max_y"):
                 errmsg = "'map_net:max_y' is required if 'flip_y' option used."

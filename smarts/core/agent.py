@@ -21,6 +21,8 @@ import logging
 import warnings
 from typing import Any, Callable
 
+from smarts.core.sensors import Observation
+
 warnings.simplefilter("once")
 
 logger = logging.getLogger(__name__)
@@ -47,7 +49,7 @@ class Agent:
 
         return FunctionAgent()
 
-    def act(self, obs):
+    def act(self, obs: Observation, **configs):
         """The agent action. See documentation on observations, `AgentSpec`, and `AgentInterface`.
 
         Expects an adapted observation and returns an unadapted action.

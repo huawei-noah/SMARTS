@@ -21,7 +21,7 @@ import multiprocessing
 import os
 import subprocess
 import sys
-from multiprocessing import Process, Semaphore
+from multiprocessing import Process, Semaphore, synchronize
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from typing import Sequence
@@ -29,7 +29,10 @@ from typing import Sequence
 import click
 
 
-@click.group(name="scenario")
+@click.group(
+    name="scenario",
+    help="Generate, replay or clean scenarios. See `scl scenario COMMAND --help` for further options.",
+)
 def scenario_cli():
     pass
 
@@ -84,7 +87,7 @@ def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
 
 
 def _build_single_scenario_proc(
-    clean: bool, allow_offset_map: bool, scenario: str, semaphore: Semaphore
+    clean: bool, allow_offset_map: bool, scenario: str, semaphore: synchronize.Semaphore
 ):
     semaphore.acquire()
     try:
@@ -186,7 +189,9 @@ def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
         proc.join()
 
 
-@scenario_cli.command(name="clean")
+@scenario_cli.command(
+    name="clean", help="Remove previously generated scenario artifacts."
+)
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
 def clean_scenario(scenario: str):
     _clean(scenario)
@@ -215,7 +220,7 @@ def _clean(scenario: str):
             f.unlink()
 
 
-@scenario_cli.command(name="replay")
+@scenario_cli.command(name="replay", help="Play saved Envision data files in Envision.")
 @click.option("-d", "--directory", multiple=True)
 @click.option("-t", "--timestep", default=0.01, help="Timestep in seconds")
 @click.option("--endpoint", default="ws://localhost:8081")

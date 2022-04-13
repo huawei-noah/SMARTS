@@ -22,12 +22,15 @@ import click
 from envision.server import run
 
 
-@click.group(name="envision")
+@click.group(
+    name="envision",
+    help="Commands to utilize an Envision server. The Envision web server is used for visualization purposes. See `scl envision COMMAND --help` for further options.",
+)
 def envision_cli():
     pass
 
 
-@envision_cli.command(name="start")
+@envision_cli.command(name="start", help="Start an Envision server.")
 @click.option("-p", "--port", help="Port Envision will run on.", default=8081)
 @click.option(
     "-s",

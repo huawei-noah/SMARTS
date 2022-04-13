@@ -134,7 +134,7 @@ def test(test_scenarios, sim_name, headless, num_episodes, seed):
                 if WITH_SOC_MT:
                     reward = rewards[AGENT_ID]
                 else:
-                    reward = np.sum(reward)
+                    reward = np.sum(rewards.values())
                 done = dones[AGENT_ID]
                 info = infos[AGENT_ID]
                 aux_info = get_aux_info(infos[AGENT_ID]["env_obs"])

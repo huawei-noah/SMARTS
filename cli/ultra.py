@@ -28,7 +28,7 @@ import click
 from rich import print
 
 
-@click.group(name="ultra")
+@click.group(name="ultra", help="Utilites for working with the ULTRA benchmark.")
 def ultra_cli():
     pass
 
@@ -47,7 +47,7 @@ def build_policy(policy):
 
         wheel = Path(results[0])
         dst_path = cwd / wheel.name
-        shutil.move(wheel.resolve(), cwd / wheel.name)
+        shutil.move(str(wheel.resolve()), cwd / wheel.name)
         return dst_path
 
     os.chdir(policy)
@@ -65,15 +65,4 @@ You can now add it to the policy ultra if you want to make it available to scena
     )
 
 
-@ultra_cli.command(name="worker", help="Start the agent worker")
-@click.argument("auth_key", type=str, default=None)
-@click.argument("port", default=7432, type=int)
-def worker(auth_key, port):
-    from smarts.zoo.worker import listen
-
-    auth_key = auth_key if auth_key else ""
-    listen(port, auth_key)
-
-
 ultra_cli.add_command(build_policy)
-ultra_cli.add_command(worker)
