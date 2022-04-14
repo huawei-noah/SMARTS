@@ -71,7 +71,6 @@
 #     Optional[_Layout]
 # ]
 
-from dataclasses import dataclass
 from enum import IntEnum, unique
 from types import TracebackType
 from typing import (
@@ -79,6 +78,7 @@ from typing import (
     Callable,
     ContextManager,
     Dict,
+    Hashable,
     List,
     Optional,
     Sequence,
@@ -117,20 +117,27 @@ _primitives = {int, float, str, VehicleType, TrafficActorType}
 class ReductionContext:
     def __init__(
         self,
-        current_count: int = 0,
-        items: Optional[Dict[Any, int]] = None,
+        mapping: Optional[Dict[Hashable, int]] = None,
         removed: Optional[List[int]] = None,
     ) -> None:
-        self.current_count = current_count
-        self.items = items or {}
+        self.current_id = 0
+        self._mapping = mapping or {}
         self.removed = removed or []
 
+    @property
+    def has_values(self):
+        return len(self._mapping) > 0
+
     @staticmethod
-    def resolve_value(rc: "ReductionContext", v) -> int:
-        cc = rc.current_count
-        reduce = rc.items.setdefault(v, cc)
-        if rc.current_count == reduce:
-            rc.current_count += 1
+    def resolve_mapping(rc: "ReductionContext"):
+        return {k: v for _, (k, v) in rc._mapping.items()}
+
+    @staticmethod
+    def resolve_value(rc: "ReductionContext", value: Hashable) -> int:
+        cc = rc.current_id
+        reduce, _ = rc._mapping.setdefault(hash(value), (cc, value))
+        if rc.current_id == reduce:
+            rc.current_id += 1
         return reduce
 
 
@@ -217,8 +224,8 @@ class EnvisionDataFormatter:
         return self.DataFormatterLayer(self)
 
     def resolve(self):
-        if self._reduction_context.current_count > 0:
-            self._data.append({v: k for k, v in self._reduction_context.items.items()})
+        if self._reduction_context.has_values:
+            self._data.append(ReductionContext.resolve_mapping(self._reduction_context))
             self._data.append(self._reduction_context.removed)
         return self._serializer(self._data)
 
