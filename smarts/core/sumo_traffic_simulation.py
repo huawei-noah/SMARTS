@@ -149,7 +149,7 @@ class SumoTrafficSimulation(Provider):
         """Does not show TraCI visualization."""
         return self._headless
 
-    def _initialize_traci_conn(self, num_retries=500):
+    def _initialize_traci_conn(self, num_retries=5):
         # TODO: inline sumo or process pool
         # the retries are to deal with port collisions
         #   since the way we start sumo here has a race condition on
@@ -181,7 +181,7 @@ class SumoTrafficSimulation(Provider):
                 with suppress_output(stdout=False):
                     self._traci_conn = traci.connect(
                         sumo_port,
-                        numRetries=0,
+                        numRetries=100,
                         proc=self._sumo_proc,
                         waitBetweenRetries=0.05,
                     )  # SUMO must be ready within 5 seconds

@@ -112,6 +112,9 @@ def test_notebook1(nb_regression: nb.NBRegressionFixture, notebook):
         ), f"pynotebook `{NOTEBOOK_NAME}` timed out after {nb_regression.exec_timeout}s during test: {te}.\nFor more details see: https://jupyterbook.org/content/execute.html#setting-execution-timeout"
     ## Run notebook against generated
     ## ignore output for now
-    nb_regression.diff_ignore = ("/cells/*/outputs/*/text",)
+    nb_regression.diff_ignore = (
+        "/cells/*/outputs/*/text",
+        "/metadata/language_info/version",
+    )
     nb_regression.force_regen = False
     nb_regression.check(notebook)
