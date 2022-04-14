@@ -191,12 +191,13 @@ class SumoTrafficSimulation(Provider):
                         self._traci_conn.getVersion()[0] >= 20
                     ), "TraCI API version must be >= 20 (SUMO 1.5.0)"
                 # We will retry since this is our first sumo command
-                except FatalTraCIError as e:
-                    logging.debug("TraCI connection closed unexpectedly.")
-                    raise e
+                except FatalTraCIError:
+                    logging.debug("Connection closed. Retrying...")
+                    self._close_traci_and_pipes()
+                    continue
                 except TraCIException as e:
                     logging.debug(f"Unknown connection issue has occurred: {e}")
-                    raise e
+                    self._close_traci_and_pipes()
             except ConnectionRefusedError:
                 logging.debug(
                     "Connection refused. Tried to connect to unpaired TraCI client."
