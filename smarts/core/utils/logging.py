@@ -23,7 +23,6 @@ import sys
 from contextlib import contextmanager
 from io import UnsupportedOperation
 from time import time
-from unittest.mock import Mock
 
 
 @contextmanager
@@ -110,11 +109,11 @@ def _suppress_fileout(stdname):
             nonlocal old_std, stdname
             new_std = getattr(sys, stdname)
             new_std.flush()
-            # Dummy attributes because of https://github.com/ipython/ipykernel/issues/867
+            # Ensure attributes exist because of https://github.com/ipython/ipykernel/issues/867
             if not hasattr(new_std, "watch_fd_thread"):
-                setattr(new_std, "watch_fd_thread", Mock())
+                setattr(new_std, "watch_fd_thread", None)
             if not hasattr(new_std, "_exc"):
-                setattr(new_std, "_exc", False)
+                setattr(new_std, "_exc", None)
             new_std.close()
             setattr(sys, stdname, old_std)
 
