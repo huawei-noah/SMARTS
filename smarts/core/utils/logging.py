@@ -101,8 +101,17 @@ def _suppress_fileout(stdname):
     except UnsupportedOperation as e:
         if not isnotebook():
             raise e
-        ## This case is notebook which does not have issues with the c_printf
-        return None
+        old_stderr = sys.stderr
+        sys.stderr = open(os.devnull, os.O_WRONLY)
+
+        def cleanup(_):
+            nonlocal old_stderr
+            sys.stderr.flush()
+            os.close(sys.stderr)
+            sys.stderr = old_stderr
+
+        ## This case is notebook
+        return cleanup
 
     dup_std_fno = os.dup(original_std_fno)
     devnull_fno = os.open(os.devnull, os.O_WRONLY)
