@@ -28,7 +28,7 @@ import pytest
 
 import smarts.sstudio.types as t
 from envision.client import Client
-from envision.serialization import EnvisionDataFormatter, Operation, _serialization_map
+from envision.data_format import EnvisionDataFormatter, Operation, _serialization_map
 from envision.types import State, TrafficActorState, TrafficActorType, VehicleType
 from smarts.core import seed
 from smarts.core.agent_interface import AgentInterface
