@@ -23,6 +23,7 @@ import sys
 from contextlib import contextmanager
 from io import UnsupportedOperation
 from time import time
+from unittest.mock import Mock
 
 
 @contextmanager
@@ -101,14 +102,21 @@ def _suppress_fileout(stdname):
     except UnsupportedOperation as e:
         if not isnotebook():
             raise e
-        old_stderr = sys.stderr
-        sys.stderr = open(os.devnull, os.O_WRONLY)
+        file = open(os.devnull, "w")
+        old_std = getattr(sys, stdname)
+        setattr(sys, stdname, file)
 
         def cleanup(_):
-            nonlocal old_stderr
-            sys.stderr.flush()
-            os.close(sys.stderr)
-            sys.stderr = old_stderr
+            nonlocal old_std, stdname
+            new_std = getattr(sys, stdname)
+            new_std.flush()
+            # Dummy attributes because of https://github.com/ipython/ipykernel/issues/867
+            if not hasattr(new_std, "watch_fd_thread"):
+                setattr(new_std, "watch_fd_thread", Mock())
+            if not hasattr(new_std, "_exc"):
+                setattr(new_std, "_exc", False)
+            new_std.close()
+            setattr(sys, stdname, old_std)
 
         ## This case is notebook
         return cleanup
