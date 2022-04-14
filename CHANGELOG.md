@@ -21,6 +21,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Moved the `smarts_ros` ROS node from the `examples` area into the `smarts.ros` module so that it can be distributed with SMARTS packages.
 - Use `Process` to replace `Thread` to speed up the `scl scenario build-all --clean <scenario_dir>` runtime.
 - Modified the repository's front page to be more informative and better organised.
+- Added an option to `Scenario.scenario_variations()` to make the iterator not yield a cycle.
 ### Deprecated
 - Moved the `AgentSpec` class out of `smarts.core.agent` to `smarts.zoo.agent_spec`.
 ### Fixed
