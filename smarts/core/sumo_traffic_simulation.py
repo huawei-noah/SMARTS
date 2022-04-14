@@ -149,12 +149,12 @@ class SumoTrafficSimulation(Provider):
         """Does not show TraCI visualization."""
         return self._headless
 
-    def _initialize_traci_conn(self, num_retries=5):
+    def _initialize_traci_conn(self, num_retries=500):
         # TODO: inline sumo or process pool
         # the retries are to deal with port collisions
         #   since the way we start sumo here has a race condition on
         #   each spawned process claiming a port
-        for _ in range(num_retries*100):
+        for _ in range(num_retries):
             self._close_traci_and_pipes()
 
             sumo_port = self._sumo_port
@@ -204,9 +204,7 @@ class SumoTrafficSimulation(Provider):
                 self._close_traci_and_pipes()
                 continue
             except:
-                logging.debug(
-                    "Retrying TraCI connection..."
-                )
+                logging.debug("Retrying TraCI connection...")
                 self._close_traci_and_pipes()
                 continue
             break
