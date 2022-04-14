@@ -93,8 +93,10 @@ def notebook():
     with open(tmppath, "w") as f:
         import smarts.core.tests
 
+        # pytype: disable=module-attr
         traversable = importlib_resources.files(smarts.core.tests)
         f.write(traversable.joinpath(NOTEBOOK_NAME).read_text())
+        # pytype: enable=module-attr
     yield tmppath
     os.remove(tmppath)
 
