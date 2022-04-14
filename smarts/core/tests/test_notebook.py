@@ -93,9 +93,8 @@ def notebook():
     with open(tmppath, "w") as f:
         import smarts.core.tests
 
-        # pytype: disable=module-attr
-        f.write(importlib_resources.read_text(smarts.core.tests, NOTEBOOK_NAME))
-        # pytype: enable=module-attr
+        traversable = importlib_resources.files(smarts.core.tests)
+        f.write(traversable.joinpath(NOTEBOOK_NAME).read_text())
     yield tmppath
     os.remove(tmppath)
 
