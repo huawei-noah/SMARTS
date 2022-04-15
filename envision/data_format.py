@@ -211,10 +211,12 @@ class EnvisionDataFormatter:
             self,
             context: "EnvisionDataFormatter",
             iterable: Iterable,
+            op: Operation,
         ) -> None:
             super().__init__()
             self._context = context
             self._upper_layer_data = context._data
+            self._operation = op
 
             def empty_gen():
                 return
@@ -237,7 +239,7 @@ class EnvisionDataFormatter:
         ) -> Optional[bool]:
             d = self._context._data
             self._context._data = self._upper_layer_data
-            self._context.add_primitive(d)
+            self._context.add(d, "", op=self._operation)
             return super().__exit__(__exc_type, __exc_value, __traceback)
 
         def __iter__(self) -> Iterator[Any]:
@@ -255,8 +257,8 @@ class EnvisionDataFormatter:
                 self._context.add_primitive(d)
                 raise
 
-    def layer(self, iterable: Iterable = None):
-        return self.DataFormatterLayer(self, iterable)
+    def layer(self, iterable: Iterable = None, op: Operation = Operation.NONE):
+        return self.DataFormatterLayer(self, iterable, op)
 
     def resolve(self):
         if self._reduction_context.has_values:
