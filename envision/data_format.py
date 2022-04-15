@@ -78,8 +78,10 @@ from typing import (
     Callable,
     ContextManager,
     Dict,
+    Generator,
     Hashable,
     Iterable,
+    Iterator,
     List,
     Optional,
     Sequence,
@@ -204,7 +206,7 @@ class EnvisionDataFormatter:
         else:
             self.add_primitive(outval)
 
-    class DataFormatterLayer(ContextManager):
+    class DataFormatterLayer(ContextManager, Iterator):
         def __init__(
             self,
             context: "EnvisionDataFormatter",
@@ -214,21 +216,23 @@ class EnvisionDataFormatter:
             super().__init__()
             self._context = context
             self._upper_layer_data = context._data
-            self._iterable = iterable
+
+            def empty_gen():
+                return
+                yield
+
+            self._iterable: Generator[Any, None, None] = empty_gen()
             self._value_selector = value_selector
+            if iterable:
+                if self._value_selector:
+                    self._iterable = (self._value_selector(v) for v in iterable)
+                else:
+                    self._iterable = (v for v in iterable)
 
         def __enter__(self):
             super().__enter__()
             self._context._data = []
-
-            iterable = []
-            if iterable:
-                if self._value_selector:
-                    iterable = (self._value_selector(v) for v in self._iterable)
-                else:
-                    iterable = (v for v in self._iterable)
-
-            return iterable
+            return self._iterable
 
         def __exit__(
             self,
@@ -240,6 +244,21 @@ class EnvisionDataFormatter:
             self._context._data = self._upper_layer_data
             self._context.add_primitive(d)
             return super().__exit__(__exc_type, __exc_value, __traceback)
+
+        def __iter__(self) -> Iterator[Any]:
+            super().__iter__()
+            self._context._data = []
+            return self
+
+        def __next__(self) -> Any:
+            try:
+                n = next(self._iterable)
+                return n
+            except StopIteration:
+                d = self._context._data
+                self._context._data = self._upper_layer_data
+                self._context.add_primitive(d)
+                raise
 
     def layer(
         self, iterable: Iterable = None, value_selector: Callable[[Any], Any] = None
@@ -262,30 +281,17 @@ def _format_traffic_actor(obj, context: EnvisionDataFormatter):
     context.add_primitive(obj.speed)
     context.add(obj.events, "events", op=Operation.DELTA)
     context.add(obj.score, "score")
-    # context.add(obj.waypoint_paths, "waypoint_paths", op=Context.OPTIONAL)
-    with context.layer():
-        for lane in obj.waypoint_paths:
+    for lane in context.layer(obj.waypoint_paths):
+        for waypoint in context.layer(lane):
             with context.layer():
-                for waypoint in lane:
-                    with context.layer():
-                        context.add(waypoint, "waypoint")
-    # context.add(obj.driven_path, "driven_path", op=Context.OPTIONAL)
-    with context.layer():
-        for dp in obj.driven_path:
-            context.add(dp, "driven_path_point", op=Operation.FLATTEN)
-    # context.add(obj.point_cloud, "point_cloud", op=Context.OPTIONAL)
-    with context.layer():
-        for l_point in obj.point_cloud:
-            context.add(l_point, "lidar_point", op=Operation.FLATTEN)
-    # context.add(
-    #     obj.mission_route_geometry or [], "mission_route_geometry", op=Context.OPTIONAL
-    # )
-    with context.layer():
-        if obj.mission_route_geometry:
-            for geo in obj.mission_route_geometry:
-                with context.layer():
-                    for route_point in geo:
-                        context.add(route_point, "route_point", op=Operation.FLATTEN)
+                context.add(waypoint, "waypoint")
+    for dp in context.layer(obj.driven_path):
+        context.add(dp, "driven_path_point", op=Operation.FLATTEN)
+    for l_point in context.layer(obj.point_cloud):
+        context.add(l_point, "lidar_point", op=Operation.FLATTEN)
+    for geo in context.layer(obj.mission_route_geometry):
+        for route_point in context.layer(geo):
+            context.add(route_point, "route_point", op=Operation.FLATTEN)
     assert type(obj.actor_type) is TrafficActorType
     context.add(obj.actor_type, "actor_type", op=Operation.ONCE)
     assert type(obj.vehicle_type) is VehicleType
@@ -297,11 +303,10 @@ def _format_state(obj: State, context: EnvisionDataFormatter):
     context.add(obj.frame_time, "frame_time")
     context.add(obj.scenario_id, "scenario_id")
     context.add(obj.scenario_name, "scenario_name", op=Operation.ONCE)
-    with context.layer():
-        for _id, t in obj.traffic.items():
-            with context.layer():
-                # context.add(_id, "agent_id", op=Operation.REDUCE)
-                context.add(t, "traffic")
+    for _id, t in context.layer(obj.traffic.items()):
+        with context.layer():
+            # context.add(_id, "agent_id", op=Operation.REDUCE)
+            context.add(t, "traffic")
     # context.add(
     #     obj.bubbles,
     #     "bubbles",
@@ -309,11 +314,9 @@ def _format_state(obj: State, context: EnvisionDataFormatter):
     #     alternate=lambda bbl: bbl.pose,
     #     op=Operation.DELTA_ALTERNATE,
     # )  # On delta use alternative
-    with context.layer():
-        for bubble in obj.bubbles:
-            with context.layer():
-                for p in bubble:
-                    context.add(p, "bubble_point", op=Operation.FLATTEN)
+    for bubble in context.layer(obj.bubbles):
+        for p in context.layer(bubble):
+            context.add(p, "bubble_point", op=Operation.FLATTEN)
     # context.add(obj.ego_agent_ids, "ego_agent_ids", op=Context.DELTA)
 
 
@@ -358,11 +361,10 @@ def _format_waypoint(obj: Waypoint, context: EnvisionDataFormatter):
     context.add_primitive(obj.lane_index)
 
 
-def _format_list(obj: Union[list, tuple], context: EnvisionDataFormatter):
-    assert isinstance(obj, (list, tuple))
-    with context.layer():
-        for e in obj:
-            context.add(e, "")
+def _format_list(l: Union[list, tuple], context: EnvisionDataFormatter):
+    assert isinstance(l, (list, tuple))
+    for e in context.layer(l):
+        context.add(e, "")
 
 
 _formatter_map[TrafficActorState] = _format_traffic_actor
