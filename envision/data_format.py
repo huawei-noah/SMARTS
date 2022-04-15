@@ -211,7 +211,6 @@ class EnvisionDataFormatter:
             self,
             context: "EnvisionDataFormatter",
             iterable: Iterable,
-            value_selector: Callable[[Any], Any] = None,
         ) -> None:
             super().__init__()
             self._context = context
@@ -221,13 +220,9 @@ class EnvisionDataFormatter:
                 return
                 yield
 
-            self._iterable: Generator[Any, None, None] = empty_gen()
-            self._value_selector = value_selector
-            if iterable:
-                if self._value_selector:
-                    self._iterable = (self._value_selector(v) for v in iterable)
-                else:
-                    self._iterable = (v for v in iterable)
+            self._iterable: Generator[Any, None, None] = (
+                (v for v in iterable) if iterable else empty_gen()
+            )
 
         def __enter__(self):
             super().__enter__()
@@ -260,10 +255,8 @@ class EnvisionDataFormatter:
                 self._context.add_primitive(d)
                 raise
 
-    def layer(
-        self, iterable: Iterable = None, value_selector: Callable[[Any], Any] = None
-    ):
-        return self.DataFormatterLayer(self, iterable, value_selector)
+    def layer(self, iterable: Iterable = None):
+        return self.DataFormatterLayer(self, iterable)
 
     def resolve(self):
         if self._reduction_context.has_values:
@@ -313,7 +306,7 @@ def _format_state(obj: State, context: EnvisionDataFormatter):
     #     select=lambda bbl: (bbl.geometry, bbl.pose),
     #     alternate=lambda bbl: bbl.pose,
     #     op=Operation.DELTA_ALTERNATE,
-    # )  # On delta use alternative
+    # )  # TODO: On delta use position+heading as alternative
     for bubble in context.layer(obj.bubbles):
         for p in context.layer(bubble):
             context.add(p, "bubble_point", op=Operation.FLATTEN)
