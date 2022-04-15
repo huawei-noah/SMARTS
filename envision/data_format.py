@@ -79,11 +79,13 @@ from typing import (
     ContextManager,
     Dict,
     Hashable,
+    Iterable,
     List,
     Optional,
     Sequence,
     Set,
     Type,
+    Union,
 )
 
 from envision.types import State, TrafficActorState, TrafficActorType, VehicleType
@@ -109,7 +111,8 @@ class Operation(IntEnum):
     """Similar to DELTA, this value will be sent as the base value the first time seen then as an alternate."""
 
 
-_serialization_map: Dict[Type, Callable[[Any, "EnvisionDataFormatter"], None]] = {}
+_formatter_map: Dict[Type, Callable[[Any, "EnvisionDataFormatter"], None]] = {}
+_sequence_formatter_map: Dict[Type, Callable[[Any, "EnvisionDataFormatter"], None]] = {}
 
 _primitives = {int, float, str, VehicleType, TrafficActorType}
 
@@ -173,7 +176,7 @@ class EnvisionDataFormatter:
         # if isinstance(value, (Object)) and value in self.seen_objects:
         #     return
 
-        f = _serialization_map.get(type(value))
+        f = _formatter_map.get(type(value))
         if f:
             f(value, self)
         else:
@@ -188,6 +191,7 @@ class EnvisionDataFormatter:
         alternate: Callable[[Any], Any] = None,
     ):
         outval = value
+        f = _sequence_formatter_map.get(type(value))
         if op & Operation.REDUCE:
             outval = ReductionContext.resolve_value(self._reduction_context, outval)
         if op & Operation.FLATTEN:
@@ -195,19 +199,36 @@ class EnvisionDataFormatter:
                 assert False, "Must use flatten with Sequence or dataclass"
             for e in outval:
                 self.add_primitive(e)
+        elif f:
+            f(value, self)
         else:
             self.add_primitive(outval)
 
     class DataFormatterLayer(ContextManager):
-        def __init__(self, context: "EnvisionDataFormatter") -> None:
+        def __init__(
+            self,
+            context: "EnvisionDataFormatter",
+            iterable: Iterable,
+            value_selector: Callable[[Any], Any] = None,
+        ) -> None:
             super().__init__()
             self._context = context
             self._upper_layer_data = context._data
+            self._iterable = iterable
+            self._value_selector = value_selector
 
         def __enter__(self):
             super().__enter__()
             self._context._data = []
-            return self
+
+            iterable = []
+            if iterable:
+                if self._value_selector:
+                    iterable = (self._value_selector(v) for v in self._iterable)
+                else:
+                    iterable = (v for v in self._iterable)
+
+            return iterable
 
         def __exit__(
             self,
@@ -220,8 +241,10 @@ class EnvisionDataFormatter:
             self._context.add_primitive(d)
             return super().__exit__(__exc_type, __exc_value, __traceback)
 
-    def layer(self):
-        return self.DataFormatterLayer(self)
+    def layer(
+        self, iterable: Iterable = None, value_selector: Callable[[Any], Any] = None
+    ):
+        return self.DataFormatterLayer(self, iterable, value_selector)
 
     def resolve(self):
         if self._reduction_context.has_values:
@@ -335,18 +358,18 @@ def _format_waypoint(obj: Waypoint, context: EnvisionDataFormatter):
     context.add_primitive(obj.lane_index)
 
 
-# def _format_list(obj: list, context: EnvisionDataFormatter):
-#     t = type(obj)
-#     assert obj is list
-#     with context.layer():
-#         for e in obj:
-#             context.add(e, "")
+def _format_list(obj: Union[list, tuple], context: EnvisionDataFormatter):
+    assert isinstance(obj, (list, tuple))
+    with context.layer():
+        for e in obj:
+            context.add(e, "")
 
 
-_serialization_map[TrafficActorState] = _format_traffic_actor
-_serialization_map[State] = _format_state
-_serialization_map[VehicleType] = _format_vehicle_type
-_serialization_map[TrafficActorType] = _format_traffic_actor_type
-_serialization_map[Events] = _format_events
-_serialization_map[Waypoint] = _format_waypoint
-# _serialization_map[list] = _format_list
+_formatter_map[TrafficActorState] = _format_traffic_actor
+_formatter_map[State] = _format_state
+_formatter_map[VehicleType] = _format_vehicle_type
+_formatter_map[TrafficActorType] = _format_traffic_actor_type
+_formatter_map[Events] = _format_events
+_formatter_map[Waypoint] = _format_waypoint
+_sequence_formatter_map[list] = _format_list
+_sequence_formatter_map[tuple] = _format_list

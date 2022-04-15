@@ -28,7 +28,7 @@ import pytest
 
 import smarts.sstudio.types as t
 from envision.client import Client
-from envision.data_format import EnvisionDataFormatter, Operation, _serialization_map
+from envision.data_format import EnvisionDataFormatter, Operation, _formatter_map
 from envision.types import State, TrafficActorState, TrafficActorType, VehicleType
 from smarts.core import seed
 from smarts.core.agent_interface import AgentInterface
@@ -140,7 +140,7 @@ def covered_data():
 
 @pytest.fixture
 def primitive_data():
-    return [(1, [1]), (0.2, [0.2]), ("la", ["la"]), ([], [[]]), ((3, 5), [(3, 5)])]
+    return [(1, [1]), (0.2, [0.2]), ("la", ["la"]), ([], [[]]), ((3, 5), [[3, 5]])]
 
 
 @pytest.fixture
@@ -230,7 +230,7 @@ def test_covered_data_format(covered_data):
     for item in covered_data:
         es = EnvisionDataFormatter(None)
         vt = item[0]
-        _serialization_map[type(vt)](vt, es)
+        _formatter_map[type(vt)](vt, es)
 
         data = es.resolve()
 
