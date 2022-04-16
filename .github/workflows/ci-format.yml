@@ -1,6 +1,12 @@
 name: SMARTS CI Format
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+      - master
+  pull_request:
+    branches-ignore:
+      - master
 
 env:
   venv_dir: .venv
