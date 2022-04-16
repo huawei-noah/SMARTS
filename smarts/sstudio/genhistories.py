@@ -304,8 +304,8 @@ class Interaction(_TrajectoryDataset):
             return np.linalg.norm((dx, dy))
         if col_name == "heading_rad":
             if self._next_row:
-                dx = float(self._next_row["x"]) - float(row["x"])
-                dy = float(self._next_row["y"]) - float(row["y"])
+                dx = (float(self._next_row["x"]) - float(row["x"])) / 0.1
+                dy = (float(self._next_row["y"]) - float(row["y"])) / 0.1
                 dm = np.linalg.norm((dx, dy))
                 if dm != 0.0 and dm > self._heading_min_speed:
                     new_heading = vec_to_radians((dx, dy))
@@ -363,7 +363,10 @@ class NGSIM(_TrajectoryDataset):
             ispeed = window[w, 2]
             if s == 0.0 or (
                 self._heading_min_speed is not None
-                and (s < self._heading_min_speed or ispeed < self._heading_min_speed)
+                and (
+                    10.0 * s < self._heading_min_speed
+                    or ispeed < self._heading_min_speed
+                )
             ):
                 if prev_heading is not None:
                     new_heading += prev_heading
