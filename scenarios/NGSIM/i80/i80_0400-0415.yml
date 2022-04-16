@@ -36,8 +36,8 @@ trajectory_dataset:
     # This is useful to prevent abnormal heading changes that may arise from
     # noise in position estimates in a trajectory dataset dominating real position
     # changes in situations where the real position changes are very small.
-    # Defaults to .22 m/s if not specified.
-    #heading_inference_min_speed:  .22
+    # Defaults to 2.2 m/s if not specified.
+    #heading_inference_min_speed:  2.2
 
     map_net:
         # These are dimensions of the Sumo network in map.net.xml.

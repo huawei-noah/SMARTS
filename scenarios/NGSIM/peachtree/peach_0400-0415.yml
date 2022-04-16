@@ -13,7 +13,7 @@ trajectory_dataset:
 
     #max_angular_velocity: 4
     #heading_inference_window: 5
-    #heading_inference_min_speed: 0.22
+    #heading_inference_min_speed: 2.2
 
     map_net:
         # These are dimensions of the Sumo network in map.net.xml.
@@ -23,4 +23,4 @@ trajectory_dataset:
 
         # The map width is used to filter position_x values
         # to ensure they're in range.
-        width: 1000000
+        #width: 100

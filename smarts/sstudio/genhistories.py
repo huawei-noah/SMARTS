@@ -60,6 +60,8 @@ class _TrajectoryDataset:
         self._scale = lane_width / real_lane_width_m
         self._flip_y = dataset_spec.get("flip_y", False)
         self._swap_xy = dataset_spec.get("swap_xy", False)
+        # most trajectory datasets have .1s time delta (i.e., were collected at 10 Hz)
+        self._dt_sec = 0.1
 
     @property
     def scale(self) -> float:
@@ -234,7 +236,7 @@ class Interaction(_TrajectoryDataset):
         super().__init__(dataset_spec, output)
         assert not self._flip_y
         self._max_angular_velocity = dataset_spec.get("max_angular_velocity", None)
-        self._heading_min_speed = dataset_spec.get("heading_inference_min_speed", 0.22)
+        self._heading_min_speed = dataset_spec.get("heading_inference_min_speed", 2.2)
         self._prev_heading = None
         self._next_row = None
         # See: https://interaction-dataset.com/details-and-format
@@ -296,28 +298,31 @@ class Interaction(_TrajectoryDataset):
             return self._lookup_agent_type(row["agent_type"])
         if col_name == "speed":
             if self._next_row:
-                # XXX: could try to divide by sim_time delta here instead of assuming .1s
-                dx = (float(self._next_row["x"]) - float(row["x"])) / 0.1
-                dy = (float(self._next_row["y"]) - float(row["y"])) / 0.1
+                # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
+                dx = (float(self._next_row["x"]) - float(row["x"])) / self._dt_sec
+                dy = (float(self._next_row["y"]) - float(row["y"])) / self._dt_sec
             else:
                 dx, dy = float(row["vx"]), float(row["vy"])
             return np.linalg.norm((dx, dy))
         if col_name == "heading_rad":
             if self._next_row:
-                dx = (float(self._next_row["x"]) - float(row["x"])) / 0.1
-                dy = (float(self._next_row["y"]) - float(row["y"])) / 0.1
+                # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
+                dx = (float(self._next_row["x"]) - float(row["x"])) / self._dt_sec
+                dy = (float(self._next_row["y"]) - float(row["y"])) / self._dt_sec
                 dm = np.linalg.norm((dx, dy))
                 if dm != 0.0 and dm > self._heading_min_speed:
                     new_heading = vec_to_radians((dx, dy))
                     if self._max_angular_velocity and self._prev_heading is not None:
-                        # XXX: could try to divide by sim_time delta here instead of assuming .1s
-                        angular_velocity = (new_heading - self._prev_heading) / 0.1
+                        # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
+                        angular_velocity = (
+                            new_heading - self._prev_heading
+                        ) / self._dt_sec
                         if abs(angular_velocity) > self._max_angular_velocity:
                             new_heading = (
                                 self._prev_heading
                                 + np.sign(angular_velocity)
                                 * self._max_angular_velocity
-                                * 0.1
+                                * self._dt_sec
                             )
                     self._prev_heading = new_heading
                     return new_heading
@@ -333,11 +338,12 @@ class NGSIM(_TrajectoryDataset):
 
     def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
-        self._prev_heading = 3 * math.pi / 2
+        # self._prev_heading = 3 * math.pi / 2
+        self._prev_heading = None
         self._max_angular_velocity = dataset_spec.get("max_angular_velocity", None)
         self._heading_window = dataset_spec.get("heading_inference_window", 2)
-        # .22 corresponds to roughly 5mph.
-        self._heading_min_speed = dataset_spec.get("heading_inference_min_speed", 0.22)
+        # 2.2 corresponds to roughly 5mph.
+        self._heading_min_speed = dataset_spec.get("heading_inference_min_speed", 2.2)
 
     def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
         super().check_dataset_spec(dataset_spec)
@@ -349,49 +355,55 @@ class NGSIM(_TrajectoryDataset):
     def _cal_heading(self, window_param) -> float:
         window = window_param[0]
         new_heading = 0
+        inst_heading = None
         prev_heading = None
         den = 0
+        continued = False
         for w in range(self._heading_window - 1):
+            if continued and prev_heading is not None:
+                new_heading += prev_heading
+                den += 1
+            continued = False
             c = window[w, :2]
             n = window[w + 1, :2]
             if any(np.isnan(c)) or any(np.isnan(n)):
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
+                continued = True
                 continue
             s = np.linalg.norm(n - c)
-            ispeed = window[w, 2]
-            if s == 0.0 or (
-                self._heading_min_speed is not None
-                and (
-                    10.0 * s < self._heading_min_speed
-                    or ispeed < self._heading_min_speed
-                )
-            ):
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
+            if s == 0.0:
+                continued = True
                 continue
+            ispeed = window[w, 2]
             vhat = (n - c) / s
             inst_heading = vec_to_radians(vhat)
+            if self._heading_min_speed is not None and (
+                (s / self._dt_sec) < self._heading_min_speed
+                or ispeed < self._heading_min_speed
+            ):
+                continued = True
+                continue
             if prev_heading is not None:
                 if inst_heading == 0 and prev_heading > math.pi:
                     inst_heading = 2 * math.pi
                 if self._max_angular_velocity:
-                    # XXX: could try to divide by sim_time delta here instead of assuming .1s
-                    angular_velocity = (inst_heading - prev_heading) / 0.1
+                    # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
+                    angular_velocity = (inst_heading - prev_heading) / self._dt_sec
                     if abs(angular_velocity) > self._max_angular_velocity:
                         inst_heading = (
                             prev_heading
                             + np.sign(angular_velocity)
                             * self._max_angular_velocity
-                            * 0.1
+                            * self._dt_sec
                         )
             den += 1
             new_heading += inst_heading
             prev_heading = inst_heading
         if den > 0:
             new_heading /= den
+        elif inst_heading is not None:
+            new_heading = inst_heading
+        elif self._prev_heading is None:
+            new_heading = 3 * math.pi / 2
         else:
             new_heading = self._prev_heading
         self._prev_heading = new_heading
@@ -404,8 +416,8 @@ class NGSIM(_TrajectoryDataset):
         badn = any(np.isnan(n))
         if badc or badn:
             return None
-        # XXX: could try to divide by sim_time delta here instead of assuming .1s
-        return np.linalg.norm(n - c) / 0.1
+        # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
+        return np.linalg.norm(n - c) / self._dt_sec
 
     def _transform_all_data(self):
         self._log.debug("transforming NGSIM data")
@@ -688,7 +700,7 @@ class Waymo(_TrajectoryDataset):
             interp_rows = [None] * num_steps
             for j in range(num_steps):
                 row = rows[j]
-                timestep = 0.1
+                timestep = self._dt_sec
                 time_current = row["sim_time"]
                 time_expected = round(j * timestep, 3)
                 time_error = time_current - time_expected
