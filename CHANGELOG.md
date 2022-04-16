@@ -8,7 +8,9 @@ All text added must be human-readable.
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
-## [Unreleased]
+# [Unreleased]
+
+### [0.6.1rc0] 15-04-16
 ### Added
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 - Added `sb3` reinforcement-learning example. An ego agent is trained using PPO algorithm from Stable Baselines3 library, to drive as far and as fast as possible in heavy traffic, without colliding or going off-road.
@@ -62,13 +64,13 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Security
 
 
-# [0.5.1.post1] 2022-03-11
+## [0.5.1.post1] 2022-03-11
 ### Fixed
 - Fixed an issue involving relative imports in `examples/rllib/rllib.py`.
 - Fixed an issue with uncapped `opencv` causing an error within `ray.rllib`.
 - Fixed a longstanding issue that did not allow camera observations unless you had windowing.
 
-# [0.5.1] 2022-01-25
+## [0.5.1] 2022-01-25
 ### Added
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 ### Changed
