@@ -101,3 +101,20 @@ def test_scenario_variations_of_social_agents(scenario_root):
     assert (
         len(all_social_agent_ids - expected_social_agent_ids) == 0
     ), "All the correct social agent IDs were used"
+
+
+def test_scenario_variations(scenario_root):
+    # Test that the iterator yields a cycle
+    cyclic_iterator = Scenario.scenario_variations([str(scenario_root)], [AGENT_ID])
+    for _ in range(7):
+        scenario = next(cyclic_iterator)
+        assert scenario is not None
+
+    # Test that the iterator does not yield a cycle
+    acyclic_iterator = Scenario.scenario_variations(
+        [str(scenario_root)], [AGENT_ID], circular=False
+    )
+    for _ in range(6):
+        scenario = next(acyclic_iterator)
+    with pytest.raises(StopIteration):
+        _ = next(acyclic_iterator)

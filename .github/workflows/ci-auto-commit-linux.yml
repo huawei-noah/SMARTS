@@ -24,6 +24,8 @@ jobs:
           apt-get install -y git curl ca-certificates
           curl -sL https://deb.nodesource.com/setup_14.x | bash -
           apt-get install -y nodejs
+      - name: Add safe directory
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Checkout
         uses: actions/checkout@v2
         with:

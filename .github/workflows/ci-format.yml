@@ -1,6 +1,16 @@
 name: SMARTS CI Format
 
+<<<<<<< HEAD
 on: [push, pull_request]
+=======
+on:
+  push:
+    branches-ignore:
+      - master
+  pull_request:
+    branches-ignore:
+      - master
+>>>>>>> develop
 
 env:
   venv_dir: .venv
@@ -48,6 +58,8 @@ jobs:
           add-apt-repository -y ppa:git-core/ppa
           apt-get update
           apt-get install -y git
+      - name: Add safe directory
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Checkout
         uses: actions/checkout@v2
         with:
