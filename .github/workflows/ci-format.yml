@@ -1,8 +1,5 @@
 name: SMARTS CI Format
 
-<<<<<<< HEAD
-on: [push, pull_request]
-=======
 on:
   push:
     branches-ignore:
@@ -10,7 +7,6 @@ on:
   pull_request:
     branches-ignore:
       - master
->>>>>>> develop
 
 env:
   venv_dir: .venv

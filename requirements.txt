@@ -46,13 +46,8 @@ gast==0.5.3
 gitdb==4.0.9
 GitPython==3.1.27
 google==3.0.0
-<<<<<<< HEAD
-google-api-core==2.7.1
-google-auth==2.6.3
-=======
 google-api-core==2.7.2
 google-auth==2.6.5
->>>>>>> develop
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 googleapis-common-protos==1.56.0
@@ -64,7 +59,7 @@ hyperlink==21.0.0
 idna==3.3
 ijson==3.1.4
 importlib-metadata==4.11.3
-importlib-resources==5.7.0
+importlib-resources==5.7.1
 incremental==21.3.0
 iniconfig==1.1.1
 ipykernel==6.13.0
@@ -75,7 +70,7 @@ jsonpatch==1.32
 jsonpointer==2.3
 jsonschema==4.4.0
 jupyter-client==7.2.2
-jupyter-core==4.9.2
+jupyter-core==4.10.0
 jupyter-server==1.16.0
 jupyter-server-mathjax==0.2.5
 <<<<<<< HEAD
@@ -183,7 +178,7 @@ tornado==6.1
 traitlets==5.1.1
 trimesh==3.9.29
 Twisted==22.4.0
-typing_extensions==4.1.1
+typing_extensions==4.2.0
 urllib3==1.26.9
 visdom==0.1.8.9
 wcwidth==0.2.5

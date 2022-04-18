@@ -10,6 +10,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 # [Unreleased]
 
+### Fixed
+- Gracefully handle `EndlessGoal` missions in the MaRL benchmark. Relative goal distance with `EndlessGoal` will be now always be 0.
+
 ### [0.6.1rc0] 15-04-16
 ### Added
 - Added `scenarios/waymo_motion/waymo_utility.py`, a text-based utility to explore and export scenarios from the Waymo Motion dataset to SMARTS scenarios. 
