@@ -11,7 +11,7 @@ from .lane_space import (
     get_observation_adapter,
 )
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 try:
     from smarts.zoo.agent_spec import AgentSpec
