@@ -68,6 +68,7 @@ class WaymoMap(RoadMap):
     def __init__(self, map_spec: MapSpec, waymo_scenario):
         self._log = logging.getLogger(self.__class__.__name__)
         self._map_spec = map_spec
+        self._waymo_scenario_id = waymo_scenario.scenario_id
         self._surfaces: Dict[str, WaymoMap.Surface] = dict()
         self._lanes: Dict[str, WaymoMap.Lane] = dict()
         self._roads: Dict[str, WaymoMap.Road] = dict()
@@ -1648,7 +1649,7 @@ class WaymoMap(RoadMap):
             ref_lanepoints_coordinates["headings"]
         )
         first_lp_heading = ref_lanepoints_coordinates["headings"][0]
-        lp_position = path[0].lp.pose.position[:2]
+        lp_position = path[0].lp.pose.as_position2d()
         vehicle_pos = np.array(point[:2])
         heading_vec = np.array(radians_to_vec(first_lp_heading))
         projected_distant_lp_vehicle = np.inner(
@@ -1674,7 +1675,7 @@ class WaymoMap(RoadMap):
 
             return [
                 Waypoint(
-                    pos=lp.pose.position,
+                    pos=lp.pose.position[:2],
                     heading=lp.pose.heading,
                     lane_width=lp.lane.width_at_offset(0)[0],
                     speed_limit=lp.lane.speed_limit,
