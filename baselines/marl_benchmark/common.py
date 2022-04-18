@@ -171,10 +171,11 @@ class CalObs:
 
         ego_state = env_obs.ego_vehicle_state
         goal = ego_state.mission.goal
-        assert isinstance(goal, PositionalGoal), goal
 
         ego_pos = ego_state.position[:2]
-        goal_pos = goal.position  # the position of mission goal is 2-dimensional.
+        goal_pos = getattr(
+            goal, "position", ego_pos
+        )  # the position of mission goal is 2-dimensional.
         vector = np.asarray([goal_pos[0] - ego_pos[0], goal_pos[1] - ego_pos[1]])
         # space = SPACE_LIB["goal_relative_pos"](None)
         # return vector / (space.high - space.low)
