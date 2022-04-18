@@ -10,6 +10,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 # [Unreleased]
 
+### Fixed
+- Gracefully handle `EndlessGoal` missions in the MaRL benchmark. Relative goal distance with `EndlessGoal` will be now always be 0.
+
 ### [0.6.1rc0] 15-04-16
 ### Added
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
