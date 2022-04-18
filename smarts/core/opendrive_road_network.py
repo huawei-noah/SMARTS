@@ -678,7 +678,7 @@ class OpenDriveRoadNetwork(RoadMap):
         )
 
     def to_glb(self, at_path):
-        """build a glb file for camera rendering and envision"""
+        """Build a glb file for camera rendering and envision."""
         glb = self._make_glb_from_polys()
         glb.write_glb(at_path)
 

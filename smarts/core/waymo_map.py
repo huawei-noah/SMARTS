@@ -35,6 +35,8 @@ import numpy as np
 import rtree
 from cached_property import cached_property
 from shapely.geometry import Polygon
+import trimesh
+from trimesh.exchange import gltf
 from waymo_open_dataset.protos import scenario_pb2
 from waymo_open_dataset.protos.map_pb2 import LaneCenter, RoadLine
 
@@ -54,16 +56,45 @@ from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
 from .utils.file import read_tfrecord_file
 from .utils.math import ray_boundary_intersect, inplace_unwrap, radians_to_vec, vec_2d
-from .utils.geometry import buffered_shape
+from .utils.geometry import buffered_shape, generate_mesh_from_polygons
 
 # pytype: enable=import-error
+
+
+def _convert_camera(camera):
+    result = {
+        "name": camera.name,
+        "type": "perspective",
+        "perspective": {
+            "aspectRatio": camera.fov[0] / camera.fov[1],
+            "yfov": np.radians(camera.fov[1]),
+            "znear": float(camera.z_near),
+            # HACK: The trimesh gltf export doesn't include a zfar which Panda3D GLB
+            #       loader expects. Here we override to make loading possible.
+            "zfar": float(camera.z_near + 100),
+        },
+    }
+    return result
+
+
+gltf._convert_camera = _convert_camera
+
+
+class _GLBData:
+    def __init__(self, bytes_):
+        self._bytes = bytes_
+
+    def write_glb(self, output_path: str):
+        """Generate a geometry file."""
+        with open(output_path, "wb") as f:
+            f.write(self._bytes)
 
 
 class WaymoMap(RoadMap):
     """A map associated with a Waymo dataset"""
 
     DEFAULT_LANE_SPEED = 16.67  # in m/s
-    DEFAULT_LANE_WIDTH = 3.5
+    DEFAULT_LANE_WIDTH = 4
 
     def __init__(self, map_spec: MapSpec, waymo_scenario):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -739,8 +770,38 @@ class WaymoMap(RoadMap):
     def scale_factor(self) -> float:
         return 1.0  # TODO
 
-    def to_glb(self, at_path: str):
-        pass  # TODO (or not!)
+    def to_glb(self, at_path):
+        """Build a glb file for camera rendering and envision."""
+        glb = self._make_glb_from_polys()
+        glb.write_glb(at_path)
+
+    def _make_glb_from_polys(self):
+        scene = trimesh.Scene()
+        polygons = []
+        for lane_id in self._lanes:
+            lane = self._lanes[lane_id]
+            polygons.append(lane.shape())
+
+        mesh = generate_mesh_from_polygons(polygons)
+
+        # Attach additional information for rendering as metadata in the map glb
+        # <2D-BOUNDING_BOX>: four floats separated by ',' (<FLOAT>,<FLOAT>,<FLOAT>,<FLOAT>),
+        # which describe x-minimum, y-minimum, x-maximum, and y-maximum
+        metadata = {
+            "bounding_box": (
+                self.bounding_box.min_pt.x,
+                self.bounding_box.min_pt.y,
+                self.bounding_box.max_pt.x,
+                self.bounding_box.max_pt.y,
+            )
+        }
+
+        mesh.visual = trimesh.visual.TextureVisuals(
+            material=trimesh.visual.material.PBRMaterial()
+        )
+
+        scene.add_geometry(mesh)
+        return _GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
 
     class Surface(RoadMap.Surface):
         """Surface representation for Waymo maps"""
