@@ -132,12 +132,13 @@ define a `MapSpec` object in your `scenario.py`.
   gen_map(map_spec)
 
 However, note that the `gen_traffic()` operation is net yet supported with custom map types.
-To use that feature, you may still need to convert your map to the Sumo road network format.
+Suggested change
+To use that feature, you may still need to convert your map to the SUMO road network format.
 
 
-Convert existing map to Sumo
+Convert an existing map to SUMO
 ----------------------------
-If you have a suitable file in another format, you can turn it into a Sumo road network using the conversion utility `sumo2mesh.py` like this:
+If you have a suitable file in another format, you can turn it into a SUMO road network using the `sumo2mesh.py` conversion utility:
 
 .. code-block:: bash
 
@@ -145,10 +146,10 @@ If you have a suitable file in another format, you can turn it into a Sumo road 
   python3 -m smarts.sstudio.sumo2mesh dataset_public/2lane_sharp/map.net.xml dataset_public/2lane_sharp/map.egg --format=egg
 
 
-Create a Sumo map
+Create a SUMO map
 -----------------
 
-You can edit your own Sumo map through [SUMO's NETEDIT](https://sumo.dlr.de/docs/NETEDIT.html) and export it in a map.net.xml format.
+You can edit your own SUMO map through [SUMO's NETEDIT](https://sumo.dlr.de/docs/NETEDIT.html) and export it in a map.net.xml format.
 First, to start `netedit`, run the following on terminal:
 
 .. code-block:: bash
@@ -164,7 +165,7 @@ Use shortcut key "e" to change to edge mode. Click "chain" and "two-way" icons l
 Then click on map to start creating new edges and lanes.
 
 
-Edit existing Sumo map
+Edit an existing SUMO map
 ----------------------
 
 "file" -> "Open Network..." to open an existing map.

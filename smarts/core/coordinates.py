@@ -185,11 +185,11 @@ def line_offset_with_minimum_distance_to_point(
     p2 = line_end
     d = euclidean_distance(p1, p2)
     u = ((p[0] - p1[0]) * (p2[0] - p1[0])) + ((p[1] - p1[1]) * (p2[1] - p1[1]))
-    if d == 0.0 or u < 0.0 or u > d * d:
+    if u < 0.0:
+        return 0.0
+    if d == 0.0 or u > d * d:
         if perpendicular:
             return -1
-        if u < 0.0:
-            return 0.0
         return d
     return u / d
 
