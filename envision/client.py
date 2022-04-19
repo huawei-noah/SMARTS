@@ -26,7 +26,6 @@ import multiprocessing
 import re
 import time
 import warnings
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Union
@@ -35,7 +34,7 @@ import numpy as np
 import websocket
 
 from envision import types
-from envision.client_config import EnvisionStateFilter, ToggleOverride
+from envision.client_config import EnvisionStateFilter
 from smarts.core.utils.file import unpack
 
 
@@ -86,11 +85,8 @@ class Client:
         self._log = logging.getLogger(self.__class__.__name__)
         self._headless = headless
 
-        def default_toggle():
-            return ToggleOverride(True, None)
-
-        self._envision_state_filter = envision_state_filter or EnvisionStateFilter(
-            defaultdict(default_toggle), defaultdict(default_toggle)
+        self._envision_state_filter = (
+            envision_state_filter or EnvisionStateFilter.default()
         )
 
         current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]

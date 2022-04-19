@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Dict, NamedTuple
 
@@ -34,3 +35,10 @@ class EnvisionStateFilter:
     actor_data_filter: Dict[str, ToggleOverride]
     simulation_data_filter: Dict[str, ToggleOverride]
     max_driven_path: int = 20
+
+    @classmethod
+    def default(cls):
+        def default_toggle():
+            return ToggleOverride(True, None)
+
+        return cls(defaultdict(default_toggle), defaultdict(default_toggle))
