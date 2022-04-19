@@ -46,7 +46,9 @@ try:
 except (ModuleNotFoundError, ImportError):
     print(sys.exc_info())
     print(
-        "You may not have installed the [waymo] dependencies required to run this Waymo Utility. Install them first using the command `pip install -e .[waymo]` at the source directory."
+        "You may not have installed the [waymo] dependencies required to run this Waymo Utility. \n"
+        "Install them first using the following command at the source directory:\n"
+        "pip install waymo-open-dataset-tf-2-4-0 tabulate==0.8.9 pathos==0.2.8 readline"
     )
     exit()
 
