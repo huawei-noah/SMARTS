@@ -1405,7 +1405,9 @@ class SMARTS:
                 if filter.actor_data_filter["driven_path"].enabled:
                     driven_path = self._vehicle_index.vehicle_by_id(
                         v.vehicle_id
-                    ).driven_path_sensor()[filter.max_driven_path :]
+                    ).driven_path_sensor(
+                        filter.actor_data_filter["driven_path"].max_count
+                    )
 
                 mission_route_geometry = None
                 if self._agent_manager.is_ego(agent_id):
