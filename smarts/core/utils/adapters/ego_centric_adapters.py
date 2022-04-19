@@ -28,8 +28,9 @@ import numpy as np
 
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading
-from smarts.core.plan import Goal, PositionalGoal, Via
-from smarts.core.sensors import Observation, ViaPoint, Vias
+from smarts.core.plan import PositionalGoal, Via
+from smarts.core.sensors import Observation, ViaPoint
+from smarts.core.utils.file import isnamedtupleinstance
 from smarts.core.utils.math import (
     position_to_ego_frame,
     world_position_from_ego_frame,
@@ -37,21 +38,10 @@ from smarts.core.utils.math import (
 )
 
 
-def _isnamedtupleinstance(x):
-    t = type(x)
-    b = t.__bases__
-    if len(b) != 1 or b[0] != tuple:
-        return False
-    f = getattr(t, "_fields", None)
-    if not isinstance(f, tuple):
-        return False
-    return all(type(n) == str for n in f)
-
-
 def _replace(obj: Any, **kwargs):
     if is_dataclass(obj):
         return dc_replace(obj, **kwargs)
-    elif _isnamedtupleinstance(obj):
+    elif isnamedtupleinstance(obj):
         return obj._replace(**kwargs)
 
     raise ValueError("Must be a namedtuple or dataclass.")
