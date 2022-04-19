@@ -41,6 +41,7 @@ from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.tests.helpers.bubbles import bubble_geometry
 from smarts.core.tests.helpers.scenario import temp_scenario
+from smarts.core.utils.file import unpack
 from smarts.sstudio.genscenario import gen_scenario
 
 
@@ -235,6 +236,7 @@ def test_covered_data_format(covered_data):
         data = es.resolve()
 
         assert data == item[1]
+        assert data == unpack(data)
 
 
 def test_primitive_data_format(primitive_data):
@@ -246,6 +248,7 @@ def test_primitive_data_format(primitive_data):
         data = es.resolve()
 
         assert data == item[1]
+        assert data == unpack(data)
 
 
 def test_layer():
@@ -261,7 +264,10 @@ def test_layer():
         with es.layer():
             es.add(["for", "tea", 12, "noon"], "", op=Operation.FLATTEN)
 
-    assert es.resolve() == expected_output
+    data = es.resolve()
+
+    assert data == expected_output
+    assert data == unpack(data)
 
 
 def test_complex_data(complex_data):
@@ -273,6 +279,7 @@ def test_complex_data(complex_data):
         data = es.resolve()
 
         assert data == item[1]
+        assert data == unpack(data)
 
 
 @pytest.fixture
@@ -432,7 +439,8 @@ def test_client_with_smarts(smarts: SMARTS, scenarios: Iterator[Scenario], sim_d
             es.add_any(state)
 
             data = es.resolve()
-            assert sim_data == data
+            assert data == sim_data
+            assert data == unpack(data)
 
     envision.send = MagicMock(side_effect=side_effect)
     scenario = next(scenarios)
