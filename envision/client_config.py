@@ -21,24 +21,33 @@
 # THE SOFTWARE.
 from collections import defaultdict
 from dataclasses import dataclass
+import sys
 from typing import Any, Dict, NamedTuple
 
 
-class ToggleOverride(NamedTuple):
+class SingleAttributeOverride(NamedTuple):
     enabled: bool
+    """If the stream value is enabled."""
     default: Any
-    use_default = True
+    """The default value for the stream if not enabled."""
+    max_count = sys.maxsize
+    """The maximum number of elements an iterable can contain."""
 
 
 @dataclass(frozen=True)
 class EnvisionStateFilter:
-    actor_data_filter: Dict[str, ToggleOverride]
-    simulation_data_filter: Dict[str, ToggleOverride]
-    max_driven_path: int = 20
+    """A state filtering tool."""
+
+    actor_data_filter: Dict[str, SingleAttributeOverride]
+    """Actor filtering."""
+    simulation_data_filter: Dict[str, SingleAttributeOverride]
+    """Simulation filtering."""
 
     @classmethod
     def default(cls):
-        def default_toggle():
-            return ToggleOverride(True, None)
+        """Give a new default filter."""
 
-        return cls(defaultdict(default_toggle), defaultdict(default_toggle))
+        def default_override():
+            return SingleAttributeOverride(True, None)
+
+        return cls(defaultdict(default_override), defaultdict(default_override))
