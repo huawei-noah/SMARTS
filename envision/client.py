@@ -35,6 +35,7 @@ import websocket
 
 from envision import types
 from envision.client_config import EnvisionStateFilter
+from envision.data_format import EnvisionDataFormatter
 from smarts.core.utils.file import unpack
 
 
@@ -81,6 +82,7 @@ class Client:
         sim_name: Optional[str] = None,
         headless: bool = False,
         envision_state_filter: EnvisionStateFilter = None,
+        envision_data_formatter: EnvisionDataFormatter = None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._headless = headless
@@ -88,6 +90,7 @@ class Client:
         self._envision_state_filter = (
             envision_state_filter or EnvisionStateFilter.default()
         )
+        self._envision_data_formatter = envision_data_formatter
 
         current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
         client_id = current_time
@@ -262,6 +265,9 @@ class Client:
 
     def send(self, state: types.State):
         """Send the given envision state to the remote as the most recent state."""
+        if self._envision_data_formatter:
+            self._envision_data_formatter.add(state, "state")
+            state = self._envision_data_formatter.resolve()
         if not self._headless and self._process.is_alive():
             self._state_queue.put(state)
         if self._logging_process:
