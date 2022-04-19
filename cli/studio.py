@@ -71,7 +71,7 @@ def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
     from smarts.core.scenario import Scenario
 
     traffic_histories = Scenario.discover_traffic_histories(scenario_root_str)
-    shift_to_origin = not allow_offset_map or bool(traffic_histories)
+    shift_to_origin = not allow_offset_map
 
     map_spec = Scenario.discover_map(scenario_root_str, shift_to_origin=shift_to_origin)
     road_map, _ = map_spec.builder_fn(map_spec)

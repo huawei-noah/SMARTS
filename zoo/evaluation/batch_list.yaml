@@ -74,7 +74,7 @@ agent_list:
           rate: 1
 
   group_3:
-    - locator: rl_agent:rl-agent-v0
+    - locator: rl_agent:rl-agent-v1
       name: normal_speed_agent
       params:
         goal_is_nearby_threshold: 40
@@ -86,7 +86,7 @@ agent_list:
         target_speed: 15
         lane_change_speed: 12.5
 
-    - locator: rl_agent:rl-agent-v0
+    - locator: rl_agent:rl-agent-v1
       name: low_speed_agent
       params:
         goal_is_nearby_threshold: 40

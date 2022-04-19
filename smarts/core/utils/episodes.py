@@ -69,7 +69,7 @@ class EpisodeLog:
         """Record a step end."""
         self.steps += 1
 
-        if not isinstance(observations, dict):
+        if not isinstance(dones, dict):
             observations, rewards, dones, infos = self._convert_to_dict(
                 observations, rewards, dones, infos
             )

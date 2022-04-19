@@ -534,7 +534,7 @@ def get_observation_adapter(
 
         # get goal
         goal = env_obs.ego_vehicle_state.mission.goal
-        goal_position = goal.position
+        goal_position = getattr(goal, "position", ego_state.position[:2])
 
         (
             lane_ttc,
