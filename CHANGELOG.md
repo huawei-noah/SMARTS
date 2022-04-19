@@ -12,6 +12,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ### Fixed
 - Gracefully handle `EndlessGoal` missions in the MaRL benchmark. Relative goal distance with `EndlessGoal` will be now always be 0.
+- Restore `rl-agent` to working order.
 
 ### [0.6.1rc0] 15-04-16
 ### Added
