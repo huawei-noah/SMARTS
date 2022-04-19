@@ -138,6 +138,7 @@ class Client:
 
     @property
     def envision_state_filter(self) -> EnvisionStateFilter:
+        """Filtering options for data."""
         return self._envision_state_filter
 
     @staticmethod
