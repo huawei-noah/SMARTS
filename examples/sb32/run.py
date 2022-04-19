@@ -40,22 +40,29 @@ def main(args: argparse.Namespace):
     config["mode"] = args.mode
 
     # Setup logdir.
-    print("\n\n")
-    if (config["mode"] == "train" and args.model) or (config["mode"] == "evaluate"):
-        # Begin training from a pretrained model.
-        logdir = Path(args.logdir)
-        config["model"] = args.model
-        print("Model:", config["model"])
-    elif config["mode"] == "train" and not args.model:
-        # Begin training from scratch.
+    if not args.logdir:
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         logdir = Path(__file__).absolute().parents[0] / "logs" / time
     else:
-        raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
+        logdir = Path(args.logdir)
     logdir.mkdir(parents=True, exist_ok=True)
     config["logdir"] = logdir
+    print("\n")
     print("Logdir:", logdir)
-    print("\n\n")
+    print("\n")
+
+    # Setup model.
+    if (config["mode"] == "train" and args.model) or (config["mode"] == "evaluate"):
+        # Begin training from a pretrained model.
+        config["model"] = args.model
+        print("\n")
+        print("Model:", config["model"])
+        print("\n")
+    elif config["mode"] == "train" and not args.model:
+        # Begin training from scratch.
+        pass
+    else:
+        raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
 
     # Make training and evaluation environments.
     env = make_env(config=config, training=True)
@@ -128,7 +135,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     #     env=eval_env,
     # )
 
-    print("\n\n")
+    print("\n")
     if config["mode"] == "evaluate":
         print("Start evaluation.")
         model = getattr(sb3lib, config["alg"]).load(
@@ -149,7 +156,6 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     else:
         print("Start training from scratch.")
         model = getattr(sb3lib, config["alg"])(
-            "CnnPolicy",
             env=env,
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
@@ -203,13 +209,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.mode == "train" and args.model is not None and args.logdir is None:
+    if args.mode == "evaluate" and args.model is None:
         raise Exception(
-            "When --mode=train, --model=<path>, --logdir option must be specified."
-        )
-    if args.mode == "evaluate" and (args.logdir is None or args.model is None):
-        raise Exception(
-            "When --mode=evaluate, --logdir and --model option must be specified."
+            "When --mode=evaluate, --model option must be specified."
         )
 
     main(args)
@@ -218,7 +220,6 @@ if __name__ == "__main__":
     # import torchvision.models as th_models
     # import torch
     # pip install prefetch_generator tqdm yacs
-
 
     # modelut = th_models.video.r2plus1d_18(pretrained=pretrained, progress=True)   
     # modelut = th.hub.load('datvuthanh/hybridnets', 'hybridnets', pretrained=True)

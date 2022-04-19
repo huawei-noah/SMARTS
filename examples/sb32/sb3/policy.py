@@ -207,6 +207,7 @@ class R2plus1D_18(BaseFeaturesExtractor):
 
 def naturecnn(config):
     kwargs = {}
+    kwargs["policy"]="CnnPolicy"
     # kwargs["policy_kwargs"] = dict(
     #     # activation_fn=th.nn.Tanh, # default activation used
     #     net_arch=[],
@@ -216,6 +217,7 @@ def naturecnn(config):
 
 def customnaturecnn(config):
     kwargs = {}
+    kwargs["policy"]="CnnPolicy"
     kwargs["policy_kwargs"] = dict(
         # features_extractor_class=NatureCNN,
         # activation_fn=th.nn.Tanh, # default activation used
@@ -226,6 +228,7 @@ def customnaturecnn(config):
 
 def dreamer(config):
     kwargs = {}
+    kwargs["policy"]="CnnPolicy"
     kwargs["policy_kwargs"] = dict(
         features_extractor_class=Dreamer,
         features_extractor_kwargs=dict(features_dim=512),
@@ -236,6 +239,7 @@ def dreamer(config):
 
 def l5kit(config):
     kwargs = {}
+    kwargs["policy"]="CnnPolicy"
     kwargs["policy_kwargs"] = dict(
         features_extractor_class=L5Kit,
         features_extractor_kwargs=dict(features_dim=128),
@@ -264,6 +268,7 @@ def l5kit(config):
 
 def r2plus1d_18(config):
     kwargs = {}
+    kwargs["policy"]="CnnPolicy"
     kwargs["policy_kwargs"] = dict(
         features_extractor_class=R2plus1D_18,
         features_extractor_kwargs=dict(config=config, pretrained=False, features_dim=400),
