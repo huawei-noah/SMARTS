@@ -86,7 +86,6 @@ export default class Client {
       return;
     }
 
-
     this._lastSeek = new Promise((resolve) =>
       resolve(
         this._sockets[simulationId].send(JSON.stringify({ seek: seconds }))
