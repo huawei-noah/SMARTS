@@ -47,17 +47,13 @@ def main(args: argparse.Namespace):
         logdir = Path(args.logdir)
     logdir.mkdir(parents=True, exist_ok=True)
     config["logdir"] = logdir
-    print("\n")
-    print("Logdir:", logdir)
-    print("\n")
+    print("\nLogdir:", logdir,"\n")
 
     # Setup model.
     if (config["mode"] == "train" and args.model) or (config["mode"] == "evaluate"):
         # Begin training from a pretrained model.
         config["model"] = args.model
-        print("\n")
-        print("Model:", config["model"])
-        print("\n")
+        print("\nModel:", config["model"],"\n")
     elif config["mode"] == "train" and not args.model:
         # Begin training from scratch.
         pass
@@ -135,15 +131,14 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     #     env=eval_env,
     # )
 
-    print("\n")
     if config["mode"] == "evaluate":
-        print("Start evaluation.")
+        print("\nStart evaluation.\n")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
         sb3_util.print_model(model, eval_env)
     elif config["mode"] == "train" and config.get("model", None):
-        print("Start training from existing model.")
+        print("\nStart training from existing model.\n")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
@@ -154,7 +149,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             callback=[checkpoint_callback, eval_callback],
         )
     else:
-        print("Start training from scratch.")
+        print("\nStart training from scratch.\n")
         model = getattr(sb3lib, config["alg"])(
             env=env,
             verbose=1,
@@ -172,14 +167,14 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         save_dir.mkdir(parents=True, exist_ok=True)
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         model.save(save_dir / ("model_" + time))
-        print("Saved trained model.")
+        print("\nSaved trained model.\n")
 
-    print("Evaluate policy.")
+    print("\nEvaluate policy.\n")
     mean_reward, std_reward = evaluate_policy(
         model, eval_env, n_eval_episodes=config["eval_eps"], deterministic=True
     )
     print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
-    print("Finished evaluating.")
+    print("\nFinished evaluating.\n")
 
 
 if __name__ == "__main__":
