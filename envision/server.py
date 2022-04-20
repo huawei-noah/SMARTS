@@ -29,7 +29,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Dict, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 import ijson
 import tornado.gen
@@ -116,24 +116,24 @@ class Frames:
 
         # XXX: Index of timestamp in `self._timestamps` matches the index of the
         # frame with the same timestamp in `self._frames`.
-        self._timestamps = []
-        self._frames = []
+        self._timestamps: List[float] = []
+        self._frames: List[Frame] = []
 
     @property
-    def start_frame(self):
+    def start_frame(self) -> Optional[Frame]:
         """The first frame in all available frames."""
         return self._frames[0] if self._frames else None
 
     @property
-    def start_time(self):
+    def start_time(self) -> Optional[float]:
         """The first timestamp in all available frames."""
         return self._frames[0].timestamp if self._frames else None
 
     @property
-    def elapsed_time(self):
+    def elapsed_time(self) -> float:
         """The total elapsed time between the first and last frame."""
         if len(self._frames) == 0:
-            return 0
+            return 0.0
         return self._frames[-1].timestamp - self._frames[0].timestamp
 
     def append(self, frame: Frame):
@@ -180,13 +180,19 @@ class WebClientRunLoop:
     messages to it as needed.
     """
 
-    def __init__(self, frames, web_client_handler, fixed_timestep_sec, seek=None):
+    def __init__(
+        self,
+        frames: Frames,
+        web_client_handler: tornado.websocket.WebSocketHandler,
+        fixed_timestep_sec: float,
+        seek: Optional[int] = None,
+    ):
         self._log = logging.getLogger(__class__.__name__)
         self._frames: Frames = frames
-        self._client = web_client_handler
-        self._fixed_timestep_sec = fixed_timestep_sec
+        self._client: tornado.websocket.WebSocketHandler = web_client_handler
+        self._fixed_timestep_sec: float = fixed_timestep_sec
         self._seek: Optional[int] = seek
-        self._thread = None
+        self._thread: Optional[threading.Thread] = None
 
     def seek(self, offset_seconds):
         """Indicate to the webclient that it should progress to the nearest frame to the given time."""
@@ -239,7 +245,7 @@ class WebClientRunLoop:
         self._thread = threading.Thread(target=sync_run_forever, args=(), daemon=True)
         self._thread.start()
 
-    def _push_frames_to_web_client(self, frames):
+    def _push_frames_to_web_client(self, frames: List[Frame]):
         try:
             frames_formatted = [
                 {
@@ -262,7 +268,7 @@ class WebClientRunLoop:
     def _wait_for_next_frame(self, frame_ptr):
         FRAME_BATCH_SIZE = 10  # limit the batch size for bandwidth and to allow breaks for seeks to be handled
         while True:
-            delay = self._calculate_frame_delay(frame_ptr) * FRAME_BATCH_SIZE
+            delay = self._calculate_frame_delay(frame_ptr)
             time.sleep(delay)
             frames_to_send = []
             while frame_ptr.next_ and len(frames_to_send) <= FRAME_BATCH_SIZE:
