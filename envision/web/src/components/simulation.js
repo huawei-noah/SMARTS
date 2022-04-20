@@ -47,6 +47,7 @@ import { attrs, agentModes } from "./control_panel";
 import InfoDisplay from "./InfoDisplay";
 import ScenarioNameDisplay from "./ScenarioNameDisplay";
 import earcut from "earcut";
+import { SceneColors } from "../helpers/scene_colors.js";
 
 // Required by Babylon.js
 window.earcut = earcut;
@@ -78,7 +79,6 @@ export default function Simulation({
     scenario_id: null,
     scenario_name: null,
     bubbles: [],
-    scene_colors: {},
     scores: [],
     ego_agent_ids: [],
     position: [],
@@ -228,7 +228,7 @@ export default function Simulation({
       for (const child of meshes[0].getChildMeshes()) {
         let material = new StandardMaterial("material-map", scene);
         material.backFaceCulling = false;
-        material.diffuseColor = new Color4(...worldState.scene_colors["road"]);
+        material.diffuseColor = new Color4(...SceneColors.Road);
         material.specularColor = new Color3(0, 0, 0);
         child.material = material;
       }

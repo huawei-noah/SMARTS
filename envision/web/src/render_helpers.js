@@ -26,6 +26,7 @@ import {
 } from "@babylonjs/core";
 
 import { VehicleTypes, ActorTypes } from "./enums.js";
+import { SceneColors } from "./helpers/scene_colors.js";
 
 export function vehicleMeshFilename(actorType, vehicleType) {
   if (vehicleType == VehicleTypes.BUS) {
@@ -63,13 +64,13 @@ export function vehicleMeshFilename(actorType, vehicleType) {
   return "simple_car.glb";
 }
 
-export function vehicleMeshColor(actorType, scene_colors) {
+export function vehicleMeshColor(actorType) {
   if (actorType == ActorTypes.SOCIAL_AGENT) {
-    return scene_colors["social_agent"];
+    return SceneColors.SocialAgent;
   } else if (actorType == ActorTypes.AGENT) {
-    return scene_colors["agent"];
+    return SceneColors.Agent;
   } else {
-    return scene_colors["social_vehicle"];
+    return SceneColors.SocialVehicle;
   }
 }
 
