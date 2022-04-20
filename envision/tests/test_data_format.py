@@ -115,7 +115,7 @@ def covered_data():
                 4,  # x
                 5,  # y
                 2,  # z
-                -3.142,  # heading
+                -3.14,  # heading
                 20,  # speed
                 (
                     [],
@@ -195,7 +195,7 @@ def complex_data():
                         4,
                         5,
                         2,
-                        -3.142,
+                        -3.14,
                         20,
                         [[], False, False, False, False, False, False, False, True],
                         10,
@@ -212,7 +212,7 @@ def complex_data():
                         4,
                         5,
                         2,
-                        -3.142,
+                        -3.14,
                         20,
                         [[], False, False, False, False, False, False, False, True],
                         10,
@@ -301,8 +301,8 @@ def sim_data():
                 -1.84,
                 -3.2,
                 0.0,
-                -1.571,
-                4.617,
+                -1.57,
+                4.62,
                 None,
                 0,
                 [],
@@ -318,8 +318,8 @@ def sim_data():
                 -1.84,
                 0.0,
                 0.0,
-                -1.571,
-                5.001,
+                -1.57,
+                5.0,
                 None,
                 0,
                 [],
@@ -335,8 +335,8 @@ def sim_data():
                 -1.84,
                 3.2,
                 0.0,
-                -1.571,
-                4.914,
+                -1.57,
+                4.91,
                 None,
                 0,
                 [],
