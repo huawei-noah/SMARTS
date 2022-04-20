@@ -35,7 +35,7 @@ import websocket
 
 from envision import types
 from envision.client_config import EnvisionStateFilter
-from envision.data_format import EnvisionDataFormatter
+from envision.data_format import EnvisionDataFormatter, EnvisionDataFormatterParams
 from smarts.core.utils.file import unpack
 
 
@@ -82,7 +82,7 @@ class Client:
         sim_name: Optional[str] = None,
         headless: bool = False,
         envision_state_filter: EnvisionStateFilter = None,
-        envision_data_formatter: EnvisionDataFormatter = None,
+        data_formatter_params: EnvisionDataFormatterParams = None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._headless = headless
@@ -90,7 +90,7 @@ class Client:
         self._envision_state_filter = (
             envision_state_filter or EnvisionStateFilter.default()
         )
-        self._envision_data_formatter = envision_data_formatter
+        self._data_formatter_params = data_formatter_params
 
         current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
         client_id = current_time
@@ -111,10 +111,7 @@ class Client:
             self._logging_queue = multiprocessing.Queue()
             self._logging_process = multiprocessing.Process(
                 target=self._write_log_state,
-                args=(
-                    self._logging_queue,
-                    path,
-                ),
+                args=(self._logging_queue, path, self._data_formatter_params),
             )
             self._logging_process.daemon = True
             self._logging_process.start()
@@ -145,7 +142,12 @@ class Client:
         return self._envision_state_filter
 
     @staticmethod
-    def _write_log_state(queue, path):
+    def _write_log_state(
+        queue, path, data_formatter_params: Optional[EnvisionDataFormatterParams]
+    ):
+        data_formatter = None
+        if data_formatter_params:
+            data_formatter = EnvisionDataFormatter(*data_formatter_params)
         with path.open("w", encoding="utf-8") as f:
             while True:
                 state = queue.get()
@@ -153,6 +155,10 @@ class Client:
                     break
 
                 if not isinstance(state, str):
+                    if data_formatter:
+                        data_formatter.reset()
+                        data_formatter.add(state, "state")  # TODO do this in subprocess
+                        state = data_formatter.resolve()
                     state = unpack(state)
                     state = json.dumps(state, cls=JSONEncoder)
 
@@ -265,12 +271,6 @@ class Client:
 
     def send(self, state: types.State):
         """Send the given envision state to the remote as the most recent state."""
-        if self._envision_data_formatter:
-            self._envision_data_formatter.reset()
-            self._envision_data_formatter.add(
-                state, "state"
-            )  # TODO do this in subprocess
-            state = self._envision_data_formatter.resolve()
         if not self._headless and self._process.is_alive():
             self._state_queue.put(state)
         if self._logging_process:
