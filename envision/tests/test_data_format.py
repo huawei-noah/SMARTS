@@ -23,6 +23,7 @@ import os
 from typing import Iterator, Sequence
 from unittest import mock
 from unittest.mock import MagicMock, Mock, PropertyMock
+import numpy as np
 
 import pytest
 
@@ -59,7 +60,7 @@ def covered_data():
         (TrafficActorType.Agent, [2]),
         (
             Waypoint(
-                pos=[4, 5, 3],
+                pos=np.array([4, 5, 3]),
                 heading=Heading(2.24),
                 lane_id="NE-NW",
                 lane_width=4,
@@ -84,11 +85,11 @@ def covered_data():
                 ),
                 driven_path=[[4, 4], [2, 2]],
                 point_cloud=[[1, 3], [4, 2]],
-                mission_route_geometry=[[[0, 2.2], [9, 4.4]], [[3.1, 42]]],
+                mission_route_geometry=[[(0, 2.2), (9, 4.4)], [(3.1, 42)]],
                 waypoint_paths=[
                     [
                         Waypoint(
-                            pos=[4, 5, 3],
+                            pos=np.array([4, 5, 3]),
                             heading=Heading(2.24),
                             lane_id="NE-NW",
                             lane_width=4,
@@ -98,7 +99,7 @@ def covered_data():
                     ],
                     [
                         Waypoint(
-                            pos=[9, 5, 3],
+                            pos=np.array([9, 5, 3]),
                             heading=Heading(1.11),
                             lane_id="NE-EW",
                             lane_width=2,
@@ -174,13 +175,13 @@ def complex_data():
                 scenario_id="scene_id",
                 scenario_name="big blue",
                 bubbles=[],
-                scene_colors=[],
-                scores=[],
+                scene_colors=dict(),
+                scores=dict(),
                 ego_agent_ids=[],
-                position=[],
-                speed=[],
-                heading=[],
-                lane_ids=[],
+                position=dict(),
+                speed=dict(),
+                heading=dict(),
+                lane_ids=dict(),
                 frame_time=0.1,
             ),
             [
