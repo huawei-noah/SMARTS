@@ -100,6 +100,7 @@ from smarts.core.utils.file import unpack
 
 @unique
 class Operation(IntEnum):
+    """Formatting operations that should be performed on an object or layer."""
     NONE = 0
     """No special operation. Value will be sent as is."""
     REDUCE = 1

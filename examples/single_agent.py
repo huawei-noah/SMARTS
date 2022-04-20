@@ -47,6 +47,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
         agent_specs={"SingleAgent": agent_spec},
         headless=headless,
         sumo_headless=True,
+        envision_record_data_replay_path="./envision",
     )
 
     # Convert `env.step()` and `env.reset()` from multi-agent interface to
