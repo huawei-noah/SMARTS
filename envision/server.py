@@ -301,7 +301,15 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
 
     async def on_message(self, message):
         """Asynchronously receive messages from the Envision client."""
-        frame_time = next(ijson.items(message, "frame_time", use_float=True))
+        it = ijson.parse(message)
+        frame_time = None
+        for prefix, event, value in it:
+            if not prefix:
+                continue
+            if event != "number":
+                continue
+            frame_time = float(value)
+        assert isinstance(frame_time, float)
         self._frames.append(Frame(timestamp=frame_time, data=message))
 
 
