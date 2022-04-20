@@ -266,7 +266,10 @@ class Client:
     def send(self, state: types.State):
         """Send the given envision state to the remote as the most recent state."""
         if self._envision_data_formatter:
-            self._envision_data_formatter.add(state, "state")
+            self._envision_data_formatter.reset()
+            self._envision_data_formatter.add(
+                state, "state"
+            )  # TODO do this in subprocess
             state = self._envision_data_formatter.resolve()
         if not self._headless and self._process.is_alive():
             self._state_queue.put(state)

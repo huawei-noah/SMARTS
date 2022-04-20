@@ -90,9 +90,12 @@ from typing import (
     Union,
 )
 
+import numpy as np
+
 from envision.types import State, TrafficActorState, TrafficActorType, VehicleType
 from smarts.core.events import Events
 from smarts.core.road_map import Waypoint
+from smarts.core.utils.file import unpack
 
 
 @unique
@@ -152,6 +155,7 @@ class EnvisionDataFormatter:
         id,
         formatter: "EnvisionDataFormatter" = None,
         serializer: Callable[[list], Any] = lambda d: d,
+        float_decimals: int = 3,
     ):
         # self.seen_objects = context.seen_objects if context else set()
         self.id: Any = id
@@ -160,9 +164,14 @@ class EnvisionDataFormatter:
         self._data: List[Any] = []
         self._reduction_context = ReductionContext()
         self._serializer = serializer
+        self._float_decimals = float_decimals
 
         if self.parent_context:
             self.parent_context._add_child(self)
+
+    def reset(self):
+        self._data = []
+        self._reduction_context = ReductionContext()
 
     def _add_child(self, other):
         self._children.add(other)
@@ -182,6 +191,10 @@ class EnvisionDataFormatter:
         if f:
             f(value, self)
         else:
+            if isinstance(value, float):
+                value = round(value, self._float_decimals)
+            # elif isinstance(value, (bool, np.bool_)):
+            #     value = int(value)
             self._data.append(value)
 
     def add(
@@ -197,7 +210,8 @@ class EnvisionDataFormatter:
         if op & Operation.REDUCE:
             outval = ReductionContext.resolve_value(self._reduction_context, outval)
         if op & Operation.FLATTEN:
-            if not isinstance(outval, (Sequence)):
+            outval = unpack(outval)
+            if not isinstance(outval, (Sequence, np.ndarray)):
                 assert False, "Must use flatten with Sequence or dataclass"
             for e in outval:
                 self.add_primitive(e)
@@ -302,17 +316,10 @@ def _format_state(obj: State, context: EnvisionDataFormatter):
         with context.layer():
             # context.add(_id, "agent_id", op=Operation.REDUCE)
             context.add(t, "traffic")
-    # context.add(
-    #     obj.bubbles,
-    #     "bubbles",
-    #     select=lambda bbl: (bbl.geometry, bbl.pose),
-    #     alternate=lambda bbl: bbl.pose,
-    #     op=Operation.DELTA_ALTERNATE,
-    # )  # TODO: On delta use position+heading as alternative
+    # TODO: On delta use position+heading as alternative
     for bubble in context.layer(obj.bubbles):
         for p in context.layer(bubble):
             context.add(p, "bubble_point", op=Operation.FLATTEN)
-    # context.add(obj.ego_agent_ids, "ego_agent_ids", op=Context.DELTA)
 
 
 def _format_vehicle_type(obj: VehicleType, context: EnvisionDataFormatter):
