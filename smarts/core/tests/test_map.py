@@ -692,10 +692,10 @@ def test_waymo_map():
 
     assert len(road_map._lanes) > 0
     assert road_map.bounding_box.max_pt == Point(
-        x=2912.2181232681987, y=-2517.46886965742, z=0
+        x=2912.3285212006194, y=-2517.245059405716, z=0
     )
     assert road_map.bounding_box.min_pt == Point(
-        x=2639.0602928565454, y=-2827.0688319058345, z=0
+        x=2638.8465565631, y=-2827.202301342871, z=0
     )
 
     # Expected properties for all roads and lanes
@@ -741,7 +741,7 @@ def test_waymo_map():
 
     offset = refline_pt.s
     width, conf = l1.width_at_offset(offset)
-    assert round(width, 2) == 3.5
+    assert round(width, 2) == 4.0
     assert conf == 1.0
     assert round(l1.curvature_radius_at_offset(offset), 2) == -3136.8
     assert l1.contains_point(point)
@@ -955,137 +955,3 @@ def test_waymo_map():
     _check_composite(
         road_map, "waymo_composite_lane::309_14:309_40", ["309_14", "309_40"]
     )
-
-
-# XXX: The below is just for testing. Remove before merging.
-
-
-def convert_polyline(polyline):
-    xs, ys = [], []
-    for p in polyline:
-        xs.append(p[0])
-        ys.append(p[1])
-    return xs, ys
-
-
-def plot_lane(lane):
-    xs, ys = convert_polyline(lane["polyline"])
-    plt.plot(xs, ys, linestyle="-", c="gray")
-    # plt.scatter(xs, ys, s=12, c="gray")
-    # plt.scatter(xs[0], ys[0], s=12, c="red")
-
-
-def get_lp_coords(lps):
-    xs, ys = [], []
-    for lp in lps:
-        xs.append(lp.lp.pose.position[0])
-        ys.append(lp.lp.pose.position[1])
-    return xs, ys
-
-
-def get_wp_coords(wps):
-    xs, ys = [], []
-    for wp in wps:
-        xs.append(wp.pos[0])
-        ys.append(wp.pos[1])
-    return xs, ys
-
-
-def plot_road_line(road_line):
-    xs, ys = convert_polyline(road_line.polyline)
-    plt.plot(xs, ys, "y-")
-    plt.scatter(xs, ys, s=12, c="y")
-    # plt.scatter(xs[0], ys[0], s=12, c="red")
-
-
-def plot_road_edge(road_edge):
-    xs, ys = convert_polyline(road_edge.polyline)
-    plt.plot(xs, ys, "k-")
-    plt.scatter(xs, ys, s=12, c="black")
-    # plt.scatter(xs[0], ys[0], s=12, c="red")
-
-
-def plot_boundaries(lane, features):
-    if lane.left_boundaries or lane.right_boundaries:
-        for b in list(lane.left_boundaries) + list(lane.right_boundaries)[0:1]:
-            if b.boundary_type == 0:
-                plot_road_edge(features[b.boundary_feature_id])
-            else:
-                plot_road_line(features[b.boundary_feature_id])
-
-
-if __name__ == "__main__":
-    # scenario_id = "4f30f060069bbeb9"
-    # scenario_id = "c84cde79e51b087c"
-    # scenario_id = "6cec26a9347e8574"
-    scenario_id = "d9a14485bb4f49e8"
-    dataset_root = os.path.join(Path(__file__).parent, "maps/")
-    dataset_file = (
-        "uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000"
-    )
-    dataset_path = os.path.join(dataset_root, dataset_file)
-    source_str = f"{dataset_path}#{scenario_id}"
-
-    fig, ax = plt.subplots()
-    ax.set_title(f"Scenario {scenario_id}")
-    ax.axis("equal")
-
-    from smarts.core.waymo_map import WaymoMap
-
-    map_spec = MapSpec(source=source_str, lanepoint_spacing=1.0)
-    road_map = WaymoMap.from_spec(map_spec)
-    assert road_map is not None
-
-    # Plot waypoints on nearest lanes of road for a given lanepoint
-    # lp_101_0 = road_map._lanepoints._lanepoints_by_lane_id["101_0"]
-    # lp_pose = lp_101_0[0].lp.pose
-    # waypoints_path = road_map.waypoint_paths(lp_pose, 100)
-    # for waypoints in waypoints_path:
-    #     xwp, ywp = get_wp_coords(waypoints)
-    #     plt.scatter(xwp, ywp, s=1, c="r")
-
-    # ids for scenario 4f30f060069bbeb9
-    ids = [
-        # "80_0",
-        # "89_0",
-        # "90_0",
-        # "81",
-        # "87",
-        # "87_4",
-        # "87_26",
-        # "93",
-        # "86",
-        # "86_4",
-        # "86_16",
-        # "88"
-        # "129"
-    ]
-
-    for lane_id, lane in road_map._lanes.items():
-        if ids and lane_id not in ids:
-            continue
-        if lane.is_composite:
-            # don't draw lanes twice...
-            continue
-        color = "b-"
-        # color = "r-" if  lane.in_junction else "b-"
-        feature_id = int(lane._lane_dict["_feature_id"])
-        feature = road_map._waymo_features[feature_id]
-        plot_lane(lane._lane_dict)
-        # plot_boundaries(feature, road_map._waymo_features)
-        xs, ys = [], []
-        for x, y in lane._lane_polygon:
-            xs.append(x)
-            ys.append(y)
-        plt.plot(xs, ys, color)
-
-        # Plot lanepoints
-        # if lane.is_drivable:
-        #     linked_lps = road_map._lanepoints._lanepoints_by_lane_id[lane.lane_id]
-        #     xlp, ylp = get_lp_coords(linked_lps)
-        #     plt.scatter(xlp, ylp, s=1, c="r")
-
-    mng = plt.get_current_fig_manager()
-    mng.resize(1000, 1000)
-    # mng.resize(*mng.window.maxsize())
-    plt.show()
