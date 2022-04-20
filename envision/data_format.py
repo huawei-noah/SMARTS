@@ -83,6 +83,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    NamedTuple,
     Optional,
     Sequence,
     Set,
@@ -153,6 +154,13 @@ class ReductionContext:
         if self.current_id == reduce:
             self.current_id += 1
         return reduce
+
+
+class EnvisionDataFormatterParams(NamedTuple):
+    id: Optional[str]
+    serializer: Callable[[list], Any] = lambda d: d
+    float_decimals: int = 3
+    bool_as_int: bool = False
 
 
 class EnvisionDataFormatter:
