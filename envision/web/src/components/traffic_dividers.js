@@ -20,6 +20,7 @@
 import { Vector3, Color4, MeshBuilder } from "@babylonjs/core";
 
 import { useRef, useEffect } from "react";
+import { SceneColors } from "../helpers/scene_colors";
 
 export default function TrafficDividers({
   scene,
@@ -51,7 +52,7 @@ export default function TrafficDividers({
         { points: points, updatable: false, dashSize: 1, gapSize: 2 },
         scene
       );
-      dashLine.color = new Color4(...worldState.scene_colors["lane_divider"]);
+      dashLine.color = new Color4(...SceneColors.TrafficDividers);
       return dashLine;
     });
 
@@ -78,9 +79,7 @@ export default function TrafficDividers({
       { lines: edgeDividerPoints, updatable: false },
       scene
     );
-    newEdgeDividers.color = new Color4(
-      ...worldState.scene_colors["edge_divider"]
-    );
+    newEdgeDividers.color = new Color4(...SceneColors.EdgeDivider);
 
     edgeDividerGeometryRef.current = newEdgeDividers;
   }, [scene, JSON.stringify(edgeDividerPos)]);

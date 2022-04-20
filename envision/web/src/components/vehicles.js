@@ -172,7 +172,7 @@ export default function Vehicles({
         continue;
       }
 
-      let color = vehicleMeshColor(state.actor_type, worldState.scene_colors);
+      let color = vehicleMeshColor(state.actor_type);
       let rootMesh = new Mesh(`root-mesh-${meshId}`, scene);
       let childMeshes = vehicleMeshTemplates[filename].getChildMeshes();
       for (const child of childMeshes) {
