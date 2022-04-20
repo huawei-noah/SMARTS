@@ -157,6 +157,8 @@ class ReductionContext:
 
 
 class EnvisionDataFormatterParams(NamedTuple):
+    """Data formatter configurations."""
+
     id: Optional[str]
     serializer: Callable[[list], Any] = lambda d: d
     float_decimals: int = 2
@@ -286,7 +288,9 @@ class EnvisionDataFormatter:
                 self._context.add_primitive(d)
                 raise
 
-    def layer(self, iterable: Iterable = None, op: Operation = Operation.NONE):
+    def layer(
+        self, iterable: Optional[Iterable] = None, op: Operation = Operation.NONE
+    ):
         """Create a new layer which maps into a section of the above layer."""
         return self.DataFormatterLayer(self, iterable, op)
 
