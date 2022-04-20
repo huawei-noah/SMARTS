@@ -103,7 +103,8 @@ class Operation(IntEnum):
     NONE = 0
     """No special operation. Value will be sent as is."""
     REDUCE = 1
-    """Convert the value to an integer and centralize the value into a list."""
+    """Convert the value to an integer and centralize the value into a mapping. Useful for
+     reoccuring values"""
     DELTA = 2  # TODO implement
     """Send value only if it has changed."""
     FLATTEN = 4
@@ -123,6 +124,8 @@ _primitives = {int, float, str, VehicleType, TrafficActorType}
 
 
 class ReductionContext:
+    """Mappings between an object and its reduction to an ID."""
+
     def __init__(
         self,
         mapping: Optional[Dict[Hashable, int]] = None,
@@ -133,28 +136,32 @@ class ReductionContext:
         self.removed = removed or []
 
     @property
-    def has_values(self):
+    def has_ids(self):
+        """If this reducing tool has currently reduced objects."""
         return len(self._mapping) > 0
 
-    @staticmethod
-    def resolve_mapping(rc: "ReductionContext"):
-        return {k: v for _, (k, v) in rc._mapping.items()}
+    def resolve_mapping(self: "ReductionContext"):
+        """The mappings that the context contains"""
+        return {k: v for _, (k, v) in self._mapping.items()}
 
-    @staticmethod
-    def resolve_value(rc: "ReductionContext", value: Hashable) -> int:
-        cc = rc.current_id
-        reduce, _ = rc._mapping.setdefault(hash(value), (cc, value))
-        if rc.current_id == reduce:
-            rc.current_id += 1
+    def resolve_value(self: "ReductionContext", value: Hashable) -> int:
+        """Map the value to an ID."""
+        cc = self.current_id
+        reduce, _ = self._mapping.setdefault(hash(value), (cc, value))
+        if self.current_id == reduce:
+            self.current_id += 1
         return reduce
 
 
 class EnvisionDataFormatter:
+    """A formatter to put envision state into a reduced format."""
+
     def __init__(
         self,
         id,
         serializer: Callable[[list], Any] = lambda d: d,
         float_decimals: int = 3,
+        bool_as_int: bool = False,
     ):
         # self.seen_objects = context.seen_objects if context else set()
         self.id: Any = id
@@ -162,33 +169,36 @@ class EnvisionDataFormatter:
         self._reduction_context = ReductionContext()
         self._serializer = serializer
         self._float_decimals = float_decimals
+        self._bool_as_int = bool_as_int
 
-
-    def reset(self):
+    def reset(self, reset_reduction_context: bool = True):
+        """Reset the current context in preparation for new serialization."""
         self._data = []
-        self._reduction_context = ReductionContext()
+        if reset_reduction_context:
+            self._reduction_context = ReductionContext()
 
-
-    def add_any(self, value: Any):
-        if type(value) in _primitives:
-            self.add_primitive(value)
+    def add_any(self, obj: Any):
+        """Format the given object to the current layer."""
+        if type(obj) in _primitives:
+            self.add_primitive(obj)
         else:
-            self.add(value, None)
+            self.add(obj, None)
 
-    def add_primitive(self, value: Any):
+    def add_primitive(self, obj: Any):
+        """Add the given object as is to the given layer. Will decompose known primitives."""
         # TODO prevent cycles
         # if isinstance(value, (Object)) and value in self.seen_objects:
         #     return
 
-        f = _formatter_map.get(type(value))
+        f = _formatter_map.get(type(obj))
         if f:
-            f(value, self)
+            f(obj, self)
         else:
-            if isinstance(value, float):
-                value = round(value, self._float_decimals)
-            # elif isinstance(value, (bool, np.bool_)):
-            #     value = int(value)
-            self._data.append(value)
+            if isinstance(obj, float):
+                obj = round(obj, self._float_decimals)
+            elif self._bool_as_int and isinstance(obj, (bool, np.bool_)):
+                obj = int(obj)
+            self._data.append(obj)
 
     def add(
         self,
@@ -197,10 +207,11 @@ class EnvisionDataFormatter:
         op: Operation = Operation.NONE,
         alternate: Callable[[Any], Any] = None,
     ):
+        """Format the given object to the current layer. Specified operations are performed."""
         outval = value
         f = _sequence_formatter_map.get(type(value))
         if op & Operation.REDUCE:
-            outval = ReductionContext.resolve_value(self._reduction_context, outval)
+            outval = self._reduction_context.resolve_value(outval)
         if op & Operation.FLATTEN:
             outval = unpack(outval)
             if not isinstance(outval, (Sequence, np.ndarray)):
@@ -213,6 +224,8 @@ class EnvisionDataFormatter:
             self.add_primitive(outval)
 
     class DataFormatterLayer(ContextManager, Iterator):
+        """A formatting layer that maps into the above layer of the current data formatter."""
+
         def __init__(
             self,
             context: "EnvisionDataFormatter",
@@ -264,11 +277,13 @@ class EnvisionDataFormatter:
                 raise
 
     def layer(self, iterable: Iterable = None, op: Operation = Operation.NONE):
+        """Create a new layer which maps into a section of the above layer."""
         return self.DataFormatterLayer(self, iterable, op)
 
-    def resolve(self):
-        if self._reduction_context.has_values:
-            self._data.append(ReductionContext.resolve_mapping(self._reduction_context))
+    def resolve(self) -> List:
+        """Resolve all layers and mappings into the final data object."""
+        if self._reduction_context.has_ids:
+            self._data.append(self._reduction_context.resolve_mapping())
             self._data.append(self._reduction_context.removed)
         return self._serializer(self._data)
 
