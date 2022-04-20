@@ -368,12 +368,12 @@ class FileHandler(AllowCORSMixin, tornado.web.RequestHandler):
         if id_ not in self._path_map:
             raise tornado.web.HTTPError(404, f"Map resource {id_} not found")
 
-        if not self._path_map[id_].exists():
+        if not Path(self._path_map[id_]).exists():
             raise tornado.web.HTTPError(
                 404, f"Map file `{self._path_map[id_]}` not found."
             )
 
-        await self.serve_chunked(self._path_map[id_])
+        await self.serve_chunked(Path(self._path_map[id_]))
 
     async def serve_chunked(self, path: Path, chunk_size: int = 1024 * 1024):
         """Serve a file to the endpoint given a path."""
@@ -447,7 +447,7 @@ class ModelFileHandler(FileHandler):
         if id_ not in self._path_map or not pkg_resources.is_resource(
             smarts.core.models, self._path_map[id_]
         ):
-            raise tornado.web.HTTPError(404, f"Model `{id_}` not found.")
+            raise tornado.web.HTTPError(404, f"GLB Model `{id_}` not found.")
 
         with pkg_resources.path(smarts.core.models, self._path_map[id_]) as path:
             await self.serve_chunked(path)
