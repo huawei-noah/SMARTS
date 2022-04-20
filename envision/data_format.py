@@ -159,7 +159,7 @@ class ReductionContext:
 class EnvisionDataFormatterParams(NamedTuple):
     id: Optional[str]
     serializer: Callable[[list], Any] = lambda d: d
-    float_decimals: int = 3
+    float_decimals: int = 2
     bool_as_int: bool = False
 
 
@@ -169,9 +169,9 @@ class EnvisionDataFormatter:
     def __init__(
         self,
         id: Optional[str],
-        serializer: Callable[[list], Any] = lambda d: d,
-        float_decimals: int = 3,
-        bool_as_int: bool = True,
+        serializer: Callable[[list], Any],
+        float_decimals: int,
+        bool_as_int: bool,
     ):
         # self.seen_objects = context.seen_objects if context else set()
         self.id: Any = id
