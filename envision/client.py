@@ -81,8 +81,8 @@ class Client:
         output_dir: Optional[str] = None,
         sim_name: Optional[str] = None,
         headless: bool = False,
-        envision_state_filter: EnvisionStateFilter = None,
-        data_formatter_params: EnvisionDataFormatterParams = None,
+        envision_state_filter: Optional[EnvisionStateFilter] = None,
+        data_formatter_params: Optional[EnvisionDataFormatterParams] = None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._headless = headless
