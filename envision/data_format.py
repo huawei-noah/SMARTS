@@ -171,7 +171,7 @@ class EnvisionDataFormatter:
         id: Optional[str],
         serializer: Callable[[list], Any] = lambda d: d,
         float_decimals: int = 3,
-        bool_as_int: bool = False,
+        bool_as_int: bool = True,
     ):
         # self.seen_objects = context.seen_objects if context else set()
         self.id: Any = id
