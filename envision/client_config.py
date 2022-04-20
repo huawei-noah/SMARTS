@@ -26,12 +26,14 @@ from typing import Any, Dict, NamedTuple
 
 
 class SingleAttributeOverride(NamedTuple):
+    """Options for filtering out attributes."""
+
     enabled: bool
     """If the stream value is enabled."""
     default: Any
     """The default value for the stream if not enabled."""
     max_count = sys.maxsize
-    """The maximum number of elements an iterable can contain."""
+    """The maximum number of elements an iterable attribute can contain."""
 
 
 @dataclass(frozen=True)

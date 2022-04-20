@@ -101,6 +101,7 @@ from smarts.core.utils.file import unpack
 @unique
 class Operation(IntEnum):
     """Formatting operations that should be performed on an object or layer."""
+
     NONE = 0
     """No special operation. Value will be sent as is."""
     REDUCE = 1
@@ -159,7 +160,7 @@ class EnvisionDataFormatter:
 
     def __init__(
         self,
-        id,
+        id: Optional[str],
         serializer: Callable[[list], Any] = lambda d: d,
         float_decimals: int = 3,
         bool_as_int: bool = False,
@@ -204,9 +205,9 @@ class EnvisionDataFormatter:
     def add(
         self,
         value: Any,
-        id_: str,
+        id_: Optional[str],
         op: Operation = Operation.NONE,
-        alternate: Callable[[Any], Any] = None,
+        alternate: Callable[[Any], Any] = lambda v: v,
     ):
         """Format the given object to the current layer. Specified operations are performed."""
         outval = value
@@ -230,7 +231,7 @@ class EnvisionDataFormatter:
         def __init__(
             self,
             context: "EnvisionDataFormatter",
-            iterable: Iterable,
+            iterable: Optional[Iterable],
             op: Operation,
         ) -> None:
             super().__init__()
