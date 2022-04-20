@@ -153,28 +153,21 @@ class EnvisionDataFormatter:
     def __init__(
         self,
         id,
-        formatter: "EnvisionDataFormatter" = None,
         serializer: Callable[[list], Any] = lambda d: d,
         float_decimals: int = 3,
     ):
         # self.seen_objects = context.seen_objects if context else set()
         self.id: Any = id
-        self.parent_context: EnvisionDataFormatter = formatter
-        self._children: Set[EnvisionDataFormatter] = set()
         self._data: List[Any] = []
         self._reduction_context = ReductionContext()
         self._serializer = serializer
         self._float_decimals = float_decimals
 
-        if self.parent_context:
-            self.parent_context._add_child(self)
 
     def reset(self):
         self._data = []
         self._reduction_context = ReductionContext()
 
-    def _add_child(self, other):
-        self._children.add(other)
 
     def add_any(self, value: Any):
         if type(value) in _primitives:
