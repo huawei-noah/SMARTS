@@ -126,6 +126,7 @@ class Client:
                     f"{endpoint}/simulations/{client_id}/broadcast",
                     self._state_queue,
                     wait_between_retries,
+                    self._data_formatter_params,
                 ),
             )
             self._process.daemon = True
@@ -190,11 +191,19 @@ class Client:
         endpoint,
         state_queue,
         wait_between_retries: float = 0.05,
+        data_formatter_params: Optional[EnvisionDataFormatterParams] = None,
     ):
         connection_established = False
         warned_about_connection = False
+        data_formatter = None
+        if data_formatter_params:
+            data_formatter = EnvisionDataFormatter(*data_formatter_params)
 
         def optionally_serialize_and_write(state: Union[types.State, str], ws):
+            if data_formatter:
+                data_formatter.reset()
+                data_formatter.add(state, "state")  # TODO do this in subprocess
+                state = data_formatter.resolve()
             # if not already serialized
             if not isinstance(state, str):
                 state = unpack(state)
