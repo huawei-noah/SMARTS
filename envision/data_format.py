@@ -202,7 +202,6 @@ class EnvisionDataFormatter:
         value: Any,
         id_: str,
         op: Operation = Operation.NONE,
-        select: Callable[[Any], Any] = None,
         alternate: Callable[[Any], Any] = None,
     ):
         outval = value
