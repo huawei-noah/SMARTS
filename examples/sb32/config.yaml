@@ -7,7 +7,7 @@ smarts:
   img_meters: 64
   img_pixels: 112
   n_stack: 4 # Number of frames to stack as input to policy network
-  action_space: Continuous # Either "Lane" or "Continuous"
+  action_space: Discrete # Either "Lane" or "Continuous" or "Discrete"
   
   # Training
   train_steps: 1e8 # Number of training steps.
@@ -16,7 +16,9 @@ smarts:
   eval_freq: 1e5 # Evaluate the trained model every eval_freq steps and save the best model.
 
   # Policy
-  alg: PPO
+  # alg: PPO
+  alg: DQN
+  
   # policy: naturecnn
   # policy: customnaturecnn
 
@@ -31,3 +33,4 @@ smarts:
   policy: r2plus1d_18
   # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Continuous
   # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Lane
+  # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Discrete

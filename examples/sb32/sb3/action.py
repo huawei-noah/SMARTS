@@ -11,6 +11,8 @@ class Action(gym.ActionWrapper):
             self._wrapper, self.action_space = _continuous()
         elif space == "Lane":
             self._wrapper, self.action_space = _lane()
+        elif space == "Discrete":
+            self._wrapper, self.action_space = _discrete()            
         else:
             raise Exception(f"Unknown action space {space}.")
 
@@ -48,4 +50,21 @@ def _lane() -> Tuple[Callable[[int], str], gym.Space]:
     def wrapper(model_action: int) -> str:
         return action_map[model_action]
     
+    return wrapper, space
+
+def _discrete() -> Tuple[Callable[[int], np.ndarray], gym.Space]:
+    space = gym.spaces.Discrete(n=4)
+
+    action_map = {
+        # key: [throttle, brake, steering]
+        0: [0.5, 0, 0], # keep_direction
+        1: [0, 1, 0], # slow_down
+        2: [0.5, 0, -0.8], # turn_left
+        3: [0.5, 0, 0.8], # turn_right
+    }
+
+    def wrapper(model_action: int) -> np.ndarray:
+        throttle, brake, steering = action_map[model_action]
+        return np.array([throttle, brake, steering], dtype=np.float32)
+
     return wrapper, space

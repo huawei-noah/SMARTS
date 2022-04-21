@@ -79,7 +79,7 @@ def plotter3d(observation: th.Tensor, rgb_gray=3, name: str = "Plotter3D", block
         rows = obs.shape[0]
         columns = obs.shape[2]
 
-    fig, axs = plt.subplots(nrows=rows, ncols=columns, squeeze=False)
+    fig, axs = plt.subplots(nrows=rows, ncols=columns, squeeze=False, figsize=(10,10))
     fig.suptitle("PLOTTER3D")
 
     for row in range(0, rows):

@@ -23,7 +23,7 @@ from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMonitor
 
-print("Torch cuda is available: ", th.cuda.is_available())
+print("\nTorch cuda is available: ", th.cuda.is_available(),"\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
 yaml = YAML(typ="safe")
 
@@ -51,7 +51,7 @@ def main(args: argparse.Namespace):
 
     # Setup model.
     if (config["mode"] == "train" and args.model) or (config["mode"] == "evaluate"):
-        # Begin training from a pretrained model.
+        # Begin training or evaluation from a pretrained model.
         config["model"] = args.model
         print("\nModel:", config["model"],"\n")
     elif config["mode"] == "train" and not args.model:
@@ -225,3 +225,9 @@ if __name__ == "__main__":
     # print(model)
     # sb3_util.summary(model=model, depth=10, input_size=(1,3,256,256))
     # print("\n\n")
+
+    # import gym
+    # import Box2D
+    # env = gym.make('RoadRunner-v0')
+    # print("obs_space",env.observation_space)
+    # print("action_space",env.action_space)

@@ -98,7 +98,7 @@ class L5Kit(BaseFeaturesExtractor):
         )
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        # sb3_util.plotter3d(observations, rgb_gray=3, name="L5KIT")
+        # sb3_util.plotter3d(observations, rgb_gray=3, name="L5KIT", block=False)
         return self.linear(self.cnn(observations))
 
 
@@ -124,6 +124,7 @@ class R2plus1D_18(BaseFeaturesExtractor):
         self.thmodel = th_models.video.r2plus1d_18(pretrained=pretrained, progress=True)
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
+        # sb3_util.plotter3d(obs, rgb_gray=3, name="R2Plus1D_18", block=False)
         obs = self.modify_obs(obs)
         return self.thmodel(obs)
 
@@ -275,6 +276,24 @@ def r2plus1d_18(config):
         net_arch=[],
         # log_std_init=0.0, # default
         log_std_init=-10.0, # reduce exploration
+    )
+
+    # Hyperparameter
+    # kwargs["n_steps"] = 256
+    kwargs["batch_size"] = 64
+
+    return kwargs
+
+
+def dqn(config):
+    kwargs = {}
+    kwargs["policy"]="CnnPolicy"
+    kwargs["policy_kwargs"] = dict(
+        features_extractor_class=R2plus1D_18,
+        features_extractor_kwargs=dict(config=config, pretrained=False, features_dim=400),
+        net_arch=[],
+        # log_std_init=0.0, # default
+        # log_std_init=-10.0, # reduce exploration
     )
 
     # Hyperparameter
