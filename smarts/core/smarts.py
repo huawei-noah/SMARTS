@@ -37,7 +37,6 @@ from . import models
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
 from .bubble_manager import BubbleManager
-from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
@@ -1474,7 +1473,6 @@ class SMARTS:
             scenario_id=self.scenario.scenario_hash,
             scenario_name=scenario_name,
             bubbles=bubble_geometry,
-            scene_colors=SceneColors.EnvisionColors.value,
             scores=scores,
             ego_agent_ids=list(self._agent_manager.ego_agent_ids),
             position=position,

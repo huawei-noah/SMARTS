@@ -68,7 +68,6 @@ class State(NamedTuple):
     scenario_name: str
     # sequence of x, y coordinates
     bubbles: Sequence[Sequence[Tuple[float, float]]]
-    scene_colors: Dict[str, Tuple[float, float, float, float]]
     scores: Dict[str, float]
     ego_agent_ids: list
     position: Dict[str, Tuple[float, float]]
