@@ -20,57 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# TODO: Output the following:
-# _x = float
-# _y = float
-# _z = float
-# _pos=Tuple[_x,_y,_z]
-# _heading = float
-# _id = int
-# _pose = Tuple[_x, _y, _z, _heading]
-# from gym.spaces import Space
-# _Layout=Space
-# _Waypoint=[
-#     *_pose,
-#     _id, # lane_id
-#     float, # lane_width_at_waypoint
-#     float, # speed_limit
-#     int, # lane_index
-# ]
-# _Traffic = [
-#     int, # actor_id # mapped to id in scenario level state
-#     int, # lane_id # mapped to name in scenario level state
-#     *_pose, # [x,y,z,heading]
-#     float, #speed
-#     Optional[Sequence[_Waypoint]], # waypoint_paths
-#     Optional[Sequence[_pos]], # point cloud positions [x,y,x2,y2,...,xn,yn]
-#     Optional[Sequence[_pos]], # mission route geometry positions [x,y,x2,y2,...,xn,yn]
-#     int, #actor_type # Send once
-#     int, #vehicle_type # Send once
-#     # bitfield, events
-#     # remove name
-# ]
-# _Geometry = Tuple[Sequence[Tuple[_x, _y]], _pose]
-# _State = [
-#     int, # frame time
-#     str, # scenario id
-#     Optional[str], # scenario name # send once
-#     *Sequence[Tuple[_id, Union[_Geometry, _pose]]], # should be sent updates only Optional[id,geometry] optional[pos,heading]
-#     *Sequence[_Traffic],
-# ]
-# _Payload = [
-#     [
-#         *_State,
-#         Dict[_id, str], # added vehicle ids
-#         Sequence[_id], # removed vehicle ids
-#         Dict[Tuple[_id, str]], # added agent ids
-#         Sequence[_id], # removed agent ids
-#         Dict[Tuple[_id, str]], # added lane ids
-#         Sequence[_id, str], # removed lane ids
-#     ],
-#     Optional[_Layout]
-# ]
-
 from enum import IntEnum, unique
 from types import TracebackType
 from typing import (
@@ -176,7 +125,7 @@ class EnvisionDataFormatterParams(NamedTuple):
     serializer: Callable[[list], Any] = lambda d: d
     float_decimals: int = 2
     bool_as_int: bool = False
-    enable_reduction = True
+    enable_reduction: bool = True
 
 
 class EnvisionDataFormatter:
@@ -325,7 +274,6 @@ def _format_traffic_actor(obj, context: EnvisionDataFormatter):
     context.add_primitive(obj.heading)
     context.add_primitive(obj.speed)
     context.add(obj.events, "events", op=Operation.DELTA)
-    context.add(obj.score, "score")
     for lane in context.layer(obj.waypoint_paths):
         for waypoint in context.layer(lane):
             with context.layer():
@@ -356,6 +304,10 @@ def _format_state(obj: State, context: EnvisionDataFormatter):
     for bubble in context.layer(obj.bubbles):
         for p in context.layer(bubble):
             context.add(p, "bubble_point", op=Operation.FLATTEN)
+    for id_, score in context.layer(obj.scores.items()):
+        with context.layer():
+            context.add(id_, "agent_id", op=Operation.REDUCE)
+            context.add(score, "score")
 
 
 def _format_vehicle_type(obj: VehicleType, context: EnvisionDataFormatter):
