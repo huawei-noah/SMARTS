@@ -133,10 +133,21 @@ class ReductionContext:
         self,
         mapping: Optional[Dict[Hashable, int]] = None,
         removed: Optional[List[int]] = None,
+        enabled: bool = True,
     ) -> None:
         self.current_id = 0
         self._mapping = mapping or {}
         self.removed = removed or []
+        self._enabled = enabled
+
+    def reset(self):
+        self.current_id = 0
+        self._mapping = {}
+        self.removed = []
+
+    @property
+    def enabled(self):
+        return self._enabled
 
     @property
     def has_ids(self):
@@ -149,6 +160,8 @@ class ReductionContext:
 
     def resolve_value(self: "ReductionContext", value: Hashable) -> int:
         """Map the value to an ID."""
+        if not self._enabled:
+            return value
         cc = self.current_id
         reduce, _ = self._mapping.setdefault(hash(value), (cc, value))
         if self.current_id == reduce:
@@ -163,6 +176,7 @@ class EnvisionDataFormatterParams(NamedTuple):
     serializer: Callable[[list], Any] = lambda d: d
     float_decimals: int = 2
     bool_as_int: bool = False
+    enable_reduction = True
 
 
 class EnvisionDataFormatter:
@@ -174,11 +188,12 @@ class EnvisionDataFormatter:
         serializer: Callable[[list], Any],
         float_decimals: int,
         bool_as_int: bool,
+        enable_reduction: bool,
     ):
         # self.seen_objects = context.seen_objects if context else set()
         self.id: Any = id
         self._data: List[Any] = []
-        self._reduction_context = ReductionContext()
+        self._reduction_context = ReductionContext(enabled=enable_reduction)
         self._serializer = serializer
         self._float_decimals = float_decimals
         self._bool_as_int = bool_as_int
@@ -187,7 +202,7 @@ class EnvisionDataFormatter:
         """Reset the current context in preparation for new serialization."""
         self._data = []
         if reset_reduction_context:
-            self._reduction_context = ReductionContext()
+            self._reduction_context.reset()
 
     def add_any(self, obj: Any):
         """Format the given object to the current layer."""
