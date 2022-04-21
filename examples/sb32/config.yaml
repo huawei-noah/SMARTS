@@ -30,7 +30,9 @@ smarts:
   # img=pixels=64; img_meters=64; rgb; stack=4; action_space=Continuous
   # img=pixels=64; img_meters=64; rgb; stack=4; action_space=Lane
 
-  policy: r2plus1d_18
+  # policy: r2plus1d_18
   # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Continuous
   # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Lane
+
+  policy: dqn
   # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Discrete
