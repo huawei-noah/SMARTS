@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from smarts.sstudio.types import Distribution
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 
@@ -8,7 +9,7 @@ flow1 = [t.Flow(
                 begin=("-E3",0, "random"), end=("-E0",0, "max")
             ),
             rate=1,
-            actors={t.TrafficActor("car"): 1},
+            actors={t.TrafficActor("car",speed=Distribution(mean=0.5, sigma=1)): 1},
             
         )
         for _ in range(1)]
@@ -18,7 +19,7 @@ flow2 = [t.Flow(
                 begin=("E0",0, "random"), end=("E3",0, "max")
             ),
             rate=1,
-            actors={t.TrafficActor("car"): 1},
+            actors={t.TrafficActor("car",speed=Distribution(mean=0.5, sigma=1)): 1},
             
         )
         for _ in range(1)]
@@ -28,7 +29,7 @@ flow3 = [t.Flow(
                 begin=("E4", lane, "random"), end=("E1", lane, "max")
             ),
             rate=1,
-            actors={t.TrafficActor("car"): 1},
+            actors={t.TrafficActor("car",speed=Distribution(mean=0.5, sigma=1)): 1},
             
         ) for lane in range(2)
         for _ in range(2)]
@@ -38,7 +39,7 @@ flow4 = [t.Flow(
                 begin=("-E1", lane, "random"), end=("-E4", lane, "max")
             ),
             rate=1,
-            actors={t.TrafficActor("car"): 1},
+            actors={t.TrafficActor("car",speed=Distribution(mean=0.5, sigma=1)): 1},
             
         ) for lane in range(2)
         for _ in range(2)]
@@ -48,7 +49,7 @@ flow5 = [t.Flow(
                 begin=("E0", 0, "random"), end=("E1", 1, "max")
             ),
             rate=1,
-            actors={t.TrafficActor("car"): 1},
+            actors={t.TrafficActor("car",speed=Distribution(mean=0.5, sigma=1)): 1},
             
         )
         for _ in range(1)]
