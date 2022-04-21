@@ -52,7 +52,7 @@ export default function TrafficDividers({
         { points: points, updatable: false, dashSize: 1, gapSize: 2 },
         scene
       );
-      dashLine.color = new Color4(...SceneColors.TrafficDividers);
+      dashLine.color = new Color4(...SceneColors.LaneDivider);
       return dashLine;
     });
 
