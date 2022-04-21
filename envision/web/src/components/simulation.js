@@ -48,6 +48,7 @@ import InfoDisplay from "./InfoDisplay";
 import ScenarioNameDisplay from "./ScenarioNameDisplay";
 import earcut from "earcut";
 import { SceneColors } from "../helpers/scene_colors.js";
+import unpack_worldstate from "../helpers/state_unpacker.js";
 
 // Required by Babylon.js
 window.earcut = earcut;
@@ -181,8 +182,8 @@ export default function Simulation({
           );
           prevElapsedTime = elapsed_times[0];
         }
-
-        setWorldState(wstate);
+        let unpacked_wstate = unpack_worldstate(wstate);
+        setWorldState(unpacked_wstate);
         onElapsedTimesChanged(...elapsed_times);
         waitStartTime = Date.now();
         wstate_and_time = await it.next();
