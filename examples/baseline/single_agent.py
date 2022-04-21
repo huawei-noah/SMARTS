@@ -12,7 +12,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType, RGB
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
 from smarts.env.wrappers.single_agent import SingleAgent
-from smarts.env.wrappers.rgb_image import RGBImage
+from rgb_image import RGBImage
 from smarts.sstudio import build_scenario
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.core.controllers import ActionSpaceType
@@ -22,21 +22,8 @@ logging.basicConfig(level=logging.INFO)
 
 class ChaseViaPointsAgent(Agent):
     def act(self, obs: Observation):
-        # if (
-        #     len(obs.via_data.near_via_points) < 1
-        #     or obs.ego_vehicle_state.road_id != obs.via_data.near_via_points[0].road_id
-        # ):
-        #     return (obs.waypoint_paths[0][0].speed_limit, 0)
-
-        # nearest = obs.via_data.near_via_points[0]
-        # if nearest.lane_index == obs.ego_vehicle_state.lane_index:
-        #     return (nearest.required_speed, 0)
-
-        # return (
-        #     nearest.required_speed,
-        #     1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
-        # )
-        return (1, 0, 0)
+        
+        return (1.1, 0, 0)
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
     agent_spec = AgentSpec(
@@ -63,11 +50,8 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     env = SingleAgent(env=env)
     env.action_space = gym.spaces.Box(
         low=-1e6, high=1e6, shape=(3,), dtype=np.float32
-    )
+    )   
 
-    # print(env.action_space)
-
-    # dataset = {}
     observations = []
     actions = []
     rewards = []
@@ -75,14 +59,10 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     timeouts = []
     infos = []
 
-    # print(env.observation_space)
-
-    for episode in episodes(n=1):
+    for episode in episodes(n=2):
         agent = agent_spec.build_agent()
         observation = env.reset()
         episode.record_scenario(env.scenario_log)
-        # print(np.array(observation).shape)
-        # print(np.transpose(np.array(observation)).shape)
 
         done = False
         while not done:
@@ -90,26 +70,20 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
             observation, reward, done, info = env.step(agent_action)
             episode.record_step(observation, reward, done, info)
             
-            # observations.append(observation)
-            observations.append(np.transpose(observation))
-            actions.append(np.array(agent_action))
+            # collect data
+            observations.append(observation)
+            actions.append(agent_action)
             rewards.append(reward)
             terminals.append(done)
             timeouts.append(done)
             infos.append(info)
 
+    # create dataset
     dataset = MDPDataset(np.array(observations), np.array(actions), np.array(rewards), np.array(terminals))
-    # dataset["observations"] = observations
-    # dataset["actions"] = actions
-    # dataset["rewards"] = rewards
-    # dataset["terminals"] = terminals
-    # dataset["timeouts"] = timeouts
-    # dataset["infos"] = infos   
-    # print(dataset.size())
 
-    cql = d3rlpy.algos.DiscreteCQL(use_gpu=False)
+    cql = d3rlpy.algos.CQL(use_gpu=False)
 
-
+    # train
     cql.fit(dataset, 
             eval_episodes=dataset, 
             n_epochs=100, 
