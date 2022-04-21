@@ -255,8 +255,7 @@ class WebClientRunLoop:
                 }
                 for frame in frames
             ]
-            if len(frames_formatted) > 0:
-                self._client.write_message(json.dumps(frames_formatted))
+            self._client.write_message(json.dumps(frames_formatted))
             return False
         except WebSocketClosedError:
             return True
@@ -478,7 +477,7 @@ class MainHandler(tornado.web.RequestHandler):
             self.render(str(index_path))
 
 
-def make_app(scenario_dirs: Sequence, max_capacity_mb: float):
+def make_app(scenario_dirs: Sequence, max_capacity_mb: float, debug: bool):
     """Create the envision web server application through composition of services."""
     with pkg_resources.path(web_dist, ".") as dist_path:
         return tornado.web.Application(
@@ -498,7 +497,8 @@ def make_app(scenario_dirs: Sequence, max_capacity_mb: float):
                 ),
                 (r"/assets/models/(.*)", ModelFileHandler),
                 (r"/(.*)", tornado.web.StaticFileHandler, dict(path=str(dist_path))),
-            ]
+            ],
+            debug=debug,
         )
 
 
@@ -553,9 +553,12 @@ def main():
         default=500,
         type=float,
     )
+    parser.add_argument(
+        "--debug", help="Run the server with debug mode.", action="store_true"
+    )
     args = parser.parse_args()
 
-    run(scenario_dirs=args.scenarios, max_capacity_mb=args.max_capacity, port=args.port)
+    run(scenario_dirs=args.scenarios, max_capacity_mb=args.max_capacity, port=args.port, debug=args.debug)
 
 
 if __name__ == "__main__":
