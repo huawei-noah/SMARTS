@@ -133,7 +133,9 @@ class HiWayEnv(gym.Env):
                 sim_name=sim_name,
                 output_dir=envision_record_data_replay_path,
                 headless=headless,
-                data_formatter_params=EnvisionDataFormatterParams("base"),
+                data_formatter_params=EnvisionDataFormatterParams(
+                    "base", enable_reduction=False
+                ),
             )
 
         visdom_client = None
