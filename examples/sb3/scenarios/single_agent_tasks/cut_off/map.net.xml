@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2022-04-19 15:35:01 by Eclipse SUMO netedit Version 1.12.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <output>
+        <output-file value="/home/sqy201x/SMARTS/examples/sb3/scenarios/single_agent_tasks/cut_off/map.net.xml"/>
+    </output>
+
+    <processing>
+        <offset.disable-normalization value="true"/>
+    </processing>
+
+    <junctions>
+        <no-turnarounds value="true"/>
+    </junctions>
+
+    <report>
+        <aggregate-warnings value="5"/>
+    </report>
+
+</configuration>
+-->
+
+<net version="1.9" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="0.00,0.00" convBoundary="0.00,100.00,200.00,100.00" origBoundary="10000000000.00,10000000000.00,-10000000000.00,-10000000000.00" projParameter="!"/>
+
+    <edge id="E1" from="J2" to="J3" priority="-1">
+        <lane id="E1_0" index="0" speed="13.89" length="200.00" shape="0.00,92.00 200.00,92.00"/>
+        <lane id="E1_1" index="1" speed="13.89" length="200.00" shape="0.00,95.20 200.00,95.20"/>
+        <lane id="E1_2" index="2" speed="13.89" length="200.00" shape="0.00,98.40 200.00,98.40"/>
+    </edge>
+
+    <junction id="J2" type="dead_end" x="0.00" y="100.00" incLanes="" intLanes="" shape="0.00,100.00 0.00,90.40"/>
+    <junction id="J3" type="dead_end" x="200.00" y="100.00" incLanes="E1_0 E1_1 E1_2" intLanes="" shape="200.00,90.40 200.00,100.00"/>
+
+</net>
