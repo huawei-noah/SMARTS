@@ -79,7 +79,6 @@ def covered_data():
                 name="",
                 actor_id="agent_007",
                 lane_id="NE-NW",
-                score=10,
                 events=Events(
                     [], False, False, False, False, False, False, False, True
                 ),
@@ -128,7 +127,6 @@ def covered_data():
                     False,
                     True,
                 ),  # events
-                10,  # score
                 [
                     [[4, 5, 3, 2.24, 1, 4, 10, 0]],
                     [[9, 5, 3, 1.11, 2, 2, 1.2, 1]],
@@ -165,7 +163,6 @@ def complex_data():
                         name="",
                         actor_id="agent_007",
                         lane_id="NE-NW",
-                        score=10,
                         events=Events(
                             [], False, False, False, False, False, False, False, True
                         ),
@@ -180,13 +177,12 @@ def complex_data():
                 position=dict(),
                 speed=dict(),
                 heading=dict(),
-                lane_ids=dict(),
                 frame_time=0.1,
             ),
             [
-                0.1, # Timestamp
-                "scene_id", # scene_id
-                "scene_name", #
+                0.1,  # Timestamp
+                "scene_id",  # scene_id
+                "scene_name",  #
                 [
                     [
                         0,
@@ -197,7 +193,6 @@ def complex_data():
                         -3.14,
                         20,
                         [[], False, False, False, False, False, False, False, True],
-                        10,
                         [],
                         [],
                         [],
@@ -214,7 +209,6 @@ def complex_data():
                         -3.14,
                         20,
                         [[], False, False, False, False, False, False, False, True],
-                        10,
                         [],
                         [],
                         [],
@@ -223,6 +217,7 @@ def complex_data():
                         0,
                     ],
                 ],
+                [],
                 [],
                 # [], # ego agent ids
                 {0: "agent_007", 1: "NE-NW"},  # lookup for reduced values
@@ -291,25 +286,24 @@ def test_complex_data(complex_data):
 def sim_data():
     return [
         0.1,
-        None, # scene_id
-        "straight", # scene_name
+        None,  # scene_id
+        "straight",  # scene_name
         [
-            [ # Traffic actor
-                0, # id
-                0, # lane id
-                -1.84, # x
-                -3.2, # y
-                0.0, # z
-                -1.57, # heading
-                4.62, # speed
-                None, # events
-                0, # score
-                [], # wapypoint paths
-                [], # driven path
-                [], # lidar
-                [], # geometry
-                0, # actor type
-                4, # vehicle type
+            [  # Traffic actor
+                0,  # id
+                0,  # lane id
+                -1.84,  # x
+                -3.2,  # y
+                0.0,  # z
+                -1.57,  # heading
+                4.62,  # speed
+                None,  # events
+                [],  # wapypoint paths
+                [],  # driven path
+                [],  # lidar
+                [],  # geometry
+                0,  # actor type
+                4,  # vehicle type
             ],
             [
                 0,
@@ -320,7 +314,6 @@ def sim_data():
                 -1.57,
                 5.0,
                 None,
-                0,
                 [],
                 [],
                 [],
@@ -337,7 +330,6 @@ def sim_data():
                 -1.57,
                 4.91,
                 None,
-                0,
                 [],
                 [],
                 [],
@@ -346,7 +338,8 @@ def sim_data():
                 4,
             ],
         ],
-        [[90.0, -10.0, 90.0, 10.0, 110.0, 10.0, 110.0, -10.0, 90.0, -10.0]], # bubbles
+        [[90.0, -10.0, 90.0, 10.0, 110.0, 10.0, 110.0, -10.0, 90.0, -10.0]],  # bubbles
+        [],
         {0: None},
         [],
     ]
