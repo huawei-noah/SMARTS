@@ -173,9 +173,8 @@ def complex_data():
                     for i in range(2)
                 },
                 scenario_id="scene_id",
-                scenario_name="big blue",
+                scenario_name="scene_name",
                 bubbles=[],
-                scene_colors=dict(),
                 scores=dict(),
                 ego_agent_ids=[],
                 position=dict(),
@@ -185,9 +184,9 @@ def complex_data():
                 frame_time=0.1,
             ),
             [
-                0.1,
-                "scene_id",
-                "big blue",
+                0.1, # Timestamp
+                "scene_id", # scene_id
+                "scene_name", #
                 [
                     [
                         0,
@@ -292,25 +291,25 @@ def test_complex_data(complex_data):
 def sim_data():
     return [
         0.1,
-        None,
-        "straight",
+        None, # scene_id
+        "straight", # scene_name
         [
-            [
-                0,
-                0,
-                -1.84,
-                -3.2,
-                0.0,
-                -1.57,
-                4.62,
-                None,
-                0,
-                [],
-                [],
-                [],
-                [],
-                0,
-                4,
+            [ # Traffic actor
+                0, # id
+                0, # lane id
+                -1.84, # x
+                -3.2, # y
+                0.0, # z
+                -1.57, # heading
+                4.62, # speed
+                None, # events
+                0, # score
+                [], # wapypoint paths
+                [], # driven path
+                [], # lidar
+                [], # geometry
+                0, # actor type
+                4, # vehicle type
             ],
             [
                 0,
@@ -347,7 +346,7 @@ def sim_data():
                 4,
             ],
         ],
-        [[90.0, -10.0, 90.0, 10.0, 110.0, 10.0, 110.0, -10.0, 90.0, -10.0]],
+        [[90.0, -10.0, 90.0, 10.0, 110.0, 10.0, 110.0, -10.0, 90.0, -10.0]], # bubbles
         {0: None},
         [],
     ]

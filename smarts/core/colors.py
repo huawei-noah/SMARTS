@@ -66,16 +66,3 @@ class SceneColors(Enum):
     MissionRoute = Colors.GreenTransparent.value
     LaneDivider = Colors.OffWhite.value
     EdgeDivider = Colors.Yellow.value
-
-    EnvisionColors = {
-        "agent": Agent,
-        "social_agent": SocialAgent,
-        "social_vehicle": SocialVehicle,
-        "road": Road,
-        "ego_waypoint": EgoWaypoint,
-        "ego_driven_path": EgoDrivenPath,
-        "bubble_line": BubbleLine,
-        "mission_route": MissionRoute,
-        "lane_divider": LaneDivider,
-        "edge_divider": EdgeDivider,
-    }
