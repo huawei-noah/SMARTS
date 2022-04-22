@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from enum import Enum
-from typing import Dict, NamedTuple, Optional, Sequence, Tuple, Union
+from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple, Union
 
 from smarts.core.events import Events
 
@@ -53,10 +53,9 @@ class TrafficActorState(NamedTuple):
     actor_id: Optional[str] = None
     events: Events = None
     waypoint_paths: Sequence = []
-    driven_path: Sequence = []
+    driven_path: Sequence[Tuple[float, float]] = []
     point_cloud: Sequence = []
     mission_route_geometry: Sequence[Sequence[Tuple[float, float]]] = None
-    score: int = 0
     lane_id: Optional[str] = None
 
 
@@ -69,11 +68,7 @@ class State(NamedTuple):
     # sequence of x, y coordinates
     bubbles: Sequence[Sequence[Tuple[float, float]]]
     scores: Dict[str, float]
-    ego_agent_ids: list
-    position: Dict[str, Tuple[float, float]]
-    speed: Dict[str, float]
-    heading: Dict[str, float]
-    lane_ids: Dict[str, str]
+    ego_agent_ids: List[str]
     frame_time: float
 
 
