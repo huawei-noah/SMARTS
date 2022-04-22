@@ -803,6 +803,31 @@ class WaymoMap(RoadMap):
         scene.add_geometry(mesh)
         return _GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
 
+    def _compute_traffic_dividers(self):
+        lane_dividers = []  # divider between lanes with same traffic direction
+        road_dividers = []  # divider between roads with opposite traffic direction
+        road_borders = []
+        for road_id in self._roads:
+            road = self._roads[road_id]
+            if not road.is_junction:
+                leftmost_edge_shape, rightmost_edge_shape = road._edge_shape()
+                road_borders.extend([leftmost_edge_shape, rightmost_edge_shape])
+                for lane in road.lanes:
+                    left_border_vertices_len = int((len(lane._lane_polygon) - 1) / 2)
+                    left_side = lane._lane_polygon[:left_border_vertices_len]
+                    lane_to_left, same_dir = lane.lane_to_left
+                    if lane.index != len(road.lanes) - 1:
+                        assert lane_to_left
+                        if lane.is_drivable and lane_to_left.is_drivable:
+                            lane_dividers.append(left_side)
+                        else:
+                            road_dividers.append(left_side)
+                    else:
+                        if lane_to_left and not same_dir:
+                            road_dividers.append(left_side)
+
+        return lane_dividers, road_dividers
+
     class Surface(RoadMap.Surface):
         """Surface representation for Waymo maps"""
 
@@ -974,8 +999,8 @@ class WaymoMap(RoadMap):
                 return self._map.lane_id(lli), True
             lli = self._adj_lane_info(lli)
             same_dir = self._check_boundaries(lli, "right")
-            llane_id = WaymoMap._lane_id(lli.feat_id, lli.index)
-            return self._map.lane_by_id(llane_id), same_dir
+            left_lane_id = WaymoMap._lane_id(lli.feat_id, lli.index)
+            return self._map.lane_by_id(left_lane_id), same_dir
 
         @cached_property
         def lane_to_right(self) -> Tuple[Optional[RoadMap.Lane], bool]:
@@ -986,8 +1011,8 @@ class WaymoMap(RoadMap):
                 return self._map.lane_id(lri), True
             lri = self._adj_lane_info(lri)
             same_dir = self._check_boundaries(lri, "left")
-            rlane_id = WaymoMap._lane_id(lri.feat_id, lri.index)
-            return self._map.lane_by_id(rlane_id), same_dir
+            right_lane_id = WaymoMap._lane_id(lri.feat_id, lri.index)
+            return self._map.lane_by_id(right_lane_id), same_dir
 
         @property
         def speed_limit(self) -> float:
