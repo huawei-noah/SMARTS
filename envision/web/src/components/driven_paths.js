@@ -94,7 +94,7 @@ export default function DrivenPaths({
       egoDrivenPathModel.material.diffuseColor = new Color4(
         ...SceneColors.EgoDrivenPath
       );
-      egoDrivenPathModel.material.alpha = SceneColors.ego_driven_path[3];
+      egoDrivenPathModel.material.alpha = SceneColors.EgoDrivenPath[3];
     }
 
     if (socialDrivenPathModel.material == null) {
