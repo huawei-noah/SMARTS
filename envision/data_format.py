@@ -109,7 +109,9 @@ class ReductionContext:
         """The mappings that the context contains"""
         return {k: v for _, (k, v) in self._mapping.items()}
 
-    def resolve_value(self: "ReductionContext", value: Hashable) -> Union[int, Hashable]:
+    def resolve_value(
+        self: "ReductionContext", value: Hashable
+    ) -> Union[int, Hashable]:
         """Map the value to an ID."""
         if not self._enabled:
             return value
