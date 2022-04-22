@@ -19,18 +19,144 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+
+function multi_slice(array, width) {
+  let a = [];
+  for (let i = 0; i < array.length / width; i++) {
+    let b = i * width;
+    a[i] = array.slice(b, b + width);
+  }
+  return a;
+}
+
+const WorldState = Object.freeze({
+  SCENARIO_ID: 1,
+  SCENARIO_NAME: 2,
+  TRAFFIC: 3,
+  BUBBLES: 4,
+  SCORES: 5,
+});
+
+const Traffic = Object.freeze({
+  ACTOR_ID: 0,
+  LANE_ID: 1,
+  POSITION: 2,
+  HEADING: 5,
+  SPEED: 6,
+  EVENTS: 7,
+  WAYPOINT_PATHS: 8,
+  DRIVEN_PATH: 9,
+  POINT_CLOUD: 10,
+  MISSION_ROUTE_GEOMETRY: 11,
+  ACTOR_TYPE: 12,
+  VEHICLE_TYPE: 13,
+});
+
+const POINT_2D_LENGTH = 2;
+const POINT_3D_LENGTH = 3;
+
+const BUBBLE_POINT_LENGTH = POINT_2D_LENGTH;
+const DRIVEN_PATH_POINT_LENGTH = POINT_2D_LENGTH;
+const WAYPOINT_POSITION_LENGTH = POINT_3D_LENGTH;
+
+const Waypoint = Object.freeze({
+  POSITION: 0,
+  HEADING: 3,
+  LANE_ID: 4,
+  LANE_WIDTH: 5,
+  SPEED_LIMIT: 6,
+  LANE_INDEX: 7,
+});
+
+const AGENT_TYPE_MAP = Object.freeze({
+  0: "social_vehicle",
+  1: "social_agent",
+  2: "agent",
+});
+
+const VEHICLE_TYPE_MAP = Object.freeze({
+  0: "bus",
+  1: "coach",
+  2: "truck",
+  3: "trailer",
+  4: "car",
+});
+
+function unpack_bubbles(bubbles) {
+  return bubbles.map((a) => multi_slice(a, BUBBLE_POINT_LENGTH));
+}
+
+function unpack_driven_path(driven_path) {
+  return multi_slice(driven_path, DRIVEN_PATH_POINT_LENGTH);
+}
+
+function unpack_waypoints(lanes) {
+  return lanes.map((lane) =>
+    lane.map(function (wp) {
+      return {
+        pos: wp.slice(Waypoint.POSITION, WAYPOINT_POSITION_LENGTH),
+        heading: wp[Waypoint.HEADING],
+        lane_id: wp[Waypoint.LANE_ID],
+        lane_width: wp[Waypoint.LANE_WIDTH],
+        speed_limit: wp[Waypoint.SPEED_LIMIT],
+        lane_index: wp[Waypoint.LANE_INDEX],
+      };
+    })
+  );
+}
+
+function unpack_point_cloud(point_cloud) {
+  return [];
+}
+
+function unpack_route_geometry(route_geometry) {
+  return [];
+}
+
+function unpack_traffic(traffic) {
+  return traffic.map((t) => {
+    let obj = {
+      actor_id: t[Traffic.ACTOR_ID],
+      lane_id: t[Traffic.LANE_ID],
+      position: t.slice(Traffic.POSITION, 5),
+      heading: t[Traffic.HEADING],
+      speed: t[Traffic.SPEED],
+      events: t[Traffic.EVENTS],
+      waypoint_paths: unpack_waypoints(t[Traffic.WAYPOINT_PATHS]),
+      driven_path: unpack_driven_path(t[Traffic.DRIVEN_PATH]),
+      point_cloud: unpack_point_cloud(t[Traffic.POINT_CLOUD]),
+      mission_route_geometry: unpack_route_geometry(
+        t[Traffic.MISSION_ROUTE_GEOMETRY]
+      ),
+      actor_type: AGENT_TYPE_MAP[t[Traffic.ACTOR_TYPE]],
+      vehicle_type: VEHICLE_TYPE_MAP[t[Traffic.VEHICLE_TYPE]],
+    };
+    return obj;
+  });
+}
+
+function get_attribute_map(unpacked_traffic, attr) {
+  return Object.fromEntries(
+    unpacked_traffic
+      .filter((t) => t.actor_type === AGENT_TYPE_MAP[2])
+      .map((t) => [t.actor_id, t[attr]])
+  );
+}
+
 export default function unpack_worldstate(formatted_state) {
+  let unpacked_bubbles = unpack_bubbles(formatted_state[WorldState.BUBBLES]);
+  let unpacked_traffic = unpack_traffic(formatted_state[WorldState.TRAFFIC]);
   const worldstate = {
-    traffic: [],
-    scenario_id: null,
-    scenario_name: null,
-    bubbles: [],
-    scores: [],
+    traffic: unpacked_traffic,
+    scenario_id: formatted_state[WorldState.SCENARIO_ID],
+    scenario_name: formatted_state[WorldState.SCENARIO_NAME],
+    bubbles: unpacked_bubbles,
+    scores: Object.fromEntries(formatted_state[WorldState.SCORES]),
     ego_agent_ids: [],
-    position: [],
-    speed: [],
-    heading: [],
-    lane_ids: [],
+    position: get_attribute_map(unpacked_traffic, "position"),
+    speed: get_attribute_map(unpacked_traffic, "speed"),
+    heading: get_attribute_map(unpacked_traffic, "heading"),
+    lane_ids: get_attribute_map(unpacked_traffic, "lane_id"),
   };
   return worldstate;
 }
