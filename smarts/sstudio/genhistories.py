@@ -23,7 +23,6 @@ import csv
 import logging
 import math
 import os
-import re
 import sqlite3
 import struct
 import sys
@@ -37,7 +36,6 @@ from typing import (
     Generator,
     Iterable,
     Optional,
-    Sequence,
     Tuple,
     Union,
 )
