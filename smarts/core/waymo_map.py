@@ -796,6 +796,11 @@ class WaymoMap(RoadMap):
             )
         }
 
+        # lane markings information
+        lane_dividers, road_dividers = self._compute_traffic_dividers()
+        metadata["lane_dividers"] = lane_dividers
+        metadata["edge_dividers"] = road_dividers
+
         mesh.visual = trimesh.visual.TextureVisuals(
             material=trimesh.visual.material.PBRMaterial()
         )
