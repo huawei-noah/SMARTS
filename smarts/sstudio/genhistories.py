@@ -23,17 +23,28 @@ import csv
 import logging
 import math
 import os
+import re
 import sqlite3
 import struct
 import sys
-from typing import Any, Dict, Generator, Iterable, Optional, Tuple, Union
+from collections import deque
+from itertools import islice
+from typing import (
+    Any,
+    Callable,
+    Deque,
+    Dict,
+    Generator,
+    Iterable,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import ijson
 import numpy as np
-import pandas as pd
 import yaml
-from numpy.lib.stride_tricks import as_strided as stride
-from numpy.lib.stride_tricks import sliding_window_view
 
 from smarts.core.utils.math import vec_to_radians
 
@@ -62,6 +73,74 @@ class _TrajectoryDataset:
         self._swap_xy = dataset_spec.get("swap_xy", False)
         # most trajectory datasets have .1s time delta (i.e., were collected at 10 Hz)
         self._dt_sec = 0.1
+
+    class _WindowedReader:
+        """Iterates over the rows in file using a sliding window that keeps track of
+        both a number of rows before the current row and a number of rows after.
+        These "windows" are passed to a row transformation function on each step.
+        For example, if window_before = 4 and window_after = 3, for a 9-row
+        file, the windows associated with each row are:
+            row 1, before = [], after = [2, 3, 4]
+            row 2, before = [1], after = [3, 4, 5]
+            row 3, before = [2, 1], after = [4, 5, 6]
+            row 4, before = [3, 2, 1], after = [5, 6, 7]
+            row 5, before = [4, 3, 2, 1], after = [6, 7, 8]
+            row 6, before = [5, 4, 3, 2], after = [7, 8, 9]
+            row 7, before = [6, 5, 4, 3], after = [8, 9]
+            row 8, before = [7, 6, 5, 4], after = [9]
+            row 9, before = [8, 7, 6, 5], after = []
+        Windows are cleared whenever the value in the (optional) `group_col` column changes.
+        This was designed to be nestable by making the `row_gen` parameter support an iterator over another _WindowedReader.
+        """
+
+        Row = Dict[str, Any]
+
+        def __init__(
+            self,
+            row_gen: Union[Generator[Row, None, None], "_TrajectoryDataset._WindowedReader"],
+            transform_fn: Callable[[Row, Deque[Row], Deque[Row]], None],
+            window_before: int = 0,
+            window_after: int = 0,
+            group_col: Optional[str] = None,
+        ):
+            self._row_gen = row_gen
+            self._transform_fn = transform_fn
+            self._before_width = window_before
+            self._after_width = window_after
+            self._group_col = group_col
+
+        def __iter__(self) -> Generator[Row, None, None]:
+            after_win = deque(maxlen=self._after_width)
+            before_win = deque(maxlen=self._before_width)
+            cur_row = None
+            prev_group = None
+            for row in self._row_gen:
+                if self._group_col and row[self._group_col] != prev_group:
+                    while after_win:
+                        if cur_row:
+                            before_win.appendleft(cur_row)
+                        cur_row = after_win.popleft()
+                        self._transform_fn(cur_row, before_win, after_win)
+                        yield cur_row
+                    before_win.clear()
+                    cur_row = None
+                if self._group_col:
+                    prev_group = row[self._group_col]
+                if len(after_win) < self._after_width:
+                    after_win.append(row)
+                    continue
+                if cur_row:
+                    before_win.appendleft(cur_row)
+                cur_row = after_win.popleft() if after_win else row
+                after_win.append(row)
+                self._transform_fn(cur_row, before_win, after_win)
+                yield cur_row
+            while after_win:
+                if cur_row:
+                    before_win.appendleft(cur_row)
+                cur_row = after_win.popleft()
+                self._transform_fn(cur_row, before_win, after_win)
+                yield cur_row
 
     @property
     def scale(self) -> float:
@@ -131,7 +210,7 @@ class _TrajectoryDataset:
                    speed REAL DEFAULT 0.0,
                    lane_id INTEGER DEFAULT 0,
                    PRIMARY KEY (vehicle_id, sim_time),
-                   FOREIGN KEY (vehicle_id) REFERENCES Vehicles(id)
+                   FOREIGN KEY (vehicle_id) REFERENCES Vehicle(id)
                ) WITHOUT ROWID"""
         )
         dbconxn.commit()
@@ -254,7 +333,7 @@ class Interaction(_TrajectoryDataset):
         hiw = dataset_spec.get("heading_inference_window", 2)
         if hiw != 2:
             # Adding support for this would require changing the rows() generator
-            # (since we're not using Pandas here like we are for NGSIM).
+            # (to something similar to what NGSIM does)
             # So wait until if/when users request it...
             raise ValueError(
                 "heading_inference_window not yet supported for Interaction datasets."
@@ -340,92 +419,16 @@ class NGSIM(_TrajectoryDataset):
         super().__init__(dataset_spec, output)
         # self._prev_heading = 3 * math.pi / 2
         self._prev_heading = None
+        self._default_heading = dataset_spec.get("default_heading", 3.0 * math.pi / 2.0)
         self._max_angular_velocity = dataset_spec.get("max_angular_velocity", None)
         self._heading_window = dataset_spec.get("heading_inference_window", 2)
         # 2.2 corresponds to roughly 5mph.
         self._heading_min_speed = dataset_spec.get("heading_inference_min_speed", 2.2)
-
-    def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
-        super().check_dataset_spec(dataset_spec)
-        hiw = dataset_spec.get("heading_inference_window", 2)
-        # 11 is a semi-arbitrary max just to keep things "sane".
-        if not 2 <= hiw <= 11:
-            raise ValueError("heading_inference_window must be between 2 and 11")
-
-    def _cal_heading(self, window_param) -> float:
-        window = window_param[0]
-        new_heading = 0
-        inst_heading = None
-        prev_heading = None
-        den = 0
-        continued = False
-        for w in range(self._heading_window - 1):
-            if continued and prev_heading is not None:
-                new_heading += prev_heading
-                den += 1
-            continued = False
-            c = window[w, :2]
-            n = window[w + 1, :2]
-            if any(np.isnan(c)) or any(np.isnan(n)):
-                continued = True
-                continue
-            s = np.linalg.norm(n - c)
-            if s == 0.0:
-                continued = True
-                continue
-            ispeed = window[w, 2]
-            vhat = (n - c) / s
-            inst_heading = vec_to_radians(vhat)
-            if self._heading_min_speed is not None and (
-                (s / self._dt_sec) < self._heading_min_speed
-                or ispeed < self._heading_min_speed
-            ):
-                continued = True
-                continue
-            if prev_heading is not None:
-                if inst_heading == 0 and prev_heading > math.pi:
-                    inst_heading = 2 * math.pi
-                if self._max_angular_velocity:
-                    # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
-                    angular_velocity = (inst_heading - prev_heading) / self._dt_sec
-                    if abs(angular_velocity) > self._max_angular_velocity:
-                        inst_heading = (
-                            prev_heading
-                            + np.sign(angular_velocity)
-                            * self._max_angular_velocity
-                            * self._dt_sec
-                        )
-            den += 1
-            new_heading += inst_heading
-            prev_heading = inst_heading
-        if den > 0:
-            new_heading /= den
-        elif inst_heading is not None:
-            new_heading = inst_heading
-        elif self._prev_heading is None:
-            new_heading = 3 * math.pi / 2
-        else:
-            new_heading = self._prev_heading
-        self._prev_heading = new_heading
-        return new_heading % (2 * math.pi)
-
-    def _cal_speed(self, window) -> Optional[float]:
-        c = window[1, :2]
-        n = window[2, :2]
-        badc = any(np.isnan(c))
-        badn = any(np.isnan(n))
-        if badc or badn:
-            return None
-        # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
-        return np.linalg.norm(n - c) / self._dt_sec
-
-    def _transform_all_data(self):
-        self._log.debug("transforming NGSIM data")
-        cols = (
+        self._columns = (
             "vehicle_id",
             "frame_id",  # 1 frame per .1s
             "total_frames",
-            "global_time",  # msecs
+            "sim_time",  # msecs
             # front center in feet from left lane edge
             "position_x" if not self._swap_xy else "position_y",
             # front center in feet from entry edge
@@ -452,104 +455,218 @@ class NGSIM(_TrajectoryDataset):
                 "direction",
                 "movement",
             )
-            cols = cols[:16] + extra_cols + cols[16:]
-        df = pd.read_csv(self._path, sep=r"\s+", header=None, names=cols)
+            self._columns = self._columns[:16] + extra_cols + self._columns[16:]
 
-        df["sim_time"] = df["global_time"] - min(df["global_time"])
+    def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
+        super().check_dataset_spec(dataset_spec)
+        hiw = dataset_spec.get("heading_inference_window", 2)
+        # 11 is a semi-arbitrary max just to keep things "sane".
+        if not 2 <= hiw <= 11:
+            raise ValueError("heading_inference_window must be between 2 and 11")
 
-        # offset of the map from the data...
-        x_margin = self._dataset_spec.get("x_margin_px", 0) / self.scale
-        y_margin = self._dataset_spec.get("y_margin_px", 0) / self.scale
-
-        df["length"] *= METERS_PER_FOOT
-        df["width"] *= METERS_PER_FOOT
-        df["speed"] *= METERS_PER_FOOT
-        df["acceleration"] *= METERS_PER_FOOT
-        df["spacing"] *= METERS_PER_FOOT
-        df["position_x"] *= METERS_PER_FOOT
-        df["position_y"] *= METERS_PER_FOOT
-        if x_margin:
-            df["position_x"] = df["position_x"] - x_margin
-        if y_margin:
-            df["position_x"] = df["position_y"] - y_margin
-
-        if self._flip_y:
-            max_y = self._map_spec["max_y"]
-            df["position_y"] = (max_y / self.scale) - df["position_y"]
-
-        # Use moving average to smooth positions...
-        df.sort_values("sim_time", inplace=True)  # just in case it wasn't already...
-        k = 15  # kernel size for positions
-        for vehicle_id in set(df["vehicle_id"]):
-            same_car = df["vehicle_id"] == vehicle_id
-            df.loc[same_car, "position_x"] = (
-                df.loc[same_car, "position_x"]
-                .rolling(window=k)
-                .mean()
-                .shift(1 - k)
-                .values
+    def _smooth_positions(
+        self,
+        row: _TrajectoryDataset._WindowedReader.Row,
+        before_win: Deque[_TrajectoryDataset._WindowedReader.Row],
+        after_win: Deque[_TrajectoryDataset._WindowedReader.Row],
+    ):
+        pos_width = 1 + before_win.maxlen + after_win.maxlen
+        sumwin = (
+            lambda d, key: sum(
+                d[r][key] if r < len(d) else d[-1][key] for r in range(d.maxlen)
             )
-            df.loc[same_car, "position_y"] = (
-                df.loc[same_car, "position_y"]
-                .rolling(window=k)
-                .mean()
-                .shift(1 - k)
-                .values
-            )
-            # and compute heading with (smaller) rolling window (=3) too..
-            shift = int(self._heading_window / 2)
-            pad = self._heading_window - shift - 1
-            v = df.loc[same_car, ["position_x", "position_y", "speed"]].values
-            v = np.insert(v, 0, [[np.nan, np.nan, np.nan]] * shift, axis=0)
-            headings = [
-                self._cal_heading(values)
-                for values in sliding_window_view(v, (self._heading_window, 3))
-            ]
-            df.loc[same_car, "heading_rad"] = headings + [headings[-1]] * pad
-            # ... and new speeds (based on these smoothed positions)
-            # (This also overcomes problem that NGSIM speeds are "instantaneous"
-            # and so don't match with dPos/dt, which can affect some models.)
-            v = df.loc[same_car, ["position_x", "position_y"]].shift(1).values
-            d0, d1 = v.shape
-            s0, s1 = v.strides
-            speeds = [
-                self._cal_speed(values)
-                for values in stride(v, (d0 - 2, 3, d1), (s0, s0, s1))
-            ]
-            df.loc[same_car, "speed_discrete"] = speeds + [None, None]
+            if d
+            else row[key] * d.maxlen
+        )
+        row["position_x"] += sumwin(before_win, "position_x") + sumwin(
+            after_win, "position_x"
+        )
+        row["position_x"] /= pos_width
+        row["position_y"] += sumwin(before_win, "position_y") + sumwin(
+            after_win, "position_y"
+        )
+        row["position_y"] /= pos_width
 
-        # since SMARTS' positions are the vehicle centerpoints, but NGSIM's are at the front,
-        # now adjust the vehicle position to its centerpoint based on its angle (+y = 0 rad)
-        adj_heading = df["heading_rad"] + 0.5 * math.pi
-        x_hlen = 0.5 * df["length"] * np.cos(adj_heading)
-        y_hlen = 0.5 * df["length"] * np.sin(adj_heading)
-        df["position_x"] -= x_hlen
-        df["position_y"] -= y_hlen
+    def _infer_heading(
+        self,
+        row: _TrajectoryDataset._WindowedReader.Row,
+        before_win: Deque[_TrajectoryDataset._WindowedReader.Row],
+        after_win: Deque[_TrajectoryDataset._WindowedReader.Row],
+    ):
+        window = [np.array((r["position_x"], r["position_y"])) for r in before_win]
+        window.reverse()
+        window += [np.array((row["position_x"], row["position_y"]))]
+        window += [np.array((r["position_x"], r["position_y"])) for r in after_win]
+        speeds = (
+            [r["speed"] for r in before_win]
+            + [row["speed"]]
+            + [r["speed"] for r in after_win]
+        )
+        new_heading = 0
+        inst_heading = None
+        prev_heading = None
+        den = 0
+        for w in range(len(window) - 1):
+            c = window[w]
+            n = window[w + 1]
+            if any(np.isnan(c)) or any(np.isnan(n)):
+                if prev_heading is not None:
+                    new_heading += prev_heading
+                    den += 1
+                continue
+            s = np.linalg.norm(n - c)
+            if s == 0.0:
+                if prev_heading is not None:
+                    new_heading += prev_heading
+                    den += 1
+                continue
+            ispeed = speeds[w]
+            vhat = (n - c) / s
+            inst_heading = vec_to_radians(vhat)
+            if self._heading_min_speed is not None and (
+                (s / self._dt_sec) < self._heading_min_speed
+                or ispeed < self._heading_min_speed
+            ):
+                if prev_heading is not None:
+                    new_heading += prev_heading
+                    den += 1
+                continue
+            if prev_heading is not None:
+                if inst_heading == 0 and prev_heading > math.pi:
+                    inst_heading = 2 * math.pi
+                if self._max_angular_velocity:
+                    # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
+                    angular_velocity = (inst_heading - prev_heading) / self._dt_sec
+                    if abs(angular_velocity) > self._max_angular_velocity:
+                        inst_heading = (
+                            prev_heading
+                            + np.sign(angular_velocity)
+                            * self._max_angular_velocity
+                            * self._dt_sec
+                        )
+            den += 1
+            new_heading += inst_heading
+            prev_heading = inst_heading
+        if den > 0:
+            new_heading /= den
+        elif inst_heading is not None:
+            new_heading = inst_heading
+        elif self._prev_heading is None:
+            # TAI:  backfill from the first "real" heading (second pass)
+            new_heading = self._default_heading
+        else:
+            new_heading = self._prev_heading
+        self._prev_heading = new_heading
+        row["heading_rad"] = new_heading % (2 * math.pi)
 
-        map_width = self._map_spec.get("width")
-        if map_width:
-            valid_x = (df["position_x"] * self.scale).between(
-                x_hlen, map_width - x_hlen
-            )
-            df = df[valid_x]
-        map_height = self._map_spec.get("height")
-        if map_height:
-            valid_y = (df["position_y"] * self.scale).between(
-                y_hlen, map_height - y_hlen
-            )
-            df = df[valid_y]
+        # now since SMARTS' positions are the vehicle centerpoints, but NGSIM's are at the front
+        # we must adjust the vehicle position to its centerpoint based on its inferred heading angle (+y = 0 rad)
+        adj_heading = row["heading_rad"] + 0.5 * math.pi
+        half_len = 0.5 * row["length"]
+        # XXX: need to use a different key heree since changing position_x or position_y would probably
+        # XXX: affect a row that's still in the before window of a nested generator (smooth_positions).
+        row["adj_position_x"] = row["position_x"] - half_len * np.cos(adj_heading)
+        row["adj_position_y"] = row["position_y"] - half_len * np.sin(adj_heading)
 
-        return df
+    def _cal_speed(
+        self,
+        row: _TrajectoryDataset._WindowedReader.Row,
+        before_win: Deque[_TrajectoryDataset._WindowedReader.Row],
+        after_win: Deque[_TrajectoryDataset._WindowedReader.Row],
+    ):
+        row["speed_discrete"] = None
+        if not after_win:
+            return row
+        c = np.array((row["adj_position_x"], row["adj_position_y"]))
+        n = np.array((after_win[0]["adj_position_x"], after_win[0]["adj_position_y"]))
+        if not any(np.isnan(c)) and not any(np.isnan(n)):
+            # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
+            row["speed_discrete"] = np.linalg.norm(n - c) / self._dt_sec
+
+    def _row_gen(self) -> Generator[_TrajectoryDataset._WindowedReader.Row, None, None]:
+        with open(self._path, newline="") as infile:
+            for line in infile:
+                fields = line.split()
+                row = {col: fields[f] for f, col in enumerate(self._columns)}
+
+                row["lane_id"] = int(row["lane_id"])
+                row["length"] = float(row["length"]) * METERS_PER_FOOT
+                row["width"] = float(row["width"]) * METERS_PER_FOOT
+                row["speed"] = float(row["speed"]) * METERS_PER_FOOT
+                row["acceleration"] = float(row["acceleration"]) * METERS_PER_FOOT
+                row["spacing"] = float(row["spacing"]) * METERS_PER_FOOT
+                row["position_x"] = float(row["position_x"]) * METERS_PER_FOOT
+                row["position_y"] = float(row["position_y"]) * METERS_PER_FOOT
+
+                # offset of the map from the data...
+                x_margin = self._dataset_spec.get("x_margin_px", 0) / self.scale
+                y_margin = self._dataset_spec.get("y_margin_px", 0) / self.scale
+                if x_margin:
+                    row["position_x"] = row["position_x"] - x_margin
+                if y_margin:
+                    row["position_x"] = row["position_y"] - y_margin
+                if self._flip_y:
+                    max_y = self._map_spec["max_y"]
+                    row["position_y"] = (max_y / self.scale) - row["position_y"]
+
+                yield row
 
     @property
     def rows(self) -> Generator[Dict, None, None]:
-        for t in self._transform_all_data().itertuples():
-            yield t
+        map_width = self._map_spec.get("width")
+        map_height = self._map_spec.get("height")
+
+        heading_before_win = int(
+            (self._heading_window / 2) + (self._heading_window % 2) - 1
+        )
+        heading_after_win = int(self._heading_window / 2)
+
+        self._log.debug("transforming NGSIM data...")
+
+        # smooth positions using a moving average...
+        posns_gen = _TrajectoryDataset._WindowedReader(
+            self._row_gen(), self._smooth_positions, 7, 7, "vehicle_id"
+        )
+
+        # infer heading with rolling window on previously-smoothed positions...
+        headings_gen = _TrajectoryDataset._WindowedReader(
+            posns_gen,
+            self._infer_heading,
+            heading_before_win,
+            heading_after_win,
+            "vehicle_id",
+        )
+
+        # finally calculate speeds based on these smoothed and centered positions...
+        # (This also overcomes problem that NGSIM speeds are "instantaneous"
+        # and so don't match with dPos/dt, which can affect some models.)
+        speeds_gen = _TrajectoryDataset._WindowedReader(
+            headings_gen, self._cal_speed, 0, 1, "vehicle_id"
+        )
+
+        # note: iterating over outer generator iterates over all nested generators too...
+        # XXX: assumes all timesteps for a vehicle are grouped together in the file
+        for row in speeds_gen:
+            if map_width and row["position_x"] * self.scale > map_width:
+                self._log.warning(
+                    f"skipping row for vehicle {row['vehicle_id']} with x-position(s) off of map"
+                )
+                continue
+            if map_height and row["position_y"] * self.scale > map_height:
+                self._log.warning(
+                    f"skipping row for vehicle {row['vehicle_id']} with y-position(s) off of map"
+                )
+                continue
+            yield row
 
     def column_val_in_row(self, row, col_name: str) -> Any:
         if col_name == "speed":
-            return row.speed_discrete if row.speed_discrete else row.speed
-        return getattr(row, col_name, None)
+            return row["speed_discrete"] if row["speed_discrete"] else row["speed"]
+        if col_name == "position_x":
+            return row["adj_position_x"]
+        if col_name == "position_y":
+            return row["adj_position_y"]
+        return row.get(col_name)
 
 
 class OldJSON(_TrajectoryDataset):
