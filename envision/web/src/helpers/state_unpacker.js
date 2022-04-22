@@ -58,7 +58,8 @@ const POINT_3D_LENGTH = 3;
 
 const BUBBLE_POINT_LENGTH = POINT_2D_LENGTH;
 const DRIVEN_PATH_POINT_LENGTH = POINT_2D_LENGTH;
-const WAYPOINT_POSITION_LENGTH = POINT_3D_LENGTH;
+const LIDAR_POINT_LENGTH = POINT_3D_LENGTH;
+const ROUTE_POINT_LENGTH = POINT_2D_LENGTH;
 
 const Waypoint = Object.freeze({
   POSITION_BEGIN: 0,
@@ -108,11 +109,11 @@ function unpack_waypoints(lanes) {
 }
 
 function unpack_point_cloud(point_cloud) {
-  return [];
+  return multi_slice(point_cloud, LIDAR_POINT_LENGTH);
 }
 
 function unpack_route_geometry(route_geometry) {
-  return [];
+  return route_geometry.map((a) => multi_slice(a, ROUTE_POINT_LENGTH));
 }
 
 function unpack_traffic(traffic) {
