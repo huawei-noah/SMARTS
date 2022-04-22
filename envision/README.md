@@ -20,7 +20,7 @@ To contribute to envision it's easiest to start and control the processes manual
 
 ```bash
 # From SMARTS project root; runs on port 8081 by default
-python envision/server.py
+python envision/server.py --debug
 ```
 
 Then start the Envision web application. npm (version >= 6) and node (version >= 12) are required.
@@ -32,8 +32,10 @@ cd envision/web
 npm install
 
 # Build, run dev server, and watch code changes
-npm start
+npm run watch
 ```
+
+This development flow currently requires reloading the webpage after update.
 
 ## Deployment
 
