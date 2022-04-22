@@ -348,14 +348,16 @@ class Interaction(_TrajectoryDataset):
                 # Note: track_id will be like "P12" for pedestrian tracks.  (TODO)
                 row["vehicle_id"] = int(row["track_id"])
                 row["sim_time"] = row["timestamp_ms"]
-                row["position_x"] = (
-                    float(row["y"]) if self._swap_xy else float(row["x"])
-                )
-                row["position_y"] = (
-                    float(row["x"]) if self._swap_xy else float(row["y"])
-                )
-                row["vx"] = float(row["vx"])
-                row["vy"] = float(row["vy"])
+                if self._swap_xy:
+                    row["position_x"] = float(row["y"])
+                    row["position_y"] = float(row["x"])
+                    row["vx"] = float(row["vy"])
+                    row["vy"] = float(row["vx"])
+                else:
+                    row["position_x"] = float(row["x"])
+                    row["position_y"] = float(row["y"])
+                    row["vx"] = float(row["vx"])
+                    row["vy"] = float(row["vy"])
                 row["length"] = float(row.get("length", 0.0))
                 row["width"] = float(row.get("width", 0.0))
                 row["type"] = self._lookup_agent_type(row["agent_type"])
