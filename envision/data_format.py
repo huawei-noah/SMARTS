@@ -122,7 +122,7 @@ class ReductionContext:
         return reduce
 
 
-class EnvisionDataFormatterParams(NamedTuple):
+class EnvisionDataFormatterArgs(NamedTuple):
     """Data formatter configurations."""
 
     id: Optional[str]
@@ -137,19 +137,17 @@ class EnvisionDataFormatter:
 
     def __init__(
         self,
-        id: Optional[str],
-        serializer: Callable[[list], Any],
-        float_decimals: int,
-        bool_as_int: bool,
-        enable_reduction: bool,
+        formatter_params: EnvisionDataFormatterArgs,
     ):
         # self.seen_objects = context.seen_objects if context else set()
         self.id: Any = id
         self._data: List[Any] = []
-        self._reduction_context = ReductionContext(enabled=enable_reduction)
-        self._serializer = serializer
-        self._float_decimals = float_decimals
-        self._bool_as_int = bool_as_int
+        self._reduction_context = ReductionContext(
+            enabled=formatter_params.enable_reduction
+        )
+        self._serializer = formatter_params.serializer
+        self._float_decimals = formatter_params.float_decimals
+        self._bool_as_int = formatter_params.bool_as_int
 
     def reset(self, reset_reduction_context: bool = True):
         """Reset the current context in preparation for new serialization."""

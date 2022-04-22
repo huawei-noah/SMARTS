@@ -31,7 +31,7 @@ import smarts.sstudio.types as t
 from envision.client import Client
 from envision.data_format import (
     EnvisionDataFormatter,
-    EnvisionDataFormatterParams,
+    EnvisionDataFormatterArgs,
     Operation,
     _formatter_map,
 )
@@ -226,7 +226,7 @@ def complex_data():
 
 def test_covered_data_format(covered_data):
     for item in covered_data:
-        es = EnvisionDataFormatter(*EnvisionDataFormatterParams(None))
+        es = EnvisionDataFormatter(EnvisionDataFormatterArgs(None))
         vt = item[0]
         _formatter_map[type(vt)](vt, es)
 
@@ -239,7 +239,7 @@ def test_covered_data_format(covered_data):
 def test_primitive_data_format(primitive_data):
     for item in primitive_data:
         vt = item[0]
-        es = EnvisionDataFormatter(*EnvisionDataFormatterParams(None))
+        es = EnvisionDataFormatter(EnvisionDataFormatterArgs(None))
         es.add_any(vt)
 
         data = es.resolve()
@@ -250,7 +250,7 @@ def test_primitive_data_format(primitive_data):
 
 def test_layer():
     expected_output = [2, 5, 6, [2, 5, 6], [8, 8], ["Time", ["for", "tea", 12, "noon"]]]
-    es = EnvisionDataFormatter(*EnvisionDataFormatterParams(None))
+    es = EnvisionDataFormatter(EnvisionDataFormatterArgs(None))
     es.add([2, 5, 6], "", op=Operation.FLATTEN)
     es.add([2, 5, 6], "")
     with es.layer():
@@ -270,7 +270,7 @@ def test_layer():
 def test_complex_data(complex_data):
     for item in complex_data:
         vt = item[0]
-        es = EnvisionDataFormatter(*EnvisionDataFormatterParams(None))
+        es = EnvisionDataFormatter(EnvisionDataFormatterArgs(None))
         es.add_any(vt)
 
         data = es.resolve()
@@ -425,7 +425,7 @@ def test_client_with_smarts(smarts: SMARTS, scenarios: Iterator[Scenario], sim_d
         if not first_time:
             return
         first_time = False
-        es = EnvisionDataFormatter(*EnvisionDataFormatterParams(None))
+        es = EnvisionDataFormatter(EnvisionDataFormatterArgs(None))
         assert state.scenario_id is not None
         with mock.patch(
             "envision.types.State.scenario_id", new_callable=PropertyMock

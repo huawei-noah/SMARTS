@@ -25,7 +25,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple, Union
 import gym
 
 from envision.client import Client as Envision
-from envision.data_format import EnvisionDataFormatterParams
+from envision.data_format import EnvisionDataFormatterArgs
 from smarts.core import seed as smarts_seed
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
@@ -133,7 +133,7 @@ class HiWayEnv(gym.Env):
                 sim_name=sim_name,
                 output_dir=envision_record_data_replay_path,
                 headless=headless,
-                data_formatter_params=EnvisionDataFormatterParams(
+                data_formatter_args=EnvisionDataFormatterArgs(
                     "base", enable_reduction=False
                 ),
             )

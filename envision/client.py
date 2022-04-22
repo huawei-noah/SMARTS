@@ -35,7 +35,7 @@ import websocket
 
 from envision import types
 from envision.client_config import EnvisionStateFilter
-from envision.data_format import EnvisionDataFormatter, EnvisionDataFormatterParams
+from envision.data_format import EnvisionDataFormatter, EnvisionDataFormatterArgs
 from smarts.core.utils.file import unpack
 
 
@@ -82,7 +82,7 @@ class Client:
         sim_name: Optional[str] = None,
         headless: bool = False,
         envision_state_filter: Optional[EnvisionStateFilter] = None,
-        data_formatter_params: Optional[EnvisionDataFormatterParams] = None,
+        data_formatter_args: Optional[EnvisionDataFormatterArgs] = None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._headless = headless
@@ -90,7 +90,7 @@ class Client:
         self._envision_state_filter = (
             envision_state_filter or EnvisionStateFilter.default()
         )
-        self._data_formatter_params = data_formatter_params
+        self._data_formatter_args = data_formatter_args
 
         current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
         client_id = current_time
@@ -111,7 +111,7 @@ class Client:
             self._logging_queue = multiprocessing.Queue()
             self._logging_process = multiprocessing.Process(
                 target=self._write_log_state,
-                args=(self._logging_queue, path, self._data_formatter_params),
+                args=(self._logging_queue, path, self._data_formatter_args),
             )
             self._logging_process.daemon = True
             self._logging_process.start()
@@ -126,7 +126,7 @@ class Client:
                     f"{endpoint}/simulations/{client_id}/broadcast",
                     self._state_queue,
                     wait_between_retries,
-                    self._data_formatter_params,
+                    self._data_formatter_args,
                 ),
             )
             self._process.daemon = True
@@ -144,11 +144,11 @@ class Client:
 
     @staticmethod
     def _write_log_state(
-        queue, path, data_formatter_params: Optional[EnvisionDataFormatterParams]
+        queue, path, data_formatter_args: Optional[EnvisionDataFormatterArgs]
     ):
         data_formatter = None
-        if data_formatter_params:
-            data_formatter = EnvisionDataFormatter(*data_formatter_params)
+        if data_formatter_args:
+            data_formatter = EnvisionDataFormatter(data_formatter_args)
         with path.open("w", encoding="utf-8") as f:
             while True:
                 state = queue.get()
@@ -191,13 +191,13 @@ class Client:
         endpoint,
         state_queue,
         wait_between_retries: float = 0.05,
-        data_formatter_params: Optional[EnvisionDataFormatterParams] = None,
+        data_formatter_args: Optional[EnvisionDataFormatterArgs] = None,
     ):
         connection_established = False
         warned_about_connection = False
         data_formatter = None
-        if data_formatter_params:
-            data_formatter = EnvisionDataFormatter(*data_formatter_params)
+        if data_formatter_args:
+            data_formatter = EnvisionDataFormatter(data_formatter_args)
 
         def optionally_serialize_and_write(state: Union[types.State, str], ws):
             if data_formatter:
