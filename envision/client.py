@@ -35,7 +35,7 @@ import websocket
 
 from envision import types
 from envision.client_config import EnvisionStateFilter
-from envision.data_format import EnvisionDataFormatter, EnvisionDataFormatterArgs
+from envision.data_formatter import EnvisionDataFormatter, EnvisionDataFormatterArgs
 from smarts.core.utils.file import unpack
 
 

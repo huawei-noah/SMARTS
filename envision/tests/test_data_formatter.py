@@ -29,7 +29,7 @@ import pytest
 
 import smarts.sstudio.types as t
 from envision.client import Client
-from envision.data_format import (
+from envision.data_formatter import (
     EnvisionDataFormatter,
     EnvisionDataFormatterArgs,
     Operation,
