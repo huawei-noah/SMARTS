@@ -162,10 +162,10 @@ function App({ client }) {
                       flexDirection: "row",
                     }}
                   >
-                    {/* <ControlPanel
+                    <ControlPanel
                       showControls={showControls}
                       toggleControlModes={toggleControlModes}
-                    /> */}
+                    />
                     <Simulation
                       canvasRef={simulationCanvasRef}
                       client={client}
