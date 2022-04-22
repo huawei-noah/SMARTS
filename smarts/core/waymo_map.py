@@ -831,6 +831,19 @@ class WaymoMap(RoadMap):
                         if lane_to_left and not same_dir:
                             road_dividers.append(left_side)
 
+        for i in range(len(road_borders) - 1):
+            for j in range(i + 1, len(road_borders)):
+                edge_border_i = np.array(
+                    [road_borders[i][0], road_borders[i][-1]]
+                )  # start and end position
+                edge_border_j = np.array(
+                    [road_borders[j][-1], road_borders[j][0]]
+                )  # start and end position with reverse traffic direction
+
+                # The edge borders of two lanes do not always overlap perfectly, thus relax the tolerance threshold to 1
+                if np.linalg.norm(edge_border_i - edge_border_j) < 1:
+                    road_dividers.append(road_borders[i])
+
         return lane_dividers, road_dividers
 
     class Surface(RoadMap.Surface):
@@ -1293,7 +1306,7 @@ class WaymoMap(RoadMap):
             return result
 
         def _edge_shape(self):
-            leftmost_lane = self.lane_at_index(self._total_lanes - 1)
+            leftmost_lane = self.lane_at_index(len(self._lanes) - 1)
             rightmost_lane = self.lane_at_index(0)
 
             rightmost_lane_buffered_polygon = rightmost_lane._lane_polygon
