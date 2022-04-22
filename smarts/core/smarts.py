@@ -1345,9 +1345,6 @@ class SMARTS:
         filter = self._envision.envision_state_filter
 
         traffic = {}
-        position = {}
-        speed = {}
-        heading = {}
         lane_ids = {}
         agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         vt_mapping = {
@@ -1361,9 +1358,6 @@ class SMARTS:
             if v.vehicle_id in agent_vehicle_ids:
                 # this is an agent controlled vehicle
                 agent_id = self._vehicle_index.actor_id_from_vehicle_id(v.vehicle_id)
-                speed[agent_id] = v.speed
-                position[agent_id] = tuple(v.pose.as_position2d())
-                heading[agent_id] = float(v.pose.heading)
                 is_boid_agent = self._agent_manager.is_boid_agent(agent_id)
                 agent_obs = obs[agent_id]
                 vehicle_obs = agent_obs[v.vehicle_id] if is_boid_agent else agent_obs
@@ -1437,6 +1431,7 @@ class SMARTS:
                     point_cloud=point_cloud,
                     driven_path=driven_path,
                     mission_route_geometry=mission_route_geometry,
+                    lane_id=lane_ids.get(agent_id),
                 )
             elif v.vehicle_id in self._vehicle_index.social_vehicle_ids():
                 # this is a social vehicle
@@ -1475,10 +1470,6 @@ class SMARTS:
             bubbles=bubble_geometry,
             scores=scores,
             ego_agent_ids=list(self._agent_manager.ego_agent_ids),
-            position=position,
-            speed=speed,
-            heading=heading,
-            lane_ids=lane_ids,
             frame_time=self._rounder(self._elapsed_sim_time + self._total_sim_time),
         )
         self._envision.send(state)

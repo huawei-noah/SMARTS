@@ -174,9 +174,6 @@ def complex_data():
                 bubbles=[],
                 scores=dict(),
                 ego_agent_ids=[],
-                position=dict(),
-                speed=dict(),
-                heading=dict(),
                 frame_time=0.1,
             ),
             [
