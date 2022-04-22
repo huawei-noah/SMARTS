@@ -11,6 +11,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 # [Unreleased]
 
 ### [0.6.1rc1] 15-04-18
+### Added
+- Added example scenario for importing the NGSIM `peachtree` dataset.
+- Added example scenario for importing the INTERACTION `merging` dataset
 ### Fixed
 - Gracefully handle `EndlessGoal` missions in the MaRL benchmark. Relative goal distance with `EndlessGoal` will be now always be 0.
 - Restore `rl-agent` to working order. Version incremented to `1.1.0`.
