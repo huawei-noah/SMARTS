@@ -128,7 +128,7 @@ class EnvisionDataFormatterArgs(NamedTuple):
     id: Optional[str]
     serializer: Callable[[list], Any] = lambda d: d
     float_decimals: int = 2
-    bool_as_int: bool = False
+    bool_as_int: bool = True
     enable_reduction: bool = True
 
 
