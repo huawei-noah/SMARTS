@@ -82,7 +82,7 @@ def covered_data():
                 events=Events(
                     [], False, False, False, False, False, False, False, True
                 ),
-                driven_path=[[4, 4], [2, 2]],
+                driven_path=[(4, 4), (2, 2)],
                 point_cloud=[[1, 3], [4, 2]],
                 mission_route_geometry=[[(0, 2.2), (9, 4.4)], [(3.1, 42)]],
                 waypoint_paths=[
