@@ -40,7 +40,8 @@ const WorldState = Object.freeze({
 const Traffic = Object.freeze({
   ACTOR_ID: 0,
   LANE_ID: 1,
-  POSITION: 2,
+  POSITION_BEGIN: 2,
+  POSITION_END: 5,
   HEADING: 5,
   SPEED: 6,
   EVENTS: 7,
@@ -60,7 +61,8 @@ const DRIVEN_PATH_POINT_LENGTH = POINT_2D_LENGTH;
 const WAYPOINT_POSITION_LENGTH = POINT_3D_LENGTH;
 
 const Waypoint = Object.freeze({
-  POSITION: 0,
+  POSITION_BEGIN: 0,
+  POSITION_END: 3,
   HEADING: 3,
   LANE_ID: 4,
   LANE_WIDTH: 5,
@@ -94,7 +96,7 @@ function unpack_waypoints(lanes) {
   return lanes.map((lane) =>
     lane.map(function (wp) {
       return {
-        pos: wp.slice(Waypoint.POSITION, WAYPOINT_POSITION_LENGTH),
+        pos: wp.slice(Waypoint.POSITION_BEGIN, Waypoint.POSITION_END),
         heading: wp[Waypoint.HEADING],
         lane_id: wp[Waypoint.LANE_ID],
         lane_width: wp[Waypoint.LANE_WIDTH],
@@ -118,7 +120,7 @@ function unpack_traffic(traffic) {
     let obj = {
       actor_id: t[Traffic.ACTOR_ID],
       lane_id: t[Traffic.LANE_ID],
-      position: t.slice(Traffic.POSITION, 5),
+      position: t.slice(Traffic.POSITION_BEGIN, Traffic.POSITION_END),
       heading: t[Traffic.HEADING],
       speed: t[Traffic.SPEED],
       events: t[Traffic.EVENTS],
