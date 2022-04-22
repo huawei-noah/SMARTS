@@ -65,7 +65,7 @@ class _TrajectoryDataset:
         self._log = logging.getLogger(self.__class__.__name__)
         self.check_dataset_spec(dataset_spec)
         self._output = output
-        self._path = dataset_spec["input_path"]
+        self._path = os.path.expanduser(dataset_spec["input_path"])
         real_lane_width_m = dataset_spec.get("real_lane_width_m", DEFAULT_LANE_WIDTH)
         lane_width = self._map_spec.get("lane_width", real_lane_width_m)
         self._scale = lane_width / real_lane_width_m
@@ -97,7 +97,7 @@ class _TrajectoryDataset:
 
         def __init__(
             self,
-            row_gen: Union[Generator[Row, None, None], "_TrajectoryDataset._WindowedReader"],
+            row_gen: Iterable[Row],
             transform_fn: Callable[[Row, Deque[Row], Deque[Row]], None],
             window_before: int = 0,
             window_after: int = 0,
@@ -645,7 +645,7 @@ class NGSIM(_TrajectoryDataset):
         )
 
         # note: iterating over outer generator iterates over all nested generators too...
-        # XXX: assumes all timesteps for a vehicle are grouped together in the file
+        # XXX: assumes all timesteps for a vehicle are grouped together in the file and are in sorted temporal order
         for row in speeds_gen:
             if map_width and row["position_x"] * self.scale > map_width:
                 self._log.warning(

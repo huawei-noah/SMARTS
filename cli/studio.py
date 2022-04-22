@@ -68,7 +68,8 @@ def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
     from smarts.core.scenario import Scenario
 
     traffic_histories = Scenario.discover_traffic_histories(scenario_root_str)
-    shift_to_origin = not allow_offset_map or bool(traffic_histories)
+    # don't shift maps for scenarios with traffic histories since history data must line up with map
+    shift_to_origin = not allow_offset_map and not bool(traffic_histories)
 
     map_spec = Scenario.discover_map(scenario_root_str, shift_to_origin=shift_to_origin)
     road_map, _ = map_spec.builder_fn(map_spec)
@@ -157,7 +158,7 @@ def _is_scenario_folder_to_build(path: str) -> bool:
     "--allow-offset-maps",
     is_flag=True,
     default=False,
-    help="Allows road networks (maps) to be offset from the origin. If not specified, creates creates a new network file if necessary.",
+    help="Allows road networks (maps) to be offset from the origin. If not specified, a new network file is created if necessary.  Defaults to False except when there's Traffic History data associated with the scenario.",
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
 def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
