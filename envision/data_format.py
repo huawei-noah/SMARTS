@@ -90,12 +90,14 @@ class ReductionContext:
         self._enabled = enabled
 
     def reset(self):
+        """Returns this context back to blank."""
         self.current_id = 0
         self._mapping = {}
         self.removed = []
 
     @property
     def enabled(self):
+        """If this reduction context is enabled(else it is passthrough.)"""
         return self._enabled
 
     @property
@@ -107,7 +109,7 @@ class ReductionContext:
         """The mappings that the context contains"""
         return {k: v for _, (k, v) in self._mapping.items()}
 
-    def resolve_value(self: "ReductionContext", value: Hashable) -> int:
+    def resolve_value(self: "ReductionContext", value: Hashable) -> Union[int, Hashable]:
         """Map the value to an ID."""
         if not self._enabled:
             return value
