@@ -25,7 +25,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple, Union
 import gym
 
 from envision.client import Client as Envision
-from envision.data_format import EnvisionDataFormatterArgs
+from envision.data_formatter import EnvisionDataFormatterArgs
 from smarts.core import seed as smarts_seed
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
