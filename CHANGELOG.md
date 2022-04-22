@@ -15,7 +15,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Gracefully handle `EndlessGoal` missions in the MaRL benchmark. Relative goal distance with `EndlessGoal` will be now always be 0.
 - Restore `rl-agent` to working order. Version incremented to `1.1.0`.
 - Update `rl-agent` wheel.
-- Add workaround for issue where traffic history starts offroad by fixing `scl scenario build`'s `--allow-offset-map` to work with traffic history.
+- Do not auto-shift maps for a scenario that has traffic history.
+- Fixed Issue #1321 such that numpy's `sliding_window_view()` is no longer needed for NGSIM traffic histories.
+- Fixed NGSIM traffic history import bugs (see Issues #1354 and #1402).
+
 
 ### [0.6.1rc0] 15-04-16
 ### Added
