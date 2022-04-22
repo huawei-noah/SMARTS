@@ -32,7 +32,7 @@ try:
 except ImportError:
     if "SUMO_HOME" not in os.environ:
         raise ImportError("SUMO_HOME not set, can't import sumolib")
-    sumo_path = os.environ["SUMO_HOME"]
+    SUMO_PATH = os.environ["SUMO_HOME"]
 
 tools_path = os.path.join(SUMO_PATH, "tools")
 if tools_path not in sys.path:

@@ -34,6 +34,8 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
 
    sim/visualization.rst
 
+   sim/cli.rst
+
    api/modules.rst
 
 

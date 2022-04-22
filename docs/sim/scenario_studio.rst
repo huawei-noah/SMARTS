@@ -6,6 +6,28 @@ Scenario Studio
 The Scenario Studio of SMARTS is a stand alone package (`sstudio`) that supports flexible and expressive scenario specification.
 If you have access to `sstudio` you can use it to generate traffic with different traffic vehicle numbers and routes, and agent missions.
 
+Scenarios can reference remote packages or local zoo agent packages by including a requirements.txt 
+file in the root of the scenario directory. Packages will be installed during the build.
+
+In the requirements.txt file:
+
+.. code-block:: bash
+
+    --extra-index-url http://localhost:8080
+    <dependency>==1.0.0
+    rl-agent==1.0.0
+    ...
+
+Then in the scenario.py file:
+
+.. code-block:: python
+
+    t.SocialAgentActor(
+        name="my-rl-agent",
+        agent_locator="rl_agent:rl_agent-v1"
+    )
+
+
 ================
 Generate traffic
 ================

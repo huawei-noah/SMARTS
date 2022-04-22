@@ -36,11 +36,11 @@ jobs:
             -s n \
             --ignore marl_benchmark,examples,scenarios,docs,manager_pb2_grpc.py,worker_pb2_grpc.py \
             --msg-template='{path}: line {line}: {msg_id}: {msg}' \
-            ./smarts ./envision
+            ./smarts ./envision ./baselines
 
   test-types:
     runs-on: ubuntu-18.04
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) && (github.ref != 'refs/heads/master')
     container: huaweinoah/smarts:v0.4.18-minimal
     steps:
       - name: Install packages
@@ -48,6 +48,8 @@ jobs:
           add-apt-repository -y ppa:git-core/ppa
           apt-get update
           apt-get install -y git
+      - name: Add safe directory
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Checkout
         uses: actions/checkout@v2
         with:

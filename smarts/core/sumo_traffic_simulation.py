@@ -204,6 +204,10 @@ class SumoTrafficSimulation(Provider):
                 )
                 self._close_traci_and_pipes()
                 continue
+            except:
+                logging.debug("Retrying TraCI connection...")
+                self._close_traci_and_pipes()
+                continue
             break
 
         try:

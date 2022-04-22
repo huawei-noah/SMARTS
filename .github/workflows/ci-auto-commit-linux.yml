@@ -24,6 +24,8 @@ jobs:
           apt-get install -y git curl ca-certificates
           curl -sL https://deb.nodesource.com/setup_14.x | bash -
           apt-get install -y nodejs
+      - name: Add safe directory
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -59,3 +61,14 @@ jobs:
           branch: develop
           default_author: user_info 
           message: 'GitHub Actions: Format'
+      - name: Update cli.rst documentation
+        run: |
+          . ${{env.venv_dir}}/bin/activate
+          python docs/create_cli_docs.py
+      - name: Commit cli.rst changes
+        uses: EndBug/add-and-commit@v7
+        with:
+          add: '*/cli.rst'
+          branch: develop
+          default_author: user_info
+          message: 'GitHub Actions: Update cli.rst'

@@ -8,7 +8,45 @@ All text added must be human-readable.
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
-## [Unreleased]
+# [Unreleased]
+
+### [0.6.1rc1] 15-04-18
+### Fixed
+- Gracefully handle `EndlessGoal` missions in the MaRL benchmark. Relative goal distance with `EndlessGoal` will be now always be 0.
+- Restore `rl-agent` to working order. Version incremented to `1.1.0`.
+- Update `rl-agent` wheel.
+- Add workaround for issue where traffic history starts offroad by fixing `scl scenario build`'s `--allow-offset-map` to work with traffic history.
+
+### [0.6.1rc0] 15-04-16
+### Added
+- Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
+- Added `sb3` reinforcement-learning example. An ego agent is trained using PPO algorithm from Stable Baselines3 library, to drive as far and as fast as possible in heavy traffic, without colliding or going off-road.
+- Added `FormatObs` wrapper which converts SMARTS observations to gym-compliant RL-friendly vectorized observations and returns `StdObs`.
+- Added `Pose.as_position2d()` method which converts the pose to an [x,y] position array.
+- Added `EventConfiguration` dataclass in the agent interface to allow users to configure the conditions in which events are triggered
+- Added scenarios for "importing" the i80 and us101 NGSIM trajectory history datasets
+- Added an observation adapter that makes the observation ego-centric: `smarts.core.utils.ego_centric_observation_adapter`.
+- Added math utility `world_position_from_ego_frame` which allows converting from an ego frame to world frame.
+- Added math utility `wrap_value` which constrains a float between a `min` and `max` by wrapping around every time the value exceeds `max` or falls below `min`.
+- Added ego-centric adapter utility `smarts.core.utils.adapters.ego_centric_adapters.get_egocentric_adapters(action_space)` which provides an ego-centric pair of observation and action adapters that are used together to provide an ego-centric interface.
+### Changed
+- If more than one qualifying map file exists in a the `map_spec.source` folder, `get_road_map()` in `default_map_builder.py` will prefer to return the default files (`map.net.xml` or `map.xodr`) if they exist.
+- Moved the `smarts_ros` ROS node from the `examples` area into the `smarts.ros` module so that it can be distributed with SMARTS packages.
+- Use `Process` to replace `Thread` to speed up the `scl scenario build-all --clean <scenario_dir>` runtime.
+- Modified the repository's front page to be more informative and better organised.
+- Added an option to `Scenario.scenario_variations()` to make the iterator not yield a cycle.
+### Deprecated
+- Moved the `AgentSpec` class out of `smarts.core.agent` to `smarts.zoo.agent_spec`.
+### Fixed
+- Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error.
+- Ensure that `smarts.core.coordinates.Pose` attribute `position` is an [x, y, z] numpy array, and attribute `orientation` is a quaternion length 4 numpy array. 
+- Update social vehicle pose in Bullet when no active agents are present.
+- Fix suppression of `stderr` and `stdout` on `ipython` platforms via `suppress_output(..)`.
+### Removed
+- Removed the unconditional import of `Renderer` from `smarts/core/vehicle.py` to make `Panda3D` optional dependency regression. See Issue #1310.
+### Security
+
+## [0.6.0] 2022-03-28
 ### Added
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 - Added `sb3` reinforcement-learning example. An ego agent is trained using PPO algorithm from Stable Baselines3 library, to drive as far and as fast as possible in heavy traffic, without colliding or going off-road.
@@ -27,18 +65,19 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed a secondary exception that the `SumoTrafficSimulation` will throw when attempting to close a TraCI connection that is closed by an error.
 - Ensure that `smarts.core.coordinates.Pose` attribute `position` is an [x, y, z] numpy array, and attribute `orientation` is a quaternion length 4 numpy array. 
 - Update social vehicle pose in Bullet when no active agents are present.
+- Document missing action space type `ActionSpaceType.TargetPose`.
 ### Removed
 - Removed the unconditional import of `Renderer` from `smarts/core/vehicle.py` to make `Panda3D` optional dependency regression. See Issue #1310.
 ### Security
 
 
-# [0.5.1.post1] 2022-03-11
+## [0.5.1.post1] 2022-03-11
 ### Fixed
 - Fixed an issue involving relative imports in `examples/rllib/rllib.py`.
 - Fixed an issue with uncapped `opencv` causing an error within `ray.rllib`.
 - Fixed a longstanding issue that did not allow camera observations unless you had windowing.
 
-# [0.5.1] 2022-01-25
+## [0.5.1] 2022-01-25
 ### Added
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 ### Changed

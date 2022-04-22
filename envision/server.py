@@ -324,7 +324,7 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
     async def open(self, simulation_id):
         """Open this socket to  listen for webclient playback requests."""
         if simulation_id not in WEB_CLIENT_RUN_LOOPS:
-            raise tornado.web.HTTPError(404)
+            raise tornado.web.HTTPError(404, f"Simuation `{simulation_id}` not found.")
 
         # TODO: Set this appropriately (pass from SMARTS)
         fixed_timestep_sec = 0.1
@@ -365,10 +365,15 @@ class FileHandler(AllowCORSMixin, tornado.web.RequestHandler):
 
     async def get(self, id_):
         """Serve a resource requested by id."""
-        if id_ not in self._path_map or not self._path_map[id_].exists():
-            raise tornado.web.HTTPError(404)
+        if id_ not in self._path_map:
+            raise tornado.web.HTTPError(404, f"Map resource {id_} not found")
 
-        await self.serve_chunked(self._path_map[id_])
+        if not Path(self._path_map[id_]).exists():
+            raise tornado.web.HTTPError(
+                404, f"Map file `{self._path_map[id_]}` not found."
+            )
+
+        await self.serve_chunked(Path(self._path_map[id_]))
 
     async def serve_chunked(self, path: Path, chunk_size: int = 1024 * 1024):
         """Serve a file to the endpoint given a path."""
@@ -442,7 +447,7 @@ class ModelFileHandler(FileHandler):
         if id_ not in self._path_map or not pkg_resources.is_resource(
             smarts.core.models, self._path_map[id_]
         ):
-            raise tornado.web.HTTPError(404)
+            raise tornado.web.HTTPError(404, f"GLB Model `{id_}` not found.")
 
         with pkg_resources.path(smarts.core.models, self._path_map[id_]) as path:
             await self.serve_chunked(path)
