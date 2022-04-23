@@ -124,13 +124,10 @@ def gen_scenario(
         gen_friction_map(scenario=output_dir, surface_patches=scenario.friction_maps)
 
     if scenario.traffic_histories:
-        # TODO:  pass in Sumo graph offset and use to offset history coordinates
-        #    if sumo_road_network._graph._shifted_by_smarts: sumo_road_network._graph.getLocationOffset()
         gen_traffic_histories(
             scenario=output_dir,
             histories_datasets=scenario.traffic_histories,
             overwrite=overwrite,
-            map_spec=map_spec,
         )
 
 
@@ -444,7 +441,6 @@ def gen_traffic_histories(
     scenario: str,
     histories_datasets: Sequence[str],
     overwrite: bool,
-    map_spec: Optional[types.MapSpec] = None,
 ):
     """Converts traffic history to a format that SMARTS can use.
     Args:
@@ -454,23 +450,7 @@ def gen_traffic_histories(
             A sequence of traffic history files.
         overwrite:
             If to forcefully write over the previous existing output file
-        map_spec:
-            An optional map specification that takes precedence over scenario directory information.
     """
-    # For SUMO maps, we need to check if the map was shifted and translate the vehicle positions if so
-    xy_offset = None
-    if not map_spec:
-        road_network_path = os.path.join(scenario, "map.net.xml")
-        map_spec = types.MapSpec(road_network_path)
-    if os.path.exists(map_spec.source):
-        from smarts.core.sumo_road_network import SumoRoadNetwork
-
-        road_network = SumoRoadNetwork.from_spec(map_spec)
-        if road_network._graph and getattr(
-            road_network._graph, "_shifted_by_smarts", False
-        ):
-            xy_offset = road_network._graph.getLocationOffset()
-
     genhistories_py = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
     )
@@ -491,10 +471,8 @@ def gen_traffic_histories(
         th_file = f"{base}.shf"
         if overwrite:
             cmd += ["-f"]
-        if xy_offset:
-            cmd += ["--x_offset", str(xy_offset[0])]
-            cmd += ["--y_offset", str(xy_offset[1])]
         elif os.path.exists(os.path.join(scenario, th_file)):
             continue
         cmd += [th_file]
+        # note that maps in scenarios with traffic history datasets will not be auto-shifted
         subprocess.check_call(cmd, cwd=scenario)
