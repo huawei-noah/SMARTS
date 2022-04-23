@@ -439,7 +439,7 @@ def _validate_entry_tactic(mission):
 
 def gen_traffic_histories(
     scenario: str,
-    histories_datasets: Sequence[str],
+    histories_datasets: Sequence[Union[types.TrafficHistoryDataset, str]],
     overwrite: bool,
 ):
     """Converts traffic history to a format that SMARTS can use.
@@ -447,17 +447,28 @@ def gen_traffic_histories(
         scenario:
             The scenario directory
         histories_datasets:
-            A sequence of traffic history files.
+            A sequence of traffic history descriptors.
         overwrite:
             If to forcefully write over the previous existing output file
     """
-    genhistories_py = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
-    )
     for hdsr in histories_datasets:
+        if not isinstance(hdsr, str):
+            from . import genhistories
+
+            genhistories.import_dataset(hdsr, scenario, overwrite)
+            continue
+
+        logger.warn(
+            f"use of yaml-file dataset specs (like {hdsr}) is deprecated; update to use types.TrafficHistoryDataset in your scenario.py. "
+        )
+
         hds = os.path.join(scenario, hdsr)
         if not os.path.exists(hds):
             raise ValueError(f"Traffic history dataset file missing: {hds}")
+
+        genhistories_py = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
+        )
         cmd = [sys.executable, genhistories_py, hdsr]
         base, ext = os.path.splitext(os.path.basename(hds))
         if ext == ".json":
@@ -469,6 +480,7 @@ def gen_traffic_histories(
             )
             cmd += ["--old"]
         th_file = f"{base}.shf"
+
         if overwrite:
             cmd += ["-f"]
         elif os.path.exists(os.path.join(scenario, th_file)):

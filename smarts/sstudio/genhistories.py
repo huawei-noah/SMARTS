@@ -45,6 +45,9 @@ import yaml
 
 from smarts.core.utils.math import vec_to_radians
 
+from . import types
+
+
 try:
     from waymo_open_dataset.protos import scenario_pb2  # pytype: disable=import-error
 except ImportError:
@@ -64,7 +67,7 @@ class _TrajectoryDataset:
         self._output = output
         self._path = os.path.expanduser(dataset_spec["input_path"])
         real_lane_width_m = dataset_spec.get("real_lane_width_m", DEFAULT_LANE_WIDTH)
-        lane_width = self._map_spec.get("lane_width", real_lane_width_m)
+        lane_width = dataset_spec.get("map_lane_width", real_lane_width_m)
         self._scale = lane_width / real_lane_width_m
         self._flip_y = dataset_spec.get("flip_y", False)
         self._swap_xy = dataset_spec.get("swap_xy", False)
@@ -158,14 +161,13 @@ class _TrajectoryDataset:
     def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
         """Validate the form of the dataset specification."""
         errmsg = None
-        self._map_spec = dataset_spec.get("map_net") or {}
         if "input_path" not in dataset_spec:
             errmsg = "'input_path' field is required in dataset yaml."
         elif dataset_spec.get("flip_y"):
-            if not dataset_spec["source"].startswith("NGSIM"):
+            if not dataset_spec["source_type"].startswith("NGSIM"):
                 errmsg = "'flip_y' option only supported for NGSIM datasets."
-            elif not self._map_spec.get("max_y"):
-                errmsg = "'map_net:max_y' is required if 'flip_y' option used."
+            elif not dataset_spec.get("map_max_y"):
+                errmsg = "'map_max_y' is required if 'flip_y' option used."
         if errmsg:
             self._log.error(errmsg)
             raise ValueError(errmsg)
@@ -365,7 +367,7 @@ class Interaction(_TrajectoryDataset):
                 if y_margin:
                     row["position_y"] -= y_margin
                 if self._flip_y:
-                    max_y = self._map_spec["max_y"]
+                    max_y = self._dataset_spec["map_max_y"]
                     row["position_y"] = (max_y / self.scale) - row["position_y"]
 
                 yield row
@@ -477,8 +479,8 @@ class Interaction(_TrajectoryDataset):
             "vehicle_id",
         )
 
-        map_width = self._map_spec.get("width")
-        map_height = self._map_spec.get("height")
+        map_width = self._dataset_spec.get("map_width")
+        map_height = self._dataset_spec.get("map_height")
 
         # note: iterating over outer generator iterates over all nested generators too...
         # XXX: assumes all timesteps for a vehicle are grouped together in the file and are in sorted temporal order
@@ -532,7 +534,7 @@ class NGSIM(_TrajectoryDataset):
             "spacing",  # feet
             "headway",  # secs
         )
-        if self._dataset_spec.get("source") == "NGSIM2":
+        if self._dataset_spec["source_type"] == "NGSIM_city":
             extra_cols = (
                 "origin_zone",
                 "destination_zone",
@@ -692,7 +694,7 @@ class NGSIM(_TrajectoryDataset):
                 if y_margin:
                     row["position_y"] -= y_margin
                 if self._flip_y:
-                    max_y = self._map_spec["max_y"]
+                    max_y = self._dataset_spec["map_max_y"]
                     row["position_y"] = (max_y / self.scale) - row["position_y"]
 
                 yield row
@@ -725,8 +727,8 @@ class NGSIM(_TrajectoryDataset):
             headings_gen, self._cal_speed, 0, 1, "vehicle_id"
         )
 
-        map_width = self._map_spec.get("width")
-        map_height = self._map_spec.get("height")
+        map_width = self._dataset_spec.get("map_width")
+        map_height = self._dataset_spec.get("map_height")
 
         # note: iterating over outer generator iterates over all nested generators too...
         # XXX: assumes all timesteps for a vehicle are grouped together in the file and are in sorted temporal order
@@ -990,6 +992,46 @@ class Waymo(_TrajectoryDataset):
         return row[col_name]
 
 
+def import_dataset(
+    dataset_spec: types.TrafficHistoryDataset, output_path: str, overwrite: bool
+):
+    if not dataset_spec.input_path:
+        print(f"skipping placeholder dataset spec '{dataset_spec.name}'.")
+        return
+    output = os.path.join(output_path, f"{dataset_spec['name']}.shf")
+    if os.path.exists(output):
+        if not overwrite:
+            print("file already exists at {output}.  skipping...")
+            return
+        os.remove(output)
+    source = dataset_spec.source_type
+    if source.startswith("NGSIM"):
+        dataset = NGSIM(dataset_spec.__dict__, output)
+    elif source == "INTERACTION":
+        dataset = Interaction(dataset_spec.__dict__, output)
+    elif source == "Waymo":
+        dataset = Waymo(dataset_spec.__dict__, output)
+    else:
+        raise ValueError(
+            "unsupported TrafficHistoryDataset type: {dataset_spec.source_type}"
+        )
+    dataset.create_output()
+
+
+def _migrate_deprecated_dataset(dataset_spec: Dict[str, Any]):
+    def remap(old_d: Dict[str, Any], old_key: str, new_d: Dict[str, Any], new_key: str):
+        if new_key not in new_d and old_key in old_d:
+            new_d[new_key] = old_d[old_key]
+
+    remap(dataset_spec, "source", dataset_spec, "source_type")
+    if "map_net" in dataset_spec:
+        map_spec = dataset_spec["map_net"]
+        remap(map_spec, "max_y", dataset_spec, "map_max_y")
+        remap(map_spec, "width", dataset_spec, "map_width")
+        remap(map_spec, "height", dataset_spec, "map_height")
+        remap(map_spec, "lane_width", dataset_spec, "map_lane_width")
+
+
 def _check_args(args) -> bool:
     if not args.force and os.path.exists(args.output):
         print("output file already exists\n")
@@ -1032,15 +1074,16 @@ if __name__ == "__main__":
         os.remove(args.output)
 
     if args.old:
-        dataset_spec = {"source": "OldJSON", "input_path": args.dataset}
+        dataset_spec = {"source_type": "OldJSON", "input_path": args.dataset}
     else:
         with open(args.dataset, "r") as yf:
             dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
 
-    default_input_path = "<PATH TO FILE GOES HERE>"
-    if dataset_spec.get("input_path") == default_input_path:
+    if not dataset_spec.get("input_path"):
         print(f"skipping placeholder dataset spec at {args.dataset}.")
         sys.exit(0)
+
+    _migrate_deprecated_dataset(dataset_spec)
 
     if args.x_offset:
         dataset_spec["x_offset"] = args.x_offset
@@ -1048,8 +1091,8 @@ if __name__ == "__main__":
     if args.y_offset:
         dataset_spec["y_offset"] = args.y_offset
 
-    source = dataset_spec.get("source", "NGSIM")
-    if source == "NGSIM" or source == "NGSIM2":
+    source = dataset_spec.get("source_type", "NGSIM_highway")
+    if source.startswith("NGSIM"):
         dataset = NGSIM(dataset_spec, args.output)
     elif source == "Waymo":
         dataset = Waymo(dataset_spec, args.output)

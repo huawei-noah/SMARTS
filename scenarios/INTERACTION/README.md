@@ -7,7 +7,7 @@ described [here](https://interaction-dataset.com/).
 To use these scenarios, you must first download the dataset in an appropriate format.
 SMARTS assumes that the data will be in comma-separated (CSV) files.
 
-After the dataset has been downloaded, you will need to update each of the `.yml` files
+After the dataset has been downloaded, you will need to update `scenario.py`
 in the scenario folders to point the `input_path` field to its location on your filesystem.
 
 Once that is done, you should be able to build your scenarios in the normal way, for example:
@@ -15,8 +15,8 @@ Once that is done, you should be able to build your scenarios in the normal way,
 scl scenario build-all --clean scenarios/INTERACTION
 ```
 
-For each traffic history `.yml` file specified in your `scenario.py`, 
-this will creates a cooresponding `.shf` file that SMARTS will use
+For each traffic history dataset specified in your `scenario.py`, 
+this will creates a corresponding `.shf` file that SMARTS will use
 whenever this traffic will be added to a simulation.
 
 Note that the SUMO maps here were created by hand by the open-source SMARTS team.
