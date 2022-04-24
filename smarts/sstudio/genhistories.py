@@ -369,7 +369,9 @@ class Interaction(_TrajectoryDataset):
                     row["position_y"] -= y_margin
                 if self._flip_y:
                     map_bb = self._dataset_spec["map_bbox"]
-                    row["position_y"] = map_bb.max_pt.y / self.scale - row["position_y"]
+                    row["position_y"] = (
+                        map_bb.max_pt[1] / self.scale - row["position_y"]
+                    )
 
                 yield row
 
@@ -487,18 +489,18 @@ class Interaction(_TrajectoryDataset):
         for row in headings_gen:
             if map_bbox:
                 if (
-                    map_bbox.max_pt.x is not None
-                    and row["position_x"] * self.scale > map_bbox.max_pt.x
+                    map_bbox.max_pt[0] is not None
+                    and row["position_x"] * self.scale > map_bbox.max_pt[0]
                 ):
-                    self._log.warning(
+                    self._log.info(
                         f"skipping row for vehicle {row['vehicle_id']} with x-position ({row['position_x'] * self.scale}) off of map"
                     )
                     continue
                 if (
-                    map_bbox.max_pt.y is not None
-                    and row["position_y"] * self.scale > map_bbox.max_pt.y
+                    map_bbox.max_pt[1] is not None
+                    and row["position_y"] * self.scale > map_bbox.max_pt[1]
                 ):
-                    self._log.warning(
+                    self._log.info(
                         f"skipping row for vehicle {row['vehicle_id']} with y-position ({row['position_y'] * self.scale}) off of map"
                     )
                     continue
@@ -702,9 +704,9 @@ class NGSIM(_TrajectoryDataset):
                     row["position_y"] -= y_margin
                 if self._flip_y:
                     map_bb = self._dataset_spec["map_bbox"]
-                    row["position_y"] = (map_bb.max_pt.y / self.scale) - row[
-                        "position_y"
-                    ]
+                    row["position_y"] = (
+                        map_bb.max_pt[1] / self.scale - row["position_y"]
+                    )
 
                 yield row
 
@@ -743,18 +745,18 @@ class NGSIM(_TrajectoryDataset):
         for row in speeds_gen:
             if map_bbox:
                 if (
-                    map_bbox.max_pt.x is not None
-                    and row["position_x"] * self.scale > map_bbox.max_pt.x
+                    map_bbox.max_pt[0] is not None
+                    and row["position_x"] * self.scale > map_bbox.max_pt[0]
                 ):
-                    self._log.warning(
+                    self._log.info(
                         f"skipping row for vehicle {row['vehicle_id']} with x-position ({row['position_x'] * self.scale}) off of map"
                     )
                     continue
                 if (
-                    map_bbox.max_pt.y is not None
-                    and row["position_y"] * self.scale > map_bbox.max_pt.y
+                    map_bbox.max_pt[1] is not None
+                    and row["position_y"] * self.scale > map_bbox.max_pt[1]
                 ):
-                    self._log.warning(
+                    self._log.info(
                         f"skipping row for vehicle {row['vehicle_id']} with y-position ({row['position_y'] * self.scale}) off of map"
                     )
                     continue
