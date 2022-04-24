@@ -43,6 +43,7 @@ import ijson
 import numpy as np
 import yaml
 
+from smarts.core.coordinates import BoundingBox
 from smarts.core.utils.math import vec_to_radians
 
 from . import types
@@ -166,8 +167,8 @@ class _TrajectoryDataset:
         elif dataset_spec.get("flip_y"):
             if not dataset_spec["source_type"].startswith("NGSIM"):
                 errmsg = "'flip_y' option only supported for NGSIM datasets."
-            elif not dataset_spec.get("map_max_y"):
-                errmsg = "'map_max_y' is required if 'flip_y' option used."
+            elif not dataset_spec.get("map_bbox"):
+                errmsg = "'map_bbox' is required if 'flip_y' option used."
         if errmsg:
             self._log.error(errmsg)
             raise ValueError(errmsg)
@@ -367,8 +368,8 @@ class Interaction(_TrajectoryDataset):
                 if y_margin:
                     row["position_y"] -= y_margin
                 if self._flip_y:
-                    max_y = self._dataset_spec["map_max_y"]
-                    row["position_y"] = (max_y / self.scale) - row["position_y"]
+                    map_bb = self._dataset_spec["map_bbox"]
+                    row["position_y"] = map_bb.max_pt.y / self.scale - row["position_y"]
 
                 yield row
 
@@ -479,22 +480,28 @@ class Interaction(_TrajectoryDataset):
             "vehicle_id",
         )
 
-        map_width = self._dataset_spec.get("map_width")
-        map_height = self._dataset_spec.get("map_height")
+        map_bbox = self._dataset_spec.get("map_bbox")
 
         # note: iterating over outer generator iterates over all nested generators too...
         # XXX: assumes all timesteps for a vehicle are grouped together in the file and are in sorted temporal order
         for row in headings_gen:
-            if map_width and row["position_x"] * self.scale > map_width:
-                self._log.warning(
-                    f"skipping row for vehicle {row['vehicle_id']} with x-position ({row['position_x']}) off of map"
-                )
-                continue
-            if map_height and row["position_y"] * self.scale > map_height:
-                self._log.warning(
-                    f"skipping row for vehicle {row['vehicle_id']} with y-position ({row['position_y']}) off of map"
-                )
-                continue
+            if map_bbox:
+                if (
+                    map_bbox.max_pt.x is not None
+                    and row["position_x"] * self.scale > map_bbox.max_pt.x
+                ):
+                    self._log.warning(
+                        f"skipping row for vehicle {row['vehicle_id']} with x-position ({row['position_x'] * self.scale}) off of map"
+                    )
+                    continue
+                if (
+                    map_bbox.max_pt.y is not None
+                    and row["position_y"] * self.scale > map_bbox.max_pt.y
+                ):
+                    self._log.warning(
+                        f"skipping row for vehicle {row['vehicle_id']} with y-position ({row['position_y'] * self.scale}) off of map"
+                    )
+                    continue
             yield row
 
     def column_val_in_row(self, row, col_name: str) -> Any:
@@ -694,8 +701,10 @@ class NGSIM(_TrajectoryDataset):
                 if y_margin:
                     row["position_y"] -= y_margin
                 if self._flip_y:
-                    max_y = self._dataset_spec["map_max_y"]
-                    row["position_y"] = (max_y / self.scale) - row["position_y"]
+                    map_bb = self._dataset_spec["map_bbox"]
+                    row["position_y"] = (map_bb.max_pt.y / self.scale) - row[
+                        "position_y"
+                    ]
 
                 yield row
 
@@ -727,22 +736,28 @@ class NGSIM(_TrajectoryDataset):
             headings_gen, self._cal_speed, 0, 1, "vehicle_id"
         )
 
-        map_width = self._dataset_spec.get("map_width")
-        map_height = self._dataset_spec.get("map_height")
+        map_bbox = self._dataset_spec.get("map_bbox")
 
         # note: iterating over outer generator iterates over all nested generators too...
         # XXX: assumes all timesteps for a vehicle are grouped together in the file and are in sorted temporal order
         for row in speeds_gen:
-            if map_width and row["position_x"] * self.scale > map_width:
-                self._log.info(
-                    f"skipping row for vehicle {row['vehicle_id']} with x-position ({row['position_x']}) off of map"
-                )
-                continue
-            if map_height and row["position_y"] * self.scale > map_height:
-                self._log.info(
-                    f"skipping row for vehicle {row['vehicle_id']} with y-position ({row['position_y']}) off of map"
-                )
-                continue
+            if map_bbox:
+                if (
+                    map_bbox.max_pt.x is not None
+                    and row["position_x"] * self.scale > map_bbox.max_pt.x
+                ):
+                    self._log.warning(
+                        f"skipping row for vehicle {row['vehicle_id']} with x-position ({row['position_x'] * self.scale}) off of map"
+                    )
+                    continue
+                if (
+                    map_bbox.max_pt.y is not None
+                    and row["position_y"] * self.scale > map_bbox.max_pt.y
+                ):
+                    self._log.warning(
+                        f"skipping row for vehicle {row['vehicle_id']} with y-position ({row['position_y'] * self.scale}) off of map"
+                    )
+                    continue
             yield row
 
     def column_val_in_row(self, row, col_name: str) -> Any:
@@ -1026,10 +1041,11 @@ def _migrate_deprecated_dataset(dataset_spec: Dict[str, Any]):
     remap(dataset_spec, "source", dataset_spec, "source_type")
     if "map_net" in dataset_spec:
         map_spec = dataset_spec["map_net"]
-        remap(map_spec, "max_y", dataset_spec, "map_max_y")
-        remap(map_spec, "width", dataset_spec, "map_width")
-        remap(map_spec, "height", dataset_spec, "map_height")
         remap(map_spec, "lane_width", dataset_spec, "map_lane_width")
+        if "max_y" in map_spec or "width" in map_spec or "height" in map_spec:
+            max_x = map_spec.get("width")
+            max_y = map_spec.get("max_y", map_spec.get("height"))
+            dataset_spec["map_bbox"] = BoundingBox((0, 0), (max_x, max_y))
 
 
 def _check_args(args) -> bool:

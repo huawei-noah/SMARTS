@@ -1,6 +1,7 @@
 import math
 from pathlib import Path
 
+from smarts.core.coordinates import BoundingBox
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 
@@ -12,8 +13,7 @@ traffic_histories = [
         x_margin_px=60.0,
         swap_xy=True,
         flip_y=True,
-        map_max_y=25.02,
-        map_width=425.00,
+        map_bbox=BoundingBox((0.0, -3.0), (425.00, 25.02)),
         speed_limit_mps=28,
         heading_inference_window=5,
         max_angular_velocity=4,
