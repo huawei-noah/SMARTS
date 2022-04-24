@@ -46,7 +46,7 @@ import yaml
 from smarts.core.coordinates import BoundingBox
 from smarts.core.utils.math import vec_to_radians
 
-from . import types
+from smarts.sstudio import types
 
 
 try:
