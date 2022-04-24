@@ -1012,6 +1012,7 @@ class Waymo(_TrajectoryDataset):
 def import_dataset(
     dataset_spec: types.TrafficHistoryDataset, output_path: str, overwrite: bool
 ):
+    """called to pre-process (import) a TrafficHistoryDataset for use by SMARTS"""
     if not dataset_spec.input_path:
         print(f"skipping placeholder dataset spec '{dataset_spec.name}'.")
         return
