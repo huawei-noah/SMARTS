@@ -814,9 +814,9 @@ class TrafficHistoryDataset:
     input_path: Optional[str] = None
     """a relative or absolute path to the dataset; if omitted, dataset will not be imported"""
 
-    x_margin_px: int = 0
+    x_margin_px: float = 0.0
     """x offset of the map from the data (in pixels)"""
-    y_margin_px: int = 0
+    y_margin_px: float = 0.0
     """y offset of the map from the data (in pixels)"""
     swap_xy: bool = False
     """if True, the x and y axes the dataset coordinate system will be swapped"""

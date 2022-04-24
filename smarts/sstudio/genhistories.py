@@ -468,7 +468,7 @@ class Interaction(_TrajectoryDataset):
         )
 
         # now infer heading with rolling window...
-        heading_window = dataset_spec.get("heading_inference_window", 2)
+        heading_window = self._dataset_spec.get("heading_inference_window", 2)
         heading_before_win = int((heading_window / 2) + (heading_window % 2) - 1)
         heading_after_win = int(heading_window / 2)
         headings_gen = _TrajectoryDataset._WindowedReader(
@@ -487,12 +487,12 @@ class Interaction(_TrajectoryDataset):
         for row in headings_gen:
             if map_width and row["position_x"] * self.scale > map_width:
                 self._log.warning(
-                    f"skipping row for vehicle {row['vehicle_id']} with x-position(s) off of map"
+                    f"skipping row for vehicle {row['vehicle_id']} with x-position ({row['position_x']}) off of map"
                 )
                 continue
             if map_height and row["position_y"] * self.scale > map_height:
                 self._log.warning(
-                    f"skipping row for vehicle {row['vehicle_id']} with y-position(s) off of map"
+                    f"skipping row for vehicle {row['vehicle_id']} with y-position ({row['position_y']}) off of map"
                 )
                 continue
             yield row
@@ -709,7 +709,7 @@ class NGSIM(_TrajectoryDataset):
         )
 
         # infer heading with rolling window on previously-smoothed positions...
-        heading_window = dataset_spec.get("heading_inference_window", 2)
+        heading_window = self._dataset_spec.get("heading_inference_window", 2)
         heading_before_win = int((heading_window / 2) + (heading_window % 2) - 1)
         heading_after_win = int(heading_window / 2)
         headings_gen = _TrajectoryDataset._WindowedReader(
@@ -734,13 +734,13 @@ class NGSIM(_TrajectoryDataset):
         # XXX: assumes all timesteps for a vehicle are grouped together in the file and are in sorted temporal order
         for row in speeds_gen:
             if map_width and row["position_x"] * self.scale > map_width:
-                self._log.warning(
-                    f"skipping row for vehicle {row['vehicle_id']} with x-position(s) off of map"
+                self._log.info(
+                    f"skipping row for vehicle {row['vehicle_id']} with x-position ({row['position_x']}) off of map"
                 )
                 continue
             if map_height and row["position_y"] * self.scale > map_height:
-                self._log.warning(
-                    f"skipping row for vehicle {row['vehicle_id']} with y-position(s) off of map"
+                self._log.info(
+                    f"skipping row for vehicle {row['vehicle_id']} with y-position ({row['position_y']}) off of map"
                 )
                 continue
             yield row
@@ -998,7 +998,7 @@ def import_dataset(
     if not dataset_spec.input_path:
         print(f"skipping placeholder dataset spec '{dataset_spec.name}'.")
         return
-    output = os.path.join(output_path, f"{dataset_spec['name']}.shf")
+    output = os.path.join(output_path, f"{dataset_spec.name}.shf")
     if os.path.exists(output):
         if not overwrite:
             print("file already exists at {output}.  skipping...")
