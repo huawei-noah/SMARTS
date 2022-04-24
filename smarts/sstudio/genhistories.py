@@ -466,7 +466,7 @@ class Interaction(_TrajectoryDataset):
         )
 
         # now infer heading with rolling window...
-        heading_window = dataset_spec.get("heading_inference_window", 2)
+        heading_window = self._dataset_spec.get("heading_inference_window", 2)
         heading_before_win = int((heading_window / 2) + (heading_window % 2) - 1)
         heading_after_win = int(heading_window / 2)
         headings_gen = _TrajectoryDataset._WindowedReader(
@@ -707,7 +707,7 @@ class NGSIM(_TrajectoryDataset):
         )
 
         # infer heading with rolling window on previously-smoothed positions...
-        heading_window = dataset_spec.get("heading_inference_window", 2)
+        heading_window = self._dataset_spec.get("heading_inference_window", 2)
         heading_before_win = int((heading_window / 2) + (heading_window % 2) - 1)
         heading_after_win = int(heading_window / 2)
         headings_gen = _TrajectoryDataset._WindowedReader(
