@@ -22,7 +22,9 @@ from dataclasses import replace
 from typing import Any, Dict, List, Optional, Tuple
 
 import gym
+import gym.spaces as spaces
 import numpy as np
+
 
 from smarts.core import seed as smarts_seed
 from smarts.core.coordinates import Dimensions, Heading
@@ -50,6 +52,27 @@ class CompetitionEnv(gym.Env):
 
     metadata = {"render.modes": ["human"]}
     """Metadata for gym's use"""
+    action_space = spaces.Box(low=-20.0, high=20.0, shape=(2,), dtype=np.float)
+    observation_space = spaces.Dict(
+        dict(
+            dt=spaces.Discrete(1),
+            step_count=spaces.Box(low=0, high=1e100, dtype=np.int),
+            elapsed_sim_time=spaces.Box(low=0, high=1e10, dtype=np.float),
+            events=spaces.Dict(
+                dict(
+                    collision=spaces.Discrete(2),
+                    off_road=spaces.Discrete(2),
+                    off_route=spaces.Discrete(2),
+                    on_shoulder=spaces.Discrete(2),
+                    wrong_way=spaces.Discrete(2),
+                    not_moving=spaces.Discrete(2),
+                    reached_goal=spaces.Discrete(2),
+                    reached_max_episode_steps=spaces.Discrete(2),
+                    agents_alive_done=spaces.Discrete(2),
+                )
+            ),
+        )
+    )  # TODO: Fill out
 
     def __init__(
         self,
