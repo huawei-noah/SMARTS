@@ -458,7 +458,7 @@ def gen_traffic_histories(
             genhistories.import_dataset(hdsr, scenario, overwrite)
             continue
 
-        assert instance(hdsr, str)
+        assert isinstance(hdsr, str)
         logger.warn(
             f"use of yaml-file dataset specs (like {hdsr}) is deprecated; update to use types.TrafficHistoryDataset in your scenario.py. "
         )
