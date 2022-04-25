@@ -20,7 +20,7 @@
 import math
 from dataclasses import dataclass
 from math import factorial
-from typing import Callable, List, Optional, Tuple, TypeVar, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 
 @dataclass(frozen=True)
