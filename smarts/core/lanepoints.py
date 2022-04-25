@@ -162,7 +162,6 @@ class LanePoints:
                 shape_lanepoints.append(first_lanepoint)
                 curr_lanepoint = first_lanepoint
 
-                lane_width, _ = road_map.lane_by_id(lane.getID()).width_at_offset(0)
                 for p1, p2 in zip(lane_shape[1:], lane_shape[2:]):
                     heading_ = vec_to_radians(p2 - p1)
                     heading_ = Heading(heading_)

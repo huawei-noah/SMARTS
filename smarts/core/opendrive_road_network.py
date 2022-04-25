@@ -63,6 +63,7 @@ except ImportError:
         "You may not have installed the [opendrive] dependencies required for using the OpenDRIVE maps with SMARTS. Install it first using the command `pip install -e .[opendrive]` at the source directory."
         ""
     )
+# pytype: enable=import-error
 
 from shapely.geometry import Polygon
 from trimesh.exchange import gltf
@@ -91,8 +92,6 @@ from .coordinates import (
     position_at_shape_offset,
 )
 from .lanepoints import LanePoints, LinkedLanePoint
-
-# pytype: enable=import-error
 
 
 def _convert_camera(camera):
@@ -662,7 +661,7 @@ class OpenDriveRoadNetwork(RoadMap):
         return self._surfaces.get(surface_id)
 
     @cached_property
-    def bounding_box(self):
+    def bounding_box(self) -> BoundingBox:
         """Return a bounding box that encapsulates the map."""
         x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
         for road_id in self._roads:

@@ -164,7 +164,7 @@ class RoadMap:
 
         @property
         def is_drivable(self) -> bool:
-            """Returns true iff this surface is legally and physically drivable."""
+            """Returns true if this surface is legally and physically drivable."""
             raise NotImplementedError()
 
         @property
@@ -196,7 +196,7 @@ class RoadMap:
             raise NotImplementedError()
 
         def contains_point(self, point: Point) -> bool:
-            """Returns True iff this point is fully contained by this surface.
+            """Returns True if this point is fully contained by this surface.
             For some regions of some maps, it may not be possible to determine this.
             In such indeterminate cases, it is recommended to return True."""
             raise NotImplementedError()
@@ -290,7 +290,7 @@ class RoadMap:
 
         @property
         def foes(self) -> List[RoadMap.Lane]:
-            """All lanes that in some way intersect with (cross) this one,
+            """All lanes that in some ways intersect with (cross) this one,
             including those that have the same outgoing lane as this one,
             and so might require right-of-way rules.  This should only
             ever happen in junctions."""
@@ -353,6 +353,8 @@ class RoadMap:
         ## The next 5 methods are "reference" implementations for convenience.
         ## Derived classes may want to extend as well as add a cache.
 
+        ## ======== Reference Methods =========
+
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
             """Convert from the given world coordinate to a lane coordinate point."""
             s = self.offset_along_lane(world_point)
@@ -410,6 +412,8 @@ class RoadMap:
                     )
                 prev_heading_rad = heading_rad
             return lookahead / heading_deltas if heading_deltas else math.inf
+
+        ## ======== \Reference Methods =========
 
     class Road(Surface):
         """This is akin to a 'road segment' in real life.
