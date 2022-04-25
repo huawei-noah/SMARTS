@@ -1118,7 +1118,7 @@ if __name__ == "__main__":
     if args.y_offset:
         dataset_spec["y_offset"] = args.y_offset
 
-    source = dataset_spec.get("source_type", "NGSIM_highway")
+    source = dataset_spec.get("source_type", "NGSIM")
     if source.startswith("NGSIM"):
         dataset = NGSIM(dataset_spec, args.output)
     elif source == "Waymo":
