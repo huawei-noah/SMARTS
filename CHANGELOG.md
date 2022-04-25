@@ -10,6 +10,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 # [Unreleased]
 
+### Changed
+- Updated license to 2022 version.
+
 ### [0.6.1rc1] 15-04-18
 ### Fixed
 - Gracefully handle `EndlessGoal` missions in the MaRL benchmark. Relative goal distance with `EndlessGoal` will be now always be 0.
