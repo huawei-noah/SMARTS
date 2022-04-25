@@ -69,7 +69,7 @@ Jinja2==3.1.1
 jsonpatch==1.32
 jsonpointer==2.3
 jsonschema==4.4.0
-jupyter-client==7.2.2
+jupyter-client==7.3.0
 jupyter-core==4.10.0
 jupyter-server==1.16.0
 jupyter-server-mathjax==0.2.5
