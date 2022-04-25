@@ -7,12 +7,12 @@ from smarts.sstudio import gen_scenario
 traffic_histories = [
     t.TrafficHistoryDataset(
         name=f"peach_{hd}",
-        source_type="NGSIM_city",
-        input_path=None,  # for example: f"./trajectories-{hd}pm.txt"
+        source_type="NGSIM",
+        input_path=None,  # for example: f"./trajectories-{hd}.txt"
         speed_limit_mps=28,
         default_heading=0,
     )
-    for hd in ["0400-0415", "1245-0100"]
+    for hd in ["0400pm-0415pm", "1245pm-0100pm"]
 ]
 
 gen_scenario(

@@ -521,6 +521,16 @@ class NGSIM(_TrajectoryDataset):
         self._max_angular_velocity = dataset_spec.get("max_angular_velocity", None)
         # 2.2 corresponds to roughly 5mph.
         self._heading_min_speed = dataset_spec.get("heading_inference_min_speed", 2.2)
+        self._determine_columns()
+
+    def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
+        super().check_dataset_spec(dataset_spec)
+        hiw = dataset_spec.get("heading_inference_window", 2)
+        # 11 is a semi-arbitrary max just to keep things "sane".
+        if not 2 <= hiw <= 11:
+            raise ValueError("heading_inference_window must be between 2 and 11")
+
+    def _determine_columns(self):
         self._columns = (
             "vehicle_id",
             "frame_id",  # 1 frame per .1s
@@ -543,7 +553,9 @@ class NGSIM(_TrajectoryDataset):
             "spacing",  # feet
             "headway",  # secs
         )
-        if self._dataset_spec["source_type"] == "NGSIM_city":
+        with open(self._path, newline="") as infile:
+            num_cols = len(infile.readline().strip().split())
+        if num_cols > len(self._columns):
             extra_cols = (
                 "origin_zone",
                 "destination_zone",
@@ -553,13 +565,9 @@ class NGSIM(_TrajectoryDataset):
                 "movement",
             )
             self._columns = self._columns[:16] + extra_cols + self._columns[16:]
-
-    def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
-        super().check_dataset_spec(dataset_spec)
-        hiw = dataset_spec.get("heading_inference_window", 2)
-        # 11 is a semi-arbitrary max just to keep things "sane".
-        if not 2 <= hiw <= 11:
-            raise ValueError("heading_inference_window must be between 2 and 11")
+        assert num_cols == len(
+            self._columns
+        ), f"unexpected number of columns/fields ({num_cols}) in {self._path}"
 
     def _smooth_positions(
         self,
@@ -1023,7 +1031,7 @@ def import_dataset(
             return
         os.remove(output)
     source = dataset_spec.source_type
-    if source.startswith("NGSIM"):
+    if source == "NGSIM":
         dataset = NGSIM(dataset_spec.__dict__, output)
     elif source == "INTERACTION":
         dataset = Interaction(dataset_spec.__dict__, output)

@@ -810,7 +810,7 @@ class TrafficHistoryDataset:
     name: str
     """a unique name for the dataset"""
     source_type: str
-    """the type of the dataset; supported values include: NGSIM_highway, NGSIM_city, INTERACTION, Waymo"""
+    """the type of the dataset; supported values include: NGSIM, INTERACTION, Waymo"""
     input_path: Optional[str] = None
     """a relative or absolute path to the dataset; if omitted, dataset will not be imported"""
 

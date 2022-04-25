@@ -8,7 +8,7 @@ from smarts.sstudio import types as t
 traffic_histories = [
     t.TrafficHistoryDataset(
         name=f"i80_{hd}",
-        source_type="NGSIM_highway",
+        source_type="NGSIM",
         input_path=None,  # for example: f"./trajectories-{hd}.txt"
         x_margin_px=60.0,
         swap_xy=True,

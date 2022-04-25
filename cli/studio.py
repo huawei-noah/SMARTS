@@ -66,7 +66,7 @@ def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
     scenario_py = scenario_root / "scenario.py"
     if scenario_py.exists():
         _install_requirements(scenario_root)
-        subprocess.check_call([sys.executable, scenario_py])
+        subprocess.check_call([sys.executable, "scenario.py"], cwd=scenario_root)
 
     from smarts.core.scenario import Scenario
 
