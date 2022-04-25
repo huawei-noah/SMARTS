@@ -71,8 +71,9 @@ class CompetitionEnv(gym.Env):
                     agents_alive_done=spaces.Discrete(2),
                 )
             ),
+            # TODO: Fill out
         )
-    )  # TODO: Fill out
+    )
 
     def __init__(
         self,
