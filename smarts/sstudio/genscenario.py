@@ -453,7 +453,7 @@ def gen_traffic_histories(
     """
     for hdsr in histories_datasets:
         if isinstance(hdsr, types.TrafficHistoryDataset):
-            from . import genhistories
+            from smarts.sstudio import genhistories
 
             genhistories.import_dataset(hdsr, scenario, overwrite)
             continue
