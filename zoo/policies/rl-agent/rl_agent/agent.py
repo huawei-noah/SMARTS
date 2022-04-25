@@ -5,7 +5,9 @@ import pickle
 from pathlib import Path
 
 import gym
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+
+tf.disable_v2_behavior()
 from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy as LoadPolicy
 from ray.rllib.models import ModelCatalog
 
@@ -31,13 +33,18 @@ class RLAgent(Agent):
             return
 
         self._prep = ModelCatalog.get_preprocessor_for_space(self._observation_space)
-        self._sess = tf.compat.v1.Session(graph=tf.Graph())
+        self._sess = tf.Session(graph=tf.Graph())
         self._sess.__enter__()
 
         with tf.name_scope(self._policy_name):
             # obs_space need to be flattened before passed to PPOTFPolicy
             flat_obs_space = self._prep.observation_space
-            self.policy = LoadPolicy(flat_obs_space, self._action_space, {})
+
+            self.policy = LoadPolicy(
+                flat_obs_space,
+                self._action_space,
+                {},
+            )
             objs = pickle.load(open(self._checkpoint_path, "rb"))
             objs = pickle.loads(objs["worker"])
             state = objs["state"]

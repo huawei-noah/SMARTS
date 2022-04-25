@@ -24,7 +24,7 @@ Then in the scenario.py file:
 
     t.SocialAgentActor(
         name="my-rl-agent",
-        agent_locator="rl_agent:rl_agent-v0"
+        agent_locator="rl_agent:rl_agent-v1"
     )
 
 
