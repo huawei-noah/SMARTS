@@ -1047,9 +1047,9 @@ class OpenDriveRoadNetwork(RoadMap):
         @lru_cache(maxsize=8)
         def contains_point(self, point: Point) -> bool:
             if (
-                self._bounding_box.min_pt.x <= point[0] <= self._bounding_box.max_pt.x
+                self._bounding_box.min_pt.x <= point.x <= self._bounding_box.max_pt.x
                 and self._bounding_box.min_pt.y
-                <= point[1]
+                <= point.y
                 <= self._bounding_box.max_pt.y
             ):
                 lane_point = self.to_lane_coord(point)
