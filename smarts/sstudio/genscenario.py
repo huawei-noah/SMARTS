@@ -452,12 +452,13 @@ def gen_traffic_histories(
             If to forcefully write over the previous existing output file
     """
     for hdsr in histories_datasets:
-        if not isinstance(hdsr, str):
+        if isinstance(hdsr, types.TrafficHistoryDataset):
             from . import genhistories
 
             genhistories.import_dataset(hdsr, scenario, overwrite)
             continue
 
+        assert instance(hdsr, str)
         logger.warn(
             f"use of yaml-file dataset specs (like {hdsr}) is deprecated; update to use types.TrafficHistoryDataset in your scenario.py. "
         )
