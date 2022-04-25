@@ -1347,7 +1347,7 @@ class WaymoMap(RoadMap):
             return []
 
         @property
-        def lanes(self) -> List[RoadMap.Lane]:
+        def lanes(self) -> Sequence[RoadMap.Lane]:
             return self._lanes
 
         def lane_at_index(self, index: int) -> RoadMap.Lane:
