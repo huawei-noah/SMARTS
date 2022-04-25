@@ -803,7 +803,7 @@ class TrafficHistoryDataset:
     from real-world observations, hence the name 'history'.  When used
     with a SMARTS scenario, traffic vehicles will move on the map according
     to their trajectories as specified in the dataset.  These can be mixed
-    with other types of traffic (such as would be sepcified by an object of
+    with other types of traffic (such as would be specified by an object of
     the Traffic type in this DSL).  In order to use this efficiently, SMARTS
     will pre-process ('import') the dataset when the scenario is built."""
 
@@ -823,14 +823,14 @@ class TrafficHistoryDataset:
     flip_y: bool = False
     """if True, the dataset will be mirrored around the x-axis; need to specify map_bbox to use"""
     map_bbox: Optional[BoundingBox] = None
-    """the bounding box of the map, used to filter x- and y-coordinsates to ensure they're in range"""
+    """the bounding box of the map, used to filter x- and y-coordinates to ensure they're in range"""
 
     map_lane_width: float = 3.7
     """This is used to figure out the map scale, which is map_lane_width / real_lane_width_m.  (So use `real_lane_width_m` here for 1:1 scale - the default.)  It's also used in SMARTS for detecting off-road, etc."""
     real_lane_width_m: float = 3.7
-    """Averge width in meters of the dataset's lanes in the real world.  US highway lanes are about 12 feet (or ~3.7m, the default) wide."""
+    """Average width in meters of the dataset's lanes in the real world.  US highway lanes are about 12 feet (or ~3.7m, the default) wide."""
     speed_limit_mps: Optional[float] = None
-    """used by SMARTS or the initial speed of new agents being added to the scenario"""
+    """used by SMARTS for the initial speed of new agents being added to the scenario"""
 
     heading_inference_window: int = 2
     """When inferring headings from positions, a sliding window (moving average) of this size will be used to smooth inferred headings and reduce their dependency on any individual position changes.  Defaults to 2 if not specified."""
