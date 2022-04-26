@@ -13,6 +13,9 @@ from sb3.env.make_env import make_env
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 
+from d3rlpy.wrappers.sb3 import to_mdp_dataset
+from d3rlpy.algos import CQL
+
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=ImportWarning)
 warnings.simplefilter("ignore", category=ResourceWarning)
@@ -81,6 +84,7 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
             verbose=1,
             tensorboard_log=logdir / "tensorboard",
             use_sde=True,
+            device='cpu',
         )
         model.learn(total_timesteps=config["train_steps"])
 
@@ -91,6 +95,10 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
 
     if config["mode"] == "train":
         model.save(logdir / "model")
+
+    dataset = to_mdp_dataset(model.replay_buffer)
+    offline_model = CQL()
+    offline_model.fit(dataset.episodes, n_epochs=1)
 
     env.close()
 

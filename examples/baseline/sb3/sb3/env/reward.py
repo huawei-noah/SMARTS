@@ -1,5 +1,6 @@
 import gym
 import numpy as np
+from smarts.core.plan import PositionalGoal
 
 from smarts.core.sensors import Observation
 
@@ -15,7 +16,7 @@ class Reward(gym.Wrapper):
         obs, env_reward, done, info = self.env.step(action)
 
         wrapped_reward = {
-            agent_id: self._reward_with_goal(obs[agent_id], agent_reward, self._smarts)
+            agent_id: self._reward_with_goal(obs[agent_id], agent_reward)
             for agent_id, agent_reward in env_reward.items()
         }
 
@@ -59,14 +60,15 @@ class Reward(gym.Wrapper):
         # Reward for distance travelled
         reward += env_reward
 
-        goal_position = obs.ego_vehicle_state.mission.goal.position
-        vehicle_position = obs.ego_vehicle_state.position
+        if isinstance(obs.ego_vehicle_state.mission.goal, PositionalGoal): 
+            goal_position = obs.ego_vehicle_state.mission.goal.position
+            vehicle_position = obs.ego_vehicle_state.position
 
-        goal_road = self._smarts._scenario.road_map.nearest_lane(goal_position).road
-        vehicle_road = self._smarts._scenario.road_map.nearest_lane(vehicle_position).road
+            goal_road = self._smarts._scenario.road_map.nearest_lane(goal_position).road
+            vehicle_road = self._smarts._scenario.road_map.nearest_lane(vehicle_position).road
 
-        route_length = self._smarts._scenario.road_map.generate_routes(start_road=vehicle_road, end_road=goal_road).distance_between(vehicle_position, goal_position)
+            route_length = self._smarts._scenario.road_map.generate_routes(start_road=vehicle_road, end_road=goal_road).distance_between(vehicle_position, goal_position)
 
-        reward -= route_length
+            reward -= route_length
 
         return float(reward)
