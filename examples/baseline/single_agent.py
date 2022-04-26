@@ -25,10 +25,10 @@ class ChaseViaPointsAgent(Agent):
         
         return (1.1, 0, 0)
 
-def main(scenarios, headless, num_episodes, max_episode_steps=None):
+def main(scenarios, headless, num_episodes, max_episode_steps=300):
     agent_spec = AgentSpec(
         interface=AgentInterface(
-            max_episode_steps=300,
+            max_episode_steps=max_episode_steps,
             rgb=RGB(),
             action=getattr(ActionSpaceType, "Continuous")
         ),
@@ -59,7 +59,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     timeouts = []
     infos = []
 
-    for episode in episodes(n=2):
+    for episode in episodes(n=num_episodes):
         agent = agent_spec.build_agent()
         observation = env.reset()
         episode.record_scenario(env.scenario_log)
