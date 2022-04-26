@@ -799,9 +799,8 @@ class WaymoMap(RoadMap):
         }
 
         # lane markings information
-        lane_dividers, road_dividers = self._compute_traffic_dividers()
+        lane_dividers = self._compute_traffic_dividers()
         metadata["lane_dividers"] = lane_dividers
-        metadata["edge_dividers"] = road_dividers
 
         mesh.visual = trimesh.visual.TextureVisuals(
             material=trimesh.visual.material.PBRMaterial()
@@ -812,46 +811,24 @@ class WaymoMap(RoadMap):
 
     def _compute_traffic_dividers(self):
         lane_dividers = []  # divider between lanes with same traffic direction
-        road_dividers = []  # divider between roads with opposite traffic direction
-        road_borders = []
         for road_id in self._roads:
             road = self._roads[road_id]
             if not road.is_junction:
-                leftmost_edge_shape, rightmost_edge_shape = road._edge_shape()
-                road_borders.extend([leftmost_edge_shape, rightmost_edge_shape])
                 for lane in road.lanes:
                     left_border_vertices_len = int((len(lane._lane_polygon) - 1) / 2)
                     left_side = lane._lane_polygon[:left_border_vertices_len]
-                    lane_to_left, same_dir = lane.lane_to_left
+                    lane_to_left, _ = lane.lane_to_left
                     if lane.index != len(road.lanes) - 1:
                         assert lane_to_left
                         if lane.is_drivable and lane_to_left.is_drivable:
                             lane_dividers.append(left_side)
-                        else:
-                            road_dividers.append(left_side)
-                    else:
-                        if lane_to_left and not same_dir:
-                            road_dividers.append(left_side)
 
-        for i in range(len(road_borders) - 1):
-            for j in range(i + 1, len(road_borders)):
-                edge_border_i = np.array(
-                    [road_borders[i][0], road_borders[i][-1]]
-                )  # start and end position
-                edge_border_j = np.array(
-                    [road_borders[j][-1], road_borders[j][0]]
-                )  # start and end position with reverse traffic direction
-
-                # The edge borders of two lanes do not always overlap perfectly, thus relax the tolerance threshold to 1
-                if np.linalg.norm(edge_border_i - edge_border_j) < 1:
-                    road_dividers.append(road_borders[i])
-
-        return lane_dividers, road_dividers
+        return lane_dividers
 
     class Surface(RoadMap.Surface):
         """Surface representation for Waymo maps"""
 
-        def __init__(self, surface_id: str, road_map):
+        def __init__(self, surface_id: str, road_map: RoadMap):
             self._surface_id = surface_id
             self._map = road_map
 
@@ -870,7 +847,7 @@ class WaymoMap(RoadMap):
     class Lane(RoadMap.Lane, Surface):
         """Lane representation for Waymo maps"""
 
-        def __init__(self, road_map, lane_id: str, lane_dict: Dict[str, Any]):
+        def __init__(self, road_map: RoadMap, lane_id: str, lane_dict: Dict[str, Any]):
             super().__init__(lane_id, road_map)
             self._map = road_map
             self._lane_id = lane_id
@@ -1016,7 +993,7 @@ class WaymoMap(RoadMap):
             if not lli:
                 return None, True
             if isinstance(lli, str):
-                return self._map.lane_id(lli), True
+                return self._map.lane_by_id(lli), True
             lli = self._adj_lane_info(lli)
             same_dir = self._check_boundaries(lli, "right")
             left_lane_id = WaymoMap._lane_id(lli.feat_id, lli.index)
@@ -1028,7 +1005,7 @@ class WaymoMap(RoadMap):
             if not lri:
                 return None, True
             if isinstance(lri, str):
-                return self._map.lane_id(lri), True
+                return self._map.lane_by_id(lri), True
             lri = self._adj_lane_info(lri)
             same_dir = self._check_boundaries(lri, "left")
             right_lane_id = WaymoMap._lane_id(lri.feat_id, lri.index)
@@ -1171,7 +1148,10 @@ class WaymoMap(RoadMap):
         Many of these might correspond to a single named road in reality."""
 
         def __init__(
-            self, road_map, road_lanes: Sequence[RoadMap.Lane], is_junction: bool
+            self,
+            road_map: RoadMap,
+            road_lanes: Sequence[RoadMap.Lane],
+            is_junction: bool,
         ):
             self._composite = None
             self._is_composite = False
@@ -1430,7 +1410,7 @@ class WaymoMap(RoadMap):
     class Route(RoadMap.Route):
         """Describes a route between roads."""
 
-        def __init__(self, road_map):
+        def __init__(self, road_map: RoadMap):
             self._roads = []
             self._length = 0
             self._map = road_map
