@@ -7,8 +7,8 @@ with open(path.join(this_dir, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
-    name="sb3",
-    description="Intersection navigation with SB3",
+    name="OfflineRL",
+    description="Offline RL with d3rlpy",
     long_description=long_description,
     long_description_content_type="text/markdown",
     version="0.1.0",
@@ -20,9 +20,9 @@ setup(
         "setuptools>=41.0.0,!=50.0",
         "ruamel.yaml==0.17.17",
         "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@sb3-1",
-        "stable-baselines3[extra]==1.4.0",
         "tensorflow==2.4.0",
         "torchinfo==1.6.4",
         "torchvision==0.12.0",
+        "d3rlpy>=1.0.0",
     ],
 )
