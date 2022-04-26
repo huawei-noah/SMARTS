@@ -52,12 +52,19 @@ MAX_MPS = 100
 
 
 def _filter(obs: Observation, target_position, env):
+    def _clip(formatted_obs, observation_space):
+        return {
+            k: np.clip(v, observation_space[k].low, observation_space[k].high)
+            for k, v in formatted_obs.items()
+        }
+
     obs = {
         "position": obs.ego_vehicle_state.position,
         "linear_velocity": obs.ego_vehicle_state.linear_velocity,
         "target_position": target_position,
         "rgb": obs.top_down_rgb.data.astype(np.uint8),
     }
+    obs = _clip(obs, env.observation_space)
     assert env.observation_space.contains(obs), "Observation mismatch."
     return obs
 
