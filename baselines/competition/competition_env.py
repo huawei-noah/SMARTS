@@ -65,7 +65,9 @@ def _filter(obs: Observation, target_position, env):
         "rgb": obs.top_down_rgb.data.astype(np.uint8),
     }
     obs = _clip(obs, env.observation_space)
-    assert env.observation_space.contains(obs), "Observation mismatch."
+    assert env.observation_space.contains(
+        obs
+    ), "Observation mismatch with observation space. Less keys in observation space dictionary."
     return obs
 
 
