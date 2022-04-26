@@ -44,7 +44,11 @@ import numpy as np
 import yaml
 
 from smarts.core.coordinates import BoundingBox
-from smarts.core.utils.math import vec_to_radians
+from smarts.core.utils.math import (
+    circular_mean,
+    min_angles_difference_signed,
+    vec_to_radians,
+)
 
 from smarts.sstudio import types
 
@@ -404,59 +408,58 @@ class Interaction(_TrajectoryDataset):
             + [row["speed"]]
             + [r["speed"] for r in after_win]
         )
-        new_heading = 0
-        inst_heading = None
-        prev_heading = None
-        den = 0
+        vecs = []
+        prev_vhat = None
+        prev_inst_heading = None
         for w in range(len(window) - 1):
             c = window[w]
             n = window[w + 1]
             if any(np.isnan(c)) or any(np.isnan(n)):
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
+                if prev_vhat is not None:
+                    vecs.append(prev_vhat)
                 continue
             s = np.linalg.norm(n - c)
-            if s == 0.0:
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
+            if s == 0.0 or (
+                self._heading_min_speed is not None
+                and (
+                    (s / self._dt_sec) < self._heading_min_speed
+                    or speeds[w] < self._heading_min_speed
+                )
+            ):
+                if prev_vhat is not None:
+                    vecs.append(prev_vhat)
                 continue
-            ispeed = speeds[w]
             vhat = (n - c) / s
             inst_heading = vec_to_radians(vhat)
-            if self._heading_min_speed is not None and (
-                (s / self._dt_sec) < self._heading_min_speed
-                or ispeed < self._heading_min_speed
-            ):
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
-                continue
-            if prev_heading is not None:
-                if inst_heading == 0 and prev_heading > math.pi:
-                    inst_heading = 2 * math.pi
+            if prev_inst_heading is not None:
                 if self._max_angular_velocity:
                     # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
-                    angular_velocity = (inst_heading - prev_heading) / self._dt_sec
+                    angular_velocity = (
+                        min_angles_difference_signed(inst_heading, prev_inst_heading)
+                        / self._dt_sec
+                    )
                     if abs(angular_velocity) > self._max_angular_velocity:
                         inst_heading = (
-                            prev_heading
+                            prev_inst_heading
                             + np.sign(angular_velocity)
                             * self._max_angular_velocity
                             * self._dt_sec
                         )
-            den += 1
-            new_heading += inst_heading
-            prev_heading = inst_heading
-        if den > 0:
-            new_heading /= den
-        elif inst_heading is not None:
-            new_heading = inst_heading
-        elif self._prev_heading is None:
-            new_heading = float(row.get("psi_rad", 0.0)) - math.pi / 2
-        else:
+                        inst_heading += 0.5 * math.pi
+                        vhat = np.array(
+                            (math.cos(inst_heading), math.sin(inst_heading))
+                        )
+            vecs.append(vhat)
+            prev_vhat = vhat
+            prev_inst_heading = inst_heading
+        if vecs:
+            new_heading = circular_mean(vecs)
+        elif self._prev_heading is not None:
             new_heading = self._prev_heading
+        elif "psi_rad" in row:
+            new_heading = float(row["psi_rad"]) - 0.5 * math.pi
+        else:
+            new_heading = self._default_heading
         self._prev_heading = new_heading
         row["heading_rad"] = new_heading % (2 * math.pi)
 
@@ -607,55 +610,52 @@ class NGSIM(_TrajectoryDataset):
             + [row["speed"]]
             + [r["speed"] for r in after_win]
         )
-        new_heading = 0
-        inst_heading = None
-        prev_heading = None
-        den = 0
+        vecs = []
+        prev_vhat = None
+        prev_inst_heading = None
         for w in range(len(window) - 1):
             c = window[w]
             n = window[w + 1]
             if any(np.isnan(c)) or any(np.isnan(n)):
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
+                if prev_vhat is not None:
+                    vecs.append(prev_vhat)
                 continue
             s = np.linalg.norm(n - c)
-            if s == 0.0:
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
+            if s == 0.0 or (
+                self._heading_min_speed is not None
+                and (
+                    (s / self._dt_sec) < self._heading_min_speed
+                    or speeds[w] < self._heading_min_speed
+                )
+            ):
+                if prev_vhat is not None:
+                    vecs.append(prev_vhat)
                 continue
-            ispeed = speeds[w]
             vhat = (n - c) / s
             inst_heading = vec_to_radians(vhat)
-            if self._heading_min_speed is not None and (
-                (s / self._dt_sec) < self._heading_min_speed
-                or ispeed < self._heading_min_speed
-            ):
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
-                continue
-            if prev_heading is not None:
-                if inst_heading == 0 and prev_heading > math.pi:
-                    inst_heading = 2 * math.pi
+            if prev_inst_heading is not None:
                 if self._max_angular_velocity:
                     # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
-                    angular_velocity = (inst_heading - prev_heading) / self._dt_sec
+                    angular_velocity = (
+                        min_angles_difference_signed(inst_heading, prev_inst_heading)
+                        / self._dt_sec
+                    )
                     if abs(angular_velocity) > self._max_angular_velocity:
                         inst_heading = (
-                            prev_heading
+                            prev_inst_heading
                             + np.sign(angular_velocity)
                             * self._max_angular_velocity
                             * self._dt_sec
                         )
-            den += 1
-            new_heading += inst_heading
-            prev_heading = inst_heading
-        if den > 0:
-            new_heading /= den
-        elif inst_heading is not None:
-            new_heading = inst_heading
+                        inst_heading += 0.5 * math.pi
+                        vhat = np.array(
+                            (math.cos(inst_heading), math.sin(inst_heading))
+                        )
+            vecs.append(vhat)
+            prev_vhat = vhat
+            prev_inst_heading = inst_heading
+        if vecs:
+            new_heading = circular_mean(vecs)
         elif self._prev_heading is None:
             # TAI:  backfill from the first "real" heading (second pass)
             new_heading = self._default_heading
@@ -723,6 +723,7 @@ class NGSIM(_TrajectoryDataset):
         self._log.debug("transforming NGSIM data...")
 
         # smooth positions using a moving average...
+        # TAI: make this window size a parameter too?
         posns_gen = _TrajectoryDataset._WindowedReader(
             self._row_gen(), self._smooth_positions, 7, 7, "vehicle_id"
         )
@@ -1027,7 +1028,7 @@ def import_dataset(
     output = os.path.join(output_path, f"{dataset_spec.name}.shf")
     if os.path.exists(output):
         if not overwrite:
-            print("file already exists at {output}.  skipping...")
+            print(f"file already exists at {output}.  skipping...")
             return
         os.remove(output)
     source = dataset_spec.source_type
@@ -1039,7 +1040,7 @@ def import_dataset(
         dataset = Waymo(dataset_spec.__dict__, output)
     else:
         raise ValueError(
-            "unsupported TrafficHistoryDataset type: {dataset_spec.source_type}"
+            f"unsupported TrafficHistoryDataset type: {dataset_spec.source_type}"
         )
     dataset.create_output()
 
