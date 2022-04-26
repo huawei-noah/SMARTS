@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any, Dict
 
 import gym
-import stable_baselines3 as sb3lib
 import torch as th
 from ruamel.yaml import YAML
 
