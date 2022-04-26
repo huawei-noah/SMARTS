@@ -87,6 +87,8 @@ from .coordinates import (
     Point,
     Pose,
     RefLinePoint,
+)
+from .shape import (
     distance_point_to_polygon,
     offset_along_shape,
     position_at_shape_offset,
