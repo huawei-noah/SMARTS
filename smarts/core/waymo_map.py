@@ -828,7 +828,7 @@ class WaymoMap(RoadMap):
     class Surface(RoadMap.Surface):
         """Surface representation for Waymo maps"""
 
-        def __init__(self, surface_id: str, road_map: RoadMap):
+        def __init__(self, surface_id: str, road_map):
             self._surface_id = surface_id
             self._map = road_map
 
@@ -847,7 +847,7 @@ class WaymoMap(RoadMap):
     class Lane(RoadMap.Lane, Surface):
         """Lane representation for Waymo maps"""
 
-        def __init__(self, road_map: RoadMap, lane_id: str, lane_dict: Dict[str, Any]):
+        def __init__(self, road_map, lane_id: str, lane_dict: Dict[str, Any]):
             super().__init__(lane_id, road_map)
             self._map = road_map
             self._lane_id = lane_id
@@ -1149,7 +1149,7 @@ class WaymoMap(RoadMap):
 
         def __init__(
             self,
-            road_map: RoadMap,
+            road_map,
             road_lanes: Sequence[RoadMap.Lane],
             is_junction: bool,
         ):
@@ -1410,7 +1410,7 @@ class WaymoMap(RoadMap):
     class Route(RoadMap.Route):
         """Describes a route between roads."""
 
-        def __init__(self, road_map: RoadMap):
+        def __init__(self, road_map):
             self._roads = []
             self._length = 0
             self._map = road_map
