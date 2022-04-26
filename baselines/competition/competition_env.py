@@ -21,6 +21,8 @@
 from dataclasses import replace
 from typing import Any, Dict, List, Optional, Tuple
 
+import math
+
 import gym
 import gym.spaces as spaces
 import numpy as np
@@ -46,6 +48,19 @@ import smarts.sstudio.types as t
 
 dummy_obs: Optional[Observation] = None
 
+MAX_MPS = 100
+
+
+def _filter(obs: Observation, target_position, env):
+    obs = {
+        "position": obs.ego_vehicle_state.position,
+        "linear_velocity": obs.ego_vehicle_state.linear_velocity,
+        "target_position": target_position,
+        "rgb": obs.top_down_rgb.data.astype(np.uint8),
+    }
+    assert env.observation_space.contains(obs), "Observation mismatch."
+    return obs
+
 
 class CompetitionEnv(gym.Env):
     """A generic environment for various driving tasks simulated by SMARTS."""
@@ -54,25 +69,40 @@ class CompetitionEnv(gym.Env):
     """Metadata for gym's use"""
     action_space = spaces.Box(low=-20.0, high=20.0, shape=(2,), dtype=np.float)
     observation_space = spaces.Dict(
-        dict(
-            dt=spaces.Discrete(1),
-            step_count=spaces.Box(low=0, high=1e100, dtype=np.int),
-            elapsed_sim_time=spaces.Box(low=0, high=1e10, dtype=np.float),
-            events=spaces.Dict(
-                dict(
-                    collision=spaces.Discrete(2),
-                    off_road=spaces.Discrete(2),
-                    off_route=spaces.Discrete(2),
-                    on_shoulder=spaces.Discrete(2),
-                    wrong_way=spaces.Discrete(2),
-                    not_moving=spaces.Discrete(2),
-                    reached_goal=spaces.Discrete(2),
-                    reached_max_episode_steps=spaces.Discrete(2),
-                    agents_alive_done=spaces.Discrete(2),
-                )
+        {
+            # position x, y, z in meters
+            "position": spaces.Box(
+                low=-math.inf,
+                high=math.inf,
+                shape=(3,),
+                dtype=np.float32,
             ),
-            # TODO: Fill out
-        )
+            # Velocity
+            "linear_velocity": spaces.Box(
+                low=-MAX_MPS,
+                high=MAX_MPS,
+                shape=(3,),
+                dtype=np.float32,
+            ),
+            # target position x, y, z in meters
+            "target_position": spaces.Box(
+                low=-math.inf,
+                high=math.inf,
+                shape=(3,),
+                dtype=np.float32,
+            ),
+            # RGB image
+            "rgb": spaces.Box(
+                low=0,
+                high=255,
+                shape=(
+                    256,
+                    256,
+                    3,
+                ),
+                dtype=np.uint8,
+            ),
+        }
     )
 
     def __init__(
@@ -127,8 +157,9 @@ class CompetitionEnv(gym.Env):
         """
         global dummy_obs
         self._current_time += dummy_obs.dt
+        target = [0, 0, 0]
         return (
-            replace(dummy_obs, elapsed_sim_time=self._current_time),
+            _filter(dummy_obs, target, self),
             0.1,
             False,
             dict(),
@@ -142,7 +173,8 @@ class CompetitionEnv(gym.Env):
         """
         global dummy_obs
         self._current_time += dummy_obs.dt
-        return replace(dummy_obs, elapsed_sim_time=self._current_time)
+        target = [0, 0, 0]
+        return _filter(dummy_obs, target, self)
 
     def render(self, mode="human"):
         """Does nothing."""

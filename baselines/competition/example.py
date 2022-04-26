@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from baselines.competition.competition_env import CompetitionEnv
 from smarts.core.agent import Agent
 
@@ -25,4 +27,4 @@ def main(max_steps):
 
 
 if __name__ == "__main__":
-    main(max_steps=1000)
+    main(max_steps=2)
