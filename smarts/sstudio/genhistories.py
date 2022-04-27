@@ -49,9 +49,7 @@ from smarts.core.utils.math import (
     min_angles_difference_signed,
     vec_to_radians,
 )
-
 from smarts.sstudio import types
-
 
 try:
     from waymo_open_dataset.protos import scenario_pb2  # pytype: disable=import-error

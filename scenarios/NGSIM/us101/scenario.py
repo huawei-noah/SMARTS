@@ -3,7 +3,6 @@ from pathlib import Path
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 
-
 traffic_histories = [
     t.TrafficHistoryDataset(
         name=f"us101_{hd}",
