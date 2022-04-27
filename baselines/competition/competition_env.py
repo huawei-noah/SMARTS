@@ -31,12 +31,14 @@ from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
+from smarts.core.coordinates import Heading
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import (
     Observation,
 )
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.logging import timeit
+from smarts.core.utils.math import vec_to_radians
 
 
 MAX_MPS = 100
@@ -170,8 +172,7 @@ class CompetitionEnv(gym.Env):
             fixed_timestep_sec=self._fixed_timestep_sec,
         )
 
-        self._last_position = 0
-        self._last_heading = 0
+        self._last_obs = None
 
     def seed(self, seed: int) -> List[int]:
         """Sets random number generator seed number.
@@ -206,12 +207,13 @@ class CompetitionEnv(gym.Env):
         ), f"Action {agent_action} must be within the action space: {self.action_space}"
         observation, reward, done, extra = None, None, None, None
 
-        l_p = self._last_position
+        heading = Heading(vec_to_radians(agent_action))  # naive heading
+        l_p = self._last_obs.ego_vehicle_state.position
         target_pose = np.array(
             [
                 l_p[0] + agent_action[0],
                 l_p[1] + agent_action[1],
-                self._last_heading,
+                float(heading),
                 self._fixed_timestep_sec,
             ]
         )
@@ -226,6 +228,7 @@ class CompetitionEnv(gym.Env):
         extra = {"score": extras["scores"][AGENT_ID], "env_obs": observations[AGENT_ID]}
         observation = observations[AGENT_ID]
 
+        self._last_obs = observation
         self._current_time += observation.dt
         target = [0, 0, 0]
         return (
@@ -247,8 +250,7 @@ class CompetitionEnv(gym.Env):
         env_observations = self._smarts.reset(scenario)
 
         observation = env_observations[AGENT_ID]
-
-        self._last_position = observation.ego_vehicle_state.position
+        self._last_obs = observation
 
         self._current_time += observation.dt
         target = [0, 0, 0]

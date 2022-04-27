@@ -16,7 +16,7 @@ def main(max_steps):
     done = False
 
     while not done:
-        obs["target_position"] = [0.4, 0, 0] # can manually modify the observation here
+        obs["target_position"] = [0.4, 0, 0]  # can manually modify the observation here
         action = agent.act(obs)
         obs, reward, done, info = env.step(action)
         # smarts_obs = info["env_obs"] # full observations for debugging if needed
