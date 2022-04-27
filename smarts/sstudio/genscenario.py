@@ -128,6 +128,7 @@ def gen_scenario(
             scenario=output_dir,
             histories_datasets=scenario.traffic_histories,
             overwrite=overwrite,
+            map_spec=map_spec,
         )
 
 
@@ -441,6 +442,7 @@ def gen_traffic_histories(
     scenario: str,
     histories_datasets: Sequence[Union[types.TrafficHistoryDataset, str]],
     overwrite: bool,
+    map_spec: Optional[types.MapSpec] = None,
 ):
     """Converts traffic history to a format that SMARTS can use.
     Args:
@@ -450,12 +452,25 @@ def gen_traffic_histories(
             A sequence of traffic history descriptors.
         overwrite:
             If to forcefully write over the previous existing output file
+        map_spec:
+             An optional map specification that takes precedence over scenario directory information.
     """
+    road_map = None  # shared across all history_datasets in scenario
     for hdsr in histories_datasets:
         if isinstance(hdsr, types.TrafficHistoryDataset):
             from smarts.sstudio import genhistories
 
-            genhistories.import_dataset(hdsr, scenario, overwrite)
+            map_bbox = None
+            if hdsr.filter_off_map:
+                if map_spec:
+                    if not road_map:
+                        road_map, _ = map_spec.builder_fn(map_spec)
+                    map_bbox = road_map.bounding_box
+                else:
+                    logger.warn(
+                        f"no map_spec supplied, so unable to filter off-map coordinates for {hdsr.name}"
+                    )
+            genhistories.import_dataset(hdsr, scenario, overwrite, map_bbox)
             continue
 
         assert isinstance(hdsr, str)

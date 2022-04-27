@@ -40,7 +40,7 @@ from shapely.geometry import (
 from shapely.ops import split, unary_union
 
 from smarts.core import gen_id
-from smarts.core.coordinates import BoundingBox, RefLinePoint
+from smarts.core.coordinates import RefLinePoint
 from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
@@ -821,9 +821,9 @@ class TrafficHistoryDataset:
     swap_xy: bool = False
     """if True, the x and y axes the dataset coordinate system will be swapped"""
     flip_y: bool = False
-    """if True, the dataset will be mirrored around the x-axis; need to specify map_bbox to use"""
-    map_bbox: Optional[BoundingBox] = None
-    """the bounding box of the map, used to filter x- and y-coordinates to ensure they're in range"""
+    """if True, the dataset will be mirrored around the x-axis"""
+    filter_off_map: bool = False
+    """if True, then any vehicle whose coordinates on a time step fall outside of the map's bounding box will be removed for that time step"""
 
     map_lane_width: float = 3.7
     """This is used to figure out the map scale, which is map_lane_width / real_lane_width_m.  (So use `real_lane_width_m` here for 1:1 scale - the default.)  It's also used in SMARTS for detecting off-road, etc."""

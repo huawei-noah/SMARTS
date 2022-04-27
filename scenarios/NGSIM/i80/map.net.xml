@@ -2,7 +2,7 @@
 
 <net version="1.9" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
 
-    <location netOffset="0.00,0.00" convBoundary="0.00,-0.15,425.00,27.00" origBoundary="-10000000000.00,-10000000000.00,10000000000.00,10000000000.00" projParameter="!"/>
+    <location netOffset="0.00,0.00" convBoundary="0.00,-3.00,425.00,25.02" origBoundary="-10000000000.00,-10000000000.00,10000000000.00,10000000000.00" projParameter="!"/>
 
     <edge id="gneE05a" from="gneJ00a" to="gneJ05" priority="-1">
         <lane id="gneE05a_0" index="0" speed="13.89" acceleration="true" length="180.072" width="4.25" shape="0.00,-1.98 20.75,-1.75 49.11,-1.34 85.43,-0.53 132.38,1.40 165.10,2.52 180.00,2.57"/>
