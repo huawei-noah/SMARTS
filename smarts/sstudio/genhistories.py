@@ -43,7 +43,15 @@ import ijson
 import numpy as np
 import yaml
 
-from smarts.core.utils.math import vec_to_radians
+from smarts.core.coordinates import BoundingBox, Point
+from smarts.core.utils.math import (
+    circular_mean,
+    min_angles_difference_signed,
+    vec_to_radians,
+)
+
+from smarts.sstudio import types
+
 
 try:
     from waymo_open_dataset.protos import scenario_pb2  # pytype: disable=import-error
@@ -64,7 +72,7 @@ class _TrajectoryDataset:
         self._output = output
         self._path = os.path.expanduser(dataset_spec["input_path"])
         real_lane_width_m = dataset_spec.get("real_lane_width_m", DEFAULT_LANE_WIDTH)
-        lane_width = self._map_spec.get("lane_width", real_lane_width_m)
+        lane_width = dataset_spec.get("map_lane_width", real_lane_width_m)
         self._scale = lane_width / real_lane_width_m
         self._flip_y = dataset_spec.get("flip_y", False)
         self._swap_xy = dataset_spec.get("swap_xy", False)
@@ -158,14 +166,13 @@ class _TrajectoryDataset:
     def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
         """Validate the form of the dataset specification."""
         errmsg = None
-        self._map_spec = dataset_spec.get("map_net") or {}
         if "input_path" not in dataset_spec:
             errmsg = "'input_path' field is required in dataset yaml."
         elif dataset_spec.get("flip_y"):
-            if not dataset_spec["source"].startswith("NGSIM"):
+            if not dataset_spec["source_type"].startswith("NGSIM"):
                 errmsg = "'flip_y' option only supported for NGSIM datasets."
-            elif not self._map_spec.get("max_y"):
-                errmsg = "'map_net:max_y' is required if 'flip_y' option used."
+            elif not dataset_spec.get("_map_bbox"):
+                errmsg = "'_map_bbox' is required if 'flip_y' option used; need to pass in a map_spec."
         if errmsg:
             self._log.error(errmsg)
             raise ValueError(errmsg)
@@ -365,8 +372,8 @@ class Interaction(_TrajectoryDataset):
                 if y_margin:
                     row["position_y"] -= y_margin
                 if self._flip_y:
-                    max_y = self._map_spec["max_y"]
-                    row["position_y"] = (max_y / self.scale) - row["position_y"]
+                    map_bb = self._dataset_spec["_map_bbox"]
+                    row["position_y"] = map_bb.max_pt.y / self.scale - row["position_y"]
 
                 yield row
 
@@ -399,59 +406,58 @@ class Interaction(_TrajectoryDataset):
             + [row["speed"]]
             + [r["speed"] for r in after_win]
         )
-        new_heading = 0
-        inst_heading = None
-        prev_heading = None
-        den = 0
+        vecs = []
+        prev_vhat = None
+        prev_inst_heading = None
         for w in range(len(window) - 1):
             c = window[w]
             n = window[w + 1]
             if any(np.isnan(c)) or any(np.isnan(n)):
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
+                if prev_vhat is not None:
+                    vecs.append(prev_vhat)
                 continue
             s = np.linalg.norm(n - c)
-            if s == 0.0:
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
+            if s == 0.0 or (
+                self._heading_min_speed is not None
+                and (
+                    (s / self._dt_sec) < self._heading_min_speed
+                    or speeds[w] < self._heading_min_speed
+                )
+            ):
+                if prev_vhat is not None:
+                    vecs.append(prev_vhat)
                 continue
-            ispeed = speeds[w]
             vhat = (n - c) / s
             inst_heading = vec_to_radians(vhat)
-            if self._heading_min_speed is not None and (
-                (s / self._dt_sec) < self._heading_min_speed
-                or ispeed < self._heading_min_speed
-            ):
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
-                continue
-            if prev_heading is not None:
-                if inst_heading == 0 and prev_heading > math.pi:
-                    inst_heading = 2 * math.pi
+            if prev_inst_heading is not None:
                 if self._max_angular_velocity:
                     # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
-                    angular_velocity = (inst_heading - prev_heading) / self._dt_sec
+                    angular_velocity = (
+                        min_angles_difference_signed(inst_heading, prev_inst_heading)
+                        / self._dt_sec
+                    )
                     if abs(angular_velocity) > self._max_angular_velocity:
                         inst_heading = (
-                            prev_heading
+                            prev_inst_heading
                             + np.sign(angular_velocity)
                             * self._max_angular_velocity
                             * self._dt_sec
                         )
-            den += 1
-            new_heading += inst_heading
-            prev_heading = inst_heading
-        if den > 0:
-            new_heading /= den
-        elif inst_heading is not None:
-            new_heading = inst_heading
-        elif self._prev_heading is None:
-            new_heading = float(row.get("psi_rad", 0.0)) - math.pi / 2
-        else:
+                        inst_heading += 0.5 * math.pi
+                        vhat = np.array(
+                            (math.cos(inst_heading), math.sin(inst_heading))
+                        )
+            vecs.append(vhat)
+            prev_vhat = vhat
+            prev_inst_heading = inst_heading
+        if vecs:
+            new_heading = circular_mean(vecs)
+        elif self._prev_heading is not None:
             new_heading = self._prev_heading
+        elif "psi_rad" in row:
+            new_heading = float(row["psi_rad"]) - 0.5 * math.pi
+        else:
+            new_heading = self._default_heading
         self._prev_heading = new_heading
         row["heading_rad"] = new_heading % (2 * math.pi)
 
@@ -477,20 +483,16 @@ class Interaction(_TrajectoryDataset):
             "vehicle_id",
         )
 
-        map_width = self._map_spec.get("width")
-        map_height = self._map_spec.get("height")
+        map_bbox = self._dataset_spec.get("_map_bbox")
 
         # note: iterating over outer generator iterates over all nested generators too...
         # XXX: assumes all timesteps for a vehicle are grouped together in the file and are in sorted temporal order
         for row in headings_gen:
-            if map_width and row["position_x"] * self.scale > map_width:
-                self._log.warning(
-                    f"skipping row for vehicle {row['vehicle_id']} with x-position(s) off of map"
-                )
-                continue
-            if map_height and row["position_y"] * self.scale > map_height:
-                self._log.warning(
-                    f"skipping row for vehicle {row['vehicle_id']} with y-position(s) off of map"
+            if map_bbox and not map_bbox.contains(
+                Point(self.scale * row["position_x"], self.scale * row["position_y"])
+            ):
+                self._log.info(
+                    f"skipping row for vehicle {row['vehicle_id']} with position off of map"
                 )
                 continue
             yield row
@@ -510,6 +512,16 @@ class NGSIM(_TrajectoryDataset):
         self._max_angular_velocity = dataset_spec.get("max_angular_velocity", None)
         # 2.2 corresponds to roughly 5mph.
         self._heading_min_speed = dataset_spec.get("heading_inference_min_speed", 2.2)
+        self._determine_columns()
+
+    def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
+        super().check_dataset_spec(dataset_spec)
+        hiw = dataset_spec.get("heading_inference_window", 2)
+        # 11 is a semi-arbitrary max just to keep things "sane".
+        if not 2 <= hiw <= 11:
+            raise ValueError("heading_inference_window must be between 2 and 11")
+
+    def _determine_columns(self):
         self._columns = (
             "vehicle_id",
             "frame_id",  # 1 frame per .1s
@@ -532,7 +544,9 @@ class NGSIM(_TrajectoryDataset):
             "spacing",  # feet
             "headway",  # secs
         )
-        if self._dataset_spec.get("source") == "NGSIM2":
+        with open(self._path, newline="") as infile:
+            num_cols = len(infile.readline().strip().split())
+        if num_cols > len(self._columns):
             extra_cols = (
                 "origin_zone",
                 "destination_zone",
@@ -542,13 +556,9 @@ class NGSIM(_TrajectoryDataset):
                 "movement",
             )
             self._columns = self._columns[:16] + extra_cols + self._columns[16:]
-
-    def check_dataset_spec(self, dataset_spec: Dict[str, Any]):
-        super().check_dataset_spec(dataset_spec)
-        hiw = dataset_spec.get("heading_inference_window", 2)
-        # 11 is a semi-arbitrary max just to keep things "sane".
-        if not 2 <= hiw <= 11:
-            raise ValueError("heading_inference_window must be between 2 and 11")
+        assert num_cols == len(
+            self._columns
+        ), f"unexpected number of columns/fields ({num_cols}) in {self._path}"
 
     def _smooth_positions(
         self,
@@ -588,55 +598,52 @@ class NGSIM(_TrajectoryDataset):
             + [row["speed"]]
             + [r["speed"] for r in after_win]
         )
-        new_heading = 0
-        inst_heading = None
-        prev_heading = None
-        den = 0
+        vecs = []
+        prev_vhat = None
+        prev_inst_heading = None
         for w in range(len(window) - 1):
             c = window[w]
             n = window[w + 1]
             if any(np.isnan(c)) or any(np.isnan(n)):
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
+                if prev_vhat is not None:
+                    vecs.append(prev_vhat)
                 continue
             s = np.linalg.norm(n - c)
-            if s == 0.0:
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
+            if s == 0.0 or (
+                self._heading_min_speed is not None
+                and (
+                    (s / self._dt_sec) < self._heading_min_speed
+                    or speeds[w] < self._heading_min_speed
+                )
+            ):
+                if prev_vhat is not None:
+                    vecs.append(prev_vhat)
                 continue
-            ispeed = speeds[w]
             vhat = (n - c) / s
             inst_heading = vec_to_radians(vhat)
-            if self._heading_min_speed is not None and (
-                (s / self._dt_sec) < self._heading_min_speed
-                or ispeed < self._heading_min_speed
-            ):
-                if prev_heading is not None:
-                    new_heading += prev_heading
-                    den += 1
-                continue
-            if prev_heading is not None:
-                if inst_heading == 0 and prev_heading > math.pi:
-                    inst_heading = 2 * math.pi
+            if prev_inst_heading is not None:
                 if self._max_angular_velocity:
                     # XXX: could try to divide by sim_time delta here instead of assuming it's fixed
-                    angular_velocity = (inst_heading - prev_heading) / self._dt_sec
+                    angular_velocity = (
+                        min_angles_difference_signed(inst_heading, prev_inst_heading)
+                        / self._dt_sec
+                    )
                     if abs(angular_velocity) > self._max_angular_velocity:
                         inst_heading = (
-                            prev_heading
+                            prev_inst_heading
                             + np.sign(angular_velocity)
                             * self._max_angular_velocity
                             * self._dt_sec
                         )
-            den += 1
-            new_heading += inst_heading
-            prev_heading = inst_heading
-        if den > 0:
-            new_heading /= den
-        elif inst_heading is not None:
-            new_heading = inst_heading
+                        inst_heading += 0.5 * math.pi
+                        vhat = np.array(
+                            (math.cos(inst_heading), math.sin(inst_heading))
+                        )
+            vecs.append(vhat)
+            prev_vhat = vhat
+            prev_inst_heading = inst_heading
+        if vecs:
+            new_heading = circular_mean(vecs)
         elif self._prev_heading is None:
             # TAI:  backfill from the first "real" heading (second pass)
             new_heading = self._default_heading
@@ -692,8 +699,8 @@ class NGSIM(_TrajectoryDataset):
                 if y_margin:
                     row["position_y"] -= y_margin
                 if self._flip_y:
-                    max_y = self._map_spec["max_y"]
-                    row["position_y"] = (max_y / self.scale) - row["position_y"]
+                    map_bb = self._dataset_spec["_map_bbox"]
+                    row["position_y"] = map_bb.max_pt.y / self.scale - row["position_y"]
 
                 yield row
 
@@ -702,6 +709,7 @@ class NGSIM(_TrajectoryDataset):
         self._log.debug("transforming NGSIM data...")
 
         # smooth positions using a moving average...
+        # TAI: make this window size a parameter too?
         posns_gen = _TrajectoryDataset._WindowedReader(
             self._row_gen(), self._smooth_positions, 7, 7, "vehicle_id"
         )
@@ -725,20 +733,19 @@ class NGSIM(_TrajectoryDataset):
             headings_gen, self._cal_speed, 0, 1, "vehicle_id"
         )
 
-        map_width = self._map_spec.get("width")
-        map_height = self._map_spec.get("height")
+        map_bbox = self._dataset_spec.get("_map_bbox")
 
         # note: iterating over outer generator iterates over all nested generators too...
         # XXX: assumes all timesteps for a vehicle are grouped together in the file and are in sorted temporal order
         for row in speeds_gen:
-            if map_width and row["position_x"] * self.scale > map_width:
-                self._log.warning(
-                    f"skipping row for vehicle {row['vehicle_id']} with x-position(s) off of map"
+            if map_bbox and not map_bbox.contains(
+                Point(
+                    self.scale * row["adj_position_x"],
+                    self.scale * row["adj_position_y"],
                 )
-                continue
-            if map_height and row["position_y"] * self.scale > map_height:
-                self._log.warning(
-                    f"skipping row for vehicle {row['vehicle_id']} with y-position(s) off of map"
+            ):
+                self._log.info(
+                    f"skipping row for vehicle {row['vehicle_id']} with position off of map"
                 )
                 continue
             yield row
@@ -990,6 +997,58 @@ class Waymo(_TrajectoryDataset):
         return row[col_name]
 
 
+def import_dataset(
+    dataset_spec: types.TrafficHistoryDataset,
+    output_path: str,
+    overwrite: bool,
+    map_bbox: Optional[BoundingBox] = None,
+):
+    """called to pre-process (import) a TrafficHistoryDataset for use by SMARTS"""
+    if not dataset_spec.input_path:
+        print(f"skipping placeholder dataset spec '{dataset_spec.name}'.")
+        return
+    output = os.path.join(output_path, f"{dataset_spec.name}.shf")
+    if os.path.exists(output):
+        if not overwrite:
+            print(f"file already exists at {output}.  skipping...")
+            return
+        os.remove(output)
+    source = dataset_spec.source_type
+    dataset_dict = dataset_spec.__dict__
+    if map_bbox:
+        assert dataset_spec.filter_off_map
+        dataset_dict["_map_bbox"] = map_bbox
+    if source == "NGSIM":
+        dataset = NGSIM(dataset_dict, output)
+    elif source == "INTERACTION":
+        dataset = Interaction(dataset_dict, output)
+    elif source == "Waymo":
+        dataset = Waymo(dataset_dict, output)
+    else:
+        raise ValueError(
+            f"unsupported TrafficHistoryDataset type: {dataset_spec.source_type}"
+        )
+    dataset.create_output()
+
+
+def _migrate_deprecated_dataset(dataset_spec: Dict[str, Any]):
+    def remap(old_d: Dict[str, Any], old_key: str, new_d: Dict[str, Any], new_key: str):
+        if new_key not in new_d and old_key in old_d:
+            new_d[new_key] = old_d[old_key]
+
+    remap(dataset_spec, "source", dataset_spec, "source_type")
+    if "map_net" in dataset_spec:
+        map_spec = dataset_spec["map_net"]
+        remap(map_spec, "lane_width", dataset_spec, "map_lane_width")
+        if "max_y" in map_spec or "width" in map_spec or "height" in map_spec:
+            assert "_map_bbox" not in dataset_spec
+            max_x = map_spec.get("width")
+            max_y = map_spec.get("max_y", map_spec.get("height"))
+            dataset_spec["_map_bbox"] = BoundingBox(
+                min_pt=Point(0, 0), max_pt=Point(max_x, max_y)
+            )
+
+
 def _check_args(args) -> bool:
     if not args.force and os.path.exists(args.output):
         print("output file already exists\n")
@@ -1032,15 +1091,16 @@ if __name__ == "__main__":
         os.remove(args.output)
 
     if args.old:
-        dataset_spec = {"source": "OldJSON", "input_path": args.dataset}
+        dataset_spec = {"source_type": "OldJSON", "input_path": args.dataset}
     else:
         with open(args.dataset, "r") as yf:
             dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
 
-    default_input_path = "<PATH TO FILE GOES HERE>"
-    if dataset_spec.get("input_path") == default_input_path:
+    if not dataset_spec.get("input_path"):
         print(f"skipping placeholder dataset spec at {args.dataset}.")
         sys.exit(0)
+
+    _migrate_deprecated_dataset(dataset_spec)
 
     if args.x_offset:
         dataset_spec["x_offset"] = args.x_offset
@@ -1048,8 +1108,8 @@ if __name__ == "__main__":
     if args.y_offset:
         dataset_spec["y_offset"] = args.y_offset
 
-    source = dataset_spec.get("source", "NGSIM")
-    if source == "NGSIM" or source == "NGSIM2":
+    source = dataset_spec.get("source_type", "NGSIM")
+    if source.startswith("NGSIM"):
         dataset = NGSIM(dataset_spec, args.output)
     elif source == "Waymo":
         dataset = Waymo(dataset_spec, args.output)

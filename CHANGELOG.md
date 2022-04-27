@@ -14,6 +14,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added example scenario for importing the NGSIM `peachtree` dataset.
 - Added example scenario for importing the INTERACTION `merging` dataset
+### Deprecated
+- Using `.yml` files to specify traffic history datasets have been deprecated in favor of using `sstudio.types.TrafficHistoryDataset` objects.
 ### Fixed
 - Gracefully handle `EndlessGoal` missions in the MaRL benchmark. Relative goal distance with `EndlessGoal` will be now always be 0.
 - Restore `rl-agent` to working order. Version incremented to `1.1.0`.

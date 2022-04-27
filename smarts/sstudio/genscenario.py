@@ -128,6 +128,7 @@ def gen_scenario(
             scenario=output_dir,
             histories_datasets=scenario.traffic_histories,
             overwrite=overwrite,
+            map_spec=map_spec,
         )
 
 
@@ -439,25 +440,52 @@ def _validate_entry_tactic(mission):
 
 def gen_traffic_histories(
     scenario: str,
-    histories_datasets: Sequence[str],
+    histories_datasets: Sequence[Union[types.TrafficHistoryDataset, str]],
     overwrite: bool,
+    map_spec: Optional[types.MapSpec] = None,
 ):
     """Converts traffic history to a format that SMARTS can use.
     Args:
         scenario:
             The scenario directory
         histories_datasets:
-            A sequence of traffic history files.
+            A sequence of traffic history descriptors.
         overwrite:
             If to forcefully write over the previous existing output file
+        map_spec:
+             An optional map specification that takes precedence over scenario directory information.
     """
-    genhistories_py = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
-    )
+    road_map = None  # shared across all history_datasets in scenario
     for hdsr in histories_datasets:
+        if isinstance(hdsr, types.TrafficHistoryDataset):
+            from smarts.sstudio import genhistories
+
+            map_bbox = None
+            if hdsr.filter_off_map:
+                if map_spec:
+                    if not road_map:
+                        road_map, _ = map_spec.builder_fn(map_spec)
+                    assert road_map
+                    map_bbox = road_map.bounding_box
+                else:
+                    logger.warn(
+                        f"no map_spec supplied, so unable to filter off-map coordinates for {hdsr.name}"
+                    )
+            genhistories.import_dataset(hdsr, scenario, overwrite, map_bbox)
+            continue
+
+        assert isinstance(hdsr, str)
+        logger.warn(
+            f"use of yaml-file dataset specs (like {hdsr}) is deprecated; update to use types.TrafficHistoryDataset in your scenario.py. "
+        )
+
         hds = os.path.join(scenario, hdsr)
         if not os.path.exists(hds):
             raise ValueError(f"Traffic history dataset file missing: {hds}")
+
+        genhistories_py = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
+        )
         cmd = [sys.executable, genhistories_py, hdsr]
         base, ext = os.path.splitext(os.path.basename(hds))
         if ext == ".json":
@@ -469,6 +497,7 @@ def gen_traffic_histories(
             )
             cmd += ["--old"]
         th_file = f"{base}.shf"
+
         if overwrite:
             cmd += ["-f"]
         elif os.path.exists(os.path.join(scenario, th_file)):
