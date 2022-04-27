@@ -1,21 +1,19 @@
-# NGSIM traffic history scenarios
+# Interaction traffic history scenarios
 
-The scenarios in the sub-folders here are based on the Next Generation Simulation (NGSIM) 
-dataset created by the US Department of Transportation (DOT) and described
-[here](https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm).
+The scenarios in the sub-folders here are based on the INTERACTION dataset
+(INTERnational, Adversarial and Cooperative moTION Dataset)
+described [here](https://interaction-dataset.com/).
 
 To use these scenarios, you must first download the dataset in an appropriate format.
-SMARTS assumes that the data will be in tab-separated files.
-Its import scripts were tested on and work with the data downloaded from [here](http://bit.ly/PPUU-data),
-which is the same as was used by this [PPUU project](https://github.com/Atcold/pytorch-PPUU).
+SMARTS assumes that the data will be in comma-separated (CSV) files.
 
 After the dataset has been downloaded, you will need to update `scenario.py`
-in the scenario directories (e.g., `i80`, `us101`, and/or `peach`) to point the `input_path` field
+in the scenario directory (i.e., `merging`) to point the `input_path` field
 to the dataset location on your filesystem.
 
 Once that is done, you should be able to build your scenarios in the normal way, for example:
 ```bash
-scl scenario build-all --clean scenarios/NGSIM
+scl scenario build-all --clean scenarios/INTERACTION
 ```
 
 For each traffic history dataset specified in your `scenario.py`, 
