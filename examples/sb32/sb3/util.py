@@ -6,11 +6,11 @@ from torchinfo import summary
 
 def print_model(model, env):
     # Print model summary
-    # print("\n\n")
-    # network = Network(model.policy.features_extractor, model.policy.mlp_extractor)
-    # print(network)
-    # summary(model=network, input_size=(1,) + env.observation_space.shape, depth=10)
-    # print("\n\n")
+    print("\n\n")
+    network = Network(model.policy.features_extractor, model.policy.mlp_extractor)
+    print(network)
+    summary(model=network, input_size=(1,) + env.observation_space.shape, depth=10)
+    print("\n\n")
     pass
 
 

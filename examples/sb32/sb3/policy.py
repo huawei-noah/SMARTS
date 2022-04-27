@@ -275,7 +275,7 @@ def r2plus1d_18(config):
         features_extractor_kwargs=dict(config=config, pretrained=False, features_dim=400),
         net_arch=[],
         # log_std_init=0.0, # default
-        log_std_init=-10.0, # reduce exploration
+        # log_std_init=-10.0, # reduce exploration
     )
 
     # Hyperparameter
