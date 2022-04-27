@@ -292,12 +292,7 @@ def dqn(config):
         features_extractor_class=R2plus1D_18,
         features_extractor_kwargs=dict(config=config, pretrained=False, features_dim=400),
         net_arch=[],
-        # log_std_init=0.0, # default
-        # log_std_init=-10.0, # reduce exploration
     )
-
-    # Hyperparameter
-    # kwargs["n_steps"] = 256
-    kwargs["batch_size"] = 64
+    kwargs["buffer_size"]=1_00_000
 
     return kwargs

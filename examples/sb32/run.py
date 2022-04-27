@@ -83,7 +83,7 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
 
     # Wrap env with action, reward, and observation wrapper
     env = sb3_info.Info(env=env)
-    env = sb3_action.Action(env=env, space=config["action_space"])
+    env = sb3_action.Action(env=env, space=config["action_space_wrapper"])
     env = sb3_reward.Reward(env=env)
     env = sb3_observation.Observation(env=env)
 
