@@ -18,8 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from dataclasses import replace
-from typing import Any, Dict, List, Optional, Tuple
+import logging
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import math
 
@@ -31,28 +31,17 @@ from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.coordinates import Dimensions, Heading
-from smarts.core.events import Events
-from smarts.core.plan import EndlessGoal, Mission, Start
-from smarts.core.road_map import Waypoint
+from smarts.core.scenario import Scenario
 from smarts.core.sensors import (
-    DrivableAreaGridMap,
-    EgoVehicleObservation,
-    GridMapMetadata,
     Observation,
-    OccupancyGridMap,
-    RoadWaypoints,
-    TopDownRGB,
-    VehicleObservation,
-    Vias,
 )
 from smarts.core.smarts import SMARTS
-import smarts.sstudio.types as t
+from smarts.core.utils.logging import timeit
 
-dummy_obs: Optional[Observation] = None
 
 MAX_MPS = 100
 AGENT_ID = "EGO"
+
 
 def _filter(obs: Observation, target_position, env):
     def _clip(formatted_obs, observation_space):
@@ -119,6 +108,7 @@ class CompetitionEnv(gym.Env):
 
     def __init__(
         self,
+        scenarios: Sequence[str],
         headless: bool = True,
         sim_name: Optional[str] = None,
         max_episode_steps: Optional[int] = None,
@@ -138,15 +128,22 @@ class CompetitionEnv(gym.Env):
             envision_record_data_replay_path (Optional[str], optional):
                 Envision's data replay output directory. Defaults to None.
         """
+        self._log = logging.getLogger(self.__class__.__name__)
         self.seed(seed)
         self._current_time = 0.0
         self._fixed_timestep_sec = 0.1
+
+        self._scenarios_iterator = Scenario.scenario_variations(
+            scenarios,
+            [AGENT_ID],
+        )
 
         agent_interface = AgentInterface(
             max_episode_steps=max_episode_steps,
             drivable_area_grid_map=True,
             rgb=True,
-            action=ActionSpaceType.Trajectory,
+            waypoints=True,
+            action=ActionSpaceType.TargetPose,
         )
 
         envision_client = None
@@ -172,7 +169,9 @@ class CompetitionEnv(gym.Env):
             envision=envision_client,
             fixed_timestep_sec=self._fixed_timestep_sec,
         )
-        
+
+        self._last_position = 0
+        self._last_heading = 0
 
     def seed(self, seed: int) -> List[int]:
         """Sets random number generator seed number.
@@ -202,15 +201,38 @@ class CompetitionEnv(gym.Env):
             Tuple[Observation, float, bool, Any]:
                 Observation, reward, done, and info for the environment.
         """
-        assert self.action_space.contains(np.array(agent_action)), f"Action {agent_action} must be within the action space: {self.action_space}"
-        global dummy_obs
-        self._current_time += dummy_obs.dt
+        assert self.action_space.contains(
+            np.array(agent_action)
+        ), f"Action {agent_action} must be within the action space: {self.action_space}"
+        observation, reward, done, extra = None, None, None, None
+
+        l_p = self._last_position
+        target_pose = np.array(
+            [
+                l_p[0] + agent_action[0],
+                l_p[1] + agent_action[1],
+                self._last_heading,
+                self._fixed_timestep_sec,
+            ]
+        )
+
+        with timeit("SMARTS Simulation/Scenario Step", self._log):
+            observations, rewards, dones, extras = self._smarts.step(
+                {AGENT_ID: target_pose}
+            )
+
+        done = dones[AGENT_ID]
+        reward = rewards[AGENT_ID]
+        extra = {"score": extras["scores"][AGENT_ID], "env_obs": observations[AGENT_ID]}
+        observation = observations[AGENT_ID]
+
+        self._current_time += observation.dt
         target = [0, 0, 0]
         return (
-            _filter(dummy_obs, target, self),
-            0.1,
-            False,
-            dict(),
+            _filter(observation, target, self),
+            reward,
+            done,
+            extra,
         )
 
     def reset(self) -> Observation:
@@ -219,10 +241,18 @@ class CompetitionEnv(gym.Env):
         Returns:
             Observation: Agents' observation.
         """
-        global dummy_obs
-        self._current_time += dummy_obs.dt
+        scenario = next(self._scenarios_iterator)
+
+        self._dones_registered = 0
+        env_observations = self._smarts.reset(scenario)
+
+        observation = env_observations[AGENT_ID]
+
+        self._last_position = observation.ego_vehicle_state.position
+
+        self._current_time += observation.dt
         target = [0, 0, 0]
-        return _filter(dummy_obs, target, self)
+        return _filter(observation, target, self)
 
     def render(self, mode="human"):
         """Does nothing."""
@@ -233,188 +263,3 @@ class CompetitionEnv(gym.Env):
         if self._smarts is not None:
             self._smarts.destroy()
             self._smarts = None
-
-
-dummy_obs = Observation(
-    dt=0.1,
-    step_count=1,
-    elapsed_sim_time=0.0,
-    events=Events(
-        collisions=[],
-        off_road=False,
-        off_route=False,
-        on_shoulder=True,
-        wrong_way=False,
-        not_moving=False,
-        reached_goal=False,
-        reached_max_episode_steps=False,
-        agents_alive_done=False,
-    ),
-    ego_vehicle_state=EgoVehicleObservation(
-        id="AGENT-007-07a0ca6e",
-        position=np.array([161.23485529, 3.2, 0.0]),
-        bounding_box=Dimensions(length=3.68, width=1.47, height=1.0),
-        heading=Heading(-1.5707963267948966),
-        speed=5.0,
-        steering=-0.0,
-        yaw_rate=4.71238898038469,
-        road_id="east",
-        lane_id="east_2",
-        lane_index=2,
-        mission=Mission(
-            start=Start(
-                position=np.array([163.07485529, 3.2]),
-                heading=Heading(-1.5707963267948966),
-                from_front_bumper=True,
-            ),
-            goal=EndlessGoal(),
-            route_vias=(),
-            start_time=0.1,
-            entry_tactic=t.TrapEntryTactic(
-                wait_to_hijack_limit_s=0,
-                zone=None,
-                exclusion_prefixes=(),
-                default_entry_speed=None,
-            ),
-            via=(),
-            vehicle_spec=None,
-        ),
-        linear_velocity=np.array([5.000000e00, 3.061617e-16, 0.000000e00]),
-        angular_velocity=np.array([0.0, 0.0, 0.0]),
-        linear_acceleration=np.array([0.0, 0.0, 0.0]),
-        angular_acceleration=np.array([0.0, 0.0, 0.0]),
-        linear_jerk=np.array([0.0, 0.0, 0.0]),
-        angular_jerk=np.array([0.0, 0.0, 0.0]),
-    ),
-    neighborhood_vehicle_states=[
-        VehicleObservation(
-            id="car-flow-route-west_0_0-east_0_max-7845114534199723832--7266489842092764092--0-0.0",
-            position=(-1.33354215, -3.2, 0.0),
-            bounding_box=Dimensions(length=3.68, width=1.47, height=1.4),
-            heading=Heading(-1.5707963267948966),
-            speed=5.050372796758114,
-            road_id="west",
-            lane_id="west_0",
-            lane_index=0,
-        ),
-    ],
-    waypoint_paths=[
-        [
-            Waypoint(
-                pos=np.array([192.00733923, -3.2]),
-                heading=Heading(-1.5707963267948966),
-                lane_id="east_0",
-                lane_width=3.2,
-                speed_limit=5.0,
-                lane_index=0,
-            ),
-            Waypoint(
-                pos=np.array([193.0, -3.2]),
-                heading=Heading(-1.5707963267948966),
-                lane_id="east_0",
-                lane_width=3.2,
-                speed_limit=5.0,
-                lane_index=0,
-            ),
-        ],
-        [
-            Waypoint(
-                pos=np.array([192.00733923, 0.0]),
-                heading=Heading(-1.5707963267948966),
-                lane_id="east_1",
-                lane_width=3.2,
-                speed_limit=5.0,
-                lane_index=1,
-            ),
-            Waypoint(
-                pos=np.array([193.0, 0.0]),
-                heading=Heading(-1.5707963267948966),
-                lane_id="east_1",
-                lane_width=3.2,
-                speed_limit=5.0,
-                lane_index=1,
-            ),
-        ],
-    ],
-    distance_travelled=0.0,
-    lidar_point_cloud=[],
-    drivable_area_grid_map=DrivableAreaGridMap(
-        metadata=GridMapMetadata(
-            created_at=1649853761,
-            resolution=0.1953125,
-            width=256,
-            height=256,
-            camera_pos=(161.235, 3.2, 73.6),
-            camera_heading_in_degrees=-90.0,
-        ),
-        data=np.array(
-            [
-                [[0]] * 256,
-            ]
-            * 256,
-            dtype=np.uint8,
-        ),
-    ),
-    occupancy_grid_map=OccupancyGridMap(
-        metadata=GridMapMetadata(
-            created_at=1649853761,
-            resolution=0.1953125,
-            width=256,
-            height=256,
-            camera_pos=(161.235, 3.2, 73.6),
-            camera_heading_in_degrees=-90.0,
-        ),
-        data=np.array(
-            [
-                [[0]] * 256,
-            ]
-            * 256,
-            dtype=np.uint8,
-        ),
-    ),
-    top_down_rgb=TopDownRGB(
-        metadata=GridMapMetadata(
-            created_at=1649853761,
-            resolution=0.1953125,
-            width=256,
-            height=256,
-            camera_pos=(161.235, 3.2, 73.6),
-            camera_heading_in_degrees=-90.0,
-        ),
-        data=np.array(
-            [
-                [
-                    [0, 0, 0],
-                ]
-                * 256,
-            ]
-            * 256,
-            dtype=np.uint8,
-        ),
-    ),
-    road_waypoints=RoadWaypoints(
-        lanes={
-            "east_0": [
-                [
-                    Waypoint(
-                        pos=np.array([180.00587138, -3.2]),
-                        heading=Heading(-1.5707963267948966),
-                        lane_id="east_0",
-                        lane_width=3.2,
-                        speed_limit=5.0,
-                        lane_index=0,
-                    ),
-                    Waypoint(
-                        pos=np.array([181.0, -3.2]),
-                        heading=Heading(-1.5707963267948966),
-                        lane_id="east_0",
-                        lane_width=3.2,
-                        speed_limit=5.0,
-                        lane_index=0,
-                    ),
-                ]
-            ],
-        }
-    ),
-    via_data=Vias(near_via_points=[], hit_via_points=[]),
-)
