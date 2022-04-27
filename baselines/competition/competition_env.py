@@ -27,8 +27,10 @@ import gym
 import gym.spaces as spaces
 import numpy as np
 
-
+from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
+from smarts.core.agent_interface import AgentInterface
+from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Dimensions, Heading
 from smarts.core.events import Events
 from smarts.core.plan import EndlessGoal, Mission, Start
@@ -44,12 +46,13 @@ from smarts.core.sensors import (
     VehicleObservation,
     Vias,
 )
+from smarts.core.smarts import SMARTS
 import smarts.sstudio.types as t
 
 dummy_obs: Optional[Observation] = None
 
 MAX_MPS = 100
-
+AGENT_ID = "EGO"
 
 def _filter(obs: Observation, target_position, env):
     def _clip(formatted_obs, observation_space):
@@ -72,7 +75,7 @@ def _filter(obs: Observation, target_position, env):
 
 
 class CompetitionEnv(gym.Env):
-    """A generic environment for various driving tasks simulated by SMARTS."""
+    """A specific competition environment."""
 
     metadata = {"render.modes": ["human"]}
     """Metadata for gym's use"""
@@ -117,6 +120,8 @@ class CompetitionEnv(gym.Env):
     def __init__(
         self,
         headless: bool = True,
+        sim_name: Optional[str] = None,
+        max_episode_steps: Optional[int] = None,
         seed: int = 42,
         envision_endpoint: Optional[str] = None,
         envision_record_data_replay_path: Optional[str] = None,
@@ -135,6 +140,40 @@ class CompetitionEnv(gym.Env):
         """
         self.seed(seed)
         self._current_time = 0.0
+        self._fixed_timestep_sec = 0.1
+
+        agent_interface = AgentInterface(
+            max_episode_steps=max_episode_steps,
+            waypoints=True,
+            drivable_area_grid_map=True,
+            rgb=True,
+            action=ActionSpaceType.Trajectory,
+        )
+
+        envision_client = None
+        if not headless or envision_record_data_replay_path:
+            envision_client = Envision(
+                endpoint=envision_endpoint,
+                sim_name=sim_name,
+                output_dir=envision_record_data_replay_path,
+                headless=headless,
+            )
+
+        from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
+        traffic_sim = SumoTrafficSimulation(
+            headless=True,
+            time_resolution=self._fixed_timestep_sec,
+            endless_traffic=False,
+        )
+
+        self._smarts = SMARTS(
+            agent_interfaces={AGENT_ID: agent_interface},
+            traffic_sim=traffic_sim,
+            envision=envision_client,
+            fixed_timestep_sec=self._fixed_timestep_sec,
+        )
+        
 
     def seed(self, seed: int) -> List[int]:
         """Sets random number generator seed number.
@@ -191,7 +230,9 @@ class CompetitionEnv(gym.Env):
 
     def close(self):
         """Closes the environment and releases all resources."""
-        return
+        if self._smarts is not None:
+            self._smarts.destroy()
+            self._smarts = None
 
 
 dummy_obs = Observation(
