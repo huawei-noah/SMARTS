@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from baselines.competition.competition_env import CompetitionEnv
 from smarts.core.agent import Agent
 

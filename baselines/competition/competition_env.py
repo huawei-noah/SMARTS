@@ -144,7 +144,6 @@ class CompetitionEnv(gym.Env):
 
         agent_interface = AgentInterface(
             max_episode_steps=max_episode_steps,
-            waypoints=True,
             drivable_area_grid_map=True,
             rgb=True,
             action=ActionSpaceType.Trajectory,
@@ -203,6 +202,7 @@ class CompetitionEnv(gym.Env):
             Tuple[Observation, float, bool, Any]:
                 Observation, reward, done, and info for the environment.
         """
+        assert self.action_space.contains(np.array(agent_action)), f"Action {agent_action} must be within the action space: {self.action_space}"
         global dummy_obs
         self._current_time += dummy_obs.dt
         target = [0, 0, 0]
