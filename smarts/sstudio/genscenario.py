@@ -465,6 +465,7 @@ def gen_traffic_histories(
                 if map_spec:
                     if not road_map:
                         road_map, _ = map_spec.builder_fn(map_spec)
+                    assert road_map
                     map_bbox = road_map.bounding_box
                 else:
                     logger.warn(
