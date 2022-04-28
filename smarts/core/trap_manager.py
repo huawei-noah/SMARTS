@@ -51,11 +51,11 @@ class Trap:
 
     def ready(self, sim_time: float):
         """If the trap is ready to capture a vehicle."""
-        return self.activation_time >= sim_time
+        return self.activation_time <= sim_time
 
     def patience_expired(self, sim_time: float):
         """If the trap has expired and should no longer capture a vehicle."""
-        return self.activation_time >= sim_time + self.patience
+        return self.activation_time + self.patience <= sim_time
 
     def includes(self, vehicle_id: str):
         """Returns if the given actor should be considered for capture."""
