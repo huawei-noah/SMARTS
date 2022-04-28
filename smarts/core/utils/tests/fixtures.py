@@ -26,7 +26,7 @@ import pytest
 
 import smarts.sstudio.types as t
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.coordinates import Dimensions, Heading, ReflinePoint
+from smarts.core.coordinates import Dimensions, Heading, RefLinePoint
 from smarts.core.events import Events
 from smarts.core.plan import EndlessGoal, Mission, Start
 from smarts.core.road_map import Waypoint
