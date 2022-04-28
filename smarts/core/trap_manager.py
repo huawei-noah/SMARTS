@@ -23,13 +23,12 @@ from collections import defaultdict
 from dataclasses import dataclass, replace
 from typing import Dict, Sequence
 
-import numpy as np
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Polygon
 
 from smarts.core.coordinates import Point as MapPoint
 from smarts.core.plan import Mission, Plan, Start, default_entry_tactic
 from smarts.core.utils.math import clip, squared_dist
-from smarts.core.vehicle import Vehicle, VehicleState
+from smarts.core.vehicle import Vehicle
 from smarts.sstudio.types import MapZone, TrapEntryTactic
 
 
