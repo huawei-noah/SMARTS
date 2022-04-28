@@ -106,6 +106,13 @@ class Accelerometer:
     pass
 
 
+@dataclass
+class LanePositions:
+    """Computation and reporting of lane-relative RefLine (Frenet) coordinates for all vehicles."""
+
+    pass
+
+
 class AgentType(IntEnum):
     """Used to select preconfigured agent interfaces."""
 
@@ -276,6 +283,11 @@ class AgentInterface:
     Enable acceleration and jerk observations.
     """
 
+    lane_positions: Union[LanePositions, bool] = True
+    """
+    Enable lane-relative position reporting.
+    """
+
     def __post_init__(self):
         self.neighborhood_vehicles = AgentInterface._resolve_config(
             self.neighborhood_vehicles, NeighborhoodVehicles
@@ -292,6 +304,9 @@ class AgentInterface:
         self.lidar = AgentInterface._resolve_config(self.lidar, Lidar)
         self.accelerometer = AgentInterface._resolve_config(
             self.accelerometer, Accelerometer
+        )
+        self.lane_positions = AgentInterface._resolve_config(
+            self.lane_positions, LanePositions
         )
         assert self.vehicle_type in {"sedan", "bus"}
 
