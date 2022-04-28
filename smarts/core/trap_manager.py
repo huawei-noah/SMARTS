@@ -43,26 +43,24 @@ class Trap:
     """The mission that this trap should assign the captured actor."""
     exclusion_prefixes: Sequence[str]
     """Prefixes of actors that should be ignored by this trap."""
-    remaining_time_to_activation: float
+    activation_time: float
     """The amount of time left until this trap activates."""
     patience: float
     """Patience to wait for better capture circumstances after which the trap expires."""
     default_entry_speed: float
     """The default entry speed of a new vehicle should this trap expire."""
 
-    def step_trigger(self, dt: float):
+    def step_trigger(self, dt: float, sim_time: float):
         """Update the trigger state"""
-        self.remaining_time_to_activation -= dt
+        pass
 
-    @property
-    def ready(self):
+    def ready(self, dt: float, sim_time: float):
         """If the trap is ready to capture a vehicle."""
-        return self.remaining_time_to_activation < 0
+        return self.activation_time >= sim_time
 
-    @property
-    def patience_expired(self):
+    def patience_expired(self, dt: float, sim_time: float):
         """If the trap has expired and should no longer capture a vehicle."""
-        return self.remaining_time_to_activation < -self.patience
+        return self.activation_time + self.patience >= sim_time
 
     def includes(self, vehicle_id: str):
         """Returns if the given actor should be considered for capture."""
@@ -151,7 +149,7 @@ class TrapManager:
 
             trap.step_trigger(sim.last_dt)
 
-            if not trap.ready:
+            if not trap.ready(sim.last_dt, sim.elapsed_sim_time):
                 continue
 
             # Order vehicle ids by distance.
@@ -200,7 +198,7 @@ class TrapManager:
 
             captures = captures_by_agent_id[agent_id]
 
-            if not trap.ready:
+            if not trap.ready(sim.last_dt, sim.elapsed_sim_time):
                 continue
 
             vehicle = None
@@ -209,7 +207,7 @@ class TrapManager:
                 vehicle = sim.switch_control_to_agent(
                     vehicle_id, agent_id, mission, recreate=True, is_hijacked=False
                 )
-            elif trap.patience_expired:
+            elif trap.patience_expired(sim.last_dt, sim.elapsed_sim_time):
                 # Make sure there is not a vehicle in the same location
                 mission = trap.mission
                 nv_dims = Vehicle.agent_vehicle_dims(mission)
@@ -277,7 +275,6 @@ class TrapManager:
         if not (hasattr(mission, "start") and hasattr(mission, "goal")):
             raise ValueError(f"Value {mission} is not a mission!")
 
-        activation_delay = mission.start_time
         patience = mission.entry_tactic.wait_to_hijack_limit_s
         zone = mission.entry_tactic.zone
         default_entry_speed = mission.entry_tactic.default_entry_speed
@@ -317,7 +314,7 @@ class TrapManager:
 
         trap = Trap(
             geometry=zone.to_geometry(road_map),
-            remaining_time_to_activation=activation_delay,
+            activation_time=mission.start_time,
             patience=patience,
             mission=mission,
             exclusion_prefixes=mission.entry_tactic.exclusion_prefixes,
