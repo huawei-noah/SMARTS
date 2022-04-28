@@ -60,6 +60,9 @@ class VehicleObservation(NamedTuple):
     """The identifier for the lane nearest to this vehicle."""
     lane_index: int
     """The index of the nearest lane on the road nearest to this vehicle."""
+    lane_position: RefLinePoint
+    """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
+    See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
 
 
 class EgoVehicleObservation(NamedTuple):
@@ -85,6 +88,9 @@ class EgoVehicleObservation(NamedTuple):
     """The identifier for the lane nearest to this vehicle."""
     lane_index: int
     """The index of the nearest lane on the road nearest to this vehicle."""
+    lane_position: RefLinePoint
+    """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
+    See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
     mission: Mission
     """A field describing the vehicle plotted route"""
     linear_velocity: np.ndarray
@@ -248,10 +254,12 @@ class Sensors:
                     nv_road_id = nv_lane.road.road_id
                     nv_lane_id = nv_lane.lane_id
                     nv_lane_index = nv_lane.index
+                    nv_lane_pos = nv_lane.to_lane_coord(nv.pose.point)
                 else:
                     nv_road_id = None
                     nv_lane_id = None
                     nv_lane_index = None
+                    nv_lane_pos = None
                 neighborhood_vehicles.append(
                     VehicleObservation(
                         id=nv.vehicle_id,
@@ -262,6 +270,7 @@ class Sensors:
                         road_id=nv_road_id,
                         lane_id=nv_lane_id,
                         lane_index=nv_lane_index,
+                        lane_position=TODO_STEVE,
                     )
                 )
 
@@ -279,10 +288,12 @@ class Sensors:
             ego_lane_id = closest_lane.lane_id
             ego_lane_index = closest_lane.index
             ego_road_id = closest_lane.road.road_id
+            ego_lane_pos = closest_lane.to_lane_coord(vehicle.pose.point)
         else:
             ego_lane_id = None
             ego_lane_index = None
             ego_road_id = None
+            ego_lane_pos = None
         ego_vehicle_state = vehicle.state
 
         acceleration_params = {
@@ -322,6 +333,7 @@ class Sensors:
             road_id=ego_road_id,
             lane_id=ego_lane_id,
             lane_index=ego_lane_index,
+            lane_position=ego_lane_pos,
             mission=sensor_state.plan.mission,
             linear_velocity=ego_vehicle_state.linear_velocity,
             angular_velocity=ego_vehicle_state.angular_velocity,

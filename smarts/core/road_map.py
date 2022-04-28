@@ -567,6 +567,7 @@ class Waypoint:
     lane_width: float  # Width of lane at this point (meters)
     speed_limit: float  # Lane speed in m/s
     lane_index: int  # Index of the lane this waypoint is over. 0 is the outer(right) most lane
+    lane_offset: float  # longitudinal distance along lane centerline of this waypoint
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Waypoint):
@@ -578,6 +579,7 @@ class Waypoint:
             and self.speed_limit == other.speed_limit
             and self.lane_id == other.lane_id
             and self.lane_index == other.lane_index
+            and self.lane_offset == other.lane_offset
         )
 
     def __hash__(self):
@@ -589,6 +591,7 @@ class Waypoint:
                 self.speed_limit,
                 self.lane_id,
                 self.lane_index,
+                self.lane_offset,
             )
         )
 
