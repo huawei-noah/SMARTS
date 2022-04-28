@@ -390,6 +390,11 @@ class SMARTS:
 
     def _reset(self, scenario: Scenario, start_time):
         self._check_valid()
+
+        self._total_sim_time += self._elapsed_sim_time
+        self._elapsed_sim_time = max(0, start_time)  # The past is not allowed
+        self._step_count = 0
+
         if (
             scenario == self._scenario
             and self._reset_agents_only
@@ -402,7 +407,9 @@ class SMARTS:
                 vehicle_ids_to_teardown.extend(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
             assert self._trap_manager
-            self._trap_manager.init_traps(scenario.road_map, scenario.missions)
+            self._trap_manager.init_traps(
+                scenario.road_map, scenario.missions, self.elapsed_sim_time
+            )
             self._agent_manager.init_ego_agents(self)
             if self._renderer:
                 self._sync_vehicles_to_renderer()
@@ -416,10 +423,6 @@ class SMARTS:
             for m in scenario.missions.values()
             if m and m.vehicle_spec
         )
-
-        self._total_sim_time += self._elapsed_sim_time
-        self._elapsed_sim_time = max(0, start_time)  # The past is not allowed
-        self._step_count = 0
         self._reset_required = False
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
@@ -444,7 +447,9 @@ class SMARTS:
 
         self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
         self._trap_manager = TrapManager()
-        self._trap_manager.init_traps(scenario.road_map, scenario.missions)
+        self._trap_manager.init_traps(
+            scenario.road_map, scenario.missions, self.elapsed_sim_time
+        )
 
         if self._renderer:
             self._renderer.setup(scenario)
