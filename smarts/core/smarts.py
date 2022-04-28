@@ -362,7 +362,7 @@ class SMARTS:
         self._agent_manager.teardown_social_agents(agents_to_teardown)
         self._teardown_vehicles(vehicles_to_teardown)
 
-    def reset(self, scenario: Scenario) -> Dict[str, Observation]:
+    def reset(self, scenario: Scenario, start_time=0) -> Dict[str, Observation]:
         """Reset the simulation, reinitialize with the specified scenario. Then progress the
          simulation up to the first time an agent returns an observation, or time 0 if there are no
          agents in the simulation.
@@ -379,7 +379,7 @@ class SMARTS:
         for _ in range(tries):
             try:
                 self._resetting = True
-                return self._reset(scenario)
+                return self._reset(scenario, start_time)
             except Exception as e:
                 if not first_exception:
                     first_exception = e
@@ -388,7 +388,7 @@ class SMARTS:
         self._log.error(f"Failed to successfully reset after {tries} times.")
         raise first_exception
 
-    def _reset(self, scenario: Scenario):
+    def _reset(self, scenario: Scenario, start_time):
         self._check_valid()
         if (
             scenario == self._scenario
@@ -418,7 +418,7 @@ class SMARTS:
         )
 
         self._total_sim_time += self._elapsed_sim_time
-        self._elapsed_sim_time = 0
+        self._elapsed_sim_time = max(0, start_time)  # The past is not allowed
         self._step_count = 0
         self._reset_required = False
 
