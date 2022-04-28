@@ -362,13 +362,18 @@ class SMARTS:
         self._agent_manager.teardown_social_agents(agents_to_teardown)
         self._teardown_vehicles(vehicles_to_teardown)
 
-    def reset(self, scenario: Scenario, start_time: float = 0.0) -> Dict[str, Observation]:
+    def reset(
+        self, scenario: Scenario, start_time: float = 0.0
+    ) -> Dict[str, Observation]:
         """Reset the simulation, reinitialize with the specified scenario. Then progress the
          simulation up to the first time an agent returns an observation, or time 0 if there are no
          agents in the simulation.
         Args:
-            scenario:
+            scenario(Scenario):
                 The scenario to reset the simulation with.
+            start_time(float):
+                The initial amount of simulation time to skip. This has implications on all time
+                dependent systems.
         Returns:
             Agent observations. This observation is as follows:
                 - If no agents: the initial simulation observation at time 0
