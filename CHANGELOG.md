@@ -12,9 +12,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ### Changed
 - Updated license to 2022 version.
+- SMARTS reset now has a start time option which will skip simulation.
 
 ### Fixed
 - Unpack utility now unpacks dataclass attributes.
+- Trap manager now uses elapsed sim time rather than step delta to associate with time.
 
 ### [0.6.1rc1] 15-04-18
 ### Added
