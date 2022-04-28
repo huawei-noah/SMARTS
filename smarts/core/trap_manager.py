@@ -68,28 +68,54 @@ class Trap:
 class TrapManager:
     """Facilitates agent hijacking of actors"""
 
-    def __init__(self, scenario):
+    def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
         self._traps: Dict[str, Trap] = defaultdict(Trap)
-        self.init_traps(scenario.road_map, scenario.missions)
 
-    def init_traps(self, road_map, missions):
+    def init_traps(self, road_map, missions, sim_time):
         """Set up the traps used to capture actors."""
         self._traps.clear()
         for agent_id, mission in missions.items():
-            self.add_trap_for_agent(agent_id, mission, road_map)
+            self.add_trap_for_agent(
+                agent_id, mission, road_map, sim_time, reject_expired=True
+            )
 
-    def add_trap_for_agent(self, agent_id: str, mission: Mission, road_map) -> bool:
-        """Add a new trap to capture an actor for the given agent."""
+    def add_trap_for_agent(
+        self,
+        agent_id: str,
+        mission: Mission,
+        road_map,
+        sim_time: float,
+        reject_expired=False,
+    ) -> bool:
+        """Add a new trap to capture an actor for the given agent.
+        Args:
+            agent_id(str):
+                The agent to associate to this trap.
+            mission(Mission):
+                The mission to assign to the agent and vehicle.
+            road_map(RoadMap):
+                The road map to provide information to about the map.
+            sim_time(float|None):
+                The current simulator time.
+            reject_expired(bool):
+                If traps should be ignored if their patience would already be
+                expired on creation.
+        """
         if mission is None:
             mission = Mission.random_endless_mission(road_map)
 
         if not mission.entry_tactic:
             mission = replace(mission, entry_tactic=default_entry_tactic())
 
+        if not isinstance(mission.entry_tactic, TrapEntryTactic):
+            return False
+
+        # Do not add trap if simulation time is specified and patience already expired
         if (
-            not isinstance(mission.entry_tactic, TrapEntryTactic)
-            and mission.entry_tactic
+            reject_expired
+            and mission.start_time + mission.entry_tactic.wait_to_hijack_limit_s
+            < sim_time
         ):
             return False
 
@@ -264,7 +290,7 @@ class TrapManager:
         self.reset()
         self._traps.clear()
 
-    def _mission2trap(self, road_map, mission, default_zone_dist=6):
+    def _mission2trap(self, road_map, mission: Mission, default_zone_dist=6):
         if not (hasattr(mission, "start") and hasattr(mission, "goal")):
             raise ValueError(f"Value {mission} is not a mission!")
 

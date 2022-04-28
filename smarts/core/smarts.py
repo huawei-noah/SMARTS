@@ -443,7 +443,8 @@ class SMARTS:
         self._scenario = scenario
 
         self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
-        self._trap_manager = TrapManager(scenario)
+        self._trap_manager = TrapManager()
+        self._trap_manager.init_traps(scenario.road_map, scenario.missions)
 
         if self._renderer:
             self._renderer.setup(scenario)
@@ -495,7 +496,9 @@ class SMARTS:
         """
         self._check_valid()
         # TODO:  check that agent_id isn't already used...
-        if self._trap_manager.add_trap_for_agent(agent_id, mission, self.road_map):
+        if self._trap_manager.add_trap_for_agent(
+            agent_id, mission, self.road_map, self.elapsed_sim_time
+        ):
             self._agent_manager.add_ego_agent(agent_id, agent_interface)
         else:
             self._log.warning(
