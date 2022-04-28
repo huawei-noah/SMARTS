@@ -12,7 +12,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ### Changed
 - Updated license to 2022 version.
-- Add `lane_offset` to `Waypoint` class and `lane_postion` to both `EgoVehicleObservation` and `VehicleObservation` classes to expose ref-line coordinate system.
+- Add `lane_offset` to `Waypoint` class and `lane_postion` to both `EgoVehicleObservation` and `VehicleObservation` classes to expose the reference-line coordinate system.
 
 ### Fixed
 - Unpack utility now unpacks dataclass attributes.

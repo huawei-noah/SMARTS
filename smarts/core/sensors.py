@@ -270,7 +270,7 @@ class Sensors:
                         road_id=nv_road_id,
                         lane_id=nv_lane_id,
                         lane_index=nv_lane_index,
-                        lane_position=TODO_STEVE,
+                        lane_position=nv_lane_pos,
                     )
                 )
 
