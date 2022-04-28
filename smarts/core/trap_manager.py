@@ -50,15 +50,11 @@ class Trap:
     default_entry_speed: float
     """The default entry speed of a new vehicle should this trap expire."""
 
-    def step_trigger(self, dt: float, sim_time: float):
-        """Update the trigger state"""
-        pass
-
-    def ready(self, dt: float, sim_time: float):
+    def ready(self, sim_time: float):
         """If the trap is ready to capture a vehicle."""
         return self.activation_time >= sim_time
 
-    def patience_expired(self, dt: float, sim_time: float):
+    def patience_expired(self, sim_time: float):
         """If the trap has expired and should no longer capture a vehicle."""
         return self.activation_time + self.patience >= sim_time
 
@@ -147,9 +143,7 @@ class TrapManager:
             if trap is None:
                 continue
 
-            trap.step_trigger(sim.last_dt)
-
-            if not trap.ready(sim.last_dt, sim.elapsed_sim_time):
+            if not trap.ready(sim.elapsed_sim_time):
                 continue
 
             # Order vehicle ids by distance.
@@ -198,7 +192,7 @@ class TrapManager:
 
             captures = captures_by_agent_id[agent_id]
 
-            if not trap.ready(sim.last_dt, sim.elapsed_sim_time):
+            if not trap.ready(sim.elapsed_sim_time):
                 continue
 
             vehicle = None
@@ -207,7 +201,7 @@ class TrapManager:
                 vehicle = sim.switch_control_to_agent(
                     vehicle_id, agent_id, mission, recreate=True, is_hijacked=False
                 )
-            elif trap.patience_expired(sim.last_dt, sim.elapsed_sim_time):
+            elif trap.patience_expired(sim.elapsed_sim_time):
                 # Make sure there is not a vehicle in the same location
                 mission = trap.mission
                 nv_dims = Vehicle.agent_vehicle_dims(mission)
