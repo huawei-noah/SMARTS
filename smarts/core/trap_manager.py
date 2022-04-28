@@ -86,7 +86,7 @@ class TrapManager:
         mission: Mission,
         road_map,
         sim_time: float,
-        reject_expired=False,
+        reject_expired: bool = False,
     ) -> bool:
         """Add a new trap to capture an actor for the given agent.
         Args:
@@ -96,7 +96,7 @@ class TrapManager:
                 The mission to assign to the agent and vehicle.
             road_map(RoadMap):
                 The road map to provide information to about the map.
-            sim_time(float|None):
+            sim_time(float):
                 The current simulator time.
             reject_expired(bool):
                 If traps should be ignored if their patience would already be
