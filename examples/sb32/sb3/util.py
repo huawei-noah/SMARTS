@@ -4,12 +4,19 @@ import torch.nn as nn
 from torchinfo import summary
 
 
-def print_model(model, env):
+def print_model(model, env, alg):
     # Print model summary
     print("\n\n")
-    network = Network(model.policy.features_extractor, model.policy.mlp_extractor)
-    print(network)
-    summary(model=network, input_size=(1,) + env.observation_space.shape, depth=10)
+    if alg=="PPO":
+        network = Network(model.policy.features_extractor, model.policy.mlp_extractor)
+        print(network)
+        summary(model=network, input_size=(1,) + env.observation_space.shape, depth=10)
+    elif alg=="DQN":
+        network = model.policy.q_net
+        print(network)
+        summary(model=network, input_size=(1,) + env.observation_space.shape, depth=10)
+    else:
+        raise Exception(f"Unknown algorithm: {alg}.")
     print("\n\n")
     pass
 

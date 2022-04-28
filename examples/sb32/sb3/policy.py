@@ -285,14 +285,9 @@ def r2plus1d_18(config):
     return kwargs
 
 
-def dqn(config):
+def dqn_naturecnn(config):
     kwargs = {}
     kwargs["policy"]="CnnPolicy"
-    kwargs["policy_kwargs"] = dict(
-        features_extractor_class=R2plus1D_18,
-        features_extractor_kwargs=dict(config=config, pretrained=False, features_dim=400),
-        net_arch=[],
-    )
     kwargs["buffer_size"]=1_00_000
 
     return kwargs

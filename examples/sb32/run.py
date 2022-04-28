@@ -136,14 +136,14 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
-        sb3_util.print_model(model, eval_env)
+        sb3_util.print_model(model, env, config["alg"])
     elif config["mode"] == "train" and config.get("model", None):
         print("\nStart training from existing model.\n")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
         model.set_env(env)
-        sb3_util.print_model(model, env)
+        sb3_util.print_model(model, env, config["alg"])
         model.learn(
             total_timesteps=config["train_steps"],
             callback=[checkpoint_callback, eval_callback],
@@ -156,7 +156,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             tensorboard_log=config["logdir"] / "tensorboard",
             **(getattr(sb3_policy, config["policy"])(config)),
         )
-        sb3_util.print_model(model, env)
+        sb3_util.print_model(model, env, config["alg"])
         model.learn(
             total_timesteps=config["train_steps"],
             callback=[checkpoint_callback, eval_callback],
