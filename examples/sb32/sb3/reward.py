@@ -28,6 +28,8 @@ class Reward(gym.Wrapper):
                 obs.events["off_road"]
                 | obs.events["collisions"]
                 | obs.events["off_route"]
+                | obs.events["on_shoulder"]
+                | obs.events["wrong_way"]
             ):
                 pass
             else:
@@ -41,25 +43,31 @@ class Reward(gym.Wrapper):
 
         # Penalty for driving off road
         if obs.events["off_road"]:
-            reward -= 10
+            reward -= 20
             print(f"----- Vehicle went off road.")
             return np.float64(reward)
 
         # Penalty for driving on road shoulder
-        # if obs.events["on_shoulder"]:
-        #     reward -= 10
-        #     print(f"----- Vehicle went on shoulder.")
-        #     return np.float64(reward)
+        if obs.events["on_shoulder"]:
+            reward -= 20
+            print(f"----- Vehicle went on shoulder.")
+            return np.float64(reward)
+
+        # Penalty for driving on wrong way
+        if obs.events["wrong_way"]:
+            reward -= 20
+            print(f"----- Vehicle went wrong way.")
+            return np.float64(reward)
 
         # Penalty for colliding
         if obs.events["collisions"]:
-            reward -= 10
+            reward -= 20
             print(f"----- Vehicle collided.")
             return np.float64(reward)
 
         # Penalty for driving off route
         if obs.events["off_route"]:
-            reward -= 10
+            reward -= 20
             print(f"----- Vehicle went off route.")
             return np.float64(reward)
 
