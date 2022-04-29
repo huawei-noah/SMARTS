@@ -76,7 +76,9 @@ class TrapManager:
         """Set up the traps used to capture actors."""
         self._traps.clear()
         for agent_id, mission in missions.items():
-            self.add_trap_for_agent(agent_id, mission, road_map, sim_time)
+            self.add_trap_for_agent(
+                agent_id, mission, road_map, sim_time, reject_expired=True
+            )
 
     def add_trap_for_agent(
         self,
@@ -110,11 +112,15 @@ class TrapManager:
             return False
 
         # Do not add trap if simulation time is specified and patience already expired
-        if (
-            reject_expired
-            and mission.start_time + mission.entry_tactic.wait_to_hijack_limit_s
-            < sim_time
-        ):
+        patience_expired = (
+            mission.start_time + mission.entry_tactic.wait_to_hijack_limit_s
+        )
+        if reject_expired and patience_expired < sim_time:
+            self._log.warning(
+                f"Trap skipped for `{agent_id}` scheduled to start between "
+                + f"`{mission.start_time}` and `{patience_expired}` because simulation skipped to "
+                f"simulation time `{sim_time}`"
+            )
             return False
 
         plan = Plan(road_map, mission)
