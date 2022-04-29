@@ -206,13 +206,13 @@ class EnvisionDataFormatter:
 
         def __init__(
             self,
-            context: "EnvisionDataFormatter",
+            data_formatter: "EnvisionDataFormatter",
             iterable: Optional[Iterable],
             op: Operation,
         ) -> None:
             super().__init__()
-            self._context = context
-            self._upper_layer_data = context._data
+            self._data_formatter = data_formatter
+            self._upper_layer_data = data_formatter._data
             self._operation = op
 
             def empty_gen():
@@ -225,7 +225,7 @@ class EnvisionDataFormatter:
 
         def __enter__(self):
             super().__enter__()
-            self._context._data = []
+            self._data_formatter._data = []
             return self._iterable
 
         def __exit__(
@@ -234,14 +234,14 @@ class EnvisionDataFormatter:
             __exc_value: Optional[BaseException],
             __traceback: Optional[TracebackType],
         ) -> Optional[bool]:
-            d = self._context._data
-            self._context._data = self._upper_layer_data
-            self._context.add(d, "", op=self._operation)
+            d = self._data_formatter._data
+            self._data_formatter._data = self._upper_layer_data
+            self._data_formatter.add(d, "", op=self._operation)
             return super().__exit__(__exc_type, __exc_value, __traceback)
 
         def __iter__(self) -> Iterator[Any]:
             super().__iter__()
-            self._context._data = []
+            self._data_formatter._data = []
             return self
 
         def __next__(self) -> Any:
@@ -249,9 +249,9 @@ class EnvisionDataFormatter:
                 n = next(self._iterable)
                 return n
             except StopIteration:
-                d = self._context._data
-                self._context._data = self._upper_layer_data
-                self._context.add_primitive(d)
+                d = self._data_formatter._data
+                self._data_formatter._data = self._upper_layer_data
+                self._data_formatter.add_primitive(d)
                 raise
 
     def layer(
@@ -268,51 +268,51 @@ class EnvisionDataFormatter:
         return self._serializer(self._data)
 
 
-def _format_traffic_actor(obj, context: EnvisionDataFormatter):
+def _format_traffic_actor(obj, data_formatter: EnvisionDataFormatter):
     assert type(obj) is TrafficActorState
-    context.add(obj.actor_id, "actor_id", op=Operation.REDUCE)
-    context.add(obj.lane_id, "lane_id", op=Operation.DELTA | Operation.REDUCE)
-    context.add(obj.position, "position", op=Operation.FLATTEN)
-    context.add_primitive(obj.heading)
-    context.add_primitive(obj.speed)
-    context.add(obj.events, "events", op=Operation.DELTA)
-    for lane in context.layer(obj.waypoint_paths):
-        for waypoint in context.layer(lane):
-            with context.layer():
-                context.add(waypoint, "waypoint")
-    for dp in context.layer(obj.driven_path):
-        context.add(dp, "driven_path_point", op=Operation.FLATTEN)
-    for l_point in context.layer(obj.point_cloud):
-        context.add(l_point, "lidar_point", op=Operation.FLATTEN)
-    for geo in context.layer(obj.mission_route_geometry):
-        for route_point in context.layer(geo):
-            context.add(route_point, "route_point", op=Operation.FLATTEN)
+    data_formatter.add(obj.actor_id, "actor_id", op=Operation.REDUCE)
+    data_formatter.add(obj.lane_id, "lane_id", op=Operation.DELTA | Operation.REDUCE)
+    data_formatter.add(obj.position, "position", op=Operation.FLATTEN)
+    data_formatter.add_primitive(obj.heading)
+    data_formatter.add_primitive(obj.speed)
+    data_formatter.add(obj.events, "events", op=Operation.DELTA)
+    for lane in data_formatter.layer(obj.waypoint_paths):
+        for waypoint in data_formatter.layer(lane):
+            with data_formatter.layer():
+                data_formatter.add(waypoint, "waypoint")
+    for dp in data_formatter.layer(obj.driven_path):
+        data_formatter.add(dp, "driven_path_point", op=Operation.FLATTEN)
+    for l_point in data_formatter.layer(obj.point_cloud):
+        data_formatter.add(l_point, "lidar_point", op=Operation.FLATTEN)
+    for geo in data_formatter.layer(obj.mission_route_geometry):
+        for route_point in data_formatter.layer(geo):
+            data_formatter.add(route_point, "route_point", op=Operation.FLATTEN)
     assert type(obj.actor_type) is TrafficActorType
-    context.add(obj.actor_type, "actor_type", op=Operation.ONCE)
+    data_formatter.add(obj.actor_type, "actor_type", op=Operation.ONCE)
     assert type(obj.vehicle_type) is VehicleType
-    context.add(obj.vehicle_type, "vehicle_type", op=Operation.ONCE)
+    data_formatter.add(obj.vehicle_type, "vehicle_type", op=Operation.ONCE)
 
 
-def _format_state(obj: State, context: EnvisionDataFormatter):
+def _format_state(obj: State, data_formatter: EnvisionDataFormatter):
     assert type(obj) is State
-    context.add(obj.frame_time, "frame_time")
-    context.add(obj.scenario_id, "scenario_id")
-    context.add(obj.scenario_name, "scenario_name", op=Operation.ONCE)
-    for _id, t in context.layer(obj.traffic.items()):
-        with context.layer():
+    data_formatter.add(obj.frame_time, "frame_time")
+    data_formatter.add(obj.scenario_id, "scenario_id")
+    data_formatter.add(obj.scenario_name, "scenario_name", op=Operation.ONCE)
+    for _id, t in data_formatter.layer(obj.traffic.items()):
+        with data_formatter.layer():
             # context.add(_id, "agent_id", op=Operation.REDUCE)
-            context.add(t, "traffic")
+            data_formatter.add(t, "traffic")
     # TODO: On delta use position+heading as alternative
-    for bubble in context.layer(obj.bubbles):
-        for p in context.layer(bubble):
-            context.add(p, "bubble_point", op=Operation.FLATTEN)
-    for id_, score in context.layer(obj.scores.items()):
-        with context.layer():
-            context.add(id_, "agent_id", op=Operation.REDUCE)
-            context.add(score, "score")
+    for bubble in data_formatter.layer(obj.bubbles):
+        for p in data_formatter.layer(bubble):
+            data_formatter.add(p, "bubble_point", op=Operation.FLATTEN)
+    for id_, score in data_formatter.layer(obj.scores.items()):
+        with data_formatter.layer():
+            data_formatter.add(id_, "agent_id", op=Operation.REDUCE)
+            data_formatter.add(score, "score")
 
 
-def _format_vehicle_type(obj: VehicleType, context: EnvisionDataFormatter):
+def _format_vehicle_type(obj: VehicleType, data_formatter: EnvisionDataFormatter):
     t = type(obj)
     assert t is VehicleType
     mapping = {
@@ -322,10 +322,10 @@ def _format_vehicle_type(obj: VehicleType, context: EnvisionDataFormatter):
         VehicleType.Trailer: 3,
         VehicleType.Car: 4,
     }
-    context.add_primitive(mapping[obj])
+    data_formatter.add_primitive(mapping[obj])
 
 
-def _format_traffic_actor_type(obj: TrafficActorType, context: EnvisionDataFormatter):
+def _format_traffic_actor_type(obj: TrafficActorType, data_formatter: EnvisionDataFormatter):
     t = type(obj)
     assert t is TrafficActorType
     mapping = {
@@ -333,30 +333,30 @@ def _format_traffic_actor_type(obj: TrafficActorType, context: EnvisionDataForma
         TrafficActorType.SocialAgent: 1,
         TrafficActorType.Agent: 2,
     }
-    context.add_primitive(mapping[obj])
+    data_formatter.add_primitive(mapping[obj])
 
 
-def _format_events(obj: Events, context: EnvisionDataFormatter):
+def _format_events(obj: Events, data_formatter: EnvisionDataFormatter):
     t = type(obj)
     assert t is Events
-    context.add_primitive(tuple(obj))
+    data_formatter.add_primitive(tuple(obj))
 
 
-def _format_waypoint(obj: Waypoint, context: EnvisionDataFormatter):
+def _format_waypoint(obj: Waypoint, data_formatter: EnvisionDataFormatter):
     t = type(obj)
     assert t is Waypoint
-    context.add(obj.pos, "position", op=Operation.FLATTEN)
-    context.add_primitive(float(obj.heading))
-    context.add(obj.lane_id, "lane_id", op=Operation.REDUCE)
-    context.add_primitive(obj.lane_width)
-    context.add_primitive(obj.speed_limit)
-    context.add_primitive(obj.lane_index)
+    data_formatter.add(obj.pos, "position", op=Operation.FLATTEN)
+    data_formatter.add_primitive(float(obj.heading))
+    data_formatter.add(obj.lane_id, "lane_id", op=Operation.REDUCE)
+    data_formatter.add_primitive(obj.lane_width)
+    data_formatter.add_primitive(obj.speed_limit)
+    data_formatter.add_primitive(obj.lane_index)
 
 
-def _format_list(l: Union[list, tuple], context: EnvisionDataFormatter):
+def _format_list(l: Union[list, tuple], data_formatter: EnvisionDataFormatter):
     assert isinstance(l, (list, tuple))
-    for e in context.layer(l):
-        context.add(e, "")
+    for e in data_formatter.layer(l):
+        data_formatter.add(e, "")
 
 
 _formatter_map[TrafficActorState] = _format_traffic_actor
