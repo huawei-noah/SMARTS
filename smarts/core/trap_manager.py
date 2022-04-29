@@ -21,7 +21,7 @@ import logging
 import random as rand
 from collections import defaultdict
 from dataclasses import dataclass, replace
-from typing import Dict, Sequence
+from typing import Dict, Sequence, Set
 
 from shapely.geometry import Polygon
 
@@ -70,15 +70,22 @@ class TrapManager:
 
     def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._traps: Dict[str, Trap] = defaultdict(Trap)
+        self._traps: Dict[str, Trap] = {}
+        self._cancelled_agents: Set[str] = set()
 
-    def init_traps(self, road_map, missions, sim_time):
+    def init_traps(self, road_map, missions, sim):
         """Set up the traps used to capture actors."""
+        from smarts.core.smarts import SMARTS
+
+        assert isinstance(sim, SMARTS)
         self._traps.clear()
         for agent_id, mission in missions.items():
             self.add_trap_for_agent(
-                agent_id, mission, road_map, sim_time, reject_expired=True
+                agent_id, mission, road_map, sim.elapsed_sim_time, reject_expired=True
             )
+        if len(self._cancelled_agents) > 0:
+            sim.agent_manager.teardown_ego_agents(self._cancelled_agents)
+            self._cancelled_agents.clear()
 
     def add_trap_for_agent(
         self,
@@ -121,6 +128,7 @@ class TrapManager:
                 + f"`{mission.start_time}` and `{patience_expired}` because simulation skipped to "
                 f"simulation time `{sim_time}`"
             )
+            self._cancelled_agents.add(agent_id)
             return False
 
         plan = Plan(road_map, mission)
@@ -143,6 +151,9 @@ class TrapManager:
 
     def step(self, sim):
         """Run hijacking and update agent and actor states."""
+        from smarts.core.smarts import SMARTS
+
+        assert isinstance(sim, SMARTS)
         captures_by_agent_id = defaultdict(list)
 
         # Do an optimization to only check if there are pending agents.
@@ -167,7 +178,7 @@ class TrapManager:
         ]
 
         for agent_id in sim.agent_manager.pending_agent_ids:
-            trap = self._traps[agent_id]
+            trap = self._traps.get(agent_id)
 
             if trap is None:
                 continue
