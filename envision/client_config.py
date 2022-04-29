@@ -32,7 +32,7 @@ class SingleAttributeOverride(NamedTuple):
     """If the stream value is enabled."""
     default: Any
     """The default value for the stream if not enabled."""
-    max_count = sys.maxsize
+    max_count: int = sys.maxsize
     """The maximum number of elements an iterable attribute can contain."""
 
 
