@@ -36,4 +36,3 @@ smarts:
   # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Lane
 
   policy: dqn_naturecnn
-  # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Discrete
