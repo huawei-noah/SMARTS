@@ -158,7 +158,7 @@ class Client:
                 if not isinstance(state, str):
                     if data_formatter:
                         data_formatter.reset()
-                        data_formatter.add(state, "state")  # TODO do this in subprocess
+                        data_formatter.add(state, "state")
                         state = data_formatter.resolve()
                     state = unpack(state)
                     state = json.dumps(state, cls=JSONEncoder)
@@ -202,7 +202,7 @@ class Client:
         def optionally_serialize_and_write(state: Union[types.State, str], ws):
             if data_formatter:
                 data_formatter.reset()
-                data_formatter.add(state, "state")  # TODO do this in subprocess
+                data_formatter.add(state, "state")
                 state = data_formatter.resolve()
             # if not already serialized
             if not isinstance(state, str):
