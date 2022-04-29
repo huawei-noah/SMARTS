@@ -55,18 +55,11 @@ class Operation(IntEnum):
     NONE = 0
     """No special operation. Value will be sent as is."""
     REDUCE = 1
-    """Convert the value to an integer and centralize the value into a mapping. Useful for
-     reoccuring values"""
-    DELTA = 2  # TODO implement
     """Send value only if it has changed."""
     FLATTEN = 4
     """Convert value from list or dataclass to higher hierachy."""
     OPTIONAL = 8
     """Sending this value is togglable by option."""
-    ONCE = 16  # TODO implement
-    """This will be sent only if it was not sent in the previous reduction."""
-    DELTA_ALTERNATE = 64  # TODO implement
-    """Similar to DELTA, this value will be sent as the base value the first time seen then as an alternate."""
 
 
 _formatter_map: Dict[Type, Callable[[Any, "EnvisionDataFormatter"], None]] = {}
@@ -165,7 +158,7 @@ class EnvisionDataFormatter:
     def add_primitive(self, obj: Any):
         """Add the given object as is to the given layer. Will decompose known primitives."""
         # TODO prevent cycles
-        # if isinstance(value, (Object)) and value in self.seen_objects:
+        # if isinstance(ref, (Object)) and ref in self.seen_objects:
         #     return
 
         f = _formatter_map.get(type(obj))
@@ -271,11 +264,11 @@ class EnvisionDataFormatter:
 def _format_traffic_actor(obj, data_formatter: EnvisionDataFormatter):
     assert type(obj) is TrafficActorState
     data_formatter.add(obj.actor_id, "actor_id", op=Operation.REDUCE)
-    data_formatter.add(obj.lane_id, "lane_id", op=Operation.DELTA | Operation.REDUCE)
+    data_formatter.add(obj.lane_id, "lane_id", op=Operation.REDUCE)
     data_formatter.add(obj.position, "position", op=Operation.FLATTEN)
     data_formatter.add_primitive(obj.heading)
     data_formatter.add_primitive(obj.speed)
-    data_formatter.add(obj.events, "events", op=Operation.DELTA)
+    data_formatter.add(obj.events, "events")
     for lane in data_formatter.layer(obj.waypoint_paths):
         for waypoint in data_formatter.layer(lane):
             with data_formatter.layer():
@@ -288,16 +281,16 @@ def _format_traffic_actor(obj, data_formatter: EnvisionDataFormatter):
         for route_point in data_formatter.layer(geo):
             data_formatter.add(route_point, "route_point", op=Operation.FLATTEN)
     assert type(obj.actor_type) is TrafficActorType
-    data_formatter.add(obj.actor_type, "actor_type", op=Operation.ONCE)
+    data_formatter.add(obj.actor_type, "actor_type")
     assert type(obj.vehicle_type) is VehicleType
-    data_formatter.add(obj.vehicle_type, "vehicle_type", op=Operation.ONCE)
+    data_formatter.add(obj.vehicle_type, "vehicle_type")
 
 
 def _format_state(obj: State, data_formatter: EnvisionDataFormatter):
     assert type(obj) is State
     data_formatter.add(obj.frame_time, "frame_time")
     data_formatter.add(obj.scenario_id, "scenario_id")
-    data_formatter.add(obj.scenario_name, "scenario_name", op=Operation.ONCE)
+    data_formatter.add(obj.scenario_name, "scenario_name")
     for _id, t in data_formatter.layer(obj.traffic.items()):
         with data_formatter.layer():
             # context.add(_id, "agent_id", op=Operation.REDUCE)
