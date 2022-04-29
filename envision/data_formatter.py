@@ -318,7 +318,9 @@ def _format_vehicle_type(obj: VehicleType, data_formatter: EnvisionDataFormatter
     data_formatter.add_primitive(mapping[obj])
 
 
-def _format_traffic_actor_type(obj: TrafficActorType, data_formatter: EnvisionDataFormatter):
+def _format_traffic_actor_type(
+    obj: TrafficActorType, data_formatter: EnvisionDataFormatter
+):
     t = type(obj)
     assert t is TrafficActorType
     mapping = {
