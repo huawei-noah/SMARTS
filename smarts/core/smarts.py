@@ -393,7 +393,7 @@ class SMARTS:
         self._log.error(f"Failed to successfully reset after {tries} times.")
         raise first_exception
 
-    def _reset(self, scenario: Scenario, start_time):
+    def _reset(self, scenario: Scenario, start_time: float):
         self._check_valid()
 
         self._total_sim_time += self._elapsed_sim_time
