@@ -50,7 +50,7 @@ $ pip install -e .
 1. Evaluate
     ```bash
     $ cd <path>/SMARTS/examples/sb3
-    $ scl envision start -s ./scenarios &
+    $ scl envision start --scenarios ./.venv/lib/python3.7/site-packages/scenarios/intersections &
     $ python3.7 run.py --mode=evaluate --logdir="<path>/SMARTS/examples/sb3/logs/<folder_name>" --head
     ```
 1. Go to `localhost:8081` to view the simulation in Envision.
