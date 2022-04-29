@@ -219,12 +219,18 @@ if __name__ == "__main__":
     # print("\n\n")
 
     import d3rlpy
-    dataset, env = d3rlpy.datasets.get_dataset("hopper-medium-v0")
-    # prepare algorithm
-    sac = d3rlpy.algos.SAC()
-    # train offline
-    sac.fit(dataset, n_steps=1000000)
-    # train online
-    sac.fit_online(env, n_steps=1000000)
-    # ready to control
-    # actions = sac.predict(x)
+    dataset, env = d3rlpy.datasets.get_dataset("cartpole-replay")
+
+    print(type(dataset))
+    print(dataset.)
+
+
+
+    # # prepare algorithm
+    # sac = d3rlpy.algos.SAC()
+    # # train offline
+    # sac.fit(dataset, n_steps=1000000)
+    # # train online
+    # sac.fit_online(env, n_steps=1000000)
+    # # ready to control
+    # # actions = sac.predict(x)
