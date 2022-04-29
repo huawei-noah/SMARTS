@@ -109,9 +109,8 @@ def intersection_env(
         collision=True,
         off_road=True,
         off_route=True,
-        # on_shoulder=True,
-        on_shoulder=False,
-        wrong_way=False,
+        on_shoulder=True,
+        wrong_way=True,
         not_moving=False,
         agents_alive=None,
     )
