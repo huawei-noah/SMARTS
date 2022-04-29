@@ -202,24 +202,17 @@ def main(
                 agent.load_data_for_vehicle(veh_id, scenario, history_start_time)
                 agents[agent_id] = agent
                 dones[agent_id] = False
-                mission = veh_missions[veh_id]
-                ego_missions[agent_id] = replace(
-                    mission, start_time=mission.start_time - history_start_time
-                )
+                ego_missions[agent_id] = veh_missions[veh_id]
 
-            # Tell the traffic history provider to start traffic
-            # at the point when the earliest agent enters...
-            traffic_history_provider.start_time = history_start_time
             # and all the other agents to offset their missions by this much too
             scenario.set_ego_missions(ego_missions)
-            logger.info(f"offsetting sim_time by: {history_start_time}")
 
             # Take control of vehicles with corresponding agent_ids
             smarts.switch_ego_agents(agent_interfaces)
 
             # Finally start the simulation loop...
-            logger.info(f"starting simulation loop...")
-            observations = smarts.reset(scenario)
+            logger.info(f"starting simulation loop at: `{history_start_time}`...")
+            observations = smarts.reset(scenario, history_start_time)
             while not all(done for done in dones.values()):
                 actions = {
                     agent_id: agents[agent_id].act(agent_obs)
