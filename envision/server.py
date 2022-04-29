@@ -23,6 +23,7 @@ import bisect
 import importlib.resources as pkg_resources
 import json
 import logging
+import math
 import random
 import signal
 import sys
@@ -184,13 +185,15 @@ class WebClientRunLoop:
         self,
         frames: Frames,
         web_client_handler: tornado.websocket.WebSocketHandler,
-        fixed_timestep_sec: float,
+        message_frequency: float,
+        message_frame_volume: int,
         seek: Optional[int] = None,
     ):
         self._log = logging.getLogger(__class__.__name__)
         self._frames: Frames = frames
         self._client: tornado.websocket.WebSocketHandler = web_client_handler
-        self._fixed_timestep_sec: float = fixed_timestep_sec
+        self._message_wait_time: float = 1 / (max(0, message_frequency) or math.inf)
+        self._message_frame_volume: int = message_frame_volume
         self._seek: Optional[int] = seek
         self._thread: Optional[threading.Thread] = None
 
@@ -211,7 +214,7 @@ class WebClientRunLoop:
             frame_ptr = None
             # wait until we have a start_frame...
             while frame_ptr is None:
-                time.sleep(0.5 * self._fixed_timestep_sec)
+                time.sleep(self._message_wait_time)
                 frame_ptr = self._frames.start_frame
                 frames_to_send = [frame_ptr]
 
@@ -262,15 +265,14 @@ class WebClientRunLoop:
 
     def _calculate_frame_delay(self, frame_ptr):
         # we may want to be more clever here in the future...
-        return 0.5 * self._fixed_timestep_sec if not frame_ptr.next_ else 0
+        return self._message_wait_time
 
     def _wait_for_next_frame(self, frame_ptr):
-        FRAME_BATCH_SIZE = 10  # limit the batch size for bandwidth and to allow breaks for seeks to be handled
         while True:
             delay = self._calculate_frame_delay(frame_ptr)
             time.sleep(delay)
             frames_to_send = []
-            while frame_ptr.next_ and len(frames_to_send) <= FRAME_BATCH_SIZE:
+            while frame_ptr.next_ and len(frames_to_send) <= self._message_frame_volume:
                 frame_ptr = frame_ptr.next_
                 frames_to_send.append(frame_ptr)
             if len(frames_to_send) > 0:
@@ -339,12 +341,13 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
         if simulation_id not in WEB_CLIENT_RUN_LOOPS:
             raise tornado.web.HTTPError(404, f"Simuation `{simulation_id}` not found.")
 
-        # TODO: Set this appropriately (pass from SMARTS)
-        fixed_timestep_sec = 0.1
+        frequency = 10
+        message_frame_volume = 100
         self._run_loop = WebClientRunLoop(
             frames=FRAMES[simulation_id],
             web_client_handler=self,
-            fixed_timestep_sec=fixed_timestep_sec,
+            message_frequency=frequency,
+            message_frame_volume=message_frame_volume,
             seek=self.get_argument("seek", None),
         )
 
