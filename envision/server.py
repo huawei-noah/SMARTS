@@ -310,9 +310,7 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
         frame_time = None
         # find the first number value. It is the frame time.
         for prefix, event, value in it:
-            if not prefix:
-                continue
-            if event != "number":
+            if not prefix or event != "number":
                 continue
             frame_time = float(value)
         assert isinstance(frame_time, float)
