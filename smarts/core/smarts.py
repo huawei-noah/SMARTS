@@ -412,9 +412,7 @@ class SMARTS:
                 vehicle_ids_to_teardown.extend(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
             assert self._trap_manager
-            self._trap_manager.init_traps(
-                scenario.road_map, scenario.missions, self.elapsed_sim_time
-            )
+            self._trap_manager.init_traps(scenario.road_map, scenario.missions, self)
             self._agent_manager.init_ego_agents(self)
             if self._renderer:
                 self._sync_vehicles_to_renderer()
@@ -437,9 +435,8 @@ class SMARTS:
         # Visualization
         self._try_emit_visdom_obs(observations)
 
-        if len(self._agent_manager.ego_agent_ids):
-            while len(observations_for_ego) < 1:
-                observations_for_ego, _, _, _ = self.step({})
+        while len(self._agent_manager.ego_agent_ids) and len(observations_for_ego) < 1:
+            observations_for_ego, _, _, _ = self.step({})
 
         self._reset_providers()
 
@@ -450,12 +447,6 @@ class SMARTS:
         self._check_valid()
         self._scenario = scenario
 
-        self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
-        self._trap_manager = TrapManager()
-        self._trap_manager.init_traps(
-            scenario.road_map, scenario.missions, self.elapsed_sim_time
-        )
-
         if self._renderer:
             self._renderer.setup(scenario)
         self._setup_bullet_client(self._bullet_client)
@@ -463,7 +454,11 @@ class SMARTS:
         self._vehicle_index.load_controller_params(
             scenario.controller_parameters_filepath
         )
+
         self._agent_manager.setup_agents(self)
+        self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
+        self._trap_manager = TrapManager()
+        self._trap_manager.init_traps(scenario.road_map, scenario.missions, self)
 
         self._harmonize_providers(provider_state)
         self._last_provider_state = provider_state
