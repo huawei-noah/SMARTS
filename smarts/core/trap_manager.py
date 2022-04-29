@@ -76,9 +76,7 @@ class TrapManager:
         """Set up the traps used to capture actors."""
         self._traps.clear()
         for agent_id, mission in missions.items():
-            self.add_trap_for_agent(
-                agent_id, mission, road_map, sim_time, reject_expired=True
-            )
+            self.add_trap_for_agent(agent_id, mission, road_map, sim_time)
 
     def add_trap_for_agent(
         self,
