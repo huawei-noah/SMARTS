@@ -290,9 +290,11 @@ class TrapManager:
         self.reset()
         self._traps.clear()
 
-    def _mission2trap(self, road_map, mission: Mission, default_zone_dist=6):
+    def _mission2trap(self, road_map, mission: Mission, default_zone_dist: float = 6.0):
         if not (hasattr(mission, "start") and hasattr(mission, "goal")):
             raise ValueError(f"Value {mission} is not a mission!")
+
+        assert isinstance(mission.entry_tactic, TrapEntryTactic)
 
         patience = mission.entry_tactic.wait_to_hijack_limit_s
         zone = mission.entry_tactic.zone
