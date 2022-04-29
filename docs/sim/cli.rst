@@ -94,8 +94,9 @@ Usage: scl scenario build-all [OPTIONS] <scenarios>
 Options:
   --clean              Clean previously generated artifacts first
   --allow-offset-maps  Allows road networks (maps) to be offset from the
-                       origin. If not specified, creates creates a new network
-                       file if necessary.
+                       origin. If not specified, a new network file is created
+                       if necessary.  Defaults to False except when there's
+                       Traffic History data associated with the scenario.
   --help               Show this message and exit.
 
 clean

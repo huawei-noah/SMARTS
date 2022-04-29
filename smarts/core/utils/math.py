@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -20,7 +20,7 @@
 import math
 from dataclasses import dataclass
 from math import factorial
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 
 @dataclass(frozen=True)
@@ -275,6 +275,16 @@ def vec_to_radians(v) -> float:
     elif y < 0:
         return (1.5 * math.pi - r) % (2 * math.pi)  # quad 4
     return (r - 0.5 * math.pi) % (2 * math.pi)  # quad 1
+
+
+def circular_mean(vectors: Sequence[np.ndarray]) -> float:
+    """Given a sequence of equal-length 2D vectors (e.g., unit vectors),
+    returns their circular mean in radians, but with +y = 0 rad.
+    See: https://en.wikipedia.org/wiki/Circular_mean"""
+    return (
+        math.atan2(sum(v[1] for v in vectors), sum(v[0] for v in vectors))
+        - 0.5 * math.pi
+    )
 
 
 def is_close(a: float, b: float, rel_tol: float = 1e-09, abs_tol: float = 0.0) -> bool:
