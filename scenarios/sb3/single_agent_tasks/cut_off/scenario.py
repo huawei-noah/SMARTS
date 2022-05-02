@@ -18,9 +18,11 @@ traffic = t.Traffic(
     for _ in range(4)
     ]
 )
+ego_missions = [t.Mission(t.Route(begin=("E1",2,1),end=("E2",2,'max')))]
 
 scenario = t.Scenario(
     traffic={"all": traffic},
+    ego_missions=ego_missions,
 )
 
 gen_scenario(scenario, output_dir=str(Path(__file__).parent))

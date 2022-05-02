@@ -59,9 +59,12 @@ traffic = t.Traffic(
     flows=flow1+flow2+flow3+flow4+flow5
 )
 
+ego_mission = [t.Mission(t.Route(begin=("E0",0,1),end=("E1",0,'max')))]
+
 gen_scenario(
     scenario=t.Scenario(
         traffic={"basic": traffic},
+        ego_missions=ego_mission
     ),
     output_dir=Path(__file__).parent,
 )
