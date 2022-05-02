@@ -238,8 +238,8 @@ class TrafficHistory:
         heading_rad: float
         speed: float
 
-    class TrafficHistoryVehicleTimeSlice(NamedTuple):
-        """Information about a vehicle between two times."""
+    class TrafficHistoryVehicleWindow(NamedTuple):
+        """General information about a vehicle between a time window."""
 
         vehicle_id: int
         vehicle_type: int
@@ -259,16 +259,19 @@ class TrafficHistory:
 
         @property
         def axle_start_position(self):
+            """The start position of the vehicle from the axle."""
             hhx, hhy = radians_to_vec(self.start_heading) * (0.5 * self.vehicle_length)
             return [self.start_position_x + hhx, self.start_position_y + hhy]
 
         @property
         def axle_end_position(self):
+            """The start position of the vehicle from the axle."""
             hhx, hhy = radians_to_vec(self.end_heading) * (0.5 * self.vehicle_length)
             return [self.end_position_x + hhx, self.end_position_y + hhy]
 
         @property
         def dimensions(self) -> Dimensions:
+            """The known or estimated dimensions of this vehicle."""
             return Dimensions(
                 self.vehicle_length, self.vehicle_width, self.vehicle_height
             )
@@ -285,8 +288,8 @@ class TrafficHistory:
         rows = self._query_list(query, (start_time, end_time))
         return (TrafficHistory.VehicleRow(*row) for row in rows)
 
-    def vehicle_slice_in_range(
-        self, exists_at_or_after, ends_before, minimum_history_duration
+    def vehicle_windows_in_range(
+        self, exists_at_or_after, ends_before, minimum_vehicle_window
     ):
         """Find all vehicles active between the given history times."""
         query = """SELECT V.id, V.type, V.length, V.width, V.height,
@@ -330,12 +333,12 @@ class TrafficHistory:
                 ends_before,
                 ends_before,
                 exists_at_or_after,
-                minimum_history_duration,
+                minimum_vehicle_window,
             ),
         )
 
         def _slice_from_row(row):
-            return TrafficHistory.TrafficHistoryVehicleTimeSlice(
+            return TrafficHistory.TrafficHistoryVehicleWindow(
                 row[0],
                 self.decode_vehicle_type(row[1]),
                 *self._resolve_vehicle_dims(row[1], *row[2:5]).as_lwh,
@@ -349,7 +352,7 @@ class TrafficHistory:
             for row in rows:
                 r = _slice_from_row(row)
                 assert r.vehicle_id not in seen
-                assert r.end_time - r.start_time >= minimum_history_duration
+                assert r.end_time - r.start_time >= minimum_vehicle_window
                 assert r.start_time >= exists_at_or_after
                 assert r.end_time <= ends_before
                 assert r.end_position_x not in seen_pos_x
