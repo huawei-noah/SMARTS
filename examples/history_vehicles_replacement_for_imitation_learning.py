@@ -119,15 +119,8 @@ def main(
         assert isinstance(scenario.traffic_history, TrafficHistory)
         logger.debug("working on scenario {}".format(scenario.name))
 
-        traffic_history: TrafficHistory = scenario.traffic_history
-        assert traffic_history is not None
-        active_vehicles: List[
-            TrafficHistory.TrafficHistoryVehicleTimeSlice
-        ] = traffic_history.vehicle_slice_in_range(
-            exists_at_or_after, ends_before, minimum_history_duration
-        )
-        # e.g. filter: v.end_time - v.start_time > 6 and v.start_time == start_time
-        def custom_filter(vehs: List[TrafficHistory.TrafficHistoryVehicleTimeSlice]):
+        # Can use this to futher filter out perpective vehicles
+        def custom_filter(vehs: List[TrafficHistory.TrafficHistoryVehicleWindow]):
             nonlocal exists_at_or_after
             window = 4
             return (
@@ -137,13 +130,11 @@ def main(
                 and abs(v.start_time) - exists_at_or_after < window
             )
 
-        used_vehicles = custom_filter(active_vehicles)
-
         veh_missions = {
-            str(veh_time_slice.vehicle_id): scenario.history_mission_for_vehicle_slice(
-                veh_time_slice
+            mission.vehicle_spec.veh_id: mission
+            for mission in scenario.history_missions_for_window(
+                exists_at_or_after, ends_before, minimum_history_duration, custom_filter
             )
-            for veh_time_slice in used_vehicles
         }
         if not veh_missions:
             logger.warning(
