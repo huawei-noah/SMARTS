@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -41,8 +41,8 @@ def agent_info_adapter(env_obs, shaped_reward: float, raw_info: dict):
     info["collision"] = 1 if len(env_obs.events.collisions) > 0 else 0
 
     goal = env_obs.ego_vehicle_state.mission.goal
-    goal_pos = goal.position
     ego_2d_pos = env_obs.ego_vehicle_state.position[:2]
+    goal_pos = getattr(goal, "position", ego_2d_pos)
 
     info["distance_to_goal"] = distance.euclidean(ego_2d_pos, goal_pos)
     info["distance_to_center"] = CalObs.cal_distance_to_center(env_obs, "")

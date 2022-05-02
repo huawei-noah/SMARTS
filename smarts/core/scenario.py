@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -138,6 +138,7 @@ class Scenario:
         scenarios_or_scenarios_dirs: Sequence[str],
         agents_to_be_briefed: Sequence[str],
         shuffle_scenarios: bool = True,
+        circular: bool = True,
     ) -> Generator["Scenario", None, None]:
         """Generate a cycle of scenario configurations.
 
@@ -151,12 +152,12 @@ class Scenario:
             A generator that serves up Scenarios.
         """
         scenario_roots = Scenario.get_scenario_list(scenarios_or_scenarios_dirs)
-
         if shuffle_scenarios:
             np.random.shuffle(scenario_roots)
-
+        if circular:
+            scenario_roots = cycle(scenario_roots)
         return Scenario.variations_for_all_scenario_roots(
-            cycle(scenario_roots), agents_to_be_briefed, shuffle_scenarios
+            scenario_roots, agents_to_be_briefed, shuffle_scenarios
         )
 
     @staticmethod

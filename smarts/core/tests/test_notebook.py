@@ -14,7 +14,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -94,7 +94,8 @@ def notebook():
         import smarts.core.tests
 
         # pytype: disable=module-attr
-        f.write(importlib_resources.read_text(smarts.core.tests, NOTEBOOK_NAME))
+        traversable = importlib_resources.files(smarts.core.tests)
+        f.write(traversable.joinpath(NOTEBOOK_NAME).read_text())
         # pytype: enable=module-attr
     yield tmppath
     os.remove(tmppath)
@@ -112,6 +113,9 @@ def test_notebook1(nb_regression: nb.NBRegressionFixture, notebook):
         ), f"pynotebook `{NOTEBOOK_NAME}` timed out after {nb_regression.exec_timeout}s during test: {te}.\nFor more details see: https://jupyterbook.org/content/execute.html#setting-execution-timeout"
     ## Run notebook against generated
     ## ignore output for now
-    nb_regression.diff_ignore = ("/cells/*/outputs/*/text",)
+    nb_regression.diff_ignore = (
+        "/cells/*/outputs/*/text",
+        "/metadata/language_info/version",
+    )
     nb_regression.force_regen = False
     nb_regression.check(notebook)

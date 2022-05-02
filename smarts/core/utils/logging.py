@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -101,8 +101,24 @@ def _suppress_fileout(stdname):
     except UnsupportedOperation as e:
         if not isnotebook():
             raise e
-        ## This case is notebook which does not have issues with the c_printf
-        return None
+        file = open(os.devnull, "w")
+        old_std = getattr(sys, stdname)
+        setattr(sys, stdname, file)
+
+        def cleanup(_):
+            nonlocal old_std, stdname
+            new_std = getattr(sys, stdname)
+            new_std.flush()
+            # Ensure attributes exist because of https://github.com/ipython/ipykernel/issues/867
+            if not hasattr(new_std, "watch_fd_thread"):
+                setattr(new_std, "watch_fd_thread", None)
+            if not hasattr(new_std, "_exc"):
+                setattr(new_std, "_exc", None)
+            new_std.close()
+            setattr(sys, stdname, old_std)
+
+        ## This case is notebook
+        return cleanup
 
     dup_std_fno = os.dup(original_std_fno)
     devnull_fno = os.open(os.devnull, os.O_WRONLY)

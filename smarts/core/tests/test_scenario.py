@@ -14,7 +14,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -101,3 +101,20 @@ def test_scenario_variations_of_social_agents(scenario_root):
     assert (
         len(all_social_agent_ids - expected_social_agent_ids) == 0
     ), "All the correct social agent IDs were used"
+
+
+def test_scenario_variations(scenario_root):
+    # Test that the iterator yields a cycle
+    cyclic_iterator = Scenario.scenario_variations([str(scenario_root)], [AGENT_ID])
+    for _ in range(7):
+        scenario = next(cyclic_iterator)
+        assert scenario is not None
+
+    # Test that the iterator does not yield a cycle
+    acyclic_iterator = Scenario.scenario_variations(
+        [str(scenario_root)], [AGENT_ID], circular=False
+    )
+    for _ in range(6):
+        scenario = next(acyclic_iterator)
+    with pytest.raises(StopIteration):
+        _ = next(acyclic_iterator)

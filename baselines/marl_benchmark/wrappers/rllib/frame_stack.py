@@ -14,7 +14,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -234,20 +234,14 @@ class FrameStack(Wrapper):
             # ======== Penalty: distance to goal =========
             goal = last_env_obs.ego_vehicle_state.mission.goal
             ego_2d_position = last_env_obs.ego_vehicle_state.position[:2]
-            if hasattr(goal, "position"):
-                goal_position = goal.position
-            else:
-                goal_position = ego_2d_position
+            goal_position = getattr(goal, "position", ego_2d_position)
             goal_dist = distance.euclidean(ego_2d_position, goal_position)
             penalty += -0.01 * goal_dist
 
             old_obs = env_obs_seq[-2]
             old_goal = old_obs.ego_vehicle_state.mission.goal
             old_ego_2d_position = old_obs.ego_vehicle_state.position[:2]
-            if hasattr(old_goal, "position"):
-                old_goal_position = old_goal.position
-            else:
-                old_goal_position = old_ego_2d_position
+            old_goal_position = getattr(old_goal, "position", old_ego_2d_position)
             old_goal_dist = distance.euclidean(old_ego_2d_position, old_goal_position)
             penalty += 0.1 * (old_goal_dist - goal_dist)  # 0.05
 

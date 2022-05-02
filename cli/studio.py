@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -71,7 +71,7 @@ def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
     from smarts.core.scenario import Scenario
 
     traffic_histories = Scenario.discover_traffic_histories(scenario_root_str)
-    shift_to_origin = not allow_offset_map or bool(traffic_histories)
+    shift_to_origin = not allow_offset_map
 
     map_spec = Scenario.discover_map(scenario_root_str, shift_to_origin=shift_to_origin)
     road_map, _ = map_spec.builder_fn(map_spec)

@@ -16,6 +16,10 @@ Once that is done, you should be able to build your scenarios in the normal way,
 ```bash
 scl scenario build-all --clean scenarios/NGSIM
 ```
+or the following command to disable generating `shifted_map-AUTOGEN.net.xml`
+```bash
+scl scenario build-all --clean --allow-offset-map scenarios/NGSIM
+```
 
 For each traffic history `.yml` file specified in your `scenario.py`, 
 this will creates a cooresponding `.shf` file that SMARTS will use
