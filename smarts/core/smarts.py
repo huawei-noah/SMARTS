@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -362,13 +362,18 @@ class SMARTS:
         self._agent_manager.teardown_social_agents(agents_to_teardown)
         self._teardown_vehicles(vehicles_to_teardown)
 
-    def reset(self, scenario: Scenario) -> Dict[str, Observation]:
+    def reset(
+        self, scenario: Scenario, start_time: float = 0.0
+    ) -> Dict[str, Observation]:
         """Reset the simulation, reinitialize with the specified scenario. Then progress the
          simulation up to the first time an agent returns an observation, or time 0 if there are no
          agents in the simulation.
         Args:
-            scenario:
+            scenario(Scenario):
                 The scenario to reset the simulation with.
+            start_time(float):
+                The initial amount of simulation time to skip. This has implications on all time
+                dependent systems.
         Returns:
             Agent observations. This observation is as follows:
                 - If no agents: the initial simulation observation at time 0
@@ -379,7 +384,7 @@ class SMARTS:
         for _ in range(tries):
             try:
                 self._resetting = True
-                return self._reset(scenario)
+                return self._reset(scenario, start_time)
             except Exception as e:
                 if not first_exception:
                     first_exception = e
@@ -388,8 +393,13 @@ class SMARTS:
         self._log.error(f"Failed to successfully reset after {tries} times.")
         raise first_exception
 
-    def _reset(self, scenario: Scenario):
+    def _reset(self, scenario: Scenario, start_time: float):
         self._check_valid()
+
+        self._total_sim_time += self._elapsed_sim_time
+        self._elapsed_sim_time = max(0, start_time)  # The past is not allowed
+        self._step_count = 0
+
         if (
             scenario == self._scenario
             and self._reset_agents_only
@@ -402,7 +412,7 @@ class SMARTS:
                 vehicle_ids_to_teardown.extend(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
             assert self._trap_manager
-            self._trap_manager.init_traps(scenario.road_map, scenario.missions)
+            self._trap_manager.init_traps(scenario.road_map, scenario.missions, self)
             self._agent_manager.init_ego_agents(self)
             if self._renderer:
                 self._sync_vehicles_to_renderer()
@@ -416,10 +426,6 @@ class SMARTS:
             for m in scenario.missions.values()
             if m and m.vehicle_spec
         )
-
-        self._total_sim_time += self._elapsed_sim_time
-        self._elapsed_sim_time = 0
-        self._step_count = 0
         self._reset_required = False
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
@@ -429,9 +435,8 @@ class SMARTS:
         # Visualization
         self._try_emit_visdom_obs(observations)
 
-        if len(self._agent_manager.ego_agent_ids):
-            while len(observations_for_ego) < 1:
-                observations_for_ego, _, _, _ = self.step({})
+        while len(self._agent_manager.ego_agent_ids) and len(observations_for_ego) < 1:
+            observations_for_ego, _, _, _ = self.step({})
 
         self._reset_providers()
 
@@ -442,9 +447,6 @@ class SMARTS:
         self._check_valid()
         self._scenario = scenario
 
-        self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
-        self._trap_manager = TrapManager(scenario)
-
         if self._renderer:
             self._renderer.setup(scenario)
         self._setup_bullet_client(self._bullet_client)
@@ -452,7 +454,11 @@ class SMARTS:
         self._vehicle_index.load_controller_params(
             scenario.controller_parameters_filepath
         )
+
         self._agent_manager.setup_agents(self)
+        self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
+        self._trap_manager = TrapManager()
+        self._trap_manager.init_traps(scenario.road_map, scenario.missions, self)
 
         self._harmonize_providers(provider_state)
         self._last_provider_state = provider_state
@@ -495,7 +501,9 @@ class SMARTS:
         """
         self._check_valid()
         # TODO:  check that agent_id isn't already used...
-        if self._trap_manager.add_trap_for_agent(agent_id, mission, self.road_map):
+        if self._trap_manager.add_trap_for_agent(
+            agent_id, mission, self.road_map, self.elapsed_sim_time
+        ):
             self._agent_manager.add_ego_agent(agent_id, agent_interface)
         else:
             self._log.warning(
