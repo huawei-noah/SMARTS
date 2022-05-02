@@ -582,7 +582,7 @@ class Scenario:
     def create_dynamic_traffic_history_mission(
         self, veh_id: str, trigger_time: float, positional_radius: int
     ) -> Tuple[Mission, Mission]:
-        """Builds a vehicle out of
+        """Builds missions out of the given vehicle information.
         Args:
             veh_id:
                 The id of a vehicle in the traffic history dataset.
@@ -618,16 +618,38 @@ class Scenario:
         exists_at_or_after: float,
         ends_before: float,
         minimum_vehicle_window: float,
-        filter: Callable[
-            [Sequence[TrafficHistory.TrafficHistoryVehicleWindow]],
-            Sequence[TrafficHistory.TrafficHistoryVehicleWindow],
+        filter: Optional[
+            Callable[
+                [Sequence[TrafficHistory.TrafficHistoryVehicleWindow]],
+                Sequence[TrafficHistory.TrafficHistoryVehicleWindow],
+            ]
         ],
-    ):
+    ) -> Sequence[Mission]:
+        """Discovers vehicle missions for the given window of time.
+        Args:
+            exists_at_or_after(float):
+                The starting time of any vehicles to query for.
+            ends_before(float):
+                The last point in time a vehicle should be in the simulation. Vehicles ending after
+                that time are not considered.
+            minimum_vehicle_window(float):
+                The minimum time that a vehicle must be in the simulation to be considered for a
+                mission.
+            filter(func(Sequence[TrafficHistoryVehicleWindow]) -> Sequence[TrafficHistoryVehicleWindow]):
+                A filter which passes in traffic vehicle information and then should be used purely
+                to filter the sequence down.
+        Returns:
+            (List[Mission]): A set of missions derived from the traffic history.
+
+        """
         vehicle_windows = self._traffic_history.vehicle_windows_in_range(
             exists_at_or_after, ends_before, minimum_vehicle_window
         )
 
         def _gen_mission(vw: TrafficHistory.TrafficHistoryVehicleWindow):
+            assert isinstance(
+                vw, TrafficHistory.TrafficHistoryVehicleWindow
+            ), "`filter(..)` likely returns malformed data."
             v_id = str(vw.vehicle_id)
             start_time = float(vw.start_time)
             start = Start(
@@ -650,7 +672,9 @@ class Scenario:
             )
             return vehicle_mission
 
-        return [_gen_mission(vw) for vw in filter(vehicle_windows)]
+        if filter is not None:
+            vehicle_windows = filter(vehicle_windows)
+        return [_gen_mission(vw) for vw in vehicle_windows]
 
     @staticmethod
     def discover_traffic_histories(scenario_root: str):
