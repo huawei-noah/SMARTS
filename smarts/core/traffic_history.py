@@ -27,11 +27,23 @@ import random
 import sqlite3
 from contextlib import closing, nullcontext
 from functools import lru_cache
-from typing import Dict, Generator, NamedTuple, Optional, Set, Tuple, Type, TypeVar
+from typing import (
+    Dict,
+    Generator,
+    NamedTuple,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from cached_property import cached_property
 
 from smarts.core.coordinates import Dimensions
+from smarts.core.utils.math import radians_to_vec
+from smarts.core.vehicle import VEHICLE_CONFIGS
 
 T = TypeVar("T")
 
@@ -152,6 +164,21 @@ class TrafficHistory:
         veh_type = self._query_val(int, query, params=(vehicle_id,))
         return self.decode_vehicle_type(veh_type)
 
+    def _resolve_vehicle_dims(
+        self, vehicle_type: Union[str, int], length: float, width: float, height: float
+    ):
+        v_type = vehicle_type
+        if isinstance(v_type, int):
+            v_type = self.decode_vehicle_type(v_type)
+        default_dims = VEHICLE_CONFIGS[v_type].dimensions
+        if not length:
+            length = default_dims.length
+        if not width:
+            width = default_dims.width
+        if not height:
+            height = default_dims.height
+        return Dimensions(length, width, height)
+
     @lru_cache(maxsize=32)
     def vehicle_dims(self, vehicle_id: str) -> Dimensions:
         """Get the vehicle dimensions of the specified vehicle."""
@@ -162,14 +189,7 @@ class TrafficHistory:
         length, width, height, veh_type = self._query_val(
             tuple, query, params=(vehicle_id,)
         )
-        default_dims = VEHICLE_CONFIGS[self.decode_vehicle_type(veh_type)].dimensions
-        if not length:
-            length = default_dims.length
-        if not width:
-            width = default_dims.width
-        if not height:
-            height = default_dims.height
-        return Dimensions(length, width, height)
+        return self._resolve_vehicle_dims(veh_type, length, width, height)
 
     def first_seen_times(self) -> Generator[Tuple[int, float], None, None]:
         """Find the times each vehicle is first seen in the traffic history.
@@ -218,6 +238,41 @@ class TrafficHistory:
         heading_rad: float
         speed: float
 
+    class TrafficHistoryVehicleTimeSlice(NamedTuple):
+        """Information about a vehicle between two times."""
+
+        vehicle_id: int
+        vehicle_type: int
+        vehicle_length: float
+        vehicle_width: float
+        vehicle_height: float
+        start_position_x: float
+        start_position_y: float
+        start_heading: float
+        start_speed: float
+        average_speed: float
+        start_time: float
+        end_time: float
+        end_position_x: float
+        end_position_y: float
+        end_heading: float
+
+        @property
+        def axle_start_position(self):
+            hhx, hhy = radians_to_vec(self.start_heading) * (0.5 * self.vehicle_length)
+            return [self.start_position_x + hhx, self.start_position_y + hhy]
+
+        @property
+        def axle_end_position(self):
+            hhx, hhy = radians_to_vec(self.end_heading) * (0.5 * self.vehicle_length)
+            return [self.end_position_x + hhx, self.end_position_y + hhy]
+
+        @property
+        def dimensions(self) -> Dimensions:
+            return Dimensions(
+                self.vehicle_length, self.vehicle_width, self.vehicle_height
+            )
+
     def vehicles_active_between(
         self, start_time: float, end_time: float
     ) -> Generator[TrafficHistory.VehicleRow, None, None]:
@@ -229,6 +284,85 @@ class TrafficHistory:
                    ORDER BY T.sim_time DESC"""
         rows = self._query_list(query, (start_time, end_time))
         return (TrafficHistory.VehicleRow(*row) for row in rows)
+
+    def vehicle_slice_in_range(
+        self, exists_at_or_after, ends_before, minimum_history_duration
+    ):
+        """Find all vehicles active between the given history times."""
+        query = """SELECT V.id, V.type, V.length, V.width, V.height,
+                          S.position_x, S.position_y, S.heading_rad, S.speed, D.avg_speed,
+                          S.sim_time, E.sim_time,
+                          E.position_x, E.position_y, E.heading_rad
+                   FROM Vehicle AS V
+                   INNER JOIN ( 
+                    SELECT vehicle_id, AVG(speed) as "avg_speed"
+                    FROM (SELECT vehicle_id, sim_time, speed from Trajectory WHERE sim_time >= ? AND sim_time < ?)
+                    GROUP BY vehicle_id
+                   ) AS D ON V.id = D.vehicle_id
+                   JOIN (
+                    SELECT
+                        vehicle_id,
+                        sim_time,
+                        speed,
+                        position_x,
+                        position_y,
+                        heading_rad
+                    FROM (SELECT * from Trajectory WHERE sim_time < ? ORDER BY sim_time ASC)
+                    GROUP BY vehicle_id
+                   ) AS E ON V.id = E.vehicle_id
+                   JOIN (
+                    SELECT
+                        vehicle_id,
+                        sim_time,
+                        speed,
+                        position_x,
+                        position_y,
+                        heading_rad
+                    FROM (SELECT * from Trajectory WHERE sim_time >= ? ORDER BY sim_time DESC)
+                    GROUP BY vehicle_id
+                   ) AS S ON V.id = S.vehicle_id
+                   WHERE E.sim_time - S.sim_time >= ?
+                   GROUP BY V.id"""
+        rows = self._query_list(
+            query,
+            (
+                exists_at_or_after,
+                ends_before,
+                ends_before,
+                exists_at_or_after,
+                minimum_history_duration,
+            ),
+        )
+
+        def _slice_from_row(row):
+            return TrafficHistory.TrafficHistoryVehicleTimeSlice(
+                row[0],
+                self.decode_vehicle_type(row[1]),
+                *self._resolve_vehicle_dims(row[1], *row[2:5]).as_lwh,
+                *row[5:],
+            )
+
+        def debug(rows):
+            seen = set()
+            seen_pos_x = set()
+            rs = list()
+            for row in rows:
+                r = _slice_from_row(row)
+                assert r.vehicle_id not in seen
+                assert r.end_time - r.start_time >= minimum_history_duration
+                assert r.start_time >= exists_at_or_after
+                assert r.end_time <= ends_before
+                assert r.end_position_x not in seen_pos_x
+                seen_pos_x.add(r.end_position_x)
+                seen.add(r.vehicle_id)
+                rs.append(r)
+            self._log.info(f"Num vehicles suiting time criteria: {len(rs)}")
+            return rs
+
+        thvtss = None
+        thvtss = debug(rows)
+
+        return thvtss or (_slice_from_row(row) for row in rows)
 
     class TrajectoryRow(NamedTuple):
         """An instant in a trajectory"""
@@ -262,12 +396,10 @@ class TrafficHistory:
         sample_start_time = vehicle_start_times[choice]
         sample_end_time = self.vehicle_final_exit_time(choice)
         while len(sample) < k:
-            choices = list(
-                self.vehicle_ids_active_between(sample_start_time, sample_end_time)
-            )
+            choices = list(vehicle_start_times.keys())
             if len(choices) <= len(sample):
                 break
-            choice = str(random.choice(choices)[0])
+            choice = str(random.choice(choices))
             sample_start_time = min(vehicle_start_times[choice], sample_start_time)
             sample_end_time = max(self.vehicle_final_exit_time(choice), sample_end_time)
             sample.add(choice)

@@ -539,6 +539,7 @@ class Scenario:
             Start(
                 np.array([pos_x + hhx, pos_y + hhy]),
                 Heading(heading),
+                from_front_bumper=False,
             ),
             speed,
         )
@@ -611,6 +612,31 @@ class Scenario:
             goal=TraverseGoal(self._road_map),
         )
         return positional_mission, traverse_mission
+
+    def history_mission_for_vehicle_slice(
+        self, vehicle_slice: TrafficHistory.TrafficHistoryVehicleTimeSlice
+    ):
+        v_id = str(vehicle_slice.vehicle_id)
+        start_time = float(vehicle_slice.start_time)
+        start = Start(
+            np.array(vehicle_slice.axle_start_position),
+            Heading(vehicle_slice.start_heading),
+        )
+        entry_tactic = default_entry_tactic(vehicle_slice.start_speed)
+        veh_config_type = vehicle_slice.vehicle_type
+        veh_dims = vehicle_slice.dimensions
+        vehicle_mission = Mission(
+            start=start,
+            entry_tactic=entry_tactic,
+            goal=TraverseGoal(self.road_map),
+            start_time=start_time,
+            vehicle_spec=VehicleSpec(
+                veh_id=v_id,
+                veh_config_type=veh_config_type,
+                dimensions=veh_dims,
+            ),
+        )
+        return vehicle_mission
 
     @staticmethod
     def discover_traffic_histories(scenario_root: str):
