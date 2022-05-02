@@ -28,7 +28,7 @@ def continuous() -> Tuple[Callable[[np.array], np.array], gym.Space]:
     return wrapper, space
 
 def dxdy() -> Tuple[Callable[[np.array], np.array], gym.Space]:
-    space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
+    space = gym.spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
 
     def wrapper(model_action):
         # dx = model_action[0]
