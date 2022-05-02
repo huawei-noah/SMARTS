@@ -17,10 +17,10 @@ smarts:
   eval_freq: 1e5 # Evaluate the trained model every eval_freq steps and save the best model.
 
   # Policy
-  # alg: PPO
-  alg: DQN
+  alg: PPO
+  # alg: DQN
   
-  # policy: naturecnn
+  policy: naturecnn
   # policy: customnaturecnn
 
   # policy: l5kit
@@ -35,4 +35,4 @@ smarts:
   # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Continuous
   # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Lane
 
-  policy: dqn_naturecnn
+  # policy: dqn_naturecnn
