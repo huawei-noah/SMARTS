@@ -130,14 +130,14 @@ def main(
                 and abs(v.start_time) - exists_at_or_after < window
             )
 
+        # pytype: disable=attribute-error
         veh_missions = {
-            # pytype: disable=attribute-error
             mission.vehicle_spec.veh_id: mission
-            # pytype: enable=attribute-error
             for mission in scenario.history_missions_for_window(
                 exists_at_or_after, ends_before, minimum_history_duration, custom_filter
             )
         }
+        # pytype: enable=attribute-error
         if not veh_missions:
             logger.warning(
                 "no vehicle missions found for scenario {}.".format(scenario.name)
