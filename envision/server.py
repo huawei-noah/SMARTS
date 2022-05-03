@@ -509,7 +509,12 @@ def on_shutdown():
     tornado.ioloop.IOLoop.current().stop()
 
 
-def run(scenario_dirs, max_capacity_mb=500, port=8081, debug=False):
+def run(
+    scenario_dirs: List[str],
+    max_capacity_mb: int = 500,
+    port: int = 8081,
+    debug: bool = False,
+):
     """Create and run an envision web server."""
     app = make_app(scenario_dirs, max_capacity_mb, debug=debug)
     app.listen(port)
