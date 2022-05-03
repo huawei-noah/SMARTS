@@ -310,7 +310,7 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
         """Asynchronously receive messages from the Envision client."""
         it = ijson.parse(message)
         frame_time = None
-        # find the first number value. It is the frame time.
+        # Find the first number value, which will be the frame time.
         for prefix, event, value in it:
             if not prefix or event != "number":
                 continue
