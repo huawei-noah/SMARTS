@@ -214,7 +214,6 @@ def naturecnn(config):
     #     net_arch=[],
     # )
     kwargs["target_kl"]=0.003
-    # kwargs["ent_coef"]=0.01
     return kwargs
 
 
@@ -283,6 +282,7 @@ def r2plus1d_18(config):
     # Hyperparameter
     # kwargs["n_steps"] = 256
     kwargs["batch_size"] = 64
+    kwargs["target_kl"]=0.003
 
     return kwargs
 
