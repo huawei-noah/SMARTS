@@ -35,7 +35,6 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
-    Set,
     Type,
     Union,
 )
