@@ -27,7 +27,7 @@ class ObservationCNN(gym.Wrapper):
                 Observation, reward, done, info, of the agent.
         """
         obs, rewards, dones, infos = self.env.step(action)
-        filtered = filter_obs(obs)
+        filtered = filter_obs_cnn(obs)
         return filtered, rewards, dones, infos
 
     def reset(self):
@@ -37,11 +37,11 @@ class ObservationCNN(gym.Wrapper):
             np.ndarray: Agent's observation after reset.
         """
         obs = self.env.reset()
-        filtered = filter_obs(obs)
+        filtered = filter_obs_cnn(obs)
         return filtered
 
 
-def filter_obs(obs: format_obs.StdObs) -> np.ndarray:
+def filter_obs_cnn(obs: format_obs.StdObs) -> np.ndarray:
     rgb = obs.rgb
 
     # Ego vehicle is 1.5mx3.75m
@@ -97,7 +97,7 @@ class ObservationMLP(gym.Wrapper):
                 Observation, reward, done, info, of the agent.
         """
         obs, rewards, dones, infos = self.env.step(action)
-        filtered = filter_obs(obs)
+        filtered = filter_obs_mlp(obs)
         return filtered, rewards, dones, infos
 
     def reset(self):
@@ -107,5 +107,15 @@ class ObservationMLP(gym.Wrapper):
             np.ndarray: Agent's observation after reset.
         """
         obs = self.env.reset()
-        filtered = filter_obs(obs)
+        filtered = filter_obs_mlp(obs)
         return filtered
+
+def filter_obs_mlp(obs: format_obs.StdObs) -> np.ndarray:
+    waypoints = obs.waypoints["pos"]
+    neighbours = obs.neighbours["pos"]
+    neighbours = obs.neighbours["speed"]
+    
+    # waypoints coordinate
+    waypoints.pos
+
+    return filtered
