@@ -85,7 +85,7 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
     env = sb3_info.Info(env=env)
     env = sb3_action.Action(env=env, space=config["action_space_wrapper"])
     env = sb3_reward.Reward(env=env)
-    env = sb3_observation.Observation(env=env)
+    env = getattr(sb3_observation, config["observation_wrapper"])(env=env)
 
     # Check custom environment
     check_env(env)

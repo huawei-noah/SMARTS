@@ -9,7 +9,8 @@ smarts:
   n_stack: 3 # Number of frames to stack as input to policy network
   action_space: Continuous # Either "Lane" or "Continuous"
   action_space_wrapper: Discrete # Either "Lane" or "Continuous" or "Discrete"
-  
+  observation_wrapper: "ObservationCNN" # Either "ObservationCNN" or "ObservationMLP"
+
   # Training
   train_steps: 1e8 # Number of training steps.
   checkpoint_freq: 1e5 # Save a model every checkpoint_freq calls to env.step().
@@ -20,7 +21,7 @@ smarts:
   alg: PPO
   # alg: DQN
   
-  policy: naturecnn
+  # policy: naturecnn
   # policy: customnaturecnn
 
   # policy: l5kit
@@ -31,8 +32,10 @@ smarts:
   # img=pixels=64; img_meters=64; rgb; stack=4; action_space=Continuous
   # img=pixels=64; img_meters=64; rgb; stack=4; action_space=Lane
 
-  # policy: r2plus1d_18
+  policy: r2plus1d_18
   # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Continuous
   # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Lane
 
   # policy: dqn_naturecnn
+
+  # policy: mlp
