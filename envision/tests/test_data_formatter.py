@@ -251,15 +251,15 @@ def test_primitive_data_format(primitive_data):
 def test_layer():
     expected_output = [2, 5, 6, [2, 5, 6], [8, 8], ["Time", ["for", "tea", 12, "noon"]]]
     es = EnvisionDataFormatter(EnvisionDataFormatterArgs(None))
-    es.add([2, 5, 6], "", op=Operation.FLATTEN)
-    es.add([2, 5, 6], "")
+    es.add([2, 5, 6], op=Operation.FLATTEN)
+    es.add([2, 5, 6])
     with es.layer():
-        es.add([8, 8], "", op=Operation.FLATTEN)
+        es.add([8, 8], op=Operation.FLATTEN)
 
     with es.layer():
-        es.add("Time", "")
+        es.add("Time")
         with es.layer():
-            es.add(["for", "tea", 12, "noon"], "", op=Operation.FLATTEN)
+            es.add(["for", "tea", 12, "noon"], op=Operation.FLATTEN)
 
     data = es.resolve()
 
