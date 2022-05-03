@@ -35,6 +35,8 @@ class ReplayCheckerAgent(Agent):
         self._fixed_timestep_sec = fixed_timestep_sec
         self._rounder = rounder_for_dt(fixed_timestep_sec)
         self._time_offset = 0
+        self._data = None
+        self._vehicle_id = ""
 
     def load_data_for_vehicle(
         self, vehicle_id: str, scenario: Scenario, time_offset: float
@@ -129,7 +131,9 @@ def main(
             )
 
         veh_missions = {
-            mission.vehicle_spec.veh_id: mission  # pytype: disable=attribute-error
+            # pytype: disable=attribute-error
+            mission.vehicle_spec.veh_id: mission
+            # pytype: enable=attribute-error
             for mission in scenario.history_missions_for_window(
                 exists_at_or_after, ends_before, minimum_history_duration, custom_filter
             )
