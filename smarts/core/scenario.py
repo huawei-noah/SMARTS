@@ -26,7 +26,17 @@ import uuid
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Optional, Sequence, Tuple
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 import cloudpickle
 import numpy as np
@@ -52,6 +62,8 @@ from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import MapSpec
 from smarts.sstudio.types import Via as SSVia
+
+VehicleWindow = TrafficHistory.TrafficHistoryVehicleWindow
 
 
 class Scenario:
@@ -620,8 +632,8 @@ class Scenario:
         minimum_vehicle_window: float,
         filter: Optional[
             Callable[
-                [Sequence[TrafficHistory.TrafficHistoryVehicleWindow]],
-                Sequence[TrafficHistory.TrafficHistoryVehicleWindow],
+                [Iterable[VehicleWindow]],
+                Iterable[VehicleWindow],
             ]
         ],
     ) -> Sequence[Mission]:
