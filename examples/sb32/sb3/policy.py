@@ -213,6 +213,8 @@ def naturecnn(config):
     #     # activation_fn=th.nn.Tanh, # default activation used
     #     net_arch=[],
     # )
+    kwargs["target_kl"]=0.003
+    # kwargs["ent_coef"]=0.01
     return kwargs
 
 
