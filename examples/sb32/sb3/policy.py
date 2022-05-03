@@ -213,7 +213,7 @@ def naturecnn(config):
     #     # activation_fn=th.nn.Tanh, # default activation used
     #     net_arch=[],
     # )
-    kwargs["target_kl"]=0.003
+    kwargs["target_kl"]=0.1
     return kwargs
 
 
@@ -236,6 +236,7 @@ def dreamer(config):
         features_extractor_kwargs=dict(features_dim=512),
         net_arch=[],
     )
+    kwargs["target_kl"]=0.1
     return kwargs
 
 
@@ -282,7 +283,7 @@ def r2plus1d_18(config):
     # Hyperparameter
     # kwargs["n_steps"] = 256
     kwargs["batch_size"] = 64
-    kwargs["target_kl"]=0.003
+    kwargs["target_kl"]=0.1
 
     return kwargs
 
