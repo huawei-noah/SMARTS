@@ -77,14 +77,14 @@ class ReductionContext:
         removed: Optional[List[int]] = None,
         enabled: bool = True,
     ) -> None:
-        self.current_id = 0
+        self._current_id = 0
         self._mapping = mapping or {}
         self.removed = removed or []
         self._enabled = enabled
 
     def reset(self):
         """Returns this context back to blank."""
-        self.current_id = 0
+        self._current_id = 0
         self._mapping = {}
         self.removed = []
 
@@ -108,10 +108,10 @@ class ReductionContext:
         """Map the value to an ID."""
         if not self._enabled:
             return value
-        cc = self.current_id
+        cc = self._current_id
         reduce, _ = self._mapping.setdefault(hash(value), (cc, value))
-        if self.current_id == reduce:
-            self.current_id += 1
+        if self._current_id == reduce:
+            self._current_id += 1
         return reduce
 
 
