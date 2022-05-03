@@ -18,7 +18,6 @@ from smarts.core.traffic_history_provider import TrafficHistoryProvider
 from smarts.core.utils.math import rounder_for_dt
 from smarts.zoo.agent_spec import AgentSpec
 
-
 try:
     from argument_parser import default_argument_parser
 except ImportError:
