@@ -166,9 +166,10 @@ Commands you can execute at this level:
 from pathlib import Path
 import yaml
 import os
-    
+
 from smarts.sstudio.genscenario import gen_scenario
-from smarts.sstudio.types import Scenario, MapSpec
+from smarts.sstudio import types as t
+
 
 yaml_file = os.path.join(Path(__file__).parent, "waymo.yaml")
 with open(yaml_file, "r") as yf:
@@ -176,11 +177,19 @@ with open(yaml_file, "r") as yf:
 
 dataset_path = dataset_spec["input_path"]
 scenario_id = dataset_spec["scenario_id"]
+traffic_history = t.TrafficHistoryDataset(
+    name=f"waymo_{scenario_id}",
+    source_type="Waymo",
+    input_path=dataset_path,
+    scenario_id=scenario_id,
+)
 
 gen_scenario(
-    Scenario(
-        map_spec=MapSpec(source=f"{dataset_path}#{scenario_id}", lanepoint_spacing=1.0),
-        traffic_histories=["waymo.yaml"],
+    t.Scenario(
+        map_spec=t.MapSpec(
+            source=f"{dataset_path}#{scenario_id}", lanepoint_spacing=1.0
+        ),
+        traffic_histories=[traffic_history],
     ),
     output_dir=str(Path(__file__).parent),
     overwrite=True,
@@ -189,9 +198,9 @@ gen_scenario(
    And `<SCENARIO_ID>/waymo.yaml` for generating history dataset and imitation learning aspects of `SMARTS`:
 ```yaml
 trajectory_dataset:
-source: Waymo
-input_path: ./waymo_dataset/uncompressed_scenario_training_20s_training_20s.tfrecord-00001-of-01000
-scenario_id: <SCENARIO_ID>
+  source: Waymo
+  input_path: ./waymo_dataset/uncompressed_scenario_training_20s_training_20s.tfrecord-00001-of-01000
+  scenario_id: <SCENARIO_ID>
 ```
 Where the `input_path` and `scenario_id` will be modified accordingly.
 

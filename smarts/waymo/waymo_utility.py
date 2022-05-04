@@ -1200,6 +1200,8 @@ def export_scenario(
         shutil.copy2(scenario_template, scenario_py)
         print(f"Scenario.py created in {subfolder_path}.")
 
+    # The dataspec is written in a yaml file and scenario_template.py will read this file and fill in the dataspec for Waymo Scenario.
+    # We don't directly write to the scenario_template.py file to avoid writing at wrong lines if users edit that file.
     yaml_dataspec = {
         "trajectory_dataset": {
             "source": "Waymo",
