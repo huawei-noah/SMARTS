@@ -42,14 +42,13 @@ setup(
     zip_safe=True,
     python_requires=">=3.7",
     install_requires=[
-        "smarts[train]==0.5.0",
-        "ray[rllib]==1.0.1.post1",
+        "smarts[train,rllib]==0.6.1rc1",
         "trimesh==3.9.29",
         "setuptools>=41.0.0,!=50.0",
         "dill",
         "black==20.8b1",
-        "opencv-python",
-        "gym==0.18.3",
+        "opencv-python==4.1.2.30",
+        "gym==0.19.0",
         "numpy==1.19.5",
     ],
 )
