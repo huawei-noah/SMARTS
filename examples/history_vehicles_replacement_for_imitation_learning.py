@@ -171,7 +171,7 @@ def main(
             agents = {}
             dones = {}
             ego_missions = {}
-            sample = {}
+            sample = set()
 
             if scenario.traffic_history.dataset_source == "Waymo":
                 # For Waymo, we only hijack the vehicle that was autonomous in the dataset
@@ -190,7 +190,7 @@ def main(
             if not sample:
                 # For other datasets, hijack a sample of the recorded vehicles
                 # Pick k vehicle missions to hijack with agent
-                sample = set(random.sample(veh_missions.keys(), k))
+                sample = set(random.sample(tuple(veh_missions.keys()), k))
 
             agent_spec.interface.max_episode_steps = max(
                 [
