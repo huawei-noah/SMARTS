@@ -354,7 +354,7 @@ class WaymoMap(RoadMap):
         # find splits for all lanes individually
         feat_splits: WaymoMap._FeatureSplits = dict()
         splits_stack = deque()
-        for lane_feat_id in self._lane_dicts.keys():
+        for lane_feat_id in self._feat_dicts.keys():
             lane_splits = self._find_lane_splits(lane_feat_id)
             assert len(lane_splits) >= 2
             feat_splits[lane_feat_id] = lane_splits
@@ -430,7 +430,7 @@ class WaymoMap(RoadMap):
         self, linked_split: _LinkedSplit, feat_splits: _FeatureSplits
     ) -> "WaymoMap.Lane":
         feat_id = linked_split.split.feat_id
-        feat_dict = self._lane_dicts[feat_id]
+        feat_dict = self._feat_dicts[feat_id]
         orig_polyline = self._polyline_cache[feat_id][0]
         next_split_pt = linked_split.next_split.split.index
 
@@ -450,6 +450,7 @@ class WaymoMap(RoadMap):
             for i, pt in enumerate(orig_polyline)
             if linked_split.split.index <= i <= next_split_pt
         ]
+
         if linked_split.split.index > 0:
             lane_dict["incoming_lane_ids"] = [
                 WaymoMap._lane_id(feat_id, linked_split.prev_split.split.index)
@@ -468,7 +469,9 @@ class WaymoMap(RoadMap):
             ]
         lane_dict["lane_to_left_info"] = linked_split.left_splits
         lane_dict["lane_to_right_info"] = linked_split.right_splits
+
         lane_id = WaymoMap._lane_id(feat_id, linked_split.split.index)
+
         lane = WaymoMap.Lane(self, lane_id, lane_dict)
         self._lanes[lane_id] = lane
         self._surfaces[lane_id] = lane
@@ -664,7 +667,7 @@ class WaymoMap(RoadMap):
         start = time.time()
 
         # cache feature info about lanes
-        self._lane_dicts: Dict[int, Dict[str, Any]] = {}
+        self._feat_dicts: Dict[int, Dict[str, Any]] = {}
         self._polyline_cache: Dict[int, Tuple[List[np.ndarray], np.ndarray]] = {}
         for map_feature in waymo_scenario.map_features:
             key = map_feature.WhichOneof("feature_data")
@@ -676,10 +679,10 @@ class WaymoMap(RoadMap):
             if key != "lane":
                 continue
             self._polyline_cache[feat_id] = WaymoMap._polyline_dists(map_feats.polyline)
-            self._lane_dicts[feat_id] = self._waymo_pb_to_dict(map_feats)
+            self._feat_dicts[feat_id] = self._waymo_pb_to_dict(map_feats)
 
         # use original lane polylines for geometry
-        for feat_id, lane_dict in self._lane_dicts.items():
+        for feat_id, lane_dict in self._feat_dicts.items():
             lane_dict["_normals"] = self._calculate_normals(feat_id)
             left_widths, right_widths = self._raycast_boundaries(lane_dict, feat_id)
             max_width = max(
@@ -698,7 +701,7 @@ class WaymoMap(RoadMap):
 
         # don't need these anymore
         self._polyline_cache = None
-        self._lane_dicts = None
+        self._feat_dicts = None
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
@@ -851,6 +854,7 @@ class WaymoMap(RoadMap):
             super().__init__(lane_id, road_map)
             self._map = road_map
             self._lane_id = lane_id
+            self._feature_id = lane_dict["_feature_id"]
             self._road = None  # set when lane is added to a Road
             self._index = None  # set when lane is added to a Road
             self._lane_dict = lane_dict
@@ -864,17 +868,24 @@ class WaymoMap(RoadMap):
                 * 0.44704
             )
             self._is_composite = bool(lane_dict.get("sublanes", None))
+            self._length = sum(
+                np.linalg.norm(self._lane_pts[i + 1][:2] - self._lane_pts[i][:2])
+                for i in range(len(self._lane_pts) - 1)
+            )
+            self._drivable = lane_dict["type"] != LaneCenter.LaneType.TYPE_BIKE_LANE
+            self._type = lane_dict["type"]
+
             self._lane_polygon = None
-            self._create_polygon()
+            self._create_polygon(lane_dict)
             if self._map._no_composites:
                 del lane_dict["_normals"]
 
-        def _create_polygon(self):
+        def _create_polygon(self, lane_dict: Dict[str, Any]):
             new_left_pts = [None] * self._n_pts
             new_right_pts = [None] * self._n_pts
             for i in range(self._n_pts):
                 p = self._lane_pts[i][:2]
-                n = self._lane_dict["_normals"][i]
+                n = lane_dict["_normals"][i]
                 w = self._lane_width / 2.0
                 new_left_pts[i] = p + (w * n)
                 new_right_pts[i] = p + (-1.0 * w * n)
@@ -902,18 +913,13 @@ class WaymoMap(RoadMap):
         def index(self) -> int:
             return self._index
 
-        @cached_property
+        @property
         def length(self) -> float:
-            length = 0.0
-            for i in range(len(self._lane_pts) - 1):
-                a = self._lane_pts[i][:2]
-                b = self._lane_pts[i + 1][:2]
-                length += np.linalg.norm(b - a)
-            return length
+            return self._length
 
-        @cached_property
+        @property
         def is_drivable(self) -> bool:
-            return self._lane_dict["type"] != LaneCenter.LaneType.TYPE_BIKE_LANE
+            return self._drivable
 
         @property
         def composite_lane(self) -> RoadMap.Lane:
@@ -951,12 +957,12 @@ class WaymoMap(RoadMap):
                 self._map.lane_by_id(ol) for ol in self._lane_dict["outgoing_lane_ids"]
             ]
 
-        @cached_property
+        @property
         def entry_surfaces(self) -> List[RoadMap.Surface]:
             # TODO?  can a non-lane connect into a lane?
             return self.incoming_lanes
 
-        @cached_property
+        @property
         def exit_surfaces(self) -> List[RoadMap.Surface]:
             # TODO?  can a lane exit to a non-lane?
             return self.outgoing_lanes
@@ -981,35 +987,30 @@ class WaymoMap(RoadMap):
                 return adj_lane_info[0]
             min_fdelt = None
             for li in adj_lane_info:
-                fdelt = abs(self._lane_dict["_feature_id"] - li.feat_id)
+                fdelt = abs(self._feature_id - li.feat_id)
                 if not min_fdelt or fdelt < min_fdelt:
                     min_fdelt = fdelt
                     lane_info = li
             return lane_info
 
+        def _get_side_lane(self, side: str) -> Tuple[Optional[RoadMap.Lane], bool]:
+            li = self._lane_dict.get(f"lane_to_{side}_info")
+            if not li:
+                return None, True
+            if isinstance(li, str):
+                return self._map.lane_by_id(li), True
+            li = self._adj_lane_info(li)
+            same_dir = self._check_boundaries(li, "right" if side == "left" else "left")
+            side_lane_id = WaymoMap._lane_id(li.feat_id, li.index)
+            return self._map.lane_by_id(side_lane_id), same_dir
+
         @cached_property
         def lane_to_left(self) -> Tuple[Optional[RoadMap.Lane], bool]:
-            lli = self._lane_dict.get("lane_to_left_info")
-            if not lli:
-                return None, True
-            if isinstance(lli, str):
-                return self._map.lane_by_id(lli), True
-            lli = self._adj_lane_info(lli)
-            same_dir = self._check_boundaries(lli, "right")
-            left_lane_id = WaymoMap._lane_id(lli.feat_id, lli.index)
-            return self._map.lane_by_id(left_lane_id), same_dir
+            return self._get_side_lane("left")
 
         @cached_property
         def lane_to_right(self) -> Tuple[Optional[RoadMap.Lane], bool]:
-            lri = self._lane_dict.get("lane_to_right_info")
-            if not lri:
-                return None, True
-            if isinstance(lri, str):
-                return self._map.lane_by_id(lri), True
-            lri = self._adj_lane_info(lri)
-            same_dir = self._check_boundaries(lri, "left")
-            right_lane_id = WaymoMap._lane_id(lri.feat_id, lri.index)
-            return self._map.lane_by_id(right_lane_id), same_dir
+            return self._get_side_lane("right")
 
         @property
         def speed_limit(self) -> float:
@@ -1157,41 +1158,48 @@ class WaymoMap(RoadMap):
             self._is_composite = False
             self._is_junction = is_junction
             self._road_id = "waymo_road"
+
+            self._drivaable = False
+            self._road_type = -1
+            self._length = 0
+            x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
             for ind, lane in enumerate(road_lanes):
                 self._road_id += f"-{lane.lane_id}"
                 lane._road = self
                 lane._index = ind
+                self._length += lane.length
+                x_mins.append(lane.bounding_box.min_pt.x)
+                y_mins.append(lane.bounding_box.min_pt.y)
+                x_maxs.append(lane.bounding_box.max_pt.x)
+                y_maxs.append(lane.bounding_box.max_pt.y)
+                if self._road_type == -1:
+                    self._road_type = lane._type
+                elif lane._type != self._road_type:
+                    self._road_type = LaneCenter.LanesType.TYPE_UNDEFINED
+                if lane.is_drivable:
+                    self._drivable = True
                 if lane.is_composite:
                     # TAI: do we need to keep track of sub roads?
                     self._is_composite = True
-                if lane.composite_lane and lane.composite_lane != lane:
-                    assert (
-                        not self._composite
-                        or self._composite == lane.composite_lane.road
-                    )
-                    self._composite = lane.composite_lane.road
-            super().__init__(self._road_id, road_map)
-            self._lanes = road_lanes
 
-            # Set road and index for its lanes
-            idx_counter = 0
-            for lane in self._lanes:
-                lane._road = self
-                lane._index = idx_counter
-                idx_counter += 1
+            self._length /= len(road_lanes)
+            self._bbox = BoundingBox(
+                min_pt=Point(x=min(x_mins), y=min(y_mins)),
+                max_pt=Point(x=max(x_maxs), y=max(y_maxs)),
+            )
+
+            self._lanes = road_lanes
+            self._compute_edge_shapes()
+
+            super().__init__(self._road_id, road_map)
 
         @property
         def road_id(self) -> str:
             return self._road_id
 
-        @cached_property
+        @property
         def type(self) -> int:
-            road_type = LaneCenter.LaneType.TYPE_UNDEFINED
-            for lane in self._lanes:
-                if road_type != 0 and lane.type != road_type:
-                    return 0
-                road_type = lane.type
-            return road_type
+            return self._road_type
 
         @cached_property
         def type_as_str(self) -> str:
@@ -1206,27 +1214,13 @@ class WaymoMap(RoadMap):
                 return "bike lane"
             return "undefined"
 
-        @cached_property
+        @property
         def is_drivable(self) -> bool:
-            for lane in self.lanes:
-                if lane.is_drivable:
-                    return True
-            return False
+            return self._drivable
 
-        @cached_property
+        @property
         def bounding_box(self) -> BoundingBox:
-            """Get the minimal axis aligned bounding box that contains all road geometry."""
-            x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
-            for lane in self._lanes:
-                x_mins.append(lane.bounding_box.min_pt.x)
-                y_mins.append(lane.bounding_box.min_pt.y)
-                x_maxs.append(lane.bounding_box.max_pt.x)
-                y_maxs.append(lane.bounding_box.max_pt.y)
-
-            return BoundingBox(
-                min_pt=Point(x=min(x_mins), y=min(y_mins)),
-                max_pt=Point(x=max(x_maxs), y=max(y_maxs)),
-            )
+            return self._bbox
 
         @property
         def composite_road(self) -> RoadMap.Road:
@@ -1241,18 +1235,18 @@ class WaymoMap(RoadMap):
             # XXX: Waymo does not indicate whether a road is in junction or not, but we can *sometimes* tell.
             return self._is_junction
 
-        @cached_property
+        @property
         def length(self) -> float:
             # Note: the more curved the road, the more the lane lengths diverge.
-            return sum(lane.length for lane in self.lanes) / len(self.lanes)
+            return self._length
 
-        @cached_property
+        @property
         def incoming_roads(self) -> List[RoadMap.Road]:
             return list(
                 {in_lane.road for lane in self.lanes for in_lane in lane.incoming_lanes}
             )
 
-        @cached_property
+        @property
         def outgoing_roads(self) -> List[RoadMap.Road]:
             return list(
                 {
@@ -1287,7 +1281,7 @@ class WaymoMap(RoadMap):
                 ]
             return result
 
-        def _edge_shape(self):
+        def _compute_edge_shapes(self):
             leftmost_lane = self.lane_at_index(len(self._lanes) - 1)
             rightmost_lane = self.lane_at_index(0)
 
@@ -1296,33 +1290,34 @@ class WaymoMap(RoadMap):
 
             # Right edge
             rightmost_edge_vertices_len = int(
-                (len(rightmost_lane_buffered_polygon) - 1) / 2
+                0.5 * (len(rightmost_lane_buffered_polygon) - 1)
             )
-            rightmost_edge_shape = rightmost_lane_buffered_polygon[
+            self._rightmost_edge_shape = rightmost_lane_buffered_polygon[
                 rightmost_edge_vertices_len : len(rightmost_lane_buffered_polygon) - 1
             ]
 
             # Left edge
             leftmost_edge_vertices_len = int(
-                (len(leftmost_lane_buffered_polygon) - 1) / 2
+                0.5 * (len(leftmost_lane_buffered_polygon) - 1)
             )
-            leftmost_edge_shape = leftmost_lane_buffered_polygon[
+            self._leftmost_edge_shape = leftmost_lane_buffered_polygon[
                 :leftmost_edge_vertices_len
             ]
-
-            return leftmost_edge_shape, rightmost_edge_shape
 
         @lru_cache(maxsize=4)
         def shape(
             self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
-            """Returns the polygon representing this , buffered by buffered_width (which must be non-negative),
+            """Returns the polygon representing this buffered by buffered_width (which must be non-negative),
             where buffer_width is a buffer around the perimeter of the polygon."""
-            leftmost_edge_shape, rightmost_edge_shape = self._edge_shape()
-            road_polygon = (
-                leftmost_edge_shape + rightmost_edge_shape + [leftmost_edge_shape[0]]
+            # TODO:  use buffer_width
+            return Polygon(
+                (
+                    self._leftmost_edge_shape
+                    + self._rightmost_edge_shape
+                    + [self._leftmost_edge_shape[0]]
+                )
             )
-            return Polygon(road_polygon)
 
         @property
         def parallel_roads(self) -> List[RoadMap.Road]:
