@@ -112,10 +112,13 @@ class ObservationMLP(gym.Wrapper):
 
 def filter_obs_mlp(obs: format_obs.StdObs) -> np.ndarray:
     waypoints = obs.waypoints["pos"]
-    neighbours = obs.neighbours["pos"]
-    neighbours = obs.neighbours["speed"]
-    
-    # waypoints coordinate
-    waypoints.pos
+    neighbors = obs.neighbors["pos"]
+    neighbors = obs.neighbors["speed"]    
+    d=obs.ego["pos"]
+    f=obs.ego["speed"]
+    g=obs.ego["heading"]
+    h=obs.ego["steering"]
 
-    return filtered
+    print(waypoints.shape, "ddddddddddddddddddddd")
+
+    return h

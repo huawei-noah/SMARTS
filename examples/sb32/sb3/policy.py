@@ -1,5 +1,5 @@
 import gym
-import torch
+import torch as th
 import torch.nn as nn
 from sb3 import util as sb3_util
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
@@ -42,14 +42,14 @@ class Dreamer(BaseFeaturesExtractor):
         )
 
         # Compute shape by doing one forward pass
-        with torch.no_grad():
+        with th.no_grad():
             n_flatten = self.cnn(
-                torch.as_tensor(observation_space.sample()[None]).float()
+                th.as_tensor(observation_space.sample()[None]).float()
             ).shape[1]
 
         self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ELU())
 
-    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+    def forward(self, observations: th.Tensor) -> th.Tensor:
         return self.linear(self.cnn(observations))
 
 
@@ -87,9 +87,9 @@ class L5Kit(BaseFeaturesExtractor):
         )
 
         # Compute shape by doing one forward pass
-        with torch.no_grad():
+        with th.no_grad():
             n_flatten = self.cnn(
-                torch.as_tensor(observation_space.sample()[None]).float()
+                th.as_tensor(observation_space.sample()[None]).float()
             ).shape[1]
 
         # nn.Linear(in_features=1568, out_features=features_dim)
@@ -97,7 +97,7 @@ class L5Kit(BaseFeaturesExtractor):
             nn.Linear(in_features=n_flatten, out_features=features_dim)
         )
 
-    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+    def forward(self, observations: th.Tensor) -> th.Tensor:
         # sb3_util.plotter3d(observations, rgb_gray=3, name="L5KIT", block=False)
         return self.linear(self.cnn(observations))
 
@@ -123,12 +123,12 @@ class R2plus1D_18(BaseFeaturesExtractor):
 
         self.thmodel = th_models.video.r2plus1d_18(pretrained=pretrained, progress=True)
 
-    def forward(self, obs: torch.Tensor) -> torch.Tensor:
+    def forward(self, obs: th.Tensor) -> th.Tensor:
         # sb3_util.plotter3d(obs, rgb_gray=3, name="R2Plus1D_18", block=False)
         obs = self.modify_obs(obs)
         return self.thmodel(obs)
 
-    def modify_obs(self, obs: torch.Tensor) -> torch.Tensor:
+    def modify_obs(self, obs: th.Tensor) -> th.Tensor:
         """
         All pre-trained models expect input images normalized in the
         same way, i.e. mini-batches of 3-channel RGB videos of shape
@@ -137,14 +137,14 @@ class R2plus1D_18(BaseFeaturesExtractor):
         loaded in to a range of [0, 1].
 
         Args:
-            obs (torch.Tensor): _description_
+            obs (th.Tensor): _description_
 
         Returns:
-            torch.Tensor: _description_
+            th.Tensor: _description_
         """
 
         # Reshape and swap axes of input image
-        obs = torch.reshape(
+        obs = th.reshape(
             obs,
             (
                 obs.shape[0],
@@ -154,7 +154,7 @@ class R2plus1D_18(BaseFeaturesExtractor):
                 self._input_width,
             ),
         )
-        obs = torch.swapaxes(obs, 1, 2)
+        obs = th.swapaxes(obs, 1, 2)
 
         # sb3_util.plotter3d(obs, rgb_gray=3, name="R2plus1D_18")
 
@@ -292,5 +292,15 @@ def dqn_naturecnn(config):
     kwargs = {}
     kwargs["policy"]="CnnPolicy"
     kwargs["buffer_size"]=1_00_000
+
+    return kwargs
+
+def mlp(config):
+    kwargs = {}
+    kwargs["policy"]="MlpPolicy"
+    kwargs["policy_kwargs"] = dict(
+        activation_fn=th.nn.ReLU,
+        net_arch=[dict(pi=[32, 32], vf=[32, 32])]
+    )
 
     return kwargs
