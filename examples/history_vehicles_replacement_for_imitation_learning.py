@@ -92,9 +92,9 @@ def main(
     seed: int,
     vehicles_to_replace: int,
     episodes: int,
-    exists_at_or_after: float,
-    minimum_history_duration: float,
-    ends_before: float,
+    exists_at_or_after: float = 40,
+    minimum_history_duration: float = 10,
+    ends_before: float = 80,
 ):
     assert vehicles_to_replace > 0
     assert episodes > 0
@@ -114,6 +114,7 @@ def main(
 
     scenario_list = Scenario.get_scenario_list(scenarios)
     scenarios_iterator = Scenario.variations_for_all_scenario_roots(scenario_list, [])
+
     for scenario in scenarios_iterator:
         assert isinstance(scenario.traffic_history, TrafficHistory)
         logger.debug("working on scenario {}".format(scenario.name))
@@ -143,9 +144,6 @@ def main(
                 "no vehicle missions found for scenario {}.".format(scenario.name)
             )
             continue
-        veh_start_times = {
-            v_id: mission.start_time for v_id, mission in veh_missions.items()
-        }
 
         k = vehicles_to_replace
         if k > len(veh_missions):
@@ -192,17 +190,7 @@ def main(
             if not sample:
                 # For other datasets, hijack a sample of the recorded vehicles
                 # Pick k vehicle missions to hijack with agent
-                # and figure out which one starts the earliest
-                sample = scenario.traffic_history.random_overlapping_sample(
-                    veh_start_times, k
-                )
-
-            if len(sample) < k:
-                logger.warning(
-                    f"Unable to choose {k} overlapping missions.  allowing non-overlapping."
-                )
-                leftover = set(veh_start_times.keys()) - sample
-                sample.update(set(random.sample(leftover, k - len(sample))))
+                sample = set(random.sample(veh_missions.keys(), k))
 
             agent_spec.interface.max_episode_steps = max(
                 [
@@ -218,9 +206,9 @@ def main(
                 agent_interfaces[agent_id] = agent_spec.interface
                 if (
                     not history_start_time
-                    or veh_start_times[veh_id] < history_start_time
+                    or veh_missions[veh_id].start_time < history_start_time
                 ):
-                    history_start_time = veh_start_times[veh_id]
+                    history_start_time = veh_missions[veh_id].start_time
 
             for agent_id in agent_interfaces.keys():
                 agent = agent_spec.build_agent()
@@ -231,10 +219,6 @@ def main(
                 dones[agent_id] = False
                 ego_missions[agent_id] = veh_missions[veh_id]
 
-            # Tell the traffic history provider to start traffic
-            # at the point when the earliest agent enters...
-            # traffic_history_provider.start_time = history_start_time
-            # and all the other agents to offset their missions by this much too
             scenario.set_ego_missions(ego_missions)
 
             # Take control of vehicles with corresponding agent_ids
@@ -289,28 +273,6 @@ if __name__ == "__main__":
         type=int,
         default=1,
     )
-    # TODO remove the following 3 arguments
-    parser.add_argument(
-        "--exists-at-or-after",
-        "-s",
-        help="A time (sec) after which the vehicle must exist.",
-        type=float,
-        default=40,
-    )
-    parser.add_argument(
-        "--minimum-history-duration",
-        "-d",
-        help="The minimum length of time (sec) a vehicle must exist in the slice of traffic history.",
-        type=float,
-        default=10,
-    )
-    parser.add_argument(
-        "--ends-before",
-        "-e",
-        help="A time (sec) at which the vehicle should no longer be active. Default is infinite.",
-        type=float,
-        default=80,
-    )
     args = parser.parse_args()
 
     main(
@@ -320,7 +282,4 @@ if __name__ == "__main__":
         seed=args.seed,
         vehicles_to_replace=args.replacements_per_episode,
         episodes=args.episodes,
-        exists_at_or_after=args.exists_at_or_after,
-        minimum_history_duration=args.minimum_history_duration,
-        ends_before=args.ends_before,
     )
