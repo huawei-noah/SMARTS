@@ -5,7 +5,7 @@ from sb3 import util as sb3_util
 from smarts.env.wrappers import format_obs
 
 
-class ObservationCNN(gym.Wrapper):
+class ObsCNN(gym.Wrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
         old_space = env.observation_space["rgb"]
@@ -75,7 +75,7 @@ def filter_obs_cnn(obs: format_obs.StdObs) -> np.ndarray:
     return np.uint8(rgb)
 
 
-class ObservationMLP(gym.Wrapper):
+class ObsMLP(gym.Wrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
         old_space = env.observation_space["rgb"]
@@ -121,4 +121,7 @@ def filter_obs_mlp(obs: format_obs.StdObs) -> np.ndarray:
 
     print(waypoints.shape, "ddddddddddddddddddddd")
 
-    return h
+    import sys
+    sys.exit(3)
+
+    return np.zeros(shape=(50,), dtype=float)

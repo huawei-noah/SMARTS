@@ -31,13 +31,3 @@ register(
     id="intersection-v0",
     entry_point="smarts.env.intersection_env:intersection_env",
 )
-
-
-def build_scenario(scenario: List[str]):
-    """Build the given scenarios.
-
-    Args:
-        scenario (List[str]): Scenarios to build.
-    """
-    build_scenario = " ".join(["scl scenario build-all --clean"] + scenario)
-    subprocess.call(build_scenario, shell=True)

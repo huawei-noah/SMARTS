@@ -8,9 +8,9 @@ smarts:
   img_pixels: 112
   n_stack: 0 # Number of frames to stack as input to policy network
   action_space: Continuous # Either "Lane" or "Continuous"
-  action_space_wrapper: Discrete # Either "Lane" or "Continuous" or "Discrete"
-  # observation_wrapper: "ObservationCNN" # Either "ObservationCNN" or "ObservationMLP"
-  observation_wrapper: "ObservationMLP" # Either "ObservationCNN" or "ObservationMLP"
+  action_wrapper: Discrete # Either "Lane" or "Continuous" or "Discrete"
+  # observation_wrapper: "ObsCNN" # Either "ObservationCNN" or "ObservationMLP"
+  observation_wrapper: "ObsMLP" # Either "ObservationCNN" or "ObservationMLP"
 
   # Training
   train_steps: 1e8 # Number of training steps.
@@ -24,19 +24,8 @@ smarts:
   
   # policy: naturecnn
   # policy: customnaturecnn
-
-  # policy: l5kit
-  # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Continuous
-  # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Lane
-
-  # policy: dreamer
-  # img=pixels=64; img_meters=64; rgb; stack=4; action_space=Continuous
-  # img=pixels=64; img_meters=64; rgb; stack=4; action_space=Lane
-
-  # policy: r2plus1d_18
-  # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Continuous
-  # img=pixels=112; img_meters=64; rgb; stack=4; action_space=Lane
-
-  # policy: dqn_naturecnn
-
   policy: mlp
+  # policy: l5kit
+  # policy: dreamer
+  # policy: r2plus1d_18
+  # policy: dqn_naturecnn
