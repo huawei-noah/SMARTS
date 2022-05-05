@@ -104,7 +104,11 @@ class L5Kit(BaseFeaturesExtractor):
 
 class R2plus1D_18(BaseFeaturesExtractor):
     def __init__(
-        self, observation_space: gym.spaces.Box, config, pretrained: bool, features_dim: int = 400
+        self,
+        observation_space: gym.spaces.Box,
+        config,
+        pretrained: bool,
+        features_dim: int = 400,
     ):
         super().__init__(observation_space, features_dim)
         self._input_channel = 3
@@ -208,18 +212,18 @@ class R2plus1D_18(BaseFeaturesExtractor):
 
 def naturecnn(config):
     kwargs = {}
-    kwargs["policy"]="CnnPolicy"
+    kwargs["policy"] = "CnnPolicy"
     # kwargs["policy_kwargs"] = dict(
     #     # activation_fn=th.nn.Tanh, # default activation used
     #     net_arch=[],
     # )
-    kwargs["target_kl"]=0.1
+    kwargs["target_kl"] = 0.1
     return kwargs
 
 
 def customnaturecnn(config):
     kwargs = {}
-    kwargs["policy"]="CnnPolicy"
+    kwargs["policy"] = "CnnPolicy"
     kwargs["policy_kwargs"] = dict(
         # features_extractor_class=NatureCNN,
         # activation_fn=th.nn.Tanh, # default activation used
@@ -230,25 +234,25 @@ def customnaturecnn(config):
 
 def dreamer(config):
     kwargs = {}
-    kwargs["policy"]="CnnPolicy"
+    kwargs["policy"] = "CnnPolicy"
     kwargs["policy_kwargs"] = dict(
         features_extractor_class=Dreamer,
         features_extractor_kwargs=dict(features_dim=512),
         net_arch=[],
     )
-    kwargs["target_kl"]=0.1
+    kwargs["target_kl"] = 0.1
     return kwargs
 
 
 def l5kit(config):
     kwargs = {}
-    kwargs["policy"]="CnnPolicy"
+    kwargs["policy"] = "CnnPolicy"
     kwargs["policy_kwargs"] = dict(
         features_extractor_class=L5Kit,
         features_extractor_kwargs=dict(features_dim=128),
         normalize_images=False,
         net_arch=[],
-        log_std_init=-10.0, # reduce exploration
+        log_std_init=-10.0,  # reduce exploration
     )
 
     # Clipping schedule of PPO epsilon parameter
@@ -271,10 +275,12 @@ def l5kit(config):
 
 def r2plus1d_18(config):
     kwargs = {}
-    kwargs["policy"]="CnnPolicy"
+    kwargs["policy"] = "CnnPolicy"
     kwargs["policy_kwargs"] = dict(
         features_extractor_class=R2plus1D_18,
-        features_extractor_kwargs=dict(config=config, pretrained=False, features_dim=400),
+        features_extractor_kwargs=dict(
+            config=config, pretrained=False, features_dim=400
+        ),
         net_arch=[],
         # log_std_init=0.0, # default
         # log_std_init=-10.0, # reduce exploration
@@ -283,24 +289,24 @@ def r2plus1d_18(config):
     # Hyperparameter
     # kwargs["n_steps"] = 256
     kwargs["batch_size"] = 64
-    kwargs["target_kl"]=0.1
+    kwargs["target_kl"] = 0.1
 
     return kwargs
 
 
 def dqn_naturecnn(config):
     kwargs = {}
-    kwargs["policy"]="CnnPolicy"
-    kwargs["buffer_size"]=1_00_000
+    kwargs["policy"] = "CnnPolicy"
+    kwargs["buffer_size"] = 1_00_000
 
     return kwargs
 
+
 def mlp(config):
     kwargs = {}
-    kwargs["policy"]="MlpPolicy"
+    kwargs["policy"] = "MlpPolicy"
     kwargs["policy_kwargs"] = dict(
-        activation_fn=th.nn.ReLU,
-        net_arch=[dict(pi=[32, 32], vf=[32, 32])]
+        activation_fn=th.nn.ReLU, net_arch=[dict(pi=[32, 32], vf=[32, 32])]
     )
 
     return kwargs

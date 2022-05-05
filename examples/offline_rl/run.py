@@ -1,7 +1,6 @@
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
-import tensorflow as tf
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import argparse
 import warnings
 from datetime import datetime
@@ -9,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import gym
+import tensorflow as tf
 import torch as th
 from ruamel.yaml import YAML
 
@@ -207,8 +207,7 @@ if __name__ == "__main__":
     # import torch
     # pip install prefetch_generator tqdm yacs
 
-
-    # modelut = th_models.video.r2plus1d_18(pretrained=pretrained, progress=True)   
+    # modelut = th_models.video.r2plus1d_18(pretrained=pretrained, progress=True)
     # modelut = th.hub.load('datvuthanh/hybridnets', 'hybridnets', pretrained=True)
     # model = torch.hub.load('hustvl/yolop', 'yolop', pretrained=True)
     # Print model summary
@@ -219,12 +218,11 @@ if __name__ == "__main__":
     # print("\n\n")
 
     import d3rlpy
+
     dataset, env = d3rlpy.datasets.get_dataset("cartpole-replay")
 
     print(type(dataset))
-    print(dataset.)
-
-
+    # print(dataset.)
 
     # # prepare algorithm
     # sac = d3rlpy.algos.SAC()

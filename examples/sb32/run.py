@@ -1,7 +1,6 @@
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
-import tensorflow as tf
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import argparse
 import warnings
 from datetime import datetime
@@ -10,6 +9,7 @@ from typing import Any, Dict
 
 import gym
 import stable_baselines3 as sb3lib
+import tensorflow as tf
 import torch as th
 from ruamel.yaml import YAML
 from sb3 import action as sb3_action
@@ -23,7 +23,7 @@ from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMonitor
 
-print("\nTorch cuda is available: ", th.cuda.is_available(),"\n")
+print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
 yaml = YAML(typ="safe")
 
@@ -47,13 +47,13 @@ def main(args: argparse.Namespace):
         logdir = Path(args.logdir)
     logdir.mkdir(parents=True, exist_ok=True)
     config["logdir"] = logdir
-    print("\nLogdir:", logdir,"\n")
+    print("\nLogdir:", logdir, "\n")
 
     # Setup model.
     if (config["mode"] == "train" and args.model) or (config["mode"] == "evaluate"):
         # Begin training or evaluation from a pretrained model.
         config["model"] = args.model
-        print("\nModel:", config["model"],"\n")
+        print("\nModel:", config["model"], "\n")
     elif config["mode"] == "train" and not args.model:
         # Begin training from scratch.
         pass
@@ -205,18 +205,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.mode == "evaluate" and args.model is None:
-        raise Exception(
-            "When --mode=evaluate, --model option must be specified."
-        )
+        raise Exception("When --mode=evaluate, --model option must be specified.")
 
     main(args)
-
 
     # import torchvision.models as th_models
     # import torch
     # pip install prefetch_generator tqdm yacs
 
-    # modelut = th_models.video.r2plus1d_18(pretrained=pretrained, progress=True)   
+    # modelut = th_models.video.r2plus1d_18(pretrained=pretrained, progress=True)
     # modelut = th.hub.load('datvuthanh/hybridnets', 'hybridnets', pretrained=True)
     # model = torch.hub.load('hustvl/yolop', 'yolop', pretrained=True)
     # Print model summary
@@ -231,3 +228,18 @@ if __name__ == "__main__":
     # env = gym.make('RoadRunner-v0')
     # print("obs_space",env.observation_space)
     # print("action_space",env.action_space)
+
+    # import gym
+    # import torch as th
+
+    # from stable_baselines3 import PPO
+
+    # # Custom actor (pi) and value function (vf) networks
+    # # of two layers of size 32 each with Relu activation function
+    # policy_kwargs = dict(activation_fn=th.nn.ReLU,
+    #                     net_arch=[dict(pi=[32, 32], vf=[32, 32])])
+    # # Create the agent
+    # model = PPO("MlpPolicy", "CartPole-v1", policy_kwargs=policy_kwargs, verbose=1)
+    # # Retrieve the environment
+    # env = model.get_env()
+    # print(env.observation_space)
