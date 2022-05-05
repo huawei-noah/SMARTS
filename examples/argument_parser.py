@@ -32,7 +32,12 @@ def default_argument_parser(program: Optional[str] = None):
     parser.add_argument(
         "--headless", help="Run the simulation in headless mode.", action="store_true"
     )
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--seed",
+        help="A seed to use for all random numbers in the simulation.  Using the same seed value should lead to the same results.",
+        type=int,
+        default=42,
+    )
     parser.add_argument(
         "--sim-name",
         help="Simulation name.",

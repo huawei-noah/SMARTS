@@ -1,6 +1,7 @@
 import logging
 
 import gym
+from typing import Sequence
 
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent
@@ -37,7 +38,13 @@ class TrackingAgent(Agent):
         return trajectory
 
 
-def main(scenarios, sim_name, headless, num_episodes, seed):
+def main(
+    scenarios: Sequence[str],
+    sim_name: str,
+    headless: bool,
+    num_episodes: int,
+    seed: int,
+):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Tracker, max_episode_steps=None),
         agent_builder=TrackingAgent,

@@ -1,6 +1,7 @@
 import logging
 
 import gym
+from typing import Sequence
 
 from examples.argument_parser import default_argument_parser
 from smarts.core.utils.episodes import episodes
@@ -8,13 +9,20 @@ from smarts.core.utils.episodes import episodes
 logging.basicConfig(level=logging.INFO)
 
 
-def main(scenarios, headless, num_episodes, max_episode_steps=None):
+def main(
+    scenarios: Sequence[str],
+    headless: bool,
+    num_episodes: int,
+    seed: int,
+    max_episode_steps: int = None,
+):
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
         agent_specs={},
         headless=headless,
         sumo_headless=True,
+        seed=seed,
     )
 
     if max_episode_steps is None:
@@ -39,4 +47,5 @@ if __name__ == "__main__":
         scenarios=args.scenarios,
         headless=args.headless,
         num_episodes=args.episodes,
+        seed=args.seed,
     )
