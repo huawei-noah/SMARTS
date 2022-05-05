@@ -5,6 +5,7 @@ from typing import Any, Dict, Sequence
 
 from envision.client import Client as Envision
 from examples.argument_parser import default_argument_parser
+from smarts.core import seed as random_seed
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ControllerOutOfLaneException
 from smarts.core.scenario import Scenario
@@ -44,6 +45,8 @@ def _record_data(
 def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
     logger = logging.getLogger(script)
     logger.setLevel(logging.INFO)
+
+    random_seed(seed)
 
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
