@@ -136,7 +136,7 @@ def main(
             return vehicles
 
         logger.info(
-            f"Final vehicle exits at: {scenario.traffic_history.last_seen_vehicle_time()}"
+            f"final vehicle exits at: {scenario.traffic_history.last_seen_vehicle_time()}"
         )
 
         # pytype: disable=attribute-error
