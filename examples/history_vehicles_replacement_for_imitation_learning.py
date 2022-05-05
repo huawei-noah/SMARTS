@@ -120,7 +120,7 @@ def main(
         logger.debug("working on scenario {}".format(scenario.name))
 
         VehicleWindow = TrafficHistory.TrafficHistoryVehicleWindow
-        # Can use this to futher filter out perpective vehicles
+        # Can use this to further filter out prospective vehicles
         def custom_filter(vehs: Iterable[VehicleWindow]) -> Iterable[VehicleWindow]:
             nonlocal exists_at_or_after
             vehicles = list(vehs)
