@@ -330,8 +330,11 @@ class TrafficHistory:
         """
 
     def vehicle_windows_in_range(
-        self, exists_at_or_after, ends_before, minimum_vehicle_window
-    ):
+        self,
+        exists_at_or_after: float,
+        ends_before: float,
+        minimum_vehicle_window: float,
+    ) -> Generator[TrafficHistory.TrafficHistoryVehicleWindow, None, None]:
         """Find all vehicles active between the given history times."""
         query = f"""SELECT V.id, V.type, V.length, V.width, V.height,
                           S.position_x, S.position_y, S.heading_rad, S.speed, D.avg_speed,
