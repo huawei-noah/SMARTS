@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
@@ -5,13 +6,13 @@ from smarts.sstudio import types as t
 
 traffic_histories = [
     t.TrafficHistoryDataset(
-        name=f"us101_{hd}",
-        source_type="NGSIM",
-        input_path=None,  # for example: f"./trajectories-{hd}.txt"
-        speed_limit_mps=28,
-        default_heading=0,
+        name=f"traffic_history_{hd}",
+        source_type="INTERACTION",
+        input_path=None,  # for example: f"./traffic_history_{hd}.txt"
+        speed_limit_mps=15,
+        default_heading=0.5 * math.pi,
     )
-    for hd in ["0750am-0805am", "0805am-0820am", "0820am-0835am"]
+    for hd in ["000", "011"]
 ]
 
 gen_scenario(
