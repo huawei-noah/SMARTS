@@ -123,13 +123,21 @@ def main(
         # Can use this to futher filter out perpective vehicles
         def custom_filter(vehs: Iterable[VehicleWindow]) -> Iterable[VehicleWindow]:
             nonlocal exists_at_or_after
+            vehicles = list(vehs)
+            logger.info(f"Total vehicles pre-filter: {len(vehicles)}")
             window = 4
-            return (
+            vehicles = list(
                 v
-                for v in vehs
+                for v in vehicles
                 if v.average_speed > 3
                 and abs(v.start_time) - exists_at_or_after < window
             )
+            logger.info(f"Total vehicles post-filter: {len(vehicles)}")
+            return vehicles
+
+        logger.info(
+            f"Final vehicle exits at: {scenario.traffic_history.last_seen_vehicle_time()}"
+        )
 
         # pytype: disable=attribute-error
         veh_missions = {
