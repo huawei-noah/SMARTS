@@ -407,8 +407,8 @@ def _make_space(intrfcs: Dict[str, Any]) -> Dict[str, gym.Space]:
 
 
 def _std_dagm(
-    val: Optional[DrivableAreaGridMap],
-) -> Optional[np.ndarray]:
+    val: DrivableAreaGridMap,
+) -> np.ndarray:
     return val.data.astype(np.uint8)
 
 
@@ -460,10 +460,8 @@ def _std_events(val: Events) -> Dict[str, int]:
 
 
 def _std_lidar(
-    val: Optional[
-        Tuple[List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]]
-    ]
-) -> Optional[Dict[str, np.ndarray]]:
+    val: Tuple[List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]]
+) -> Dict[str, np.ndarray]:
 
     des_shp = _LIDAR_SHP
     hit = np.array(val[1], dtype=np.int8)
@@ -496,8 +494,8 @@ def _std_lidar(
 
 
 def _std_neighbors(
-    nghbs: Optional[List[VehicleObservation]],
-) -> Optional[Dict[str, np.ndarray]]:
+    nghbs: List[VehicleObservation],
+) -> Dict[str, np.ndarray]:
 
     des_shp = _NEIGHBOR_SHP
     rcv_shp = len(nghbs)
@@ -538,15 +536,15 @@ def _std_neighbors(
     }
 
 
-def _std_ogm(val: Optional[OccupancyGridMap]) -> Optional[np.ndarray]:
+def _std_ogm(val: OccupancyGridMap) -> np.ndarray:
     return val.data.astype(np.uint8)
 
 
-def _std_rgb(val: Optional[TopDownRGB]) -> Optional[np.ndarray]:
+def _std_rgb(val: TopDownRGB) -> np.ndarray:
     return val.data.astype(np.uint8)
 
 
-def _std_ttc(obs: Observation) -> Optional[Dict[str, Union[np.float32, np.ndarray]]]:
+def _std_ttc(obs: Observation) -> Dict[str, Union[np.float32, np.ndarray]]:
 
     val = lane_ttc(obs)
     return {
@@ -558,8 +556,8 @@ def _std_ttc(obs: Observation) -> Optional[Dict[str, Union[np.float32, np.ndarra
 
 
 def _std_waypoints(
-    paths: Optional[List[List[Waypoint]]],
-) -> Optional[Dict[str, np.ndarray]]:
+    paths: List[List[Waypoint]],
+) -> Dict[str, np.ndarray]:
 
     des_shp = _WAYPOINT_SHP
     rcv_shp = (len(paths), len(paths[0]))
