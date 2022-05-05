@@ -314,23 +314,25 @@ class TrafficHistory:
                    JOIN (
                     SELECT
                         vehicle_id,
-                        sim_time,
+                        MAX(sim_time) as sim_time,
                         speed,
                         position_x,
                         position_y,
                         heading_rad
-                    FROM (SELECT * from Trajectory WHERE sim_time < ? ORDER BY sim_time ASC)
+                    FROM Trajectory
+                    WHERE sim_time < ?
                     GROUP BY vehicle_id
                    ) AS E ON V.id = E.vehicle_id
                    JOIN (
                     SELECT
                         vehicle_id,
-                        sim_time,
+                        MIN(sim_time) as sim_time,
                         speed,
                         position_x,
                         position_y,
                         heading_rad
-                    FROM (SELECT * from Trajectory WHERE sim_time >= ? ORDER BY sim_time DESC)
+                    FROM Trajectory
+                    WHERE sim_time >= ?
                     GROUP BY vehicle_id
                    ) AS S ON V.id = S.vehicle_id
                    WHERE E.sim_time - S.sim_time >= ?
