@@ -297,11 +297,43 @@ class TrafficHistory:
         rows = self._query_list(query, (start_time, end_time))
         return (TrafficHistory.VehicleRow(*row) for row in rows)
 
+    @staticmethod
+    def _greatest_n_per_group_format(
+        select, table, group_by, greatest_of_group, where=None, operation="MAX"
+    ):
+        """This solves the issue where you want to get the highest value of `greatest_of_group` in
+        the group `groupby` for versions of sqlite3 that are lower than `3.7.11`.
+
+        See: https://stackoverflow.com/questions/12608025/how-to-construct-a-sqlite-query-to-group-by-order
+
+        e.g. Get a table of the highest speed(`greatest_of_group`) each vehicle(`group_by`) was
+        operating at.
+        > _greatest_n_per_group_format(
+        >    select="vehicle_speed,
+        >    vehicle_id",
+        >    table="Trajectory",
+        >    group_by="vehicle_id",
+        >    greatest_of_group="vehicle_speed",
+        > )
+        """
+        where = f"{where} AND" if where else ""
+        return f"""
+            SELECT {select},
+                (SELECT COUNT({group_by}) AS count
+                    FROM {table} m2
+                    WHERE m1.{group_by} = m2.{group_by})
+            FROM  {table} m1
+            WHERE {greatest_of_group} = (SELECT {operation}({greatest_of_group})
+                                            FROM {table} m3
+                                            WHERE {where} m1.{group_by} = m3.{group_by})
+            GROUP BY {group_by}
+        """
+
     def vehicle_windows_in_range(
         self, exists_at_or_after, ends_before, minimum_vehicle_window
     ):
         """Find all vehicles active between the given history times."""
-        query = """SELECT V.id, V.type, V.length, V.width, V.height,
+        query = f"""SELECT V.id, V.type, V.length, V.width, V.height,
                           S.position_x, S.position_y, S.heading_rad, S.speed, D.avg_speed,
                           S.sim_time, E.sim_time,
                           E.position_x, E.position_y, E.heading_rad
@@ -312,38 +344,46 @@ class TrafficHistory:
                     GROUP BY vehicle_id
                    ) AS D ON V.id = D.vehicle_id
                    JOIN (
-                    SELECT
-                        vehicle_id,
-                        MAX(sim_time) as sim_time,
+                    {self._greatest_n_per_group_format(
+                        select='''vehicle_id,
+                        sim_time,
                         speed,
                         position_x,
                         position_y,
-                        heading_rad
-                    FROM Trajectory
-                    WHERE sim_time < ?
-                    GROUP BY vehicle_id
-                   ) AS E ON V.id = E.vehicle_id
-                   JOIN (
-                    SELECT
-                        vehicle_id,
-                        MIN(sim_time) as sim_time,
-                        speed,
-                        position_x,
-                        position_y,
-                        heading_rad
-                    FROM Trajectory
-                    WHERE sim_time >= ?
-                    GROUP BY vehicle_id
+                        heading_rad''',
+                        table='Trajectory',
+                        group_by='vehicle_id',
+                        greatest_of_group='sim_time',
+                        where='sim_time >= ?',
+                        operation="MIN"
+                    )}
                    ) AS S ON V.id = S.vehicle_id
+                   JOIN (
+                    {self._greatest_n_per_group_format(
+                        select='''vehicle_id,
+                        sim_time,
+                        speed,
+                        position_x,
+                        position_y,
+                        heading_rad''',
+                        table='Trajectory',
+                        group_by='vehicle_id',
+                        greatest_of_group='sim_time',
+                        where='sim_time < ?'
+                    )}
+                   ) AS E ON V.id = E.vehicle_id
                    WHERE E.sim_time - S.sim_time >= ?
-                   GROUP BY V.id"""
+                   GROUP BY V.id
+                   ORDER BY S.sim_time
+                   """
+
         rows = self._query_list(
             query,
             (
                 exists_at_or_after,
                 ends_before,
-                ends_before,
                 exists_at_or_after,
+                ends_before,
                 minimum_vehicle_window,
             ),
         )
