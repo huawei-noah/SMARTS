@@ -39,8 +39,8 @@ from ray.rllib.contrib.maddpg.maddpg import DEFAULT_CONFIG
 
 logger = logging.getLogger(__name__)
 
-tf1, tf, tfv = try_import_tf()
-tfp = try_import_tfp()
+tf1, tf, tfv = try_import_tf(error=True)
+tfp = try_import_tfp(error=True)
 
 
 class MADDPGPostprocessing:

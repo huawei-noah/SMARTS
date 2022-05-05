@@ -32,6 +32,7 @@ from ray.rllib.evaluation.observation_function import ObservationFunction
 from ray.rllib.evaluation import MultiAgentEpisode, RolloutWorker
 from ray.rllib.env import BaseEnv
 from ray.rllib.policy import Policy
+from torch import dtype, float32
 
 from smarts.core.sensors import Observation
 from smarts.core.utils.math import vec_2d
@@ -188,7 +189,7 @@ class CalObs:
 
         ego_pos = ego_state.position[:2]
         goal_pos = goal.position  # the position of mission goal is 2-dimensional.
-        vector = np.asarray([goal_pos[0] - ego_pos[0], goal_pos[1] - ego_pos[1]])
+        vector = np.asarray([goal_pos[0] - ego_pos[0], goal_pos[1] - ego_pos[1]], dtype=np.float32)
         space = SPACE_LIB["goal_relative_pos"](None)
         return vector / (space.high - space.low)
 
@@ -204,7 +205,7 @@ class CalObs:
         lane_hwidth = closest_wp.lane_width * 0.5
         norm_dist_from_center = signed_dist_to_center / lane_hwidth
 
-        dist = np.asarray([norm_dist_from_center])
+        dist = np.asarray([norm_dist_from_center], dtype=np.float32)
         return dist
 
     @staticmethod
@@ -235,25 +236,25 @@ class CalObs:
             for wp in closest_path_wps
         ]
 
-        return np.asarray(heading_errors)
+        return np.asarray(heading_errors, dtype=np.float32)
 
     @staticmethod
     def cal_speed(env_obs: Observation, _):
         ego = env_obs.ego_vehicle_state
-        res = np.asarray([ego.speed])
+        res = np.asarray([ego.speed], np.float32)
         return res * 3.6 / 120
 
     @staticmethod
     def cal_steering(env_obs: Observation, _):
         ego = env_obs.ego_vehicle_state
-        return np.asarray([ego.steering / (0.5 * math.pi)])
+        return np.asarray([ego.steering / (0.5 * math.pi)], np.float32)
 
     @staticmethod
     def cal_neighbor(env_obs: Observation, closest_neighbor_num):
         ego = env_obs.ego_vehicle_state
         neighbor_vehicle_states = env_obs.neighborhood_vehicle_states
         # dist, speed, ttc, pos
-        features = np.zeros((closest_neighbor_num, 5))
+        features = np.zeros((closest_neighbor_num, 5), dtype=np.float32)
         # fill neighbor vehicles into closest_neighboor_num areas
         surrounding_vehicles = _get_closest_vehicles(
             ego, neighbor_vehicle_states, n=closest_neighbor_num
@@ -297,7 +298,8 @@ class CalObs:
             ttc = min(rel_dist / max(1e-5, rel_speed), 1e3)
 
             features[i, :] = np.asarray(
-                [rel_dist, rel_speed, ttc, rel_pos[0], rel_pos[1]]
+                [rel_dist, rel_speed, ttc, rel_pos[0], rel_pos[1]],
+                dtype=np.float32
             )
 
         return features.reshape((-1,))
@@ -892,6 +894,7 @@ def subscribe_features(**kwargs):
 
 def cal_obs(env_obs: Observation, space, feature_configs):
     obs = None
+    import gym.spaces
     if isinstance(space, gym.spaces.Dict):
         obs = dict()
         for name in space.spaces:
@@ -902,6 +905,9 @@ def cal_obs(env_obs: Observation, space, feature_configs):
                     else feature_configs[name]
                 )
                 obs[name] = getattr(CalObs, f"cal_{name}")(env_obs, *args)
+                assert space.spaces[name].contains(obs[name]), f"{name}: {obs[name]}"
+                if isinstance(obs[name], np.ndarray):
+                    assert obs[name].dtype == np.float32, f"{name}: {obs[name]}"
     elif isinstance(space, gym.spaces.Tuple):
         obs = []
         for _env_obs, _space in zip(env_obs, space.spaces):

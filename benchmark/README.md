@@ -12,9 +12,24 @@ This directory contains the scenarios, training environment, and agents used in 
 - `evaluate.py`: The evaluation program
 - `run.py`: Executes multi-agent training
 
+## Installing:
+```bash
+# from benchmarks/
+# Set up virtual environment e.g. `python3.7 -m venv .venv && . .venv/bin/activate`
+pip install -r ../requirements_marl.txt # Tested requirements that work
+pip install ..[train]
+```
+
 ## Running
 
 To run the training procedure,
+
+```bash
+# If you have ran SMARTS on a different branch it is suggested you do the following to ensure that `ray` does not pick up old python cache:
+cd $SMARTS_REPO # cd ..
+make rm-pycache
+cd benchmarks # cd -
+```
 
 ```bash
 # from benchmarks/

@@ -24,10 +24,10 @@ setup(
         "gym",
         "panda3d",
         "panda3d-gltf",
-        "numpy",
+        "numpy==1.19.5",
         "shapely",
         "networkx",
-        "trimesh",  # Used for writing .glb files
+        "trimesh<=3.9.29",  # Used for writing .glb files
         "rtree",  # Used by sumolib
         "lz4",
         "filelock",
@@ -46,7 +46,7 @@ setup(
         #       and ray[rllib] under [train] it  prevents rllib from getting installed.
         #       For simplicity we just install both here. In the future we may want to
         #       address this bug head on to keep our SMARTS base install more lean.
-        "ray[rllib]==0.8.4",  # We use Ray for our multiprocessing needs
+        "ray[rllib]==1.0.1post1",  # We use Ray for our multiprocessing needs
         # The following are for Scenario Studio
         "yattag",
         # The following are for testing
@@ -66,8 +66,10 @@ setup(
         "PyYAML",
     ],
     extras_require={
+
         "train": [
-            "tensorflow==2.2.1",
+            "tensorflow>=2.4.0",
+            "tensorflow-probability==1.4.1",
             # XXX: TF requires specific version of scipy
             "scipy==1.4.1",
             "torch==1.4.0",

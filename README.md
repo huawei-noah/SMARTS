@@ -1,3 +1,7 @@
+# MARL 0.4.7 Benchmark Branch
+
+See [./benchmark/README.md](./benchmark/README.md) for instructions on how to use the MARL benchmark.
+
 # SMARTS
 ![SMARTS CI](https://github.com/junluo-huawei/SMARTS/workflows/SMARTS%20CI/badge.svg?branch=master) ![Code style](https://img.shields.io/badge/code%20style-black-000000.svg)
 
