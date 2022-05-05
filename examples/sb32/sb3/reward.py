@@ -1,7 +1,7 @@
+from typing import Dict
+
 import gym
 import numpy as np
-
-from smarts.env.wrappers import format_obs
 
 
 class Reward(gym.Wrapper):
@@ -38,7 +38,7 @@ class Reward(gym.Wrapper):
 
         return obs, wrapped_reward, done, info
 
-    def _reward(self, obs: format_obs.StdObs, env_reward: np.float64) -> np.float64:
+    def _reward(self, obs: Dict[str, gym.Space], env_reward: np.float64) -> np.float64:
         reward = 0
 
         # Penalty for driving off road

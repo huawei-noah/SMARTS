@@ -40,14 +40,12 @@ from smarts.sstudio import build_scenario
 from smarts.zoo.agent_spec import AgentSpec
 
 
-def intersection_env(
+def multi_intersection_env(
     headless: bool = True,
     visdom: bool = False,
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
-    img_meters=64,
-    img_pixels=256,
-    action_space="Continuous",  # Either "Continuous" or "Lane".
+    action_space="Continuous",
 ):
     """An intersection environment where a single agent needs to make an
     unprotected left turn in the presence of traffic and without traffic
@@ -101,7 +99,13 @@ def intersection_env(
             / "scenarios"
             / "intersections"
             / "1lane_left_turn"
-        )
+        ),
+        str(
+            pathlib.Path(__file__).absolute().parents[2]
+            / "scenarios"
+            / "intersections"
+            / "1lane_to_2lane_left_turn"
+        ),
     ]
     build_scenario(scenario)
 
@@ -115,6 +119,8 @@ def intersection_env(
         agents_alive=None,
     )
     max_episode_steps = 6000
+    img_meters = 50
+    img_pixels = 112
     agent_specs = {
         "LeftTurnAgent": AgentSpec(
             interface=AgentInterface(

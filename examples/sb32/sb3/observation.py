@@ -78,12 +78,11 @@ def filter_obs_cnn(obs: format_obs.StdObs) -> np.ndarray:
 class ObsMLP(gym.Wrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
-        old_space = env.observation_space["rgb"]
         self.observation_space = gym.spaces.Box(
-            low=0,
-            high=255,
-            shape=(old_space.shape[-1],) + old_space.shape[:-1],
-            dtype=np.uint8,
+            low=-1e8,
+            high=1e8,
+            shape=(50,),
+            dtype=np.float32,
         )
 
     def step(self, action):
@@ -110,18 +109,28 @@ class ObsMLP(gym.Wrapper):
         filtered = filter_obs_mlp(obs)
         return filtered
 
+
 def filter_obs_mlp(obs: format_obs.StdObs) -> np.ndarray:
+    import dataclasses
+
+    print(dataclasses.asdict(obs).keys())
+    print(obs.neighbors)
+    print("===================================================")
+
     waypoints = obs.waypoints["pos"]
     neighbors = obs.neighbors["pos"]
-    neighbors = obs.neighbors["speed"]    
-    d=obs.ego["pos"]
-    f=obs.ego["speed"]
-    g=obs.ego["heading"]
-    h=obs.ego["steering"]
+    # neighbors = obs.neighbors["speed"]
+    d = obs.ego["pos"]
+    f = obs.ego["speed"]
+    g = obs.ego["heading"]
+    h = obs.ego["steering"]
 
     print(waypoints.shape, "ddddddddddddddddddddd")
+    print(waypoints.flatten().shape, "ddddddddddddddddddddd")
+    print(waypoints)
 
     import sys
+
     sys.exit(3)
 
-    return np.zeros(shape=(50,), dtype=float)
+    return np.zeros(shape=(50,), dtype=np.float32)

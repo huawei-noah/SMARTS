@@ -24,7 +24,7 @@ import gym
 import pytest
 
 from smarts.core.agent import Agent
-from smarts.core.agent_interface import AgentInterface, Waypoints
+from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.wrappers.format_obs import FormatObs, intrfc_to_stdobs
 from smarts.zoo.agent_spec import AgentSpec
@@ -57,6 +57,8 @@ def _intrfcs_obs():
 
     return [
         [base_intrfc] * 2,
+        [dict(base_intrfc, **{"neighborhood_vehicles": NeighborhoodVehicles(radius=0)})]
+        * 2,
         [dict(base_intrfc, **{"accelerometer": False})] * 2,
         [dict(base_intrfc, **{"waypoints": Waypoints(lookahead=50)})] * 2,
     ]
