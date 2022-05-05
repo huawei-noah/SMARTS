@@ -202,6 +202,15 @@ class TrafficHistory:
             GROUP BY vehicle_id"""
         return self._query_list(query)
 
+    def last_seen_vehicle_time(self) -> float:
+        """Find the time the last vehicle exits the history."""
+
+        query = """SELECT MAX(T.sim_time)
+            FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
+            WHERE V.type = 2
+            ORDER BY T.sim_time DESC LIMIT 1"""
+        return self._query_val(float, query)
+
     def vehicle_pose_at_time(
         self, vehicle_id: str, sim_time: float
     ) -> Optional[Tuple[float, float, float, float]]:
