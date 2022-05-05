@@ -202,7 +202,7 @@ class TrafficHistory:
             GROUP BY vehicle_id"""
         return self._query_list(query)
 
-    def last_seen_vehicle_time(self) -> float:
+    def last_seen_vehicle_time(self) -> Optional[float]:
         """Find the time the last vehicle exits the history."""
 
         query = """SELECT MAX(T.sim_time)

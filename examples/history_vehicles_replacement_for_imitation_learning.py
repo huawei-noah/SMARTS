@@ -135,9 +135,13 @@ def main(
             logger.info(f"Total vehicles post-filter: {len(vehicles)}")
             return vehicles
 
-        logger.info(
-            f"final vehicle exits at: {scenario.traffic_history.last_seen_vehicle_time()}"
-        )
+        last_seen_vehicle_time = scenario.traffic_history.last_seen_vehicle_time()
+        if last_seen_vehicle_time is None:
+            logger.warning(
+                f"no vehicles are found in `{scenario.traffic_history.name}` traffic history!!!"
+            )
+
+        logger.info(f"final vehicle exits at: {last_seen_vehicle_time}")
 
         # pytype: disable=attribute-error
         veh_missions = {
