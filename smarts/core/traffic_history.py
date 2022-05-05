@@ -396,27 +396,24 @@ class TrafficHistory:
                 *row[5:],
             )
 
-        def debug(rows):
-            seen = set()
-            seen_pos_x = set()
-            rs = list()
-            for row in rows:
-                r = _slice_from_row(row)
-                assert r.vehicle_id not in seen
-                assert r.end_time - r.start_time >= minimum_vehicle_window
-                assert r.start_time >= exists_at_or_after
-                assert r.end_time <= ends_before
-                assert r.end_position_x not in seen_pos_x
-                seen_pos_x.add(r.end_position_x)
-                seen.add(r.vehicle_id)
-                rs.append(r)
-            self._log.info(f"Num vehicles suiting time criteria: {len(rs)}")
-            return rs
+        seen = set()
+        seen_pos_x = set()
+        rs = list()
 
-        thvtss = None
-        thvtss = debug(rows)
+        def _slice_from_row_debug(row):
+            nonlocal seen, seen_pos_x, rs
+            r = _slice_from_row(row)
+            assert r.vehicle_id not in seen
+            assert r.end_time - r.start_time >= minimum_vehicle_window
+            assert r.start_time >= exists_at_or_after
+            assert r.end_time <= ends_before
+            assert r.end_position_x not in seen_pos_x
+            seen_pos_x.add(r.end_position_x)
+            seen.add(r.vehicle_id)
+            rs.append(r)
+            return r
 
-        return thvtss or (_slice_from_row(row) for row in rows)
+        return (_slice_from_row_debug(row) for row in rows)
 
     class TrajectoryRow(NamedTuple):
         """An instant in a trajectory"""
