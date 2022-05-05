@@ -1,7 +1,7 @@
 import logging
 
 import gym
-from typing import Sequence
+from typing import Optional, Sequence
 
 from examples.argument_parser import default_argument_parser
 from smarts.core.utils.episodes import episodes
@@ -14,7 +14,7 @@ def main(
     headless: bool,
     num_episodes: int,
     seed: int,
-    max_episode_steps: int = None,
+    max_episode_steps: Optional[int] = None,
 ):
     env = gym.make(
         "smarts.env:hiway-v0",

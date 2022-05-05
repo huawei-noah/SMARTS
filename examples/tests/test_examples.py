@@ -29,6 +29,7 @@ def test_examples(example):
         headless=True,
         num_episodes=1,
         max_episode_steps=100,
+        seed=42,
     )
 
 

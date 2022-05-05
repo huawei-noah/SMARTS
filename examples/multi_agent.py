@@ -1,7 +1,7 @@
 import pathlib
 
 import gym
-from typing import Sequence
+from typing import Optional, Sequence
 
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent
@@ -24,7 +24,7 @@ def main(
     headless: bool,
     num_episodes: int,
     seed: int,
-    max_episode_steps: int = None,
+    max_episode_steps: Optional[int] = None,
 ):
     agent_specs = {
         agent_id: AgentSpec(
