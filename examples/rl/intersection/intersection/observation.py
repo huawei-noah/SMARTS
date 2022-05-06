@@ -1,6 +1,6 @@
 import gym
 import numpy as np
-from sb3 import util as sb3_util
+from intersection import util as intersection_util
 
 from smarts.env.wrappers import format_obs
 
@@ -70,7 +70,7 @@ def filter_obs_cnn(obs: format_obs.StdObs) -> np.ndarray:
     # rep = repainted.transpose(2, 0, 1)
     # plotter(rgb, 3, name="from obs")
 
-    # sb3_util.plotter3d(rgb, rgb_gray=3, name="From Obs")
+    # intersection_util.plotter3d(rgb, rgb_gray=3, name="From Obs")
 
     return np.uint8(rgb)
 

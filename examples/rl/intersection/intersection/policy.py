@@ -1,7 +1,7 @@
 import gym
 import torch as th
 import torch.nn as nn
-from sb3 import util as sb3_util
+from intersection import util as intersection_util
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.utils import get_linear_fn
 
@@ -98,7 +98,7 @@ class L5Kit(BaseFeaturesExtractor):
         )
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
-        # sb3_util.plotter3d(observations, rgb_gray=3, name="L5KIT", block=False)
+        # intersection_util.plotter3d(observations, rgb_gray=3, name="L5KIT", block=False)
         return self.linear(self.cnn(observations))
 
 
@@ -128,7 +128,7 @@ class R2plus1D_18(BaseFeaturesExtractor):
         self.thmodel = th_models.video.r2plus1d_18(pretrained=pretrained, progress=True)
 
     def forward(self, obs: th.Tensor) -> th.Tensor:
-        # sb3_util.plotter3d(obs, rgb_gray=3, name="R2Plus1D_18", block=False)
+        # intersection_util.plotter3d(obs, rgb_gray=3, name="R2Plus1D_18", block=False)
         obs = self.modify_obs(obs)
         return self.thmodel(obs)
 
@@ -160,7 +160,7 @@ class R2plus1D_18(BaseFeaturesExtractor):
         )
         obs = th.swapaxes(obs, 1, 2)
 
-        # sb3_util.plotter3d(obs, rgb_gray=3, name="R2plus1D_18")
+        # intersection_util.plotter3d(obs, rgb_gray=3, name="R2plus1D_18")
 
         return obs
 

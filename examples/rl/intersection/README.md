@@ -5,6 +5,9 @@ The ego agent earns reward for the distance travelled per-step and is penalised 
 
 This example is only to demonstrate the use of SB3 library with SMARTS intersection-v0 task environments. The trained agents may not solve the task environment.
 
+## Trained agent making uprotected left turn
+![](./docs/_static/intersection.gif)
+
 ## Observation space
 + Topdown RGB image
     + size (width x height): 112 pixels x 112 pixels
@@ -30,6 +33,9 @@ $ source ./.venv/bin/activate
 $ pip install --upgrade pip
 $ pip install -e .
 ```
+
+## Colab
+1. Try it at 
 
 ## Train
 1. Train
@@ -58,7 +64,7 @@ $ pip install -e .
 1. Run
     ```bash
     $ cd <path>/SMARTS/examples/rl/intersection
-    $ curl --o <path>/SMARTS/examples/rl/intersection/logs/pretrained/intersection.zip https://github.com/Adaickalavan/SMARTS-models/raw/main/intersection-v0/PPO_6200000_steps.zip
+    $ curl -o ./logs/pretrained/intersection.zip --create-dirs -L https://github.com/Adaickalavan/SMARTS-models/raw/main/intersection-v0/PPO_6200000_steps.zip
     $ scl envision start --scenarios ./.venv/lib/python3.7/site-packages/scenarios/intersections &
     $ python3.7 run.py --mode=evaluate --logdir="<path>/SMARTS/examples/rl/intersection/logs/pretrained/intersection.zip" --head
     ```

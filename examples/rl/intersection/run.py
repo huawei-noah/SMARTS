@@ -12,12 +12,12 @@ import stable_baselines3 as sb3lib
 import tensorflow as tf
 import torch as th
 from ruamel.yaml import YAML
-from sb3 import action as sb3_action
-from sb3 import info as sb3_info
-from sb3 import observation as sb3_observation
-from sb3 import policy as sb3_policy
-from sb3 import reward as sb3_reward
-from sb3 import util as sb3_util
+from intersection import action as intersection_action
+from intersection import info as intersection_info
+from intersection import observation as intersection_observation
+from intersection import policy as intersection_policy
+from intersection import reward as intersection_reward
+from intersection import util as intersection_util
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -82,10 +82,10 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
     )
 
     # Wrap env with action, reward, and observation wrapper
-    env = sb3_info.Info(env=env)
-    env = sb3_action.Action(env=env, space=config["action_wrapper"])
-    env = sb3_reward.Reward(env=env)
-    env = getattr(sb3_observation, config["observation_wrapper"])(env=env)
+    env = intersection_info.Info(env=env)
+    env = intersection_action.Action(env=env, space=config["action_wrapper"])
+    env = intersection_reward.Reward(env=env)
+    env = getattr(intersection_observation, config["observation_wrapper"])(env=env)
 
     # Check custom environment
     check_env(env)
@@ -98,16 +98,6 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
         filename=str(config["logdir"]),
         info_keywords=("is_success",),
     )
-
-    # Record evaluation video
-    # if not training:
-    # env = VecVideoRecorder(
-    #     venv=env,
-    #     video_folder=str(config["logdir"] / "videos"),
-    #     record_video_trigger=lambda x: x == 0,
-    #     video_length=config["video_length"],
-    #     name_prefix=config["name"]+"-PPO"
-    # )
 
     return env
 
@@ -127,23 +117,20 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         best_model_save_path=config["logdir"] / "eval",
         deterministic=True,
     )
-    # video_recorder_callback = sb3_callback.VideoRecorderCallback(
-    #     env=eval_env,
-    # )
 
     if config["mode"] == "evaluate":
         print("\nStart evaluation.\n")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
-        sb3_util.print_model(model, env, config["alg"])
+        intersection_util.print_model(model, env, config["alg"])
     elif config["mode"] == "train" and config.get("model", None):
         print("\nStart training from existing model.\n")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
         model.set_env(env)
-        sb3_util.print_model(model, env, config["alg"])
+        intersection_util.print_model(model, env, config["alg"])
         model.learn(
             total_timesteps=config["train_steps"],
             callback=[checkpoint_callback, eval_callback],
@@ -154,9 +141,9 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             env=env,
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
-            **(getattr(sb3_policy, config["policy"])(config)),
+            **(getattr(intersection_policy, config["policy"])(config)),
         )
-        sb3_util.print_model(model, env, config["alg"])
+        intersection_util.print_model(model, env, config["alg"])
         model.learn(
             total_timesteps=config["train_steps"],
             callback=[checkpoint_callback, eval_callback],
