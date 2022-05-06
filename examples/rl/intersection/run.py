@@ -78,7 +78,6 @@ def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
         img_meters=config["img_meters"],
         img_pixels=config["img_pixels"],
-        action_space=config["action_space"],
     )
 
     # Wrap env with action, reward, and observation wrapper

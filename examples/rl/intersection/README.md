@@ -50,26 +50,23 @@ $ pip install -e .
     $ tensorboard --logdir ./tensorboard/
     ```
 
-## Evaluate your model
-1. Run
+## Evaluate
+1. Start
     ```bash
     $ cd <path>/SMARTS/examples/rl/intersection
     $ scl envision start --scenarios ./.venv/lib/python3.7/site-packages/scenarios/intersections &
-    $ python3.7 run.py --mode=evaluate --logdir="<path>/SMARTS/examples/rl/intersection/logs/<folder_name>" --head
     ```
-1. Go to `localhost:8081` to view the simulation in Envision.
-
-
-## Evaluate pre-trained model
 1. Run
-    ```bash
-    $ cd <path>/SMARTS/examples/rl/intersection
-    $ curl -o ./logs/pretrained/intersection.zip --create-dirs -L https://github.com/Adaickalavan/SMARTS-models/raw/main/intersection-v0/PPO_6200000_steps.zip
-    $ scl envision start --scenarios ./.venv/lib/python3.7/site-packages/scenarios/intersections &
-    $ python3.7 run.py --mode=evaluate --logdir="<path>/SMARTS/examples/rl/intersection/logs/pretrained/intersection.zip" --head
-    ```
+    + Evaluate your own model 
+        ```bash
+        $ python3.7 run.py --mode=evaluate --model="./logs/<folder_name>/<model>.zip" --head
+        ```
+    + Evaluate pretrained model
+        ```bash
+        $ curl -o ./logs/pretrained/intersection.zip --create-dirs -L https://github.com/Adaickalavan/SMARTS-models/raw/main/intersection-v0/PPO_6200000_steps.zip
+        $ python3.7 run.py --mode=evaluate --model="./logs/pretrained/intersection.zip" --head
+        ```
 1. Go to `localhost:8081` to view the simulation in Envision.
-
 
 ## Docker
 1. Train a model inside docker
@@ -80,4 +77,3 @@ $ pip install -e .
     (container) $ cd /src/examples/rl/intersection
     (container) $ python3.7 run.py
     ```
-

@@ -47,15 +47,14 @@ def intersection_env(
     envision_record_data_replay_path: Optional[str] = None,
     img_meters=64,
     img_pixels=256,
-    action_space="Continuous",  # Either "Continuous" or "Lane".
 ):
     """An intersection environment where a single agent needs to make an
     unprotected left turn in the presence of traffic and without traffic
     lights. Traffic vehicles stop before entering the junction.
 
     Observation:
-        A `smarts.env.wrappers.format_obs.StdObs` dataclass, with all fields
-        enabled, is returned as observation.
+        A `smarts.env.wrappers.format_obs:StdObs` dict, containing enabled keys,
+        is returned as observation.
 
     Actions:
         Type: gym.spaces.Box(
@@ -114,12 +113,12 @@ def intersection_env(
         not_moving=False,
         agents_alive=None,
     )
-    max_episode_steps = 6000
+    max_episode_steps = 5000
     agent_specs = {
         "LeftTurnAgent": AgentSpec(
             interface=AgentInterface(
                 accelerometer=True,
-                action=getattr(ActionSpaceType, action_space),
+                action=ActionSpaceType.Continuous,
                 done_criteria=done_criteria,
                 drivable_area_grid_map=DrivableAreaGridMap(
                     width=img_pixels,

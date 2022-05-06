@@ -6,7 +6,6 @@ smarts:
   img_meters: 50
   img_pixels: 112
   n_stack: 3 # Number of frames to stack as input to policy network
-  action_space: Continuous # Either "Lane" or "Continuous"
   action_wrapper: Discrete # Either "Lane" or "Continuous" or "Discrete"
   observation_wrapper: "ObsCNN" # Either "ObservationCNN" or "ObservationMLP"
   # observation_wrapper: "ObsMLP" # Either "ObservationCNN" or "ObservationMLP"

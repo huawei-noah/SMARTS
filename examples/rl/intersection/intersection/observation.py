@@ -1,6 +1,7 @@
 import gym
 import numpy as np
 from intersection import util as intersection_util
+from typing import Dict
 
 from smarts.env.wrappers import format_obs
 
@@ -41,7 +42,7 @@ class ObsCNN(gym.Wrapper):
         return filtered
 
 
-def filter_obs_cnn(obs: format_obs.StdObs) -> np.ndarray:
+def filter_obs_cnn(obs: Dict[str, gym.Space]) -> np.ndarray:
     rgb = obs.rgb
 
     # Ego vehicle is 1.5mx3.75m
@@ -110,7 +111,7 @@ class ObsMLP(gym.Wrapper):
         return filtered
 
 
-def filter_obs_mlp(obs: format_obs.StdObs) -> np.ndarray:
+def filter_obs_mlp(obs: Dict[str, gym.Space]) -> np.ndarray:
     import dataclasses
 
     print(dataclasses.asdict(obs).keys())
