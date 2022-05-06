@@ -7,8 +7,8 @@ with open(path.join(this_dir, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
-    name="sb3",
-    description="Intersection navigation with SB3",
+    name="intersection",
+    description="Unprotected left turn intersection",
     long_description=long_description,
     long_description_content_type="text/markdown",
     version="0.1.0",
