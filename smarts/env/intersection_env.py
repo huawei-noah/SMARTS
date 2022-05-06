@@ -72,7 +72,7 @@ def intersection_env(
 
     Episode termination:
         Episode is terminated if any of the following occurs.
-        + Steps per episode exceed 5000.
+        + Steps per episode exceed 3000.
         + Agent collides, drives off road, drives off route, drives on shoulder,
           or drives on wrong way.
 
@@ -101,7 +101,7 @@ def intersection_env(
             / "scenarios"
             / "intersections"
             / "1lane_left_turn"
-        ),
+        )
     ]
     build_scenario(scenario)
 
@@ -114,7 +114,7 @@ def intersection_env(
         not_moving=False,
         agents_alive=None,
     )
-    max_episode_steps = 5000
+    max_episode_steps = 3000
     agent_specs = {
         "LeftTurnAgent": AgentSpec(
             interface=AgentInterface(
