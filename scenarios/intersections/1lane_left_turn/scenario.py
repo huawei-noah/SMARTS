@@ -73,7 +73,7 @@ route = Route(begin=("edge-west-WE", 0, 60), end=("edge-north-SN", 0, 40))
 ego_missions = [
     Mission(
         route=route,
-        start_time=15,  # Delayed start, to ensure road has prior traffic.
+        start_time=12,  # Delayed start, to ensure road has prior traffic.
         entry_tactic=TrapEntryTactic(
             wait_to_hijack_limit_s=1,
             zone=MapZone(
