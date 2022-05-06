@@ -71,9 +71,10 @@ def intersection_env(
         termination step.
 
     Episode termination:
-        Episode is terminated if any of the following is fulfilled.
-        Steps per episode exceed 3000.
-        Agent collides, drives off road, drives off route, or drives on shoulder.
+        Episode is terminated if any of the following occurs.
+        + Steps per episode exceed 5000.
+        + Agent collides, drives off road, drives off route, drives on shoulder,
+          or drives on wrong way.
 
     Solved requirement:
         If agent successfully navigates the intersection then `info["score"]`

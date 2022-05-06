@@ -59,12 +59,12 @@ $ pip install -e .
 1. Run
     + Evaluate your own model 
         ```bash
-        $ python3.7 run.py --mode=evaluate --model="./logs/<folder_name>/<model>.zip" --head
+        $ python3.7 run.py --mode=evaluate --model="./logs/<folder_name>/<model>" --head
         ```
     + Evaluate pretrained model
         ```bash
         $ curl -o ./logs/pretrained/intersection.zip --create-dirs -L https://github.com/Adaickalavan/SMARTS-models/raw/main/intersection-v0/PPO_6200000_steps.zip
-        $ python3.7 run.py --mode=evaluate --model="./logs/pretrained/intersection.zip" --head
+        $ python3.7 run.py --mode=evaluate --model="./logs/pretrained/intersection" --head
         ```
 1. Go to `localhost:8081` to view the simulation in Envision.
 
