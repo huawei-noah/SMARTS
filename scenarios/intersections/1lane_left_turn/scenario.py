@@ -54,14 +54,14 @@ for name, routes in enumerate(route_comb):
                     begin=(f"edge-{r[0]}", 0, 0),
                     end=(f"edge-{r[1]}", 0, "max"),
                 ),
-                # Random flow rate, between 2 and 5 vehicles per minute.
-                rate=60 * random.uniform(2, 5),
+                # Random flow rate, between 3 and 5 vehicles per minute.
+                rate=60 * random.uniform(3, 5),
                 # Random flow start time, between 0 and 10 seconds.
                 begin=random.uniform(0, 10),
-                # For an episode with maximum_episode_steps=3000 and step
-                # time=0.1s, maximum episode time=300s. Hence, traffic set to
+                # For an episode with maximum_episode_steps=5000 and step
+                # time=0.1s, maximum episode time=500s. Hence, traffic set to
                 # end at 900s, which is greater than maximum episode time of
-                # 300s.
+                # 500s.
                 end=60 * 15,
                 actors={intersection_car: 1},
             )
