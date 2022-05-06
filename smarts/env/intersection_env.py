@@ -100,7 +100,7 @@ def intersection_env(
             / "scenarios"
             / "intersections"
             / "1lane_left_turn"
-        )
+        ),
     ]
     build_scenario(scenario)
 

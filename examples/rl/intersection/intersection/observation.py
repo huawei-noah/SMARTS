@@ -43,7 +43,7 @@ class ObsCNN(gym.Wrapper):
 
 
 def filter_obs_cnn(obs: Dict[str, gym.Space]) -> np.ndarray:
-    rgb = obs.rgb
+    rgb = obs["rgb"]
 
     # Ego vehicle is 1.5mx3.75m
     # Road width = 6.25m

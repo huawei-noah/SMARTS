@@ -20,20 +20,20 @@ class Reward(gym.Wrapper):
         wrapped_reward = self._reward(obs, reward)
 
         if done:
-            if obs.events["reached_goal"]:
-                print(f"***** Vehicle reached goal.")
-            elif obs.events["reached_max_episode_steps"]:
-                print(f"@@@@@ Vehicle reached max episode steps.")
+            if obs["events"]["reached_goal"]:
+                print(f"ENV: Hooray! Vehicle reached goal.")
+            elif obs["events"]["reached_max_episode_steps"]:
+                print(f"ENV: Vehicle reached max episode steps.")
             elif (
-                obs.events["off_road"]
-                | obs.events["collisions"]
-                | obs.events["off_route"]
-                | obs.events["on_shoulder"]
-                | obs.events["wrong_way"]
+                obs["events"]["off_road"]
+                | obs["events"]["collisions"]
+                | obs["events"]["off_route"]
+                | obs["events"]["on_shoulder"]
+                | obs["events"]["wrong_way"]
             ):
                 pass
             else:
-                print(obs.events)
+                print("Events: ", obs["events"])
                 raise Exception("Episode ended for unknown reason.")
 
         return obs, wrapped_reward, done, info
@@ -42,33 +42,33 @@ class Reward(gym.Wrapper):
         reward = 0
 
         # Penalty for driving off road
-        if obs.events["off_road"]:
+        if obs["events"]["off_road"]:
             reward -= 10
-            print(f"----- Vehicle went off road.")
+            print(f"ENV: Vehicle went off road.")
             return np.float64(reward)
 
         # Penalty for driving on road shoulder
-        if obs.events["on_shoulder"]:
+        if obs["events"]["on_shoulder"]:
             reward -= 10
-            print(f"----- Vehicle went on shoulder.")
+            print(f"ENV: Vehicle went on road shoulder.")
             return np.float64(reward)
 
         # Penalty for driving on wrong way
-        if obs.events["wrong_way"]:
+        if obs["events"]["wrong_way"]:
             reward -= 10
-            print(f"----- Vehicle went wrong way.")
+            print(f"ENV: Vehicle went wrong way.")
             return np.float64(reward)
 
         # Penalty for colliding
-        if obs.events["collisions"]:
+        if obs["events"]["collisions"]:
             reward -= 10
-            print(f"----- Vehicle collided.")
+            print(f"ENV: Vehicle collided.")
             return np.float64(reward)
 
         # Penalty for driving off route
-        if obs.events["off_route"]:
+        if obs["events"]["off_route"]:
             reward -= 10
-            print(f"----- Vehicle went off route.")
+            print(f"ENV: Vehicle went off route.")
             return np.float64(reward)
 
         # Reward for distance travelled
