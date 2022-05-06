@@ -116,7 +116,7 @@ def main(
 
     for scenario in scenarios_iterator:
         assert isinstance(scenario.traffic_history, TrafficHistory)
-        logger.debug("working on scenario {}".format(scenario.name))
+        logger.info("working on scenario {}".format(scenario.traffic_history.name))
 
         VehicleWindow = TrafficHistory.TrafficHistoryVehicleWindow
         # Can use this to further filter out prospective vehicles

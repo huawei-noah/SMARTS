@@ -329,6 +329,51 @@ class TrafficHistory:
             GROUP BY {group_by}
         """
 
+    def _window_from_row(self, row):
+        return TrafficHistory.TrafficHistoryVehicleWindow(
+            row[0],
+            self.decode_vehicle_type(row[1]),
+            *self._resolve_vehicle_dims(row[1], *row[2:5]).as_lwh,
+            *row[5:],
+        )
+
+    def vehicle_window_by_id(
+        self,
+        vehicle_id: str,
+    ) -> Optional[TrafficHistory.TrafficHistoryVehicleWindow]:
+        """Find the given vehicle by its id."""
+        query = """SELECT V.id, V.type, V.length, V.width, V.height,
+                          S.position_x, S.position_y, S.heading_rad, S.speed, D.avg_speed,
+                          S.sim_time, E.sim_time,
+                          E.position_x, E.position_y, E.heading_rad
+                    FROM Vehicle AS V
+                    INNER JOIN (
+                     SELECT vehicle_id, AVG(speed) as "avg_speed"
+                     FROM Trajectory
+                     WHERE vehicle_id = ?
+                    ) AS D ON V.id = D.vehicle_id
+                    INNER JOIN (
+                     SELECT vehicle_id, MIN(sim_time) as sim_time, speed, position_x, position_y, heading_rad
+                     FROM Trajectory
+                     WHERE vehicle_id = ?
+                    ) AS S ON V.id = S.vehicle_id
+                    INNER JOIN (
+                     SELECT vehicle_id, MAX(sim_time) as sim_time, speed, position_x, position_y, heading_rad
+                     FROM Trajectory
+                     WHERE vehicle_id = ?
+                    ) AS E ON V.id = E.vehicle_id
+        """
+        rows = self._query_list(
+            query,
+            tuple([vehicle_id] * 3),
+        )
+
+        row = next(rows, None)
+
+        if row is None:
+            return None
+        return self._window_from_row(row)
+
     def vehicle_windows_in_range(
         self,
         exists_at_or_after: float,
@@ -346,7 +391,7 @@ class TrafficHistory:
                     FROM (SELECT vehicle_id, sim_time, speed from Trajectory WHERE sim_time >= ? AND sim_time < ?)
                     GROUP BY vehicle_id
                    ) AS D ON V.id = D.vehicle_id
-                   JOIN (
+                   INNER JOIN (
                     {self._greatest_n_per_group_format(
                         select='''vehicle_id,
                         sim_time,
@@ -361,7 +406,7 @@ class TrafficHistory:
                         operation="MIN"
                     )}
                    ) AS S ON V.id = S.vehicle_id
-                   JOIN (
+                   INNER JOIN (
                     {self._greatest_n_per_group_format(
                         select='''vehicle_id,
                         sim_time,
@@ -391,21 +436,13 @@ class TrafficHistory:
             ),
         )
 
-        def _slice_from_row(row):
-            return TrafficHistory.TrafficHistoryVehicleWindow(
-                row[0],
-                self.decode_vehicle_type(row[1]),
-                *self._resolve_vehicle_dims(row[1], *row[2:5]).as_lwh,
-                *row[5:],
-            )
-
         seen = set()
         seen_pos_x = set()
         rs = list()
 
-        def _slice_from_row_debug(row):
+        def _window_from_row_debug(row):
             nonlocal seen, seen_pos_x, rs
-            r = _slice_from_row(row)
+            r = self._window_from_row(row)
             assert r.vehicle_id not in seen
             assert r.end_time - r.start_time >= minimum_vehicle_window
             assert r.start_time >= exists_at_or_after
@@ -416,7 +453,7 @@ class TrafficHistory:
             rs.append(r)
             return r
 
-        return (_slice_from_row_debug(row) for row in rows)
+        return (_window_from_row_debug(row) for row in rows)
 
     class TrajectoryRow(NamedTuple):
         """An instant in a trajectory"""
