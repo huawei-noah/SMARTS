@@ -35,7 +35,7 @@ $ pip install -e .
 ```
 
 ## Colab
-1. Try it at 
+1. Try it here [![here](./docs/static/colab-badge.svg)](https://colab.research.google.com/github/huawei-noah/SMARTS/blob/sb3-1/examples/rl/intersection/intersection.ipynb)
 
 ## Train
 1. Train
