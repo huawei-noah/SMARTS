@@ -17,8 +17,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import subprocess
-from typing import List
 
 from gym.envs.registration import register
 
@@ -30,9 +28,4 @@ register(
 register(
     id="intersection-v0",
     entry_point="smarts.env.intersection_env:intersection_env",
-)
-
-register(
-    id="multi-intersection-v0",
-    entry_point="smarts.env.multi_intersection_env:multi_intersection_env",
 )
