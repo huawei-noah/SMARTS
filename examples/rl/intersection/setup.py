@@ -19,9 +19,7 @@ setup(
     install_requires=[
         "setuptools>=41.0.0,!=50.0",
         "ruamel.yaml==0.17.17",
-        "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@sb3-1",
+        "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@intersection-v0",
         "stable-baselines3[extra]==1.4.0",
-        "torchinfo==1.6.4",
-        "torchvision==0.12.0",
     ],
 )

@@ -1,6 +1,7 @@
+from typing import Dict
+
 import gym
 import numpy as np
-from typing import Dict
 
 
 class Observation(gym.Wrapper):

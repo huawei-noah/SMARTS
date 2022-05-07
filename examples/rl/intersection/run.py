@@ -10,11 +10,11 @@ from typing import Any, Dict
 import gym
 import stable_baselines3 as sb3lib
 import torch as th
-from ruamel.yaml import YAML
 from intersection import action as intersection_action
 from intersection import info as intersection_info
 from intersection import observation as intersection_observation
 from intersection import reward as intersection_reward
+from ruamel.yaml import YAML
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy

@@ -64,6 +64,11 @@ $ pip install -e .
     + Evaluate pretrained model
         ```bash
         $ curl -o ./logs/pretrained/intersection.zip --create-dirs -L https://github.com/Adaickalavan/SMARTS-models/raw/main/intersection-v0/PPO_6200000_steps.zip
+        
+        $ curl -o ./logs/pretrained/intersection.zip --create-dirs -L https://github.com/Adaickalavan/SMARTS-models/raw/main/intersection-v0/best_model.zip   
+
+        $ curl -o ./logs/pretrained/intersection.zip --create-dirs -L https://huggingface.co/adai/intersection-v0/resolve/main/PPO_5800000_steps.zip
+
         $ python3.7 run.py --mode=evaluate --model="./logs/pretrained/intersection" --head
         ```
 1. Go to `localhost:8081` to view the simulation in Envision.
