@@ -47,7 +47,7 @@ $ pip install -e .
 1. Monitor the RL agent during or after the training using tensorboard
     ```bash
     $ cd <path>/SMARTS/examples/rl/intersection
-    $ tensorboard --logdir ./tensorboard/
+    $ tensorboard --logdir ./logs/
     ```
 
 ## Evaluate
