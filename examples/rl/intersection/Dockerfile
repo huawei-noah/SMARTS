@@ -2,11 +2,6 @@ FROM pytorch/pytorch:1.7.1-cuda11.0-cudnn8-runtime
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# (Optional) Disable certificate verification
-RUN touch /etc/apt/apt.conf.d/99verify-peer.conf && \
-    echo >>/etc/apt/apt.conf.d/99verify-peer.conf 'Acquire::https::Verify-Peer "false";' && \
-    echo >>/etc/apt/apt.conf.d/99verify-peer.conf 'Acquire::https::Verify-Host "false";'
-
 # Install libraries.
 RUN apt-get update --fix-missing && \
     apt-get install -y \
@@ -35,9 +30,6 @@ RUN pip install --upgrade pip wheel
 # Install requirements.txt .
 COPY ./examples/rl/intersection/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
-
-# (Optional) Disable git certificate verification
-RUN git config --global http.sslVerify false
 
 # Copy source files and install.
 COPY . /src
