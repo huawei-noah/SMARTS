@@ -1,11 +1,11 @@
 # Intersection
-This example illustrates the training of an ego agent to drive and make an uprotected left turn in an all-way-stop intersection, in traffic using the [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3) reinforcement-learning library. Here, we used the PPO algorithm.
+This example illustrates the training of an ego agent to make an unprotected left turn at an all-way-stop intersection with traffic, using the [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3) reinforcement-learning library. Here, the PPO algorithm is used.
 
-The ego agent earns reward for the distance travelled per-step and is penalised for colliding with other vehicles, for going off-road, for going off-route, or for going on road-shoulder.
+The ego agent earns reward for the distance travelled per-step and is penalised for colliding with other vehicles, for going off-road, for going off-route, or for driving on road-shoulder.
 
-This example is only to demonstrate the use of SB3 library with SMARTS intersection-v0 task environments. The trained agents may not solve the task environment.
+This example is only meant to demonstrate the use of SB3 library with SMARTS task environments. The trained agent does not solve the task environment.
 
-## Trained agent making uprotected left turn
+## Trained agent making an uprotected left turn
 ![](./docs/_static/intersection.gif)
 
 ## Observation space
@@ -77,7 +77,7 @@ $ pip install -e .
 1. Train a model inside docker
     ```bash
     $ cd <path>/SMARTS
-    $ docker build --file=<path>/SMARTS/examples/rl/intersection/Dockerfile --network=host --tag=intersection <path>/SMARTS
+    $ docker build --file=./examples/rl/intersection/Dockerfile --network=host --tag=intersection .
     $ docker run --rm -it --network=host --gpus=all intersection
     (container) $ cd /src/examples/rl/intersection
     (container) $ python3.7 run.py
