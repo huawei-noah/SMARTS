@@ -123,7 +123,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
         )
         intersection_util.print_model(model, env, config["alg"])
     elif config["mode"] == "train" and config.get("model", None):
-        print("\nStart training from existing model.\n")
+        print("\nStart training from an existing model.\n")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
