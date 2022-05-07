@@ -48,7 +48,7 @@ def main(args: argparse.Namespace):
 
     # Setup model.
     if (config["mode"] == "train" and args.model) or (config["mode"] == "evaluate"):
-        # Begin training or evaluation from a pretrained model.
+        # Begin training or evaluation from a pre-trained agent.
         config["model"] = args.model
         print("\nModel:", config["model"], "\n")
     elif config["mode"] == "train" and not args.model:

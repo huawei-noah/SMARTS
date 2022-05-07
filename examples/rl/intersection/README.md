@@ -61,7 +61,7 @@ $ pip install -e .
         ```bash
         $ python3.7 run.py --mode=evaluate --model="./logs/<folder_name>/<model>" --head
         ```
-    + Evaluate pretrained model
+    + Evaluate pre-trained agent
         ```bash
         $ curl -o ./logs/pretrained/intersection.zip --create-dirs -L https://github.com/Adaickalavan/SMARTS-models/raw/main/intersection-v0/PPO_6200000_steps.zip
         

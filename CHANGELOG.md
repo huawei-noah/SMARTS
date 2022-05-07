@@ -11,7 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 # [Unreleased]
 ### Added
 - Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make an uprotected left turn in the presence of traffic.
-- Added an online RL example for solving the `intersection-v0` environment, using PPO algorithm from StableBaselines3 library. An accompanying Colab example is also provided.
+- Added an online RL example for solving the `intersection-v0` environment, using PPO algorithm from Stable Baselines3 library. An accompanying Colab example is also provided.
 
 ### Changed
 - Updated license to 2022 version.
@@ -19,7 +19,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Since `gym.Space` does not support dataclass, `StdObs` type is changed from a dataclass to a dictionary.
 
 ### Removed
-- Old StableBaselines3 based example is removed in favour of the new online RL example developed using StableBaselines3 library.
+- Old Stable Baselines3 based example is removed in favour of the new online RL example developed using Stable Baselines3 library.
 
 ### Fixed
 - Unpack utility now unpacks dataclass attributes.
