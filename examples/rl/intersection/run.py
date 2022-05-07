@@ -9,7 +9,6 @@ from typing import Any, Dict
 
 import gym
 import stable_baselines3 as sb3lib
-import tensorflow as tf
 import torch as th
 from ruamel.yaml import YAML
 from intersection import action as intersection_action
