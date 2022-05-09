@@ -18,8 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import csv
 import logging
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import math
 
@@ -117,6 +119,7 @@ class CompetitionEnv(gym.Env):
         seed: int = 42,
         envision_endpoint: Optional[str] = None,
         envision_record_data_replay_path: Optional[str] = None,
+        recorded_obs_path: Optional[Union[Path, str]] = None,
     ):
         """
         Args:
@@ -129,6 +132,8 @@ class CompetitionEnv(gym.Env):
                 Defaults to None.
             envision_record_data_replay_path (Optional[str], optional):
                 Envision's data replay output directory. Defaults to None.
+            recorded_obs_path (Optional[Path, str], optional):
+                Output directory to write recorded observations to as a csv file.
         """
         self._log = logging.getLogger(self.__class__.__name__)
         self.seed(seed)
@@ -157,6 +162,10 @@ class CompetitionEnv(gym.Env):
                 headless=headless,
             )
 
+        self._recorded_obs_path = recorded_obs_path
+        self._csv_file_handle = None
+        self._csv_writer = None
+
         from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
         traffic_sim = SumoTrafficSimulation(
@@ -173,6 +182,7 @@ class CompetitionEnv(gym.Env):
         )
 
         self._last_obs = None
+        self._last_full_obs = None
 
     def seed(self, seed: int) -> List[int]:
         """Sets random number generator seed number.
@@ -228,9 +238,17 @@ class CompetitionEnv(gym.Env):
         extra = {"score": extras["scores"][AGENT_ID], "env_obs": observations[AGENT_ID]}
         observation = observations[AGENT_ID]
 
+        prev_obs = self._last_full_obs
         self._last_obs = observation
+        self._last_full_obs = observations
         self._current_time += observation.dt
         target = [0, 0, 0]
+
+        # If enabled, record observations for all agents out to a csv
+        if self._recorded_obs_path:
+            for agent_id, obs in observations.items():
+                self._write_obs(agent_id, obs, prev_obs)
+
         return (
             _filter(observation, target, self),
             reward,
@@ -251,9 +269,35 @@ class CompetitionEnv(gym.Env):
 
         observation = env_observations[AGENT_ID]
         self._last_obs = observation
+        self._last_full_obs = env_observations
 
         self._current_time += observation.dt
         target = [0, 0, 0]
+
+        if self._recorded_obs_path:
+            if self._csv_file_handle:
+                self._csv_file_handle.close()
+            csv_filename = (
+                Path(self._recorded_obs_path) / f"{self._smarts.scenario.name}.csv"
+            )
+            self._csv_file_handle = open(csv_filename, "w", newline="")
+            self._csv_writer = csv.writer(self._csv_file_handle, delimiter=",")
+
+            # Write csv header and first row
+            header = [
+                "agent_id",
+                "sim_time",
+                "position_x",
+                "position_y",
+                "delta_x",
+                "delta_y",
+                "speed",
+                "heading",
+            ]
+            self._csv_writer.writerow(header)
+            for agent_id, obs in env_observations.items():
+                self._write_obs(agent_id, obs, None)
+
         return _filter(observation, target, self)
 
     def render(self, mode="human"):
@@ -263,5 +307,28 @@ class CompetitionEnv(gym.Env):
     def close(self):
         """Closes the environment and releases all resources."""
         if self._smarts is not None:
+            if self._csv_file_handle:
+                self._csv_file_handle.close()
             self._smarts.destroy()
             self._smarts = None
+
+    def _write_obs(
+        self, agent_id: str, obs: Observation, prev_obs: Optional[Observation]
+    ):
+        dx, dy = None, None
+        if prev_obs and agent_id in prev_obs:
+            prev_s = prev_obs[agent_id].ego_vehicle_state
+            dx = prev_s.position[0]
+            dy = prev_s.position[1]
+        s = obs.ego_vehicle_state
+        row = [
+            agent_id,
+            self._current_time,
+            s.position[0],
+            s.position[1],
+            dx,
+            dy,
+            s.speed,
+            s.heading,
+        ]
+        self._csv_writer.writerow(row)
