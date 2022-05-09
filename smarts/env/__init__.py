@@ -23,3 +23,8 @@ register(
     id="hiway-v0",
     entry_point="smarts.env.hiway_env:HiWayEnv",
 )
+
+register(
+    id="merging-v0",
+    entry_point="smarts.env.merging_env:merging_env",
+)
