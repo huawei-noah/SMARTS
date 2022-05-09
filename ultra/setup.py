@@ -47,9 +47,19 @@ setup(
     install_requires=[
         "smarts[train,test]==0.4.14",
         "setuptools>=41.0.0,!=50.0",
+        "trimesh<=3.9.29",
         "dill",
         "black==20.8b1",
-        "ray[rllib]==1.0.1.post1",
-        "opencv-python",
+        # "ray[rllib]==1.0.1.post1",
+        "opencv-python==4.1.2.30",
     ],
+    extras_require={
+        "dev": [
+            "black==20.8b1",
+            "isort==5.7.0",
+            "pre-commit==2.16.0",
+            "pylint>=2.12.2",
+            "pytype==2022.1.13",
+        ],
+    },
 )
