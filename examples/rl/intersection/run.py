@@ -22,6 +22,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMoni
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
+warnings.simplefilter("ignore", category=ResourceWarning)
 yaml = YAML(typ="safe")
 
 
