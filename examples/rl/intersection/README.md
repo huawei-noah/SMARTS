@@ -24,6 +24,9 @@ observation_space = gym.spaces.Box(low=0, high=255, shape=(3, 112, 112), dtype=n
 action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
 ```
 
+## Colab
+1. Try it here: [![here](./docs/_static/colab-badge.svg)](https://colab.research.google.com/github/huawei-noah/SMARTS/blob/intersection-v0/examples/rl/intersection/intersection.ipynb)
+
 ## Setup
 ```bash
 $ git clone https://github.com/huawei-noah/SMARTS.git
@@ -33,9 +36,6 @@ $ source ./.venv/bin/activate
 $ pip install --upgrade pip
 $ pip install -e .
 ```
-
-## Colab
-1. Try it here: [![here](./docs/_static/colab-badge.svg)](https://colab.research.google.com/github/huawei-noah/SMARTS/blob/intersection-v0/examples/rl/intersection/intersection.ipynb)
 
 ## Train
 1. Train
