@@ -10,13 +10,12 @@ from typing import Any, Dict
 import gym
 import stable_baselines3 as sb3lib
 import torch as th
-from ruamel.yaml import YAML
 from intersection import action as intersection_action
 from intersection import info as intersection_info
 from intersection import observation as intersection_observation
-from intersection import policy as intersection_policy
 from intersection import reward as intersection_reward
 from intersection import util as intersection_util
+from ruamel.yaml import YAML
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -24,6 +23,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMoni
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
+warnings.simplefilter("ignore", category=ResourceWarning)
 yaml = YAML(typ="safe")
 
 
@@ -50,7 +50,7 @@ def main(args: argparse.Namespace):
 
     # Setup model.
     if (config["mode"] == "train" and args.model) or (config["mode"] == "evaluate"):
-        # Begin training or evaluation from a pretrained model.
+        # Begin training or evaluation from a pre-trained agent.
         config["model"] = args.model
         print("\nModel:", config["model"], "\n")
     elif config["mode"] == "train" and not args.model:
@@ -60,15 +60,15 @@ def main(args: argparse.Namespace):
         raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
 
     # Make training and evaluation environments.
-    env = make_env(config=config, training=True)
-    eval_env = make_env(config=config, training=False)
+    env = make_env(config=config)
+    eval_env = make_env(config=config)
 
     # Run training or evaluation.
     run(env=env, eval_env=eval_env, config=config)
     env.close()
 
 
-def make_env(config: Dict[str, Any], training: bool) -> gym.Env:
+def make_env(config: Dict[str, Any]) -> gym.Env:
     # Create environment
     env = gym.make(
         "smarts.env:intersection-v0",
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     if args.mode == "evaluate" and args.model is None:
         raise Exception("When --mode=evaluate, --model option must be specified.")
 
-    main(args)
+    # main(args)
 
     # import torchvision.models as th_models
     # import torch
@@ -228,3 +228,10 @@ if __name__ == "__main__":
     # # Retrieve the environment
     # env = model.get_env()
     # print(env.observation_space)
+
+
+    import d3rlpy
+
+    dataset, env = d3rlpy.datasets.get_dataset("cartpole-replay")
+
+    print(type(dataset))
