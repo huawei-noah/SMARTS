@@ -236,8 +236,14 @@ def main(
             smarts.switch_ego_agents(agent_interfaces)
 
             # Finally start the simulation loop...
+            logger.info(
+                f"mission start times: {[(veh_id, veh_missions[veh_id].start_time) for veh_id in sample]}"
+            )
             logger.info(f"starting simulation loop at: `{history_start_time}`...")
             observations = smarts.reset(scenario, history_start_time)
+            assert math.isclose(
+                smarts.elapsed_sim_time, history_start_time, abs_tol=1.1e-1
+            ), f"{smarts.elapsed_sim_time} != {history_start_time+smarts.timestep_sec}"
             while not all(done for done in dones.values()):
                 actions = {
                     agent_id: agents[agent_id].act(agent_obs)
