@@ -12,7 +12,7 @@ agent = Agent.from_function(agent_function=act)
 
 def main(max_steps):
     env = CompetitionEnv(
-        scenarios=["scenarios/loop"],
+        scenarios=["scenarios/straight"],
         max_episode_steps=max_steps,
         recorded_obs_path=Path(__file__).parent,
     )
@@ -31,4 +31,4 @@ def main(max_steps):
 
 
 if __name__ == "__main__":
-    main(max_steps=2)
+    main(max_steps=10)

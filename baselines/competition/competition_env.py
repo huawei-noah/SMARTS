@@ -31,8 +31,8 @@ import numpy as np
 
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
-from smarts.core.agent_interface import AgentInterface
-from smarts.core.controllers import ActionSpaceType
+from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
 from smarts.core.coordinates import Heading
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import (
@@ -182,7 +182,7 @@ class CompetitionEnv(gym.Env):
         )
 
         self._last_obs = None
-        self._last_full_obs = None
+        self._last_veh_obs = None
 
     def seed(self, seed: int) -> List[int]:
         """Sets random number generator seed number.
@@ -238,16 +238,18 @@ class CompetitionEnv(gym.Env):
         extra = {"score": extras["scores"][AGENT_ID], "env_obs": observations[AGENT_ID]}
         observation = observations[AGENT_ID]
 
-        prev_obs = self._last_full_obs
         self._last_obs = observation
-        self._last_full_obs = observations
         self._current_time += observation.dt
         target = [0, 0, 0]
 
+        veh_obs = self._collect_social_vehicle_obs()
+        prev_veh_obs = self._last_veh_obs
+        self._last_veh_obs = veh_obs
+
         # If enabled, record observations for all agents out to a csv
         if self._recorded_obs_path:
-            for agent_id, obs in observations.items():
-                self._write_obs(agent_id, obs, prev_obs)
+            for agent_id, obs in veh_obs.items():
+                self._write_obs(agent_id, obs, prev_veh_obs)
 
         return (
             _filter(observation, target, self),
@@ -269,7 +271,9 @@ class CompetitionEnv(gym.Env):
 
         observation = env_observations[AGENT_ID]
         self._last_obs = observation
-        self._last_full_obs = env_observations
+
+        veh_obs = self._collect_social_vehicle_obs()
+        self._last_veh_obs = veh_obs
 
         self._current_time += observation.dt
         target = [0, 0, 0]
@@ -285,8 +289,8 @@ class CompetitionEnv(gym.Env):
 
             # Write csv header and first row
             header = [
-                "agent_id",
                 "sim_time",
+                "agent_id",
                 "position_x",
                 "position_y",
                 "delta_x",
@@ -295,7 +299,7 @@ class CompetitionEnv(gym.Env):
                 "heading",
             ]
             self._csv_writer.writerow(header)
-            for agent_id, obs in env_observations.items():
+            for agent_id, obs in veh_obs.items():
                 self._write_obs(agent_id, obs, None)
 
         return _filter(observation, target, self)
@@ -312,9 +316,25 @@ class CompetitionEnv(gym.Env):
             self._smarts.destroy()
             self._smarts = None
 
+    def _collect_social_vehicle_obs(self) -> Dict[str, Observation]:
+        """Get observations from the current active social vehicles."""
+        current_vehicles = self._smarts.vehicle_index.social_vehicle_ids()
+        for veh_id in current_vehicles:
+            try:
+                interface = AgentInterface.from_type(
+                    AgentType.Laner, max_episode_steps=None
+                )
+                self._smarts.attach_sensors_to_vehicles(interface, {veh_id})
+            except ControllerOutOfLaneException:
+                pass
+
+        veh_obs, _, _, _ = self._smarts.observe_from(list(current_vehicles))
+        return veh_obs
+
     def _write_obs(
         self, agent_id: str, obs: Observation, prev_obs: Optional[Observation]
     ):
+        """Write an observation as a row in the csv file."""
         dx, dy = None, None
         if prev_obs and agent_id in prev_obs:
             prev_s = prev_obs[agent_id].ego_vehicle_state
@@ -322,8 +342,8 @@ class CompetitionEnv(gym.Env):
             dy = prev_s.position[1]
         s = obs.ego_vehicle_state
         row = [
-            agent_id,
             self._current_time,
+            agent_id,
             s.position[0],
             s.position[1],
             dx,
