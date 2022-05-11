@@ -23,7 +23,6 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMoni
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
-warnings.simplefilter("ignore", category=ResourceWarning)
 yaml = YAML(typ="safe")
 
 
@@ -192,46 +191,4 @@ if __name__ == "__main__":
     if args.mode == "evaluate" and args.model is None:
         raise Exception("When --mode=evaluate, --model option must be specified.")
 
-    # main(args)
-
-    # import torchvision.models as th_models
-    # import torch
-    # pip install prefetch_generator tqdm yacs
-
-    # modelut = th_models.video.r2plus1d_18(pretrained=pretrained, progress=True)
-    # modelut = th.hub.load('datvuthanh/hybridnets', 'hybridnets', pretrained=True)
-    # model = torch.hub.load('hustvl/yolop', 'yolop', pretrained=True)
-    # Print model summary
-    # print("\n\n")
-    # network = sb3_util.Network(modelut)
-    # print(model)
-    # sb3_util.summary(model=model, depth=10, input_size=(1,3,256,256))
-    # print("\n\n")
-
-    # import gym
-    # import Box2D
-    # env = gym.make('RoadRunner-v0')
-    # print("obs_space",env.observation_space)
-    # print("action_space",env.action_space)
-
-    # import gym
-    # import torch as th
-
-    # from stable_baselines3 import PPO
-
-    # # Custom actor (pi) and value function (vf) networks
-    # # of two layers of size 32 each with Relu activation function
-    # policy_kwargs = dict(activation_fn=th.nn.ReLU,
-    #                     net_arch=[dict(pi=[32, 32], vf=[32, 32])])
-    # # Create the agent
-    # model = PPO("MlpPolicy", "CartPole-v1", policy_kwargs=policy_kwargs, verbose=1)
-    # # Retrieve the environment
-    # env = model.get_env()
-    # print(env.observation_space)
-
-
-    import d3rlpy
-
-    dataset, env = d3rlpy.datasets.get_dataset("cartpole-replay")
-
-    print(type(dataset))
+    main(args)

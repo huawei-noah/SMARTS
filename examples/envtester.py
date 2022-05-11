@@ -20,10 +20,9 @@ def main(num_episodes, max_episode_steps=50):
     )
 
     env = gym.make(
-        "smarts.env:multi-intersection-v0",
-        headless=True,
-        visdom=False,
-        sumo_headless=False,
+        "smarts.env:merge-v0",
+        headless=False,
+        sumo_headless=True,
         action_space="Lane",
     )
 
@@ -33,6 +32,8 @@ def main(num_episodes, max_episode_steps=50):
 
         done = False
         while not done:
+            import time
+            time.sleep(0.2)
             agent_action = agent.act(observation)
             observation, reward, done, info = env.step(agent_action)
 
@@ -40,7 +41,7 @@ def main(num_episodes, max_episode_steps=50):
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("single-agent-example")
+    parser = default_argument_parser("test-example")
     args = parser.parse_args()
 
     main(

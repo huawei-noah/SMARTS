@@ -47,6 +47,7 @@ def merge_env(
     envision_record_data_replay_path: Optional[str] = None,
     img_meters=64,
     img_pixels=256,
+    action_space="Continuous"
 ):
     """A merge environment where a single agent needs to merge into a freeway 
     by driving along an entrance ramp, an acceleration lane, enter into the 
@@ -108,7 +109,7 @@ def merge_env(
     done_criteria = DoneCriteria(
         collision=False,
         off_road=True,
-        off_route=True,
+        off_route=False,
         on_shoulder=True,
         wrong_way=True,
         not_moving=False,
@@ -119,7 +120,7 @@ def merge_env(
         "MergeAgent": AgentSpec(
             interface=AgentInterface(
                 accelerometer=True,
-                action=ActionSpaceType.Continuous,
+                action=getattr(ActionSpaceType, action_space),
                 done_criteria=done_criteria,
                 drivable_area_grid_map=DrivableAreaGridMap(
                     width=img_pixels,

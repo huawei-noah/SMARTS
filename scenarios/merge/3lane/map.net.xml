@@ -1,38 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2022-05-06 15:31:35 by Eclipse SUMO netedit Version 1.12.0
+<!-- generated on 2022-05-11 17:25:07 by Eclipse SUMO netedit Version 1.10.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
-
     <input>
-        <sumo-net-file value="scenarios/merging/map.net.xml"/>
+        <sumo-net-file value="scenarios/merging/3lane_merging_light/map.net.xml"/>
     </input>
-
     <output>
-        <output-file value="scenarios/merging/map.net.xml"/>
+        <output-file value="scenarios/merging/3lane_merging_light/map.net.xml"/>
     </output>
-
     <processing>
         <geometry.min-radius.fix.railways value="false"/>
         <geometry.max-grade.fix value="false"/>
         <offset.disable-normalization value="true"/>
         <lefthand value="false"/>
     </processing>
-
     <junctions>
         <no-turnarounds value="true"/>
         <junctions.corner-detail value="5"/>
         <junctions.limit-turn-speed value="5.5"/>
         <rectangular-lane-cut value="false"/>
     </junctions>
-
     <pedestrian>
         <walkingareas value="false"/>
     </pedestrian>
-
     <report>
         <aggregate-warnings value="5"/>
     </report>
-
 </configuration>
 -->
 
@@ -46,9 +39,9 @@
         <lane id=":J13_0_2" index="2" speed="13.89" length="20.29" shape="57.90,93.36 78.18,93.36"/>
     </edge>
     <edge id=":J13_3" function="internal">
-        <lane id=":J13_3_0" index="0" speed="13.89" length="21.59" shape="57.90,96.45 61.60,94.96 65.72,91.70 70.99,88.44 78.18,86.96"/>
-        <lane id=":J13_3_1" index="1" speed="13.89" length="21.59" shape="57.90,96.45 61.68,95.46 65.93,93.30 71.24,91.14 78.18,90.16"/>
-        <lane id=":J13_3_2" index="2" speed="13.89" length="21.59" shape="57.90,96.45 61.73,95.96 66.07,94.90 71.39,93.84 78.18,93.36"/>
+        <lane id=":J13_3_0" index="0" speed="13.89" length="21.45" shape="57.90,96.05 61.61,94.62 65.75,91.50 71.03,88.38 78.18,86.96"/>
+        <lane id=":J13_3_1" index="1" speed="13.89" length="21.45" shape="57.90,96.05 61.69,95.12 65.95,93.10 71.26,91.08 78.18,90.16"/>
+        <lane id=":J13_3_2" index="2" speed="13.89" length="21.45" shape="57.90,96.05 61.74,95.62 66.08,94.70 71.40,93.78 78.18,93.36"/>
     </edge>
 
     <edge id="E5" from="J12" to="J13" priority="-1">
@@ -62,7 +55,7 @@
         <lane id="E6_2" index="2" speed="13.89" length="121.82" shape="78.18,93.36 200.00,93.36"/>
     </edge>
     <edge id="E8" from="J16" to="J13" priority="-1" shape="1.14,105.63 2.71,104.71 4.35,103.86 6.07,103.06 7.85,102.32 9.70,101.64 11.63,101.01 13.62,100.45 15.69,99.95 17.82,99.50 20.03,99.12 22.31,98.79 24.65,98.52 27.07,98.31 29.56,98.16 32.12,98.07 65.07,98.04">
-        <lane id="E8_0" index="0" speed="13.89" length="58.88" shape="0.33,104.25 1.94,103.31 3.64,102.42 5.43,101.60 7.27,100.83 9.18,100.13 11.17,99.48 13.22,98.90 15.34,98.39 17.52,97.93 19.78,97.54 22.10,97.20 24.49,96.93 26.95,96.71 29.48,96.56 32.09,96.47 57.90,96.45"/>
+        <lane id="E8_0" index="0" speed="13.89" length="59.09" width="4.00" shape="0.13,103.90 1.74,102.96 3.47,102.06 5.26,101.23 7.12,100.46 9.05,99.75 11.05,99.10 13.11,98.51 15.25,98.00 17.44,97.54 19.72,97.14 22.05,96.81 24.45,96.53 26.92,96.32 29.47,96.16 32.08,96.07 57.90,96.05"/>
     </edge>
 
     <junction id="J12" type="dead_end" x="0.22" y="94.96" incLanes="" intLanes="" shape="0.22,94.96 0.22,85.36"/>
@@ -75,7 +68,7 @@
         <request index="5" response="000111" foes="000111" cont="0"/>
     </junction>
     <junction id="J14" type="dead_end" x="200.00" y="94.96" incLanes="E6_0 E6_1 E6_2" intLanes="" shape="200.00,85.36 200.00,94.96"/>
-    <junction id="J16" type="dead_end" x="1.14" y="105.63" incLanes="" intLanes="" shape="1.14,105.63 -0.48,102.87"/>
+    <junction id="J16" type="dead_end" x="1.14" y="105.63" incLanes="" intLanes="" shape="1.14,105.63 -0.88,102.18"/>
 
     <connection from="E5" to="E6" fromLane="0" toLane="0" via=":J13_0_0" dir="s" state="M"/>
     <connection from="E5" to="E6" fromLane="1" toLane="1" via=":J13_0_1" dir="s" state="M"/>

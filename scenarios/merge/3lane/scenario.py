@@ -19,20 +19,30 @@ freeway_car = TrafficActor(
     speed=Distribution(mean=0.5, sigma=0.8)
 )
 
+
+
+
 traffic = {}
 traffic["merge"] = Traffic(
     flows=[
         Flow(
             route=Route(
-                begin=("E5",random.randint(0,2), 0),
-                end=("E6", random.randint(0,2), "max"),
+                begin=("E5", i, 0),
+                end=("E6", i, "max"),
             ),
-            rate=3,
-            begin=np.random.exponential(scale=2.5),
+            # Random flow rate, between x and y vehicles per minute.
+            rate=60 * random.uniform(4, 5),
+            # Random flow start time, between 0 and 10 seconds.
+            begin=random.uniform(0, 10),
+            # For an episode with maximum_episode_steps=3000 and step
+            # time=0.1s, maximum episode time=300s. Hence, traffic set to
+            # end at 900s, which is greater than maximum episode time of
+            # 300s.
+            end=60 * 15,            
             actors={freeway_car:1},
         )
-        for _ in range(3)
-    for _ in range(3)
+        for i in range(3)
+    # for _ in range(3)
     ]
 )
 
@@ -40,7 +50,7 @@ route = Route(begin=("E8",0,1), end=("E6",0,'max'))
 ego_missions = [
     Mission(
         route=route,
-        start_time=10, # Delayed start, to ensure road has prior traffic.
+        start_time=15, # Delayed start, to ensure road has prior traffic.
     )
 ]
 
