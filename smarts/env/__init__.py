@@ -28,3 +28,8 @@ register(
     id="merging-v0",
     entry_point="smarts.env.merging_env:merging_env",
 )
+
+register(
+    id="cutoff-v0",
+    entry_point="smarts.env.cut_off_env:cutoff_env",
+)
