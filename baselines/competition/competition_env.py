@@ -20,10 +20,12 @@
 
 import csv
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import math
+from uuid import uuid4
 
 import gym
 import gym.spaces as spaces
@@ -281,9 +283,17 @@ class CompetitionEnv(gym.Env):
         if self._recorded_obs_path:
             if self._csv_file_handle:
                 self._csv_file_handle.close()
+
+            guid = uuid4().hex[:16]  # NOTE: increase this if we have collisions
             csv_filename = (
-                Path(self._recorded_obs_path) / f"{self._smarts.scenario.name}.csv"
+                Path(self._recorded_obs_path)
+                / f"{self._smarts.scenario.name}-{guid}.csv"
             )
+
+            # Check for name collisions
+            if os.path.exists(csv_filename):
+                self._log.warning(f"File '{csv_filename}' already exists, overwriting.")
+
             self._csv_file_handle = open(csv_filename, "w", newline="")
             self._csv_writer = csv.writer(self._csv_file_handle, delimiter=",")
 
@@ -335,20 +345,20 @@ class CompetitionEnv(gym.Env):
         self, agent_id: str, obs: Observation, prev_obs: Optional[Observation]
     ):
         """Write an observation as a row in the csv file."""
+        curr_s = obs.ego_vehicle_state
         dx, dy = None, None
         if prev_obs and agent_id in prev_obs:
             prev_s = prev_obs[agent_id].ego_vehicle_state
-            dx = prev_s.position[0]
-            dy = prev_s.position[1]
-        s = obs.ego_vehicle_state
+            dx = curr_s.position[0] - prev_s.position[0]
+            dy = curr_s.position[1] - prev_s.position[1]
         row = [
             self._current_time,
             agent_id,
-            s.position[0],
-            s.position[1],
+            curr_s.position[0],
+            curr_s.position[1],
             dx,
             dy,
-            s.speed,
-            s.heading,
+            curr_s.speed,
+            curr_s.heading,
         ]
         self._csv_writer.writerow(row)
