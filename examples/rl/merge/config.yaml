@@ -1,0 +1,30 @@
+smarts:
+  # Environment
+  visdom: False # If True, enables Visdom display.
+  sumo_gui: False # If True, enables sumo-gui display.
+  img_meters: 50 # Observation image area size in meters.
+  img_pixels: 112 # Observation image size in pixels.
+  n_stack: 3 # Number of frames to stack as input to policy network.
+  action_wrapper: Discrete # Either "Lane" or "Continuous" or "Discrete"
+  observation_wrapper: "ObsCNN" # Either "ObservationCNN" or "ObservationMLP"
+  # observation_wrapper: "ObsMLP" # Either "ObservationCNN" or "ObservationMLP"
+
+  # Training
+  train_steps: 1e8 # Number of training steps.
+  checkpoint_freq: 1e5 # Save a model every checkpoint_freq calls to env.step().
+  eval_eps: 100 # Number of evaluation epsiodes.
+  eval_freq: 1e5 # Evaluate the trained model every eval_freq steps and save the best model.
+
+  # Policy
+  alg: PPO  # Stable Baselines3 algorithm.
+  alg_kwargs:
+    policy: "CnnPolicy" # Network policy.
+    target_kl: 0.1
+  
+  # policy: naturecnn
+  # policy: customnaturecnn
+  # policy: mlp
+  # policy: l5kit
+  # policy: dreamer
+  # policy: r2plus1d_18
+  # policy: dqn_naturecnn
