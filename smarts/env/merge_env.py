@@ -48,9 +48,9 @@ def merge_env(
     img_meters=64,
     img_pixels=256,
 ):
-    """An intersection environment where a single agent needs to make an
-    unprotected left turn in the presence of traffic and without traffic
-    lights. Traffic vehicles stop before entering the junction.
+    """A merge environment where a single agent needs to merge into a freeway 
+    by driving along an entrance ramp, an acceleration lane, enter into the 
+    freeway, and finally change lanes to the rightmost lane.
 
     Observation:
         A `smarts.env.wrappers.format_obs:StdObs` dict, containing enabled keys,
@@ -77,9 +77,9 @@ def merge_env(
           or drives on wrong way.
 
     Solved requirement:
-        If agent successfully navigates the intersection then `info["score"]`
-        will equal 1, else it is 0. Considered solved when `info["score"] == 1`
-        is achieved over 800 consecutive episodes.
+        If agent successfully merges into the freeway then `info["score"]` will
+        equal 1, else it is 0. Considered solved when `info["score"] == 1` is
+        achieved over 800 consecutive episodes.
 
     Args:
         headless (bool, optional): If True, disables visualization in
@@ -92,7 +92,7 @@ def merge_env(
             Envision's data replay output directory. Defaults to None.
 
     Returns:
-        A single-agent unprotected left turn intersection environment.
+        A single-agent merging into a freeway.
     """
 
     scenario = [
@@ -100,13 +100,13 @@ def merge_env(
             pathlib.Path(__file__).absolute().parents[2]
             / "scenarios"
             / "merge"
-            / "3lane_merge"
+            / "3lane"
         )
     ]
     build_scenario(scenario)
 
     done_criteria = DoneCriteria(
-        collision=True,
+        collision=False,
         off_road=True,
         off_route=True,
         on_shoulder=True,
@@ -116,7 +116,7 @@ def merge_env(
     )
     max_episode_steps = 3000
     agent_specs = {
-        "LeftTurnAgent": AgentSpec(
+        "MergeAgent": AgentSpec(
             interface=AgentInterface(
                 accelerometer=True,
                 action=ActionSpaceType.Continuous,
@@ -148,7 +148,7 @@ def merge_env(
     env = HiWayEnv(
         scenarios=scenario,
         agent_specs=agent_specs,
-        sim_name="LeftTurn",
+        sim_name="Merge",
         headless=headless,
         visdom=visdom,
         sumo_headless=sumo_headless,
@@ -189,8 +189,8 @@ class _InfoScore(gym.Wrapper):
 
         for agent_id in obs.keys():
             reached_goal = obs[agent_id]["events"]["reached_goal"]
-            # Set `score=1` if ego agent successfully navigates the left-turn
-            # intersection and reaches the end of mission route, else `score=0`.
+            # Set `score=1` if ego agent successfully merges into the freeway,
+            # changes lane, and reaches the end of mission route, else `score=0`.
             info[agent_id]["score"] = reached_goal
 
         return obs, reward, done, info

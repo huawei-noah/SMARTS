@@ -31,6 +31,6 @@ register(
 )
 
 register(
-    id="multi-intersection-v0",
-    entry_point="smarts.env.multi_intersection_env:multi_intersection_env",
+    id="merge-v0",
+    entry_point="smarts.env.merge_env:merge_env",
 )
