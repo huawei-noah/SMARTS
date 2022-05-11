@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:1.7.1-cuda11.0-cudnn8-runtime
+FROM tensorflow/tensorflow:2.4.0-gpu
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -33,7 +33,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip install --upgrade pip wheel
 
 # Install requirements.txt .
-COPY ./examples/rl/intersection/requirements.txt /tmp/requirements.txt
+COPY ./examples/rl/merge/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # (Optional) Disable git certificate verification
@@ -42,7 +42,7 @@ RUN git config --global http.sslVerify false
 # Copy source files and install.
 COPY . /src
 WORKDIR /src
-RUN pip install --no-cache-dir -e ./examples/rl/intersection
+RUN pip install --no-cache-dir -e ./examples/rl/merge
 
 # For Envision.
 EXPOSE 8081
