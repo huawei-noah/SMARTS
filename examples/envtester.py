@@ -16,8 +16,16 @@ def main(num_episodes, max_episode_steps=50):
         interface=AgentInterface.from_type(
             AgentType.Laner, max_episode_steps=max_episode_steps
         ),
-        agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
+        agent_builder=lambda: Agent.from_function(lambda _: 0),
     )
+
+    # Action map for AgentType.Laner
+    # action_map = {
+    #     0: "keep_lane",
+    #     1: "slow_down",
+    #     2: "change_lane_left",
+    #     3: "change_lane_right",
+    # }
 
     env = gym.make(
         "smarts.env:merge-v0",
@@ -35,6 +43,8 @@ def main(num_episodes, max_episode_steps=50):
 
             agent_action = agent.act(observation)
             observation, reward, done, info = env.step(agent_action)
+            if observation["events"]["reached_goal"]:
+                print("HURRAY REACHED GOAL !!!")
 
     env.close()
 

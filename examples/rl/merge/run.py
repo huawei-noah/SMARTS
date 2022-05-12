@@ -107,7 +107,6 @@ def make_env(config: Dict[str, Any]) -> PyEnvironment:
             "img_pixels": config["img_pixels"],
         },
     )
-    print(tfenv.action_space)
     validate_py_environment(environment=tfenv)
 
     # env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="first")
