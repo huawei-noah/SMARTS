@@ -8,16 +8,17 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
-from tf_agents.environments import suite_gym
-from tf_agents.environments import PyEnvironment
+
 import gym
+from gym.utils.env_checker import check_env
 from merge import action as merge_action
-from merge import info as merge_info
 from merge import observation as merge_observation
 from merge import reward as merge_reward
+
 # from merge import policy as merge_policy
 # from merge import util as merge_util
 from ruamel.yaml import YAML
+from tf_agents.environments import PyEnvironment, suite_gym, validate_py_environment
 
 yaml = YAML(typ="safe")
 
@@ -64,23 +65,33 @@ def main(args: argparse.Namespace):
 
 
 def make_env(config: Dict[str, Any]) -> PyEnvironment:
-    # Create environment in Gym
-    # env = gym.make(
-    #     "smarts.env:merge-v0",
-    #     headless=not config["head"],  # If False, enables Envision display.
-    #     visdom=config["visdom"],  # If True, enables Visdom display.
-    #     sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
-    #     img_meters=config["img_meters"],
-    #     img_pixels=config["img_pixels"],
-    # )
-    # env = merge_action.Action(env=env, space=config["action_wrapper"])
-    # env = getattr(merge_observation, config["observation_wrapper"])(env=env)
-    # env = merge_reward.Reward(env=env)
+    # Create environment in Gym.
+    # Refer to https://www.gymlibrary.ml/
+    env = gym.make(
+        "smarts.env:merge-v0",
+        headless=not config["head"],  # If False, enables Envision display.
+        visdom=config["visdom"],  # If True, enables Visdom display.
+        sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
+        img_meters=config["img_meters"],
+        img_pixels=config["img_pixels"],
+    )
+    print(env.action_space)
+    env = merge_action.Action(env=env, space=config["action_wrapper"])
+    env = getattr(merge_observation, config["observation_wrapper"])(env=env)
+    env = merge_reward.Reward(env=env)
+    check_env(env)
 
-    # Create the equivalent environment in TF
-    gym_action_wrapper = lambda env : merge_action.Action(env=env, space=config["action_wrapper"])
-    gym_obs_wrapper = lambda env : getattr(merge_observation, config["observation_wrapper"])(env=env)
-    gym_reward_wrapper = lambda env: merge_reward.Reward(env=env)   
+    print("SUCECECECECECEECECECEE")
+
+    # Create the equivalent environment in TF.
+    # Refer to https://www.tensorflow.org/agents/tutorials/2_environments_tutorial
+    gym_action_wrapper = lambda env: merge_action.Action(
+        env=env, space=config["action_wrapper"]
+    )
+    gym_obs_wrapper = lambda env: getattr(
+        merge_observation, config["observation_wrapper"]
+    )(env=env)
+    gym_reward_wrapper = lambda env: merge_reward.Reward(env=env)
     tfenv = suite_gym.load(
         environment_name="merge-v0",
         gym_env_wrappers=[
@@ -89,15 +100,17 @@ def make_env(config: Dict[str, Any]) -> PyEnvironment:
             gym_reward_wrapper,
         ],
         gym_kwargs={
-            "headless":not config["head"],  # If False, enables Envision display.
-            "visdom":config["visdom"],  # If True, enables Visdom display.
-            "sumo_headless":not config["sumo_gui"],  # If False, enables sumo-gui display.
-            "img_meters":config["img_meters"],
-            "img_pixels":config["img_pixels"],
+            "headless": not config["head"],  # If False, enables Envision display.
+            "visdom": config["visdom"],  # If True, enables Visdom display.
+            "sumo_headless": not config[
+                "sumo_gui"
+            ],  # If False, enables sumo-gui display.
+            "img_meters": config["img_meters"],
+            "img_pixels": config["img_pixels"],
         },
     )
-
     print(tfenv.action_space)
+    validate_py_environment(environment=tfenv)
 
     # # Wrap env with SB3 wrappers
     # env = DummyVecEnv([lambda: env])

@@ -1,7 +1,6 @@
 import numpy as np
 
 
-
 def plotter3d(observation: Tensor, rgb_gray=3, name: str = "Plotter3D", block=True):
     """Plot images
 

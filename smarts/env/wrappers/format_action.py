@@ -7,11 +7,8 @@ import numpy as np
 class FormatAction(gym.ActionWrapper):
     def __init__(self, env: gym.Env, space: str):
         super().__init__(env)
-        space_map = {
-            "Continuous": _continuous,
-            "Lane": _lane
-        }
-        self._wrapper, self.action_space  = space_map.get(space)()
+        space_map = {"Continuous": _continuous, "Lane": _lane}
+        self._wrapper, self.action_space = space_map.get(space)()
 
     def action(self, action):
         """Adapts the action input to the wrapped environment.
@@ -24,9 +21,7 @@ class FormatAction(gym.ActionWrapper):
 
 def _continuous() -> Tuple[Callable[[np.ndarray], np.ndarray], gym.Space]:
     space = gym.spaces.Box(
-        low=np.array([0.0, 0.0, -1.0]), 
-        high=np.array([1.0, 1.0, 1.0]),  
-        dtype=np.float32
+        low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32
     )
 
     def wrapper(model_action: np.ndarray) -> np.ndarray:

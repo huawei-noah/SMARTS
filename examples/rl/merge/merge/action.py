@@ -10,7 +10,7 @@ class Action(gym.ActionWrapper):
         space_map = {
             "Discrete": _discrete,
         }
-        self._wrapper, self.action_space  = space_map.get(space)()
+        self._wrapper, self.action_space = space_map.get(space)()
 
     def action(self, action):
         """Adapts the action input to the wrapped environment.
