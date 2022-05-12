@@ -67,21 +67,19 @@ def main(args: argparse.Namespace):
 def make_env(config: Dict[str, Any]) -> PyEnvironment:
     # Create environment in Gym.
     # Refer to https://www.gymlibrary.ml/
-    env = gym.make(
-        "smarts.env:merge-v0",
-        headless=not config["head"],  # If False, enables Envision display.
-        visdom=config["visdom"],  # If True, enables Visdom display.
-        sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
-        img_meters=config["img_meters"],
-        img_pixels=config["img_pixels"],
-    )
-    print(env.action_space)
-    env = merge_action.Action(env=env, space=config["action_wrapper"])
-    env = getattr(merge_observation, config["observation_wrapper"])(env=env)
-    env = merge_reward.Reward(env=env)
-    check_env(env)
-
-    print("SUCECECECECECEECECECEE")
+    # env = gym.make(
+    #     "smarts.env:merge-v0",
+    #     headless=not config["head"],  # If False, enables Envision display.
+    #     visdom=config["visdom"],  # If True, enables Visdom display.
+    #     sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
+    #     img_meters=config["img_meters"],
+    #     img_pixels=config["img_pixels"],
+    # )
+    # print(env.action_space)
+    # env = merge_action.Action(env=env, space=config["action_wrapper"])
+    # env = getattr(merge_observation, config["observation_wrapper"])(env=env)
+    # env = merge_reward.Reward(env=env)
+    # check_env(env)
 
     # Create the equivalent environment in TF.
     # Refer to https://www.tensorflow.org/agents/tutorials/2_environments_tutorial

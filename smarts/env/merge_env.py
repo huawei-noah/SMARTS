@@ -121,7 +121,7 @@ def merge_env(
         "MergeAgent": AgentSpec(
             interface=AgentInterface(
                 accelerometer=True,
-                action=getattr(ActionSpaceType, action_space),
+                action=ActionSpaceType[action_space],
                 done_criteria=done_criteria,
                 drivable_area_grid_map=DrivableAreaGridMap(
                     width=img_pixels,
@@ -159,7 +159,7 @@ def merge_env(
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
     env = FormatObs(env=env)
-    env = FormatAction(env=env, space=action_space)
+    env = FormatAction(env=env, space=ActionSpaceType[action_space])
     env = _InfoScore(env=env)
     env = SingleAgent(env=env)
 

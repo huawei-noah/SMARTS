@@ -3,12 +3,25 @@ from typing import Callable, Tuple
 import gym
 import numpy as np
 
+from smarts.core.controllers import ActionSpaceType
+
 
 class FormatAction(gym.ActionWrapper):
-    def __init__(self, env: gym.Env, space: str):
+    def __init__(self, env: gym.Env, space_type: ActionSpaceType):
+        """Sets identical action space, denoted by `space`, for all agents.
+
+        Args:
+            env (gym.Env): Gym env to be wrapped.
+            space (str): Denotes the desired action space type from
+                `smarts.core.controllers.ActionSpaceType`.
+        """
         super().__init__(env)
         space_map = {"Continuous": _continuous, "Lane": _lane}
-        self._wrapper, self.action_space = space_map.get(space)()
+        self._wrapper, action_space = space_map.get(space_type.name)()
+
+        self.action_space = gym.spaces.Dict(
+            {agent_id: action_space for agent_id in self.agent_specs.keys()}
+        )
 
     def action(self, action):
         """Adapts the action input to the wrapped environment.
