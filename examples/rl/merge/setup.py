@@ -21,5 +21,6 @@ setup(
         "ruamel.yaml==0.17.17",
         "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@sb3-1",
         "tensorflow==2.4.0",
+        "tf-agents==0.12.1",
     ],
 )

@@ -2,7 +2,6 @@ from typing import Dict
 
 import gym
 import numpy as np
-from intersection import util as intersection_util
 
 from smarts.env.wrappers import format_obs
 

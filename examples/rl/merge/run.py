@@ -8,20 +8,14 @@ from pathlib import Path
 from typing import Any, Dict
 
 import gym
-import stable_baselines3 as sb3lib
-import torch as th
-from intersection import action as intersection_action
-from intersection import info as intersection_info
-from intersection import observation as intersection_observation
-from intersection import reward as intersection_reward
-from intersection import util as intersection_util
+from merge import action as merge_action
+from merge import info as merge_info
+from merge import observation as merge_observation
+from merge import reward as merge_reward
+# from merge import policy as merge_policy
+# from merge import util as merge_util
 from ruamel.yaml import YAML
-from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
-from stable_baselines3.common.env_checker import check_env
-from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMonitor
 
-print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
 yaml = YAML(typ="safe")
 
@@ -60,17 +54,17 @@ def main(args: argparse.Namespace):
 
     # Make training and evaluation environments.
     env = make_env(config=config)
-    eval_env = make_env(config=config)
+    # eval_env = make_env(config=config)
 
     # Run training or evaluation.
-    run(env=env, eval_env=eval_env, config=config)
+    # run(env=env, eval_env=eval_env, config=config)
     env.close()
 
 
 def make_env(config: Dict[str, Any]) -> gym.Env:
     # Create environment
     env = gym.make(
-        "smarts.env:intersection-v0",
+        "smarts.env:merge-v0",
         headless=not config["head"],  # If False, enables Envision display.
         visdom=config["visdom"],  # If True, enables Visdom display.
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
@@ -79,55 +73,61 @@ def make_env(config: Dict[str, Any]) -> gym.Env:
     )
 
     # Wrap env with action, reward, and observation wrapper
-    env = intersection_info.Info(env=env)
-    env = intersection_action.Action(env=env, space=config["action_wrapper"])
-    env = intersection_reward.Reward(env=env)
-    env = getattr(intersection_observation, config["observation_wrapper"])(env=env)
+    env = merge_info.Info(env=env)
+    env = merge_action.Action(env=env, space=config["action_wrapper"])
+    env = merge_reward.Reward(env=env)
+    env = getattr(merge_observation, config["observation_wrapper"])(env=env)
 
-    # Check custom environment
-    check_env(env)
 
-    # Wrap env with SB3 wrappers
-    env = DummyVecEnv([lambda: env])
-    env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="first")
-    env = VecMonitor(
-        venv=env,
-        filename=str(config["logdir"]),
-        info_keywords=("is_success",),
-    )
+    print(env.action_space)
+
+    # Convert Gym env to TF env
+    # env = gymenv_to_pyenv(env=env)
+
+    # # Check custom environment
+    # check_env(env)
+
+    # # Wrap env with SB3 wrappers
+    # env = DummyVecEnv([lambda: env])
+    # env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="first")
+    # env = VecMonitor(
+    #     venv=env,
+    #     filename=str(config["logdir"]),
+    #     info_keywords=("is_success",),
+    # )
 
     return env
 
 
 def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
 
-    checkpoint_callback = CheckpointCallback(
-        save_freq=config["checkpoint_freq"],
-        save_path=config["logdir"] / "checkpoint",
-        name_prefix=config["alg"],
-    )
-    eval_callback = EvalCallback(
-        eval_env=eval_env,
-        n_eval_episodes=config["eval_eps"],
-        eval_freq=config["eval_freq"],
-        log_path=config["logdir"] / "eval",
-        best_model_save_path=config["logdir"] / "eval",
-        deterministic=True,
-    )
+    # checkpoint_callback = CheckpointCallback(
+    #     save_freq=config["checkpoint_freq"],
+    #     save_path=config["logdir"] / "checkpoint",
+    #     name_prefix=config["alg"],
+    # )
+    # eval_callback = EvalCallback(
+    #     eval_env=eval_env,
+    #     n_eval_episodes=config["eval_eps"],
+    #     eval_freq=config["eval_freq"],
+    #     log_path=config["logdir"] / "eval",
+    #     best_model_save_path=config["logdir"] / "eval",
+    #     deterministic=True,
+    # )
 
     if config["mode"] == "evaluate":
         print("\nStart evaluation.\n")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
-        intersection_util.print_model(model, env, config["alg"])
+        merge_util.print_model(model, env, config["alg"])
     elif config["mode"] == "train" and config.get("model", None):
         print("\nStart training from an existing model.\n")
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
         model.set_env(env)
-        intersection_util.print_model(model, env, config["alg"])
+        merge_util.print_model(model, env, config["alg"])
         model.learn(
             total_timesteps=config["train_steps"],
             callback=[checkpoint_callback, eval_callback],
@@ -138,9 +138,9 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             env=env,
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
-            **(getattr(intersection_policy, config["policy"])(config)),
+            **(getattr(merge_policy, config["policy"])(config)),
         )
-        intersection_util.print_model(model, env, config["alg"])
+        merge_util.print_model(model, env, config["alg"])
         model.learn(
             total_timesteps=config["train_steps"],
             callback=[checkpoint_callback, eval_callback],

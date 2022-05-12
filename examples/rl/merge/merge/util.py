@@ -1,38 +1,8 @@
 import numpy as np
-import torch as th
-import torch.nn as nn
-from torchinfo import summary
 
 
-def print_model(model, env, alg):
-    # Print model summary
-    print("\n\n")
-    if alg == "PPO":
-        network = Network(model.policy.features_extractor, model.policy.mlp_extractor)
-        print(network)
-        summary(model=network, input_size=(1,) + env.observation_space.shape, depth=10)
-    elif alg == "DQN":
-        network = model.policy.q_net
-        print(network)
-        summary(model=network, input_size=(1,) + env.observation_space.shape, depth=10)
-    else:
-        raise Exception(f"Unknown algorithm: {alg}.")
-    print("\n\n")
-    pass
 
-
-class Network(nn.Module):
-    def __init__(self, feature_extractor: nn.Module, mlp_extractor: nn.Module):
-        super(Network, self).__init__()
-        self._feature_extractor = feature_extractor
-        self._mlp_extractor = mlp_extractor
-
-    def forward(self, obs: th.Tensor) -> th.Tensor:
-        feature_out = self._feature_extractor(obs)
-        return self._mlp_extractor(feature_out)
-
-
-def plotter3d(observation: th.Tensor, rgb_gray=3, name: str = "Plotter3D", block=True):
+def plotter3d(observation: Tensor, rgb_gray=3, name: str = "Plotter3D", block=True):
     """Plot images
 
     Args:
