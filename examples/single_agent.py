@@ -1,24 +1,28 @@
 import logging
 import pathlib
+from functools import partial
 
 import gym
-from functools import partial
-from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
 from smarts.env.wrappers.single_agent import SingleAgent
-from smarts.sstudio import build_scenario
 from smarts.zoo.agent_spec import AgentSpec
+
+from examples.argument_parser import default_argument_parser
+from smarts.sstudio import build_scenario
 
 logging.basicConfig(level=logging.INFO)
 
 
 class TargetLaneAgent(Agent):
     def act(self, obs: Observation):
+        speed = 10
+        if len(obs.waypoint_paths):
+            speed = obs.waypoint_paths[0][0].speed_limit
         return (
-            obs.waypoint_paths[0][0].speed_limit,
+            speed,
             self._target_lane - obs.ego_vehicle_state.lane_index,
         )
 
