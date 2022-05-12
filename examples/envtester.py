@@ -21,8 +21,8 @@ def main(num_episodes, max_episode_steps=50):
 
     env = gym.make(
         "smarts.env:merge-v0",
-        headless=False,
-        sumo_headless=True,
+        headless=True,
+        sumo_headless=False,
         action_space="Lane",
     )
 
@@ -32,9 +32,7 @@ def main(num_episodes, max_episode_steps=50):
 
         done = False
         while not done:
-            import time
 
-            time.sleep(0.05)
             agent_action = agent.act(observation)
             observation, reward, done, info = env.step(agent_action)
 

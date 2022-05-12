@@ -24,7 +24,7 @@ from smarts.sstudio.types import (
 
 normal = TrafficActor(
     name="car",
-    speed=Distribution(sigma=0.8, mean=0.5),
+    speed=Distribution(sigma=0.8, mean=0.8),
 )
 # cooperative = TrafficActor(
 #     name="cooperative",
@@ -103,7 +103,7 @@ route = Route(begin=("E8", 0, 1), end=("E6", 0, "max"))
 ego_missions = [
     Mission(
         route=route,
-        start_time=18,  # Delayed start, to ensure road has prior traffic.
+        start_time=19,  # Delayed start, to ensure road has prior traffic.
     )
 ]
 
