@@ -158,7 +158,9 @@ class SMARTS:
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
         # self._bullet_client = BulletClient(pybullet.GUI)
-        self._bullet_client = bc.BulletClient(pybullet.DIRECT)
+        self._bullet_client = bc.BulletClient(
+            pybullet.DIRECT  # pylint: disable=no-member
+        )
         self._dynamic_action_spaces = {
             ActionSpaceType.Continuous,
             ActionSpaceType.Lane,
@@ -365,8 +367,8 @@ class SMARTS:
         self, scenario: Scenario, start_time: float = 0.0
     ) -> Dict[str, Observation]:
         """Reset the simulation, reinitialize with the specified scenario. Then progress the
-         simulation up to the first time an agent returns an observation, or time 0 if there are no
-         agents in the simulation.
+         simulation up to the first time an agent returns an observation, or `start_time` if there
+         are no agents in the simulation.
         Args:
             scenario(Scenario):
                 The scenario to reset the simulation with.
@@ -377,7 +379,7 @@ class SMARTS:
                 simulation should start at `start_time==0.2`.
         Returns:
             Agent observations. This observation is as follows:
-                - If no agents: the initial simulation observation at time 0
+                - If no agents: the initial simulation observation at `start_time`
                 - If agents: the first step of the simulation with an agent observation
         """
         tries = 2
@@ -597,7 +599,9 @@ class SMARTS:
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()
-        client.configureDebugVisualizer(pybullet.COV_ENABLE_GUI, 0)
+        client.configureDebugVisualizer(
+            pybullet.COV_ENABLE_GUI, 0  # pylint: disable=no-member
+        )
 
         # PyBullet defaults the timestep to 240Hz. Several parameters are tuned with
         # this value in mind. For example the number of solver iterations and the error
