@@ -6,7 +6,7 @@ import warnings
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
-
+from tf_agents.environments import suite_gym
 import gym
 from merge import action as merge_action
 from merge import info as merge_info
@@ -73,13 +73,16 @@ def make_env(config: Dict[str, Any]) -> gym.Env:
     )
 
     # Wrap env with action, reward, and observation wrapper
-    env = merge_info.Info(env=env)
-    env = merge_action.Action(env=env, space=config["action_wrapper"])
-    env = merge_reward.Reward(env=env)
-    env = getattr(merge_observation, config["observation_wrapper"])(env=env)
+    # env = merge_info.Info(env=env)
+    # env = merge_action.Action(env=env, space=config["action_wrapper"])
+    # env = merge_reward.Reward(env=env)
+    # env = getattr(merge_observation, config["observation_wrapper"])(env=env)
 
 
     print(env.action_space)
+    print("++++++++++++++++++++++++++++++++++++++++++++++++")
+    # tfenv = suite_gym.load('merge-v0',gym_kwargs: Optional[Dict[str, Any]] = None,)
+    # print(tfenv.action_space)
 
     # Convert Gym env to TF env
     # env = gymenv_to_pyenv(env=env)

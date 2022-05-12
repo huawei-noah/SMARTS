@@ -35,6 +35,7 @@ from smarts.core.agent_interface import (
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.format_obs import FormatObs
+from smarts.env.wrappers.format_action import FormatAction
 from smarts.env.wrappers.single_agent import SingleAgent
 from smarts.sstudio import build_scenario
 from smarts.zoo.agent_spec import AgentSpec
@@ -158,6 +159,7 @@ def merge_env(
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
     env = FormatObs(env=env)
+    env = FormatAction(env=env, space=action_space)
     env = _InfoScore(env=env)
     env = SingleAgent(env=env)
 
