@@ -76,26 +76,26 @@ def make_env(config: Dict[str, Any]) -> PyEnvironment:
     #     img_pixels=config["img_pixels"],
     # )
     # print(env.action_space)
+    # env = merge_reward.Reward(env=env)
     # env = merge_action.Action(env=env, space=config["action_wrapper"])
     # env = getattr(merge_observation, config["observation_wrapper"])(env=env)
-    # env = merge_reward.Reward(env=env)
     # check_env(env)
 
     # Create the equivalent environment in TF.
     # Refer to https://www.tensorflow.org/agents/tutorials/2_environments_tutorial
+    gym_reward_wrapper = lambda env: merge_reward.Reward(env=env)
     gym_action_wrapper = lambda env: merge_action.Action(
         env=env, space=config["action_wrapper"]
     )
     gym_obs_wrapper = lambda env: getattr(
         merge_observation, config["observation_wrapper"]
     )(env=env)
-    gym_reward_wrapper = lambda env: merge_reward.Reward(env=env)
     tfenv = suite_gym.load(
         environment_name="merge-v0",
         gym_env_wrappers=[
+            gym_reward_wrapper,
             gym_action_wrapper,
             gym_obs_wrapper,
-            gym_reward_wrapper,
         ],
         gym_kwargs={
             "headless": not config["head"],  # If False, enables Envision display.
@@ -110,14 +110,7 @@ def make_env(config: Dict[str, Any]) -> PyEnvironment:
     print(tfenv.action_space)
     validate_py_environment(environment=tfenv)
 
-    # # Wrap env with SB3 wrappers
-    # env = DummyVecEnv([lambda: env])
     # env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="first")
-    # env = VecMonitor(
-    #     venv=env,
-    #     filename=str(config["logdir"]),
-    #     info_keywords=("is_success",),
-    # )
 
     return tfenv
 
