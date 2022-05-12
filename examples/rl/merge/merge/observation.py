@@ -13,7 +13,7 @@ class ObsCNN(gym.Wrapper):
         self.observation_space = gym.spaces.Box(
             low=0,
             high=255,
-            shape=(old_space.shape[-1],) + old_space.shape[:-1],
+            shape=old_space.shape,
             dtype=np.uint8,
         )
 
@@ -63,7 +63,7 @@ def filter_obs_cnn(obs: Dict[str, gym.Space]) -> np.ndarray:
     # expanded = np.expand_dims(gray, -1)
 
     # Channel first
-    rgb = rgb.transpose(2, 0, 1)
+    # rgb = rgb.transpose(2, 0, 1)
 
     # Resize image to 64x64
     # resized = transposed[:, 96:160, 96:160]
