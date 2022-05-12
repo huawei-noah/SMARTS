@@ -38,9 +38,7 @@ def _continuous() -> Tuple[Callable[[np.ndarray], np.ndarray], gym.Space]:
     )
 
     def wrapper(action: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
-        return {
-            k: v.astype(np.float32) for k, v in action.items()
-        }
+        return {k: v.astype(np.float32) for k, v in action.items()}
 
     return wrapper, space
 
@@ -56,8 +54,6 @@ def _lane() -> Tuple[Callable[[int], str], gym.Space]:
     }
 
     def wrapper(action: Dict[str, int]) -> Dict[str, str]:
-        return {
-            k: action_map[v] for k, v in action.items()
-        }
+        return {k: action_map[v] for k, v in action.items()}
 
     return wrapper, space
