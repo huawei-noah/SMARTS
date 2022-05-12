@@ -159,7 +159,7 @@ def merge_env(
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
     env = FormatObs(env=env)
-    env = FormatAction(env=env, space_type=ActionSpaceType[action_space])
+    env = FormatAction(env=env, space=ActionSpaceType[action_space])
     env = _InfoScore(env=env)
     env = SingleAgent(env=env)
 
