@@ -1,17 +1,18 @@
+import random
 from pathlib import Path
 
 import numpy as np
-import random
+from smarts.sstudio.types import Distribution
+
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-from smarts.sstudio.types import Distribution
 
 traffic = t.Traffic(
     flows=[
         t.Flow(
             route=t.Route(
-                begin=("E5",random.randint(0,2), 'random'),
-                end=("E6", random.randint(0,2), "max"),
+                begin=("gneE3",random.randint(0,2), 'random'),
+                end=("gneE4", random.randint(0,2), "max"),
             ),
             rate=3,
             begin=np.random.exponential(scale=2.5),
@@ -21,7 +22,7 @@ traffic = t.Traffic(
     for _ in range(7)
     ]
 )
-ego_mission = [t.Mission(t.Route(begin=("E8",0,1),end=("E6",0,'max')),start_time=5)]
+ego_mission = [t.Mission(t.Route(begin=("gneE6",0,1),end=("gneE4",2,'max')),start_time=7)]
 
 scenario = t.Scenario(
     traffic={"all": traffic},
