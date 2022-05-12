@@ -33,7 +33,8 @@ def main(num_episodes, max_episode_steps=50):
         done = False
         while not done:
             import time
-            time.sleep(0.2)
+
+            time.sleep(0.05)
             agent_action = agent.act(observation)
             observation, reward, done, info = env.step(agent_action)
 
@@ -45,5 +46,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(
-        num_episodes=args.episodes,
+        num_episodes=30,
     )

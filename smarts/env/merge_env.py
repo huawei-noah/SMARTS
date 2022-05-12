@@ -47,10 +47,10 @@ def merge_env(
     envision_record_data_replay_path: Optional[str] = None,
     img_meters=64,
     img_pixels=256,
-    action_space="Continuous"
+    action_space="Continuous",
 ):
-    """A merge environment where a single agent needs to merge into a freeway 
-    by driving along an entrance ramp, an acceleration lane, enter into the 
+    """A merge environment where a single agent needs to merge into a freeway
+    by driving along an entrance ramp, an acceleration lane, enter into the
     freeway, and finally change lanes to the rightmost lane.
 
     Observation:

@@ -229,7 +229,6 @@ if __name__ == "__main__":
     # env = model.get_env()
     # print(env.observation_space)
 
-
     import d3rlpy
 
     dataset, env = d3rlpy.datasets.get_dataset("cartpole-replay")
