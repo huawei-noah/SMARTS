@@ -140,6 +140,9 @@ ultra/ultra/scenarios/task*/*/
 # Folder containing observations collected .pkl files for imitation learning
 collected_observations/
 
+# Folder containing recorded trajectory data as .csv files
+recorded_trajectories/
+
 # vim swap files
 *.swp
 

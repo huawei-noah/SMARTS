@@ -12,13 +12,26 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ### Changed
 - Updated license to 2022 version.
+- SMARTS reset now has a start time option which will skip simulation.
+
+### Fixed
+- Unpack utility now unpacks dataclass attributes.
+- Trap manager now uses elapsed sim time rather than step delta to associate with time.
 
 ### [0.6.1rc1] 15-04-18
+### Added
+- Added example scenario for importing the NGSIM `peachtree` dataset.
+- Added example scenario for importing the INTERACTION `merging` dataset
+### Deprecated
+- Using `.yml` files to specify traffic history datasets have been deprecated in favor of using `sstudio.types.TrafficHistoryDataset` objects.
 ### Fixed
 - Gracefully handle `EndlessGoal` missions in the MaRL benchmark. Relative goal distance with `EndlessGoal` will be now always be 0.
 - Restore `rl-agent` to working order. Version incremented to `1.1.0`.
 - Update `rl-agent` wheel.
-- Add workaround for issue where traffic history starts offroad by fixing `scl scenario build`'s `--allow-offset-map` to work with traffic history.
+- Do not auto-shift maps for a scenario that has traffic history.
+- Fixed Issue #1321 such that numpy's `sliding_window_view()` is no longer needed for NGSIM traffic histories.
+- Fixed NGSIM traffic history import bugs (see Issues #1354 and #1402).
+
 
 ### [0.6.1rc0] 15-04-16
 ### Added

@@ -165,6 +165,18 @@ class BoundingBox:
         """The box dimensions. This will lose offset information."""
         return Dimensions(length=self.length, width=self.width, height=self.height)
 
+    def contains(self, pt: Point) -> bool:
+        """returnx True iff pt is fully within the bounding box.  If any bbox coordinates are None, it's considered unbounded on that dimension/axis."""
+        return (
+            self.min_pt is None
+            or (self.min_pt.x is None or self.min_pt.x < pt.x)
+            and (self.min_pt.y is None or self.min_pt.y < pt.y)
+        ) and (
+            self.max_pt is None
+            or (self.max_pt.x is None or pt.x < self.max_pt.x)
+            and (self.max_pt.y is None or pt.y < self.max_pt.y)
+        )
+
 
 class Heading(float):
     """In this space we use radians, 0 is facing north, and turn counter-clockwise."""

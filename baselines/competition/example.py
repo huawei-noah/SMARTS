@@ -1,3 +1,4 @@
+from pathlib import Path
 from baselines.competition.competition_env import CompetitionEnv
 from smarts.core.agent import Agent
 
@@ -10,7 +11,11 @@ agent = Agent.from_function(agent_function=act)
 
 
 def main(max_steps):
-    env = CompetitionEnv(scenarios=["scenarios/loop"], max_episode_steps=max_steps)
+    env = CompetitionEnv(
+        scenarios=["scenarios/straight"],
+        max_episode_steps=max_steps,
+        recorded_obs_path=Path(__file__).parent,
+    )
 
     obs = env.reset()
     done = False
@@ -26,4 +31,4 @@ def main(max_steps):
 
 
 if __name__ == "__main__":
-    main(max_steps=2)
+    main(max_steps=10)
