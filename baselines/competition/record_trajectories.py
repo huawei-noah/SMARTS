@@ -10,6 +10,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.sstudio import build_scenario
 from smarts.zoo.agent_spec import AgentSpec
 
 logging.basicConfig(level=logging.INFO)
@@ -58,9 +59,10 @@ def main(episodes: int, max_steps: int):
         envision=None,
     )
 
-    scenarios = ["scenarios/straight"]
-    scenarios_iterator = Scenario.scenario_variations(scenarios, [])
+    scenario_name = "baselines/competition/scenarios/follow"
+    scenarios_iterator = Scenario.scenario_variations([scenario_name], [])
     for episode in range(episodes):
+        build_scenario([scenario_name])
         scenario = next(scenarios_iterator)
         obs = smarts.reset(scenario)
         prev_obs = obs
