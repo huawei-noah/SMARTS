@@ -718,8 +718,7 @@ def build_scenarios(
         "train": [i for i in range(train_total)],
         "test": [i for i in range(train_total, train_total + test_total)],
     }
-    jobs: List[AsyncResult] = []
-    # print(M)
+
     start = time.time()
     num_cpus = max(1, psutil.cpu_count(logical=True))
     with Pool(num_cpus) as process_pool:
@@ -790,7 +789,7 @@ def build_scenarios(
                     else:
                         temp_save_dir = os.path.join(save_dir, "_".join(name_additions))
 
-                    async_result: AsyncResult = process_pool.apply_async(
+                    process_pool.apply_async(
                         func=scenario_worker,
                         args=(
                             temp_seeds,
@@ -814,14 +813,8 @@ def build_scenarios(
                             dynamic_pattern_func,
                         ),
                     )
-                    jobs.append(async_result)
                     inner_prev_split = inner_cur_split
 
-                    # Regulate cpu usage to prevent interrupts
-                    if len(jobs) > num_cpus:
-                        while not any([j.ready() for j in jobs]):
-                            time.sleep(0.1)
-                        jobs.clear()
                 print(
                     f">> {mode} {intersection_type} count:{seed_count} generated: {seed_count/len(mode_seeds)} real: {intersection_percent}"
                 )
