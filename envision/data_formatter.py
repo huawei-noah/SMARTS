@@ -57,8 +57,6 @@ class Operation(IntEnum):
     """Send value only if it has changed."""
     FLATTEN = 4
     """Convert value from list or dataclass to higher hierachy."""
-    OPTIONAL = 8
-    """Sending this value is togglable by option."""
 
 
 _formatter_map: Dict[Type, Callable[[Any, "EnvisionDataFormatter"], None]] = {}
