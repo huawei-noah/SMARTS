@@ -1,27 +1,27 @@
 {
     "agents" : {
         "ppo" : {
-            "path" : "ultra.baselines.ppo",
+            "path" : "ultra.baselines",
             "name" : "ppo",
             "locator" : "ppo-v0"
         },
         "sac" : {
-            "path" : "ultra.baselines.sac",
+            "path" : "ultra.baselines",
             "name" : "sac",
             "locator" : "sac-v0"
         },
         "dqn" : {
-            "path" : "ultra.baselines.dqn",
+            "path" : "ultra.baselines",
             "name" : "dqn",
             "locator" : "dqn-v0"
         },
         "bdqn" : {
-            "path" : "ultra.baselines.bdqn",
+            "path" : "ultra.baselines",
             "name" : "bdqn",
             "locator" : "bdqn-v0"
         },
         "td3" : {
-            "path" : "ultra.baselines.td3",
+            "path" : "ultra.baselines",
             "name" : "td3",
             "locator" : "td3-v0"
         }

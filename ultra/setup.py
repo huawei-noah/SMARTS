@@ -46,6 +46,7 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "smarts[train,test]==0.4.14",
+        "gym==0.19.0",
         "setuptools>=41.0.0,!=50.0",
         "trimesh<=3.9.29",
         "dill",
