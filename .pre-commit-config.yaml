@@ -6,6 +6,7 @@ repos:
         entry: pylint
         language: system
         types: [python]
+        stages: [push]
         args:
             [
             "--errors-only",

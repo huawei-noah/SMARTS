@@ -185,7 +185,7 @@ def bubble_config_to_bubble_object(
 
 
 def add_stops_to_traffic(
-    scenario: str, stops: Sequence[Sequence[Any]], vehicles_to_not_hijack: Sequence[str]
+    scenario: str, stops: Sequence[Sequence[Any]], vehicles_to_not_hijack: List[str]
 ):
     """Adds stopped vehicles to the traffic by overwriting all.rou.xml and replacing
     some vehicles' attributes so that they start, and remain stopped.
@@ -443,7 +443,7 @@ def generate_left_turn_missions(
         start_time = (
             hijacking_params["start_time"]
             if hijacking_params["start_time"] != "default"
-            else random.randint((LANE_LENGTH // speed_m_per_s), 60)
+            else random.randint(int(LANE_LENGTH // speed_m_per_s), 60)
         )
         mission_objects = [
             Mission(
