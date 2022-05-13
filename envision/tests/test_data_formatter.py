@@ -173,7 +173,7 @@ def complex_data():
                 scenario_name="scene_name",
                 bubbles=[],
                 scores=dict(),
-                ego_agent_ids=[],
+                ego_agent_ids=["agent_007"],
                 frame_time=0.1,
             ),
             [
@@ -216,6 +216,7 @@ def complex_data():
                 ],
                 [],
                 [],
+                [0],
                 # [], # ego agent ids
                 {0: "agent_007", 1: "NE-NW"},  # lookup for reduced values
                 [],
@@ -337,7 +338,8 @@ def sim_data():
         ],
         [[90.0, -10.0, 90.0, 10.0, 110.0, 10.0, 110.0, -10.0, 90.0, -10.0]],  # bubbles
         [],
-        {0: None},
+        [1],
+        {0: None, 1: "AGENT_1"},
         [],
     ]
 

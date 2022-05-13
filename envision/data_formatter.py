@@ -150,7 +150,7 @@ class EnvisionDataFormatter:
         if type(obj) in _primitives:
             self.add_primitive(obj)
         else:
-            self.add(obj, None)
+            self.add(obj)
 
     def add_primitive(self, obj: Any):
         """Add the given object as is to the given layer. Will decompose known primitives."""
@@ -286,7 +286,7 @@ def _format_state(obj: State, data_formatter: EnvisionDataFormatter):
     data_formatter.add(obj.frame_time)
     data_formatter.add(obj.scenario_id)
     data_formatter.add(obj.scenario_name)
-    for _id, t in data_formatter.layer(obj.traffic.items()):
+    for t in data_formatter.layer(obj.traffic.values()):
         with data_formatter.layer():
             # context.add(_id, op=Operation.REDUCE)
             data_formatter.add(t)
@@ -298,6 +298,8 @@ def _format_state(obj: State, data_formatter: EnvisionDataFormatter):
         with data_formatter.layer():
             data_formatter.add(id_, op=Operation.REDUCE)
             data_formatter.add(score)
+    for id_ in data_formatter.layer(obj.ego_agent_ids):
+        data_formatter.add(id_, op=Operation.REDUCE)
 
 
 def _format_vehicle_type(obj: VehicleType, data_formatter: EnvisionDataFormatter):

@@ -35,6 +35,7 @@ const WorldState = Object.freeze({
   TRAFFIC: 3,
   BUBBLES: 4,
   SCORES: 5,
+  EGO_AGENT_IDS: 6,
 });
 
 const Traffic = Object.freeze({
@@ -155,7 +156,7 @@ export default function unpack_worldstate(formatted_state) {
     scenario_name: formatted_state[WorldState.SCENARIO_NAME],
     bubbles: unpacked_bubbles,
     scores: Object.fromEntries(formatted_state[WorldState.SCORES]),
-    ego_agent_ids: [],
+    ego_agent_ids: formatted_state[WorldState.EGO_AGENT_IDS],
     position: get_attribute_map(unpacked_traffic, "position"),
     speed: get_attribute_map(unpacked_traffic, "speed"),
     heading: get_attribute_map(unpacked_traffic, "heading"),
