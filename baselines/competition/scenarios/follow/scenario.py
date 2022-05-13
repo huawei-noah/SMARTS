@@ -18,7 +18,7 @@ flow_lead = [
             end=("gneE4", 1, "max"),
         ),
         rate=1,
-        actors={t.TrafficActor("car", min_gap=Distribution(mean=2.5, sigma=0)): 1},
+        actors={t.TrafficActor("leader", min_gap=Distribution(mean=2.5, sigma=0)): 1},
     )
 ]
 flow_follow = [
@@ -28,7 +28,7 @@ flow_follow = [
             end=("gneE4", 1, "max"),
         ),
         rate=1,
-        actors={t.TrafficActor("car"): 1},
+        actors={t.TrafficActor("follower"): 1},
     )
 ]
 

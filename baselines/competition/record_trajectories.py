@@ -40,6 +40,8 @@ def _record_data(
             dy,
             curr_state.speed,
             curr_state.heading,
+            curr_state.lane_id,
+            curr_state.lane_index,
         ]
         collected_data.append(row)
 
@@ -115,6 +117,8 @@ def main(episodes: int, max_steps: int):
                 "delta_y",
                 "speed",
                 "heading",
+                "lane_id",
+                "lane_index",
             ]
             csv_writer.writerow(header)
 
