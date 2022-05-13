@@ -264,7 +264,9 @@ def evaluate_saved_models(
     if not all([os.path.exists(model_path) for model_path in model_paths]):
         raise FileNotFoundError("At least one path to a model is invalid")
     if not all([os.listdir(model_path) for model_path in model_paths]):
-        raise FileNotFoundError("There are no models to evaluate in at least one model path")
+        raise FileNotFoundError(
+            "There are no models to evaluate in at least one model path"
+        )
 
     # Get agent IDs from the models to be evaluated.
     agent_ids_from_models = [

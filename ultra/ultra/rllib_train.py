@@ -44,13 +44,13 @@ import torch
 from ray import tune
 from ray.rllib.models import ModelCatalog
 
+from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import (
     OGM,
     AgentInterface,
     NeighborhoodVehicles,
     Waypoints,
 )
-from smarts.core.agent import AgentSpec
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.registry import make
 from ultra.baselines.common.yaml_loader import load_yaml

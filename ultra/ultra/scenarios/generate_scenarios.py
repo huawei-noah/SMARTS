@@ -92,8 +92,8 @@ def ego_mission_config_to_route(
         mission_end_lane_index = route_lanes[ego_mission_config["end"]] - 1
         mission_start_offset = (
             random.randint(
-                ego_mission_config["start_offset"][0],
-                ego_mission_config["start_offset"][1],
+                int(ego_mission_config["start_offset"][0]),
+                int(ego_mission_config["start_offset"][1]),
             )
             if "start_offset" in ego_mission_config
             else random.randint(50, 120)  # The default range of the offset.
@@ -623,7 +623,6 @@ def generate_social_vehicles(
                     actors={behavior: 1.0},
                 )
             )
-        log_info[behavior_idx]["count"] += 1
         log_info["route_distribution"] = route_distribution
         log_info["num_vehicles"] = (
             num_vehicles + 1 if stopwatcher_added else num_vehicles
@@ -631,9 +630,12 @@ def generate_social_vehicles(
         log_info[
             "start_end_on_different_lanes_probability"
         ] = start_end_on_different_lanes_probability
+        # pytype: disable=unsupported-operands
+        log_info[behavior_idx]["count"] += 1
         log_info[behavior_idx]["start_end_different_lanes"] += (
             1 if start_lane_id != end_lane_id else 0
         )
+        # pytype: enable=unsupported-operands
 
     return flows, log_info
 
