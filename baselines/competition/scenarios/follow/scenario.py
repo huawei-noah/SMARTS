@@ -19,26 +19,26 @@ start_lane = random.randint(0, 2)
 start_offset = random.randint(0, 60)  # road is 80m long, so leave space for the leader
 distance = 10
 
-# flow_lead = [
-#     t.Flow(
-#         route=t.Route(
-#             begin=(start_edge, start_lane, start_offset + distance),
-#             end=("gneE4", 1, "max"),
-#         ),
-#         rate=1,
-#         actors={t.TrafficActor("car", min_gap=Distribution(mean=2.5, sigma=0)): 1},
-#     )
-# ]
-# flow_follow = [
-#     t.Flow(
-#         route=t.Route(
-#             begin=(start_edge, start_lane, start_offset),
-#             end=("gneE4", 1, "max"),
-#         ),
-#         rate=1,
-#         actors={t.TrafficActor("car"): 1},
-#     )
-# ]
+flow_lead = [
+    t.Flow(
+        route=t.Route(
+            begin=(start_edge, start_lane, start_offset + distance),
+            end=("gneE4", 1, "max"),
+        ),
+        rate=1,
+        actors={t.TrafficActor("leader", min_gap=Distribution(mean=2.5, sigma=0)): 1},
+    )
+]
+flow_follow = [
+    t.Flow(
+        route=t.Route(
+            begin=(start_edge, start_lane, start_offset),
+            end=("gneE4", 1, "max"),
+        ),
+        rate=1,
+        actors={t.TrafficActor("follower"): 1},
+    )
+]
 
 # traffic = t.Traffic(
 #     flows=[
