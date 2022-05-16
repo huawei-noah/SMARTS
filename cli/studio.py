@@ -209,7 +209,7 @@ def _clean(scenario: str):
         "*.rou.xml",
         "*.rou.alt.xml",
         "social_agents/*",
-        "traffic/*",
+        "traffic/*.rou.xml",
         "history_mission.pkl",
         "*.shf",
         "*-AUTOGEN.net.xml",

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2022-05-16 11:12:22 by Eclipse SUMO netedit Version 1.10.0
+<!-- generated on 2022-05-16 14:37:29 by Eclipse SUMO netedit Version 1.10.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
@@ -30,8 +30,7 @@
     </pedestrian>
 
     <netedit>
-        <additional-files value="/home/kyber/Desktop/SMARTS/scenarios/loop/circles.add.xml"/>
-        <route-files value="/home/kyber/Desktop/SMARTS/scenarios/loop/circles.rou.xml"/>
+        <additional-files value="/home/kyber/Desktop/SMARTS/scenarios/loop/traffic/loop.add.xml"/>
     </netedit>
 
     <report>
@@ -42,12 +41,12 @@
 -->
 
 <additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
-    <rerouter id="rerouter_0" edges="445633931" pos="125.28,50.38">
+    <rerouter id="rerouter_0" edges="445633931" pos="124.69,51.08">
         <interval begin="0.00" end="3600.00">
             <destProbReroute id="445633932" probability="1.00"/>
         </interval>
     </rerouter>
-    <rerouter id="rerouter_1" edges="445633932" pos="121.29,22.72">
+    <rerouter id="rerouter_1" edges="445633932" pos="124.27,20.12">
         <interval begin="0.00" end="3600.00">
             <destProbReroute id="445633931" probability="1.00"/>
         </interval>
