@@ -1,17 +1,22 @@
 from pathlib import Path
-
+from smarts.sstudio.types import Distribution
 from smarts.core import seed
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-
+import random
+import numpy as np
 seed(42)
 
 traffic = t.Traffic(
     flows=[
         t.Flow(
-            route=t.RandomRoute(),
-            rate=60 * 60,
-            actors={t.TrafficActor(name="car", vehicle_type=vehicle_type): 1},
+            route=t.Route(
+                begin=("445633931",random.randint(0,2), 'random'),
+                end=("445633932", random.randint(0,2), "max"),  
+            ),
+            rate=10*10,
+            begin=np.random.exponential(scale=2.5),
+            actors={t.TrafficActor(name="car",speed=Distribution(mean=0.5, sigma=0.8),vehicle_type=vehicle_type): 1},
         )
         for vehicle_type in [
             "passenger",
