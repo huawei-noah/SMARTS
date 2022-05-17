@@ -13,10 +13,10 @@ import gym
 from gym.utils.env_checker import check_env
 from gym.wrappers.frame_stack import FrameStack
 from merge import action as merge_action
+from merge import agent as merge_agent
+from merge import network as merge_network
 from merge import observation as merge_observation
 from merge import reward as merge_reward
-from merge import network as merge_network
-from merge import agent as merge_agent
 
 # from merge import policy as merge_policy
 # from merge import util as merge_util
@@ -161,9 +161,7 @@ def run(train_env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     #     deterministic=True,
     # )
 
-    network = getattr(merge_network, config["network"])(
-        env=env
-    )
+    network = getattr(merge_network, config["network"])(env=env)
 
     return
 

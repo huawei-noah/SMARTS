@@ -8,11 +8,7 @@ def q_net(env):
         lambda obs: tf.cast(obs, np.float32) / 255.0
     )
     # number of filters, kernel size, and stride
-    conv_layer_params = [
-        (32, (8, 8), 4), 
-        (64, (4, 4), 2), 
-        (64, (3, 3), 1)
-    ]
+    conv_layer_params = [(32, (8, 8), 4), (64, (4, 4), 2), (64, (3, 3), 1)]
     fc_layer_params = [512]
     q_net = QNetwork(
         env.observation_spec(),
