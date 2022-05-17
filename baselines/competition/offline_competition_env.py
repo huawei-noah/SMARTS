@@ -18,21 +18,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import csv
 import logging
 import math
-import os
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
-from uuid import uuid4
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import gym
 import gym.spaces as spaces
 import numpy as np
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
+from smarts.core.agent_interface import AgentInterface
+from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
@@ -41,11 +37,12 @@ from smarts.core.utils.logging import timeit
 from smarts.core.utils.math import vec_to_radians
 
 NUM_WAYPOINTS = 5
+NUM_NEIGHBORS = 10
 MAX_MPS = 100
 AGENT_ID = "EGO"
 
 
-def _filter(obs: Observation, target_position, env):
+def _filter(obs: Observation, env):
     def _clip(formatted_obs, observation_space):
         result = {}
         for k, v in formatted_obs.items():
@@ -62,27 +59,25 @@ def _filter(obs: Observation, target_position, env):
                 )
         return result
 
+    neighbors = [np.array([np.inf] * 5)] * NUM_NEIGHBORS
+    if obs.neighborhood_vehicle_states:
+        for i in range(min(len(obs.neighborhood_vehicle_states), NUM_NEIGHBORS)):
+            neighbors[i] = np.hstack(
+                (
+                    obs.neighborhood_vehicle_states[i].position,
+                    np.array(
+                        [
+                            float(obs.neighborhood_vehicle_states[i].heading),
+                            obs.neighborhood_vehicle_states[i].speed,
+                        ]
+                    ),
+                )
+            )
+
     obs = {
         "position": obs.ego_vehicle_state.position,
         "linear_velocity": obs.ego_vehicle_state.linear_velocity,
-        "target_position": target_position,
-        "rgb": obs.top_down_rgb.data.astype(np.uint8),
-        "waypoints": tuple(
-            [
-                np.hstack(
-                    (
-                        obs.waypoint_paths[0][i].pos,
-                        np.array(
-                            [
-                                float(obs.waypoint_paths[0][i].heading),
-                                obs.waypoint_paths[0][i].speed_limit,
-                            ]
-                        ),
-                    )
-                )
-                for i in range(NUM_WAYPOINTS)
-            ]
-        ),
+        "neighbors": tuple(neighbors),
     }
     obs = _clip(obs, env.observation_space)
     assert env.observation_space.contains(
@@ -91,7 +86,7 @@ def _filter(obs: Observation, target_position, env):
     return obs
 
 
-class CompetitionEnv(gym.Env):
+class OfflineCompetitionEnv(gym.Env):
     """A specific competition environment."""
 
     metadata = {"render.modes": ["human"]}
@@ -113,33 +108,15 @@ class CompetitionEnv(gym.Env):
                 shape=(3,),
                 dtype=np.float32,
             ),
-            # target position x, y, z in meters
-            "target_position": spaces.Box(
-                low=-math.inf,
-                high=math.inf,
-                shape=(3,),
-                dtype=np.float32,
-            ),
-            # RGB image
-            "rgb": spaces.Box(
-                low=0,
-                high=255,
-                shape=(
-                    256,
-                    256,
-                    3,
-                ),
-                dtype=np.uint8,
-            ),
-            # nearest waypoints (2D position, heading, speed limit)
-            "waypoints": spaces.Tuple(
+            # neighboring vehicle states (3D position, heading, speed)
+            "neighbors": spaces.Tuple(
                 tuple(
                     [
                         spaces.Box(
-                            low=-math.inf, high=math.inf, shape=(4,), dtype=np.float32
+                            low=-math.inf, high=math.inf, shape=(5,), dtype=np.float32
                         )
                     ]
-                    * NUM_WAYPOINTS
+                    * NUM_NEIGHBORS
                 )
             ),
         }
@@ -182,8 +159,8 @@ class CompetitionEnv(gym.Env):
         agent_interface = AgentInterface(
             max_episode_steps=max_episode_steps,
             drivable_area_grid_map=True,
-            rgb=True,
             waypoints=True,
+            neighborhood_vehicles=True,
             action=ActionSpaceType.TargetPose,
         )
 
@@ -270,10 +247,9 @@ class CompetitionEnv(gym.Env):
 
         self._last_obs = observation
         self._current_time += observation.dt
-        target = [0, 0, 0]
 
         return (
-            _filter(observation, target, self),
+            _filter(observation, self),
             reward,
             done,
             extra,
@@ -294,9 +270,8 @@ class CompetitionEnv(gym.Env):
         self._last_obs = observation
 
         self._current_time += observation.dt
-        target = [0, 0, 0]
 
-        return _filter(observation, target, self)
+        return _filter(observation, self)
 
     def render(self, mode="human"):
         """Does nothing."""
