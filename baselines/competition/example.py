@@ -11,11 +11,7 @@ agent = Agent.from_function(agent_function=act)
 
 
 def main(max_steps):
-    env = CompetitionEnv(
-        scenarios=["scenarios/straight"],
-        max_episode_steps=max_steps,
-        recorded_obs_path=Path(__file__).parent,
-    )
+    env = CompetitionEnv(scenarios=["scenarios/straight"], max_episode_steps=max_steps)
 
     obs = env.reset()
     done = False

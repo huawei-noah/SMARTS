@@ -153,7 +153,6 @@ class CompetitionEnv(gym.Env):
         seed: int = 42,
         envision_endpoint: Optional[str] = None,
         envision_record_data_replay_path: Optional[str] = None,
-        recorded_obs_path: Optional[Union[Path, str]] = None,
     ):
         """
         Args:
@@ -195,10 +194,6 @@ class CompetitionEnv(gym.Env):
                 output_dir=envision_record_data_replay_path,
                 headless=headless,
             )
-
-        self._recorded_obs_path = recorded_obs_path
-        self._csv_file_handle = None
-        self._csv_writer = None
 
         from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
@@ -276,15 +271,6 @@ class CompetitionEnv(gym.Env):
         self._current_time += observation.dt
         target = [0, 0, 0]
 
-        veh_obs = self._collect_social_vehicle_obs()
-        prev_veh_obs = self._last_veh_obs
-        self._last_veh_obs = veh_obs
-
-        # If enabled, record observations for all agents out to a csv
-        if self._recorded_obs_path:
-            for agent_id, obs in veh_obs.items():
-                self._write_obs(agent_id, obs, prev_veh_obs)
-
         return (
             _filter(observation, target, self),
             reward,
@@ -306,43 +292,8 @@ class CompetitionEnv(gym.Env):
         observation = env_observations[AGENT_ID]
         self._last_obs = observation
 
-        veh_obs = self._collect_social_vehicle_obs()
-        self._last_veh_obs = veh_obs
-
         self._current_time += observation.dt
         target = [0, 0, 0]
-
-        if self._recorded_obs_path:
-            if self._csv_file_handle:
-                self._csv_file_handle.close()
-
-            guid = uuid4().hex[:16]  # NOTE: increase this if we have collisions
-            csv_filename = (
-                Path(self._recorded_obs_path)
-                / f"{self._smarts.scenario.name}-{guid}.csv"
-            )
-
-            # Check for name collisions
-            if os.path.exists(csv_filename):
-                self._log.warning(f"File '{csv_filename}' already exists, overwriting.")
-
-            self._csv_file_handle = open(csv_filename, "w", newline="")
-            self._csv_writer = csv.writer(self._csv_file_handle, delimiter=",")
-
-            # Write csv header and first row
-            header = [
-                "sim_time",
-                "agent_id",
-                "position_x",
-                "position_y",
-                "delta_x",
-                "delta_y",
-                "speed",
-                "heading",
-            ]
-            self._csv_writer.writerow(header)
-            for agent_id, obs in veh_obs.items():
-                self._write_obs(agent_id, obs, None)
 
         return _filter(observation, target, self)
 
@@ -353,44 +304,5 @@ class CompetitionEnv(gym.Env):
     def close(self):
         """Closes the environment and releases all resources."""
         if self._smarts is not None:
-            if self._csv_file_handle:
-                self._csv_file_handle.close()
             self._smarts.destroy()
             self._smarts = None
-
-    def _collect_social_vehicle_obs(self) -> Dict[str, Observation]:
-        """Get observations from the current active social vehicles."""
-        current_vehicles = self._smarts.vehicle_index.social_vehicle_ids()
-        for veh_id in current_vehicles:
-            try:
-                interface = AgentInterface.from_type(
-                    AgentType.Laner, max_episode_steps=None
-                )
-                self._smarts.attach_sensors_to_vehicles(interface, {veh_id})
-            except ControllerOutOfLaneException:
-                pass
-
-        veh_obs, _, _, _ = self._smarts.observe_from(list(current_vehicles))
-        return veh_obs
-
-    def _write_obs(
-        self, agent_id: str, obs: Observation, prev_obs: Optional[Observation]
-    ):
-        """Write an observation as a row in the csv file."""
-        curr_s = obs.ego_vehicle_state
-        dx, dy = None, None
-        if prev_obs and agent_id in prev_obs:
-            prev_s = prev_obs[agent_id].ego_vehicle_state
-            dx = curr_s.position[0] - prev_s.position[0]
-            dy = curr_s.position[1] - prev_s.position[1]
-        row = [
-            self._current_time,
-            agent_id,
-            curr_s.position[0],
-            curr_s.position[1],
-            dx,
-            dy,
-            curr_s.speed,
-            curr_s.heading,
-        ]
-        self._csv_writer.writerow(row)
