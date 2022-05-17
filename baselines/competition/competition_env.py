@@ -20,47 +20,69 @@
 
 import csv
 import logging
+import math
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
-
-import math
 from uuid import uuid4
 
 import gym
 import gym.spaces as spaces
 import numpy as np
-
 from envision.client import Client as Envision
 from smarts.core import seed as smarts_seed
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
 from smarts.core.coordinates import Heading
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import (
-    Observation,
-)
+from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.math import vec_to_radians
 
-
+NUM_WAYPOINTS = 5
 MAX_MPS = 100
 AGENT_ID = "EGO"
 
 
 def _filter(obs: Observation, target_position, env):
     def _clip(formatted_obs, observation_space):
-        return {
-            k: np.clip(v, observation_space[k].low, observation_space[k].high)
-            for k, v in formatted_obs.items()
-        }
+        result = {}
+        for k, v in formatted_obs.items():
+            if type(observation_space[k]) == spaces.Tuple:
+                tuple_vals = []
+                for inner_val, inner_space in zip(v, observation_space[k]):
+                    tuple_vals.append(
+                        np.clip(inner_val, inner_space.low, inner_space.high)
+                    )
+                result[k] = tuple(tuple_vals)
+            else:
+                result[k] = np.clip(
+                    v, observation_space[k].low, observation_space[k].high
+                )
+        return result
 
     obs = {
         "position": obs.ego_vehicle_state.position,
         "linear_velocity": obs.ego_vehicle_state.linear_velocity,
         "target_position": target_position,
         "rgb": obs.top_down_rgb.data.astype(np.uint8),
+        "waypoints": tuple(
+            [
+                np.hstack(
+                    (
+                        obs.waypoint_paths[0][i].pos,
+                        np.array(
+                            [
+                                float(obs.waypoint_paths[0][i].heading),
+                                obs.waypoint_paths[0][i].speed_limit,
+                            ]
+                        ),
+                    )
+                )
+                for i in range(NUM_WAYPOINTS)
+            ]
+        ),
     }
     obs = _clip(obs, env.observation_space)
     assert env.observation_space.contains(
@@ -108,6 +130,16 @@ class CompetitionEnv(gym.Env):
                     3,
                 ),
                 dtype=np.uint8,
+            ),
+            "waypoints": spaces.Tuple(
+                tuple(
+                    [
+                        spaces.Box(
+                            low=-math.inf, high=math.inf, shape=(4,), dtype=np.float32
+                        )
+                    ]
+                    * NUM_WAYPOINTS
+                )
             ),
         }
     )
