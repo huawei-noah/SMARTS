@@ -120,8 +120,8 @@ class SMARTS:
         self.fixed_timestep_sec: Optional[float] = fixed_timestep_sec
         self._last_dt = fixed_timestep_sec
 
-        self._elapsed_sim_time = 0
-        self._total_sim_time = 0
+        self._elapsed_sim_time = 0.0
+        self._total_sim_time = 0.0
         self._step_count = 0
 
         self._motion_planner_provider = MotionPlannerProvider()
@@ -1443,6 +1443,7 @@ class SMARTS:
                         envision_types.VehicleType.Car,
                     )
                     traffic[v.vehicle_id] = envision_types.TrafficActorState(
+                        actor_id=v.vehicle_id,
                         actor_type=envision_types.TrafficActorType.SocialVehicle,
                         vehicle_type=veh_type,
                         position=tuple(v.pose.position),

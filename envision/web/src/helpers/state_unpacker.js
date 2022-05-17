@@ -118,32 +118,35 @@ function unpack_route_geometry(route_geometry) {
 }
 
 function unpack_traffic(traffic) {
-  return traffic.map((t) => {
-    let obj = {
-      actor_id: t[Traffic.ACTOR_ID],
-      lane_id: t[Traffic.LANE_ID],
-      position: t.slice(Traffic.POSITION_BEGIN, Traffic.POSITION_END),
-      heading: t[Traffic.HEADING],
-      speed: t[Traffic.SPEED],
-      events: t[Traffic.EVENTS],
-      waypoint_paths: unpack_waypoints(t[Traffic.WAYPOINT_PATHS]),
-      driven_path: unpack_driven_path(t[Traffic.DRIVEN_PATH]),
-      point_cloud: unpack_point_cloud(t[Traffic.POINT_CLOUD]),
-      mission_route_geometry: unpack_route_geometry(
-        t[Traffic.MISSION_ROUTE_GEOMETRY]
-      ),
-      actor_type: AGENT_TYPE_MAP[t[Traffic.ACTOR_TYPE]],
-      vehicle_type: VEHICLE_TYPE_MAP[t[Traffic.VEHICLE_TYPE]],
-    };
-    return obj;
-  });
+  let mapped_traffic = Object.assign(
+    {},
+    ...traffic.map((t) => ({
+      [t[Traffic.ACTOR_ID]]: {
+        actor_id: t[Traffic.ACTOR_ID],
+        lane_id: t[Traffic.LANE_ID],
+        position: t.slice(Traffic.POSITION_BEGIN, Traffic.POSITION_END),
+        heading: t[Traffic.HEADING],
+        speed: t[Traffic.SPEED],
+        events: t[Traffic.EVENTS],
+        waypoint_paths: unpack_waypoints(t[Traffic.WAYPOINT_PATHS]),
+        driven_path: unpack_driven_path(t[Traffic.DRIVEN_PATH]),
+        point_cloud: unpack_point_cloud(t[Traffic.POINT_CLOUD]),
+        mission_route_geometry: unpack_route_geometry(
+          t[Traffic.MISSION_ROUTE_GEOMETRY]
+        ),
+        actor_type: AGENT_TYPE_MAP[t[Traffic.ACTOR_TYPE]],
+        vehicle_type: VEHICLE_TYPE_MAP[t[Traffic.VEHICLE_TYPE]],
+      },
+    }))
+  );
+  return mapped_traffic;
 }
 
 function get_attribute_map(unpacked_traffic, attr) {
   return Object.fromEntries(
-    unpacked_traffic
-      .filter((t) => t.actor_type === AGENT_TYPE_MAP[2])
-      .map((t) => [t.actor_id, t[attr]])
+    Object.entries(unpacked_traffic)
+      .filter(([_, t]) => t.actor_type === AGENT_TYPE_MAP[2])
+      .map(([n, t]) => [n, t[attr]])
   );
 }
 

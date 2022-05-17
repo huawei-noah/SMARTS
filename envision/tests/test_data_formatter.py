@@ -134,8 +134,8 @@ def covered_data():
                 [4, 4, 2, 2],  # driven path
                 [1, 3, 4, 2],  # point cloud positions
                 [[0, 2.2, 9, 4.4], [3.1, 42]],  # mission route geometry
-                2,
-                0,
+                2,  # agent type
+                0,  # vehicle type
                 {0: "agent_007", 1: "NE-NW", 2: "NE-EW"},  # added values
                 [],  # removed values
             ],
