@@ -4,7 +4,7 @@ smarts:
   sumo_gui: False # If True, enables sumo-gui display.
   img_meters: 50 # Observation image area size in meters.
   img_pixels: 112 # Observation image size in pixels.
-  n_stack: 3 # Number of frames to stack as input to policy network.
+  num_stack: 4 # Number of frames to stack as input to policy network.
   action_wrapper: Discrete # Either "Lane" or "Continuous" or "Discrete"
   observation_wrapper: "ObsCNN" # Either "ObservationCNN" or "ObservationMLP"
   # observation_wrapper: "ObsMLP" # Either "ObservationCNN" or "ObservationMLP"
@@ -16,7 +16,14 @@ smarts:
   eval_freq: 1e5 # Evaluate the trained model every eval_freq steps and save the best model.
 
   # Policy
-  alg: DQN  # Stable Baselines3 algorithm.
+  alg: tf_agents/agents/dqn/dqn_agent.py  # Stable Baselines3 algorithm.
   alg_kwargs:
-    policy: "CnnPolicy" # Network policy.
-    target_kl: 0.1
+    num_iterations: 20000 # @param {type:"integer"}
+    initial_collect_steps: 100  # @param {type:"integer"}
+    collect_steps_per_iteration: 1 # @param {type:"integer"}
+    replay_buffer_max_length: 100000  # @param {type:"integer"}
+    batch_size: 64  # @param {type:"integer"}
+    learning_rate: 1e-3  # @param {type:"number"}
+    log_interval: 200  # @param {type:"integer"}
+    num_eval_episodes: 10  # @param {type:"integer"}
+    eval_interval: 1000  # @param {type:"integer"}

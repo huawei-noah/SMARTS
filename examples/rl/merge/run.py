@@ -1,15 +1,16 @@
 import os
 import warnings
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-warnings.simplefilter("ignore", category=Warning)
+import tensorflow as tf
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import argparse
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
 import gym
+from gym.wrappers.frame_stack import FrameStack
 from gym.utils.env_checker import check_env
 from merge import action as merge_action
 from merge import observation as merge_observation
@@ -18,10 +19,24 @@ from merge import reward as merge_reward
 # from merge import policy as merge_policy
 # from merge import util as merge_util
 from ruamel.yaml import YAML
-from tf_agents.environments import PyEnvironment, suite_gym, validate_py_environment
+from tf_agents.environments import (
+    PyEnvironment,
+    suite_gym,
+    tf_environment,
+    tf_py_environment,
+    validate_py_environment,
+)
+
+warnings.simplefilter("ignore", category=UserWarning)
+warnings.simplefilter("ignore", category=DeprecationWarning)
+warnings.filterwarnings(
+    "ignore",
+    ".*Box.*",
+)
 
 yaml = YAML(typ="safe")
 
+print(f"\nTF version: {tf.version.VERSION}\n")
 
 def main(args: argparse.Namespace):
     # Load config file.
@@ -56,13 +71,13 @@ def main(args: argparse.Namespace):
         raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
 
     # Make training and evaluation environments.
-    env = make_env(config=config)
-    # eval_env = make_env(config=config)
+    train_env = make_env(config=config)
+    eval_env = make_env(config=config)
 
     # Run training or evaluation.
-    # run(env=env, eval_env=eval_env, config=config)
-    env.close()
-
+    run(train_env=train_env, eval_env=eval_env, config=config)
+    train_env.close()
+    eval_env.close()
 
 def make_env(config: Dict[str, Any]) -> PyEnvironment:
     # Create environment in Gym.
@@ -90,12 +105,14 @@ def make_env(config: Dict[str, Any]) -> PyEnvironment:
     gym_obs_wrapper = lambda env: getattr(
         merge_observation, config["observation_wrapper"]
     )(env=env)
-    tfenv = suite_gym.load(
+    gym_frame_stack = lambda env: FrameStack(env=env, num_stack=config["num_stack"])
+    pyenv = suite_gym.load(
         environment_name="merge-v0",
         gym_env_wrappers=[
             gym_reward_wrapper,
             gym_action_wrapper,
             gym_obs_wrapper,
+            gym_frame_stack,
         ],
         gym_kwargs={
             "headless": not config["head"],  # If False, enables Envision display.
@@ -107,14 +124,24 @@ def make_env(config: Dict[str, Any]) -> PyEnvironment:
             "img_pixels": config["img_pixels"],
         },
     )
-    validate_py_environment(environment=tfenv)
+    # validate_py_environment(environment=pyenv)
+    # (Optional) Manually verify Py env spaces
+    # print('action_spec:', pyenv.action_spec())
+    # print('time_step_spec.observation:', pyenv.time_step_spec().observation)
+    # print('time_step_spec.step_type:', pyenv.time_step_spec().step_type)
+    # print('time_step_spec.discount:', pyenv.time_step_spec().discount)
+    # print('time_step_spec.reward:', pyenv.time_step_spec().reward)
 
-    # env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="first")
+    tfenv = tf_py_environment.TFPyEnvironment(pyenv)
+    # (Optional) Manually verify TF env specs
+    # print(isinstance(tfenv, tf_environment.TFEnvironment))
+    # print("TimeStep Specs:", tfenv.time_step_spec())
+    # print("Action Specs:", tfenv.action_spec())
 
     return tfenv
 
 
-def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
+def run(train_env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
 
     # checkpoint_callback = CheckpointCallback(
     #     save_freq=config["checkpoint_freq"],
@@ -129,6 +156,17 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     #     best_model_save_path=config["logdir"] / "eval",
     #     deterministic=True,
     # )
+
+    # agent = config["alg"]
+    # agent = dqn_agent.DqnAgent()
+        # train_env.time_step_spec(),
+        # train_env.action_spec(),
+        # q_network=q_net,
+        # optimizer=optimizer,
+        # td_errors_loss_fn=common.element_wise_squared_loss,
+        # train_step_counter=train_step_counter)
+
+    return
 
     if config["mode"] == "evaluate":
         print("\nStart evaluation.\n")
