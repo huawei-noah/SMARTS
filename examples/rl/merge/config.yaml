@@ -16,7 +16,7 @@ smarts:
   eval_freq: 1e5 # Evaluate the trained model every eval_freq steps and save the best model.
 
   # Policy
-  alg: tf_agents/agents/dqn/dqn_agent.py  # Stable Baselines3 algorithm.
+  alg: dqn  # Stable Baselines3 algorithm.
   alg_kwargs:
     num_iterations: 20000 # @param {type:"integer"}
     initial_collect_steps: 100  # @param {type:"integer"}

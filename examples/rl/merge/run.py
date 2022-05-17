@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any, Dict
 
 import gym
-from gym.wrappers.frame_stack import FrameStack
 from gym.utils.env_checker import check_env
+from gym.wrappers.frame_stack import FrameStack
 from merge import action as merge_action
 from merge import observation as merge_observation
 from merge import reward as merge_reward
@@ -37,6 +37,7 @@ warnings.filterwarnings(
 yaml = YAML(typ="safe")
 
 print(f"\nTF version: {tf.version.VERSION}\n")
+
 
 def main(args: argparse.Namespace):
     # Load config file.
@@ -78,6 +79,7 @@ def main(args: argparse.Namespace):
     run(train_env=train_env, eval_env=eval_env, config=config)
     train_env.close()
     eval_env.close()
+
 
 def make_env(config: Dict[str, Any]) -> PyEnvironment:
     # Create environment in Gym.
@@ -124,7 +126,7 @@ def make_env(config: Dict[str, Any]) -> PyEnvironment:
             "img_pixels": config["img_pixels"],
         },
     )
-    # validate_py_environment(environment=pyenv)
+    validate_py_environment(environment=pyenv)
     # (Optional) Manually verify Py env spaces
     # print('action_spec:', pyenv.action_spec())
     # print('time_step_spec.observation:', pyenv.time_step_spec().observation)
@@ -159,12 +161,12 @@ def run(train_env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
 
     # agent = config["alg"]
     # agent = dqn_agent.DqnAgent()
-        # train_env.time_step_spec(),
-        # train_env.action_spec(),
-        # q_network=q_net,
-        # optimizer=optimizer,
-        # td_errors_loss_fn=common.element_wise_squared_loss,
-        # train_step_counter=train_step_counter)
+    # train_env.time_step_spec(),
+    # train_env.action_spec(),
+    # q_network=q_net,
+    # optimizer=optimizer,
+    # td_errors_loss_fn=common.element_wise_squared_loss,
+    # train_step_counter=train_step_counter)
 
     return
 
