@@ -5,6 +5,14 @@ from smarts.sstudio.types import Distribution
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 
+actors = [
+    t.SocialAgentActor(
+        name=f"keep-lane-agent_{num}",
+        agent_locator="zoo.policies:keep-lane-agent-v0",
+    )
+    for num in range(1)
+]
+
 edges = ["gneE1", "gneE2", "gneE3", "gneE4"]
 start_edge = random.choice(edges)
 start_lane = random.randint(0, 2)
@@ -48,12 +56,22 @@ flow_follow = [
 #     ]
 # )
 
-traffic = t.Traffic(flows=flow_lead + flow_follow)
-ego_mission = [
-    t.Mission(t.Route(begin=("gneE1", 1, 1), end=("gneE4", 1, "max")), start_time=3)
-]
-scenario = t.Scenario(
-    traffic={"all": traffic},
-    ego_missions=ego_mission,
+# traffic = t.Traffic(flows=flow_lead + flow_follow)
+# ego_mission = [
+#     t.Mission(t.Route(begin=("gneE1", 1, 1), end=("gneE4", 1, "max")), start_time=3)
+# ]
+# scenario = t.Scenario(
+#     traffic={"all": traffic},
+#     ego_missions=ego_mission,
+# )
+# gen_scenario(scenario, output_dir=str(Path(__file__).parent))
+
+gen_scenario(
+    t.Scenario(
+        social_agent_missions={
+            "group-1": (actors,[t.EndlessMission(begin=(start_edge,start_lane,start_offset+distance))]),
+            "group-2": (actors,[t.EndlessMission(begin=(start_edge,start_lane,start_offset))]),
+        },
+    ),
+    output_dir=Path(__file__).parent,
 )
-gen_scenario(scenario, output_dir=str(Path(__file__).parent))
