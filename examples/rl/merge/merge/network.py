@@ -3,7 +3,7 @@ import tensorflow as tf
 from tf_agents.networks.q_network import QNetwork
 
 
-def q_net(observation_spec, action_spec):
+def q_net(env):
     preprocessing_layer = tf.keras.layers.Lambda(
         lambda obs: tf.cast(obs, np.float32) / 255.0
     )
@@ -15,8 +15,8 @@ def q_net(observation_spec, action_spec):
     ]
     fc_layer_params = [512]
     q_net = QNetwork(
-        observation_spec(),
-        action_spec(),
+        env.observation_spec(),
+        env.action_spec(),
         preprocessing_layers=preprocessing_layer,
         conv_layer_params=conv_layer_params,
         fc_layer_params=fc_layer_params,

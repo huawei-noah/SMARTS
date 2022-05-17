@@ -3,12 +3,12 @@ smarts:
   visdom: False # If True, enables Visdom display.
   sumo_gui: False # If True, enables sumo-gui display.
   img_meters: 50 # Observation image area size in meters.
-  img_pixels: 112 # Observation image size in pixels.
+  img_pixels: 128 # Observation image size in pixels.
   num_stack: 4 # Number of frames to stack as input to policy network.
   action_wrapper: Discrete # Either "Lane" or "Continuous" or "Discrete"
   observation_wrapper: "CNNRGB" # Either "ObservationCNN" or "ObservationMLP"
 
-  # Training
+  # Training and evaluation
   train_steps: 1e8 # Number of training steps.
   checkpoint_freq: 1e5 # Save a model every checkpoint_freq calls to env.step().
   eval_eps: 100 # Number of evaluation epsiodes.
@@ -27,3 +27,8 @@ smarts:
     log_interval: 200  # @param {type:"integer"}
     num_eval_episodes: 10  # @param {type:"integer"}
     eval_interval: 1000  # @param {type:"integer"}
+    
+    epsilon_greedy:
+      initial: 1
+      decay_steps: 3_000_000
+      end: 0.01

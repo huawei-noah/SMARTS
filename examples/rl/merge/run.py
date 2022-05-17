@@ -162,8 +162,7 @@ def run(train_env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     # )
 
     network = getattr(merge_network, config["network"])(
-        observation_spec=env.observation_spec, 
-        action_spec=env.action_spec
+        env=env
     )
 
     return
