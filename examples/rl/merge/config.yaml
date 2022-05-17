@@ -6,8 +6,7 @@ smarts:
   img_pixels: 112 # Observation image size in pixels.
   num_stack: 4 # Number of frames to stack as input to policy network.
   action_wrapper: Discrete # Either "Lane" or "Continuous" or "Discrete"
-  observation_wrapper: "ObsCNN" # Either "ObservationCNN" or "ObservationMLP"
-  # observation_wrapper: "ObsMLP" # Either "ObservationCNN" or "ObservationMLP"
+  observation_wrapper: "CNNRGB" # Either "ObservationCNN" or "ObservationMLP"
 
   # Training
   train_steps: 1e8 # Number of training steps.
@@ -16,6 +15,7 @@ smarts:
   eval_freq: 1e5 # Evaluate the trained model every eval_freq steps and save the best model.
 
   # Policy
+  network: q_net
   alg: dqn  # Stable Baselines3 algorithm.
   alg_kwargs:
     num_iterations: 20000 # @param {type:"integer"}

@@ -15,6 +15,8 @@ from gym.wrappers.frame_stack import FrameStack
 from merge import action as merge_action
 from merge import observation as merge_observation
 from merge import reward as merge_reward
+from merge import network as merge_network
+from merge import agent as merge_agent
 
 # from merge import policy as merge_policy
 # from merge import util as merge_util
@@ -109,7 +111,7 @@ def make_env(config: Dict[str, Any]) -> PyEnvironment:
     )(env=env)
     gym_frame_stack = lambda env: FrameStack(env=env, num_stack=config["num_stack"])
     pyenv = suite_gym.load(
-        environment_name="merge-v0",
+        environment_name="smarts.env:merge-v0",
         gym_env_wrappers=[
             gym_reward_wrapper,
             gym_action_wrapper,
@@ -159,14 +161,10 @@ def run(train_env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     #     deterministic=True,
     # )
 
-    # agent = config["alg"]
-    # agent = dqn_agent.DqnAgent()
-    # train_env.time_step_spec(),
-    # train_env.action_spec(),
-    # q_network=q_net,
-    # optimizer=optimizer,
-    # td_errors_loss_fn=common.element_wise_squared_loss,
-    # train_step_counter=train_step_counter)
+    network = getattr(merge_network, config["network"])(
+        observation_spec=env.observation_spec, 
+        action_spec=env.action_spec
+    )
 
     return
 

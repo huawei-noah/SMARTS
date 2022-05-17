@@ -3,10 +3,8 @@ from typing import Dict
 import gym
 import numpy as np
 
-from smarts.env.wrappers import format_obs
 
-
-class ObsCNN(gym.Wrapper):
+class CNNRGB(gym.Wrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
         old_space = env.observation_space["rgb"]
