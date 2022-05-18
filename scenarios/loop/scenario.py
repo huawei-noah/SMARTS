@@ -15,7 +15,8 @@ traffic = t.Traffic(
                 begin=(route[0],random.randint(0,2), "random"),
                 end=(route[1], random.randint(0,2), "max"),  
             ),
-            rate=0.000000000001,
+            rate=1,
+            end=10, # since rate=1 means introducing 1 more vehicle per hour, so set any value less than 1 hr (1*60*60 secs) here could make sure no more vehicles get introduced after the initial flow.
             actors={t.TrafficActor(name="car",speed=Distribution(mean=0.5, sigma=0.8),vehicle_type=random.choice(["passenger","coach","bus","trailer","truck"])): 1},
         )
         for route in [("445633931","445633932"),("445633932","445633931")]*12
