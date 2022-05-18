@@ -7,7 +7,7 @@ def dqn(env, q_net, config):
     train_step_counter = tf.Variable(0)
 
     optimizer = tf.keras.optimizers.Adam(
-        learning_rate=config["alg_kwargs"]["learning_rate"]
+        learning_rate=config["agent_kwargs"]["learning_rate"]
     )
     # optimizer = tf.keras.optimizers.RMSprop(
     #     lr=2.5e-4,
@@ -18,11 +18,11 @@ def dqn(env, q_net, config):
     # )
 
     epsilon_fn = tf.keras.optimizers.schedules.PolynomialDecay(
-        initial_learning_rate=config["alg_kwargs"]["epsilon_greedy"][
+        initial_learning_rate=config["agent_kwargs"]["epsilon_greedy"][
             "initial"
         ],  # initial ε
-        decay_steps=config["alg_kwargs"]["epsilon_greedy"]["decay_steps"],
-        end_learning_rate=config["alg_kwargs"]["epsilon_greedy"]["end"],  # final ε
+        decay_steps=config["agent_kwargs"]["epsilon_greedy"]["decay_steps"],
+        end_learning_rate=config["agent_kwargs"]["epsilon_greedy"]["end"],  # final ε
     )
 
     agent = DqnAgent(
@@ -30,7 +30,7 @@ def dqn(env, q_net, config):
         env.action_spec(),
         q_network=q_net,
         optimizer=optimizer,
-        td_errors_loss_fn=common.element_wise_squared_loss,
+        td_errors_loss_fn=tf.keras.losses.Huber(reduction="none"),
         train_step_counter=train_step_counter,
         epsilon_greedy=lambda _: epsilon_fn(train_step_counter),
     )

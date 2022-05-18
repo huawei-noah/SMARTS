@@ -16,19 +16,20 @@ smarts:
 
   # Policy
   network: q_net
-  alg: dqn  # Stable Baselines3 algorithm.
-  alg_kwargs:
-    num_iterations: 20000 # @param {type:"integer"}
-    initial_collect_steps: 100  # @param {type:"integer"}
-    collect_steps_per_iteration: 1 # @param {type:"integer"}
-    replay_buffer_max_length: 100000  # @param {type:"integer"}
-    batch_size: 64  # @param {type:"integer"}
+  agent: dqn
+  agent_kwargs:
     learning_rate: 1e-3  # @param {type:"number"}
-    log_interval: 200  # @param {type:"integer"}
-    num_eval_episodes: 10  # @param {type:"integer"}
-    eval_interval: 1000  # @param {type:"integer"}
-    
     epsilon_greedy:
       initial: 1
       decay_steps: 3_000_000
       end: 0.01
+
+  num_iterations: 20000 # @param {type:"integer"}
+  initial_collect_steps: 100  # @param {type:"integer"}
+  collect_steps_per_iteration: 1 # @param {type:"integer"}
+  replay_buffer_max_length: 100000  # @param {type:"integer"}
+  batch_size: 64  # @param {type:"integer"}
+  log_interval: 200  # @param {type:"integer"}
+  num_eval_episodes: 10  # @param {type:"integer"}
+  eval_interval: 1000  # @param {type:"integer"}
+    
