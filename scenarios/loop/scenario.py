@@ -18,7 +18,7 @@ traffic = t.Traffic(
             rate=1,
             actors={t.TrafficActor(name="car",speed=Distribution(mean=0.5, sigma=0.8),vehicle_type=random.choice(['passenger','coach','bus','trailer','truck'])): 1},
         )
-        for _ , route in itertools.product(range(15),[('445633931',"445633932"),('445633932','445633931')])
+        for route in [("445633931","445633932"),("445633932","445633931")]*12
     ]
 )
 
