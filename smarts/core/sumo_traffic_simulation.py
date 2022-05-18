@@ -253,7 +253,8 @@ class SumoTrafficSimulation(Provider):
             "--end=31536000",  # keep the simulation running for a year
         ]
         rerouter_file = Path(self._scenario.road_map.source).parent/"traffic"/"rerouter.add.xml"
-        load_params.append(f"--additional-files={rerouter_file}")
+        if rerouter_file.exists(): 
+            load_params.append(f"--additional-files={rerouter_file}")
         if self._auto_start:
             load_params.append("--start")
 
