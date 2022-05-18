@@ -2,12 +2,10 @@ import itertools
 import random
 from pathlib import Path
 
-import numpy as np
-
+from smarts.sstudio.types import Distribution
 from smarts.core import seed
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-from smarts.sstudio.types import Distribution
 
 seed(42)
 
