@@ -1,25 +1,25 @@
 from pathlib import Path
-
+from smarts.sstudio.types import Distribution
 from smarts.core import seed
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-
+import random
+import numpy as np
+import itertools
 seed(42)
 
 traffic = t.Traffic(
     flows=[
         t.Flow(
-            route=t.RandomRoute(),
-            rate=60 * 60,
-            actors={t.TrafficActor(name="car", vehicle_type=vehicle_type): 1},
+            route=t.Route(
+                begin=(route[0],random.randint(0,2), "random"),
+                end=(route[1], random.randint(0,2), "max"),  
+            ),
+            rate=1,
+            end=10, # `rate=1` adds 1 additional vehicle per hour. So set `end` < 1*60*60 secs to avoid addition of more vehicles after the initial flow. This prevents traffic congestion.
+            actors={t.TrafficActor(name="car",speed=Distribution(mean=0.5, sigma=0.8),vehicle_type=random.choice(["passenger","coach","bus","trailer","truck"])): 1},
         )
-        for vehicle_type in [
-            "passenger",
-            "bus",
-            "coach",
-            "truck",
-            "trailer",
-        ]
+        for route in [("445633931","445633932"),("445633932","445633931")]*12
     ]
 )
 
