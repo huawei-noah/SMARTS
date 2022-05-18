@@ -6,9 +6,6 @@ from smarts.sstudio.types import Distribution
 from smarts.core import seed
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-import random
-import numpy as np
-import itertools
 
 seed(42)
 
