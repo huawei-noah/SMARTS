@@ -37,7 +37,6 @@ from . import models
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
 from .bubble_manager import BubbleManager
-from .colors import SceneColors
 from .controllers import ActionSpaceType, Controllers
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
@@ -121,8 +120,8 @@ class SMARTS:
         self.fixed_timestep_sec: Optional[float] = fixed_timestep_sec
         self._last_dt = fixed_timestep_sec
 
-        self._elapsed_sim_time = 0
-        self._total_sim_time = 0
+        self._elapsed_sim_time = 0.0
+        self._total_sim_time = 0.0
         self._step_count = 0
 
         self._motion_planner_provider = MotionPlannerProvider()
@@ -1343,46 +1342,78 @@ class SMARTS:
         if not self._envision:
             return
 
+        filter = self._envision.envision_state_filter
+
         traffic = {}
-        position = {}
-        speed = {}
-        heading = {}
         lane_ids = {}
         agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
+        vt_mapping = {
+            "passenger": envision_types.VehicleType.Car,
+            "bus": envision_types.VehicleType.Bus,
+            "coach": envision_types.VehicleType.Coach,
+            "truck": envision_types.VehicleType.Truck,
+            "trailer": envision_types.VehicleType.Trailer,
+        }
         for v in provider_state.vehicles:
             if v.vehicle_id in agent_vehicle_ids:
                 # this is an agent controlled vehicle
                 agent_id = self._vehicle_index.actor_id_from_vehicle_id(v.vehicle_id)
-                agent_obs = obs[agent_id]
                 is_boid_agent = self._agent_manager.is_boid_agent(agent_id)
+                agent_obs = obs[agent_id]
                 vehicle_obs = agent_obs[v.vehicle_id] if is_boid_agent else agent_obs
+                if (
+                    filter.simulation_data_filter["lane_ids"].enabled
+                    and vehicle_obs.waypoint_paths
+                    and len(vehicle_obs.waypoint_paths[0]) > 0
+                ):
+                    lane_ids[agent_id] = vehicle_obs.waypoint_paths[0][0].lane_id
+                if not filter.simulation_data_filter["traffic"].enabled:
+                    continue
 
-                if self._agent_manager.is_ego(agent_id):
-                    actor_type = envision_types.TrafficActorType.Agent
-                    mission_route_geometry = (
-                        self._vehicle_index.sensor_state_for_vehicle_id(
-                            v.vehicle_id
-                        ).plan.route.geometry
-                    )
-                else:
-                    actor_type = envision_types.TrafficActorType.SocialAgent
-                    mission_route_geometry = None
-
-                point_cloud = vehicle_obs.lidar_point_cloud or ([], [], [])
-                point_cloud = point_cloud[0]  # (points, hits, rays), just want points
-
-                # TODO: driven path should be read from vehicle_obs
-                driven_path = self._vehicle_index.vehicle_by_id(
-                    v.vehicle_id
-                ).driven_path_sensor()
+                waypoint_paths = []
+                if (
+                    filter.actor_data_filter["waypoint_paths"].enabled
+                    and vehicle_obs.waypoint_paths
+                ):
+                    waypoint_paths = vehicle_obs.waypoint_paths
 
                 road_waypoints = []
-                if vehicle_obs.road_waypoints:
+                if (
+                    filter.actor_data_filter["road_waypoints"].enabled
+                    and vehicle_obs.road_waypoints
+                ):
                     road_waypoints = [
                         path
                         for paths in vehicle_obs.road_waypoints.lanes.values()
                         for path in paths
                     ]
+
+                # (points, hits, rays), just want points
+                point_cloud = ([], [], [])
+                if filter.actor_data_filter["point_cloud"].enabled:
+                    point_cloud = (vehicle_obs.lidar_point_cloud or point_cloud)[0]
+
+                # TODO: driven path should be read from vehicle_obs
+                driven_path = []
+                if filter.actor_data_filter["driven_path"].enabled:
+                    driven_path = self._vehicle_index.vehicle_by_id(
+                        v.vehicle_id
+                    ).driven_path_sensor(
+                        filter.actor_data_filter["driven_path"].max_count
+                    )
+
+                mission_route_geometry = None
+                if self._agent_manager.is_ego(agent_id):
+                    actor_type = envision_types.TrafficActorType.Agent
+                    if filter.actor_data_filter["mission_route_geometry"].enabled:
+                        mission_route_geometry = (
+                            self._vehicle_index.sensor_state_for_vehicle_id(
+                                v.vehicle_id
+                            ).plan.route.geometry
+                        )
+                else:
+                    actor_type = envision_types.TrafficActorType.SocialAgent
+
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
                     name=self._agent_manager.agent_name(agent_id),
                     actor_type=actor_type,
@@ -1396,36 +1427,36 @@ class SMARTS:
                         is_multi=is_boid_agent,
                     ),
                     events=vehicle_obs.events,
-                    waypoint_paths=(vehicle_obs.waypoint_paths or []) + road_waypoints,
+                    waypoint_paths=waypoint_paths + road_waypoints,
                     point_cloud=point_cloud,
                     driven_path=driven_path,
                     mission_route_geometry=mission_route_geometry,
+                    lane_id=lane_ids.get(agent_id),
                 )
-                speed[agent_id] = v.speed
-                position[agent_id] = tuple(v.pose.as_position2d())
-                heading[agent_id] = float(v.pose.heading)
-                if (
-                    vehicle_obs.waypoint_paths
-                    and len(vehicle_obs.waypoint_paths[0]) > 0
-                ):
-                    lane_ids[agent_id] = vehicle_obs.waypoint_paths[0][0].lane_id
             elif v.vehicle_id in self._vehicle_index.social_vehicle_ids():
                 # this is a social vehicle
-                veh_type = (
-                    v.vehicle_config_type if v.vehicle_config_type else v.vehicle_type
-                )
-                traffic[v.vehicle_id] = envision_types.TrafficActorState(
-                    actor_type=envision_types.TrafficActorType.SocialVehicle,
-                    vehicle_type=veh_type,
-                    position=tuple(v.pose.position),
-                    heading=float(v.pose.heading),
-                    speed=v.speed,
-                )
+                if filter.simulation_data_filter["traffic"].enabled:
+                    veh_type = vt_mapping.get(
+                        v.vehicle_config_type
+                        if v.vehicle_config_type
+                        else v.vehicle_type,
+                        envision_types.VehicleType.Car,
+                    )
+                    traffic[v.vehicle_id] = envision_types.TrafficActorState(
+                        actor_id=v.vehicle_id,
+                        actor_type=envision_types.TrafficActorType.SocialVehicle,
+                        vehicle_type=veh_type,
+                        position=tuple(v.pose.position),
+                        heading=float(v.pose.heading),
+                        speed=v.speed,
+                    )
 
-        bubble_geometry = [
-            list(bubble.geometry.exterior.coords)
-            for bubble in self._bubble_manager.bubbles
-        ]
+        bubble_geometry = []
+        if filter.simulation_data_filter["bubble_geometry"].enabled:
+            bubble_geometry = [
+                list(bubble.geometry.exterior.coords)
+                for bubble in self._bubble_manager.bubbles
+            ]
 
         scenario_folder_path = self.scenario._root
         scenario_name = os.path.split((scenario_folder_path).rstrip("/"))[1]
@@ -1438,13 +1469,8 @@ class SMARTS:
             scenario_id=self.scenario.scenario_hash,
             scenario_name=scenario_name,
             bubbles=bubble_geometry,
-            scene_colors=SceneColors.EnvisionColors.value,
             scores=scores,
             ego_agent_ids=list(self._agent_manager.ego_agent_ids),
-            position=position,
-            speed=speed,
-            heading=heading,
-            lane_ids=lane_ids,
             frame_time=self._rounder(self._elapsed_sim_time + self._total_sim_time),
         )
         self._envision.send(state)

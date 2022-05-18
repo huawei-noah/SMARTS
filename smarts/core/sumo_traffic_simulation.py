@@ -23,6 +23,7 @@ import os
 import random
 import subprocess
 import time
+from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
 from pathlib import Path
 import numpy as np
@@ -252,6 +253,7 @@ class SumoTrafficSimulation(Provider):
             "--begin=0",  # start simulation at time=0
             "--end=31536000",  # keep the simulation running for a year
         ]
+        
         rerouter_file = Path(self._scenario.road_map.source).parent/"traffic"/"rerouter.add.xml"
         if rerouter_file.exists(): 
             load_params.append(f"--additional-files={rerouter_file}")

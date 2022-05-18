@@ -32,7 +32,7 @@ export default class Client {
     endpoint,
     delay = 2000,
     retries = Number.POSITIVE_INFINITY,
-    maxFrameBufferSize = 300000,
+    maxFrameBufferSize = 200,
     frameBufferMode = frameBufferModes.NO_BIAS,
   }) {
     this._endpoint = new URL(endpoint);
@@ -49,40 +49,57 @@ export default class Client {
     this._sockets = {};
     this._stateQueues = {};
     this._simulationSelectedTime = {};
+    this._lastSeek = null;
   }
 
   async fetchSimulationIds() {
     let url = new URL(this.endpoint);
     url.pathname = "simulations";
-    let response = await fetch(url);
-    if (!response.ok) {
-      console.error("Unable to fetch simulation IDs");
+    try {
+      let response = await fetch(url);
+      if (!response.ok) {
+        console.error("Unable to fetch simulation IDs");
+        return [];
+      } else {
+        let data = await response.json();
+        return data.simulations;
+      }
+    } catch (error) {
       return [];
-    } else {
-      let data = await response.json();
-      return data.simulations;
     }
   }
 
   seek(simulationId, seconds) {
+    if (this._lastSeek != null) {
+      return;
+    }
+
     if (!(simulationId in this._sockets)) {
       this._sockets[simulationId] = null;
     }
 
     if (
-      !this._sockets[simulationId] &&
-      this._sockets[simulationId].readyState == WebSocket.OPEN
+      !this._sockets[simulationId] ||
+      !(this._sockets[simulationId].readyState == WebSocket.OPEN)
     ) {
       console.warn("Unable to seek because no connected socket exists");
       return;
     }
 
-    this._sockets[simulationId].send(JSON.stringify({ seek: seconds }));
+    this._lastSeek = new Promise((resolve) =>
+      resolve(
+        this._sockets[simulationId].send(JSON.stringify({ seek: seconds }))
+      )
+    )
+      .then(wait(500))
+      .finally(() => {
+        this._lastSeek = null;
+        console.log("Seek complete");
+      });
   }
 
   async _obtainStream(simulationId, stateQueue, remainingRetries) {
-    let self = this;
-    let url = new URL(self._wsEndpoint);
+    let url = new URL(this._wsEndpoint);
     url.pathname = `simulations/${simulationId}/state`;
 
     try {
@@ -111,13 +128,13 @@ export default class Client {
             );
             if (
               stateQueue.length > 0 &&
-              frame.current_elapsed_time <=
+              frame.current_elapsed_time <
                 stateQueue[stateQueue.length - 1].current_elapsed_time
             ) {
               // if it's moved back in time, it was from a seek and we're now
               // going to receive those frames again, so flush.
               stateQueue.length = 0;
-            } else if (stateQueue.length > self._maxFrameBufferSize) {
+            } else if (stateQueue.length > this._maxFrameBufferSize) {
               // the following is a placeholder to protect us
               // until we revisit the architecture, at which point
               // different policies can be implemented here.  for example,
@@ -125,14 +142,16 @@ export default class Client {
               // or on events that happened in the simulation (although that
               // would require upstream support).  We might also want to
               // dump frames to a local file rather than just evicting them.
-              switch (self._frameBufferMode) {
+              switch (this._frameBufferMode) {
                 case frameBufferModes.RECENCY_BIAS: {
                   // evenly thin out older frames to allow granular newer frames...
                   // (each time this is done, the earliest frames will get even thinner.)
                   // This allows for a "fast-forward-like catch up" to the most
                   // recent events in the simulation (when not in near-real-time
                   // playing mode).
-                  stateQueue = stateQueue.filter((frame, ind) => ind % 2 == 0);
+                  stateQueue = stateQueue.filter(
+                    (frame, ind) => ind % 2 == 0 && ind > 5
+                  );
                   self._stateQueues[simulationId] = stateQueue;
                   break;
                 }
@@ -179,8 +198,8 @@ export default class Client {
       );
 
       remainingRetries -= 1;
-      await wait(self._delay);
-      return await self._obtainStream(
+      await wait(this._delay);
+      return await this._obtainStream(
         simulationId,
         stateQueue,
         remainingRetries

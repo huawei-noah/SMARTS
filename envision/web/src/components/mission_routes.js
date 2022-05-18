@@ -26,6 +26,7 @@ import {
 } from "@babylonjs/core";
 
 import { useRef, useEffect } from "react";
+import { SceneColors } from "../helpers/scene_colors";
 
 // Mission route geometry
 export default function MissionRoutes({ scene, worldState }) {
@@ -70,10 +71,8 @@ export default function MissionRoutes({ scene, worldState }) {
           `mission-route-shape-${vehicle_id}-${shape_id}-material`,
           scene
         );
-        polygon.material.diffuseColor = new Color4(
-          ...worldState.scene_colors["mission_route"]
-        );
-        polygon.material.alpha = worldState.scene_colors["mission_route"][3];
+        polygon.material.diffuseColor = new Color4(...SceneColors.MissionRoute);
+        polygon.material.alpha = SceneColors.MissionRoute[3];
         polygon.material.specularColor = new Color3(0, 0, 0);
         missionGeometryRef.current.push(polygon);
       });
