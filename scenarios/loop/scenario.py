@@ -5,26 +5,39 @@ from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 import random
 import numpy as np
+import itertools
+
 seed(42)
 
 traffic = t.Traffic(
     flows=[
         t.Flow(
             route=t.Route(
-                begin=("445633931",random.randint(0,2), 'random'),
-                end=("445633932", random.randint(0,2), "max"),  
+                begin=(route[0], random.randint(0, 2), "random"),
+                end=(route[1], random.randint(0, 2), "max"),
             ),
-            rate=10*10,
-            begin=np.random.exponential(scale=2.5),
-            actors={t.TrafficActor(name="car",speed=Distribution(mean=0.5, sigma=0.8),vehicle_type=vehicle_type): 1},
+            rate=0.01,
+            actors={
+                t.TrafficActor(
+                    name="car",
+                    speed=Distribution(mean=0.5, sigma=0.8),
+                    vehicle_type=random.choices(
+                        [
+                            "passenger",
+                            "coach",
+                            "bus",
+                            "trailer",
+                            "truck",
+                        ],
+                        weights=[5, 1, 1, 1, 1],
+                        k=1,
+                    )[0],
+                ): 1
+            },
         )
-        for vehicle_type in [
-            "passenger",
-            "bus",
-            "coach",
-            "truck",
-            "trailer",
-        ]
+        for _, route in itertools.product(
+            range(15), [("445633931", "445633932"), ("445633932", "445633931")]
+        )
     ]
 )
 

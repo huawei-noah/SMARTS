@@ -24,7 +24,7 @@ import random
 import subprocess
 import time
 from typing import List, Optional, Sequence, Tuple
-
+from pathlib import Path
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
@@ -229,7 +229,6 @@ class SumoTrafficSimulation(Provider):
         self._log.debug("Finished starting sumo process")
 
     def _base_sumo_load_params(self):
-
         load_params = [
             "--num-clients=%d" % self._num_clients,
             "--net-file=%s" % self._scenario.road_map.source,
@@ -253,7 +252,9 @@ class SumoTrafficSimulation(Provider):
             "--begin=0",  # start simulation at time=0
             "--end=31536000",  # keep the simulation running for a year
         ]
-
+        rerouter_file = Path(self._scenario.road_map.source).parent/"traffic/rerouter.add.xml"
+        if rerouter_file.exists(): 
+            load_params.append("--additional-files=%s" % str(rerouter_file))
         if self._auto_start:
             load_params.append("--start")
 
