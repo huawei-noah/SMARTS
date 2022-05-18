@@ -40,7 +40,7 @@ def dqn(env, q_net, config):
     return agent
 
 
-update_period = 4  # train the model every 4 steps
+
 agent = DqnAgent(
     target_update_period=2000,  # <=> 32,000 ALE frames
     td_errors_loss_fn=keras.losses.Huber(reduction="none"),
