@@ -27,11 +27,23 @@ import random
 import sqlite3
 from contextlib import closing, nullcontext
 from functools import lru_cache
-from typing import Dict, Generator, NamedTuple, Optional, Set, Tuple, Type, TypeVar
+from typing import (
+    Dict,
+    Generator,
+    NamedTuple,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from cached_property import cached_property
 
 from smarts.core.coordinates import Dimensions
+from smarts.core.utils.math import radians_to_vec
+from smarts.core.vehicle import VEHICLE_CONFIGS
 
 T = TypeVar("T")
 
@@ -152,6 +164,21 @@ class TrafficHistory:
         veh_type = self._query_val(int, query, params=(vehicle_id,))
         return self.decode_vehicle_type(veh_type)
 
+    def _resolve_vehicle_dims(
+        self, vehicle_type: Union[str, int], length: float, width: float, height: float
+    ):
+        v_type = vehicle_type
+        if isinstance(v_type, int):
+            v_type = self.decode_vehicle_type(v_type)
+        default_dims = VEHICLE_CONFIGS[v_type].dimensions
+        if not length:
+            length = default_dims.length
+        if not width:
+            width = default_dims.width
+        if not height:
+            height = default_dims.height
+        return Dimensions(length, width, height)
+
     @lru_cache(maxsize=32)
     def vehicle_dims(self, vehicle_id: str) -> Dimensions:
         """Get the vehicle dimensions of the specified vehicle."""
@@ -162,14 +189,7 @@ class TrafficHistory:
         length, width, height, veh_type = self._query_val(
             tuple, query, params=(vehicle_id,)
         )
-        default_dims = VEHICLE_CONFIGS[self.decode_vehicle_type(veh_type)].dimensions
-        if not length:
-            length = default_dims.length
-        if not width:
-            width = default_dims.width
-        if not height:
-            height = default_dims.height
-        return Dimensions(length, width, height)
+        return self._resolve_vehicle_dims(veh_type, length, width, height)
 
     def first_seen_times(self) -> Generator[Tuple[int, float], None, None]:
         """Find the times each vehicle is first seen in the traffic history.
@@ -181,6 +201,15 @@ class TrafficHistory:
             WHERE V.type = 2
             GROUP BY vehicle_id"""
         return self._query_list(query)
+
+    def last_seen_vehicle_time(self) -> Optional[float]:
+        """Find the time the last vehicle exits the history."""
+
+        query = """SELECT MAX(T.sim_time)
+            FROM Trajectory AS T INNER JOIN Vehicle AS V ON T.vehicle_id=V.id
+            WHERE V.type = 2
+            ORDER BY T.sim_time DESC LIMIT 1"""
+        return self._query_val(float, query)
 
     def vehicle_pose_at_time(
         self, vehicle_id: str, sim_time: float
@@ -218,6 +247,44 @@ class TrafficHistory:
         heading_rad: float
         speed: float
 
+    class TrafficHistoryVehicleWindow(NamedTuple):
+        """General information about a vehicle between a time window."""
+
+        vehicle_id: int
+        vehicle_type: int
+        vehicle_length: float
+        vehicle_width: float
+        vehicle_height: float
+        start_position_x: float
+        start_position_y: float
+        start_heading: float
+        start_speed: float
+        average_speed: float
+        start_time: float
+        end_time: float
+        end_position_x: float
+        end_position_y: float
+        end_heading: float
+
+        @property
+        def axle_start_position(self):
+            """The start position of the vehicle from the axle."""
+            hhx, hhy = radians_to_vec(self.start_heading) * (0.5 * self.vehicle_length)
+            return [self.start_position_x + hhx, self.start_position_y + hhy]
+
+        @property
+        def axle_end_position(self):
+            """The start position of the vehicle from the axle."""
+            hhx, hhy = radians_to_vec(self.end_heading) * (0.5 * self.vehicle_length)
+            return [self.end_position_x + hhx, self.end_position_y + hhy]
+
+        @property
+        def dimensions(self) -> Dimensions:
+            """The known or estimated dimensions of this vehicle."""
+            return Dimensions(
+                self.vehicle_length, self.vehicle_width, self.vehicle_height
+            )
+
     def vehicles_active_between(
         self, start_time: float, end_time: float
     ) -> Generator[TrafficHistory.VehicleRow, None, None]:
@@ -229,6 +296,164 @@ class TrafficHistory:
                    ORDER BY T.sim_time DESC"""
         rows = self._query_list(query, (start_time, end_time))
         return (TrafficHistory.VehicleRow(*row) for row in rows)
+
+    @staticmethod
+    def _greatest_n_per_group_format(
+        select, table, group_by, greatest_of_group, where=None, operation="MAX"
+    ):
+        """This solves the issue where you want to get the highest value of `greatest_of_group` in
+        the group `groupby` for versions of sqlite3 that are lower than `3.7.11`.
+
+        See: https://stackoverflow.com/questions/12608025/how-to-construct-a-sqlite-query-to-group-by-order
+
+        e.g. Get a table of the highest speed(`greatest_of_group`) each vehicle(`group_by`) was
+        operating at.
+        > _greatest_n_per_group_format(
+        >    select="vehicle_speed,
+        >    vehicle_id",
+        >    table="Trajectory",
+        >    group_by="vehicle_id",
+        >    greatest_of_group="vehicle_speed",
+        > )
+        """
+        where = f"{where} AND" if where else ""
+        return f"""
+            SELECT {select},
+                (SELECT COUNT({group_by}) AS count
+                    FROM {table} m2
+                    WHERE m1.{group_by} = m2.{group_by})
+            FROM  {table} m1
+            WHERE {greatest_of_group} = (SELECT {operation}({greatest_of_group})
+                                            FROM {table} m3
+                                            WHERE {where} m1.{group_by} = m3.{group_by})
+            GROUP BY {group_by}
+        """
+
+    def _window_from_row(self, row):
+        return TrafficHistory.TrafficHistoryVehicleWindow(
+            row[0],
+            self.decode_vehicle_type(row[1]),
+            *self._resolve_vehicle_dims(row[1], *row[2:5]).as_lwh,
+            *row[5:],
+        )
+
+    def vehicle_window_by_id(
+        self,
+        vehicle_id: str,
+    ) -> Optional[TrafficHistory.TrafficHistoryVehicleWindow]:
+        """Find the given vehicle by its id."""
+        query = """SELECT V.id, V.type, V.length, V.width, V.height,
+                          S.position_x, S.position_y, S.heading_rad, S.speed, D.avg_speed,
+                          S.sim_time, E.sim_time,
+                          E.position_x, E.position_y, E.heading_rad
+                    FROM Vehicle AS V
+                    INNER JOIN (
+                     SELECT vehicle_id, AVG(speed) as "avg_speed"
+                     FROM Trajectory
+                     WHERE vehicle_id = ?
+                    ) AS D ON V.id = D.vehicle_id
+                    INNER JOIN (
+                     SELECT vehicle_id, MIN(sim_time) as sim_time, speed, position_x, position_y, heading_rad
+                     FROM Trajectory
+                     WHERE vehicle_id = ?
+                    ) AS S ON V.id = S.vehicle_id
+                    INNER JOIN (
+                     SELECT vehicle_id, MAX(sim_time) as sim_time, speed, position_x, position_y, heading_rad
+                     FROM Trajectory
+                     WHERE vehicle_id = ?
+                    ) AS E ON V.id = E.vehicle_id
+        """
+        rows = self._query_list(
+            query,
+            tuple([vehicle_id] * 3),
+        )
+
+        row = next(rows, None)
+
+        if row is None:
+            return None
+        return self._window_from_row(row)
+
+    def vehicle_windows_in_range(
+        self,
+        exists_at_or_after: float,
+        ends_before: float,
+        minimum_vehicle_window: float,
+    ) -> Generator[TrafficHistory.TrafficHistoryVehicleWindow, None, None]:
+        """Find all vehicles active between the given history times."""
+        query = f"""SELECT V.id, V.type, V.length, V.width, V.height,
+                          S.position_x, S.position_y, S.heading_rad, S.speed, D.avg_speed,
+                          S.sim_time, E.sim_time,
+                          E.position_x, E.position_y, E.heading_rad
+                   FROM Vehicle AS V
+                   INNER JOIN ( 
+                    SELECT vehicle_id, AVG(speed) as "avg_speed"
+                    FROM (SELECT vehicle_id, sim_time, speed from Trajectory WHERE sim_time >= ? AND sim_time < ?)
+                    GROUP BY vehicle_id
+                   ) AS D ON V.id = D.vehicle_id
+                   INNER JOIN (
+                    {self._greatest_n_per_group_format(
+                        select='''vehicle_id,
+                        sim_time,
+                        speed,
+                        position_x,
+                        position_y,
+                        heading_rad''',
+                        table='Trajectory',
+                        group_by='vehicle_id',
+                        greatest_of_group='sim_time',
+                        where='sim_time >= ?',
+                        operation="MIN"
+                    )}
+                   ) AS S ON V.id = S.vehicle_id
+                   INNER JOIN (
+                    {self._greatest_n_per_group_format(
+                        select='''vehicle_id,
+                        sim_time,
+                        speed,
+                        position_x,
+                        position_y,
+                        heading_rad''',
+                        table='Trajectory',
+                        group_by='vehicle_id',
+                        greatest_of_group='sim_time',
+                        where='sim_time < ?'
+                    )}
+                   ) AS E ON V.id = E.vehicle_id
+                   WHERE E.sim_time - S.sim_time >= ?
+                   GROUP BY V.id
+                   ORDER BY S.sim_time
+                   """
+
+        rows = self._query_list(
+            query,
+            (
+                exists_at_or_after,
+                ends_before,
+                exists_at_or_after,
+                ends_before,
+                minimum_vehicle_window,
+            ),
+        )
+
+        seen = set()
+        seen_pos_x = set()
+        rs = list()
+
+        def _window_from_row_debug(row):
+            nonlocal seen, seen_pos_x, rs
+            r = self._window_from_row(row)
+            assert r.vehicle_id not in seen
+            assert r.end_time - r.start_time >= minimum_vehicle_window
+            assert r.start_time >= exists_at_or_after
+            assert r.end_time <= ends_before
+            assert r.end_position_x not in seen_pos_x
+            seen_pos_x.add(r.end_position_x)
+            seen.add(r.vehicle_id)
+            rs.append(r)
+            return r
+
+        return (_window_from_row_debug(row) for row in rows)
 
     class TrajectoryRow(NamedTuple):
         """An instant in a trajectory"""
@@ -262,12 +487,10 @@ class TrafficHistory:
         sample_start_time = vehicle_start_times[choice]
         sample_end_time = self.vehicle_final_exit_time(choice)
         while len(sample) < k:
-            choices = list(
-                self.vehicle_ids_active_between(sample_start_time, sample_end_time)
-            )
+            choices = list(vehicle_start_times.keys())
             if len(choices) <= len(sample):
                 break
-            choice = str(random.choice(choices)[0])
+            choice = str(random.choice(choices))
             sample_start_time = min(vehicle_start_times[choice], sample_start_time)
             sample_end_time = max(self.vehicle_final_exit_time(choice), sample_end_time)
             sample.add(choice)

@@ -8,8 +8,7 @@ Envision is a visualization front-end for SMARTS providing real-time view of env
 
 ```bash
 # From SMARTS project root; starts SMARTS and the Envision server
-# ...if you want to change the startup command for SMARTS update the supervisord.conf file
-supervisord
+scl envision start -p 8081
 
 # Then to visit the Envision web app in your browser,
 http://localhost:8081/
@@ -21,7 +20,7 @@ To contribute to envision it's easiest to start and control the processes manual
 
 ```bash
 # From SMARTS project root; runs on port 8081 by default
-python envision/server.py
+python envision/server.py --debug
 ```
 
 Then start the Envision web application. npm (version >= 6) and node (version >= 12) are required.
@@ -33,8 +32,10 @@ cd envision/web
 npm install
 
 # Build, run dev server, and watch code changes
-npm start
+npm run watch
 ```
+
+This development flow currently requires reloading the webpage after update.
 
 ## Deployment
 
