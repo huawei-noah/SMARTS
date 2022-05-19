@@ -7,7 +7,7 @@ from tf_agents.replay_buffers import (
 from tf_agents.specs import tensor_spec
 
 
-def reverb(agent, config):
+def reverb_buffer(agent, config):
     table_name = "uniform_table"
     replay_buffer_signature = tensor_spec.from_spec(agent.collect_data_spec)
     replay_buffer_signature = tensor_spec.add_outer_dim(replay_buffer_signature)
@@ -37,10 +37,10 @@ def reverb(agent, config):
     return replay_buffer
 
 
-def uniform(agent, config):
+def uniform_buffer(env, agent, config):
     replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
         data_spec=agent.collect_data_spec,
-        batch_size=tf_env.batch_size,
+        batch_size=env.batch_size,
         max_length=1000000,
     )
 

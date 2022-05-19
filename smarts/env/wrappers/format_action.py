@@ -43,7 +43,7 @@ def _continuous() -> Tuple[Callable[[np.ndarray], np.ndarray], gym.Space]:
     return wrapper, space
 
 
-def _lane() -> Tuple[Callable[[int], str], gym.Space]:
+def _lane() -> Tuple[Callable[[Dict[str, int]], Dict[str, str]], gym.Space]:
     space = gym.spaces.Discrete(n=4)
 
     action_map = {

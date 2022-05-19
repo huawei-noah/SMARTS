@@ -161,8 +161,8 @@ def run(train_env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     #     deterministic=True,
     # )
 
-    network = getattr(merge_network, config["network"])(env=env)
-    agent = getattr(merge_agent, config["agent"])(env=env)
+    network = getattr(merge_network, config["network"])(env=train_env)
+    agent = getattr(merge_agent, config["agent"])(env=train_env)
 
     return
 

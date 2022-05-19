@@ -4,6 +4,15 @@ from tf_agents.networks.q_network import QNetwork
 
 
 def q_net(env):
+    """_summary_
+
+    Args:
+        env (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    
     preprocessing_layer = tf.keras.layers.Lambda(
         lambda obs: tf.cast(obs, np.float32) / 255.0
     )
