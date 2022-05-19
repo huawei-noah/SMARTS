@@ -18,47 +18,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import heapq
 import logging
 import math
-import time
-import heapq
 import random
+import time
 from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
-# pytype: disable=import-error
-
 import numpy as np
 import rtree
+import trimesh
 from cached_property import cached_property
 from shapely.geometry import Polygon
-import trimesh
 from trimesh.exchange import gltf
 from waymo_open_dataset.protos import scenario_pb2
 from waymo_open_dataset.protos.map_pb2 import LaneCenter, RoadLine
 
 from smarts.sstudio.types import MapSpec
 
-from .coordinates import (
-    BoundingBox,
-    Heading,
-    Point,
-    Pose,
-    RefLinePoint,
-)
+from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
+from .lanepoints import LanePoints, LinkedLanePoint
+from .road_map import RoadMap, Waypoint
 from .shape import (
     distance_point_to_polygon,
     offset_along_shape,
     position_at_shape_offset,
 )
-from .lanepoints import LanePoints, LinkedLanePoint
-from .road_map import RoadMap, Waypoint
 from .utils.file import read_tfrecord_file
-from .utils.math import ray_boundary_intersect, inplace_unwrap, radians_to_vec, vec_2d
 from .utils.geometry import buffered_shape, generate_mesh_from_polygons
+from .utils.math import inplace_unwrap, radians_to_vec, ray_boundary_intersect, vec_2d
+
+# pytype: disable=import-error
+
 
 # pytype: enable=import-error
 

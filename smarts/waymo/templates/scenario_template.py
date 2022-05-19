@@ -20,13 +20,13 @@
 
 # Template for Waymo scenario.py
 
-from pathlib import Path
-import yaml
 import os
+from pathlib import Path
 
-from smarts.sstudio.genscenario import gen_scenario
+import yaml
+
 from smarts.sstudio import types as t
-
+from smarts.sstudio.genscenario import gen_scenario
 
 yaml_file = os.path.join(Path(__file__).parent, "waymo.yaml")
 with open(yaml_file, "r") as yf:

@@ -22,10 +22,10 @@
 import math
 import os
 from pathlib import Path
-from matplotlib import pyplot as plt
 
 import numpy as np
 import pytest
+from matplotlib import pyplot as plt
 
 from smarts.core.coordinates import Point
 from smarts.core.opendrive_road_network import OpenDriveRoadNetwork

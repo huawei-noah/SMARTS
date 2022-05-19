@@ -29,17 +29,19 @@ import re
 import shutil
 import struct
 import sys
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Union, Generator
 from itertools import product
 from multiprocessing import cpu_count
+from pathlib import Path
+from typing import Dict, Generator, List, Optional, Tuple, Union
+
 import matplotlib.pyplot as plt
 import yaml
-from matplotlib.animation import FuncAnimation, FFMpegWriter
+from matplotlib.animation import FFMpegWriter, FuncAnimation
 from matplotlib.lines import Line2D
 
 try:
     import readline
+
     from pathos.multiprocessing import ProcessingPool as Pool
     from tabulate import tabulate
     from waymo_open_dataset.protos import scenario_pb2

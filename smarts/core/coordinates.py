@@ -19,14 +19,7 @@
 # THE SOFTWARE.
 import math
 from dataclasses import dataclass
-from typing import (
-    Any,
-    NamedTuple,
-    Optional,
-    SupportsFloat,
-    Tuple,
-    Union,
-)
+from typing import Any, NamedTuple, Optional, SupportsFloat, Tuple, Union
 
 import numpy as np
 from cached_property import cached_property

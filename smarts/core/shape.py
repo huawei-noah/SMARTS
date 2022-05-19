@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import math
 from typing import List, Optional, Union
+
 from smarts.core.coordinates import Point
 from smarts.core.utils.math import is_close
 

@@ -24,8 +24,9 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Set, Tuple
-from shapely.geometry import Polygon
+
 import numpy as np
+from shapely.geometry import Polygon
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .utils.math import (

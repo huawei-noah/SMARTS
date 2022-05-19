@@ -24,7 +24,7 @@ import sys
 from multiprocessing import Process, Semaphore, synchronize
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 
 import click
 

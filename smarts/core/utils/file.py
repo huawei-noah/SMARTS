@@ -21,9 +21,9 @@ import dataclasses
 import hashlib
 import os
 import shutil
+import struct
 from contextlib import contextmanager
 from typing import Generator
-import struct
 
 
 def file_in_folder(filename: str, path: str) -> bool:

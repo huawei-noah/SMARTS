@@ -29,13 +29,14 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
-# pytype: disable=import-error
-
 import numpy as np
 import rtree
 import trimesh
 import trimesh.scene
 from cached_property import cached_property
+
+# pytype: disable=import-error
+
 
 try:
     from lxml import etree
@@ -81,19 +82,13 @@ from smarts.core.utils.math import (
 )
 from smarts.sstudio.types import MapSpec
 
-from .coordinates import (
-    BoundingBox,
-    Heading,
-    Point,
-    Pose,
-    RefLinePoint,
-)
+from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
+from .lanepoints import LanePoints, LinkedLanePoint
 from .shape import (
     distance_point_to_polygon,
     offset_along_shape,
     position_at_shape_offset,
 )
-from .lanepoints import LanePoints, LinkedLanePoint
 
 
 def _convert_camera(camera):
