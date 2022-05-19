@@ -9,7 +9,7 @@ def dqn(env, q_net, config):
     optimizer = tf.keras.optimizers.Adam(
         learning_rate=config["agent_kwargs"]["learning_rate"]
     )
- 
+
     epsilon_fn = tf.keras.optimizers.schedules.PolynomialDecay(
         initial_learning_rate=config["agent_kwargs"]["epsilon_greedy"][
             "initial"
@@ -19,8 +19,8 @@ def dqn(env, q_net, config):
     )
 
     agent = DqnAgent(
-        time_step_spec = env.time_step_spec(),
-        action_spec = env.action_spec(),
+        time_step_spec=env.time_step_spec(),
+        action_spec=env.action_spec(),
         q_network=q_net,
         optimizer=optimizer,
         target_update_period=config["agent_kwargs"]["target_update_period"],

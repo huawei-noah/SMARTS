@@ -46,8 +46,8 @@ def merge_env(
     visdom: bool = False,
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
-    img_meters=64,
-    img_pixels=256,
+    img_meters: int = 64,
+    img_pixels: int = 256,
     action_space="Continuous",
 ):
     """A merge environment where a single agent needs to merge into a freeway
@@ -92,6 +92,10 @@ def merge_env(
             SUMO GUI. Defaults to True.
         envision_record_data_replay_path (Optional[str], optional):
             Envision's data replay output directory. Defaults to None.
+        img_meters (int): Ground square size covered by image observations.
+            Defaults to 64 x 64 meter (height x width) square.
+        img_pixels (int): Pixels representing the square image observations.
+            Defaults to 256 x 256 pixels (height x width).
 
     Returns:
         A single-agent merging into a freeway.
