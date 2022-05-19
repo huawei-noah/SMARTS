@@ -22,6 +22,6 @@ setup(
         "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@sb3-1",
         "tensorflow==2.8.0",
         "tensorflow-probability==0.16.0",
-        "tf-agents==0.12.1",
+        "tf-agents[reverb]==0.12.1",
     ],
 )

@@ -499,11 +499,11 @@ def _std_neighbors(
 
     if len(nghbs) == 0:
         return {
-            "box": np.zeros((10, 3), dtype=np.float32),
-            "heading": np.zeros((10,), dtype=np.float32),
-            "lane_index": np.zeros((10,), dtype=np.int8),
-            "pos": np.zeros((10, 3), dtype=np.float64),
-            "speed": np.zeros((10,), dtype=np.float32),
+            "box": np.zeros((_NEIGHBOR_SHP, 3), dtype=np.float32),
+            "heading": np.zeros((_NEIGHBOR_SHP,), dtype=np.float32),
+            "lane_index": np.zeros((_NEIGHBOR_SHP,), dtype=np.int8),
+            "pos": np.zeros((_NEIGHBOR_SHP, 3), dtype=np.float64),
+            "speed": np.zeros((_NEIGHBOR_SHP,), dtype=np.float32),
         }
 
     des_shp = _NEIGHBOR_SHP
