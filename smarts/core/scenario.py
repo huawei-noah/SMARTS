@@ -732,7 +732,7 @@ class Scenario:
             for via in vias:
                 road = road_map.road_by_id(via.road_id)
                 lane = road.lane_at_index(via.lane_index)
-                lane_width = lane.width_at_offset(via.lane_offset)
+                lane_width, _ = lane.width_at_offset(via.lane_offset)
                 hit_distance = (
                     via.hit_distance if via.hit_distance > 0 else lane_width / 2
                 )

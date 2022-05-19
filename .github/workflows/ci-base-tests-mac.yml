@@ -57,6 +57,7 @@ jobs:
           PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
             -n auto \
+            --ignore-glob="**/waymo_map.py" \
             ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/env/tests/test_benchmark.py \
