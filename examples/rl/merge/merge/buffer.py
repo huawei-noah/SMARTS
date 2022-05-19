@@ -41,7 +41,7 @@ def uniform_buffer(env, agent, config):
     replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
         data_spec=agent.collect_data_spec,
         batch_size=env.batch_size,
-        max_length=1000000,
+        max_length=config["buffer"]["max_length"],
     )
 
     return replay_buffer

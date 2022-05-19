@@ -24,8 +24,12 @@ smarts:
       initial: 1
       decay_steps: 3_000_000
       end: 0.01
-  buffer:
-    replay_buffer_max_length: 100_000 
+  # buffer: reverb_buffer
+  # buffer_kwargs:
+  #   replay_buffer_max_length: 100_000 
+  buffer: uniform_buffer
+  buffer_kwargs:
+    max_length: 1_000_000 
 
   num_iterations: 20000 # @param {type:"integer"}
   initial_collect_steps: 100  # @param {type:"integer"}
