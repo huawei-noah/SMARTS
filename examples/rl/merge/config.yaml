@@ -26,12 +26,12 @@ smarts:
   # buffer: reverb_replay
   # buffer_kwargs:
   #   replay_buffer_max_length: 100_000 
-  buffer: uniform_replay
-  buffer_kwargs:
-    max_length: 100_000 
-  # buffer: hashed_replay
+  # buffer: uniform_replay
   # buffer_kwargs:
-  #   capacity: 500_000
+  #   max_length: 100_000 
+  buffer: hashed_replay
+  buffer_kwargs:
+    capacity: 500_000
 
   num_iterations: 20000 # @param {type:"integer"}
   initial_collect_steps: 100  # @param {type:"integer"}

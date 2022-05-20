@@ -65,7 +65,7 @@ def hashed_replay(env:gym.Env, agent:tf_agent.TFAgent, config:Dict):
             A replay buffer and a replay buffer observer. 
     """
     replay_buffer = py_hashed_replay_buffer.PyHashedReplayBuffer(
-        data_spec=tensor_spec.to_array_spec(agent.collect_data_spec),
+        data_spec=tensor_spec.to_nest_array_spec(agent.collect_data_spec),
         capacity=config["buffer_kwargs"]["capacity"],
         log_interval=None,
     )

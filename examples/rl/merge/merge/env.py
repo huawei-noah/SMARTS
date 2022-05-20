@@ -23,7 +23,7 @@ def make(config: Dict[str, Any]) -> PyEnvironment:
     gym_frame_stack = lambda env: FrameStack(env=env, num_stack=config["num_stack"])
     gym_frame_concatenate = merge_observation.Concatenate
     pyenv = suite_gym.load(
-        environment_name="smarts.env:merge-v0",
+        environment_name="Merge-v0",
         gym_env_wrappers=[
             gym_reward_wrapper,
             gym_action_wrapper,
