@@ -172,4 +172,7 @@ if __name__ == "__main__":
     if args.mode == "evaluate" and args.model is None:
         raise Exception("When --mode=evaluate, --model option must be specified.")
 
+    from gym import envs
+    print(envs.registry.all())
+
     main(args)

@@ -31,6 +31,6 @@ register(
 )
 
 register(
-    id="Merge-v0",
+    id="merge-v0",
     entry_point="smarts.env.merge_env:merge_env",
 )
