@@ -1,4 +1,5 @@
 import reverb
+import gym
 from tf_agents.replay_buffers import (
     py_hashed_replay_buffer,
     reverb_replay_buffer,
@@ -6,7 +7,8 @@ from tf_agents.replay_buffers import (
     tf_uniform_replay_buffer,
 )
 from tf_agents.specs import tensor_spec
-
+from tf_agents.agents import tf_agent
+from typing import Dict
 
 def reverb_replay(env, agent, config):
     table_name = "uniform_table"
@@ -49,9 +51,21 @@ def uniform_replay(env, agent, config):
     return replay_buffer, replay_buffer_observer
 
 
-def hashed_replay(env, agent, config):
+def hashed_replay(env:gym.Env, agent:tf_agent.TFAgent, config:Dict):
+    """A hashed replay buffer, which deduplicates data in the stored
+    trajectories along the last axis of the observations.
+
+    Args:
+        env (gym.Env): Unused.
+        agent (tf_agent.TFAgent): TF-Agent.
+        config (Dict): Configuration parameters.
+
+    Returns:
+        Tuple[py_hashed_replay_buffer.PyHashedReplayBuffer, Callable[[Any],]]:
+            A replay buffer and a replay buffer observer. 
+    """
     replay_buffer = py_hashed_replay_buffer.PyHashedReplayBuffer(
-        data_spec=agent.collect_data_spec,
+        data_spec=tensor_spec.to_array_spec(agent.collect_data_spec),
         capacity=config["buffer_kwargs"]["capacity"],
         log_interval=None,
     )

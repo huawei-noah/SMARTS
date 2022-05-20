@@ -13,7 +13,7 @@ from tf_agents.environments import (
 
 
 def make(config: Dict[str, Any]) -> PyEnvironment:
-    # Create environment in TF.
+    # Create TF environment.
     # Refer to https://www.tensorflow.org/agents/tutorials/2_environments_tutorial
     gym_reward_wrapper = merge_reward.Reward
     gym_action_wrapper = lambda env: merge_action.Action(
