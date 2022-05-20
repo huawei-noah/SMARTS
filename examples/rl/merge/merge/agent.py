@@ -3,7 +3,7 @@ from tf_agents.agents.dqn.dqn_agent import DqnAgent
 from tf_agents.utils import common
 
 
-def dqn(env, q_net, config):
+def dqn(env, network, config):
     train_step_counter = tf.Variable(0)
 
     optimizer = tf.keras.optimizers.Adam(
@@ -21,7 +21,7 @@ def dqn(env, q_net, config):
     agent = DqnAgent(
         time_step_spec=env.time_step_spec(),
         action_spec=env.action_spec(),
-        q_network=q_net,
+        q_network=network,
         optimizer=optimizer,
         target_update_period=config["agent_kwargs"]["target_update_period"],
         td_errors_loss_fn=tf.keras.losses.Huber(reduction="none"),

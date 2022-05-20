@@ -14,6 +14,7 @@ from gym.utils.env_checker import check_env
 from gym.wrappers.frame_stack import FrameStack
 from merge import action as merge_action
 from merge import agent as merge_agent
+from merge import buffer as merge_buffer
 from merge import network as merge_network
 from merge import observation as merge_observation
 from merge import reward as merge_reward
@@ -84,32 +85,15 @@ def main(args: argparse.Namespace):
 
 
 def make_env(config: Dict[str, Any]) -> PyEnvironment:
-    # Create environment in Gym.
-    # Refer to https://www.gymlibrary.ml/
-    # env = gym.make(
-    #     "smarts.env:merge-v0",
-    #     headless=not config["head"],  # If False, enables Envision display.
-    #     visdom=config["visdom"],  # If True, enables Visdom display.
-    #     sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
-    #     img_meters=config["img_meters"],
-    #     img_pixels=config["img_pixels"],
-    # )
-    # print(env.action_space)
-    # env = merge_reward.Reward(env=env)
-    # env = merge_action.Action(env=env, space=config["action_wrapper"])
-    # env = getattr(merge_observation, config["observation_wrapper"])(env=env)
-    # check_env(env)
-
-    # Create the equivalent environment in TF.
+    # Create environment in TF.
     # Refer to https://www.tensorflow.org/agents/tutorials/2_environments_tutorial
-    gym_reward_wrapper = lambda env: merge_reward.Reward(env=env)
+    gym_reward_wrapper = merge_reward.Reward
     gym_action_wrapper = lambda env: merge_action.Action(
         env=env, space=config["action_wrapper"]
     )
-    gym_obs_wrapper = lambda env: getattr(
-        merge_observation, config["observation_wrapper"]
-    )(env=env)
+    gym_obs_wrapper = merge_observation.RGB
     gym_frame_stack = lambda env: FrameStack(env=env, num_stack=config["num_stack"])
+    gym_frame_concatenate = merge_observation.Concatenate
     pyenv = suite_gym.load(
         environment_name="smarts.env:merge-v0",
         gym_env_wrappers=[
@@ -117,6 +101,7 @@ def make_env(config: Dict[str, Any]) -> PyEnvironment:
             gym_action_wrapper,
             gym_obs_wrapper,
             gym_frame_stack,
+            gym_frame_concatenate,
         ],
         gym_kwargs={
             "headless": not config["head"],  # If False, enables Envision display.
@@ -162,7 +147,12 @@ def run(train_env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     # )
 
     network = getattr(merge_network, config["network"])(env=train_env)
-    agent = getattr(merge_agent, config["agent"])(env=train_env)
+    agent = getattr(merge_agent, config["agent"])(
+        env=train_env, network=network, config=config
+    )
+    replay_buffer, replay_buffer_observer = getattr(merge_buffer, config["buffer"])(
+        env=train_env, agent=agent, config=config
+    )
 
     return
 
