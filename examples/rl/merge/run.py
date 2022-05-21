@@ -15,6 +15,14 @@ from merge import buffer as merge_buffer
 from merge import env as merge_env
 from merge import network as merge_network
 from ruamel.yaml import YAML
+from tf_agents.utils.common import function
+from tf_agents.policies.random_tf_policy import RandomTFPolicy
+from tf_agents.drivers.dynamic_step_driver import DynamicStepDriver
+from tf_agents.metrics import tf_metrics
+from tf_agents.eval.metric_utils import log_metrics
+import logging
+logging.getLogger().setLevel(logging.INFO)
+# log_metrics(train_metrics)
 
 warnings.simplefilter("ignore", category=UserWarning)
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -72,20 +80,6 @@ def main(args: argparse.Namespace):
 
 def run(train_env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
 
-    # checkpoint_callback = CheckpointCallback(
-    #     save_freq=config["checkpoint_freq"],
-    #     save_path=config["logdir"] / "checkpoint",
-    #     name_prefix=config["alg"],
-    # )
-    # eval_callback = EvalCallback(
-    #     eval_env=eval_env,
-    #     n_eval_episodes=config["eval_eps"],
-    #     eval_freq=config["eval_freq"],
-    #     log_path=config["logdir"] / "eval",
-    #     best_model_save_path=config["logdir"] / "eval",
-    #     deterministic=True,
-    # )
-
     network = getattr(merge_network, config["network"])(env=train_env)
     agent = getattr(merge_agent, config["agent"])(
         env=train_env, network=network, config=config
@@ -93,6 +87,58 @@ def run(train_env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
     replay_buffer, replay_buffer_observer = getattr(merge_buffer, config["buffer"])(
         env=train_env, agent=agent, config=config
     )
+
+    train_summary_writer = tf.summary.create_file_writer(
+                logdir=config["logdir"] / "tensorboard")
+    train_summary_writer.set_as_default()
+    train_metrics = [
+        tf_metrics.NumberOfEpisodes(),
+        tf_metrics.EnvironmentSteps(),
+        tf_metrics.AverageReturnMetric(),
+        tf_metrics.AverageEpisodeLengthMetric(),
+        tf_metrics.MaxReturnMetric(),
+    ]
+    collect_driver = DynamicStepDriver(
+        env=train_env,
+        policy=agent.collect_policy,
+        observers=[replay_buffer_observer] + train_metrics,
+        num_steps=config["collect_steps_per_iteration"], # collect `num_steps` steps for each training iteration
+    ) 
+
+    initial_collect_policy = RandomTFPolicy(
+        train_env.time_step_spec(),
+        train_env.action_spec()
+    )
+    init_driver = DynamicStepDriver(
+        env=train_env,
+        policy=initial_collect_policy,
+        observers=[replay_buffer.add_batch],
+        num_steps=config["initial_collect_steps"]
+    )
+    final_time_step, final_policy_state = init_driver.run()
+
+    collect_driver.run = function(collect_driver.run)
+    agent.train = function(agent.train)
+    for 
+
+        dataset = replay_buffer.as_dataset(
+            sample_batch_size=64,
+            num_steps=2,
+            num_parallel_calls=3
+        ).prefetch(3)
+    def train_agent(n_iterations):
+        time_step = None
+        policy_state = agent.collect_policy.get_initial_state(train_env.batch_size)
+        iterator = iter(dataset)
+        for iteration in range(n_iterations):
+            time_step, policy_state = collect_driver.run(time_step, policy_state)
+            trajectories, buffer_info = next(iterator)
+            train_loss = agent.train(trajectories)
+            print("\r{} loss:{:.5f}".format(
+            iteration, train_loss.loss.numpy()), end="")
+            if iteration % 1000 == 0:
+                log_metrics(train_metrics)
+
 
     return
 
@@ -172,7 +218,7 @@ if __name__ == "__main__":
     if args.mode == "evaluate" and args.model is None:
         raise Exception("When --mode=evaluate, --model option must be specified.")
 
-    from gym import envs
-    print(envs.registry.all())
+    # from gym import envs
+    # print(envs.registry.all())
 
     main(args)
