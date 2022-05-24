@@ -28,6 +28,7 @@ def dqn(env, network, config):
         gamma=0.99,  # discount factor
         train_step_counter=train_step_counter,
         epsilon_greedy=lambda _: epsilon_fn(train_step_counter),
+        n_step_update=config["agent_kwargs"]["n_step_update"],
     )
 
     agent.initialize()

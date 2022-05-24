@@ -1,6 +1,5 @@
 from typing import Dict
 
-import gym
 import reverb
 from tf_agents.agents import tf_agent
 from tf_agents.replay_buffers import (
@@ -10,9 +9,9 @@ from tf_agents.replay_buffers import (
     tf_uniform_replay_buffer,
 )
 from tf_agents.specs import tensor_spec
+from tf_agents.environments import tf_py_environment
 
-
-def uniform_replay(env, agent, config):
+def uniform_replay(env: tf_py_environment.TFPyEnvironment, agent: tf_agent.TFAgent, config: Dict):
     replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
         data_spec=agent.collect_data_spec,
         batch_size=env.batch_size,
@@ -23,7 +22,7 @@ def uniform_replay(env, agent, config):
     return replay_buffer, replay_buffer_observer
 
 
-def hashed_replay(env: gym.Env, agent: tf_agent.TFAgent, config: Dict):
+def hashed_replay(env, agent: tf_agent.TFAgent, config: Dict):
     """A hashed replay buffer, which deduplicates data in the stored
     trajectories along the last axis of the observations.
 
@@ -46,7 +45,7 @@ def hashed_replay(env: gym.Env, agent: tf_agent.TFAgent, config: Dict):
     return replay_buffer, replay_buffer_observer
 
 
-def reverb_replay(env, agent, config):
+def reverb_replay(env, agent: tf_agent.TFAgent, config: Dict):
     table_name = "uniform_table"
     replay_buffer_signature = tensor_spec.from_spec(agent.collect_data_spec)
     replay_buffer_signature = tensor_spec.add_outer_dim(replay_buffer_signature)

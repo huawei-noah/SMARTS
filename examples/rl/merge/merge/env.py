@@ -5,14 +5,13 @@ from merge import action as merge_action
 from merge import observation as merge_observation
 from merge import reward as merge_reward
 from tf_agents.environments import (
-    PyEnvironment,
     suite_gym,
     tf_py_environment,
     validate_py_environment,
 )
 
 
-def make(config: Dict[str, Any]) -> PyEnvironment:
+def make(config: Dict[str, Any]) -> tf_py_environment.TFPyEnvironment:
     # Create TF environment.
     # Refer to https://www.tensorflow.org/agents/tutorials/2_environments_tutorial
     gym_reward_wrapper = merge_reward.Reward

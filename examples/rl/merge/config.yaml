@@ -8,12 +8,16 @@ smarts:
   action_wrapper: Discrete # Either "Lane" or "Continuous" or "Discrete"
 
   # Training and evaluation
-  initial_collect_steps: 100
-  collect_steps_per_iteration: 10
-
-  checkpoint_freq: 1e5 # Save a model every checkpoint_freq calls to env.step().
-  eval_eps: 100 # Number of evaluation epsiodes.
-  eval_freq: 1e5 # Evaluate the trained model every eval_freq steps and save the best model.
+  train:
+    iterations: 10 # 1e8  # Number of training iteration.
+  driver:
+    initial_collect_steps: 100
+    num_steps: 100 # Collect `num_steps` steps from env for each training iteration.
+  dataset:
+    batch_size: 64 # Train batch size.
+  num_eval_episodes: 10  
+  eval_interval: 1000 
+  log_interval: 200  
 
   # RL algorithm
   network: q_net
@@ -21,9 +25,10 @@ smarts:
   agent_kwargs:
     learning_rate: 1e-3
     target_update_period: 10 # Train step interval at which the target network is updated
+    n_step_update: 1
     epsilon_greedy:
       initial: 1
-      decay_steps: 3_000_000
+      decay_steps: 300_000 # Train step interval over which the epsilon greedy decays
       end: 0.01
   driver_steps:  
   buffer: uniform_replay
@@ -35,12 +40,3 @@ smarts:
   # buffer: reverb_replay
   # buffer_kwargs:
   #   replay_buffer_max_length: 100_000 
-
-  num_iterations: 20000 # @param {type:"integer"}
-  initial_collect_steps: 100  # @param {type:"integer"}
-  collect_steps_per_iteration: 1 # @param {type:"integer"}
-  batch_size: 64  # @param {type:"integer"}
-  log_interval: 200  # @param {type:"integer"}
-  num_eval_episodes: 10  # @param {type:"integer"}
-  eval_interval: 1000  # @param {type:"integer"}
-    
