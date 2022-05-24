@@ -1,0 +1,5 @@
+absl-py==1.0.0
+astunparse==1.6.3
+attrs==21.4.0
+Automat==20.2.0
+cached-property==1.5.2

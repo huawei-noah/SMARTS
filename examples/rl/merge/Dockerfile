@@ -7,6 +7,10 @@ RUN touch /etc/apt/apt.conf.d/99verify-peer.conf && \
     echo >>/etc/apt/apt.conf.d/99verify-peer.conf 'Acquire::https::Verify-Peer "false";' && \
     echo >>/etc/apt/apt.conf.d/99verify-peer.conf 'Acquire::https::Verify-Host "false";'
 
+# (Temporary) NVIDIA invalid public key
+RUN rm /etc/apt/sources.list.d/cuda.list
+RUN rm /etc/apt/sources.list.d/nvidia-ml.list
+
 # Install libraries.
 RUN apt-get update --fix-missing && \
     apt-get install -y \

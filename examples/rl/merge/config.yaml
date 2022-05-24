@@ -27,7 +27,7 @@ smarts:
     target_update_period: 10 # Train step interval at which the target network is updated
     n_step_update: 1
     epsilon_greedy:
-      initial: 1
+      initial: 1.0
       decay_steps: 300_000 # Train step interval over which the epsilon greedy decays
       end: 0.01
   driver_steps:  
