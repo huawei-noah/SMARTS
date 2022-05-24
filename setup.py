@@ -74,7 +74,7 @@ setup(
             "sphinxcontrib-apidoc>=0.3.0",
         ],
         "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
-        "colab": ["grpcio>=1.32.0"],
+        "colab": ["grpcio==1.46.1"],
         "rllib": [
             "opencv-python==4.1.2.30",
             "opencv-python-headless==4.1.2.30",
