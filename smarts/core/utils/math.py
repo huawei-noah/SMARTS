@@ -300,149 +300,6 @@ def is_close(a: float, b: float, rel_tol: float = 1e-09, abs_tol: float = 0.0) -
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
-def euclidean_distance(p1: Tuple[float, ...], p2: Tuple[float, ...]) -> float:
-    """The distance taking measuring a direct line between p1 and p2."""
-    dx = p1[0] - p2[0]
-    dy = p1[1] - p2[1]
-    return math.sqrt(dx * dx + dy * dy)
-
-
-def position_at_offset(
-    p1: Tuple[float, ...], p2: Tuple[float, ...], offset: float
-) -> Tuple[float, ...]:
-    """A point between p1 and p2 given an offset less than the distance between p1 and p2."""
-    if is_close(offset, 0.0):  # for pathological cases with dist == 0 and offset == 0
-        return p1
-
-    dist = euclidean_distance(p1, p2)
-
-    if is_close(dist, offset):
-        return p2
-
-    return p1[0] + (p2[0] - p1[0]) * (offset / dist), p1[1] + (p2[1] - p1[1]) * (
-        offset / dist
-    )
-
-
-def offset_along_shape(
-    point: Tuple[float], shape: List[Tuple[float]]
-) -> Union[float, int]:
-    """An offset on a shape defined as a vector path determined by the closest location on the
-    path to the point.
-    """
-    if point not in shape:
-        return polygon_offset_with_minimum_distance_to_point(point, shape)
-    offset = 0
-    for i in range(len(shape) - 1):
-        if shape[i] == point:
-            break
-        offset += euclidean_distance(shape[i], shape[i + 1])
-    return offset
-
-
-def position_at_shape_offset(
-    shape: List[Tuple[float, float]], offset: float
-) -> Tuple[float, float]:
-    """A point defined as the offset into a shape defined as vector path."""
-    seen_length = 0
-    curr = shape[0]
-    for next_p in shape[1:]:
-        next_length = euclidean_distance(curr, next_p)
-        if seen_length + next_length > offset:
-            return position_at_offset(curr, next_p, offset - seen_length)
-        seen_length += next_length
-        curr = next_p
-    return shape[-1]
-
-
-def line_offset_with_minimum_distance_to_point(
-    point: Tuple[float],
-    line_start: Tuple[float],
-    line_end: Tuple[float],
-    perpendicular: bool = False,
-) -> Union[float, int]:
-    """Return the offset from line (line_start, line_end) where the distance to
-    point is minimal"""
-    p = point
-    p1 = line_start
-    p2 = line_end
-    d = euclidean_distance(p1, p2)
-    u = ((p[0] - p1[0]) * (p2[0] - p1[0])) + ((p[1] - p1[1]) * (p2[1] - p1[1]))
-    if d == 0.0 or u < 0.0 or u > d * d:
-        if perpendicular:
-            return -1
-        if u < 0.0:
-            return 0.0
-        return d
-    return u / d
-
-
-def polygon_offset_with_minimum_distance_to_point(
-    point: Tuple[float], polygon: List[Tuple[float]]
-) -> Union[float, int]:
-    """Return the offset and the distance from the polygon start where the distance to the point is minimal"""
-    p = point
-    s = polygon
-    seen = 0
-    min_dist = 1e400
-    min_offset = -1
-    for i in range(len(s) - 1):
-        p_offset = line_offset_with_minimum_distance_to_point(p, s[i], s[i + 1])
-        dist = (
-            min_dist
-            if p_offset == -1
-            else euclidean_distance(p, position_at_offset(s[i], s[i + 1], p_offset))
-        )
-        if dist < min_dist:
-            min_dist = dist
-            min_offset = p_offset + seen
-        seen += euclidean_distance(s[i], s[i + 1])
-    return min_offset
-
-
-def distance_point_to_line(
-    point: Tuple[float],
-    line_start: Tuple[float],
-    line_end: Tuple[float],
-    perpendicular: bool = False,
-) -> Union[float, int]:
-    """Return the minimum distance between point and the line (line_start, line_end)"""
-    p1 = line_start
-    p2 = line_end
-    offset = line_offset_with_minimum_distance_to_point(
-        point, line_start, line_end, perpendicular
-    )
-    if offset == -1:
-        return -1
-    if offset == 0:
-        return euclidean_distance(point, p1)
-    u = offset / euclidean_distance(line_start, line_end)
-    intersection = (p1[0] + u * (p2[0] - p1[0]), p1[1] + u * (p2[1] - p1[1]))
-    return euclidean_distance(point, intersection)
-
-
-def distance_point_to_polygon(
-    point: Tuple[float, ...],
-    polygon: List[Tuple[float, ...]],
-    perpendicular: bool = False,
-) -> Union[float, int]:
-    """Return the minimum distance between point and polygon"""
-    p = point
-    s = polygon
-    min_dist = None
-    for i in range(len(s) - 1):
-        dist = distance_point_to_line(p, s[i], s[i + 1], perpendicular)
-        if dist == -1 and perpendicular and i != 0:
-            # distance to inner corner
-            dist = euclidean_distance(point, s[i])
-        if dist != -1:
-            if min_dist is None or dist < min_dist:
-                min_dist = dist
-    if min_dist is not None:
-        return min_dist
-    return -1
-
-
 def rotate_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
     """Rotate a point around a given origin."""
     x, y = point
@@ -452,6 +309,51 @@ def rotate_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
     qy = oy + -math.sin(radians) * (x - ox) + math.cos(radians) * (y - oy)
 
     return np.array([qx, qy])
+
+
+def line_intersect(a, b, c, d) -> Union[np.ndarray, None]:
+    """Check if the lines [a, b] and [c, d] intersect, and return the
+    intersection point if so. Otherwise, return None.
+      d
+    a─┼─b
+      c
+    """
+
+    r = b - a
+    s = d - c
+    d = r[0] * s[1] - r[1] * s[0]
+
+    if d == 0:
+        return None
+
+    u = ((c[0] - a[0]) * r[1] - (c[1] - a[1]) * r[0]) / d
+    t = ((c[0] - a[0]) * s[1] - (c[1] - a[1]) * s[0]) / d
+
+    if 0 <= u <= 1 and 0 <= t <= 1:
+        return a + t * r
+
+    return None
+
+
+def ray_boundary_intersect(
+    ray_start, ray_end, boundary_pts, early_return=True
+) -> Union[np.ndarray, None]:
+    """Iterate over the boundary segments, returning the nearest intersection point if a ray intersection is found.
+    If early_return is True, this will return the first intersection point that is found."""
+    nearest_pt = None
+    min_dist = math.inf
+    for j in range(len(boundary_pts) - 1):
+        b0 = boundary_pts[j]
+        b1 = boundary_pts[j + 1]
+        pt = line_intersect(b0, b1, ray_start, ray_end)
+        if pt is not None:
+            if early_return:
+                return pt
+            dist = np.linalg.norm(pt - ray_start)
+            if dist < min_dist:
+                min_dist = dist
+                nearest_pt = pt
+    return nearest_pt
 
 
 def min_angles_difference_signed(first, second) -> float:

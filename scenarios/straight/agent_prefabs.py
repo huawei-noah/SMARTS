@@ -1,7 +1,7 @@
 import numpy as np
 
 from smarts.core.agent import Agent
-from smarts.core.agent_interface import AgentInterface
+from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import register
@@ -47,7 +47,11 @@ class TrajectoryBoidAgent(Agent):
 register(
     locator="pose-boid-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
-        interface=AgentInterface(action=ActionSpaceType.TargetPose, waypoints=True),
+        interface=AgentInterface(
+            action=ActionSpaceType.TargetPose,
+            waypoints=True,
+            done_criteria=DoneCriteria(collision=False),
+        ),
         agent_builder=PoseBoidAgent,
     ),
 )
@@ -55,7 +59,11 @@ register(
 register(
     locator="trajectory-boid-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
-        interface=AgentInterface(action=ActionSpaceType.Trajectory, waypoints=True),
+        interface=AgentInterface(
+            action=ActionSpaceType.Trajectory,
+            waypoints=True,
+            done_criteria=DoneCriteria(collision=False),
+        ),
         agent_builder=TrajectoryBoidAgent,
     ),
 )

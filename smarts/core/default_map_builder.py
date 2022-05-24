@@ -1,4 +1,4 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,8 +19,7 @@
 # THE SOFTWARE.
 
 import os
-from dataclasses import replace
-from pathlib import Path
+import sys
 from typing import NamedTuple, Optional, Tuple
 
 from smarts.core.road_map import RoadMap
@@ -55,6 +54,7 @@ def _clear_cache():
 _UNKNOWN_MAP = 0
 _SUMO_MAP = 1
 _OPENDRIVE_MAP = 2
+_WAYMO_MAP = 3
 
 
 def _find_mapfile_in_dir(map_dir: str) -> Tuple[int, str]:
@@ -74,6 +74,8 @@ def _find_mapfile_in_dir(map_dir: str) -> Tuple[int, str]:
             map_path = os.path.join(map_dir, f)
         elif f.endswith(".xodr"):
             map_type = _OPENDRIVE_MAP
+        elif ".tfrecord" in f:
+            map_type = _WAYMO_MAP
             map_path = os.path.join(map_dir, f)
     return map_type, map_path
 
@@ -106,6 +108,8 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
             map_type = _SUMO_MAP
         elif map_source.endswith(".xodr"):
             map_type = _OPENDRIVE_MAP
+        elif ".tfrecord" in map_source:
+            map_type = _WAYMO_MAP
 
     if map_type == _SUMO_MAP:
         from smarts.core.sumo_road_network import SumoRoadNetwork
@@ -117,6 +121,16 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
 
         map_class = OpenDriveRoadNetwork
 
+    elif map_type == _WAYMO_MAP:
+        try:
+            from smarts.core.waymo_map import WaymoMap  # pytype: disable=import-error
+        except (ImportError, ModuleNotFoundError):
+            print(sys.exc_info())
+            print(
+                "You may not have installed the [waymo] dependencies required to build and use WaymoMap Scenario. Install them first using the command `pip install -e .[waymo]` at the source directory."
+            )
+            return None, None
+        map_class = WaymoMap
     else:
         return None, None
 
@@ -128,6 +142,9 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
         _clear_cache()
 
     road_map = map_class.from_spec(map_spec)
+    if road_map is None:
+        return None, None
+
     if os.path.isfile(road_map.source):
         road_map_hash = file_md5_hash(road_map.source)
     else:

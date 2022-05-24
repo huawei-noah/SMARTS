@@ -2,8 +2,7 @@ import logging
 import math
 import pickle
 import random
-from dataclasses import replace
-from typing import Sequence, Tuple
+from typing import Iterable, Sequence, Tuple
 from unittest.mock import Mock
 
 from envision.client import Client as Envision
@@ -18,11 +17,9 @@ from smarts.core.traffic_history_provider import TrafficHistoryProvider
 from smarts.core.utils.math import rounder_for_dt
 from smarts.zoo.agent_spec import AgentSpec
 
-# The following ugliness was made necessary because the `aiohttp` #
-# dependency has an "examples" module too.  (See PR #1120.)
-if __name__ == "__main__":
+try:
     from argument_parser import default_argument_parser
-else:
+except ImportError:
     from .argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
@@ -37,6 +34,8 @@ class ReplayCheckerAgent(Agent):
         self._fixed_timestep_sec = fixed_timestep_sec
         self._rounder = rounder_for_dt(fixed_timestep_sec)
         self._time_offset = 0
+        self._data = None
+        self._vehicle_id = ""
 
     def load_data_for_vehicle(
         self, vehicle_id: str, scenario: Scenario, time_offset: float
@@ -92,6 +91,9 @@ def main(
     seed: int,
     vehicles_to_replace: int,
     episodes: int,
+    exists_at_or_after: float = 40,
+    minimum_history_duration: float = 10,
+    ends_before: float = 80,
 ):
     assert vehicles_to_replace > 0
     assert episodes > 0
@@ -111,19 +113,48 @@ def main(
 
     scenario_list = Scenario.get_scenario_list(scenarios)
     scenarios_iterator = Scenario.variations_for_all_scenario_roots(scenario_list, [])
+
     for scenario in scenarios_iterator:
         assert isinstance(scenario.traffic_history, TrafficHistory)
-        logger.debug("working on scenario {}".format(scenario.name))
+        logger.info("working on scenario {}".format(scenario.traffic_history.name))
 
-        veh_missions = scenario.discover_missions_of_traffic_histories()
+        VehicleWindow = TrafficHistory.TrafficHistoryVehicleWindow
+        # Can use this to further filter out prospective vehicles
+        def custom_filter(vehs: Iterable[VehicleWindow]) -> Iterable[VehicleWindow]:
+            nonlocal exists_at_or_after
+            vehicles = list(vehs)
+            logger.info(f"Total vehicles pre-filter: {len(vehicles)}")
+            window = 4
+            vehicles = list(
+                v
+                for v in vehicles
+                if v.average_speed > 3
+                and abs(v.start_time) - exists_at_or_after < window
+            )
+            logger.info(f"Total vehicles post-filter: {len(vehicles)}")
+            return vehicles
+
+        last_seen_vehicle_time = scenario.traffic_history.last_seen_vehicle_time()
+        if last_seen_vehicle_time is None:
+            logger.warning(
+                f"no vehicles are found in `{scenario.traffic_history.name}` traffic history!!!"
+            )
+
+        logger.info(f"final vehicle exits at: {last_seen_vehicle_time}")
+
+        # pytype: disable=attribute-error
+        veh_missions = {
+            mission.vehicle_spec.veh_id: mission
+            for mission in scenario.history_missions_for_window(
+                exists_at_or_after, ends_before, minimum_history_duration, custom_filter
+            )
+        }
+        # pytype: enable=attribute-error
         if not veh_missions:
             logger.warning(
                 "no vehicle missions found for scenario {}.".format(scenario.name)
             )
             continue
-        veh_start_times = {
-            v_id: mission.start_time for v_id, mission in veh_missions.items()
-        }
 
         k = vehicles_to_replace
         if k > len(veh_missions):
@@ -151,7 +182,7 @@ def main(
             agents = {}
             dones = {}
             ego_missions = {}
-            sample = {}
+            sample = set()
 
             if scenario.traffic_history.dataset_source == "Waymo":
                 # For Waymo, we only hijack the vehicle that was autonomous in the dataset
@@ -170,17 +201,7 @@ def main(
             if not sample:
                 # For other datasets, hijack a sample of the recorded vehicles
                 # Pick k vehicle missions to hijack with agent
-                # and figure out which one starts the earliest
-                sample = scenario.traffic_history.random_overlapping_sample(
-                    veh_start_times, k
-                )
-
-            if len(sample) < k:
-                logger.warning(
-                    f"Unable to choose {k} overlapping missions.  allowing non-overlapping."
-                )
-                leftover = set(veh_start_times.keys()) - sample
-                sample.update(set(random.sample(leftover, k - len(sample))))
+                sample = set(random.sample(tuple(veh_missions.keys()), k))
 
             agent_spec.interface.max_episode_steps = max(
                 [
@@ -196,9 +217,9 @@ def main(
                 agent_interfaces[agent_id] = agent_spec.interface
                 if (
                     not history_start_time
-                    or veh_start_times[veh_id] < history_start_time
+                    or veh_missions[veh_id].start_time < history_start_time
                 ):
-                    history_start_time = veh_start_times[veh_id]
+                    history_start_time = veh_missions[veh_id].start_time
 
             for agent_id in agent_interfaces.keys():
                 agent = agent_spec.build_agent()
@@ -209,15 +230,20 @@ def main(
                 dones[agent_id] = False
                 ego_missions[agent_id] = veh_missions[veh_id]
 
-            # and all the other agents to offset their missions by this much too
             scenario.set_ego_missions(ego_missions)
 
             # Take control of vehicles with corresponding agent_ids
             smarts.switch_ego_agents(agent_interfaces)
 
             # Finally start the simulation loop...
+            logger.info(
+                f"mission start times: {[(veh_id, veh_missions[veh_id].start_time) for veh_id in sample]}"
+            )
             logger.info(f"starting simulation loop at: `{history_start_time}`...")
             observations = smarts.reset(scenario, history_start_time)
+            assert math.isclose(
+                smarts.elapsed_sim_time, history_start_time, abs_tol=1.1e-1
+            ), f"{smarts.elapsed_sim_time} != {history_start_time+smarts.timestep_sec}"
             while not all(done for done in dones.values()):
                 actions = {
                     agent_id: agents[agent_id].act(agent_obs)

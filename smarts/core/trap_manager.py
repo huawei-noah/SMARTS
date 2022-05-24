@@ -143,9 +143,11 @@ class TrapManager:
 
     def reset_traps(self, used_traps):
         """Reset all used traps."""
-        logging.warning(
-            "`TrapManager.reset_traps(..)` method has been deprecated in favor of `remove_traps(..)`.  Please update your code.",
-            DeprecationWarning,
+        self._log.warning(
+            "Please update usage: ",
+            exc_info=DeprecationWarning(
+                "`TrapManager.reset_traps(..)` method has been deprecated in favor of `remove_traps(..)`."
+            ),
         )
         self.remove_traps(used_traps)
 
@@ -195,7 +197,7 @@ class TrapManager:
             )
             for v_id in sorted_vehicle_ids:
                 # Skip the capturing process if history traffic is used
-                if sim.scenario.traffic_history is not None:
+                if trap.mission.vehicle_spec is not None:
                     break
 
                 if not trap.includes(v_id):
@@ -244,18 +246,19 @@ class TrapManager:
             elif trap.patience_expired(sim.elapsed_sim_time):
                 # Make sure there is not a vehicle in the same location
                 mission = trap.mission
-                nv_dims = Vehicle.agent_vehicle_dims(mission)
-                new_veh_maxd = max(nv_dims.as_lwh[:2])
-                overlapping = False
-                for pos, largest_dimension, _ in vehicle_comp:
-                    if (
-                        squared_dist(pos, mission.start.position[:2])
-                        <= (0.5 * (largest_dimension + new_veh_maxd)) ** 2
-                    ):
-                        overlapping = True
-                        break
-                if overlapping:
-                    continue
+                if mission.vehicle_spec is None:
+                    nv_dims = Vehicle.agent_vehicle_dims(mission)
+                    new_veh_maxd = max(nv_dims.as_lwh[:2])
+                    overlapping = False
+                    for pos, largest_dimension, _ in vehicle_comp:
+                        if (
+                            squared_dist(pos, mission.start.position[:2])
+                            <= (0.5 * (largest_dimension + new_veh_maxd)) ** 2
+                        ):
+                            overlapping = True
+                            break
+                    if overlapping:
+                        continue
 
                 vehicle = TrapManager._make_vehicle(
                     sim, agent_id, mission, trap.default_entry_speed

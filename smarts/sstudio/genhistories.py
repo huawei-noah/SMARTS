@@ -1,4 +1,4 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,13 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+
 import argparse
 import csv
 import logging
 import math
 import os
 import sqlite3
-import struct
 import sys
 from collections import deque
 from typing import (
@@ -44,6 +44,7 @@ import numpy as np
 import yaml
 
 from smarts.core.coordinates import BoundingBox, Point
+from smarts.core.utils.file import read_tfrecord_file
 from smarts.core.utils.math import (
     circular_mean,
     min_angles_difference_signed,
@@ -825,23 +826,6 @@ class Waymo(_TrajectoryDataset):
     def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
 
-    @staticmethod
-    def read_dataset(path: str) -> Generator[bytes, None, None]:
-        """Iterate over the records in a TFRecord file and return the bytes of each record.
-
-        path: The path to the TFRecord file
-        """
-        with open(path, "rb") as f:
-            while True:
-                length_bytes = f.read(8)
-                if len(length_bytes) != 8:
-                    return
-                record_len = int(struct.unpack("Q", length_bytes)[0])
-                _ = f.read(4)  # masked_crc32_of_length (ignore)
-                record_data = f.read(record_len)
-                _ = f.read(4)  # masked_crc32_of_data (ignore)
-                yield record_data
-
     @property
     def rows(self) -> Generator[Dict, None, None]:
         def lerp(a: float, b: float, t: float) -> float:
@@ -849,7 +833,7 @@ class Waymo(_TrajectoryDataset):
 
         def constrain_angle(angle: float) -> float:
             """Constrain to [-pi, pi]"""
-            angle = angle % (2 * math.pi)
+            angle %= 2 * math.pi
             if angle > math.pi:
                 angle -= 2 * math.pi
             return angle
@@ -862,7 +846,7 @@ class Waymo(_TrajectoryDataset):
 
         # Loop over the scenarios in the TFRecord and check its ID for a match
         scenario = None
-        dataset = Waymo.read_dataset(self._dataset_spec["input_path"])
+        dataset = read_tfrecord_file(self._dataset_spec["input_path"])
         for record in dataset:
             parsed_scenario = scenario_pb2.Scenario()
             parsed_scenario.ParseFromString(bytearray(record))
@@ -886,7 +870,7 @@ class Waymo(_TrajectoryDataset):
                 obj_state = scenario.tracks[i].states[j]
                 vel = np.array([obj_state.velocity_x, obj_state.velocity_y])
 
-                row = {}
+                row = dict()
                 row["valid"] = obj_state.valid
                 row["vehicle_id"] = vehicle_id
                 row["type"] = vehicle_type
@@ -920,8 +904,7 @@ class Waymo(_TrajectoryDataset):
                         continue
 
                     # Interpolate backwards using previous timestep
-                    interp_row = {}
-                    interp_row["sim_time"] = time_expected
+                    interp_row = {"sim_time": time_expected}
 
                     prev_row = rows[j - 1]
                     prev_time = prev_row["sim_time"]
@@ -947,8 +930,7 @@ class Waymo(_TrajectoryDataset):
                         continue
 
                     # Interpolate forwards using next timestep
-                    interp_row = {}
-                    interp_row["sim_time"] = time_expected
+                    interp_row = {"sim_time": time_expected}
 
                     next_row = rows[j + 1]
                     next_time = next_row["sim_time"]
@@ -968,7 +950,7 @@ class Waymo(_TrajectoryDataset):
 
             # Third pass -- filter invalid states, replace interpolated values, convert to ms, constrain angles
             for j in range(num_steps):
-                if rows[j]["valid"] == False:
+                if not rows[j]["valid"]:
                     continue
                 if interp_rows[j] is not None:
                     rows[j]["sim_time"] = interp_rows[j]["sim_time"]
