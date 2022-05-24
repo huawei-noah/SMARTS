@@ -50,7 +50,7 @@ setup(
         # The following are for the /smarts/algorithms
         "matplotlib>=3.2.2",
         # The following are for /smarts/zoo and remote agents
-        "grpcio==1.32.0,<=1.46.1",
+        "grpcio==1.46.1",
         "protobuf>=3.17.3",
         "PyYAML>=3.13",
         "twisted>=21.7.0",
