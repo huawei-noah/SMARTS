@@ -62,7 +62,7 @@ setup(
         "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
         "dev": [
             "black==20.8b1",
-            "grpcio-tools==1.32.0",
+            "grpcio-tools==1.46.1",
             "isort==5.7.0",
             "pre-commit==2.16.0",
             "pylint>=2.12.2",
