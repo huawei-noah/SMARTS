@@ -130,7 +130,7 @@ def train(train_env, config):
     )
 
     train_summary_writer = tf.summary.create_file_writer(
-        logdir=config["logdir"] / "tensorboard"
+        logdir=str(config["logdir"] / "tensorboard")
     )
     train_summary_writer.set_as_default()
     train_metrics = [
