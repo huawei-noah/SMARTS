@@ -20,7 +20,7 @@
 
 
 from shapely.geometry import Polygon
-from typing import Sequence
+from typing import Optional, Sequence
 
 from .provider import Provider
 
@@ -54,7 +54,7 @@ class TrafficProvider(Provider):
         """Set a new route for the given vehicle."""
         raise NotImplementedError
 
-    def vehicle_route(self, vehicle_id: str) -> Sequence[str]:
+    def vehicle_route(self, vehicle_id: str) -> Optional[Sequence[str]]:
         """Get the route of the given vehicle."""
         raise NotImplementedError
 

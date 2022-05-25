@@ -592,10 +592,10 @@ class BubbleManager:
         # XXX: this is not quite right.  route may not be what the agent wants to take.
         route = None
         for traffic_sim in sim.traffic_sims:
-            if traffic_sim.manages_vehicle(vehicle_id):
-                route = traffic_sim.vehicle_route(vehicle_id=vehicle.id)
+            route = traffic_sim.vehicle_route(vehicle_id=vehicle.id)
+            if route is not None:
                 break
-        assert route
+        assert route is not None
         if len(route) > 0:
             goal = PositionalGoal.from_road(route[-1], sim.scenario.road_map)
         else:

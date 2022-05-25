@@ -96,8 +96,9 @@ class SMARTS:
     def __init__(
         self,
         agent_interfaces: Dict[str, AgentInterface],
-        traffic_sim: TrafficProvider = None,  # deprecated:  use traffic_sims instead
-        traffic_sims: Sequence[TrafficProvider] = [],
+        # traffic_sim is deprecated:  use traffic_sims instead
+        traffic_sim: Optional[TrafficProvider] = None,
+        traffic_sims: List[TrafficProvider] = [],
         envision: Optional[EnvisionClient] = None,
         visdom: Optional[VisdomClient] = None,
         fixed_timestep_sec: Optional[float] = 0.1,

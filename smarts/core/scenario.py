@@ -514,13 +514,7 @@ class Scenario:
 
     @staticmethod
     def discover_traffic(scenario_root):
-        """Discover the traffic spec files in the given scenario.
-
-        >>> Scenario.discover_traffic("scenarios/intersections/2lane")
-        ['all.rou.xml', 'horizontal.rou.xml', 'turns.rou.xml', 'unprotected_left.rou.xml', 'vertical.rou.xml']
-        >>> Scenario.discover_traffic("scenarios/loop") # loop does not have any traffic
-        ['basic.rou.xml']
-        """
+        """Discover the traffic spec files in the given scenario."""
         traffic_path = os.path.join(scenario_root, "traffic")
         return sorted(
             [

@@ -762,7 +762,7 @@ class SumoTrafficSimulation(TrafficProvider):
             new_route_edges = route_edges[-1:] + route_edges
             self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
 
-    def vehicle_route(self, vehicle_id) -> Sequence[str]:
+    def vehicle_route(self, vehicle_id) -> Optional[Sequence[str]]:
         if not self.connected:
             return []
         try:

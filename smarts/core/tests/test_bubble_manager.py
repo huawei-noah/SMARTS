@@ -127,9 +127,9 @@ def test_bubble_manager_state_change(smarts, mock_provider):
 
             # XXX: this is necessary because the bubble manager doesn't know
             # XXX: what route to give the agent when it hijacks vehicle.
-            for traffic_sim in sim.traffic_sims:
-                if traffic_sim.manages_vehicle(vehicle_id):
-                    traffic_sim.update_route_for_vehicle(vehicle_id, ["west", "east"])
+            smarts.traffic_sims[0].update_route_for_vehicle(
+                vehicle_id, ["west", "east"]
+            )
 
         got_shadowed = index.vehicle_is_shadowed(vehicle_id)
         got_hijacked = index.vehicle_is_hijacked(vehicle_id)

@@ -24,7 +24,7 @@ import random
 import xml.etree.ElementTree as XET
 from collections import deque
 from functools import lru_cache
-from typing import Any, Dict, List, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 from cached_property import cached_property
@@ -70,7 +70,9 @@ class LocalTrafficProvider(TrafficProvider):
         self.road_map: RoadMap = None
         self._flows: Dict[str, Dict[str, Any]] = dict()
         self._my_actors: Dict[str, _TrafficActor] = dict()
-        self._other_vehicles: Dict[str, VehicleState] = dict()
+        self._other_vehicles: Dict[
+            str, Tuple[VehicleState, Optional[Sequence[str]]]
+        ] = dict()
         self._reserved_areas: Dict[str, Polygon] = dict()
         self._route_lane_lengths: Dict[int, Dict[str, float]] = dict()
         self._actors_created: int = 0
@@ -158,9 +160,20 @@ class LocalTrafficProvider(TrafficProvider):
                 flow["last_added"] = sim_time
 
     @property
+    def _my_actor_states(self) -> List[VehicleState]:
+        return [actor.state for actor in self._my_actors.values()]
+
+    @property
+    def _other_vehicle_states(self) -> List[VehicleState]:
+        return [other for other, _ in self._other_vehicles.values()]
+
+    @property
+    def _all_states(self) -> List[VehicleState]:
+        return self._my_actor_states + self._other_vehicle_states
+
+    @property
     def _provider_state(self) -> ProviderState:
-        actor_states = [actor.state for actor in self._my_actors.values()]
-        return ProviderState(vehicles=actor_states)
+        return ProviderState(vehicles=self._my_actor_states)
 
     def setup(self, scenario: Scenario) -> ProviderState:
         self._scenario = scenario
@@ -177,16 +190,13 @@ class LocalTrafficProvider(TrafficProvider):
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
         self._add_actors_for_time(elapsed_sim_time)
-        for other in self._other_vehicles.values():
+        for other, _ in self._other_vehicles.values():
             if other.vehicle_id in self._reserved_areas:
                 del self._reserved_areas[other.vehicle_id]
         # Do state update in two passes so that we don't use next states in the
         # computations for actors encountered later in the iterator.
-        all_actor_states = list(self._other_vehicles.values()) + [
-            actor.state for actor in self._my_actors.values()
-        ]
         for actor in self._my_actors.values():
-            actor.compute_next_state(dt, all_actor_states)
+            actor.compute_next_state(dt, self._all_states)
         dones = []
         for actor in self._my_actors.values():
             actor.step(dt)
@@ -218,7 +228,7 @@ class LocalTrafficProvider(TrafficProvider):
             if my_actor:
                 my_actor.state = vs
             else:
-                self._other_vehicles[vs.vehicle_id] = vs
+                self._other_vehicles[vs.vehicle_id] = (vs, None)
 
     def reset(self):
         # Unify interfaces with other providers
@@ -248,14 +258,25 @@ class LocalTrafficProvider(TrafficProvider):
 
     def update_route_for_vehicle(self, vehicle_id: str, new_route_roads: Sequence[str]):
         traffic_actor = self._my_actors.get(vehicle_id)
-        assert traffic_actor, f"unknown vehicle_id '{vehicle_id}'"
-        route_id = self._cache_route_lengths(new_route_roads)
-        traffic_actor.update_route(route_id, new_route_roads)
+        if traffic_actor:
+            route_id = self._cache_route_lengths(new_route_roads)
+            traffic_actor.update_route(route_id, new_route_roads)
+            return
+        other = self._other_vehicles.get(vehicle_id)
+        if other:
+            self._other_vehicles[vehicle_id] = (other[0], new_route_roads)
+            return
+        assert False, f"unknown vehicle_id: {vehicle_id}"
 
-    def vehicle_route(self, vehicle_id: str) -> Sequence[str]:
+    def vehicle_route(self, vehicle_id: str) -> Optional[Sequence[str]]:
         traffic_actor = self._my_actors.get(vehicle_id)
-        assert traffic_actor, f"unknown vehicle_id '{vehicle_id}'"
-        return traffic_actor.route
+        if traffic_actor:
+            return traffic_actor.route
+        other = self._other_vehicles.get(vehicle_id)
+        if other:
+            return other[1]
+        assert False, f"unknown vehicle_id: {vehicle_id}"
+        return None
 
 
 # TAI:  inner class?

@@ -44,14 +44,14 @@ def scenarios():
     )
     scenario = Scenario(
         scenario_root="scenarios/loop",
-        traffic_specs=["basic.rou.xml"],
+        traffic_specs=["scenarios/loop/traffic/basic.rou.xml"],
         missions={"Agent-007": mission},
     )
     return cycle([scenario])
 
 
 @pytest.fixture
-def traffic_sim():
+def sumo_traffic_sim():
     return SumoTrafficSimulation(
         headless=True, num_external_sumo_clients=1, sumo_port=SUMO_PORT
     )
