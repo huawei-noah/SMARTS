@@ -168,7 +168,7 @@ class LocalTrafficProvider(TrafficProvider):
         traffic_specs = [
             ts for ts in self._scenario.traffic_specs if ts.endswith(".smarts.xml")
         ]
-        assert len(traffic_specs) == 1
+        assert len(traffic_specs) <= 1
         if traffic_specs:
             self._load_traffic_flows(traffic_specs[0])
         # TAI: is there any point if not?
