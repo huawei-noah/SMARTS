@@ -19,7 +19,7 @@ setup(
     install_requires=[
         "setuptools>=41.0.0,!=50.0",
         "ruamel.yaml==0.17.17",
-        "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@sb3-2",
+        "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@sb3-3",
         "tensorflow==2.8.0",
         "tensorflow-probability==0.16.0",
         "tf-agents[reverb]==0.12.1",
