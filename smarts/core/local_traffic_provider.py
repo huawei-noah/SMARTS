@@ -354,7 +354,7 @@ class _TrafficActor:
 
     def _resolve_flow_speed(self, flow: Dict[str, Any]) -> float:
         depart_speed = flow.get("departSpeed", 0.0)
-        max_speed = float(self._vtype.get("maxSpeed", 55.55))
+        max_speed = float(self._vtype.get("maxSpeed", 55.5))
         if depart_speed == "random":
             return random.random() * max_speed
         elif depart_speed == "max":

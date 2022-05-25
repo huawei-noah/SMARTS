@@ -207,7 +207,7 @@ class TrafficActor(Actor):
     """Driver imperfection within range [0..1]"""
     min_gap: Distribution = Distribution(mean=2.5, sigma=0)
     """Minimum gap (when standing) in meters."""
-    max_speed: float = 55.55
+    max_speed: float = 55.5
     """The vehicle's maximum velocity (in m/s), defaults to 200 km/h for vehicles"""
     vehicle_type: str = "passenger"
     """The configured vehicle type this actor will perform as. ("passenger", "bus", "coach", "truck", "trailer")"""
