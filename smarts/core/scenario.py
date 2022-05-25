@@ -959,7 +959,8 @@ class Scenario:
         return self._road_map
 
     @property
-    def support_sumo_traffic(self) -> bool:
+    def supports_sumo_traffic(self) -> bool:
+        """Returns True if this scenario uses a Sumo road network."""
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
         return isinstance(self._road_map, SumoRoadNetwork)

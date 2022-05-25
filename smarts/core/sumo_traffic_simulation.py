@@ -45,7 +45,7 @@ from traci.exceptions import FatalTraCIError, TraCIException  # isort:skip
 import traci.constants as tc  # isort:skip
 
 
-class SumoTrafficSimulation(Provider):
+class SumoTrafficSimulation(TrafficProvider):
     """
     Args:
         headless:
@@ -551,11 +551,11 @@ class SumoTrafficSimulation(Provider):
         )
         self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
 
-    def update_route_for_vehicle(self, vehicle_id: str, new_route_edges: Sequence[str]):
+    def update_route_for_vehicle(self, vehicle_id: str, new_route_roads: Sequence[str]):
         if not self.connected:
             return
         try:
-            self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
+            self._traci_conn.vehicle.setRoute(vehicle_id, new_route_roads)
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
 

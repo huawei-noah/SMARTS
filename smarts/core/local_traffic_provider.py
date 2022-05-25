@@ -46,6 +46,7 @@ from .utils.math import (
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
+# TODO:  handle "endless_traffic" arg
 # TODO:  "resonance" issues
 # TODO:  add tests to test_traffic_simulation.py
 # TODO:  debug Envision
@@ -54,6 +55,13 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class LocalTrafficProvider(TrafficProvider):
+    """
+    A LocalTrafficProvider simulates multiple traffic actors on a generic RoadMap.
+    Args:
+        endless_traffic:
+            Reintroduce vehicles that exit the simulation.
+    """
+
     def __init__(self, endless_traffic: bool = True):
         self._logger = logging.getLogger(self.__class__.__name__)
         self._endless_traffic: bool = endless_traffic
@@ -252,6 +260,8 @@ class LocalTrafficProvider(TrafficProvider):
 
 # TAI:  inner class?
 class _TrafficActor:
+    """Simulates a vehicle managed by the LocalTrafficProvider."""
+
     def __init__(self, flow: Dict[str, Any], owner: LocalTrafficProvider):
         self._logger = logging.getLogger(self.__class__.__name__)
         self._logger.setLevel(logging.INFO)
@@ -341,21 +351,27 @@ class _TrafficActor:
 
     @property
     def state(self) -> VehicleState:
+        """Returns the current VehicleState for this actor."""
         return self._state
 
     @state.setter
     def state(self, state: VehicleState):
+        """Sets the current VehicleState for this actor."""
         self._state = state
 
     @property
     def actor_id(self) -> str:
+        """A unique id identifying this actor."""
         return self._state.vehicle_id
 
     @property
     def route(self) -> Sequence[str]:
+        """The route (sequence of road_ids) this actor will attempt to take."""
         return self._route
 
     def update_route(self, route_id: int, route: Sequence[str]):
+        """Update the route (sequence of road_ids) this actor will attempt to take.
+        A unique route_id is provided for referencing the route cache in he owner provider."""
         self._route = route
         self._route_id = route_id
         self._dest_lane, self._dest_offset = self._resolve_flow_pos(
@@ -364,30 +380,37 @@ class _TrafficActor:
 
     @property
     def finished_route(self) -> bool:
+        """Returns True iff this vehicle has reached the end of its route."""
         return self._done_with_route
 
     @property
     def lane(self) -> RoadMap.Lane:
+        """Returns the current Lane object."""
         return self._lane
 
     @property
     def road(self) -> RoadMap.Road:
+        """Returns the current Road object."""
         return self._lane.road
 
     @property
     def offset_along_lane(self) -> float:
+        """Returns the current offset along the current Lane object."""
         return self._offset
 
     @property
     def speed(self) -> float:
+        """Returns the current speed."""
         return self._state.speed
 
     @property
     def acceleration(self) -> float:
+        """Returns the current (linear) acceleration."""
         return np.linalg.norm(self._state.linear_acceleration)
 
     @property
     def bbox(self) -> Polygon:
+        """Returns a bounding box around the vehicle."""
         pos = self._state.pose.point
         dims = self._state.dimensions
         poly = shapely_box(
@@ -416,10 +439,12 @@ class _TrafficActor:
 
         @cached_property
         def width(self) -> float:
+            """The width of this lane at its lane_coord."""
             return self.lane.width_at_offset(self.lane_coord.s)[0]
 
         @cached_property
         def radius(self) -> float:
+            """The radius of curvature of this lane at its lane_coord."""
             return self.lane.curvature_radius_at_offset(
                 self.lane_coord.s, lookahead=math.ceil(2 * self.width)
             )
@@ -445,11 +470,15 @@ class _TrafficActor:
         def crossing_time_at_speed(
             self, to_index: int, speed: float, acc: float = 0.0
         ) -> float:
+            """Returns how long it would take to cross from this lane to
+            the lane indexed by to_index given our current speed and acceleration."""
             angle_scale = self._angle_scale(to_index)
             return time_to_cover(angle_scale * self.width, speed, acc)
 
         @lru_cache(maxsize=8)
         def exit_time(self, speed: float, to_index: int, acc: float = 0.0) -> float:
+            """Returns how long it would take to drive into the to_index lane
+            from this lane given our current speed and acceleration."""
             ct = self.crossing_time_at_speed(to_index, speed, acc)
             t = self.lane_coord.t
             pm = (-1 if to_index >= self.lane.index else 1) * np.sign(t)
@@ -703,6 +732,7 @@ class _TrafficActor:
         return PID * max_decel
 
     def compute_next_state(self, dt: float, all_vehicle_states: Sequence[VehicleState]):
+        """Pre-computes the next state for this traffic actor."""
         self._all_vehicle_states = all_vehicle_states
         self._compute_lane_speeds()
 
@@ -722,6 +752,7 @@ class _TrafficActor:
         self._next_pose = Pose.from_center(target_pos, Heading(target_heading))
 
     def step(self, dt: float):
+        """Updates to the pre-computed next state for this traffic actor."""
         self._state.pose = self._next_pose
         self._state.speed = self._next_speed
         self._state.linear_acceleration = self._next_linear_acceleration
