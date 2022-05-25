@@ -625,18 +625,10 @@ class BubbleManager:
         )
 
         # Setup mission (also used for observations)
-        # XXX:  here we try to find where the vehicle was originally going, although
-        # the agent may or may not want to go there too.  But we preserve it
-        # in the plan so when the agent relinquishes control, the next Provider
-        # can resume going there (potentially via a different route at that point).
-        dest_road_id = None
-        for traffic_sim in sim.traffic_sims:
-            if traffic_sim.manages_vehicle(vehicle.id):
-                dest_road_id = traffic_sim.vehicle_dest_road(vehicle.id)
-                if dest_road_id is not None:
-                    break
-        if dest_road_id:
-            goal = PositionalGoal.from_road(dest_road_id, sim.scenario.road_map)
+        # XXX: this is not quite right.  route may not be what the agent wants to take.
+        route = sim.traffic_sim.vehicle_route(vehicle_id=vehicle.id)
+        if len(route) > 0:
+            goal = PositionalGoal.from_road(route[-1], sim.scenario.road_map)
         else:
             goal = EndlessGoal()
         mission = Mission(start=Start(vehicle.position[:2], vehicle.heading), goal=goal)
@@ -645,7 +637,6 @@ class BubbleManager:
     def _start_social_agent(
         self, sim, agent_id, social_agent, social_agent_actor, bubble
     ):
-        social_agent_data_model = SocialAgent(
             id=SocialAgentId.new(social_agent_actor.name),
             name=social_agent_actor.name,
             is_boid=bubble.is_boid,
