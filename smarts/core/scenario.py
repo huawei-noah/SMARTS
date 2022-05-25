@@ -217,12 +217,12 @@ class Scenario:
 
             # `or [None]` so that product(...) will not return an empty result
             # but insted a [(..., `None`), ...].
-            traffic = Scenario.discover_traffic(scenario_root) or [None]
             agent_missions = agent_missions or [None]
             social_agents = social_agents or [None]
             traffic_histories = Scenario.discover_traffic_histories(scenario_root) or [
                 None
             ]
+            traffic = [[ts] for ts in Scenario.discover_traffic(scenario_root)] or [[]]
 
             roll_traffic = 0
             roll_agent_missions = 0
@@ -263,7 +263,7 @@ class Scenario:
 
                 yield Scenario(
                     scenario_root,
-                    traffic_specs=[concrete_traffic],
+                    traffic_specs=concrete_traffic,
                     missions={
                         **(concrete_agent_missions or {}),
                         **concrete_social_agent_missions,
