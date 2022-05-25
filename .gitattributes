@@ -1,58 +1,58 @@
-# Set the default behavior, in case people don't have core.autocrlf set.
-# This should catch all files with no extension or not listed below.
-* text=auto
+# # Set the default behavior, in case people don't have core.autocrlf set.
+# # This should catch all files with no extension or not listed below.
+# * text=auto
 
-# Explicitly declare text files you want to always be normalized and converted
-# to native line endings on checkout.
-*.txt text
-*.py text
-*.md text
-*.rst text
-*.sh text
-*.bash text
-*.js text
-*.json text
-*.css text
-*.ipynb text
-*.xml text
-*.urdf text
-*.yml text
-*.yaml text
-*.proto text
-*.msg text
-*.srv text
-*.launch text
-*.c text
-*.cpp text
-*.h text
-*.hpp text
-*.pl text
-*.vert text
-*.frag text
-*.log text
-*.cfg text
-*.docker text
-Dockerfile* text
-Makefile* text
-MANIFEST.in
-*NOTICE text
+# # Explicitly declare text files you want to always be normalized and converted
+# # to native line endings on checkout.
+# *.txt text
+# *.py text
+# *.md text
+# *.rst text
+# *.sh text
+# *.bash text
+# *.js text
+# *.json text
+# *.css text
+# *.ipynb text
+# *.xml text
+# *.urdf text
+# *.yml text
+# *.yaml text
+# *.proto text
+# *.msg text
+# *.srv text
+# *.launch text
+# *.c text
+# *.cpp text
+# *.h text
+# *.hpp text
+# *.pl text
+# *.vert text
+# *.frag text
+# *.log text
+# *.cfg text
+# *.docker text
+# Dockerfile* text
+# Makefile* text
+# MANIFEST.in
+# *NOTICE text
 
-# Denote all files that are truly binary and should not be modified.
-*.png binary
-*.jpg binary
-*.jpeg binary
-*.gif binary
-*.svg binary
-*.glb binary
-*.blend binary
-*.pkl binary
-*.pdf binary
-*.gz binary
-*.zip binary
-*.tar binary
-*.tgz binary
+# # Denote all files that are truly binary and should not be modified.
+# *.png binary
+# *.jpg binary
+# *.jpeg binary
+# *.gif binary
+# *.svg binary
+# *.glb binary
+# *.blend binary
+# *.pkl binary
+# *.pdf binary
+# *.gz binary
+# *.zip binary
+# *.tar binary
+# *.tgz binary
 
-# Declare files that will always have CRLF line endings on checkout.
-#map.net.xml text eol=crlf
-#*.sln text eol=crlf
+# # Declare files that will always have CRLF line endings on checkout.
+# #map.net.xml text eol=crlf
+# #*.sln text eol=crlf
 
