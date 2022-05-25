@@ -34,8 +34,9 @@ from shapely.geometry import box as shapely_box
 from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose
-from smarts.core.provider import Provider, ProviderRecoveryFlags, ProviderState
+from smarts.core.provider import ProviderRecoveryFlags, ProviderState
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
