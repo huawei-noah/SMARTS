@@ -907,12 +907,12 @@ class Scenario:
         return os.path.join(self._root, "controller_parameters.yaml")
 
     @property
-    def traffic_specs(self) -> List[str]:
+    def traffic_specs(self) -> Sequence[str]:
         """The traffic spec file names to use for this scenario."""
         return self._traffic_specs
 
     @property
-    def route(self) -> str:
+    def route(self) -> Optional[str]:
         """The traffic route file name."""
         warnings.warn(
             "Scenario route property has been deprecated in favor of traffic_specs.  Please update your code.",
