@@ -8,11 +8,10 @@ from merge.util import plotter3d
 class RGB(gym.ObservationWrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
-        old_space = env.observation_space["rgb"]
         self.observation_space = gym.spaces.Box(
             low=0,
             high=255,
-            shape=old_space.shape,
+            shape=env.observation_space["rgb"].shape,
             dtype=np.uint8,
         )
 

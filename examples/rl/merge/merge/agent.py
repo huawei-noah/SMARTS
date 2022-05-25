@@ -1,10 +1,9 @@
 import tensorflow as tf
 from tf_agents.agents.dqn.dqn_agent import DqnAgent
-from tf_agents.utils import common
 
 
 def dqn(env, network, config):
-    train_step_counter = tf.Variable(0)
+    train_step_counter = tf.Variable(0, dtype=tf.int64)
 
     optimizer = tf.keras.optimizers.Adam(
         learning_rate=config["agent_kwargs"]["learning_rate"]
@@ -27,7 +26,7 @@ def dqn(env, network, config):
         td_errors_loss_fn=tf.keras.losses.Huber(reduction="none"),
         gamma=0.99,  # discount factor
         train_step_counter=train_step_counter,
-        epsilon_greedy=lambda : epsilon_fn(train_step_counter),
+        epsilon_greedy=lambda: epsilon_fn(train_step_counter),
         n_step_update=config["agent_kwargs"]["n_step_update"],
     )
 

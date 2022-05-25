@@ -11,7 +11,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
-import gym
 from merge import agent as merge_agent
 from merge import buffer as merge_buffer
 from merge import env as merge_env
@@ -21,7 +20,7 @@ from tf_agents.drivers.dynamic_step_driver import DynamicStepDriver
 from tf_agents.eval.metric_utils import log_metrics
 from tf_agents.metrics import tf_metrics
 from tf_agents.policies.random_tf_policy import RandomTFPolicy
-from tf_agents.utils.common import function, Checkpointer
+from tf_agents.utils.common import Checkpointer, function
 
 warnings.simplefilter("ignore", category=UserWarning)
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -39,6 +38,7 @@ print(f"\nTF version: {tf.version.VERSION}\n")
 
 tf.random.set_seed(42)
 physical_devices = tf.config.list_physical_devices("GPU")
+print("Physical devices:", physical_devices)
 if physical_devices:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
@@ -118,15 +118,16 @@ def run(train_env, eval_env, config: Dict[str, Any]):
     # print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
     # print("\nFinished evaluating.\n")
 
-def train(train_env, config):
+
+def train(env, config):
     # Build agent, network, and replay buffer
-    network = getattr(merge_network, config["network"])(env=train_env)
+    network = getattr(merge_network, config["network"])(env=env)
     agent = getattr(merge_agent, config["agent"])(
-        env=train_env, network=network, config=config
+        env=env, network=network, config=config
     )
     agent.train_step_counter.assign(0)
     replay_buffer, replay_buffer_observer = getattr(merge_buffer, config["buffer"])(
-        env=train_env, agent=agent, config=config
+        env=env, agent=agent, config=config
     )
 
     train_summary_writer = tf.summary.create_file_writer(
@@ -136,38 +137,45 @@ def train(train_env, config):
     train_metrics = [
         tf_metrics.NumberOfEpisodes(),
         tf_metrics.EnvironmentSteps(),
-        tf_metrics.AverageReturnMetric(batch_size=train_env.batch_size),
-        tf_metrics.AverageEpisodeLengthMetric(batch_size=train_env.batch_size),
+        tf_metrics.AverageReturnMetric(batch_size=env.batch_size),
+        tf_metrics.AverageEpisodeLengthMetric(batch_size=env.batch_size),
         tf_metrics.MaxReturnMetric(),
     ]
 
     # Build the driver, and dataset
     collect_driver = DynamicStepDriver(
-        env=train_env,
+        env=env,
         policy=agent.collect_policy,
         observers=[replay_buffer_observer] + train_metrics,
         num_steps=config["driver"][
             "num_steps"
-        ], # collect `num_steps` steps for each training iteration  
+        ],  # collect `num_steps` steps for each iteration
     )
     # Dataset generates trajectories with shape [BxTx...] where
-    # B = `sample_batch_size` and T = `num_steps` = `n_step_update` + 1. Here, 
-    # `n_step_update` is the number of steps to consider when computing TD 
-    # error and TD loss in DqnAgent. 
+    # B = `sample_batch_size` and T = `num_steps` = `n_step_update` + 1. Here,
+    # `n_step_update` is the number of steps to consider when computing TD
+    # error and TD loss in DqnAgent.
     dataset = replay_buffer.as_dataset(
-        sample_batch_size=config["dataset"]["batch_size"], 
-        num_steps=config["agent_kwargs"]["n_step_update"]+1, 
-        num_parallel_calls=3
+        sample_batch_size=config["dataset"]["batch_size"],
+        num_steps=config["agent_kwargs"]["n_step_update"] + 1,
+        num_parallel_calls=3,
     ).prefetch(3)
     iterator = iter(dataset)
 
+    assert (
+        config["driver"]["num_steps"]
+        >= (config["agent_kwargs"]["n_step_update"] + 1)
+        * config["dataset"]["batch_size"],
+        "Driver collects lesser steps than that required for training per iteration.",
+    )
+
     # (Optional) Optimize by wrapping some of the code in a graph using TF function.
-    collect_driver.run = function(collect_driver.run)
-    agent.train = function(agent.train)
+    # collect_driver.run = function(collect_driver.run)
+    # agent.train = function(agent.train)
 
     # Create checkpoint
     train_checkpointer = Checkpointer(
-        ckpt_dir=config["logdir"]/"checkpoint",
+        ckpt_dir=config["logdir"] / "checkpoint",
         max_to_keep=1,
         agent=agent,
         replay_buffer=replay_buffer,
@@ -175,26 +183,27 @@ def train(train_env, config):
         # metrics=metric_utils.MetricsGroup(train_metrics, 'train_metrics')
     )
 
-
-
     # Start training
     for _ in range(config["train"]["iterations"]):
+        print("I HAVE ENETERED THE TRAINING LOOP !!!!!!!!!!!")
         # Collect a few steps using collect_policy and save to the replay buffer.
         collect_driver.run()
 
         # Sample a batch of data from the buffer and update the agent's network.
         trajectories, buffer_info = next(iterator)
         train_loss = agent.train(trajectories)
+        print("Stage 2 !!!!!!!!!!!")
 
         train_step = agent.train_step_counter.numpy()
         train_checkpointer.save(train_step)
+        print("Stage 3 !!!!")
 
         if train_step % config["log_interval"] == 0:
             print(f"step = {train_step}: loss = {train_loss.loss}")
 
         if train_step % config["eval_interval"] == 0:
             print(f"step = {train_step}: Average Return = {2}")
-
+        print("Stage 4 !!!!!!!!!!!")
 
     # for _ in range(n_iterations):
 
@@ -205,7 +214,7 @@ def train(train_env, config):
     #         trajectories, buffer_info = next(iterator)
     #         train_loss = agent.train(trajectories)
     #         print("\r{} loss:{:.5f}".format(
-    #             iteration, train_loss.loss.numpy()), 
+    #             iteration, train_loss.loss.numpy()),
     #             end=""
     #         )
     #         if iteration % 1000 == 0:
@@ -214,11 +223,9 @@ def train(train_env, config):
     return
 
 
-def evaluate(eval_env, config):
+def evaluate(env, config):
     # Restore checkpoint
     train_checkpointer.initialize_or_restore()
-
- 
 
 
 if __name__ == "__main__":

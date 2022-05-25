@@ -4,11 +4,7 @@ from gym.wrappers.frame_stack import FrameStack
 from merge import action as merge_action
 from merge import observation as merge_observation
 from merge import reward as merge_reward
-from tf_agents.environments import (
-    suite_gym,
-    tf_py_environment,
-    validate_py_environment,
-)
+from tf_agents.environments import suite_gym, tf_py_environment, validate_py_environment
 
 
 def make(config: Dict[str, Any]) -> tf_py_environment.TFPyEnvironment:
