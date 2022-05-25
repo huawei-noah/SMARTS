@@ -75,15 +75,15 @@ class SumoTrafficSimulation(Provider):
 
     def __init__(
         self,
-        headless=True,
-        time_resolution=0.1,
-        num_external_sumo_clients=0,
-        sumo_port=None,
-        auto_start=True,
-        endless_traffic=True,
-        allow_reload=True,
-        debug=True,
-        remove_agents_only_mode=False,
+        headless: bool = True,
+        time_resolution: Optional[float] = 0.1,
+        num_external_sumo_clients: int = 0,
+        sumo_port: Optional[int] = None,
+        auto_start: bool = True,
+        endless_traffic: bool = True,
+        allow_reload: bool = True,
+        debug: bool = True,
+        remove_agents_only_mode: bool = False,
     ):
         self._remove_agents_only_mode = remove_agents_only_mode
         self._log = logging.getLogger(self.__class__.__name__)
@@ -265,8 +265,11 @@ class SumoTrafficSimulation(Provider):
         ## See for more information about --route-files
         # https://sumo.dlr.de/docs/Simulation/Basic_Definition.html#traffic_demand_routes
         # https://sumo.dlr.de/docs/sumo.html#loading_order_of_input_files
-        if self._scenario.route_files_enabled:
-            load_params.append("--route-files={}".format(self._scenario.route_filepath))
+        sumo_route_files = [
+            ts for ts in self._scenario.traffic_specs if ts.endswith(".rou.xml")
+        ]
+        if sumo_route_files:
+            load_params.append("--route-files={}".format(",".join(sumo_route_files)))
 
         return load_params
 
@@ -349,7 +352,6 @@ class SumoTrafficSimulation(Provider):
             self._traci_conn.vehicle.remove(vehicle_id)
 
     def teardown(self):
-        """Clean up resources as are needed."""
         self._log.debug("Tearing down SUMO traffic sim %s" % self)
         if not self._is_setup:
             self._log.debug("Nothing to teardown")
@@ -395,12 +397,7 @@ class SumoTrafficSimulation(Provider):
         return ProviderState(), False
 
     def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
-        """
-        Args:
-            dt: time (in seconds) to simulate during this simulation step
-        Returns:
-            ProviderState representing the state of the SUMO simulation
-        """
+        assert not provider_actions
         if not self.connected:
             return ProviderState()
         return self._step(dt)
@@ -554,8 +551,7 @@ class SumoTrafficSimulation(Provider):
         )
         self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
 
-    def update_route_for_vehicle(self, vehicle_id, new_route_edges):
-        """Set a new route for the given vehicle."""
+    def update_route_for_vehicle(self, vehicle_id: str, new_route_edges: Sequence[str]):
         if not self.connected:
             return
         try:
@@ -605,6 +601,9 @@ class SumoTrafficSimulation(Provider):
         return ProviderState(
             vehicles=self._compute_traffic_vehicles(),
         )
+
+    def manages_vehicle(self, vehicle_id: str) -> bool:
+        return vehicle_id in self._sumo_vehicle_ids
 
     def _compute_traffic_vehicles(self) -> List[VehicleState]:
         sub_results = self._traci_conn.simulation.getSubscriptionResults()
@@ -763,7 +762,6 @@ class SumoTrafficSimulation(Provider):
             self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
 
     def vehicle_route(self, vehicle_id) -> Sequence[str]:
-        """Get the route of the given vehicle."""
         if not self.connected:
             return []
         try:
@@ -778,16 +776,9 @@ class SumoTrafficSimulation(Provider):
         vehicle_id: str,
         reserved_location: Polygon,
     ):
-        """Reserve an area around a location where vehicles cannot spawn until a given vehicle
-        is added.
-        Args:
-            vehicle_id: The vehicle to wait for.
-            reserved_location: The space the vehicle takes up.
-        """
         self._reserved_areas[vehicle_id] = reserved_location
 
     def remove_traffic_vehicle(self, vehicle_id: str):
-        """Remove the given vehicle from the traffic simulation."""
         if not self.connected:
             return
         try:

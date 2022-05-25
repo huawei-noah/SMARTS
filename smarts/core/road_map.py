@@ -230,7 +230,7 @@ class RoadMap:
 
         @property
         def speed_limit(self) -> float:
-            """The speed limit on this lane."""
+            """The speed limit on this lane.  May be None if not defined."""
             raise NotImplementedError()
 
         @property
@@ -400,19 +400,24 @@ class RoadMap:
             to compute the curvature, which must be at least 1 to make sense.
             This may return math.inf if the lane is straight."""
             assert lookahead > 1
-            if offset + lookahead > self.length:
-                return math.inf
             prev_heading_rad = None
             heading_deltas = 0.0
+            lane = self
             for i in range(lookahead + 1):
-                vec = self.vector_at_offset(offset + i)[:2]
+                if offset + i > lane.length:
+                    if len(lane.outgoing_lanes) != 1:
+                        break
+                    lane = lane.outgoing_lanes[0]
+                    offset = -i
+                vec = lane.vector_at_offset(offset + i)[:2]
                 heading_rad = vec_to_radians(vec[:2])
                 if prev_heading_rad is not None:
+                    # XXX: things like S curves can cancel out here
                     heading_deltas += min_angles_difference_signed(
                         heading_rad, prev_heading_rad
                     )
                 prev_heading_rad = heading_rad
-            return lookahead / heading_deltas if heading_deltas else math.inf
+            return i / heading_deltas if heading_deltas else math.inf
 
         ## ======== \Reference Methods =========
 

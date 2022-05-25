@@ -161,6 +161,8 @@ class Vehicle:
         self._chassis: Chassis = chassis
         self._vehicle_config_type = vehicle_config_type
         self._action_space = action_space
+        # self._controller_state = TODO
+        # self._sensors_state = TODO
         self._speed = None
 
         self._meta_create_sensor_functions()

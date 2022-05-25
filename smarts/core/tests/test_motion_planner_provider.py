@@ -44,7 +44,7 @@ def loop_scenario():
     )
     scenario = Scenario(
         scenario_root="scenarios/loop",
-        route="basic.rou.xml",
+        traffic_specs=["basic.rou.xml"],
         missions={"Agent-007": mission},
     )
     return scenario

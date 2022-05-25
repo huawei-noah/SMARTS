@@ -61,7 +61,6 @@ def main(
 
     smarts = SMARTS(
         agent_interfaces={},
-        traffic_sim=None,
         envision=envision_client,
     )
     random_seed(seed)

@@ -47,7 +47,7 @@ def _smarts_with_agent(agent) -> SMARTS:
     agents = {AGENT_ID: agent}
     return SMARTS(
         agents,
-        traffic_sim=SumoTrafficSimulation(headless=True),
+        traffic_sims=[SumoTrafficSimulation(headless=True)],
         envision=None,
     )
 
@@ -89,7 +89,7 @@ def scenario():
     )
     scenario = Scenario(
         scenario_root="scenarios/loop",
-        route="basic.rou.xml",
+        traffic_specs=["basic.rou.xml"],
         missions={AGENT_ID: mission},
     )
     return scenario

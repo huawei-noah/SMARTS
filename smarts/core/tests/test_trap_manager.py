@@ -129,7 +129,7 @@ def smarts():
         agent_interfaces={
             AGENT_ID: AgentInterface.from_type(AgentType.Laner, max_episode_steps=30)
         },
-        traffic_sim=SumoTrafficSimulation(time_resolution=0.1),
+        traffic_sims=[SumoTrafficSimulation(time_resolution=0.1)],
     )
     yield smarts_
     smarts_.destroy()
@@ -142,7 +142,7 @@ def smarts_two_agents():
             AGENT_ID: AgentInterface.from_type(AgentType.Laner, max_episode_steps=30),
             AGENT_ID_2: AgentInterface.from_type(AgentType.Laner, max_episode_steps=30),
         },
-        traffic_sim=SumoTrafficSimulation(time_resolution=0.1),
+        traffic_sims=[SumoTrafficSimulation(time_resolution=0.1)],
     )
     yield smarts_
     smarts_.destroy()

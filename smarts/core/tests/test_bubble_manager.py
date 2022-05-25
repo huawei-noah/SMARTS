@@ -76,9 +76,11 @@ def mock_provider():
 def smarts(scenarios, mock_provider, time_resolution):
     smarts_ = SMARTS(
         agent_interfaces={},
-        traffic_sim=SumoTrafficSimulation(
-            time_resolution=time_resolution,
-        ),
+        traffic_sims=[
+            SumoTrafficSimulation(
+                time_resolution=time_resolution,
+            )
+        ],
     )
     smarts_.add_provider(mock_provider)
     smarts_.reset(next(scenarios))
@@ -125,7 +127,9 @@ def test_bubble_manager_state_change(smarts, mock_provider):
 
             # XXX: this is necessary because the bubble manager doesn't know
             # XXX: what route to give the agent when it hijacks vehicle.
-            smarts.traffic_sim.update_route_for_vehicle(vehicle_id, ["west", "east"])
+            for traffic_sim in sim.traffic_sims:
+                if traffic_sim.manages_vehicle(vehicle_id):
+                    traffic_sim.update_route_for_vehicle(vehicle_id, ["west", "east"])
 
         got_shadowed = index.vehicle_is_shadowed(vehicle_id)
         got_hijacked = index.vehicle_is_hijacked(vehicle_id)

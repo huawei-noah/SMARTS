@@ -125,7 +125,7 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
     envision = Envision(output_dir=data_replay_path)
     smarts = SMARTS(
         agent_interfaces={AGENT_ID: agent_spec.interface},
-        traffic_sim=SumoTrafficSimulation(time_resolution=TIMESTEP_SEC),
+        traffic_sims=[SumoTrafficSimulation(time_resolution=TIMESTEP_SEC)],
         envision=envision,
         fixed_timestep_sec=TIMESTEP_SEC,
     )

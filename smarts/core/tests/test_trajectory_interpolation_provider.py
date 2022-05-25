@@ -270,7 +270,7 @@ def agent_spec():
 def smarts(agent_spec):
     smarts = SMARTS(
         agent_interfaces={AGENT_ID: agent_spec.interface},
-        traffic_sim=SumoTrafficSimulation(),
+        traffic_sims=[SumoTrafficSimulation()],
         fixed_timestep_sec=0.1,
     )
     yield smarts

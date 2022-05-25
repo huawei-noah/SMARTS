@@ -13,7 +13,6 @@ The SMARTS class can be instantiated in the following way:
   # Instantiate the simulator
   smarts: SMARTS = SMARTS(
     agent_interfaces={"A-007": AgentInterface.from_type(AgentType.Laner)},
-    traffic_sim=None,
     envision=None if headless else Envision(),
   )
 

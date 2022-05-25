@@ -47,6 +47,7 @@ from .scenario import Mission, Scenario
 from .sensors import Collision, Observation
 from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
+from .traffic_provider import TrafficProvider
 from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
@@ -82,7 +83,7 @@ class SMARTS:
     """The core SMARTS simulator. This is the direct interface to all parts of the simulation.
     Args:
         agent_interfaces: The interfaces providing SMARTS with the understanding of what features each agent needs.
-        traffic_sim: The traffic simulator for providing non-agent traffic.
+        traffic_sims: An optional list of traffic simulators for providing non-agent traffic.
         envision: An envision client for connecting to an envision visualization server.
         visdom: A visdom client for connecting to a visdom visualization server.
         fixed_timestep_sec: The fixed timestep that will be default if time is not otherwise specified at step.
@@ -95,7 +96,8 @@ class SMARTS:
     def __init__(
         self,
         agent_interfaces: Dict[str, AgentInterface],
-        traffic_sim,  # SumoTrafficSimulation
+        traffic_sim: TrafficProvider = None,  # deprecated:  use traffic_sims instead
+        traffic_sims: Sequence[TrafficProvider] = [],
         envision: Optional[EnvisionClient] = None,
         visdom: Optional[VisdomClient] = None,
         fixed_timestep_sec: Optional[float] = 0.1,
@@ -111,7 +113,13 @@ class SMARTS:
         self._renderer = None
         self._envision: Optional[EnvisionClient] = envision
         self._visdom: Optional[VisdomClient] = visdom
-        self._traffic_sim = traffic_sim
+        self._traffic_sims = traffic_sims
+        if traffic_sim:
+            warnings.warn(
+                "SMARTS traffic_sim property has been deprecated in favor of traffic_sims.  Please update your code.",
+                category=DeprecationWarning,
+            )
+            self._traffic_sims += [traffic_sim]
         self._external_provider: ExternalProvider = None
         self._resetting = False
         self._reset_required = False
@@ -139,10 +147,10 @@ class SMARTS:
         self.add_provider(
             self._trajectory_interpolation_provider,
         )
-        if self._traffic_sim:
+        for traffic_sim in self._traffic_sims:
             self._insert_provider(
                 0,
-                self._traffic_sim,
+                traffic_sim,
                 recovery_flags=ProviderRecoveryFlags.EPISODE_REQUIRED
                 | ProviderRecoveryFlags.ATTEMPT_RECOVERY,
             )
@@ -159,6 +167,7 @@ class SMARTS:
         # from .utils.bullet import BulletClient
         # self._bullet_client = BulletClient(pybullet.GUI)
         self._bullet_client = bc.BulletClient(pybullet.DIRECT)
+        # TODO:  rename to "physical_action_spaces"?  (really determines what type of chassis is used for agent...)
         self._dynamic_action_spaces = {
             ActionSpaceType.Continuous,
             ActionSpaceType.Lane,
@@ -167,6 +176,9 @@ class SMARTS:
             ActionSpaceType.Trajectory,
             ActionSpaceType.MPC,
             # ActionSpaceType.Imitation,
+            # ActionSpaceType.TargetPose,
+            # ActionSpaceType.MultiTargetPose,
+            # ActionSpaceType.TrajectoryWithTime,
         }
 
         # Set up indices
@@ -667,8 +679,8 @@ class SMARTS:
             self._bullet_client.resetSimulation()
         if self._renderer is not None:
             self._renderer.teardown()
-        if self._traffic_sim is not None:
-            self._traffic_sim.teardown()
+        for traffic_sim in self._traffic_sims:
+            traffic_sim.teardown()
         self._teardown_providers()
 
         if self._bubble_manager is not None:
@@ -698,9 +710,9 @@ class SMARTS:
             self._agent_manager = None
         if self._vehicle_index is not None:
             self._vehicle_index = None
-        if self._traffic_sim is not None:
-            self._traffic_sim.destroy()
-            self._traffic_sim = None
+        for traffic_sim in self._traffic_sims:
+            traffic_sim.destroy()
+        self._traffic_sims = []
         if self._renderer is not None:
             self._renderer.destroy()
             self._renderer = None
@@ -788,11 +800,19 @@ class SMARTS:
         return self._dynamic_action_spaces
 
     @property
-    def traffic_sim(
-        self,
-    ) -> Optional[SumoTrafficSimulation]:
+    def traffic_sim(self) -> Optional[TrafficProvider]:
         """The underlying traffic simulation."""
-        return self._traffic_sim
+        warnings.warn(
+            "SMARTS traffic_sim property has been deprecated in favor of traffic_sims.  Please update your code.",
+            category=DeprecationWarning,
+        )
+        assert len(self._traffic_sims) <= 1
+        return self._traffic_sims[0] if len(self._traffic_sims) == 1 else None
+
+    @property
+    def traffic_sims(self) -> List[TrafficProvider]:
+        """The underlying traffic simulations."""
+        return self._traffic_sims
 
     @property
     def road_map(self) -> RoadMap:
@@ -937,6 +957,7 @@ class SMARTS:
         for vehicle in self._vehicle_index.vehicles:
             vehicle.step(self._elapsed_sim_time)
 
+    # TODO:  This allows harmonizing agent-controlled state with provider-controlled state
     def _get_provider_state(self, source: str, action_space_pred) -> ProviderState:
         agent_ids = {
             agent_id
@@ -1108,7 +1129,7 @@ class SMARTS:
             except Exception as provider_error:
                 provider_state = self._handle_provider(provider, provider_error)
 
-            if provider == self._traffic_sim:
+            if isinstance(provider, TrafficProvider):
                 # Remove agent vehicles from provider vehicles
                 provider_state.filter(agent_vehicle_ids)
             accumulated_provider_state.merge(provider_state)
@@ -1195,7 +1216,9 @@ class SMARTS:
         assert not self._last_dt or self._last_dt > 0
         return self._last_dt
 
-    def neighborhood_vehicles_around_vehicle(self, vehicle, radius=None):
+    def neighborhood_vehicles_around_vehicle(
+        self, vehicle: Vehicle, radius: Optional[float] = None
+    ) -> List[VehicleState]:
         """Find vehicles in the vicinity of the target vehicle."""
         self._check_valid()
         other_states = [v for v in self._vehicle_states if v.vehicle_id != vehicle.id]

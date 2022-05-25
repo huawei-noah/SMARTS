@@ -54,6 +54,10 @@ class ActionSpaceType(Enum):
     Imitation = 9
 
 
+# TODO:  make part of Vehicle class (or new AgentVehicle class?), keep with controller_state..  except one agent can control multiple vehicles with a single action
+# TODO:  check MotionPlannerProvider to see if vehicles are independent
+# TODO:  Providers provide vehicle *state*.  But then when Agent is *controlling* vehicle, no Provider is responsible, however things still need to be harmonized.  How does it currently work if we're NOT using the MotionPlannerProvider??
+#   TODO:  controllers update state in vehicle and then treated like provider in smarts.py`
 class Controllers:
     """Handles vehicle controller selection."""
 

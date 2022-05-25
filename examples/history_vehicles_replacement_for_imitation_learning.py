@@ -104,7 +104,6 @@ def main(
 
     smarts = SMARTS(
         agent_interfaces={},
-        traffic_sim=None,
         envision=None if headless else Envision(),
     )
     random_seed(seed)

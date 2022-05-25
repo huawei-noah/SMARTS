@@ -159,9 +159,8 @@ class TrafficGenerator:
         """
         random.seed(seed)
 
-        route_path = os.path.join(output_dir, "{}.rou.xml".format(name))
-        route_alt_path = os.path.join(output_dir, "{}.rou.alt.xml".format(name))
-
+        ext = "smarts" if traffic.engine == "SMARTS" else "rou"
+        route_path = os.path.join(output_dir, "{}.{}.xml".format(name, ext))
         if os.path.exists(route_path):
             if self._overwrite:
                 self._log.info(
@@ -171,10 +170,19 @@ class TrafficGenerator:
                 self._log.info(f"Routes at routes={route_path} already exist, skipping")
                 return None
 
+        if traffic.engine == "SMARTS":
+            self._writexml(traffic, route_path)
+            return route_path
+
+        assert (
+            traffic.engine == "SUMO"
+        ), f"Unsupported traffic engine specified: {traffic.engine}"
+
         with tempfile.TemporaryDirectory() as temp_dir:
             trips_path = os.path.join(temp_dir, "trips.trips.xml")
             self._writexml(traffic, trips_path)
 
+            route_alt_path = os.path.join(output_dir, "{}.rou.alt.xml".format(name))
             scenario_name = os.path.basename(os.path.normpath(output_dir))
             log_path = f"{self._log_dir}/{scenario_name}"
             os.makedirs(log_path, exist_ok=True)

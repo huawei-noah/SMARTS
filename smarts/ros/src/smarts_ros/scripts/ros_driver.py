@@ -177,7 +177,7 @@ class ROSDriver:
 
         self._smarts = SMARTS(
             agent_interfaces={},
-            traffic_sim=traffic_sim,
+            traffic_sims=[traffic_sim],
             fixed_timestep_sec=None,
             envision=None if headless else Envision(),
             external_provider=True,
@@ -637,9 +637,11 @@ class ROSDriver:
                 self._most_recent_state_sent = None
                 self._warned_about_freq = False
                 map_spec = self._get_map_spec()
-                routes = Scenario.discover_routes(self._scenario_path) or [None]
+                traffic = Scenario.discover_traffic(self._scenario_path) or [None]
                 return self._smarts.reset(
-                    Scenario(self._scenario_path, map_spec=map_spec, route=routes[0])
+                    Scenario(
+                        self._scenario_path, map_spec=map_spec, traffic_specs=traffic
+                    )
                 )
         return None
 

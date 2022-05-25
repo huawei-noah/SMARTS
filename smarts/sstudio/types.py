@@ -186,16 +186,17 @@ class TrafficActor(Actor):
     explicit that you actually want a car.
     """
 
+    # TODO: consider possible parameters: cutoff_proclivity (or cutoff_target?) and cutoff_aggressiveness
     name: str
     """The name of the traffic actor. It must be unique."""
     accel: float = 2.6
-    """The acceleration value of the actor."""
+    """The maximum acceleration value of the actor (in m/s^2)."""
     decel: float = 4.5
-    """The deceleration value of the actor."""
+    """The maximum deceleration value of the actor (in m/s^2)."""
     tau: float = 1.0
     """The minimum time headway"""
     sigma: float = 0.5
-    """The driver imperfection"""
+    """The driver imperfection"""  # TODO: appears to not b used in generators.py
     depart_speed: Union[float, str] = "max"
     """The starting speed of the actor"""
     emergency_decel: float = 4.5
@@ -203,11 +204,11 @@ class TrafficActor(Actor):
     speed: Distribution = Distribution(mean=1.0, sigma=0.1)
     """The speed distribution of this actor in m/s."""
     imperfection: Distribution = Distribution(mean=0.5, sigma=0)
-    """Imperfection within range [0..1]"""
+    """Driver imperfection within range [0..1]"""
     min_gap: Distribution = Distribution(mean=2.5, sigma=0)
-    """Minimum gap in meters."""
-    max_speed: float = 55.5
-    """The vehicle's maximum velocity (in m/s), defaults 200 km/h for vehicles"""
+    """Minimum gap (when standing) in meters."""
+    max_speed: float = 55.55
+    """The vehicle's maximum velocity (in m/s), defaults to 200 km/h for vehicles"""
     vehicle_type: str = "passenger"
     """The configured vehicle type this actor will perform as. ("passenger", "bus", "coach", "truck", "trailer")"""
     lane_changing_model: LaneChangingModel = field(
@@ -442,6 +443,10 @@ class Traffic:
 
     flows: Sequence[Flow]
     """Flows are used to define a steady supply of vehicles."""
+    # TODO: consider moving TrafficHistory stuff in here (and rename to Trajectory)
+    # TODO:  - treat history points like Vias (no guarantee on history timesteps anyway)
+    engine: str = "SUMO"
+    """The traffic-generation engine to use. Supported values include: SUMO, SMARTS.  SUMO requires using a SumoRoadNetwork for the RoadMap."""
 
 
 @dataclass(frozen=True)

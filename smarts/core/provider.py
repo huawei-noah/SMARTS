@@ -83,7 +83,14 @@ class Provider:
         raise NotImplementedError
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
-        """Progress the provider to generate new vehicle state."""
+        """Progress the provider to generate new vehicle state.
+        Args:
+            actions: one or more valid actions from the supported action_spaces of this provider
+            dt: time (in seconds) to simulate during this simulation step
+            elapsed_sim_time: amount of time (in seconds) that's elapsed so far in the simulation
+        Returns:
+            ProviderState representing the state of all vehicles this manages.
+        """
         raise NotImplementedError
 
     def sync(self, provider_state: ProviderState):
@@ -91,7 +98,7 @@ class Provider:
         raise NotImplementedError
 
     def create_vehicle(self, provider_vehicle: VehicleState):
-        """Create a vehicle within the provider."""
+        """Create a new vehicle within and managed by this provider."""
         raise NotImplementedError
 
     def reset(self):

@@ -25,6 +25,7 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 import smarts
 from envision.client import Client as Envision
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -208,16 +209,21 @@ class RLlibHiWayEnv(MultiAgentEnv):
                 headless=self._headless,
             )
 
+        sumo_traffic = SumoTrafficSimulation(
+            headless=self._sumo_headless,
+            time_resolution=self._fixed_timestep_sec,
+            num_external_sumo_clients=self._num_external_sumo_clients,
+            sumo_port=self._sumo_port,
+            auto_start=self._sumo_auto_start,
+            endless_traffic=self._endless_traffic,
+        )
+        smarts_traffic = LocalTrafficProvider(
+            endless_traffic=self._endless_traffic,
+        )
+
         sim = SMARTS(
             agent_interfaces=agent_interfaces,
-            traffic_sim=SumoTrafficSimulation(
-                headless=self._sumo_headless,
-                time_resolution=self._fixed_timestep_sec,
-                num_external_sumo_clients=self._num_external_sumo_clients,
-                sumo_port=self._sumo_port,
-                auto_start=self._sumo_auto_start,
-                endless_traffic=self._endless_traffic,
-            ),
+            traffic_sims=[sumo_traffic, smarts_traffic],
             envision=envision,
             fixed_timestep_sec=self._fixed_timestep_sec,
         )

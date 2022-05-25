@@ -45,7 +45,7 @@ def scenarios():
     )
     scenario = Scenario(
         scenario_root="scenarios/loop",
-        route="basic.rou.xml",
+        traffic_specs=["basic.rou.xml"],
         missions={"Agent-007": mission},
     )
     return cycle([scenario])
@@ -61,7 +61,7 @@ def smarts():
     agents = {"Agent-007": buddha}
     smarts = SMARTS(
         agents,
-        traffic_sim=SumoTrafficSimulation(headless=True),
+        traffic_sims=[SumoTrafficSimulation(headless=True)],
         envision=None,
     )
 

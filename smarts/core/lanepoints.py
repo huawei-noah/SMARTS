@@ -778,7 +778,7 @@ class LanePoints:
             lookahead:
                 The maximum lanepoints in a branch.
             filter_edge_ids:
-                Blacklisted edge ids.
+                Whiteisted edge ids.
         Returns:
             All branches(as lists) stemming from the lanepoint.
         """

@@ -263,7 +263,7 @@ class AgentInterface:
 
     action: Optional[ActionSpaceType] = None
     """
-    The choice of action space, this action space also decides the controller that will be enabled.
+    The choice of action space; this also decides the controller that will be enabled and the chassis type that will be used.
     """
 
     vehicle_type: str = "sedan"

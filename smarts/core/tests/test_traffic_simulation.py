@@ -27,6 +27,7 @@ import pytest
 
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface
 from smarts.core.coordinates import Heading
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.plan import EndlessGoal, Mission, Start
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
@@ -43,7 +44,7 @@ def scenarios():
     )
     scenario = Scenario(
         scenario_root="scenarios/loop",
-        route="basic.rou.xml",
+        traffic_specs=["basic.rou.xml"],
         missions={"Agent-007": mission},
     )
     return cycle([scenario])
@@ -57,14 +58,19 @@ def traffic_sim():
 
 
 @pytest.fixture
-def smarts(traffic_sim):
+def smarts_traffic_sim():
+    return LocalTrafficProvider(endless_traffic=True)
+
+
+@pytest.fixture
+def smarts(sumo_traffic_sim, smarts_traffic_sim):
     buddha = AgentInterface(
         max_episode_steps=1000,
         neighborhood_vehicles=True,
         action=ActionSpaceType.Lane,
     )
     agents = {"Agent-007": buddha}
-    smarts = SMARTS(agents, traffic_sim=traffic_sim)
+    smarts = SMARTS(agents, traffic_sims=[sumo_traffic_sim, smarts_traffic_sim])
 
     yield smarts
     smarts.destroy()

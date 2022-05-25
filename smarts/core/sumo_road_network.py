@@ -281,7 +281,12 @@ class SumoRoadNetwork(RoadMap):
 
         @cached_property
         def length(self) -> float:
-            return self._sumo_lane.getLength()
+            # self._sumo_lane.getLength() is not accurate
+            length = 0
+            shape = self._sumo_lane.getShape()
+            for p1, p2 in zip(shape, shape[1:]):
+                length += np.linalg.norm(np.array(p2) - np.array(p1))
+            return length
 
         @cached_property
         def _width(self) -> float:
@@ -504,6 +509,7 @@ class SumoRoadNetwork(RoadMap):
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             shape = self._sumo_lane.getShape(False)
             x, y = sumolib.geomhelper.positionAtShapeOffset(shape, lane_point.s)
+            # TODO:  take into account lane_point.t here too
             return Point(x=x, y=y)
 
         @lru_cache(maxsize=8)

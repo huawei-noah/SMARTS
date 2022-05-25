@@ -52,7 +52,7 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
 
     smarts = SMARTS(
         agent_interfaces={},
-        traffic_sim=SumoTrafficSimulation(headless=headless, auto_start=True),
+        traffic_sims=[SumoTrafficSimulation(headless=headless, auto_start=True)],
         envision=None if headless else Envision(),
     )
 

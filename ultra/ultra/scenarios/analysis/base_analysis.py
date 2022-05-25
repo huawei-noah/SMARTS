@@ -313,6 +313,8 @@ class BaseAnalysis:
 
             # only run scenario once
             if scenario_path not in visited_scenario:
+                from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
                 with open(f"{scenario_path}/metadata.json", "r") as metadata_rd:
                     metadata = json.load(metadata_rd)
                 visited_scenario.add(scenario_path)
@@ -368,16 +370,19 @@ class BaseAnalysis:
                         if not stopwatcher_logged:
                             print("stopwatcher detected!")
                             stopwatcher_logged = True
+
                     if (
                         step > (init_time_skip / timestep_sec)
                         and step % int(1 / timestep_sec) == 0
                     ):
-                        for func in custom_traci_functions:
-                            func(
-                                env._smarts.traffic_sim._traci_conn,
-                                simulation_data,
-                                last_step=step,
-                            )
+                        for traffic_sim in env._smarts.traffic_sims:
+                            if isinstance(traffic_sim, SumoTrafficSimultation):
+                                for func in custom_traci_functions:
+                                    func(
+                                        traffic_sim._traci_conn,
+                                        simulation_data,
+                                        last_step=step,
+                                    )
 
                     step += 1
                     episode_time += timestep_sec

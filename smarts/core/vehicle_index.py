@@ -562,14 +562,18 @@ class VehicleIndex:
         new_vehicle.chassis.inherit_physical_values(vehicle.chassis)
 
         # Reserve space inside the traffic sim
-        sim._traffic_sim.reserve_traffic_location_for_vehicle(
-            vehicle.id, vehicle.chassis.to_polygon
-        )
+        for traffic_sim in sim.traffic_sims:
+            if traffic_sim.manages_vehicle(vehicle.id):
+                traffic_sim.reserve_traffic_location_for_vehicle(
+                    vehicle.id, vehicle.chassis.to_polygon
+                )
 
         # Remove the old vehicle
         self.teardown_vehicles_by_vehicle_ids([vehicle.id])
         # HACK: Directly remove the vehicle from the traffic provider
-        sim._traffic_sim.remove_traffic_vehicle(vehicle.id)
+        for traffic_sim in sim.traffic_sims:
+            if traffic_sim.manages_vehicle(vehicle.id):
+                traffic_sim.remove_traffic_vehicle(vehicle.id)
 
         # Take control of the new vehicle
         self._enfranchise_actor(
