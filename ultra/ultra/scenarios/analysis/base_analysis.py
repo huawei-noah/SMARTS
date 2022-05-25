@@ -74,7 +74,7 @@ class DefaultPolicy(Agent):
 class BaseAnalysis:
     def __init__(self):
         self.social_vehicles_states = {}
-        self.social_vehicles_ids = set()
+        self.social_vehicles_ids = {}
         self.finished_social_vehicles_ids = set()
         self.analysis = {}
 
@@ -118,6 +118,7 @@ class BaseAnalysis:
     def get_agent(self, ego, policy, max_episode_steps):
         observation_adapter = None
         if ego:
+            # pytype: disable=name-error
             config = get_agent_config_by_type(policy)
             agent_spec = AgentSpec(
                 interface=config["interface"],
@@ -131,6 +132,7 @@ class BaseAnalysis:
                 timestep_sec=config["env"]["timestep_sec"],
                 **config["other"],
             )
+            # pytype: enable=name-error
         else:
             # Lane Following agent
             agent_spec = AgentSpec(
@@ -376,7 +378,7 @@ class BaseAnalysis:
                         and step % int(1 / timestep_sec) == 0
                     ):
                         for traffic_sim in env._smarts.traffic_sims:
-                            if isinstance(traffic_sim, SumoTrafficSimultation):
+                            if isinstance(traffic_sim, SumoTrafficSimulation):
                                 for func in custom_traci_functions:
                                     func(
                                         traffic_sim._traci_conn,

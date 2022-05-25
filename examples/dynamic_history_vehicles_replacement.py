@@ -121,6 +121,7 @@ def main(
 
         # Create a table of vehicle trajectory lengths, filtering out non-moving vehicles
         vehicle_candidates = []
+        assert scenario.traffic_history
         for v_id in (str(id) for id in scenario.traffic_history.all_vehicle_ids()):
             traj = list(scenario.traffic_history.vehicle_trajectory(v_id))
             # Find moving vehicles with more than the minimum number of timesteps
