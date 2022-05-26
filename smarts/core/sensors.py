@@ -582,6 +582,7 @@ class Sensors:
             for lane in nearest_lane.outgoing_lanes:
                 if lane in route_roads:
                     (False, is_wrong_way)
+                # If outgoing lane is in a junction see if the junction lane leads into current route.
                 if lane.in_junction:
                     for out_lane in lane.outgoing_lanes:
                         if out_lane in route_roads:
