@@ -11,6 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 # [Unreleased]
 
 ### Changed
+- Updated sumo to 1.13.0 to increase stability.
 - Updated license to 2022 version.
 - SMARTS reset now has a start time option which will skip simulation.
 
