@@ -12,12 +12,12 @@ smarts:
   log_interval: 1 # Recomended=100_00.
   checkpoint_interval: 1
   driver:
-    initial_collect_steps: 100
+    initial_steps: 100
     num_steps: 64 # Default=1. Collect `num_steps` steps from env for each iteration.
   dataset:
     batch_size: 32 # Train batch size.
   eval:
-    episodes: 1  
+    episodes: 30  
     interval: 1 # Recomended=100_000. 
 
   # RL algorithm

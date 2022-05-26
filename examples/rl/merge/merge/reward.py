@@ -71,6 +71,11 @@ class Reward(gym.Wrapper):
         #     print(f"ENV: Vehicle went off route.")
         #     return np.float64(reward)
 
+        # Reward for reaching goal
+        if obs["events"]["reached_goal"]:
+            reward += 30
+            print(f"ENV: Hooray! Vehicle reached goal. INTRMDT")
+
         # Reward for distance travelled
         reward += env_reward
 

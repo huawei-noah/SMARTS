@@ -19,6 +19,7 @@ from ruamel.yaml import YAML
 from tf_agents.drivers.dynamic_step_driver import DynamicStepDriver
 from tf_agents.eval.metric_utils import log_metrics
 from tf_agents.metrics import tf_metrics
+from tf_agents.policies.random_tf_policy import RandomTFPolicy
 from tf_agents.utils.common import Checkpointer, function
 
 warnings.simplefilter("ignore", category=UserWarning)
@@ -140,6 +141,15 @@ def train(train_env, eval_env, agent, train_checkpointer, config):
     ]
 
     # Build the driver, and dataset
+    initial_collect_policy = RandomTFPolicy(
+        train_env.time_step_spec(), train_env.action_spec()
+    )
+    initial_driver = DynamicStepDriver(
+        env=train_env,
+        policy=initial_collect_policy,
+        observers=[replay_buffer_observer],
+        num_steps=config["driver"]["initial_steps"], # collect `initial_steps` steps to prefill the buffer with random policy
+    )
     collect_driver = DynamicStepDriver(
         env=train_env,
         policy=agent.collect_policy,
@@ -178,8 +188,9 @@ def train(train_env, eval_env, agent, train_checkpointer, config):
     )
 
     # Start training
-    train_step = 0
-    env_step = 0
+    initial_driver.run()
+    train_step = agent.train_step_counter.numpy()
+    env_step = train_metrics[0].result()
     for _ in range(config["train_iterations"]):
         print(f"Training. Train_step = {train_step}. Env_step = {env_step}.")
 
