@@ -119,32 +119,29 @@ def run(train_env, eval_env, config: Dict[str, Any]):
     # print("\nFinished evaluating.\n")
 
 
-def train(env, config):
+def train(train_env, eval_env, config):
     # Build agent, network, and replay buffer
-    network = getattr(merge_network, config["network"])(env=env)
+    network = getattr(merge_network, config["network"])(env=train_env)
     agent = getattr(merge_agent, config["agent"])(
-        env=env, network=network, config=config
+        env=train_env, network=network, config=config
     )
     agent.train_step_counter.assign(0)
     replay_buffer, replay_buffer_observer = getattr(merge_buffer, config["buffer"])(
-        env=env, agent=agent, config=config
+        env=train_env, agent=agent, config=config
     )
 
-    train_summary_writer = tf.summary.create_file_writer(
-        logdir=str(config["logdir"] / "tensorboard")
-    )
-    train_summary_writer.set_as_default()
+    # Train metrics
     train_metrics = [
         tf_metrics.NumberOfEpisodes(),
         tf_metrics.EnvironmentSteps(),
-        tf_metrics.AverageReturnMetric(batch_size=env.batch_size),
-        tf_metrics.AverageEpisodeLengthMetric(batch_size=env.batch_size),
+        tf_metrics.AverageReturnMetric(batch_size=train_env.batch_size),
+        tf_metrics.AverageEpisodeLengthMetric(batch_size=train_env.batch_size),
         tf_metrics.MaxReturnMetric(),
     ]
 
     # Build the driver, and dataset
     collect_driver = DynamicStepDriver(
-        env=env,
+        env=train_env,
         policy=agent.collect_policy,
         observers=[replay_buffer_observer] + train_metrics,
         num_steps=config["driver"][
@@ -176,56 +173,61 @@ def train(env, config):
     # Create checkpoint
     train_checkpointer = Checkpointer(
         ckpt_dir=config["logdir"] / "checkpoint",
-        max_to_keep=1,
+        max_to_keep=3,
         agent=agent,
-        replay_buffer=replay_buffer,
+        # replay_buffer=replay_buffer,
         global_step=agent.train_step_counter,
         # metrics=metric_utils.MetricsGroup(train_metrics, 'train_metrics')
     )
 
+    # Setup Tensorboard
+    train_summary_writer = tf.summary.create_file_writer(
+        logdir=str(config["logdir"] / "tensorboard")
+    )
+    train_summary_writer.set_as_default()
+
     # Start training
     for _ in range(config["train"]["iterations"]):
-        print("I HAVE ENETERED THE TRAINING LOOP !!!!!!!!!!!")
         # Collect a few steps using collect_policy and save to the replay buffer.
         collect_driver.run()
 
         # Sample a batch of data from the buffer and update the agent's network.
         trajectories, buffer_info = next(iterator)
         train_loss = agent.train(trajectories)
-        print("Stage 2 !!!!!!!!!!!")
 
         train_step = agent.train_step_counter.numpy()
-        train_checkpointer.save(train_step)
-        print("Stage 3 !!!!")
-
         if train_step % config["log_interval"] == 0:
-            print(f"step = {train_step}: loss = {train_loss.loss}")
+            train_checkpointer.save(train_step)
+            print(f"Step = {train_step}. Loss = {train_loss.loss}.")
+        if train_step % config["eval"]["interval"] == 0:
+            evaluate(eval_env, agent.policy, config)
+            print(f"Step = {train_step}. Average Return = {2}.")
 
-        if train_step % config["eval_interval"] == 0:
-            print(f"step = {train_step}: Average Return = {2}")
-        print("Stage 4 !!!!!!!!!!!")
 
-    # for _ in range(n_iterations):
+    # Restore checkpoint
+    # train_checkpointer.initialize_or_restore()
 
-    #     policy_state = agent.collect_policy.get_initial_state(train_env.batch_size)
-
-    #     for iteration in range(n_iterations):
-    #         time_step, policy_state = collect_driver.run(time_step, policy_state)
-    #         trajectories, buffer_info = next(iterator)
-    #         train_loss = agent.train(trajectories)
-    #         print("\r{} loss:{:.5f}".format(
-    #             iteration, train_loss.loss.numpy()),
-    #             end=""
-    #         )
-    #         if iteration % 1000 == 0:
-    #             log_metrics(train_metrics)
 
     return
 
 
-def evaluate(env, config):
-    # Restore checkpoint
-    train_checkpointer.initialize_or_restore()
+def evaluate(eval_env, policy, config):
+    total_return = 0.0
+    for ep in range(config["eval"]["episodes"]):
+        time_step = eval_env.reset()
+        ep_return = 0.0
+        while not time_step.is_last():
+            action_step = policy.action(time_step)
+            time_step = eval_env.step(action_step.action)
+            ep_return += time_step.reward
+
+        print(f"Episode {ep} return: {ep_return.numpy()}")
+        total_return += ep_return
+
+    avg_return = total_return / config["eval"]["episodes"]
+    print(f"Average episode return: {avg_return.numpy()}")
+
+    return avg_return.numpy()
 
 
 if __name__ == "__main__":

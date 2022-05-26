@@ -15,8 +15,9 @@ smarts:
     num_steps: 64 # Default=1. Collect `num_steps` steps from env for each iteration.
   dataset:
     batch_size: 32 # Train batch size.
-  num_eval_episodes: 10  
-  eval_interval: 1 # Recomended=100_000. 
+  eval:
+    episodes: 10  
+    interval: 1 # Recomended=100_000. 
   log_interval: 1 # Recomended=100_00.
 
   # RL algorithm
