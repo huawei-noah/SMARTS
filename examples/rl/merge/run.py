@@ -35,10 +35,9 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 yaml = YAML(typ="safe")
 
 print(f"\nTF version: {tf.version.VERSION}\n")
-
 tf.random.set_seed(42)
 physical_devices = tf.config.list_physical_devices("GPU")
-print("Physical devices:", physical_devices)
+print(f"\nPhysical devices: {physical_devices} \n")
 if physical_devices:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
@@ -138,8 +137,8 @@ def train(train_env, eval_env, config):
 
     # Train metrics
     train_metrics = [
-        tf_metrics.NumberOfEpisodes(),
         tf_metrics.EnvironmentSteps(),
+        tf_metrics.NumberOfEpisodes(),
         tf_metrics.AverageReturnMetric(batch_size=train_env.batch_size),
         tf_metrics.AverageEpisodeLengthMetric(batch_size=train_env.batch_size),
         tf_metrics.MaxReturnMetric(),
@@ -178,7 +177,7 @@ def train(train_env, eval_env, config):
     # Create checkpoint
     train_checkpointer = Checkpointer(
         ckpt_dir=config["logdir"] / "checkpoint",
-        max_to_keep=3,
+        max_to_keep=1,
         agent=agent,
         # replay_buffer=replay_buffer,
         global_step=agent.train_step_counter,
@@ -194,24 +193,29 @@ def train(train_env, eval_env, config):
     )
 
     # Start training
+    train_step = 0
     for _ in range(config["train"]["iterations"]):
+        print(f"Training. Train_step = {train_step}. Env_step = {train_metrics[0].result()}.")
+        
         # Collect a few steps using collect_policy and save to the replay buffer.
         collect_driver.run()
+        train_step = agent.train_step_counter.numpy()
 
         # Sample a batch of data from the buffer and update the agent's network.
         trajectories, buffer_info = next(iterator)
         train_loss = agent.train(trajectories)
-
-        train_step = agent.train_step_counter.numpy()
-        if train_step % config["train"]["checkpoint_interval"] == 0:
-            train_checkpointer.save(gloabl_step=train_step)
+        
+        if train_step % config["checkpoint"]["interval"] == 0:
+            train_checkpointer.save(global_step=train_step)
         if train_step % config["log_interval"] == 0:
             with train_summary_writer.as_default():
                 tf.summary.scalar(
-                    name="reward", data=train_loss.result(), step=train_step
+                    name="train/loss", data=train_loss.loss.numpy(), step=train_metrics[0].result()
                 )
+                for train_metric in train_metrics:
+                    train_metric.tf_summaries(step_metrics=train_metrics[:1])
         if train_step % config["eval"]["interval"] == 0:
-            print("Evaluating. Step = {train_step}.")
+            print(f"Evaluating. Train_step = {train_step}. Env_step = {train_metrics[0].result()}.")
             evaluate(eval_env, agent.policy, train_step, eval_summary_writer, config)
 
     return
@@ -219,7 +223,6 @@ def train(train_env, eval_env, config):
 
 def evaluate(env, policy, step, summary_writer, config):
     total_return = 0.0
-    total_step = 0
     for ep in range(config["eval"]["episodes"]):
         time_step = env.reset()
         ep_return = 0.0
@@ -227,19 +230,18 @@ def evaluate(env, policy, step, summary_writer, config):
             action_step = policy.action(time_step)
             time_step = env.step(action_step.action)
             ep_return += time_step.reward
-            total_step += 1
 
-        print(f"Episode {ep} return: {ep_return.numpy()}")
+        print(f"Eval episode {ep} return: {ep_return.numpy()[0]:.5f}")
         total_return += ep_return
-        with summary_writer.as_default():
-            tf.summary.scalar(
-                name="episode return", data=ep_return.numpy(), step=step + total_step
-            )
 
     avg_return = total_return / config["eval"]["episodes"]
-    print(f"Average episode return: {avg_return.numpy()}")
+    with summary_writer.as_default():
+        tf.summary.scalar(
+            name="eval/episode avg return", data=avg_return.numpy()[0], step=step
+        )
+    print(f"Eval episode avg return: {avg_return.numpy()[0]:.5f}")
 
-    return avg_return.numpy()
+    return
 
 
 if __name__ == "__main__":
