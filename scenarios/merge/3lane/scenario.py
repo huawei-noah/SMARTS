@@ -81,8 +81,8 @@ for name, routes in enumerate(route_comb):
         flows=[
             Flow(
                 route=Route(
-                    begin=("E5", r[0], 0),
-                    end=("E6", r[1], "max"),
+                    begin=("gneE3", r[0], 0),
+                    end=("gneE4", r[1], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
                 rate=60 * random.uniform(8, 15),
@@ -99,7 +99,7 @@ for name, routes in enumerate(route_comb):
         ]
     )
 
-route = Route(begin=("E8", 0, 1), end=("E6", 0, "max"))
+route = Route(begin=("gneE6", 0, 1), end=("gneE4", 2, "max"))
 ego_missions = [
     Mission(
         route=route,
