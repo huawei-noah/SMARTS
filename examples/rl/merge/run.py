@@ -168,9 +168,8 @@ def train(train_env, eval_env, config):
     assert (
         config["driver"]["num_steps"]
         >= (config["agent_kwargs"]["n_step_update"] + 1)
-        * config["dataset"]["batch_size"],
-        "Driver collects lesser steps than that required for training per iteration.",
-    )
+        * config["dataset"]["batch_size"]
+    ), "Driver collects lesser steps than that required for training per iteration."
 
     # (Optional) Optimize by wrapping some of the code in a graph using TF function.
     # collect_driver.run = function(collect_driver.run)
@@ -208,7 +207,9 @@ def train(train_env, eval_env, config):
             train_checkpointer.save(gloabl_step=train_step)
         if train_step % config["log_interval"] == 0:
             with train_summary_writer.as_default():
-                tf.summary.scalar(name='reward', data=train_loss.result(), step=train_step)        
+                tf.summary.scalar(
+                    name="reward", data=train_loss.result(), step=train_step
+                )
         if train_step % config["eval"]["interval"] == 0:
             print("Evaluating. Step = {train_step}.")
             evaluate(eval_env, agent.policy, train_step, eval_summary_writer, config)
@@ -231,7 +232,9 @@ def evaluate(env, policy, step, summary_writer, config):
         print(f"Episode {ep} return: {ep_return.numpy()}")
         total_return += ep_return
         with summary_writer.as_default():
-            tf.summary.scalar(name='episode return', data=ep_return.numpy(), step=step+total_step)        
+            tf.summary.scalar(
+                name="episode return", data=ep_return.numpy(), step=step + total_step
+            )
 
     avg_return = total_return / config["eval"]["episodes"]
     print(f"Average episode return: {avg_return.numpy()}")
