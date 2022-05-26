@@ -99,29 +99,14 @@ def run(train_env, eval_env, config: Dict[str, Any]):
         # model = getattr(sb3lib, config["alg"]).load(
         #     config["model"], print_system_info=True
         # )
-        # model.set_env(env)
-        # merge_util.print_model(model, env, config["alg"])
         # model.learn(
         #     total_timesteps=config["train_steps"],
         #     callback=[checkpoint_callback, eval_callback],
         # )
+        train(train_env, eval_env, agent, config)
     else:
         print("\nStart training from scratch.\n")
         train(train_env, eval_env, config)
-
-    # if config["mode"] == "train":
-    #     save_dir = config["logdir"] / "train"
-    #     save_dir.mkdir(parents=True, exist_ok=True)
-    #     time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    #     model.save(save_dir / ("model_" + time))
-    #     print("\nSaved trained model.\n")
-
-    # print("\nEvaluate policy.\n")
-    # mean_reward, std_reward = evaluate_policy(
-    #     model, eval_env, n_eval_episodes=config["eval_eps"], deterministic=True
-    # )
-    # print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
-    # print("\nFinished evaluating.\n")
 
 
 def train(train_env, eval_env, config):
@@ -194,29 +179,37 @@ def train(train_env, eval_env, config):
 
     # Start training
     train_step = 0
+    env_step = 0
     for _ in range(config["train"]["iterations"]):
-        print(f"Training. Train_step = {train_step}. Env_step = {train_metrics[0].result()}.")
-        
+        print(f"Training. Train_step = {train_step}. Env_step = {env_step}.")
+
         # Collect a few steps using collect_policy and save to the replay buffer.
         collect_driver.run()
         train_step = agent.train_step_counter.numpy()
+        env_step = train_metrics[0].result()
 
         # Sample a batch of data from the buffer and update the agent's network.
         trajectories, buffer_info = next(iterator)
         train_loss = agent.train(trajectories)
-        
+
         if train_step % config["checkpoint"]["interval"] == 0:
-            train_checkpointer.save(global_step=train_step)
+            train_checkpointer.save(global_step=env_step)
         if train_step % config["log_interval"] == 0:
             with train_summary_writer.as_default():
                 tf.summary.scalar(
-                    name="train/loss", data=train_loss.loss.numpy(), step=train_metrics[0].result()
+                    name="train/loss",
+                    data=train_loss.loss.numpy(),
+                    step=env_step,
                 )
                 for train_metric in train_metrics:
                     train_metric.tf_summaries(step_metrics=train_metrics[:1])
         if train_step % config["eval"]["interval"] == 0:
-            print(f"Evaluating. Train_step = {train_step}. Env_step = {train_metrics[0].result()}.")
-            evaluate(eval_env, agent.policy, train_step, eval_summary_writer, config)
+            print(f"Evaluating. Train_step = {train_step}. Env_step = {env_step}.")
+            evaluate(eval_env, agent.policy, env_step, eval_summary_writer, config)
+
+    train_checkpointer.save(global_step=env_step)
+    print(f"Evaluating. Train_step = {train_step}. Env_step = {env_step}.")
+    evaluate(eval_env, agent.policy, env_step, eval_summary_writer, config)
 
     return
 
@@ -231,7 +224,7 @@ def evaluate(env, policy, step, summary_writer, config):
             time_step = env.step(action_step.action)
             ep_return += time_step.reward
 
-        print(f"Eval episode {ep} return: {ep_return.numpy()[0]:.5f}")
+        print(f"Eval episode {ep} return: {ep_return.numpy()[0]:.2f}")
         total_return += ep_return
 
     avg_return = total_return / config["eval"]["episodes"]
@@ -239,7 +232,7 @@ def evaluate(env, policy, step, summary_writer, config):
         tf.summary.scalar(
             name="eval/episode avg return", data=avg_return.numpy()[0], step=step
         )
-    print(f"Eval episode avg return: {avg_return.numpy()[0]:.5f}")
+    print(f"Eval episode avg return: {avg_return.numpy()[0]:.2f}")
 
     return
 
