@@ -46,10 +46,10 @@ from .utils.math import (
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-# TODO:  profile and adjust lru_cache sizes for *all* map types
 # TODO:  debug collisions
 # TODO:  "resonance" issues
 # TODO:  failing pytests
+# TODO:  profile and adjust lru_cache sizes for *all* map types
 # TODO:  add tests to test_traffic_simulation.py
 # TODO:  reserved area tests
 # TODO:  bubble hijacking tests
@@ -57,6 +57,7 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 # TODO:  debug Envision
 # TODO:  left turns across traffic and other intersection stuff!
 # TODO:  reconsider vehicle dims stuff from proposal
+# TODO:  refactor of Providers and Controllers (or remove comments)
 
 
 class LocalTrafficProvider(TrafficProvider):
@@ -79,7 +80,7 @@ class LocalTrafficProvider(TrafficProvider):
             str, Tuple[VehicleState, Optional[Sequence[str]]]
         ] = dict()
         self._reserved_areas: Dict[str, Polygon] = dict()
-        self._route_lane_lengths: Dict[int, Dict[str, float]] = dict()
+        self._route_lane_lengths: Dict[int, Dict[Tuple[str, int], float]] = dict()
         self._actors_created: int = 0
 
     @property
@@ -97,26 +98,26 @@ class LocalTrafficProvider(TrafficProvider):
         # TAI: could pre-cache curvatures here too (like waypoints) ?
         self._route_lane_lengths[route_id] = dict()
 
-        def _backprop_length(bplane: RoadMap.Lane, length: float):
+        def _backprop_length(bplane: RoadMap.Lane, length: float, rind: int):
+            assert rind >= 0
+            rind -= 1
             for il in bplane.incoming_lanes:
                 il = il.composite_lane
-                ill = self._route_lane_lengths[route_id].get(il.lane_id)
+                ill = self._route_lane_lengths[route_id].get((il.lane_id, rind))
                 if ill is not None:
-                    self._route_lane_lengths[route_id][il.lane_id] = ill + length
-                    _backprop_length(il, length)
+                    self._route_lane_lengths[route_id][(il.lane_id, rind)] = (
+                        ill + length
+                    )
+                    _backprop_length(il, length, rind)
 
-        for road_id in route:
+        for r_ind, road_id in enumerate(route):
             road = self.road_map.road_by_id(road_id)
             assert road, f"route road '{road_id}' not found in road map"
             for lane in road.lanes:
                 lane = lane.composite_lane
-                if lane.lane_id in self._route_lane_lengths[route_id]:
-                    self._logger.debug(
-                        f"traffic route has a cycle for scenario:  {route}"
-                    )
-                    break
-                _backprop_length(lane, lane.length)
-                self._route_lane_lengths[route_id][lane.lane_id] = lane.length
+                assert (lane.lane_id, r_ind) not in self._route_lane_lengths[route_id]
+                _backprop_length(lane, lane.length, r_ind)
+                self._route_lane_lengths[route_id][(lane.lane_id, r_ind)] = lane.length
             else:
                 continue
             break
@@ -130,7 +131,7 @@ class LocalTrafficProvider(TrafficProvider):
                     og.road.road_id == route[0]
                     or og.road.composite_road.road_id == route[0]
                 ):
-                    self._route_lane_lengths[route_id][lane.lane_id] += 1
+                    self._route_lane_lengths[route_id][(lane.lane_id, r_ind)] += 1
         return route_id
 
     def _load_traffic_flows(self, traffic_spec: str):
@@ -317,6 +318,7 @@ class _TrafficActor:
         self._vtype: Dict[str, Any] = flow["vtype"]
         self._route: Sequence[str] = flow["route"]
         self._route_id: int = flow["route_id"]
+        self._route_ind: int = 0
         self._done_with_route: bool = False
         self._off_route: bool = False
 
@@ -351,7 +353,9 @@ class _TrafficActor:
     def _resolve_flow_pos(
         self, flow: Dict[str, Any], depart_arrival: str, dimensions: Dimensions
     ) -> Tuple[RoadMap.Lane, float]:
-        base_err = f"scenario traffic specifies flow with invalid route {depart_arrival} point:  "
+        base_err = (
+            f"scenario traffic specifies flow with invalid route {depart_arrival} point"
+        )
         road_id = self._route[0] if depart_arrival == "depart" else self._route[-1]
         road = self._owner.road_map.road_by_id(road_id)
         if not road:
@@ -364,12 +368,12 @@ class _TrafficActor:
         lane = road.lanes[lane_ind]
         offset = flow[f"{depart_arrival}Pos"]
         if offset == "max":
-            offset = road.length
+            offset = lanelength
             if depart_arrival == "depart":
                 offset -= 0.5 * dimensions
         elif offset == "random":
-            offset = random.random() * road.length
-        elif 0 <= float(offset) < road.length:
+            offset = random.random() * lane.length
+        elif 0 <= float(offset) <= lane.length:
             offset = float(offset)
         else:
             raise Exception(
@@ -540,12 +544,28 @@ class _TrafficActor:
             angle_scale = self._angle_scale(to_index)
             return 0.5 * ct + pm * time_to_cover(angle_scale * abs(t), speed, acc)
 
+    def _connected_route_lanes(
+        self,
+        start_lane: RoadMap.Lane,
+        end_lane: RoadMap.Lane,
+        route_lens: Dict[Tuple[str, int], float],
+        r_ind: int,
+    ) -> bool:
+        r_ind += 1
+        for ogl in start_lane.outgoing_lanes:
+            ogl = ogl.composite_lane
+            if ogl == end_lane or (
+                (ogl.lane_id, r_ind) in route_lens
+                and self._connected_route_lanes(ogl, end_lane, route_lens, r_ind)
+            ):
+                return True
+        return False
+
     def _compute_lane_window(self, lane: RoadMap.Lane, next_route_road: RoadMap.Road):
         lane_coord = lane.to_lane_coord(self._state.pose.point)
         my_offset = lane_coord.s
-        path_len = self._owner._route_lane_lengths[self._route_id].get(
-            lane.lane_id, lane.length
-        )
+        my_route_lens = self._owner._route_lane_lengths[self._route_id]
+        path_len = my_route_lens.get((lane.lane_id, self._route_ind), lane.length)
         path_len -= my_offset
         lane_time_left = path_len / self.speed
 
@@ -561,19 +581,31 @@ class _TrafficActor:
             )
             if not ov_lane:
                 continue
-            ov_lane = ov_lane.composite_lane
-            # TODO: will eventually want to look beyond the end of this road on route... (matter of scaling)
-            #    - vehicles within distance along route (both before and after)
-            #        - compute route distance between all vehicle pairs?  expensive!!
-            #            - TAI:  since route distance always >= euclidian distance, use euclidian to filter first...
-            #        - iterate roads on route and check other vehicle roads, OR when vehicle road changes get others
-            # TODO: should also handle when front/back-end is in a different lane (while changing lanes)
-            #        - could get position of front/rear bumper and then use nearest_lane, but this is expensive
-            if ov_lane != lane:
-                continue
 
-            ov_ttc = ov_ttre = math.inf
-            ov_offset = lane.offset_along_lane(ovs.pose.point)
+            ov_lane = ov_lane.composite_lane
+            if ov_lane == lane:
+                ov_ttc = ov_ttre = math.inf
+                ov_offset = lane.offset_along_lane(ovs.pose.point)
+            else:
+                for rind in range(self._route_ind + 1, len(self._route)):
+                    ov_route_len = my_route_lens.get((ov_lane.lane_id, self._route_ind))
+                    if ov_route_len:
+                        break
+                else:
+                    continue
+                if ov_route_len < path_len:
+                    connected = self._connected_route_lanes(
+                        lane, ov_lane, my_route_lens, self._route_ind
+                    )
+                else:
+                    connected = self._connected_route_lanes(
+                        ov_lane, lane, my_route_lens, self._route_ind
+                    )
+                if not connected:
+                    continue
+                ov_offset = ov_lane.offset_along_lane(ovs.pose.point)
+                ov_offset += my_offset + (path_len - ov_route_len)
+
             ov_front_offset = ov_offset + 0.5 * ovs.dimensions.length
             ov_back_offset = ov_offset - 0.5 * ovs.dimensions.length
 
@@ -811,6 +843,7 @@ class _TrafficActor:
         self._state.pose = self._next_pose
         self._state.speed = self._next_speed
         self._state.linear_acceleration = self._next_linear_acceleration
+        prev_road_id = self._lane.road.road_id
 
         # if there's more than one lane near us (like in a junction) pick one that's in our route
         nls = self._owner.road_map.nearest_lanes(
@@ -832,6 +865,10 @@ class _TrafficActor:
         # TODO:  eventually just remove vehicles that drive off road?
         assert self._lane, f"actor {self.actor_id} out-of-lane:  {self._next_pose}"
         self._lane = self._lane.composite_lane
+
+        road_id = self._lane.road.road_id
+        if road_id != prev_road_id:
+            self._route_ind += 1
 
         self._offset = self._lane.offset_along_lane(self._next_pose.point)
         if self._lane == self._dest_lane and self._offset >= self._dest_offset:

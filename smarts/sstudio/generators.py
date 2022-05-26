@@ -309,6 +309,8 @@ class TrafficGenerator:
         return road_map
 
     def _fill_in_gaps(self, route: types.Route) -> types.Route:
+        # TODO:  do this at runtime so each vehicle on the flow can take a different variation of the route ?
+        # TODO:  or do it like SUMO and generate a huge *.rou.xml file instead ?
         road_map = self._map_for_route(route)
         start_road = road_map.road_by_id(route.begin[0])
         end_road = road_map.road_by_id(route.end[0])
