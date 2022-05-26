@@ -88,7 +88,13 @@ def main(args: argparse.Namespace):
 def run(train_env, eval_env, config: Dict[str, Any]):
     if config["mode"] == "evaluate":
         print("\nStart evaluation.\n")
-        evaluate(eval_env, config)
+        eval_step = tf.Variable(0, dtype=tf.int64)
+        eval_summary_writer = tf.summary.create_file_writer(
+            logdir=str(config["logdir"] / "tensorboard" / "eval")
+        )
+        # Restore checkpoint
+        # train_checkpointer.initialize_or_restore()
+        evaluate(eval_env, policy, eval_step, eval_summary_writer, config)
     elif config["mode"] == "train" and config.get("model", None):
         print("\nStart training from an existing model.\n")
         # model = getattr(sb3lib, config["alg"]).load(
@@ -102,7 +108,7 @@ def run(train_env, eval_env, config: Dict[str, Any]):
         # )
     else:
         print("\nStart training from scratch.\n")
-        train(train_env, config)
+        train(train_env, eval_env, config)
 
     # if config["mode"] == "train":
     #     save_dir = config["logdir"] / "train"
@@ -182,9 +188,11 @@ def train(train_env, eval_env, config):
 
     # Setup Tensorboard
     train_summary_writer = tf.summary.create_file_writer(
-        logdir=str(config["logdir"] / "tensorboard")
+        logdir=str(config["logdir"] / "tensorboard" / "train")
     )
-    train_summary_writer.set_as_default()
+    eval_summary_writer = tf.summary.create_file_writer(
+        logdir=str(config["logdir"] / "tensorboard" / "eval")
+    )
 
     # Start training
     for _ in range(config["train"]["iterations"]):
@@ -196,33 +204,34 @@ def train(train_env, eval_env, config):
         train_loss = agent.train(trajectories)
 
         train_step = agent.train_step_counter.numpy()
+        if train_step % config["train"]["checkpoint_interval"] == 0:
+            train_checkpointer.save(gloabl_step=train_step)
         if train_step % config["log_interval"] == 0:
-            train_checkpointer.save(train_step)
-            print(f"Step = {train_step}. Loss = {train_loss.loss}.")
+            with train_summary_writer.as_default():
+                tf.summary.scalar(name='reward', data=train_loss.result(), step=train_step)        
         if train_step % config["eval"]["interval"] == 0:
-            evaluate(eval_env, agent.policy, config)
-            print(f"Step = {train_step}. Average Return = {2}.")
-
-
-    # Restore checkpoint
-    # train_checkpointer.initialize_or_restore()
-
+            print("Evaluating. Step = {train_step}.")
+            evaluate(eval_env, agent.policy, train_step, eval_summary_writer, config)
 
     return
 
 
-def evaluate(eval_env, policy, config):
+def evaluate(env, policy, step, summary_writer, config):
     total_return = 0.0
+    total_step = 0
     for ep in range(config["eval"]["episodes"]):
-        time_step = eval_env.reset()
+        time_step = env.reset()
         ep_return = 0.0
         while not time_step.is_last():
             action_step = policy.action(time_step)
-            time_step = eval_env.step(action_step.action)
+            time_step = env.step(action_step.action)
             ep_return += time_step.reward
+            total_step += 1
 
         print(f"Episode {ep} return: {ep_return.numpy()}")
         total_return += ep_return
+        with summary_writer.as_default():
+            tf.summary.scalar(name='episode return', data=ep_return.numpy(), step=step+total_step)        
 
     avg_return = total_return / config["eval"]["episodes"]
     print(f"Average episode return: {avg_return.numpy()}")
@@ -259,8 +268,5 @@ if __name__ == "__main__":
 
     if args.mode == "evaluate" and args.model is None:
         raise Exception("When --mode=evaluate, --model option must be specified.")
-
-    # from gym import envs
-    # print(envs.registry.all())
 
     main(args)
