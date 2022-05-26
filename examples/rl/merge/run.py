@@ -19,7 +19,6 @@ from ruamel.yaml import YAML
 from tf_agents.drivers.dynamic_step_driver import DynamicStepDriver
 from tf_agents.eval.metric_utils import log_metrics
 from tf_agents.metrics import tf_metrics
-from tf_agents.policies.random_tf_policy import RandomTFPolicy
 from tf_agents.utils.common import Checkpointer, function
 
 warnings.simplefilter("ignore", category=UserWarning)
@@ -66,10 +65,11 @@ def main(args: argparse.Namespace):
     # Setup model.
     if (config["mode"] == "train" and args.model) or (config["mode"] == "evaluate"):
         # Begin training or evaluation from a pre-trained agent.
-        config["model"] = args.model
-        print("\nModel:", config["model"], "\n")
+        config["checkpoint_dir"] = args.model
+        print("\nCheckpoint directory:", config["checkpoint_dir"], "\n")
     elif config["mode"] == "train" and not args.model:
         # Begin training from scratch.
+        config["checkpoint_dir"] = config["logdir"] / "checkpoint"
         pass
     else:
         raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
@@ -85,37 +85,47 @@ def main(args: argparse.Namespace):
 
 
 def run(train_env, eval_env, config: Dict[str, Any]):
+
+    # Build agent, and network
+    network = getattr(merge_network, config["network"])(env=train_env)
+    agent = getattr(merge_agent, config["agent"])(
+        env=train_env, network=network, config=config
+    )
+    agent.train_step_counter.assign(0)
+
+    # Create or restore checkpoint
+    train_checkpointer = Checkpointer(
+        ckpt_dir=config["checkpoint_dir"],
+        max_to_keep=1,
+        agent=agent,
+    )
+    train_checkpointer.initialize_or_restore()
+
+    # Train, re-train, or evaluate
     if config["mode"] == "evaluate":
         print("\nStart evaluation.\n")
         eval_step = tf.Variable(0, dtype=tf.int64)
         eval_summary_writer = tf.summary.create_file_writer(
             logdir=str(config["logdir"] / "tensorboard" / "eval")
         )
-        # Restore checkpoint
-        # train_checkpointer.initialize_or_restore()
-        evaluate(eval_env, policy, eval_step, eval_summary_writer, config)
+        evaluate(
+            env=eval_env,
+            policy=agent.policy,
+            step=eval_step,
+            summary_writer=eval_summary_writer,
+            config=config,
+        )
     elif config["mode"] == "train" and config.get("model", None):
         print("\nStart training from an existing model.\n")
-        # model = getattr(sb3lib, config["alg"]).load(
-        #     config["model"], print_system_info=True
-        # )
-        # model.learn(
-        #     total_timesteps=config["train_steps"],
-        #     callback=[checkpoint_callback, eval_callback],
-        # )
-        train(train_env, eval_env, agent, config)
+        train(train_env, eval_env, agent, train_checkpointer, config)
     else:
         print("\nStart training from scratch.\n")
-        train(train_env, eval_env, config)
+        train(train_env, eval_env, agent, train_checkpointer, config)
 
 
-def train(train_env, eval_env, config):
-    # Build agent, network, and replay buffer
-    network = getattr(merge_network, config["network"])(env=train_env)
-    agent = getattr(merge_agent, config["agent"])(
-        env=train_env, network=network, config=config
-    )
-    agent.train_step_counter.assign(0)
+def train(train_env, eval_env, agent, train_checkpointer, config):
+
+    # Build replay buffer
     replay_buffer, replay_buffer_observer = getattr(merge_buffer, config["buffer"])(
         env=train_env, agent=agent, config=config
     )
@@ -159,17 +169,7 @@ def train(train_env, eval_env, config):
     # collect_driver.run = function(collect_driver.run)
     # agent.train = function(agent.train)
 
-    # Create checkpoint
-    train_checkpointer = Checkpointer(
-        ckpt_dir=config["logdir"] / "checkpoint",
-        max_to_keep=1,
-        agent=agent,
-        # replay_buffer=replay_buffer,
-        global_step=agent.train_step_counter,
-        # metrics=metric_utils.MetricsGroup(train_metrics, 'train_metrics')
-    )
-
-    # Setup Tensorboard
+    # Setup tensorboard
     train_summary_writer = tf.summary.create_file_writer(
         logdir=str(config["logdir"] / "tensorboard" / "train")
     )
@@ -180,7 +180,7 @@ def train(train_env, eval_env, config):
     # Start training
     train_step = 0
     env_step = 0
-    for _ in range(config["train"]["iterations"]):
+    for _ in range(config["train_iterations"]):
         print(f"Training. Train_step = {train_step}. Env_step = {env_step}.")
 
         # Collect a few steps using collect_policy and save to the replay buffer.
@@ -192,8 +192,8 @@ def train(train_env, eval_env, config):
         trajectories, buffer_info = next(iterator)
         train_loss = agent.train(trajectories)
 
-        if train_step % config["checkpoint"]["interval"] == 0:
-            train_checkpointer.save(global_step=env_step)
+        if train_step % config["checkpoint_interval"] == 0:
+            train_checkpointer.save(global_step=train_step)
         if train_step % config["log_interval"] == 0:
             with train_summary_writer.as_default():
                 tf.summary.scalar(
@@ -205,18 +205,31 @@ def train(train_env, eval_env, config):
                     train_metric.tf_summaries(step_metrics=train_metrics[:1])
         if train_step % config["eval"]["interval"] == 0:
             print(f"Evaluating. Train_step = {train_step}. Env_step = {env_step}.")
-            evaluate(eval_env, agent.policy, env_step, eval_summary_writer, config)
+            evaluate(
+                env=eval_env,
+                policy=agent.policy,
+                step=env_step,
+                summary_writer=eval_summary_writer,
+                config=config,
+            )
 
-    train_checkpointer.save(global_step=env_step)
+    # Finally, save a checkpoint and evaluate the final model.
+    train_checkpointer.save(global_step=train_step)
     print(f"Evaluating. Train_step = {train_step}. Env_step = {env_step}.")
-    evaluate(eval_env, agent.policy, env_step, eval_summary_writer, config)
+    evaluate(
+        env=eval_env,
+        policy=agent.policy,
+        step=env_step,
+        summary_writer=eval_summary_writer,
+        config=config,
+    )
 
     return
 
 
 def evaluate(env, policy, step, summary_writer, config):
     total_return = 0.0
-    for ep in range(config["eval"]["episodes"]):
+    for _ in range(config["eval"]["episodes"]):
         time_step = env.reset()
         ep_return = 0.0
         while not time_step.is_last():
@@ -224,7 +237,7 @@ def evaluate(env, policy, step, summary_writer, config):
             time_step = env.step(action_step.action)
             ep_return += time_step.reward
 
-        print(f"Eval episode {ep} return: {ep_return.numpy()[0]:.2f}")
+        # print(f"Eval episode {ep} return: {ep_return.numpy()[0]:.2f}")
         total_return += ep_return
 
     avg_return = total_return / config["eval"]["episodes"]
