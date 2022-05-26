@@ -575,6 +575,10 @@ class Sensors:
             if on_lane.road in route_roads:
                 return (False, is_wrong_way)
 
+        for lanes in nearest_lane.incoming_lanes:
+            if on_lane in lanes:
+                return (False, is_wrong_way)
+
         # Vehicle is completely off-route
         return (True, is_wrong_way)
 
