@@ -576,19 +576,16 @@ class Sensors:
                 return (False, is_wrong_way)
 
         # Check for case if there was an early merge into another incoming lane. This means the
-        # vehicle should still be following the lane direction.
+        # vehicle should still be following the lane direction to be valid as still on route.
         if not is_wrong_way:
-            for lanes in nearest_lane.outgoing_lanes:
-                for lane in lanes:
-                    if lane.in_junction:
-                        for out_lane in lane.outgoing_lanes:
-                            if out_lane in route_roads:
-                                break
-                        else:
-                            continue
-                    if not lane in route_roads:
-                        continue
-                    return (True, is_wrong_way)
+            # See if the lane leads into the current route
+            for lane in nearest_lane.outgoing_lanes:
+                if lane in route_roads:
+                    (False, is_wrong_way)
+                if lane.in_junction:
+                    for out_lane in lane.outgoing_lanes:
+                        if out_lane in route_roads:
+                            return (False, is_wrong_way)
 
         # Vehicle is completely off-route
         return (True, is_wrong_way)
