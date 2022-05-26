@@ -60,7 +60,7 @@ def test_sumo_map(sumo_scenario):
     assert lane.index == 0
     assert lane.road.contains_point(point)
     assert lane.is_drivable
-    assert lane.length == 55.6
+    assert round(lane.length, 4) == 55.6
 
     right_lane, direction = lane.lane_to_right
     assert not right_lane
@@ -140,8 +140,9 @@ def test_sumo_map(sumo_scenario):
     for r2lane in r2.lanes:
         if r2lane.index == 1:
             assert any(
-                r2lane == cand[0] and math.isclose(cand[1], 53.6) for cand in cands
-            )
+                r2lane == cand[0] and math.isclose(cand[1], 53.6059606)
+                for cand in cands
+            ), cands
 
 
 def test_opendrive_map_4lane(opendrive_scenario_4lane):

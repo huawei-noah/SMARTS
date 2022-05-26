@@ -32,7 +32,7 @@ def time_to_cover(dist: float, speed: float, acc: float = 0.0) -> float:
     """
     if dist == 0:
         return 0
-    if acc == 0:
+    if abs(acc) < 1e9:
         if speed == 0:
             return math.inf
         t = dist / speed

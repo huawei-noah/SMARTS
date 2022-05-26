@@ -370,7 +370,7 @@ def _gen_missions(
         route = getattr(mission, "route", None)
         kwargs = {}
         if route:
-            kwargs["route"] = generator.resolve_route(route)
+            kwargs["route"] = generator.resolve_route(route, False)
 
         via = getattr(mission, "via", ())
         if via != ():

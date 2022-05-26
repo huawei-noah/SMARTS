@@ -123,6 +123,7 @@ clean:
 	rm -f ./$(scenario)/flamegraph.html
 	rm -f ./$(scenario)/*.rou.xml
 	rm -f ./$(scenario)/*.rou.alt.xml
+	rm -f ./$(scenario)/*.smarts.xml
 	rm -rf ./$(scenario)/traffic
 	rm -rf ./$(scenario)/social_agents
 	rm -f .coverage.*

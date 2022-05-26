@@ -479,7 +479,7 @@ class SumoRoadNetwork(RoadMap):
                 abs(lane_point.t) <= self._width / 2 and 0 <= lane_point.s < self.length
             )
 
-        @lru_cache(maxsize=8)
+        @lru_cache(maxsize=64)
         def offset_along_lane(self, world_point: Point) -> float:
             shape = self._sumo_lane.getShape(False)
             point = world_point[:2]
@@ -505,14 +505,23 @@ class SumoRoadNetwork(RoadMap):
         ) -> Set[Tuple[RoadMap.Lane, float]]:
             return super().project_along(start_offset, distance)
 
-        @lru_cache(maxsize=8)
+        @lru_cache(maxsize=64)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             shape = self._sumo_lane.getShape(False)
             x, y = sumolib.geomhelper.positionAtShapeOffset(shape, lane_point.s)
-            # TODO:  take into account lane_point.t here too
+            if lane_point.t != 0:
+                dv = 1 if lane_point.s < self.length else -1
+                x2, y2 = sumolib.geomhelper.positionAtShapeOffset(
+                    shape, lane_point.s + dv
+                )
+                dx = dv * (x2 - x)
+                dy = dv * (y2 - y)
+                dd = lane_point.t / np.linalg.norm((dx, dy))
+                x -= dy * dd
+                y += dx * dd
             return Point(x=x, y=y)
 
-        @lru_cache(maxsize=8)
+        @lru_cache(maxsize=64)
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
             return super().to_lane_coord(world_point)
 
@@ -536,7 +545,7 @@ class SumoRoadNetwork(RoadMap):
             right_edge = RefLinePoint(s=offset, t=-width / 2)
             return self.from_lane_coord(left_edge), self.from_lane_coord(right_edge)
 
-        @lru_cache(8)
+        @lru_cache(64)
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
             return super().vector_at_offset(start_offset)
 
@@ -544,7 +553,7 @@ class SumoRoadNetwork(RoadMap):
         def center_pose_at_point(self, point: Point) -> Pose:
             return super().center_pose_at_point(point)
 
-        @lru_cache(maxsize=8)
+        @lru_cache(maxsize=64)
         def curvature_radius_at_offset(
             self, offset: float, lookahead: int = 5
         ) -> float:
@@ -703,7 +712,7 @@ class SumoRoadNetwork(RoadMap):
         self._surfaces[road_id] = road
         return road
 
-    @lru_cache(maxsize=16)
+    @lru_cache(maxsize=64)
     def nearest_lanes(
         self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> List[Tuple[RoadMap.Lane, float]]:

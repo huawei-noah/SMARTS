@@ -51,16 +51,6 @@ class RandomRouteGenerator:
         self._log = logging.getLogger(self.__class__.__name__)
         self._road_map = road_map
 
-    @classmethod
-    def from_spec(cls, map_spec: types.MapSpec):
-        """Constructs a route generator from the given map spec
-
-        Args:
-            map_spec: An instance of types.MapSpec specifying a map location
-        """
-        road_map, _ = map_spec.builder_fn(map_spec)
-        return cls(road_map)
-
     def __iter__(self):
         return self
 
@@ -171,7 +161,7 @@ class TrafficGenerator:
                 return None
 
         if traffic.engine == "SMARTS":
-            self._writexml(traffic, route_path)
+            self._writexml(traffic, True, route_path)
             return route_path
 
         assert (
@@ -180,7 +170,7 @@ class TrafficGenerator:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             trips_path = os.path.join(temp_dir, "trips.trips.xml")
-            self._writexml(traffic, trips_path)
+            self._writexml(traffic, False, trips_path)
 
             route_alt_path = os.path.join(output_dir, "{}.rou.alt.xml".format(name))
             scenario_name = os.path.basename(os.path.normpath(output_dir))
@@ -208,7 +198,9 @@ class TrafficGenerator:
 
         return route_path
 
-    def _writexml(self, traffic: types.Traffic, route_path: str):
+    def _writexml(
+        self, traffic: types.Traffic, fill_in_route_gaps: bool, route_path: str
+    ):
         """Writes a traffic spec into a route file. Typically this would be the source
         data to Sumo's DUAROUTER.
         """
@@ -245,7 +237,7 @@ class TrafficGenerator:
             # `Route`) so that we can write them all to file.
             resolved_routes = {}
             for route in {flow.route for flow in traffic.flows}:
-                resolved_routes[route] = self.resolve_route(route)
+                resolved_routes[route] = self.resolve_route(route, fill_in_route_gaps)
 
             for route in set(resolved_routes.values()):
                 doc.stag("route", id=route.id, edges=" ".join(route.roads))
@@ -300,7 +292,37 @@ class TrafficGenerator:
         lane = self._road_network.road_by_id(edge_id).lanes[lane_idx]
         return lane.length
 
-    def resolve_route(self, route):
+    def _map_for_route(self, route) -> RoadMap:
+        map_spec = route.map_spec
+        if not map_spec:
+            # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
+            lp_spacing = 2.0
+            if self._scenario_map_spec:
+                map_spec = replace(
+                    self._scenario_map_spec, lanepoint_spacing=lp_spacing
+                )
+            else:
+                map_spec = types.MapSpec(
+                    self._road_network_path, lanepoint_spacing=lp_spacing
+                )
+        road_map, _ = map_spec.builder_fn(map_spec)
+        return road_map
+
+    def _fill_in_gaps(self, route: types.Route) -> types.Route:
+        road_map = self._map_for_route(route)
+        start_road = road_map.road_by_id(route.begin[0])
+        end_road = road_map.road_by_id(route.end[0])
+        vias = [road_map.road_by_id(via) for via in route.via]
+        routes = road_map.generate_routes(start_road, end_road, vias)
+        if not routes:
+            raise InvalidRoute(
+                "Could not find route that starts at {route.begin[0]}, ends at {route.end[0]} and includes {route.vias}."
+            )
+        return replace(
+            route, via=tuple((road.road_id for road in routes[0].roads[1:-1]))
+        )
+
+    def resolve_route(self, route, fill_in_gaps: bool) -> types.Route:
         """Attempts to fill in the route between the begining and end specified in the initial
          route.
         Args:
@@ -309,23 +331,12 @@ class TrafficGenerator:
             A complete route listing all road segments it passes through.
         """
         if not isinstance(route, types.RandomRoute):
-            return route
+            return self._fill_in_gaps(route) if fill_in_gaps else route
 
         if not self._random_route_generator:
-            map_spec = route.map_spec
-            if not map_spec:
-                # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
-                lp_spacing = 2.0
-                if self._scenario_map_spec:
-                    map_spec = replace(
-                        self._scenario_map_spec, lanepoint_spacing=lp_spacing
-                    )
-                else:
-                    map_spec = types.MapSpec(
-                        self._road_network_path, lanepoint_spacing=lp_spacing
-                    )
+            road_map = self._map_for_route(route)
             # Lazy-load to improve performance when not using random route generation.
-            self._random_route_generator = RandomRouteGenerator.from_spec(map_spec)
+            self._random_route_generator = RandomRouteGenerator(road_map)
 
         return next(self._random_route_generator)
 

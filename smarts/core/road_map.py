@@ -218,8 +218,8 @@ class RoadMap:
         @property
         def composite_lane(self) -> RoadMap.Lane:
             """Return an abstract Lane composed of one or more RoadMap.Lane segments
-            that has been inferred to correspond to one continuous real-world lane.
-            May return same object as self."""
+            (including this one) that has been inferred to correspond to one
+            continuous real-world lane.  May return same object as self."""
             return self
 
         @property
@@ -373,7 +373,7 @@ class RoadMap:
             return self.from_lane_coord(RefLinePoint(s=offset))
 
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
-            """The lane direction vector at the given offset."""
+            """The lane direction vector at the given offset (not normalized)."""
             if start_offset >= self.length:
                 s_offset = self.length - 1
                 end_offset = self.length
@@ -443,8 +443,8 @@ class RoadMap:
         @property
         def composite_road(self) -> RoadMap.Road:
             """Return an abstract Road composed of one or more RoadMap.Road segments
-            that has been inferred to correspond to one continuous real-world road.
-            May return same object as self."""
+            (including this one) that has been inferred to correspond to one continuous
+            real-world road.  May return same object as self."""
             return self
 
         @property
