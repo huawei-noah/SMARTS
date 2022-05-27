@@ -25,7 +25,7 @@ smarts:
   agent: dqn
   agent_kwargs:
     learning_rate: 1e-3
-    target_update_period: 1 # Default=1. Train step interval at which the target network is updated.
+    target_update_period: 10 # Default=1. Train step interval at which the target network is updated.
     n_step_update: 1 # Default=1. Number of steps to consider when computing TD error and TD loss in DqnAgent.
     epsilon_greedy:
       initial: 1.0
