@@ -16,7 +16,6 @@ from merge import env as merge_env
 from merge import network as merge_network
 from ruamel.yaml import YAML
 from tf_agents.drivers.dynamic_step_driver import DynamicStepDriver
-from tf_agents.eval.metric_utils import log_metrics
 from tf_agents.metrics import tf_metrics
 from tf_agents.policies.random_tf_policy import RandomTFPolicy
 from tf_agents.utils.common import Checkpointer, function

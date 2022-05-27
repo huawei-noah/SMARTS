@@ -8,8 +8,8 @@ RUN touch /etc/apt/apt.conf.d/99verify-peer.conf && \
     echo >>/etc/apt/apt.conf.d/99verify-peer.conf 'Acquire::https::Verify-Host "false";'
 
 # (Temporary) NVIDIA invalid public key
-RUN rm /etc/apt/sources.list.d/cuda.list
-RUN rm /etc/apt/sources.list.d/nvidia-ml.list
+# RUN rm /etc/apt/sources.list.d/cuda.list
+# RUN rm /etc/apt/sources.list.d/nvidia-ml.list
 
 # Install libraries.
 RUN apt-get update --fix-missing && \
@@ -21,18 +21,18 @@ RUN apt-get update --fix-missing && \
         ffmpeg \
         git \
         libspatialindex-dev \
-        python3.7 \
-        python3.7-venv \
+        python3.8 \
+        python3.8-venv \
         xorg && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
 # Update default python version.
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
 
 # Setup virtual environment and install pip.
 ENV VIRTUAL_ENV=/opt/.venv
-RUN python3.7 -m venv $VIRTUAL_ENV
+RUN python3.8 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip install --upgrade pip wheel
 
