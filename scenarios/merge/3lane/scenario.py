@@ -24,7 +24,7 @@ from smarts.sstudio.types import (
 
 normal = TrafficActor(
     name="car",
-    speed=Distribution(sigma=0.8, mean=0.8),
+    speed=Distribution(sigma=0.8, mean=1),
 )
 # cooperative = TrafficActor(
 #     name="cooperative",

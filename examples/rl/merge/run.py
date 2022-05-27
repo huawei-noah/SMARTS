@@ -6,7 +6,6 @@ import tensorflow as tf
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 import argparse
-import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
@@ -28,16 +27,13 @@ warnings.filterwarnings(
     "ignore",
     ".*Box.*",
 )
-logging.getLogger().setLevel(logging.INFO)
-# Suppress tensorflow deprecation warning messages
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 yaml = YAML(typ="safe")
 
 print(f"\nTF version: {tf.version.VERSION}\n")
 tf.random.set_seed(42)
+print(f"\nPhysical devices: {tf.config.list_physical_devices()} \n")
 physical_devices = tf.config.list_physical_devices("GPU")
-print(f"\nPhysical devices: {physical_devices} \n")
 if physical_devices:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
