@@ -1,4 +1,25 @@
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 import argparse
+from collections import defaultdict
 import io
 import os
 import subprocess
@@ -7,9 +28,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
-from waymo_open_dataset.protos import map_pb2, scenario_pb2
-
-from smarts.sstudio.genhistories import Waymo
+from smarts.core.waymo_map import WaymoMap
+from smarts.sstudio.types import MapSpec
 
 
 class SumoMapGenerator:
@@ -19,26 +39,15 @@ class SumoMapGenerator:
 
     @staticmethod
     def _read_map_data(path: str, scenario_id: str) -> Dict:
-        scenario = None
-        dataset = Waymo.read_dataset(path)
-        for record in dataset:
-            parsed_scenario = scenario_pb2.Scenario()
-            parsed_scenario.ParseFromString(bytearray(record))
-            if parsed_scenario.scenario_id == scenario_id:
-                scenario = parsed_scenario
-                break
+        source = f"{path}#{scenario_id}"
+        map_spec = MapSpec(source)
+        scenario = WaymoMap._parse_source_to_scenario(source)
 
         if scenario is None:
             errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
             raise ValueError(errmsg)
 
-        map_features = {}
-        map_features["lane"] = []
-        map_features["road_line"] = []
-        map_features["road_edge"] = []
-        map_features["stop_sign"] = []
-        map_features["crosswalk"] = []
-        map_features["speed_bump"] = []
+        map_features = defaultdict(lambda: [])
         for i in range(len(scenario.map_features)):
             map_feature = scenario.map_features[i]
             key = map_feature.WhichOneof("feature_data")
@@ -48,9 +57,7 @@ class SumoMapGenerator:
         return map_features
 
     @staticmethod
-    def _convert_polyline(
-        polyline: map_pb2.MapPoint,
-    ) -> Tuple[List[float], List[float]]:
+    def _convert_polyline(polyline) -> Tuple[List[float], List[float]]:
         tuples = [(p.x, p.y) for p in polyline]
         xs, ys = zip(*tuples)
         return xs, ys
@@ -164,7 +171,7 @@ class SumoMapGenerator:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="gen_sumo_map.py",
-        description="Extract map data from a Waymo motion dataset scenario and generate a SUMO map.",
+        description="Extract map data from a Waymo Motion Dataset scenario and generate a SUMO map.",
     )
     parser.add_argument("file", help="TFRecord file")
     parser.add_argument("id", help="ID of the scenario")
