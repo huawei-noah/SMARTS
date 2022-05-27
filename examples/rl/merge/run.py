@@ -1,9 +1,16 @@
+import os
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
 import tensorflow as tf
 
 tf.get_logger().setLevel("ERROR")  # To avoid TF warnings
 
-import argparse
 import warnings
+
+warnings.simplefilter("ignore", category=DeprecationWarning)
+
+import argparse
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
@@ -17,9 +24,6 @@ from tf_agents.drivers.dynamic_step_driver import DynamicStepDriver
 from tf_agents.metrics import tf_metrics
 from tf_agents.policies.random_tf_policy import RandomTFPolicy
 from tf_agents.utils.common import Checkpointer, function
-
-warnings.simplefilter("ignore", category=UserWarning)
-warnings.simplefilter("ignore", category=DeprecationWarning)
 
 yaml = YAML(typ="safe")
 
