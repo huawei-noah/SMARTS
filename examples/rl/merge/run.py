@@ -183,7 +183,8 @@ def train(train_env, eval_env, agent, train_checkpointer, config):
     train_step = agent.train_step_counter.numpy()
     env_step = train_metrics[0].result()
     for _ in range(config["train_iterations"]):
-        print(f"Training. Train_step = {train_step}. Env_step = {env_step}.")
+        if train_step % 1e3 == 0:
+            print(f"Training. Train_step = {train_step}. Env_step = {env_step}.")
 
         # Collect a few steps using collect_policy and save to the replay buffer.
         collect_driver.run()
