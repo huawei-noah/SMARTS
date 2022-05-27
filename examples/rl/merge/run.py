@@ -1,9 +1,7 @@
-import os
 import warnings
-
 import tensorflow as tf
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+# tf.get_logger().setLevel('ERROR') # To avoid TF warnings
 
 import argparse
 from datetime import datetime
@@ -32,10 +30,9 @@ yaml = YAML(typ="safe")
 print(f"\nTF version: {tf.version.VERSION}\n")
 tf.random.set_seed(42)
 print(f"\nPhysical devices: {tf.config.list_physical_devices()} \n")
-physical_devices = tf.config.list_physical_devices("GPU")
-if physical_devices:
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
-
+gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+for device in gpu_devices:
+    tf.config.experimental.set_memory_growth(device, True)
 
 def main(args: argparse.Namespace):
     # Load config file.
@@ -143,7 +140,9 @@ def train(train_env, eval_env, agent, train_checkpointer, config):
         env=train_env,
         policy=initial_collect_policy,
         observers=[replay_buffer_observer],
-        num_steps=config["driver"]["initial_steps"], # collect `initial_steps` steps to prefill the buffer with random policy
+        num_steps=config["driver"][
+            "initial_steps"
+        ],  # collect `initial_steps` steps to prefill the buffer with random policy
     )
     collect_driver = DynamicStepDriver(
         env=train_env,
@@ -172,7 +171,7 @@ def train(train_env, eval_env, agent, train_checkpointer, config):
 
     # (Optional) Optimize by wrapping some of the code in a graph using TF function.
     # collect_driver.run = function(collect_driver.run)
-    # agent.train = function(agent.train)
+    agent.train = function(agent.train)
 
     # Setup tensorboard
     train_summary_writer = tf.summary.create_file_writer(

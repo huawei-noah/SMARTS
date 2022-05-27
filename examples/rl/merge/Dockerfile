@@ -1,4 +1,4 @@
-FROM tensorflow/tensorflow:2.4.0
+FROM tensorflow/tensorflow:2.8.0-gpu
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -8,8 +8,8 @@ RUN touch /etc/apt/apt.conf.d/99verify-peer.conf && \
     echo >>/etc/apt/apt.conf.d/99verify-peer.conf 'Acquire::https::Verify-Host "false";'
 
 # (Temporary) NVIDIA invalid public key
-# RUN rm /etc/apt/sources.list.d/cuda.list
-# RUN rm /etc/apt/sources.list.d/nvidia-ml.list
+RUN rm /etc/apt/sources.list.d/cuda.list
+RUN rm /etc/apt/sources.list.d/nvidia-ml.list
 
 # Install libraries.
 RUN apt-get update --fix-missing && \
@@ -18,7 +18,6 @@ RUN apt-get update --fix-missing && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y \
-        ffmpeg \
         git \
         libspatialindex-dev \
         python3.8 \
