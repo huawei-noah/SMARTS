@@ -1,9 +1,9 @@
-import warnings
 import tensorflow as tf
 
-# tf.get_logger().setLevel('ERROR') # To avoid TF warnings
+tf.get_logger().setLevel("ERROR")  # To avoid TF warnings
 
 import argparse
+import warnings
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
@@ -20,19 +20,16 @@ from tf_agents.utils.common import Checkpointer, function
 
 warnings.simplefilter("ignore", category=UserWarning)
 warnings.simplefilter("ignore", category=DeprecationWarning)
-warnings.filterwarnings(
-    "ignore",
-    ".*Box.*",
-)
 
 yaml = YAML(typ="safe")
 
 print(f"\nTF version: {tf.version.VERSION}\n")
 tf.random.set_seed(42)
 print(f"\nPhysical devices: {tf.config.list_physical_devices()} \n")
-gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+gpu_devices = tf.config.experimental.list_physical_devices("GPU")
 for device in gpu_devices:
     tf.config.experimental.set_memory_growth(device, True)
+
 
 def main(args: argparse.Namespace):
     # Load config file.
@@ -163,15 +160,15 @@ def train(train_env, eval_env, agent, train_checkpointer, config):
     ).prefetch(3)
     iterator = iter(dataset)
 
-    assert (
-        config["driver"]["num_steps"]
-        >= (config["agent_kwargs"]["n_step_update"] + 1)
-        * config["dataset"]["batch_size"]
-    ), "Driver collects lesser steps than that required for training per iteration."
+    # assert (
+    #     config["driver"]["num_steps"]
+    #     >= (config["agent_kwargs"]["n_step_update"] + 1)
+    #     * config["dataset"]["batch_size"]
+    # ), "Driver collects lesser steps than that required for training per iteration."
 
     # (Optional) Optimize by wrapping some of the code in a graph using TF function.
     # collect_driver.run = function(collect_driver.run)
-    agent.train = function(agent.train)
+    # agent.train = function(agent.train)
 
     # Setup tensorboard
     train_summary_writer = tf.summary.create_file_writer(
@@ -250,7 +247,7 @@ def evaluate(env, policy, step, summary_writer, config):
         tf.summary.scalar(
             name="eval/episode avg return", data=avg_return.numpy()[0], step=step
         )
-    print(f"Eval episode avg return: {avg_return.numpy()[0]:.2f}")
+    print(f"Evaluating. Episode average return: {avg_return.numpy()[0]:.2f}")
 
     return
 

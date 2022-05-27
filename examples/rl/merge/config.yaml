@@ -5,35 +5,35 @@ smarts:
   img_meters: 50 # Observation image area size in meters.
   img_pixels: 100 # Observation image size in pixels.
   num_stack: 3 # Number of frames to stack as input to policy network.
-  action_wrapper: Discrete # Either "Lane" or "Continuous" or "Discrete"
+  action_wrapper: Discrete # Either "Lane" or "Continuous" or "Discrete".
 
   # Training and evaluation
-  train_iterations: 10 # Recomended=1e8. Number of training iteration.
-  log_interval: 1 # Recomended=100_00.
-  checkpoint_interval: 1
+  train_iterations: 1e8 # Recomended=1e8. Number of training iteration.
+  log_interval: 1e4 # Recomended=1e4.
+  checkpoint_interval: 5e4 # Recomended=5e4.
   driver:
     initial_steps: 100
-    num_steps: 64 # Default=1. Collect `num_steps` steps from env for each iteration.
+    num_steps: 1 # Default=1. Collect `num_steps` steps from env for each iteration.
   dataset:
     batch_size: 32 # Train batch size.
   eval:
     episodes: 30  
-    interval: 1 # Recomended=100_000. 
+    interval: 1e5 # Recomended=1e5. 
 
   # RL algorithm
   network: q_net
   agent: dqn
   agent_kwargs:
     learning_rate: 1e-3
-    target_update_period: 1 # Default=1. Train step interval at which the target network is updated
-    n_step_update: 1
+    target_update_period: 1 # Default=1. Train step interval at which the target network is updated.
+    n_step_update: 1 # Default=1. Number of steps to consider when computing TD error and TD loss in DqnAgent.
     epsilon_greedy:
       initial: 1.0
-      decay_steps: 300_000 # Train step interval over which the epsilon greedy decays
+      decay_steps: 300_000 # Train step interval over which the epsilon greedy decays.
       end: 0.01
   buffer: uniform_replay
   buffer_kwargs:
-    max_length: 50_000 
+    max_length: 200_000 
   # buffer: hashed_replay
   # buffer_kwargs:
   #   capacity: 100_000
