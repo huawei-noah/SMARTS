@@ -99,14 +99,14 @@ def run(train_env, eval_env, config: Dict[str, Any]):
     if config["mode"] == "evaluate":
         print("\nStart evaluation.\n")
         eval_step = tf.Variable(0, dtype=tf.int64)
-        eval_summary_writer = tf.summary.create_file_writer(
-            logdir=str(config["logdir"] / "tensorboard" / "eval")
+        summary_writer = tf.summary.create_file_writer(
+            logdir=str(config["logdir"] / "tensorboard")
         )
         evaluate(
             env=eval_env,
             policy=agent.policy,
             step=eval_step,
-            summary_writer=eval_summary_writer,
+            summary_writer=summary_writer,
             config=config,
         )
     elif config["mode"] == "train" and config.get("model", None):
@@ -175,11 +175,8 @@ def train(train_env, eval_env, agent, train_checkpointer, config):
     # agent.train = function(agent.train)
 
     # Setup tensorboard
-    train_summary_writer = tf.summary.create_file_writer(
-        logdir=str(config["logdir"] / "tensorboard" / "train")
-    )
-    eval_summary_writer = tf.summary.create_file_writer(
-        logdir=str(config["logdir"] / "tensorboard" / "eval")
+    summary_writer = tf.summary.create_file_writer(
+        logdir=str(config["logdir"] / "tensorboard")
     )
 
     # Start training
@@ -202,7 +199,7 @@ def train(train_env, eval_env, agent, train_checkpointer, config):
         if train_step % config["checkpoint_interval"] == 0:
             train_checkpointer.save(global_step=train_step)
         if train_step % config["log_interval"] == 0:
-            with train_summary_writer.as_default():
+            with summary_writer.as_default():
                 tf.summary.scalar(
                     name="train/loss",
                     data=train_loss.loss.numpy(),
@@ -216,7 +213,7 @@ def train(train_env, eval_env, agent, train_checkpointer, config):
                 env=eval_env,
                 policy=agent.policy,
                 step=env_step,
-                summary_writer=eval_summary_writer,
+                summary_writer=summary_writer,
                 config=config,
             )
 
@@ -227,7 +224,7 @@ def train(train_env, eval_env, agent, train_checkpointer, config):
         env=eval_env,
         policy=agent.policy,
         step=env_step,
-        summary_writer=eval_summary_writer,
+        summary_writer=summary_writer,
         config=config,
     )
 
