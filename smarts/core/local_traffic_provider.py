@@ -46,8 +46,6 @@ from .utils.math import (
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-# TODO:  debug collisions
-# TODO:  "resonance" issues
 # TODO:  failing pytests
 # TODO:  profile and adjust lru_cache sizes for *all* map types
 # TODO:  add tests to test_traffic_simulation.py
@@ -56,6 +54,8 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 # TODO:  test mixed
 # TODO:  debug Envision
 # TODO:  left turns across traffic and other intersection stuff!
+# TODO:  debug traffic jams
+# TODO:  dynamic routing
 # TODO:  reconsider vehicle dims stuff from proposal
 # TODO:  refactor of Providers and Controllers (or remove comments)
 
@@ -431,6 +431,7 @@ class _TrafficActor:
         self._dest_lane, self._dest_offset = self._resolve_flow_pos(
             self._flow, "arrival", self._state.dimensions.length
         )
+        self._route_ind = 0
 
     @property
     def finished_route(self) -> bool:
@@ -621,12 +622,8 @@ class _TrafficActor:
                     lane_gap = ov_front_gap
 
                 if lane_ttc > 0:
-                    ov_ttc = max(
-                        time_to_cover(
-                            ov_front_gap - min_space_cush, speed_delta, acc_delta
-                        ),
-                        0,
-                    )
+                    ntc = max(ov_front_gap - min_space_cush, 0)
+                    ov_ttc = max(time_to_cover(ntc, speed_delta, acc_delta), 0)
                     if ov_ttc < lane_ttc:
                         lane_ttc = ov_ttc
 
@@ -637,7 +634,7 @@ class _TrafficActor:
                     lane_ttre = ov_ttre
 
             if lane_ttc == 0 and lane_ttre == 0:
-                assert lane_gap == 0, f"{lane_gap}"
+                assert lane_gap <= min_space_cush, f"{lane_gap}"
                 break
 
         self._lane_windows[lane.index] = _TrafficActor._LaneWindow(
@@ -790,14 +787,18 @@ class _TrafficActor:
         )
         min_time_cush = float(self._vtype.get("tau", 1.0))
         if time_cush < min_time_cush:
-            severity = 3 * (min_time_cush - time_cush) / min_time_cush
-            return -emergency_decl * np.clip(severity, 0, 1.0)
+            if self.speed > 0:
+                severity = 3 * (min_time_cush - time_cush) / min_time_cush
+                return -emergency_decl * np.clip(severity, 0, 1.0)
+            return 0
 
         space_cush = max(min(self._target_lane_win.gap, self._lane_win.gap), 0)
         min_space_cush = float(self._vtype.get("minGap", 2.5))
         if space_cush < min_space_cush:
-            severity = 2 * (min_space_cush - space_cush) / min_space_cush
-            return -emergency_decl * np.clip(severity, 0, 1.0)
+            if self.speed > 0:
+                severity = 2 * (min_space_cush - space_cush) / min_space_cush
+                return -emergency_decl * np.clip(severity, 0, 1.0)
+            return 0
 
         my_speed, my_acc = self._lane_speed[self._target_lane_win.lane.index]
 
@@ -879,6 +880,7 @@ class _TrafficActor:
 
     def _reroute(self):
         if self._route[0] in {oid.road_id for oid in self._lane.road.outgoing_roads}:
+            self._route_ind = -1
             self._logger.info(
                 f"{self.actor_id} will loop around to beginning of its route"
             )
@@ -892,3 +894,4 @@ class _TrafficActor:
         self._state.pose = Pose.from_center(position, Heading(heading))
         self._state.speed = self._resolve_flow_speed(self._flow)
         self._state.linear_acceleration = np.array((0.0, 0.0, 0.0))
+        self._route_ind = 0
