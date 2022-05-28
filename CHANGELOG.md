@@ -41,11 +41,13 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ### [0.6.1rc0] 15-04-16
 ### Added
+- Added `scenarios/waymo_motion/waymo_utility.py`, a text-based utility to explore and export scenarios from the Waymo Motion dataset to SMARTS scenarios. 
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 - Added `sb3` reinforcement-learning example. An ego agent is trained using PPO algorithm from Stable Baselines3 library, to drive as far and as fast as possible in heavy traffic, without colliding or going off-road.
 - Added `FormatObs` wrapper which converts SMARTS observations to gym-compliant RL-friendly vectorized observations and returns `StdObs`.
 - Added `Pose.as_position2d()` method which converts the pose to an [x,y] position array.
 - Added `EventConfiguration` dataclass in the agent interface to allow users to configure the conditions in which events are triggered
+- Extended the `RoadMap` API to support `Waymo` map format in `smarts/core/waymo_map.py`.
 - Added scenarios for "importing" the i80 and us101 NGSIM trajectory history datasets
 - Added an observation adapter that makes the observation ego-centric: `smarts.core.utils.ego_centric_observation_adapter`.
 - Added math utility `world_position_from_ego_frame` which allows converting from an ego frame to world frame.

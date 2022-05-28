@@ -610,7 +610,7 @@ class MapZone(Zone):
             lane_shape: Polygon, lane: RoadMap.Lane, offset: float
         ):
             # XXX: generalize to n-dim
-            width_2 = lane.width_at_offset(offset)
+            width_2, _ = lane.width_at_offset(offset)
             point = np.array(lane.from_lane_coord(RefLinePoint(offset)))[:2]
             lane_vec = lane.vector_at_offset(offset)[:2]
 
@@ -649,8 +649,8 @@ class MapZone(Zone):
 
             lane_offset = resolve_offset(offset, geom_length, lane_length)
             lane_offset += buffer_from_ends
-            width = lane.width_at_offset(lane_offset)
-            lane_shape = lane.shape(0.3, width)
+            width, _ = lane.width_at_offset(lane_offset)  # TODO
+            lane_shape = lane.shape(0.3, width)  # TODO
 
             geom_length = max(geom_length - buffer_from_ends, buffer_from_ends)
             lane_length = max(lane_length - buffer_from_ends, buffer_from_ends)
@@ -813,7 +813,8 @@ class TrafficHistoryDataset:
     """the type of the dataset; supported values include: NGSIM, INTERACTION, Waymo"""
     input_path: Optional[str] = None
     """a relative or absolute path to the dataset; if omitted, dataset will not be imported"""
-
+    scenario_id: Optional[str] = None
+    """a unique ID for a Waymo scenario. For other datasets, this field will be None."""
     x_margin_px: float = 0.0
     """x offset of the map from the data (in pixels)"""
     y_margin_px: float = 0.0
