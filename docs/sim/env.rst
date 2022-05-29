@@ -142,14 +142,15 @@ Vehicle Diversity
 -----------------
 
 SMARTS environments allow three types of vehicles to exist concurrently, which are **ego agents** under the control of RL model currently
-in training , **social agents** controlled by (trained) models from the "Agent Zoo", and **traffic vehicles** controlled by the underlying
-traffic simulator SUMO. 
+in training , **social agents** controlled by (trained) models from the "Agent Zoo", and **traffic vehicles** controlled by an underlying
+traffic simulator, like SUMO or SMARTS.
 
 Ego agents are controlled by our training algorithms, and are able to interact with environment directly. Like ego agents, social agents 
 also use AgentInterface to register with the environment and interact with it through standard observation and action messages, except
 that they are driven by trained models and act in separate `Ray` processes, hence they can provide behavioral characteristics we want.
-Traffic vehicles are controlled by SUMO with the features SUMO provided, such as predefined traffic routes and vehicle types. To see more 
-details about generation of traffic vehicles and control of their behavior, see our [Scenario Studio](ScenarioStudio.md).
+Traffic vehicles are controlled by a trafiffic simulator (e.g., SUMO or SMARTS) with whatever features it provides, such as predefined
+traffic routes and vehicle types. To see more details about generation of traffic vehicles and control of their behavior,
+see our [Scenario Studio](ScenarioStudio.md).
 
 Envision and Logging
 --------------------

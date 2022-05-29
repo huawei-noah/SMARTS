@@ -131,10 +131,6 @@ define a `MapSpec` object in your `scenario.py`.
 
   gen_map(map_spec)
 
-However, note that the `gen_traffic()` operation is net yet supported with custom map types.
-Suggested change
-To use that feature, you may still need to convert your map to the SUMO road network format.
-
 
 Convert an existing map to SUMO
 ----------------------------

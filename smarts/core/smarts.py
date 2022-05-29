@@ -904,10 +904,10 @@ class SMARTS:
         agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         for vehicle in provider_state.vehicles:
             vehicle_id = vehicle.vehicle_id
-            # either this is a pybullet agent vehicle, or it is a social vehicle
+            # either this is a pybullet agent vehicle (ego or social), or it is a social vehicle (traffic)
             if vehicle_id in agent_vehicle_ids:
+                # this is an agent vehicle
                 if not vehicle.updated:
-                    # this is an agent vehicle
                     agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
                     agent_interface = self._agent_manager.agent_interface_for_agent_id(
                         agent_id
@@ -922,7 +922,7 @@ class SMARTS:
                         assert isinstance(pybullet_vehicle.chassis, BoxChassis)
                         pybullet_vehicle.update_state(vehicle, dt=dt)
             else:
-                # This vehicle is a social vehicle
+                # This vehicle is a social vehicle (traffic)
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():
                     social_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                 else:
@@ -1075,8 +1075,6 @@ class SMARTS:
         raise provider_error
 
     def _step_providers(self, actions) -> ProviderState:
-        accumulated_provider_state = ProviderState()
-
         def agent_controls_vehicles(agent_id):
             vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
             return len(vehicles) > 0
@@ -1102,6 +1100,7 @@ class SMARTS:
             elif matches_no_provider_action_space(agent_id):
                 other_actions[agent_id] = action
 
+        accumulated_provider_state = ProviderState()
         if pybullet_actions or other_actions:
             self._perform_agent_actions(pybullet_actions)
             self._perform_agent_actions(other_actions)

@@ -573,6 +573,7 @@ class SumoTrafficSimulation(TrafficProvider):
         )
 
         # TODO: Vehicle Id should not be using prefixes this way
+        # TODO STEVE:  also vehicles controlled by LocalTrafficProvider --> use source field instead of vehicle_id?
         if vehicle_id.startswith("social-agent") or vehicle_id.startswith(
             "history-vehicle"
         ):

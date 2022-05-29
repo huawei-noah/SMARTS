@@ -46,7 +46,6 @@ from .utils.math import (
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-# TODO:  failing pytests
 # TODO:  profile and adjust lru_cache sizes for *all* map types
 # TODO:  add tests to test_traffic_simulation.py
 # TODO:  reserved area tests
@@ -54,6 +53,7 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 # TODO:  test mixed
 # TODO:  debug Envision
 # TODO:  left turns across traffic and other intersection stuff!
+# TODO:  failing pytests (determinism?)
 # TODO:  debug traffic jams
 # TODO:  dynamic routing
 # TODO:  reconsider vehicle dims stuff from proposal
@@ -506,7 +506,7 @@ class _TrafficActor:
         def radius(self) -> float:
             """The radius of curvature of this lane at its lane_coord."""
             return self.lane.curvature_radius_at_offset(
-                self.lane_coord.s, lookahead=math.ceil(2 * self.width)
+                self.lane_coord.s, lookahead=max(math.ceil(2 * self.width), 2)
             )
 
         @lru_cache(maxsize=4)
@@ -711,7 +711,7 @@ class _TrafficActor:
             l_offset = lane.offset_along_lane(pos)
             l_width, _ = lane.width_at_offset(l_offset)
             return lane.curvature_radius_at_offset(
-                l_offset, lookahead=math.ceil(2 * l_width)
+                l_offset, lookahead=max(math.ceil(2 * l_width), 2)
             )
 
         self._lane_speed = dict()

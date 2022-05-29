@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import List, Sequence, Set
 
 import numpy as np
@@ -29,7 +29,8 @@ from .vehicle import VehicleState
 
 
 class ExternalProvider(Provider):
-    """A provider that is intended to used for external intervention in the simulation."""
+    """A provider that is intended to used for external intervention in the simulation.
+    Vehicles managed by this provider cannot be hijacked by social agents."""
 
     def __init__(self, sim):
         self._sim = sim
@@ -47,7 +48,9 @@ class ExternalProvider(Provider):
         step_delta: float,
     ):
         """Update vehicle states. Use `all_vehicle_states()` to look at previous states."""
-        self._ext_vehicle_states = vehicle_states
+        self._ext_vehicle_states = [
+            replace(vs, source="EXTERNAL") for vs in vehicle_states
+        ]
         self._last_step_delta = step_delta
 
     @property

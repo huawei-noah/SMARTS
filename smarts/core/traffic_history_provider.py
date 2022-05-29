@@ -28,7 +28,9 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class TrafficHistoryProvider(Provider):
-    """A provider that replays traffic history for simulation."""
+    """A provider that replays traffic history for simulation.
+    Not quite a TrafficProvider since vehicles cannot be re-routed, and
+    managed vehicles can be hijacked, but cannot be returned ."""
 
     def __init__(self):
         self._histories = None

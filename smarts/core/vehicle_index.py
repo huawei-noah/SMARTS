@@ -50,8 +50,9 @@ def _2id(id_: str):
 
 
 class _ActorType(IntEnum):
-    Social = 0
+    Social = 0  # Traffic
     Agent = 1
+    External = 2  # cannot be hijacked or trapped
 
 
 class _ControlEntity(NamedTuple):
@@ -700,10 +701,11 @@ class VehicleIndex:
         self._vehicles[vehicle_id] = vehicle
         self._2id_to_id[vehicle_id] = vehicle.id
 
+        actor_type = _ActorType.Social if source != "EXTERNAL" else _ActorType.External
         entity = _ControlEntity(
             vehicle_id=vehicle_id,
             actor_id=actor_id,
-            actor_type=_ActorType.Social,
+            actor_type=actor_type,
             shadow_actor_id="",
             is_boid=False,
             is_hijacked=False,
