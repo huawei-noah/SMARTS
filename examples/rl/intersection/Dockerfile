@@ -9,7 +9,6 @@ RUN apt-get update --fix-missing && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y \
-        ffmpeg \
         git \
         libspatialindex-dev \
         python3.7 \
