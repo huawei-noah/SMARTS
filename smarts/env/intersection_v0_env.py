@@ -34,19 +34,20 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.hiway_env import HiWayEnv
+from smarts.env.wrappers.format_action import FormatAction
 from smarts.env.wrappers.format_obs import FormatObs
 from smarts.env.wrappers.single_agent import SingleAgent
 from smarts.sstudio import build_scenario
 from smarts.zoo.agent_spec import AgentSpec
 
 
-def intersection_env(
+def intersection_v0_env(
     headless: bool = True,
     visdom: bool = False,
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
-    img_meters=64,
-    img_pixels=256,
+    img_meters: int = 64,
+    img_pixels: int = 256,
 ):
     """An intersection environment where a single agent needs to make an
     unprotected left turn in the presence of traffic and without traffic
@@ -90,6 +91,10 @@ def intersection_env(
             SUMO GUI. Defaults to True.
         envision_record_data_replay_path (Optional[str], optional):
             Envision's data replay output directory. Defaults to None.
+        img_meters (int): Ground square size covered by image observations.
+            Defaults to 64 x 64 meter (height x width) square.
+        img_pixels (int): Pixels representing the square image observations.
+            Defaults to 256 x 256 pixels (height x width) square.
 
     Returns:
         A single-agent unprotected left turn intersection environment.
@@ -97,10 +102,9 @@ def intersection_env(
 
     scenario = [
         str(
-            pathlib.Path(__file__).absolute().parents[2]
+            pathlib.Path(__file__).absolute().parents[1]
             / "scenarios"
-            / "intersections"
-            / "1lane_left_turn"
+            / "intersection_v0"
         )
     ]
     build_scenario(scenario)
@@ -157,6 +161,7 @@ def intersection_env(
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
     env = FormatObs(env=env)
+    env = FormatAction(env=env, space=ActionSpaceType.Continuous)
     env = _InfoScore(env=env)
     env = SingleAgent(env=env)
 

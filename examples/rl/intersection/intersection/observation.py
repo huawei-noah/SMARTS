@@ -4,7 +4,7 @@ import gym
 import numpy as np
 
 
-class Observation(gym.Wrapper):
+class Observation(gym.ObservationWrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
         old_space = env.observation_space["rgb"]
@@ -15,35 +15,10 @@ class Observation(gym.Wrapper):
             dtype=np.uint8,
         )
 
-    def step(self, action):
-        """Steps the environment by one step.
+    def observation(self, obs: Dict[str, gym.Space]) -> np.ndarray:
+        rgb = obs["rgb"]
 
-        Args:
-            actions (Any): Agent's action.
+        # Channel first
+        rgb = rgb.transpose(2, 0, 1)
 
-        Returns:
-            Tuple[ np.ndarray, float, bool, Dict[str, Any] ]:
-                Observation, reward, done, info, of the agent.
-        """
-        obs, rewards, dones, infos = self.env.step(action)
-        filtered = filter_obs(obs)
-        return filtered, rewards, dones, infos
-
-    def reset(self):
-        """Resets the environment.
-
-        Returns:
-            np.ndarray: Agent's observation after reset.
-        """
-        obs = self.env.reset()
-        filtered = filter_obs(obs)
-        return filtered
-
-
-def filter_obs(obs: Dict[str, gym.Space]) -> np.ndarray:
-    rgb = obs["rgb"]
-
-    # Channel first
-    rgb = rgb.transpose(2, 0, 1)
-
-    return np.uint8(rgb)
+        return np.uint8(rgb)

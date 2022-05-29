@@ -27,5 +27,5 @@ register(
 
 register(
     id="intersection-v0",
-    entry_point="smarts.env.intersection_env:intersection_env",
+    entry_point="smarts.env.intersection_v0_env:intersection_v0_env",
 )

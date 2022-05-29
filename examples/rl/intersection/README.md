@@ -54,7 +54,7 @@ $ pip install -e .
 1. Start
     ```bash
     $ cd <path>/SMARTS/examples/rl/intersection
-    $ scl envision start --scenarios ./.venv/lib/python3.7/site-packages/scenarios/intersections &
+    $ scl envision start --scenarios ./.venv/lib/python3.7/site-packages/smarts/scenarios &
     ```
 1. Run
     + Evaluate your own model 

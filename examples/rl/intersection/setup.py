@@ -19,7 +19,7 @@ setup(
     install_requires=[
         "setuptools>=41.0.0,!=50.0",
         "ruamel.yaml==0.17.17",
-        "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@intersection-v0",
+        "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@intersection-1",
         "stable-baselines3[extra]==1.4.0",
     ],
 )

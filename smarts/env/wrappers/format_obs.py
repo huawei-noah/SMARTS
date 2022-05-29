@@ -497,18 +497,18 @@ def _std_neighbors(
     nghbs: List[VehicleObservation],
 ) -> Dict[str, np.ndarray]:
 
-    if len(nghbs) == 0:
-        return {
-            "box": np.zeros((10, 3), dtype=np.float32),
-            "heading": np.zeros((10,), dtype=np.float32),
-            "lane_index": np.zeros((10,), dtype=np.int8),
-            "pos": np.zeros((10, 3), dtype=np.float64),
-            "speed": np.zeros((10,), dtype=np.float32),
-        }
-
     des_shp = _NEIGHBOR_SHP
     rcv_shp = len(nghbs)
     pad_shp = 0 if des_shp - rcv_shp < 0 else des_shp - rcv_shp
+
+    if rcv_shp == 0:
+        return {
+            "box": np.zeros((des_shp, 3), dtype=np.float32),
+            "heading": np.zeros((des_shp,), dtype=np.float32),
+            "lane_index": np.zeros((des_shp,), dtype=np.int8),
+            "pos": np.zeros((des_shp, 3), dtype=np.float64),
+            "speed": np.zeros((des_shp,), dtype=np.float32),
+        }
 
     nghbs = [
         (

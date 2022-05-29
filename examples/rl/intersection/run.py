@@ -10,15 +10,10 @@ from typing import Any, Dict
 import gym
 import stable_baselines3 as sb3lib
 import torch as th
-from intersection import action as intersection_action
-from intersection import info as intersection_info
-from intersection import observation as intersection_observation
-from intersection import reward as intersection_reward
+from intersection import env as intersection_env
 from ruamel.yaml import YAML
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
-from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMonitor
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -59,44 +54,12 @@ def main(args: argparse.Namespace):
         raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
 
     # Make training and evaluation environments.
-    env = make_env(config=config)
-    eval_env = make_env(config=config)
+    env = intersection_env.make(config=config)
+    eval_env = intersection_env.make(config=config)
 
     # Run training or evaluation.
     run(env=env, eval_env=eval_env, config=config)
     env.close()
-
-
-def make_env(config: Dict[str, Any]) -> gym.Env:
-    # Create environment
-    env = gym.make(
-        "smarts.env:intersection-v0",
-        headless=not config["head"],  # If False, enables Envision display.
-        visdom=config["visdom"],  # If True, enables Visdom display.
-        sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
-        img_meters=config["img_meters"],
-        img_pixels=config["img_pixels"],
-    )
-
-    # Wrap env with action, reward, and observation wrapper
-    env = intersection_info.Info(env=env)
-    env = intersection_action.Action(env=env)
-    env = intersection_reward.Reward(env=env)
-    env = intersection_observation.Observation(env=env)
-
-    # Check custom environment
-    check_env(env)
-
-    # Wrap env with SB3 wrappers
-    env = DummyVecEnv([lambda: env])
-    env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="first")
-    env = VecMonitor(
-        venv=env,
-        filename=str(config["logdir"]),
-        info_keywords=("is_success",),
-    )
-
-    return env
 
 
 def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
