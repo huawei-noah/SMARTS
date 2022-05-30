@@ -46,18 +46,18 @@ from .utils.math import (
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-# TODO:  profile
 # TODO:  add tests to test_traffic_simulation.py
 # TODO:  reserved area tests
 # TODO:  bubble hijacking tests
 # TODO:  test mixed
 # TODO:  debug Envision
 # TODO:  left turns across traffic and other intersection stuff!
+# TODO:  profile
 # TODO:  failing pytests (determinism?)
 # TODO:  debug traffic jams
 # TODO:  dynamic routing
-# TODO:  reconsider vehicle dims stuff from proposal
 # TODO:  refactor MPP and TIP into Controllers
+# TODO:  reconsider vehicle dims stuff from proposal
 
 
 class LocalTrafficProvider(TrafficProvider):
@@ -82,6 +82,8 @@ class LocalTrafficProvider(TrafficProvider):
         self._reserved_areas: Dict[str, Polygon] = dict()
         self._route_lane_lengths: Dict[int, Dict[Tuple[str, int], float]] = dict()
         self._actors_created: int = 0
+        self._nearest_lanes_cache: Dict[str, RoadMap.Lane] = dict()
+        self._offsets_cache: Dict[str, Dict[str, float]] = dict()
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -216,10 +218,21 @@ class LocalTrafficProvider(TrafficProvider):
         for other, _ in self._other_vehicles.values():
             if other.vehicle_id in self._reserved_areas:
                 del self._reserved_areas[other.vehicle_id]
+
+        # precompute nearest lanes for all vehicles and cache
+        # (this prevents having to do it O(ovs^2) times)
+        self._nearest_lanes_cache = dict()
+        for ovs in self._all_states:
+            self._nearest_lanes_cache[ovs.vehicle_id] = self.road_map.nearest_lane(
+                ovs.pose.point, radius=ovs.dimensions.length
+            )
+        self._offsets_cache = dict()
+
         # Do state update in two passes so that we don't use next states in the
         # computations for actors encountered later in the iterator.
         for actor in self._my_actors.values():
             actor.compute_next_state(dt, self._all_states)
+
         dones = []
         for actor in self._my_actors.values():
             actor.step(dt)
@@ -228,6 +241,7 @@ class LocalTrafficProvider(TrafficProvider):
                 dones.append(actor.actor_id)
         for actor_id in dones:
             del self._my_actors[actor_id]
+
         return self._provider_state
 
     def sync(self, provider_state: ProviderState):
@@ -302,6 +316,12 @@ class LocalTrafficProvider(TrafficProvider):
         assert False, f"unknown vehicle_id: {vehicle_id}"
         return None
 
+    def _cached_lane_offset(self, vs: VehicleState, lane: RoadMap.Lane):
+        lane_offsets = self._offsets_cache.setdefault(vs.vehicle_id, dict())
+        return lane_offsets.setdefault(
+            lane.lane_id, lane.offset_along_lane(vs.pose.point)
+        )
+
 
 # TAI:  inner class?
 class _TrafficActor:
@@ -346,6 +366,9 @@ class _TrafficActor:
         self._dest_lane, self._dest_offset = self._resolve_flow_pos(
             flow, "arrival", dimensions
         )
+
+        self._last_bbox = None
+        self._last_bbox_pose = None
 
         self._owner._actors_created += 1
 
@@ -470,15 +493,21 @@ class _TrafficActor:
     @property
     def bbox(self) -> Polygon:
         """Returns a bounding box around the vehicle."""
-        pos = self._state.pose.point
-        dims = self._state.dimensions
-        poly = shapely_box(
-            pos.x - 0.5 * dims.width,
-            pos.y - 0.5 * dims.length,
-            pos.x + 0.5 * dims.width,
-            pos.y + 0.5 * dims.length,
-        )
-        return shapely_rotate(poly, self._state.pose.heading, use_radians=True)
+        if id(self._state.pose) != id(self._last_bbox_pose):
+            pos = self._state.pose.point
+            dims = self._state.dimensions
+            poly = shapely_box(
+                pos.x - 0.5 * dims.width,
+                pos.y - 0.5 * dims.length,
+                pos.x + 0.5 * dims.width,
+                pos.y + 0.5 * dims.length,
+            )
+            self._last_bbox = shapely_rotate(
+                poly, self._state.pose.heading, use_radians=True
+            )
+            self._last_bbox_pose = self._state.pose
+        assert self._last_bbox
+        return self._last_bbox
 
     class _LaneWindow:
         def __init__(
@@ -576,16 +605,14 @@ class _TrafficActor:
         for ovs in self._all_vehicle_states:
             if ovs.vehicle_id == self._state.vehicle_id:
                 continue
-            ov_lane = self._owner.road_map.nearest_lane(
-                ovs.pose.point, radius=ovs.dimensions.length
-            )
+            ov_lane = self._owner._nearest_lanes_cache[ovs.vehicle_id]
             if not ov_lane:
                 continue
 
             ov_lane = ov_lane.composite_lane
             if ov_lane == lane:
                 ov_ttc = ov_ttre = math.inf
-                ov_offset = lane.offset_along_lane(ovs.pose.point)
+                ov_offset = self._owner._cached_lane_offset(ovs, lane)
             else:
                 for rind in range(self._route_ind + 1, len(self._route)):
                     ov_route_len = my_route_lens.get((ov_lane.lane_id, self._route_ind))
@@ -603,7 +630,7 @@ class _TrafficActor:
                     )
                 if not connected:
                     continue
-                ov_offset = ov_lane.offset_along_lane(ovs.pose.point)
+                ov_offset = self._owner._cached_lane_offset(ovs, ov_lane)
                 ov_offset += my_offset + (path_len - ov_route_len)
 
             ov_front_offset = ov_offset + 0.5 * ovs.dimensions.length
@@ -706,19 +733,18 @@ class _TrafficActor:
         self._target_lane_win = best_lw
 
     def _compute_lane_speeds(self):
-        def _get_radius(lane: RoadMap.Lane, pos: Point) -> float:
-            l_offset = lane.offset_along_lane(pos)
+        def _get_radius(lane: RoadMap.Lane) -> float:
+            l_offset = self._owner._cached_lane_offset(self._state, lane)
             l_width, _ = lane.width_at_offset(l_offset)
             return lane.curvature_radius_at_offset(
                 l_offset, lookahead=max(math.ceil(2 * l_width), 2)
             )
 
         self._lane_speed = dict()
-        my_pos = self._state.pose.point
-        my_radius = _get_radius(self._lane, my_pos)
+        my_radius = _get_radius(self._lane)
         for l in self._lane.road.lanes:
             ratio = 1.0
-            l_radius = _get_radius(l, my_pos)
+            l_radius = _get_radius(l)
             if abs(my_radius) < 1e5 and abs(l_radius) < 1e5:
                 ratio = l_radius / my_radius
                 if ratio < 0:
