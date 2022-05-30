@@ -48,10 +48,10 @@ Types
     * `mission` - a field describing the vehicle plotted route
     * `linear_velocity` - Vehicle velocity along body coordinate axes. A numpy array of shape=(3,) and dtype=np.float64.
     * `angular_velocity` - Angular velocity vector. A numpy array of shape=(3,) and dtype=np.float64.
-    * `linear_acceleration`(Optional) - Linear acceleration vector. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor.
-    * `angular_acceleration`(Optional) - Angular acceleration vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor. 
-    * `linear_jerk`(Optional) - Linear jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor.
-    * `angular_jerk`(Optional) - Angular jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor.
+    * `linear_acceleration` (Optional) - Linear acceleration vector. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor.
+    * `angular_acceleration` (Optional) - Angular acceleration vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor. 
+    * `linear_jerk` (Optional) - Linear jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor.
+    * `angular_jerk` (Optional) - Angular jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor.
 * `VehicleObservation` - a subset of `EgoVehicleObservation` describing a vehicle:
     * `position`, `bounding_box`, `heading`, `speed`, `lane_id`, `lane_index` - the same as with `EgoVehicleObservation`
 * `ViaPoint` - 'Collectable' locations that can be placed within the simulation.
@@ -59,7 +59,7 @@ Types
     * `lane_index` - The lane index on the road this `ViaPoint` is associated with
     * `road_id` - The road id this `ViaPoint` is associated with
     * `required_speed` - The rough minimum speed required to collect this `ViaPoint`
-* `Vias` - A listing of nearby `ViaPoint`s and `ViaPoint`s collected in the last step
+* `Vias` - A listing of nearby `ViaPoint` and `ViaPoint` collected in the last step
 
 --------
 Features
@@ -78,24 +78,24 @@ Features
     * `agents_alive_done` - `True` if all configured co-simulating agents are done (if any). This is useful for cases the ego has dependence on other agents
 * `ego_vehicle_state` - A `EgoVehicleObservation` describing state information about the ego vehicle.
 * `neighborhood_vehicle_states` - a list of `VehicleObservation` within the configured distance of the vehicle.
-* `waypoint_paths` - A collection of `Waypoint`s in front of the ego vehicle showing the potential routes ahead. Each item is a `Waypoint` instance.
+* `waypoint_paths` - A collection of `Waypoint` in front of the ego vehicle showing the potential routes ahead. Each item is a `Waypoint` instance.
 * `distance_travelled` - The amount of distance that the ego vehicle has travelled along its mission route (or forward along road if no mission.)
-* `lidar_point_cloud`(Optional) - The result of a simulated lidar array sourced from the ego vehicle's center.
+* `lidar_point_cloud` (Optional) - The result of a simulated lidar array sourced from the ego vehicle's center.
   * Each item contains: a collection of hit points(or misses as an inf value), a collection of if the lidar point hit, and a collection of lines from emission point to hit(or inf).
-* `drivable_area_grid_map`(Optional) - contains an observation image with its metadata
+* `drivable_area_grid_map` (Optional) - contains an observation image with its metadata
     * `metadata` - `GridMapMetadata`
     * `data` - A grid map (default 256x256) that shows the static drivable area around the ego vehicle
-* `occupancy_grid_map`(Optional) - contains an observation image with its metadata
+* `occupancy_grid_map` (Optional) - contains an observation image with its metadata
     * `metadata` - `GridMapMetadata`
     * `data` - An `OGM <https://en.wikipedia.org/wiki/Occupancy_grid_mapping>`_ (default 256x256) around the ego vehicle
-* `top_down_rgb`(Optional) - contains an observation image with its metadata
+* `top_down_rgb` (Optional) - contains an observation image with its metadata
     * `metadata` - `GridMapMetadata`
     * `data` - A RGB image (default 256x256) with the ego vehicle at the center
 
 .. image:: ../_static/rgb.png
 
-* `road_waypoints`(Optional) - A collection of `Waypoint`s near the ego vehicle representing a `Waypoint` approximation of nearby lane centers.
-    * `lanes` - The representation of each lane represented by `Waypoint`s. Each item is list of `Waypoint`.
+* `road_waypoints` (Optional) - A collection of `Waypoint` near the ego vehicle representing a `Waypoint` approximation of nearby lane centers.
+    * `lanes` - The representation of each lane represented by `Waypoint`. Each item is list of `Waypoint`.
 * `via_data` - A `Vias` describing collectable points the agent can visit.
 
 See implementation in :class:`smarts.core.sensors`
