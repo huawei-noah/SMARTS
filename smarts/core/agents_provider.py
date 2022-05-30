@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 import logging
-from typing import Any, Dict, Set
+from typing import Any, Dict, List, Set
 
 from .controllers import ActionSpaceType, Controllers
 from .provider import Provider, ProviderState
@@ -33,7 +33,7 @@ class AgentsProvider(Provider):
     def __init__(self, sim):
         self._log = logging.getLogger(self.__class__.__name__)
         self._sim = sim
-        self._my_agent_vehicles: Dict[str, VehicleState] = dict()
+        self._my_agent_vehicles: Dict[str, List[VehicleState]] = dict()
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
