@@ -166,7 +166,7 @@ def main(
 
         # XXX replace with AgentSpec appropriate for IL model
         agent_spec = AgentSpec(
-            interface=AgentInterface.from_type(AgentType.Imitation),
+            interface=AgentInterface.from_type(AgentType.Direct),
             agent_builder=ReplayCheckerAgent,
             agent_params=smarts.fixed_timestep_sec,
         )

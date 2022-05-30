@@ -430,7 +430,6 @@ class VehicleIndex:
 
         vehicle = self._vehicles[vehicle_id]
         chassis = None
-        # change this to dynamic_action_spaces later when pr merged
         if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
             chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
         else:
@@ -701,7 +700,11 @@ class VehicleIndex:
         self._vehicles[vehicle_id] = vehicle
         self._2id_to_id[vehicle_id] = vehicle.id
 
-        actor_type = _ActorType.Social if source != "EXTERNAL" else _ActorType.External
+        actor_type = (
+            _ActorType.Social
+            if vehicle_state.source != "EXTERNAL"
+            else _ActorType.External
+        )
         entity = _ControlEntity(
             vehicle_id=vehicle_id,
             actor_id=actor_id,

@@ -18,13 +18,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-from typing import Dict, Set, Tuple
+from typing import Any, Dict, Set, Tuple
 
 import numpy as np
 
+from smarts.core.agents_provider import AgentsProvider
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.provider import Provider, ProviderState
+from smarts.core.provider import ProviderState
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
@@ -38,7 +39,7 @@ class TrajectoryWithTime:
     VEL_INDEX = 4
 
 
-class TrajectoryInterpolationProvider(Provider):
+class TrajectoryInterpolationProvider(AgentsProvider):
     """A provider used to perform trajectory interpolation on agent actors that request trajectory
     following.
     """
@@ -49,6 +50,18 @@ class TrajectoryInterpolationProvider(Provider):
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
         return {ActionSpaceType.TrajectoryWithTime}
+
+    @property
+    def _source(self) -> str:
+        return "TrajectoryInterpolation"
+
+    def perform_agent_actions(self, agent_actions: Dict[str, Any]):
+        # XXX:  we do the controller-ish stuff in step() below
+        # XXX:  but it would be better to move it here by sending the actions to a proper controller
+        # XXX:  (operating on a BoxChassis) that updates the vehicle's pose and speed
+        # XXX:  which then gets picked up as the Vehicle's new state in step() below.
+        # XXX:  In this way, it will happen *before* pybullet is stepped.
+        pass
 
     def setup(self, scenario) -> ProviderState:
         self._is_setup = True
@@ -84,7 +97,7 @@ class TrajectoryInterpolationProvider(Provider):
                     pose=pose,
                     dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
                     speed=speed,
-                    source="TrajectoryInterpolation",
+                    source=self._source,
                 )
             )
 

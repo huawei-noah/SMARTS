@@ -135,8 +135,8 @@ class AgentType(IntEnum):
     """Agent performs trajectory tracking using model predictive control."""
     TrajectoryInterpolator = 11
     """Agent performs linear trajectory interpolation."""
-    Imitation = 12
-    """Agent sees neighbor vehicles and performs actions based on imitation-learned model (acceleration, angular_velocity)."""
+    Direct = 12
+    """Agent sees neighbor vehicles and performs actions based on direct updates to (acceleration, angular_velocity)."""
 
 
 @dataclass(frozen=True)
@@ -380,11 +380,11 @@ class AgentInterface:
                 neighborhood_vehicles=True,
                 action=ActionSpaceType.Continuous,
             )
-        # For testing imitation learners
-        elif requested_type == AgentType.Imitation:
+        # Has been useful for testing imitation learners
+        elif requested_type == AgentType.Direct:
             interface = AgentInterface(
                 neighborhood_vehicles=True,
-                action=ActionSpaceType.Imitation,
+                action=ActionSpaceType.Direct,
             )
         else:
             raise Exception("Unsupported agent type %s" % requested_type)

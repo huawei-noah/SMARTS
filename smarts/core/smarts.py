@@ -36,8 +36,9 @@ from smarts.core.plan import Plan
 from . import models
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
+from .agents_provider import AgentsProvider, AgentPhysicsProvider, DirectControlProvider
 from .bubble_manager import BubbleManager
-from .controllers import ActionSpaceType, Controllers
+from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
 from .motion_planner_provider import MotionPlannerProvider
@@ -133,21 +134,19 @@ class SMARTS:
         self._total_sim_time = 0.0
         self._step_count = 0
 
+        self._agent_physics_provider = AgentPhysicsProvider(self)
+        self._direct_control_provider = DirectControlProvider(self)
         self._motion_planner_provider = MotionPlannerProvider()
         self._traffic_history_provider = TrafficHistoryProvider()
         self._trajectory_interpolation_provider = TrajectoryInterpolationProvider()
         self._provider_recovery_flags: Dict[Provider, ProviderRecoveryFlags] = {}
-        self._providers: List[Provider] = []
 
-        self.add_provider(
-            self._motion_planner_provider,
-        )
-        self.add_provider(
-            self._traffic_history_provider,
-        )
-        self.add_provider(
-            self._trajectory_interpolation_provider,
-        )
+        self._providers: List[Provider] = []
+        self.add_provider(self._agent_physics_provider)
+        self.add_provider(self._direct_control_provider)
+        self.add_provider(self._motion_planner_provider)
+        self.add_provider(self._traffic_history_provider)
+        self.add_provider(self._trajectory_interpolation_provider)
         for traffic_sim in self._traffic_sims:
             self._insert_provider(
                 0,
@@ -162,25 +161,11 @@ class SMARTS:
         # We buffer provider state between steps to compensate for TRACI's timestep delay
         self._last_provider_state = None
         self._reset_agents_only = reset_agents_only  # a.k.a "teleportation"
-        self._imitation_learning_mode = False
 
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
         # self._bullet_client = BulletClient(pybullet.GUI)
         self._bullet_client = bc.BulletClient(pybullet.DIRECT)
-        # TODO:  rename to "physical_action_spaces"?  (really determines what type of chassis is used for agent...)
-        self._dynamic_action_spaces = {
-            ActionSpaceType.Continuous,
-            ActionSpaceType.Lane,
-            ActionSpaceType.ActuatorDynamic,
-            ActionSpaceType.LaneWithContinuousSpeed,
-            ActionSpaceType.Trajectory,
-            ActionSpaceType.MPC,
-            # ActionSpaceType.Imitation,
-            # ActionSpaceType.TargetPose,
-            # ActionSpaceType.MultiTargetPose,
-            # ActionSpaceType.TrajectoryWithTime,
-        }
 
         # Set up indices
         self._agent_manager = AgentManager(agent_interfaces, zoo_addrs)
@@ -423,6 +408,7 @@ class SMARTS:
                 ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
                 vehicle_ids_to_teardown.extend(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
+            self._reset_providers()
             assert self._trap_manager
             self._trap_manager.init_traps(scenario.road_map, scenario.missions, self)
             self._agent_manager.init_ego_agents(self)
@@ -430,6 +416,7 @@ class SMARTS:
                 self._sync_vehicles_to_renderer()
         else:
             self.teardown()
+            self._reset_providers()
             self.setup(scenario)
 
         # Tell history provide to ignore vehicles if we have assigned mission to them
@@ -449,8 +436,6 @@ class SMARTS:
 
         while len(self._agent_manager.ego_agent_ids) and len(observations_for_ego) < 1:
             observations_for_ego, _, _, _ = self.step({})
-
-        self._reset_providers()
 
         return observations_for_ego
 
@@ -797,8 +782,8 @@ class SMARTS:
 
     @property
     def dynamic_action_spaces(self) -> Set[ActionSpaceType]:
-        """The set of vehicle action spaces that use dynamics."""
-        return self._dynamic_action_spaces
+        """The set of vehicle action spaces that use dynamics (physics)."""
+        return self._agent_physics_provider.action_spaces
 
     @property
     def traffic_sim(self) -> Optional[TrafficProvider]:
@@ -901,11 +886,10 @@ class SMARTS:
 
         # Update our pybullet world given this provider state
         dt = provider_state.dt or self._last_dt
-        agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         for vehicle in provider_state.vehicles:
             vehicle_id = vehicle.vehicle_id
             # either this is a pybullet agent vehicle (ego or social), or it is a social vehicle (traffic)
-            if vehicle_id in agent_vehicle_ids:
+            if vehicle_id in self._vehicle_index.agent_vehicle_ids():
                 # this is an agent vehicle
                 if not vehicle.updated:
                     agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
@@ -913,11 +897,10 @@ class SMARTS:
                         agent_id
                     )
                     agent_action_space = agent_interface.action_space
-                    if agent_action_space not in self._dynamic_action_spaces:
+                    if agent_action_space not in self.dynamic_action_spaces:
                         # This is not a pybullet agent, but it has an avatar in this world
                         # to make it's observations. Update the avatar to match the new
                         # state of this vehicle
-                        # XXX: this needs to be disentangled from pybullet.
                         pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                         assert isinstance(pybullet_vehicle.chassis, BoxChassis)
                         pybullet_vehicle.update_state(vehicle, dt=dt)
@@ -928,20 +911,12 @@ class SMARTS:
                 else:
                     # It is a new social vehicle we have not seen yet.
                     # Create it's avatar.
-                    # XXX: this needs to be disentangled from pybullet.
-                    # XXX: (adding social vehicles to the vehicle index should not require pybullet to be present)
                     social_vehicle = self._vehicle_index.build_social_vehicle(
                         sim=self,
                         vehicle_state=vehicle,
                         actor_id=vehicle_id,
                         vehicle_id=vehicle_id,
                         vehicle_config_type=vehicle.vehicle_config_type,
-                    )
-
-                # Update social vehicle pose when no active agents are present
-                if not agent_vehicle_ids:
-                    social_vehicle.chassis.state_override(
-                        dt=dt, force_pose=vehicle.pose
                     )
 
                 if not vehicle.updated:
@@ -957,31 +932,6 @@ class SMARTS:
             self._bullet_client.stepSimulation()
         for vehicle in self._vehicle_index.vehicles:
             vehicle.step(self._elapsed_sim_time)
-
-    # TODO:  This allows harmonizing agent-controlled state with provider-controlled state
-    def _get_provider_state(self, source: str, action_space_pred) -> ProviderState:
-        agent_ids = {
-            agent_id
-            for agent_id, interface in self._agent_manager.agent_interfaces.items()
-            if action_space_pred(interface.action_space)
-        }
-        provider_state = ProviderState()
-        for vehicle_id in self._vehicle_index.agent_vehicle_ids():
-            agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
-            if agent_id not in agent_ids:
-                continue
-            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            provider_state.vehicles.append(
-                VehicleState(
-                    vehicle_id=vehicle.id,
-                    vehicle_config_type="passenger",
-                    pose=vehicle.pose,
-                    dimensions=vehicle.chassis.dimensions,
-                    speed=vehicle.speed,
-                    source=source,
-                )
-            )
-        return provider_state
 
     @property
     def vehicle_index(self):
@@ -1051,6 +1001,7 @@ class SMARTS:
             provider, ProviderRecoveryFlags.EXPERIMENT_REQUIRED
         )
         recovered = False
+        provider_state = None
         if recovery_flags & ProviderRecoveryFlags.ATTEMPT_RECOVERY:
             provider_state, recovered = provider.recover(
                 self._scenario, self.elapsed_sim_time, provider_error
@@ -1074,101 +1025,72 @@ class SMARTS:
         # default to re-raise error
         raise provider_error
 
-    def _step_providers(self, actions) -> ProviderState:
-        def agent_controls_vehicles(agent_id):
-            vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
-            return len(vehicles) > 0
-
-        def matches_provider_action_spaces(agent_id, action_spaces):
-            interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
-            return interface.action_space in action_spaces
-
-        def matches_no_provider_action_space(agent_id):
-            interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
-            for provider in self.providers:
-                if interface.action_space in provider.action_spaces:
-                    return False
-            return True
-
-        pybullet_actions = {}
-        other_actions = {}
+    def _provider_actions(
+        self, provider: Provider, actions: Dict[str, Any]
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        agent_actions = dict()
+        vehicle_actions = dict()
         for agent_id, action in actions.items():
-            if not agent_controls_vehicles(agent_id):
+            # TAI:  reconsider include_shadowers = True
+            vehicles = self._vehicle_index.vehicles_by_actor_id(
+                agent_id, include_shadowers=True
+            )
+            if not vehicles:
                 continue
-            if matches_provider_action_spaces(agent_id, self._dynamic_action_spaces):
-                pybullet_actions[agent_id] = action
-            elif matches_no_provider_action_space(agent_id):
-                other_actions[agent_id] = action
+
+            interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
+            assert interface, f"agent {agent_id} has no interface"
+            if interface.action_space not in provider.action_spaces:
+                continue
+            assert isinstance(provider, AgentsProvider)
+
+            agent_actions[agent_id] = action
+
+            if self._agent_manager.is_boid_agent(agent_id):
+                vehicle_ids = [v.id for v in vehicles]
+                for vehicle_id, vehicle_action in action.items():
+                    assert vehicle_id in vehicle_ids
+                    vehicle_actions[vehicle_id] = vehicle_action
+            else:
+                assert len(vehicles) == 1
+                vehicle_actions[vehicles[0].id] = action
+
+        return agent_actions, vehicle_actions
+
+    def _step_providers(self, actions) -> ProviderState:
+        provider_vehicle_actions = dict()
+        for provider in self.providers:
+            agent_actions, vehicle_actions = self._provider_actions(provider, actions)
+            provider_vehicle_actions[provider] = vehicle_actions
+            if isinstance(provider, AgentsProvider):
+                provider.perform_agent_actions(agent_actions)
+
+        self._check_ground_plane()
+        self._step_pybullet()
+        self._process_collisions()
 
         accumulated_provider_state = ProviderState()
-        if pybullet_actions or other_actions:
-            self._perform_agent_actions(pybullet_actions)
-            self._perform_agent_actions(other_actions)
-            self._check_ground_plane()
-            self._step_pybullet()
-            self._process_collisions()
-            if pybullet_actions:
-                as_pred = (
-                    lambda action_space: action_space in self._dynamic_action_spaces
-                )
-                accumulated_provider_state.merge(
-                    self._get_provider_state("PYBULLET", as_pred)
-                )
-            if other_actions:
-                as_pred = (
-                    lambda action_space: action_space not in self._dynamic_action_spaces
-                )
-                accumulated_provider_state.merge(
-                    self._get_provider_state("OTHER", as_pred)
-                )
 
         agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         for provider in self.providers:
             try:
-                provider_state = self._step_provider(provider, actions)
+                provider_state = provider.step(
+                    provider_vehicle_actions[provider],
+                    self._last_dt,
+                    self._elapsed_sim_time,
+                )
             except Exception as provider_error:
                 provider_state = self._handle_provider(provider, provider_error)
+                raise
 
             if isinstance(provider, TrafficProvider):
                 # Remove agent vehicles from provider vehicles
+                # TODO: better to always removed hijacked/trapped vehicles from TrafficProvider immediately!
                 provider_state.filter(agent_vehicle_ids)
             accumulated_provider_state.merge(provider_state)
 
         self._harmonize_providers(accumulated_provider_state)
         return accumulated_provider_state
-
-    def _step_provider(self, provider, actions):
-        def agent_controls_vehicles(agent_id):
-            vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
-            return len(vehicles) > 0
-
-        provider_actions = {}
-        for agent_id, action in actions.items():
-            agent_interface = self._agent_manager.agent_interfaces.get(agent_id, None)
-            if (
-                agent_interface
-                and agent_controls_vehicles(agent_id)
-                and agent_interface.action_space in provider.action_spaces
-            ):
-                vehicle_ids = [
-                    v.id
-                    for v in self._vehicle_index.vehicles_by_actor_id(
-                        agent_id, include_shadowers=True
-                    )
-                ]
-
-                if self._agent_manager.is_boid_agent(agent_id):
-                    for vehicle_id, vehicle_action in action.items():
-                        assert vehicle_id in vehicle_ids
-                        provider_actions[vehicle_id] = vehicle_action
-                else:
-                    assert len(vehicle_ids) == 1
-                    provider_actions[vehicle_ids[0]] = action
-
-        provider_state = provider.step(
-            provider_actions, self._last_dt, self._elapsed_sim_time
-        )
-        return provider_state
 
     @property
     def should_reset(self):
@@ -1259,38 +1181,6 @@ class SMARTS:
     def _clear_collisions(self, vehicle_ids):
         for vehicle_id in vehicle_ids:
             self._vehicle_collisions.pop(vehicle_id, None)
-
-    def _perform_agent_actions(self, agent_actions):
-        for agent_id, action in agent_actions.items():
-            agent_vehicles = self._vehicle_index.vehicles_by_actor_id(agent_id)
-            if len(agent_vehicles) == 0:
-                self._log.warning(
-                    f"{agent_id} doesn't have a vehicle, is the agent done? (dropping action)"
-                )
-                continue
-            agent_interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
-            is_boid_agent = self._agent_manager.is_boid_agent(agent_id)
-
-            for vehicle in agent_vehicles:
-                vehicle_action = action[vehicle.id] if is_boid_agent else action
-
-                controller_state = self._vehicle_index.controller_state_for_vehicle_id(
-                    vehicle.id
-                )
-                sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(
-                    vehicle.id
-                )
-                # TODO: Support performing batched actions
-                Controllers.perform_action(
-                    self,
-                    agent_id,
-                    vehicle,
-                    vehicle_action,
-                    controller_state,
-                    sensor_state,
-                    agent_interface.action_space,
-                    agent_interface.vehicle_type,
-                )
 
     def _sync_vehicles_to_renderer(self):
         assert self._renderer

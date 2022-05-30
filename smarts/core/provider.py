@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 from dataclasses import dataclass, field
 from enum import IntFlag
-from typing import List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from .controllers import ActionSpaceType
 from .scenario import Scenario
@@ -94,7 +94,7 @@ class Provider:
         raise NotImplementedError
 
     def sync(self, provider_state: ProviderState):
-        """Synchronize with external state."""
+        """Synchronize with state managed by other Providers."""
         raise NotImplementedError
 
     def create_vehicle(self, provider_vehicle: VehicleState):

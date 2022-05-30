@@ -369,5 +369,5 @@ def adapter_data():
             (2, 4, -2.9, 20),
             (165.23485529, 1.2, 1.81238898, 20.0),
         ),
-        (ActionSpaceType.Imitation, (2, 2), (2, 2)),
+        (ActionSpaceType.Direct, (2, 2), (2, 2)),
     ]

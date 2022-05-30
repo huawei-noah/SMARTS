@@ -569,21 +569,21 @@ class AgentManager:
         # Observations contain those for social agents; filter them out
         return self._filter_for_active_ego(observations)
 
-    def agent_name(self, agent_id: str):
+    def agent_name(self, agent_id: str) -> str:
         """Get the resolved agent name."""
         if agent_id not in self._social_agent_data_models:
             return ""
 
         return self._social_agent_data_models[agent_id].name
 
-    def is_boid_agent(self, agent_id: str):
+    def is_boid_agent(self, agent_id: str) -> bool:
         """Check if an agent is a boid agent"""
         if agent_id not in self._social_agent_data_models:
             return False
 
         return self._social_agent_data_models[agent_id].is_boid
 
-    def is_boid_keep_alive_agent(self, agent_id: str):
+    def is_boid_keep_alive_agent(self, agent_id: str) -> bool:
         """Check if this is a persistent boid agent"""
         if agent_id not in self._social_agent_data_models:
             return False

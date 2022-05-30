@@ -17,19 +17,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Set
+from typing import Any, Dict, Set
 
 import numpy as np
 
+from .agents_provider import AgentsProvider
 from .bezier_motion_planner import BezierMotionPlanner
 from .controllers import ActionSpaceType
 from .coordinates import Heading, Pose
-from .provider import Provider, ProviderState
+from .provider import ProviderState
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-class MotionPlannerProvider(Provider):
-    """A provider that reshapes vehicle motion to follow a motion plan."""
+class MotionPlannerProvider(AgentsProvider):
+    """A provider that reshapes agent vehicle motion to follow a motion plan."""
 
     _poses: np.ndarray
 
@@ -43,6 +44,18 @@ class MotionPlannerProvider(Provider):
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
         return {ActionSpaceType.TargetPose, ActionSpaceType.MultiTargetPose}
+
+    @property
+    def _source(self) -> str:
+        return "BEZIER"
+
+    def perform_agent_actions(self, agent_actions: Dict[str, Any]):
+        # XXX:  we do the controller-ish stuff in step() below
+        # XXX:  but it would be better to move it here by sending the actions to a proper controller
+        # XXX:  (operating on a BoxChassis) that updates the vehicle's pose and speed
+        # XXX:  which then gets picked up as the Vehicle's new state in step() below.
+        # XXX:  In this way, it will happen *before* pybullet is stepped.
+        pass
 
     def setup(self, scenario) -> ProviderState:
         self._motion_planner = BezierMotionPlanner()
@@ -110,7 +123,7 @@ class MotionPlannerProvider(Provider):
                     ),
                     dimensions=VEHICLE_CONFIGS[vehicle_config_type].dimensions,
                     speed=speeds[idx],
-                    source="BEZIER",
+                    source=self._source,
                 )
                 for idx, v_id in enumerate(self._vehicle_id_to_index.keys())
             ],

@@ -85,7 +85,6 @@ class LocalTrafficProvider(TrafficProvider):
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
-        # TODO:  consider removing this and create_vehicle() from the Provider base class
         return set()
 
     def manages_vehicle(self, vehicle_id: str) -> bool:

@@ -127,6 +127,9 @@ def test_bubble_manager_state_change(smarts, mock_provider):
 
             # XXX: this is necessary because the bubble manager doesn't know
             # XXX: what route to give the agent when it hijacks vehicle.
+            # XXX: note this doesn't update the plan.route for the agent stored in sensor_state,
+            # XXX: so the agent will be marked off-route and done as soon as it crosses from
+            # XXX: "west" to "east".
             smarts.traffic_sims[0].update_route_for_vehicle(
                 vehicle_id, ["west", "east"]
             )
