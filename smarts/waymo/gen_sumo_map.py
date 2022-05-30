@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
 from smarts.core.waymo_map import WaymoMap
+from waymo_open_dataset.protos import map_pb2
 
 
 class SumoMapGenerator:
@@ -59,7 +60,9 @@ class SumoMapGenerator:
         return map_features
 
     @staticmethod
-    def _convert_polyline(polyline) -> Tuple[List[float], List[float]]:
+    def _convert_polyline(
+        polyline: map_pb2.MapPoint,
+    ) -> Tuple[List[float], List[float]]:
         tuples = [(p.x, p.y) for p in polyline]
         xs, ys = zip(*tuples)
         return xs, ys
@@ -178,7 +181,7 @@ class SumoMapGenerator:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="gen_sumo_map.py",
-        description="Extract map data from a Waymo Motion Dataset scenario and generate a SUMO map.",
+        description="Extracts the map information from a Waymo Motion Dataset scenario and generates a SUMO network file.",
     )
     parser.add_argument("file", help="TFRecord file")
     parser.add_argument("id", help="ID of the scenario")
