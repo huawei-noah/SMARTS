@@ -14,7 +14,10 @@ Here we will introduce details of available observation types.
 For `AgentType.Full`, which contains the most concrete observation details, the raw observation returned
 is a Python `NamedTuple` with the following fields:
 
-Types:
+-----
+Types
+-----
+
 * `GridMapMetadata` - Metadata for the observation maps with the following information,
     * `created_at` - time at which the map was loaded
     * `resolution` - map resolution in world-space-distance/cell
@@ -58,7 +61,10 @@ Types:
     * `required_speed` - The rough minimum speed required to collect this `ViaPoint`
 * `Vias` - A listing of nearby `ViaPoint`s and `ViaPoint`s collected in the last step
 
-Features:
+--------
+Features
+--------
+
 * `dt` - the amount of simulation time since the last step
 * `step_count` - Number of steps taken by SMARTS thus far for the current scenario
 * `elapsed_sim_time` - The amount of simulation time elapsed in SMARTS thus far for the current scenario
