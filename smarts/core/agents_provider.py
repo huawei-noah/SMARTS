@@ -99,6 +99,8 @@ class AgentsProvider(Provider):
             ]
 
     def perform_agent_actions(self, agent_actions: Dict[str, Any]):
+        """Apply actions to the vheicle(s) controlled by each managed agent
+        via the appropriate controllers."""
         self._remove_missing_vehicles(agent_actions)
         actions_without_agents = agent_actions.keys() - self._my_agent_vehicles.keys()
         assert (

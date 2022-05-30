@@ -637,7 +637,6 @@ class OpenDriveRoadNetwork(RoadMap):
         return self._xodr_file
 
     def is_same_map(self, map_spec: MapSpec) -> bool:
-        """Check if this road network is the same as described by a specification."""
         return (
             (
                 map_spec.source == self._map_spec.source
@@ -654,12 +653,10 @@ class OpenDriveRoadNetwork(RoadMap):
         )
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
-        """Get a surface by the given id."""
         return self._surfaces.get(surface_id)
 
     @cached_property
     def bounding_box(self) -> BoundingBox:
-        """Return a bounding box that encapsulates the map."""
         x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
         for road_id in self._roads:
             road = self._roads[road_id]
@@ -674,7 +671,6 @@ class OpenDriveRoadNetwork(RoadMap):
         )
 
     def to_glb(self, at_path):
-        """Build a glb file for camera rendering and envision."""
         glb = self._make_glb_from_polys()
         glb.write_glb(at_path)
 
@@ -764,7 +760,7 @@ class OpenDriveRoadNetwork(RoadMap):
         return lane_dividers, road_dividers
 
     class Surface(RoadMap.Surface):
-        """Describes a surface."""
+        """Describes an OpenDRIVE surface."""
 
         def __init__(self, surface_id: str):
             self._surface_id = surface_id
@@ -779,7 +775,7 @@ class OpenDriveRoadNetwork(RoadMap):
             raise NotImplementedError
 
     class Lane(RoadMap.Lane, Surface):
-        """Describes a lane."""
+        """Describes an OpenDRIVE lane."""
 
         def __init__(
             self,
@@ -912,6 +908,7 @@ class OpenDriveRoadNetwork(RoadMap):
         @cached_property
         def bounding_box(self) -> Optional[BoundingBox]:
             """Get the minimal axis aligned bounding box that contains all geometry in this lane."""
+            # XXX: This shoudn't be public.
             x_coordinates, y_coordinates = zip(*self.lane_polygon)
             self._bounding_box = BoundingBox(
                 min_pt=Point(x=min(x_coordinates), y=min(y_coordinates)),
@@ -1160,10 +1157,6 @@ class OpenDriveRoadNetwork(RoadMap):
         def shape(
             self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
-            """Returns a convex polygon representing this lane, buffered by buffered_width (which must be non-negative),
-            where buffer_width is a buffer around the perimeter of the polygon.  In some situations, it may be desirable to
-            also specify a `default_width`, in which case the returned polygon should have a convex shape where the
-            distance across it is no less than buffered_width + default_width at any point."""
             if buffer_width == 0.0:
                 return Polygon(self._lane_polygon)
             buffered_polygon = self._compute_lane_polygon(buffer_width / 2)
@@ -1248,11 +1241,13 @@ class OpenDriveRoadNetwork(RoadMap):
         @property
         def bounding_box(self) -> Optional[BoundingBox]:
             """Get the minimal axis aligned bounding box that contains all road geometry."""
+            # XXX: This shouldn't be public.
             # XXX: The return here should be Optional[BoundingBox]
             return self._bounding_box
 
         @bounding_box.setter
         def bounding_box(self, value):
+            # XXX: This shouldn't be public.
             self._bounding_box = value
 
         @lru_cache(maxsize=8)
@@ -1336,10 +1331,6 @@ class OpenDriveRoadNetwork(RoadMap):
         def shape(
             self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
-            """Returns a convex polygon representing this , buffered by buffered_width (which must be non-negative),
-            where buffer_width is a buffer around the perimeter of the polygon.  In some situations, it may be desirable to
-            also specify a `default_width`, in which case the returned polygon should have a convex shape where the
-            distance across it is no less than buffered_width + default_width at any point."""
             leftmost_edge_shape, rightmost_edge_shape = self._edge_shape(buffer_width)
             road_polygon = (
                 leftmost_edge_shape + rightmost_edge_shape + [leftmost_edge_shape[0]]
@@ -1427,7 +1418,7 @@ class OpenDriveRoadNetwork(RoadMap):
         return None
 
     class Route(RoadMap.Route):
-        """Describes a route between two roads."""
+        """Describes a route between two OpenDRIVE roads."""
 
         def __init__(self, road_map):
             self._roads = []
@@ -1442,8 +1433,7 @@ class OpenDriveRoadNetwork(RoadMap):
         def road_length(self) -> float:
             return self._length
 
-        def add_road(self, road: RoadMap.Road):
-            """Add a road to this route."""
+        def _add_road(self, road: RoadMap.Road):
             self._length += road.length
             self._roads.append(road)
 
@@ -1600,7 +1590,7 @@ class OpenDriveRoadNetwork(RoadMap):
             route_roads.extend(sub_route[:-1])
 
         for road in route_roads:
-            newroute.add_road(road)
+            newroute._add_road(road)
         return result
 
     def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
@@ -1608,7 +1598,7 @@ class OpenDriveRoadNetwork(RoadMap):
         next_roads = list(self._roads.values())
         while next_roads and len(route.roads) < max_route_len:
             cur_road = random.choice(next_roads)
-            route.add_road(cur_road)
+            route._add_road(cur_road)
             next_roads = list(cur_road.outgoing_roads)
         return route
 

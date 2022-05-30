@@ -932,8 +932,6 @@ class WaymoMap(RoadMap):
         def shape(
             self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
-            """Returns a polygon representing this lane, buffered by buffered_width (which must be non-negative),
-            where buffer_width is a buffer around the perimeter of the polygon."""
             if buffer_width == 0.0:
                 return Polygon(self._lane_polygon)
             new_width = self._lane_width + buffer_width
@@ -1287,8 +1285,6 @@ class WaymoMap(RoadMap):
         def shape(
             self, buffer_width: float = 0.0, default_width: Optional[float] = None
         ) -> Polygon:
-            """Returns the polygon representing this buffered by buffered_width (which must be non-negative),
-            where buffer_width is a buffer around the perimeter of the polygon."""
             # TODO:  use buffer_width
             return Polygon(
                 (
@@ -1382,7 +1378,7 @@ class WaymoMap(RoadMap):
         return None
 
     class Route(RoadMap.Route):
-        """Describes a route between roads."""
+        """Describes a route between Waymo roads."""
 
         def __init__(self, road_map):
             self._roads = []
@@ -1397,8 +1393,7 @@ class WaymoMap(RoadMap):
         def road_length(self) -> float:
             return self._length
 
-        def add_road(self, road: RoadMap.Road):
-            """Add a road to this route."""
+        def _add_road(self, road: RoadMap.Road):
             self._length += road.length
             self._roads.append(road)
 
@@ -1553,7 +1548,7 @@ class WaymoMap(RoadMap):
             route_roads.extend(sub_route[:-1])
 
         for road in route_roads:
-            new_route.add_road(road)
+            new_route._add_road(road)
         return result
 
     def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
@@ -1561,7 +1556,7 @@ class WaymoMap(RoadMap):
         next_roads = list(self._roads.values())
         while next_roads and len(route.roads) < max_route_len:
             cur_road = random.choice(next_roads)
-            route.add_road(cur_road)
+            route._add_road(cur_road)
             next_roads = list(cur_road.outgoing_roads)
         return route
 

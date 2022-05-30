@@ -57,7 +57,7 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 # TODO:  debug traffic jams
 # TODO:  dynamic routing
 # TODO:  reconsider vehicle dims stuff from proposal
-# TODO:  refactor of Providers and Controllers (or remove comments)
+# TODO:  refactor MPP and TIP into Controllers
 
 
 class LocalTrafficProvider(TrafficProvider):
