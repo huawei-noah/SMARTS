@@ -46,7 +46,7 @@ from .utils.math import (
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
-# TODO:  profile and adjust lru_cache sizes for *all* map types
+# TODO:  profile
 # TODO:  add tests to test_traffic_simulation.py
 # TODO:  reserved area tests
 # TODO:  bubble hijacking tests

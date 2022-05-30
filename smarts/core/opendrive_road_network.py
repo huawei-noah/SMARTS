@@ -1057,7 +1057,7 @@ class OpenDriveRoadNetwork(RoadMap):
                 )
             return False
 
-        @lru_cache(maxsize=8)
+        @lru_cache(maxsize=64)
         def offset_along_lane(self, world_point: Point) -> float:
             return offset_along_shape(world_point[:2], self._centerline_points)
 
@@ -1087,11 +1087,11 @@ class OpenDriveRoadNetwork(RoadMap):
                     result.append(lane)
             return result
 
-        @lru_cache(maxsize=8)
+        @lru_cache(maxsize=64)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             return position_at_shape_offset(self._centerline_points, lane_point.s)
 
-        @lru_cache(maxsize=8)
+        @lru_cache(maxsize=64)
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
             return super().to_lane_coord(world_point)
 
@@ -1123,7 +1123,7 @@ class OpenDriveRoadNetwork(RoadMap):
             right_edge = position_at_shape_offset(right_edge_shape, right_offset)
             return left_edge, right_edge
 
-        @lru_cache(8)
+        @lru_cache(64)
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
             return super().vector_at_offset(start_offset)
 
@@ -1131,13 +1131,13 @@ class OpenDriveRoadNetwork(RoadMap):
         def center_pose_at_point(self, point: Point) -> Pose:
             return super().center_pose_at_point(point)
 
-        @lru_cache(maxsize=8)
+        @lru_cache(maxsize=64)
         def curvature_radius_at_offset(
             self, offset: float, lookahead: int = 5
         ) -> float:
             return super().curvature_radius_at_offset(offset, lookahead)
 
-        @lru_cache(maxsize=8)
+        @lru_cache(maxsize=64)
         def width_at_offset(self, lane_point_s: float) -> Tuple[float, float]:
             start_pos = self.road._start_pos
             if self._lane_elem_index < 0:
@@ -1384,7 +1384,7 @@ class OpenDriveRoadNetwork(RoadMap):
                 neighboring_lanes.append((lane, d))
         return neighboring_lanes
 
-    @lru_cache(maxsize=16)
+    @lru_cache(maxsize=64)
     def nearest_lanes(
         self, point: Point, radius: Optional[float] = None, include_junctions=False
     ) -> List[Tuple[RoadMap.Lane, float]]:
