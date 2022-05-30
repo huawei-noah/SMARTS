@@ -17,7 +17,7 @@ beautifulsoup4==4.11.1
 bleach==5.0.0
 blessings==1.7
 cached-property==1.5.2
-cachetools==5.1.0
+cachetools==5.2.0
 certifi==2022.5.18.1
 cffi==1.15.0
 charset-normalizer==2.0.12
@@ -46,11 +46,11 @@ gast==0.4.0
 gitdb==4.0.9
 GitPython==3.1.27
 google==3.0.0
-google-api-core==2.8.0
+google-api-core==2.8.1
 google-auth==2.6.6
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
-googleapis-common-protos==1.56.1
+googleapis-common-protos==1.56.2
 gpustat==0.6.0
 grpcio==1.32.0
 gym==0.19.0
@@ -63,7 +63,7 @@ importlib-resources==5.7.1
 incremental==21.3.0
 iniconfig==1.1.1
 ipykernel==6.13.0
-ipython==7.33.0
+ipython==7.34.0
 jedi==0.18.1
 Jinja2==3.1.2
 jsonpatch==1.32
@@ -112,7 +112,7 @@ Pillow==9.1.1
 pluggy==1.0.0
 prometheus-client==0.14.1
 prompt-toolkit==3.0.29
-protobuf==3.19.4
+protobuf==3.20.1
 psutil==5.9.1
 ptyprocess==0.7.0
 py==1.11.0
@@ -156,7 +156,7 @@ tensorboard==2.9.0
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
 tensorboardX==2.5
-tensorflow==2.9.1
+tensorflow==2.9.0
 tensorflow-estimator==2.9.0
 tensorflow-io-gcs-filesystem==0.26.0
 termcolor==1.1.0
