@@ -29,10 +29,13 @@ from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
 from smarts.core.waymo_map import WaymoMap
-from smarts.sstudio.types import MapSpec
 
 
 class SumoMapGenerator:
+    """Extracts the map information from a Waymo Motion Dataset scenario
+    and generates a SUMO network file.
+    """
+
     def __init__(self):
         self.nodes_root = None
         self.edges_root = None
@@ -40,8 +43,7 @@ class SumoMapGenerator:
     @staticmethod
     def _read_map_data(path: str, scenario_id: str) -> Dict:
         source = f"{path}#{scenario_id}"
-        map_spec = MapSpec(source)
-        scenario = WaymoMap._parse_source_to_scenario(source)
+        scenario = WaymoMap.parse_source_to_scenario(source)
 
         if scenario is None:
             errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
@@ -108,6 +110,11 @@ class SumoMapGenerator:
         lane.set("shape", shape_str)
 
     def generate(self, path: str, scenario_id: str):
+        """
+        Args:
+            path (str): Absolute path to the TFRecord file.
+            scenario_id (str): ID of the scenario to be converted.
+        """
         edge_counter = SumoMapGenerator._make_counter()
         node_counter = SumoMapGenerator._make_counter()
         self.nodes_root = ET.Element("nodes")
