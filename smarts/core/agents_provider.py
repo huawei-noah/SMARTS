@@ -108,7 +108,7 @@ class AgentsProvider(Provider):
         ), f"actions specified for non-tracked agents:  {actions_without_agents}"
         for agent_id, vehicle_states in self._my_agent_vehicles.items():
             action = agent_actions.get(agent_id)
-            if not action:
+            if action is None or len(action) == 0:
                 self._log.info(f"no actions for agent_id={agent_id}")
                 continue
             agent_interface = self._sim.agent_manager.agent_interface_for_agent_id(
