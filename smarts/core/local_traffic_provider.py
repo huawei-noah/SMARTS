@@ -367,7 +367,7 @@ class _TrafficActor:
         lane = road.lanes[lane_ind]
         offset = flow[f"{depart_arrival}Pos"]
         if offset == "max":
-            offset = lanelength
+            offset = lane.length
             if depart_arrival == "depart":
                 offset -= 0.5 * dimensions
         elif offset == "random":
