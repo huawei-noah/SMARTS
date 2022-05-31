@@ -17,7 +17,9 @@ traffic_histories = [
 
 gen_scenario(
     t.Scenario(
-        map_spec=t.MapSpec(source=f"{dataset_path}#{scenario_id}"),
+        map_spec=t.MapSpec(
+            source=f"{dataset_path}#{scenario_id}", lanepoint_spacing=1.0
+        ),
         traffic_histories=traffic_histories,
     ),
     output_dir=Path(__file__).parent,
