@@ -21,15 +21,14 @@ import logging
 import random as rand
 from collections import defaultdict
 from dataclasses import dataclass, replace
-from typing import Dict, Sequence
+from typing import Dict, Sequence, Set
 
-import numpy as np
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Polygon
 
 from smarts.core.coordinates import Point as MapPoint
 from smarts.core.plan import Mission, Plan, Start, default_entry_tactic
 from smarts.core.utils.math import clip, squared_dist
-from smarts.core.vehicle import Vehicle, VehicleState
+from smarts.core.vehicle import Vehicle
 from smarts.sstudio.types import MapZone, TrapEntryTactic
 
 
@@ -43,26 +42,20 @@ class Trap:
     """The mission that this trap should assign the captured actor."""
     exclusion_prefixes: Sequence[str]
     """Prefixes of actors that should be ignored by this trap."""
-    remaining_time_to_activation: float
+    activation_time: float
     """The amount of time left until this trap activates."""
     patience: float
     """Patience to wait for better capture circumstances after which the trap expires."""
     default_entry_speed: float
     """The default entry speed of a new vehicle should this trap expire."""
 
-    def step_trigger(self, dt: float):
-        """Update the trigger state"""
-        self.remaining_time_to_activation -= dt
-
-    @property
-    def ready(self):
+    def ready(self, sim_time: float):
         """If the trap is ready to capture a vehicle."""
-        return self.remaining_time_to_activation < 0
+        return self.activation_time <= sim_time
 
-    @property
-    def patience_expired(self):
+    def patience_expired(self, sim_time: float):
         """If the trap has expired and should no longer capture a vehicle."""
-        return self.remaining_time_to_activation < -self.patience
+        return self.activation_time + self.patience <= sim_time
 
     def includes(self, vehicle_id: str):
         """Returns if the given actor should be considered for capture."""
@@ -75,29 +68,67 @@ class Trap:
 class TrapManager:
     """Facilitates agent hijacking of actors"""
 
-    def __init__(self, scenario):
+    def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._traps: Dict[str, Trap] = defaultdict(Trap)
-        self.init_traps(scenario.road_map, scenario.missions)
+        self._traps: Dict[str, Trap] = {}
+        self._cancelled_agents: Set[str] = set()
 
-    def init_traps(self, road_map, missions):
+    def init_traps(self, road_map, missions, sim):
         """Set up the traps used to capture actors."""
+        from smarts.core.smarts import SMARTS
+
+        assert isinstance(sim, SMARTS)
         self._traps.clear()
         for agent_id, mission in missions.items():
-            self.add_trap_for_agent(agent_id, mission, road_map)
+            self.add_trap_for_agent(
+                agent_id, mission, road_map, sim.elapsed_sim_time, reject_expired=True
+            )
+        if len(self._cancelled_agents) > 0:
+            sim.agent_manager.teardown_ego_agents(self._cancelled_agents)
+            self._cancelled_agents.clear()
 
-    def add_trap_for_agent(self, agent_id: str, mission: Mission, road_map) -> bool:
-        """Add a new trap to capture an actor for the given agent."""
+    def add_trap_for_agent(
+        self,
+        agent_id: str,
+        mission: Mission,
+        road_map,
+        sim_time: float,
+        reject_expired: bool = False,
+    ) -> bool:
+        """Add a new trap to capture an actor for the given agent.
+        Args:
+            agent_id(str):
+                The agent to associate to this trap.
+            mission(Mission):
+                The mission to assign to the agent and vehicle.
+            road_map(RoadMap):
+                The road map to provide information to about the map.
+            sim_time(float):
+                The current simulator time.
+            reject_expired(bool):
+                If traps should be ignored if their patience would already be
+                expired on creation.
+        """
         if mission is None:
             mission = Mission.random_endless_mission(road_map)
 
         if not mission.entry_tactic:
             mission = replace(mission, entry_tactic=default_entry_tactic())
 
-        if (
-            not isinstance(mission.entry_tactic, TrapEntryTactic)
-            and mission.entry_tactic
-        ):
+        if not isinstance(mission.entry_tactic, TrapEntryTactic):
+            return False
+
+        # Do not add trap if simulation time is specified and patience already expired
+        patience_expired = (
+            mission.start_time + mission.entry_tactic.wait_to_hijack_limit_s
+        )
+        if reject_expired and patience_expired < sim_time:
+            self._log.warning(
+                f"Trap skipped for `{agent_id}` scheduled to start between "
+                + f"`{mission.start_time}` and `{patience_expired}` because simulation skipped to "
+                f"simulation time `{sim_time}`"
+            )
+            self._cancelled_agents.add(agent_id)
             return False
 
         plan = Plan(road_map, mission)
@@ -112,14 +143,19 @@ class TrapManager:
 
     def reset_traps(self, used_traps):
         """Reset all used traps."""
-        logging.warning(
-            "`TrapManager.reset_traps(..)` method has been deprecated in favor of `remove_traps(..)`.  Please update your code.",
-            DeprecationWarning,
+        self._log.warning(
+            "Please update usage: ",
+            exc_info=DeprecationWarning(
+                "`TrapManager.reset_traps(..)` method has been deprecated in favor of `remove_traps(..)`."
+            ),
         )
         self.remove_traps(used_traps)
 
     def step(self, sim):
         """Run hijacking and update agent and actor states."""
+        from smarts.core.smarts import SMARTS
+
+        assert isinstance(sim, SMARTS)
         captures_by_agent_id = defaultdict(list)
 
         # Do an optimization to only check if there are pending agents.
@@ -144,14 +180,12 @@ class TrapManager:
         ]
 
         for agent_id in sim.agent_manager.pending_agent_ids:
-            trap = self._traps[agent_id]
+            trap = self._traps.get(agent_id)
 
             if trap is None:
                 continue
 
-            trap.step_trigger(sim.last_dt)
-
-            if not trap.ready:
+            if not trap.ready(sim.elapsed_sim_time):
                 continue
 
             # Order vehicle ids by distance.
@@ -163,7 +197,7 @@ class TrapManager:
             )
             for v_id in sorted_vehicle_ids:
                 # Skip the capturing process if history traffic is used
-                if sim.scenario.traffic_history is not None:
+                if trap.mission.vehicle_spec is not None:
                     break
 
                 if not trap.includes(v_id):
@@ -200,7 +234,7 @@ class TrapManager:
 
             captures = captures_by_agent_id[agent_id]
 
-            if not trap.ready:
+            if not trap.ready(sim.elapsed_sim_time):
                 continue
 
             vehicle = None
@@ -209,21 +243,22 @@ class TrapManager:
                 vehicle = sim.switch_control_to_agent(
                     vehicle_id, agent_id, mission, recreate=True, is_hijacked=False
                 )
-            elif trap.patience_expired:
+            elif trap.patience_expired(sim.elapsed_sim_time):
                 # Make sure there is not a vehicle in the same location
                 mission = trap.mission
-                nv_dims = Vehicle.agent_vehicle_dims(mission)
-                new_veh_maxd = max(nv_dims.as_lwh[:2])
-                overlapping = False
-                for pos, largest_dimension, _ in vehicle_comp:
-                    if (
-                        squared_dist(pos, mission.start.position[:2])
-                        <= (0.5 * (largest_dimension + new_veh_maxd)) ** 2
-                    ):
-                        overlapping = True
-                        break
-                if overlapping:
-                    continue
+                if mission.vehicle_spec is None:
+                    nv_dims = Vehicle.agent_vehicle_dims(mission)
+                    new_veh_maxd = max(nv_dims.as_lwh[:2])
+                    overlapping = False
+                    for pos, largest_dimension, _ in vehicle_comp:
+                        if (
+                            squared_dist(pos, mission.start.position[:2])
+                            <= (0.5 * (largest_dimension + new_veh_maxd)) ** 2
+                        ):
+                            overlapping = True
+                            break
+                    if overlapping:
+                        continue
 
                 vehicle = TrapManager._make_vehicle(
                     sim, agent_id, mission, trap.default_entry_speed
@@ -273,11 +308,12 @@ class TrapManager:
         self.reset()
         self._traps.clear()
 
-    def _mission2trap(self, road_map, mission, default_zone_dist=6):
+    def _mission2trap(self, road_map, mission: Mission, default_zone_dist: float = 6.0):
         if not (hasattr(mission, "start") and hasattr(mission, "goal")):
             raise ValueError(f"Value {mission} is not a mission!")
 
-        activation_delay = mission.start_time
+        assert isinstance(mission.entry_tactic, TrapEntryTactic)
+
         patience = mission.entry_tactic.wait_to_hijack_limit_s
         zone = mission.entry_tactic.zone
         default_entry_speed = mission.entry_tactic.default_entry_speed
@@ -317,7 +353,7 @@ class TrapManager:
 
         trap = Trap(
             geometry=zone.to_geometry(road_map),
-            remaining_time_to_activation=activation_delay,
+            activation_time=mission.start_time,
             patience=patience,
             mission=mission,
             exclusion_prefixes=mission.entry_tactic.exclusion_prefixes,

@@ -65,9 +65,9 @@ function App({ client }) {
 
   let getSimIdsLength = async () => {
     let ids = await client.fetchSimulationIds();
-    setTotalSimIds(ids.length);
+    if (ids.length != totalSimIds) setTotalSimIds(ids.length);
   };
-  setInterval(getSimIdsLength, 3000);
+  // setInterval(getSimIdsLength, 3000);
 
   // also includes all
   const routeMatch = useRouteMatch("/:simulation");
