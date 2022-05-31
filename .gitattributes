@@ -14,7 +14,7 @@
 *.json text
 *.css text
 *.ipynb text
-*.xml text
+#*.xml text
 *.urdf text
 *.yml text
 *.yaml text
