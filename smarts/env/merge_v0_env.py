@@ -95,7 +95,7 @@ def merge_v0_env(
         img_meters (int): Ground square size covered by image observations.
             Defaults to 64 x 64 meter (height x width) square.
         img_pixels (int): Pixels representing the square image observations.
-            Defaults to 256 x 256 pixels (height x width).
+            Defaults to 256 x 256 pixels (height x width) square.
 
     Returns:
         A single-agent merging into a freeway.
@@ -103,10 +103,9 @@ def merge_v0_env(
 
     scenario = [
         str(
-            pathlib.Path(__file__).absolute().parents[2]
+            pathlib.Path(__file__).absolute().parents[1]
             / "scenarios"
-            / "merge"
-            / "3lane"
+            / "merge_v0"
         )
     ]
     build_scenario(scenario)
