@@ -78,5 +78,6 @@ class Reward(gym.Wrapper):
 
         # Reward for distance travelled
         reward += env_reward
+        print("ENV: Added distance reward.")
 
         return np.float64(reward)

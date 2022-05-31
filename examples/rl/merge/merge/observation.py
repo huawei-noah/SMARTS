@@ -66,5 +66,5 @@ class Concatenate(gym.ObservationWrapper):
         assert len(obs.shape) == 4
         obs = np.concatenate(obs[:], axis=-1)
         # print("After:", obs.shape)
-        # plotter3d(obs, rgb_gray=3,channel_order="last",name="after")
+        # plotter3d(obs, rgb_gray=3,channel_order="last",name="after",pause=0)
         return obs
