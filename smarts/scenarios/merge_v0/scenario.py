@@ -99,7 +99,7 @@ for name, routes in enumerate(route_comb):
         ]
     )
 
-route = Route(begin=("gneE6", 0, 1), end=("gneE4", 2, "max"))
+route = Route(begin=("gneE6", 0, 10), end=("gneE4", 2, "max"))
 ego_missions = [
     Mission(
         route=route,

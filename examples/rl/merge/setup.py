@@ -18,7 +18,7 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "setuptools>=41.0.0,!=50.0",
-        "protobuf==3.19.4",
+        "protobuf==3.20.1",
         "ruamel.yaml==0.17.17",
         "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@sb3-3",
         "tensorflow==2.8.0",
