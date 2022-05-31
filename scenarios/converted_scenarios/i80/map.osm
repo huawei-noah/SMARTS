@@ -1,0 +1,179 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version="0.6" upload="true" generator="commonroad-scenario-designer">
+  <node id="-1" action="modify" visible="true" lat="0.00020924951877745895" lon="4.511256115583004"/>
+  <node id="-2" action="modify" visible="true" lat="0.00026138219724330605" lon="4.5131599039645005"/>
+  <node id="-3" action="modify" visible="true" lat="0.0003135151491204597" lon="4.515063698235782"/>
+  <node id="-4" action="modify" visible="true" lat="0.00017625032872043705" lon="4.511257007011831"/>
+  <node id="-5" action="modify" visible="true" lat="0.0002283829206073287" lon="4.513160796293908"/>
+  <node id="-6" action="modify" visible="true" lat="0.0002805157859416695" lon="4.515064590569865"/>
+  <node id="-10" action="modify" visible="true" lat="0.00014325204051984078" lon="4.511257898439178"/>
+  <node id="-11" action="modify" visible="true" lat="0.00019538454582985595" lon="4.513161687725931"/>
+  <node id="-12" action="modify" visible="true" lat="0.0002475173246237204" lon="4.5150654820065625"/>
+  <node id="-15" action="modify" visible="true" lat="0.00011025285030050531" lon="4.5112587898650425"/>
+  <node id="-16" action="modify" visible="true" lat="0.0001623852690313095" lon="4.513162579156475"/>
+  <node id="-17" action="modify" visible="true" lat="0.00021451796128236432" lon="4.5150663734417815"/>
+  <node id="-20" action="modify" visible="true" lat="7.725456193759834e-05" lon="4.5112596812894274"/>
+  <node id="-21" action="modify" visible="true" lat="0.0001293868940915933" lon="4.513163470585538"/>
+  <node id="-22" action="modify" visible="true" lat="0.0001815194998022392" lon="4.515067264875521"/>
+  <node id="-25" action="modify" visible="true" lat="4.425537155595051e-05" lon="4.511260572712331"/>
+  <node id="-26" action="modify" visible="true" lat="9.638761713080183e-05" lon="4.513164362013121"/>
+  <node id="-27" action="modify" visible="true" lat="0.00014852013629870534" lon="4.515068156307782"/>
+  <node id="-30" action="modify" visible="true" lat="3.607750323749496e-05" lon="4.511256115611915"/>
+  <node id="-31" action="modify" visible="true" lat="3.9343462633952956e-05" lon="4.512056153560848"/>
+  <node id="-32" action="modify" visible="true" lat="4.261033116966883e-05" lon="4.512856193288441"/>
+  <node id="-33" action="modify" visible="true" lat="4.263558581034441e-05" lon="4.512861851803252"/>
+  <node id="-34" action="modify" visible="true" lat="4.2672565575138854e-05" lon="4.512865965783648"/>
+  <node id="-35" action="modify" visible="true" lat="4.278350443218108e-05" lon="4.5128708520312975"/>
+  <node id="-36" action="modify" visible="true" lat="4.296389262992419e-05" lon="4.51287557522487"/>
+  <node id="-37" action="modify" visible="true" lat="4.3206514715032294e-05" lon="4.512881179985722"/>
+  <node id="-38" action="modify" visible="true" lat="-2.2539420152416113e-06" lon="4.51125626970754"/>
+  <node id="-39" action="modify" visible="true" lat="1.0110731441757216e-06" lon="4.512056308552716"/>
+  <node id="-40" action="modify" visible="true" lat="4.277899387865581e-06" lon="4.512856348280649"/>
+  <node id="-41" action="modify" visible="true" lat="-1.3373058134821073e-05" lon="4.512862174328963"/>
+  <node id="-42" action="modify" visible="true" lat="-1.3332470937101873e-05" lon="4.512866706695437"/>
+  <node id="-43" action="modify" visible="true" lat="-1.3197180107416963e-05" lon="4.512872640252145"/>
+  <node id="-44" action="modify" visible="true" lat="-1.2996949612173196e-05" lon="4.5128778929236315"/>
+  <node id="-45" action="modify" visible="true" lat="-1.2749818262529295e-05" lon="4.512883598025508"/>
+  <node id="-49" action="modify" visible="true" lat="3.1477621574714364e-05" lon="4.511256115612127"/>
+  <node id="-50" action="modify" visible="true" lat="3.702548048822496e-05" lon="4.5120560594914005"/>
+  <node id="-51" action="modify" visible="true" lat="4.2573351636145515e-05" lon="4.512856004253195"/>
+  <node id="-52" action="modify" visible="true" lat="4.2614841189301404e-05" lon="4.512861669039316"/>
+  <node id="-53" action="modify" visible="true" lat="4.265993841095626e-05" lon="4.512865795562336"/>
+  <node id="-54" action="modify" visible="true" lat="4.2773583082798006e-05" lon="4.51287061640916"/>
+  <node id="-55" action="modify" visible="true" lat="4.2953971280895495e-05" lon="4.512875347665848"/>
+  <node id="-56" action="modify" visible="true" lat="4.3195691425394826e-05" lon="4.512880938092268"/>
+  <node id="-57" action="modify" visible="true" lat="-3.5895311868947186e-05" lon="4.511256576104353"/>
+  <node id="-58" action="modify" visible="true" lat="-3.0347527289920463e-05" lon="4.512056519984644"/>
+  <node id="-59" action="modify" visible="true" lat="-2.4799730463344476e-05" lon="4.512856464747456"/>
+  <node id="-60" action="modify" visible="true" lat="-1.3392900804826598e-05" lon="4.512862134909289"/>
+  <node id="-61" action="modify" visible="true" lat="-1.3343294210796333e-05" lon="4.512866635023305"/>
+  <node id="-62" action="modify" visible="true" lat="-1.3206199499109532e-05" lon="4.512872408213614"/>
+  <node id="-63" action="modify" visible="true" lat="-1.3006870943545012e-05" lon="4.512877658197395"/>
+  <node id="-64" action="modify" visible="true" lat="-1.2760641533538195e-05" lon="4.512883356132053"/>
+  <node id="-68" action="modify" visible="true" lat="9.10076466949166e-05" lon="4.513972438318312"/>
+  <node id="-69" action="modify" visible="true" lat="0.00013880892246732974" lon="4.515063698289511"/>
+  <node id="-70" action="modify" visible="true" lat="3.5049425802795905e-05" lon="4.513974856365377"/>
+  <node id="-71" action="modify" visible="true" lat="8.285061756019808e-05" lon="4.515066117239752"/>
+  <way id="-7" action="modify" visible="true">
+    <nd ref="-1"/>
+    <nd ref="-2"/>
+    <nd ref="-3"/>
+  </way>
+  <way id="-8" action="modify" visible="true">
+    <nd ref="-4"/>
+    <nd ref="-5"/>
+    <nd ref="-6"/>
+  </way>
+  <way id="-13" action="modify" visible="true">
+    <nd ref="-10"/>
+    <nd ref="-11"/>
+    <nd ref="-12"/>
+  </way>
+  <way id="-18" action="modify" visible="true">
+    <nd ref="-15"/>
+    <nd ref="-16"/>
+    <nd ref="-17"/>
+  </way>
+  <way id="-23" action="modify" visible="true">
+    <nd ref="-20"/>
+    <nd ref="-21"/>
+    <nd ref="-22"/>
+  </way>
+  <way id="-28" action="modify" visible="true">
+    <nd ref="-25"/>
+    <nd ref="-26"/>
+    <nd ref="-27"/>
+  </way>
+  <way id="-46" action="modify" visible="true">
+    <nd ref="-30"/>
+    <nd ref="-31"/>
+    <nd ref="-32"/>
+    <nd ref="-33"/>
+    <nd ref="-34"/>
+    <nd ref="-35"/>
+    <nd ref="-36"/>
+    <nd ref="-37"/>
+  </way>
+  <way id="-47" action="modify" visible="true">
+    <nd ref="-38"/>
+    <nd ref="-39"/>
+    <nd ref="-40"/>
+    <nd ref="-41"/>
+    <nd ref="-42"/>
+    <nd ref="-43"/>
+    <nd ref="-44"/>
+    <nd ref="-45"/>
+  </way>
+  <way id="-65" action="modify" visible="true">
+    <nd ref="-49"/>
+    <nd ref="-50"/>
+    <nd ref="-51"/>
+    <nd ref="-52"/>
+    <nd ref="-53"/>
+    <nd ref="-54"/>
+    <nd ref="-55"/>
+    <nd ref="-56"/>
+    <nd ref="-37"/>
+  </way>
+  <way id="-66" action="modify" visible="true">
+    <nd ref="-57"/>
+    <nd ref="-58"/>
+    <nd ref="-59"/>
+    <nd ref="-60"/>
+    <nd ref="-61"/>
+    <nd ref="-62"/>
+    <nd ref="-63"/>
+    <nd ref="-64"/>
+    <nd ref="-45"/>
+  </way>
+  <way id="-72" action="modify" visible="true">
+    <nd ref="-37"/>
+    <nd ref="-68"/>
+    <nd ref="-69"/>
+  </way>
+  <way id="-73" action="modify" visible="true">
+    <nd ref="-45"/>
+    <nd ref="-70"/>
+    <nd ref="-71"/>
+  </way>
+  <relation id="-9" action="modify" visible="true">
+    <member type="way" ref="-8" role="right"/>
+    <member type="way" ref="-7" role="left"/>
+    <tag k="type" v="lanelet"/>
+  </relation>
+  <relation id="-14" action="modify" visible="true">
+    <member type="way" ref="-13" role="right"/>
+    <member type="way" ref="-8" role="left"/>
+    <tag k="type" v="lanelet"/>
+  </relation>
+  <relation id="-19" action="modify" visible="true">
+    <member type="way" ref="-18" role="right"/>
+    <member type="way" ref="-13" role="left"/>
+    <tag k="type" v="lanelet"/>
+  </relation>
+  <relation id="-24" action="modify" visible="true">
+    <member type="way" ref="-23" role="right"/>
+    <member type="way" ref="-18" role="left"/>
+    <tag k="type" v="lanelet"/>
+  </relation>
+  <relation id="-29" action="modify" visible="true">
+    <member type="way" ref="-28" role="right"/>
+    <member type="way" ref="-23" role="left"/>
+    <tag k="type" v="lanelet"/>
+  </relation>
+  <relation id="-48" action="modify" visible="true">
+    <member type="way" ref="-47" role="right"/>
+    <member type="way" ref="-46" role="left"/>
+    <tag k="type" v="lanelet"/>
+  </relation>
+  <relation id="-67" action="modify" visible="true">
+    <member type="way" ref="-66" role="right"/>
+    <member type="way" ref="-65" role="left"/>
+    <tag k="type" v="lanelet"/>
+  </relation>
+  <relation id="-74" action="modify" visible="true">
+    <member type="way" ref="-73" role="right"/>
+    <member type="way" ref="-72" role="left"/>
+    <tag k="type" v="lanelet"/>
+  </relation>
+</osm>
