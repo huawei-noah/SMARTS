@@ -114,7 +114,7 @@ def merge_v0_env(
         collision=True,
         off_road=True,
         off_route=False,
-        on_shoulder=True,
+        on_shoulder=False,
         wrong_way=True,
         not_moving=False,
         agents_alive=None,

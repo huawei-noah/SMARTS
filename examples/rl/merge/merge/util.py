@@ -6,7 +6,7 @@ def plotter3d(
     rgb_gray: int = 3,
     channel_order: str = "first",
     name: str = "Plotter3D",
-    block=True,
+    pause:int=1,
 ):
     """Plot images
 
@@ -87,6 +87,6 @@ def plotter3d(
             axs[row, col].imshow(img, cmap="viridis")
             axs[row, col].set_title(f"{name}")
 
-    plt.show(block=block)
-    plt.pause(2)
+    plt.show()
+    plt.pause(interval=pause)
     plt.close()
