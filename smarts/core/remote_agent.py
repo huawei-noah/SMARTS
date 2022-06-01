@@ -21,6 +21,7 @@ import logging
 import time
 from concurrent import futures
 from typing import Tuple
+from buffer_agent import BufferAgent
 
 import cloudpickle
 import grpc
@@ -35,7 +36,7 @@ class RemoteAgentException(Exception):
     pass
 
 
-class RemoteAgent:
+class RemoteAgent(BufferAgent):
     """A remotely controlled agent."""
 
     def __init__(
