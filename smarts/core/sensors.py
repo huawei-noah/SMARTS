@@ -1102,7 +1102,7 @@ class AccelerometerSensor(Sensor):
 
 
 class LanePositionSensor(Sensor):
-    """Trackes  lane-relative RefLine (Frenet) coordinates."""
+    """Tracks lane-relative RefLine (Frenet) coordinates."""
 
     def __init__(self, vehicle):
         pass
