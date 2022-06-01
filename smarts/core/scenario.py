@@ -26,12 +26,22 @@ import uuid
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 import cloudpickle
 import numpy as np
 
-from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
+from smarts.core.coordinates import Heading, Point, RefLinePoint
 from smarts.core.data_model import SocialAgent
 from smarts.core.plan import (
     EndlessGoal,
@@ -52,6 +62,8 @@ from smarts.core.utils.math import radians_to_vec, vec_to_radians
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import MapSpec
 from smarts.sstudio.types import Via as SSVia
+
+VehicleWindow = TrafficHistory.TrafficHistoryVehicleWindow
 
 
 class Scenario:
@@ -539,6 +551,7 @@ class Scenario:
             Start(
                 np.array([pos_x + hhx, pos_y + hhy]),
                 Heading(heading),
+                from_front_bumper=False,
             ),
             speed,
         )
@@ -581,7 +594,7 @@ class Scenario:
     def create_dynamic_traffic_history_mission(
         self, veh_id: str, trigger_time: float, positional_radius: int
     ) -> Tuple[Mission, Mission]:
-        """Builds a vehicle out of
+        """Builds missions out of the given vehicle information.
         Args:
             veh_id:
                 The id of a vehicle in the traffic history dataset.
@@ -611,6 +624,69 @@ class Scenario:
             goal=TraverseGoal(self._road_map),
         )
         return positional_mission, traverse_mission
+
+    def history_missions_for_window(
+        self,
+        exists_at_or_after: float,
+        ends_before: float,
+        minimum_vehicle_window: float,
+        filter: Optional[
+            Callable[
+                [Iterable[VehicleWindow]],
+                Iterable[VehicleWindow],
+            ]
+        ],
+    ) -> Sequence[Mission]:
+        """Discovers vehicle missions for the given window of time.
+        Args:
+            exists_at_or_after(float):
+                The starting time of any vehicles to query for.
+            ends_before(float):
+                The last point in time a vehicle should be in the simulation. Vehicles ending after
+                that time are not considered.
+            minimum_vehicle_window(float):
+                The minimum time that a vehicle must be in the simulation to be considered for a
+                mission.
+            filter(func(Sequence[TrafficHistoryVehicleWindow]) -> Sequence[TrafficHistoryVehicleWindow]):
+                A filter which passes in traffic vehicle information and then should be used purely
+                to filter the sequence down.
+        Returns:
+            (List[Mission]): A set of missions derived from the traffic history.
+
+        """
+        vehicle_windows = self._traffic_history.vehicle_windows_in_range(
+            exists_at_or_after, ends_before, minimum_vehicle_window
+        )
+
+        def _gen_mission(vw: TrafficHistory.TrafficHistoryVehicleWindow):
+            assert isinstance(
+                vw, TrafficHistory.TrafficHistoryVehicleWindow
+            ), "`filter(..)` likely returns malformed data."
+            v_id = str(vw.vehicle_id)
+            start_time = float(vw.start_time)
+            start = Start(
+                np.array(vw.axle_start_position),
+                Heading(vw.start_heading),
+            )
+            entry_tactic = default_entry_tactic(vw.start_speed)
+            veh_config_type = vw.vehicle_type
+            veh_dims = vw.dimensions
+            vehicle_mission = Mission(
+                start=start,
+                entry_tactic=entry_tactic,
+                goal=TraverseGoal(self.road_map),
+                start_time=start_time,
+                vehicle_spec=VehicleSpec(
+                    veh_id=v_id,
+                    veh_config_type=veh_config_type,
+                    dimensions=veh_dims,
+                ),
+            )
+            return vehicle_mission
+
+        if filter is not None:
+            vehicle_windows = filter(vehicle_windows)
+        return [_gen_mission(vw) for vw in vehicle_windows]
 
     @staticmethod
     def discover_traffic_histories(scenario_root: str):
@@ -656,7 +732,7 @@ class Scenario:
             for via in vias:
                 road = road_map.road_by_id(via.road_id)
                 lane = road.lane_at_index(via.lane_index)
-                lane_width = lane.width_at_offset(via.lane_offset)
+                lane_width, _ = lane.width_at_offset(via.lane_offset)
                 hit_distance = (
                     via.hit_distance if via.hit_distance > 0 else lane_width / 2
                 )

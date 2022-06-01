@@ -9,13 +9,22 @@ All text added must be human-readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 # [Unreleased]
+### Added
+- Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make an uprotected left turn in the presence of traffic.
+- Added an online RL example for solving the `intersection-v0` environment, using PPO algorithm from Stable Baselines3 library. An accompanying Colab example is also provided.
 
 ### Changed
 - Updated license to 2022 version.
+- SMARTS reset now has a start time option which will skip simulation.
+- Since `gym.Space` does not support dataclass, `StdObs` type is changed from a dataclass to a dictionary.
 - Add `lane_offset` to `Waypoint` class and `lane_postion` to both `EgoVehicleObservation` and `VehicleObservation` classes to expose the reference-line (a.k.a. Frenet) coordinate system.
+
+### Removed
+- Old Stable Baselines3 based example is removed in favour of the new online RL example developed using Stable Baselines3 library.
 
 ### Fixed
 - Unpack utility now unpacks dataclass attributes.
+- Trap manager now uses elapsed sim time rather than step delta to associate with time.
 
 ### [0.6.1rc1] 15-04-18
 ### Added
@@ -31,14 +40,15 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed Issue #1321 such that numpy's `sliding_window_view()` is no longer needed for NGSIM traffic histories.
 - Fixed NGSIM traffic history import bugs (see Issues #1354 and #1402).
 
-
 ### [0.6.1rc0] 15-04-16
 ### Added
+- Added `scenarios/waymo_motion/waymo_utility.py`, a text-based utility to explore and export scenarios from the Waymo Motion dataset to SMARTS scenarios. 
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 - Added `sb3` reinforcement-learning example. An ego agent is trained using PPO algorithm from Stable Baselines3 library, to drive as far and as fast as possible in heavy traffic, without colliding or going off-road.
 - Added `FormatObs` wrapper which converts SMARTS observations to gym-compliant RL-friendly vectorized observations and returns `StdObs`.
 - Added `Pose.as_position2d()` method which converts the pose to an [x,y] position array.
 - Added `EventConfiguration` dataclass in the agent interface to allow users to configure the conditions in which events are triggered
+- Extended the `RoadMap` API to support `Waymo` map format in `smarts/core/waymo_map.py`.
 - Added scenarios for "importing" the i80 and us101 NGSIM trajectory history datasets
 - Added an observation adapter that makes the observation ego-centric: `smarts.core.utils.ego_centric_observation_adapter`.
 - Added math utility `world_position_from_ego_frame` which allows converting from an ego frame to world frame.

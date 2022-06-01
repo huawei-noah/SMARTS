@@ -66,10 +66,11 @@ Options:
   --help  Show this message and exit.
 
 Commands:
-  build      Generate a single scenario
-  build-all  Generate all scenarios under the given directories
-  clean      Remove previously generated scenario artifacts.
-  replay     Play saved Envision data files in Envision.
+  browse-waymo  Browse Waymo TFRecord datasets using...
+  build         Generate a single scenario
+  build-all     Generate all scenarios under the given directories
+  clean         Remove previously generated scenario artifacts.
+  replay        Play saved Envision data files in Envision.
 
 build
 ^^^^^
@@ -121,6 +122,20 @@ Options:
   -t, --timestep FLOAT  Timestep in seconds
   --endpoint TEXT
   --help                Show this message and exit.
+
+browse-waymo
+^^^^^^^^^^^^
+
+Usage: scl scenario browse-waymo [OPTIONS] <script>
+
+  Browse Waymo TFRecord datasets using smarts/waymo/waymo_utility.py, a text-
+  based browser utility
+
+Options:
+  -t, --target-base-path PATH  Default target base path to export scenarios to
+  -i, --import-tags PATH       .json file to import tags for tfRecord
+                               scenarios from
+  --help                       Show this message and exit.
 
 -----
 ultra

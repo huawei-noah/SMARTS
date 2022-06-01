@@ -30,8 +30,8 @@ export const attrs = Object.freeze({
 });
 
 export const agentModes = Object.freeze({
-  egoObs: "6",
-  socialObs: 6,
+  egoObs: 6,
+  socialObs: 7,
 });
 
 const treeData = [

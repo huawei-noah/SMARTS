@@ -26,36 +26,40 @@ export default function InfoDisplay({
   ego_only = false,
   data_formattter,
 }) {
-  return (
-    <table style={{ margin: "15px", tableLayout: "auto" }}>
-      <thead>
-        <tr key="data-head">
-          <th style={{ paddingRight: "15px" }}>{attrName}</th>
-          <th>Agent</th>
-        </tr>
-      </thead>
-      <tbody>
-        {Object.entries(data).map(([id, score]) => {
-          if (ego_only && !ego_agent_ids.includes(id)) {
-            return null;
-          }
-          return (
-            <tr key={`data-body-${id}`}>
-              <td style={{ paddingRight: "15px" }}>{data_formattter(score)}</td>
-              <td
-                style={{
-                  maxWidth: "400px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {id}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  );
+  if (data) {
+    return (
+      <table style={{ margin: "15px", tableLayout: "auto" }}>
+        <thead>
+          <tr key="data-head">
+            <th style={{ paddingRight: "15px" }}>{attrName}</th>
+            <th>Agent</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(data).map(([id, score]) => {
+            if (ego_only && !ego_agent_ids.includes(id)) {
+              return null;
+            }
+            return (
+              <tr key={`data-body-${id}`}>
+                <td style={{ paddingRight: "15px" }}>
+                  {data_formattter(score)}
+                </td>
+                <td
+                  style={{
+                    maxWidth: "400px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {id}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
+  }
 }

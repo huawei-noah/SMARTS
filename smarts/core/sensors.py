@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import sys
 import time
 from collections import deque, namedtuple
 from dataclasses import dataclass
@@ -860,8 +861,8 @@ class DrivenPathSensor(Sensor):
             DrivenPathSensor.Entry(timestamp=sim.elapsed_sim_time, position=pos)
         )
 
-    def __call__(self):
-        return [x.position for x in self._driven_path]  # only return the positions
+    def __call__(self, count=sys.maxsize):
+        return [x.position for x in self._driven_path][-count:]
 
     def teardown(self):
         pass

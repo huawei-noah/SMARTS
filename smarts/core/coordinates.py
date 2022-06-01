@@ -17,19 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import enum
 import math
 from dataclasses import dataclass
-from typing import (
-    Any,
-    NamedTuple,
-    Optional,
-    Sequence,
-    SupportsFloat,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, NamedTuple, Optional, SupportsFloat, Tuple, Union
 
 import numpy as np
 from cached_property import cached_property
