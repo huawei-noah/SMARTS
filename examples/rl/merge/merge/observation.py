@@ -41,11 +41,6 @@ class RGB(gym.ObservationWrapper):
         # Resize image to 64x64
         # resized = transposed[:, 96:160, 96:160]
 
-        # rep = repainted.transpose(2, 0, 1)
-        # plotter(rgb, 3, name="from obs")
-
-        # intersection_util.plotter3d(rgb, rgb_gray=3, name="From Obs")
-
         return np.uint8(rgb)
 
 
@@ -66,5 +61,5 @@ class Concatenate(gym.ObservationWrapper):
         assert len(obs.shape) == 4
         obs = np.concatenate(obs[:], axis=-1)
         # print("After:", obs.shape)
-        # plotter3d(obs, rgb_gray=3,channel_order="last",name="after",pause=0)
+        # plotter3d(obs, rgb_gray=3,channel_order="last",name="after",pause=1)
         return obs

@@ -87,6 +87,6 @@ def plotter3d(
             axs[row, col].imshow(img, cmap="viridis")
             axs[row, col].set_title(f"{name}")
 
-    plt.show()
+    # plt.show()
     plt.pause(interval=pause)
     plt.close()
