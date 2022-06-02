@@ -46,5 +46,8 @@ setup(
         # "smarts[train,test,camera-obs]==0.4.18",
         "dill==0.3.4",
         "black==20.8b1",
+        "opencv-python==4.1.2.30",
+        "opencv-python-headless==4.1.2.30",
+        "ray[rllib]==1.0.1.post1",
     ],
 )
