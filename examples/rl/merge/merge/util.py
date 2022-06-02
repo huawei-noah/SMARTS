@@ -1,4 +1,5 @@
 import numpy as np
+import pathlib
 
 
 def plotter3d(
@@ -6,7 +7,8 @@ def plotter3d(
     rgb_gray: int = 3,
     channel_order: str = "first",
     name: str = "Plotter3D",
-    pause:int=1,
+    pause:int=-1,
+    save=False,
 ):
     """Plot images
 
@@ -87,6 +89,11 @@ def plotter3d(
             axs[row, col].imshow(img, cmap="viridis")
             axs[row, col].set_title(f"{name}")
 
-    # plt.show()
-    plt.pause(interval=pause)
-    plt.close()
+    if save:
+        save_path = pathlib.Path("/home/adai/workspace/training/plots")
+        plt.savefig(fname=save_path/"rgb.png", bbox_inches="tight")
+
+    if pause>=0:
+        # plt.show()
+        plt.pause(interval=pause)
+        plt.close()

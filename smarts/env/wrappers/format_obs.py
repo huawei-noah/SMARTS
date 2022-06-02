@@ -442,6 +442,9 @@ def _std_ego(
             }
         )
 
+    print("-------------------------------------")
+    print(f"Ego position: {std_ego['pos']}, lane_index: {std_ego['lane_index']} \n")
+
     return std_ego
 
 
@@ -581,24 +584,50 @@ def _std_waypoints(
             waypoint.speed_limit,
         )
 
-    paths = [map(extract_elem, path[: des_shp[1]]) for path in paths[: des_shp[0]]]
-    heading, lane_index, lane_width, pos, speed_limit = zip(
-        *[zip(*path) for path in paths]
-    )
+    import copy
+    dup_paths = copy.deepcopy(paths)
+    try:
+        paths = [map(extract_elem, path[: des_shp[1]]) for path in paths[: des_shp[0]]]
+        heading, lane_index, lane_width, pos, speed_limit = zip(
+            *[zip(*path) for path in paths]
+        )
 
-    heading = np.array(heading, dtype=np.float32)
-    lane_index = np.array(lane_index, dtype=np.int8)
-    lane_width = np.array(lane_width, dtype=np.float32)
-    pos = np.array(pos, dtype=np.float64)
-    speed_limit = np.array(speed_limit, dtype=np.float32)
+        heading = np.array(heading, dtype=np.float32)
+        lane_index = np.array(lane_index, dtype=np.int8)
+        lane_width = np.array(lane_width, dtype=np.float32)
+        pos = np.array(pos, dtype=np.float64)
+        speed_limit = np.array(speed_limit, dtype=np.float32)
 
-    # fmt: off
-    heading = np.pad(heading, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
-    lane_index = np.pad(lane_index, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
-    lane_width = np.pad(lane_width, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
-    pos = np.pad(pos, ((0,pad_shp[0]),(0,pad_shp[1]),(0,1)), mode='constant', constant_values=0)
-    speed_limit = np.pad(speed_limit, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
-    # fmt: on
+        # fmt: off
+        heading = np.pad(heading, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+        lane_index = np.pad(lane_index, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+        lane_width = np.pad(lane_width, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+        pos = np.pad(pos, ((0,pad_shp[0]),(0,pad_shp[1]),(0,1)), mode='constant', constant_values=0)
+        speed_limit = np.pad(speed_limit, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+        # fmt: on
+
+    except BaseException as e:
+        test_des_shp = (4,5)
+        def test_extract_elem(waypoint):
+            return (
+                waypoint.heading,
+                waypoint.lane_id,
+                waypoint.lane_index,
+                waypoint.lane_width,
+                waypoint.pos,
+                waypoint.speed_limit,
+            )
+        test_paths = [list(map(test_extract_elem, path[: test_des_shp[1]])) for path in dup_paths[: test_des_shp[0]]]
+        print("Contents of obs.waypoint_paths: [List[List[Waypoint]]]")
+        print(test_paths)
+        print("\nReformatted contents of obs.waypoint_paths")
+        print("lane: first waypoint")
+        for ii in range(len(test_paths)):
+            print(f"{ii}: {test_paths[ii][0]}")
+        # input("waiting ...")
+        print("-------------------------------------")
+
+        raise e
 
     return {
         "heading": heading,
