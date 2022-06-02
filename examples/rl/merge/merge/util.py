@@ -95,7 +95,7 @@ def plotter3d(
             axs[row, col].set_title(f"{name}")
 
     if save:
-        save_path = pathlib.Path("/home/adai/workspace/training/plots")
+        save_path = pathlib.Path(__file__).absolute().parents[1] / "logs"
         save_path.mkdir(parents=True, exist_ok=True)
         plt.savefig(fname=save_path/"rgb.png", bbox_inches="tight")
 
