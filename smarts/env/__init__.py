@@ -17,9 +17,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 from gym.envs.registration import register
 
 register(
     id="hiway-v0",
     entry_point="smarts.env.hiway_env:HiWayEnv",
+)
+
+register(
+    id="intersection-v0",
+    entry_point="smarts.env.intersection_v0_env:intersection_v0_env",
 )

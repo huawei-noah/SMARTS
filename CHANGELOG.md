@@ -9,10 +9,17 @@ All text added must be human-readable.
 Copy and pasting the git commit messages is __NOT__ enough.
 
 # [Unreleased]
+### Added
+- Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make an uprotected left turn in the presence of traffic.
+- Added an online RL example for solving the `intersection-v0` environment, using PPO algorithm from Stable Baselines3 library. An accompanying Colab example is also provided.
 
 ### Changed
 - Updated license to 2022 version.
 - SMARTS reset now has a start time option which will skip simulation.
+- Since `gym.Space` does not support dataclass, `StdObs` type is changed from a dataclass to a dictionary.
+
+### Removed
+- Old Stable Baselines3 based example is removed in favour of the new online RL example developed using Stable Baselines3 library.
 
 ### Fixed
 - Unpack utility now unpacks dataclass attributes.
@@ -31,7 +38,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Do not auto-shift maps for a scenario that has traffic history.
 - Fixed Issue #1321 such that numpy's `sliding_window_view()` is no longer needed for NGSIM traffic histories.
 - Fixed NGSIM traffic history import bugs (see Issues #1354 and #1402).
-
 
 ### [0.6.1rc0] 15-04-16
 ### Added
