@@ -21,7 +21,7 @@ import logging
 import time
 from concurrent import futures
 from typing import Tuple
-from buffer_agent import BufferAgent
+from smarts.core.buffer_agent import BufferAgent
 
 import cloudpickle
 import grpc
@@ -59,7 +59,8 @@ class RemoteAgent(BufferAgent):
         self._log = logging.getLogger(self.__class__.__name__)
 
         # Track the last action future.
-        self._act_future = None
+        self._grpc_future = None
+        self._action_executor = None
 
         self._manager_channel = grpc.insecure_channel(
             f"{manager_address[0]}:{manager_address[1]}"
@@ -81,15 +82,24 @@ class RemoteAgent(BufferAgent):
 
     def act(self, obs):
         """Call the agent's act function asynchronously and return a Future."""
-        self._act_future = self._worker_stub.act.future(
+        self._grpc_future = self._worker_stub.act.future(
             worker_pb2.Observation(payload=cloudpickle.dumps(obs))
         )
 
-        return self._act_future
+        def get_action_future():
+            action = cloudpickle.loads(
+                        self._grpc_future.result().action
+                    )   
+            return action
+         
+        future = self._action_executor.submit(get_action_future)
+
+        return future
 
     def start(self, agent_spec: AgentSpec):
         """Send the AgentSpec to the agent runner."""
         # Cloudpickle used only for the agent_spec to allow for serialization of lambdas.
+        self._action_executor = futures.ThreadPoolExecutor(max_workers=1)
         self._worker_stub.build(
             worker_pb2.Specification(payload=cloudpickle.dumps(agent_spec))
         )
@@ -97,8 +107,11 @@ class RemoteAgent(BufferAgent):
     def terminate(self):
         """Close the agent connection and invalidate this agent."""
         # If the last action future returned is incomplete, cancel it first.
-        if (self._act_future is not None) and (not self._act_future.done()):
-            self._act_future.cancel()
+        if (self._grpc_future is not None) and (not self._grpc_future.done()):
+            self._grpc_future.cancel()
+
+        if self._action_executor is not None:
+            self._action_executor.shutdown(wait=True)
 
         try:
             # Stop the remote worker process
