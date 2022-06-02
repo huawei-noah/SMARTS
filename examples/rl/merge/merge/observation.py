@@ -41,8 +41,8 @@ class RGB(gym.ObservationWrapper):
         # Resize image to 64x64
         # resized = transposed[:, 96:160, 96:160]
 
-        plot_obs = np.uint8(obs["rgb"])
-        plotter3d(plot_obs, rgb_gray=3,channel_order="last",name="after",pause=-1, save=True)
+        # plot_obs = np.uint8(obs["rgb"])
+        # plotter3d(plot_obs, rgb_gray=3,channel_order="last",name="after",pause=-1, save=True)
 
         return np.uint8(rgb)
 
