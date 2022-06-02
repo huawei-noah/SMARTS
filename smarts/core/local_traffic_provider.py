@@ -58,6 +58,8 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 # TODO:  dynamic routing
 # TODO:  refactor MPP and TIP into Controllers
 # TODO:  reconsider vehicle dims stuff from proposal
+# TODO:  consider lane markings
+# TODO:  consider traffic right-of-way
 
 
 class LocalTrafficProvider(TrafficProvider):
@@ -345,6 +347,20 @@ class _TrafficActor:
         self._lane_windows: Dict[int, _TrafficActor._LaneWindow] = dict()
         self._lane_win: _TrafficActor._LaneWindow = None
         self._target_lane_win: _TrafficActor._LaneWindow = None
+
+        self._aggressiveness = float(self._vtype.get("lcAssertive", 1.0))
+        if self._aggressiveness <= 0:
+            self._log.warning(
+                "non-positive value {self._aggressiveness} for 'assertive' lane-changing parameter will be ignored"
+            )
+            self._aggressiveness = 1.0
+        self._cutin_prob = float(self._vtype.get("lcCutinprob", 0.0))
+        if not 0.0 <= self._cutin_prob <= 1.0:
+            self._log.warning(
+                "illegal probability {self._cutin_prob} for 'cutin_prob' lane-changing parameter will be ignored"
+            )
+            self._cutin_prob = 0.0
+        # TODO:  use these!
 
         vclass = self._vtype["vClass"]
         dimensions = VEHICLE_CONFIGS[vclass].dimensions

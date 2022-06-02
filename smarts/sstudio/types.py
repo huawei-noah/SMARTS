@@ -108,8 +108,11 @@ class _SumoParams(collections_abc.Mapping):
 class LaneChangingModel(_SumoParams):
     """Models how the actor acts with respect to lane changes."""
 
+    # For SUMO-specific attributes, see:
+    # https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models
+
     def __init__(self, **kwargs):
-        super().__init__("lc", mode=_SUMO_PARAMS_MODE.KEEP_SNAKE_CASE, **kwargs)
+        super().__init__("lc", whitelist=["minGapLat"], **kwargs)
 
 
 class JunctionModel(_SumoParams):
@@ -117,6 +120,27 @@ class JunctionModel(_SumoParams):
 
     def __init__(self, **kwargs):
         super().__init__("jm", whitelist=["impatience"], **kwargs)
+
+
+class SmartsLaneChangingModel(LaneChangingModel):
+    """Implements the simple lane-changing model built-into SMARTS.
+    Args:
+        cutin_prob:
+            Float value between 0 and 1 that determines the probabilty this vehicle will
+            "arbitrarily" cut in front of an adjacent (Agent) vehicle when it has a chance,
+            even if there would otherwise be no reason to change lanes at that point.  Higher
+            values risk a situation where this vehicle ends up in a lane where it cannot
+            maintain its planned route.  If that happens, this vehicle will perform whatever
+            its default behavior is when it completes its route.  default: 0.0.
+        assertive:
+            Willingness to accept lower front and rear gaps in the target lane.
+             The required gap is divided by this value. default: 1.0, range: positive floats.
+            Attempts to match the semantics of the attribute in SUMO's default lane-changing model,
+            see: https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models
+    """
+
+    def __init__(self, cutin_prob: float = 0.0, assertive: float = 1.0):
+        super().__init__(cutin_prob=cutin_prob, assertive=assertive)
 
 
 @dataclass(frozen=True)
@@ -186,7 +210,6 @@ class TrafficActor(Actor):
     explicit that you actually want a car.
     """
 
-    # TODO: consider possible parameters: cutoff_proclivity (or cutoff_target?) and cutoff_aggressiveness
     name: str
     """The name of the traffic actor. It must be unique."""
     accel: float = 2.6
