@@ -27,7 +27,8 @@ import sys
 import time
 from concurrent import futures
 from typing import Optional, Tuple
-from agent_buffer import AgentBuffer
+from smarts.core.agent_buffer import AgentBuffer
+from smarts.core.buffer_agent import BufferAgent
 
 import grpc
 
@@ -193,7 +194,7 @@ class RemoteAgentBuffer(AgentBuffer):
 
     def acquire_agent(
         self, retries: int = 3, timeout: Optional[float] = None
-    ) -> RemoteAgent:
+    ) -> BufferAgent:
         """Creates RemoteAgent objects.
 
         Args:

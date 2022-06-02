@@ -6,8 +6,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import abc
+from abc import abstractmethod
+from smarts.zoo.agent_spec import AgentSpec
 
-class BufferAgent(metaclass = ABCMeta):
+class BufferAgent(metaclass = abc.ABCMeta):
     @classmethod
     def __subclasshook__(cls,  subclass):
         return  (hasattr(subclass, 'act') and 
@@ -15,7 +17,7 @@ class BufferAgent(metaclass = ABCMeta):
                 hasattr(subclass, 'start') and 
                 callable(subclass.start) and
                 hasattr(subclass, 'terminate') and 
-                callable(subclass.terminate) and)
+                callable(subclass.terminate))
     
     @abstractmethod
     def act(self, obs):
