@@ -17,25 +17,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import  abc
-from abc import abstractmethod
 from typing import Optional
+from smarts.core.agent_buffer import AgentBuffer
 from smarts.core.buffer_agent import BufferAgent
+from smarts.core.local_agent import LocalAgent
 
-class AgentBuffer(metaclass=abc.ABCMeta):   
-    @classmethod
-    def __subclasshook__(cls,  subclass):
-        return  (hasattr(subclass, 'destroy') and 
-                callable(subclass.destroy) and
-                hasattr(subclass, 'acquire_agent') and 
-                callable(subclass.acquire_agent))
+class LocalAgentBuffer(AgentBuffer):
+    """A buffer that manages social agents."""
 
-    @abc.abstractmethod
+    def __init__(self):
+        pass
+
     def destroy(self):
-        raise NotImplementedError
+        pass
 
-    @abc.abstractmethod
     def acquire_agent(
         self, retries: int = 3, timeout: Optional[float] = None
     ) -> BufferAgent:
-        raise NotImplementedError
+        localAgent = LocalAgent()
+        return localAgent
