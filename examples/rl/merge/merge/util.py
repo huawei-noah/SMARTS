@@ -18,6 +18,11 @@ def plotter3d(
             4d image format =(batch, rgb*n_stack, height, width)
             5d image format =(batch, rgb, n_stack, height, width)
         rgb_gray (int, optional): 3 for rgb and 1 for grayscale. Defaults to 3.
+        pause (int): Defaults to -1.
+            negative int -> ignore plotting.
+            zero         -> display plot and wait for user to close the image.
+            positive int -> display plot and wait for `pause` seconds, then automatically close image.
+        save (bool): If true, save image. Defaults to False.
     """
 
     import matplotlib.pyplot as plt
@@ -91,6 +96,7 @@ def plotter3d(
 
     if save:
         save_path = pathlib.Path("/home/adai/workspace/training/plots")
+        save_path.mkdir(parents=True, exist_ok=True)
         plt.savefig(fname=save_path/"rgb.png", bbox_inches="tight")
 
     if pause>=0:
