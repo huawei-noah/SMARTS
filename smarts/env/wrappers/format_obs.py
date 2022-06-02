@@ -568,11 +568,11 @@ def _std_ttc(obs: Observation) -> Dict[str, Union[np.float32, np.ndarray]]:
 
 
 def _std_waypoints(
-    paths: List[List[Waypoint]],
+    rcv_paths: List[List[Waypoint]],
 ) -> Dict[str, np.ndarray]:
 
     des_shp = _WAYPOINT_SHP
-    rcv_shp = (len(paths), len(paths[0]))
+    rcv_shp = (len(rcv_paths), len(rcv_paths[0]))
     pad_shp = [0 if des - rcv < 0 else des - rcv for des, rcv in zip(des_shp, rcv_shp)]
 
     def extract_elem(waypoint):
@@ -584,10 +584,8 @@ def _std_waypoints(
             waypoint.speed_limit,
         )
 
-    import copy
-    dup_paths = copy.deepcopy(paths)
     try:
-        paths = [map(extract_elem, path[: des_shp[1]]) for path in paths[: des_shp[0]]]
+        paths = [map(extract_elem, path[: des_shp[1]]) for path in rcv_paths[: des_shp[0]]]
         heading, lane_index, lane_width, pos, speed_limit = zip(
             *[zip(*path) for path in paths]
         )
@@ -617,7 +615,7 @@ def _std_waypoints(
                 waypoint.pos,
                 waypoint.speed_limit,
             )
-        test_paths = [list(map(test_extract_elem, path[: test_des_shp[1]])) for path in dup_paths[: test_des_shp[0]]]
+        test_paths = [list(map(test_extract_elem, path[: test_des_shp[1]])) for path in rcv_paths[: test_des_shp[0]]]
         print("Contents of obs.waypoint_paths: [List[List[Waypoint]]]")
         print(test_paths)
         print("\nReformatted contents of obs.waypoint_paths")
