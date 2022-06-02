@@ -102,4 +102,5 @@ def plotter3d(
     if pause>=0:
         # plt.show()
         plt.pause(interval=pause)
-        plt.close()
+    
+    plt.close()
