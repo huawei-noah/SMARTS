@@ -21,48 +21,40 @@ import logging
 import time
 from concurrent import futures
 from typing import Tuple
-from buffer_agent import BufferAgent
-from agent import Agent
+from smarts.core.buffer_agent import BufferAgent
+from smarts.core.agent import Agent
 
-import cloudpickle
-
-from smarts.zoo import manager_pb2, worker_pb2
 from smarts.zoo.agent_spec import AgentSpec
 
 
 class LocalAgent(BufferAgent):
     """A remotely controlled agent."""
 
-    def __init__(
-        self
-    ):
-        """Executes an agent in a worker (i.e., a gRPC server).
-
-        Args:
-            manager_address (Tuple[str,int]): Manager's server address (ip, port).
-            worker_address (Tuple[str,int]): Worker's server address (ip, port).
-            timeout (float, optional): Time (seconds) to wait for startup or response from
-                server. Defaults to 10.
-
-        Raises:
-            RemoteAgentException: If timeout occurs while connecting to the manager or worker.
-        """
-
+    def __init__(self):
         # Track the last action future.
-        self._act_future = None
+        #self._act_future = None
+        self._agent = None
+        self._agent_spec = None
 
     def act(self, obs):
         """Call the agent's act function asynchronously and return a Future."""
-        self._act_future = concurrent.future.Future()      
-        _act_future.set_result(worker_pb2.Observation(payload=cloudpickle.dumps(obs)))
+        act_future = futures.Future()
+        
+        #payload = worker_pb2.Observation(payload=cloudpickle.dumps(obs))
+        adapted_obs = self._agent_spec.observation_adapter(obs)
+        action = self._agent.act(adapted_obs)
+        adapted_action = self._agent_spec.action_adapter(action)
+        
+        act_future.set_result(adapted_action)
 
-        return self._act_future
+        return act_future
 
     def start(self, agent_spec: AgentSpec):
         """Send the AgentSpec to the agent runner."""
+        #spec = worker_pb2.Specification(payload=cloudpickle.dumps(agent_spec))
+        self._agent_spec = agent_spec
+        self._agent = self._agent_spec.build_agent()
         # Cloudpickle used only for the agent_spec to allow for serialization of lambdas.
-        worker_pb2.Specification(payload=cloudpickle.dumps(agent_spec))
-        
 
     def terminate(self):
         pass
