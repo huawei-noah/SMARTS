@@ -96,7 +96,6 @@ def plotter3d(
 
     if save:
         save_path = pathlib.Path(__file__).absolute().parents[1] / "logs"
-        save_path.mkdir(parents=True, exist_ok=True)
         plt.savefig(fname=save_path/"rgb.png", bbox_inches="tight")
 
     if pause>=0:

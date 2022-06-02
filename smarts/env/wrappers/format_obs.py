@@ -442,9 +442,6 @@ def _std_ego(
             }
         )
 
-    print("-------------------------------------")
-    print(f"Ego position: {std_ego['pos']}, lane_index: {std_ego['lane_index']} \n")
-
     return std_ego
 
 
@@ -616,6 +613,7 @@ def _std_waypoints(
                 waypoint.speed_limit,
             )
         test_paths = [list(map(test_extract_elem, path[: test_des_shp[1]])) for path in rcv_paths[: test_des_shp[0]]]
+        print("-------------------------------------")
         print("Contents of obs.waypoint_paths: [List[List[Waypoint]]]")
         print(test_paths)
         print("\nReformatted contents of obs.waypoint_paths")
@@ -623,7 +621,6 @@ def _std_waypoints(
         for ii in range(len(test_paths)):
             print(f"{ii}: {len(test_paths[ii])}, {test_paths[ii][0]}, {test_paths[ii][-1]}")
         # input("waiting ...")
-        print("-------------------------------------")
 
         raise e
 
