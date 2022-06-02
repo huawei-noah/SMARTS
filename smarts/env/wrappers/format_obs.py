@@ -605,7 +605,7 @@ def _std_waypoints(
         # fmt: on
 
     except BaseException as e:
-        test_des_shp = (4,5)
+        test_des_shp = (100,1000)
         def test_extract_elem(waypoint):
             return (
                 waypoint.heading,
@@ -619,9 +619,9 @@ def _std_waypoints(
         print("Contents of obs.waypoint_paths: [List[List[Waypoint]]]")
         print(test_paths)
         print("\nReformatted contents of obs.waypoint_paths")
-        print("lane: first waypoint")
+        print("lane: len, first waypoint, last waypoint")
         for ii in range(len(test_paths)):
-            print(f"{ii}: {test_paths[ii][0]}")
+            print(f"{ii}: {len(test_paths[ii])}, {test_paths[ii][0]}, {test_paths[ii][-1]}")
         # input("waiting ...")
         print("-------------------------------------")
 
