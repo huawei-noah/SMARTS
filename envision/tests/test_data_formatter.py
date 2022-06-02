@@ -66,8 +66,9 @@ def covered_data():
                 lane_width=4,
                 speed_limit=10,
                 lane_index=0,
+                lane_offset=4.96,
             ),
-            [4, 5, 3, 2.24, 0, 4, 10, 0, {0: "NE-NW"}, []],
+            [4, 5, 3, 2.24, 0, 4, 10, 0, 4.96, {0: "NE-NW"}, []],
         ),
         (
             TrafficActorState(
@@ -94,6 +95,7 @@ def covered_data():
                             lane_width=4,
                             speed_limit=10,
                             lane_index=0,
+                            lane_offset=4.96,
                         )
                     ],
                     [
@@ -104,6 +106,7 @@ def covered_data():
                             lane_width=2,
                             speed_limit=1.2,
                             lane_index=1,
+                            lane_offset=9.96,
                         )
                     ],
                 ],
@@ -128,8 +131,8 @@ def covered_data():
                     1,
                 ),  # events
                 [
-                    [[4, 5, 3, 2.24, 1, 4, 10, 0]],
-                    [[9, 5, 3, 1.11, 2, 2, 1.2, 1]],
+                    [[4, 5, 3, 2.24, 1, 4, 10, 0, 4.96]],
+                    [[9, 5, 3, 1.11, 2, 2, 1.2, 1, 9.96]],
                 ],  # waypoints [p_x, p_y, p_z, heading, reduced_lane_id, lane_width, speed_limit, lane_index]
                 [4, 4, 2, 2],  # driven path
                 [1, 3, 4, 2],  # point cloud positions
