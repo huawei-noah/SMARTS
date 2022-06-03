@@ -161,10 +161,10 @@ def merge_v0_env(
         endless_traffic=False,
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
-    env = FormatObs(env=env)
-    env = FormatAction(env=env, space=ActionSpaceType[action_space])
+    # env = FormatObs(env=env)
+    # env = FormatAction(env=env, space=ActionSpaceType[action_space])
     env = _InfoScore(env=env)
-    env = SingleAgent(env=env)
+    # env = SingleAgent(env=env)
 
     return env
 
@@ -194,7 +194,7 @@ class _InfoScore(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
 
         for agent_id in obs.keys():
-            reached_goal = obs[agent_id]["events"]["reached_goal"]
+            reached_goal = obs[agent_id].events.reached_goal
             # Set `score=1` if ego agent successfully merges into the freeway,
             # changes lane, and reaches the end of mission route, else `score=0`.
             info[agent_id]["score"] = reached_goal

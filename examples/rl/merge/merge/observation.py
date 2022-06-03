@@ -5,46 +5,39 @@ import numpy as np
 from merge.util import plotter3d
 
 
-class RGB(gym.ObservationWrapper):
+class FilterObs(gym.ObservationWrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
-        self.observation_space = gym.spaces.Box(
-            low=0,
-            high=255,
-            shape=env.observation_space["rgb"].shape,
-            dtype=np.uint8,
-        )
+        self.observation_space = gym.spaces.Dict({
+            agent_id: gym.spaces.Dict({
+                "rgb": agent_obs_space["rgb"],
+                "goal_pos": agent_obs_space["mission"]["goal_pos"],
+            })
+            for agent_id, agent_obs_space in env.observation_space.spaces.items()
+        })
 
-    def observation(self, obs: Dict[str, gym.Space]) -> np.ndarray:
-        rgb = obs["rgb"]
 
-        # Ego vehicle is 1.5mx3.75m
-        # Road width = 6.25m
+    def observation(self, obs: Dict[str, Dict[str, gym.Space]]) -> Dict[str, Dict[str, gym.Space]]:
+        """Adapts the wrapped environment's observation.
 
-        # Repaint ego
-        # clr = (122, 140, 153)
-        # repainted = img.copy()
-        # repainted[120:135, 125:131, 0] = clr[0]
-        # repainted[120:135, 125:131, 1] = clr[1]
-        # repainted[120:135, 125:131, 2] = clr[2]
+        Note: Users should not directly call this method.
+        """
+        wrapped_obs = {} 
+        for agent_id, agent_obs in obs.items():
+            rgb = agent_obs["rgb"]
+            goal_error = agent_obs["mission"]["goal_pos"] - agent_obs["ego"]["pos"]
+            wrapped_obs.update(
+                {
+                    agent_id: {
+                        "rgb": np.uint8(rgb), 
+                        "goal_error": np.float64(goal_error),
+                    }
+                }
+            )
+     
+            # plotter3d(wrapped_obs[agent_id]["rgb"], rgb_gray=3,channel_order="last",name="after",pause=-1, save=True)
 
-        # RGB to grayscale
-        # R, G, B = repainted[:, :, 0], repainted[:, :, 1], repainted[:, :, 2]
-        # gray = 0.2989 * R + 0.587 * G + 0.114 * B
-
-        # Expand dims
-        # expanded = np.expand_dims(gray, -1)
-
-        # Channel first
-        # rgb = rgb.transpose(2, 0, 1)
-
-        # Resize image to 64x64
-        # resized = transposed[:, 96:160, 96:160]
-
-        # plot_obs = np.uint8(obs["rgb"])
-        # plotter3d(plot_obs, rgb_gray=3,channel_order="last",name="after",pause=-1, save=True)
-
-        return np.uint8(rgb)
+        return wrapped_obs
 
 
 class Concatenate(gym.ObservationWrapper):
@@ -57,6 +50,19 @@ class Concatenate(gym.ObservationWrapper):
             shape=old_space.shape[1:-1] + (old_space.shape[0] * old_space.shape[-1],),
             dtype=np.uint8,
         )
+        # old_rgb_space = env.observation_space.spaces[]
+        # self.observation_space = gym.spaces.Dict({
+        #     agent_id: gym.spaces.Dict({
+        #         "rgb": gym.spaces.Box(
+        #             low=0,
+        #             high=255,
+        #             shape=old_rgb_space.shape[1:-1] + (old_rgb_space.shape[0] * old_rgb_space.shape[-1],),
+        #             dtype=np.uint8,
+        #         ),
+        #         "goal_pos": agent_obs_space["mission"]["goal_pos"],
+        #     })
+        #     for agent_id, agent_obs_space in env.observation_space.spaces.items()
+        # })
 
     def observation(self, obs):
         # print("Before:",obs.shape)

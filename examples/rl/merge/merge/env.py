@@ -1,30 +1,34 @@
 from typing import Any, Dict
 
-from gym.wrappers.frame_stack import FrameStack
+from smarts.env.wrappers.frame_stack import FrameStack
 from merge import action as merge_action
-from merge import observation as merge_observation
-from merge import reward as merge_reward
+from merge.observation import Concatenate, FilterObs
+from merge.reward import Reward
 from tf_agents.environments import suite_gym, tf_py_environment, validate_py_environment
-
+from smarts.env.wrappers.format_obs import FormatObs
+from smarts.env.wrappers.format_action import FormatAction
+from smarts.core.controllers import ActionSpaceType
+from smarts.env.wrappers.single_agent import SingleAgent
 
 def make(config: Dict[str, Any]) -> tf_py_environment.TFPyEnvironment:
     # Create TF environment.
     # Refer to https://www.tensorflow.org/agents/tutorials/2_environments_tutorial
-    gym_reward_wrapper = merge_reward.Reward
-    gym_action_wrapper = lambda env: merge_action.Action(
+    gym_action_space = lambda env: FormatAction(env=env, space=ActionSpaceType[config["action_space"]])
+    action_wrapper = lambda env: merge_action.Action(
         env=env, space=config["action_wrapper"]
     )
-    gym_obs_wrapper = merge_observation.RGB
-    gym_frame_stack = lambda env: FrameStack(env=env, num_stack=config["num_stack"])
-    gym_frame_concatenate = merge_observation.Concatenate
+    frame_stack = lambda env: FrameStack(env=env, num_stack=config["num_stack"])
     pyenv = suite_gym.load(
         environment_name="smarts.env:merge-v0",
         gym_env_wrappers=[
-            gym_reward_wrapper,
-            gym_action_wrapper,
-            gym_obs_wrapper,
-            gym_frame_stack,
-            gym_frame_concatenate,
+            FormatObs,
+            gym_action_space,
+            Reward,
+            action_wrapper,
+            FilterObs,
+            frame_stack,
+            # Concatenate,
+            SingleAgent,
         ],
         gym_kwargs={
             "headless": not config["head"],  # If False, enables Envision display.
