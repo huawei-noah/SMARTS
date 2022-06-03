@@ -580,12 +580,12 @@ class Sensors:
         if not is_wrong_way:
             # See if the lane leads into the current route
             for lane in nearest_lane.outgoing_lanes:
-                if lane in route_roads:
+                if lane.road in route_roads:
                     (False, is_wrong_way)
                 # If outgoing lane is in a junction see if the junction lane leads into current route.
                 if lane.in_junction:
                     for out_lane in lane.outgoing_lanes:
-                        if out_lane in route_roads:
+                        if out_lane.road in route_roads:
                             return (False, is_wrong_way)
 
         # Vehicle is completely off-route
