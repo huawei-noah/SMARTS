@@ -403,6 +403,7 @@ def _make_space(intrfcs: Dict[str, Any]) -> Dict[str, gym.Space]:
             "dist": spaces["dist"](None),
             "ego": spaces["ego"]("accelerometer" in intrfcs.keys()),
             "events": spaces["events"](None),
+            "mission": spaces["mission"](None),
         }
     )
 
@@ -509,7 +510,7 @@ def _std_mission(
 ) -> Dict[str, np.ndarray]:
 
     if hasattr(val.mission.goal, "position"):
-        goal_pos = val.mission.goal.position.astype(np.float64)
+        goal_pos = np.array(val.mission.goal.position, dtype=np.float64)
     else:
         goal_pos = np.zeros((3,), dtype=np.float64)
 
