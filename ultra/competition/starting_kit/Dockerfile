@@ -47,7 +47,7 @@ RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \
     pip install --upgrade pip
 
 # ULTRA branch name
-ARG BRANCH=ultra-develop
+ARG BRANCH=ultra-codalab
 ARG REPO=SMARTS
 ARG WORKINGDIR=starting_kit
 
