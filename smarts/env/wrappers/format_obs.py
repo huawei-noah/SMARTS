@@ -124,6 +124,13 @@ StdObs = dict({
             Ray vectors. shape=(300,3). dtype=np.float64.
     })
     
+    Mission details for the ego agent.
+    "mission": dict({
+        "goal_pos":
+            Achieve goal by reaching the end position. Defaults to np.array([0,0,0])
+            for no mission. shape=(3,). dtype=np.float64. 
+    })
+
     Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
     vehicles are insufficient, default feature values are padded.
     "neighbors": dict({
@@ -247,6 +254,7 @@ class FormatObs(gym.ObservationWrapper):
             "ego": "ego_vehicle_state",
             "events": "events",
             "lidar": "lidar_point_cloud",
+            "mission": "ego_vehicle_state",
             "neighbors": "neighborhood_vehicle_states",
             "ogm": "occupancy_grid_map",
             "rgb": "top_down_rgb",
@@ -354,6 +362,9 @@ def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
             "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
             "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
             "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
+        }),
+        "mission": lambda _: gym.spaces.Dict({
+            "goal_pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
         }),
         "neighbors": lambda _: gym.spaces.Dict({
             "box": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),
@@ -493,6 +504,20 @@ def _std_lidar(
     }
 
 
+def _std_mission(
+    val: EgoVehicleObservation
+) -> Dict[str, np.ndarray]:
+
+    if hasattr(val.mission.goal, "position"):
+        goal_pos = val.mission.goal.position.astype(np.float64)
+    else:
+        goal_pos = np.zeros((3,), dtype=np.float64)
+
+    return {
+        "goal_pos": goal_pos
+    }
+
+
 def _std_neighbors(
     nghbs: List[VehicleObservation],
 ) -> Dict[str, np.ndarray]:
@@ -568,8 +593,12 @@ def _std_waypoints(
     rcv_paths: List[List[Waypoint]],
 ) -> Dict[str, np.ndarray]:
 
+    # Truncate all paths to be of the same length
+    min_len = min(map(len, rcv_paths))
+    trunc_paths = list(map(lambda x:x[:min_len], rcv_paths))
+
     des_shp = _WAYPOINT_SHP
-    rcv_shp = (len(rcv_paths), len(rcv_paths[0]))
+    rcv_shp = (len(trunc_paths), len(trunc_paths[0]))
     pad_shp = [0 if des - rcv < 0 else des - rcv for des, rcv in zip(des_shp, rcv_shp)]
 
     def extract_elem(waypoint):
@@ -581,48 +610,24 @@ def _std_waypoints(
             waypoint.speed_limit,
         )
 
-    try:
-        paths = [map(extract_elem, path[: des_shp[1]]) for path in rcv_paths[: des_shp[0]]]
-        heading, lane_index, lane_width, pos, speed_limit = zip(
-            *[zip(*path) for path in paths]
-        )
+    paths = [map(extract_elem, path[: des_shp[1]]) for path in trunc_paths[: des_shp[0]]]
+    heading, lane_index, lane_width, pos, speed_limit = zip(
+        *[zip(*path) for path in paths]
+    )
 
-        heading = np.array(heading, dtype=np.float32)
-        lane_index = np.array(lane_index, dtype=np.int8)
-        lane_width = np.array(lane_width, dtype=np.float32)
-        pos = np.array(pos, dtype=np.float64)
-        speed_limit = np.array(speed_limit, dtype=np.float32)
+    heading = np.array(heading, dtype=np.float32)
+    lane_index = np.array(lane_index, dtype=np.int8)
+    lane_width = np.array(lane_width, dtype=np.float32)
+    pos = np.array(pos, dtype=np.float64)
+    speed_limit = np.array(speed_limit, dtype=np.float32)
 
-        # fmt: off
-        heading = np.pad(heading, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
-        lane_index = np.pad(lane_index, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
-        lane_width = np.pad(lane_width, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
-        pos = np.pad(pos, ((0,pad_shp[0]),(0,pad_shp[1]),(0,1)), mode='constant', constant_values=0)
-        speed_limit = np.pad(speed_limit, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
-        # fmt: on
-
-    except BaseException as e:
-        test_des_shp = (100,1000)
-        def test_extract_elem(waypoint):
-            return (
-                waypoint.heading,
-                waypoint.lane_id,
-                waypoint.lane_index,
-                waypoint.lane_width,
-                waypoint.pos,
-                waypoint.speed_limit,
-            )
-        test_paths = [list(map(test_extract_elem, path[: test_des_shp[1]])) for path in rcv_paths[: test_des_shp[0]]]
-        print("-------------------------------------")
-        print("Contents of obs.waypoint_paths: [List[List[Waypoint]]]")
-        print(test_paths)
-        print("\nReformatted contents of obs.waypoint_paths")
-        print("lane: len, first waypoint, last waypoint")
-        for ii in range(len(test_paths)):
-            print(f"{ii}: {len(test_paths[ii])}, {test_paths[ii][0]}, {test_paths[ii][-1]}")
-        # input("waiting ...")
-
-        raise e
+    # fmt: off
+    heading = np.pad(heading, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+    lane_index = np.pad(lane_index, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+    lane_width = np.pad(lane_width, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+    pos = np.pad(pos, ((0,pad_shp[0]),(0,pad_shp[1]),(0,1)), mode='constant', constant_values=0)
+    speed_limit = np.pad(speed_limit, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+    # fmt: on
 
     return {
         "heading": heading,
