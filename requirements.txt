@@ -27,7 +27,7 @@ colorama==0.4.4
 colorful==0.5.4
 commonmark==0.9.1
 constantly==15.1.0
-coverage==6.4
+coverage==6.4.1
 cycler==0.11.0
 debugpy==1.6.0
 decorator==5.1.1
@@ -84,7 +84,7 @@ MarkupSafe==2.1.1
 matplotlib==3.5.2
 matplotlib-inline==0.1.3
 mistune==0.8.4
-msgpack==1.0.3
+msgpack==1.0.4
 multidict==6.0.2
 nbclient==0.5.13
 nbconvert==6.5.0
@@ -134,7 +134,7 @@ pytest_notebook==0.7.0
 python-dateutil==2.8.2
 pytz==2022.1
 PyYAML==6.0
-pyzmq==23.0.0
+pyzmq==23.1.0
 ray==1.0.1.post1
 redis==3.4.1
 requests==2.27.1
