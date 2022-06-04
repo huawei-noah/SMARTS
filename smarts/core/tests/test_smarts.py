@@ -44,7 +44,7 @@ def scenarios():
         start=Start((71.65, 63.78), Heading(math.pi * 0.91)), goal=EndlessGoal()
     )
     scenario = Scenario(
-        scenario_root="scenarios/loop",
+        scenario_root="scenarios/smarts/loop",
         route="basic.rou.xml",
         missions={"Agent-007": mission},
     )

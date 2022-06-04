@@ -36,7 +36,7 @@ from smarts.sstudio.types import MapSpec
 
 @pytest.fixture
 def sumo_scenario():
-    return Scenario(scenario_root="scenarios/intersections/4lane")
+    return Scenario(scenario_root="scenarios/smarts/intersections/4lane")
 
 
 @pytest.fixture

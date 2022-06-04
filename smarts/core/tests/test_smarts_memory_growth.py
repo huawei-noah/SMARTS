@@ -44,14 +44,14 @@ def agent_id():
 
 @pytest.fixture
 def primative_scenarios():
-    return ["scenarios/intersections/2lane"]
+    return ["scenarios/smarts/intersections/2lane"]
 
 
 @pytest.fixture
 def social_agent_scenarios():
     return [
-        "scenarios/intersections/4lane",
-        # "scenarios/intersections/6lane",
+        "scenarios/smarts/intersections/4lane",
+        # "scenarios/smarts/intersections/6lane",
     ]
 
 

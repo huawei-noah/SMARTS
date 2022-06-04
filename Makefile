@@ -52,7 +52,7 @@ test-memory-growth: build-all-scenarios
 
 .PHONY: test-long-determinism
 test-long-determinism:
-	scl scenario build --clean scenarios/minicity
+	scl scenario build --clean scenarios/smarts/minicity
 	PYTHONHASHSEED=42 pytest -v \
 		--forked \
 		./smarts/env/tests/test_determinism.py::test_long_determinism
@@ -73,9 +73,13 @@ run: build-scenario
 build-all-scenarios:
 	scl scenario build-all scenarios
 
+.PHONY: build-smarts-scenarios
+build-smarts-scenarios:
+	scl scenario build scenarios/smarts
+
 .PHONY: build-sanity-scenarios
 build-sanity-scenarios:
-	scl scenario build scenarios/loop
+	scl scenario build scenarios/smarts/loop
 
 .PHONY: build-scenario
 build-scenario:

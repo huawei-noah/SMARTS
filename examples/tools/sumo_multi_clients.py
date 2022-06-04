@@ -20,7 +20,7 @@ def start_sumo_server():
     sumo_binary = "sumo"
     sumo_cmd = [
         os.path.join(SUMO_PATH, "bin", sumo_binary),
-        "--net-file=scenarios/loop/map.net.xml",
+        "--net-file=scenarios/smarts/loop/map.net.xml",
         "--num-clients=3",
         "--remote-port=%s" % PORT,
     ]

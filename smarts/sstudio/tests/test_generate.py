@@ -82,7 +82,7 @@ def missions() -> Sequence[Mission]:
 def test_generate_traffic(traffic: Traffic):
     with tempfile.TemporaryDirectory() as temp_dir:
         gen_traffic(
-            "scenarios/intersections/4lane_t",
+            "scenarios/smarts/intersections/4lane_t",
             traffic,
             output_dir=temp_dir,
             name="generated",
@@ -109,7 +109,7 @@ def _gen_map_from_spec(scenario_root: str, map_spec: MapSpec):
 
 
 def test_generate_sumo_map():
-    scenario_root = "scenarios/intersections/4lane_t"
+    scenario_root = "scenarios/smarts/intersections/4lane_t"
     map_file = "map.net.xml"
 
     map_path = os.path.join(scenario_root, map_file)

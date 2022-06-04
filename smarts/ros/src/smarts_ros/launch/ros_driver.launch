@@ -17,7 +17,7 @@
   </node>
 
 
-  <arg name="test_scenario" default="scenarios/loop" doc="A path to scenario to test with." />
+  <arg name="test_scenario" default="scenarios/smarts/loop" doc="A path to scenario to test with." />
   <arg name="add_test_agent" default="false" doc="Whether or not to add a test agent with the following parameters." />
   <arg name="test_task_ref" default="agent" doc="The name of the test agent in the zoo registry." />
   <arg name="test_task_ver" default="" doc="A version string to identify the test agent in the zoo registry." />

@@ -99,7 +99,7 @@ The :class:`smarts.zoo.agent_spec.AgentSpec` acts as a container to store the in
 Putting it all together
 -----------------------
 
-We can run this agent with "scenarios/loop", one of the scenarios packaged with SMARTS using the familiar gym interface:
+We can run this agent with "scenarios/smarts/loop", one of the scenarios packaged with SMARTS using the familiar gym interface:
 
 .. code-block:: python
 
@@ -146,7 +146,7 @@ We can run this agent with "scenarios/loop", one of the scenarios packaged with 
 
    env = gym.make(
        "smarts.env:hiway-v0",
-       scenarios=["scenarios/loop"],
+       scenarios=["scenarios/smarts/loop"],
        agent_specs={AGENT_ID: agent_spec},
    )
 

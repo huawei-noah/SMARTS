@@ -59,7 +59,7 @@ def run(
     prev_friction_sum = None
     scenario = next(
         Scenario.variations_for_all_scenario_roots(
-            ["scenarios/loop"], agents_to_be_briefed=["007"]
+            ["scenarios/smarts/loop"], agents_to_be_briefed=["007"]
         )
     )
     previous_provider_state = traffic_sim.setup(scenario)
