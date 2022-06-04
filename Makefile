@@ -19,7 +19,7 @@ test: build-all-scenarios
 	rm -f .coverage*
 
 .PHONY: sanity-test
-sanity-test: build-all-scenarios
+sanity-test: build-sanity-scenarios
 	./tests/test_setup.py
 	PYTHONHASHSEED=42 pytest -v \
 		--doctest-modules \
@@ -72,6 +72,10 @@ run: build-scenario
 .PHONY: build-all-scenarios
 build-all-scenarios:
 	scl scenario build-all scenarios
+
+.PHONY: build-sanity-scenarios
+build-sanity-scenarios:
+	scl scenario build scenarios/loop
 
 .PHONY: build-scenario
 build-scenario:
