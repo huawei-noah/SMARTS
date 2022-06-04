@@ -79,7 +79,8 @@ build-smarts-scenarios:
 
 .PHONY: build-sanity-scenarios
 build-sanity-scenarios:
-	scl scenario build scenarios/smarts/loop
+	scl scenario build --clean scenarios/smarts/loop
+	scl scenario build --clean scenarios/smarts/zoo_intersection
 
 .PHONY: build-scenario
 build-scenario:
