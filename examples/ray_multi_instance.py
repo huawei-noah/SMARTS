@@ -194,7 +194,7 @@ if __name__ == "__main__":
     parser = default_argument_parser("pytorch-example")
     parser.add_argument(
         "--evaluation-scenario",
-        default="scenarios/loop",
+        default="scenarios/smarts/loop",
         help="The scenario to use for evaluation.",
         type=str,
     )

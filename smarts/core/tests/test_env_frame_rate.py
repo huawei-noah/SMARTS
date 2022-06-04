@@ -39,7 +39,7 @@ AGENT_ID = "Agent-007"
 
 @pytest.fixture
 def scenarios():
-    return ["scenarios/tests/multi_agents_loop"]
+    return ["scenarios/smarts/tests/multi_agents_loop"]
 
 
 @pytest.fixture

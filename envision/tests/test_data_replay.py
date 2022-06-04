@@ -64,7 +64,7 @@ def data_replay_path():
 
 @pytest.fixture
 def scenarios_iterator():
-    scenarios = ["scenarios/loop", "scenarios/intersections/6lane"]
+    scenarios = ["scenarios/smarts/loop", "scenarios/smarts/intersections/6lane"]
     return Scenario.scenario_variations(scenarios, [AGENT_ID])
 
 

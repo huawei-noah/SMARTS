@@ -81,7 +81,7 @@ agent_specs = {
 
 env = gym.make(
     "smarts.env:hiway-v0",
-    scenarios=["scenarios/loop"],
+    scenarios=["scenarios/smarts/loop"],
     agent_specs=agent_specs,
 )
 
@@ -218,10 +218,10 @@ scl envision start --scenarios ./scenarios
 scl scenario build-all ./scenarios ./eval_scenarios
 
 # Rebuild a single scenario, replacing any existing generated assets
-scl scenario build --clean scenarios/loop
+scl scenario build --clean scenarios/smarts/loop
 
 # Clean generated scenario artifacts
-scl scenario clean scenarios/loop
+scl scenario clean scenarios/smarts/loop
 ```
 
 ## Documentation

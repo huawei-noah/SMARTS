@@ -40,7 +40,7 @@ AGENT3 = "agent3"
 @pytest.fixture
 def scenario():
     scenario = Scenario(
-        scenario_root="scenarios/loop",
+        scenario_root="scenarios/smarts/loop",
         route="basic.rou.xml",
     )
     return scenario

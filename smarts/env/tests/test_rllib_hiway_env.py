@@ -123,8 +123,8 @@ def test_rllib_hiway_env(rllib_agent):
         )
     }
 
-    # XXX: We should be able to simply provide "scenarios/loop"?
-    scenario_path = Path(__file__).parent / "../../../scenarios/loop"
+    # XXX: We should be able to simply provide "scenarios/smarts/loop"?
+    scenario_path = Path(__file__).parent / "../../../scenarios/smarts/loop"
     tune_confg = {
         "env": RLlibHiWayEnv,
         "env_config": {
