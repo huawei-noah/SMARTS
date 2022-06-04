@@ -28,5 +28,5 @@ register(
     locator="zoo-agent2-v0",
     entry_point=demo_agent_callable,
     # Also works:
-    # entry_point="scenarios.zoo_intersection:demo_agent_callable",
+    # entry_point="scenarios.smarts.zoo_intersection:demo_agent_callable",
 )

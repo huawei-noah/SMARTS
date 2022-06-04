@@ -73,12 +73,12 @@ for name, routes in {
 #   In your own project you would place the prefabs script where python can reach it
 social_agent1 = SocialAgentActor(
     name="zoo-car1",
-    agent_locator="scenarios.zoo_intersection.agent_prefabs:zoo-agent2-v0",
+    agent_locator="scenarios.smarts.zoo_intersection.agent_prefabs:zoo-agent2-v0",
     initial_speed=20,
 )
 social_agent2 = SocialAgentActor(
     name="zoo-car2",
-    agent_locator="scenarios.zoo_intersection.agent_prefabs:zoo-agent2-v0",
+    agent_locator="scenarios.smarts.zoo_intersection.agent_prefabs:zoo-agent2-v0",
     initial_speed=20,
 )
 
