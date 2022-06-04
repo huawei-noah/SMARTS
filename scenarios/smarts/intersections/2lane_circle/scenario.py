@@ -7,11 +7,11 @@ scenario = os.path.dirname(os.path.realpath(__file__))
 
 laner_agent = SocialAgentActor(
     name="laner-agent",
-    agent_locator="scenarios.intersections.2lane_circle.agent_prefabs:laner-agent-v0",
+    agent_locator="scenarios.smarts.intersections.2lane_circle.agent_prefabs:laner-agent-v0",
 )
 buddha_agent = SocialAgentActor(
     name="buddha-agent",
-    agent_locator="scenarios.intersections.2lane_circle.agent_prefabs:buddha-agent-v0",
+    agent_locator="scenarios.smarts.intersections.2lane_circle.agent_prefabs:buddha-agent-v0",
 )
 
 # Replace the above lines with the code below if you want to replay the agent actions and inputs
@@ -21,7 +21,7 @@ buddha_agent = SocialAgentActor(
 #     policy_kwargs={
 #         "save_directory": "./replay",
 #         "id": "agent_la",
-#         "wrapped_agent_locator": "scenarios.intersections.2lane_circle.agent_prefabs:laner-agent-v0",
+#         "wrapped_agent_locator": "scenarios.smarts.intersections.2lane_circle.agent_prefabs:laner-agent-v0",
 #     },
 # )
 
@@ -32,7 +32,7 @@ buddha_agent = SocialAgentActor(
 #     policy_kwargs={
 #         "save_directory": "./replay",
 #         "id": "agent_ba",
-#         "wrapped_agent_locator": "scenarios.intersections.2lane_circle.agent_prefabs:buddha-agent-v0",
+#         "wrapped_agent_locator": "scenarios.smarts.intersections.2lane_circle.agent_prefabs:buddha-agent-v0",
 #     },
 # )
 

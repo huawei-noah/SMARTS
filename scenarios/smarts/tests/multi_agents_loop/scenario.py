@@ -27,7 +27,7 @@ laner_agent = t.SocialAgentActor(
 
 buddha_agent = t.SocialAgentActor(
     name="buddha-agent",
-    agent_locator="scenarios.tests.multi_agents_loop.agent_prefabs:buddha-agent-v0",
+    agent_locator="scenarios.smarts.tests.multi_agents_loop.agent_prefabs:buddha-agent-v0",
 )
 
 gen_scenario(

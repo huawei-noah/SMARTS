@@ -57,7 +57,7 @@ Or for `scenarios/smarts/straight`, you can wrap the `trajectory_boid_agent` and
         policy_kwargs={
             "save_directory": "./replay",
             "id": "agent_oa",
-            "wrapped_agent_locator": "scenarios.straight.agent_prefabs:trajectory-boid-agent-v0",
+            "wrapped_agent_locator": "scenarios.smarts.straight.agent_prefabs:trajectory-boid-agent-v0",
         },
     )
     
@@ -67,7 +67,7 @@ Or for `scenarios/smarts/straight`, you can wrap the `trajectory_boid_agent` and
         policy_kwargs={
             "save_directory": "./replay",
             "id": "agent_kla",
-            "wrapped_agent_locator": "scenarios.straight.agent_prefabs:pose-boid-agent-v0",
+            "wrapped_agent_locator": "scenarios.smarts.straight.agent_prefabs:pose-boid-agent-v0",
         },
     )
 ```

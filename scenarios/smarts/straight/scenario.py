@@ -5,12 +5,12 @@ from smarts.sstudio import types as t
 
 trajectory_boid_agent = t.BoidAgentActor(
     name="trajectory-boid",
-    agent_locator="scenarios.straight.agent_prefabs:trajectory-boid-agent-v0",
+    agent_locator="scenarios.smarts.straight.agent_prefabs:trajectory-boid-agent-v0",
 )
 
 pose_boid_agent = t.BoidAgentActor(
     name="pose-boid",
-    agent_locator="scenarios.straight.agent_prefabs:pose-boid-agent-v0",
+    agent_locator="scenarios.smarts.straight.agent_prefabs:pose-boid-agent-v0",
 )
 
 traffic = t.Traffic(
