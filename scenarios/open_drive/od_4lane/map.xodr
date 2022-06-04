@@ -4,7 +4,7 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <sumo-net-file value="scenarios/intersections/4lane/map.net.xml"/>
+        <sumo-net-file value="scenarios/smarts/intersections/4lane/map.net.xml"/>
     </input>
 
     <output>
