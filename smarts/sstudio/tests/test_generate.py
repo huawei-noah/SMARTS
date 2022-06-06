@@ -130,7 +130,7 @@ def test_generate_sumo_map():
 
 
 def test_generate_od_map():
-    scenario_root = "scenarios/smarts/od_4lane"
+    scenario_root = "scenarios/open_drive/od_4lane"
     map_file = "map.xodr"
 
     map_path = os.path.join(scenario_root, map_file)
