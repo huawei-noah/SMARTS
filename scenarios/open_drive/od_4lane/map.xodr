@@ -4,11 +4,11 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <sumo-net-file value="scenarios/smarts/intersections/4lane/map.net.xml"/>
+        <sumo-net-file value="scenarios/sumo/intersections/4lane/map.net.xml"/>
     </input>
 
     <output>
-        <opendrive-output value="scenarios/smarts/opendrive/4lane_map.xodr"/>
+        <opendrive-output value="scenarios/sumo/opendrive/4lane_map.xodr"/>
     </output>
 
     <processing>

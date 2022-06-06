@@ -97,7 +97,7 @@ def run_experiment(log_path, experiment_name, training_iteration=100):
         )
     }
 
-    scenario_path = Path(__file__).parent / "../../scenarios/smarts/loop"
+    scenario_path = Path(__file__).parent / "../../scenarios/sumo/loop"
     scenario_path = str(scenario_path.absolute())
 
     tune_confg = {

@@ -35,7 +35,7 @@ def test_sumo_version():
     load_params = [
         "--start",
         "--quit-on-end",
-        "--net-file=scenarios/smarts/loop/map.net.xml",
+        "--net-file=scenarios/sumo/loop/map.net.xml",
         "--no-step-log",
         "--no-warnings=1",
     ]

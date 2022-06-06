@@ -4,11 +4,11 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <sumo-net-file value="/home/kimia/dev/HiWay/scenarios/smarts/intersections/2lane_circle_intersection/map.net.xml"/>
+        <sumo-net-file value="/home/kimia/dev/HiWay/scenarios/sumo/intersections/2lane_circle_intersection/map.net.xml"/>
     </input>
 
     <output>
-        <output-file value="/home/kimia/dev/HiWay/scenarios/smarts/intersections/2lane_circle_intersection/map.net.xml"/>
+        <output-file value="/home/kimia/dev/HiWay/scenarios/sumo/intersections/2lane_circle_intersection/map.net.xml"/>
     </output>
 
     <processing>

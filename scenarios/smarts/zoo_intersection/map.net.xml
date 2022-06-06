@@ -6,11 +6,11 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <sumo-net-file value="/home/kimia/SMARTS/research/edmonton/scenarios/smarts/intersections/2lane_t/map.net.xml"/>
+        <sumo-net-file value="/home/kimia/SMARTS/research/edmonton/scenarios/sumo/intersections/2lane_t/map.net.xml"/>
     </input>
 
     <output>
-        <output-file value="/home/kimia/SMARTS/research/edmonton/scenarios/smarts/intersections/2lane_t/map.net.xml"/>
+        <output-file value="/home/kimia/SMARTS/research/edmonton/scenarios/sumo/intersections/2lane_t/map.net.xml"/>
     </output>
 
     <processing>

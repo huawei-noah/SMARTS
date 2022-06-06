@@ -11,11 +11,11 @@ SMARTS includes a visualizer called *Envision* that runs on a process separate f
 To run the default example simply build a scenario and run the following command,
 
 .. code-block:: bash
-    # build scenarios/smarts/loop
-    scl scenario build --clean scenarios/smarts/loop
+    # build scenarios/sumo/loop
+    scl scenario build --clean scenarios/sumo/loop
 
     # run an experiment
-    scl run --envision examples/single_agent.py scenarios/smarts/loop
+    scl run --envision examples/single_agent.py scenarios/sumo/loop
 
 You need to add the `--envision` flag to run the Envision server where you can see the visualization of the experiment.
 

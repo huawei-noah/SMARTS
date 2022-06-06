@@ -90,7 +90,7 @@ def _make_agent_specs(intrfcs):
 def make_env(request):
     env = gym.make(
         "smarts.env:hiway-v0",
-        scenarios=["scenarios/smarts/figure_eight"],
+        scenarios=["scenarios/sumo/figure_eight"],
         agent_specs=_make_agent_specs(request.param),
         headless=True,
         visdom=False,

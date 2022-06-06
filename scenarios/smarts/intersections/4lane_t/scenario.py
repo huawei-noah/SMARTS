@@ -22,7 +22,7 @@ traffic = t.Traffic(
     ]
 )
 
-agent_prefabs = "scenarios.smarts.intersections.4lane_t.agent_prefabs"
+agent_prefabs = "scenarios.sumo.intersections.4lane_t.agent_prefabs"
 
 motion_planner_actor = t.SocialAgentActor(
     name="motion-planner-agent",

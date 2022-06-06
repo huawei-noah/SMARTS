@@ -43,7 +43,7 @@ def loop_scenario():
         start=Start((71.65, 63.78), Heading(math.pi * 0.91)), goal=EndlessGoal()
     )
     scenario = Scenario(
-        scenario_root="scenarios/smarts/loop",
+        scenario_root="scenarios/sumo/loop",
         route="basic.rou.xml",
         missions={"Agent-007": mission},
     )
