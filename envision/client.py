@@ -161,7 +161,7 @@ class Client:
                         data_formatter.add(state)
                         state = data_formatter.resolve()
                     state = unpack(state)
-                    state = json.dumps(state, cls=JSONEncoder)
+                    state = json.dumps(state, cls=JSONEncoder, allow_nan=False)
 
                 f.write(f"{state}\n")
 
@@ -207,7 +207,7 @@ class Client:
             # if not already serialized
             if not isinstance(state, str):
                 state = unpack(state)
-                state = json.dumps(state, cls=JSONEncoder)
+                state = json.dumps(state, cls=JSONEncoder, allow_nan=False)
 
             ws.send(state)
 
