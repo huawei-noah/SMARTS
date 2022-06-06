@@ -41,12 +41,12 @@ def sumo_scenario():
 
 @pytest.fixture
 def opendrive_scenario_4lane():
-    return Scenario(scenario_root="scenarios/od_4lane")
+    return Scenario(scenario_root="scenarios/smarts/od_4lane")
 
 
 @pytest.fixture
 def opendrive_scenario_merge():
-    return Scenario(scenario_root="scenarios/od_merge")
+    return Scenario(scenario_root="scenarios/smarts/od_merge")
 
 
 def test_sumo_map(sumo_scenario):
