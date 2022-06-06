@@ -97,6 +97,7 @@ def env(agent_spec):
 
 
 def test_hiway_env(env, agent_spec):
+    episode = None
     for episode in episodes(n=MAX_EPISODES):
         agent = agent_spec.build_agent()
         observations = env.reset()
@@ -118,6 +119,6 @@ def test_hiway_env(env, agent_spec):
 
             assert INFO_EXTRA_KEY in infos[AGENT_ID], "Failed to apply info adapter"
 
-    assert episode.index == (
+    assert episode is not None and episode.index == (
         MAX_EPISODES - 1
     ), "Simulation must cycle through to the final episode."
