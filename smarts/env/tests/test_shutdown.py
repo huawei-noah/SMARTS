@@ -36,7 +36,7 @@ def build_env(agent_spec):
     return gym.make(
         "smarts.env:hiway-v0",
         # TODO: Switch to a test scenario that has routes, and missions
-        scenarios=["scenarios/smarts/loop"],
+        scenarios=["scenarios/sumo/loop"],
         agent_specs={AGENT_ID: agent_spec},
         headless=True,
         seed=2008,

@@ -4,11 +4,11 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <sumo-net-file value="scenarios/smarts/loop/map.net.xml"/>
+        <sumo-net-file value="scenarios/sumo/loop/map.net.xml"/>
     </input>
 
     <output>
-        <output-file value="scenarios/smarts/loop/map.net.xml"/>
+        <output-file value="scenarios/sumo/loop/map.net.xml"/>
     </output>
 
     <processing>
@@ -30,7 +30,7 @@
     </pedestrian>
 
     <netedit>
-        <additional-files value="/home/kyber/Desktop/SMARTS/scenarios/smarts/loop/traffic/loop.add.xml"/>
+        <additional-files value="/home/kyber/Desktop/SMARTS/scenarios/sumo/loop/traffic/loop.add.xml"/>
     </netedit>
 
     <report>

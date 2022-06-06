@@ -33,7 +33,7 @@ agent_specs = {
 
 env = gym.make(
     "smarts.env:hiway-v0",
-    scenarios=["scenarios/smarts/loop"],
+    scenarios=["scenarios/sumo/loop"],
     agent_specs=agent_specs,
 )
 
@@ -110,14 +110,14 @@ make sanity-test
 ### Running
 Use the `scl` command to run SMARTS together with it's supporting processes. 
 
-To run the default example, firstly build the scenario `scenarios/smarts/loop`.
+To run the default example, firstly build the scenario `scenarios/sumo/loop`.
 ```bash
-scl scenario build --clean scenarios/smarts/loop
+scl scenario build --clean scenarios/sumo/loop
 ```
 
 Then, run a single-agent SMARTS simulation with Envision display and `loop` scenario.
 ```bash 
-scl run --envision examples/single_agent.py scenarios/smarts/loop 
+scl run --envision examples/single_agent.py scenarios/sumo/loop 
 ```
 
 The `--envision` flag runs the Envision server which displays the simulation visualization. See [./envision/README.md](./envision/README.md) for more information on Envision, SMARTS's front-end visualization tool.
@@ -180,10 +180,10 @@ scl envision start --scenarios ./scenarios
 scl scenario build-all ./scenarios ./eval_scenarios
 
 # Rebuild a single scenario, replacing any existing generated assets
-scl scenario build --clean scenarios/smarts/loop
+scl scenario build --clean scenarios/sumo/loop
 
 # Clean generated scenario artifacts
-scl scenario clean scenarios/smarts/loop
+scl scenario clean scenarios/sumo/loop
 ```
 
 # Visualizing Observations
@@ -199,7 +199,7 @@ Secondly, in a separate terminal, run SMARTS simulation. Enable Visdom in the en
 ```python
 env = gym.make(
     "smarts.env:hiway-v0",
-    scenarios=["scenarios/smarts/loop"],
+    scenarios=["scenarios/sumo/loop"],
     agent_specs=agent_specs,
     visdom=True,
 )
@@ -240,7 +240,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-python examples/run_smarts.py --algo SAC --scenario ./scenarios/smarts/loop --n_agents 5
+python examples/run_smarts.py --algo SAC --scenario ./scenarios/sumo/loop --n_agents 5
 ```
 
 # Containers
@@ -257,11 +257,11 @@ $ scl envision start -s ./scenarios -p 8081 &
 
 # Build the scenario. 
 # This step is required on the first time, and whenever the scenario is modified.
-$ scl scenario build scenarios/smarts/loop --clean
+$ scl scenario build scenarios/sumo/loop --clean
 
 # Run an example. 
 # Add --headless if visualisation is not needed.
-$ python examples/single_agent.py scenarios/smarts/loop
+$ python examples/single_agent.py scenarios/sumo/loop
 
 # Visit http://localhost:8081 in the host machine to see the running simulation in Envision.
 ```
@@ -276,7 +276,7 @@ $ sudo singularity build ./utils/singularity/smarts.sif ./utils/singularity/smar
 # Use the container to build the required scenarios.
 $ singularity shell --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif
 # Inside the container
-Singularity> scl scenario build /src/scenarios/smarts/loop/
+Singularity> scl scenario build /src/scenarios/sumo/loop/
 Singularity> exit
 
 # Then, run the container using one of the following methods.
@@ -284,13 +284,13 @@ Singularity> exit
 # 1. Run container in interactive mode.
 $ singularity shell --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif
 # Inside the container
-Singularity> python3.7 /src/examples/single_agent.py /src/scenarios/smarts/loop/ --headless
+Singularity> python3.7 /src/examples/single_agent.py /src/scenarios/sumo/loop/ --headless
 
 # 2. Run commands within the container from the host system.
-$ singularity exec --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif python3.7 /src/examples/single_agent.py /src/scenarios/smarts/loop/ --headless
+$ singularity exec --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif python3.7 /src/examples/single_agent.py /src/scenarios/sumo/loop/ --headless
 
 # 3. Run container instance in the background.
-$ singularity instance start --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif smarts_train /src/examples/single_agent.py /src/scenarios/smarts/loop/ --headless
+$ singularity instance start --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif smarts_train /src/examples/single_agent.py /src/scenarios/sumo/loop/ --headless
 ```
 
 # Troubleshooting

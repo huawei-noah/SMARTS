@@ -4,7 +4,7 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <output>
-        <output-file value="/home/dev/Desktop/repos/SMARTS/scenarios/smarts/tests/congestion/map.net.xml"/>
+        <output-file value="/home/dev/Desktop/repos/SMARTS/scenarios/sumo/tests/congestion/map.net.xml"/>
     </output>
 
     <processing>

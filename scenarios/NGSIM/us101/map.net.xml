@@ -4,11 +4,11 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <sumo-net-file value="scenarios/NGSIM/us101/map.net.xml"/>
+        <sumo-net-file value="scenarios/sumo/NGSIM/us101/map.net.xml"/>
     </input>
 
     <output>
-        <output-file value="scenarios/NGSIM/us101/map.net.xml"/>
+        <output-file value="scenarios/sumo/NGSIM/us101/map.net.xml"/>
     </output>
 
     <processing>

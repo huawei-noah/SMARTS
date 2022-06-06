@@ -4,11 +4,11 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
 
     <input>
-        <sumo-net-file value="/Users/davidrusu/nondual-systems/HiWay/scenarios/smarts/figure_eight/map.net.xml"/>
+        <sumo-net-file value="/Users/davidrusu/nondual-systems/HiWay/scenarios/sumo/figure_eight/map.net.xml"/>
     </input>
 
     <output>
-        <output-file value="/Users/davidrusu/nondual-systems/HiWay/scenarios/smarts/figure_eight/map.net.xml"/>
+        <output-file value="/Users/davidrusu/nondual-systems/HiWay/scenarios/sumo/figure_eight/map.net.xml"/>
     </output>
 
     <processing>

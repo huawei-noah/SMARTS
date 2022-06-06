@@ -41,7 +41,7 @@ To run the training procedure,
 ```bash
 # from baselines/marl_benchmark/
 $ python3.7 run.py <scenario> -f <config_file>
-# E.x. python3.7 run.py scenarios/smarts/intersections/4lane -f agents/ppo/baseline-lane-control.yaml
+# E.x. python3.7 run.py scenarios/sumo/intersections/4lane -f agents/ppo/baseline-lane-control.yaml
 ```
 
 To run the evaluation procedure for multiple algorithms,
@@ -49,7 +49,7 @@ To run the evaluation procedure for multiple algorithms,
 ```bash
 # from baselines/marl_benchmark/
 $ python evaluate.py <scenario> -f <config_files>
-# E.x. python3.7  evaluate.py scenarios/smarts/intersections/4lane \
+# E.x. python3.7  evaluate.py scenarios/sumo/intersections/4lane \
 #          -f agents/ppo/baseline-lane-control.yaml \
 #          --checkpoint ./log/results/run/4lane-4/PPO_Simple_977c1_00000_0_2020-10-14_00-06-10
 ```

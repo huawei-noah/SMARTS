@@ -27,7 +27,7 @@ Checkout `examples/replay/replay_klws_agent.py` on an example on how you can wri
     copy_scenarios.copy_scenarios(save_dir, scenarios)
 ```
 You may also need to wrap the social agent used in the `scenario.py` file of the scenario on which you run your experiment.
-Like for `scenarios/smarts/loop`, you can wrap the `open_agent` and `keep_lane_agent` agents used like this, 
+Like for `scenarios/sumo/loop`, you can wrap the `open_agent` and `keep_lane_agent` agents used like this, 
 ```python
     open_agent_actor = t.SocialAgentActor(
     name="open-agent",
@@ -49,7 +49,7 @@ Like for `scenarios/smarts/loop`, you can wrap the `open_agent` and `keep_lane_a
         },
     )
 ```
-Or for `scenarios/smarts/straight`, you can wrap the `trajectory_boid_agent` and `pose_boid_agent` agents used like this,
+Or for `scenarios/sumo/straight`, you can wrap the `trajectory_boid_agent` and `pose_boid_agent` agents used like this,
 ```python
     trajectory_boid_agent = t.SocialAgentActor(
         name="trajectory-boid",
@@ -57,7 +57,7 @@ Or for `scenarios/smarts/straight`, you can wrap the `trajectory_boid_agent` and
         policy_kwargs={
             "save_directory": "./replay",
             "id": "agent_oa",
-            "wrapped_agent_locator": "scenarios.smarts.straight.agent_prefabs:trajectory-boid-agent-v0",
+            "wrapped_agent_locator": "scenarios.sumo.straight.agent_prefabs:trajectory-boid-agent-v0",
         },
     )
     
@@ -67,7 +67,7 @@ Or for `scenarios/smarts/straight`, you can wrap the `trajectory_boid_agent` and
         policy_kwargs={
             "save_directory": "./replay",
             "id": "agent_kla",
-            "wrapped_agent_locator": "scenarios.smarts.straight.agent_prefabs:pose-boid-agent-v0",
+            "wrapped_agent_locator": "scenarios.sumo.straight.agent_prefabs:pose-boid-agent-v0",
         },
     )
 ```
@@ -91,9 +91,9 @@ mkdir ./klws_replay
 
 # 3. Run the replay agent using the --write argument and with required agent's parameters (Like the klws_agent which requires you to pass in the speed parameter) to store the actions and inputs of agents to CRASH_DIR directory:
 CRASH_DIR=./klws_replay
-python3.7 examples/replay/replay_klws_agent.py scenarios/smarts/loop --save-dir $CRASH_DIR --speed 20 --write --headless
+python3.7 examples/replay/replay_klws_agent.py scenarios/sumo/loop --save-dir $CRASH_DIR --speed 20 --write --headless
 
 # 4. Now you can replay the agent's previous action by not using the --write to load the observations saved by the wrapper in CRASH_DIR directory:
-python3.7 examples/replay/replay_klws_agent.py scenarios/smarts/loop --save-dir $CRASH_DIR --speed 20 --headless
+python3.7 examples/replay/replay_klws_agent.py scenarios/sumo/loop --save-dir $CRASH_DIR --speed 20 --headless
 
 ```

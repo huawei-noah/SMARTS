@@ -88,7 +88,7 @@ def scenario():
         goal=EndlessGoal(),
     )
     scenario = Scenario(
-        scenario_root="scenarios/smarts/loop",
+        scenario_root="scenarios/sumo/loop",
         route="basic.rou.xml",
         missions={AGENT_ID: mission},
     )

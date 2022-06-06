@@ -25,7 +25,7 @@ def test_examples(example):
         from examples import multi_agent as current_example
     main = current_example.main
     main(
-        scenarios=["scenarios/smarts/loop"],
+        scenarios=["scenarios/sumo/loop"],
         headless=True,
         num_episodes=1,
         max_episode_steps=100,
@@ -38,8 +38,8 @@ def test_ray_multi_instance_example():
     main = ray_multi_instance.main
     num_cpus = max(2, min(10, (psutil.cpu_count(logical=False) - 1)))
     main(
-        training_scenarios=["scenarios/smarts/loop"],
-        evaluation_scenarios=["scenarios/smarts/loop"],
+        training_scenarios=["scenarios/sumo/loop"],
+        evaluation_scenarios=["scenarios/sumo/loop"],
         sim_name=None,
         headless=True,
         num_episodes=1,
@@ -54,7 +54,7 @@ def test_rllib_example():
     main = rllib.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
         main(
-            scenario="scenarios/smarts/loop",
+            scenario="scenarios/sumo/loop",
             headless=True,
             time_total_s=20,
             rollout_fragment_length=200,
