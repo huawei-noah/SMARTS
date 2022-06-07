@@ -1,3 +1,4 @@
+# type: ignore
 from pathlib import Path
 from typing import Dict
 
@@ -87,7 +88,7 @@ def run(
             # ),
         ]
 
-        current_provider_state = traffic_sim.step(0.01)
+        current_provider_state = traffic_sim.step(None, 0.01, step * 0.01)
         for pose, i in zip(injected_poses, range(len(injected_poses))):
             converted_to_provider = VehicleState(
                 vehicle_id=f"EGO{i}",
@@ -155,7 +156,7 @@ if __name__ == "__main__":
             # frictionERP=0.1,
         )
 
-        path = Path(__file__).parent / "../smarts/core/models/plane.urdf"
+        path = Path(__file__).parent / "../../smarts/core/models/plane.urdf"
         path = str(path.absolute())
         plane_body_id = client.loadURDF(path, useFixedBase=True)
 
