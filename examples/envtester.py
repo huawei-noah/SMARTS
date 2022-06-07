@@ -35,16 +35,22 @@ def main(num_episodes, max_episode_steps=50):
     )
 
     for episode in episodes(n=num_episodes):
-        agent = agent_spec.build_agent()
-        observation = env.reset()
+        observations = env.reset()
+        agents = { 
+            agent_id: agent_spec.build_agent()
+            for agent_id in observations.keys()
+        }
 
-        done = False
-        while not done:
-
-            agent_action = agent.act(observation)
-            observation, reward, done, info = env.step(agent_action)
-            if observation.events.reached_goal:
-                print("HURRAY REACHED GOAL !!!")
+        dones = {"__all__": False}
+        while not dones["__all__"]:
+            actions = {
+                agent_id: agents[agent_id].act(agent_obs)
+                for agent_id, agent_obs in observations.items()
+            }
+            observations, rewards, dones, infos = env.step(actions)
+            for agent_id, agent_obs in observations.items():
+                if agent_obs.events.reached_goal:
+                    print(f"{agent_id} : HURRAY REACHED GOAL !!!")
 
     env.close()
 

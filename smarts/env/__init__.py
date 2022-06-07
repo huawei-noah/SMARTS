@@ -36,6 +36,6 @@ register(
 )
 
 register(
-    id="multi_scenario-v0",
-    entry_point="smarts.env.multi_scenario_v0_env:muti_scenario_v0_env",
+    id="multi-scenario-v0",
+    entry_point="smarts.env.multi_scenario_v0_env:multi_scenario_v0_env",
 )
