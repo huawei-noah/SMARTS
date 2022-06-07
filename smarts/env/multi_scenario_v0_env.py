@@ -38,7 +38,7 @@ from smarts.sstudio import build_scenario
 from smarts.zoo.agent_spec import AgentSpec
 
 
-def multi_scenario_env(
+def multi_scenario_v0_env(
     headless: bool = True,
     visdom: bool = False,
     sumo_headless: bool = True,

@@ -12,7 +12,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMoni
 def make(config: Dict[str, Any]) -> gym.Env:
     # Create environment
     env = gym.make(
-        "smarts.env:intersection-v0",
+        "smarts.env:multi_scenario-v0",
         headless=not config["head"],  # If False, enables Envision display.
         visdom=config["visdom"],  # If True, enables Visdom display.
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
