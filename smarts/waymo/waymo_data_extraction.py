@@ -1,26 +1,36 @@
 import argparse
 import logging
 import os
+import pickle
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, List, Optional
 
 from PIL import Image
-import numpy as np
-
-from envision.client import Client as Envision
-from smarts.core.agent_interface import RGB, AgentInterface
-from smarts.core.controllers import ControllerOutOfLaneException
+from smarts.core.agent_interface import AgentInterface
+from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.waymo_map import WaymoMap
+from smarts.env.hiway_env import HiWayEnv
+from smarts.env.wrappers.format_obs import FormatObs
 from smarts.sstudio import build_scenario
 from smarts.sstudio.types import MapSpec
 from smarts.zoo.agent_spec import AgentSpec
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
+
+AGENT_SPEC = AgentSpec(
+    interface=AgentInterface(
+        accelerometer=True,
+        action=ActionSpaceType.Continuous,
+        neighborhood_vehicles=False,
+        rgb=True,
+        road_waypoints=False,
+        waypoints=False,
+    ),
+)
 
 
 def _scenario_code(dataset_path, scenario_id):
@@ -53,11 +63,44 @@ gen_scenario(
 """
 
 
+def _record_data(
+    smarts,
+    collected_data,
+    output_dir,
+    current_vehicles,
+    off_road_vehicles,
+    selected_vehicles,
+):
+    # Attach sensors to each vehicle
+    valid_vehicles = (current_vehicles - off_road_vehicles) & selected_vehicles
+    for veh_id in valid_vehicles:
+        try:
+            smarts.attach_sensors_to_vehicles(AGENT_SPEC.interface, {veh_id})
+        except ControllerOutOfLaneException:
+            logger.warning(f"{veh_id} out of lane, skipped attaching sensors")
+            off_road_vehicles.add(veh_id)
+
+    # Get observations from each vehicle and record them
+    obs, _, _, _ = smarts.observe_from(list(valid_vehicles))
+    t = smarts.elapsed_sim_time
+    for car, car_obs in obs.items():
+        collected_data.setdefault(car, {}).setdefault(t, {})
+        collected_data[car][t] = car_obs
+    logger.info(f"Sim time: {t}, active vehicles: {len(valid_vehicles)}")
+
+    # Write top-down RGB image to a file for each vehicle
+    for agent_id, agent_obs in obs.items():
+        image_data = agent_obs.top_down_rgb.data
+        img = Image.fromarray(image_data, "RGB")
+        img.save(output_dir / f"{t}_{agent_id}.png")
+
+
 def main(
     dataset_file: Path,
     scenario_id: str,
     output_dir: Path,
     scenarios_dir: Path,
+    vehicle_ids: Optional[List[int]] = None,
     headless: bool = True,
 ):
     logger.info(f"Loading map from {dataset_file}, scenario {scenario_id}")
@@ -78,62 +121,71 @@ def main(
     build_scenario(scenarios)
 
     # Run the scenario with SMARTS
-    agent_spec = AgentSpec(
-        interface=AgentInterface(
-            accelerometer=True,
-            rgb=True,
-        ),
+    env = HiWayEnv(
+        scenarios=scenarios,
+        agent_specs={"DummyAgent": AGENT_SPEC},
+        sim_name="WaymoReplay",
+        headless=headless,
     )
-
-    smarts = SMARTS(
-        agent_interfaces={},
-        traffic_sim=None,
-        envision=None if headless else Envision(),
-    )
+    env = FormatObs(env=env)
+    smarts: SMARTS = env.env._smarts
 
     scenario_list = Scenario.get_scenario_list(scenarios)
     scenarios_iterator = Scenario.variations_for_all_scenario_roots(scenario_list, [])
     for scenario in scenarios_iterator:
-        obs = smarts.reset(scenario)
-
         collected_data = {}
         vehicle_types = frozenset({"car"})
-        vehicles_off_road = set()
+        off_road_vehicles = set()
         selected_vehicles = set()
 
-        # TODO: get these as arguments
-        ego_id = scenario.traffic_history.ego_vehicle_id
-        selected_vehicles.add(f"history-vehicle-{ego_id}")
+        if vehicle_ids is None:
+            ego_id = scenario.traffic_history.ego_vehicle_id
+            selected_vehicles.add(f"history-vehicle-{ego_id}")
+            logger.warning(
+                f"No vehicle IDs specifed. Defaulting to ego vehicle ({ego_id})"
+            )
+        else:
+            for v_id in vehicle_ids:
+                selected_vehicles.add(f"history-vehicle-{v_id}")
+
+        obs = env.reset()
+        current_vehicles = smarts.vehicle_index.social_vehicle_ids(
+            vehicle_types=vehicle_types
+        )
+        _record_data(
+            smarts,
+            collected_data,
+            output_dir,
+            current_vehicles,
+            off_road_vehicles,
+            selected_vehicles,
+        )
 
         while True:
-            smarts.step({})
+            env.step({})
             current_vehicles = smarts.vehicle_index.social_vehicle_ids(
                 vehicle_types=vehicle_types
             )
 
-            # if collected_data and not current_vehicles:
-            if not current_vehicles:
-                logger.info("no more vehicles.  exiting...")
+            if collected_data and not current_vehicles:
+                logger.info("No more vehicles. Exiting...")
                 break
 
-            for veh_id in current_vehicles:
-                try:
-                    smarts.attach_sensors_to_vehicles(agent_spec.interface, {veh_id})
-                except ControllerOutOfLaneException:
-                    logger.warning(f"{veh_id} out of lane, skipped attaching sensors")
-                    vehicles_off_road.add(veh_id)
+            _record_data(
+                smarts,
+                collected_data,
+                output_dir,
+                current_vehicles,
+                off_road_vehicles,
+                selected_vehicles,
+            )
 
-            valid_vehicles = (current_vehicles - vehicles_off_road) & selected_vehicles
-            obs, _, _, _ = smarts.observe_from(list(valid_vehicles))
-            # TODO: write observations to a csv file
-
-            for agent_id, agent_obs in obs.items():
-                # Write top-down RGB image to a file
-                image_data = agent_obs.top_down_rgb.data
-                img = Image.fromarray(image_data, "RGB")
-                img.save(output_dir / f"{smarts.elapsed_sim_time}_{agent_id}.png")
-
-    smarts.destroy()
+        # Save recorded observations as pickle files
+        for car, data in collected_data.items():
+            outfile = output_dir / f"{car}.pkl"
+            with open(outfile, "wb") as of:
+                pickle.dump(data, of)
+    env.close()
 
 
 if __name__ == "__main__":
@@ -152,6 +204,9 @@ if __name__ == "__main__":
         "output_dir",
         help="Path to the directory to store the output files",
         type=str,
+    )
+    parser.add_argument(
+        "--vehicles", nargs="*", type=int, help="List of vehicle IDs to record"
     )
 
     # Parse arguments and ensure paths and directories are valid
@@ -176,4 +231,5 @@ if __name__ == "__main__":
             scenario_id=scenario_id,
             output_dir=output_dir,
             scenarios_dir=Path(scenarios_dir),
+            vehicle_ids=args.vehicles,
         )
