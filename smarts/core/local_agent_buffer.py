@@ -18,9 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from typing import Optional
+
 from smarts.core.agent_buffer import AgentBuffer
 from smarts.core.buffer_agent import BufferAgent
 from smarts.core.local_agent import LocalAgent
+
 
 class LocalAgentBuffer(AgentBuffer):
     """A buffer that manages social agents."""

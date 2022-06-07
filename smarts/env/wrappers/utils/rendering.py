@@ -19,15 +19,14 @@
 # THE SOFTWARE.
 import base64
 import glob
+from collections import defaultdict
+from itertools import groupby
+from pathlib import Path
 from typing import Dict
+
 import cv2
 import numpy as np
-from pathlib import Path
-from itertools import groupby
-
-from collections import defaultdict
 from PIL import Image
-from pathlib import Path
 
 from smarts.core.utils.logging import isnotebook
 

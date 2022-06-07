@@ -7,7 +7,9 @@
 # THE SOFTWARE.
 import abc
 from abc import abstractmethod
+
 from smarts.zoo.agent_spec import AgentSpec
+
 
 class BufferAgent(metaclass = abc.ABCMeta):
     @classmethod

@@ -22,7 +22,6 @@ gast==0.3.3
 google-auth==2.3.3
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
-grpcio==1.46.1
 gym==0.18.3
 h5py==2.10.0
 hyperlink==21.0.0

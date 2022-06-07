@@ -21,11 +21,11 @@ import logging
 import time
 from concurrent import futures
 from typing import Tuple
-from smarts.core.buffer_agent import BufferAgent
 
 import cloudpickle
 import grpc
 
+from smarts.core.buffer_agent import BufferAgent
 from smarts.zoo import manager_pb2, manager_pb2_grpc, worker_pb2, worker_pb2_grpc
 from smarts.zoo.agent_spec import AgentSpec
 
