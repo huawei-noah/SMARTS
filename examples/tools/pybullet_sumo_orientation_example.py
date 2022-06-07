@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Dict
 
 import numpy as np
 
@@ -65,7 +66,7 @@ def run(
     previous_provider_state = traffic_sim.setup(scenario)
     traffic_sim.sync(previous_provider_state)
     previous_vehicle_ids = set()
-    vehicles = dict()
+    vehicles: Dict[str, Vehicle] = dict()
 
     passenger_dimen = VEHICLE_CONFIGS["passenger"].dimensions
 
@@ -105,9 +106,10 @@ def run(
 
         for v_id in vehicle_ids_added:
             pose = Pose.from_center([0, 0, 0], Heading(0))
-            vehicles[v] = Vehicle(
+            vehicles[v_id] = Vehicle(
                 id=v_id,
                 chassis=BoxChassis(
+                    pose=pose,
                     speed=0,
                     dimensions=vehicle_config.dimensions,
                     bullet_client=client,
@@ -117,7 +119,8 @@ def run(
         # Hide any additional vehicles
         for v in vehicle_ids_removed:
             veh = vehicles.pop(v, None)
-            veh.teardown()
+            if veh:
+                veh.teardown()
 
         for pv in current_provider_state.vehicles:
             vehicles[pv.vehicle_id].control(pv.pose, pv.speed)

@@ -57,6 +57,7 @@ def env(agent_spec):
 
 
 def test_social_agents(env, agent_spec):
+    episode = None
     for episode in episodes(n=MAX_EPISODES):
         agent = agent_spec.build_agent()
         observations = env.reset()
@@ -78,6 +79,6 @@ def test_social_agents(env, agent_spec):
             # The way to verify this is by making sure the reward does not grow without bounds
             assert -3 < rewards[AGENT_ID] < 3
 
-    assert episode.index == (
+    assert episode is not None and episode.index == (
         MAX_EPISODES - 1
     ), "Simulation must cycle through to the final episode"

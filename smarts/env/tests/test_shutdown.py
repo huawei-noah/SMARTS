@@ -72,6 +72,7 @@ def test_graceful_interrupt(monkeypatch):
     with pytest.raises(KeyboardInterrupt):
         obs = env.reset()
 
+        episode = 0
         # To simulate a user interrupting the sim (e.g. ctrl-c). We just need to
         # hook in to some function that SMARTS calls internally (like this one).
         with mock.patch(
