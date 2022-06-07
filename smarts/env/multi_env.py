@@ -34,9 +34,6 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.hiway_env import HiWayEnv
-from smarts.env.wrappers.format_action import FormatAction
-from smarts.env.wrappers.format_obs import FormatObs
-from smarts.env.wrappers.single_agent import SingleAgent
 from smarts.sstudio import build_scenario
 from smarts.zoo.agent_spec import AgentSpec
 
@@ -75,13 +72,12 @@ def merge_v0_env(
     Episode termination:
         Episode is terminated if any of the following occurs.
         + Steps per episode exceed 3000.
-        + Agent collides, drives off road, drives off route, drives on shoulder,
-          or drives on wrong way.
+        + Agent collides, drives off road, drives off route, or drives on wrong way.
 
     Solved requirement:
-        If agent successfully merges into the freeway then `info["score"]` will
+        If agent successfully completes the mission then `info["score"]` will
         equal 1, else it is 0. Considered solved when `info["score"] == 1` is
-        achieved over 800 consecutive episodes.
+        achieved over 1000 consecutive episodes.
 
     Args:
         headless (bool, optional): If True, disables visualization in
@@ -156,7 +152,7 @@ def merge_v0_env(
     done_criteria = DoneCriteria(
         collision=True,
         off_road=True,
-        off_route=False,
+        off_route=True,
         on_shoulder=False,
         wrong_way=True,
         not_moving=False,
