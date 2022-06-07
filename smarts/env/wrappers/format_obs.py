@@ -326,11 +326,11 @@ def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
     """
     # fmt: off
     ego_basic = {
-        "angular_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+        "angular_velocity": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
         "box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
         "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
         "lane_index": gym.spaces.Box(low=0, high=127, shape=(), dtype=np.int8),
-        "linear_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+        "linear_velocity": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
         "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
         "speed": gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
         "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
@@ -346,15 +346,15 @@ def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
         "dist": lambda _: gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
         "ego": lambda val: gym.spaces.Dict(dict(ego_basic, **ego_opt)) if val else gym.spaces.Dict(ego_basic),
         "events": lambda _: gym.spaces.Dict({
-            "agents_alive_done": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "collisions": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "not_moving": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "off_road": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "off_route": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "on_shoulder": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "reached_goal": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "reached_max_episode_steps": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "wrong_way": gym.spaces.MultiDiscrete(1, dtype=np.int8),
+            "agents_alive_done": gym.spaces.Discrete(n=2),
+            "collisions": gym.spaces.Discrete(n=2),
+            "not_moving": gym.spaces.Discrete(n=2),
+            "off_road": gym.spaces.Discrete(n=2),
+            "off_route": gym.spaces.Discrete(n=2),
+            "on_shoulder": gym.spaces.Discrete(n=2),
+            "reached_goal": gym.spaces.Discrete(n=2),
+            "reached_max_episode_steps": gym.spaces.Discrete(n=2),
+            "wrong_way": gym.spaces.Discrete(n=2),
         }),
         "dagm": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
         "lidar": lambda _: gym.spaces.Dict({

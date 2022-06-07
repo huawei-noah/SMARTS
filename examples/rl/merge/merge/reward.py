@@ -19,8 +19,8 @@ class Reward(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         wrapped_reward = self._reward(obs, reward)
 
-        for agent_id, done in done.items():
-            if done:
+        for agent_id, agent_done in done.items():
+            if agent_id != "__all__" and agent_done==True:
                 if obs[agent_id]["events"]["reached_goal"]:
                     print(f"{agent_id}: Hooray! Vehicle reached goal.")
                 elif obs[agent_id]["events"]["reached_max_episode_steps"]:

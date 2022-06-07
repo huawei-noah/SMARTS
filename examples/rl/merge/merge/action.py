@@ -21,7 +21,7 @@ class Action(gym.ActionWrapper):
         self._wrapper, action_space = space_map.get(space)()
 
         self.action_space = gym.spaces.Dict(
-            {agent_id: action_space for agent_id in self.agent_specs.keys()}
+            {agent_id: action_space for agent_id in env.action_space.spaces.keys()}
         )
 
     def action(self, action):
@@ -44,7 +44,7 @@ def _discrete() -> Tuple[Callable[[Dict[str, int]], Dict[str,np.ndarray]], gym.S
         3: np.array([0.3, 0,  0.5], dtype=np.float32),  # turn_right
     }
 
-    def wrapper(action: Dict[str, int]) -> Dict[str, np.ndarray]:       
-        return {agent_id: action_map[agent_action] for agent_id, agent_action in action}
+    def wrapper(action: Dict[str, int]) -> Dict[str, np.ndarray]:
+        return {agent_id: action_map[agent_action] for agent_id, agent_action in action.items()}
 
     return wrapper, space

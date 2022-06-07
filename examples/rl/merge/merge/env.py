@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from smarts.env.wrappers.frame_stack import FrameStack
-from merge import action as merge_action
+from merge.action import Action as DiscreteAction
 from merge.observation import Concatenate, FilterObs
 from merge.reward import Reward
 from tf_agents.environments import suite_gym, tf_py_environment, validate_py_environment
@@ -13,33 +13,29 @@ from smarts.env.wrappers.single_agent import SingleAgent
 def make(config: Dict[str, Any]) -> tf_py_environment.TFPyEnvironment:
     # Create TF environment.
     # Refer to https://www.tensorflow.org/agents/tutorials/2_environments_tutorial
-    gym_action_space = lambda env: FormatAction(env=env, space=ActionSpaceType[config["action_space"]])
-    action_wrapper = lambda env: merge_action.Action(
-        env=env, space=config["action_wrapper"]
-    )
-    frame_stack = lambda env: FrameStack(env=env, num_stack=config["num_stack"])
+    # fmt: off
     pyenv = suite_gym.load(
         environment_name="smarts.env:merge-v0",
         gym_env_wrappers=[
             FormatObs,
-            gym_action_space,
+            lambda env: FormatAction(env=env, space=ActionSpaceType[config["action_space"]]),
             Reward,
-            action_wrapper,
+            lambda env: DiscreteAction(env=env, space=config["action_wrapper"]),
             FilterObs,
-            frame_stack,
-            # Concatenate,
+            lambda env: FrameStack(env=env, num_stack=config["num_stack"]),
+            Concatenate,
             SingleAgent,
         ],
         gym_kwargs={
             "headless": not config["head"],  # If False, enables Envision display.
             "visdom": config["visdom"],  # If True, enables Visdom display.
-            "sumo_headless": not config[
-                "sumo_gui"
-            ],  # If False, enables sumo-gui display.
+            "sumo_headless": not config["sumo_gui"],  # If False, enables sumo-gui display.
             "img_meters": config["img_meters"],
             "img_pixels": config["img_pixels"],
+            "action_space": config["action_space"],
         },
     )
+    # fmt: on
     validate_py_environment(environment=pyenv)
     # (Optional) Manually verify Py env spaces
     # print('action_spec:', pyenv.action_spec())

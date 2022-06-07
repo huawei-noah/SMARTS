@@ -22,7 +22,7 @@
 
 import copy
 from collections import defaultdict, deque
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, Tuple
 
 import gym
 
@@ -59,22 +59,22 @@ class FrameStack(gym.Wrapper):
 
     def _get_observations(
         self, frame: Dict[str, Any]
-    ) -> Dict[str, List[Any]]:
+    ) -> Dict[str, Tuple[Any]]:
         """Update and return frames stack with given latest single frame."""
 
-        new_frames = defaultdict(list)
+        new_frames = defaultdict(tuple)
 
         for agent_id, observation in frame.items():
             self._frames[agent_id].appendleft(observation)
-            frames_list = list(self._frames[agent_id])
-            new_frames[agent_id] = copy.deepcopy(frames_list)
+            frames_seq = tuple(self._frames[agent_id])
+            new_frames[agent_id] = copy.deepcopy(frames_seq)
 
         return dict(new_frames)
 
     def step(
         self, agent_actions: Dict
     ) -> Tuple[
-        Dict[str, List[Any]],
+        Dict[str, Tuple[Any]],
         Dict[str, float],
         Dict[str, bool],
         Dict[str, Dict[str, Any]],
@@ -85,7 +85,7 @@ class FrameStack(gym.Wrapper):
             agent_actions (Dict): Actions for each agent.
 
         Returns:
-            Tuple[ Dict[str, List[Any]], Dict[str, float], Dict[str, bool], Dict[str, Dict[str, Any]] ]: Observation, reward, done, info, for each agent.
+            Tuple[ Dict[str, Tuple[Any]], Dict[str, float], Dict[str, bool], Dict[str, Dict[str, Any]] ]: Observation, reward, done, info, for each agent.
         """
         env_observations, rewards, dones, infos = super(FrameStack, self).step(
             agent_actions
@@ -93,11 +93,11 @@ class FrameStack(gym.Wrapper):
 
         return self._get_observations(env_observations), rewards, dones, infos
 
-    def reset(self) -> Dict[str, List[Any]]:
+    def reset(self) -> Dict[str, Tuple[Any]]:
         """Resets the environment.
 
         Returns:
-            Dict[str, List[Any]]: Observation upon reset for each agent.
+            Dict[str, Tuple[Any]]: Observation upon reset for each agent.
         """
         env_observations = super(FrameStack, self).reset()
         for agent_id, observation in env_observations.items():
