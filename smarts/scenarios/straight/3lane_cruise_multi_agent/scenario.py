@@ -99,18 +99,16 @@ for name, routes in enumerate(route_comb):
         ]
     )
 
-route = Route(begin=("gneE3", 0, 10), end=("gneE3", 2, "max"))
-ego_missions = [
-    Mission(
-        route=route,
-        start_time=19,  # Delayed start, to ensure road has prior traffic.
-    )
+missions = [
+    Mission(Route(begin=("gneE3", 0, 10), end=("gneE3", 0, "max")),start_time=19),
+    Mission(Route(begin=("gneE3", 1, 10), end=("gneE3", 1, "max")),start_time=21),
+    Mission(Route(begin=("gneE3", 2, 10), end=("gneE3", 2, "max")),start_time=15),
 ]
 
 gen_scenario(
     scenario=Scenario(
         traffic=traffic,
-        ego_missions=ego_missions,
+        ego_missions=missions,
     ),
     output_dir=Path(__file__).parent,
 )
