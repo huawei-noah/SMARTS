@@ -104,48 +104,48 @@ def multi_scenario_v0_env(
             / "intersection"
             / "1_to_2lane_left_turn_c"
         ),
-        str(
-            pathlib.Path(__file__).absolute().parents[1]
-            / "scenarios"
-            / "intersection"
-            / "1_to_2lane_left_turn_t"
-        ),
-        str(
-            pathlib.Path(__file__).absolute().parents[1]
-            / "scenarios"
-            / "merge"
-            / "3lane_multi_agent"
-        ),
-        str(
-            pathlib.Path(__file__).absolute().parents[1]
-            / "scenarios"
-            / "merge"
-            / "3lane_single_agent"
-        ),
-        str(
-            pathlib.Path(__file__).absolute().parents[1]
-            / "scenarios"
-            / "straight"
-            / "3lane_cruise_multi_agent"
-        ),
-        str(
-            pathlib.Path(__file__).absolute().parents[1]
-            / "scenarios"
-            / "straight"
-            / "3lane_cruise_single_agent"
-        ),
-        str(
-            pathlib.Path(__file__).absolute().parents[1]
-            / "scenarios"
-            / "straight"
-            / "3lane_cut_off"
-        ),
-        str(
-            pathlib.Path(__file__).absolute().parents[1]
-            / "scenarios"
-            / "straight"
-            / "3lane_overtake"
-        ),
+        # str(
+        #     pathlib.Path(__file__).absolute().parents[1]
+        #     / "scenarios"
+        #     / "intersection"
+        #     / "1_to_2lane_left_turn_t"
+        # ),
+        # str(
+        #     pathlib.Path(__file__).absolute().parents[1]
+        #     / "scenarios"
+        #     / "merge"
+        #     / "3lane_multi_agent"
+        # ),
+        # str(
+        #     pathlib.Path(__file__).absolute().parents[1]
+        #     / "scenarios"
+        #     / "merge"
+        #     / "3lane_single_agent"
+        # ),
+        # str(
+        #     pathlib.Path(__file__).absolute().parents[1]
+        #     / "scenarios"
+        #     / "straight"
+        #     / "3lane_cruise_multi_agent"
+        # ),
+        # str(
+        #     pathlib.Path(__file__).absolute().parents[1]
+        #     / "scenarios"
+        #     / "straight"
+        #     / "3lane_cruise_single_agent"
+        # ),
+        # str(
+        #     pathlib.Path(__file__).absolute().parents[1]
+        #     / "scenarios"
+        #     / "straight"
+        #     / "3lane_cut_off"
+        # ),
+        # str(
+        #     pathlib.Path(__file__).absolute().parents[1]
+        #     / "scenarios"
+        #     / "straight"
+        #     / "3lane_overtake"
+        # ),
     ]
     build_scenario(scenario)
 

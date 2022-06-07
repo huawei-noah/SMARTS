@@ -28,7 +28,7 @@ def main(num_episodes, max_episode_steps=50):
     # }
 
     env = gym.make(
-        "smarts.env:merge-v0",
+        "smarts.env:multi-scenario-v0",
         headless=True,
         sumo_headless=False,
         action_space="Lane",
@@ -43,7 +43,7 @@ def main(num_episodes, max_episode_steps=50):
 
             agent_action = agent.act(observation)
             observation, reward, done, info = env.step(agent_action)
-            if observation["events"]["reached_goal"]:
+            if observation.events.reached_goal:
                 print("HURRAY REACHED GOAL !!!")
 
     env.close()
