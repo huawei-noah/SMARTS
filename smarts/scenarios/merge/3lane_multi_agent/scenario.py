@@ -82,35 +82,31 @@ for name, routes in enumerate(route_comb):
             Flow(
                 route=Route(
                     begin=("gneE3", r[0], 0),
-                    end=("gneE3", r[1], "max"),
+                    end=("gneE4", r[1], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=10 * random.uniform(3, 5),
+                rate=60 * random.uniform(8, 15),
                 # Random flow start time, between x and y seconds.
-                # begin=random.uniform(0, 7),
+                begin=random.uniform(0, 7),
                 # For an episode with maximum_episode_steps=3000 and step
                 # time=0.1s, maximum episode time=300s. Hence, traffic set to
                 # end at 900s, which is greater than maximum episode time of
                 # 300s.
-                # end=60 * 15,
+                end=60 * 15,
                 actors={normal: 1},
             )
             for r in routes
         ]
     )
-
-route = Route(begin=("gneE3", 0, 10), end=("gneE3", 2, "max"))
-ego_missions = [
-    Mission(
-        route=route,
-        start_time=19,  # Delayed start, to ensure road has prior traffic.
-    )
+missions = [
+    Mission(Route(begin=("gneE6", 0, 10), end=("gneE4", 0, "max")),start_time=19),
+    Mission(Route(begin=("gneE3", 0, 10), end=("gneE4", 2, "max")),start_time=19),
 ]
 
 gen_scenario(
     scenario=Scenario(
         traffic=traffic,
-        ego_missions=ego_missions,
+        ego_missions=missions,
     ),
     output_dir=Path(__file__).parent,
 )
