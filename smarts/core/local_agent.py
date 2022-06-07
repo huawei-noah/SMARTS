@@ -21,9 +21,9 @@ import logging
 import time
 from concurrent import futures
 from typing import Tuple
-from smarts.core.buffer_agent import BufferAgent
-from smarts.core.agent import Agent
 
+from smarts.core.agent import Agent
+from smarts.core.buffer_agent import BufferAgent
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -38,14 +38,15 @@ class LocalAgent(BufferAgent):
 
     def act(self, obs):
         """Call the agent's act function asynchronously and return a Future."""
-        act_future = futures.Future()
+        def obtain_future(obs):
+            adapted_obs = self._agent_spec.observation_adapter(obs)
+            action = self._agent.act(adapted_obs)
+            adapted_action = self._agent_spec.action_adapter(action)
+
+            return adapted_action
         
-        #payload = worker_pb2.Observation(payload=cloudpickle.dumps(obs))
-        adapted_obs = self._agent_spec.observation_adapter(obs)
-        action = self._agent.act(adapted_obs)
-        adapted_action = self._agent_spec.action_adapter(action)
-        
-        act_future.set_result(adapted_action)
+        with futures.Executor.ThreadPoolExecutor(max_workers=1) as executor:
+            act_future = executor.submit(obtain_future,obs)
 
         return act_future
 

@@ -1,10 +1,10 @@
+from pathlib import Path
+
 import gym
 
 from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.env.wrappers.single_agent import SingleAgent
-
-from pathlib import Path
 
 agent_spec = AgentSpec(
     interface=AgentInterface.from_type(

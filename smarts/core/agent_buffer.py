@@ -17,10 +17,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import  abc
+import abc
 from abc import abstractmethod
 from typing import Optional
+
 from smarts.core.buffer_agent import BufferAgent
+
 
 class AgentBuffer(metaclass=abc.ABCMeta):   
     @classmethod
