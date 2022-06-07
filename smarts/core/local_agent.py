@@ -30,12 +30,14 @@ from smarts.zoo.agent_spec import AgentSpec
 class LocalAgent(BufferAgent):
     """A remotely controlled agent."""
 
+    act_executor = futures.Executor.ThreadPoolExecutor(max_workers=1)
+    
     def __init__(self):
         # Track the last action future.
         #self._act_future = None
         self._agent = None
         self._agent_spec = None
-
+    
     def act(self, obs):
         """Call the agent's act function asynchronously and return a Future."""
         def obtain_future(obs):
@@ -44,10 +46,8 @@ class LocalAgent(BufferAgent):
             adapted_action = self._agent_spec.action_adapter(action)
 
             return adapted_action
-        
-        with futures.Executor.ThreadPoolExecutor(max_workers=1) as executor:
-            act_future = executor.submit(obtain_future,obs)
-
+      
+        act_future = act_executor.submit(obtain_future,obs)
         return act_future
 
     def start(self, agent_spec: AgentSpec):
