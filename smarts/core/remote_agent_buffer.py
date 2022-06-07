@@ -27,11 +27,11 @@ import sys
 import time
 from concurrent import futures
 from typing import Optional, Tuple
-from smarts.core.agent_buffer import AgentBuffer
-from smarts.core.buffer_agent import BufferAgent
 
 import grpc
 
+from smarts.core.agent_buffer import AgentBuffer
+from smarts.core.buffer_agent import BufferAgent
 from smarts.core.remote_agent import RemoteAgent, RemoteAgentException
 from smarts.core.utils.networking import find_free_port
 from smarts.zoo import manager_pb2, manager_pb2_grpc

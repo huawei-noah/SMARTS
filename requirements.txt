@@ -52,7 +52,6 @@ google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 googleapis-common-protos==1.56.3
 gpustat==0.6.0
-grpcio==1.46.1
 gym==0.19.0
 h5py==3.7.0
 hyperlink==21.0.0

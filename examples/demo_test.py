@@ -3,16 +3,14 @@ import sys
 sys.path.insert(0, "./examples/env")
 sys.path.insert(0, "./zoo")
 import baseline
+import gym
 import policies.keep_lane_agent
 
-import gym
-
-from smarts.zoo import registry
+from smarts.core.utils.episodes import episode_range
 from smarts.env.wrappers.episode_logger import EpisodeLogger
 from smarts.env.wrappers.record import AgentCameraRGBRender
-from smarts.core.utils.episodes import episode_range
 from smarts.env.wrappers.record_video import RecordVideo
-
+from smarts.zoo import registry
 
 if __name__ == "__main__":
     # FormatObs should already be applied
