@@ -40,12 +40,6 @@ class AgentsProvider(Provider):
         # must be implemented by derived classes
         raise NotImplementedError
 
-    @property
-    def _source(self) -> str:
-        """The VehicleState source field for vehicles managed by this provider."""
-        # must be implemented by derived classes
-        raise NotImplementedError
-
     def perform_agent_actions(self, agent_actions: Dict[str, Any]):
         """Applies any actions specified by agents controlling the vehicles managed by
         this provider via appropriate controllers to their chassis.
@@ -143,7 +137,7 @@ class AgentsProvider(Provider):
                 vehicle = self._sim.vehicle_index.vehicle_by_id(vs.vehicle_id)
                 vs.pose = vehicle.pose
                 vs.speed = vehicle.speed
-                vs.source = self._source
+                vs.source = self.source_str
                 provider_state.vehicles.append(vs)
         return provider_state
 
@@ -177,10 +171,6 @@ class AgentPhysicsProvider(AgentsProvider):
             ActionSpaceType.MPC,
         }
 
-    @property
-    def _source(self) -> str:
-        return "PYBULLET"
-
 
 class DirectControlProvider(AgentsProvider):
     """A provider that manages agent vehicles that are under direct control.
@@ -192,7 +182,3 @@ class DirectControlProvider(AgentsProvider):
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
         return {ActionSpaceType.Direct}
-
-    @property
-    def _source(self) -> str:
-        return "DIRECT"

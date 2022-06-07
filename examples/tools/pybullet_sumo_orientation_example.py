@@ -8,7 +8,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
-from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
+from smarts.core.vehicle import ActorRole, VEHICLE_CONFIGS, Vehicle, VehicleState
 
 TIMESTEP_SEC = 1 / 240
 INITIAL_KINEMATICS_VEHICLES = 50
@@ -95,6 +95,7 @@ def run(
                 dimensions=passenger_dimen,
                 speed=0,
                 source="TESTS",
+                role=ActorRole.EgoAgent,
             )
             current_provider_state.vehicles.append(converted_to_provider)
         traffic_sim.sync(current_provider_state)

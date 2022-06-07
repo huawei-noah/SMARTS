@@ -26,7 +26,7 @@ from .bezier_motion_planner import BezierMotionPlanner
 from .controllers import ActionSpaceType
 from .coordinates import Heading, Pose
 from .provider import ProviderState
-from .vehicle import VEHICLE_CONFIGS, VehicleState
+from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
 class MotionPlannerProvider(AgentsProvider):
@@ -44,10 +44,6 @@ class MotionPlannerProvider(AgentsProvider):
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
         return {ActionSpaceType.TargetPose, ActionSpaceType.MultiTargetPose}
-
-    @property
-    def _source(self) -> str:
-        return "BEZIER"
 
     def perform_agent_actions(self, agent_actions: Dict[str, Any]):
         # XXX:  we do the controller-ish stuff in step() below
@@ -123,7 +119,8 @@ class MotionPlannerProvider(AgentsProvider):
                     ),
                     dimensions=VEHICLE_CONFIGS[vehicle_config_type].dimensions,
                     speed=speeds[idx],
-                    source=self._source,
+                    source=self.source_str,
+                    role=ActorRole.SocialAgent,
                 )
                 for idx, v_id in enumerate(self._vehicle_id_to_index.keys())
             ],

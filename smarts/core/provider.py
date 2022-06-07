@@ -43,6 +43,7 @@ class ProviderRecoveryFlags(IntFlag):
 class ProviderState:
     """State information from a provider."""
 
+    # TAI: rename to actors and ActorState
     vehicles: List[VehicleState] = field(default_factory=list)
     dt: Optional[float] = None  # most Providers can leave this blank
 
@@ -68,10 +69,8 @@ class ProviderState:
 
 
 class Provider:
-    """A Provider manages a (sub)set of vehicles that all share the same action space(s).
+    """A Provider manages a (sub)set of actors (e.g., vehicles) that all share the same action space(s).
     This is a base class (interface) from which all Providers should inherit."""
-
-    ## TAI: Consider renaming to VehicleSet or somesuch.
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -133,3 +132,9 @@ class Provider:
             bool: The connection state of the provider.
         """
         return True
+
+    @property
+    def source_str(self) -> str:
+        """This property should be used to fill in the source field
+        of all VehicleState objects created/managed by this Provider."""
+        return self.__class__.__name__

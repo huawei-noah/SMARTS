@@ -56,7 +56,7 @@ from .utils.id import Id
 from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
-from .vehicle import Vehicle, VehicleState
+from .vehicle import ActorRole, Vehicle, VehicleState
 from .vehicle_index import VehicleIndex
 
 logging.basicConfig(
@@ -520,7 +520,7 @@ class SMARTS:
         vehicle = self.switch_control_to_agent(
             vehicle_id, agent_id, mission, recreate=False, is_hijacked=True
         )
-        self.create_vehicle_in_providers(vehicle, agent_id)
+        self.create_vehicle_in_providers(vehicle, agent_id, True)
 
         return vehicle
 
@@ -574,8 +574,10 @@ class SMARTS:
         self,
         vehicle: Vehicle,
         agent_id: str,
+        is_ego: bool = False,
     ):
         """Notify all providers of the existence of a vehicle."""
+        role = ActorRole.EgoAgent if is_ego else ActorRole.SocialAgent
         self._check_valid()
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         for provider in self.providers:
@@ -587,7 +589,8 @@ class SMARTS:
                         pose=vehicle.pose,
                         dimensions=vehicle.chassis.dimensions,
                         speed=vehicle.speed,
-                        source="HIJACK",
+                        source=provider.source_str,
+                        role=role,
                     )
                 )
 
@@ -1317,6 +1320,7 @@ class SMARTS:
 
                 mission_route_geometry = None
                 if self._agent_manager.is_ego(agent_id):
+                    assert v.role == ActorRole.EgoAgent
                     actor_type = envision_types.TrafficActorType.Agent
                     if filter.actor_data_filter["mission_route_geometry"].enabled:
                         mission_route_geometry = (
@@ -1325,6 +1329,7 @@ class SMARTS:
                             ).plan.route.geometry
                         )
                 else:
+                    assert v.role == ActorRole.SocialAgent
                     actor_type = envision_types.TrafficActorType.SocialAgent
 
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
@@ -1349,6 +1354,7 @@ class SMARTS:
             elif v.vehicle_id in self._vehicle_index.social_vehicle_ids():
                 # this is a social vehicle
                 if filter.simulation_data_filter["traffic"].enabled:
+                    assert v.role == ActorRole.Social
                     veh_type = vt_mapping.get(
                         v.vehicle_config_type
                         if v.vehicle_config_type

@@ -39,7 +39,7 @@ from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
-from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
+from smarts.core.vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 from smarts.core.utils.sumo import SUMO_PATH, traci  # isort:skip
 from traci.exceptions import FatalTraCIError, TraCIException  # isort:skip
@@ -467,7 +467,7 @@ class SumoTrafficSimulation(TrafficProvider):
                 vehicle_state.dimensions,
                 VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
             )
-            self._create_vehicle(vehicle_id, dimensions)
+            self._create_vehicle(vehicle_id, dimensions, vehicle_state.role)
             no_checks = 0b00000
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
 
@@ -488,6 +488,11 @@ class SumoTrafficSimulation(TrafficProvider):
                     sumo_heading,
                     provider_vehicle.speed,
                 )
+                # since the vehicle may have switched roles (e.g., been trapped), recolor it
+                self._traci_conn.vehicle.setColor(
+                    vehicle_id,
+                    SumoTrafficSimulation._color_for_role(provider_vehicle.role),
+                )
             except TraCIException as e:
                 # Likely as a result of https://github.com/eclipse/sumo/issues/3993
                 # the vehicle got removed because we skipped a moveToXY call between
@@ -496,7 +501,9 @@ class SumoTrafficSimulation(TrafficProvider):
                     "Attempted to (TraCI) SUMO.moveToXY(...) on missing "
                     f"vehicle(id={vehicle_id})"
                 )
-                self._create_vehicle(vehicle_id, provider_vehicle.dimensions)
+                self._create_vehicle(
+                    vehicle_id, provider_vehicle.dimensions, provider_vehicle.role
+                )
                 self._move_vehicle(
                     provider_vehicle.vehicle_id,
                     pos,
@@ -508,13 +515,13 @@ class SumoTrafficSimulation(TrafficProvider):
             no_checks = 0b00000
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
             self._traci_conn.vehicle.setColor(
-                vehicle_id, SumoTrafficSimulation._social_agent_vehicle_color()
+                vehicle_id, SumoTrafficSimulation._color_for_role(ActorRole.SocialAgent)
             )
             self._non_sumo_vehicle_ids.add(vehicle_id)
 
         for vehicle_id in vehicles_that_have_become_internal:
             self._traci_conn.vehicle.setColor(
-                vehicle_id, SumoTrafficSimulation._social_vehicle_color()
+                vehicle_id, SumoTrafficSimulation._color_for_role(ActorRole.Social)
             )
             self._non_sumo_vehicle_ids.remove(vehicle_id)
             # Let sumo take over speed again
@@ -528,15 +535,13 @@ class SumoTrafficSimulation(TrafficProvider):
             self._teleport_exited_vehicles()
 
     @staticmethod
-    def _ego_agent_vehicle_color():
-        return np.array(SceneColors.Agent.value[:3]) * 255
-
-    @staticmethod
-    def _social_agent_vehicle_color():
-        return np.array(SceneColors.SocialAgent.value[:3]) * 255
-
-    @staticmethod
-    def _social_vehicle_color():
+    def _color_for_role(role: ActorRole) -> np.ndarray:
+        if role == ActorRole.EgoAgent:
+            return np.array(SceneColors.Agent.value[:3]) * 255
+        elif role == ActorRole.SocialAgent:
+            return np.array(SceneColors.SocialAgent.value[:3]) * 255
+        elif role == ActorRole.Social:
+            return np.array(SceneColors.SocialVehicle.value[:3]) * 255
         return np.array(SceneColors.SocialVehicle.value[:3]) * 255
 
     def _move_vehicle(self, vehicle_id, position, heading, speed):
@@ -560,7 +565,7 @@ class SumoTrafficSimulation(TrafficProvider):
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
 
-    def _create_vehicle(self, vehicle_id, dimensions):
+    def _create_vehicle(self, vehicle_id, dimensions, role: ActorRole):
         assert (
             type(vehicle_id) == str
         ), f"SUMO expects string ids: {vehicle_id} is a {type(vehicle_id)}"
@@ -572,16 +577,7 @@ class SumoTrafficSimulation(TrafficProvider):
             routeID="",  # we don't care which route this vehicle is on
         )
 
-        # TODO: Vehicle Id should not be using prefixes this way
-        # TODO STEVE:  also vehicles controlled by LocalTrafficProvider --> use source field instead of vehicle_id?
-        if vehicle_id.startswith("social-agent") or vehicle_id.startswith(
-            "history-vehicle"
-        ):
-            # This is based on ID convention
-            vehicle_color = SumoTrafficSimulation._social_agent_vehicle_color()
-        else:
-            vehicle_color = SumoTrafficSimulation._ego_agent_vehicle_color()
-
+        vehicle_color = SumoTrafficSimulation._color_for_role(role)
         self._traci_conn.vehicle.setColor(vehicle_id, vehicle_color)
 
         # Directly below are two of the main factors that affect vehicle secure gap for
@@ -704,7 +700,8 @@ class SumoTrafficSimulation(TrafficProvider):
                     ),
                     dimensions=dimensions,
                     speed=speed,
-                    source="SUMO",
+                    source=self.source_str,
+                    role=ActorRole.Social,
                 )
             )
 

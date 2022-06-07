@@ -49,7 +49,7 @@ class ExternalProvider(Provider):
     ):
         """Update vehicle states. Use `all_vehicle_states()` to look at previous states."""
         self._ext_vehicle_states = [
-            replace(vs, source="EXTERNAL") for vs in vehicle_states
+            replace(vs, source=self.source_str) for vs in vehicle_states
         ]
         self._last_step_delta = step_delta
 

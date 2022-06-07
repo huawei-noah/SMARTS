@@ -43,18 +43,13 @@ from .utils.math import (
     radians_to_vec,
     vec_to_radians,
 )
-from .vehicle import VEHICLE_CONFIGS, VehicleState
+from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
-# TODO:  add cutins
-# TODO:     - only cutin on ego/social agents (do provider source refactor)
-# TODO:     - if they're in anotther lane on same road and we are ahead by the "right" amount (cf. aggressiveness), use prob and do cutin
 # TODO:  Provider hand-off
 # TODO:     - need to be able to "add_vehicle_with_state()" instead of using xml tags
 # TODO:     - need Provider interface to ask if hand-off is possible
-# TODO:     - can no longer use vehicle_id to indicate role of vehicle...
-# TODO:         - either add "role" or be rigorous about "source" always matching the Provider
-# TODO:           (probably the latter)
+# TODO:     - update role appropriately
 # TODO:  debug traffic jams
 # TODO:  add tests:
 # TODO:     - test_traffic_simulation.py
@@ -83,7 +78,6 @@ class LocalTrafficProvider(TrafficProvider):
     def __init__(self, endless_traffic: bool = True):
         self._logger = logging.getLogger(self.__class__.__name__)
         self._endless_traffic: bool = endless_traffic
-        self._provider_name = "SMARTS_traffic_provider"
         self._scenario = None
         self.road_map: RoadMap = None
         self._flows: Dict[str, Dict[str, Any]] = dict()
@@ -180,6 +174,7 @@ class LocalTrafficProvider(TrafficProvider):
         for reserved_area in self._reserved_areas.values():
             if reserved_area.intersects(new_actor_bbox):
                 return False
+        # TODO:  also don't appear on any other vehicles either!  (TAI: but for other_vehicles, we can't cache their bbox polygons)
         for actor in self._my_actors.values():
             if actor.bbox().intersects(new_actor_bbox):
                 return False
@@ -268,7 +263,7 @@ class LocalTrafficProvider(TrafficProvider):
         hijacked = self._my_actors.keys() & {
             psv.vehicle_id
             for psv in provider_state.vehicles
-            if psv.source != self._provider_name
+            if psv.source != self.source_str
         }
         for jack in hijacked:
             self.remove_traffic_vehicle(jack)
@@ -276,8 +271,10 @@ class LocalTrafficProvider(TrafficProvider):
         for vs in provider_state.vehicles:
             my_actor = self._my_actors.get(vs.vehicle_id)
             if my_actor:
+                assert vs.source == self.source_str
                 my_actor.state = vs
             else:
+                assert vs.source != self.source_str
                 self._other_vehicles[vs.vehicle_id] = (vs, None)
 
     def reset(self):
@@ -363,19 +360,22 @@ class _TrafficActor:
         speed_dev = float(self._vtype.get("speedDev", 0.1))
         self._speed_factor = random.gauss(speed_factor, speed_dev)
 
+        self._cutting_into = None
+        self._in_front_after_cutin_secs = 0
+        self._cutin_hold_secs = 3
+        self._target_cutin_gap = 2.5 * self._min_space_cush
         self._aggressiveness = float(self._vtype.get("lcAssertive", 1.0))
         if self._aggressiveness <= 0:
             self._log.warning(
                 "non-positive value {self._aggressiveness} for 'assertive' lane-changing parameter will be ignored"
             )
             self._aggressiveness = 1.0
-        self._cutin_prob = float(self._vtype.get("lcCutinprob", 0.0))
+        self._cutin_prob = float(self._vtype.get("lcCutinProb", 0.0))
         if not 0.0 <= self._cutin_prob <= 1.0:
             self._log.warning(
                 "illegal probability {self._cutin_prob} for 'cutin_prob' lane-changing parameter will be ignored"
             )
             self._cutin_prob = 0.0
-        # TODO:  use these!
 
         vclass = self._vtype["vClass"]
         dimensions = VEHICLE_CONFIGS[vclass].dimensions
@@ -392,7 +392,8 @@ class _TrafficActor:
             vehicle_config_type=vclass,
             speed=init_speed,
             linear_acceleration=np.array((0.0, 0.0, 0.0)),
-            source=self._owner._provider_name,
+            source=self._owner.source_str,
+            role=ActorRole.Social,
         )
         self._dest_lane, self._dest_offset = self._resolve_flow_pos(
             flow, "arrival", dimensions
@@ -543,6 +544,7 @@ class _TrafficActor:
             ttre: float,
             gap: float,
             lane_coord: RefLinePoint,
+            agent_gap: Optional[float],
         ):
             self.lane = lane
             self.time_left = time_left
@@ -550,6 +552,7 @@ class _TrafficActor:
             self.ttre = ttre  # time until we'd get rear-ended
             self.gap = gap  # just the gap ahead (in meters)
             self.lane_coord = lane_coord
+            self.agent_gap = agent_gap
 
         @cached_property
         def width(self) -> float:
@@ -627,6 +630,7 @@ class _TrafficActor:
         lane_ttc = lane_ttre = lane_gap = math.inf
         my_front_offset = my_offset + 0.5 * self._state.dimensions.length
         my_back_offset = my_offset - 0.5 * self._state.dimensions.length
+        agent_gap = None
         # TODO:  could instead do this via a lane search (forward and backward from my current pos) until we hit something in each lane path.
         # TODO:     instead of veh_id -> nearest_lane cache, can keep lane -> (veh_id, offset) cache
         # TODO:     only search along my (known) route (TAI: dynamic routing)
@@ -693,13 +697,22 @@ class _TrafficActor:
                 ov_ttre = time_to_cover(ov_back_gap, -speed_delta, -acc_delta)
                 if ov_ttre < lane_ttre:
                     lane_ttre = ov_ttre
+                if ovs.role == ActorRole.EgoAgent and (
+                    agent_gap is None or (ov_back_gap > 0 and ov_back_gap < agent_gap)
+                ):
+                    agent_gap = ov_back_gap
 
             if lane_ttc == 0 and lane_ttre == 0:
                 assert lane_gap <= self._min_space_cush, f"{lane_gap}"
                 break
 
         self._lane_windows[lane.index] = _TrafficActor._LaneWindow(
-            lane, min(lane_time_left, lane_ttc), lane_ttre, lane_gap, lane_coord
+            lane,
+            min(lane_time_left, lane_ttc),
+            lane_ttre,
+            lane_gap,
+            lane_coord,
+            agent_gap,
         )
 
     def _compute_lane_windows(self):
@@ -737,7 +750,19 @@ class _TrafficActor:
                 return cross_time, False
         return cross_time, True
 
-    def _pick_lane(self):
+    def _should_cutin(self, lw: _LaneWindow) -> bool:
+        if lw.lane.index == self._lane.index:
+            return False
+        min_gap = self._target_cutin_gap / self._aggressiveness
+        max_gap = self._target_cutin_gap + 2
+        if (
+            min_gap < lw.agent_gap < max_gap
+            and self._crossing_time_into(lw.lane.index)[1]
+        ):
+            return random.random() < self._cutin_prob
+        return False
+
+    def _pick_lane(self, dt: float):
         # TODO:  only use lane windows if there's a *chance* we're changing lanes
         self._compute_lane_windows()
         my_idx = self._lane.index
@@ -754,7 +779,22 @@ class _TrafficActor:
             ):
                 best_lw = lw
                 break
-            if lw.adj_time_left > best_lw.adj_time_left or (
+            if (
+                self._cutting_into
+                and self._crossing_time_into(self._cutting_into.lane.index)[1]
+            ):
+                best_lw = self._cutting_into
+                if self._cutting_into.lane != self._lane:
+                    break
+                self._in_front_after_cutin_secs += dt
+                if self._in_front_secs < self._cutin_hold_secs:
+                    break
+            self._cutting_into = None
+            self._in_front_secs = 0
+            if lw.agent_gap and self._should_cutin(lw):
+                best_lw = lw
+                self._cutting_into = lw
+            elif lw.adj_time_left > best_lw.adj_time_left or (
                 lw.adj_time_left == best_lw.adj_time_left
                 and (
                     (lw.lane == self._dest_lane and self._offset < self._dest_offset)
@@ -884,7 +924,7 @@ class _TrafficActor:
         self._all_vehicle_states = all_vehicle_states
         self._compute_lane_speeds()  # TODO: curvature only needed if we might change lanes
 
-        self._pick_lane()
+        self._pick_lane(dt)
         self._check_speed()
 
         angular_velocity = self._angle_to_lane(dt)

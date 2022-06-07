@@ -30,7 +30,7 @@ from smarts.core.data_model import SocialAgent
 from smarts.core.plan import Plan
 from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.vehicle import VehicleState
+from smarts.core.vehicle import ActorRole, VehicleState
 from smarts.zoo.registry import make as make_social_agent
 
 
@@ -499,7 +499,8 @@ class AgentManager:
                     vehicle_config_type="passenger",  # XXX: vehicles in history missions will have a type
                     pose=vehicle.pose,
                     dimensions=vehicle.chassis.dimensions,
-                    source="NEW-AGENT",
+                    source=provider.source_str,
+                    role=ActorRole.SocialAgent,
                 )
             )
 

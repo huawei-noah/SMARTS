@@ -26,7 +26,7 @@ from smarts.core.agents_provider import AgentsProvider
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.provider import ProviderState
-from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
+from smarts.core.vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
 class TrajectoryWithTime:
@@ -50,10 +50,6 @@ class TrajectoryInterpolationProvider(AgentsProvider):
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
         return {ActionSpaceType.TrajectoryWithTime}
-
-    @property
-    def _source(self) -> str:
-        return "TrajectoryInterpolation"
 
     def perform_agent_actions(self, agent_actions: Dict[str, Any]):
         # XXX:  we do the controller-ish stuff in step() below
@@ -97,7 +93,8 @@ class TrajectoryInterpolationProvider(AgentsProvider):
                     pose=pose,
                     dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
                     speed=speed,
-                    source=self._source,
+                    source=self.source_str,
+                    role=ActorRole.SocialAgent,
                 )
             )
 

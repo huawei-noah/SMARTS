@@ -21,6 +21,7 @@ import importlib.resources as pkg_resources
 import logging
 import os
 from dataclasses import dataclass
+from enum import IntEnum
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -50,6 +51,16 @@ from .utils.custom_exceptions import RendererException
 from .utils.math import rotate_around_point
 
 
+class ActorRole(IntEnum):
+    """Used to specify the role an actor (e.g. vehicle) is currently playing in the simulation."""
+
+    Unknown = 0
+    Social = 1
+    SocialAgent = 2
+    EgoAgent = 3
+    Privileged = 4  # For deferring to external co-simulators only. Use with caution!
+
+
 @dataclass
 class VehicleState:
     """Vehicle state information."""
@@ -68,16 +79,7 @@ class VehicleState:
     angular_velocity: Optional[np.ndarray] = None
     linear_acceleration: Optional[np.ndarray] = None
     angular_acceleration: Optional[np.ndarray] = None
-    _privileged: bool = False
-
-    def set_privileged(self):
-        """For deferring to external co-simulators only. Use with caution!"""
-        self._privileged = True
-
-    @property
-    def privileged(self) -> bool:
-        """If the vehicle state is privilaged over the internal simulation state."""
-        return self._privileged
+    role: ActorRole = ActorRole.Unknown
 
 
 @dataclass(frozen=True)
@@ -275,7 +277,7 @@ class Vehicle:
             steering=self._chassis.steering,
             # pytype: enable=attribute-error
             yaw_rate=self._chassis.yaw_rate,
-            source="SMARTS",
+            source="SMARTS",  # this is the "ground truth" state
             linear_velocity=self._chassis.velocity_vectors[0],
             angular_velocity=self._chassis.velocity_vectors[1],
         )
@@ -574,7 +576,7 @@ class Vehicle:
     def update_state(self, state: VehicleState, dt: float):
         """Update the vehicle's state"""
         state.updated = True
-        if not state.privileged:
+        if state.role != ActorRole.Privileged:
             assert isinstance(self._chassis, BoxChassis)
             self.control(pose=state.pose, speed=state.speed, dt=dt)
             return

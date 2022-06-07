@@ -29,7 +29,7 @@ from smarts.core.motion_planner_provider import MotionPlannerProvider
 from smarts.core.plan import EndlessGoal, Mission, Start
 from smarts.core.provider import ProviderState
 from smarts.core.scenario import Scenario
-from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
+from smarts.core.vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
 @pytest.fixture
@@ -64,7 +64,8 @@ def test_we_reach_target_pose_at_given_time(motion_planner_provider, loop_scenar
             pose=Pose.from_center([0, 0, 0.5], heading=Heading(0)),
             dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
             speed=0,
-            source="TESTS",
+            source=motion_planner_provider.source_str,
+            role=ActorRole.EgoAgent,
         )
     )
     target_position = [32, -12]

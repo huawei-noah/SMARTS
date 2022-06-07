@@ -37,7 +37,7 @@ class MockProvider(Provider):
                     pose=pose,
                     dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
                     speed=speed,
-                    source="MOCK",
+                    source=self.source_str,
                 )
                 for vehicle_id, pose, speed in vehicles
             ],

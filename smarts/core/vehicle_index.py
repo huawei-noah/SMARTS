@@ -34,7 +34,7 @@ from smarts.core.utils.string import truncate
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
 from .sensors import SensorState
-from .vehicle import Vehicle
+from .vehicle import ActorRole, Vehicle
 
 VEHICLE_INDEX_ID_LENGTH = 128
 
@@ -49,6 +49,7 @@ def _2id(id_: str):
     return (separator + id_).zfill(VEHICLE_INDEX_ID_LENGTH - len(separator))
 
 
+# TAI:  Use ActorRole enum form vehicle.py insetad?
 class _ActorType(IntEnum):
     Social = 0  # Traffic
     Agent = 1
@@ -703,6 +704,7 @@ class VehicleIndex:
         actor_type = (
             _ActorType.Social
             if vehicle_state.source != "EXTERNAL"
+            and vehicle_state.role != ActorRole.Privileged
             else _ActorType.External
         )
         entity = _ControlEntity(

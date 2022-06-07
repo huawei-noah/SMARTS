@@ -24,7 +24,7 @@ from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Pose
 from .provider import Provider, ProviderState
 from .utils.math import rounder_for_dt
-from .vehicle import VEHICLE_CONFIGS, VehicleState
+from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
 class TrafficHistoryProvider(Provider):
@@ -127,7 +127,8 @@ class TrafficHistoryProvider(Provider):
                         defaults=VEHICLE_CONFIGS[vehicle_config_type].dimensions,
                     ),
                     speed=hr.speed,
-                    source="HISTORY",
+                    source=self.source_str,
+                    role=ActorRole.Social,
                 )
             )
         self._this_step_dones = {
