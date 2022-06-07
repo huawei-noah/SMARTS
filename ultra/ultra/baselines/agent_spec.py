@@ -29,8 +29,8 @@ import torch
 import yaml
 
 import ultra.adapters as adapters
+from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import AgentInterface
-from smarts.zoo.agent_spec import AgentSpec
 from ultra.baselines.common.yaml_loader import load_yaml
 
 

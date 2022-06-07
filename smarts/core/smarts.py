@@ -372,7 +372,9 @@ class SMARTS:
                 The scenario to reset the simulation with.
             start_time(float):
                 The initial amount of simulation time to skip. This has implications on all time
-                dependent systems.
+                dependent systems. NOTE: SMARTS simulates a step and then updates vehicle control.
+                If you want a vehicle to enter at exactly `0.3` with a step of `0.1` it means the
+                simulation should start at `start_time==0.2`.
         Returns:
             Agent observations. This observation is as follows:
                 - If no agents: the initial simulation observation at time 0

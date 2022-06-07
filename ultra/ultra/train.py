@@ -37,6 +37,8 @@ import psutil
 import ray
 import torch
 
+import ultra.baselines  # Do not delete
+import ultra.env  # Do not delete
 from smarts.zoo.registry import make
 from ultra.evaluate import collect_evaluations, evaluation_check
 from ultra.utils.common import agent_pool_value
@@ -186,7 +188,7 @@ def train(
     log_dir,
     policy_ids=None,
 ):
-    torch.set_num_threads(1)
+    getattr(torch, "set_num_threads")(1)
     total_step = 0
     finished = False
     evaluation_task_ids = dict()
