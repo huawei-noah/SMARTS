@@ -57,7 +57,6 @@ def make_env(config: Dict[str, Any]) -> gym.Env:
     env = action.Action(env=env)
     # Wrap env with RewardWrapper
     env = reward.Reward(env=env)
-    #env = FormatObs(env)
     # Wrap env with RGBImage wrapper to only get rgb images in observation
     env = smarts_rgb_image.RGBImage(env=env, num_stack=1)
     # # Wrap env with SingleAgent wrapper to be Gym compliant
