@@ -45,9 +45,6 @@ class SingleAgent(gym.Wrapper):
         if self.observation_space:
             self.observation_space = self.observation_space[self._agent_id]
 
-        if self.action_space:
-            self.action_space = self.action_space[self._agent_id]
-
     def step(self, action: Any) -> Tuple[Any, float, bool, Any]:
         """Steps a single-agent SMARTS environment.
 
