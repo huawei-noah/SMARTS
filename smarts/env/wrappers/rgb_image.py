@@ -92,7 +92,11 @@ class RGBImage(gym.ObservationWrapper):
 
             images = []
             for agent_ob in agent_obs:
-                image = agent_ob.top_down_rgb.data
+                try:
+                    image = agent_ob.top_down_rgb.data
+                except AttributeError:
+       
+                    image = agent_ob.rgb
                 images.append(image.astype(np.uint8))
 
             stacked_images = np.dstack(images)
