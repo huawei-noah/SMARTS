@@ -232,7 +232,7 @@ def get_env_specs(scenario: str):
                 agents_alive=None,
             ),
         }
-    elif scenario == "3lane_cruise_muti_agent":
+    elif scenario == "3lane_cruise_multi_agent":
         return {
             "scenario": str(
                 pathlib.Path(__file__).absolute().parents[1]
