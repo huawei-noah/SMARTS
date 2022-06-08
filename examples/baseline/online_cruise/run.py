@@ -10,7 +10,7 @@ from typing import Any, Dict
 from competition_env import CompetitionEnv
 
 from ruamel.yaml import YAML
-from sb3.env.make_env import make_env
+from cruise.env.make_env import make_env
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.callbacks import CallbackList, CheckpointCallback, EvalCallback

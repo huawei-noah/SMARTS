@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 import gym
-from sb3.env import action, reward
+from cruise.env import action, reward
 from stable_baselines3.common import monitor
 from stable_baselines3.common.env_checker import check_env
 from competition_env import CompetitionEnv
