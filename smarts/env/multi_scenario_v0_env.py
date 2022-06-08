@@ -202,7 +202,7 @@ def get_env_specs(scenario: str):
                 / "merge"
                 / "3lane_multi_agent"
             ),
-            "num_agent": 3,
+            "num_agent": 2,
             "done_criteria": DoneCriteria(
                 collision=True,
                 off_road=True,
@@ -240,7 +240,7 @@ def get_env_specs(scenario: str):
                 / "straight"
                 / "3lane_cruise_multi_agent"
             ),
-            "num_agent": 3,
+            "num_agent": 2,
             "done_criteria": DoneCriteria(
                 collision=True,
                 off_road=True,

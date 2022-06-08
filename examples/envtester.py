@@ -31,7 +31,7 @@ def main(num_episodes, max_episode_steps=50):
         observations = env.reset()
         agents = { 
             agent_id: agent_spec.build_agent()
-            for agent_id in observations.keys()
+            for agent_id in env.agent_specs.keys()
         }
 
         dones = {"__all__": False}
