@@ -1,0 +1,12 @@
+smarts:
+  seed: 42
+  visdom: False
+  rgb_meters: 64 # Height and width (meters) of RGB image in SMARTS observation
+  rgb_pixels: 64 # Height and width (pixels) of RGB image in SMARTS observation  
+  max_episode_steps: 300 # 30 seconds. Maximum steps per episode.
+  eval_eps: 10 # Number of evaluation epsiodes.
+  action_space_type: "Continuous"
+  agent_ids: 
+    - Driver1
+  scenarios: 
+    - loop
