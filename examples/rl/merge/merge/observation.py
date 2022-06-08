@@ -82,6 +82,6 @@ class Concatenate(gym.ObservationWrapper):
                     }
                 }
             )
-            plotter3d(wrapped_obs[agent_id]["rgb"], rgb_gray=3,channel_order="last",name="after",pause=0, save=True)
+            # plotter3d(wrapped_obs[agent_id]["rgb"], rgb_gray=3,channel_order="last",name="after",pause=0, save=True)
 
         return wrapped_obs
