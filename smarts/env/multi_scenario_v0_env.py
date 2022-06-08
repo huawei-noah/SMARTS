@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 import pathlib
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import gym
 
@@ -39,21 +39,20 @@ from smarts.zoo.agent_spec import AgentSpec
 
 
 def multi_scenario_v0_env(
+    scenario: str,
+    img_meters: int = 64,
+    img_pixels: int = 256,
+    wrappers: List[gym.Wrapper] = [],
+    action_space="Continuous",
     headless: bool = True,
     visdom: bool = False,
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
-    img_meters: int = 64,
-    img_pixels: int = 256,
-    action_space="Continuous",
 ):
-    """A merge environment where a single agent needs to merge into a freeway
-    by driving along an entrance ramp, an acceleration lane, enter into the
-    freeway, and finally change lanes to the rightmost lane.
+    """An environment with a mission to be completed by a single or multiple ego agents.
 
     Observation:
-        A `smarts.env.wrappers.format_obs:StdObs` dict, containing enabled keys,
-        is returned as observation.
+        A `smarts.core.sensors.Observation` is returned as observation.
 
     Actions:
         Type: gym.spaces.Box(
@@ -80,6 +79,14 @@ def multi_scenario_v0_env(
         achieved over 1000 consecutive episodes.
 
     Args:
+        scenario (str): Scenario
+        img_meters (int): Ground square size covered by image observations.
+            Defaults to 64 x 64 meter (height x width) square.
+        img_pixels (int): Pixels representing the square image observations.
+            Defaults to 256 x 256 pixels (height x width) square.
+        wrappers (List[gym.Wrapper]) : Sequence of gym environment wrappers. 
+            Defaults to empty list.
+        action_space : Action space used. Defaults to "Continuous".
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
         visdom (bool, optional): If True, enables visualization of observed
@@ -88,79 +95,17 @@ def multi_scenario_v0_env(
             SUMO GUI. Defaults to True.
         envision_record_data_replay_path (Optional[str], optional):
             Envision's data replay output directory. Defaults to None.
-        img_meters (int): Ground square size covered by image observations.
-            Defaults to 64 x 64 meter (height x width) square.
-        img_pixels (int): Pixels representing the square image observations.
-            Defaults to 256 x 256 pixels (height x width) square.
 
     Returns:
-        A single-agent merging into a freeway.
+        An environment described by the input argument `scenario`.
     """
-
-    scenario = [
-        str(
-            pathlib.Path(__file__).absolute().parents[1]
-            / "scenarios"
-            / "intersection"
-            / "1_to_2lane_left_turn_c"
-        ),
-        # str(
-        #     pathlib.Path(__file__).absolute().parents[1]
-        #     / "scenarios"
-        #     / "intersection"
-        #     / "1_to_2lane_left_turn_t"
-        # ),
-        # str(
-        #     pathlib.Path(__file__).absolute().parents[1]
-        #     / "scenarios"
-        #     / "merge"
-        #     / "3lane_multi_agent"
-        # ),
-        # str(
-        #     pathlib.Path(__file__).absolute().parents[1]
-        #     / "scenarios"
-        #     / "merge"
-        #     / "3lane_single_agent"
-        # ),
-        # str(
-        #     pathlib.Path(__file__).absolute().parents[1]
-        #     / "scenarios"
-        #     / "straight"
-        #     / "3lane_cruise_multi_agent"
-        # ),
-        # str(
-        #     pathlib.Path(__file__).absolute().parents[1]
-        #     / "scenarios"
-        #     / "straight"
-        #     / "3lane_cruise_single_agent"
-        # ),
-        # str(
-        #     pathlib.Path(__file__).absolute().parents[1]
-        #     / "scenarios"
-        #     / "straight"
-        #     / "3lane_cut_off"
-        # ),
-        # str(
-        #     pathlib.Path(__file__).absolute().parents[1]
-        #     / "scenarios"
-        #     / "straight"
-        #     / "3lane_overtake"
-        # ),
-    ]
-    build_scenario(scenario)
-
-    done_criteria = DoneCriteria(
-        collision=True,
-        off_road=True,
-        off_route=True,
-        on_shoulder=False,
-        wrong_way=True,
-        not_moving=False,
-        agents_alive=None,
-    )
+  
+    env_specs = get_env_specs(scenario)
+    build_scenario([env_specs["scenario"]])
+    done_criteria = env_specs["done_criteria"]
     max_episode_steps = 3000
     agent_specs = {
-        "MergeAgent": AgentSpec(
+        f"Agent_{i}": AgentSpec(
             interface=AgentInterface(
                 accelerometer=True,
                 action=ActionSpaceType[action_space],
@@ -187,12 +132,13 @@ def multi_scenario_v0_env(
                 waypoints=Waypoints(lookahead=img_meters),
             ),
         )
+        for i in range(env_specs["num_agent"])
     }
 
     env = HiWayEnv(
-        scenarios=scenario,
+        scenarios=[env_specs["scenario"]],
         agent_specs=agent_specs,
-        sim_name="Merge",
+        sim_name="MultiScenario",
         headless=headless,
         visdom=visdom,
         sumo_headless=sumo_headless,
@@ -200,13 +146,170 @@ def multi_scenario_v0_env(
         endless_traffic=False,
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
-    # env = FormatObs(env=env)
-    # env = FormatAction(env=env, space=ActionSpaceType[action_space])
     env = _InfoScore(env=env)
-    # env = SingleAgent(env=env)
+    
+    # Wrap the environment
+    for wrapper in wrappers:
+        env = wrapper(env)
 
     return env
 
+def get_env_specs(scenario: str):
+    if scenario == "1_to_2lane_left_turn_c":
+        return {
+            "scenario": str(
+                pathlib.Path(__file__).absolute().parents[1]
+                / "scenarios"
+                / "intersection"
+                / "1_to_2lane_left_turn_c"
+            ),
+            "num_agent": 1,
+            "done_criteria": DoneCriteria(
+                collision=True,
+                off_road=True,
+                off_route=True,
+                on_shoulder=True,
+                wrong_way=True,
+                not_moving=False,
+                agents_alive=None,
+            ),
+        }
+    elif scenario == "1_to_2lane_left_turn_t":
+        return {
+            "scenario": str(
+                pathlib.Path(__file__).absolute().parents[1]
+                / "scenarios"
+                / "intersection"
+                / "1_to_2lane_left_turn_t"
+            ),
+            "num_agent": 1,
+            "done_criteria": DoneCriteria(
+                collision=True,
+                off_road=True,
+                off_route=True,
+                on_shoulder=True,
+                wrong_way=True,
+                not_moving=False,
+                agents_alive=None,
+            ),
+
+        }
+    elif scenario == "3lane_merge_multi_agent":
+        return {
+            "scenario": str(
+                pathlib.Path(__file__).absolute().parents[1]
+                / "scenarios"
+                / "merge"
+                / "3lane_multi_agent"
+            ),
+            "num_agent": 3,
+            "done_criteria": DoneCriteria(
+                collision=True,
+                off_road=True,
+                off_route=False,
+                on_shoulder=False,
+                wrong_way=True,
+                not_moving=False,
+                agents_alive=None,
+            ),
+        }
+    elif scenario == "3lane_merge_single_agent":
+        return {
+            "scenario": str(
+                pathlib.Path(__file__).absolute().parents[1]
+                / "scenarios"
+                / "merge"
+                / "3lane_single_agent"
+            ),
+            "num_agent": 1,
+            "done_criteria": DoneCriteria(
+                collision=True,
+                off_road=True,
+                off_route=False,
+                on_shoulder=False,
+                wrong_way=True,
+                not_moving=False,
+                agents_alive=None,
+            ),
+        }
+    elif scenario == "3lane_cruise_muti_agent":
+        return {
+            "scenario": str(
+                pathlib.Path(__file__).absolute().parents[1]
+                / "scenarios"
+                / "straight"
+                / "3lane_cruise_multi_agent"
+            ),
+            "num_agent": 3,
+            "done_criteria": DoneCriteria(
+                collision=True,
+                off_road=True,
+                off_route=True,
+                on_shoulder=True,
+                wrong_way=True,
+                not_moving=False,
+                agents_alive=None,
+            ),
+        }
+    elif scenario == "3lane_cruise_single_agent":
+        return {
+            "scenario": str(
+                pathlib.Path(__file__).absolute().parents[1]
+                / "scenarios"
+                / "straight"
+                / "3lane_cruise_single_agent"
+            ),
+            "num_agent": 1,
+            "done_criteria": DoneCriteria(
+                collision=True,
+                off_road=True,
+                off_route=True,
+                on_shoulder=True,
+                wrong_way=True,
+                not_moving=False,
+                agents_alive=None,
+            ),
+        }
+    elif scenario == "3lane_cut_off":
+        return {
+            "scenario": str(
+                pathlib.Path(__file__).absolute().parents[1]
+                / "scenarios"
+                / "straight"
+                / "3lane_cut_off"
+            ),
+            "num_agent": 1,
+            "done_criteria": DoneCriteria(
+                collision=True,
+                off_road=True,
+                off_route=True,
+                on_shoulder=True,
+                wrong_way=True,
+                not_moving=False,
+                agents_alive=None,
+            ),
+        }
+    elif scenario == "3lane_overtake":
+        return {
+            "scenario": str(
+                pathlib.Path(__file__).absolute().parents[1]
+                / "scenarios"
+                / "straight"
+                / "3lane_overtake"
+            ),
+            "num_agent": 1,
+            "done_criteria": DoneCriteria(
+                collision=True,
+                off_road=True,
+                off_route=True,
+                on_shoulder=True,
+                wrong_way=True,
+                not_moving=False,
+                agents_alive=None,
+            ),
+        }
+    else:
+        raise Exception(f"Unknown scenario {scenario}.")
 
 class _InfoScore(gym.Wrapper):
     def __init__(self, env: gym.Env):
@@ -234,8 +337,7 @@ class _InfoScore(gym.Wrapper):
 
         for agent_id in obs.keys():
             reached_goal = obs[agent_id].events.reached_goal
-            # Set `score=1` if ego agent successfully merges into the freeway,
-            # changes lane, and reaches the end of mission route, else `score=0`.
+            # Set `score=1` if ego agent successfully completes mission, else `score=0`.
             info[agent_id]["score"] = reached_goal
 
         return obs, reward, done, info

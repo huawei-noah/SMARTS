@@ -16,19 +16,12 @@ def main(num_episodes, max_episode_steps=50):
         interface=AgentInterface.from_type(
             AgentType.Laner, max_episode_steps=max_episode_steps
         ),
-        agent_builder=lambda: Agent.from_function(lambda _: 0),
+        agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
     )
-
-    # Action map for AgentType.Laner
-    # action_map = {
-    #     0: "keep_lane",
-    #     1: "slow_down",
-    #     2: "change_lane_left",
-    #     3: "change_lane_right",
-    # }
 
     env = gym.make(
         "smarts.env:multi-scenario-v0",
+        scenario="1_to_2lane_left_turn_c",
         headless=True,
         sumo_headless=False,
         action_space="Lane",
@@ -48,6 +41,8 @@ def main(num_episodes, max_episode_steps=50):
                 for agent_id, agent_obs in observations.items()
             }
             observations, rewards, dones, infos = env.step(actions)
+            import time
+            time.sleep(0.1)
             for agent_id, agent_obs in observations.items():
                 if agent_obs.events.reached_goal:
                     print(f"{agent_id} : HURRAY REACHED GOAL !!!")
