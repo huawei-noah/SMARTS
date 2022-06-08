@@ -70,6 +70,7 @@ def _record_data(
     current_vehicles,
     off_road_vehicles,
     selected_vehicles,
+    stb_obs,
 ):
     # Attach sensors to each vehicle
     valid_vehicles = (current_vehicles - off_road_vehicles) & selected_vehicles
@@ -82,6 +83,7 @@ def _record_data(
 
     # Get observations from each vehicle and record them
     obs, _, _, _ = smarts.observe_from(list(valid_vehicles))
+    obs = stb_obs.observation(obs)
     t = smarts.elapsed_sim_time
     for car, car_obs in obs.items():
         collected_data.setdefault(car, {}).setdefault(t, {})
@@ -90,8 +92,7 @@ def _record_data(
 
     # Write top-down RGB image to a file for each vehicle
     for agent_id, agent_obs in obs.items():
-        image_data = agent_obs.top_down_rgb.data
-        img = Image.fromarray(image_data, "RGB")
+        img = Image.fromarray(agent_obs["rgb"], "RGB")
         img.save(output_dir / f"{t}_{agent_id}.png")
 
 
@@ -120,15 +121,19 @@ def main(
     scenarios = [str(smarts_scenario_dir)]
     build_scenario(scenarios)
 
-    # Run the scenario with SMARTS
-    env = HiWayEnv(
+    # Create a dummy env to be able to use StdObs wrapper for observations
+    dummy_env = HiWayEnv(
         scenarios=scenarios,
         agent_specs={"DummyAgent": AGENT_SPEC},
-        sim_name="WaymoReplay",
-        headless=headless,
     )
-    env = FormatObs(env=env)
-    smarts: SMARTS = env.env._smarts
+    std_obs_env = FormatObs(env=dummy_env)
+
+    # The actual SMARTS instance to be used for the simulation
+    smarts = SMARTS(
+        agent_interfaces=dict(),
+        traffic_sim=None,
+        envision=None,
+    )
 
     scenario_list = Scenario.get_scenario_list(scenarios)
     scenarios_iterator = Scenario.variations_for_all_scenario_roots(scenario_list, [])
@@ -148,7 +153,7 @@ def main(
             for v_id in vehicle_ids:
                 selected_vehicles.add(f"history-vehicle-{v_id}")
 
-        obs = env.reset()
+        _ = smarts.reset(scenario)
         current_vehicles = smarts.vehicle_index.social_vehicle_ids(
             vehicle_types=vehicle_types
         )
@@ -159,10 +164,11 @@ def main(
             current_vehicles,
             off_road_vehicles,
             selected_vehicles,
+            std_obs_env,
         )
 
         while True:
-            env.step({})
+            smarts.step({})
             current_vehicles = smarts.vehicle_index.social_vehicle_ids(
                 vehicle_types=vehicle_types
             )
@@ -178,6 +184,7 @@ def main(
                 current_vehicles,
                 off_road_vehicles,
                 selected_vehicles,
+                std_obs_env,
             )
 
         # Save recorded observations as pickle files
@@ -185,7 +192,7 @@ def main(
             outfile = output_dir / f"{car}.pkl"
             with open(outfile, "wb") as of:
                 pickle.dump(data, of)
-    env.close()
+    smarts.destroy()
 
 
 if __name__ == "__main__":
