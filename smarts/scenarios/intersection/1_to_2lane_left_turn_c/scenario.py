@@ -1,91 +1,85 @@
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 import random
-import itertools
+from itertools import combinations
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
 from smarts.sstudio.types import (
     Distribution,
     Flow,
-    JunctionModel,
-    LaneChangingModel,
     Mission,
     Route,
     Scenario,
     Traffic,
     TrafficActor,
-    UniformDistribution,
 )
-
-# See SUMO doc
-# Lane changing model
-# https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models
-# Junction model
-# https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#junction_model_parameters
 
 normal = TrafficActor(
     name="car",
     speed=Distribution(sigma=0.8, mean=0.8),
 )
-# cooperative = TrafficActor(
-#     name="cooperative",
-#     speed=Distribution(sigma=0.3, mean=1.0),
-#     lane_changing_model=LaneChangingModel(
-#         pushy=0.1,
-#         impatience=0.1,
-#         cooperative=0.9,
-#         speed_Gain=0.8,
-#     ),
-#     junction_model=JunctionModel(
-#         impatience=0.1,
-#     ),
-# )
-# aggressive = TrafficActor(
-#     name="aggressive",
-#     speed=Distribution(sigma=0.3, mean=1.0),
-#     lane_changing_model=LaneChangingModel(
-#         pushy=0.8,
-#         impatience=1,
-#         cooperative=0.1,
-#         speed_Gain=2.0,
-#     ),
-#     junction_model=JunctionModel(
-#         impatience=0.6,
-#     ),
-# )
 
-# flow_name = (start_lane, end_lane,)
-route_opt = [
-    (0, 0),
-    (1, 1),
-    (0, 1),
-    (1, 0),
+vertical_routes = [
+    ("E0",0, "E3",0),
+    ("-E3",0, "-E0",0),
 ]
-start_edges=[("E0",1),("E4",2),("-E1",2),("-E3",1)]
-end_edges=[("-E0",1),("-E4",2),("E1",2),("E3",1)]
-route_options=list(itertools.product(start_edges, end_edges))
-num_routes = 5
-num_configurations = 4
-# Traffic combinations = 3C1 + 3C2 + 3C3 = 3 + 3 + 1 = 7
+
+horizontal_routes = [
+    ("E4",0, "E1",0),
+    ("E4",1, "E1",1),
+    ("-E1",0, "-E4",0),
+    ("-E1",1, "-E4",1),
+]
+
+turn_left_routes = [
+    ("E0",0, "E1",1),
+    ("-E3",0, "-E4",1),
+    ("-E1",1, "E3",0),
+    ("E4",1, "-E0",0),
+]
+
+turn_right_routes = [
+    ("E0",0, "-E4",0),
+    ("-E3",0, "E1",0),
+    ("-E1",0, "-E0",0),
+    ("E4",0, "E3",0),
+]
+
+# Total route combinations = 14C1 + 14C2 + 14C3 + 14C4 = 1470
+all_routes = vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes
+route_comb = [com for elems in range(1, 5) for com in combinations(all_routes, elems)]
 traffic = {}
-for name in range(num_configurations):
-    routes = []
-    while len(routes) < num_routes:
-        choice = random.choice(route_options)
-        start_edge, end_edge = choice
-        if start_edge[0] in end_edge[0] or end_edge[0] in start_edge[0]:
-            continue
-        routes.append(choice)
+for name, routes in enumerate(route_comb):
     traffic[str(name)] = Traffic(
         flows=[
             Flow(
                 route=Route(
-                    begin=(start_edge, random.randint(0, se_lanes - 1), 0),
-                    end=(end_edge, random.randint(0, ee_lanes - 1), "max"),
+                    begin=(f"{r[0]}", r[1], 0),
+                    end=(f"{r[2]}", r[3], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=random.uniform(10, 30),
+                rate=60 * random.uniform(5, 8),
                 # Random flow start time, between x and y seconds.
-                begin=random.uniform(0, 7),
+                begin=random.uniform(0, 3),
                 # For an episode with maximum_episode_steps=3000 and step
                 # time=0.1s, maximum episode time=300s. Hence, traffic set to
                 # end at 900s, which is greater than maximum episode time of
@@ -93,7 +87,7 @@ for name in range(num_configurations):
                 end=60 * 15,
                 actors={normal: 1},
             )
-            for (start_edge, se_lanes), (end_edge, ee_lanes) in routes
+            for r in routes
         ]
     )
 
@@ -101,7 +95,7 @@ route = Route(begin=("E0", 0, 1), end=("E1", 0, "max"))
 ego_missions = [
     Mission(
         route=route,
-        start_time=19,  # Delayed start, to ensure road has prior traffic.
+        start_time=4,  # Delayed start, to ensure road has prior traffic.
     )
 ]
 
