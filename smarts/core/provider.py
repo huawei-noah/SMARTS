@@ -170,6 +170,6 @@ class Provider:
 
     def remove_vehicle(self, vehicle_id: str):
         """The vehicle is being removed from the simulation."""
-        if manages_vehicle(vehicle_id):
+        if self.manages_vehicle(vehicle_id):
             self.stop_managing(vehicle_id)
         # can be overridden to do more cleanup as necessary
