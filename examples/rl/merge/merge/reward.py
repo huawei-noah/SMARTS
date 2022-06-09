@@ -26,8 +26,8 @@ class Reward(gym.Wrapper):
                 elif obs[agent_id]["events"]["reached_max_episode_steps"]:
                     print(f"{agent_id}: Vehicle reached max episode steps.")
                 elif (
-                    obs[agent_id]["events"]["off_road"]
-                    | obs[agent_id]["events"]["collisions"]
+                    obs[agent_id]["events"]["collisions"]
+                    | obs[agent_id]["events"]["off_road"]
                     | obs[agent_id]["events"]["off_route"]
                     | obs[agent_id]["events"]["on_shoulder"]
                     | obs[agent_id]["events"]["wrong_way"]
@@ -48,35 +48,35 @@ class Reward(gym.Wrapper):
         reward = {agent_id:np.float64(0) for agent_id in env_reward.keys()}
 
         for agent_id, agent_reward in env_reward.items():
-            # Penalty for driving off road
-            if obs[agent_id]["events"]["off_road"]:
-                reward[agent_id] -= np.float64(10)
-                print(f"{agent_id}: Vehicle went off road.")
-                break
-
-            # Penalty for driving on road shoulder
-            # if obs[agent_id]["events"]["on_shoulder"]:
-            #     reward[agent_id] -= np.float64(10)
-            #     print(f"{agent_id}: Vehicle went on road shoulder.")
-            #     break
-
-            # Penalty for driving on wrong way
-            if obs[agent_id]["events"]["wrong_way"]:
-                reward[agent_id] -= np.float64(10)
-                print(f"{agent_id}: Vehicle went wrong way.")
-                break
-
             # Penalty for colliding
             if obs[agent_id]["events"]["collisions"]:
                 reward[agent_id] -= np.float64(10)
                 print(f"{agent_id}: Vehicle collided.")
                 break
 
+            # Penalty for driving off road
+            if obs[agent_id]["events"]["off_road"]:
+                reward[agent_id] -= np.float64(10)
+                print(f"{agent_id}: Vehicle went off road.")
+                break
+
             # Penalty for driving off route
-            # if obs[agent_id]["events"]["off_route"]:
-            #     reward[agent_id] -= np.float64(10)
-            #     print(f"{agent_id}: Vehicle went off route.")
-            #     break
+            if obs[agent_id]["events"]["off_route"]:
+                reward[agent_id] -= np.float64(10)
+                print(f"{agent_id}: Vehicle went off route.")
+                break
+
+            # Penalty for driving on road shoulder
+            if obs[agent_id]["events"]["on_shoulder"]:
+                reward[agent_id] -= np.float64(10)
+                print(f"{agent_id}: Vehicle went on road shoulder.")
+                break
+
+            # Penalty for driving on wrong way
+            if obs[agent_id]["events"]["wrong_way"]:
+                reward[agent_id] -= np.float64(10)
+                print(f"{agent_id}: Vehicle went wrong way.")
+                break
 
             # Reward for reaching goal
             if obs[agent_id]["events"]["reached_goal"]:
@@ -85,6 +85,5 @@ class Reward(gym.Wrapper):
                 
             # Reward for distance travelled
             reward[agent_id] += np.float64(agent_reward)
-
 
         return reward
