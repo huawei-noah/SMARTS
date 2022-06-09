@@ -1,3 +1,23 @@
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 import random
 from itertools import combinations
 from pathlib import Path
@@ -6,71 +26,32 @@ from smarts.sstudio import gen_scenario
 from smarts.sstudio.types import (
     Distribution,
     Flow,
-    JunctionModel,
-    LaneChangingModel,
     Mission,
     Route,
     Scenario,
     Traffic,
     TrafficActor,
-    UniformDistribution,
 )
-
-# See SUMO doc
-# Lane changing model
-# https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models
-# Junction model
-# https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#junction_model_parameters
 
 normal = TrafficActor(
     name="car",
-    speed=Distribution(sigma=0.8, mean=1),
+    speed=Distribution(sigma=1.2, mean=1),
+    min_gap = Distribution(mean=20, sigma=5),
 )
-# cooperative = TrafficActor(
-#     name="cooperative",
-#     speed=Distribution(sigma=0.3, mean=1.0),
-#     lane_changing_model=LaneChangingModel(
-#         pushy=0.1,
-#         impatience=0.1,
-#         cooperative=0.9,
-#         speed_Gain=0.8,
-#     ),
-#     junction_model=JunctionModel(
-#         impatience=0.1,
-#     ),
-# )
-# aggressive = TrafficActor(
-#     name="aggressive",
-#     speed=Distribution(sigma=0.3, mean=1.0),
-#     lane_changing_model=LaneChangingModel(
-#         pushy=0.8,
-#         impatience=1,
-#         cooperative=0.1,
-#         speed_Gain=2.0,
-#     ),
-#     junction_model=JunctionModel(
-#         impatience=0.6,
-#     ),
-# )
 
 # flow_name = (start_lane, end_lane,)
 route_opt = [
     (0, 0),
     (1, 1),
     (2, 2),
-    # (0,1),
-    # (0,2),
-    # (1,0),
-    # (1,2),
-    # (2,0),
-    # (2,1)
 ]
 
-# Traffic combinations = 3C1 + 3C2 + 3C3 = 3 + 3 + 1 = 7
-min_flows = 1
+# Traffic combinations = 3C2 + 3C3 = 3 + 1 = 4
+# Duplicate traffic = traffic_combinations * 50 = 200 
+min_flows = 2
 max_flows = 3
 route_comb = [
-    com
+    com * 50
     for elems in range(min_flows, max_flows + 1)
     for com in combinations(route_opt, elems)
 ]
@@ -85,21 +66,22 @@ for name, routes in enumerate(route_comb):
                     end=("gneE3", r[1], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=10 * random.uniform(3, 5),
+                rate=10 * random.uniform(2, 5),
                 # Random flow start time, between x and y seconds.
-                # begin=random.uniform(0, 7),
+                begin=random.uniform(0, 8),
                 # For an episode with maximum_episode_steps=3000 and step
                 # time=0.1s, maximum episode time=300s. Hence, traffic set to
                 # end at 900s, which is greater than maximum episode time of
                 # 300s.
-                # end=60 * 15,
+                end=60 * 15,
                 actors={normal: 1},
             )
             for r in routes
         ]
     )
 
-route = Route(begin=("gneE3", 0, 10), end=("gneE3", 2, "max"))
+
+route = Route(begin=("gneE3", 0, 10), end=("gneE3", 0, "max"))
 ego_missions = [
     Mission(
         route=route,

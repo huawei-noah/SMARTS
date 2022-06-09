@@ -35,7 +35,8 @@ from smarts.sstudio.types import (
 
 normal = TrafficActor(
     name="car",
-    speed=Distribution(sigma=0.8, mean=1),
+    speed=Distribution(sigma=1.2, mean=1),
+    min_gap = Distribution(mean=20, sigma=5),
 )
 
 # flow_name = (start_lane, end_lane,)
@@ -45,11 +46,12 @@ route_opt = [
     (2, 2),
 ]
 
-# Traffic combinations = 3C1 + 3C2 + 3C3 = 3 + 3 + 1 = 7
-min_flows = 1
+# Traffic combinations = 3C2 + 3C3 = 3 + 1 = 4
+# Duplicate traffic = traffic_combinations * 50 = 200 
+min_flows = 2
 max_flows = 3
 route_comb = [
-    com
+    com * 50
     for elems in range(min_flows, max_flows + 1)
     for com in combinations(route_opt, elems)
 ]
@@ -64,21 +66,21 @@ for name, routes in enumerate(route_comb):
                     end=("gneE3", r[1], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=10 * random.uniform(3, 5),
+                rate=10 * random.uniform(2, 5),
                 # Random flow start time, between x and y seconds.
-                # begin=random.uniform(0, 7),
+                begin=random.uniform(0, 8),
                 # For an episode with maximum_episode_steps=3000 and step
                 # time=0.1s, maximum episode time=300s. Hence, traffic set to
                 # end at 900s, which is greater than maximum episode time of
                 # 300s.
-                # end=60 * 15,
+                end=60 * 15,
                 actors={normal: 1},
             )
             for r in routes
         ]
     )
 
-missions = [
+ego_missions = [
     Mission(Route(begin=("gneE3", 0, 10), end=("gneE3", 0, "max")),start_time=19),
     Mission(Route(begin=("gneE3", 1, 10), end=("gneE3", 1, "max")),start_time=21),
     Mission(Route(begin=("gneE3", 2, 10), end=("gneE3", 2, "max")),start_time=15),
@@ -87,7 +89,7 @@ missions = [
 gen_scenario(
     scenario=Scenario(
         traffic=traffic,
-        ego_missions=missions,
+        ego_missions=ego_missions,
     ),
     output_dir=Path(__file__).parent,
 )
