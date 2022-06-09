@@ -69,7 +69,7 @@ def multi_all_scenario_v0_env(
     Episode termination:
         Episode is terminated if any of the following occurs.
         + Steps per episode exceed 3000.
-        + Agent collides, drives off road, drives off route, drives on shoulder, 
+        + Agent collides, drives off road, drives off route, drives on shoulder,
             or drives on wrong way.
 
     Solved requirement:
@@ -131,9 +131,9 @@ def multi_all_scenario_v0_env(
 
     build_scenario(scenario)
 
-    env_specs = {"num_agent":1}
+    env_specs = {"num_agent": 1}
 
-    done_criteria=DoneCriteria(
+    done_criteria = DoneCriteria(
         collision=True,
         off_road=True,
         off_route=True,
@@ -141,7 +141,7 @@ def multi_all_scenario_v0_env(
         wrong_way=True,
         not_moving=False,
         agents_alive=None,
-    ),
+    )
     max_episode_steps = 3000
     agent_specs = {
         f"Agent_{i}": AgentSpec(

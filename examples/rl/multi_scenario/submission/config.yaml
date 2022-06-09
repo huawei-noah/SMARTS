@@ -1,5 +1,5 @@
 
-# `policy` paths are with respect to the `submission_dir`
+# `policy` paths are with respect to the `submission`
 
 1_to_2lane_left_turn_c:
   policy: "./1_to_2lane_left_turn_c"

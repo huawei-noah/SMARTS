@@ -1,14 +1,16 @@
 from typing import Any, Dict
 
-from smarts.env.wrappers.frame_stack import FrameStack
 from merge.action import Action as DiscreteAction
 from merge.observation import Concatenate, FilterObs
 from merge.reward import Reward
 from tf_agents.environments import suite_gym, tf_py_environment, validate_py_environment
-from smarts.env.wrappers.format_obs import FormatObs
-from smarts.env.wrappers.format_action import FormatAction
+
 from smarts.core.controllers import ActionSpaceType
+from smarts.env.wrappers.format_action import FormatAction
+from smarts.env.wrappers.format_obs import FormatObs
+from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.single_agent import SingleAgent
+
 
 def make(config: Dict[str, Any]) -> tf_py_environment.TFPyEnvironment:
     # Create TF environment.

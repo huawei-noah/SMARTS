@@ -36,7 +36,7 @@ from smarts.sstudio.types import (
 normal = TrafficActor(
     name="car",
     speed=Distribution(mean=1, sigma=1.2),
-    min_gap = Distribution(mean=3, sigma=1.2),
+    min_gap=Distribution(mean=3, sigma=1.2),
 )
 
 # flow_name = (start_lane, end_lane,)
@@ -47,7 +47,7 @@ route_opt = [
 ]
 
 # Traffic combinations = 3C2 + 3C3 = 3 + 1 = 4
-# Duplicate traffic = traffic_combinations * 50 = 200 
+# Duplicate traffic = traffic_combinations * 50 = 200
 min_flows = 2
 max_flows = 3
 route_comb = [

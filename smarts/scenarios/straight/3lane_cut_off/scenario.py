@@ -18,12 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import random
 from pathlib import Path
 
-import random
 import numpy as np
+
 from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import Distribution
 from smarts.sstudio.types import (
     Distribution,
     Flow,
@@ -43,18 +43,18 @@ traffic = Traffic(
     flows=[
         Flow(
             route=Route(
-                begin=("E1", random.randint(0,2), "random"),
-                end=("E2", random.randint(0,2), "max"),
+                begin=("E1", random.randint(0, 2), "random"),
+                end=("E2", random.randint(0, 2), "max"),
             ),
             rate=3,
             begin=np.random.exponential(scale=2.5),
             actors={normal: 1},
         )
         for _ in range(3)
-    for _ in range(4)
+        for _ in range(4)
     ]
 )
-ego_mission = [Mission(Route(begin=("E1",1,1),end=("E2",1,'max')))]
+ego_mission = [Mission(Route(begin=("E1", 1, 1), end=("E2", 1, "max")))]
 
 scenario = Scenario(
     traffic={"all": traffic},

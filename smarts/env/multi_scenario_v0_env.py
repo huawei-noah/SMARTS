@@ -84,9 +84,9 @@ def multi_scenario_v0_env(
             Defaults to 64 x 64 meter (height x width) square.
         img_pixels (int): Pixels representing the square image observations.
             Defaults to 256 x 256 pixels (height x width) square.
-        wrappers (List[gym.Wrapper]) : Sequence of gym environment wrappers. 
+        wrappers (List[gym.Wrapper]): Sequence of gym environment wrappers.
             Defaults to empty list.
-        action_space : Action space used. Defaults to "Continuous".
+        action_space: Action space used. Defaults to "Continuous".
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
         visdom (bool, optional): If True, enables visualization of observed
@@ -99,7 +99,7 @@ def multi_scenario_v0_env(
     Returns:
         An environment described by the input argument `scenario`.
     """
-  
+
     env_specs = get_env_specs(scenario)
     build_scenario([env_specs["scenario"]])
     done_criteria = env_specs["done_criteria"]
@@ -147,12 +147,13 @@ def multi_scenario_v0_env(
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
     env = _InfoScore(env=env)
-    
+
     # Wrap the environment
     for wrapper in wrappers:
         env = wrapper(env)
 
     return env
+
 
 def get_env_specs(scenario: str):
     if scenario == "1_to_2lane_left_turn_c":
@@ -310,6 +311,7 @@ def get_env_specs(scenario: str):
         }
     else:
         raise Exception(f"Unknown scenario {scenario}.")
+
 
 class _InfoScore(gym.Wrapper):
     def __init__(self, env: gym.Env):

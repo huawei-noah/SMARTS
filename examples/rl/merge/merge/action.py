@@ -5,8 +5,8 @@ import numpy as np
 
 
 class Action(gym.ActionWrapper):
-    """Modifies the action space.
-    """
+    """Modifies the action space."""
+
     def __init__(self, env: gym.Env, space: str):
         """Sets identical action space, denoted by `space`, for all agents.
 
@@ -33,18 +33,21 @@ class Action(gym.ActionWrapper):
         return wrapped_act
 
 
-def _discrete() -> Tuple[Callable[[Dict[str, int]], Dict[str,np.ndarray]], gym.Space]:
+def _discrete() -> Tuple[Callable[[Dict[str, int]], Dict[str, np.ndarray]], gym.Space]:
     space = gym.spaces.Discrete(n=4)
 
     action_map = {
         # key: [throttle, brake, steering]
-        0: np.array([0.3, 0,  0  ], dtype=np.float32),  # keep_direction
-        1: np.array([0  , 1,  0  ], dtype=np.float32),  # slow_down
+        0: np.array([0.3, 0, 0], dtype=np.float32),  # keep_direction
+        1: np.array([0, 1, 0], dtype=np.float32),  # slow_down
         2: np.array([0.3, 0, -0.5], dtype=np.float32),  # turn_left
-        3: np.array([0.3, 0,  0.5], dtype=np.float32),  # turn_right
+        3: np.array([0.3, 0, 0.5], dtype=np.float32),  # turn_right
     }
 
     def wrapper(action: Dict[str, int]) -> Dict[str, np.ndarray]:
-        return {agent_id: action_map[agent_action] for agent_id, agent_action in action.items()}
+        return {
+            agent_id: action_map[agent_action]
+            for agent_id, agent_action in action.items()
+        }
 
     return wrapper, space

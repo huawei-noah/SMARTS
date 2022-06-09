@@ -1,15 +1,4 @@
-
-
-
-
-
-
-
-
-
-
-
-def evaluate(env, policy, step, summary_writer, config):
+def evaluate(env, policy, config):
     total_return = 0.0
     for _ in range(config["eval"]["episodes"]):
         time_step = env.reset()
@@ -23,14 +12,11 @@ def evaluate(env, policy, step, summary_writer, config):
         total_return += ep_return
 
     avg_return = total_return / config["eval"]["episodes"]
-    with summary_writer.as_default():
-        tf.summary.scalar(
-            name="eval/episode avg return", data=avg_return.numpy()[0], step=step
-        )
+
     print(f"Evaluating. Episode average return: {avg_return.numpy()[0]:.2f}")
 
     return
 
 
-# for overtakeing scenario, the agent must start and stop at the same lane 
-# 
+# for overtakeing scenario, the agent must start and stop at the same lane
+#

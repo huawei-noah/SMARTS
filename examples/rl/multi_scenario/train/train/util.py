@@ -1,5 +1,6 @@
-import numpy as np
 import pathlib
+
+import numpy as np
 
 
 def plotter3d(
@@ -7,7 +8,7 @@ def plotter3d(
     rgb_gray: int = 3,
     channel_order: str = "first",
     name: str = "Plotter3D",
-    pause:int=-1,
+    pause: int = -1,
     save=False,
 ):
     """Plot images
@@ -96,10 +97,10 @@ def plotter3d(
 
     if save:
         save_path = pathlib.Path(__file__).absolute().parents[1] / "logs"
-        plt.savefig(fname=save_path/"rgb.png", bbox_inches="tight")
+        plt.savefig(fname=save_path / "rgb.png", bbox_inches="tight")
 
-    if pause>=0:
+    if pause >= 0:
         # plt.show()
         plt.pause(interval=pause)
-    
+
     plt.close()

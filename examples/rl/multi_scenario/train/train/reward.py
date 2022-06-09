@@ -4,6 +4,7 @@ import gym
 import numpy as np
 from train.util import plotter3d
 
+
 class Reward(gym.Wrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
@@ -20,7 +21,7 @@ class Reward(gym.Wrapper):
         wrapped_reward = self._reward(obs, reward)
 
         for agent_id, agent_done in done.items():
-            if agent_id != "__all__" and agent_done==True:
+            if agent_id != "__all__" and agent_done == True:
                 if obs[agent_id]["events"]["reached_goal"]:
                     print(f"{agent_id}: Hooray! Vehicle reached goal.")
                 elif obs[agent_id]["events"]["reached_max_episode_steps"]:
@@ -44,8 +45,10 @@ class Reward(gym.Wrapper):
 
         return obs, wrapped_reward, done, info
 
-    def _reward(self, obs: Dict[str, Dict[str, gym.Space]], env_reward: Dict[str, np.float64]) -> Dict[str, np.float64]:
-        reward = {agent_id:np.float64(0) for agent_id in env_reward.keys()}
+    def _reward(
+        self, obs: Dict[str, Dict[str, gym.Space]], env_reward: Dict[str, np.float64]
+    ) -> Dict[str, np.float64]:
+        reward = {agent_id: np.float64(0) for agent_id in env_reward.keys()}
 
         for agent_id, agent_reward in env_reward.items():
             # Penalty for colliding
@@ -82,9 +85,8 @@ class Reward(gym.Wrapper):
             if obs[agent_id]["events"]["reached_goal"]:
                 reward[agent_id] += np.float64(30)
                 print(f"{agent_id}: Hooray! Vehicle reached goal. INTRMDT")
-                
+
             # Reward for distance travelled
             reward[agent_id] += np.float64(agent_reward)
-
 
         return reward

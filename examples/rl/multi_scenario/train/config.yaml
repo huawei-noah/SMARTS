@@ -2,12 +2,16 @@ smarts:
   # Environment
   visdom: False # If True, enables Visdom display.
   sumo_gui: False # If True, enables sumo-gui display.
-  scenario: "1_to_2lane_left_turn_c"
   img_meters: 50 # Observation image area size in meters.
   img_pixels: 112 # Observation image size in pixels.
+  n_stack: 3 # Number of frames to stack as input to policy network.
+  action_space: "Continuous"
+  action_wrapper: "Discrete"
+
+  # Extras
+  scenario: "1_to_2lane_left_turn_c"
   wrappers:
     - multi_scenario/
-  n_stack: 3 # Number of frames to stack as input to policy network.
 
   # Training
   train_steps: 1e8 # Number of training steps.

@@ -505,18 +505,14 @@ def _std_lidar(
     }
 
 
-def _std_mission(
-    val: EgoVehicleObservation
-) -> Dict[str, np.ndarray]:
+def _std_mission(val: EgoVehicleObservation) -> Dict[str, np.ndarray]:
 
     if hasattr(val.mission.goal, "position"):
         goal_pos = np.array(val.mission.goal.position, dtype=np.float64)
     else:
         goal_pos = np.zeros((3,), dtype=np.float64)
 
-    return {
-        "goal_pos": goal_pos
-    }
+    return {"goal_pos": goal_pos}
 
 
 def _std_neighbors(
@@ -596,7 +592,7 @@ def _std_waypoints(
 
     # Truncate all paths to be of the same length
     min_len = min(map(len, rcv_paths))
-    trunc_paths = list(map(lambda x:x[:min_len], rcv_paths))
+    trunc_paths = list(map(lambda x: x[:min_len], rcv_paths))
 
     des_shp = _WAYPOINT_SHP
     rcv_shp = (len(trunc_paths), len(trunc_paths[0]))
@@ -611,7 +607,9 @@ def _std_waypoints(
             waypoint.speed_limit,
         )
 
-    paths = [map(extract_elem, path[: des_shp[1]]) for path in trunc_paths[: des_shp[0]]]
+    paths = [
+        map(extract_elem, path[: des_shp[1]]) for path in trunc_paths[: des_shp[0]]
+    ]
     heading, lane_index, lane_width, pos, speed_limit = zip(
         *[zip(*path) for path in paths]
     )

@@ -37,7 +37,7 @@ normal = TrafficActor(
     name="car",
     speed=Distribution(mean=1, sigma=1.2),
     max_speed=6,
-    min_gap = Distribution(mean=20, sigma=1.2),
+    min_gap=Distribution(mean=20, sigma=1.2),
 )
 
 # flow_name = (start_lane, end_lane,)
@@ -46,7 +46,7 @@ route_opt = [
 ]
 
 # Traffic combinations = 1C1 = 1
-# Duplicate traffic = traffic_combinations * 50 = 50 
+# Duplicate traffic = traffic_combinations * 50 = 50
 min_flows = 1
 max_flows = 1
 route_comb = [
