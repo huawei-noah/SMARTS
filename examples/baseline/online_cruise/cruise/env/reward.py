@@ -44,7 +44,7 @@ class Reward(gym.Wrapper):
         reward = 0
 
         if obs.events.reached_goal:
-            reward += 200
+            reward += env_reward
             return float(reward)
 
         # Penalty for driving off road

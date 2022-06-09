@@ -78,7 +78,7 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
         model.learn(total_timesteps=config["train_steps"])
     else:
         print("Start training.")
-        checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=logdir,
+        checkpoint_callback = CheckpointCallback(save_freq=50000, save_path=logdir,
                                         )
         model = PPO(
             "CnnPolicy",
@@ -87,8 +87,9 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
             tensorboard_log=logdir / "tensorboard",
             use_sde=True,
             device='auto',
+            batch_size=512
         )
-        print("Num GPUs Available: ", len(tf.config.list_physical_devices('CPU')))
+        print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
         model.learn(total_timesteps=config["train_steps"], callback = checkpoint_callback)
 
     mean_reward, std_reward = evaluate_policy(
@@ -121,7 +122,7 @@ if __name__ == "__main__":
         "--head", help="Run the simulation with display.", action="store_true"
     )
     parser.add_argument(
-        "--train-steps", help="Number of training steps.", type=int, default=5000
+        "--train-steps", help="Number of training steps.", type=int, default=1e6
     )
 
     args = parser.parse_args()
