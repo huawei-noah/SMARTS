@@ -88,7 +88,7 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
             use_sde=True,
             device='auto',
         )
-        print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+        print("Num GPUs Available: ", len(tf.config.list_physical_devices('CPU')))
         model.learn(total_timesteps=config["train_steps"], callback = checkpoint_callback)
 
     mean_reward, std_reward = evaluate_policy(
