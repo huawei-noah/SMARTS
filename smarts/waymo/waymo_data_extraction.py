@@ -168,9 +168,9 @@ def main(
         vehicle_types = frozenset({"car"})
         off_road_vehicles = set()
         selected_vehicles = set()
+        assert scenario.traffic_history is not None
 
         if not vehicle_ids:
-            assert scenario.traffic_history is not None
             ego_id = scenario.traffic_history.ego_vehicle_id
             selected_vehicles.add(f"history-vehicle-{ego_id}")
             logger.warning(
