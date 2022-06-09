@@ -1,3 +1,23 @@
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 import argparse
 import logging
 import os
@@ -101,6 +121,20 @@ def main(
     scenarios_dir: Path,
     vehicle_ids: Optional[List[int]] = None,
 ):
+    """Extract top-down RGB images and observations from a Waymo Motion Dataset scenario.
+    Args:
+        dataset_file (Path):
+            Path to the TFRecord file.
+        scenario_id (str):
+            ID for the scenario in the TFRecord file.
+        output_dir (Path):
+            Path to the directory for the output files.
+        scenarios_dir (Path):
+            Temporary directory where the SMARTS scenario will be created.
+        vehicle_ids (List[int], optional):
+            List of vehicle IDs to record. If none are provided,
+            this will default to the ego vehicle for the scenario.
+    """
     # Create & build a SMARTS scenario
     smarts_scenario_dir = scenarios_dir / f"waymo_{scenario_id}"
     if not os.path.exists(smarts_scenario_dir):
@@ -135,6 +169,7 @@ def main(
         selected_vehicles = set()
 
         if vehicle_ids is None:
+            assert scenario.traffic_history is not None
             ego_id = scenario.traffic_history.ego_vehicle_id
             selected_vehicles.add(f"history-vehicle-{ego_id}")
             logger.warning(
