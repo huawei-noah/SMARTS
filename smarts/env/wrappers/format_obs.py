@@ -459,15 +459,15 @@ def _std_ego(
 
 def _std_events(val: Events) -> Dict[str, int]:
     return {
-        "agents_alive_done": np.int8(val.agents_alive_done),
-        "collisions": np.int8(len(val.collisions) > 0),
-        "not_moving": np.int8(val.not_moving),
-        "off_road": np.int8(val.off_road),
-        "off_route": np.int8(val.off_route),
-        "on_shoulder": np.int8(val.on_shoulder),
-        "reached_goal": np.int8(val.reached_goal),
-        "reached_max_episode_steps": np.int8(val.reached_max_episode_steps),
-        "wrong_way": np.int8(val.wrong_way),
+        "agents_alive_done": np.int64(val.agents_alive_done),
+        "collisions": np.int64(len(val.collisions) > 0),
+        "not_moving": np.int64(val.not_moving),
+        "off_road": np.int64(val.off_road),
+        "off_route": np.int64(val.off_route),
+        "on_shoulder": np.int64(val.on_shoulder),
+        "reached_goal": np.int64(val.reached_goal),
+        "reached_max_episode_steps": np.int64(val.reached_max_episode_steps),
+        "wrong_way": np.int64(val.wrong_way),
     }
 
 
