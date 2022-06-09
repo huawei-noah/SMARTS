@@ -162,7 +162,11 @@ class MotionPlannerProvider(AgentsProvider):
         assert set(active_agents.keys()) == set(self._vehicle_id_to_index.keys())
         assert set(active_agents.keys()) == set(self._vehicle_index_to_id.values())
 
-    def add_vehicle(self, provider_vehicle: VehicleState, route: Optional[Sequence[RoadMap.Route]] = None):
+    def add_vehicle(
+        self,
+        provider_vehicle: VehicleState,
+        route: Optional[Sequence[RoadMap.Route]] = None,
+    ):
         assert self._is_setup
 
         vehicle_id = provider_vehicle.vehicle_id
@@ -192,4 +196,3 @@ class MotionPlannerProvider(AgentsProvider):
 
     def manages_vehicle(self, vehicle_id: str) -> bool:
         return vehicle_id in self._vehicle_id_to_index
-

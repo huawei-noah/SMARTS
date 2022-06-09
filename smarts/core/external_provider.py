@@ -96,4 +96,3 @@ class ExternalProvider(Provider):
             if vs.vehicle_id == vehicle_id:
                 return True
         return False
-

@@ -498,7 +498,9 @@ class AgentManager:
                 provider.add_vehicle(state)
                 break
         else:
-            assert False, f"could not find suitable provider supporting role={role} for action space {agent_interface.action_space}"
+            assert (
+                False
+            ), f"could not find suitable provider supporting role={role} for action space {agent_interface.action_space}"
 
         self._agent_interfaces[agent_id] = agent_interface
         self._social_agent_data_models[agent_id] = agent_model

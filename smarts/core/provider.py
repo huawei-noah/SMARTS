@@ -104,7 +104,11 @@ class Provider:
         previous role."""
         return False
 
-    def add_vehicle(self, provider_vehicle: VehicleState, route: Optional[Sequence[RoadMap.Route]] = None):
+    def add_vehicle(
+        self,
+        provider_vehicle: VehicleState,
+        route: Optional[Sequence[RoadMap.Route]] = None,
+    ):
         """Management of the vehicle with state is being transferred to this Provider.
         Will only be done if can_accept_vehicle() has returned True."""
         raise NotImplementedError
@@ -155,5 +159,3 @@ class Provider:
     def remove_vehicle(self, vehicle_id: str):
         """Remove the given vehicle from the provider."""
         raise NotImplementedError
-
-

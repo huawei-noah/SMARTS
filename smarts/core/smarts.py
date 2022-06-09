@@ -598,9 +598,13 @@ class SMARTS:
                     provider.add_vehicle(state, ss.plan.route)
                     return
         # there should always be an AgentsProvider present, so we just assert here
-        assert False, f"could not find a provider to accept vehicle {vehicle.id} for agent {agent_id} with role={role}"
+        assert (
+            False
+        ), f"could not find a provider to accept vehicle {vehicle.id} for agent {agent_id} with role={role}"
 
-    def provider_relinquishing_vehicle(self, state: VehicleState, cur_route: Optional[RoadMap.Route]):
+    def provider_relinquishing_vehicle(
+        self, state: VehicleState, cur_route: Optional[RoadMap.Route]
+    ):
         """Find a new provider for a vehicle previously managed by an agent."""
         self._remove_vehicle_from_providers(state.vehicle_id)
 
@@ -612,7 +616,9 @@ class SMARTS:
                 provider.add_vehicle(state, cur_route)
                 return
         # TODO:  traffic_history_provider seems to re-add it ?
-        self._log.warning(f"could not find a provider to assume control of vehicle {state.vehicle_id} with role={state.role} after being relinquished.  removing it.")
+        self._log.warning(
+            f"could not find a provider to assume control of vehicle {state.vehicle_id} with role={state.role} after being relinquished.  removing it."
+        )
         self._teardown_vehicles({state.vehicle_id})
 
     def _setup_bullet_client(self, client: bc.BulletClient):

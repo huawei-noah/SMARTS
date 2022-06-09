@@ -554,7 +554,9 @@ class BubbleManager:
 
         ss = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle_id)
         sim.vehicle_index.stop_agent_observation(vehicle_id)
-        vehicle = sim.vehicle_index.relinquish_agent_control(sim, vehicle_id, social_vehicle_id)
+        vehicle = sim.vehicle_index.relinquish_agent_control(
+            sim, vehicle_id, social_vehicle_id
+        )
         sim.provider_relinquishing_vehicle(vehicle.state, ss.plan.route)
         if bubble.is_boid and bubble.keep_alive:
             return

@@ -151,7 +151,11 @@ class AgentsProvider(Provider):
     def can_accept_vehicle(self, state: VehicleState) -> bool:
         return state.role == ActorRole.SocialAgent or state.role == ActorRole.EgoAgent
 
-    def add_vehicle(self, provider_vehicle: VehicleState, route: Optional[Sequence[RoadMap.Route]] = None):
+    def add_vehicle(
+        self,
+        provider_vehicle: VehicleState,
+        route: Optional[Sequence[RoadMap.Route]] = None,
+    ):
         provider_vehicle.source = self.source_str
         agent_id = self._sim.vehicle_index.actor_id_from_vehicle_id(
             provider_vehicle.vehicle_id

@@ -330,13 +330,18 @@ class LocalTrafficProvider(TrafficProvider):
     def can_accept_vehicle(self, state: VehicleState) -> bool:
         return state.role == ActorRole.Social or state.role == ActorRole.Unknown
 
-    def add_vehicle(self, provider_vehicle: VehicleState, route: Optional[Sequence[RoadMap.Route]] = None):
+    def add_vehicle(
+        self,
+        provider_vehicle: VehicleState,
+        route: Optional[Sequence[RoadMap.Route]] = None,
+    ):
         provider_vehicle.source = self.source_str
         provider_vehicle.role = ActorRole.Social
         xfrd_actor = _TrafficActor.from_state(provider_vehicle, self, route)
         self._my_actors[xfrd_actor.actor_id] = xfrd_actor
-        self._logger.info(f"traffic actor {xfrd_actor.actor_id} transferred to {self.source_str}.")
-
+        self._logger.info(
+            f"traffic actor {xfrd_actor.actor_id} transferred to {self.source_str}."
+        )
 
 
 # TAI:  inner class?
@@ -388,14 +393,19 @@ class _TrafficActor:
 
     @classmethod
     def from_flow(cls, flow: Dict[str, Any], owner: LocalTrafficProvider):
+        """Factory to construct a _TrafficActor object from a flow dictionary."""
         vclass = flow["vtype"]["vClass"]
         dimensions = VEHICLE_CONFIGS[vclass].dimensions
         vehicle_type = vclass if vclass != "passenger" else "car"
 
         new_actor = cls(flow, owner)
-        new_actor._lane, new_actor._offset = new_actor._resolve_flow_pos(flow, "depart", dimensions)
+        new_actor._lane, new_actor._offset = new_actor._resolve_flow_pos(
+            flow, "depart", dimensions
+        )
         position = new_actor._lane.from_lane_coord(RefLinePoint(s=new_actor._offset))
-        heading = vec_to_radians(new_actor._lane.vector_at_offset(new_actor._offset)[:2])
+        heading = vec_to_radians(
+            new_actor._lane.vector_at_offset(new_actor._offset)[:2]
+        )
         init_speed = new_actor._resolve_flow_speed(flow)
         new_actor._state = VehicleState(
             vehicle_id=f"{new_actor._vtype['id']}-{new_actor._owner._actors_created}",
@@ -414,7 +424,13 @@ class _TrafficActor:
         return new_actor
 
     @classmethod
-    def from_state(cls, state: VehicleState, owner: LocalTrafficProvider, route: Optional[RoadMap.Route]):
+    def from_state(
+        cls,
+        state: VehicleState,
+        owner: LocalTrafficProvider,
+        route: Optional[RoadMap.Route],
+    ):
+        """Factory to construct a _TrafficActor object from an existing VehiclState object."""
         if not route:
             route = owner.road_map.random_route()
         route_roads = [road.road_id for road in route.roads]
@@ -430,7 +446,9 @@ class _TrafficActor:
         new_actor.state = state
         new_actor._lane = owner.road_map.nearest_lane(state.pose.point)
         new_actor._offset = new_actor._lane.offset_along_lane(state.pose.point)
-        new_actor._dest_lane, new_actor._dest_offset = new_actor._resolve_flow_pos(flow, "arrival", state.dimensions.length)
+        new_actor._dest_lane, new_actor._dest_offset = new_actor._resolve_flow_pos(
+            flow, "arrival", state.dimensions.length
+        )
         return new_actor
 
     def _resolve_flow_pos(
@@ -553,7 +571,6 @@ class _TrafficActor:
         if self._state.linear_acceleration is None:
             return 0.0
         return np.linalg.norm(self._state.linear_acceleration)
-
 
     @lru_cache(maxsize=2)
     def bbox(self, cushion_length: bool = False) -> Polygon:

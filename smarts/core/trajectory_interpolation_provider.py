@@ -104,7 +104,11 @@ class TrajectoryInterpolationProvider(AgentsProvider):
 
         return provider_state
 
-    def add_vehicle(self, provider_vehicle: VehicleState, route: Optional[Sequence[RoadMap.Route]] = None):
+    def add_vehicle(
+        self,
+        provider_vehicle: VehicleState,
+        route: Optional[Sequence[RoadMap.Route]] = None,
+    ):
         pass
 
     @staticmethod

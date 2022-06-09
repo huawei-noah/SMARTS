@@ -63,7 +63,11 @@ class MockProvider(Provider):
 
         return self._next_provider_state
 
-    def add_vehicle(self, provider_vehicle: VehicleState, route: Optional[Sequence[RoadMap.Route]] = None):
+    def add_vehicle(
+        self,
+        provider_vehicle: VehicleState,
+        route: Optional[Sequence[RoadMap.Route]] = None,
+    ):
         pass
 
     def reset(self):
@@ -77,5 +81,3 @@ class MockProvider(Provider):
 
     def remove_vehicle(self, vehicle_id: str):
         pass
-
-

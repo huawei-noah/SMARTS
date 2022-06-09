@@ -95,7 +95,7 @@ class TrafficHistoryProvider(TrafficProvider):
         pass
 
     def _dbid_to_vehicle_id(self, dbid) -> str:
-       return self._vehicle_id_prefix + str(dbid)
+        return self._vehicle_id_prefix + str(dbid)
 
     def step(
         self, provider_actions, dt: float, elapsed_sim_time: float
@@ -139,7 +139,9 @@ class TrafficHistoryProvider(TrafficProvider):
 
     @cached_property
     def _history_vehicle_ids(self) -> Set[str]:
-        return { self._dbid_to_vehicle_id(hvid) for hvid in self._histories.all_vehicle_ids() }
+        return {
+            self._dbid_to_vehicle_id(hvid) for hvid in self._histories.all_vehicle_ids()
+        }
 
     @property
     def _my_vehicles(self) -> Set[str]:
@@ -151,11 +153,12 @@ class TrafficHistoryProvider(TrafficProvider):
     def remove_vehicle(self, vehicle_id: str):
         self._replaced_vehicle_ids.add(vehicle_id)
 
-    def reserve_traffic_location_for_vehicle(self, vehicle_id: str, reserved_location: Polygon):
+    def reserve_traffic_location_for_vehicle(
+        self, vehicle_id: str, reserved_location: Polygon
+    ):
         pass
 
-    def vehicle_dest(self, vehicle_id: str) -> Optional[str]:
+    def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
         pos_x, pos_y = self._histories.vehicle_final_position(vehicle_id)
         final_lane = self._scenario.road_map.nearest_lane(Point(pos_x, pos_y))
         return final_lane.road
-
