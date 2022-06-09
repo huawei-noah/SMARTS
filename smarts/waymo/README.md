@@ -1,4 +1,44 @@
-# Text-Based Browser For Waymo Dataset
+# Waymo Utilties
+
+This directory contains command-line tools for working with the Waymo Motion Dataset.
+
+# Data extraction script for offline RL (waymo_data_extraction.py)
+
+This script will extract observations (in the `StdObs` format, saved as pickle files) and birds-eye view images for a selected set of vehicles in a dataset scenario.
+
+## Setup
+
+After installing SMARTS, install the `waymo-open-dataset` package.
+
+```bash
+pip install waymo-open-dataset-tf-2-4-0
+```
+
+Note: this package will install some older versions of dependencies it shares with SMARTS, which can cause some issues. A workaround for this is to re-install the proper versions of the conflicting dependencies after installing the waymo package.
+
+```bash
+pip install typing-extensions==4.0.0
+```
+
+## Running
+
+To see the format of the arguments to the script, run
+
+```bash
+waymo_data_extraction.py -h
+```
+
+Note: if no vehicle IDs are provided, the the script will default to using the ego vehicle for the scenario.
+
+An example of running the script:
+
+```bash
+python smarts/waymo/waymo_data_extraction.py ~/Downloads/waymo/1.1/uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000 4f30f060069bbeb9 ./offline_waymo_data/ --vehicles 2287 351 358
+```
+
+The files will be saved in the provided output directory. For each vehicle, there will be a PNG file of the birds-eye view image for each timestep, as well as a `.pkl` file of the list of observations.
+
+# Text-Based Browser For Waymo Dataset (waymo_utility.py)
 This is a text-based utility to browse and explore Waymo TFRecord datasets and export them to SMARTS scenarios.
 Users are able to tag scenarios based on their interactive behavior and export and import their tags to a JSON file.
 

@@ -4,18 +4,16 @@ import os
 import pickle
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from PIL import Image
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.waymo_map import WaymoMap
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.format_obs import FormatObs
 from smarts.sstudio import build_scenario
-from smarts.sstudio.types import MapSpec
 from smarts.zoo.agent_spec import AgentSpec
 
 logger = logging.getLogger(__file__)
@@ -70,7 +68,7 @@ def _record_data(
     current_vehicles,
     off_road_vehicles,
     selected_vehicles,
-    stb_obs,
+    stb_obs_wrapper,
 ):
     # Attach sensors to each vehicle
     valid_vehicles = (current_vehicles - off_road_vehicles) & selected_vehicles
@@ -83,7 +81,7 @@ def _record_data(
 
     # Get observations from each vehicle and record them
     obs, _, _, _ = smarts.observe_from(list(valid_vehicles))
-    obs = stb_obs.observation(obs)
+    obs = stb_obs_wrapper.observation(obs)
     t = smarts.elapsed_sim_time
     for car, car_obs in obs.items():
         collected_data.setdefault(car, {}).setdefault(t, {})
@@ -102,14 +100,7 @@ def main(
     output_dir: Path,
     scenarios_dir: Path,
     vehicle_ids: Optional[List[int]] = None,
-    headless: bool = True,
 ):
-    logger.info(f"Loading map from {dataset_file}, scenario {scenario_id}")
-    map_source = f"{dataset_file}#{scenario_id}"
-    map_spec = MapSpec(map_source, 1.0)
-    road_map = WaymoMap.from_spec(map_spec)
-    assert road_map is not None
-
     # Create & build a SMARTS scenario
     smarts_scenario_dir = scenarios_dir / f"waymo_{scenario_id}"
     if not os.path.exists(smarts_scenario_dir):
@@ -126,7 +117,7 @@ def main(
         scenarios=scenarios,
         agent_specs={"DummyAgent": AGENT_SPEC},
     )
-    std_obs_env = FormatObs(env=dummy_env)
+    stb_obs_wrapper = FormatObs(env=dummy_env)
 
     # The actual SMARTS instance to be used for the simulation
     smarts = SMARTS(
@@ -164,7 +155,7 @@ def main(
             current_vehicles,
             off_road_vehicles,
             selected_vehicles,
-            std_obs_env,
+            stb_obs_wrapper,
         )
 
         while True:
@@ -184,7 +175,7 @@ def main(
                 current_vehicles,
                 off_road_vehicles,
                 selected_vehicles,
-                std_obs_env,
+                stb_obs_wrapper,
             )
 
         # Save recorded observations as pickle files
@@ -218,14 +209,12 @@ if __name__ == "__main__":
 
     # Parse arguments and ensure paths and directories are valid
     args = parser.parse_args()
+    scenario_id = args.scenario_id
 
     dataset_file = Path(args.dataset_file)
     if not os.path.exists(dataset_file):
         logger.error(f"Dataset file does not exist: {dataset_file}")
         exit(1)
-
-    scenario_id = args.scenario_id
-    assert type(scenario_id) == str
 
     output_base_dir = Path(args.output_dir)
     output_dir = output_base_dir / scenario_id
