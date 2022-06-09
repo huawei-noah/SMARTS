@@ -12,7 +12,12 @@ class FilterObs(gym.ObservationWrapper):
             {
                 agent_id: gym.spaces.Dict(
                     {
-                        "rgb": agent_obs_space["rgb"],
+                        "rgb": gym.spaces.Box(
+                            low=0,
+                            high=255,
+                            shape=(agent_obs_space["rgb"].shape[-1],) + agent_obs_space["rgb"].shape[:-1],
+                            dtype=np.uint8,
+                        ), 
                         "goal_error": agent_obs_space["mission"]["goal_pos"],
                     }
                 )
@@ -30,6 +35,7 @@ class FilterObs(gym.ObservationWrapper):
         wrapped_obs = {}
         for agent_id, agent_obs in obs.items():
             rgb = agent_obs["rgb"]
+            rgb = rgb.transpose(2, 0, 1) # Channel first
             goal_error = agent_obs["mission"]["goal_pos"] - agent_obs["ego"]["pos"]
             wrapped_obs.update(
                 {
