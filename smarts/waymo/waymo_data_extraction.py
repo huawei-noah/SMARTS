@@ -88,7 +88,7 @@ def _record_data(
     current_vehicles,
     off_road_vehicles,
     selected_vehicles,
-    stb_obs_wrapper,
+    std_obs_wrapper,
 ):
     # Attach sensors to each vehicle
     valid_vehicles = (current_vehicles - off_road_vehicles) & selected_vehicles
@@ -101,7 +101,7 @@ def _record_data(
 
     # Get observations from each vehicle and record them
     obs, _, _, _ = smarts.observe_from(list(valid_vehicles))
-    obs = stb_obs_wrapper.observation(obs)
+    obs = std_obs_wrapper.observation(obs)
     t = smarts.elapsed_sim_time
     for car, car_obs in obs.items():
         collected_data.setdefault(car, {}).setdefault(t, {})
@@ -151,7 +151,7 @@ def main(
         scenarios=scenarios,
         agent_specs={"DummyAgent": AGENT_SPEC},
     )
-    stb_obs_wrapper = FormatObs(env=dummy_env)
+    std_obs_wrapper = FormatObs(env=dummy_env)
 
     # The actual SMARTS instance to be used for the simulation
     smarts = SMARTS(
@@ -190,7 +190,7 @@ def main(
             current_vehicles,
             off_road_vehicles,
             selected_vehicles,
-            stb_obs_wrapper,
+            std_obs_wrapper,
         )
 
         while True:
@@ -210,7 +210,7 @@ def main(
                 current_vehicles,
                 off_road_vehicles,
                 selected_vehicles,
-                stb_obs_wrapper,
+                std_obs_wrapper,
             )
 
         # Save recorded observations as pickle files
