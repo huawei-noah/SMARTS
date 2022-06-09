@@ -10,14 +10,19 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMoni
 
 
 def make(config: Dict[str, Any]) -> gym.Env:
+    
+
     # Create environment
     env = gym.make(
         "smarts.env:multi_scenario-v0",
+        scenario = config["scenario"],
+        img_meters=config["img_meters"],
+        img_pixels=config["img_pixels"],
+        wrappers = config["wrappers"],
+        action_space = config["action_space"],
         headless=not config["head"],  # If False, enables Envision display.
         visdom=config["visdom"],  # If True, enables Visdom display.
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
-        img_meters=config["img_meters"],
-        img_pixels=config["img_pixels"],
     )
 
     # Wrap env with action, reward, and observation wrapper

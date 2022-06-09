@@ -10,7 +10,7 @@ from typing import Any, Dict
 import gym
 import stable_baselines3 as sb3lib
 import torch as th
-from intersection import env as intersection_env
+from multi_scenario import env as multi_scenario_env
 from ruamel.yaml import YAML
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -54,8 +54,8 @@ def main(args: argparse.Namespace):
         raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
 
     # Make training and evaluation environments.
-    env = intersection_env.make(config=config)
-    eval_env = intersection_env.make(config=config)
+    env = multi_scenario_env.make(config=config)
+    eval_env = multi_scenario_env.make(config=config)
 
     # Run training or evaluation.
     run(env=env, eval_env=eval_env, config=config)

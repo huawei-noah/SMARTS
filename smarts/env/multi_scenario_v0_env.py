@@ -240,7 +240,7 @@ def get_env_specs(scenario: str):
                 / "straight"
                 / "3lane_cruise_multi_agent"
             ),
-            "num_agent": 2,
+            "num_agent": 3,
             "done_criteria": DoneCriteria(
                 collision=True,
                 off_road=True,

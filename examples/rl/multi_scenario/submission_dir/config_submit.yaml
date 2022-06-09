@@ -1,0 +1,21 @@
+
+# `policy` paths are with respect to the `submission_dir`
+
+1_to_2lane_left_turn_c:
+  policy: "./1_to_2lane_left_turn_c"
+  wrappers:
+    - 
+1_to_2lane_left_turn_t:
+  policy: "./1_to_2lane_left_turn_t"
+3lane_cruise_multi_agent:
+  policy: "./3lane_cruise_multi_agent"
+3lane_cruise_single_agent:
+  policy: "./3lane_cruise_single_agent"
+3lane_cut_off:
+  policy: "./3lane_cut_off"
+3lane_merge_multi_agent:
+  policy: "./3lane_merge_multi_agent"
+3lane_merge_single_agent:
+  policy: "./3lane_merge_single_agent"
+3lane_overtake:
+  policy: "./3lane_overtake"
