@@ -481,28 +481,24 @@ class AgentManager:
             agent_model.initial_speed,
             boid=boid,
         )
-
-        matching_providers = [
-            provider
-            for provider in sim.providers
-            if agent_interface.action_space in provider.action_spaces
-        ]
-        if matching_providers:
-            assert (
-                len(matching_providers) == 1
-            ), f"Found {matching_providers} for action space {agent_interface.action_space}"
-            provider = matching_providers[0]
-            provider.create_vehicle(
-                VehicleState(
-                    vehicle_id=vehicle.id,
-                    vehicle_type=vehicle.vehicle_type,
-                    vehicle_config_type="passenger",  # XXX: vehicles in history missions will have a type
-                    pose=vehicle.pose,
-                    dimensions=vehicle.chassis.dimensions,
-                    source=provider.source_str,
-                    role=ActorRole.SocialAgent,
-                )
+        role = ActorRole.SocialAgent
+        for provider in sim.providers:
+            if agent_interface.action_space not in provider.action_spaces:
+                continue
+            state = VehicleState(
+                vehicle_id=vehicle.id,
+                vehicle_type=vehicle.vehicle_type,
+                vehicle_config_type="passenger",  # XXX: vehicles in history missions will have a type
+                pose=vehicle.pose,
+                dimensions=vehicle.chassis.dimensions,
+                source=provider.source_str,
+                role=role,
             )
+            if provider.can_accept_vehicle(state):
+                provider.add_vehicle(state)
+                break
+        else:
+            assert False, f"could not find suitable provider supporting role={role} for action space {agent_interface.action_space}"
 
         self._agent_interfaces[agent_id] = agent_interface
         self._social_agent_data_models[agent_id] = agent_model

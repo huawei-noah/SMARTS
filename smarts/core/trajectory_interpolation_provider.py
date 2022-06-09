@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, Optional, Sequence, Set, Tuple
 
 import numpy as np
 
@@ -26,6 +26,7 @@ from smarts.core.agents_provider import AgentsProvider
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.provider import ProviderState
+from smarts.core.road_map import RoadMap
 from smarts.core.vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
@@ -72,6 +73,9 @@ class TrajectoryInterpolationProvider(AgentsProvider):
     def teardown(self):
         self._next_provider_state = None
 
+    def manages_vehicle(self, vehicle_id: str) -> bool:
+        return False
+
     def step(self, provider_actions: Dict, dt, elapsed_sim_time) -> ProviderState:
         """[summary]
 
@@ -100,7 +104,7 @@ class TrajectoryInterpolationProvider(AgentsProvider):
 
         return provider_state
 
-    def create_vehicle(self, provider_vehicle: VehicleState):
+    def add_vehicle(self, provider_vehicle: VehicleState, route: Optional[Sequence[RoadMap.Route]] = None):
         pass
 
     @staticmethod

@@ -19,9 +19,10 @@
 # THE SOFTWARE.
 from dataclasses import dataclass, field
 from enum import IntFlag
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from .controllers import ActionSpaceType
+from .road_map import RoadMap
 from .scenario import Scenario
 from .vehicle import VehicleState
 
@@ -96,8 +97,16 @@ class Provider:
         """Synchronize with state managed by other Providers."""
         raise NotImplementedError
 
-    def create_vehicle(self, provider_vehicle: VehicleState):
-        """Create a new vehicle within and managed by this provider."""
+    def can_accept_vehicle(self, state: VehicleState) -> bool:
+        """Whether this Provider can take control of an existing vehicle
+        with state that was previously managed by another Provider.
+        The state.role field should indicate the desired role, not the
+        previous role."""
+        return False
+
+    def add_vehicle(self, provider_vehicle: VehicleState, route: Optional[Sequence[RoadMap.Route]] = None):
+        """Management of the vehicle with state is being transferred to this Provider.
+        Will only be done if can_accept_vehicle() has returned True."""
         raise NotImplementedError
 
     def reset(self):
@@ -138,3 +147,13 @@ class Provider:
         """This property should be used to fill in the source field
         of all VehicleState objects created/managed by this Provider."""
         return self.__class__.__name__
+
+    def manages_vehicle(self, vehicle_id: str) -> bool:
+        """Returns True iff the vehicle referenced by vehicle_id is managed by this Provider."""
+        raise NotImplementedError
+
+    def remove_vehicle(self, vehicle_id: str):
+        """Remove the given vehicle from the provider."""
+        raise NotImplementedError
+
+

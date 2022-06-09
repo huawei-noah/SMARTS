@@ -19,11 +19,13 @@
 # THE SOFTWARE.
 
 import logging
-from typing import Any, Dict, List, Set
+from functools import lru_cache
+from typing import Any, Dict, List, Optional, Sequence, Set
 
 from .controllers import ActionSpaceType, Controllers
 from .provider import Provider, ProviderState
-from .vehicle import VehicleState
+from .road_map import RoadMap
+from .vehicle import ActorRole, VehicleState
 
 
 class AgentsProvider(Provider):
@@ -146,11 +148,31 @@ class AgentsProvider(Provider):
         # TAI:  double-check that here?
         return self._provider_state
 
-    def create_vehicle(self, provider_vehicle: VehicleState):
+    def can_accept_vehicle(self, state: VehicleState) -> bool:
+        return state.role == ActorRole.SocialAgent or state.role == ActorRole.EgoAgent
+
+    def add_vehicle(self, provider_vehicle: VehicleState, route: Optional[Sequence[RoadMap.Route]] = None):
+        provider_vehicle.source = self.source_str
         agent_id = self._sim.vehicle_index.actor_id_from_vehicle_id(
             provider_vehicle.vehicle_id
         )
         self._my_agent_vehicles.setdefault(agent_id, []).append(provider_vehicle)
+
+    @lru_cache(maxsize=4)
+    def _agent_for_vehicle(self, vehicle_id: str) -> Optional[str]:
+        for agent_id, vss in self._my_agent_vehicles.items():
+            for vs in vss:
+                if vs.vehicle_id == vehicle_id:
+                    return agent_id
+        return None
+
+    def manages_vehicle(self, vehicle_id: str) -> bool:
+        return self._agent_for_vehicle(vehicle_id) is not None
+
+    def remove_vehicle(self, vehicle_id: str):
+        agent_id = self._agent_for_vehicle(vehicle_id)
+        if agent_id:
+            del self._my_agent_vehicles[agent_id]
 
 
 class AgentPhysicsProvider(AgentsProvider):

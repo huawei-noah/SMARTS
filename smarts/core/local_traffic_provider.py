@@ -46,10 +46,6 @@ from .utils.math import (
 from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
-# TODO:  Provider hand-off
-# TODO:     - need to be able to "add_vehicle_with_state()" instead of using xml tags
-# TODO:     - need Provider interface to ask if hand-off is possible
-# TODO:     - update role appropriately
 # TODO:  debug traffic jams
 # TODO:  add tests:
 # TODO:     - test_traffic_simulation.py
@@ -169,7 +165,7 @@ class LocalTrafficProvider(TrafficProvider):
                 flow["route_id"] = self._cache_route_lengths(route)
 
     def _add_actor_in_flow(self, flow: Dict[str, Any]) -> bool:
-        new_actor = _TrafficActor(flow, self)
+        new_actor = _TrafficActor.from_flow(flow, self)
         new_actor_bbox = new_actor.bbox(True)
         for reserved_area in self._reserved_areas.values():
             if reserved_area.intersects(new_actor_bbox):
@@ -266,7 +262,7 @@ class LocalTrafficProvider(TrafficProvider):
             if psv.source != self.source_str
         }
         for jack in hijacked:
-            self.remove_traffic_vehicle(jack)
+            self.remove_vehicle(jack)
         self._other_vehicles = dict()
         for vs in provider_state.vehicles:
             my_actor = self._my_actors.get(vs.vehicle_id)
@@ -289,11 +285,11 @@ class LocalTrafficProvider(TrafficProvider):
     def destroy(self):
         pass
 
-    def remove_traffic_vehicle(self, vehicle_id: str):
+    def remove_vehicle(self, vehicle_id: str):
         # called when agent hijacks this vehicle
         assert (
             vehicle_id in self._my_actors
-        ), f"remove_traffic_vehicle() called for non-tracked vehicle id '{vehicle_id}'"
+        ), f"remove_vehicle() called for non-tracked vehicle id '{vehicle_id}'"
         del self._my_actors[vehicle_id]
 
     def reserve_traffic_location_for_vehicle(
@@ -315,13 +311,13 @@ class LocalTrafficProvider(TrafficProvider):
             return
         assert False, f"unknown vehicle_id: {vehicle_id}"
 
-    def vehicle_route(self, vehicle_id: str) -> Optional[Sequence[str]]:
+    def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
         traffic_actor = self._my_actors.get(vehicle_id)
         if traffic_actor:
-            return traffic_actor.route
+            return traffic_actor.route[-1]
         other = self._other_vehicles.get(vehicle_id)
         if other:
-            return other[1]
+            return other[1][-1]
         assert False, f"unknown vehicle_id: {vehicle_id}"
         return None
 
@@ -330,6 +326,17 @@ class LocalTrafficProvider(TrafficProvider):
         return lane_offsets.setdefault(
             lane.lane_id, lane.offset_along_lane(vs.pose.point)
         )
+
+    def can_accept_vehicle(self, state: VehicleState) -> bool:
+        return state.role == ActorRole.Social or state.role == ActorRole.Unknown
+
+    def add_vehicle(self, provider_vehicle: VehicleState, route: Optional[Sequence[RoadMap.Route]] = None):
+        provider_vehicle.source = self.source_str
+        provider_vehicle.role = ActorRole.Social
+        xfrd_actor = _TrafficActor.from_state(provider_vehicle, self, route)
+        self._my_actors[xfrd_actor.actor_id] = xfrd_actor
+        self._logger.info(f"traffic actor {xfrd_actor.actor_id} transferred to {self.source_str}.")
+
 
 
 # TAI:  inner class?
@@ -344,11 +351,11 @@ class _TrafficActor:
         self._all_vehicle_states: Sequence[VehicleState] = []
         self._flow: Dict[str, Any] = flow
         self._vtype: Dict[str, Any] = flow["vtype"]
-        self._route: Sequence[str] = flow["route"]
-        self._route_id: int = flow["route_id"]
         self._route_ind: int = 0
         self._done_with_route: bool = False
         self._off_route: bool = False
+        self._route: Sequence[str] = flow["route"]
+        self._route_id: int = flow["route_id"]
 
         self._lane_speed: Dict[int, Tuple[float, float]] = dict()
         self._lane_windows: Dict[int, _TrafficActor._LaneWindow] = dict()
@@ -377,29 +384,54 @@ class _TrafficActor:
             )
             self._cutin_prob = 0.0
 
-        vclass = self._vtype["vClass"]
+        self._owner._actors_created += 1
+
+    @classmethod
+    def from_flow(cls, flow: Dict[str, Any], owner: LocalTrafficProvider):
+        vclass = flow["vtype"]["vClass"]
         dimensions = VEHICLE_CONFIGS[vclass].dimensions
         vehicle_type = vclass if vclass != "passenger" else "car"
-        self._lane, self._offset = self._resolve_flow_pos(flow, "depart", dimensions)
-        position = self._lane.from_lane_coord(RefLinePoint(s=self._offset))
-        heading = vec_to_radians(self._lane.vector_at_offset(self._offset)[:2])
-        init_speed = self._resolve_flow_speed(flow)
-        self._state = VehicleState(
-            vehicle_id=f"{self._vtype['id']}-{self._owner._actors_created}",
+
+        new_actor = cls(flow, owner)
+        new_actor._lane, new_actor._offset = new_actor._resolve_flow_pos(flow, "depart", dimensions)
+        position = new_actor._lane.from_lane_coord(RefLinePoint(s=new_actor._offset))
+        heading = vec_to_radians(new_actor._lane.vector_at_offset(new_actor._offset)[:2])
+        init_speed = new_actor._resolve_flow_speed(flow)
+        new_actor._state = VehicleState(
+            vehicle_id=f"{new_actor._vtype['id']}-{new_actor._owner._actors_created}",
             pose=Pose.from_center(position, Heading(heading)),
             dimensions=dimensions,
             vehicle_type=vehicle_type,
             vehicle_config_type=vclass,
             speed=init_speed,
             linear_acceleration=np.array((0.0, 0.0, 0.0)),
-            source=self._owner.source_str,
+            source=new_actor._owner.source_str,
             role=ActorRole.Social,
         )
-        self._dest_lane, self._dest_offset = self._resolve_flow_pos(
+        new_actor._dest_lane, new_actor._dest_offset = new_actor._resolve_flow_pos(
             flow, "arrival", dimensions
         )
+        return new_actor
 
-        self._owner._actors_created += 1
+    @classmethod
+    def from_state(cls, state: VehicleState, owner: LocalTrafficProvider, route: Optional[RoadMap.Route]):
+        if not route:
+            route = owner.road_map.random_route()
+        route_roads = [road.road_id for road in route.roads]
+        route_id = owner._cache_route_lengths(route_roads)
+        flow = dict()
+        flow["vtype"] = dict()
+        flow["route"] = route_roads
+        flow["route_id"] = route_id
+        flow["arrivalLane"] = "0"
+        flow["arrivalPos"] = "random"
+        # use default values for everything else in flow dict(s)...
+        new_actor = _TrafficActor(flow, owner)
+        new_actor.state = state
+        new_actor._lane = owner.road_map.nearest_lane(state.pose.point)
+        new_actor._offset = new_actor._lane.offset_along_lane(state.pose.point)
+        new_actor._dest_lane, new_actor._dest_offset = new_actor._resolve_flow_pos(flow, "arrival", state.dimensions.length)
+        return new_actor
 
     def _resolve_flow_pos(
         self, flow: Dict[str, Any], depart_arrival: str, dimensions: Dimensions
@@ -518,7 +550,10 @@ class _TrafficActor:
     @property
     def acceleration(self) -> float:
         """Returns the current (linear) acceleration."""
+        if self._state.linear_acceleration is None:
+            return 0.0
         return np.linalg.norm(self._state.linear_acceleration)
+
 
     @lru_cache(maxsize=2)
     def bbox(self, cushion_length: bool = False) -> Polygon:

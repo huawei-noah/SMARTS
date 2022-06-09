@@ -136,6 +136,12 @@ class TrafficHistory:
         query = "SELECT MAX(sim_time) FROM Trajectory WHERE vehicle_id = ?"
         return self._query_val(float, query, params=(vehicle_id,))
 
+    @lru_cache(maxsize=32)
+    def vehicle_final_position(self, vehicle_id: str) -> Tuple[float, float]:
+        """Returns the final (x,y) position for the specified vehicle in the history data."""
+        query = "SELECT position_x, position_y FROM Trajectory WHERE vehicle_id=? AND sim_time=(SELECT MAX(sim_time) FROM Trajectory WHERE vehicle_id=?)"
+        return self._query_val(tuple, query, params=(vehicle_id,vehicle_id,))
+
     def decode_vehicle_type(self, vehicle_type: int) -> str:
         """Convert from the dataset type id to their config type.
 

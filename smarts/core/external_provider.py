@@ -74,9 +74,6 @@ class ExternalProvider(Provider):
     def sync(self, provider_state: ProviderState):
         pass
 
-    def create_vehicle(self, provider_vehicle: VehicleState):
-        pass
-
     def teardown(self):
         self.reset()
 
@@ -93,3 +90,10 @@ class ExternalProvider(Provider):
                 )
             result.append(vehicle.state)
         return result
+
+    def manages_vehicle(self, vehicle_id: str) -> bool:
+        for vs in self._ext_vehicle_states:
+            if vs.vehicle_id == vehicle_id:
+                return True
+        return False
+

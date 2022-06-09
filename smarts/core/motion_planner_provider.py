@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Any, Dict, Set
+from typing import Any, Dict, Optional, Sequence, Set
 
 import numpy as np
 
@@ -26,6 +26,7 @@ from .bezier_motion_planner import BezierMotionPlanner
 from .controllers import ActionSpaceType
 from .coordinates import Heading, Pose
 from .provider import ProviderState
+from .road_map import RoadMap
 from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
@@ -152,16 +153,16 @@ class MotionPlannerProvider(AgentsProvider):
 
         assert (
             new_ids == set()
-        ), f"{new_ids} should have been created ahead of time with self.create_vehicle(..)"
+        ), f"{new_ids} should have been created ahead of time with self.add_vehicle(..)"
 
         for smarts_id in removed_ids:
-            self._destroy_vehicle(smarts_id)
+            self.remove_vehicle(smarts_id)
 
         # We should be synced up
         assert set(active_agents.keys()) == set(self._vehicle_id_to_index.keys())
         assert set(active_agents.keys()) == set(self._vehicle_index_to_id.values())
 
-    def create_vehicle(self, provider_vehicle: VehicleState):
+    def add_vehicle(self, provider_vehicle: VehicleState, route: Optional[Sequence[RoadMap.Route]] = None):
         assert self._is_setup
 
         vehicle_id = provider_vehicle.vehicle_id
@@ -180,12 +181,15 @@ class MotionPlannerProvider(AgentsProvider):
     def _alloc_index(self) -> int:
         return len(self._poses)
 
-    def _destroy_vehicle(self, vehicle_id):
+    def remove_vehicle(self, vehicle_id: str):
         vehicle_index = self._vehicle_id_to_index.pop(vehicle_id)
         removed_vehicle_id = self._vehicle_index_to_id.pop(vehicle_index)
         assert removed_vehicle_id == vehicle_id
-
         # TODO: Currently we leak poses for the duration of the episode.
         #       This is probably fine for now since we tend to have fairly small scale sims.
         #       In the future we would like to have smarter index allocation (re-use destroyed vehicle indices)
         #       or perform periodic garbage collection to remove unused vehicle indices
+
+    def manages_vehicle(self, vehicle_id: str) -> bool:
+        return vehicle_id in self._vehicle_id_to_index
+

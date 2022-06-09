@@ -467,6 +467,7 @@ class VehicleIndex:
         Vehicle.detach_all_sensors_from_vehicle(vehicle)
         # pytype: enable=attribute-error
 
+        # TAI: del self._sensor_states[vehicle_id]
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = self._controlled_by[v_index][0]
         entity = _ControlEntity(*entity)
@@ -574,7 +575,7 @@ class VehicleIndex:
         # HACK: Directly remove the vehicle from the traffic provider
         for traffic_sim in sim.traffic_sims:
             if traffic_sim.manages_vehicle(vehicle.id):
-                traffic_sim.remove_traffic_vehicle(vehicle.id)
+                traffic_sim.remove_vehicle(vehicle.id)
 
         # Take control of the new vehicle
         self._enfranchise_actor(

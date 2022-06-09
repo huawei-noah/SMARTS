@@ -29,14 +29,6 @@ class TrafficProvider(Provider):
     """A TrafficProvider is a Provider that controls/owns a (sub)set of vehicles
     that all share the same action space."""
 
-    def manages_vehicle(self, vehicle_id: str) -> bool:
-        """Returns True iff the vehicle referenced by vehicle_id is owned by this Provider."""
-        raise NotImplementedError
-
-    def remove_traffic_vehicle(self, vehicle_id: str):
-        """Remove the given vehicle from the traffic simulation."""
-        raise NotImplementedError
-
     def reserve_traffic_location_for_vehicle(
         self,
         vehicle_id: str,
@@ -54,8 +46,8 @@ class TrafficProvider(Provider):
         """Set a new route for the given vehicle."""
         raise NotImplementedError
 
-    def vehicle_route(self, vehicle_id: str) -> Optional[Sequence[str]]:
-        """Get the route of the given vehicle."""
+    def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
+        """Get the final road_id in the route of the given vehicle."""
         raise NotImplementedError
 
     def destroy(self):

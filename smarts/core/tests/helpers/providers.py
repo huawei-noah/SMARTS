@@ -17,9 +17,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Sequence, Set
+from typing import Optional, Sequence, Set
 
 from smarts.core.controllers import ActionSpaceType
+from smarts.core.road_map import RoadMap
 from smarts.core.provider import Provider, ProviderState
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
@@ -62,7 +63,7 @@ class MockProvider(Provider):
 
         return self._next_provider_state
 
-    def create_vehicle(self, provider_vehicle: VehicleState):
+    def add_vehicle(self, provider_vehicle: VehicleState, route: Optional[Sequence[RoadMap.Route]] = None):
         pass
 
     def reset(self):
@@ -70,3 +71,11 @@ class MockProvider(Provider):
 
     def teardown(self):
         self._next_provider_state = None
+
+    def manages_vehicle(self, vehicle_id: str) -> bool:
+        return True
+
+    def remove_vehicle(self, vehicle_id: str):
+        pass
+
+

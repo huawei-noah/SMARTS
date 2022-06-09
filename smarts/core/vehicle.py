@@ -163,8 +163,6 @@ class Vehicle:
         self._chassis: Chassis = chassis
         self._vehicle_config_type = vehicle_config_type
         self._action_space = action_space
-        # self._controller_state = TODO
-        # self._sensors_state = TODO
         self._speed = None
 
         self._meta_create_sensor_functions()
@@ -677,8 +675,9 @@ class Vehicle:
                 assert (
                     getattr(self, f"_{sensor_name}", None) is None
                 ), f"{sensor_name} already added to {self.id}"
-                setattr(self, f"_{sensor_name}", sensor)
-                self._sensors[sensor_name] = sensor
+                if getattr(self, f"_{sensor_name}", None) is None:
+                    setattr(self, f"_{sensor_name}", sensor)
+                    self._sensors[sensor_name] = sensor
 
             def detach_sensor(self, sensor_name=sensor_name):
                 sensor = getattr(self, f"_{sensor_name}", None)

@@ -115,13 +115,6 @@ class SMARTS:
         self._renderer = None
         self._envision: Optional[EnvisionClient] = envision
         self._visdom: Optional[VisdomClient] = visdom
-        self._traffic_sims = traffic_sims
-        if traffic_sim:
-            warnings.warn(
-                "SMARTS traffic_sim property has been deprecated in favor of traffic_sims.  Please update your code.",
-                category=DeprecationWarning,
-            )
-            self._traffic_sims += [traffic_sim]
         self._external_provider: ExternalProvider = None
         self._resetting = False
         self._reset_required = False
@@ -141,11 +134,19 @@ class SMARTS:
         self._trajectory_interpolation_provider = TrajectoryInterpolationProvider()
         self._provider_recovery_flags: Dict[Provider, ProviderRecoveryFlags] = {}
 
+        self._traffic_sims = traffic_sims
+        self._traffic_sims.append(self._traffic_history_provider)
+        if traffic_sim:
+            warnings.warn(
+                "SMARTS traffic_sim property has been deprecated in favor of traffic_sims.  Please update your code.",
+                category=DeprecationWarning,
+            )
+            self._traffic_sims += [traffic_sim]
+
         self._providers: List[Provider] = []
         self.add_provider(self._agent_physics_provider)
         self.add_provider(self._direct_control_provider)
         self.add_provider(self._motion_planner_provider)
-        self.add_provider(self._traffic_history_provider)
         self.add_provider(self._trajectory_interpolation_provider)
         for traffic_sim in self._traffic_sims:
             self._insert_provider(
@@ -537,30 +538,23 @@ class SMARTS:
         It is not possible to take over a vehicle already controlled by another agent.
         """
         self._check_valid()
-        # Check if this is a history vehicle
-        history_veh_id = self._traffic_history_provider.get_history_id(vehicle_id)
-        canonical_veh_id = history_veh_id if history_veh_id else vehicle_id
 
         assert not self.vehicle_index.vehicle_is_hijacked(
-            canonical_veh_id
-        ), f"Vehicle has already been hijacked: {canonical_veh_id}"
+            vehicle_id
+        ), f"Vehicle has already been hijacked: {vehicle_id}"
         assert (
-            not canonical_veh_id in self.vehicle_index.agent_vehicle_ids()
-        ), f"Can't hijack vehicle that is already controlled by an agent: {canonical_veh_id}"
-
-        # Remove vehicle from traffic history provider
-        if history_veh_id:
-            self._traffic_history_provider.set_replaced_ids([vehicle_id])
+            not vehicle_id in self.vehicle_index.agent_vehicle_ids()
+        ), f"Can't hijack vehicle that is already controlled by an agent: {vehicle_id}"
 
         # Switch control to agent
         plan = Plan(self.road_map, mission)
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         self.vehicle_index.start_agent_observation(
-            self, canonical_veh_id, agent_id, interface, plan
+            self, vehicle_id, agent_id, interface, plan
         )
         vehicle = self.vehicle_index.switch_control_to_agent(
             self,
-            canonical_veh_id,
+            vehicle_id,
             agent_id,
             boid=False,
             recreate=recreate,
@@ -570,29 +564,56 @@ class SMARTS:
 
         return vehicle
 
+    def _remove_vehicle_from_providers(self, vehicle_id: str):
+        for provider in self.providers:
+            if provider.manages_vehicle(vehicle_id):
+                provider.remove_vehicle(vehicle_id)
+
     def create_vehicle_in_providers(
         self,
         vehicle: Vehicle,
         agent_id: str,
         is_ego: bool = False,
     ):
-        """Notify all providers of the existence of a vehicle."""
-        role = ActorRole.EgoAgent if is_ego else ActorRole.SocialAgent
+        """Notify all providers of the existence of an agent-controlled vehicle,
+        one of which should assume management of it."""
         self._check_valid()
+        self._remove_vehicle_from_providers(vehicle.id)
+        role = ActorRole.EgoAgent if is_ego else ActorRole.SocialAgent
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         for provider in self.providers:
             if interface.action_space in provider.action_spaces:
-                provider.create_vehicle(
-                    VehicleState(
-                        vehicle_id=vehicle.id,
-                        vehicle_config_type="passenger",
-                        pose=vehicle.pose,
-                        dimensions=vehicle.chassis.dimensions,
-                        speed=vehicle.speed,
-                        source=provider.source_str,
-                        role=role,
-                    )
+                state = VehicleState(
+                    vehicle_id=vehicle.id,
+                    vehicle_config_type="passenger",
+                    pose=vehicle.pose,
+                    dimensions=vehicle.chassis.dimensions,
+                    speed=vehicle.speed,
+                    source=provider.source_str,
+                    role=role,
                 )
+                if provider.can_accept_vehicle(state):
+                    # just use the first provider we find that accepts it
+                    ss = self._vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+                    provider.add_vehicle(state, ss.plan.route)
+                    return
+        # there should always be an AgentsProvider present, so we just assert here
+        assert False, f"could not find a provider to accept vehicle {vehicle.id} for agent {agent_id} with role={role}"
+
+    def provider_relinquishing_vehicle(self, state: VehicleState, cur_route: Optional[RoadMap.Route]):
+        """Find a new provider for a vehicle previously managed by an agent."""
+        self._remove_vehicle_from_providers(state.vehicle_id)
+
+        # now try to find one who will take it...
+        state.role = ActorRole.Social  # TODO ASSUMPTION:  could use Unknown here.
+        for provider in self.providers:
+            if provider.can_accept_vehicle(state):
+                # just use the first provider we find that accepts it
+                provider.add_vehicle(state, cur_route)
+                return
+        # TODO:  traffic_history_provider seems to re-add it ?
+        self._log.warning(f"could not find a provider to assume control of vehicle {state.vehicle_id} with role={state.role} after being relinquished.  removing it.")
+        self._teardown_vehicles({state.vehicle_id})
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()
@@ -1320,7 +1341,6 @@ class SMARTS:
 
                 mission_route_geometry = None
                 if self._agent_manager.is_ego(agent_id):
-                    assert v.role == ActorRole.EgoAgent
                     actor_type = envision_types.TrafficActorType.Agent
                     if filter.actor_data_filter["mission_route_geometry"].enabled:
                         mission_route_geometry = (
@@ -1329,7 +1349,6 @@ class SMARTS:
                             ).plan.route.geometry
                         )
                 else:
-                    assert v.role == ActorRole.SocialAgent
                     actor_type = envision_types.TrafficActorType.SocialAgent
 
                 traffic[v.vehicle_id] = envision_types.TrafficActorState(
@@ -1354,7 +1373,6 @@ class SMARTS:
             elif v.vehicle_id in self._vehicle_index.social_vehicle_ids():
                 # this is a social vehicle
                 if filter.simulation_data_filter["traffic"].enabled:
-                    assert v.role == ActorRole.Social
                     veh_type = vt_mapping.get(
                         v.vehicle_config_type
                         if v.vehicle_config_type
