@@ -79,5 +79,6 @@ class MockProvider(Provider):
     def manages_vehicle(self, vehicle_id: str) -> bool:
         return True
 
-    def remove_vehicle(self, vehicle_id: str):
+    def stop_managing(self, vehicle_id: str):
         pass
+

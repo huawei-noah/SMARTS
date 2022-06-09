@@ -165,7 +165,7 @@ class VehicleIndex:
         return set(vehicle_ids)
 
     @cache
-    def agent_vehicle_ids(self):
+    def agent_vehicle_ids(self) -> FrozenSet[str]:
         """A set of vehicle ids associated with an agent."""
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Agent
@@ -572,10 +572,14 @@ class VehicleIndex:
 
         # Remove the old vehicle
         self.teardown_vehicles_by_vehicle_ids([vehicle.id])
-        # HACK: Directly remove the vehicle from the traffic provider
+        # HACK: Directly remove the vehicle from the traffic provider (should do this via the sim instead)
         for traffic_sim in sim.traffic_sims:
             if traffic_sim.manages_vehicle(vehicle.id):
-                traffic_sim.remove_vehicle(vehicle.id)
+                # TAI:  we probably should call "remove_vehicle(vehicle.id)" here instead,
+                # and then call "add_vehicle(new_vehicle.state)", but since
+                # the old and new vehicle-id and state are supposed to be the same
+                # we take this short-cut.
+                traffic_sim.stop_managing(vehicle.id)
 
         # Take control of the new vehicle
         self._enfranchise_actor(

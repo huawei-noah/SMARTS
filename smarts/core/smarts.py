@@ -567,7 +567,7 @@ class SMARTS:
     def _remove_vehicle_from_providers(self, vehicle_id: str):
         for provider in self.providers:
             if provider.manages_vehicle(vehicle_id):
-                provider.remove_vehicle(vehicle_id)
+                provider.stop_managing(vehicle_id)
 
     def create_vehicle_in_providers(
         self,
@@ -578,6 +578,8 @@ class SMARTS:
         """Notify all providers of the existence of an agent-controlled vehicle,
         one of which should assume management of it."""
         self._check_valid()
+        # TODO: the vehicle shouldn't be removed from Sumo via Traci, it just needs to not be part of self._sumo_vehicle_ids
+        # TODO:     previously, it was left there but just removed from the ProviderState in step_providers()
         self._remove_vehicle_from_providers(vehicle.id)
         role = ActorRole.EgoAgent if is_ego else ActorRole.SocialAgent
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
@@ -615,7 +617,6 @@ class SMARTS:
                 # just use the first provider we find that accepts it
                 provider.add_vehicle(state, cur_route)
                 return
-        # TODO:  traffic_history_provider seems to re-add it ?
         self._log.warning(
             f"could not find a provider to assume control of vehicle {state.vehicle_id} with role={state.role} after being relinquished.  removing it."
         )
@@ -1113,10 +1114,9 @@ class SMARTS:
                 provider_state = self._handle_provider(provider, provider_error)
                 raise
 
-            if isinstance(provider, TrafficProvider):
-                # Remove agent vehicles from provider vehicles
-                # TODO: better to always removed hijacked/trapped vehicles from TrafficProvider immediately!
-                provider_state.filter(agent_vehicle_ids)
+            # by this point, "stop_managing()" should have been called for the hijacked vehicle on all TrafficProviders
+            assert not isinstance(provider, TrafficProvider) or not provider_state.contains(agent_vehicle_ids), f"{agent_vehicle_ids} in {provider_state.vehicles}"
+
             accumulated_provider_state.merge(provider_state)
 
         self._harmonize_providers(accumulated_provider_state)

@@ -162,7 +162,6 @@ class AgentsProvider(Provider):
         )
         self._my_agent_vehicles.setdefault(agent_id, []).append(provider_vehicle)
 
-    @lru_cache(maxsize=4)
     def _agent_for_vehicle(self, vehicle_id: str) -> Optional[str]:
         for agent_id, vss in self._my_agent_vehicles.items():
             for vs in vss:
@@ -173,7 +172,7 @@ class AgentsProvider(Provider):
     def manages_vehicle(self, vehicle_id: str) -> bool:
         return self._agent_for_vehicle(vehicle_id) is not None
 
-    def remove_vehicle(self, vehicle_id: str):
+    def stop_managing(self, vehicle_id: str):
         agent_id = self._agent_for_vehicle(vehicle_id)
         if agent_id:
             del self._my_agent_vehicles[agent_id]

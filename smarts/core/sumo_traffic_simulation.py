@@ -35,6 +35,7 @@ from smarts.core import gen_id
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.provider import ProviderRecoveryFlags, ProviderState
+from smarts.core.road_map import RoadMap
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils import networking
@@ -100,6 +101,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self._cumulative_sim_seconds = 0
         self._non_sumo_vehicle_ids = set()
         self._sumo_vehicle_ids = set()
+        self._hijacked = set()
         self._is_setup = False
         self._last_trigger_time = -1000000
         self._num_dynamic_ids_used = 0
@@ -370,6 +372,7 @@ class SumoTrafficSimulation(TrafficProvider):
             self._cumulative_sim_seconds = 0
         self._non_sumo_vehicle_ids = set()
         self._sumo_vehicle_ids = set()
+        self._hijacked = set()
         self._is_setup = False
         self._num_dynamic_ids_used = 0
         self._to_be_teleported = dict()
@@ -417,7 +420,7 @@ class SumoTrafficSimulation(TrafficProvider):
 
     def _sync(self, provider_state: ProviderState):
         provider_vehicles = {v.vehicle_id: v for v in provider_state.vehicles}
-        external_vehicles = [v for v in provider_state.vehicles if v.source != "SUMO"]
+        external_vehicles = [v for v in provider_state.vehicles if v.source != self.source_str]
         external_vehicle_ids = {v.vehicle_id for v in external_vehicles}
 
         # Represents current state
@@ -429,7 +432,7 @@ class SumoTrafficSimulation(TrafficProvider):
             self._non_sumo_vehicle_ids - external_vehicle_ids - traffic_vehicle_ids
         )
         external_vehicles_that_have_joined = (
-            external_vehicle_ids - self._non_sumo_vehicle_ids - traffic_vehicle_ids
+            external_vehicle_ids - self._non_sumo_vehicle_ids - traffic_vehicle_ids - self._hijacked
         )
         vehicles_that_have_become_external = (
             traffic_vehicle_ids & external_vehicle_ids - self._non_sumo_vehicle_ids
@@ -665,6 +668,9 @@ class SumoTrafficSimulation(TrafficProvider):
             if vehicle_id in self._reserved_areas:
                 del self._reserved_areas[vehicle_id]
 
+        for vehicle_id in self._hijacked:
+            sumo_vehicle_state.pop(vehicle_id)
+
         self._sumo_vehicle_ids = (
             set(sumo_vehicle_state.keys()) - self._non_sumo_vehicle_ids
         )
@@ -777,6 +783,10 @@ class SumoTrafficSimulation(TrafficProvider):
     ):
         self._reserved_areas[vehicle_id] = reserved_location
 
+    def stop_managing(self, vehicle_id: str):
+        self._hijacked.add(vehicle_id)
+        self._sumo_vehicle_ids.remove(vehicle_id)
+
     def remove_vehicle(self, vehicle_id: str):
         if not self.connected:
             return
@@ -784,7 +794,10 @@ class SumoTrafficSimulation(TrafficProvider):
             self._traci_conn.vehicle.remove(vehicle_id)
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
-        self._sumo_vehicle_ids.remove(vehicle_id)
+        if vehicle_id in self._sumo_vehicle_ids:
+            self._sumo_vehicle_ids.remove(vehicle_id)
+        if vehicle_id in self._hijacked:
+            self._hijacked.remove(vehicle_id)
 
     def _shape_of_vehicle(self, sumo_vehicle_state, vehicle_id):
         p = sumo_vehicle_state[vehicle_id][tc.VAR_POSITION]
@@ -813,3 +826,25 @@ class SumoTrafficSimulation(TrafficProvider):
             departLane=lane_index,
         )
         return vehicle_id
+
+    def can_accept_vehicle(self, state: VehicleState) -> bool:
+        # We only accept transferred vehicles we previously used to own that
+        # have since been relinquished to us by the agent that hijacked them.
+        # (This is a conservative policy to avoid "glitches"; we may relax it
+        # in the future.)
+        return state.role == ActorRole.Social and state.vehicle_id in self._hijacked
+
+    def add_vehicle(
+        self,
+        provider_vehicle: VehicleState,
+        route: Optional[Sequence[RoadMap.Route]] = None,
+    ):
+        assert provider_vehicle.vehicle_id in self._hijacked
+        self._hijacked.remove(provider_vehicle.vehicle_id)
+        self._sumo_vehicle_ids.add(provider_vehicle.vehicle_id)
+        provider_vehicle.source = self.source_str
+        provider_vehicle.role = ActorRole.Social
+        self._log.info(
+            f"traffic actor {provider_vehicle.vehicle_id} transferred to {self.source_str}."
+        )
+

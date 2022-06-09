@@ -68,6 +68,13 @@ class ProviderState:
             except ValueError:
                 continue
 
+    def contains(self, vehicle_ids: Set[str]) -> bool:
+        """Returns True iff any of the vehicle_ids are contained in this ProviderState .
+        Returns False for empty-set containment."""
+        provider_vehicle_ids = {v.vehicle_id for v in self.vehicles}
+        missing = vehicle_ids & provider_vehicle_ids
+        return bool(missing)
+
 
 class Provider:
     """A Provider manages a (sub)set of actors (e.g., vehicles) that all share the same action space(s).
@@ -156,6 +163,13 @@ class Provider:
         """Returns True iff the vehicle referenced by vehicle_id is managed by this Provider."""
         raise NotImplementedError
 
-    def remove_vehicle(self, vehicle_id: str):
-        """Remove the given vehicle from the provider."""
+    def stop_managing(self, vehicle_id: str):
+        """Tells the Provider to stop managing the specified vehicle,
+        it will be managed by another Provider now."""
         raise NotImplementedError
+
+    def remove_vehicle(self, vehicle_id: str):
+        """The vehicle is being removed from the simulation."""
+        if manages_vehicle(vehicle_id):
+            self.stop_managing(vehicle_id)
+        # can be overridden to do more cleanup as necessary

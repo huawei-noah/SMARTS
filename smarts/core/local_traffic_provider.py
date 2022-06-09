@@ -262,7 +262,7 @@ class LocalTrafficProvider(TrafficProvider):
             if psv.source != self.source_str
         }
         for jack in hijacked:
-            self.remove_vehicle(jack)
+            self.stop_managing(jack)
         self._other_vehicles = dict()
         for vs in provider_state.vehicles:
             my_actor = self._my_actors.get(vs.vehicle_id)
@@ -285,11 +285,11 @@ class LocalTrafficProvider(TrafficProvider):
     def destroy(self):
         pass
 
-    def remove_vehicle(self, vehicle_id: str):
+    def stop_managing(self, vehicle_id: str):
         # called when agent hijacks this vehicle
         assert (
             vehicle_id in self._my_actors
-        ), f"remove_vehicle() called for non-tracked vehicle id '{vehicle_id}'"
+        ), f"stop_managing() called for non-tracked vehicle id '{vehicle_id}'"
         del self._my_actors[vehicle_id]
 
     def reserve_traffic_location_for_vehicle(

@@ -156,7 +156,7 @@ class MotionPlannerProvider(AgentsProvider):
         ), f"{new_ids} should have been created ahead of time with self.add_vehicle(..)"
 
         for smarts_id in removed_ids:
-            self.remove_vehicle(smarts_id)
+            self.stop_managing(smarts_id)
 
         # We should be synced up
         assert set(active_agents.keys()) == set(self._vehicle_id_to_index.keys())
@@ -185,14 +185,14 @@ class MotionPlannerProvider(AgentsProvider):
     def _alloc_index(self) -> int:
         return len(self._poses)
 
-    def remove_vehicle(self, vehicle_id: str):
+    # TODO: Currently we leak poses for the duration of the episode.
+    #       This is probably fine for now since we tend to have fairly small scale sims.
+    #       In the future we would like to have smarter index allocation (re-use destroyed vehicle indices)
+    #       or perform periodic garbage collection to remove unused vehicle indices
+    def stop_managing(self, vehicle_id: str):
         vehicle_index = self._vehicle_id_to_index.pop(vehicle_id)
         removed_vehicle_id = self._vehicle_index_to_id.pop(vehicle_index)
         assert removed_vehicle_id == vehicle_id
-        # TODO: Currently we leak poses for the duration of the episode.
-        #       This is probably fine for now since we tend to have fairly small scale sims.
-        #       In the future we would like to have smarter index allocation (re-use destroyed vehicle indices)
-        #       or perform periodic garbage collection to remove unused vehicle indices
 
     def manages_vehicle(self, vehicle_id: str) -> bool:
         return vehicle_id in self._vehicle_id_to_index

@@ -137,8 +137,10 @@ class TrafficHistoryProvider(TrafficProvider):
         self._last_step_vehicles = vehicle_ids
         return ProviderState(vehicles=vehicles)
 
-    @cached_property
+    @property
     def _history_vehicle_ids(self) -> Set[str]:
+        if not self._histories:
+            return set()
         return {
             self._dbid_to_vehicle_id(hvid) for hvid in self._histories.all_vehicle_ids()
         }
@@ -150,7 +152,7 @@ class TrafficHistoryProvider(TrafficProvider):
     def manages_vehicle(self, vehicle_id: str) -> bool:
         return vehicle_id in self._my_vehicles
 
-    def remove_vehicle(self, vehicle_id: str):
+    def stop_managing(self, vehicle_id: str):
         self._replaced_vehicle_ids.add(vehicle_id)
 
     def reserve_traffic_location_for_vehicle(
