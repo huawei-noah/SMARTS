@@ -29,14 +29,13 @@ from smarts.zoo.agent_spec import AgentSpec
 
 class LocalAgent(BufferAgent):
     """A remotely controlled agent."""
-
-    act_executor = futures.Executor.ThreadPoolExecutor(max_workers=1)
     
     def __init__(self):
         # Track the last action future.
         #self._act_future = None
         self._agent = None
         self._agent_spec = None
+        self._act_executor = None
     
     def act(self, obs):
         """Call the agent's act function asynchronously and return a Future."""
@@ -47,15 +46,14 @@ class LocalAgent(BufferAgent):
 
             return adapted_action
       
-        act_future = act_executor.submit(obtain_future,obs)
+        act_future = self._act_executor.submit(obtain_future,obs)
         return act_future
 
     def start(self, agent_spec: AgentSpec):
         """Send the AgentSpec to the agent runner."""
-        #spec = worker_pb2.Specification(payload=cloudpickle.dumps(agent_spec))
+        self._act_executor = futures.Executor.ThreadPoolExecutor(max_workers=1)
         self._agent_spec = agent_spec
         self._agent = self._agent_spec.build_agent()
-        # Cloudpickle used only for the agent_spec to allow for serialization of lambdas.
 
     def terminate(self):
-        pass
+        self._act_executor.shutdown(wait=True)
