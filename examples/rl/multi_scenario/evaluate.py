@@ -30,3 +30,7 @@ def evaluate(env, policy, step, summary_writer, config):
     print(f"Evaluating. Episode average return: {avg_return.numpy()[0]:.2f}")
 
     return
+
+
+# for overtakeing scenario, the agent must start and stop at the same lane 
+# 
