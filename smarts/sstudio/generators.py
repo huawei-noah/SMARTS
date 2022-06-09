@@ -33,7 +33,8 @@ from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from . import types
 
 
-SECONDS_PER_HOUR_INV = 1/60/60
+SECONDS_PER_HOUR_INV = 1 / 60 / 60
+
 
 class InvalidRoute(Exception):
     """An exception given if a route cannot be successfully plotted."""
@@ -244,7 +245,6 @@ class TrafficGenerator:
             for route in set(resolved_routes.values()):
                 doc.stag("route", id=route.id, edges=" ".join(route.roads))
 
-
             # We don't de-dup flows since defining the same flow multiple times should
             # create multiple traffic flows. Since IDs can't be reused, we also unique
             # them here.
@@ -257,7 +257,9 @@ class TrafficGenerator:
                     if flow.randomly_spaced:
                         rate_option = dict(vehsPerHour=vehs_per_hour)
                     else:
-                        rate_option = dict(probability=vehs_per_hour * SECONDS_PER_HOUR_INV)
+                        rate_option = dict(
+                            probability=vehs_per_hour * SECONDS_PER_HOUR_INV
+                        )
                     doc.stag(
                         "flow",
                         id="{}-{}-{}-{}".format(
