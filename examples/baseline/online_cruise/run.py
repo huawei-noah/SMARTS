@@ -19,6 +19,7 @@ warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=ImportWarning)
 warnings.simplefilter("ignore", category=ResourceWarning)
 yaml = YAML(typ="safe")
+import tensorflow as tf
 
 
 def main(args: argparse.Namespace):
@@ -85,8 +86,9 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
             verbose=1,
             tensorboard_log=logdir / "tensorboard",
             use_sde=True,
-            device='cpu',
+            device='auto',
         )
+        print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
         model.learn(total_timesteps=config["train_steps"], callback = checkpoint_callback)
 
     mean_reward, std_reward = evaluate_policy(
