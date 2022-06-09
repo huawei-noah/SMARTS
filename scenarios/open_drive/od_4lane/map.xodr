@@ -8,7 +8,7 @@
     </input>
 
     <output>
-        <opendrive-output value="scenarios/sumo/opendrive/4lane_map.xodr"/>
+        <opendrive-output value="scenarios/open_drive/od4_lane/map.xodr"/>
     </output>
 
     <processing>

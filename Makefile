@@ -73,8 +73,8 @@ run: build-scenario
 build-all-scenarios:
 	scl scenario build-all scenarios
 
-.PHONY: build-smarts-scenarios
-build-smarts-scenarios:
+.PHONY: build-sumo-scenarios
+build-sumo-scenarios:
 	scl scenario build scenarios/sumo
 
 .PHONY: build-sanity-scenarios
