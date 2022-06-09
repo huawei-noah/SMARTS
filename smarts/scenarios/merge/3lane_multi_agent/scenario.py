@@ -35,7 +35,8 @@ from smarts.sstudio.types import (
 
 normal = TrafficActor(
     name="car",
-    min_gap = Distribution(mean=2.5, sigma=3),
+    speed=Distribution(mean=1, sigma=1.2),
+    min_gap = Distribution(mean=3, sigma=1.2),
 )
 
 # flow_name = (start_lane, end_lane,)
