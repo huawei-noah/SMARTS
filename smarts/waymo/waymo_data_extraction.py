@@ -27,6 +27,7 @@ from tempfile import TemporaryDirectory
 from typing import List, Optional
 
 from PIL import Image
+from smarts.core import traffic_history
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
 from smarts.core.scenario import Scenario
@@ -168,7 +169,7 @@ def main(
         off_road_vehicles = set()
         selected_vehicles = set()
 
-        if vehicle_ids is None:
+        if not vehicle_ids:
             assert scenario.traffic_history is not None
             ego_id = scenario.traffic_history.ego_vehicle_id
             selected_vehicles.add(f"history-vehicle-{ego_id}")
@@ -176,8 +177,16 @@ def main(
                 f"No vehicle IDs specifed. Defaulting to ego vehicle ({ego_id})"
             )
         else:
+            all_vehicles = set(scenario.traffic_history.all_vehicle_ids())
             for v_id in vehicle_ids:
-                selected_vehicles.add(f"history-vehicle-{v_id}")
+                if v_id not in all_vehicles:
+                    logger.warning(f"Vehicle {v_id} not in scenario")
+                else:
+                    selected_vehicles.add(f"history-vehicle-{v_id}")
+
+        if not selected_vehicles:
+            logger.error("No valid vehicles specified. Exiting.")
+            return
 
         _ = smarts.reset(scenario)
         current_vehicles = smarts.vehicle_index.social_vehicle_ids(
