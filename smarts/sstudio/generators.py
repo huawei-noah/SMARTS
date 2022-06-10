@@ -255,11 +255,10 @@ class TrafficGenerator:
                     vehs_per_hour = flow.rate * (weight / total_weight)
                     rate_option = {}
                     if flow.randomly_spaced:
-                        rate_option = dict(vehsPerHour=vehs_per_hour)
+                        vehs_per_sec = vehs_per_hour * SECONDS_PER_HOUR_INV
+                        rate_option = dict(probability=vehs_per_sec)
                     else:
-                        rate_option = dict(
-                            probability=vehs_per_hour * SECONDS_PER_HOUR_INV
-                        )
+                        rate_option = dict(vehsPerHour=vehs_per_hour)
                     doc.stag(
                         "flow",
                         id="{}-{}-{}-{}".format(
