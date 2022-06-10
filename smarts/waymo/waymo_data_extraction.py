@@ -24,13 +24,14 @@ import os
 import pickle
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from PIL import Image
 from smarts.core import traffic_history
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
 from smarts.core.scenario import Scenario
+from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.format_obs import FormatObs
@@ -101,7 +102,11 @@ def _record_data(
             off_road_vehicles.add(veh_id)
 
     # Get observations from each vehicle and record them
+    obs: Dict[str, Observation] = {}
     obs, _, _, _ = smarts.observe_from(list(valid_vehicles))
+    for id_, obs in obs:
+        if obs[id_].ego_vehicle_state.lane_index == None:
+            del obs[id_]
     obs = std_obs_wrapper.observation(obs)
     t = smarts.elapsed_sim_time
     for car, car_obs in obs.items():
