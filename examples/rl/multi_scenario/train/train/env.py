@@ -85,4 +85,9 @@ def make_all(config: Dict[str, Any]) -> gym.Env:
         info_keywords=("is_success",),
     )
 
+    # print("2222222222222222222222222222222222244")
+    # print("obs space:", env.observation_space)
+    # print("act space:", env.action_space)
+    # print("33333333333333333333333333333333333355")
+
     return env

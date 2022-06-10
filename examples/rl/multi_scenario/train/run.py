@@ -100,7 +100,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             env=env,
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
-            **(network.getattr(config["alg_kwargs"])(config))
+            **(getattr(network, config["alg_kwargs"])(config)),
         )
         model.learn(
             total_timesteps=config["train_steps"],
