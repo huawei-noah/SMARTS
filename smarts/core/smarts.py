@@ -1115,7 +1115,11 @@ class SMARTS:
                 raise
 
             # by this point, "stop_managing()" should have been called for the hijacked vehicle on all TrafficProviders
-            assert not isinstance(provider, TrafficProvider) or not provider_state.contains(agent_vehicle_ids), f"{agent_vehicle_ids} in {provider_state.vehicles}"
+            assert not isinstance(
+                provider, TrafficProvider
+            ) or not provider_state.contains(
+                agent_vehicle_ids
+            ), f"{agent_vehicle_ids} in {provider_state.vehicles}"
 
             accumulated_provider_state.merge(provider_state)
 

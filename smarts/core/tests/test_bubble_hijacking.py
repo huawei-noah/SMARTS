@@ -120,8 +120,8 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles):
     for _ in range(300):
         smarts.step({})
         for vehicle in index.vehicles:
+            position = Point(vehicle.position)
             for bubble, geometry in zip(bubbles, geometries):
-                position = Point(vehicle.position)
                 in_bubble = position.within(geometry.bubble)
                 is_shadowing = (
                     index.shadow_actor_id_from_vehicle_id(vehicle.id) is not None

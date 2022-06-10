@@ -420,7 +420,9 @@ class SumoTrafficSimulation(TrafficProvider):
 
     def _sync(self, provider_state: ProviderState):
         provider_vehicles = {v.vehicle_id: v for v in provider_state.vehicles}
-        external_vehicles = [v for v in provider_state.vehicles if v.source != self.source_str]
+        external_vehicles = [
+            v for v in provider_state.vehicles if v.source != self.source_str
+        ]
         external_vehicle_ids = {v.vehicle_id for v in external_vehicles}
 
         # Represents current state
@@ -432,7 +434,10 @@ class SumoTrafficSimulation(TrafficProvider):
             self._non_sumo_vehicle_ids - external_vehicle_ids - traffic_vehicle_ids
         )
         external_vehicles_that_have_joined = (
-            external_vehicle_ids - self._non_sumo_vehicle_ids - traffic_vehicle_ids - self._hijacked
+            external_vehicle_ids
+            - self._non_sumo_vehicle_ids
+            - traffic_vehicle_ids
+            - self._hijacked
         )
         vehicles_that_have_become_external = (
             traffic_vehicle_ids & external_vehicle_ids - self._non_sumo_vehicle_ids
@@ -668,11 +673,11 @@ class SumoTrafficSimulation(TrafficProvider):
             if vehicle_id in self._reserved_areas:
                 del self._reserved_areas[vehicle_id]
 
-        for vehicle_id in self._hijacked:
-            sumo_vehicle_state.pop(vehicle_id)
-
+        # Note: we cannot just pop() the self._hijacked from sumo_vehicle_state here,
+        # as this (bizarrely) affects the self._traci_conn.vehicle.getAllSubscriptionResults() call
+        # in _sync() below!
         self._sumo_vehicle_ids = (
-            set(sumo_vehicle_state.keys()) - self._non_sumo_vehicle_ids
+            set(sumo_vehicle_state.keys()) - self._non_sumo_vehicle_ids - self._hijacked
         )
         provider_vehicles = []
 
@@ -685,6 +690,8 @@ class SumoTrafficSimulation(TrafficProvider):
         ).reshape(-1, 2)
 
         for i, (sumo_id, sumo_vehicle) in enumerate(sumo_vehicle_state.items()):
+            if sumo_id in self._hijacked:
+                continue
             # XXX: We can safely rely on iteration order over dictionaries being
             #      stable on py3.7.
             #      See: https://www.python.org/downloads/release/python-370/
@@ -785,7 +792,6 @@ class SumoTrafficSimulation(TrafficProvider):
 
     def stop_managing(self, vehicle_id: str):
         self._hijacked.add(vehicle_id)
-        self._sumo_vehicle_ids.remove(vehicle_id)
 
     def remove_vehicle(self, vehicle_id: str):
         if not self.connected:
@@ -841,10 +847,8 @@ class SumoTrafficSimulation(TrafficProvider):
     ):
         assert provider_vehicle.vehicle_id in self._hijacked
         self._hijacked.remove(provider_vehicle.vehicle_id)
-        self._sumo_vehicle_ids.add(provider_vehicle.vehicle_id)
         provider_vehicle.source = self.source_str
         provider_vehicle.role = ActorRole.Social
         self._log.info(
             f"traffic actor {provider_vehicle.vehicle_id} transferred to {self.source_str}."
         )
-

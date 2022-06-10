@@ -81,4 +81,3 @@ class MockProvider(Provider):
 
     def stop_managing(self, vehicle_id: str):
         pass
-
