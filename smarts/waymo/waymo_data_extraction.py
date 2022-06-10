@@ -102,7 +102,6 @@ def _record_data(
             off_road_vehicles.add(veh_id)
 
     # Get observations from each vehicle and record them
-    obs: Dict[str, Observation] = {}
     obs, _, _, _ = smarts.observe_from(list(valid_vehicles))
     for id_ in obs:
         if obs[id_].ego_vehicle_state.lane_index == None:
