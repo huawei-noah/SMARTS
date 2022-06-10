@@ -21,7 +21,7 @@ import logging
 from copy import copy, deepcopy
 from enum import IntEnum
 from io import StringIO
-from typing import FrozenSet, Iterator, NamedTuple, Optional, Tuple, Union
+from typing import FrozenSet, Iterator, NamedTuple, Optional, Set, Tuple, Union
 
 import numpy as np
 import tableprint as tp
@@ -165,7 +165,7 @@ class VehicleIndex:
         return set(vehicle_ids)
 
     @cache
-    def agent_vehicle_ids(self) -> FrozenSet[str]:
+    def agent_vehicle_ids(self) -> Set[str]:
         """A set of vehicle ids associated with an agent."""
         vehicle_ids = self._controlled_by[
             self._controlled_by["actor_type"] == _ActorType.Agent
