@@ -47,7 +47,6 @@ route_opt = [
 ]
 
 # Traffic combinations = 3C2 + 3C3 = 3 + 1 = 4
-# Duplicate traffic = traffic_combinations * 50 = 200
 min_flows = 2
 max_flows = 3
 route_comb = [
@@ -66,9 +65,9 @@ for name, routes in enumerate(route_comb):
                     end=("gneE3", r[1], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=60 * random.uniform(6, 10),
+                rate=60 * random.uniform(10, 20),
                 # Random flow start time, between x and y seconds.
-                begin=random.uniform(0, 8),
+                begin=random.uniform(0, 5),
                 # For an episode with maximum_episode_steps=3000 and step
                 # time=0.1s, maximum episode time=300s. Hence, traffic set to
                 # end at 900s, which is greater than maximum episode time of
@@ -83,7 +82,7 @@ for name, routes in enumerate(route_comb):
 ego_missions = [
     Mission(Route(begin=("gneE3", 0, 10), end=("gneE3", 0, "max")), start_time=19),
     Mission(Route(begin=("gneE3", 1, 10), end=("gneE3", 1, "max")), start_time=21),
-    Mission(Route(begin=("gneE3", 2, 10), end=("gneE3", 2, "max")), start_time=15),
+    Mission(Route(begin=("gneE3", 2, 10), end=("gneE3", 2, "max")), start_time=17),
 ]
 
 gen_scenario(

@@ -45,7 +45,8 @@ def main(num_episodes, max_episode_steps=50):
             for agent_id, agent_obs in observations.items():
                 if agent_obs.events.reached_goal:
                     print(f"{agent_id} : HURRAY REACHED GOAL !!!")
-
+                if agent_obs.events.collisions:
+                    print(f"{agent_id} : collided !!!")
     env.close()
 
 

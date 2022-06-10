@@ -46,11 +46,10 @@ route_opt = [
 ]
 
 # Traffic combinations = 1C1 = 1
-# Duplicate traffic = traffic_combinations * 50 = 50
 min_flows = 1
 max_flows = 1
 route_comb = [
-    com * 50
+    com
     for elems in range(min_flows, max_flows + 1)
     for com in combinations(route_opt, elems)
 ]
@@ -65,9 +64,9 @@ for name, routes in enumerate(route_comb):
                     end=("gneE3", r[1], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=10 * random.uniform(3, 5),
+                rate=60 * random.uniform(10, 20),
                 # Random flow start time, between x and y seconds.
-                begin=random.uniform(0, 7),
+                begin=random.uniform(0, 5),
                 # For an episode with maximum_episode_steps=3000 and step
                 # time=0.1s, maximum episode time=300s. Hence, traffic set to
                 # end at 900s, which is greater than maximum episode time of
