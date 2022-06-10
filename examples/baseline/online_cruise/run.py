@@ -70,7 +70,8 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
 
     if config["mode"] == "evaluate":
         print("Start evaluation.")
-        model = PPO.load(logdir / "model.zip")
+        model = PPO.load(logdir / "rl_model_200000_steps.zip")
+        print('run_here')
     elif config["mode"] == "train" and args.logdir:
         print("Start training from existing model.")
         model = PPO.load(logdir / "model.zip")
@@ -93,7 +94,7 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
         model.learn(total_timesteps=config["train_steps"], callback = checkpoint_callback)
 
     mean_reward, std_reward = evaluate_policy(
-        model, env, n_eval_episodes=config["eval_eps"], deterministic=True
+        model, env, n_eval_episodes=2, deterministic=True
     )
     print(f"Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
 
