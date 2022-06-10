@@ -41,7 +41,7 @@ AGENT3 = "agent3"
 def scenario():
     scenario = Scenario(
         scenario_root="scenarios/loop",
-        traffic_specs=["basic.rou.xml"],
+        traffic_specs=["scenarios/loop/traffic/basic.rou.xml"],
     )
     return scenario
 
