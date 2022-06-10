@@ -14,6 +14,7 @@ from ruamel.yaml import YAML
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from train import env as multi_scenario_env
+from train import network
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -99,7 +100,7 @@ def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
             env=env,
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
-            **config["alg_kwargs"],
+            **(network.getattr(config["alg_kwargs"])(config))
         )
         model.learn(
             total_timesteps=config["train_steps"],
