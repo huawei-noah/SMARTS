@@ -22,5 +22,6 @@ smarts:
   # Policy
   alg: PPO  # Stable Baselines3 algorithm.
   alg_kwargs:
-    policy: "CnnPolicy" # Network policy.
+    # policy: "CnnPolicy" # Network policy.
+    policy: "MultiInputPolicy"
     target_kl: 0.1

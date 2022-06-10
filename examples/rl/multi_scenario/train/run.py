@@ -57,9 +57,6 @@ def main(args: argparse.Namespace):
     env = multi_scenario_env.make_all(config=config)
     eval_env = multi_scenario_env.make_all(config=config)
 
-    import sys
-    sys.exit(2)
-
     # Run training or evaluation.
     run(env=env, eval_env=eval_env, config=config)
     env.close()

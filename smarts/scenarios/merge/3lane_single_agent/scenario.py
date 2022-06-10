@@ -47,11 +47,10 @@ route_opt = [
 ]
 
 # Traffic combinations = 3C2 + 3C3 = 3 + 1 = 4
-# Duplicate traffic = traffic_combinations * 50 = 200
 min_flows = 2
 max_flows = 3
 route_comb = [
-    com * 50
+    com
     for elems in range(min_flows, max_flows + 1)
     for com in combinations(route_opt, elems)
 ]

@@ -156,6 +156,15 @@ def multi_scenario_v0_env(
 
 
 def get_env_specs(scenario: str):
+    """Returns the appropriate environment parameters for each scenario.
+
+    Args:
+        scenario (str): Scenario
+
+    Returns:
+        Dict[str, Any]: A parameter dictionary.
+    """
+
     if scenario == "1_to_2lane_left_turn_c":
         return {
             "scenario": str(
@@ -193,7 +202,6 @@ def get_env_specs(scenario: str):
                 not_moving=False,
                 agents_alive=None,
             ),
-
         }
     elif scenario == "3lane_merge_multi_agent":
         return {

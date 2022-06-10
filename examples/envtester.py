@@ -40,8 +40,8 @@ def main(num_episodes, max_episode_steps=50):
                 for agent_id, agent_obs in observations.items()
             }
             observations, rewards, dones, infos = env.step(actions)
-            import time
-            time.sleep(0.1)
+            # import time
+            # time.sleep(0.1)
             for agent_id, agent_obs in observations.items():
                 if agent_obs.events.reached_goal:
                     print(f"{agent_id} : HURRAY REACHED GOAL !!!")

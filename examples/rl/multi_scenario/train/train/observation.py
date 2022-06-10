@@ -1,5 +1,5 @@
 from typing import Dict
-
+import math
 import gym
 import numpy as np
 from train.util import plotter3d
@@ -18,7 +18,18 @@ class FilterObs(gym.ObservationWrapper):
                             shape=(agent_obs_space["rgb"].shape[-1],) + agent_obs_space["rgb"].shape[:-1],
                             dtype=np.uint8,
                         ), 
-                        "goal_error": agent_obs_space["mission"]["goal_pos"],
+                        "goal_distance": gym.spaces.Box(
+                            low=-1e10, 
+                            high=+1e10,
+                            shape=(1,),
+                            dtype=np.float64,
+                        ),
+                        # "goal_heading": gym.spaces.Box(
+                        #     low=-math.pi, 
+                        #     high=math.pi,
+                        #     shape=(1,),
+                        #     dtype=np.float32,
+                        # ),
                     }
                 )
                 for agent_id, agent_obs_space in env.observation_space.spaces.items()
@@ -36,17 +47,34 @@ class FilterObs(gym.ObservationWrapper):
         for agent_id, agent_obs in obs.items():
             rgb = agent_obs["rgb"]
             rgb = rgb.transpose(2, 0, 1) # Channel first
-            goal_error = agent_obs["mission"]["goal_pos"] - agent_obs["ego"]["pos"]
+
+            goal_distance = np.array([np.linalg.norm(agent_obs["mission"]["goal_pos"] - agent_obs["ego"]["pos"])], dtype=np.float64)
+
+            ego_heading = (agent_obs["ego"]["heading"] + np.pi) % (2 * np.pi) - np.pi
+            
+            goal_x, goal_y = agent_obs["mission"]["goal_pos"][:2]
+            goal_angle = np.angle(goal_x+goal_y*1j) - np.pi/2   
+            goal_angle = (goal_angle + np.pi) % (2 * np.pi) - np.pi
+
+            goal_heading = goal_angle - ego_heading
+            goal_heading = (goal_heading + np.pi) % (2 * np.pi) - np.pi
+            goal_heading = np.array([goal_heading], dtype=np.float32)
+
             wrapped_obs.update(
                 {
                     agent_id: {
                         "rgb": np.uint8(rgb),
-                        "goal_error": np.float64(goal_error),
+                        "goal_distance": goal_distance,
+                        # "goal_heading": goal_heading,
                     }
                 }
             )
 
-            # plotter3d(wrapped_obs[agent_id]["rgb"], rgb_gray=3,channel_order="last",name="after",pause=-1, save=True)
+            # print(f"goal_angle {goal_angle*180/np.pi}")
+            # print(f"ego_heading {ego_heading*180/np.pi}")
+            print(f"goal_heading {goal_heading}")
+            print(f"goal_distance {goal_distance}")
+            # plotter3d(wrapped_obs[agent_id]["rgb"], rgb_gray=3, channel_order="first",name="after",pause=0, save=False)
 
         return wrapped_obs
 

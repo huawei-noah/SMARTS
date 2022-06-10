@@ -51,7 +51,7 @@ route_opt = [
 min_flows = 2
 max_flows = 3
 route_comb = [
-    com * 50
+    com
     for elems in range(min_flows, max_flows + 1)
     for com in combinations(route_opt, elems)
 ]
@@ -66,7 +66,7 @@ for name, routes in enumerate(route_comb):
                     end=("gneE3", r[1], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=10 * random.uniform(2, 5),
+                rate=60 * random.uniform(6, 10),
                 # Random flow start time, between x and y seconds.
                 begin=random.uniform(0, 8),
                 # For an episode with maximum_episode_steps=3000 and step
