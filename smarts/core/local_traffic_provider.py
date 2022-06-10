@@ -317,7 +317,7 @@ class LocalTrafficProvider(TrafficProvider):
             return traffic_actor.route[-1]
         other = self._other_vehicles.get(vehicle_id)
         if other:
-            return other[1][-1]
+            return other[1][-1] if other[1] else None
         assert False, f"unknown vehicle_id: {vehicle_id}"
         return None
 
