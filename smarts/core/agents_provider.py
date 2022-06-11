@@ -70,7 +70,7 @@ class AgentsProvider(Provider):
         missing_agents = self._my_agent_vehicles.keys() - agent_actions.keys()
         for agent_id in missing_agents:
             self._log.info(
-                f"agent {agent_id} no longer supplying actions, so provider will no longer manager its vehicle."
+                f"agent {agent_id} no longer supplying actions, so provider will no longer manage its vehicle."
             )
             del self._my_agent_vehicles[agent_id]
         boid_vehicles_map = {

@@ -420,19 +420,18 @@ class SumoTrafficSimulation(TrafficProvider):
 
     def _sync(self, provider_state: ProviderState):
         provider_vehicles = {v.vehicle_id: v for v in provider_state.vehicles}
-        external_vehicles = [
-            v for v in provider_state.vehicles if v.source != self.source_str
-        ]
-        external_vehicle_ids = {v.vehicle_id for v in external_vehicles}
+        external_vehicle_ids = {
+            v.vehicle_id for v in provider_state.vehicles if v.source != self.source_str
+        }
+        internal_vehicle_ids = {
+            v.vehicle_id for v in provider_state.vehicles if v.source == self.source_str
+        }
 
         # Represents current state
         traffic_vehicle_states = self._traci_conn.vehicle.getAllSubscriptionResults()
         traffic_vehicle_ids = set(traffic_vehicle_states)
 
         # State / ownership changes
-        external_vehicles_that_have_left = (
-            self._non_sumo_vehicle_ids - external_vehicle_ids - traffic_vehicle_ids
-        )
         external_vehicles_that_have_joined = (
             external_vehicle_ids
             - self._non_sumo_vehicle_ids
@@ -446,8 +445,13 @@ class SumoTrafficSimulation(TrafficProvider):
         #      because they've been destroyed from a collision. Presently we're not
         #      differentiating and will take over as social vehicles regardless.
         vehicles_that_have_become_internal = (
-            self._non_sumo_vehicle_ids - external_vehicle_ids
-        ) & traffic_vehicle_ids
+            internal_vehicle_ids & self._non_sumo_vehicle_ids & traffic_vehicle_ids
+        )
+        external_vehicles_that_have_left = (
+            self._non_sumo_vehicle_ids
+            - external_vehicle_ids
+            - vehicles_that_have_become_internal
+        )
 
         log = ""
         if external_vehicles_that_have_left:
