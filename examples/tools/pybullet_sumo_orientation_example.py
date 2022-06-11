@@ -31,6 +31,9 @@ def look_at(client, position=(0, 0, 0), top_down=True):
         )
 
 
+# pytype: disable=name-error
+
+
 def social_spin_on_bumper_cw(step, front_bumper_position, length):
     return Pose.from_front_bumper(
         np.array(front_bumper_position[:2]), Heading.from_sumo(step), length
@@ -109,6 +112,7 @@ def run(
             vehicles[v] = Vehicle(
                 id=v_id,
                 chassis=BoxChassis(
+                    pose=pose,
                     speed=0,
                     dimensions=vehicle_config.dimensions,
                     bullet_client=client,
@@ -118,7 +122,8 @@ def run(
         # Hide any additional vehicles
         for v in vehicle_ids_removed:
             veh = vehicles.pop(v, None)
-            veh.teardown()
+            if veh:
+                veh.teardown()
 
         for pv in current_provider_state.vehicles:
             vehicles[pv.vehicle_id].control(pv.pose, pv.speed)
@@ -130,6 +135,9 @@ def run(
         previous_vehicle_ids = current_vehicle_ids
 
     traffic_sim.teardown()
+
+
+# pytype: enable=name-error
 
 
 if __name__ == "__main__":
