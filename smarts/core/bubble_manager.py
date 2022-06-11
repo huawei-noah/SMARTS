@@ -541,7 +541,10 @@ class BubbleManager:
         else:
             agent_id = BubbleManager._make_social_agent_id(vehicle_id)
 
-        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
+        try:
+            agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
+        except KeyError:
+            return
         vehicle = sim.vehicle_index.switch_control_to_agent(
             sim,
             vehicle_id,
@@ -588,6 +591,8 @@ class BubbleManager:
         if bubble.is_boid and bubble.keep_alive:
             return
 
+        if shadow_agent_id == None:
+            return
         sim.teardown_agents_without_vehicles([shadow_agent_id])
 
     def _prepare_sensors_for_agent_control(

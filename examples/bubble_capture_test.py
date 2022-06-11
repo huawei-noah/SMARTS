@@ -21,7 +21,7 @@ NUM_EPISODES = 1
 
 class LaneFollowAgent(Agent):
     def act(self, obs: dict):
-        return [0, 1]
+        return [0, 0]
 
 def main(server_config):
     smarts = SMARTS(
@@ -40,7 +40,7 @@ def main(server_config):
     agent_manager.add_social_observation_callback(observation_callback, "bubble_watcher")
 
     for _ in range(NUM_EPISODES):
-        scenarios = ["scenarios/loop"]
+        scenarios = ["scenarios/loop_bubble_capture"]
         scenarios_iterator = Scenario.scenario_variations(scenarios, [])
         smarts.reset(next(scenarios_iterator))
         bubble_manager: BubbleManager = smarts._bubble_manager
