@@ -19,9 +19,9 @@ logging.basicConfig(level=logging.INFO)
 
 NUM_EPISODES = 1
 
-class LaneFollowAgent(Agent):
+class SpinningAgent(Agent):
     def act(self, obs: dict):
-        return [0, 0]
+        return [0, 0.1]
 
 def main(server_config):
     smarts = SMARTS(
@@ -30,7 +30,7 @@ def main(server_config):
         envision=None,
     )
 
-    agent = LaneFollowAgent()
+    agent = SpinningAgent()
     class obs_c:
         last_observations: Dict[str, Observation] = None
     def observation_callback(obs):
@@ -53,7 +53,6 @@ def main(server_config):
                 for agent_id in agent_ids:
                     if agent_id not in obs_c.last_observations:
                         continue
-                    print("hit")
                     agent_manager.reserve_social_agent_action(agent_id, agent.act(obs_c.last_observations[agent_id]))
             smarts.step({})
             bubbles = bubble_manager.bubbles
@@ -64,14 +63,14 @@ def main(server_config):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("local-service-example")
-    parser.add_argument(
-        "server_config",
-        help="A configuration file for the server",
-        type=str,
-        nargs=1,
-    )
+    # parser.add_argument(
+    #     "server_config",
+    #     help="A configuration file for the server",
+    #     type=str,
+    #     nargs=1,
+    # )
     args = parser.parse_args()
 
     main(
-        args.server_config
+        None, # args.server_config
     )
