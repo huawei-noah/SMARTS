@@ -64,6 +64,7 @@ class AgentCameraRGBRender(gym.Wrapper):
         return (obs, rewards, dones, infos)
 
     def render(self, mode="rgb_array", **kwargs):
+        """Render the given camera image in this environment."""
         super().render(mode, **kwargs)
 
         if mode == "rgb_array" and len(self._image_frame) > 0:

@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+#
 # The MIT License
 #
 # Copyright (c) 2016 OpenAI (https://openai.com)
@@ -38,6 +39,7 @@ from gym.wrappers.monitoring import video_recorder
 
 
 def capped_cubic_video_schedule(episode_id):
+    """Util"""
     if episode_id < 1000:
         return int(round(episode_id ** (1.0 / 3))) ** 3 == episode_id
     else:
@@ -45,6 +47,7 @@ def capped_cubic_video_schedule(episode_id):
 
 
 class RecordVideo(gym.Wrapper):
+    """A video recording wrapper."""
     def __init__(
         self,
         env,
@@ -84,12 +87,14 @@ class RecordVideo(gym.Wrapper):
         self.episode_id = 0
 
     def reset(self, **kwargs):
+        """Reset."""
         observations = super().reset(**kwargs)
         if not self.recording and self._video_enabled():
             self.start_video_recorder()
         return observations
 
     def start_video_recorder(self):
+        """Start video."""
         self.close_video_recorder()
 
         video_name = f"{self.name_prefix}-step-{self.step_id}"
@@ -114,6 +119,7 @@ class RecordVideo(gym.Wrapper):
             return self.episode_trigger(self.episode_id)
 
     def step(self, action):
+        """Step."""
         observations, rewards, dones, infos = super().step(action)
 
         # increment steps and episodes
@@ -143,12 +149,14 @@ class RecordVideo(gym.Wrapper):
         return observations, rewards, dones, infos
 
     def close_video_recorder(self) -> None:
+        """Ends recording."""
         if self.recording:
             self.video_recorder.close()
         self.recording = False
         self.recorded_frames = 1
 
     def close(self):
+        """Close."""
         self.close_video_recorder()
 
     def __del__(self):
