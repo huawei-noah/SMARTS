@@ -26,6 +26,8 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from shapely.affinity import rotate as shapely_rotate
+from shapely.geometry import Polygon, box as shapely_box
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
@@ -80,6 +82,20 @@ class VehicleState:
     linear_acceleration: Optional[np.ndarray] = None
     angular_acceleration: Optional[np.ndarray] = None
     role: ActorRole = ActorRole.Unknown
+
+    @property
+    def bbox(self) -> Polygon:
+        """Returns a bounding box around the vehicle."""
+        pos = self.pose.point
+        half_len = 0.5 * self.dimensions.length
+        half_width = 0.5 * self.dimensions.width
+        poly = shapely_box(
+            pos.x - half_width,
+            pos.y - half_len,
+            pos.x + half_width,
+            pos.y + half_len,
+        )
+        return shapely_rotate(poly, self.pose.heading, use_radians=True)
 
 
 @dataclass(frozen=True)

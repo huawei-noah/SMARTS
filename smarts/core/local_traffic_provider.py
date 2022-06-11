@@ -46,7 +46,6 @@ from .utils.math import (
 from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
-# TODO:  debug traffic jams
 # TODO:  add tests:
 # TODO:     - test_traffic_simulation.py
 # TODO:     - bubble hijacking
@@ -170,9 +169,11 @@ class LocalTrafficProvider(TrafficProvider):
         for reserved_area in self._reserved_areas.values():
             if reserved_area.intersects(new_actor_bbox):
                 return False
-        # TODO:  also don't appear on any other vehicles either!  (TAI: but for other_vehicles, we can't cache their bbox polygons)
         for actor in self._my_actors.values():
             if actor.bbox().intersects(new_actor_bbox):
+                return False
+        for other, _ in self._other_vehicles.values():
+            if other.bbox.intersects(new_actor_bbox):
                 return False
         self._my_actors[new_actor.actor_id] = new_actor
         self._logger.info(f"traffic actor {new_actor.actor_id} entered simulation")
@@ -353,6 +354,7 @@ class _TrafficActor:
         self._logger.setLevel(logging.INFO)
 
         self._owner = owner
+        self._state = None
         self._all_vehicle_states: Sequence[VehicleState] = []
         self._flow: Dict[str, Any] = flow
         self._vtype: Dict[str, Any] = flow["vtype"]
@@ -362,10 +364,14 @@ class _TrafficActor:
         self._route: Sequence[str] = flow["route"]
         self._route_id: int = flow["route_id"]
 
+        self._lane = None
+        self._offset = 0
         self._lane_speed: Dict[int, Tuple[float, float]] = dict()
         self._lane_windows: Dict[int, _TrafficActor._LaneWindow] = dict()
         self._lane_win: _TrafficActor._LaneWindow = None
         self._target_lane_win: _TrafficActor._LaneWindow = None
+        self._dest_lane = None
+        self._dest_offset = None
 
         self._min_space_cush = float(self._vtype.get("minGap", 2.5))
         speed_factor = float(self._vtype.get("speedFactor", 1.0))
@@ -378,13 +384,13 @@ class _TrafficActor:
         self._target_cutin_gap = 2.5 * self._min_space_cush
         self._aggressiveness = float(self._vtype.get("lcAssertive", 1.0))
         if self._aggressiveness <= 0:
-            self._log.warning(
+            self._logger.warning(
                 "non-positive value {self._aggressiveness} for 'assertive' lane-changing parameter will be ignored"
             )
             self._aggressiveness = 1.0
         self._cutin_prob = float(self._vtype.get("lcCutinProb", 0.0))
         if not 0.0 <= self._cutin_prob <= 1.0:
-            self._log.warning(
+            self._logger.warning(
                 "illegal probability {self._cutin_prob} for 'cutin_prob' lane-changing parameter will be ignored"
             )
             self._cutin_prob = 0.0
@@ -839,7 +845,7 @@ class _TrafficActor:
                 if self._cutting_into.lane != self._lane:
                     break
                 self._in_front_after_cutin_secs += dt
-                if self._in_front_secs < self._cutin_hold_secs:
+                if self._in_front_after_cutin_secs < self._cutin_hold_secs:
                     break
             self._cutting_into = None
             self._in_front_secs = 0
@@ -939,7 +945,7 @@ class _TrafficActor:
         min_time_cush = float(self._vtype.get("tau", 1.0))
         if time_cush < min_time_cush:
             if self.speed > 0:
-                severity = 3 * (min_time_cush - time_cush) / min_time_cush
+                severity = 4 * (min_time_cush - time_cush) / min_time_cush
                 return -emergency_decl * np.clip(severity, 0, 1.0)
             return 0
 
@@ -947,7 +953,7 @@ class _TrafficActor:
         if space_cush < self._min_space_cush:
             if self.speed > 0:
                 severity = (
-                    2 * (self._min_space_cush - space_cush) / self._min_space_cush
+                    4 * (self._min_space_cush - space_cush) / self._min_space_cush
                 )
                 return -emergency_decl * np.clip(severity, 0, 1.0)
             return 0
@@ -955,7 +961,7 @@ class _TrafficActor:
         my_speed, my_acc = self._lane_speed[self._target_lane_win.lane.index]
 
         P = 0.0060 * (self._target_speed - my_speed)
-        I = 0  # 0.0040 * (target_lane_offset - my_target_lane_offset)
+        I = -0.0100 / space_cush
         D = -0.0010 * my_acc
         PID = (P + I + D) / dt
         PID = np.clip(PID, -1.0, 1.0)
