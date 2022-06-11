@@ -24,7 +24,7 @@ from cached_property import cached_property
 from shapely.geometry import Polygon
 
 from .controllers import ActionSpaceType
-from .coordinates import Dimensions, Heading, Pose
+from .coordinates import Dimensions, Heading, Point, Pose
 from .provider import ProviderState
 from .traffic_provider import TrafficProvider
 from .utils.math import rounder_for_dt
