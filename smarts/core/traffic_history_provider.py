@@ -164,3 +164,8 @@ class TrafficHistoryProvider(TrafficProvider):
         pos_x, pos_y = self._histories.vehicle_final_position(vehicle_id)
         final_lane = self._scenario.road_map.nearest_lane(Point(pos_x, pos_y))
         return final_lane.road
+
+    def can_accept_vehicle(self, state: VehicleState) -> bool:
+        # TAI consider:
+        # return state.vehicle_id in self._replaced_vehicle_ids and state.pose "is close to" self._histories.vehicle_pose_at_time(state.vehicle_id, self._sim.elapsed_sim_time)
+        return False
