@@ -49,6 +49,7 @@ class FilterObs(gym.ObservationWrapper):
             rgb = agent_obs["rgb"]
             rgb = rgb.transpose(2, 0, 1)  # Channel first
 
+            # Distance between ego and goal.
             goal_distance = np.array(
                 [
                     [
@@ -60,12 +61,15 @@ class FilterObs(gym.ObservationWrapper):
                 dtype=np.float64,
             )
 
+            # Ego's heading with respect to the map's axes.
             ego_heading = (agent_obs["ego"]["heading"] + np.pi) % (2 * np.pi) - np.pi
 
+            # Goal's angle with respect to the map's axes.
             goal_x, goal_y = agent_obs["mission"]["goal_pos"][:2]
             goal_angle = np.angle(goal_x + goal_y * 1j) - np.pi / 2
             goal_angle = (goal_angle + np.pi) % (2 * np.pi) - np.pi
 
+            # Heading correction required by ego agent to face the goal.
             goal_heading = goal_angle - ego_heading
             goal_heading = (goal_heading + np.pi) % (2 * np.pi) - np.pi
             goal_heading = np.array([[goal_heading]], dtype=np.float32)

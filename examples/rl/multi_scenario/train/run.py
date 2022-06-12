@@ -4,6 +4,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import argparse
 import warnings
 from datetime import datetime
+from itertools import cycle
 from pathlib import Path
 from typing import Any, Dict
 
@@ -44,8 +45,8 @@ def main(args: argparse.Namespace):
     print("\nLogdir:", logdir, "\n")
 
     # Setup model.
-    if (config["mode"] == "train" and args.model) or (config["mode"] == "evaluate"):
-        # Begin training or evaluation from a pre-trained agent.
+    if config["mode"] == "evaluate":
+        # Begin evaluation from a pre-trained agent.
         config["model"] = args.model
         print("\nModel:", config["model"], "\n")
     elif config["mode"] == "train" and not args.model:
@@ -55,71 +56,82 @@ def main(args: argparse.Namespace):
         raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
 
     # Make training and evaluation environments.
-    env = multi_scenario_env.make_all(config=config)
-    eval_env = multi_scenario_env.make_all(config=config)
+    envs_train = {}
+    envs_eval = {}
+    wrappers = multi_scenario_env.wrappers(config=config)
+    for scen in config["scenarios"]:
+        envs_train[f"{scen}"] = multi_scenario_env.make(
+            config=config, scenario=scen, wrappers=wrappers
+        )
+        envs_eval[f"{scen}"] = multi_scenario_env.make(
+            config=config, scenario=scen, wrappers=wrappers
+        )
 
     # Run training or evaluation.
-    run(env=env, eval_env=eval_env, config=config)
-    env.close()
+    run(envs_train=envs_train, envs_eval=envs_eval, config=config)
+
+    # Close all environments
+    for env in envs_train.values():
+        env.close()
+    for env in envs_eval.values():
+        env.close()
 
 
-def run(env: gym.Env, eval_env: gym.Env, config: Dict[str, Any]):
+def run(envs_train: gym.Env, envs_eval: gym.Env, config: Dict[str, Any]):
 
     checkpoint_callback = CheckpointCallback(
         save_freq=config["checkpoint_freq"],
         save_path=config["logdir"] / "checkpoint",
         name_prefix=config["alg"],
     )
-    eval_callback = EvalCallback(
-        eval_env=eval_env,
-        n_eval_episodes=config["eval_eps"],
-        eval_freq=config["eval_freq"],
-        log_path=config["logdir"] / "eval",
-        best_model_save_path=config["logdir"] / "eval",
-        deterministic=True,
-    )
 
-    if config["mode"] == "evaluate":
-        print("\nStart evaluation.\n")
-        model = getattr(sb3lib, config["alg"]).load(
-            config["model"], print_system_info=True
-        )
-    elif config["mode"] == "train" and config.get("model", None):
-        print("\nStart training from an existing model.\n")
-        model = getattr(sb3lib, config["alg"]).load(
-            config["model"], print_system_info=True
-        )
-        model.set_env(env)
-        model.learn(
-            total_timesteps=config["train_steps"],
-            callback=[checkpoint_callback, eval_callback],
-        )
-    else:
-        print("\nStart training from scratch.\n")
+    if config["mode"] == "train":
+        print("\nStart training.\n")
         model = getattr(sb3lib, config["alg"])(
-            env=env,
+            env=envs_train[0],
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
             **(getattr(network, config["alg_kwargs"])(config)),
         )
-        model.learn(
-            total_timesteps=config["train_steps"],
-            callback=[checkpoint_callback, eval_callback],
-        )
+        envs_train_iter = cycle(envs_train.items())
+        envs_eval_iter = cycle(envs_eval.items())
+        for _ in config["epochs"]:
+            env_train = next(envs_train_iter)
+            env_eval = next(envs_eval_iter)
+            print(f"Training on {env_train[0]}.")
+            eval_callback = EvalCallback(
+                eval_env=env_eval[1],
+                n_eval_episodes=config["eval_eps"],
+                eval_freq=config["eval_freq"],
+                log_path=config["logdir"] / "eval",
+                best_model_save_path=config["logdir"] / "eval",
+                deterministic=True,
+            )
+            model.set_env(env_train[1])
+            model.learn(
+                total_timesteps=config["train_steps"],
+                callback=[checkpoint_callback, eval_callback],
+            )
 
-    if config["mode"] == "train":
+        # Save trained model.
         save_dir = config["logdir"] / "train"
         save_dir.mkdir(parents=True, exist_ok=True)
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         model.save(save_dir / ("model_" + time))
         print("\nSaved trained model.\n")
 
-    print("\nEvaluate policy.\n")
-    mean_reward, std_reward = evaluate_policy(
-        model, eval_env, n_eval_episodes=config["eval_eps"], deterministic=True
-    )
-    print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
-    print("\nFinished evaluating.\n")
+    if config["mode"] == "evaluate":
+        print("\nEvaluate policy.\n")
+        model = getattr(sb3lib, config["alg"]).load(
+            config["model"], print_system_info=True
+        )
+        for env_name, env_eval in envs_eval:
+            print(f"Evaluating env {env_name}.")
+            mean_reward, std_reward = evaluate_policy(
+                model, env_eval, n_eval_episodes=config["eval_eps"], deterministic=True
+            )
+            print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
+        print("\nFinished evaluating.\n")
 
 
 if __name__ == "__main__":
@@ -133,13 +145,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--logdir",
-        help="Directory path for saving logs. Required if `--mode=evaluate`, else optional.",
+        help="Directory path for saving logs.",
         type=str,
         default=None,
     )
     parser.add_argument(
         "--model",
-        help="Directory path to saved RL model. Required if `--mode=evaluate`, else optional.",
+        help="Directory path to saved RL model. Required if `--mode=evaluate`.",
         type=str,
         default=None,
     )

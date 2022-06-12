@@ -7,14 +7,18 @@ smarts:
   n_stack: 3 # Number of frames to stack as input to policy network.
   action_space: "Continuous"
   action_wrapper: "Discrete"
-
-  # Extras
-  scenario: "1_to_2lane_left_turn_c"
-  wrappers:
-    - multi_scenario/
+  scenarios: 
+    - "1_to_2lane_left_turn_c"
+    - "1_to_2lane_left_turn_t"
+    - "3lane_merge_single_agent"
+    - "3lane_cruise_single_agent"
+    - "3lane_overtake"
 
   # Training
-  train_steps: 1e8 # Number of training steps.
+  epochs: 5e3 # Number of training loops.
+
+  # Trianing per scenario
+  train_steps: 1e5
   checkpoint_freq: 1e5 # Save a model every checkpoint_freq calls to env.step().
   eval_eps: 100 # Number of evaluation epsiodes.
   eval_freq: 1e5 # Evaluate the trained model every eval_freq steps and save the best model.

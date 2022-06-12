@@ -42,7 +42,6 @@ def multi_scenario_v0_env(
     scenario: str,
     img_meters: int = 64,
     img_pixels: int = 256,
-    wrappers: List[gym.Wrapper] = [],
     action_space="Continuous",
     headless: bool = True,
     visdom: bool = False,
@@ -84,8 +83,6 @@ def multi_scenario_v0_env(
             Defaults to 64 x 64 meter (height x width) square.
         img_pixels (int): Pixels representing the square image observations.
             Defaults to 256 x 256 pixels (height x width) square.
-        wrappers (List[gym.Wrapper]): Sequence of gym environment wrappers.
-            Defaults to empty list.
         action_space: Action space used. Defaults to "Continuous".
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
@@ -147,10 +144,6 @@ def multi_scenario_v0_env(
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
     env = _InfoScore(env=env)
-
-    # Wrap the environment
-    for wrapper in wrappers:
-        env = wrapper(env)
 
     return env
 
