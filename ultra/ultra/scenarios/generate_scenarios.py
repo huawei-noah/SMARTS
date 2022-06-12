@@ -30,11 +30,13 @@ import shutil
 import time
 from collections import Counter, defaultdict
 from dataclasses import replace
-from multiprocessing import Manager, Process
+from multiprocessing import Manager, Pool, Process
+from multiprocessing.pool import AsyncResult
 from shutil import copyfile
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, List, Sequence
 
 import numpy as np
+import psutil
 import yaml
 
 from smarts.core.utils.sumo import sumolib
@@ -90,8 +92,8 @@ def ego_mission_config_to_route(
         mission_end_lane_index = route_lanes[ego_mission_config["end"]] - 1
         mission_start_offset = (
             random.randint(
-                ego_mission_config["start_offset"][0],
-                ego_mission_config["start_offset"][1],
+                int(ego_mission_config["start_offset"][0]),
+                int(ego_mission_config["start_offset"][1]),
             )
             if "start_offset" in ego_mission_config
             else random.randint(50, 120)  # The default range of the offset.
@@ -183,7 +185,7 @@ def bubble_config_to_bubble_object(
 
 
 def add_stops_to_traffic(
-    scenario: str, stops: Sequence[Sequence[Any]], vehicles_to_not_hijack: Sequence[str]
+    scenario: str, stops: Sequence[Sequence[Any]], vehicles_to_not_hijack: List[str]
 ):
     """Adds stopped vehicles to the traffic by overwriting all.rou.xml and replacing
     some vehicles' attributes so that they start, and remain stopped.
@@ -441,7 +443,7 @@ def generate_left_turn_missions(
         start_time = (
             hijacking_params["start_time"]
             if hijacking_params["start_time"] != "default"
-            else random.randint((LANE_LENGTH // speed_m_per_s), 60)
+            else random.randint(int(LANE_LENGTH // speed_m_per_s), 60)
         )
         mission_objects = [
             Mission(
@@ -621,7 +623,6 @@ def generate_social_vehicles(
                     actors={behavior: 1.0},
                 )
             )
-        log_info[behavior_idx]["count"] += 1
         log_info["route_distribution"] = route_distribution
         log_info["num_vehicles"] = (
             num_vehicles + 1 if stopwatcher_added else num_vehicles
@@ -629,9 +630,12 @@ def generate_social_vehicles(
         log_info[
             "start_end_on_different_lanes_probability"
         ] = start_end_on_different_lanes_probability
+        # pytype: disable=unsupported-operands
+        log_info[behavior_idx]["count"] += 1
         log_info[behavior_idx]["start_end_different_lanes"] += (
             1 if start_lane_id != end_lane_id else 0
         )
+        # pytype: enable=unsupported-operands
 
     return flows, log_info
 
@@ -716,104 +720,111 @@ def build_scenarios(
         "train": [i for i in range(train_total)],
         "test": [i for i in range(train_total, train_total + test_total)],
     }
-    jobs = []
-    # print(M)
+
     start = time.time()
-    for mode, mode_seeds in splitted_seeds.items():
-        combinations = []
+    num_cpus = max(1, psutil.cpu_count(logical=True))
+    with Pool(num_cpus) as process_pool:
+        for mode, mode_seeds in splitted_seeds.items():
+            combinations = []
 
-        # Obtain the ego missions specified for this mode and ensure
-        # that test scenarios only have one ego mission.
-        ego_missions = level_config[mode]["ego_missions"]
-        assert not (
-            mode == "test" and (len(ego_missions) != 1)
-        ), "Test scenarios must have one ego mission."
+            # Obtain the ego missions specified for this mode and ensure
+            # that test scenarios only have one ego mission.
+            ego_missions = level_config[mode]["ego_missions"]
+            assert not (
+                mode == "test" and (len(ego_missions) != 1)
+            ), "Test scenarios must have one ego mission."
 
-        prev_split = 0
-        main_seed_count = 0
-        # sort inverse by percents
-        intersection_types = level_config[mode]["intersection_types"]
-        intersections = sorted(
-            [
+            prev_split = 0
+            main_seed_count = 0
+            # sort inverse by percents
+            intersection_types = level_config[mode]["intersection_types"]
+            intersections = sorted(
                 [
-                    _type,
-                    intersection_types[_type]["percent"],
-                    intersection_types[_type]["stops"],
-                    intersection_types[_type]["bubbles"],
-                ]
-                for _type in intersection_types
-            ],
-            key=lambda x: x[1],
-            reverse=True,
-        )
-        log_dict[mode] = {x: {"count": 0, "percent": 0} for x in intersection_types}
-        for intersection_type, intersection_percent, stops, bubbles in intersections:
-            part = int(float(intersection_percent) * len(mode_seeds))
-            cur_split = prev_split + part
-            seeds = mode_seeds[prev_split:cur_split]
-            specs = sorted(
-                intersection_types[intersection_type]["specs"],
-                key=lambda x: float(x[2]),
+                    [
+                        _type,
+                        intersection_types[_type]["percent"],
+                        intersection_types[_type]["stops"],
+                        intersection_types[_type]["bubbles"],
+                    ]
+                    for _type in intersection_types
+                ],
+                key=lambda x: x[1],
                 reverse=True,
             )
-            seed_count = 0
-            map_dir = f"{pool_dir}/{intersection_type}"
-            with open(f"{map_dir}/info.json") as jsonfile:
-                map_metadata = json.load(jsonfile)
-                route_lanes = map_metadata["num_lanes"]
-            inner_prev_split = 0
-            for speed, traffic_density, percent in specs:
-                inner_part = math.ceil(float(percent) * len(seeds))
-
-                inner_cur_split = inner_prev_split + inner_part
-                name_additions = [mode, level_name, intersection_type, speed]
-
-                if level_name != "no-traffic":
-                    name_additions.append(traffic_density)
-
-                route_distributions = get_pattern(traffic_density, intersection_type)
-                temp_seeds = seeds[inner_prev_split:inner_cur_split]
-                seed_count += len(temp_seeds)
-                if save_dir is None:
-                    temp_save_dir = os.path.join(task_dir, "_".join(name_additions))
-                else:
-                    temp_save_dir = os.path.join(save_dir, "_".join(name_additions))
-
-                sub_proc = Process(
-                    target=scenario_worker,
-                    args=(
-                        temp_seeds,
-                        ego_missions,
-                        shuffle_missions,
-                        route_lanes,
-                        route_distributions,
-                        map_dir,
-                        stopwatcher_route,
-                        level_name,
-                        temp_save_dir,
-                        speed,
-                        stopwatcher_behavior,
-                        traffic_density,
-                        intersection_type,
-                        mode,
-                        seeds,
-                        percent,
-                        stops,
-                        bubbles,
-                        dynamic_pattern_func,
-                    ),
+            log_dict[mode] = {x: {"count": 0, "percent": 0} for x in intersection_types}
+            for (
+                intersection_type,
+                intersection_percent,
+                stops,
+                bubbles,
+            ) in intersections:
+                part = int(float(intersection_percent) * len(mode_seeds))
+                cur_split = prev_split + part
+                seeds = mode_seeds[prev_split:cur_split]
+                specs = sorted(
+                    intersection_types[intersection_type]["specs"],
+                    key=lambda x: float(x[2]),
+                    reverse=True,
                 )
-                jobs.append(sub_proc)
-                sub_proc.start()
-                inner_prev_split = inner_cur_split
-            print(
-                f">> {mode} {intersection_type} count:{seed_count} generated: {seed_count/len(mode_seeds)} real: {intersection_percent}"
-            )
-            # print("--")
-            prev_split = cur_split
-            main_seed_count += seed_count
-        # print(f"Finished: {mode}  {main_seed_count/(train_total+test_total)}")
-        # print("--------------------------------------------")
-    for process in jobs:
-        process.join()
+                seed_count = 0
+                map_dir = f"{pool_dir}/{intersection_type}"
+                with open(f"{map_dir}/info.json") as jsonfile:
+                    map_metadata = json.load(jsonfile)
+                    route_lanes = map_metadata["num_lanes"]
+                inner_prev_split = 0
+                for speed, traffic_density, percent in specs:
+                    inner_part = math.ceil(float(percent) * len(seeds))
+
+                    inner_cur_split = inner_prev_split + inner_part
+                    name_additions = [mode, level_name, intersection_type, speed]
+
+                    if level_name != "no-traffic":
+                        name_additions.append(traffic_density)
+
+                    route_distributions = get_pattern(
+                        traffic_density, intersection_type
+                    )
+                    temp_seeds = seeds[inner_prev_split:inner_cur_split]
+                    seed_count += len(temp_seeds)
+                    if save_dir is None:
+                        temp_save_dir = os.path.join(task_dir, "_".join(name_additions))
+                    else:
+                        temp_save_dir = os.path.join(save_dir, "_".join(name_additions))
+
+                    process_pool.apply_async(
+                        func=scenario_worker,
+                        args=(
+                            temp_seeds,
+                            ego_missions,
+                            shuffle_missions,
+                            route_lanes,
+                            route_distributions,
+                            map_dir,
+                            stopwatcher_route,
+                            level_name,
+                            temp_save_dir,
+                            speed,
+                            stopwatcher_behavior,
+                            traffic_density,
+                            intersection_type,
+                            mode,
+                            seeds,
+                            percent,
+                            stops,
+                            bubbles,
+                            dynamic_pattern_func,
+                        ),
+                    )
+                    inner_prev_split = inner_cur_split
+
+                print(
+                    f">> {mode} {intersection_type} count:{seed_count} generated: {seed_count/len(mode_seeds)} real: {intersection_percent}"
+                )
+                # print("--")
+                prev_split = cur_split
+                main_seed_count += seed_count
+            # print(f"Finished: {mode}  {main_seed_count/(train_total+test_total)}")
+            # print("--------------------------------------------")
+        process_pool.close()
+        process_pool.join()
     print("*** time took:", time.time() - start)

@@ -36,11 +36,10 @@ import ray
 import torch
 from matplotlib import pyplot as plt
 
-from smarts.core.agent import Agent
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType, NeighborhoodVehicles
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.utils.episodes import episodes
-from smarts.zoo.agent_spec import AgentSpec
 from ultra.scenarios.analysis.base_analysis import BaseAnalysis
 from ultra.scenarios.common.social_vehicle_definitions import get_social_vehicle_color
 from ultra.scenarios.common.visualization import (
@@ -56,7 +55,7 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 @ray.remote(num_gpus=num_gpus / 2)
 class BehaviorAnalysis(BaseAnalysis):
     def __init__(self):
-        super(BaseAnalysis, self).__init__()
+        super(BehaviorAnalysis, self).__init__()
         self.analysis = []
 
     def draw_plots(self, save_dir, failure_time=None):
