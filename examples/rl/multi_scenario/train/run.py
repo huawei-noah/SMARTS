@@ -77,7 +77,7 @@ def main(args: argparse.Namespace):
         env.close()
 
 
-def run(envs_train: gym.Env, envs_eval: gym.Env, config: Dict[str, Any]):
+def run(envs_train: Dict[str, gym.Env], envs_eval: Dict[str, gym.Env], config: Dict[str, Any]):
 
     checkpoint_callback = CheckpointCallback(
         save_freq=config["checkpoint_freq"],
@@ -125,7 +125,7 @@ def run(envs_train: gym.Env, envs_eval: gym.Env, config: Dict[str, Any]):
         model = getattr(sb3lib, config["alg"]).load(
             config["model"], print_system_info=True
         )
-        for env_name, env_eval in envs_eval:
+        for env_name, env_eval in envs_eval.items():
             print(f"Evaluating env {env_name}.")
             mean_reward, std_reward = evaluate_policy(
                 model, env_eval, n_eval_episodes=config["eval_eps"], deterministic=True
