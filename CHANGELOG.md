@@ -12,11 +12,13 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make an uprotected left turn in the presence of traffic.
 - Added an online RL example for solving the `intersection-v0` environment, using PPO algorithm from Stable Baselines3 library. An accompanying Colab example is also provided.
+- Added a basic background traffic ("social vehicle") provider as an alternative to the SUMO traffic simulator.
 
 ### Changed
 - Updated license to 2022 version.
 - SMARTS reset now has a start time option which will skip simulation.
 - Since `gym.Space` does not support dataclass, `StdObs` type is changed from a dataclass to a dictionary.
+- Traffic history vehicles can now be hijacked within a bubble.  They will be relinquished to the SMARTS background traffic provider upon exiting the bubble.
 
 ### Removed
 - Old Stable Baselines3 based example is removed in favour of the new online RL example developed using Stable Baselines3 library.

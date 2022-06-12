@@ -5,7 +5,7 @@ How to work with Bubbles
 
 SMARTS provides the concept of a spatial-temporal bubble which allows for focused simulation interaction. Bubbles are intended to address the problem of scaling of interaction. Using resources globally results in wasted simulation resources if the most important behavior to an automous vehicle is in the nearby vicinity of that vehicle.
 
-A bubble covers an area and filters traffic vehicles that pass through that zone. Vehicle pass into a buffer area of `shadowing` where an agent will begin observing from the vehicle, and then will fully take over control of that vehicle when it enters the bubble proper. SMARTS will replace traffic vehicles with the specified agents.
+A bubble covers an area and filters traffic vehicles that pass through that zone. A vehicle entering the bubble will first pass into a buffer area of `shadowing` where an agent will begin observing from the vehicle.  The agent will then will fully take over control of that vehicle when it enters the bubble proper. SMARTS will replace traffic vehicles with the specified agents.  When the vehicle exits the bubble region, the agent will relinquish its control to a suitable traffic provider.
 
 
 Limtations
