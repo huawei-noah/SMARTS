@@ -16,7 +16,7 @@ class Reward(gym.Wrapper):
         obs, env_reward, done, info = self.env.step(action)
         # print(obs['EGO'].ego_vehicle_state.position)
         wrapped_reward = {
-            agent_id: self._reward_with_goal(obs[agent_id], agent_reward)
+            agent_id: self._reward(obs[agent_id], agent_reward)
             for agent_id, agent_reward in env_reward.items()
         }
 
@@ -27,13 +27,13 @@ class Reward(gym.Wrapper):
 
         # Penalty for driving off road
         if obs.events.off_road:
-            print("case 1 happens")
-            reward -= 5
+            print("Ego vehicle run off road")
+            reward -= 10
             return float(reward)
 
         # Penalty for colliding
         if len(obs.events.collisions) > 0:
-            print("case 2 happens")
+            print("Ego vehicle collide")
             reward -= 10
             return float(reward)
 
@@ -42,25 +42,4 @@ class Reward(gym.Wrapper):
 
         return float(reward)
 
-    def _reward_with_goal(self, obs: Observation, env_reward: np.float64) -> float:
-        reward = 0
 
-        if obs.events.reached_goal:
-            reward += env_reward
-            return float(reward)
-
-        # Penalty for driving off road
-        if obs.events.off_road:
-            reward -= 5
-            return float(reward)
-
-        # Penalty for colliding
-        if len(obs.events.collisions) > 0:
-            reward -= 10
-            return float(reward)
-
-        # Reward for distance travelled
-        reward += env_reward
-
-
-        return float(reward)

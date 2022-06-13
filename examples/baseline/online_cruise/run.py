@@ -70,7 +70,7 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
 
     if config["mode"] == "evaluate":
         print("Start evaluation.")
-        model = PPO.load(logdir / "rl_model_200000_steps.zip")
+        model = PPO.load(logdir / "best_model")
         print('run_here')
     elif config["mode"] == "train" and args.logdir:
         print("Start training from existing model.")
@@ -79,22 +79,23 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
         model.learn(total_timesteps=config["train_steps"])
     else:
         print("Start training.")
-        checkpoint_callback = CheckpointCallback(save_freq=50000, save_path=logdir,
+        checkpoint_callback = CheckpointCallback(save_freq=10000, save_path=logdir,
                                         )
+        eval_callback = EvalCallback(env, best_model_save_path=logdir,
+                             log_path=logdir, eval_freq=5000,
+                             deterministic=True, render=False)
+        callback = CallbackList([checkpoint_callback, eval_callback])
         model = PPO(
             "CnnPolicy",
             env,
             verbose=1,
             tensorboard_log=logdir / "tensorboard",
-            use_sde=True,
             device='auto',
-            batch_size=512
         )
-        print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-        model.learn(total_timesteps=config["train_steps"], callback = checkpoint_callback)
+        model.learn(total_timesteps=config["train_steps"], callback = callback)
 
     mean_reward, std_reward = evaluate_policy(
-        model, env, n_eval_episodes=2, deterministic=True
+        model, env, n_eval_episodes=10, deterministic=True
     )
     print(f"Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
 

@@ -28,7 +28,7 @@ class Action(gym.ActionWrapper):
 #     return wrapper, space
 
 def dxdy() -> Tuple[Callable[[np.array], np.array], gym.Space]:
-    space = gym.spaces.Box(low=-1.5, high=1.5, shape=(2,), dtype=np.float32)
+    space = gym.spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)
 
     def wrapper(model_action):
 

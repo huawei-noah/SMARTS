@@ -233,7 +233,7 @@ class CompetitionEnv(gym.Env):
         reward = rewards[AGENT_ID]
         info = {"score": extras["scores"][AGENT_ID], "env_obs": observations[AGENT_ID]}
         observation = observations[AGENT_ID]
-
+        print(observations['EGO'].ego_vehicle_state.position, agent_action)
         self._last_obs = observation
         self._current_time += observation.dt
         target = [0, 0, 0]
