@@ -1,5 +1,0 @@
-# All paths are with respect to the `submission` folder directory
-
-# Environment variables (optional)
-img_meters: 50 # Observation image area size in meters.
-img_pixels: 112 # Observation image size in pixels.

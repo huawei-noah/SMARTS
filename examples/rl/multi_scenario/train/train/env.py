@@ -2,15 +2,16 @@ from typing import Any, Dict, List
 
 import gym
 from stable_baselines3.common.env_checker import check_env
-from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack, VecMonitor
+from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
 from train.action import Action as DiscreteAction
 from train.info import Info
-from train.observation import FilterObs
+from train.observation import Concatenate, FilterObs
 from train.reward import Reward
 
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.wrappers.format_action import FormatAction
 from smarts.env.wrappers.format_obs import FormatObs
+from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.single_agent import SingleAgent
 
 
@@ -23,9 +24,10 @@ def wrappers(config: Dict[str, Any]):
         Reward,
         lambda env: DiscreteAction(env=env, space=config["action_wrapper"]),
         FilterObs,
+        lambda env: FrameStack(env=env, num_stack=config["num_stack"]),
+        lambda env: Concatenate(env=env, channels_order="first"),
         SingleAgent,
         lambda env: DummyVecEnv([lambda: env]),
-        lambda env: VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="first"),
         lambda env: VecMonitor(venv=env, filename=str(config["logdir"]), info_keywords=("is_success",))
     ]
     # fmt: on
@@ -54,7 +56,6 @@ def make(
         scenario=scenario,
         img_meters=config["img_meters"],
         img_pixels=config["img_pixels"],
-        wrappers=wrappers,
         action_space=config["action_space"],
         headless=not config["head"],  # If False, enables Envision display.
         visdom=config["visdom"],  # If True, enables Visdom display.
@@ -65,13 +66,32 @@ def make(
     for wrapper in wrappers:
         env = wrapper(env)
 
-    # Check custom environment
-    check_env(env)
+    # # Wrap env
+    # env = FormatObs(env=env)
+    # env = FormatAction(env=env, space=ActionSpaceType[config["action_space"]])
+    # env = Info(env=env)
+    # env = Reward(env=env)
+    # env = DiscreteAction(env=env, space=config["action_wrapper"])
+    # env = FilterObs(env=env)
+    # env = FrameStack(env=env, num_stack=config["num_stack"])
+    # env = Concatenate(env=env, channels_order="first")
+    # env = SingleAgent(env=env)
 
-    print("**************************************")
-    print("obs space:", env.observation_space)
-    print("act space:", env.action_space)
-    print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+    # # Check custom environment
+    # check_env(env)
+
+    # # Wrap env with SB3 wrappers
+    # env = DummyVecEnv([lambda: env])
+    # env = VecMonitor(
+    #     venv=env,
+    #     filename=str(config["logdir"]),
+    #     info_keywords=("is_success",),
+    # )
+
+    # print("**************************************")
+    # print("obs space:", env.observation_space)
+    # print("act space:", env.action_space)
+    # print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
 
     return env
 
@@ -95,6 +115,8 @@ def make(
 #     env = Reward(env=env)
 #     env = DiscreteAction(env=env, space=config["action_wrapper"])
 #     env = FilterObs(env=env)
+#     env = FrameStack(env=env, num_stack=config["num_stack"])
+#     env = Concatenate(env=env, channels_order="first")
 #     env = SingleAgent(env=env)
 
 #     # Check custom environment
@@ -102,16 +124,15 @@ def make(
 
 #     # Wrap env with SB3 wrappers
 #     env = DummyVecEnv([lambda: env])
-#     env = VecFrameStack(venv=env, n_stack=config["n_stack"], channels_order="first")
 #     env = VecMonitor(
 #         venv=env,
 #         filename=str(config["logdir"]),
 #         info_keywords=("is_success",),
 #     )
 
-#     # print("2222222222222222222222222222222222244")
+#     # print("**************************************")
 #     # print("obs space:", env.observation_space)
 #     # print("act space:", env.action_space)
-#     # print("33333333333333333333333333333333333355")
+#     # print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
 
 #     return env

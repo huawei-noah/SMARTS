@@ -46,11 +46,11 @@ def main(args: argparse.Namespace):
 
     # Setup model.
     if config["mode"] == "evaluate":
-        # Begin evaluation from a pre-trained agent.
+        # Begin evaluation.
         config["model"] = args.model
         print("\nModel:", config["model"], "\n")
     elif config["mode"] == "train" and not args.model:
-        # Begin training from scratch.
+        # Begin training.
         pass
     else:
         raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
@@ -77,7 +77,11 @@ def main(args: argparse.Namespace):
         env.close()
 
 
-def run(envs_train: Dict[str, gym.Env], envs_eval: Dict[str, gym.Env], config: Dict[str, Any]):
+def run(
+    envs_train: Dict[str, gym.Env],
+    envs_eval: Dict[str, gym.Env],
+    config: Dict[str, Any],
+):
 
     checkpoint_callback = CheckpointCallback(
         save_freq=config["checkpoint_freq"],

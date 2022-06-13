@@ -1,7 +1,8 @@
 from typing import Any, Dict, List
 
 import gym
-from submission.policy import submitted_policy, submitted_wrappers
+from submission.policy import Policy, submitted_wrappers
+from submission.policy import IMG_METERS, IMG_PIXELS
 
 
 def make_env(
@@ -25,8 +26,6 @@ def make_env(
         scenario=scenario,
         img_meters=config["img_meters"],
         img_pixels=config["img_pixels"],
-        wrappers=wrappers,
-        action_space="Continuous",
     )
 
     # Wrap the environment
@@ -36,15 +35,53 @@ def make_env(
     return env
 
 
-def run(env, policy):
+def evaluate():
+    config = {
+        "img_meters": IMG_METERS,
+        "img_pixels": IMG_PIXELS,
+        "eval_episodes": 1e3,
+    }
+    scenarios = [
+        "1_to_2lane_left_turn_c",
+        "1_to_2lane_left_turn_t",
+        "3lane_merge_multi_agent",
+        "3lane_merge_single_agent",
+        "3lane_cruise_multi_agent"
+        "3lane_cruise_single_agent",
+        "3lane_cut_off",
+        "3lane_overtake",
+    ]
+
+    # Make evaluation environments.
+    envs_eval = {}
+    for scen in scenarios:
+        envs_eval[f"{scen}"] = make_env(config=config, scenario=scen, wrappers=submitted_wrappers())
+
+    policy = Policy()
+
+    # Evaluate model for each scenario
+    for env_name, env_eval in envs_eval.items():
+        print(f"Evaluating env {env_name}.")
+        run(env=env_eval, policy=policy, config=config)
+    print("\nFinished evaluating.\n")
+
+    # Close all environments
+    for env in envs_eval.values():
+        env.close()
+
+
+def run(env, policy, config):
     total_return = 0.0
-    for _ in range(config["eval"]["episodes"]):
-        time_step = env.reset()
+    for _ in range(config["eval_episodes"]):
+        observations = env.reset()
         ep_return = 0.0
-        while not time_step.is_last():
-            action_step = policy.action(time_step)
-            time_step = env.step(action_step.action)
-            ep_return += time_step.reward
+        dones = {"__all__": False}
+        while not dones["__all__"]:
+            actions = policy.action(observations)
+            observations, rewards, dones, infos = env.step(actions)
+            for 
+            collisions += infos[agent_id]
+            ep_return += rewards.reward
 
         # print(f"Eval episode {ep} return: {ep_return.numpy()[0]:.2f}")
         total_return += ep_return
@@ -55,27 +92,13 @@ def run(env, policy):
 
     return
 
+class Metric:
+    def __init__(self):
 
-def evaluate(policy, wrappers):   
-    # Make training and evaluation environments.
-    envs_eval = {}
-    for scen in config["scenarios"]:
-        envs_eval[f"{scen}"] = make_env(
-            config=config, scenario=scen, wrappers=wrappers
-        )
-
-    # Evaluate model for each scenario
-    for env_name, env_eval in envs_eval.items():
-        print(f"Evaluating env {env_name}.")
-        run(env_eval=env_eval, config=config)
-    print("\nFinished evaluating.\n")
-
-    # Close all environments
-    for env in envs_eval.values():
-        env.close()
+    def compute(self, infos):
+        for infos.items()
 
 
 if __name__ == "__main__":
-  
- 
-    evaluate(submitted_policy(), submitted_wrappers())
+
+    evaluate()
