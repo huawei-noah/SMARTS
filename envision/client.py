@@ -90,7 +90,9 @@ class Client:
         self._envision_state_filter = (
             envision_state_filter or EnvisionStateFilter.default()
         )
-        self._data_formatter_args = data_formatter_args
+        self._data_formatter_args = data_formatter_args or EnvisionDataFormatterArgs(
+            "default"
+        )
 
         current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
         client_id = current_time
