@@ -1,8 +1,7 @@
 from typing import Any, Dict, List
 
 import gym
-from submission.policy import Policy, submitted_wrappers
-from submission.policy import IMG_METERS, IMG_PIXELS
+from submission.policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
 
 
 def make_env(
@@ -26,6 +25,7 @@ def make_env(
         scenario=scenario,
         img_meters=config["img_meters"],
         img_pixels=config["img_pixels"],
+        action_space="Continuous",
     )
 
     # Wrap the environment
@@ -46,7 +46,7 @@ def evaluate():
         "1_to_2lane_left_turn_t",
         "3lane_merge_multi_agent",
         "3lane_merge_single_agent",
-        "3lane_cruise_multi_agent"
+        "3lane_cruise_multi_agent",
         "3lane_cruise_single_agent",
         "3lane_cut_off",
         "3lane_overtake",
@@ -55,7 +55,9 @@ def evaluate():
     # Make evaluation environments.
     envs_eval = {}
     for scen in scenarios:
-        envs_eval[f"{scen}"] = make_env(config=config, scenario=scen, wrappers=submitted_wrappers())
+        envs_eval[f"{scen}"] = make_env(
+            config=config, scenario=scen, wrappers=submitted_wrappers()
+        )
 
     # Instantiate submitted policy.
     policy = Policy()

@@ -83,14 +83,13 @@ def run(
     config: Dict[str, Any],
 ):
 
-    checkpoint_callback = CheckpointCallback(
-        save_freq=config["checkpoint_freq"],
-        save_path=config["logdir"] / "checkpoint",
-        name_prefix=config["alg"],
-    )
-
     if config["mode"] == "train":
         print("\nStart training.\n")
+        checkpoint_callback = CheckpointCallback(
+            save_freq=config["checkpoint_freq"],
+            save_path=config["logdir"] / "checkpoint",
+            name_prefix=config["alg"],
+        )
         scenarios_iter = cycle(config["scenarios"])
         model = getattr(sb3lib, config["alg"])(
             env=envs_train[next(scenarios_iter)],

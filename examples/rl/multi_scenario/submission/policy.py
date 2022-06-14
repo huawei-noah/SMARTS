@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Dict
 
 from train.action import Action as DiscreteAction
@@ -10,16 +11,13 @@ from smarts.env.wrappers.format_obs import FormatObs
 from smarts.env.wrappers.frame_stack import FrameStack
 
 # Environment variables (optional)
-IMG_METERS=50 # Observation image area size in meters.
-IMG_PIXELS=112 # Observation image size in pixels.
+IMG_METERS = 50  # Observation image area size in meters.
+IMG_PIXELS = 112  # Observation image size in pixels.
 
 
-def submitted_wrappers(config: Dict[str, Any]):
+def submitted_wrappers():
     """Return environment wrappers for wrapping the evaluation environment. Use
     of wrappers is optional. If wrappers are not used, return empty list [].
-
-    Args:
-        config (Dict[str, Any]): _description_
 
     Returns:
         List[wrappers]: List of wrappers. Default is empty list [].
@@ -28,11 +26,11 @@ def submitted_wrappers(config: Dict[str, Any]):
     # fmt: off
     wrappers = [
         FormatObs,
-        lambda env: FormatAction(env=env, space=ActionSpaceType[config["action_space"]]),
+        lambda env: FormatAction(env=env, space=ActionSpaceType["Continuous"]),
         Reward,
-        lambda env: DiscreteAction(env=env, space=config["action_wrapper"]),
+        lambda env: DiscreteAction(env=env, space="Discrete"),
         FilterObs,
-        lambda env: FrameStack(env=env, num_stack=config["num_stack"]),
+        lambda env: FrameStack(env=env, num_stack=3),
         lambda env: Concatenate(env=env, channels_order="first"),
     ]
     # fmt: on
@@ -41,15 +39,16 @@ def submitted_wrappers(config: Dict[str, Any]):
 
 
 class Policy:
-    """Policy class to be submitted.
-    """
+    """Policy class to be submitted."""
+
     def __init__(self):
-        """All policy initialization matters, including loading of model, is 
+        """All policy initialization matters, including loading of model, is
         performed here. To be implemented by the user.
         """
 
         import stable_baselines3 as sb3lib
-        model_path = "./submission/model.zip"
+
+        model_path = Path(__file__).absolute().parents[0] / "best_model.zip"
         self.model = sb3lib.PPO.load(model_path)
 
     def act(self, obs: Dict[str, Any]):
@@ -63,7 +62,7 @@ class Policy:
         """
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
-            action = self.model.predict(observation=agent_obs, deterministic=True)
-            wrapped_act.update({agent_id:action})
+            action, _ = self.model.predict(observation=agent_obs, deterministic=True)
+            wrapped_act.update({agent_id: action})
 
         return wrapped_act
