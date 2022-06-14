@@ -145,7 +145,6 @@ class Concatenate(gym.ObservationWrapper):
         for agent_id, agent_obs in obs.items():
             stacked_obs = {}
             for key in self._keys:
-                print("agent_obscccc", agent_obs)
                 val = [obs[key] for obs in agent_obs]
                 stacked_obs[key] = np.concatenate(val, axis=self._repeat_axis)
             wrapped_obs.update({agent_id: stacked_obs})

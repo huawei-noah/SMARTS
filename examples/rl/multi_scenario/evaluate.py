@@ -57,12 +57,16 @@ def evaluate():
     for scen in scenarios:
         envs_eval[f"{scen}"] = make_env(config=config, scenario=scen, wrappers=submitted_wrappers())
 
+    # Instantiate submitted policy.
     policy = Policy()
+
+    # Instantiate metric for score calculation.
+    metric = Metric()
 
     # Evaluate model for each scenario
     for env_name, env_eval in envs_eval.items():
         print(f"Evaluating env {env_name}.")
-        run(env=env_eval, policy=policy, config=config)
+        run(env=env_eval, name=env_name, policy=policy, config=config, metric=metric)
     print("\nFinished evaluating.\n")
 
     # Close all environments
@@ -70,7 +74,7 @@ def evaluate():
         env.close()
 
 
-def run(env, policy, config):
+def run(env, name, policy, config, metric):
     total_return = 0.0
     for _ in range(config["eval_episodes"]):
         observations = env.reset()
@@ -79,17 +83,7 @@ def run(env, policy, config):
         while not dones["__all__"]:
             actions = policy.action(observations)
             observations, rewards, dones, infos = env.step(actions)
-            for 
-            collisions += infos[agent_id]
-            ep_return += rewards.reward
-
-        # print(f"Eval episode {ep} return: {ep_return.numpy()[0]:.2f}")
-        total_return += ep_return
-
-    avg_return = total_return / config["eval"]["episodes"]
-    print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
-    print(f"Evaluating. Episode average return: {avg_return.numpy()[0]:.2f}")
-
+            metric.compute(infos)
     return
 
 class Metric:
@@ -97,6 +91,20 @@ class Metric:
 
     def compute(self, infos):
         for infos.items()
+            collisions += infos[agent_id]
+            ep_return += rewards.reward
+
+        total_return += ep_return
+
+    avg_return = total_return / config["eval"]["episodes"]
+    print(f"Evaluating. Episode average return: {avg_return.numpy()[0]:.2f}")
+
+    def get(self):
+
+        return
+            {
+
+        }
 
 
 if __name__ == "__main__":

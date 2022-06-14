@@ -91,27 +91,27 @@ def run(
 
     if config["mode"] == "train":
         print("\nStart training.\n")
+        scenarios_iter = cycle(config["scenarios"])
         model = getattr(sb3lib, config["alg"])(
-            env=envs_train[0],
+            env=envs_train[next(scenarios_iter)],
             verbose=1,
             tensorboard_log=config["logdir"] / "tensorboard",
             **(getattr(network, config["alg_kwargs"])(config)),
         )
-        envs_train_iter = cycle(envs_train.items())
-        envs_eval_iter = cycle(envs_eval.items())
-        for _ in config["epochs"]:
-            env_train = next(envs_train_iter)
-            env_eval = next(envs_eval_iter)
-            print(f"Training on {env_train[0]}.")
+        for _ in range(config["epochs"]):
+            scen = next(scenarios_iter)
+            env_train = envs_train[scen]
+            env_eval = envs_eval[scen]
+            print(f"Training on {scen}.")
             eval_callback = EvalCallback(
-                eval_env=env_eval[1],
+                eval_env=env_eval,
                 n_eval_episodes=config["eval_eps"],
                 eval_freq=config["eval_freq"],
                 log_path=config["logdir"] / "eval",
                 best_model_save_path=config["logdir"] / "eval",
                 deterministic=True,
             )
-            model.set_env(env_train[1])
+            model.set_env(env_train)
             model.learn(
                 total_timesteps=config["train_steps"],
                 callback=[checkpoint_callback, eval_callback],
