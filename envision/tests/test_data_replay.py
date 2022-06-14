@@ -148,7 +148,9 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
     assert new_sent_data.qsize() == 0
 
     # Now read data replay
-    Envision.read_and_send(str(jsonl_paths[0].absolute()), fixed_timestep_sec=TIMESTEP_SEC)
+    Envision.read_and_send(
+        str(jsonl_paths[0].absolute()), fixed_timestep_sec=TIMESTEP_SEC
+    )
 
     # Verify the new data matches the original data
     assert original_sent_data.qsize() == new_sent_data.qsize()

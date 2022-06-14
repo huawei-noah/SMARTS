@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 from typing import Dict
+
 import gym
 import numpy as np
 import pytest
@@ -50,7 +51,7 @@ def _make_agent_specs(num_agent):
 
     obs_space = {}
     for agent_id, agent_spec in agent_specs.items():
-        rgb: RGB = agent_spec.interface.rgb # pytype: disable=annotation-type-mismatch
+        rgb: RGB = agent_spec.interface.rgb  # pytype: disable=annotation-type-mismatch
         obs_space[agent_id] = gym.spaces.Box(
             low=0,
             high=255,
