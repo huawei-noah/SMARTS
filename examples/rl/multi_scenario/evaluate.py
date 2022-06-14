@@ -39,7 +39,7 @@ def evaluate():
     config = {
         "img_meters": IMG_METERS,
         "img_pixels": IMG_PIXELS,
-        "eval_episodes": 1e3,
+        "eval_episodes": 100,
     }
     scenarios = [
         "1_to_2lane_left_turn_c",
@@ -48,7 +48,7 @@ def evaluate():
         "3lane_merge_single_agent",
         "3lane_cruise_multi_agent",
         "3lane_cruise_single_agent",
-        "3lane_cut_off",
+        "3lane_cut_in",
         "3lane_overtake",
     ]
 

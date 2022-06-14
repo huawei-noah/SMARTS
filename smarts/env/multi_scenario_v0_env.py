@@ -272,13 +272,13 @@ def get_env_specs(scenario: str):
                 agents_alive=None,
             ),
         }
-    elif scenario == "3lane_cut_off":
+    elif scenario == "3lane_cut_in":
         return {
             "scenario": str(
                 pathlib.Path(__file__).absolute().parents[1]
                 / "scenarios"
                 / "straight"
-                / "3lane_cut_off"
+                / "3lane_cut_in"
             ),
             "num_agent": 1,
             "done_criteria": DoneCriteria(
