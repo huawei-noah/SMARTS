@@ -23,9 +23,9 @@ class Reward(gym.Wrapper):
         for agent_id, agent_done in done.items():
             if agent_id != "__all__" and agent_done == True:
                 if obs[agent_id]["events"]["reached_goal"]:
-                    print(f"{agent_id}: Hooray! Vehicle reached goal.")
+                    print(f"{agent_id}: Hooray! Reached goal.")
                 elif obs[agent_id]["events"]["reached_max_episode_steps"]:
-                    print(f"{agent_id}: Vehicle reached max episode steps.")
+                    print(f"{agent_id}: Reached max episode steps.")
                 elif (
                     obs[agent_id]["events"]["collisions"]
                     | obs[agent_id]["events"]["off_road"]
@@ -54,37 +54,36 @@ class Reward(gym.Wrapper):
             # Penalty for colliding
             if obs[agent_id]["events"]["collisions"]:
                 reward[agent_id] -= np.float64(10)
-                print(f"{agent_id}: Vehicle collided.")
+                print(f"{agent_id}: Collided.")
                 break
 
             # Penalty for driving off road
             if obs[agent_id]["events"]["off_road"]:
                 reward[agent_id] -= np.float64(10)
-                print(f"{agent_id}: Vehicle went off road.")
+                print(f"{agent_id}: Went off road.")
                 break
 
             # Penalty for driving off route
             if obs[agent_id]["events"]["off_route"]:
                 reward[agent_id] -= np.float64(10)
-                print(f"{agent_id}: Vehicle went off route.")
+                print(f"{agent_id}: Went off route.")
                 break
 
             # Penalty for driving on road shoulder
             if obs[agent_id]["events"]["on_shoulder"]:
                 reward[agent_id] -= np.float64(10)
-                print(f"{agent_id}: Vehicle went on road shoulder.")
+                print(f"{agent_id}: Went on road shoulder.")
                 break
 
             # Penalty for driving on wrong way
             if obs[agent_id]["events"]["wrong_way"]:
                 reward[agent_id] -= np.float64(10)
-                print(f"{agent_id}: Vehicle went wrong way.")
+                print(f"{agent_id}: Went wrong way.")
                 break
 
             # Reward for reaching goal
             if obs[agent_id]["events"]["reached_goal"]:
                 reward[agent_id] += np.float64(30)
-                print(f"{agent_id}: Hooray! Vehicle reached goal. INTRMDT")
 
             # Reward for distance travelled
             reward[agent_id] += np.float64(agent_reward)

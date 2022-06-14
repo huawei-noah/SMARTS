@@ -83,7 +83,7 @@ def run(env, name, policy, config, metric):
         ep_return = 0.0
         dones = {"__all__": False}
         while not dones["__all__"]:
-            actions = policy.action(observations)
+            actions = policy.act(observations)
             observations, rewards, dones, infos = env.step(actions)
             metric.compute(infos)
     return

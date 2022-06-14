@@ -101,7 +101,7 @@ def run(
             scen = next(scenarios_iter)
             env_train = envs_train[scen]
             env_eval = envs_eval[scen]
-            print(f"Training on {scen}.")
+            print(f"\nTraining on {scen}.\n")
             eval_callback = EvalCallback(
                 eval_env=env_eval,
                 n_eval_episodes=config["eval_eps"],
