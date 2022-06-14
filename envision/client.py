@@ -90,7 +90,9 @@ class Client:
         self._envision_state_filter = (
             envision_state_filter or EnvisionStateFilter.default()
         )
-        self._data_formatter_args = data_formatter_args
+        self._data_formatter_args = data_formatter_args or EnvisionDataFormatterArgs(
+            "default"
+        )
 
         current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
         client_id = current_time
@@ -161,7 +163,7 @@ class Client:
                         data_formatter.add(state)
                         state = data_formatter.resolve()
                     state = unpack(state)
-                    state = json.dumps(state, cls=JSONEncoder)
+                    state = json.dumps(state, cls=JSONEncoder, allow_nan=False)
 
                 f.write(f"{state}\n")
 
@@ -207,7 +209,7 @@ class Client:
             # if not already serialized
             if not isinstance(state, str):
                 state = unpack(state)
-                state = json.dumps(state, cls=JSONEncoder)
+                state = json.dumps(state, cls=JSONEncoder, allow_nan=False)
 
             ws.send(state)
 

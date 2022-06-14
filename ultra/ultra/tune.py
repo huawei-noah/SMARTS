@@ -41,6 +41,8 @@ from ray.tune.analysis.experiment_analysis import ExperimentAnalysis
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune.trial import Trial
 
+import ultra.baselines  # Do not delete
+import ultra.env  # Do not delete
 from smarts.zoo.registry import make
 from ultra.evaluate import evaluate_saved_models
 from ultra.utils.common import agent_pool_value
@@ -76,7 +78,7 @@ def tune_train(
     log_dir,
     metric,
 ):
-    torch.set_num_threads(1)
+    getattr(torch, "set_num_threads")(1)
     total_step = 0
     finished = False
 

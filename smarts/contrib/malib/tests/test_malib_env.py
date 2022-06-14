@@ -33,7 +33,7 @@ N_AGENTS = 3
 @pytest.fixture
 def env():
     configs = {
-        "scenarios": ["scenarios/figure_eight"],
+        "scenarios": ["scenarios/sumo/figure_eight"],
         "n_agents": N_AGENTS,
         "headless": True,
         "episode_limit": 1000,

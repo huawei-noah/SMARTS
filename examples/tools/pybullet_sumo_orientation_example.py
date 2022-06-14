@@ -1,4 +1,6 @@
+# type: ignore
 from pathlib import Path
+from typing import Dict
 
 import numpy as np
 
@@ -59,13 +61,13 @@ def run(
     prev_friction_sum = None
     scenario = next(
         Scenario.variations_for_all_scenario_roots(
-            ["scenarios/loop"], agents_to_be_briefed=["007"]
+            ["scenarios/sumo/loop"], agents_to_be_briefed=["007"]
         )
     )
     previous_provider_state = traffic_sim.setup(scenario)
     traffic_sim.sync(previous_provider_state)
     previous_vehicle_ids = set()
-    vehicles = dict()
+    vehicles: Dict[str, Vehicle] = dict()
 
     passenger_dimen = VEHICLE_CONFIGS["passenger"].dimensions
 
@@ -86,7 +88,7 @@ def run(
             # ),
         ]
 
-        current_provider_state = traffic_sim.step(0.01)
+        current_provider_state = traffic_sim.step(None, 0.01, step * 0.01)
         for pose, i in zip(injected_poses, range(len(injected_poses))):
             converted_to_provider = VehicleState(
                 vehicle_id=f"EGO{i}",
@@ -105,9 +107,10 @@ def run(
 
         for v_id in vehicle_ids_added:
             pose = Pose.from_center([0, 0, 0], Heading(0))
-            vehicles[v] = Vehicle(
+            vehicles[v_id] = Vehicle(
                 id=v_id,
                 chassis=BoxChassis(
+                    pose=pose,
                     speed=0,
                     dimensions=vehicle_config.dimensions,
                     bullet_client=client,
@@ -117,7 +120,8 @@ def run(
         # Hide any additional vehicles
         for v in vehicle_ids_removed:
             veh = vehicles.pop(v, None)
-            veh.teardown()
+            if veh:
+                veh.teardown()
 
         for pv in current_provider_state.vehicles:
             vehicles[pv.vehicle_id].control(pv.pose, pv.speed)
@@ -152,7 +156,7 @@ if __name__ == "__main__":
             # frictionERP=0.1,
         )
 
-        path = Path(__file__).parent / "../smarts/core/models/plane.urdf"
+        path = Path(__file__).parent / "../../smarts/core/models/plane.urdf"
         path = str(path.absolute())
         plane_body_id = client.loadURDF(path, useFixedBase=True)
 

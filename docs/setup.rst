@@ -46,11 +46,11 @@ Running
 We use the `scl` command line to run SMARTS together with it's supporting processes. To run the default example simply build a scenario and run the following command:
 
 .. code-block:: bash
-    # build scenarios/loop
-    scl scenario build --clean scenarios/loop
+    # build scenarios/sumo/loop
+    scl scenario build --clean scenarios/sumo/loop
 
     # run an experiment
-    scl run --envision examples/single_agent.py scenarios/loop
+    scl run --envision examples/single_agent.py scenarios/sumo/loop
 
 
 You need to add the `--envision` flag to run the Envision server where you can see the visualization of the experiment. See [./envision/README.md](./envision/README.md) for more information on Envision, our front-end visualization tool.
@@ -78,10 +78,10 @@ Examples
     scl scenario build-all ./scenarios ./eval_scenarios
 
     # Rebuild a single scenario, replacing any existing generated assets
-    scl scenario build --clean scenarios/loop
+    scl scenario build --clean scenarios/sumo/loop
 
     # Clean generated scenario artifacts
-    scl scenario clean scenarios/loop
+    scl scenario clean scenarios/sumo/loop
 
 
 ================

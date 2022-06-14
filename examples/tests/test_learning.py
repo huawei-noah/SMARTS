@@ -33,8 +33,8 @@ def test_learning_regression_rllib():
         )
     }
 
-    # XXX: We should be able to simply provide "scenarios/loop"?
-    scenario_path = Path(__file__).parents[2] / "scenarios/loop"
+    # XXX: We should be able to simply provide "scenarios/sumo/loop"?
+    scenario_path = Path(__file__).parents[2] / "scenarios/sumo/loop"
     scenario_path = str(scenario_path.absolute())
 
     tune_confg = {

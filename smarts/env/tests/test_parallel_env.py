@@ -60,7 +60,7 @@ def single_env_actions(agent_specs):
 @pytest.fixture(scope="module")
 def env_constructor(agent_specs):
     env_constructor = lambda: HiWayEnv(
-        scenarios=["scenarios/figure_eight"],
+        scenarios=["scenarios/sumo/figure_eight"],
         agent_specs=agent_specs,
         sim_name="Test_env",
         headless=True,

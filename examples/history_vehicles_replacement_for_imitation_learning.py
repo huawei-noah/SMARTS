@@ -124,12 +124,12 @@ def main(
             nonlocal exists_at_or_after
             vehicles = list(vehs)
             logger.info(f"Total vehicles pre-filter: {len(vehicles)}")
-            window = 4
+            start_window = 4
             vehicles = list(
                 v
                 for v in vehicles
                 if v.average_speed > 3
-                and abs(v.start_time) - exists_at_or_after < window
+                and abs(v.start_time - exists_at_or_after) < start_window
             )
             logger.info(f"Total vehicles post-filter: {len(vehicles)}")
             return vehicles
@@ -240,10 +240,12 @@ def main(
                 f"mission start times: {[(veh_id, veh_missions[veh_id].start_time) for veh_id in sample]}"
             )
             logger.info(f"starting simulation loop at: `{history_start_time}`...")
-            observations = smarts.reset(scenario, history_start_time)
-            assert math.isclose(
-                smarts.elapsed_sim_time, history_start_time, abs_tol=1.1e-1
-            ), f"{smarts.elapsed_sim_time} != {history_start_time+smarts.timestep_sec}"
+            # Simulation time ticks over before capture, need to start 1 step before
+            sim_start_time = max(0, history_start_time - smarts.fixed_timestep_sec)
+            observations = smarts.reset(scenario, sim_start_time)
+            assert smarts.elapsed_sim_time == smarts.fixed_timestep_sec or math.isclose(
+                smarts.elapsed_sim_time, history_start_time
+            ), f"{smarts.elapsed_sim_time} != {history_start_time}"
             while not all(done for done in dones.values()):
                 actions = {
                     agent_id: agents[agent_id].act(agent_obs)

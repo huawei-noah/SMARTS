@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from typing import Dict
+
 import gym
 import numpy as np
 import pytest
@@ -32,7 +34,7 @@ from smarts.zoo.agent_spec import AgentSpec
 
 
 def _make_agent_specs(num_agent):
-    agent_specs = {
+    agent_specs: Dict[str, AgentSpec] = {
         "AGENT_"
         + str(agent_id): AgentSpec(
             interface=AgentInterface(
@@ -47,22 +49,20 @@ def _make_agent_specs(num_agent):
         for agent_id in range(num_agent)
     }
 
-    obs_space = gym.spaces.Dict(
-        {
-            "AGENT_"
-            + str(agent_id): gym.spaces.Box(
-                low=0,
-                high=255,
-                shape=(
-                    agent_specs["AGENT_" + str(agent_id)].interface.rgb.width,
-                    agent_specs["AGENT_" + str(agent_id)].interface.rgb.height,
-                    3,
-                ),
-                dtype=np.uint8,
-            )
-            for agent_id in range(num_agent)
-        }
-    )
+    obs_space = {}
+    for agent_id, agent_spec in agent_specs.items():
+        rgb: RGB = agent_spec.interface.rgb  # pytype: disable=annotation-type-mismatch
+        obs_space[agent_id] = gym.spaces.Box(
+            low=0,
+            high=255,
+            shape=(
+                rgb.width,
+                rgb.height,
+                3,
+            ),
+            dtype=np.uint8,
+        )
+    obs_space = gym.spaces.Dict(obs_space)
 
     return agent_specs, obs_space
 
@@ -72,7 +72,7 @@ def base_env(request):
     agent_specs, obs_space = _make_agent_specs(request.param)
     env = gym.make(
         "smarts.env:hiway-v0",
-        scenarios=["scenarios/figure_eight"],
+        scenarios=["scenarios/sumo/figure_eight"],
         agent_specs=agent_specs,
         headless=True,
         visdom=False,
