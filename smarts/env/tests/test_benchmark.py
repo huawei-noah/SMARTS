@@ -51,7 +51,7 @@ def agent_specs(agent_ids, agent_interface):
 def env(agent_specs):
     env = gym.make(
         "smarts.env:hiway-v0",
-        scenarios=["scenarios/loop"],
+        scenarios=["scenarios/sumo/loop"],
         agent_specs=agent_specs,
         headless=True,
         seed=2008,
