@@ -56,7 +56,6 @@ def make(
         scenario=scenario,
         img_meters=config["img_meters"],
         img_pixels=config["img_pixels"],
-        action_space=config["action_space"],
         headless=not config["head"],  # If False, enables Envision display.
         visdom=config["visdom"],  # If True, enables Visdom display.
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
@@ -65,33 +64,6 @@ def make(
     # Wrap the environment
     for wrapper in wrappers:
         env = wrapper(env)
-
-    # # Wrap env
-    # env = FormatObs(env=env)
-    # env = FormatAction(env=env, space=ActionSpaceType[config["action_space"]])
-    # env = Info(env=env)
-    # env = Reward(env=env)
-    # env = DiscreteAction(env=env, space=config["action_wrapper"])
-    # env = FilterObs(env=env)
-    # env = FrameStack(env=env, num_stack=config["num_stack"])
-    # env = Concatenate(env=env, channels_order="first")
-    # env = SingleAgent(env=env)
-
-    # # Check custom environment
-    # check_env(env)
-
-    # # Wrap env with SB3 wrappers
-    # env = DummyVecEnv([lambda: env])
-    # env = VecMonitor(
-    #     venv=env,
-    #     filename=str(config["logdir"]),
-    #     info_keywords=("is_success",),
-    # )
-
-    # print("**************************************")
-    # print("obs space:", env.observation_space)
-    # print("act space:", env.action_space)
-    # print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
 
     return env
 

@@ -16,8 +16,9 @@ IMG_PIXELS = 112  # Observation image size in pixels.
 
 
 def submitted_wrappers():
-    """Return environment wrappers for wrapping the evaluation environment. Use
-    of wrappers is optional. If wrappers are not used, return empty list [].
+    """Return environment wrappers for wrapping the evaluation environment. 
+    Each wrapper is of the form: Callable[[env], env]. Use of wrappers is 
+    optional. If wrappers are not used, return empty list [].
 
     Returns:
         List[wrappers]: List of wrappers. Default is empty list [].
