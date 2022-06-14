@@ -46,16 +46,25 @@ from .utils.math import (
 from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
-# TODO:  add tests:
-# TODO:     - test_traffic_simulation.py
-# TODO:     - bubble hijacking
-# TODO:     - reserved area tests
-# TODO:  left turns across traffic and other basic uncontrolled intersection stuff
-# TODO:  dynamic routing
+# TODO:  add test_traffic.py
+# TODO:     - create scenario using local engine
+# TODO:     - step for a bit and test for no collisions
+# TODO:     - test for bubble hijacking
+# TODO:     - test for reserved area tests
 # TODO:  test mixed:  Smarts+Sumo
 # TODO:      - if using pre-generated rou files that both Sumo and Smarts can support, then make traffic sim contructors take this path (and remove "engine")
-# TODO:  profile
-# TODO:  failing pytests (determinism?)
+# TODO:  profile again
+# TODO:  dynamic routing
+# TODO:  left turns across traffic and other basic (uncontrolled-only?) intersection stuff
+# TODO:     Sumo:  "foes" (all crossers) and "reponse" (higher priority foes)
+# TODO:         how to determine foes, eg., for Waymo?
+# TODO:     use lane_window:
+# TODO:         end time_remaining at junction if stop will be required
+# TODO;             stop required if:
+# TODO:                vehicle on foe w/ higher priorty (right-of-way)
+# TODO:                   compute "foe gap"?
+# TODO:                red/yellow traffic light or stop sign
+# TODO:  failing pytests (rllib? determinism?)
 # TODO:  refactor MPP and TIP into Controllers
 # TODO:  reconsider vehicle dims stuff from proposal
 # TODO:  consider lane markings
@@ -377,6 +386,8 @@ class _TrafficActor:
         speed_factor = float(self._vtype.get("speedFactor", 1.0))
         speed_dev = float(self._vtype.get("speedDev", 0.1))
         self._speed_factor = random.gauss(speed_factor, speed_dev)
+        if self._speed_factor <= 0:
+            self._speed_factor = 0.1
 
         self._cutting_into = None
         self._in_front_after_cutin_secs = 0
@@ -394,6 +405,7 @@ class _TrafficActor:
                 "illegal probability {self._cutin_prob} for 'cutin_prob' lane-changing parameter will be ignored"
             )
             self._cutin_prob = 0.0
+        self._dogmatic = bool(self._vtype.get("lcDogmatic", False))
 
         self._owner._actors_created += 1
 
@@ -836,7 +848,8 @@ class _TrafficActor:
                 and lw.lane_coord.s + lw.gap >= self._dest_offset
             ):
                 best_lw = lw
-                break
+                if not self._dogmatic:
+                    break
             if (
                 self._cutting_into
                 and self._crossing_time_into(self._cutting_into.lane.index)[1]

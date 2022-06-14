@@ -134,13 +134,19 @@ class SmartsLaneChangingModel(LaneChangingModel):
             its default behavior is when it completes its route.  default: 0.0.
         assertive:
             Willingness to accept lower front and rear gaps in the target lane.
-             The required gap is divided by this value. default: 1.0, range: positive floats.
+            The required gap is divided by this value. default: 1.0, range: positive floats.
             Attempts to match the semantics of the attribute in SUMO's default lane-changing model,
             see: https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models
+        dogmatic:
+            If True, will cutin when a suitable opportunity presents itself based on the above parameters,
+            even if it means the risk of not not completing the assigned route; otherwise, will forego
+            the chance.
     """
 
-    def __init__(self, cutin_prob: float = 0.0, assertive: float = 1.0):
-        super().__init__(cutin_prob=cutin_prob, assertive=assertive)
+    def __init__(
+        self, cutin_prob: float = 0.0, assertive: float = 1.0, dogmatic: bool = True
+    ):
+        super().__init__(cutin_prob=cutin_prob, assertive=assertive, dogmatic=dogmatic)
 
 
 @dataclass(frozen=True)

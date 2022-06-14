@@ -566,10 +566,14 @@ class SMARTS:
 
         return vehicle
 
-    def _remove_vehicle_from_providers(self, vehicle_id: str):
+    def _stop_managing_with_providers(self, vehicle_id: str):
         for provider in self.providers:
             if provider.manages_vehicle(vehicle_id):
                 provider.stop_managing(vehicle_id)
+
+    def _remove_vehicle_from_providers(self, vehicle_id: str):
+        for provider in self.providers:
+            provider.remove_vehicle(vehicle_id)
 
     def create_vehicle_in_providers(
         self,
@@ -582,7 +586,7 @@ class SMARTS:
         self._check_valid()
         # TODO: the vehicle shouldn't be removed from Sumo via Traci, it just needs to not be part of self._sumo_vehicle_ids
         # TODO:     previously, it was left there but just removed from the ProviderState in step_providers()
-        self._remove_vehicle_from_providers(vehicle.id)
+        self._stop_managing_with_providers(vehicle.id)
         role = ActorRole.EgoAgent if is_ego else ActorRole.SocialAgent
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         for provider in self.providers:
@@ -610,13 +614,14 @@ class SMARTS:
         self, state: VehicleState, cur_route: Optional[RoadMap.Route]
     ):
         """Find a new provider for a vehicle previously managed by an agent."""
-        self._remove_vehicle_from_providers(state.vehicle_id)
+        self._stop_managing_with_providers(state.vehicle_id)
 
         # now try to find one who will take it...
         state.role = ActorRole.Social  # TODO ASSUMPTION:  could use Unknown here.
         for provider in self.providers:
             if provider.can_accept_vehicle(state):
                 # just use the first provider we find that accepts it
+                # TODO: give preference to Sumo over Smarts traffic
                 provider.add_vehicle(state, cur_route)
                 return
         self._log.warning(
@@ -761,6 +766,8 @@ class SMARTS:
     def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
         self._clear_collisions(vehicle_ids)
+        for v_id in vehicle_ids:
+            self._remove_vehicle_from_providers(v_id)
 
     def attach_sensors_to_vehicles(self, agent_interface, vehicle_ids):
         """Set the specified vehicles with the sensors needed to satisfy the specified agent
@@ -910,6 +917,8 @@ class SMARTS:
 
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
         self.teardown_agents_without_vehicles(shadow_and_controlling_agents)
+        # XXX: don't remove vehicle from its (traffic) Provider here, as it may be being teleported
+        # (and needs to remain registered in Traci during this step).
 
     def _pybullet_provider_sync(self, provider_state: ProviderState):
         current_vehicle_ids = {v.vehicle_id for v in provider_state.vehicles}

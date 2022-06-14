@@ -739,6 +739,7 @@ class SumoTrafficSimulation(TrafficProvider):
                 route = self._to_be_teleported[v_id]["route"]
                 type_id = self._to_be_teleported[v_id]["type_id"]
                 self._teleport_vehicle(v_id, route, 0, type_id)
+                # XXX:  del self._to_be_teleported[v_id]
 
     def _teleport_vehicle(self, vehicle_id, route, lane_offset, type_id):
         self._log.debug(

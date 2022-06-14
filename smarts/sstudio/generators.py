@@ -295,7 +295,7 @@ class TrafficGenerator:
     def _map_for_route(self, route) -> RoadMap:
         map_spec = route.map_spec
         if not map_spec:
-            # XXX: Spacing is crudely "large enough" so we less likely overlap vehicles
+            # XXX: Spacing is crudely "large enough" so we're less likely overlap vehicles
             lp_spacing = 2.0
             if self._scenario_map_spec:
                 map_spec = replace(
