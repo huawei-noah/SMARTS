@@ -30,6 +30,7 @@ from helpers.scenario import temp_scenario
 from shapely.geometry import Point
 
 import smarts.sstudio.types as t
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -62,10 +63,16 @@ def bubbles():
     ]
 
 
+@pytest.fixture(params=["SUMO", "SMARTS"])
+def traffic_sim(request):
+    return getattr(request, "param", "SUMO")
+
+
 @pytest.fixture
-def scenarios(bubbles, num_vehicles):
+def scenarios(bubbles, num_vehicles, traffic_sim):
     with temp_scenario(name="6lane", map="maps/6lane.net.xml") as scenario_root:
         traffic = t.Traffic(
+            engine=traffic_sim,
             flows=[
                 t.Flow(
                     route=t.Route(
@@ -76,7 +83,7 @@ def scenarios(bubbles, num_vehicles):
                     actors={t.TrafficActor(name="car"): 1},
                 )
                 for lane in range(num_vehicles)
-            ]
+            ],
         )
 
         gen_scenario(
@@ -88,8 +95,13 @@ def scenarios(bubbles, num_vehicles):
 
 
 @pytest.fixture
-def smarts():
-    smarts = SMARTS({}, traffic_sims=[SumoTrafficSimulation()])
+def smarts(traffic_sim):
+    traffic_sims = (
+        [LocalTrafficProvider()]
+        if traffic_sim == "SMARTS"
+        else [SumoTrafficSimulation()]
+    )
+    smarts = SMARTS({}, traffic_sims=traffic_sims)
     yield smarts
     smarts.destroy()
 
@@ -103,6 +115,7 @@ class ZoneSteps:
 
 
 # TODO: Consider a higher-level DSL syntax to fulfill these tests
+@pytest.mark.parametrize("traffic_sim", ["SUMO", "SMARTS"], indirect=True)
 def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles):
     """Ensures bubble airlocking, hijacking, and relinquishing are functional.
     Additionally, we test with multiple bubbles and vehicles to ensure operation is

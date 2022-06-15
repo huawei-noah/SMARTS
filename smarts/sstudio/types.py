@@ -225,7 +225,7 @@ class TrafficActor(Actor):
     tau: float = 1.0
     """The minimum time headway"""
     sigma: float = 0.5
-    """The driver imperfection"""  # TODO: appears to not b used in generators.py
+    """The driver imperfection"""  # TODO: appears to not be used in generators.py
     depart_speed: Union[float, str] = "max"
     """The starting speed of the actor"""
     emergency_decel: float = 4.5

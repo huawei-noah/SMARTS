@@ -47,9 +47,7 @@ from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
 # TODO:  add test_traffic.py
-# TODO:     - create scenario using local engine
 # TODO:     - step for a bit and test for no collisions
-# TODO:     - test for bubble hijacking
 # TODO:     - test for reserved area tests
 # TODO:  test mixed:  Smarts+Sumo
 # TODO:      - if using pre-generated rou files that both Sumo and Smarts can support, then make traffic sim contructors take this path (and remove "engine")
@@ -451,21 +449,24 @@ class _TrafficActor:
         """Factory to construct a _TrafficActor object from an existing VehiclState object."""
         if not route:
             route = owner.road_map.random_route()
+        cur_lane = owner.road_map.nearest_lane(state.pose.point)
         route_roads = [road.road_id for road in route.roads]
         route_id = owner._cache_route_lengths(route_roads)
         flow = dict()
         flow["vtype"] = dict()
         flow["route"] = route_roads
         flow["route_id"] = route_id
-        flow["arrivalLane"] = "0"
-        flow["arrivalPos"] = "random"
+        flow["arrivalLane"] = f"{cur_lane.index}"  # XXX: assumption!
+        flow["arrivalPos"] = "max"
+        flow["departLane"] = f"{cur_lane.index}"  # XXX: assumption!
+        flow["departPos"] = "0"
         # use default values for everything else in flow dict(s)...
         new_actor = _TrafficActor(flow, owner)
         new_actor.state = state
-        new_actor._lane = owner.road_map.nearest_lane(state.pose.point)
-        new_actor._offset = new_actor._lane.offset_along_lane(state.pose.point)
+        new_actor._lane = cur_lane
+        new_actor._offset = cur_lane.offset_along_lane(state.pose.point)
         new_actor._dest_lane, new_actor._dest_offset = new_actor._resolve_flow_pos(
-            flow, "arrival", state.dimensions.length
+            flow, "arrival", state.dimensions
         )
         return new_actor
 
@@ -487,9 +488,7 @@ class _TrafficActor:
         lane = road.lanes[lane_ind]
         offset = flow[f"{depart_arrival}Pos"]
         if offset == "max":
-            offset = lane.length
-            if depart_arrival == "depart":
-                offset -= 0.5 * dimensions
+            offset = max(lane.length - 0.5 * dimensions.length, 0)
         elif offset == "random":
             offset = random.random() * lane.length
         elif 0 <= float(offset) <= lane.length:
@@ -695,7 +694,7 @@ class _TrafficActor:
         my_route_lens = self._owner._route_lane_lengths[self._route_id]
         path_len = my_route_lens.get((lane.lane_id, self._route_ind), lane.length)
         path_len -= my_offset
-        lane_time_left = path_len / self.speed
+        lane_time_left = path_len / self.speed if self.speed else math.inf
 
         lane_ttc = lane_ttre = lane_gap = math.inf
         my_front_offset = my_offset + 0.5 * self._state.dimensions.length
@@ -847,6 +846,7 @@ class _TrafficActor:
                 lw.lane == self._dest_lane
                 and lw.lane_coord.s + lw.gap >= self._dest_offset
             ):
+                # TAI: speed up or slow down as appropriate if _crossing_time_into() was False
                 best_lw = lw
                 if not self._dogmatic:
                     break
@@ -946,12 +946,13 @@ class _TrafficActor:
     def _compute_acceleration(self, dt: float) -> float:
         emergency_decl = float(self._vtype.get("emergencyDecel", 4.5))
         assert emergency_decl >= 0.0
+        speed_denom = self.speed if self.speed else 0.1
         time_cush = max(
             min(
                 self._target_lane_win.time_left,
-                self._target_lane_win.gap / self.speed,
+                self._target_lane_win.gap / speed_denom,
                 self._lane_win.time_left,
-                self._lane_win.gap / self.speed,
+                self._lane_win.gap / speed_denom,
             ),
             0,
         )
@@ -1006,6 +1007,9 @@ class _TrafficActor:
         heading_vec = radians_to_vec(target_heading)
         self._next_linear_acceleration = dt * acceleration * heading_vec
         self._next_speed = self._state.speed + acceleration * dt
+        if self._next_speed < 0:
+            # don't go bckwards
+            self._next_speed = 0
         dpos = heading_vec * self.speed * dt
         target_pos = self._state.pose.position + np.append(dpos, 0.0)
         self._next_pose = Pose.from_center(target_pos, Heading(target_heading))
@@ -1015,6 +1019,7 @@ class _TrafficActor:
         self._state.pose = self._next_pose
         self._state.speed = self._next_speed
         self._state.linear_acceleration = self._next_linear_acceleration
+        self._state.updated = False
         prev_road_id = self._lane.road.road_id
         self.bbox.cache_clear()
 
@@ -1064,6 +1069,9 @@ class _TrafficActor:
         position = self._lane.from_lane_coord(RefLinePoint(s=self._offset))
         heading = vec_to_radians(self._lane.vector_at_offset(self._offset)[:2])
         self._state.pose = Pose.from_center(position, Heading(heading))
-        self._state.speed = self._resolve_flow_speed(self._flow)
+        start_speed = self._resolve_flow_speed(self._flow)
+        if start_speed > 0:
+            self._state.speed = start_speed
         self._state.linear_acceleration = np.array((0.0, 0.0, 0.0))
+        self._state.updated = False
         self._route_ind = 0
