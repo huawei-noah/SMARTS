@@ -22,7 +22,7 @@ for scenario_name in os.listdir(path):
 
 filename_with_vehicle_id = list()
 for scenario in scenarios:
-    # print('processing scenario' + scenario)
+    print('processing scenario ' + scenario)
     vehicle_ids = list()
     for filename in os.listdir(path + scenario):
         
@@ -31,9 +31,10 @@ for scenario in scenarios:
             if vehicle_id not in vehicle_ids:
                 vehicle_ids.append(vehicle_id)
     for id in vehicle_ids:
-        print('adding data for vehicle id ' + id + ' in scenario ' + scenario)
+        # print('adding data for vehicle id ' + id + ' in scenario ' + scenario)
         with open(path + scenario +  '/Agent-history-vehicle-' + id + '.pkl', 'rb') as f:
             vehicle_data = pickle.load(f)
+        print(vehicle_data)
         image_names = list()
         for filename in os.listdir(path + scenario):
             if filename.endswith(id + '.png'):
@@ -46,7 +47,7 @@ for scenario in scenarios:
             sim_time_next = image_names[i + 1].split('_Agent')[0]
             current_position = vehicle_data[float(sim_time)]['ego']['pos']
             next_position = vehicle_data[float(sim_time_next)]['ego']['pos']
-            # print(current_position, next_position)
+            print(vehicle_data[float(sim_time)]['ego']['pos'], vehicle_data[float(sim_time_next)]['ego']['pos'], vehicle_data[float(sim_time)]['dist'])
             dx = next_position[0] - current_position[0]
             dy = next_position[1] - current_position[1]
             actions.append([dx, dy])
