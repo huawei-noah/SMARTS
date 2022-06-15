@@ -19,6 +19,8 @@
 # THE SOFTWARE.
 
 import logging
+from pathlib import Path
+import pickle
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import math
@@ -64,6 +66,18 @@ def _filter(obs: Observation, target_position, env):
         obs
     ), "Observation mismatch with observation space. Less keys in observation space dictionary."
     return obs
+
+
+def _record_data(collected_data, t, actions, observations, rewards, dones, extras):
+    for agent_id in observations.keys():
+        collected_data.setdefault(agent_id, {}).setdefault(t, {})
+        collected_data[agent_id][t] = {
+            "actions": actions.get(agent_id, None),
+            "obs": observations.get(agent_id, None),
+            "rewards": rewards.get(agent_id, None),
+            "dones": dones.get(agent_id, None),
+            "extras": extras.get(agent_id, None),
+        }
 
 
 class CompetitionEnv(gym.Env):
@@ -152,7 +166,8 @@ class CompetitionEnv(gym.Env):
         self.agent_specs = {
             AGENT_ID: AgentSpec(
                 interface=agent_interface,
-        )}
+            )
+        }
         envision_client = None
         if not headless or envision_record_data_replay_path:
             envision_client = Envision(
@@ -178,6 +193,7 @@ class CompetitionEnv(gym.Env):
         )
 
         self._last_obs = None
+        self._collected_data = None
 
     def seed(self, seed: int) -> List[int]:
         """Sets random number generator seed number.
@@ -224,14 +240,23 @@ class CompetitionEnv(gym.Env):
             ]
         )
 
+        agent_actions = {AGENT_ID: target_pose}
         with timeit("SMARTS Simulation/Scenario Step", self._log):
-            observations, rewards, dones, extras = self._smarts.step(
-                {AGENT_ID: target_pose}
-            )
+            observations, rewards, dones, extras = self._smarts.step(agent_actions)
+        _record_data(
+            self._collected_data,
+            self._smarts.elapsed_sim_time,
+            agent_actions,
+            observations,
+            rewards,
+            dones,
+            extras,
+        )
 
         done = dones[AGENT_ID]
         reward = rewards[AGENT_ID]
         info = {"score": extras["scores"][AGENT_ID], "env_obs": observations[AGENT_ID]}
+
         observation = observations[AGENT_ID]
         # print(observations['EGO'].ego_vehicle_state.position, agent_action)
         self._last_obs = observation
@@ -250,10 +275,28 @@ class CompetitionEnv(gym.Env):
         Returns:
             Observation: Agents' observation.
         """
+
+        # Save recorded observations as pickle files
+        if self._collected_data:
+            for car, data in self._collected_data.items():
+                outfile = Path(__file__).parent / f"{car}.pkl"
+                with open(outfile, "wb") as of:
+                    pickle.dump(data, of)
+        self._collected_data = dict()
+
         scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)
+        _record_data(
+            self._collected_data,
+            self._smarts.elapsed_sim_time,
+            {},
+            env_observations,
+            {},
+            {},
+            {},
+        )
 
         observation = env_observations[AGENT_ID]
         self._last_obs = observation
@@ -268,6 +311,14 @@ class CompetitionEnv(gym.Env):
 
     def close(self):
         """Closes the environment and releases all resources."""
+
+        # Save recorded observations as pickle files
+        if self._collected_data:
+            for car, data in self._collected_data.items():
+                outfile = Path(__file__).parent / f"{car}.pkl"
+                with open(outfile, "wb") as of:
+                    pickle.dump(data, of)
+
         if self._smarts is not None:
             self._smarts.destroy()
             self._smarts = None
