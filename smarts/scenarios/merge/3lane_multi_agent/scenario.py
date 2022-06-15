@@ -23,14 +23,7 @@ from itertools import combinations
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import (
-    Flow,
-    Mission,
-    Route,
-    Scenario,
-    Traffic,
-    TrafficActor,
-)
+from smarts.sstudio.types import Flow, Mission, Route, Scenario, Traffic, TrafficActor
 
 normal = TrafficActor(
     name="car",
@@ -72,7 +65,7 @@ for name, routes in enumerate(route_comb):
                 # 300s.
                 end=60 * 15,
                 actors={normal: 1},
-                randomly_spaced = True,
+                randomly_spaced=True,
             )
             for r in routes
         ]

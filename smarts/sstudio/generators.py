@@ -32,8 +32,8 @@ from smarts.core.utils.file import make_dir_in_smarts_log_dir
 
 from . import types
 
-
 SECONDS_PER_HOUR_INV = 1 / 60 / 60
+
 
 class InvalidRoute(Exception):
     """An exception given if a route cannot be successfully plotted."""

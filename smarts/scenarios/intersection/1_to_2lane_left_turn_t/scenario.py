@@ -23,14 +23,7 @@ from itertools import combinations
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import (
-    Flow,
-    Mission,
-    Route,
-    Scenario,
-    Traffic,
-    TrafficActor,
-)
+from smarts.sstudio.types import Flow, Mission, Route, Scenario, Traffic, TrafficActor
 
 normal = TrafficActor(
     name="car",
@@ -56,7 +49,9 @@ turn_right_routes = [
 # Total route combinations = 8C1 + 8C2 + 8C3 + 8C4 + 8C5 = 218
 # Repeated route combinations = 218 * 2 = 436
 all_routes = horizontal_routes + turn_left_routes + turn_right_routes
-route_comb = [com for elems in range(1, 6) for com in combinations(all_routes, elems)] * 2
+route_comb = [
+    com for elems in range(1, 6) for com in combinations(all_routes, elems)
+] * 2
 traffic = {}
 for name, routes in enumerate(route_comb):
     traffic[str(name)] = Traffic(
