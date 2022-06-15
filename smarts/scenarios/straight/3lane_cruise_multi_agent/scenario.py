@@ -44,7 +44,7 @@ route_opt = [
 ]
 
 # Traffic combinations = 3C2 + 3C3 = 3 + 1 = 4
-# Duplicated traffic combinations = 4 * 100 = 400
+# Repeated traffic combinations = 4 * 100 = 400
 min_flows = 2
 max_flows = 3
 route_comb = [

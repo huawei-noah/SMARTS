@@ -24,7 +24,6 @@ from pathlib import Path
 
 from smarts.sstudio import gen_scenario
 from smarts.sstudio.types import (
-    Distribution,
     Flow,
     Mission,
     Route,
@@ -35,8 +34,6 @@ from smarts.sstudio.types import (
 
 normal = TrafficActor(
     name="car",
-    speed=Distribution(mean=1, sigma=0.5),
-    min_gap=Distribution(mean=10, sigma=0.5),
 )
 
 # flow_name = (start_lane, end_lane,)
@@ -47,13 +44,14 @@ route_opt = [
 ]
 
 # Traffic combinations = 3C2 + 3C3 = 3 + 1 = 4
+# Repeated traffic combinations = 4 * 100 = 400
 min_flows = 2
 max_flows = 3
 route_comb = [
     com
     for elems in range(min_flows, max_flows + 1)
     for com in combinations(route_opt, elems)
-]
+] * 100
 
 traffic = {}
 for name, routes in enumerate(route_comb):
@@ -74,6 +72,7 @@ for name, routes in enumerate(route_comb):
                 # 300s.
                 end=60 * 15,
                 actors={normal: 1},
+                randomly_spaced = True,                
             )
             for r in routes
         ]

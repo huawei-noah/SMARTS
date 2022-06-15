@@ -24,7 +24,6 @@ from pathlib import Path
 
 from smarts.sstudio import gen_scenario
 from smarts.sstudio.types import (
-    Distribution,
     Flow,
     Mission,
     Route,
@@ -35,7 +34,6 @@ from smarts.sstudio.types import (
 
 normal = TrafficActor(
     name="car",
-    speed=Distribution(sigma=0.8, mean=0.8),
 )
 
 vertical_routes = [
@@ -77,7 +75,7 @@ for name, routes in enumerate(route_comb):
                     end=(f"{r[2]}", r[3], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=60 * random.uniform(5, 8),
+                rate=60 * random.uniform(5, 10),
                 # Random flow start time, between x and y seconds.
                 begin=random.uniform(0, 3),
                 # For an episode with maximum_episode_steps=3000 and step
