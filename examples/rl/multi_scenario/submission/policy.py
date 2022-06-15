@@ -53,7 +53,7 @@ def submitted_wrappers():
 
 
 class Policy(BasePolicy):
-    """Policy class to be submitted by the user. This class will be loaded 
+    """Policy class to be submitted by the user. This class will be loaded
     and tested during evaluation."""
 
     def __init__(self):
@@ -84,7 +84,7 @@ class Policy(BasePolicy):
 
 
 class RandomPolicy(BasePolicy):
-    """A sample policy with random actions. Note that only the class named `Policy` 
+    """A sample policy with random actions. Note that only the class named `Policy`
     will be tested during evaluation."""
 
     def __init__(self):
@@ -92,8 +92,9 @@ class RandomPolicy(BasePolicy):
         performed here. To be implemented by the user.
         """
         import gym
+
         self._action_space = gym.spaces.Discrete(4)
- 
+
     def act(self, obs: Dict[str, Any]):
         """Act function to be implemented by user.
 
