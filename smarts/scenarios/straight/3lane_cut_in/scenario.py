@@ -27,8 +27,12 @@ from smarts.sstudio.types import Flow, Mission, Route, Scenario, Traffic, Traffi
 
 normal = TrafficActor(
     name="car",
-    lane_changing_model=LaneChangingModel(impatience=0, cooperative=0.5),
-
+    lane_changing_model=LaneChangingModel(
+        pushy=1,
+        impatience=1,
+        cooperative=0.1,
+        speed_Gain=1,
+    ),
 )
 
 # See SUMO doc
@@ -37,10 +41,6 @@ normal = TrafficActor(
 # Junction model
 # https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#junction_model_parameters
 
-# normal = TrafficActor(
-#     name="car",
-#     speed=Distribution(sigma=0.8, mean=0.8),
-# )
 # cooperative = TrafficActor(
 #     name="cooperative",
 #     speed=Distribution(sigma=0.3, mean=1.0),
@@ -81,15 +81,13 @@ route_opt = [
     (2, 2),
 ]
 
-# Traffic combinations = 3C2 + 3C3 = 3 + 1 = 4
-# Repeated traffic combinations = 4 * 100 = 400
 min_flows = 3
-max_flows = 6
+max_flows = 7
 route_comb = [
     com
     for elems in range(min_flows, max_flows + 1)
     for com in combinations(route_opt, elems)
-]
+] * 100
 
 traffic = {}
 for name, routes in enumerate(route_comb):

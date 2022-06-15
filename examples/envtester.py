@@ -21,7 +21,7 @@ def main(num_episodes, max_episode_steps=50):
 
     env = gym.make(
         "smarts.env:multi-scenario-v0",
-        scenario="1_to_2lane_left_turn_c",
+        scenario="3lane_cut_in",
         headless=True,
         sumo_headless=False,
         action_space="Lane",
