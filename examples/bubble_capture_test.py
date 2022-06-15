@@ -2,16 +2,12 @@ import argparse
 import logging
 from typing import Dict
 
-import gym
-from envision.tests.test_data_replay import NUM_EPISODES
 from smarts.core.agent import Agent
 from smarts.core.agent_manager import AgentManager
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
-from smarts.service.bubble_service import BubbleService
-from smarts.service.proto.bubble_pb2 import BubbleRequest, ObservationRequest
 
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 

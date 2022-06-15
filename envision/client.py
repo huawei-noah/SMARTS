@@ -175,7 +175,6 @@ class Client:
         wait_between_retries: float = 0.5,
     ):
         """Send a pre-recorded envision simulation to the envision server."""
-
         client = Client(
             endpoint=endpoint,
             wait_between_retries=wait_between_retries,
