@@ -11,12 +11,15 @@ torch.cuda.empty_cache()
 
 prediction_step = 1
 path = '/home/kyber/SMARTS/examples/baseline/waymo_offline/extracted_waymo/'
+obs = list()
+actions = list()
+
 
 scenarios = list()
 for scenario_name in os.listdir(path):
     scenarios.append(scenario_name)
 
-obs = list()
+
 filename_with_vehicle_id = list()
 for scenario in scenarios:
     # print('processing scenario' + scenario)
@@ -29,22 +32,38 @@ for scenario in scenarios:
                 vehicle_ids.append(vehicle_id)
     for id in vehicle_ids:
         print('adding data for vehicle id ' + id + ' in scenario ' + scenario)
-        with open(path + scenario +  '/Agent-history-vehicle-' + vehicle_id + '.pkl', 'rb') as f:
+        with open(path + scenario +  '/Agent-history-vehicle-' + id + '.pkl', 'rb') as f:
             vehicle_data = pickle.load(f)
         image_names = list()
         for filename in os.listdir(path + scenario):
             if filename.endswith(id + '.png'):
                 image_names.append(filename)
         image_names = sorted(image_names)
+        for i in range(len(image_names) - 1):
+            image = Image.open(path + scenario + '/' + image_names[i])
+            obs.append(np.asarray(image).reshape(3,256,256))
+            sim_time = image_names[i].split('_Agent')[0]
+            sim_time_next = image_names[i + 1].split('_Agent')[0]
+            current_position = vehicle_data[float(sim_time)]['ego']['pos']
+            next_position = vehicle_data[float(sim_time_next)]['ego']['pos']
+            # print(current_position, next_position)
+            dx = next_position[0] - current_position[0]
+            dy = next_position[1] - current_position[1]
+            actions.append([dx, dy])
 
-        for i in range(len(image_names) - prediction_step):
-            image_group = image_names[i : i + prediction_step]
-            for image_name in image_group:
-                image = Image.open(path + scenario + '/' + image_name)
-                obs.append(np.asarray(image).reshape(3,256,256))
+
+
+        # for i in range(len(image_names) - prediction_step):
+        #     image_group = image_names[i : i + prediction_step]
+        #     for image_name in image_group:
+        #         image = Image.open(path + scenario + '/' + image_name)
+        #         obs.append(np.asarray(image).reshape(3,256,256))
+        #         sim_time = image_name[0:3]
+        #         sim_time_next = str(float(sim_time) + 0.1)
+        #         print(sim_time, sim_time_next)
 
 obs = np.array(obs)
-actions = np.random.random((len(obs),2))
+actions = np.array(actions)
 rewards = np.random.random(len(obs))
 terminals = np.random.random(len(obs))
 print(str(obs.shape[0]) + ' pieces of data are added into dataset.' )
