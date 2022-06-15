@@ -13,6 +13,8 @@ prediction_step = 1
 path = '/home/kyber/SMARTS/examples/baseline/waymo_offline/extracted_waymo/'
 obs = list()
 actions = list()
+rewards = list()
+terminals = list()
 
 
 scenarios = list()
@@ -34,7 +36,6 @@ for scenario in scenarios:
         # print('adding data for vehicle id ' + id + ' in scenario ' + scenario)
         with open(path + scenario +  '/Agent-history-vehicle-' + id + '.pkl', 'rb') as f:
             vehicle_data = pickle.load(f)
-        print(vehicle_data)
         image_names = list()
         for filename in os.listdir(path + scenario):
             if filename.endswith(id + '.png'):
@@ -42,15 +43,21 @@ for scenario in scenarios:
         image_names = sorted(image_names)
         for i in range(len(image_names) - 1):
             image = Image.open(path + scenario + '/' + image_names[i])
-            obs.append(np.asarray(image).reshape(3,256,256))
             sim_time = image_names[i].split('_Agent')[0]
             sim_time_next = image_names[i + 1].split('_Agent')[0]
             current_position = vehicle_data[float(sim_time)]['ego']['pos']
             next_position = vehicle_data[float(sim_time_next)]['ego']['pos']
-            print(vehicle_data[float(sim_time)]['ego']['pos'], vehicle_data[float(sim_time_next)]['ego']['pos'], vehicle_data[float(sim_time)]['dist'])
             dx = next_position[0] - current_position[0]
             dy = next_position[1] - current_position[1]
+            events = vehicle_data[float(sim_time)]['events']
+            if all(value == 0 for value in events.values()):
+                terminal = 0
+            else:
+                terminal = 1
+            obs.append(np.asarray(image).reshape(3,256,256))
             actions.append([dx, dy])
+            rewards.append(vehicle_data[float(sim_time)]['dist'])
+            terminals.append(terminal)
 
 
 
@@ -65,8 +72,8 @@ for scenario in scenarios:
 
 obs = np.array(obs)
 actions = np.array(actions)
-rewards = np.random.random(len(obs))
-terminals = np.random.random(len(obs))
+rewards = np.array(rewards)
+terminals = np.array(terminals)
 print(str(obs.shape[0]) + ' pieces of data are added into dataset.' )
 dataset = MDPDataset(obs, actions, rewards, terminals) 
 cql = d3rlpy.algos.CQL(use_gpu=True, batch_size=1)
