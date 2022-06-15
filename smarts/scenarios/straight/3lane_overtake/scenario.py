@@ -35,9 +35,8 @@ from smarts.sstudio.types import (
 
 normal = TrafficActor(
     name="car",
-    speed=Distribution(mean=1, sigma=1.2),
-    max_speed=6,
-    min_gap=Distribution(mean=20, sigma=1.2),
+    max_speed=10,
+    min_gap=Distribution(mean=4, sigma=1.2),
 )
 
 # flow_name = (start_lane, end_lane,)
@@ -46,13 +45,14 @@ route_opt = [
 ]
 
 # Traffic combinations = 1C1 = 1
+# Repeated traffic combinations = 1 * 400 = 400
 min_flows = 1
 max_flows = 1
 route_comb = [
     com
     for elems in range(min_flows, max_flows + 1)
     for com in combinations(route_opt, elems)
-]
+] * 400
 
 traffic = {}
 for name, routes in enumerate(route_comb):
@@ -73,6 +73,7 @@ for name, routes in enumerate(route_comb):
                 # 300s.
                 end=60 * 15,
                 actors={normal: 1},
+                randomly_spaced=True,
             )
             for r in routes
         ]
@@ -82,7 +83,7 @@ route = Route(begin=("gneE3", 0, 10), end=("gneE3", 0, "max"))
 ego_missions = [
     Mission(
         route=route,
-        start_time=19,  # Delayed start, to ensure road has prior traffic.
+        start_time=17,  # Delayed start, to ensure road has prior traffic.
     )
 ]
 

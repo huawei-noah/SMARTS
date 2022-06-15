@@ -87,7 +87,7 @@ route_comb = [
     com
     for elems in range(min_flows, max_flows + 1)
     for com in combinations(route_opt, elems)
-] * 100
+]
 
 traffic = {}
 for name, routes in enumerate(route_comb):

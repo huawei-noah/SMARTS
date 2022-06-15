@@ -1,18 +1,22 @@
 from pathlib import Path
 from typing import Any, Dict
 
-from train.action import Action as DiscreteAction
-from train.observation import Concatenate, FilterObs
-from train.reward import Reward
-
-from smarts.core.controllers import ActionSpaceType
-from smarts.env.wrappers.format_action import FormatAction
-from smarts.env.wrappers.format_obs import FormatObs
-from smarts.env.wrappers.frame_stack import FrameStack
-
 # Environment variables (optional)
 IMG_METERS = 50  # Observation image area size in meters.
 IMG_PIXELS = 112  # Observation image size in pixels.
+
+
+class BasePolicy:
+    def act(self, obs: Dict[str, Any]):
+        """Act function to be implemented by user.
+
+        Args:
+            obs (Dict[str, Any]): A dictionary of observation for each ego agent step.
+
+        Returns:
+            Dict[str, Any]: A dictionary of actions for each ego agent.
+        """
+        raise NotImplementedError
 
 
 def submitted_wrappers():
@@ -23,6 +27,15 @@ def submitted_wrappers():
     Returns:
         List[wrappers]: List of wrappers. Default is empty list [].
     """
+
+    from train.action import Action as DiscreteAction
+    from train.observation import Concatenate, FilterObs
+    from train.reward import Reward
+
+    from smarts.core.controllers import ActionSpaceType
+    from smarts.env.wrappers.format_action import FormatAction
+    from smarts.env.wrappers.format_obs import FormatObs
+    from smarts.env.wrappers.frame_stack import FrameStack
 
     # fmt: off
     wrappers = [
@@ -39,8 +52,9 @@ def submitted_wrappers():
     return wrappers
 
 
-class Policy:
-    """Policy class to be submitted."""
+class Policy(BasePolicy):
+    """Policy class to be submitted by the user. This class will be loaded 
+    and tested during evaluation."""
 
     def __init__(self):
         """All policy initialization matters, including loading of model, is
@@ -64,6 +78,34 @@ class Policy:
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
             action, _ = self.model.predict(observation=agent_obs, deterministic=True)
+            wrapped_act.update({agent_id: action})
+
+        return wrapped_act
+
+
+class RandomPolicy(BasePolicy):
+    """A sample policy with random actions. Note that only the class named `Policy` 
+    will be tested during evaluation."""
+
+    def __init__(self):
+        """All policy initialization matters, including loading of model, is
+        performed here. To be implemented by the user.
+        """
+        import gym
+        self._action_space = gym.spaces.Discrete(4)
+ 
+    def act(self, obs: Dict[str, Any]):
+        """Act function to be implemented by user.
+
+        Args:
+            obs (Dict[str, Any]): A dictionary of observation for each ego agent step.
+
+        Returns:
+            Dict[str, Any]: A dictionary of actions for each ego agent.
+        """
+        wrapped_act = {}
+        for agent_id, agent_obs in obs.items():
+            action = self._action_space.sample()
             wrapped_act.update({agent_id: action})
 
         return wrapped_act
