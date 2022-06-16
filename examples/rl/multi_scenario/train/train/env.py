@@ -18,14 +18,22 @@ from smarts.env.wrappers.single_agent import SingleAgent
 def wrappers(config: Dict[str, Any]):
     # fmt: off
     wrappers = [
+        # Used to format observation space such that it becomes gym-space compliant.
         FormatObs,
+        # Used to format action space such that it becomes gym-space compliant.
         lambda env: FormatAction(env=env, space=ActionSpaceType[config["action_space"]]),
         Info,
+        # Used to shape rewards.
         Reward,
+        # Used to discretize action space for easier RL training.
         lambda env: DiscreteAction(env=env, space=config["action_wrapper"]),
+        # Used to filter only the selected observation parameters.
         FilterObs,
+        # Used to stack sequential observations to include temporal information. 
         lambda env: FrameStack(env=env, num_stack=config["num_stack"]),
+        # Concatenates stacked dictionaries into numpy arrays.
         lambda env: Concatenate(env=env, channels_order="first"),
+        # Modifies interface to a single agent interface, which is compatible with libraries such as gym, Stable Baselines3, TF-Agents, etc.
         SingleAgent,
         lambda env: DummyVecEnv([lambda: env]),
         lambda env: VecMonitor(venv=env, filename=str(config["logdir"]), info_keywords=("is_success",))
@@ -57,7 +65,6 @@ def make(
         img_meters=config["img_meters"],
         img_pixels=config["img_pixels"],
         headless=not config["head"],  # If False, enables Envision display.
-        visdom=config["visdom"],  # If True, enables Visdom display.
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
     )
 

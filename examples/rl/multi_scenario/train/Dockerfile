@@ -27,13 +27,13 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip install --upgrade pip wheel
 
 # Install requirements.txt .
-COPY ./examples/rl/intersection/requirements.txt /tmp/requirements.txt
+COPY ./examples/rl/multi_scenario/train/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy source files and install.
 COPY . /src
 WORKDIR /src
-RUN pip install --no-cache-dir -e ./examples/rl/intersection
+RUN pip install --no-cache-dir -e ./examples/rl/multi_scenario/train
 
 # For Envision.
 EXPOSE 8081
