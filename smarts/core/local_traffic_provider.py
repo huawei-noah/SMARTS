@@ -18,11 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import bisect
 import logging
 import math
 import random
 import xml.etree.ElementTree as XET
+from bisect import bisect_left, bisect_right, insort
 from collections import deque
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
@@ -250,9 +250,9 @@ class LocalTrafficProvider(TrafficProvider):
             offset = nlane.offset_along_lane(ovs.pose.point)
             half_len = 0.5 * ovs.dimensions.length
             lbc = self._lane_backs_cache.setdefault(nlane, [])
-            bisect.insort(lbc, (offset - half_len, ovs))
+            insort(lbc, (offset - half_len, ovs))
             lfc = self._lane_fronts_cache.setdefault(nlane, [])
-            bisect.insort(lfc, (offset + half_len, ovs))
+            insort(lfc, (offset + half_len, ovs))
         self._offsets_cache = dict()
 
         # Do state update in two passes so that we don't use next states in the
@@ -724,7 +724,7 @@ class _TrafficActor:
     ) -> Tuple[float, Optional[VehicleState]]:
         lbc = self._owner._lane_backs_cache.get(lane)
         if lbc:
-            lane_spot = bisect.bisect_right(lbc, (my_offset, None))
+            lane_spot = bisect_right(lbc, (my_offset, None))
             if lane_spot < len(lbc):
                 lane_offset, nvs = lbc[lane_spot]
                 assert lane_offset >= my_offset
@@ -742,7 +742,7 @@ class _TrafficActor:
     ) -> Tuple[float, Optional[VehicleState]]:
         lfc = self._owner._lane_fronts_cache.get(lane)
         if lfc:
-            lane_spot = bisect.bisect_left(lfc, (my_offset, None))
+            lane_spot = bisect_left(lfc, (my_offset, None))
             if lane_spot > 0:
                 lane_offset, bv_vs = lfc[lane_spot - 1]
                 assert lane_offset <= my_offset
