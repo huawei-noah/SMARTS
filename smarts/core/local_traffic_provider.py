@@ -179,8 +179,8 @@ class LocalTrafficProvider(TrafficProvider):
         for reserved_area in self._reserved_areas.values():
             if reserved_area.intersects(actor_bbox):
                 return False
-        for actor in self._my_actors.values():
-            if actor.bbox().intersects(actor_bbox):
+        for my_actor in self._my_actors.values():
+            if actor != my_actor and my_actor.bbox().intersects(actor_bbox):
                 return False
         for other, _ in self._other_vehicles.values():
             if other.bbox.intersects(actor_bbox):
