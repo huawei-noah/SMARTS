@@ -386,7 +386,7 @@ class _TrafficActor:
         self._route_ind: int = 0
         self._done_with_route: bool = False
         self._off_route: bool = False
-        self._route: Sequence[str] = flow["route"]
+        self._route: List[str] = flow["route"]
         self._route_id: int = flow["route_id"]
 
         self._lane = None
@@ -559,11 +559,11 @@ class _TrafficActor:
         return self._state.vehicle_id
 
     @property
-    def route(self) -> Sequence[str]:
+    def route(self) -> List[str]:
         """The route (sequence of road_ids) this actor will attempt to take."""
         return self._route
 
-    def update_route(self, route_id: int, route: Sequence[str]):
+    def update_route(self, route_id: int, route: List[str]):
         """Update the route (sequence of road_ids) this actor will attempt to take.
         A unique route_id is provided for referencing the route cache in he owner provider."""
         self._route = route
@@ -694,7 +694,7 @@ class _TrafficActor:
 
     def _find_vehicle_ahead_on_route(
         self, lane: RoadMap.Lane, dte: float, route_lens, rind: int
-    ) -> Tuple[float, VehicleState]:
+    ) -> Tuple[float, Optional[VehicleState]]:
         nv_ahead_dist = math.inf
         nv_ahead_vs = None
         rind += 1
@@ -721,7 +721,7 @@ class _TrafficActor:
 
     def _find_vehicle_ahead(
         self, lane: RoadMap.Lane, my_offset: float
-    ) -> Tuple[float, VehicleState]:
+    ) -> Tuple[float, Optional[VehicleState]]:
         lbc = self._owner._lane_backs_cache.get(lane)
         if lbc:
             lane_spot = bisect.bisect_right(lbc, (my_offset, None))
@@ -739,7 +739,7 @@ class _TrafficActor:
 
     def _find_vehicle_behind(
         self, lane: RoadMap.Lane, my_offset: float
-    ) -> Tuple[float, VehicleState]:
+    ) -> Tuple[float, Optional[VehicleState]]:
         lfc = self._owner._lane_fronts_cache.get(lane)
         if lfc:
             lane_spot = bisect.bisect_left(lfc, (my_offset, None))
