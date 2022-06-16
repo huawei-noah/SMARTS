@@ -570,7 +570,7 @@ class BubbleManager:
             f"Stop shadowing vehicle={vehicle_id} (shadow_agent={shadow_agent_id})"
         )
 
-        sim.vehicle_index.stop_agent_observation(vehicle_id)
+        sim.agent_manager.stop_agent_observation(sim, vehicle_id)
 
         if bubble.is_boid and bubble.keep_alive:
             return
@@ -597,9 +597,10 @@ class BubbleManager:
         # can resume going there (potentially via a different route at that point).
         dest_road_id = None
         for traffic_sim in sim.traffic_sims:
-            dest_road_id = traffic_sim.vehicle_dest_road(vehicle_id=vehicle.id)
-            if dest_road_id is not None:
-                break
+            if traffic_sim.manages_vehicle(vehicle.id):
+                dest_road_id = traffic_sim.vehicle_dest_road(vehicle.id)
+                if dest_road_id is not None:
+                    break
         if dest_road_id:
             goal = PositionalGoal.from_road(dest_road_id, sim.scenario.road_map)
         else:

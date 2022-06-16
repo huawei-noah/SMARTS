@@ -839,6 +839,11 @@ class SMARTS:
         return self._traffic_sims
 
     @property
+    def traffic_history_provider(self) -> TrafficHistoryProvider:
+        """The source of any traffic history data."""
+        return self._traffic_history_provider
+
+    @property
     def road_map(self) -> RoadMap:
         """The road map api which allows lookup of road features."""
         return self.scenario.road_map

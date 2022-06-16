@@ -688,12 +688,17 @@ class Vehicle:
         for sensor_name in sensor_names:
 
             def attach_sensor(self, sensor, sensor_name=sensor_name):
-                assert (
-                    getattr(self, f"_{sensor_name}", None) is None
-                ), f"{sensor_name} already added to {self.id}"
-                if getattr(self, f"_{sensor_name}", None) is None:
-                    setattr(self, f"_{sensor_name}", sensor)
-                    self._sensors[sensor_name] = sensor
+                # replace previously-attached sensor with this one
+                # (to allow updating its parameters).
+                # Sensors might have been attached to a non-agent vehicle
+                # (for example, for observation colleciton from history vehicles),
+                # but if that vehicle gets hijacked, we want to use the sensors
+                # specified by the hijacking agent's interface.
+                detach = getattr(self, f"detach_{sensor_name}")
+                if detach:
+                    detach(sensor_name)
+                setattr(self, f"_{sensor_name}", sensor)
+                self._sensors[sensor_name] = sensor
 
             def detach_sensor(self, sensor_name=sensor_name):
                 sensor = getattr(self, f"_{sensor_name}", None)
@@ -708,7 +713,7 @@ class Vehicle:
 
             def sensor_property(self, sensor_name=sensor_name):
                 sensor = getattr(self, f"_{sensor_name}", None)
-                assert sensor is not None, f"{sensor_name} is not attached"
+                assert sensor is not None, f"{sensor_name} is not attached to {self.id}"
                 return sensor
 
             setattr(Vehicle, f"_{sensor_name}", None)

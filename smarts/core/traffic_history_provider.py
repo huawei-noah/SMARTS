@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import logging
 from typing import Iterable, Optional, Sequence, Set
 
 from cached_property import cached_property
@@ -35,6 +36,7 @@ class TrafficHistoryProvider(TrafficProvider):
     """A provider that replays traffic history for simulation."""
 
     def __init__(self):
+        self._logger = logging.getLogger(self.__class__.__name__)
         self._histories = None
         self._scenario = None
         self._is_setup = False
@@ -161,9 +163,16 @@ class TrafficHistoryProvider(TrafficProvider):
         pass
 
     def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
-        pos_x, pos_y = self._histories.vehicle_final_position(vehicle_id)
-        final_lane = self._scenario.road_map.nearest_lane(Point(pos_x, pos_y))
-        return final_lane.road
+        try:
+            vid = int(vehicle_id.replace(self._vehicle_id_prefix, ""))
+            pos_x, pos_y = self._histories.vehicle_final_position(vid)
+            final_lane = self._scenario.road_map.nearest_lane(Point(pos_x, pos_y))
+            return final_lane.road.road_id
+        except:
+            self._logger.warning(
+                "called vehicle_dest_road() for non-history vehicle_id: {vehicle_id}"
+            )
+            return None
 
     def can_accept_vehicle(self, state: VehicleState) -> bool:
         # TAI consider:

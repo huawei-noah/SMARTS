@@ -604,3 +604,8 @@ class AgentManager:
             sim.vehicle_index.attach_sensors_to_vehicle(
                 sim, sv_id, agent_interface, plan
             )
+
+    def stop_agent_observation(self, sim, vehicle_id: str):
+        """Called when agent observation is finished and sensors should be removed from a vehicle"""
+        sim.vehicle_index.stop_agent_observation(vehicle_id)
+        del self._vehicle_with_sensors[vehicle_id]
