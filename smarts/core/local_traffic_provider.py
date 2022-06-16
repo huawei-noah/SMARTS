@@ -728,6 +728,7 @@ class _TrafficActor:
             if lane_spot < len(lbc):
                 lane_offset, nvs = lbc[lane_spot]
                 assert lane_offset >= my_offset
+                assert self.actor_id != nvs.vehicle_id
                 return lane_offset - my_offset, nvs
         route_lens = self._owner._route_lane_lengths[self._route_id]
         route_len = route_lens.get((lane.lane_id, self._route_ind), lane.length)
@@ -772,9 +773,7 @@ class _TrafficActor:
         path_len -= my_offset
         lane_time_left = path_len / self.speed if self.speed else math.inf
 
-        ahead_dist, nv_vs = self._find_vehicle_ahead(
-            lane, 1.001 * (my_offset - half_len)
-        )
+        ahead_dist, nv_vs = self._find_vehicle_ahead(lane, my_offset - 0.999 * half_len)
         if nv_vs:
             ahead_dist -= half_len
             ahead_dist -= self._min_space_cush
@@ -788,7 +787,7 @@ class _TrafficActor:
             lane_ttc = math.inf
 
         behind_dist, bv_vs = self._find_vehicle_behind(
-            lane, 0.999 * (my_offset + half_len)
+            lane, my_offset + 0.999 * half_len
         )
         if bv_vs:
             behind_dist -= half_len
