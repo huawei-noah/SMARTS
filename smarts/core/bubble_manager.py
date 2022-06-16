@@ -122,6 +122,11 @@ class Bubble:
         return self._bubble.follow_actor_id
 
     @property
+    def follow_vehicle_id(self) -> str:
+        """A target vehicle that the bubble should remain at a fixed offset from."""
+        return self._bubble.follow_vehicle_id
+
+    @property
     def limit(self):
         """The maximum number of actors that the bubble can have captured at the same time."""
         return self._limit
@@ -220,7 +225,7 @@ class Bubble:
     @property
     def is_travelling(self):
         """If the bubble is following an actor."""
-        return self._bubble.follow_actor_id is not None
+        return self._bubble.follow_actor_id is not None or self._bubble.follow_vehicle_id is not None
 
     def move_to_follow_vehicle(self, vehicle: Vehicle):
         """Move the bubble to a pose relative to the given vehicle."""
@@ -257,6 +262,7 @@ class Bubble:
   limit={self.limit},
   geometry={self.geometry},
   airlock_geometry={self.airlock_geometry},
+  follow_vehicle_id={self.follow_vehicle_id},
 )"""
 
 
@@ -311,7 +317,7 @@ class Cursor:
         #       time-based airlocking. For robust code we'll want to handle these
         #       scenarios (e.g. hijacking if didn't airlock first)
         transition = None
-        if is_social and not is_shadowed and is_airlock_admissible and in_airlock_zone:
+        if is_social and not is_shadowed and is_airlock_admissible and (in_airlock_zone or in_bubble_zone):
             transition = BubbleTransition.AirlockEntered
         elif is_shadowed and is_hijack_admissible and in_bubble_zone:
             transition = BubbleTransition.Entered
@@ -360,9 +366,13 @@ class BubbleManager:
             if not bubble.is_travelling:
                 return True
 
-            vehicles = self._last_vehicle_index.vehicles_by_actor_id(
-                bubble.follow_actor_id
-            )
+            vehicles = []
+            if bubble.follow_actor_id is not None:
+                vehicles += self._last_vehicle_index.vehicles_by_actor_id(bubble.follow_actor_id)
+            if bubble.follow_vehicle_id is not None:
+                vehicle = self._last_vehicle_index.vehicle_by_id(bubble.follow_vehicle_id, None)
+                if vehicle is not None:
+                    vehicles += [vehicle]
             return len(vehicles) == 1
 
         return [bubble for bubble in self._bubbles if is_active(bubble)]
@@ -478,7 +488,13 @@ class BubbleManager:
             if not bubble.is_travelling:
                 continue
 
-            vehicles = sim.vehicle_index.vehicles_by_actor_id(bubble.follow_actor_id)
+            vehicles = []
+            if bubble.follow_actor_id is not None:
+                vehicles += self._last_vehicle_index.vehicles_by_actor_id(bubble.follow_actor_id)
+            if bubble.follow_vehicle_id is not None:
+                vehicle = self._last_vehicle_index.vehicle_by_id(bubble.follow_vehicle_id, None)
+                if vehicle is not None:
+                    vehicles += [vehicle]
             assert (
                 len(vehicles) <= 1
             ), "Travelling bubbles only support pinning to a single vehicle"
