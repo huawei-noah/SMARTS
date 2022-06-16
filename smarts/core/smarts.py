@@ -1045,7 +1045,7 @@ class SMARTS:
                 self._scenario, self.elapsed_sim_time, provider_error
             )
 
-        provider_state = provider_state or ProviderState()
+        provider_state = provider_state or ProviderState(__file__)
         if recovered:
             return provider_state
 

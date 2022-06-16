@@ -66,7 +66,7 @@ class ExternalProvider(Provider):
         if id(self._ext_vehicle_states) != id(self._sent_states):
             self._last_fresh_step = self._sim.elapsed_sim_time
             self._sent_states = self._ext_vehicle_states
-        return ProviderState(vehicles=self._ext_vehicle_states, dt=dt)
+        return ProviderState(source=__file__, vehicles=self._ext_vehicle_states, dt=dt)
 
     def setup(self, scenario: Scenario) -> ProviderState:
         return self._provider_state
