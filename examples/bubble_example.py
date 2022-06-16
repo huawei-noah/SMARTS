@@ -19,7 +19,8 @@ from smarts.core.bubble_manager import BubbleManager
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
-from smarts.sstudio.types import Bubble, MapZone, SocialAgentActor
+from smarts.core.traffic_history_provider import TrafficHistoryProvider
+from smarts.sstudio.types import Bubble, MapZone, PositionalZone, SocialAgentActor
 from smarts.zoo.agent_spec import AgentSpec
 
 from smarts.zoo.registry import register
@@ -60,10 +61,12 @@ class UsedAgent(Agent):
         return (acceleration, angular_velocity)
 
 
+# Register the dummy agent for use by the bubbles 
+#  referenced as `"<module>:<locator>"` (i.e. `"examples:dummy_agent-v0"`)
 register(
     "dummy_agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
-        interface=AgentInterface.from_type(AgentType.Imitation, done_criteria= DoneCriteria(collision=False, not_moving=False)),
+        interface=AgentInterface.from_type(AgentType.Imitation, done_criteria= DoneCriteria(not_moving=False, off_road=False, off_route=False, on_shoulder=False, wrong_way=False)),
         agent_builder=DummyAgent,
     ),
 )
@@ -71,6 +74,26 @@ register(
 # Locations from inspecting the `map.net.xml` using netedit
 bubble_locations = {
     "i80": [
+        Bubble(
+            zone=PositionalZone(pos=(0, 0), size=(20, 100)),
+            actor=SocialAgentActor(
+                name="dummy0", agent_locator="examples:dummy_agent-v0"
+            ),
+            follow_vehicle_id="history-vehicle-314",
+            exclusion_prefixes=("history-vehicle-314",),
+            follow_offset=(0, 0),
+            margin=10
+        ),
+    ],
+    "peachtree": [
+        Bubble(
+            zone=MapZone(start=("E9", 0, 5), length=40, n_lanes=2),
+            actor=SocialAgentActor(
+                name="dummy0", agent_locator="examples:dummy_agent-v0"
+            ),
+        )
+    ],
+    "us101": [
         Bubble(
             zone=MapZone(start=("gneE01.132", 0, 1), length=120, n_lanes=5),
             actor=SocialAgentActor(
@@ -112,7 +135,7 @@ def main(
     class obs_ref:
         last_observations: Dict[str, Observation] = None
 
-    def observation_callback(obs):
+    def observation_callback(obs: Observation):
         obs_ref.last_observations = obs
 
     for scenario in scenarios_iterator:
@@ -128,14 +151,18 @@ def main(
         for episode in range(episodes):
             logger.info(f"starting episode {episode}...")
             smarts.reset(scenario, start_time=start_time)
+            traffic_history_provider: TrafficHistoryProvider = smarts.get_provider_by_type(TrafficHistoryProvider)
+            used_history_ids = set()
+
             bubble_manager: BubbleManager = smarts._bubble_manager
             bubbles = bubble_manager.bubbles
             agent = UsedAgent(logger=logger)
 
             for _ in range(run_steps):
-                for agent_ids in [
+                agent_ids_per_bubble = [
                     bubble_manager.agent_ids_for_bubble(b, smarts) for b in bubbles
-                ]:
+                ]
+                for agent_ids in agent_ids_per_bubble:
                     if agent_ids == None:
                         continue
                     for agent_id in agent_ids:
@@ -145,7 +172,9 @@ def main(
                         agent_manager.reserve_social_agent_action(
                             agent_id, agent.act(obs_ref.last_observations[agent_id])
                         )
+                        used_history_ids |= {obs_ref.last_observations[agent_id].ego_vehicle_state.id}
                 _, _, _, _ = smarts.step({})
+                traffic_history_provider.set_replaced_ids(used_history_ids)
                 # Update the current bubble in case there are new active bubbles
                 bubbles = bubble_manager.bubbles
 
