@@ -38,7 +38,7 @@ The following setup, train, evaluate, and docker, instructions are meant for get
 + SMARTS is used as a dependent package.
 
 ## Environment
-+ Make separate envrionments for each scenario. 
++ Make separate environments for each scenario. 
 + Individual environments can be instantiated as follows, by inserting the name of the desired scenario.
     ```python
     env = gym.make(

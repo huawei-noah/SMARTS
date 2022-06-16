@@ -6,7 +6,13 @@ from train.util import plotter3d
 
 
 class FilterObs(gym.ObservationWrapper):
+    """Filter only the selected observation parameters."""
+
     def __init__(self, env: gym.Env):
+        """
+        Args:
+            env (gym.Env): Environment to be wrapped.
+        """
         super().__init__(env)
         self.observation_space = gym.spaces.Dict(
             {
