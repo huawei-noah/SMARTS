@@ -43,7 +43,6 @@ from smarts.core.utils.logging import suppress_output
 from smarts.core.vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 from smarts.core.utils.sumo import SUMO_PATH, traci  # isort:skip
-from traci.exceptions import FatalTraCIError, TraCIException  # isort:skip
 import traci.constants as tc  # isort:skip
 
 
@@ -121,7 +120,10 @@ class SumoTrafficSimulation(TrafficProvider):
         self._current_reload_count = 0
         # /TODO
 
-        self._traci_exceptions = (TraCIException, FatalTraCIError)
+        self._traci_exceptions = (
+            traci.exceptions.TraCIException,
+            traci.exceptions.FatalTraCIError,
+        )
 
     def __repr__(self):
         return f"""SumoTrafficSim(
@@ -195,11 +197,11 @@ class SumoTrafficSimulation(TrafficProvider):
                         self._traci_conn.getVersion()[0] >= 20
                     ), "TraCI API version must be >= 20 (SUMO 1.5.0)"
                 # We will retry since this is our first sumo command
-                except FatalTraCIError:
+                except traci.exceptions.FatalTraCIError:
                     logging.debug("Connection closed. Retrying...")
                     self._close_traci_and_pipes()
                     continue
-                except TraCIException as e:
+                except traci.exceptions.TraCIException as e:
                     logging.debug(f"Unknown connection issue has occurred: {e}")
                     self._close_traci_and_pipes()
             except ConnectionRefusedError:
@@ -394,7 +396,7 @@ class SumoTrafficSimulation(TrafficProvider):
     def recover(
         self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
     ) -> Tuple[ProviderState, bool]:
-        if isinstance(error, (TraCIException, FatalTraCIError)):
+        if isinstance(error, self._traci_exceptions):
             self._handle_traci_disconnect(error)
         elif isinstance(error, Exception):
             raise error
@@ -505,7 +507,7 @@ class SumoTrafficSimulation(TrafficProvider):
                     vehicle_id,
                     SumoTrafficSimulation._color_for_role(provider_vehicle.role),
                 )
-            except TraCIException as e:
+            except traci.exceptions.TraCIException as e:
                 # Likely as a result of https://github.com/eclipse/sumo/issues/3993
                 # the vehicle got removed because we skipped a moveToXY call between
                 # internal stepSimulations, so we add the vehicle back here.
