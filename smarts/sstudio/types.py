@@ -787,12 +787,22 @@ class Bubble:
     and be reused for every subsequent vehicle entering the bubble until the episode
     is over.
     """
+    follow_vehicle_id: Optional[str] = None
+    """Vehicle ID of agent we want to pin to. Doing so makes this a "travelling bubble"
+    which means it moves to follow the `follow_actor_id`'s vehicle. Offset is from the
+    vehicle's center position to the bubble's center position.
+    """
 
     def __post_init__(self):
         if self.margin <= 0:
             raise ValueError("Airlocking margin must be greater than 0")
 
-        if self.follow_actor_id is not None and self.follow_offset is None:
+        if (self.follow_actor_id is not None and self.follow_vehicle_id is not None):
+            raise ValueError(
+                "Only one option of follow actor id and follow vehicle id can be used at any time."
+            )
+
+        if (self.follow_actor_id is not None or self.follow_vehicle_id is not None) and self.follow_offset is None:
             raise ValueError(
                 "A follow offset must be set if this is a travelling bubble"
             )
