@@ -704,7 +704,6 @@ class SMARTS:
         if self._renderer is not None:
             self._renderer.teardown()
         self._teardown_providers()
-        self._traffic_sims = []
 
         if self._bubble_manager is not None:
             self._bubble_manager.teardown()
