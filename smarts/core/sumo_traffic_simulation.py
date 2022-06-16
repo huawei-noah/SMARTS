@@ -809,6 +809,8 @@ class SumoTrafficSimulation(TrafficProvider):
             self._sumo_vehicle_ids.remove(vehicle_id)
         if vehicle_id in self._hijacked:
             self._hijacked.remove(vehicle_id)
+        if vehicle_id in self._non_sumo_vehicle_ids:
+            self._non_sumo_vehicle_ids.remove(vehicle_id)
 
     def _shape_of_vehicle(self, sumo_vehicle_state, vehicle_id):
         p = sumo_vehicle_state[vehicle_id][tc.VAR_POSITION]

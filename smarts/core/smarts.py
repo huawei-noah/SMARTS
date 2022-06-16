@@ -703,9 +703,8 @@ class SMARTS:
             self._bullet_client.resetSimulation()
         if self._renderer is not None:
             self._renderer.teardown()
-        for traffic_sim in self._traffic_sims:
-            traffic_sim.teardown()
         self._teardown_providers()
+        self._traffic_sims = []
 
         if self._bubble_manager is not None:
             self._bubble_manager.teardown()

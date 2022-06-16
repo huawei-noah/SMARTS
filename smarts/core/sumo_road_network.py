@@ -334,9 +334,11 @@ class SumoRoadNetwork(RoadMap):
 
         @cached_property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
+            # XXX: we restrict these to just direct connections, so
+            # we don't skip over the internal connection lanes coming into this one.
             return [
                 self._map.lane_by_id(incoming.getID())
-                for incoming in self._sumo_lane.getIncoming()
+                for incoming in self._sumo_lane.getIncoming(onlyDirect=True)
             ]
 
         @cached_property
@@ -782,6 +784,8 @@ class SumoRoadNetwork(RoadMap):
     def _internal_routes_between(
         self, start_edge: Edge, end_edge: Edge
     ) -> List[List[Edge]]:
+        if start_edge.isSpecial() or end_edge.isSpecial():
+            return [[start_edge, end_edge]]
         routes = []
         outgoing = start_edge.getOutgoing()
         assert end_edge in outgoing, (
@@ -815,11 +819,27 @@ class SumoRoadNetwork(RoadMap):
             routes.append(conn_route)
         return routes
 
-    def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
+    def random_route(
+        self, max_route_len: int = 10, starting_road: Optional[RoadMap.Road] = None
+    ) -> RoadMap.Route:
         route = SumoRoadNetwork.Route(self)
-        next_edges = self._graph.getEdges(False)
+        next_edges = (
+            [starting_road._sumo_edge] if starting_road else self._graph.getEdges(False)
+        )
+        cur_edge = None
         while next_edges and len(route.roads) < max_route_len:
-            cur_edge = random.choice(next_edges)
+            choice = random.choice(next_edges)
+            if cur_edge:
+                # include internal connection edges as well (TAI:  don't count these towrads max_route_len?)
+                connection_roads = set()
+                for cnxn in cur_edge.getConnections(choice):
+                    via_lane_id = cnxn.getViaLaneID()
+                    if via_lane_id:
+                        via_road = self.lane_by_id(via_lane_id).road
+                        if via_road not in connection_roads:
+                            route._add_road(via_road)
+                            connection_roads.add(via_road)
+            cur_edge = choice
             route._add_road(self.road_by_id(cur_edge.getID()))
             next_edges = list(cur_edge.getOutgoing().keys())
         return route

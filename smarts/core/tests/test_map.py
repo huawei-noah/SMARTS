@@ -106,10 +106,8 @@ def test_sumo_map(sumo_scenario):
 
     foes = out_lanes[0].foes
     assert foes
-    assert len(foes) == 3
+    assert len(foes) == 1
     foe_set = set(f.lane_id for f in foes)
-    assert "edge-east-EW_0" in foe_set  # entering from east
-    assert "edge-north-NS_0" in foe_set  # entering from north
     assert ":junction-intersection_5_0" in foe_set  # crossing from east-to-west
 
     # Test the lane vector for a refline point outside lane

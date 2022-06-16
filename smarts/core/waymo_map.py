@@ -1551,9 +1551,11 @@ class WaymoMap(RoadMap):
             new_route._add_road(road)
         return result
 
-    def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
+    def random_route(
+        self, max_route_len: int = 10, starting_road: Optional[RoadMap.Road] = None
+    ) -> RoadMap.Route:
         route = WaymoMap.Route(self)
-        next_roads = list(self._roads.values())
+        next_roads = [starting_road] if starting_road else list(self._roads.values())
         while next_roads and len(route.roads) < max_route_len:
             cur_road = random.choice(next_roads)
             route._add_road(cur_road)

@@ -91,7 +91,8 @@ class RoadMap:
     def nearest_lanes(
         self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> List[Tuple[RoadMap.Lane, float]]:
-        """Find lanes on this road map that are near the given point."""
+        """Find lanes on this road map that are near the given point.
+        Returns a list of tuples of lane and distance, sorted by distance."""
         raise NotImplementedError()
 
     def nearest_lane(
@@ -128,11 +129,15 @@ class RoadMap:
         """
         raise NotImplementedError()
 
-    def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
+    def random_route(
+        self, max_route_len: int = 10, starting_road: Optional[RoadMap.Road] = None
+    ) -> RoadMap.Route:
         """Generate a random route contained in this road map.
         Args:
             max_route_len:
                 The total number of roads in the route.
+            starting_road:
+                If specified, the route will start with this road.
         Returns:
             A randomly generated route.
         """
