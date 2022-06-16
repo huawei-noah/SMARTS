@@ -608,4 +608,5 @@ class AgentManager:
     def stop_agent_observation(self, sim, vehicle_id: str):
         """Called when agent observation is finished and sensors should be removed from a vehicle"""
         sim.vehicle_index.stop_agent_observation(vehicle_id)
-        del self._vehicle_with_sensors[vehicle_id]
+        if vehicle_id in self._vehicle_with_sensors:
+            del self._vehicle_with_sensors[vehicle_id]
