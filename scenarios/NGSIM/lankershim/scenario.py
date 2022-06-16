@@ -7,7 +7,7 @@ traffic_histories = [
     t.TrafficHistoryDataset(
         name=f"lankershim_{hd}",
         source_type="NGSIM",
-        input_path=f"./trajectories-{hd}.txt",  # for example: f"./trajectories-{hd}.txt"
+        input_path=None,  # for example: f"./trajectories-{hd}.txt"
         speed_limit_mps=28,
         default_heading=0,
     )
