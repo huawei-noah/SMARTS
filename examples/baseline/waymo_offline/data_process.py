@@ -38,7 +38,7 @@ for scenario in scenarios:
             vehicle_data = pickle.load(f)
         image_names = list()
         for filename in os.listdir(path + scenario):
-            if filename.endswith(id + '.png'):
+            if filename.endswith('-' + id + '.png'):
                 image_names.append(filename)
         image_names = sorted(image_names)
         for i in range(len(image_names) - 1):
