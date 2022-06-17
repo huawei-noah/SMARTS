@@ -469,7 +469,7 @@ class Scenario:
 
         Args:
             scenarios_root:
-                A specific scenario to run (e.g. scenarios/loop)
+                A specific scenario to run (e.g. scenarios/sumo/loop)
             lanepoint_spacing:
                 The distance between lanepoints that represent a lane's geometry.
             default_lane_width:
@@ -496,9 +496,9 @@ class Scenario:
     def discover_routes(scenario_root):
         """Discover the route files in the given scenario.
 
-        >>> Scenario.discover_routes("scenarios/intersections/2lane")
+        >>> Scenario.discover_routes("scenarios/sumo/intersections/2lane")
         ['all.rou.xml', 'horizontal.rou.xml', 'turns.rou.xml', 'unprotected_left.rou.xml', 'vertical.rou.xml']
-        >>> Scenario.discover_routes("scenarios/loop") # loop does not have any routes
+        >>> Scenario.discover_routes("scenarios/sumo/loop") # loop does not have any routes
         ['basic.rou.xml']
         """
         warnings.warn(
@@ -835,7 +835,7 @@ class Scenario:
     def is_valid_scenario(scenario_root) -> bool:
         """Checks if the scenario_root directory matches our expected scenario structure
 
-        >>> Scenario.is_valid_scenario("scenarios/loop")
+        >>> Scenario.is_valid_scenario("scenarios/sumo/loop")
         True
         >>> Scenario.is_valid_scenario("scenarios/non_existant")
         False

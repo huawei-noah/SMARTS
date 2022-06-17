@@ -18,10 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import math
 import random as rand
 from collections import defaultdict
 from dataclasses import dataclass, replace
-from typing import Dict, Sequence, Set
+from typing import Dict, List, Sequence, Set
 
 from shapely.geometry import Polygon
 
@@ -51,11 +52,14 @@ class Trap:
 
     def ready(self, sim_time: float):
         """If the trap is ready to capture a vehicle."""
-        return self.activation_time <= sim_time
+        return self.activation_time < sim_time or math.isclose(
+            self.activation_time, sim_time
+        )
 
     def patience_expired(self, sim_time: float):
         """If the trap has expired and should no longer capture a vehicle."""
-        return self.activation_time + self.patience <= sim_time
+        expiry_time = self.activation_time + self.patience
+        return expiry_time < sim_time or math.isclose(expiry_time, sim_time)
 
     def includes(self, vehicle_id: str):
         """Returns if the given actor should be considered for capture."""
@@ -162,16 +166,16 @@ class TrapManager:
         if not sim.agent_manager.pending_agent_ids:
             return
 
-        social_vehicle_ids = [
+        social_vehicle_ids: List[str] = [
             v_id
             for v_id in sim.vehicle_index.social_vehicle_ids()
             if not sim.vehicle_index.vehicle_is_shadowed(v_id)
         ]
-        vehicles = {
+        vehicles: Dict[str, Vehicle] = {
             v_id: sim.vehicle_index.vehicle_by_id(v_id) for v_id in social_vehicle_ids
         }
 
-        def largest_vehicle_plane_dimension(vehicle):
+        def largest_vehicle_plane_dimension(vehicle: Vehicle):
             return max(*vehicle.chassis.dimensions.as_lwh[:2])
 
         vehicle_comp = [
@@ -203,7 +207,7 @@ class TrapManager:
                 if not trap.includes(v_id):
                     continue
 
-                vehicle = vehicles[v_id]
+                vehicle: Vehicle = vehicles[v_id]
                 point = vehicle.pose.point.as_shapely
 
                 if not point.within(trap.geometry):

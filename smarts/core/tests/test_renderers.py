@@ -88,8 +88,8 @@ def scenario():
         goal=EndlessGoal(),
     )
     scenario = Scenario(
-        scenario_root="scenarios/loop",
-        traffic_specs=["scenarios/loop/traffic/basic.rou.xml"],
+        scenario_root="scenarios/sumo/loop",
+        traffic_specs=["scenarios/sumo/loop/traffic/basic.rou.xml"],
         missions={AGENT_ID: mission},
     )
     return scenario
