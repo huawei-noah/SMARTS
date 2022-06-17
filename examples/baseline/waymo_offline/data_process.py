@@ -58,6 +58,7 @@ for scenario in scenarios:
             actions.append([dx, dy])
             rewards.append(vehicle_data[float(sim_time)]['dist'])
             terminals.append(terminal)
+        print(str(len(obs)) + ' pieces of data are added into dataset.' )
 
 
 
