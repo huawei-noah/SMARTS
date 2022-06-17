@@ -1010,19 +1010,18 @@ class WaymoMap(RoadMap):
         def speed_limit(self) -> float:
             return self._speed_limit
 
-        @lru_cache(maxsize=64)
+        @lru_cache(maxsize=1024)
         def offset_along_lane(self, world_point: Point) -> float:
             return offset_along_shape(world_point[:2], self._centerline_pts)
 
-        @lru_cache(maxsize=64)
         def width_at_offset(self, lane_point_s: float) -> Tuple[float, float]:
             return self._lane_width, 1.0
 
-        @lru_cache(maxsize=64)
+        @lru_cache(maxsize=1024)
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             return position_at_shape_offset(self._centerline_pts, lane_point.s)
 
-        @lru_cache(maxsize=64)
+        @lru_cache(maxsize=1024)
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
             return super().to_lane_coord(world_point)
 
@@ -1030,7 +1029,7 @@ class WaymoMap(RoadMap):
         def center_at_point(self, point: Point) -> Point:
             return super().center_at_point(point)
 
-        @lru_cache(64)
+        @lru_cache(1024)
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
             return super().vector_at_offset(start_offset)
 
@@ -1038,7 +1037,7 @@ class WaymoMap(RoadMap):
         def center_pose_at_point(self, point: Point) -> Pose:
             return super().center_pose_at_point(point)
 
-        @lru_cache(maxsize=64)
+        @lru_cache(maxsize=1024)
         def curvature_radius_at_offset(
             self, offset: float, lookahead: int = 5
         ) -> float:
@@ -1347,7 +1346,7 @@ class WaymoMap(RoadMap):
                 neighboring_lanes.append((lane, d))
         return neighboring_lanes
 
-    @lru_cache(maxsize=64)
+    @lru_cache(maxsize=1024)
     def nearest_lanes(
         self,
         point: Point,

@@ -47,9 +47,9 @@ from .utils.math import (
 from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
+# TODO:  refactor MPP and TIP into Controllers
 # TODO:  test mixed:  Smarts+Sumo
 # TODO:      - if using pre-generated rou files that both Sumo and Smarts can support, then make traffic sim contructors take this path (and remove "engine")
-# TODO:  profile again
 # TODO:  dynamic routing
 # TODO:  left turns across traffic and other basic (uncontrolled-only?) intersection stuff
 # TODO:     Sumo:  "foes" (all crossers) and "reponse" (higher priority foes)
@@ -60,8 +60,6 @@ from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 # TODO:                vehicle on foe w/ higher priorty (right-of-way)
 # TODO:                   compute "foe gap"?
 # TODO:                red/yellow traffic light or stop sign
-# TODO:  failing pytests (rllib? determinism?)
-# TODO:  refactor MPP and TIP into Controllers
 # TODO:  reconsider vehicle dims stuff from proposal
 # TODO:  consider lane markings
 # TODO:  consider traffic lights and intersection right-of-way
@@ -652,8 +650,10 @@ class _TrafficActor:
         @cached_property
         def radius(self) -> float:
             """The radius of curvature of this lane at its lane_coord."""
+            # we round the offset in attempt to reduce the unique hits on the LRU caches...
+            rounded_offset = round(self.lane_coord.s)
             return self.lane.curvature_radius_at_offset(
-                self.lane_coord.s, lookahead=max(math.ceil(2 * self.width), 2)
+                rounded_offset, lookahead=max(math.ceil(2 * self.width), 2)
             )
 
         @lru_cache(maxsize=4)
@@ -904,6 +904,8 @@ class _TrafficActor:
     def _compute_lane_speeds(self):
         def _get_radius(lane: RoadMap.Lane) -> float:
             l_offset = self._owner._cached_lane_offset(self._state, lane)
+            # we round the offset in attempt to reduce the unique hits on the LRU caches...
+            l_offset = round(l_offset)
             l_width, _ = lane.width_at_offset(l_offset)
             return lane.curvature_radius_at_offset(
                 l_offset, lookahead=max(math.ceil(2 * l_width), 2)
@@ -924,7 +926,9 @@ class _TrafficActor:
     def _slow_for_curves(self):
         # XXX:  this may be too expensive.  if so, we'll need to precompute curvy spots for routes
         lookahead = math.ceil(1 + math.log(self._target_speed))
-        radius = self._lane.curvature_radius_at_offset(self._offset, lookahead)
+        # we round the offset in attempt to reduce the unique hits on the LRU caches...
+        rounded_offset = round(self._offset)
+        radius = self._lane.curvature_radius_at_offset(rounded_offset, lookahead)
         # pi/2 radian right turn == 6 m/s with radius 10.5 m
         # TODO:  also depends on vehicle type (traction, length, etc.)
         self._target_speed = min(abs(radius) * 0.5714, self._target_speed)
