@@ -913,11 +913,12 @@ class _TrafficActor:
         my_radius = _get_radius(self._lane)
         for l in self._lane.road.lanes:
             ratio = 1.0
-            l_radius = _get_radius(l)
-            if abs(my_radius) < 1e5 and abs(l_radius) < 1e5:
-                ratio = l_radius / my_radius
-                if ratio < 0:
-                    ratio = 1.0
+            if l != self._lane and abs(my_radius) < 1e5:
+                l_radius = _get_radius(l)
+                if abs(l_radius) < 1e5:
+                    ratio = l_radius / my_radius
+                    if ratio < 0:
+                        ratio = 1.0
             self._lane_speed[l.index] = (ratio * self.speed, ratio * self.acceleration)
 
     def _slow_for_curves(self):
