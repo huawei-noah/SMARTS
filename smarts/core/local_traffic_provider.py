@@ -244,6 +244,8 @@ class LocalTrafficProvider(TrafficProvider):
             nlane = self.road_map.nearest_lane(
                 ovs.pose.point, radius=ovs.dimensions.length
             )
+            if not nlane:
+                continue
             offset = nlane.offset_along_lane(ovs.pose.point)
             half_len = 0.5 * ovs.dimensions.length
             lbc = self._lane_backs_cache.setdefault(nlane, [])
@@ -260,8 +262,8 @@ class LocalTrafficProvider(TrafficProvider):
         dones = []
         for actor in self._my_actors.values():
             actor.step(dt)
-            # TAI: consider removing vehicles that are off route too
-            if actor.finished_route:
+            # TAI: warn about off_route actors?
+            if actor.finished_route or actor.off_route:
                 dones.append(actor.actor_id)
         for actor_id in dones:
             del self._my_actors[actor_id]
@@ -401,6 +403,7 @@ class _TrafficActor:
         self._speed_factor = random.gauss(speed_factor, speed_dev)
         if self._speed_factor <= 0:
             self._speed_factor = 0.1
+        self._sigma = float(self._vtype.get("sigma", 0.5))
 
         self._cutting_into = None
         self._in_front_after_cutin_secs = 0
@@ -964,7 +967,7 @@ class _TrafficActor:
         # Here we may also want to take into account speed, accel, inertia, etc.
         # and maybe even self._aggressiveness...
 
-        # TODO: use float(self._vtype.get("sigma", 0.5)) to add some random variation
+        # TODO: self._sigma to add some random variation
 
         # magic numbers here were just what looked reasonable in limited testing
         angular_velocity = 3.75 * heading_delta - 1.25 * lat_err
@@ -1021,7 +1024,7 @@ class _TrafficActor:
         PID = (P + I + D) / dt
         PID = np.clip(PID, -1.0, 1.0)
 
-        # TODO: use float(self._vtype.get("sigma", 0.5)) to add some random variation
+        # TODO: self._sigma to add some random variation
 
         if PID > 0:
             max_accel = float(self._vtype.get("accel", 2.6))
@@ -1070,8 +1073,13 @@ class _TrafficActor:
             radius=self._state.dimensions.length,
             include_junctions=True,
         )
-        # TODO:  eventually just remove vehicles that drive off road?
-        assert nls, f"actor {self.actor_id} out-of-lane:  {self._next_pose}"
+        if not nls:
+            self._logger.warn(f"actor {self.actor_id} out-of-lane: {self._next_pose}")
+            if self._owner._endless_traffic:
+                self._reroute()
+            else:
+                self._off_route = True
+            return
         self._lane = None
         best_ri_delta = None
         next_route_ind = None
@@ -1106,7 +1114,9 @@ class _TrafficActor:
                 self._done_with_route = True
 
     def _reroute(self):
-        if self._route[0] in {oid.road_id for oid in self._lane.road.outgoing_roads}:
+        if not self._off_route and self._route[0] in {
+            oid.road_id for oid in self._lane.road.outgoing_roads
+        }:
             self._route_ind = -1
             self._logger.debug(
                 f"{self.actor_id} will loop around to beginning of its route"
