@@ -20,7 +20,7 @@
 
 import logging
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Sequence, Set
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from .controllers import ActionSpaceType, Controllers
 from .provider import Provider, ProviderState
@@ -96,24 +96,22 @@ class AgentsProvider(Provider):
         assert (
             not actions_without_agents
         ), f"actions specified for non-tracked agents:  {actions_without_agents}"
+        agent_manager = self._sim.agent_manager
+        vehicle_index = self._sim.vehicle_index
         for agent_id, vehicle_states in self._my_agent_vehicles.items():
             action = agent_actions.get(agent_id)
             if action is None or len(action) == 0:
                 self._log.info(f"no actions for agent_id={agent_id}")
                 continue
-            agent_interface = self._sim.agent_manager.agent_interface_for_agent_id(
-                agent_id
-            )
-            is_boid_agent = len(vehicle_states) > 1
+            agent_interface = agent_manager.agent_interface_for_agent_id(agent_id)
+            is_boid_agent = agent_manager.is_boid_agent(agent_id)
             for vs in vehicle_states:
-                vehicle = self._sim.vehicle_index.vehicle_by_id(vs.vehicle_id)
+                vehicle = vehicle_index.vehicle_by_id(vs.vehicle_id)
                 vehicle_action = action[vehicle.id] if is_boid_agent else action
-                controller_state = (
-                    self._sim.vehicle_index.controller_state_for_vehicle_id(vehicle.id)
-                )
-                sensor_state = self._sim.vehicle_index.sensor_state_for_vehicle_id(
+                controller_state = vehicle_index.controller_state_for_vehicle_id(
                     vehicle.id
                 )
+                sensor_state = vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
                 Controllers.perform_action(
                     self._sim,
                     agent_id,
@@ -156,20 +154,22 @@ class AgentsProvider(Provider):
         )
         self._my_agent_vehicles.setdefault(agent_id, []).append(provider_vehicle)
 
-    def _agent_for_vehicle(self, vehicle_id: str) -> Optional[str]:
+    def _agent_for_vehicle(self, vehicle_id: str) -> Optional[Tuple[str, int]]:
         for agent_id, vss in self._my_agent_vehicles.items():
-            for vs in vss:
+            for i, vs in enumerate(vss):
                 if vs.vehicle_id == vehicle_id:
-                    return agent_id
+                    return agent_id, i
         return None
 
     def manages_vehicle(self, vehicle_id: str) -> bool:
         return self._agent_for_vehicle(vehicle_id) is not None
 
     def stop_managing(self, vehicle_id: str):
-        agent_id = self._agent_for_vehicle(vehicle_id)
+        agent_id, i = self._agent_for_vehicle(vehicle_id)
         if agent_id:
-            del self._my_agent_vehicles[agent_id]
+            self._my_agent_vehicles[agent_id].pop(i)
+            if not self._my_agent_vehicles[agent_id]:
+                del self._my_agent_vehicles[agent_id]
 
 
 class AgentPhysicsProvider(AgentsProvider):

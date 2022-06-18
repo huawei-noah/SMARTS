@@ -77,7 +77,7 @@ class MotionPlannerController:
                  pose we would like to have this many seconds into the future
         """
         assert isinstance(vehicle.chassis, BoxChassis)
-        assert len(action) >= 4
+        assert len(action) >= 4, f"{action}"
         pose, speed = controller_state.get_next_state(
             vehicle.pose, vehicle.speed, dt, action
         )
