@@ -60,7 +60,7 @@ class MotionPlannerController:
         controller_state: MotionPlannerControllerState,
         dt: float,
         vehicle,
-        action: Tuple[float, float, float, float],
+        action: Optional[np.ndarray],
     ):
         """Performs an action adapting to the underlying chassis.
         Args:
@@ -75,6 +75,7 @@ class MotionPlannerController:
                  pose we would like to have this many seconds into the future
         """
         assert isinstance(vehicle.chassis, BoxChassis)
+        assert len(action) >= 4
         pose, speed = controller_state.get_next_state(
             vehicle.pose, vehicle.speed, dt, action
         )

@@ -1102,9 +1102,9 @@ class SumoRoadNetwork(RoadMap):
                             continue
                         nl_shape = lane_to_poly.get(nl.lane_id)
                         if nl_shape:
-                            _, np = nearest_points(p, nl_shape)
-                            if p.distance(np) < thresh:
-                                p = np  # !!!! :)
+                            _, npt = nearest_points(p, nl_shape)
+                            if p.distance(npt) < thresh:
+                                p = npt
                                 # allow vertices to snap to more than one thing, but
                                 # try to avoid infinite loops and making things worse instead of better here...
                                 # (so reduce snap dist threshold by an arbitrary amount each pass.)
@@ -1158,9 +1158,9 @@ class SumoRoadNetwork(RoadMap):
                             continue
                         nl_shape = lane_to_poly.get(nl.lane_id)
                         if nl_shape:
-                            _, np = nearest_points(p, nl_shape)
-                            if p.distance(np) < thresh:
-                                p = np  # !!!! :)
+                            _, npt = nearest_points(p, nl_shape)
+                            if p.distance(npt) < thresh:
+                                p = np
                                 # allow vertices to snap to more than one thing, but
                                 # try to avoid infinite loops and making things worse instead of better here...
                                 # (so reduce snap dist threshold by an arbitrary amount each pass.)
