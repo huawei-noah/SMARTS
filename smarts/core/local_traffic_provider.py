@@ -1092,10 +1092,10 @@ class _TrafficActor:
                     self._lane = nl
                     best_ri_delta = ri_delta
                     break
-                if ri_delta < best_ri_delta or best_ri_delta is None:
+                if best_ri_delta is None or ri_delta < best_ri_delta:
                     self._lane = nl
                     best_ri_delta = ri_delta
-            except:
+            except ValueError:
                 pass
         if not self._lane:
             self._off_route = True
