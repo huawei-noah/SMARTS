@@ -40,7 +40,9 @@ class MotionPlannerControllerState:
         target_pose_at_t: Optional[np.ndarray],
     ) -> Tuple[Pose, float]:
         """Computes a cubic bezier curbe to the target_pose_at_t."""
-        cur_state = [*cur_pose.position[:2], cur_pose.heading, cur_speed]
+        cur_state = np.array(
+            [*cur_pose.position[:2], float(cur_pose.heading), cur_speed]
+        )
         if target_pose_at_t is None:
             # if agent failed to produce a target pose, just use the previous pose
             target_pose_at_t = cur_state
