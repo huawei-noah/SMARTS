@@ -42,7 +42,7 @@ class MotionPlannerControllerState:
         """Computes a cubic bezier curbe to the target_pose_at_t."""
         cur_state = np.array(
             [*cur_pose.position[:2], float(cur_pose.heading), cur_speed]
-        )
+        ).astype(float)
         if target_pose_at_t is None:
             # if agent failed to produce a target pose, just use the previous pose
             target_pose_at_t = cur_state
