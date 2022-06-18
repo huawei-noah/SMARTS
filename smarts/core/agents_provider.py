@@ -165,8 +165,9 @@ class AgentsProvider(Provider):
         return self._agent_for_vehicle(vehicle_id) is not None
 
     def stop_managing(self, vehicle_id: str):
-        agent_id, i = self._agent_for_vehicle(vehicle_id)
-        if agent_id:
+        agent_tup = self._agent_for_vehicle(vehicle_id)
+        if agent_tup:
+            agent_id, i = agent_tup
             self._my_agent_vehicles[agent_id].pop(i)
             if not self._my_agent_vehicles[agent_id]:
                 del self._my_agent_vehicles[agent_id]
