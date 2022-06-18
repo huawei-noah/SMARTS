@@ -1,4 +1,4 @@
-# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -47,7 +47,6 @@ from .utils.math import (
 from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
-# TODO:  refactor MPP and TIP into Controllers
 # TODO:  test mixed:  Smarts+Sumo
 # TODO:      - if using pre-generated rou files that both Sumo and Smarts can support, then make traffic sim contructors take this path (and remove "engine")
 # TODO:  dynamic routing

@@ -36,12 +36,17 @@ from smarts.core.plan import Plan
 from . import models
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
-from .agents_provider import AgentsProvider, AgentPhysicsProvider, DirectControlProvider
+from .agents_provider import (
+    AgentsProvider,
+    AgentPhysicsProvider,
+    DirectControlProvider,
+    MotionPlannerProvider,
+    TrajectoryInterpolationProvider,
+)
 from .bubble_manager import BubbleManager
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
-from .motion_planner_provider import MotionPlannerProvider
 from .provider import Provider, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
@@ -49,7 +54,6 @@ from .sensors import Collision, Observation
 from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
 from .traffic_provider import TrafficProvider
-from .trajectory_interpolation_provider import TrajectoryInterpolationProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
 from .utils.id import Id
@@ -129,9 +133,9 @@ class SMARTS:
 
         self._agent_physics_provider = AgentPhysicsProvider(self)
         self._direct_control_provider = DirectControlProvider(self)
-        self._motion_planner_provider = MotionPlannerProvider()
+        self._motion_planner_provider = MotionPlannerProvider(self)
         self._traffic_history_provider = TrafficHistoryProvider()
-        self._trajectory_interpolation_provider = TrajectoryInterpolationProvider()
+        self._trajectory_interpolation_provider = TrajectoryInterpolationProvider(self)
         self._provider_recovery_flags: Dict[Provider, ProviderRecoveryFlags] = {}
 
         self._traffic_sims = traffic_sims
