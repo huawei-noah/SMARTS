@@ -1160,7 +1160,7 @@ class SumoRoadNetwork(RoadMap):
                         if nl_shape:
                             _, npt = nearest_points(p, nl_shape)
                             if p.distance(npt) < thresh:
-                                p = np
+                                p = npt
                                 # allow vertices to snap to more than one thing, but
                                 # try to avoid infinite loops and making things worse instead of better here...
                                 # (so reduce snap dist threshold by an arbitrary amount each pass.)
