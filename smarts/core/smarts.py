@@ -21,7 +21,6 @@ import importlib.resources as pkg_resources
 import logging
 import os
 import warnings
-from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
@@ -178,7 +177,7 @@ class SMARTS:
         self._vehicle_index = VehicleIndex()
 
         # TODO: Should not be stored in SMARTS
-        self._vehicle_collisions = defaultdict(list)  # list of `Collision` instances
+        self._vehicle_collisions: Dict[str, List[Collision]] = dict()
         self._vehicle_states = []
 
         self._bubble_manager = None
@@ -1217,7 +1216,8 @@ class SMARTS:
     def vehicle_did_collide(self, vehicle_id) -> bool:
         """Test if the given vehicle had any collisions in the last physics update."""
         self._check_valid()
-        for c in self._vehicle_collisions[vehicle_id]:
+        vehicle_collisions = self._vehicle_collisions.get(vehicle_id, [])
+        for c in vehicle_collisions:
             if c.collidee_id != self._ground_bullet_id:
                 return True
         return False
@@ -1227,10 +1227,9 @@ class SMARTS:
         physics update.
         """
         self._check_valid()
+        vehicle_collisions = self._vehicle_collisions.get(vehicle_id, [])
         return [
-            c
-            for c in self._vehicle_collisions[vehicle_id]
-            if c.collidee_id != self._ground_bullet_id
+            c for c in vehicle_collisions if c.collidee_id != self._ground_bullet_id
         ]
 
     def _clear_collisions(self, vehicle_ids):
@@ -1242,28 +1241,39 @@ class SMARTS:
         for vehicle in self._vehicle_index.vehicles:
             vehicle.sync_to_renderer()
 
+    def _get_pybullet_collisions(self, vehicle_id: str) -> Set[str]:
+        vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
+        # We are only concerned with vehicle-vehicle collisions
+        return {
+            p.bullet_id
+            for p in vehicle.chassis.contact_points
+            if p.bullet_id != self._ground_bullet_id
+        }
+
     def _process_collisions(self):
-        self._vehicle_collisions = defaultdict(list)  # list of `Collision` instances
+        self._vehicle_collisions = dict()
 
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
-            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            # We are only concerned with vehicle-vehicle collisions
-            collidee_bullet_ids = set(
-                [p.bullet_id for p in vehicle.chassis.contact_points]
-            )
-            if self._ground_bullet_id in collidee_bullet_ids:
-                collidee_bullet_ids.remove(self._ground_bullet_id)
-
+            collidee_bullet_ids = self._get_pybullet_collisions(vehicle_id)
             if not collidee_bullet_ids:
                 continue
-
+            vehicle_collisions = self._vehicle_collisions.setdefault(vehicle_id, [])
             for bullet_id in collidee_bullet_ids:
                 collidee = self._bullet_id_to_vehicle(bullet_id)
                 actor_id = self._vehicle_index.actor_id_from_vehicle_id(collidee.id)
                 # TODO: Should we specify the collidee as the vehicle ID instead of
                 #       the agent/social ID?
                 collision = Collision(collidee_id=actor_id)
-                self._vehicle_collisions[vehicle_id].append(collision)
+                vehicle_collisions.append(collision)
+
+        for vehicle_id in self._vehicle_index.social_vehicle_ids():
+            for provider in self.providers:
+                if (
+                    isinstance(provider, TrafficProvider)
+                    and provider.manages_vehicle(vehicle_id)
+                    and self._get_pybullet_collisions(vehicle_id)
+                ):
+                    provider.vehicle_collided(vehicle_id)
 
     def _bullet_id_to_vehicle(self, bullet_id):
         for vehicle in self._vehicle_index.vehicles:

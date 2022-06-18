@@ -797,6 +797,10 @@ class SumoTrafficSimulation(TrafficProvider):
     ):
         self._reserved_areas[vehicle_id] = reserved_location
 
+    def vehicle_collided(self, vehicle_id):
+        # Sumo should already know about this and deal with it appropriately.
+        pass
+
     def stop_managing(self, vehicle_id: str):
         self._hijacked.add(vehicle_id)
 

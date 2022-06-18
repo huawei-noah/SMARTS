@@ -162,6 +162,13 @@ class TrafficHistoryProvider(TrafficProvider):
     ):
         pass
 
+    def vehicle_collided(self, vehicle_id: str):
+        # There's nothing we can do about it, save for removing vehicle_id, i.e.:
+        #     self.stop_managing(vehicle_id)
+        # But this collision MIGHT have explicitly been part of the original
+        # traffic history data, so we don't do that just in case.
+        pass
+
     def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
         try:
             vid = int(vehicle_id.replace(self._vehicle_id_prefix, ""))

@@ -47,8 +47,12 @@ from .utils.math import (
 from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
+# TODO:  sigma
+# TODO:  better handling of vehicles that are angled across multiple lanes
 # TODO:  test mixed:  Smarts+Sumo
 # TODO:      - if using pre-generated rou files that both Sumo and Smarts can support, then make traffic sim contructors take this path (and remove "engine")
+# TODO:  --- submit basic PR for review ---
+# TODO:  reconsider vehicle dims stuff from proposal
 # TODO:  dynamic routing
 # TODO:  left turns across traffic and other basic (uncontrolled-only?) intersection stuff
 # TODO:     Sumo:  "foes" (all crossers) and "reponse" (higher priority foes)
@@ -59,7 +63,6 @@ from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 # TODO:                vehicle on foe w/ higher priorty (right-of-way)
 # TODO:                   compute "foe gap"?
 # TODO:                red/yellow traffic light or stop sign
-# TODO:  reconsider vehicle dims stuff from proposal
 # TODO:  consider lane markings
 # TODO:  consider traffic lights and intersection right-of-way
 
@@ -322,6 +325,18 @@ class LocalTrafficProvider(TrafficProvider):
     ):
         self._reserved_areas[vehicle_id] = reserved_location
 
+    def vehicle_collided(self, vehicle_id: str):
+        # TAI:  consider removing the vehicle?
+        # If collidee(s) include an EgoAgent, it will likely be marked "done" and things will end.
+        # (But this is not guaranteed depending on the criteria that were set.)
+        # Probably the most realistic thing we can do is leave the vehicle sitting in the road, blocking traffic!
+        # Let's do that for now, but we should also consider just removing the vehicle.
+        traffic_actor = self._my_actors.get(vehicle_id)
+        if not traffic_actor:
+            # guess we already removed it for some other reason (off route?)
+            return
+        traffic_actor.stay_put()
+
     def update_route_for_vehicle(self, vehicle_id: str, new_route_roads: Sequence[str]):
         traffic_actor = self._my_actors.get(vehicle_id)
         if traffic_actor:
@@ -387,6 +402,7 @@ class _TrafficActor:
         self._off_route: bool = False
         self._route: List[str] = flow["route"]
         self._route_id: int = flow["route_id"]
+        self._stranded: bool = False
 
         self._lane = None
         self._offset = 0
@@ -396,6 +412,7 @@ class _TrafficActor:
         self._target_lane_win: _TrafficActor._LaneWindow = None
         self._dest_lane = None
         self._dest_offset = None
+        self._wrong_way: bool = False
 
         self._min_space_cush = float(self._vtype.get("minGap", 2.5))
         speed_factor = float(self._vtype.get("speedFactor", 1.0))
@@ -573,6 +590,11 @@ class _TrafficActor:
         )
         self._route_ind = 0
 
+    def stay_put(self):
+        if not self._stranded:
+            self._logger.info(f"{self.actor_id} stranded")
+            self._stranded = True
+
     @property
     def finished_route(self) -> bool:
         """Returns True iff this vehicle has reached the end of its route."""
@@ -582,6 +604,11 @@ class _TrafficActor:
     def off_route(self) -> bool:
         """Returns True iff this vehicle has left its route before it got to the end."""
         return self._off_route
+
+    @property
+    def wrong_way(self) -> bool:
+        """Returns True iff this vehicle is currently going the wrong way in its lane."""
+        return self._wrong_way
 
     @property
     def lane(self) -> RoadMap.Lane:
@@ -964,6 +991,14 @@ class _TrafficActor:
         target_heading = vec_to_radians(target_vec[:2])
         heading_delta = min_angles_difference_signed(target_heading, my_heading)
 
+        self._wrong_way = abs(heading_delta) > 0.5 * math.pi
+        if self._wrong_way:
+            self._logger.warning(
+                f"{self.actor_id} going the wrong way for {target_lane.lane_id}.  heading_delta={heading_delta}."
+            )
+            # slow down so it's easier to turn around
+            self._target_speed = 0.67 * self._target_speed
+
         # Here we may also want to take into account speed, accel, inertia, etc.
         # and maybe even self._aggressiveness...
 
@@ -972,17 +1007,19 @@ class _TrafficActor:
         # magic numbers here were just what looked reasonable in limited testing
         angular_velocity = 3.75 * heading_delta - 1.25 * lat_err
 
-        # add some damping...
-        damping = heading_delta * lat_err
-        if damping < 0:
-            angular_velocity += 2.2 * np.sign(angular_velocity) * damping
-        if self._prev_angular_err is not None:
-            angular_velocity -= 0.2 * (heading_delta - self._prev_angular_err[0])
-            angular_velocity += 0.2 * (lat_err - self._prev_angular_err[1])
-        if abs(angular_velocity) > dt * self._max_angular_velocity:
-            angular_velocity = (
-                np.sign(angular_velocity) * dt * self._max_angular_velocity
-            )
+        if not self._wrong_way:
+            # add some damping...
+            # but only if we're not going the wrong way already! (if we are, try to correct quickly.)
+            damping = heading_delta * lat_err
+            if damping < 0:
+                angular_velocity += 2.2 * np.sign(angular_velocity) * damping
+            if self._prev_angular_err is not None:
+                angular_velocity -= 0.2 * (heading_delta - self._prev_angular_err[0])
+                angular_velocity += 0.2 * (lat_err - self._prev_angular_err[1])
+            if abs(angular_velocity) > dt * self._max_angular_velocity:
+                angular_velocity = (
+                    np.sign(angular_velocity) * dt * self._max_angular_velocity
+                )
 
         self._prev_angular_err = (heading_delta, lat_err)
         return angular_velocity
@@ -1060,6 +1097,8 @@ class _TrafficActor:
 
     def step(self, dt: float):
         """Updates to the pre-computed next state for this traffic actor."""
+        if self._stranded:
+            return
         self._state.pose = self._next_pose
         self._state.speed = self._next_speed
         self._state.linear_acceleration = self._next_linear_acceleration
@@ -1075,10 +1114,9 @@ class _TrafficActor:
         )
         if not nls:
             self._logger.warn(f"actor {self.actor_id} out-of-lane: {self._next_pose}")
+            self._off_route = True
             if self._owner._endless_traffic:
                 self._reroute()
-            else:
-                self._off_route = True
             return
         self._lane = None
         best_ri_delta = None
@@ -1140,3 +1178,5 @@ class _TrafficActor:
                 f"{self.actor_id} could not teleport back to beginning of its route b/c it was already occupied; just removing it."
             )
             self._done_with_route = True
+        elif self._off_route:
+            self._off_route = False

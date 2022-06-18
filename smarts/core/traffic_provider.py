@@ -42,6 +42,11 @@ class TrafficProvider(Provider):
         """
         raise NotImplementedError
 
+    def vehicle_collided(self, vehicle_id: str):
+        """Called when a vehicle this provder manages is detected to have
+        collided with any other vehicles in the scenario."""
+        raise NotImplementedError
+
     def update_route_for_vehicle(self, vehicle_id: str, new_route_roads: Sequence[str]):
         """Set a new route for the given vehicle."""
         raise NotImplementedError
