@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import logging
+import os
 import warnings
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
@@ -183,7 +184,7 @@ class HiWayEnv(gym.Env):
             Dict[str, Union[float,str]]: A dictionary with the following keys.
                 fixed_timestep_sec - Simulation timestep.
                 scenario_map - Name of the current scenario.
-                scenario_traffic - Traffic spec used.
+                scenario_traffic - Traffic spec(s) used.
                 mission_hash - Hash identifier for the current scenario.
         """
 
@@ -191,7 +192,7 @@ class HiWayEnv(gym.Env):
         return {
             "fixed_timestep_sec": self._smarts.fixed_timestep_sec,
             "scenario_map": scenario.name,
-            "scenario_traffic": scenario.route if scenario.traffic_specs else "",
+            "scenario_traffic": ",".join(map(os.path.basename, scenario.traffic_specs)),
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 

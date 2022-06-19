@@ -222,7 +222,7 @@ class Scenario:
             traffic_histories = Scenario.discover_traffic_histories(scenario_root) or [
                 None
             ]
-            traffic = [[ts] for ts in Scenario.discover_traffic(scenario_root)] or [[]]
+            traffic = Scenario.discover_traffic(scenario_root) or [[]]
 
             roll_traffic = 0
             roll_agent_missions = 0
@@ -235,6 +235,7 @@ class Scenario:
                 roll_social_agents = random.randint(0, len(social_agents))
                 roll_traffic_histories = 0  # random.randint(0, len(traffic_histories))
 
+            # TODO:  get one of each type of traffic_spec
             for (
                 concrete_traffic,
                 concrete_agent_missions,
@@ -516,13 +517,14 @@ class Scenario:
     def discover_traffic(scenario_root):
         """Discover the traffic spec files in the given scenario."""
         traffic_path = os.path.join(scenario_root, "traffic")
-        return sorted(
-            [
-                ts
-                for ts in glob.glob(os.path.join(traffic_path, "*.rou.xml"))
-                + glob.glob(os.path.join(traffic_path, "*.smarts.xml"))
-            ]
-        )
+        # combine any SMARTS and SUMO traffic together...
+        sumo_traffic = glob.glob(os.path.join(traffic_path, "*.rou.xml"))
+        smarts_traffic = glob.glob(os.path.join(traffic_path, "*.smarts.xml"))
+        if sumo_traffic and not smarts_traffic:
+            return [[ts] for ts in sumo_traffic]
+        elif not sumo_traffic and smarts_traffic:
+            return [[ts] for ts in smarts_traffic]
+        return [ts for ts in product(sumo_traffic, smarts_traffic)]
 
     @staticmethod
     def _discover_bubbles(scenario_root):

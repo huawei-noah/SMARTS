@@ -588,8 +588,6 @@ class SMARTS:
         """Notify all providers of the existence of an agent-controlled vehicle,
         one of which should assume management of it."""
         self._check_valid()
-        # TODO: the vehicle shouldn't be removed from Sumo via Traci, it just needs to not be part of self._sumo_vehicle_ids
-        # TODO:     previously, it was left there but just removed from the ProviderState in step_providers()
         self._stop_managing_with_providers(vehicle.id)
         role = ActorRole.EgoAgent if is_ego else ActorRole.SocialAgent
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
@@ -621,11 +619,13 @@ class SMARTS:
         self._stop_managing_with_providers(state.vehicle_id)
 
         # now try to find one who will take it...
-        state.role = ActorRole.Social  # TODO ASSUMPTION:  could use Unknown here.
+        state.role = ActorRole.Social  # XXX ASSUMPTION: might use Unknown instead?
         for provider in self.providers:
             if provider.can_accept_vehicle(state):
-                # just use the first provider we find that accepts it
-                # TODO: give preference to Sumo over Smarts traffic
+                # Here we just use the first provider we find that accepts it.
+                # If we want to give preference to, say, Sumo over SMARTS traffic,
+                # then we should ensure that Sumo comes first in the traffic_sims
+                # list we pass to SMARTS __init__().
                 provider.add_vehicle(state, cur_route)
                 return
         self._log.warning(
@@ -996,9 +996,7 @@ class SMARTS:
 
     @property
     def providers(self) -> List[Provider]:
-        """The current providers contributing to the simulation."""
-        # TODO: Add check to ensure that action spaces are disjoint between providers
-        # TODO: It's inconsistent that pybullet is not here
+        """The current providers controlling actors within the simulation."""
         return self._providers
 
     def get_provider_by_type(self, requested_type) -> Optional[Provider]:

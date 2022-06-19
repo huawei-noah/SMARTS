@@ -48,8 +48,6 @@ from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
 # TODO:  better handling of vehicles that are angled across multiple lanes
-# TODO:  test mixed:  Smarts+Sumo
-# TODO:      - if using pre-generated rou files that both Sumo and Smarts can support, then make traffic sim contructors take this path (and remove "engine")
 # TODO:  --- submit basic PR for review ---
 # TODO:  reconsider vehicle dims stuff from proposal
 # TODO:  dynamic routing
