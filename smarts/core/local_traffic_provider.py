@@ -409,6 +409,7 @@ class _TrafficActor:
         self._lane_windows: Dict[int, _TrafficActor._LaneWindow] = dict()
         self._lane_win: _TrafficActor._LaneWindow = None
         self._target_lane_win: _TrafficActor._LaneWindow = None
+        self._target_speed: float = 15.0
         self._dest_lane = None
         self._dest_offset = None
         self._wrong_way: bool = False
@@ -419,7 +420,7 @@ class _TrafficActor:
         self._speed_factor = random.gauss(speed_factor, speed_dev)
         if self._speed_factor <= 0:
             self._speed_factor = 0.1
-        self._sigma = float(self._vtype.get("sigma", 0.5))
+        self._imperfection = float(self._vtype.get("sigma", 0.5))
 
         self._cutting_into = None
         self._in_front_after_cutin_secs = 0
@@ -1021,7 +1022,7 @@ class _TrafficActor:
                 # also slow down...
                 self._target_speed *= 0.8
 
-        angular_velocity += 0.02 * self._sigma * (random.random() - 0.5)
+        angular_velocity += 0.02 * self._imperfection * (random.random() - 0.5)
 
         self._prev_angular_err = (heading_delta, lat_err)
         return angular_velocity
@@ -1063,7 +1064,7 @@ class _TrafficActor:
         PID = (P + I + D) / dt
         PID = np.clip(PID, -1.0, 1.0)
 
-        PID -= 0.02 * self._sigma * random.random()
+        PID -= 0.02 * self._imperfection * random.random()
 
         if PID > 0:
             max_accel = float(self._vtype.get("accel", 2.6))
