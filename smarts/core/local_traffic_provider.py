@@ -47,7 +47,6 @@ from .utils.math import (
 from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
-# TODO:  sigma
 # TODO:  better handling of vehicles that are angled across multiple lanes
 # TODO:  test mixed:  Smarts+Sumo
 # TODO:      - if using pre-generated rou files that both Sumo and Smarts can support, then make traffic sim contructors take this path (and remove "engine")
@@ -591,6 +590,7 @@ class _TrafficActor:
         self._route_ind = 0
 
     def stay_put(self):
+        """Tells this actor to stop acting and remain where it is indefinitely."""
         if not self._stranded:
             self._logger.info(f"{self.actor_id} stranded")
             self._stranded = True
@@ -997,12 +997,10 @@ class _TrafficActor:
                 f"{self.actor_id} going the wrong way for {target_lane.lane_id}.  heading_delta={heading_delta}."
             )
             # slow down so it's easier to turn around
-            self._target_speed = 0.67 * self._target_speed
+            self._target_speed *= 0.67
 
         # Here we may also want to take into account speed, accel, inertia, etc.
         # and maybe even self._aggressiveness...
-
-        # TODO: self._sigma to add some random variation
 
         # magic numbers here were just what looked reasonable in limited testing
         angular_velocity = 3.75 * heading_delta - 1.25 * lat_err
@@ -1020,6 +1018,10 @@ class _TrafficActor:
                 angular_velocity = (
                     np.sign(angular_velocity) * dt * self._max_angular_velocity
                 )
+                # also slow down...
+                self._target_speed *= 0.8
+
+        angular_velocity += 0.02 * self._sigma * (random.random() - 0.5)
 
         self._prev_angular_err = (heading_delta, lat_err)
         return angular_velocity
@@ -1056,12 +1058,12 @@ class _TrafficActor:
         my_speed, my_acc = self._lane_speed[self._target_lane_win.lane.index]
 
         P = 0.0060 * (self._target_speed - my_speed)
-        I = -0.0100 / space_cush
+        I = -0.0150 / space_cush
         D = -0.0010 * my_acc
         PID = (P + I + D) / dt
         PID = np.clip(PID, -1.0, 1.0)
 
-        # TODO: self._sigma to add some random variation
+        PID -= 0.02 * self._sigma * random.random()
 
         if PID > 0:
             max_accel = float(self._vtype.get("accel", 2.6))
