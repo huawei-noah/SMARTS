@@ -23,6 +23,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 import pytest
+import re
 from helpers.bubbles import bubble_geometry
 
 # TODO: Rename temp_scenario(...)
@@ -141,7 +142,12 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles):
                 )
                 is_agent_controlled = vehicle.id in index.agent_vehicle_ids()
 
-                zone_steps = steps_driven_in_zones[bubble.id][vehicle.id]
+                vehicle_id = (
+                    vehicle.id
+                    if traffic_sim == "SUMO"
+                    else re.sub("_\d+$", "", vehicle.id)
+                )
+                zone_steps = steps_driven_in_zones[bubble.id][vehicle_id]
                 if position.within(geometry.bubble):
                     zone_steps.in_bubble += 1
                     assert in_bubble and not is_shadowing and is_agent_controlled
@@ -152,8 +158,8 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles):
                     zone_steps.airlock_exit += 1
                     # TODO: Presently not implemented, but `is_shadowing` should be True
                     assert not in_bubble and not is_shadowing and is_agent_controlled
-                    if vehicle.id not in vehicles_made_to_through_bubble[bubble.id]:
-                        vehicles_made_to_through_bubble[bubble.id].append(vehicle.id)
+                    if vehicle_id not in vehicles_made_to_through_bubble[bubble.id]:
+                        vehicles_made_to_through_bubble[bubble.id].append(vehicle_id)
                 elif not any([position.within(geom.airlock) for geom in geometries]):
                     # Not in any bubble; airlock is the encompassing region
                     zone_steps.outside_bubble += 1

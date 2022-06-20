@@ -21,6 +21,7 @@
 import logging
 import math
 import random
+import re
 import xml.etree.ElementTree as XET
 from bisect import bisect_left, bisect_right, insort
 from collections import deque
@@ -47,23 +48,6 @@ from .utils.math import (
 from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
 
 
-# TODO:  better handling of vehicles that are angled across multiple lanes
-# TODO:  --- submit basic PR for review ---
-# TODO:  reconsider vehicle dims stuff from proposal
-# TODO:  dynamic routing
-# TODO:  left turns across traffic and other basic (uncontrolled-only?) intersection stuff
-# TODO:     Sumo:  "foes" (all crossers) and "reponse" (higher priority foes)
-# TODO:         how to determine foes, eg., for Waymo?
-# TODO:     use lane_window:
-# TODO:         end time_remaining at junction if stop will be required
-# TODO;             stop required if:
-# TODO:                vehicle on foe w/ higher priorty (right-of-way)
-# TODO:                   compute "foe gap"?
-# TODO:                red/yellow traffic light or stop sign
-# TODO:  consider lane markings
-# TODO:  consider traffic lights and intersection right-of-way
-
-
 class LocalTrafficProvider(TrafficProvider):
     """
     A LocalTrafficProvider simulates multiple traffic actors on a generic RoadMap.
@@ -85,10 +69,7 @@ class LocalTrafficProvider(TrafficProvider):
         self._reserved_areas: Dict[str, Polygon] = dict()
         self._route_lane_lengths: Dict[int, Dict[Tuple[str, int], float]] = dict()
         self._actors_created: int = 0
-        self._lane_backs_cache: Dict[
-            RoadMap.Lane, List[Tuple[float, VehicleState]]
-        ] = dict()
-        self._lane_fronts_cache: Dict[
+        self._lane_bumpers_cache: Dict[
             RoadMap.Lane, List[Tuple[float, VehicleState]]
         ] = dict()
         self._offsets_cache: Dict[str, Dict[str, float]] = dict()
@@ -230,6 +211,30 @@ class LocalTrafficProvider(TrafficProvider):
         self._add_actors_for_time(0.0)
         return self._provider_state
 
+    def _create_caches(self):
+        self._lane_bumpers_cache = dict()
+        for ovs in self._all_states:
+            center = ovs.pose.point
+            length = ovs.dimensions.length
+            hhx, hhy = radians_to_vec(ovs.pose.heading) * (0.5 * length)
+            back = Point(center.x - hhx, center.y - hhy)
+            front = Point(center.x + hhx, center.y + hhy)
+            back_lane = self.road_map.nearest_lane(back, radius=length)
+            front_lane = self.road_map.nearest_lane(front, radius=length)
+            if back_lane:
+                back_offset = back_lane.offset_along_lane(back)
+                lbc = self._lane_bumpers_cache.setdefault(back_lane, [])
+                insort(lbc, (back_offset, ovs))
+            if front_lane:
+                front_offset = front_lane.offset_along_lane(front)
+                lbc = self._lane_bumpers_cache.setdefault(front_lane, [])
+                insort(lbc, (front_offset, ovs))
+            if front_lane and back_lane != front_lane:
+                # it's changing lanes, don't misjudge the target lane...
+                fake_back_offset = front_lane.offset_along_lane(back)
+                insort(self._lane_bumpers_cache[front_lane], (fake_back_offset, ovs))
+        self._offsets_cache = dict()
+
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
         self._add_actors_for_time(elapsed_sim_time)
         for other, _ in self._other_vehicles.values():
@@ -238,21 +243,7 @@ class LocalTrafficProvider(TrafficProvider):
 
         # precompute nearest lanes and offsets for all vehicles and cache
         # (this prevents having to do it O(ovs^2) times)
-        self._lane_fronts_cache = dict()
-        self._lane_backs_cache = dict()
-        for ovs in self._all_states:
-            nlane = self.road_map.nearest_lane(
-                ovs.pose.point, radius=ovs.dimensions.length
-            )
-            if not nlane:
-                continue
-            offset = nlane.offset_along_lane(ovs.pose.point)
-            half_len = 0.5 * ovs.dimensions.length
-            lbc = self._lane_backs_cache.setdefault(nlane, [])
-            insort(lbc, (offset - half_len, ovs))
-            lfc = self._lane_fronts_cache.setdefault(nlane, [])
-            insort(lfc, (offset + half_len, ovs))
-        self._offsets_cache = dict()
+        self._create_caches()
 
         # Do state update in two passes so that we don't use next states in the
         # computations for actors encountered later in the iterator.
@@ -260,13 +251,21 @@ class LocalTrafficProvider(TrafficProvider):
             actor.compute_next_state(dt, self._all_states)
 
         dones = []
-        for actor in self._my_actors.values():
+        remap_ids: Dict[str, str] = dict()
+        for actor_id, actor in self._my_actors.items():
             actor.step(dt)
-            # TAI: warn about off_route actors?
             if actor.finished_route or actor.off_route:
                 dones.append(actor.actor_id)
+            elif actor.teleporting:
+                # pybullet doesn't like it when a vehicle jumps from one side of the map to another,
+                # so we need to give teleporting vehicles a new id thus a new chassis.
+                actor.bump_id()
+                remap_ids[actor_id] = actor.actor_id
         for actor_id in dones:
             del self._my_actors[actor_id]
+        for orig_id, new_id in remap_ids.items():
+            self._my_actors[new_id] = self._my_actors[orig_id]
+            del self._my_actors[orig_id]
 
         return self._provider_state
 
@@ -400,6 +399,7 @@ class _TrafficActor:
         self._route: List[str] = flow["route"]
         self._route_id: int = flow["route_id"]
         self._stranded: bool = False
+        self._teleporting: bool = False
 
         self._lane = None
         self._offset = 0
@@ -573,6 +573,13 @@ class _TrafficActor:
         """A unique id identifying this actor."""
         return self._state.vehicle_id
 
+    def bump_id(self):
+        """Changes the id of a teleporting vehicle."""
+        mm = re.match("([^_]+)(_(\d+))?$", self._state.vehicle_id)
+        assert mm
+        ver = int(mm.group(3)) if mm.group(3) else 0
+        self._state.vehicle_id = f"{mm.group(1)}_{ver + 1}"
+
     @property
     def route(self) -> List[str]:
         """The route (sequence of road_ids) this actor will attempt to take."""
@@ -608,6 +615,11 @@ class _TrafficActor:
     def wrong_way(self) -> bool:
         """Returns True iff this vehicle is currently going the wrong way in its lane."""
         return self._wrong_way
+
+    @property
+    def teleporting(self) -> bool:
+        """Returns True iff this vehicle is teleporting back to the beginning of its route on this step."""
+        return self._teleporting
 
     @property
     def lane(self) -> RoadMap.Lane:
@@ -731,9 +743,16 @@ class _TrafficActor:
             len_to_end = route_lens.get((ogl.lane_id, rind))
             if len_to_end is None:
                 continue
-            lbc = self._owner._lane_backs_cache.get(ogl)
+            lbc = self._owner._lane_bumpers_cache.get(ogl)
             if lbc:
-                ogl_offset, ogl_vs = lbc[0]
+                fi = 0
+                while fi < len(lbc):
+                    ogl_offset, ogl_vs = lbc[fi]
+                    if ogl_vs.vehicle_id != self.actor_id:
+                        break
+                    fi += 1
+                if fi == len(lbc):
+                    continue
                 ogl_dist = dte - (len_to_end - ogl_offset)
                 if ogl_dist < nv_ahead_dist:
                     nv_ahead_dist = ogl_dist
@@ -748,16 +767,24 @@ class _TrafficActor:
         return nv_ahead_dist, nv_ahead_vs
 
     def _find_vehicle_ahead(
-        self, lane: RoadMap.Lane, my_offset: float
+        self, lane: RoadMap.Lane, my_offset: float, search_start: float
     ) -> Tuple[float, Optional[VehicleState]]:
-        lbc = self._owner._lane_backs_cache.get(lane)
+        lbc = self._owner._lane_bumpers_cache.get(lane)
         if lbc:
-            lane_spot = bisect_right(lbc, (my_offset, None))
+            lane_spot = bisect_right(lbc, (search_start, self._state))
+            # if we're at an angle to the lane, it's possible for the
+            # first thing we hit to be our own entries in the bumpers cache,
+            # which we need to skip.
+            while (
+                lane_spot < len(lbc) and self.actor_id == lbc[lane_spot][1].vehicle_id
+            ):
+                lane_spot += 1
             if lane_spot < len(lbc):
                 lane_offset, nvs = lbc[lane_spot]
-                assert lane_offset >= my_offset
-                assert self.actor_id != nvs.vehicle_id
-                return lane_offset - my_offset, nvs
+                assert lane_offset >= search_start
+                if lane_offset > my_offset:
+                    return lane_offset - my_offset, nvs
+                return 0, nvs
         route_lens = self._owner._route_lane_lengths[self._route_id]
         route_len = route_lens.get((lane.lane_id, self._route_ind), lane.length)
         my_dist_to_end = route_len - my_offset
@@ -766,24 +793,36 @@ class _TrafficActor:
         )
 
     def _find_vehicle_behind(
-        self, lane: RoadMap.Lane, my_offset: float
+        self, lane: RoadMap.Lane, my_offset: float, search_start: float
     ) -> Tuple[float, Optional[VehicleState]]:
-        lfc = self._owner._lane_fronts_cache.get(lane)
-        if lfc:
-            lane_spot = bisect_left(lfc, (my_offset, None))
+        lbc = self._owner._lane_bumpers_cache.get(lane)
+        if lbc:
+            print(f"STEVE {search_start} {self._state} --> {lbc}")
+            lane_spot = bisect_left(lbc, (search_start, self._state))
+            # if we're at an angle to the lane, it's possible for the
+            # first thing we hit to be our own entries in the bumpers cache,
+            # which we need to skip.
+            while lane_spot > 0 and self.actor_id == lbc[lane_spot - 1][1].vehicle_id:
+                lane_spot -= 1
             if lane_spot > 0:
-                lane_offset, bv_vs = lfc[lane_spot - 1]
-                assert lane_offset <= my_offset
-                return my_offset - lane_offset, bv_vs
+                lane_offset, bv_vs = lbc[lane_spot - 1]
+                assert lane_offset <= search_start
+                if lane_offset < my_offset:
+                    return my_offset - lane_offset, bv_vs
+                return 0, bv_vs
         # only look back one lane...
         bv_behind_dist = math.inf
         bv_behind_vs = None
         for inl in lane.incoming_lanes:
             inl = inl.composite_lane
-            plfc = self._owner._lane_fronts_cache.get(inl)
-            if not plfc:
+            plbc = self._owner._lane_bumpers_cache.get(inl)
+            if not plbc:
                 continue
-            bv_offset, bv_vs = plfc[-1]
+            bi = -1
+            bv_offset, bv_vs = plbc[bi]
+            while bi > -len(plbc) and bv_vs.vehicle_id == self.actor_id:
+                bi -= 1
+                bv_offset, bv_vs = plbc[bi]
             bv_dist = inl.length - bv_offset
             if bv_dist < bv_behind_dist:
                 bv_behind_dist = bv_dist
@@ -795,15 +834,17 @@ class _TrafficActor:
         lane_coord = lane.to_lane_coord(self._state.pose.point)
         my_offset = lane_coord.s
         my_speed, my_acc = self._lane_speed[lane.index]
-        half_len = 0.5 * self._state.dimensions.length
         my_route_lens = self._owner._route_lane_lengths[self._route_id]
         path_len = my_route_lens.get((lane.lane_id, self._route_ind), lane.length)
         path_len -= my_offset
         lane_time_left = path_len / self.speed if self.speed else math.inf
 
-        ahead_dist, nv_vs = self._find_vehicle_ahead(lane, my_offset - 0.999 * half_len)
+        half_len = 0.5 * self._state.dimensions.length
+        front_bumper = my_offset + half_len
+        back_bumper = my_offset - half_len
+
+        ahead_dist, nv_vs = self._find_vehicle_ahead(lane, front_bumper, back_bumper)
         if nv_vs:
-            ahead_dist -= half_len
             ahead_dist -= self._min_space_cush
             ahead_dist = max(0, ahead_dist)
             speed_delta = my_speed - nv_vs.speed
@@ -814,11 +855,8 @@ class _TrafficActor:
         else:
             lane_ttc = math.inf
 
-        behind_dist, bv_vs = self._find_vehicle_behind(
-            lane, my_offset + 0.999 * half_len
-        )
+        behind_dist, bv_vs = self._find_vehicle_behind(lane, back_bumper, front_bumper)
         if bv_vs:
-            behind_dist -= half_len
             behind_dist -= self._min_space_cush
             behind_dist = max(0, behind_dist)
             speed_delta = my_speed - bv_vs.speed
@@ -858,7 +896,7 @@ class _TrafficActor:
             lw = self._lane_windows[i]
             lct = lw.crossing_time_at_speed(target_idx, self.speed, self.acceleration)
             if i == target_idx:
-                lct *= 0.5
+                lct *= 0.75
             cross_time += lct
         # note: we *could* be more clever and use cross_time for each lane separately
         # to try to thread our way through the gaps independently... nah.
@@ -1100,6 +1138,7 @@ class _TrafficActor:
         """Updates to the pre-computed next state for this traffic actor."""
         if self._stranded:
             return
+        self._teleporting = False
         self._state.pose = self._next_pose
         self._state.speed = self._next_speed
         self._state.linear_acceleration = self._next_linear_acceleration
@@ -1139,6 +1178,9 @@ class _TrafficActor:
         if not self._lane:
             self._off_route = True
             self._lane = nls[0][0]
+            self._logger.info(
+                f"actor {self.actor_id} is off of its route.  now in lane {self._lane.lane_id}."
+            )
         self._lane = self._lane.composite_lane
 
         road_id = self._lane.road.road_id
@@ -1162,6 +1204,7 @@ class _TrafficActor:
             )
             return
         self._logger.info(f"{self.actor_id} teleporting back to beginning of its route")
+        self._teleporting = True
         self._lane, self._offset = self._resolve_flow_pos(
             self._flow, "depart", self._state.dimensions
         )

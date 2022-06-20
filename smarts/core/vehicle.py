@@ -97,6 +97,13 @@ class VehicleState:
         )
         return shapely_rotate(poly, self.pose.heading, use_radians=True)
 
+    def __lt__(self, other):
+        """Allows ordering VehicleStates for use in sorted datastructures."""
+        assert isinstance(other, VehicleState)
+        return self.vehicle_id < other.vehicle_id or (
+            self.vehicle_id == other.vehicle_id and id(self) < id(other)
+        )
+
 
 @dataclass(frozen=True)
 class VehicleConfig:
@@ -283,7 +290,7 @@ class Vehicle:
         return VehicleState(
             vehicle_id=self.id,
             vehicle_type=self.vehicle_type,
-            vehicle_config_type=None,  # it's hard to invert
+            vehicle_config_type=self._vehicle_config_type,
             pose=self.pose,
             dimensions=self._chassis.dimensions,
             speed=self.speed,
