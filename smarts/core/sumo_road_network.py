@@ -270,7 +270,7 @@ class SumoRoadNetwork(RoadMap):
             return self._road
 
         @cached_property
-        def speed_limit(self) -> float:
+        def speed_limit(self) -> Optional[float]:
             return self._sumo_lane.getSpeed()
 
         @cached_property

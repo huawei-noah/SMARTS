@@ -1007,7 +1007,7 @@ class WaymoMap(RoadMap):
             return self._get_side_lane("right")
 
         @property
-        def speed_limit(self) -> float:
+        def speed_limit(self) -> Optional[float]:
             return self._speed_limit
 
         @lru_cache(maxsize=1024)

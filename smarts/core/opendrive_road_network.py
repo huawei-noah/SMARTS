@@ -839,7 +839,7 @@ class OpenDriveRoadNetwork(RoadMap):
             return self._length
 
         @property
-        def speed_limit(self) -> float:
+        def speed_limit(self) -> Optional[float]:
             return self._speed_limit
 
         @property
