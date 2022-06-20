@@ -8,22 +8,32 @@ from PIL import Image
 import re
 import torch
 torch.cuda.empty_cache()
+import pathlib
 
 prediction_step = 1
 path = '/home/kyber/SMARTS/examples/baseline/waymo_offline/extracted_waymo/'
-obs = list()
-actions = list()
-rewards = list()
-terminals = list()
+working_dir = '/home/kyber/SMARTS/examples/baseline/waymo_offline/'
+
 
 
 scenarios = list()
 for scenario_name in os.listdir(path):
     scenarios.append(scenario_name)
 
+if not os.listdir('saved_model'):
+    index = 0
+else:
+    existing_index = list()
+    for model_name in os.listdir('saved_model'):
+        existing_index.append(int(re.search('model_(.*).pt', model_name).group(1)))
+    index = sorted(existing_index)[-1] + 1
 
-filename_with_vehicle_id = list()
-for scenario in scenarios:
+
+for scenario in scenarios[0:3]:
+    obs = list()
+    actions = list()
+    rewards = list()
+    terminals = list()
     print('processing scenario ' + scenario)
     vehicle_ids = list()
     for filename in os.listdir(path + scenario):
@@ -33,7 +43,7 @@ for scenario in scenarios:
             if vehicle_id not in vehicle_ids:
                 vehicle_ids.append(vehicle_id)
     for id in vehicle_ids:
-        # print('adding data for vehicle id ' + id + ' in scenario ' + scenario)
+        print('adding data for vehicle id ' + id + ' in scenario ' + scenario)
         with open(path + scenario +  '/Agent-history-vehicle-' + id + '.pkl', 'rb') as f:
             vehicle_data = pickle.load(f)
         image_names = list()
@@ -71,19 +81,25 @@ for scenario in scenarios:
         #         sim_time_next = str(float(sim_time) + 0.1)
         #         print(sim_time, sim_time_next)
 
-obs = np.array(obs)
-actions = np.array(actions)
-rewards = np.array(rewards)
-terminals = np.array(terminals)
-print(str(obs.shape[0]) + ' pieces of data are added into dataset.' )
-dataset = MDPDataset(obs, actions, rewards, terminals) 
-cql = d3rlpy.algos.CQL(use_gpu=True, batch_size=1)
+    obs = np.array(obs)
+    actions = np.array(actions)
+    rewards = np.array(rewards)
+    terminals = np.array(terminals)
+    dataset = MDPDataset(obs, actions, rewards, terminals)
+    if index == 0:
+        model = d3rlpy.algos.CQL(use_gpu=True, batch_size=1)
+    else:
+        saved_folder = sorted(os.listdir(pathlib.Path(__file__).absolute().parent/'d3rlpy_logs/'))[-1]
+        model = CQL.from_json('d3rlpy_logs/' + saved_folder + '/params.json', use_gpu=True)
 
-cql.fit(dataset, 
-        eval_episodes=dataset, 
-        n_epochs = 1, 
+    model.fit(dataset, 
+            eval_episodes=dataset, 
+            n_epochs = 1, 
 
-)
+    )
+    model.save_model('saved_model/' + 'model_' + str(index) + '.pt')
+    index += 1
+
 
 
 
