@@ -14,13 +14,13 @@ smarts:
     - "3lane_overtake"
 
   # Training
-  epochs: 5e3 # Number of training loops.
+  epochs: 16 #5e3 # Number of training loops.
 
   # Trianing per scenario
-  train_steps: 1e5
-  checkpoint_freq: 1e5 # Save a model every checkpoint_freq calls to env.step().
-  eval_eps: 100 # Number of evaluation epsiodes.
-  eval_freq: 1e5 # Evaluate the trained model every eval_freq steps and save the best model.
+  train_steps: 100 # 1e5
+  checkpoint_freq: 50 #  1e5 # Save a model every checkpoint_freq calls to env.step().
+  eval_eps: 3 # 100 # Number of evaluation epsiodes.
+  eval_freq: 50 # 1e5 # Evaluate the trained model every eval_freq steps and save the best model.
 
   # Policy
   alg: PPO  # Stable Baselines3 algorithm.
