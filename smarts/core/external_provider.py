@@ -29,8 +29,9 @@ from .vehicle import VehicleState
 
 
 class ExternalProvider(Provider):
-    """A provider that is intended to used for external intervention in the simulation.
-    Vehicles managed by this provider cannot be hijacked by social agents."""
+    """A provider that is intended to be used for external intervention in the simulation.
+    Vehicles managed by this provider cannot be hijacked by social agents
+    and may have privileged VehicleStates."""
 
     def __init__(self, sim):
         self._sim = sim

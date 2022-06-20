@@ -234,7 +234,7 @@ class RoadMap:
             return False
 
         @property
-        def speed_limit(self) -> float:
+        def speed_limit(self) -> Optional[float]:
             """The speed limit on this lane.  May be None if not defined."""
             raise NotImplementedError()
 

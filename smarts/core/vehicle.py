@@ -98,7 +98,7 @@ class VehicleState:
         return shapely_rotate(poly, self.pose.heading, use_radians=True)
 
     def __lt__(self, other):
-        """Allows ordering VehicleStates for use in sorted datastructures."""
+        """Allows ordering VehicleStates for use in sorted data-structures."""
         assert isinstance(other, VehicleState)
         return self.vehicle_id < other.vehicle_id or (
             self.vehicle_id == other.vehicle_id and id(self) < id(other)
@@ -698,7 +698,7 @@ class Vehicle:
                 # replace previously-attached sensor with this one
                 # (to allow updating its parameters).
                 # Sensors might have been attached to a non-agent vehicle
-                # (for example, for observation colleciton from history vehicles),
+                # (for example, for observation collection from history vehicles),
                 # but if that vehicle gets hijacked, we want to use the sensors
                 # specified by the hijacking agent's interface.
                 detach = getattr(self, f"detach_{sensor_name}")

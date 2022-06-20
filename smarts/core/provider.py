@@ -117,7 +117,7 @@ class Provider:
         route: Optional[Sequence[RoadMap.Route]] = None,
     ):
         """Management of the vehicle with state is being transferred to this Provider.
-        Will only be done if can_accept_vehicle() has returned True."""
+        Will only be called if can_accept_vehicle() has returned True."""
         raise NotImplementedError
 
     def reset(self):
@@ -164,7 +164,7 @@ class Provider:
         raise NotImplementedError
 
     def stop_managing(self, vehicle_id: str):
-        """Tells the Provider to stop managing the specified vehicle,
+        """Tells the Provider to stop managing the specified vehicle;
         it will be managed by another Provider now."""
         raise NotImplementedError
 
