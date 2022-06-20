@@ -797,7 +797,6 @@ class _TrafficActor:
     ) -> Tuple[float, Optional[VehicleState]]:
         lbc = self._owner._lane_bumpers_cache.get(lane)
         if lbc:
-            print(f"STEVE {search_start} {self._state} --> {lbc}")
             lane_spot = bisect_left(lbc, (search_start, self._state))
             # if we're at an angle to the lane, it's possible for the
             # first thing we hit to be our own entries in the bumpers cache,

@@ -637,10 +637,10 @@ class ROSDriver:
                 self._most_recent_state_sent = None
                 self._warned_about_freq = False
                 map_spec = self._get_map_spec()
-                traffic = Scenario.discover_traffic(self._scenario_path) or [None]
+                traffic = Scenario.discover_traffic(self._scenario_path) or [[]]
                 return self._smarts.reset(
                     Scenario(
-                        self._scenario_path, map_spec=map_spec, traffic_specs=traffic
+                        self._scenario_path, map_spec=map_spec, traffic_specs=traffic[0]
                     )
                 )
         return None
