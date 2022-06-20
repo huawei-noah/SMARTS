@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import logging
+import os
 from pathlib import Path
 import pickle
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -68,7 +69,7 @@ def _filter(obs: Observation, target_position, env):
     return obs
 
 
-def _record_data(collected_data, t, actions, observations, rewards, dones, extras):
+def _record_data(collected_data, actions, observations, rewards, dones, extras):
     for agent_id in observations.keys():
         collected_data.setdefault(agent_id, [])
         collected_data[agent_id].append(
@@ -195,7 +196,12 @@ class CompetitionEnv(gym.Env):
         )
 
         self._last_obs = None
-        self._collected_data = dict()
+
+        self._collected_data_path = Path(__file__).parent / "collected_data"
+        self._collected_data = None
+        self._episode_count = 0
+        if not os.path.exists(self._collected_data_path):
+            os.mkdir(self._collected_data_path)
 
     def seed(self, seed: int) -> List[int]:
         """Sets random number generator seed number.
@@ -247,7 +253,6 @@ class CompetitionEnv(gym.Env):
             observations, rewards, dones, extras = self._smarts.step(agent_actions)
         _record_data(
             self._collected_data,
-            self._smarts.elapsed_sim_time,
             agent_actions,
             observations,
             rewards,
@@ -277,13 +282,20 @@ class CompetitionEnv(gym.Env):
         Returns:
             Observation: Agents' observation.
         """
+        if self._collected_data:
+            for car, data in self._collected_data.items():
+                outfile = self._collected_data_path / f"{self._episode_count}-{car}.pkl"
+                with open(outfile, "wb") as of:
+                    pickle.dump(data, of)
+        self._episode_count += 1
+        self._collected_data = dict()
+
         scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
         env_observations = self._smarts.reset(scenario)
         _record_data(
             self._collected_data,
-            self._smarts.elapsed_sim_time,
             {},
             env_observations,
             {},
@@ -308,7 +320,7 @@ class CompetitionEnv(gym.Env):
         # Save recorded observations as pickle files
         if self._collected_data:
             for car, data in self._collected_data.items():
-                outfile = Path(__file__).parent / f"{car}.pkl"
+                outfile = self._collected_data_path / f"{self._episode_count}-{car}.pkl"
                 with open(outfile, "wb") as of:
                     pickle.dump(data, of)
 
