@@ -211,7 +211,8 @@ class LocalTrafficProvider(TrafficProvider):
         self._add_actors_for_time(0.0)
         return self._provider_state
 
-    def _create_caches(self):
+    def _create_actor_caches(self):
+        self._offsets_cache = dict()
         self._lane_bumpers_cache = dict()
         for ovs in self._all_states:
             center = ovs.pose.point
@@ -233,7 +234,12 @@ class LocalTrafficProvider(TrafficProvider):
                 # it's changing lanes, don't misjudge the target lane...
                 fake_back_offset = front_lane.offset_along_lane(back)
                 insort(self._lane_bumpers_cache[front_lane], (fake_back_offset, ovs))
-        self._offsets_cache = dict()
+
+    def _cached_lane_offset(self, vs: VehicleState, lane: RoadMap.Lane):
+        lane_offsets = self._offsets_cache.setdefault(vs.vehicle_id, dict())
+        return lane_offsets.setdefault(
+            lane.lane_id, lane.offset_along_lane(vs.pose.point)
+        )
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
         self._add_actors_for_time(elapsed_sim_time)
@@ -243,7 +249,7 @@ class LocalTrafficProvider(TrafficProvider):
 
         # precompute nearest lanes and offsets for all vehicles and cache
         # (this prevents having to do it O(ovs^2) times)
-        self._create_caches()
+        self._create_actor_caches()
 
         # Do state update in two passes so that we don't use next states in the
         # computations for actors encountered later in the iterator.
@@ -354,12 +360,6 @@ class LocalTrafficProvider(TrafficProvider):
             return other[1][-1] if other[1] else None
         assert False, f"unknown vehicle_id: {vehicle_id}"
         return None
-
-    def _cached_lane_offset(self, vs: VehicleState, lane: RoadMap.Lane):
-        lane_offsets = self._offsets_cache.setdefault(vs.vehicle_id, dict())
-        return lane_offsets.setdefault(
-            lane.lane_id, lane.offset_along_lane(vs.pose.point)
-        )
 
     def can_accept_vehicle(self, state: VehicleState) -> bool:
         return state.role == ActorRole.Social or state.role == ActorRole.Unknown
