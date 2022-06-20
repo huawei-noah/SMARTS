@@ -77,13 +77,13 @@ rewards = np.array(rewards)
 terminals = np.array(terminals)
 print(str(obs.shape[0]) + ' pieces of data are added into dataset.' )
 dataset = MDPDataset(obs, actions, rewards, terminals) 
-cql = d3rlpy.algos.CQL(use_gpu=True, batch_size=1)
+# cql = d3rlpy.algos.CQL(use_gpu=True, batch_size=1)
 
-cql.fit(dataset, 
-        eval_episodes=dataset, 
-        n_epochs = 1, 
+# cql.fit(dataset, 
+#         eval_episodes=dataset, 
+#         n_epochs = 1, 
 
-)
+# )
 
 
 
