@@ -244,7 +244,7 @@ class CompetitionEnv(gym.Env):
 
         agent_actions = {AGENT_ID: target_pose}
         with timeit("SMARTS Simulation/Scenario Step", self._log):
-            observations, rewards, dones, extras = self._smarts.step(agent_actions)
+            observations, rewards, dones, extras = self._smarts.step(agent_action)
         _record_data(
             self._collected_data,
             self._smarts.elapsed_sim_time,
