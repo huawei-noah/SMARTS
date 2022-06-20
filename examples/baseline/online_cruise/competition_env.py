@@ -70,14 +70,16 @@ def _filter(obs: Observation, target_position, env):
 
 def _record_data(collected_data, t, actions, observations, rewards, dones, extras):
     for agent_id in observations.keys():
-        collected_data.setdefault(agent_id, {}).setdefault(t, {})
-        collected_data[agent_id][t] = {
-            "actions": actions.get(agent_id, None),
-            "obs": observations.get(agent_id, None),
-            "rewards": rewards.get(agent_id, None),
-            "dones": dones.get(agent_id, None),
-            "extras": extras.get(agent_id, None),
-        }
+        collected_data.setdefault(agent_id, [])
+        collected_data[agent_id].append(
+            {
+                "actions": actions.get(agent_id, None),
+                "obs": observations.get(agent_id, None),
+                "rewards": rewards.get(agent_id, None),
+                "dones": dones.get(agent_id, None),
+                "extras": extras.get(agent_id, None),
+            }
+        )
 
 
 class CompetitionEnv(gym.Env):
@@ -193,7 +195,7 @@ class CompetitionEnv(gym.Env):
         )
 
         self._last_obs = None
-        self._collected_data = None
+        self._collected_data = dict()
 
     def seed(self, seed: int) -> List[int]:
         """Sets random number generator seed number.
@@ -275,15 +277,6 @@ class CompetitionEnv(gym.Env):
         Returns:
             Observation: Agents' observation.
         """
-
-        # Save recorded observations as pickle files
-        if self._collected_data:
-            for car, data in self._collected_data.items():
-                outfile = Path(__file__).parent / f"{car}.pkl"
-                with open(outfile, "wb") as of:
-                    pickle.dump(data, of)
-        self._collected_data = dict()
-
         scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
