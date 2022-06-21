@@ -160,6 +160,10 @@ Use shortcut key "e" to change to edge mode. Click "chain" and "two-way" icons l
 
 Then click on map to start creating new edges and lanes.
 
+Note that SMARTS prefers to have "internal links" (connections) as part of any Junctions.  You can enable these by 
+going to "Processing" -> "Options", choosing the "Junctions" section, and then making sure the 
+"no-internal-links" checkbox is *unchecked*.
+
 
 Edit an existing SUMO map
 ----------------------
