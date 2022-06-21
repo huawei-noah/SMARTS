@@ -26,13 +26,13 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Dict, List, Optional
 
-from PIL import Image
-from smarts.core import traffic_history
+from PIL import Image, ImageDraw
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
+from smarts.core.waymo_map import WaymoMap
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.format_obs import FormatObs
 from smarts.sstudio import build_scenario
@@ -102,8 +102,11 @@ def _record_data(
             off_road_vehicles.add(veh_id)
 
     # Get observations from each vehicle and record them
+    obs: Dict[str, Observation] = {}
     obs, _, _, _ = smarts.observe_from(list(valid_vehicles))
-    for id_ in obs:
+    resolutions = {}
+    for id_ in list(obs):
+        resolutions[id_] = obs[id_].top_down_rgb.metadata.resolution
         if obs[id_].ego_vehicle_state.lane_index == None:
             del obs[id_]
     obs = std_obs_wrapper.observation(obs)
@@ -111,11 +114,17 @@ def _record_data(
     for car, car_obs in obs.items():
         collected_data.setdefault(car, {}).setdefault(t, {})
         collected_data[car][t] = car_obs
-    logger.info(f"Sim time: {t}, active vehicles: {len(valid_vehicles)}")
 
     # Write top-down RGB image to a file for each vehicle
     for agent_id, agent_obs in obs.items():
+        h, w = agent_obs["rgb"].shape[0], agent_obs["rgb"].shape[1]
+        shape = [
+            (h / 2 - 1.47 / 2 / resolutions[id_], w / 2 - 3.68 / 2 / resolutions[id_]),
+            (h / 2 + 1.47 / 2 / resolutions[id_], w / 2 + 3.68 / 2 / resolutions[id_]),
+        ]
         img = Image.fromarray(agent_obs["rgb"], "RGB")
+        rect_image = ImageDraw.Draw(img)
+        rect_image.rectangle(shape, fill="red")
         img.save(output_dir / f"{t}_{agent_id}.png")
 
 
@@ -125,6 +134,7 @@ def main(
     output_dir: Path,
     scenarios_dir: Path,
     vehicle_ids: Optional[List[int]] = None,
+    max_time: float = 20.0,
 ):
     """Extract top-down RGB images and observations from a Waymo Motion Dataset scenario.
     Args:
@@ -139,6 +149,8 @@ def main(
         vehicle_ids (List[int], optional):
             List of vehicle IDs to record. If none are provided,
             this will default to the ego vehicle for the scenario.
+        max_time (float):
+            Maximum amount of time to run the simulation before it exits.
     """
     # Create & build a SMARTS scenario
     smarts_scenario_dir = scenarios_dir / f"waymo_{scenario_id}"
@@ -172,8 +184,8 @@ def main(
         vehicle_types = frozenset({"car"})
         off_road_vehicles = set()
         selected_vehicles = set()
-        assert scenario.traffic_history is not None
 
+        assert scenario.traffic_history is not None
         if not vehicle_ids:
             ego_id = scenario.traffic_history.ego_vehicle_id
             selected_vehicles.add(f"history-vehicle-{ego_id}")
@@ -216,6 +228,10 @@ def main(
                 logger.info("No more vehicles. Exiting...")
                 break
 
+            if smarts._elapsed_sim_time > max_time:
+                logger.info("Scenario time exceeded. Exiting...")
+                break
+
             _record_data(
                 smarts,
                 collected_data,
@@ -237,17 +253,17 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("waymo_data_extraction.py")
     parser.add_argument(
-        "dataset_file",
+        "--dataset_file",
         help="Path to the TFRecord file",
         type=str,
     )
     parser.add_argument(
-        "scenario_id",
+        "--scenario_id",
         help="ID of the scenario to extract",
         type=str,
     )
     parser.add_argument(
-        "output_dir",
+        "--output_dir",
         help="Path to the directory to store the output files",
         type=str,
     )
@@ -257,15 +273,29 @@ if __name__ == "__main__":
 
     # Parse arguments and ensure paths and directories are valid
     args = parser.parse_args()
-    scenario_id = args.scenario_id
 
     dataset_file = Path(args.dataset_file)
     if not os.path.exists(dataset_file):
         logger.error(f"Dataset file does not exist: {dataset_file}")
         exit(1)
 
+    scenario_id = args.scenario_id
+    scenario = WaymoMap.parse_source_to_scenario(f"{dataset_file}#{scenario_id}")
+
+    vehicle_ids = args.vehicles
+    if not vehicle_ids and scenario.tracks_to_predict:
+        logger.warning(
+            "No vehicle IDs were specified. Using vehicle IDs from tracks_to_predict"
+        )
+        objects_ttp = [
+            scenario.tracks[ttp.track_index] for ttp in scenario.tracks_to_predict
+        ]
+        vehicle_ids = [ttp.id for ttp in objects_ttp if ttp.object_type == 1]
+
     output_base_dir = Path(args.output_dir)
-    output_dir = output_base_dir / scenario_id
+    output_dir = (
+        output_base_dir / dataset_file.stem / dataset_file.suffix[1:] / scenario_id
+    )
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -275,5 +305,6 @@ if __name__ == "__main__":
             scenario_id=scenario_id,
             output_dir=output_dir,
             scenarios_dir=Path(scenarios_dir),
-            vehicle_ids=args.vehicles,
+            vehicle_ids=vehicle_ids,
+            max_time=max(scenario.timestamps_seconds),
         )
