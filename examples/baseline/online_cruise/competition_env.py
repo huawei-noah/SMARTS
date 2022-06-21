@@ -69,12 +69,12 @@ def _filter(obs: Observation, target_position, env):
     return obs
 
 
-def _record_data(collected_data, actions, observations, rewards, dones, extras):
+def _record_data(collected_data, agent_action, observations, rewards, dones, extras):
     for agent_id in observations.keys():
         collected_data.setdefault(agent_id, [])
         collected_data[agent_id].append(
             {
-                "actions": actions.get(agent_id, None),
+                "actions": agent_action,
                 "obs": observations.get(agent_id, None),
                 "rewards": rewards.get(agent_id, None),
                 "dones": dones.get(agent_id, None),
@@ -253,7 +253,7 @@ class CompetitionEnv(gym.Env):
             observations, rewards, dones, extras = self._smarts.step(agent_actions)
         _record_data(
             self._collected_data,
-            agent_actions,
+            agent_action,
             observations,
             rewards,
             dones,
