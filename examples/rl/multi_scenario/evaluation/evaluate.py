@@ -1,8 +1,14 @@
+# Add submission directory to python search path
+import sys
+from pathlib import Path
+print(Path(__file__).absolute().parents[1])
+sys.path.insert(0, str(Path(__file__).absolute().parents[1]))
+
 from typing import Any, Dict, List
 
 import gym
-from ..evaluation.copy_data import CopyData, DataStore
-from ..submission.policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
+from evaluation.copy_data import CopyInfo, DataStore
+from submission.policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
 
 def make_env(
     config: Dict[str, Any], scenario: str, datastore:DataStore, wrappers: List[gym.Wrapper] = [],
@@ -29,7 +35,7 @@ def make_env(
     )
 
     # Makes a copy of original info and prevents modification by external users. 
-    env = CopyData(env, datastore)
+    env = CopyInfo(env, datastore)
 
     # Wrap the environment
     for wrapper in wrappers:
@@ -131,5 +137,4 @@ class Metric:
 
 
 if __name__ == "__main__":
-
     evaluate()
