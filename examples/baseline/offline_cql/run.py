@@ -17,93 +17,6 @@ import argparse
 from datetime import datetime
 yaml = YAML(typ="safe")
 
-# def data_process(df_behind, df_front):
-#     df_process = pd.DataFrame()
-#     cols = ['x_behind', 'y_behind', 'x_front', 'y_front', 'dx_behind', 'dy_behind', 'lane_behind', 'lane_front', 'reward']
-#     for i in range(df_behind.shape[0]):
-#         x_behind = df_behind.iloc[i]['position_x']
-#         y_behind = df_behind.iloc[i]['position_y']
-#         x_front = df_front.iloc[i]['position_x']
-#         y_front = df_front.iloc[i]['position_y']
-#         dx_behind = df_behind.iloc[i]['delta_x']
-#         dy_behind = df_behind.iloc[i]['delta_y']
-#         lane_behind = df_behind.iloc[i]['lane_index']
-#         lane_front = df_front.iloc[i]['lane_index']
-#         dist = np.sqrt((x_behind - x_front) ** 2 + (y_behind - y_front) ** 2)
-#         reward = - dist
-#         temp_df = pd.DataFrame([[x_behind, y_behind, x_front, y_front, dx_behind, dy_behind, lane_behind, lane_front, reward]], columns=cols)
-#         df_process = pd.concat([df_process, temp_df])
-#     return df_process
-
-def data_process():
-    df_dataset = pd.DataFrame()
-    cols = ['x', 'y', 'dx', 'dy', 'rewards', 'terminals']
-    for filename in np.sort(os.listdir('recorded_trajectories')):
-        print(filename)
-        df = pd.read_csv('recorded_trajectories/' + filename)
-        for i in range(1, df.shape[0]):
-            x = df.iloc[i]['position_x']
-            y = df.iloc[i]['position_y']
-            dx = df.iloc[i]['delta_x']
-            dy = df.iloc[i]['delta_y']
-            if df.iloc[i]['dones']:
-                reward = 10
-                terminal = 1
-            else:
-                reward = df.iloc[i]['rewards']
-                terminal = 0
-            temp_df = pd.DataFrame([[x, y, dx, dy, reward, terminal]], columns=cols)
-            df_dataset = pd.concat([df_dataset, temp_df])
-    return df_dataset
-
-
-
-def bad_data_process():
-    df_dataset = pd.DataFrame()
-    cols = ['x', 'y', 'dx', 'dy', 'rewards', 'terminals']
-    for filename in np.sort(os.listdir('recorded_trajectories_bad')):
-        print(filename)
-        df = pd.read_csv('recorded_trajectories_bad/' + filename)
-        for i in range(1, df.shape[0]):
-            x = df.iloc[i]['position_x']
-            y = df.iloc[i]['position_y']
-            dx = df.iloc[i]['delta_x']
-            dy = df.iloc[i]['delta_y']
-            if df.iloc[i]['dones']:
-                reward = 0
-                terminal = 1
-            else:
-                reward = df.iloc[i]['rewards']
-                terminal = 0
-            temp_df = pd.DataFrame([[x, y, dx, dy, reward, terminal]], columns=cols)
-            df_dataset = pd.concat([df_dataset, temp_df])
-    return df_dataset
-
-
-
-def clean_data(df):
-    df_clean = pd.DataFrame()
-    i = 2
-    while i < df.shape[0] - 1:
-        if df.iloc[i]['sim_time'] == df.iloc[i + 1]['sim_time']:
-            sub_df = df.iloc[i : i+2, :]
-            df_clean = pd.concat([df_clean, sub_df])
-            i += 2
-        else:
-            i += 1
-    return df_clean
-
-def get_vehicle_id(df):
-    vehicle_behind_id = 'NA'
-    vehicle_front_id = 'NA'
-    for i in range(df.shape[0]):
-        if 'behind' in df.iloc[i]['agent_id']:
-            vehicle_behind_id = df.iloc[i]['agent_id']
-        else: 
-            vehicle_front_id = df.iloc[i]['agent_id']
-        if vehicle_behind_id != 'NA' and vehicle_front_id != 'NA':
-            break
-    return vehicle_behind_id, vehicle_front_id
 
 def main(args: argparse.Namespace):
     # Load config file.
@@ -208,7 +121,7 @@ def run(config, logdir):
 
 
     else:
-           
+        
         
         df_dataset = pd.DataFrame()
         if os.path.isfile('dataset.csv'):
@@ -259,7 +172,7 @@ if __name__ == "__main__":
         "--head", help="Run the simulation with display.", action="store_true"
     )
     parser.add_argument(
-        "--num_epochs", help="Number of training epochs.", type=int, default=500
+        "--num_epochs", help="Number of training epochs.", type=int, default=1
     )
     parser.add_argument(
         "--max_episode_steps", help="Number of steps in each episode.", type=int, default=300
