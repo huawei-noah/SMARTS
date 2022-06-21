@@ -1097,9 +1097,10 @@ class _TrafficActor:
         I = -0.0150 / space_cush
         D = -0.0010 * my_acc
         PID = (P + I + D) / dt
-        PID = np.clip(PID, -1.0, 1.0)
 
         PID -= 0.02 * self._imperfection * random.random()
+
+        PID = np.clip(PID, -1.0, 1.0)
 
         if PID > 0:
             max_accel = float(self._vtype.get("accel", 2.6))

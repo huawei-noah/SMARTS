@@ -703,6 +703,7 @@ class SumoRoadNetwork(RoadMap):
         # even when in an intersection where we want to hit "special"
         # lanes when we specify include_junctions=True.  Note that "special"
         # lanes are always candidates to be returned, no matter what.
+        # See:  https://github.com/eclipse/sumo/issues/5854
         candidate_lanes = self._graph.getNeighboringLanes(
             point[0],
             point[1],

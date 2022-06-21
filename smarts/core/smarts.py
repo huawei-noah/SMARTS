@@ -168,6 +168,7 @@ class SMARTS:
 
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
+        # self._bullet_client = BulletClient(pybullet.GUI)
         self._bullet_client = bc.BulletClient(
             pybullet.DIRECT  # pylint: disable=no-member
         )
