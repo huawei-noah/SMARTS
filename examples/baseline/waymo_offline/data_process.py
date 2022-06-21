@@ -88,15 +88,20 @@ for scenario in scenarios[0:3]:
     dataset = MDPDataset(obs, actions, rewards, terminals)
     if index == 0:
         model = d3rlpy.algos.CQL(use_gpu=True, batch_size=1)
+        model.fit(dataset, 
+            eval_episodes=dataset, 
+            n_epochs = 1, 
+        )
     else:
         saved_folder = sorted(os.listdir(pathlib.Path(__file__).absolute().parent/'d3rlpy_logs/'))[-1]
         model = CQL.from_json('d3rlpy_logs/' + saved_folder + '/params.json', use_gpu=True)
-
-    model.fit(dataset, 
+        model.fit(dataset, 
             eval_episodes=dataset, 
             n_epochs = 1, 
+            save_metrics=False
+        )
 
-    )
+
     model.save_model('saved_model/' + 'model_' + str(index) + '.pt')
     index += 1
 
