@@ -5,13 +5,13 @@ How to work with Bubbles
 
 SMARTS provides the concept of a spatial-temporal bubble which allows for focused simulation interaction. Bubbles are intended to address the problem of scaling of interaction. Using resources globally results in wasted simulation resources if the most important behavior to an automous vehicle is in the nearby vicinity of that vehicle.
 
-A bubble covers an area and filters traffic vehicles that pass through that zone. A vehicle entering the bubble will first pass into a buffer area of `shadowing` where an agent will begin observing from the vehicle.  The agent will then will fully take over control of that vehicle when it enters the bubble proper. SMARTS will replace traffic vehicles with the specified agents.  When the vehicle exits the bubble region, the agent will relinquish its control to a suitable traffic provider.
+A bubble covers an area and filters traffic vehicles that pass through that zone. A vehicle entering the bubble will first pass into an `airlock` buffer area of `shadowing` where an agent may begin observing from the vehicle.  The agent may then fully take over control of that vehicle when it enters the bubble proper. SMARTS will replace control of the traffic vehicles with the agents specified by the bubble definition.  The bubble agent will relinquish its control to a suitable traffic provider when its controlled vehicle exits the bubble and airlock regions.
 
 
 Limtations
 ===========
 
-If a vehicle whose trajectory is being provided from a traffic history dataset is taken over by an agent withn a bubble, it generally cannot return to the trajectory specified in the history dataset upon bubble exit without a "jump" or "glitch" due to potential divergence of the agent's behavior from the history within the bubble.  So instead, the simple SMARTS traffic provider assumes control of it at this point and will attempt to navigate it to its original destination, avoiding collisions along the way. 
+If a vehicle whose trajectory is being provided from a traffic history dataset is taken over by an agent withn a bubble, the vehicle generally cannot be returned to the trajectory specified in the history dataset upon bubble exit without a "jump" or "glitch" due to the plurality of situations where there is a divergence of vehicle states from the history within the bubble.  So instead, the simple SMARTS traffic provider assumes control of it at this point and will attempt to navigate it to its original destination, avoiding collisions along the way.
 
 Usage
 =====
@@ -39,7 +39,7 @@ Bubbles can be fixed to a static location defined either as an edge or a positio
 
 **Moving bubbles**
 
-Bubbles that are vehicle-relative can be attached to specific actors by specifying the id of the actor in the bubble.
+Bubbles that are vehicle-relative can be attached to specific actors by specifying the id of the actor in the bubble definition.
 
 .. code-block:: python
     import smarts.sstudio.types as t

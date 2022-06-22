@@ -41,7 +41,7 @@ class TrajectoryInterpolationController:
     """A controller used to perform trajectory interpolation."""
 
     @classmethod
-    def check_legal_trajectory(cls, trajectory: np.ndarray):
+    def assert_is_legal_trajectory(cls, trajectory: np.ndarray):
         """Test if the trajectory is correctly formed."""
         assert (
             len(trajectory[TrajectoryField.TIME_INDEX]) >= 2
@@ -106,7 +106,7 @@ class TrajectoryInterpolationController:
             trajectory (np.ndarray) : trajectory with 5 dimensions - TIME, X, Y, THETA and VEL
         """
         assert isinstance(vehicle.chassis, BoxChassis)
-        cls.check_legal_trajectory(trajectory)
+        cls.assert_is_legal_trajectory(trajectory)
 
         ms0, ms1 = cls._locate_motion_state(trajectory, dt)
 

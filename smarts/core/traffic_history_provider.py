@@ -163,10 +163,12 @@ class TrafficHistoryProvider(TrafficProvider):
         pass
 
     def vehicle_collided(self, vehicle_id: str):
-        # There's nothing we can do about it, save for removing vehicle_id, i.e.:
+        # Here we might remove the vehicle_id from history replay, i.e.:
         #     self.stop_managing(vehicle_id)
+        # OR we might consider handing the vehicle off to another
+        # provider to manage from here on out.
         # But this collision MIGHT have explicitly been part of the original
-        # traffic history data, so we don't do that just in case.
+        # traffic history data, so we don't do either of those things just in case.
         pass
 
     def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:

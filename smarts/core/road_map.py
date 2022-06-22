@@ -404,7 +404,7 @@ class RoadMap:
             """lookahead (in meters) is the size of the window to use
             to compute the curvature, which must be at least 1 to make sense.
             This may return math.inf if the lane is straight."""
-            assert lookahead > 1
+            assert lookahead > 0
             prev_heading_rad = None
             heading_deltas = 0.0
             lane = self

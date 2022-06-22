@@ -109,9 +109,6 @@ class LocalTrafficProvider(TrafficProvider):
                 assert (lane.lane_id, r_ind) not in self._route_lane_lengths[route_id]
                 _backprop_length(lane, lane.length, r_ind)
                 self._route_lane_lengths[route_id][(lane.lane_id, r_ind)] = lane.length
-            else:
-                continue
-            break
         if not road:
             return route_id
         # give lanes that would form a loop an advantage...
@@ -359,7 +356,6 @@ class LocalTrafficProvider(TrafficProvider):
         if other:
             return other[1][-1] if other[1] else None
         assert False, f"unknown vehicle_id: {vehicle_id}"
-        return None
 
     def can_accept_vehicle(self, state: VehicleState) -> bool:
         return state.role == ActorRole.Social or state.role == ActorRole.Unknown

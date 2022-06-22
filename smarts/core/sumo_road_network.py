@@ -275,7 +275,8 @@ class SumoRoadNetwork(RoadMap):
 
         @cached_property
         def length(self) -> float:
-            # self._sumo_lane.getLength() is not accurate
+            # self._sumo_lane.getLength() is not accurate because it gets the length
+            # of the outermost lane on the edge, not the lane you query.
             length = 0
             shape = self._sumo_lane.getShape()
             for p1, p2 in zip(shape, shape[1:]):

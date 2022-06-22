@@ -811,12 +811,9 @@ class SumoTrafficSimulation(TrafficProvider):
             self._traci_conn.vehicle.remove(vehicle_id)
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
-        if vehicle_id in self._sumo_vehicle_ids:
-            self._sumo_vehicle_ids.remove(vehicle_id)
-        if vehicle_id in self._hijacked:
-            self._hijacked.remove(vehicle_id)
-        if vehicle_id in self._non_sumo_vehicle_ids:
-            self._non_sumo_vehicle_ids.remove(vehicle_id)
+        self._sumo_vehicle_ids.discard(vehicle_id)
+        self._hijacked.discard(vehicle_id)
+        self._non_sumo_vehicle_ids.discard(vehicle_id)
 
     def _shape_of_vehicle(self, sumo_vehicle_state, vehicle_id):
         p = sumo_vehicle_state[vehicle_id][tc.VAR_POSITION]

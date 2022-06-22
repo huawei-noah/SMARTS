@@ -121,7 +121,7 @@ class RefLinePoint(NamedTuple):
 
 @dataclass(frozen=True)
 class BoundingBox:
-    """A box located in a coordinate system generally used to encapsulate geometry."""
+    """A 2-dimensional axis aligned box located in a [x, y] coordinate system."""
 
     min_pt: Point
     max_pt: Point
