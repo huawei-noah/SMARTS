@@ -117,7 +117,7 @@ class ZoneSteps:
 
 # TODO: Consider a higher-level DSL syntax to fulfill these tests
 @pytest.mark.parametrize("traffic_sim", ["SUMO", "SMARTS"], indirect=True)
-def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles):
+def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim):
     """Ensures bubble airlocking, hijacking, and relinquishing are functional.
     Additionally, we test with multiple bubbles and vehicles to ensure operation is
     correct in these conditions as well.
