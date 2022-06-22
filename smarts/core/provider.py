@@ -72,8 +72,8 @@ class ProviderState:
         """Returns True iff any of the vehicle_ids are contained in this ProviderState .
         Returns False for empty-set containment."""
         provider_vehicle_ids = {v.vehicle_id for v in self.vehicles}
-        missing = vehicle_ids & provider_vehicle_ids
-        return bool(missing)
+        intersection = vehicle_ids & provider_vehicle_ids
+        return bool(intersection)
 
 
 class Provider:
