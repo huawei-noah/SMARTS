@@ -202,12 +202,12 @@ class Client:
             data_formatter = EnvisionDataFormatter(data_formatter_args)
 
         def optionally_serialize_and_write(state: Union[types.State, str], ws):
-            if data_formatter:
-                data_formatter.reset()
-                data_formatter.add(state)
-                state = data_formatter.resolve()
             # if not already serialized
             if not isinstance(state, str):
+                if data_formatter:
+                    data_formatter.reset()
+                    data_formatter.add(state)
+                    state = data_formatter.resolve()
                 state = unpack(state)
                 state = json.dumps(state, cls=JSONEncoder, allow_nan=False)
 
