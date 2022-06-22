@@ -294,8 +294,8 @@ class LocalTrafficProvider(TrafficProvider):
             if my_actor:
                 assert vs.source == self.source_str
                 # here we override our state with the "consensus" state...
-                # (Note: this is different from what Sumo does; we're
-                # allowing for true "harmonization" if necessary.
+                # (Note: this is different from what Sumo does;
+                # we're allowing for true "harmonization" if necessary.
                 # "You may say that I'm a dreamer, but I'm not the only one,
                 # I hope that one day you'll join us, and the world will
                 # be as one." ;)
@@ -332,10 +332,10 @@ class LocalTrafficProvider(TrafficProvider):
 
     def vehicle_collided(self, vehicle_id: str):
         # TAI:  consider removing the vehicle?
-        # If collidee(s) include an EgoAgent, it will likely be marked "done" and things will end.
+        # If collidee(s) include(s) an EgoAgent, it will likely be marked "done" and things will end.
         # (But this is not guaranteed depending on the criteria that were set.)
         # Probably the most realistic thing we can do is leave the vehicle sitting in the road, blocking traffic!
-        # (... and then add a "rubber-neck mode" for all nearby vehicles? ;)
+        # (... and then add a "rubber-neck mode" for all nearby # vehicles?! ;)
         # Let's do that for now, but we should also consider just removing the vehicle.
         traffic_actor = self._my_actors.get(vehicle_id)
         if not traffic_actor:
@@ -692,7 +692,7 @@ class _TrafficActor:
         @cached_property
         def radius(self) -> float:
             """The radius of curvature of this lane at its lane_coord."""
-            # we round the offset in attempt to reduce the unique hits on the LRU caches...
+            # we round the offset in an attempt to reduce the unique hits on the LRU caches...
             rounded_offset = round(self.lane_coord.s)
             return self.lane.curvature_radius_at_offset(
                 rounded_offset, lookahead=max(math.ceil(2 * self.width), 2)
@@ -971,7 +971,7 @@ class _TrafficActor:
     def _compute_lane_speeds(self):
         def _get_radius(lane: RoadMap.Lane) -> float:
             l_offset = self._owner._cached_lane_offset(self._state, lane)
-            # we round the offset in attempt to reduce the unique hits on the LRU caches...
+            # we round the offset in an attempt to reduce the unique hits on the LRU caches...
             l_offset = round(l_offset)
             l_width, _ = lane.width_at_offset(l_offset)
             return lane.curvature_radius_at_offset(
@@ -993,7 +993,7 @@ class _TrafficActor:
     def _slow_for_curves(self):
         # XXX:  this may be too expensive.  if so, we'll need to precompute curvy spots for routes
         lookahead = math.ceil(1 + math.log(self._target_speed))
-        # we round the offset in attempt to reduce the unique hits on the LRU caches...
+        # we round the offset in an attempt to reduce the unique hits on the LRU caches...
         rounded_offset = round(self._offset)
         radius = self._lane.curvature_radius_at_offset(rounded_offset, lookahead)
         # pi/2 radian right turn == 6 m/s with radius 10.5 m
@@ -1130,7 +1130,7 @@ class _TrafficActor:
         self._next_linear_acceleration = dt * acceleration * heading_vec
         self._next_speed = self._state.speed + acceleration * dt
         if self._next_speed < 0:
-            # don't go bckwards
+            # don't go backwards
             self._next_speed = 0
         dpos = heading_vec * self.speed * dt
         target_pos = self._state.pose.position + np.append(dpos, 0.0)
