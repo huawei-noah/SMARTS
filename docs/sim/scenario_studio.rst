@@ -38,6 +38,7 @@ Generate traffic
 
   # add 10 social vehicles with random routes.
   traffic = Traffic(
+      engine="SUMO",
       flows=[
           # generate flows last for 10 hours
           Flow(route=RandomRoute(), begin=0, end=10 * 60 * 60, rate=25, actors={traffic_actor: 1},)
@@ -46,6 +47,10 @@ Generate traffic
   )
 
   gen_traffic(scenario_path, traffic, name="all", output_dir=scenario_path, seed=seed_, overwrite=True)
+
+Note that the `engine` argument to `Traffic` can either be `"SUMO"` or `"SMARTS"`, with `"SUMO"` being the default.
+As `"SUMO"` can only be used on Sumo-format "road networks", if you need
+to run SMARTS with another map type you may need to change to the `"SMARTS"` engine.
 
 `traffic_actor` is used as a spec for traffic actors (e.g. Vehicles, Pedestrians, etc). The defaults provided are for a car.
 You can specify acceleration, deceleration, speed distribution, imperfection distribution and other configs for social cars.
