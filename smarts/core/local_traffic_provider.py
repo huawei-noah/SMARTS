@@ -335,7 +335,7 @@ class LocalTrafficProvider(TrafficProvider):
         # If collidee(s) include(s) an EgoAgent, it will likely be marked "done" and things will end.
         # (But this is not guaranteed depending on the criteria that were set.)
         # Probably the most realistic thing we can do is leave the vehicle sitting in the road, blocking traffic!
-        # (... and then add a "rubber-neck mode" for all nearby # vehicles?! ;)
+        # (... and then add a "rubber-neck mode" for all nearby vehicles?! ;)
         # Let's do that for now, but we should also consider just removing the vehicle.
         traffic_actor = self._my_actors.get(vehicle_id)
         if not traffic_actor:

@@ -495,9 +495,13 @@ class AgentManager:
                 role=role,
             )
             if provider.can_accept_vehicle(state):
+                # Note: this just takes the first one that we come across,
+                # so the order in the sim.providers list matters.
                 provider.add_vehicle(state)
                 break
         else:
+            # We should never get here because there will always be an AgentsProvider in SMARTS
+            # willing to accept SocialAgents.
             assert (
                 False
             ), f"could not find suitable provider supporting role={role} for action space {agent_interface.action_space}"
