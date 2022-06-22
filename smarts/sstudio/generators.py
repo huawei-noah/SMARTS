@@ -114,12 +114,10 @@ class TrafficGenerator:
             overwrite:
                 Whether to overwrite existing traffic information.
         """
-        from smarts.core.utils.sumo import sumolib
 
         self._log = logging.getLogger(self.__class__.__name__)
         self._scenario = scenario_dir
         self._overwrite = overwrite
-        self._duarouter = sh.Command(sumolib.checkBinary("duarouter"))
         self._scenario_map_spec = scenario_map_spec
         self._road_network_path = os.path.join(self._scenario, "map.net.xml")
         if scenario_map_spec and scenario_map_spec.source:
@@ -177,10 +175,13 @@ class TrafficGenerator:
             log_path = f"{self._log_dir}/{scenario_name}"
             os.makedirs(log_path, exist_ok=True)
 
+            from smarts.core.utils.sumo import sumolib
             import smarts.core.utils.sumo  # Set SUMO_HOME environment variable
 
+            duarouter = sh.Command(sumolib.checkBinary("duarouter"))
+
             # Validates, and runs route planner
-            self._duarouter(
+            duarouter(
                 unsorted_input=True,
                 net_file=self.road_network.source,
                 route_files=trips_path,
