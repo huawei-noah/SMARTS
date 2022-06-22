@@ -1265,13 +1265,14 @@ class SMARTS:
                 collision = Collision(collidee_id=actor_id)
                 vehicle_collisions.append(collision)
 
+        traffic_providers = [
+            p for p in self.providers if isinstance(p, TrafficProvider)
+        ]
         for vehicle_id in self._vehicle_index.social_vehicle_ids():
-            for provider in self.providers:
-                if (
-                    isinstance(provider, TrafficProvider)
-                    and provider.manages_vehicle(vehicle_id)
-                    and self._get_pybullet_collisions(vehicle_id)
-                ):
+            for provider in traffic_providers:
+                if provider.manages_vehicle(
+                    vehicle_id
+                ) and self._get_pybullet_collisions(vehicle_id):
                     provider.vehicle_collided(vehicle_id)
 
     def _bullet_id_to_vehicle(self, bullet_id):
