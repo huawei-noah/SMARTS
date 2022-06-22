@@ -704,6 +704,9 @@ class Vehicle:
                 detach = getattr(self, f"detach_{sensor_name}")
                 if detach:
                     detach(sensor_name)
+                    self._log.info(
+                        f"replacing existing {sensor_name} on vehicle {self.id}"
+                    )
                 setattr(self, f"_{sensor_name}", sensor)
                 self._sensors[sensor_name] = sensor
 
