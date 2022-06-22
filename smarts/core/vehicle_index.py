@@ -49,7 +49,7 @@ def _2id(id_: str):
     return (separator + id_).zfill(VEHICLE_INDEX_ID_LENGTH - len(separator))
 
 
-# TAI:  Use ActorRole enum form vehicle.py insetad?
+# TAI:  Use ActorRole enum from vehicle.py insetad?
 class _ActorType(IntEnum):
     Social = 0  # Traffic
     Agent = 1

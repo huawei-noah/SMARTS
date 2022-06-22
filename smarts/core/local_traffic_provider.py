@@ -261,7 +261,7 @@ class LocalTrafficProvider(TrafficProvider):
                 dones.append(actor.actor_id)
             elif actor.teleporting:
                 # pybullet doesn't like it when a vehicle jumps from one side of the map to another,
-                # so we need to give teleporting vehicles a new id thus a new chassis.
+                # so we need to give teleporting vehicles a new id and thus a new chassis.
                 actor.bump_id()
                 remap_ids[actor_id] = actor.actor_id
         for actor_id in dones:
@@ -293,6 +293,12 @@ class LocalTrafficProvider(TrafficProvider):
             my_actor = self._my_actors.get(vs.vehicle_id)
             if my_actor:
                 assert vs.source == self.source_str
+                # here we override our state with the "consensus" state...
+                # (Note: this is different from what Sumo does; we're
+                # allowing for true "harmonization" if necessary.
+                # "You may say that I'm a dreamer, but I'm not the only one,
+                # I hope that one day you'll join us, and the world will
+                # be as one." ;)
                 my_actor.state = vs
             else:
                 assert vs.source != self.source_str
@@ -329,6 +335,7 @@ class LocalTrafficProvider(TrafficProvider):
         # If collidee(s) include an EgoAgent, it will likely be marked "done" and things will end.
         # (But this is not guaranteed depending on the criteria that were set.)
         # Probably the most realistic thing we can do is leave the vehicle sitting in the road, blocking traffic!
+        # (... and then add a "rubber-neck mode" for all nearby vehicles? ;)
         # Let's do that for now, but we should also consider just removing the vehicle.
         traffic_actor = self._my_actors.get(vehicle_id)
         if not traffic_actor:
@@ -376,7 +383,6 @@ class LocalTrafficProvider(TrafficProvider):
         )
 
 
-# TAI:  inner class?
 class _TrafficActor:
     """Simulates a vehicle managed by the LocalTrafficProvider."""
 
