@@ -128,7 +128,7 @@ browse-waymo
 
 Usage: scl scenario browse-waymo [OPTIONS] <script>
 
-  Browse Waymo TFRecord datasets using smarts/waymo/waymo_utility.py, a text-
+  Browse Waymo TFRecord datasets using smarts/waymo/waymo_browser.py, a text-
   based browser utility
 
 Options:
