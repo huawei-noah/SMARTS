@@ -41,8 +41,10 @@ def make_env(
         action_space="Continuous",
     )
 
-    # Makes a copy of original info and prevents modification by external users.
+    # Make a copy of original info.
     env = CopyData(env, datastore)
+    # Disallow modification of attributes starting with "_" by external users.
+    env = gym.Wrapper(env)
 
     # Wrap the environment
     for wrapper in wrappers:
