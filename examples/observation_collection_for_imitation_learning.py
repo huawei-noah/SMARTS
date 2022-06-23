@@ -52,8 +52,10 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
 
     # Make sure we can use SUMO traffic for these scenarios
     all_sumo = Scenario.supports_traffic_simulation(scenarios)
-    traffic_sim = SumoTrafficSimulation(headless=headless, auto_start=True) if all_sumo else None
-    
+    traffic_sim = (
+        SumoTrafficSimulation(headless=headless, auto_start=True) if all_sumo else None
+    )
+
     smarts = SMARTS(
         agent_interfaces={},
         traffic_sim=traffic_sim,
