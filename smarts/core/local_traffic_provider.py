@@ -577,7 +577,7 @@ class _TrafficActor:
 
     def bump_id(self):
         """Changes the id of a teleporting vehicle."""
-        mm = re.match("([^_]+)(_(\d+))?$", self._state.vehicle_id)
+        mm = re.match(r"([^_]+)(_(\d+))?$", self._state.vehicle_id)
         assert mm
         ver = int(mm.group(3)) if mm.group(3) else 0
         self._state.vehicle_id = f"{mm.group(1)}_{ver + 1}"
@@ -706,6 +706,9 @@ class _TrafficActor:
                 return 1.0 / math.sin(theta)
             # here we correct for the local road curvature (which affects how far we must travel)...
             T = self.radius / self.width
+            assert (
+                abs(T) > 2
+            ), f"abnormally high curvature?  radius={self.radius}, width={self.width}"
             if to_index > self.lane.index:
                 se = T * (T - 1)
                 return math.sqrt(
@@ -924,10 +927,10 @@ class _TrafficActor:
         my_idx = self._lane.index
         self._lane_win = my_lw = self._lane_windows[my_idx]
         best_lw = self._lane_windows[my_idx]
-        idx = my_idx
-        while 0 <= idx < len(self._lane_windows):
-            if not self._crossing_time_into(idx)[1]:
-                break
+        for l in range(len(self._lane_windows)):
+            idx = (my_idx + l) % len(self._lane_windows)
+            if l > 0 and not self._crossing_time_into(idx)[1]:
+                continue
             lw = self._lane_windows[idx]
             if (
                 lw.lane == self._dest_lane
@@ -939,6 +942,7 @@ class _TrafficActor:
                     break
             if (
                 self._cutting_into
+                and self._cutting_into.lane.index < len(self._lane_windows)
                 and self._crossing_time_into(self._cutting_into.lane.index)[1]
             ):
                 best_lw = self._cutting_into
@@ -960,10 +964,6 @@ class _TrafficActor:
                 )
             ):
                 best_lw = lw
-            idx += 1
-            idx %= len(self._lane_windows)
-            if idx == my_idx:
-                break
         if best_lw.lane != self._lane and not self._cutting_into:
             self._cutting_into = best_lw
         self._target_lane_win = best_lw
