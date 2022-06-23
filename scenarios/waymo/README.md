@@ -30,7 +30,7 @@ This will build the map and generate the SQLite database of trajectory data (wit
 
 ## Using the traffic histories in SMARTS
 
-There are currently 2 examples that use traffic histories. We explain their use below.
+There are examples that use traffic histories. We explain their use below.
 
 ### Example: observation collection
 
