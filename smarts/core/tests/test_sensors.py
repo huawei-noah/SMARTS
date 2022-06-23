@@ -25,11 +25,11 @@ import numpy as np
 import pytest
 from helpers.scenario import temp_scenario
 
-from smarts.core.agent_interface import AgentInterface
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.plan import Plan
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import DrivenPathSensor, WaypointsSensor
+from smarts.core.sensors import DrivenPathSensor, TripMeterSensor, WaypointsSensor
+from smarts.core.utils.math import squared_dist
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 
@@ -79,6 +79,41 @@ def scenarios():
             [str(scenario_root)], [AGENT_ID]
         )
 
+def test_trip_meter_sensor(scenarios):
+    scenario: Scenario = next(scenarios)
+
+    sim = mock.Mock()
+    vehicle = mock.Mock()
+    vehicle.pose = Pose(
+        position=np.array([33, -65, 0]),
+        orientation=np.array([0, 0, 0, 0]),
+        heading_=Heading(0),
+    )
+    vehicle.length = 3.68
+
+    mission = scenario.missions[AGENT_ID]
+    plan = Plan(scenario.road_map, mission)
+
+    sensor = TripMeterSensor(vehicle, scenario.road_map, plan)
+    waypoints_sensor = WaypointsSensor(vehicle, plan)
+    
+
+    positions = [(x, 0, 0) for x in range(0, 100, 10)]
+    sim_times = list(range(0, 50, 5))
+    for idx, (position, sim_time) in enumerate(zip(positions, sim_times)):
+        sim.elapsed_sim_time = sim_time
+        vehicle.position = position
+        vehicle.pose = Pose(
+            position=vehicle.position,
+            orientation=np.array([0, 0, 0, 0]),
+            heading_=Heading(0),
+        )
+        waypoint_paths = waypoints_sensor()
+        sensor.update_distance_wps_record(waypoint_paths=waypoint_paths)
+
+    assert sensor() == sum(wpf.dist_to(wps.pos) for wpf, wps in zip(sensor._wps_for_distance[:-1], sensor._wps_for_distance[1:]))
+
+    sensor.teardown()
 
 def test_waypoints_sensor(scenarios):
     scenario = next(scenarios)
@@ -97,3 +132,5 @@ def test_waypoints_sensor(scenarios):
     waypoints = sensor()
 
     assert len(waypoints) == 3
+
+    sensor.teardown()
