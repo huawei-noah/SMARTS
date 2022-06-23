@@ -133,11 +133,12 @@ def run(env, datastore: DataStore, name, policy: Policy, config: Dict[str, Any])
 
 
 # things to check
-# 1 cheating by changing datainfo
 # 2 distance to obstacles
-# 3 check whether waypoint for both lanes avaialble in left turn
 # 4 check jd
 # check score calculation
+# how to calculate for multiagent
+# special cost case for overtake scenario
+# 
 
 
 if __name__ == "__main__":

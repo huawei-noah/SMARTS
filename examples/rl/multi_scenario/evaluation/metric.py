@@ -22,6 +22,7 @@ class Metric:
             "dist_to_obstacles": 0,
             "steering_rate": 0,
             "jerk": 0,
+            "yaw_rate":0
         }
         self._results = {name: CustomDict(**costs) for name in agent_names}
         self._steering_rate = _steering_rate()
@@ -33,14 +34,18 @@ class Metric:
                 **(_collisions(agent_obs)),
                 **(_on_shoulder(agent_obs)),
                 **(_reached_goal(agent_obs)),
+                **(_lane_ttc(agent_obs)),
                 **(self._steering_rate(agent_obs)),
                 **(_jerk(agent_obs)),
-                **(_lane_ttc(agent_obs)),
+                **(_yaw_rate(agent_obs)),
             )
             self._results[agent_name] += costs
 
+    def reinit(self):
+        self._steering_rate = _steering_rate()
+
     def compute(self):
-        self._results
+        pass
 
 
 def _collisions(obs: Observation) -> Dict[str, int]:
@@ -84,8 +89,14 @@ def _steering_rate() -> Callable[[Observation], Dict[str, float]]:
 def _jerk(obs: Observation) -> Dict[str, float]:
     w_jerk = [0.7, 0.3]
 
-    l_jerk_2 = (obs.ego_vehicle_state.linear_jerk) ** 2
-    a_jerk_2 = (obs.ego_vehicle_state.angular_jerk) ** 2
+    l_jerk_2 = np.sum(np.square(obs.ego_vehicle_state.linear_jerk))
+    a_jerk_2 = np.sum(np.square(obs.ego_vehicle_state.angular_jerk))
+
     jerk = np.dot(w_jerk, [l_jerk_2, a_jerk_2])
 
     return {"jerk": jerk}
+
+
+def _yaw_rate(obs:Observation) -> Dict[str, float]:
+    velocity = obs.ego_vehicle_state.yaw_rate ** 2
+    return {"yaw_rate": velocity}
