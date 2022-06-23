@@ -62,7 +62,7 @@ class NonInteractiveAgent(Agent):
                     print(wp.lane_id + " but actually: "+lane_waypoints[-1].lane_id)
         dist_to_wp = wp.dist_to(obs.ego_vehicle_state.position)
         print(f"selected {wp.lane_id} {dist_to_wp / self.speed}")
-        return np.array([*wp.pos, wp.heading, dist_to_wp / self.speed])
+        return np.array([*wp.pos, wp.heading, 0.1])
 
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
