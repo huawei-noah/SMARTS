@@ -1,17 +1,24 @@
 # Add submission directory to python search path
 import sys
 from pathlib import Path
-print(Path(__file__).absolute().parents[1])
+
+print(f"Adding python search path: {Path(__file__).absolute().parents[1]}")
 sys.path.insert(0, str(Path(__file__).absolute().parents[1]))
 
 from typing import Any, Dict, List
 
 import gym
-from evaluation.copy_data import CopyInfo, DataStore
+from evaluation.copy_data import CopyData, DataStore
+from evaluation.counter import Counter
+from evaluation.metric import Metric, Score
 from submission.policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
 
+
 def make_env(
-    config: Dict[str, Any], scenario: str, datastore:DataStore, wrappers: List[gym.Wrapper] = [],
+    config: Dict[str, Any],
+    scenario: str,
+    datastore: DataStore,
+    wrappers: List[gym.Wrapper] = [],
 ) -> gym.Env:
     """Make environment.
 
@@ -34,8 +41,8 @@ def make_env(
         action_space="Continuous",
     )
 
-    # Makes a copy of original info and prevents modification by external users. 
-    env = CopyInfo(env, datastore)
+    # Makes a copy of original info and prevents modification by external users.
+    env = CopyData(env, datastore)
 
     # Wrap the environment
     for wrapper in wrappers:
@@ -54,7 +61,7 @@ def evaluate():
         # "1_to_2lane_left_turn_c",
         # "1_to_2lane_left_turn_t",
         "3lane_merge_multi_agent",
-        "3lane_merge_single_agent",
+        # "3lane_merge_single_agent",
         # "3lane_cruise_multi_agent",
         # "3lane_cruise_single_agent",
         # "3lane_cut_in",
@@ -64,76 +71,71 @@ def evaluate():
     # Make evaluation environments.
     envs_eval = {}
     for scen in scenarios:
-        datastore =  DataStore()
-        envs_eval[f"{scen}"] = (make_env(
-            config=config, scenario=scen, datastore=datastore, wrappers=submitted_wrappers(),
-         ), datastore)
+        datastore = DataStore()
+        envs_eval[f"{scen}"] = (
+            make_env(
+                config=config,
+                scenario=scen,
+                datastore=datastore,
+                wrappers=submitted_wrappers(),
+            ),
+            datastore,
+        )
 
     # Instantiate submitted policy.
     policy = Policy()
 
-    # Instantiate metric for score calculation.
-    metric = Metric()
-
     # Evaluate model for each scenario
-    for env_name, env_eval in envs_eval.items():
+    score = Score()
+    for env_name, (env, datastore) in envs_eval.items():
         print(f"Evaluating env {env_name}.")
-        run(env=env_eval, name=env_name, policy=policy, config=config, metric=metric)
+        metric = run(
+            env=env, datastore=datastore, name=env_name, policy=policy, config=config
+        )
+
+        # score[]
+
     print("\nFinished evaluating.\n")
 
     # Close all environments
-    for env in envs_eval.values():
+    for env, _ in envs_eval.values():
         env.close()
 
 
-def run(env, name, policy, config, metric):
+def run(env, datastore: DataStore, name, policy: Policy, config: Dict[str, Any]):
+    # Instantiate metric for score calculation.
+    metric = Metric(datastore.agent_names)
+    steps = Counter()
+
     for _ in range(config["eval_episodes"]):
-        observations = env[0].reset()
+        observations = env.reset()
         dones = {"__all__": False}
         while not dones["__all__"]:
-            actions = policy.act(observations)
-            observations, rewards, dones, infos = env[0].step(actions)
+            # Count steps per scenario
+            if not observations:
+                steps.increment()
 
-            # print("Info from copy: ", env[1])
-            print("Info from copy: ", env[1]["Agent_0"]["score"])
+            actions = policy.act(observations)
+            observations, rewards, dones, infos = env.step(actions)
 
             import time
-            time.sleep(1)
 
-            # metric.compute(infos)
+            time.sleep(0.5)
+            print(dones)
+
+            # metric.store(datastore.data)
+            # if dones["__all__"]:
+            #     metric.compute()
+
     return
 
-class Metric:
-    def __init__(self):
-        results = {}
- 
-#     def compute(self, infos):
-#         for agent_name, agent_info in infos.items():
-#             # results[agent_name] = agent_info[obs.events
-#             pass
 
-
-#         import os
-#         os.exit(2)
-
-        #     collisions += infos[agent_id]
-        #     ep_return += rewards.reward
-
-        # total_return += ep_return
-
-    # avg_return = total_return / config["eval"]["episodes"]
-    # print(f"Evaluating. Episode average return: {avg_return.numpy()[0]:.2f}")
-
-
-    # def compute_collisions():
-        
-
-    # def get(self):
-
-    #     return 0
-        #     {
-
-        # }
+# things to check
+# 1 cheating by changing datainfo
+# 2 distance to obstacles
+# 3 check whether waypoint for both lanes avaialble in left turn
+# 4 check jd
+# check score calculation
 
 
 if __name__ == "__main__":

@@ -68,16 +68,20 @@ class FilterObs(gym.ObservationWrapper):
                 dtype=np.float32,
             )
 
-            # Ego's heading with respect to the map's axes.
-            ego_heading = (agent_obs["ego"]["heading"] + np.pi) % (2 * np.pi) - np.pi
+            # Ego's angle with respect to the map's axes.
+            # Note: All angles returned by smarts is with respect to the map axes.
+            #       Angle is zero at positive y axis, and increases anti-clockwise, on the map.
+            ego_angle = (agent_obs["ego"]["heading"] + np.pi) % (2 * np.pi) - np.pi
 
             # Goal's angle with respect to the map's axes.
+            # Note: Angle is zero at positive x axis, and increases anti-clockwise, in np.angle().
+            #       Hence, map_angle = np.angle() - π/2
             goal_x, goal_y = agent_obs["mission"]["goal_pos"][:2]
             goal_angle = np.angle(goal_x + goal_y * 1j) - np.pi / 2
             goal_angle = (goal_angle + np.pi) % (2 * np.pi) - np.pi
 
-            # Heading correction required by ego agent to face the goal.
-            goal_heading = goal_angle - ego_heading
+            # Goal heading is the angle correction required by ego agent to face the goal.
+            goal_heading = goal_angle - ego_angle
             goal_heading = (goal_heading + np.pi) % (2 * np.pi) - np.pi
             goal_heading = np.array([[goal_heading]], dtype=np.float32)
 
@@ -92,7 +96,7 @@ class FilterObs(gym.ObservationWrapper):
             )
 
             # print(f"goal_angle {goal_angle*180/np.pi}")
-            # print(f"ego_heading {ego_heading*180/np.pi}")
+            # print(f"ego_angle {ego_angle*180/np.pi}")
             # print(f"goal_heading {goal_heading}")
             # print(f"goal_distance {goal_distance}")
             # plotter3d(wrapped_obs[agent_id]["rgb"], rgb_gray=3, channel_order="first",name="after",pause=0, save=True)

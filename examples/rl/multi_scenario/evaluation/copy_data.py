@@ -1,23 +1,35 @@
-from typing import Any, Dict, Tuple
+import copy
+from typing import Any, Dict, Iterable, Tuple
 
 import gym
-import copy
+
 
 class DataStore:
     def __init__(self):
         self._data = None
+        self._agent_names = None
 
     def __call__(self, data):
         self._data = copy.deepcopy(data)
 
-    def get(self):
+    @property
+    def data(self):
         return self._data
 
+    @property
+    def agent_names(self):
+        return self._agent_names
 
-class CopyInfo(gym.Wrapper):
-    def __init__(self, env: gym.Env, datastore:DataStore):
-        super(CopyInfo, self).__init__(env)
-        self._datastore=datastore
+    @agent_names.setter
+    def agent_names(self, names: Iterable[str]):
+        self._agent_names = names
+
+
+class CopyData(gym.Wrapper):
+    def __init__(self, env: gym.Env, datastore: DataStore):
+        super(CopyData, self).__init__(env)
+        self._datastore = datastore
+        self._datastore.agent_names = env.agent_spec.keys()
 
     def step(
         self, action: Dict[str, Any]
@@ -27,8 +39,8 @@ class CopyInfo(gym.Wrapper):
         Dict[str, bool],
         Dict[str, Dict[str, Any]],
     ]:
-        """Steps the environment and makes a copy of info. The info copy is a private attribute and 
-        cannot be acccessed from outside.  
+        """Steps the environment and makes a copy of info. The info copy is a private attribute and
+        cannot be acccessed from outside.
 
         Args:
             action (Dict[str, Any]): Action for each agent.
