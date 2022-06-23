@@ -79,12 +79,10 @@ def run(config: Dict[str, Any], logdir: pathlib.PosixPath):
         model.learn(total_timesteps=config["train_steps"])
     else:
         print("Start training.")
-        checkpoint_callback = CheckpointCallback(save_freq=50, save_path=logdir,
-                                        )
         eval_callback = EvalCallback(env, best_model_save_path=logdir,
-                             log_path=logdir, eval_freq=50,
+                             log_path=logdir, eval_freq=10000,
                              deterministic=True, render=False)
-        callback = CallbackList([checkpoint_callback, eval_callback])
+        callback = CallbackList([eval_callback])
         model = PPO(
             "CnnPolicy",
             env,
@@ -124,7 +122,7 @@ if __name__ == "__main__":
         "--head", help="Run the simulation with display.", action="store_true"
     )
     parser.add_argument(
-        "--train-steps", help="Number of training steps.", type=int, default=1000
+        "--train-steps", help="Number of training steps.", type=int, default=300000
     )
 
     args = parser.parse_args()
