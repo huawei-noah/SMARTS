@@ -101,6 +101,7 @@ def multi_scenario_v0_env(
     build_scenario([env_specs["scenario"]])
     done_criteria = env_specs["done_criteria"]
     max_episode_steps = 3000
+    neighbor_radius = 50
     agent_specs = {
         f"Agent_{i}": AgentSpec(
             interface=AgentInterface(
@@ -114,7 +115,7 @@ def multi_scenario_v0_env(
                 ),
                 lidar=True,
                 max_episode_steps=max_episode_steps,
-                neighborhood_vehicles=NeighborhoodVehicles(img_meters),
+                neighborhood_vehicles=NeighborhoodVehicles(neighbor_radius),
                 ogm=OGM(
                     width=img_pixels,
                     height=img_pixels,

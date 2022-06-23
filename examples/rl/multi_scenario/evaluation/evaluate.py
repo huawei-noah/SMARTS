@@ -60,9 +60,9 @@ def evaluate():
         "eval_episodes": 100,
     }
     scenarios = [
-        # "1_to_2lane_left_turn_c",
+        "1_to_2lane_left_turn_c",
         # "1_to_2lane_left_turn_t",
-        "3lane_merge_multi_agent",
+        # "3lane_merge_multi_agent",
         # "3lane_merge_single_agent",
         # "3lane_cruise_multi_agent",
         # "3lane_cruise_single_agent",
@@ -138,6 +138,7 @@ def run(env, datastore: DataStore, name, policy: Policy, config: Dict[str, Any])
 # check score calculation
 # how to calculate for multiagent
 # special cost case for overtake scenario
+# remove ttc from format stdobs
 # 
 
 
