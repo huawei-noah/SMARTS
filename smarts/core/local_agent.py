@@ -17,12 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import logging
-import time
 from concurrent import futures
-from typing import Tuple
 
-from smarts.core.agent import Agent
 from smarts.core.buffer_agent import BufferAgent
 from smarts.zoo.agent_spec import AgentSpec
 
@@ -31,8 +27,6 @@ class LocalAgent(BufferAgent):
     """A remotely controlled agent."""
     
     def __init__(self):
-        # Track the last action future.
-        #self._act_future = None
         self._agent = None
         self._agent_spec = None
         self._act_executor = None
