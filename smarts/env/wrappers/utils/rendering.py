@@ -32,6 +32,7 @@ from smarts.core.utils.logging import isnotebook
 
 
 def flatten_obs(sim_obs):
+    """Convert the observation into tuples of observations (for purposes of flattening boids)."""
     obs = []
     for agent_id, agent_obs in sim_obs.items():
         if agent_obs is None:
@@ -45,10 +46,10 @@ def flatten_obs(sim_obs):
 
 
 def vis_sim_obs(sim_obs) -> Dict[str, np.ndarray]:
+    """Convert the observations into format for mp4 video output."""
     vis_images = defaultdict(list)
 
     for agent_id, agent_obs in flatten_obs(sim_obs):
-        # Visdom image format: Channel x Height x Width
         drivable_area = getattr(agent_obs, "drivable_area_grid_map", None)
         if drivable_area is not None:
             image = drivable_area.data
@@ -73,6 +74,7 @@ def vis_sim_obs(sim_obs) -> Dict[str, np.ndarray]:
 
 
 def show_notebook_videos(path="videos", height="400px", split_html=""):
+    """Render a video in a python display. Usually for jupyter notebooks."""
     if not isnotebook():
         return
     from IPython import display as ipythondisplay
