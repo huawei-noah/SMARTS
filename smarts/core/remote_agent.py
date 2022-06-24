@@ -18,8 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-import time
-from concurrent import futures
+from functools import wraps
 from typing import Tuple
 
 import cloudpickle
@@ -60,7 +59,6 @@ class RemoteAgent(BufferAgent):
 
         # Track the last action future.
         self._grpc_future = None
-        self._action_executor = None
 
         self._manager_channel = grpc.insecure_channel(
             f"{manager_address[0]}:{manager_address[1]}"
@@ -86,20 +84,22 @@ class RemoteAgent(BufferAgent):
             worker_pb2.Observation(payload=cloudpickle.dumps(obs))
         )
 
-        def get_action_future():
-            action = cloudpickle.loads(
-                        self._grpc_future.result().action
-                    )   
-            return action
-         
-        future = self._action_executor.submit(get_action_future)
+        def result_wrapper(f):
+            @wraps(f)
+            def wrapper():
+                action = cloudpickle.loads(
+                            f().action
+                        )   
+                return action
+            return wrapper
+        
+        setattr(self._grpc_future, "result", result_wrapper(self._grpc_future.result))
 
-        return future
+        return self._grpc_future
 
     def start(self, agent_spec: AgentSpec):
         """Send the AgentSpec to the agent runner."""
         # Cloudpickle used only for the agent_spec to allow for serialization of lambdas.
-        self._action_executor = futures.ThreadPoolExecutor(max_workers=1)
         self._worker_stub.build(
             worker_pb2.Specification(payload=cloudpickle.dumps(agent_spec))
         )
@@ -109,9 +109,6 @@ class RemoteAgent(BufferAgent):
         # If the last action future returned is incomplete, cancel it first.
         if (self._grpc_future is not None) and (not self._grpc_future.done()):
             self._grpc_future.cancel()
-
-        if self._action_executor is not None:
-            self._action_executor.shutdown(wait=True)
 
         try:
             # Stop the remote worker process
