@@ -44,7 +44,6 @@ class AgentCameraRGBRender(gym.Wrapper):
         }
         super(AgentCameraRGBRender, self).__init__(env)
         self._max_agents = max_agents
-        self._current_agents = {}
         self._enabled = enabled
         self._image_frame = []
         self.is_vector_env = getattr(env, "is_vector_env", False)
@@ -79,7 +78,6 @@ class AgentCameraRGBRender(gym.Wrapper):
             pass
         obs = super().reset()
         self._record_for_render(obs)
-        self._current_agents = set()
         return obs
 
     def _record_for_render(self, obs) -> Any:
