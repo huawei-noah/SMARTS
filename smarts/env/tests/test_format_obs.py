@@ -128,8 +128,6 @@ def test_init(make_env):
         if val and intrfc_to_stdobs(intrfc)
     ]
     des_space_keys.update(opt_space_keys)
-    if "waypoints" in opt_space_keys and "neighbors" in opt_space_keys:
-        des_space_keys.update(["ttc"])
 
     assert rcv_space_keys == des_space_keys
 

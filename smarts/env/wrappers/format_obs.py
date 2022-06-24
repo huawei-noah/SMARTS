@@ -34,7 +34,6 @@ from smarts.core.sensors import (
     TopDownRGB,
     VehicleObservation,
 )
-from smarts.env.custom_observations import lane_ttc
 
 _LIDAR_SHP = 300
 _NEIGHBOR_SHP = 10
@@ -160,25 +159,6 @@ StdObs = dict({
     shape=(height, width, 3). dtype=np.uint8.
     "rgb": np.ndarray
 
-    Time and distance to collision. Enabled only if both `waypoints` and
-    `neighborhood_vehicles` attributes are enabled in AgentInterface.
-    "ttc": dict({  
-        "angle_error":
-            Angular error in radians [-pi, pi]. dtype=np.float32.
-        "distance_from_center":
-            Distance of vehicle from lane center in meters. dtype=np.float32.
-        "dtc":
-            Distance to collision on the right lane (`dtc[0]`), current lane
-            (`dtc[1]`), and left lane (`dtc[2]`). If no lane is available, to the
-            right or to the left, default value of 0 is padded. shape=(3,).
-            dtype=np.float32.
-        "ttc":
-            Time to collision on the right lane (`ttc[0]`), current lane
-            (`ttc[1]`), and left lane (`ttc[2]`). If no lane is available,
-            to the right or to the left, default value of 0 is padded. shape=(3,).
-            dtype=np.float32.
-    })
-
     Feature array of 20 waypoints ahead or in the mission route, from the 
     nearest 4 lanes. If lanes or waypoints ahead are insufficient, default 
     values are padded.
@@ -258,7 +238,6 @@ class FormatObs(gym.ObservationWrapper):
             "neighbors": "neighborhood_vehicle_states",
             "ogm": "occupancy_grid_map",
             "rgb": "top_down_rgb",
-            "ttc": "ttc",
             "waypoints": "waypoint_paths",
         }
         self._accelerometer = "accelerometer" in intrfcs.keys()
@@ -281,9 +260,7 @@ class FormatObs(gym.ObservationWrapper):
             wrapped_ob = {}
             for stdob in self._space.keys():
                 func = globals()[f"_std_{stdob}"]
-                if stdob == "ttc":
-                    val = func(agent_obs)
-                elif stdob == "ego":
+                if stdob == "ego":
                     val = func(
                         getattr(agent_obs, self._stdob_to_ob[stdob]),
                         self._accelerometer,
@@ -375,12 +352,6 @@ def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
         }),
         "ogm": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
         "rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
-        "ttc": lambda _: gym.spaces.Dict({
-            "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(), dtype=np.float32),
-            "distance_from_center": gym.spaces.Box(low=-1e10, high=1e10, shape=(), dtype=np.float32),
-            "dtc": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "ttc": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-        }),
         "waypoints": lambda _: gym.spaces.Dict({
             "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=_WAYPOINT_SHP, dtype=np.float32),
             "lane_index": gym.spaces.Box(low=0, high=127, shape=_WAYPOINT_SHP, dtype=np.int8),
@@ -411,9 +382,6 @@ def _make_space(intrfcs: Dict[str, Any]) -> Dict[str, gym.Space]:
         opt_ob = intrfc_to_stdobs(intrfc)
         if opt_ob:
             space.update({opt_ob: spaces[opt_ob](val)})
-
-    if "waypoints" in intrfcs.keys() and "neighborhood_vehicles" in intrfcs.keys():
-        space.update({"ttc": spaces["ttc"](None)})
 
     return space
 
@@ -573,17 +541,6 @@ def _std_ogm(val: OccupancyGridMap) -> np.ndarray:
 
 def _std_rgb(val: TopDownRGB) -> np.ndarray:
     return val.data.astype(np.uint8)
-
-
-def _std_ttc(obs: Observation) -> Dict[str, Union[np.float32, np.ndarray]]:
-
-    val = lane_ttc(obs)
-    return {
-        "angle_error": np.float32(val["angle_error"][0]),
-        "distance_from_center": np.float32(val["distance_from_center"][0]),
-        "dtc": np.array(val["ego_lane_dist"], dtype=np.float32),
-        "ttc": np.array(val["ego_ttc"], dtype=np.float32),
-    }
 
 
 def _std_waypoints(
