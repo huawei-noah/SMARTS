@@ -21,8 +21,6 @@
 import logging
 from typing import Any, Dict, Optional, Set, Tuple, Union
 
-import cloudpickle
-
 from envision.types import format_actor_id
 from smarts.core.actor_role import ActorRole
 from smarts.core.agent_interface import AgentInterface
