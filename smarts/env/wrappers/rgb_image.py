@@ -30,7 +30,6 @@ import numpy as np
 class RGBImage(gym.ObservationWrapper):
     """Filters SMARTS environment observation and returns only top-down RGB
     image as observation.
-
     If the base env's observation space is frame stacked using the FrameStack
     wrapper, then the returned observation will be a numpy array of stacked
     images with shape (image_width, image_height, 3*num_stack). Here, num_stack
@@ -73,7 +72,6 @@ class RGBImage(gym.ObservationWrapper):
 
     def observation(self, obs: Dict[str, Any]) -> Dict[str, np.ndarray]:
         """Adapts the wrapped environment's observation.
-
         Note: Users should not directly call this method.
         """
         wrapped_obs = {}
@@ -95,7 +93,6 @@ class RGBImage(gym.ObservationWrapper):
                 try:
                     image = agent_ob.top_down_rgb.data
                 except AttributeError:
-       
                     image = agent_ob.rgb
                 images.append(image.astype(np.uint8))
 

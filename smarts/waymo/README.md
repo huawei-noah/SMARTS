@@ -15,11 +15,11 @@ Next, download the dataset files from [Waymo Motion Dataset](https://waymo.com/o
 ## Running the Utility:
 It is recommended to run this script from the root or source level directory of the repo. The script can be run using the following command:
 ```bash
-python scenarios/waymo_motion/waymo_utility.py <path/to/waymo_dataset_directories> --target-base-path=<default/path/to/export/scenarios> --import-tags=<path/to/tag/containing/json/file/>
+python smarts/waymo/waymo_browser.py <path/to/waymo_dataset_directories> --target-base-path=<default/path/to/export/scenarios> --import-tags=<path/to/tag/containing/json/file/>
 ```
 Ex:
 ```bash
-python scenarios/waymo_motion/waymo_utility.py scenarios/waymo_motion/waymo_data
+python smarts/waymo/waymo_browser.py scenarios/waymo_motion/waymo_data
 ```
 
 Or you can also use the scl command line at the source directory to launch the browser:

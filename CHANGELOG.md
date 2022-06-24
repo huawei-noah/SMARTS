@@ -22,6 +22,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Old Stable Baselines3 based example is removed in favour of the new online RL example developed using Stable Baselines3 library.
 
 ### Fixed
+- Additional case added for avoiding off-route if merging early into a lane.
+
+### Fixed
 - Unpack utility now unpacks dataclass attributes.
 - Trap manager now uses elapsed sim time rather than step delta to associate with time.
 
@@ -41,7 +44,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ### [0.6.1rc0] 15-04-16
 ### Added
-- Added `scenarios/waymo_motion/waymo_utility.py`, a text-based utility to explore and export scenarios from the Waymo Motion dataset to SMARTS scenarios. 
+- Added `smarts/waymo/waymo_browser.py`, a text-based utility to explore and export scenarios from the Waymo Motion dataset to SMARTS scenarios. 
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
 - Added `sb3` reinforcement-learning example. An ego agent is trained using PPO algorithm from Stable Baselines3 library, to drive as far and as fast as possible in heavy traffic, without colliding or going off-road.
 - Added `FormatObs` wrapper which converts SMARTS observations to gym-compliant RL-friendly vectorized observations and returns `StdObs`.
