@@ -37,7 +37,7 @@ class LocalAgentBuffer(AgentBuffer):
         self._act_executor = ProcessPoolExecutor(num_cpus)
 
     def destroy(self):
-        pass
+        self._act_executor.shutdown(wait=True)
 
     def acquire_agent(
         self, retries: int = 3, timeout: Optional[float] = None
