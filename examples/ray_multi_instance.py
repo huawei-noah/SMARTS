@@ -12,7 +12,7 @@ import torch
 try:
     import ray
 except Exception as e:
-    from . import RayException
+    from smarts.core.utils.custom_exceptions import RayException
 
     raise RayException.required_to("ray_multi_instance.py")
 
