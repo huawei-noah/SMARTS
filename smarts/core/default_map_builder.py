@@ -117,12 +117,12 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
         map_class = SumoRoadNetwork
 
     elif map_type == _OPENDRIVE_MAP:
-        from smarts.core.utils.open_drive_exception import OpenDRIVEException
+        from smarts.core.utils.custom_exceptions import OpenDriveException
 
         try:
             from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
         except ImportError:
-            raise OpenDRIVEException.required_to("use OpenDRIVE maps")
+            raise OpenDriveException.required_to("use OpenDRIVE maps")
         map_class = OpenDriveRoadNetwork
 
     elif map_type == _WAYMO_MAP:
