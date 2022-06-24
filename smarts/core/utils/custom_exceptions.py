@@ -48,6 +48,6 @@ class OpenDriveException(Exception):
         """Generate an instance of this exception that describes what can be done to remove the exception"""
         return cls(
             f"""OpenDRIVE Package is required to {thing}.
-               You may not have installed the [opendrive] dependencies required to run the ray dependent example.
+               You may not have installed the [opendrive] dependencies required to run the OpenDRIVE dependent example.
                Install them first using the command `pip install -e .[opendrive]` at the source directory to install the necessary packages"""
         )
