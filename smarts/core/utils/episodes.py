@@ -175,6 +175,7 @@ def episodes(n):
 class Episodes:
     """An episode counter utility."""
 
+    max_steps: int
     current_step: int = 0
 
     def __enter__(self):
@@ -190,11 +191,14 @@ class Episode:
     def __init__(self, episodes: Episodes) -> None:
         self._episodes = episodes
 
-    def register_step(self, observation, reward, done, info):
-        """Register the current step to the episode."""
+    def continues(self, observation, reward, done, info):
+        """Determine if the current episode can continue."""
 
         self._episodes.current_step += 1
 
+
+        if self._episodes.current_step < self._episodes.max_steps:
+            return False
         if isinstance(done, dict):
             return not done.get("__all__", all(done.values()))
         return not done
@@ -203,6 +207,6 @@ class Episode:
 def episode_range(max_steps):
     """An iteration method that provides a range of episodes that meets the given max steps."""
 
-    with Episodes() as episodes:
-        while episodes.current_step < max_steps:
+    with Episodes(max_steps=max_steps) as episodes:
+        while episodes.current_step < episodes.max_steps:
             yield Episode(episodes=episodes)

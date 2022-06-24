@@ -24,7 +24,7 @@ if __name__ == "__main__":
     for episode in episode_range(max_steps=450):
         observation = env.reset()
         reward, done, info = None, False, None
-        while episode.register_step(observation, reward, done, info):
+        while episode.continues(observation, reward, done, info):
             action = agent.act(observation)
             observation, reward, done, info = env.step(action)
 
