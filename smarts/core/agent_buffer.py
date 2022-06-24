@@ -25,12 +25,6 @@ from smarts.core.buffer_agent import BufferAgent
 
 class AgentBuffer(metaclass=abc.ABCMeta):
     """Defines a buffer of agents for external use."""
-    @classmethod
-    def __subclasshook__(cls,  subclass):
-        return  (hasattr(subclass, 'destroy') and 
-                callable(subclass.destroy) and
-                hasattr(subclass, 'acquire_agent') and 
-                callable(subclass.acquire_agent))
 
     @abc.abstractmethod
     def destroy(self):
