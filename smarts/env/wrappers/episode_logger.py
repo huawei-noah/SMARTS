@@ -33,7 +33,7 @@ class EpisodeLogger(gym.Wrapper):
     def __init__(self, env: gym.Env, col_width: int = 18):
         super(EpisodeLogger, self).__init__(env)
         self._current_episode = None
-        self._done = False
+        self._closed = False
         self._log_iter = self._episode_logs(col_width)
 
     def step(self, action: Action) -> Tuple[Operation, float, bool, Dict[str, Any]]:
@@ -54,7 +54,7 @@ class EpisodeLogger(gym.Wrapper):
     def close(self):
         """Cap off the episode logging."""
 
-        self._done = True
+        self._closed = True
         try:
             next(self._log_iter)
         except:
@@ -63,6 +63,6 @@ class EpisodeLogger(gym.Wrapper):
 
     def _episode_logs(self, col_width) -> EpisodeLog:
         with EpisodeLogs(col_width) as episode_logs:
-            while not self._done:
+            while not self._closed:
                 yield episode_logs.reset()
             episode_logs.reset()
