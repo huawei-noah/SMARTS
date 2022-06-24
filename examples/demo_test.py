@@ -2,7 +2,7 @@ import sys
 
 sys.path.insert(0, "./examples/env")
 sys.path.insert(0, "./zoo")
-import baseline
+import figure_eight_v0_env
 import gym
 import policies.keep_lane_agent
 
