@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from concurrent import futures
+import concurrent.futures
 
 from smarts.core.buffer_agent import BufferAgent
 from smarts.zoo.agent_spec import AgentSpec
@@ -26,10 +26,10 @@ from smarts.zoo.agent_spec import AgentSpec
 class LocalAgent(BufferAgent):
     """A remotely controlled agent."""
     
-    def __init__(self):
+    def __init__(self, act_executor):
         self._agent = None
         self._agent_spec = None
-        self._act_executor = None
+        self._act_executor = act_executor
     
     def act(self, obs):
         """Call the agent's act function asynchronously and return a Future."""
@@ -45,7 +45,6 @@ class LocalAgent(BufferAgent):
 
     def start(self, agent_spec: AgentSpec):
         """Send the AgentSpec to the agent runner."""
-        self._act_executor = futures.Executor.ThreadPoolExecutor(max_workers=1)
         self._agent_spec = agent_spec
         self._agent = self._agent_spec.build_agent()
 

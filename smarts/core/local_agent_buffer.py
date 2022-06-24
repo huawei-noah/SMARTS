@@ -17,7 +17,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from concurrent.futures import ProcessPoolExecutor
 from typing import Optional
+
+import psutil
 
 from smarts.core.agent_buffer import AgentBuffer
 from smarts.core.buffer_agent import BufferAgent
@@ -28,7 +31,10 @@ class LocalAgentBuffer(AgentBuffer):
     """A buffer that manages social agents."""
 
     def __init__(self):
-        pass
+        num_cpus = max(
+            2, num_cpus or psutil.cpu_count(logical=False) or (psutil.cpu_count() - 1)
+        )
+        self._act_executor = ProcessPoolExecutor(num_cpus)
 
     def destroy(self):
         pass
@@ -36,5 +42,5 @@ class LocalAgentBuffer(AgentBuffer):
     def acquire_agent(
         self, retries: int = 3, timeout: Optional[float] = None
     ) -> BufferAgent:
-        localAgent = LocalAgent()
+        localAgent = LocalAgent(self._act_executor)
         return localAgent
