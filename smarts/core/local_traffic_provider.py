@@ -710,8 +710,8 @@ class _TrafficActor:
             # here we correct for the local road curvature (which affects how far we must travel)...
             T = self.radius / self.width
             assert (
-                abs(T) > 2
-            ), f"abnormally high curvature?  radius={self.radius}, width={self.width} at offset {self.lane_coord.s}"
+                abs(T) > 1.5
+            ), f"abnormally high curvature?  radius={self.radius}, width={self.width} at offset {self.lane_coord.s} of lane {self.lane.lane_id}"
             if to_index > self.lane.index:
                 se = T * (T - 1)
                 return math.sqrt(
