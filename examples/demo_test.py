@@ -1,10 +1,9 @@
 import sys
 
-sys.path.insert(0, "./examples/env")
-sys.path.insert(0, "./zoo")
-import figure_eight_v0_env
+sys.path.insert(0, "./")
+import examples.env.figure_eight_v0_env
 import gym
-import policies.keep_lane_agent
+import zoo.policies.keep_lane_agent
 
 from smarts.core.utils.episodes import episode_range
 from smarts.env.wrappers.episode_logger import EpisodeLogger
