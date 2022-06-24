@@ -49,4 +49,4 @@ class LocalAgent(BufferAgent):
         self._agent = self._agent_spec.build_agent()
 
     def terminate(self):
-        self._act_executor.shutdown(wait=True)
+        pass
