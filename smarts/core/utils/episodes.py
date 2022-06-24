@@ -194,6 +194,9 @@ class Episode:
         """Register the current step to the episode."""
 
         self._episodes.current_step += 1
+
+        if isinstance(done, dict):
+            return done.get("__all__", all(done.values()))
         return not done
 
 
