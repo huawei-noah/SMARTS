@@ -32,7 +32,9 @@ class CustomDict(dict):
         return self
 
     def __delitem__(self, key):
-        raise AttributeError(f"Cannot delete individual keys after object instantiation.")
+        raise AttributeError(
+            f"Cannot delete individual keys after object instantiation."
+        )
 
     def update(self, **kwargs):
         new = dict(**kwargs)
