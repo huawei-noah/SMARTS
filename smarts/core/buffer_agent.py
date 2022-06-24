@@ -27,14 +27,6 @@ from smarts.zoo.agent_spec import AgentSpec
 
 class BufferAgent(metaclass = abc.ABCMeta):
     """An agent which is part of a buffer."""
-    @classmethod
-    def __subclasshook__(cls,  subclass):
-        return  (hasattr(subclass, 'act') and 
-                callable(subclass.act) and
-                hasattr(subclass, 'start') and 
-                callable(subclass.start) and
-                hasattr(subclass, 'terminate') and 
-                callable(subclass.terminate))
     
     @abstractmethod
     def act(self, obs):
