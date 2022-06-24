@@ -54,9 +54,6 @@ setup(
         "twisted>=21.7.0",
     ],
     extras_require={
-        "opendrive": [
-            "opendrive2lanelet>=1.2.1",
-        ],
         "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
         "dev": [
             "black==20.8b1",
@@ -101,7 +98,9 @@ setup(
         "waymo": [
             "waymo-open-dataset-tf-2-4-0",
         ],
-        "opendrive": ["opendrive2lanelet>=1.2.1"],
+        "opendrive": [
+            "opendrive2lanelet>=1.2.1",
+        ],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},
 )
