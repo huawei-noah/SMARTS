@@ -53,7 +53,8 @@ class LocalTrafficProvider(TrafficProvider):
     A LocalTrafficProvider simulates multiple traffic actors on a generic RoadMap.
     Args:
         endless_traffic:
-            Reintroduce vehicles that exit the simulation.
+            Traffic vehicles that exit the simulation will be reintroduced back
+            into the simulation to recycle traffic volume.
     """
 
     def __init__(self, endless_traffic: bool = True):
@@ -82,20 +83,22 @@ class LocalTrafficProvider(TrafficProvider):
         return vehicle_id in self._my_actors
 
     def _cache_route_lengths(self, route: Sequence[str]) -> int:
-        route_id = hash(tuple(route))
-        if route_id in self._route_lane_lengths:
-            return route_id
+        # returns a route_key for finding the route in the cache.
+        # route_keys shouldn't be exposed/used outside of this file.
+        route_key = hash(tuple(route))
+        if route_key in self._route_lane_lengths:
+            return route_key
         # TAI: could pre-cache curvatures here too (like waypoints) ?
-        self._route_lane_lengths[route_id] = dict()
+        self._route_lane_lengths[route_key] = dict()
 
         def _backprop_length(bplane: RoadMap.Lane, length: float, rind: int):
             assert rind >= 0
             rind -= 1
             for il in bplane.incoming_lanes:
                 il = il.composite_lane
-                ill = self._route_lane_lengths[route_id].get((il.lane_id, rind))
+                ill = self._route_lane_lengths[route_key].get((il.lane_id, rind))
                 if ill is not None:
-                    self._route_lane_lengths[route_id][(il.lane_id, rind)] = (
+                    self._route_lane_lengths[route_key][(il.lane_id, rind)] = (
                         ill + length
                     )
                     _backprop_length(il, length, rind)
@@ -106,11 +109,11 @@ class LocalTrafficProvider(TrafficProvider):
             assert road, f"route road '{road_id}' not found in road map"
             for lane in road.lanes:
                 lane = lane.composite_lane
-                assert (lane.lane_id, r_ind) not in self._route_lane_lengths[route_id]
+                assert (lane.lane_id, r_ind) not in self._route_lane_lengths[route_key]
                 _backprop_length(lane, lane.length, r_ind)
-                self._route_lane_lengths[route_id][(lane.lane_id, r_ind)] = lane.length
+                self._route_lane_lengths[route_key][(lane.lane_id, r_ind)] = lane.length
         if not road:
-            return route_id
+            return route_key
         # give lanes that would form a loop an advantage...
         for lane in road.lanes:
             lane = lane.composite_lane
@@ -119,8 +122,8 @@ class LocalTrafficProvider(TrafficProvider):
                     og.road.road_id == route[0]
                     or og.road.composite_road.road_id == route[0]
                 ):
-                    self._route_lane_lengths[route_id][(lane.lane_id, r_ind)] += 1
-        return route_id
+                    self._route_lane_lengths[route_key][(lane.lane_id, r_ind)] += 1
+        return route_key
 
     def _load_traffic_flows(self, traffic_spec: str):
         vtypes = {}
@@ -147,7 +150,7 @@ class LocalTrafficProvider(TrafficProvider):
                 flow["end"] = float(flow["end"])
                 flow["emit_period"] = (60.0 * 60.0) / float(flow["vehsPerHour"])
                 self._flows[str(flow["id"])] = flow
-                flow["route_id"] = self._cache_route_lengths(route)
+                flow["route_key"] = self._cache_route_lengths(route)
 
     def _check_actor_bbox(self, actor: "_TrafficActor") -> bool:
         actor_bbox = actor.bbox(True)
@@ -346,8 +349,8 @@ class LocalTrafficProvider(TrafficProvider):
     def update_route_for_vehicle(self, vehicle_id: str, new_route_roads: Sequence[str]):
         traffic_actor = self._my_actors.get(vehicle_id)
         if traffic_actor:
-            route_id = self._cache_route_lengths(new_route_roads)
-            traffic_actor.update_route(route_id, new_route_roads)
+            route_key = self._cache_route_lengths(new_route_roads)
+            traffic_actor.update_route(route_key, new_route_roads)
             return
         other = self._other_vehicles.get(vehicle_id)
         if other:
@@ -399,7 +402,7 @@ class _TrafficActor:
         self._done_with_route: bool = False
         self._off_route: bool = False
         self._route: List[str] = flow["route"]
-        self._route_id: int = flow["route_id"]
+        self._route_key: int = flow["route_key"]
         self._stranded: bool = False
         self._teleporting: bool = False
 
@@ -489,11 +492,11 @@ class _TrafficActor:
         if not route or not route.roads:
             route = owner.road_map.random_route(starting_road=cur_lane.road)
         route_roads = [road.road_id for road in route.roads]
-        route_id = owner._cache_route_lengths(route_roads)
+        route_key = owner._cache_route_lengths(route_roads)
         flow = dict()
         flow["vtype"] = dict()
         flow["route"] = route_roads
-        flow["route_id"] = route_id
+        flow["route_key"] = route_key
         flow["arrivalLane"] = f"{cur_lane.index}"  # XXX: assumption!
         flow["arrivalPos"] = "max"
         flow["departLane"] = f"{cur_lane.index}"  # XXX: assumption!
@@ -587,11 +590,11 @@ class _TrafficActor:
         """The route (sequence of road_ids) this actor will attempt to take."""
         return self._route
 
-    def update_route(self, route_id: int, route: List[str]):
+    def update_route(self, route_key: int, route: List[str]):
         """Update the route (sequence of road_ids) this actor will attempt to take.
-        A unique route_id is provided for referencing the route cache in he owner provider."""
+        A unique route_key is provided for referencing the route cache in he owner provider."""
         self._route = route
-        self._route_id = route_id
+        self._route_key = route_key
         self._dest_lane, self._dest_offset = self._resolve_flow_pos(
             self._flow, "arrival", self._state.dimensions.length
         )
@@ -708,7 +711,7 @@ class _TrafficActor:
             T = self.radius / self.width
             assert (
                 abs(T) > 2
-            ), f"abnormally high curvature?  radius={self.radius}, width={self.width}"
+            ), f"abnormally high curvature?  radius={self.radius}, width={self.width} at offset {self.lane_coord.s}"
             if to_index > self.lane.index:
                 se = T * (T - 1)
                 return math.sqrt(
@@ -790,7 +793,7 @@ class _TrafficActor:
                 if lane_offset > my_offset:
                     return lane_offset - my_offset, nvs
                 return 0, nvs
-        route_lens = self._owner._route_lane_lengths[self._route_id]
+        route_lens = self._owner._route_lane_lengths[self._route_key]
         route_len = route_lens.get((lane.lane_id, self._route_ind), lane.length)
         my_dist_to_end = route_len - my_offset
         return self._find_vehicle_ahead_on_route(
@@ -838,7 +841,7 @@ class _TrafficActor:
         lane_coord = lane.to_lane_coord(self._state.pose.point)
         my_offset = lane_coord.s
         my_speed, my_acc = self._lane_speed[lane.index]
-        my_route_lens = self._owner._route_lane_lengths[self._route_id]
+        my_route_lens = self._owner._route_lane_lengths[self._route_key]
         path_len = my_route_lens.get((lane.lane_id, self._route_ind), lane.length)
         path_len -= my_offset
         lane_time_left = path_len / self.speed if self.speed else math.inf

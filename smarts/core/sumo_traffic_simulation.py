@@ -64,7 +64,8 @@ class SumoTrafficSimulation(TrafficProvider):
             False to pause simulation when SMARTS runs, and wait for user to click
             start on sumo-gui.
         endless_traffic:
-            Reintroduce vehicles that exit the SUMO simulation.
+            Traffic vehicles that exit the simulation will be reintroduced back
+            into the simulation to recycle traffic volume.
         allow_reload:
             Reset SUMO instead of restarting SUMO when the current map is the same as the previous.
         remove_agents_only_mode:
