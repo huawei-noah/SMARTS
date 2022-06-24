@@ -72,38 +72,6 @@ def vis_sim_obs(sim_obs) -> Dict[str, np.ndarray]:
     return {key: np.array(images) for key, images in vis_images.items()}
 
 
-def write_image(sim_obs, frame_folder, tag_id):
-    im_obs = vis_sim_obs(sim_obs)
-    for im_id, im in im_obs.items():
-        out = np.array(im)
-        image_name = f"{frame_folder}/{im_id}_{tag_id}.JPG"
-        cv2.imwrite(image_name, out[0])
-
-
-def make_gif(frame_folder):
-    group_key = lambda f: f.split("-")[-1].split("_")[0]
-    image_file_groups = groupby(
-        sorted(glob.glob(f"{frame_folder}/*.JPG"), key=group_key), key=group_key
-    )
-    image_file_groups = [list(imf) for g, imf in image_file_groups]
-    sort_key = lambda im: int(Path(im).name.split("_")[-1].split(".")[0])
-    gif_num = 0
-    for image_files in image_file_groups:
-        frames = []
-        for image in sorted(image_files, key=sort_key):
-            frames.append(Image.open(image))
-        frame_one = frames[0]
-        frame_one.save(
-            f"{frame_folder}/im_{gif_num}.gif",
-            format="GIF",
-            append_images=frames,
-            save_all=True,
-            duration=100,
-            loop=0,
-        )
-        gif_num += 1
-
-
 def show_notebook_videos(path="videos", height="400px", split_html=""):
     if not isnotebook():
         return
