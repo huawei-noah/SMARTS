@@ -1,10 +1,9 @@
-from typing import Callable, Dict
+from typing import Dict
 
 import numpy as np
 from custom_dict import CustomDict
 
 from smarts.core.sensors import Observation
-from smarts.env.custom_observations import lane_ttc
 
 
 class Score:
@@ -60,43 +59,97 @@ def _reached_goal(obs: Observation) -> Dict[str, int]:
     return {"reached_goal": int(obs.events.reached_goal)}
 
 
-def _lane_ttc(obs: Observation) -> Dict[str, float]:
-    val = lane_ttc(obs)
+def _lane_center_offset(obs: Observation) -> Dict[str, float]:
+    # Nearest waypoints
+    ego = obs.ego_vehicle_state
+    waypoint_paths = obs.waypoint_paths
+    wps = [path[0] for path in waypoint_paths]
+
+    # Distance of vehicle from center of lane
+    closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
+    signed_dist_from_center = closest_wp.signed_lateral_error(ego.position)
+    lane_hwidth = closest_wp.lane_width * 0.5
+    norm_dist_from_center = signed_dist_from_center / lane_hwidth
 
     # J_LC : Lane center offset
-    jlc = np.float32((val["distance_from_center"][0]) ** 2)
+    jlc = np.float32(norm_dist_from_center ** 2)
 
-    # J_D : Distance to obstacles in front
+    return {"lane_center_offset": jlc}
+
+def _distance_to_obstacles(obs: Observation) -> Dict[str, float]:
+    obstacle_dist_th = 50
+    obstacle_angle_th = np.pi * 30/180
     w_dist = 0.1
-    dist_to_obstacles = np.array(val["ego_lane_dist"], dtype=np.float32)
-    jd = np.amax(np.exp(-w_dist * dist_to_obstacles))
 
-    return {"lane_center_offset": jlc, "dist_to_obstacles": jd}
+    # Ego's position and angle with respect to the map's axes.
+    # Note: All angles returned by smarts is with respect to the map axes.
+    #       Angle is zero at positive y axis, and increases anti-clockwise, on the map.
+    ego_angle = (obs["ego"]["heading"] + np.pi) % (2 * np.pi) - np.pi
+    ego_pos = obs["ego"]["position"]
+
+    # Filter neighbors by distance
+    nghbs = obs.neighborhood_vehicle_states
+    nghbs = [
+        (
+            nghb.id,
+            nghb.position,
+            np.linalg.norm(ego_pos - nghb.position)
+        )
+        for nghb in nghbs
+    ]
+    nghbs = filter(lambda x: x[2] <= obstacle_dist_th, nghbs)
+    if len(nghbs) == 0:
+        return 0 
+
+    # Filter neighbors by angle
+    obstacles = []
+    for id, pos, dist in nghbs:
+        # Neighbors's angle with respect to the map's axes.
+        # Note: Angle is zero at positive x axis, and increases anti-clockwise, in np.angle().
+        #       Hence, map_angle = np.angle() - π/2
+        obstacle_angle = np.angle(pos[0] + 1j*pos[1]) - np.pi / 2
+        obstacle_angle = (obstacle_angle + np.pi) % (2 * np.pi) - np.pi
+        # Obstacle heading is the angle correction required by ego agent to face the obstacle.
+        obstacle_heading = obstacle_angle - ego_angle
+        obstacle_heading = (obstacle_heading + np.pi) % (2 * np.pi) - np.pi
+        if abs(obstacle_heading) <= obstacle_angle_th:
+            obstacles.append((id, pos, dist, obstacle_heading))
+
+    # J_D : Distance to obstacles cost
+    _, _, di, _ = zip(**obstacles)
+    for obstacle in obstacles:
+        print(f"Obstacle: {obstacle[0]},{obstacle[1]},{obstacle[2]},{obstacle[3]}.")
+    j_d = np.amax( np.exp(-w_dist * di))
+
+    return j_d
 
 
-def _steering_rate() -> Callable[[Observation], Dict[str, float]]:
-    prev_steering = 0
-
-    def func(obs: Observation) -> Dict[str, float]:
-        nonlocal prev_steering
-        velocity = (obs.ego_vehicle_state.steering - prev_steering) / 0.1
-        prev_steering = obs.ego_vehicle_state.steering
+class _SteeringRate():
+    def __init__(self, agent_names):
+        self._prev_steering = {name: 0 for name in agent_names}
+    
+    def reinit(self):
+        self._prev_steering = {name: 0 for name in self._prev_steering.keys()}
+  
+    def __call__(self, obs: Observation, agent_name: str) -> Dict[str, float]:
+        velocity = (obs.ego_vehicle_state.steering - self._prev_steering[agent_name]) / 0.1
+        self._prev_steering[agent_name] = obs.ego_vehicle_state.steering
         return {"steering_rate": velocity ** 2}
-
-    return func
 
 
 def _jerk(obs: Observation) -> Dict[str, float]:
     w_jerk = [0.7, 0.3]
 
-    l_jerk_2 = np.sum(np.square(obs.ego_vehicle_state.linear_jerk))
-    a_jerk_2 = np.sum(np.square(obs.ego_vehicle_state.angular_jerk))
+    lj_squared = np.sum(np.square(obs.ego_vehicle_state.linear_jerk))
+    aj_squared = np.sum(np.square(obs.ego_vehicle_state.angular_jerk))
 
-    jerk = np.dot(w_jerk, [l_jerk_2, a_jerk_2])
+    jerk = np.dot(w_jerk, [lj_squared, aj_squared])
 
     return {"jerk": jerk}
 
 
 def _yaw_rate(obs:Observation) -> Dict[str, float]:
-    velocity = obs.ego_vehicle_state.yaw_rate ** 2
-    return {"yaw_rate": velocity}
+    yr_squared = obs.ego_vehicle_state.yaw_rate ** 2
+    return {"yaw_rate": yr_squared}
+
+

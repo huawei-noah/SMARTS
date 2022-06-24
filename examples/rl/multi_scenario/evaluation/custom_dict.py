@@ -31,6 +31,9 @@ class CustomDict(dict):
             self[key] /= value
         return self
 
+    def __delitem__(self, key):
+        raise AttributeError(f"Cannot delete individual keys after object instantiation.")
+
     def update(self, **kwargs):
         new = dict(**kwargs)
         diff = set(new.keys()).difference(set(self.keys()))
