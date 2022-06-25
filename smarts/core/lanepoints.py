@@ -256,7 +256,7 @@ class LanePoints:
                         previous_lp.nexts.append(first_lanepoint)
                     continue
 
-                lane_shape = [np.array([p.x, p.y]) for p in curr_lane.centerline_points]
+                lane_shape = [np.array([p.x, p.y]) for p in curr_lane.center_polyline]
 
                 assert len(lane_shape) >= 2, repr(lane_shape)
 

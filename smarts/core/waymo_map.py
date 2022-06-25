@@ -33,7 +33,7 @@ import numpy as np
 import rtree
 import trimesh
 from cached_property import cached_property
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, Point as SPoint
 from trimesh.exchange import gltf
 from waymo_open_dataset.protos import scenario_pb2
 from waymo_open_dataset.protos.map_pb2 import LaneCenter, RoadLine
@@ -42,12 +42,7 @@ from smarts.sstudio.types import MapSpec
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
-from .road_map import RoadMap, Waypoint
-from .shape import (
-    distance_point_to_polygon,
-    offset_along_shape,
-    position_at_shape_offset,
-)
+from .road_map import RoadMap, RoadMapWithCaches, Waypoint
 from .utils.file import read_tfrecord_file
 from .utils.geometry import buffered_shape, generate_mesh_from_polygons
 from .utils.math import inplace_unwrap, radians_to_vec, ray_boundary_intersect, vec_2d
@@ -87,13 +82,14 @@ class _GLBData:
             f.write(self._bytes)
 
 
-class WaymoMap(RoadMap):
+class WaymoMap(RoadMapWithCaches):
     """A map associated with a Waymo dataset"""
 
     DEFAULT_LANE_SPEED = 16.67  # in m/s
     DEFAULT_LANE_WIDTH = 4
 
     def __init__(self, map_spec: MapSpec, waymo_scenario):
+        super().__init__()
         self._log = logging.getLogger(self.__class__.__name__)
         self._map_spec = map_spec
         self._waymo_scenario_id = waymo_scenario.scenario_id
@@ -820,7 +816,7 @@ class WaymoMap(RoadMap):
 
         return lane_dividers
 
-    class Surface(RoadMap.Surface):
+    class Surface(RoadMapWithCaches.Surface):
         """Surface representation for Waymo maps"""
 
         def __init__(self, surface_id: str, road_map):
@@ -839,13 +835,11 @@ class WaymoMap(RoadMap):
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
         return self._surfaces.get(surface_id)
 
-    class Lane(RoadMap.Lane, Surface):
+    class Lane(RoadMapWithCaches.Lane, Surface):
         """Lane representation for Waymo maps"""
 
         def __init__(self, road_map, lane_id: str, lane_dict: Dict[str, Any]):
             super().__init__(lane_id, road_map)
-            self._map = road_map
-            self._lane_id = lane_id
             self._feature_id = lane_dict["_feature_id"]
             self._road = None  # set when lane is added to a Road
             self._index = None  # set when lane is added to a Road
@@ -918,7 +912,11 @@ class WaymoMap(RoadMap):
             return self._drivable
 
         @property
-        def composite_lane(self) -> RoadMap.Lane:
+        def center_polyline(self) -> List[Point]:
+            return self._centerline_pts
+
+        @property
+        def composite_lane(self) -> RoadMapWithCaches.Lane:
             composite_id = self._lane_dict.get("composite")
             if composite_id:
                 return self._map.lane_by_id(composite_id)
@@ -940,13 +938,13 @@ class WaymoMap(RoadMap):
             return Polygon(self._lane_polygon)
 
         @cached_property
-        def incoming_lanes(self) -> List[RoadMap.Lane]:
+        def incoming_lanes(self) -> List[RoadMapWithCaches.Lane]:
             return [
                 self._map.lane_by_id(il) for il in self._lane_dict["incoming_lane_ids"]
             ]
 
         @cached_property
-        def outgoing_lanes(self) -> List[RoadMap.Lane]:
+        def outgoing_lanes(self) -> List[RoadMapWithCaches.Lane]:
             return [
                 self._map.lane_by_id(ol) for ol in self._lane_dict["outgoing_lane_ids"]
             ]
@@ -962,7 +960,7 @@ class WaymoMap(RoadMap):
             return self.outgoing_lanes
 
         @cached_property
-        def lanes_in_same_direction(self) -> List[RoadMap.Lane]:
+        def lanes_in_same_direction(self) -> List[RoadMapWithCaches.Lane]:
             return [l for l in self.road.lanes if l != self]
 
         def _check_boundaries(self, split: "WaymoMap._Split", side: str) -> bool:
@@ -987,7 +985,9 @@ class WaymoMap(RoadMap):
                     lane_info = li
             return lane_info
 
-        def _get_side_lane(self, side: str) -> Tuple[Optional[RoadMap.Lane], bool]:
+        def _get_side_lane(
+            self, side: str
+        ) -> Tuple[Optional[RoadMapWithCaches.Lane], bool]:
             li = self._lane_dict.get(f"lane_to_{side}_info")
             if not li:
                 return None, True
@@ -999,39 +999,23 @@ class WaymoMap(RoadMap):
             return self._map.lane_by_id(side_lane_id), same_dir
 
         @cached_property
-        def lane_to_left(self) -> Tuple[Optional[RoadMap.Lane], bool]:
+        def lane_to_left(self) -> Tuple[Optional[RoadMapWithCaches.Lane], bool]:
             return self._get_side_lane("left")
 
         @cached_property
-        def lane_to_right(self) -> Tuple[Optional[RoadMap.Lane], bool]:
+        def lane_to_right(self) -> Tuple[Optional[RoadMapWithCaches.Lane], bool]:
             return self._get_side_lane("right")
 
         @property
         def speed_limit(self) -> Optional[float]:
             return self._speed_limit
 
-        @lru_cache(maxsize=1024)
-        def offset_along_lane(self, world_point: Point) -> float:
-            return offset_along_shape(world_point[:2], self._centerline_pts)
-
         def width_at_offset(self, lane_point_s: float) -> Tuple[float, float]:
             return self._lane_width, 1.0
-
-        @lru_cache(maxsize=1024)
-        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
-            return position_at_shape_offset(self._centerline_pts, lane_point.s)
-
-        @lru_cache(maxsize=1024)
-        def to_lane_coord(self, world_point: Point) -> RefLinePoint:
-            return super().to_lane_coord(world_point)
 
         @lru_cache(maxsize=8)
         def center_at_point(self, point: Point) -> Point:
             return super().center_at_point(point)
-
-        @lru_cache(1024)
-        def vector_at_offset(self, start_offset: float) -> np.ndarray:
-            return super().vector_at_offset(start_offset)
 
         @lru_cache(maxsize=8)
         def center_pose_at_point(self, point: Point) -> Pose:
@@ -1044,7 +1028,9 @@ class WaymoMap(RoadMap):
             return super().curvature_radius_at_offset(offset, lookahead)
 
         @lru_cache(maxsize=16)
-        def oncoming_lanes_at_offset(self, offset: float) -> List[RoadMap.Lane]:
+        def oncoming_lanes_at_offset(
+            self, offset: float
+        ) -> List[RoadMapWithCaches.Lane]:
             result = []
             radius = 1.1 * self.width_at_offset(offset)[0]
             pt = self.from_lane_coord(RefLinePoint(offset))
@@ -1086,7 +1072,7 @@ class WaymoMap(RoadMap):
         @lru_cache(maxsize=8)
         def project_along(
             self, start_offset: float, distance: float
-        ) -> Set[Tuple[RoadMap.Lane, float]]:
+        ) -> Set[Tuple[RoadMapWithCaches.Lane, float]]:
             return super().project_along(start_offset, distance)
 
         def waypoint_paths_for_pose(
@@ -1126,14 +1112,14 @@ class WaymoMap(RoadMap):
                 tuple(point),
             )
 
-    class Road(RoadMap.Road, Surface):
+    class Road(RoadMapWithCaches.Road, Surface):
         """This is akin to a 'road segment' in real life.
         Many of these might correspond to a single named road in reality."""
 
         def __init__(
             self,
             road_map,
-            road_lanes: Sequence[RoadMap.Lane],
+            road_lanes: Sequence[RoadMapWithCaches.Lane],
             is_junction: bool,
         ):
             self._composite = None
@@ -1298,10 +1284,10 @@ class WaymoMap(RoadMap):
             return []
 
         @property
-        def lanes(self) -> Sequence[RoadMap.Lane]:
+        def lanes(self) -> Sequence[RoadMapWithCaches.Lane]:
             return self._lanes
 
-        def lane_at_index(self, index: int) -> RoadMap.Lane:
+        def lane_at_index(self, index: int) -> RoadMapWithCaches.Lane:
             return self._lanes[index]
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
@@ -1310,7 +1296,7 @@ class WaymoMap(RoadMap):
             self._log.warning(f"WaymoMap got request for unknown road_id '{road_id}'")
         return road
 
-    def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
+    def lane_by_id(self, lane_id: str) -> RoadMapWithCaches.Lane:
         # note: all lanes were cached already by _load()
         lane = self._lanes.get(lane_id)
         if not lane:
@@ -1333,15 +1319,16 @@ class WaymoMap(RoadMap):
 
     def _get_neighboring_lanes(
         self, x: float, y: float, r: float = 0.1
-    ) -> List[Tuple[RoadMap.Lane, float]]:
+    ) -> List[Tuple[RoadMapWithCaches.Lane, float]]:
         neighboring_lanes = []
         all_lanes = list(self._lanes.values())
         if self._lane_rtree is None:
             self._lane_rtree = self._build_lane_r_tree()
 
+        spt = SPoint(x, y)
         for i in self._lane_rtree.intersection((x - r, y - r, x + r, y + r)):
             lane = all_lanes[i]
-            d = distance_point_to_polygon((x, y), lane._lane_polygon)
+            d = lane.shape().distance(spt)
             if d < r:
                 neighboring_lanes.append((lane, d))
         return neighboring_lanes
@@ -1352,7 +1339,7 @@ class WaymoMap(RoadMap):
         point: Point,
         radius: Optional[float] = None,
         include_junctions: bool = False,
-    ) -> List[Tuple[RoadMap.Lane, float]]:
+    ) -> List[Tuple[RoadMapWithCaches.Lane, float]]:
         if radius is None:
             radius = max(10, 2 * self._default_lane_width)
         candidate_lanes = self._get_neighboring_lanes(point[0], point[1], r=radius)
@@ -1364,7 +1351,7 @@ class WaymoMap(RoadMap):
         point: Point,
         radius: Optional[float] = None,
         include_junctions: bool = False,
-    ) -> Optional[RoadMap.Lane]:
+    ) -> Optional[RoadMapWithCaches.Lane]:
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
         return nearest_lanes[0][0] if nearest_lanes else None
 
@@ -1376,7 +1363,7 @@ class WaymoMap(RoadMap):
                 return nl.road
         return None
 
-    class Route(RoadMap.Route):
+    class Route(RoadMapWithCaches.Route):
         """Describes a route between Waymo roads."""
 
         def __init__(self, road_map):
@@ -1451,7 +1438,7 @@ class WaymoMap(RoadMap):
         @lru_cache(maxsize=8)
         def project_along(
             self, start: Point, distance: float
-        ) -> Optional[Set[Tuple[RoadMap.Lane, float]]]:
+        ) -> Optional[Set[Tuple[RoadMapWithCaches.Lane, float]]]:
             radius = 30.0
             route_roads = set(self._roads)
             for cand_start_lane, _ in self._map.nearest_lanes(

@@ -22,11 +22,14 @@
 from __future__ import annotations
 
 import math
+from bisect import bisect
+from cached_property import cached_property
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import List, Optional, Sequence, Set, Tuple
 
 import numpy as np
-from shapely.geometry import Polygon
+from shapely.geometry import LineString, Point as SPoint, Polygon
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .utils.math import (
@@ -615,3 +618,151 @@ class Waypoint:
     def dist_to(self, p) -> float:
         """Calculates straight line distance to the given 2D point"""
         return np.linalg.norm(self.pos - p[: len(self.pos)])
+
+
+class RoadMapWithCaches(RoadMap):
+    """Base class for map implementations that wish to include
+    a built-in SegmentCache and other LRU caches."""
+
+    def __init__(self):
+        super().__init__()
+        self._seg_cache = RoadMapWithCaches._SegmentCache()
+
+    class Lane(RoadMap.Lane, RoadMap.Surface):
+        """Describes a RoadMapWithCaches lane surface."""
+
+        def __init__(self, lane_id: str, road_map):
+            self._lane_id = lane_id
+            self._map = road_map
+
+        @property
+        def center_polyline(self) -> List[Point]:
+            """Should return a list of the points along the centerline
+            of the lane, in the order they will be encountered in the
+            direction of travel.
+
+            Note: not all instantiations will be able to implement this method,
+            so use with care.  This was added to support those that wish
+            to make use of the SegmentCache class below."""
+            raise NotImplementedError()
+
+        @lru_cache(maxsize=1024)
+        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
+            seg = self._map._seg_cache.segment_for_offset(self, lane_point.s)
+            return seg.from_lane_coord(lane_point)
+
+        @lru_cache(maxsize=1024)
+        def _normal_at_offset(self, offset: float) -> np.ndarray:
+            seg = self._map._seg_cache.segment_for_offset(self, offset)
+            return np.array((seg.dy, seg.dx, 0.0))
+
+        @lru_cache(maxsize=1024)
+        def to_lane_coord(self, world_point: Point) -> RefLinePoint:
+            lc = RefLinePoint(s=self.offset_along_lane(world_point))
+            offcenter_vector = np.array(world_point) - self.from_lane_coord(lc)
+            t_sign = np.sign(np.dot(offcenter_vector, self._normal_at_offset(lc.s)))
+            return lc._replace(t=np.linalg.norm(offcenter_vector) * t_sign)
+
+        @lru_cache(maxsize=1024)
+        def vector_at_offset(self, offset: float) -> np.ndarray:
+            seg = self._map._seg_cache.segment_for_offset(self, offset)
+            return np.array((seg.dx, seg.dy))
+
+        @cached_property
+        def _lane_line(self) -> LineString:
+            points = self.center_polyline
+            assert len(points) >= 2
+            # If we switch to using pygeos instead of Shapely (which is faster), this would become:
+            # return pygeos.creation.linestring(tuple(p) for p in points)
+            return LineString(SPoint(tuple(p)) for p in points)
+
+        @lru_cache(maxsize=1024)
+        def offset_along_lane(self, world_point: Point) -> float:
+            # If we switch to using pygeos instead of Shapely (which is faster), this would become:
+            # return pygeos.linear.line_locate_point(self._lane_line, pygeos.creation.points([world_point][0]))
+            return self._lane_line.project(SPoint(*world_point))
+
+    class _SegmentCache:
+        @dataclass(frozen=True)
+        class Segment:
+            x: float
+            y: float
+            dx: float
+            dy: float
+            offset: float
+
+            @cached_property
+            def dist_to_next(self) -> float:
+                return np.linalg.norm((self.dx, self.dy))
+
+            @lru_cache(maxsize=1024)
+            def from_lane_coord(self, lane_pt: RefLinePoint) -> Point:
+                offset = lane_point.s - self.offset
+                return Point(
+                    self.x
+                    + (offset * self.dx - lane_pt.t * self.dy) / self.dist_to_next,
+                    self.y
+                    + (offset * self.dy + lane_pt.t * self.dx) / self.dist_to_next,
+                )
+
+        class _OffsetWrapper:
+            def __init__(self, seq: List[RoadMapWithCaches._SegmentCache.Segment]):
+                self._seq = seq
+
+            def __getitem__(self, i: int) -> float:
+                return self._seq[i].offset
+
+            def __len__(self) -> int:
+                return len(self._seq)
+
+        def __init__(self):
+            self.clear()
+
+        # TAI: can be more clever and clear based on size or LRU...
+        def clear(self):
+            self._lane_cache = dict()
+
+        @lru_cache(maxsize=1024)
+        def segment_for_offset(
+            self, lane: RoadMapWithCaches.Lane, offset: float
+        ) -> RoadMapWithCaches._SegmentCache.Segment:
+            # Note: we could use Shapely's "interpolate()" for a LineString here,
+            # but profiling and testing showed that (unlike Shapely's # "project()")
+            # this was significantly slower than doing our own version here...
+            # TODO: consider using pygeos' line_interpolate_point() here.
+            segs = self._cache_lane_info(lane)
+            assert segs
+            segi = bisect(self.__class__._OffsetWrapper(segs), offset)
+            if segi > 0:
+                segi -= 1
+            return segs[segi]
+
+        def _cache_lane_info(
+            self, lane: RoadMapWithCaches.Lane
+        ) -> List[RoadMapWithCaches._SegmentCache.Segment]:
+            segs = self._lane_cache.get(lane.lane_id)
+            if segs is not None:
+                return segs
+
+            class _AccumulateSegs:
+                def __init__(self):
+                    self.offset = 0
+
+                def seg(self, pt1: Point, pt2: Point) -> float:
+                    # TAI: include lane width someitmes?
+                    rval = RoadMapWithCaches._SegmentCache.Segment(
+                        x=pt1.x,
+                        y=pt1.y,
+                        dx=pt2.x - pt1.x,
+                        dy=pt2.y - pt1.y,
+                        offset=self.offset,
+                    )
+                    self.offset += rval.dist_to_next
+                    return rval
+
+            points = lane.center_polyline
+            assert len(points) >= 2
+            accum = _AccumulateSegs()
+            segs = [accum.seg(pt1, pt2) for pt1, pt2 in zip(points[:-1], points[1:])]
+            self._lane_cache[lane.lane_id] = segs
+            return segs
