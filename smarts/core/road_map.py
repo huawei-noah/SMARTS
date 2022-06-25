@@ -685,6 +685,8 @@ class RoadMapWithCaches(RoadMap):
     class _SegmentCache:
         @dataclass(frozen=True)
         class Segment:
+            """Stored info about a segment of a lane's center polyline."""
+
             x: float
             y: float
             dx: float
@@ -693,10 +695,12 @@ class RoadMapWithCaches(RoadMap):
 
             @cached_property
             def dist_to_next(self) -> float:
+                """returns the distance to the next point in the polyline."""
                 return np.linalg.norm((self.dx, self.dy))
 
             @lru_cache(maxsize=1024)
             def from_lane_coord(self, lane_pt: RefLinePoint) -> Point:
+                """For a reference-line point in/along this segment, converts it to a world point."""
                 offset = lane_pt.s - self.offset
                 return Point(
                     self.x
@@ -720,12 +724,14 @@ class RoadMapWithCaches(RoadMap):
 
         # TAI: can be more clever and clear based on size or LRU...
         def clear(self):
+            """Reset this SegmentCache."""
             self._lane_cache = dict()
 
         @lru_cache(maxsize=1024)
         def segment_for_offset(
             self, lane: RoadMapWithCaches.Lane, offset: float
         ) -> RoadMapWithCaches._SegmentCache.Segment:
+            """Given an offset along a Lane, returns the nearest Segment to it."""
             # Note: we could use Shapely's "interpolate()" for a LineString here,
             # but profiling and testing showed that (unlike Shapely's # "project()")
             # this was significantly slower than doing our own version here...
@@ -749,6 +755,7 @@ class RoadMapWithCaches(RoadMap):
                     self.offset = 0
 
                 def seg(self, pt1: Point, pt2: Point) -> float:
+                    """Create a Segment for a successive pair of polyline points."""
                     # TAI: include lane width someitmes?
                     rval = RoadMapWithCaches._SegmentCache.Segment(
                         x=pt1.x,
