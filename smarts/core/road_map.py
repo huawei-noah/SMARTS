@@ -654,7 +654,7 @@ class RoadMapWithCaches(RoadMap):
         @lru_cache(maxsize=1024)
         def _normal_at_offset(self, offset: float) -> np.ndarray:
             seg = self._map._seg_cache.segment_for_offset(self, offset)
-            return np.array((seg.dy, seg.dx, 0.0))
+            return np.array((-seg.dy, seg.dx, 0.0))
 
         @lru_cache(maxsize=1024)
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
@@ -666,7 +666,7 @@ class RoadMapWithCaches(RoadMap):
         @lru_cache(maxsize=1024)
         def vector_at_offset(self, offset: float) -> np.ndarray:
             seg = self._map._seg_cache.segment_for_offset(self, offset)
-            return np.array((seg.dx, seg.dy))
+            return np.array((seg.dx, seg.dy, 0.0))
 
         @cached_property
         def _lane_line(self) -> LineString:
@@ -733,7 +733,7 @@ class RoadMapWithCaches(RoadMap):
         ) -> RoadMapWithCaches._SegmentCache.Segment:
             """Given an offset along a Lane, returns the nearest Segment to it."""
             # Note: we could use Shapely's "interpolate()" for a LineString here,
-            # but profiling and testing showed that (unlike Shapely's # "project()")
+            # but profiling and testing showed that (unlike Shapely's "project()")
             # this was significantly slower than doing our own version here...
             # TODO: consider using pygeos' line_interpolate_point() here.
             segs = self._cache_lane_info(lane)
@@ -756,7 +756,7 @@ class RoadMapWithCaches(RoadMap):
 
                 def seg(self, pt1: Point, pt2: Point) -> float:
                     """Create a Segment for a successive pair of polyline points."""
-                    # TAI: include lane width someitmes?
+                    # TAI: include lane width sometimes?
                     rval = RoadMapWithCaches._SegmentCache.Segment(
                         x=pt1.x,
                         y=pt1.y,
