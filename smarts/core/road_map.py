@@ -697,7 +697,7 @@ class RoadMapWithCaches(RoadMap):
 
             @lru_cache(maxsize=1024)
             def from_lane_coord(self, lane_pt: RefLinePoint) -> Point:
-                offset = lane_point.s - self.offset
+                offset = lane_pt.s - self.offset
                 return Point(
                     self.x
                     + (offset * self.dx - lane_pt.t * self.dy) / self.dist_to_next,
