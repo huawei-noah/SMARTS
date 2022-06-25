@@ -1303,11 +1303,17 @@ class WaymoMap(RoadMapWithCaches):
             self._log.warning(f"WaymoMap got request for unknown lane_id '{lane_id}'")
         return lane
 
+    @cached_property
+    def _simple_lanes(self) -> List[RoadMapWithCaches.Lane]:
+        return [lane for lane in self._lanes.values() if not lane.is_composite]
+
     def _build_lane_r_tree(self):
         result = rtree.index.Index()
         result.interleaved = True
-        all_lanes = list(self._lanes.values())
-        for idx, lane in enumerate(all_lanes):
+        # only index simple lanes, as composite lanes can
+        # always be gotten from a simple lane, and we don't
+        # want more ambiguity in our spatial queries.
+        for idx, lane in enumerate(self._simple_lanes):
             bounding_box = (
                 lane._bbox.min_pt.x,
                 lane._bbox.min_pt.y,
@@ -1321,13 +1327,13 @@ class WaymoMap(RoadMapWithCaches):
         self, x: float, y: float, r: float = 0.1
     ) -> List[Tuple[RoadMapWithCaches.Lane, float]]:
         neighboring_lanes = []
-        all_lanes = list(self._lanes.values())
         if self._lane_rtree is None:
             self._lane_rtree = self._build_lane_r_tree()
 
+        simple_lanes = self._simple_lanes
         spt = SPoint(x, y)
         for i in self._lane_rtree.intersection((x - r, y - r, x + r, y + r)):
-            lane = all_lanes[i]
+            lane = simple_lanes[i]
             d = lane.shape().distance(spt)
             if d < r:
                 neighboring_lanes.append((lane, d))
@@ -1353,6 +1359,12 @@ class WaymoMap(RoadMapWithCaches):
         include_junctions: bool = False,
     ) -> Optional[RoadMapWithCaches.Lane]:
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
+        for lane, dist in nearest_lanes:
+            if lane.contains_point(point):
+                # Since Waymo has lanes of varying width, a point can be closer to a lane it does not lie in
+                # when compared to the lane it does if it is closer to the outer lane's central line,
+                # than the lane it lies in.
+                return lane
         return nearest_lanes[0][0] if nearest_lanes else None
 
     @lru_cache(maxsize=16)

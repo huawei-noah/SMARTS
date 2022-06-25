@@ -358,6 +358,8 @@ class LanePoints:
 
         for road_id in roads:
             road = roads[road_id]
+            # TODO:  don't add Waypoints for composite roads/lanes.
+            # TODO:  instead, promote if agent is using composite lane.
             for lane in road.lanes:
                 # Ignore non drivable lanes in OpenDRIVE
                 if lane.is_drivable:
@@ -479,6 +481,8 @@ class LanePoints:
 
         for road_id in roads:
             road = roads[road_id]
+            # TODO:  don't add Waypoints for composite roads/lanes.
+            # TODO:  instead, promote if agent is using composite lane.
             for lane in road.lanes:
                 # Ignore non drivable lanes in Waymo
                 if lane.is_drivable:
