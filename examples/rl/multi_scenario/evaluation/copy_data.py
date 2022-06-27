@@ -9,8 +9,8 @@ class DataStore:
         self._data = None
         self._agent_names = None
 
-    def __call__(self, data):
-        self._data = copy.deepcopy(data)
+    def __call__(self, **kwargs):
+        self._data = copy.deepcopy(dict(**kwargs))
 
     @property
     def data(self):
@@ -49,6 +49,6 @@ class CopyData(gym.Wrapper):
             Tuple[ Dict[str, Any], Dict[str, float], Dict[str, bool], Dict[str, Dict[str, Any]] ]:
                 Observation, reward, done, and info, for each agent is returned.
         """
-        obs, reward, done, info = self.env.step(action)
-        self._datastore(info)
-        return obs, reward, done, info
+        obs, rewards, dones, infos = self.env.step(action)
+        self._datastore(infos=infos, dones=dones)
+        return obs, rewards, dones, infos

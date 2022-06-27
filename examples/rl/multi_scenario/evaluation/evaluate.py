@@ -91,10 +91,11 @@ def evaluate():
     score = Score()
     for env_name, (env, datastore) in envs_eval.items():
         print(f"Evaluating env {env_name}.")
-        metric = run(
+        res = run(
             env=env, datastore=datastore, name=env_name, policy=policy, config=config
         )
 
+        score.add(res)
         # score[]
 
     print("\nFinished evaluating.\n")
@@ -107,39 +108,29 @@ def evaluate():
 def run(env, datastore: DataStore, name, policy: Policy, config: Dict[str, Any]):
     # Instantiate metric for score calculation.
     metric = Metric(datastore.agent_names)
-    steps = Counter()
 
     for _ in range(config["eval_episodes"]):
         observations = env.reset()
         dones = {"__all__": False}
         while not dones["__all__"]:
-            # Count steps per scenario
-            if not observations:
-                steps.increment()
-
             actions = policy.act(observations)
             observations, rewards, dones, infos = env.step(actions)
 
             import time
 
             time.sleep(0.5)
-            print(dones)
 
-            # metric.store(datastore.data)
-            # if dones["__all__"]:
-            #     metric.compute()
+            metric.store(infos=datastore.data["infos"], dones=datastore.data["dones"])
 
-    return
+    print("-----------------------")
+    print(metric.results())
+
+    return metric.results()
 
 
-# things to check
-# 2 distance to obstacles
-# 4 check jd
 # check score calculation
 # how to calculate for multiagent
 # special cost case for overtake scenario
-# remove ttc from format stdobs
-# 
 
 
 if __name__ == "__main__":
