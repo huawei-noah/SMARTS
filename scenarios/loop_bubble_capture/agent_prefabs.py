@@ -16,7 +16,7 @@ class DummyAgent(Agent):
 register(
     locator="interface-dummy-imitation-v0",
     entry_point=lambda **kwargs: AgentSpec(
-        interface=AgentInterface.from_type(AgentType.Imitation),
+        interface=AgentInterface.from_type(AgentType.Direct),
         agent_builder=DummyAgent,
     ),
 )

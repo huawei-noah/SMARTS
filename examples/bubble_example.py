@@ -66,7 +66,7 @@ class UsedAgent(Agent):
 register(
     "dummy_agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
-        interface=AgentInterface.from_type(AgentType.Imitation, done_criteria= DoneCriteria(not_moving=False, off_road=False, off_route=False, on_shoulder=False, wrong_way=False)),
+        interface=AgentInterface.from_type(AgentType.Direct, done_criteria= DoneCriteria(not_moving=False, off_road=False, off_route=False, on_shoulder=False, wrong_way=False)),
         agent_builder=DummyAgent,
     ),
 )
