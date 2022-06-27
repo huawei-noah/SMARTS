@@ -2,7 +2,7 @@ from pathlib import Path
 
 import gym
 
-from smarts.core.agent import AgentSpec
+from smarts.zoo.agent_spec import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.env.wrappers.single_agent import SingleAgent
 
@@ -26,13 +26,17 @@ def entry_point(*args, **kwargs):
     from smarts.sstudio.build_scenario import build_single_scenario
 
     build_single_scenario(clean=True, allow_offset_map=True, scenario=scenario)
+    hiwayenv = HiWayEnv(
+        agent_specs={"agent-007": agent_spec},
+        scenarios=[scenario],
+        headless=True,
+        sumo_headless=True,
+    )
+    hiwayenv.metadata["render.modes"] = set(hiwayenv.metadata["render.modes"]) | {
+        "rgb_array"
+    }
     return SingleAgent(
-        HiWayEnv(
-            agent_specs={"agent-007": agent_spec},
-            scenarios=[scenario],
-            headless=True,
-            sumo_headless=True,
-        )
+        hiwayenv
     )
 
 

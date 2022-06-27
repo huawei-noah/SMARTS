@@ -8,14 +8,12 @@ import zoo.policies.keep_lane_agent
 
 from smarts.core.utils.episodes import episode_range
 from smarts.env.wrappers.episode_logger import EpisodeLogger
-from smarts.env.wrappers.record import AgentCameraRGBRender
 from smarts.env.wrappers.record_video import RecordVideo
 from smarts.zoo import registry
 
 if __name__ == "__main__":
     # FormatObs should already be applied
     env = gym.make("figure_eight-v0")
-    env: gym.Env = AgentCameraRGBRender(env)
     env: gym.Env = RecordVideo(
         env, video_folder="videos", video_length=40, step_trigger=lambda s: s % 100 == 0
     )

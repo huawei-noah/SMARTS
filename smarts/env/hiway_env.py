@@ -138,6 +138,8 @@ class HiWayEnv(gym.Env):
                 ),
             )
 
+        self._env_renderer = None
+
         visdom_client = None
         if visdom:
             visdom_client = VisdomClient()
@@ -247,6 +249,9 @@ class HiWayEnv(gym.Env):
             observations[agent_id] = agent_spec.observation_adapter(observation)
             infos[agent_id] = agent_spec.info_adapter(observation, reward, info)
 
+        if self._env_renderer is not None:
+            self._env_renderer.step(observations, rewards, dones, infos)
+
         for done in dones.values():
             self._dones_registered += 1 if done else 0
 
@@ -269,12 +274,20 @@ class HiWayEnv(gym.Env):
             agent_id: self._agent_specs[agent_id].observation_adapter(obs)
             for agent_id, obs in env_observations.items()
         }
+        if self._env_renderer is not None:
+            self._env_renderer.reset(observations)
 
         return observations
 
     def render(self, mode="human"):
-        """Does nothing."""
-        pass
+        """Renders according to metadata requirements."""
+
+        if "rgb_array" in self.metadata["render.modes"]:
+            if self._env_renderer is None:
+                from smarts.env.utils.record import AgentCameraRGBRender
+                self._env_renderer = AgentCameraRGBRender(self)
+
+            return self._env_renderer.render(env=self)
 
     def close(self):
         """Closes the environment and releases all resources."""
