@@ -358,7 +358,7 @@ class LanePoints:
             road = roads[road_id]
             # go ahead and add lanepoints for composite lanes,
             # even though we don't on other map formats,
-            # and then filter these our on lanepoint queries.
+            # and then filter these out on lanepoint queries.
             # (not an issue right now for OpenDrive since we don't
             # find composite lanes, but it may be in the future.)
             for lane in road.lanes:
@@ -484,7 +484,7 @@ class LanePoints:
             road = roads[road_id]
             # go ahead and add lanepoints for composite lanes,
             # even though we don't on other map formats,
-            # and then filter these our on lanepoint queries.
+            # and then filter these out on lanepoint queries.
             for lane in road.lanes:
                 # Ignore non drivable lanes in Waymo
                 if lane.is_drivable:
