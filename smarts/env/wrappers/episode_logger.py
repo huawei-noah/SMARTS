@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Iterator, Tuple
 
 import gym
 
@@ -61,7 +61,7 @@ class EpisodeLogger(gym.Wrapper):
             pass
         return super().close()
 
-    def _episode_logs(self, col_width) -> EpisodeLog:
+    def _episode_logs(self, col_width) -> Iterator[EpisodeLog]:
         with EpisodeLogs(col_width) as episode_logs:
             while not self._closed:
                 yield episode_logs.reset()

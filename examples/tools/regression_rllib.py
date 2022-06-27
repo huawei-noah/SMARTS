@@ -45,6 +45,7 @@ class RLlibTFSavedModelAgent(Agent):
         )
 
     def act(self, obs):
+        assert self._sess is not None, f"You must call {self.setup.__name__} first."
         obs = self._prep.transform(obs)
         graph = tf.compat.v1.get_default_graph()
         # These tensor names were found by inspecting the trained model
@@ -83,7 +84,7 @@ def run_experiment(log_path, experiment_name, training_iteration=100):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Standard, max_episode_steps=5000),
         agent_builder=RLlibTFSavedModelAgent,
-        agent_params=(
+        agent_params=dict(
             model_path.absolute(),
             OBSERVATION_SPACE,
         ),
