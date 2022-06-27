@@ -150,7 +150,7 @@ class Provider:
         """
         if error:
             raise error
-        return ProviderState(__file__), False
+        return ProviderState(), False
 
     @property
     def connected(self) -> bool:

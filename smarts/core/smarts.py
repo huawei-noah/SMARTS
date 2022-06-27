@@ -997,7 +997,7 @@ class SMARTS:
         return None
 
     def _setup_providers(self, scenario) -> ProviderState:
-        provider_state = ProviderState(source=__file__)
+        provider_state = ProviderState()
         for provider in self.providers:
             try:
                 new_provider_state = provider.setup(scenario)
@@ -1045,7 +1045,7 @@ class SMARTS:
                 self._scenario, self.elapsed_sim_time, provider_error
             )
 
-        provider_state = provider_state or ProviderState(__file__)
+        provider_state = provider_state or ProviderState()
         if recovered:
             return provider_state
 
