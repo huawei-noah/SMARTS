@@ -47,22 +47,16 @@ class ProviderState:
     # TAI: rename to actors and ActorState
     vehicles: List[VehicleState] = field(default_factory=list)
     dt: Optional[float] = None  # most Providers can leave this blank
-    priority: int = 0
 
     def merge(self, other: "ProviderState"):
         """Merge state with another provider's state."""
         our_vehicles = {v.vehicle_id for v in self.vehicles}
         other_vehicles = {v.vehicle_id for v in other.vehicles}
-        # assert our_vehicles.isdisjoint(other_vehicles), f"Our vehicles {self.source} conflicts with {other.source}"
+        # assert our_vehicles.isdisjoint(other_vehicles)
 
         ## TODO: Properly harmonize these vehicle ids so that there is a priority and per vehicle source
         self.vehicles += filter(lambda v: v.vehicle_id not in our_vehicles, other.vehicles)
-        # if self.priority > other.priority:
-        #     self.vehicles += filter(lambda v: v.vehicle_id not in our_vehicles, other.vehicles)
-        # elif self.priority < other.priority:
-        #     self.vehicles = other.vehicles + filter(lambda v: v.vehicle_id not in other_vehicles, self.vehicles)
-        # else:
-        #     assert our_vehicles.isdisjoint(other_vehicles), f"Our vehicles {self.source} conflicts with {other.source} at same priority level."
+
         self.dt = max(self.dt, other.dt, key=lambda x: x if x else 0)
 
     def filter(self, vehicle_ids):
