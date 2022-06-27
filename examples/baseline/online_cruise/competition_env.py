@@ -129,7 +129,7 @@ class CompetitionEnv(gym.Env):
     def __init__(
         self,
         scenarios: Sequence[str],
-        headless: bool = False,
+        headless: bool = True,
         sim_name: Optional[str] = None,
         max_episode_steps: Optional[int] = None,
         seed: int = 42,
@@ -183,7 +183,7 @@ class CompetitionEnv(gym.Env):
         from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
         traffic_sim = SumoTrafficSimulation(
-            headless=False,
+            headless=True,
             time_resolution=self._fixed_timestep_sec,
             endless_traffic=False,
         )
@@ -265,7 +265,7 @@ class CompetitionEnv(gym.Env):
         info = {"score": extras["scores"][AGENT_ID], "env_obs": observations[AGENT_ID]}
 
         observation = observations[AGENT_ID]
-        # print(observations['EGO'].ego_vehicle_state.position, agent_action)
+        print(observations['EGO'].ego_vehicle_state.position, agent_action)
         self._last_obs = observation
         self._current_time += observation.dt
         target = [0, 0, 0]
