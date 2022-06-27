@@ -60,20 +60,21 @@ for i in index:
                 saved_models = glob.glob('d3rlpy_logs/*')
                 latest_model = max(saved_models, key=os.path.getctime)
                 model = CQL.from_json('d3rlpy_logs/1/params.json', use_gpu=True)
-                model.load_model(latest_model + '/model_10.pt')
+                model.load_model(latest_model + '/model_100.pt')
                 # saved_models = glob.glob('d3rlpy_logs/*')
                 # latest_model = max(saved_models, key=os.path.getctime)
                 # saved_folder = sorted(os.listdir(pathlib.Path(__file__).absolute().parent/'d3rlpy_logs/'))[0]
 
             model.fit(dataset, 
                 eval_episodes=dataset, 
-                n_steps_per_epoch = 10,
-                n_steps = 10, 
+                n_steps_per_epoch = 100,
+                n_steps = 100, 
                 scorers={
                             'td_error': td_error_scorer,
                             'value_scale': average_value_estimation_scorer,
                         }
             )
+            
             saved_models = glob.glob('d3rlpy_logs/*')
             latest_model = max(saved_models, key=os.path.getctime)
             os.rename(latest_model, 'd3rlpy_logs/' + str(total_num_train + 1))
