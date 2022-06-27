@@ -32,7 +32,7 @@ class LocalAgentBuffer(AgentBuffer):
 
     def __init__(self):
         num_cpus = max(
-            2, num_cpus or psutil.cpu_count(logical=False) or (psutil.cpu_count() - 1)
+            2, psutil.cpu_count(logical=False) or (psutil.cpu_count() - 1)
         )
         self._act_executor = ProcessPoolExecutor(num_cpus)
 
