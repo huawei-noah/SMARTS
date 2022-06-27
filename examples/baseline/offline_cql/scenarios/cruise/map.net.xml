@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2022-06-02 12:14:39 by Eclipse SUMO netedit Version 1.13.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <sumo-net-file value="scenarios/merge/simple/map.net.xml"/>
+    </input>
+
+    <output>
+        <output-file value="scenarios/merge/simple/map.net.xml"/>
+    </output>
+
+    <processing>
+        <geometry.min-radius.fix.railways value="false"/>
+        <geometry.max-grade.fix value="false"/>
+        <offset.disable-normalization value="true"/>
+        <lefthand value="false"/>
+    </processing>
+
+    <junctions>
+        <no-turnarounds value="true"/>
+        <junctions.corner-detail value="5"/>
+        <junctions.limit-turn-speed value="5.5"/>
+        <rectangular-lane-cut value="false"/>
+    </junctions>
+
+    <pedestrian>
+        <walkingareas value="false"/>
+    </pedestrian>
+
+    <report>
+        <aggregate-warnings value="5"/>
+    </report>
+
+</configuration>
+-->
+
+<net version="1.9" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="0.00,0.00" convBoundary="42.35,100.00,236.67,100.17" origBoundary="-10000000000.00,-10000000000.00,10000000000.00,10000000000.00" projParameter="!"/>
+
+    <edge id="gneE3" from="gneJ4" to="gneJ6" priority="-1" spreadType="center">
+        <lane id="gneE3_0" index="0" speed="13.89" length="194.32" shape="42.35,96.80 236.67,96.97"/>
+        <lane id="gneE3_1" index="1" speed="13.89" length="194.32" shape="42.35,100.00 236.67,100.17"/>
+        <lane id="gneE3_2" index="2" speed="13.89" length="194.32" shape="42.35,103.20 236.67,103.37"/>
+    </edge>
+
+    <junction id="gneJ4" type="dead_end" x="42.35" y="100.00" incLanes="" intLanes="" shape="42.35,104.80 42.35,95.20"/>
+    <junction id="gneJ6" type="dead_end" x="236.67" y="100.17" incLanes="gneE3_0 gneE3_1 gneE3_2" intLanes="" shape="236.67,95.37 236.67,104.97"/>
+
+</net>
