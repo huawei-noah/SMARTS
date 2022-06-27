@@ -18,8 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os
-import shutil
-from typing import Any, Dict, Tuple
+
+from typing import Any
 
 import gym
 import numpy as np
@@ -34,24 +34,17 @@ Operation = Any
 default_log_dir = smarts_log_dir()
 
 
-class AgentCameraRGBRender(gym.Wrapper):
+class AgentCameraRGBRender:
     """Wraps the environment with `rgb_array` render mode capabilities."""
 
     def __init__(self, env: gym.Env, max_agents: int = 1, enabled=True):
-        super().__init__(env)
-        self.env.metadata["render.modes"] = set(self.env.metadata["render.modes"]) | {
-            "rgb_array"
-        }
-        super(AgentCameraRGBRender, self).__init__(env)
         self._max_agents = max_agents
         self._enabled = enabled
         self._image_frame = []
         self.is_vector_env = getattr(env, "is_vector_env", False)
 
-    def step(self, action: Action) -> Tuple[Operation, float, bool, Dict[str, Any]]:
+    def step(self, obs, rewards, dones, infos):
         """Record a step."""
-
-        obs, rewards, dones, infos = super().step(action)
 
         single_env_obs = obs
         if self.is_vector_env:
@@ -60,23 +53,15 @@ class AgentCameraRGBRender(gym.Wrapper):
 
         self._record_for_render(single_env_obs)
 
-        return (obs, rewards, dones, infos)
-
     def render(self, mode="rgb_array", **kwargs):
         """Render the given camera image in this environment."""
-        super().render(mode, **kwargs)
 
-        if mode == "rgb_array" and len(self._image_frame) > 0:
+        if len(self._image_frame) > 0:
             return self._image_frame
 
-    def reset(self) -> Any:
+    def reset(self, obs) -> Any:
         """Record the reset of the environment."""
 
-        try:
-            os.mkdir(self._recording_dir)
-        except:
-            pass
-        obs = super().reset()
         self._record_for_render(obs)
         return obs
 
