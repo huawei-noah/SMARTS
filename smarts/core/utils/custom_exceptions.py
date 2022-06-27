@@ -34,6 +34,7 @@ class RayException(Exception):
 
     @classmethod
     def required_to(cls, thing):
+        """Generate a `RayException` requiring a render to do `thing`."""
         return cls(
             f"""Ray Package is required to {thing}.
                You may not have installed the [rllib] or [train] dependencies required to run the ray dependent example.
