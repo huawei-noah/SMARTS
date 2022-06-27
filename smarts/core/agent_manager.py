@@ -352,12 +352,15 @@ class AgentManager:
         return social_agent_actions
 
     def add_social_observation_callback(self, callback, id):
+        """Suscribe to observe social agents."""
         self._social_agent_observation_callbacks[id] = callback
 
     def remove_social_observation_callback(self, id):
+        """Remove a subscription to social agents."""
         del self._social_agent_observation_callbacks[id]
 
     def reserve_social_agent_action(self, agent_id, action):
+        """Override a current social agent action."""
         self._reserved_social_agent_actions[agent_id] = action
 
     def _send_observations_to_social_agents(self, observations: Dict[str, Observation]):
