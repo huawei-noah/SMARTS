@@ -699,7 +699,10 @@ class VehicleIndex:
         self._2id_to_id[vehicle_id] = vehicle.id
 
         actor_role = vehicle_state.role
-        assert actor_role in (ActorRole.External, ActorRole.Social)
+        assert actor_role not in (
+            ActorRole.EgoAgent,
+            ActorRole.SocialAgent,
+        ), f"role={actor_role} from {vehicle_state.source}"
         entity = _ControlEntity(
             vehicle_id=vehicle_id,
             actor_id=actor_id,

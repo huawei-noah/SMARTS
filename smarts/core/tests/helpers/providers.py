@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 from typing import Optional, Sequence, Set
 
+from smarts.core.actor_role import ActorRole
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.road_map import RoadMap
 from smarts.core.provider import Provider, ProviderState
@@ -39,6 +40,7 @@ class MockProvider(Provider):
                     dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
                     speed=speed,
                     source=self.source_str,
+                    role=ActorRole.Social,
                 )
                 for vehicle_id, pose, speed in vehicles
             ],
