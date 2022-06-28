@@ -33,6 +33,7 @@ from cached_property import cached_property
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon, box as shapely_box
 
+from .actor_role import ActorRole
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .provider import ProviderRecoveryFlags, ProviderState
@@ -45,7 +46,7 @@ from .utils.math import (
     radians_to_vec,
     vec_to_radians,
 )
-from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
+from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class LocalTrafficProvider(TrafficProvider):

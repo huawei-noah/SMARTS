@@ -33,6 +33,7 @@ from smarts.core.chassis import BoxChassis
 from smarts.core.plan import Plan
 
 from . import models
+from .actor_role import ActorRole
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
 from .agents_provider import (
@@ -59,7 +60,7 @@ from .utils.id import Id
 from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
-from .vehicle import ActorRole, Vehicle, VehicleState
+from .vehicle import Vehicle, VehicleState
 from .vehicle_index import VehicleIndex
 
 logging.basicConfig(

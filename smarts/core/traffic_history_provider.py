@@ -24,12 +24,13 @@ from typing import Iterable, Optional, Sequence, Set
 from cached_property import cached_property
 from shapely.geometry import Polygon
 
+from .actor_role import ActorRole
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose
 from .provider import ProviderState
 from .traffic_provider import TrafficProvider
 from .utils.math import rounder_for_dt
-from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
+from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class TrafficHistoryProvider(TrafficProvider):

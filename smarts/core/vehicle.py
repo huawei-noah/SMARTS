@@ -21,7 +21,6 @@ import importlib.resources as pkg_resources
 import logging
 import os
 from dataclasses import dataclass
-from enum import IntEnum
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -33,6 +32,7 @@ from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
 
 from . import models
+from .actor_role import ActorRole
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import Colors, SceneColors
 from .coordinates import Dimensions, Heading, Pose
@@ -51,16 +51,6 @@ from .sensors import (
 )
 from .utils.custom_exceptions import RendererException
 from .utils.math import rotate_around_point
-
-
-class ActorRole(IntEnum):
-    """Used to specify the role an actor (e.g. vehicle) is currently playing in the simulation."""
-
-    Unknown = 0
-    Social = 1
-    SocialAgent = 2
-    EgoAgent = 3
-    Privileged = 4  # For deferring to external co-simulators only. Use with caution!
 
 
 @dataclass
@@ -597,11 +587,11 @@ class Vehicle:
     def update_state(self, state: VehicleState, dt: float):
         """Update the vehicle's state"""
         state.updated = True
-        if state.role != ActorRole.Privileged:
+        if state.role != ActorRole.External:
             assert isinstance(self._chassis, BoxChassis)
             self.control(pose=state.pose, speed=state.speed, dt=dt)
             return
-        # "Privileged" means we can work directly (bypass force application).
+        # Eternal actors are "privileged", which means they work directly (bypass force application).
         # Conceptually, this is playing 'god' with physics and should only be used
         # to defer to a co-simulator's states.
         linear_velocity, angular_velocity = None, None

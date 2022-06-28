@@ -22,10 +22,11 @@ import logging
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
+from .actor_role import ActorRole
 from .controllers import ActionSpaceType, Controllers
 from .provider import Provider, ProviderState
 from .road_map import RoadMap
-from .vehicle import ActorRole, VehicleState
+from .vehicle import VehicleState
 
 
 class AgentsProvider(Provider):
