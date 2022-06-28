@@ -45,6 +45,7 @@ def main(num_episodes, max_episode_steps=50):
             observations, rewards, dones, infos = env.step(actions)
 
             import time
+
             time.sleep(0.1)
 
             # for name in ["Agent_0", "Agent_1"]:

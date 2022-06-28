@@ -28,6 +28,9 @@ class Metric:
         self._steps = 0
         """ Total number of steps.
         """
+        self._adjusted_steps = 0
+        """ Total number of `self._adjusted_steps_per_episode`.
+        """
         self._goals_unachieved = 0
         """ Total number of episodes, where at least one agent did not achieve their goal.
         """
@@ -36,7 +39,7 @@ class Metric:
         """ Number of agents which did not complete the episode. Episode is incomplete if 
         any agent becomes done due to traffic violation.
         """
-        self._steps_per_episode = 0
+        self._adjusted_steps_per_episode = 0
         """ Total `act` steps taken by all agents per episode. Maximum steps `_MAX_STEPS` 
         is assigned if the episode is incomplete.
         """
@@ -65,7 +68,8 @@ class Metric:
 
         # Count only steps where an ego agent was present.
         if len(infos) > 0:
-            self._steps_per_episode += 1
+            self._steps += 1
+            self._adjusted_steps_per_episode += 1
 
         # Count `self._incomplete_per_episode` and `self._goals_per_episode`.
         for agent_name, agent_done in dones.items():
@@ -86,10 +90,10 @@ class Metric:
             # Check whether episode was complete.
             if self._incomplete_per_episode > 0:
                 self._incomplete += self._incomplete_per_episode / self._num_agents
-                self._steps_per_episode == _MAX_STEPS  # Assign max steps if episode is incomplete.
+                self._adjusted_steps_per_episode == _MAX_STEPS  # Assign max steps if episode is incomplete.
 
             # Update running total number of steps.
-            self._steps += self._steps_per_episode
+            self._adjusted_steps += self._adjusted_steps_per_episode
             # Update running total number of episodes with goal unachieved.
             self._goals_unachieved += (
                 1 if self._num_agents != self._goals_per_episode else 0
@@ -99,7 +103,7 @@ class Metric:
             self._cost_funcs = self._reinit()
             # Reset per-episode counters.
             self._incomplete_per_episode = 0
-            self._steps_per_episode = 0
+            self._adjusted_steps_per_episode = 0
             self._goals_per_episode = 0
 
     def results(self):
@@ -108,13 +112,14 @@ class Metric:
             "episodes": self._episodes,
             "incomplete": self._incomplete,
             "steps": self._steps,
+            "adjusted_steps": self._adjusted_steps,
             "goals_unachieved": self._goals_unachieved,
         }
 
 
 COST_FUNCS = {
     "collisions": lambda _: _collisions,
-    "dist_to_obstacles": lambda _: _distance_to_obstacles,
+    "dist_to_obstacles": lambda _: _dist_to_obstacles,
     "jerk": lambda _: _jerk,
     "lane_center_offset": lambda _: _lane_center_offset,
     "off_road": lambda _: _off_road,
@@ -131,7 +136,7 @@ def _collisions(obs: Observation) -> Dict[str, int]:
     return {"collisions": len(obs.events.collisions)}
 
 
-def _distance_to_obstacles(obs: Observation) -> Dict[str, float]:
+def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
     obstacle_dist_th = 50
     obstacle_angle_th = np.pi * 30 / 180
     w_dist = 0.05

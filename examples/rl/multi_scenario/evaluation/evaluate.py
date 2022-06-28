@@ -98,7 +98,9 @@ def evaluate():
         score.add(res)
 
     rank = score.compute()
+    print("Overall Rank:\n", rank)
     import os
+
     os.exit(2)
 
     print("\nFinished evaluating.\n")
@@ -129,11 +131,6 @@ def run(env, datastore: DataStore, name, policy: Policy, config: Dict[str, Any])
     print(metric.results())
 
     return metric.results()
-
-
-# check score calculation
-# how to calculate for multiagent
-# special cost case for overtake scenario
 
 
 if __name__ == "__main__":
