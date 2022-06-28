@@ -118,17 +118,17 @@ class Metric:
 
 
 COST_FUNCS = {
-    "collisions": lambda _: _collisions,
-    "dist_to_obstacles": lambda _: _dist_to_obstacles,
-    "jerk": lambda _: _jerk,
-    "lane_center_offset": lambda _: _lane_center_offset,
-    "off_road": lambda _: _off_road,
-    "off_route": lambda _: _off_route,
-    "on_shoulder": lambda _: _on_shoulder,
-    "steering_rate": lambda _: _steering_rate(),
-    "velocity_offset": lambda _: _velocity_offset,
-    "wrong_way": lambda _: _wrong_way,
-    "yaw_rate": lambda _: _yaw_rate,
+    "collisions": lambda : _collisions,
+    "dist_to_obstacles": lambda : _dist_to_obstacles,
+    "jerk": lambda : _jerk,
+    "lane_center_offset": lambda : _lane_center_offset,
+    "off_road": lambda : _off_road,
+    "off_route": lambda : _off_route,
+    "on_shoulder": lambda : _on_shoulder,
+    "steering_rate": lambda : _steering_rate(),
+    "velocity_offset": lambda : _velocity_offset,
+    "wrong_way": lambda : _wrong_way,
+    "yaw_rate": lambda : _yaw_rate,
 }
 
 

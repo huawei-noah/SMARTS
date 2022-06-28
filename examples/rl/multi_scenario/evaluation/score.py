@@ -10,7 +10,7 @@ class Score:
             "rules": 0,
             "time": 0,
         }
-        self._costs = CustomDict(**{key: 0 for key in COST_FUNCS.items()})
+        self._costs = CustomDict(**{key: 0 for key in COST_FUNCS.keys()})
 
     def add(self, metric):
         for agent_costs in metric["costs"].values():
