@@ -16,6 +16,7 @@ from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 from smarts.core.agent_manager import AgentManager
 from smarts.core.bubble_manager import BubbleManager
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
@@ -122,7 +123,7 @@ def main(
     run_steps = int(run_time / timestep)
     smarts = SMARTS(
         agent_interfaces={},
-        traffic_sim=None,
+        traffic_sims=[LocalTrafficProvider(endless_traffic=False)],
         envision=None if headless else Envision(),
         fixed_timestep_sec=timestep,
     )
