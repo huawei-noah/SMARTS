@@ -98,7 +98,6 @@ for scenario in scenarios[0:3]:
         model.fit(dataset, 
             eval_episodes=dataset, 
             n_epochs = 1, 
-            save_metrics=False
         )
 
 
