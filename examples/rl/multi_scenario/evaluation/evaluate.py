@@ -9,8 +9,8 @@ from typing import Any, Dict, List
 
 import gym
 from evaluation.copy_data import CopyData, DataStore
-from evaluation.counter import Counter
-from evaluation.metric import Metric, Score
+from evaluation.metric import Metric
+from evaluation.score import Score
 from submission.policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
 
 
@@ -57,7 +57,7 @@ def evaluate():
     config = {
         "img_meters": IMG_METERS,
         "img_pixels": IMG_PIXELS,
-        "eval_episodes": 100,
+        "eval_episodes": 2,
     }
     scenarios = [
         "1_to_2lane_left_turn_c",
@@ -96,7 +96,10 @@ def evaluate():
         )
 
         score.add(res)
-        # score[]
+
+    rank = score.compute()
+    import os
+    os.exit(2)
 
     print("\nFinished evaluating.\n")
 

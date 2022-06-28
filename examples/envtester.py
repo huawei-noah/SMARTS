@@ -6,6 +6,7 @@ from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
+from smarts.env.wrappers.format_obs import FormatObs
 from smarts.zoo.agent_spec import AgentSpec
 
 logging.basicConfig(level=logging.INFO)
@@ -21,22 +22,13 @@ def main(num_episodes, max_episode_steps=50):
 
     env = gym.make(
         "smarts.env:multi-scenario-v0",
-        scenario="3lane_overtake",
+        scenario="3lane_merge_multi_agent",
         headless=True,
-        sumo_headless=True,
+        sumo_headless=False,
         action_space="Lane",
     )
 
-
-    def modify_info(obs, reward, info):
-        info["security"] = "checked----"
-        return info 
-
-    for agent_name, env_agent_spec in env.agent_specs.items():
-        env_agent_spec.info_adapter = modify_info
-
-
-
+    env = FormatObs(env)
 
     for episode in episodes(n=num_episodes):
         observations = env.reset()
@@ -51,16 +43,23 @@ def main(num_episodes, max_episode_steps=50):
                 for agent_id, agent_obs in observations.items()
             }
             observations, rewards, dones, infos = env.step(actions)
-            # import time
-            # time.sleep(0.1)
 
-            print(infos["Agent_0"]["security"])
+            import time
+            time.sleep(0.1)
 
-            for agent_id, agent_obs in observations.items():
-                if agent_obs.events.reached_goal:
-                    print(f"{agent_id} : HURRAY REACHED GOAL !!!")
-                if agent_obs.events.collisions:
-                    print(f"{agent_id} : collided !!!")
+            # for name in ["Agent_0", "Agent_1"]:
+            # if observations.get(name, None):
+            qwe = infos.keys()
+            print(f"Obs --> {qwe} {len(infos)}")
+            # {bool(qwe)} {len(observations)} {bool(observations)}")
+            print("-----------------------------")
+
+            # for agent_id, agent_obs in observations.items():
+            #     if agent_obs.events.reached_goal:
+            #         print(f"{agent_id} : HURRAY REACHED GOAL !!!")
+            #     if agent_obs.events.collisions:
+            #         print(f"{agent_id} : collided !!!")
+
     env.close()
 
 

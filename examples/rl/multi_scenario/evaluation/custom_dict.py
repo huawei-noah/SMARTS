@@ -6,7 +6,7 @@ class CustomDict(dict):
 
     def __setitem__(self, key, value):
         if key not in self.keys():
-            raise AttributeError(f"Cannot add new key {key}.")
+            raise AttributeError(f"Cannot add new key {key}. Instead, use update().")
 
         res = self._ensure_types({key: value})
         return super().__setitem__(key, res[key])
@@ -32,15 +32,13 @@ class CustomDict(dict):
         return self
 
     def __delitem__(self, key):
-        raise AttributeError(
-            f"Cannot delete individual keys after object instantiation."
-        )
+        raise AttributeError(f"Cannot delete individual keys after creation.")
 
     def update(self, **kwargs):
         new = dict(**kwargs)
-        diff = set(new.keys()).difference(set(self.keys()))
-        if diff:
-            raise AttributeError(f"Cannot add new keys {diff}.")
+        # diff = set(new.keys()).difference(set(self.keys()))
+        # if diff:
+        #     raise AttributeError(f"Cannot add new keys {diff}.")
 
         res = self._ensure_types(new)
         super().update(res)
