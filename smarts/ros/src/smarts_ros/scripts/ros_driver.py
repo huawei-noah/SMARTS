@@ -54,7 +54,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.math import fast_quaternion_from_angle, vec_to_radians
-from smarts.core.vehicle import ActorRole, VehicleState
+from smarts.core.vehicle import VehicleState
 from smarts.ros.logging import log_everything_to_ROS
 from smarts.sstudio.types import MapSpec
 from smarts.zoo import registry
@@ -367,7 +367,6 @@ class ROSDriver:
         veh_type = ROSDriver._decode_entity_type(entity.entity_type)
         veh_dims = Dimensions(entity.length, entity.width, entity.height)
         vs = VehicleState(
-            source="EXTERNAL",
             vehicle_id=veh_id,
             vehicle_config_type=veh_type,
             pose=Pose(
@@ -379,7 +378,6 @@ class ROSDriver:
             angular_velocity=ROSDriver._xyz_to_vect(entity.velocity.angular),
             linear_acceleration=ROSDriver._xyz_to_vect(entity.acceleration.linear),
             angular_acceleration=ROSDriver._xyz_to_vect(entity.acceleration.angular),
-            role=ActorRole.Privileged,
         )
         vs.speed = np.linalg.norm(vs.linear_velocity)
         return vs

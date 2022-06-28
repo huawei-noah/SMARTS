@@ -33,6 +33,7 @@ from cached_property import cached_property
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon, box as shapely_box
 
+from .actor_role import ActorRole
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .provider import ProviderRecoveryFlags, ProviderState
@@ -45,7 +46,7 @@ from .utils.math import (
     radians_to_vec,
     vec_to_radians,
 )
-from .vehicle import ActorRole, VEHICLE_CONFIGS, VehicleState
+from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class LocalTrafficProvider(TrafficProvider):
@@ -412,17 +413,19 @@ class _TrafficActor:
         self._lane_windows: Dict[int, _TrafficActor._LaneWindow] = dict()
         self._lane_win: _TrafficActor._LaneWindow = None
         self._target_lane_win: _TrafficActor._LaneWindow = None
-        self._target_speed: float = 15.0
+        self._target_speed: float = 15.0  # arbitrary reasonable default
         self._dest_lane = None
         self._dest_offset = None
         self._wrong_way: bool = False
 
+        # The default values here all attempt to match those in sstudio.types,
+        # which in turn attempt to match Sumo's defaults.
         self._min_space_cush = float(self._vtype.get("minGap", 2.5))
         speed_factor = float(self._vtype.get("speedFactor", 1.0))
         speed_dev = float(self._vtype.get("speedDev", 0.1))
         self._speed_factor = random.gauss(speed_factor, speed_dev)
         if self._speed_factor <= 0:
-            self._speed_factor = 0.1
+            self._speed_factor = 0.1  # arbitrary minimum speed
         self._imperfection = float(self._vtype.get("sigma", 0.5))
 
         self._cutting_into = None
@@ -443,7 +446,7 @@ class _TrafficActor:
             self._cutin_prob = 0.0
         self._dogmatic = bool(self._vtype.get("lcDogmatic", False))
 
-        self._max_angular_velocity = 26
+        self._max_angular_velocity = 26  # arbitrary, based on limited testing
         self._prev_angular_err = None
 
         self._owner._actors_created += 1
@@ -546,6 +549,8 @@ class _TrafficActor:
 
     def _resolve_flow_speed(self, flow: Dict[str, Any]) -> float:
         depart_speed = flow.get("departSpeed", 0.0)
+        # maxSpeed's default attempts to match the one in sstudio.types,
+        # which in turn attempt to match Sumo's default.
         max_speed = float(self._vtype.get("maxSpeed", 55.5))
         if depart_speed == "random":
             return random.random() * max_speed
@@ -1098,6 +1103,7 @@ class _TrafficActor:
 
         my_speed, my_acc = self._lane_speed[self._target_lane_win.lane.index]
 
+        # magic numbers / weights here were just what looked reasonable in limited testing
         P = 0.0060 * (self._target_speed - my_speed)
         I = -0.0150 / space_cush
         D = -0.0010 * my_acc

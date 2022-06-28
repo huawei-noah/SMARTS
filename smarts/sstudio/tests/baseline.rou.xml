@@ -4,7 +4,7 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
 
     <input>
-        <net-file value="scenarios/sumo/intersections/2lane_t/map.net.xml"/>
+        <net-file value="scenarios/sumo/intersections/4lane_t/map.net.xml"/>
         <route-files value="/tmp/tmp6925s2db/trips.trips.xml"/>
     </input>
 

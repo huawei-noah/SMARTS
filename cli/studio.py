@@ -246,7 +246,7 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
 
 @scenario_cli.command(
     name="browse-waymo",
-    help="Browse Waymo TFRecord datasets using smarts/waymo/waymo_utility.py, a text-based browser utility",
+    help="Browse Waymo TFRecord datasets using smarts/waymo/waymo_browser.py, a text-based browser utility",
 )
 @click.argument(
     "tfrecords",
@@ -279,7 +279,7 @@ def browse_waymo_dataset(
         # if tfrecords is not given, set the known tfrecord directory as default
         tfrecords = [os.path.join("smarts", "waymo", "waymo_data")]
 
-    utility_path = os.path.join("smarts", "waymo", "waymo_utility.py")
+    utility_path = os.path.join("smarts", "waymo", "waymo_browser.py")
     subprocess_command = [
         sys.executable,
         utility_path,

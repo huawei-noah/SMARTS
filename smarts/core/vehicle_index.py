@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 import logging
 from copy import copy, deepcopy
-from enum import IntEnum
 from io import StringIO
 from typing import FrozenSet, Iterator, NamedTuple, Optional, Set, Tuple, Union
 
@@ -31,10 +30,11 @@ from smarts.core.utils import resources
 from smarts.core.utils.cache import cache, clear_cache
 from smarts.core.utils.string import truncate
 
+from .actor_role import ActorRole
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
 from .sensors import SensorState
-from .vehicle import ActorRole, Vehicle
+from .vehicle import Vehicle
 
 VEHICLE_INDEX_ID_LENGTH = 128
 
@@ -49,20 +49,13 @@ def _2id(id_: str):
     return (separator + id_).zfill(VEHICLE_INDEX_ID_LENGTH - len(separator))
 
 
-# TAI:  Use ActorRole enum from vehicle.py insetad?
-class _ActorType(IntEnum):
-    Social = 0  # Traffic
-    Agent = 1
-    External = 2  # cannot be hijacked or trapped
-
-
 class _ControlEntity(NamedTuple):
     vehicle_id: Union[bytes, str]
     actor_id: Union[bytes, str]
-    actor_type: _ActorType
+    actor_role: ActorRole
     shadow_actor_id: Union[bytes, str]
     # Applies to shadowing and controlling actor
-    # TODO: Consider moving this to an _ActorType field
+    # TODO: Consider moving this to an ActorRole field
     is_boid: bool
     is_hijacked: bool
     position: np.ndarray
@@ -167,7 +160,8 @@ class VehicleIndex:
     def agent_vehicle_ids(self) -> Set[str]:
         """A set of vehicle ids associated with an agent."""
         vehicle_ids = self._controlled_by[
-            self._controlled_by["actor_type"] == _ActorType.Agent
+            (self._controlled_by["actor_role"] == ActorRole.EgoAgent)
+            | (self._controlled_by["actor_role"] == ActorRole.SocialAgent)
         ]["vehicle_id"]
         return {self._2id_to_id[id_] for id_ in vehicle_ids}
 
@@ -177,7 +171,7 @@ class VehicleIndex:
     ) -> Set[str]:
         """A set of vehicle ids associated with traffic vehicles."""
         vehicle_ids = self._controlled_by[
-            self._controlled_by["actor_type"] == _ActorType.Social
+            self._controlled_by["actor_role"] == ActorRole.Social
         ]["vehicle_id"]
         return {
             self._2id_to_id[id_]
@@ -443,9 +437,10 @@ class VehicleIndex:
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = _ControlEntity(*self._controlled_by[v_index][0])
+        actor_role = ActorRole.SocialAgent if hijacking else ActorRole.EgoAgent
         self._controlled_by[v_index] = tuple(
             entity._replace(
-                actor_type=_ActorType.Agent,
+                actor_role=actor_role,
                 actor_id=agent_id,
                 shadow_actor_id="",
                 is_boid=boid,
@@ -496,7 +491,7 @@ class VehicleIndex:
         entity = _ControlEntity(*entity)
         self._controlled_by[v_index] = tuple(
             entity._replace(
-                actor_type=_ActorType.Social,
+                actor_role=ActorRole.Social,
                 actor_id="",
                 shadow_actor_id="",
                 is_boid=False,
@@ -552,9 +547,7 @@ class VehicleIndex:
             plan,
             sim.scenario.vehicle_filepath,
             sim.scenario.tire_parameters_filepath,
-            # BUG: Both the TrapManager and BubbleManager call into this method but the
-            #      trainable field below always assumes trainable=True
-            True,
+            not hijacking,
             sim.scenario.surface_patches,
         )
 
@@ -651,8 +644,8 @@ class VehicleIndex:
         vehicle,
         controller_state,
         sensor_state,
-        boid=False,
-        hijacking=False,
+        boid: bool = False,
+        hijacking: bool = False,
     ):
         # XXX: agent_id must be the original agent_id (not the fixed _2id(...))
         original_agent_id = agent_id
@@ -673,10 +666,11 @@ class VehicleIndex:
         self._2id_to_id[vehicle_id] = vehicle.id
         self._2id_to_id[agent_id] = original_agent_id
 
+        actor_role = ActorRole.SocialAgent if hijacking else ActorRole.EgoAgent
         entity = _ControlEntity(
             vehicle_id=vehicle_id,
             actor_id=agent_id,
-            actor_type=_ActorType.Agent,
+            actor_role=actor_role,
             shadow_actor_id="",
             is_boid=boid,
             is_hijacked=hijacking,
@@ -704,16 +698,15 @@ class VehicleIndex:
         self._vehicles[vehicle_id] = vehicle
         self._2id_to_id[vehicle_id] = vehicle.id
 
-        actor_type = (
-            _ActorType.Social
-            if vehicle_state.source != "EXTERNAL"
-            and vehicle_state.role != ActorRole.Privileged
-            else _ActorType.External
-        )
+        actor_role = vehicle_state.role
+        assert actor_role not in (
+            ActorRole.EgoAgent,
+            ActorRole.SocialAgent,
+        ), f"role={actor_role} from {vehicle_state.source}"
         entity = _ControlEntity(
             vehicle_id=vehicle_id,
             actor_id=actor_id,
-            actor_type=actor_type,
+            actor_role=actor_role,
             shadow_actor_id="",
             is_boid=False,
             is_hijacked=False,
@@ -768,9 +761,9 @@ class VehicleIndex:
                 # E.g. [(<vehicle ID>, <actor ID>, <actor type>), ...]
                 ("vehicle_id", f"|S{VEHICLE_INDEX_ID_LENGTH}"),
                 ("actor_id", f"|S{VEHICLE_INDEX_ID_LENGTH}"),
-                ("actor_type", "B"),
+                ("actor_role", "B"),
                 # XXX: Keeping things simple, this is always assumed to be an agent.
-                #      We can add an shadow_actor_type when needed
+                #      We can add an shadow_actor_role when needed
                 ("shadow_actor_id", f"|S{VEHICLE_INDEX_ID_LENGTH}"),
                 ("is_boid", "B"),
                 ("is_hijacked", "B"),
@@ -792,7 +785,7 @@ class VehicleIndex:
         by["shadow_actor_id"] = [truncate(p, 20) for p in by["shadow_actor_id"]]
         by["is_boid"] = [str(bool(x)) for x in by["is_boid"]]
         by["is_hijacked"] = [str(bool(x)) for x in by["is_hijacked"]]
-        by["actor_type"] = [str(_ActorType(x)).split(".")[-1] for x in by["actor_type"]]
+        by["actor_role"] = [str(ActorRole(x)).split(".")[-1] for x in by["actor_role"]]
 
         # XXX: tableprint crashes when there's no data
         if by.size == 0:
