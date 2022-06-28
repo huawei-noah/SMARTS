@@ -51,13 +51,17 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
         agent_builder=None,
     )
 
+    # In case we have any bubbles or additional non-history traffic
+    # in one of the scenarios, we need to add some traffic providers.
     smarts_traffic = LocalTrafficProvider(endless_traffic=False)
+    traffic_sims = [smarts_traffic]
+    if Scenario.all_support_sumo_traffic(scenarios):
+        sumo_traffic = (SumoTrafficSimulation(headless=headless, auto_start=True),)
+        traffic_sims += [sumo_traffic]
+
     smarts = SMARTS(
         agent_interfaces={},
-        traffic_sims=[
-            SumoTrafficSimulation(headless=headless, auto_start=True),
-            smarts_traffic,
-        ],
+        traffic_sims=traffic_sims,
         envision=None if headless else Envision(),
     )
 

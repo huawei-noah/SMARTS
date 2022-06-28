@@ -411,6 +411,8 @@ class Flow:
     weight:
         The chance of this actor appearing as a ratio over total weight.
     """
+    randomly_spaced: bool = False
+    """This determines if the flow should have randomly spaced traffic. Default `False`."""
 
     @property
     def id(self) -> str:
