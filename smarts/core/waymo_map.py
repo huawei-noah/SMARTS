@@ -714,6 +714,16 @@ class WaymoMap(RoadMap):
         errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
         raise ValueError(errmsg)
 
+    @staticmethod
+    def get_scenario_ids(dataset_path: str):
+        scenario_ids = []
+        dataset_records = read_tfrecord_file(dataset_path)
+        for record in dataset_records:
+            parsed_scenario = scenario_pb2.Scenario()
+            parsed_scenario.ParseFromString(bytearray(record))
+            scenario_ids.append(parsed_scenario.scenario_id)
+        return scenario_ids
+
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
         """Generate a road network from the given specification."""
