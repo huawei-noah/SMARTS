@@ -39,6 +39,7 @@ def _completion(incomplete, goals_unachieved, episodes):
     return (w_ic * incomplete + w_gua * goals_unachieved) / episodes
 
 
+# Need to modify to take average of average jerkiness
 def _humanness(costs, steps):
     w_d = 0.2
     w_j = 0.2
