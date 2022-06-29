@@ -74,15 +74,16 @@ class Metric:
         # Count `self._incomplete_per_episode` and `self._goals_per_episode`.
         for agent_name, agent_info in infos.items():
             agent_done = dones[agent_name]
+            agent_obs = agent_info["env_obs"]
             if agent_done and (
-                agent_info.events.collisions
-                | agent_info.events.off_road
-                | agent_info.events.off_route
-                | agent_info.events.on_shoulder
-                | agent_info.events.wrong_way
+                agent_obs.events.collisions
+                | agent_obs.events.off_road
+                | agent_obs.events.off_route
+                | agent_obs.events.on_shoulder
+                | agent_obs.events.wrong_way
             ):
                 self._incomplete_per_episode += 1
-            elif agent_done and agent_info.events.reached_goal:
+            elif agent_done and agent_obs.events.reached_goal:
                 self._goals_per_episode += 1
 
         if dones["__all__"] == True:
