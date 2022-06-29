@@ -18,7 +18,7 @@ remote_store_path= '/net/storage-1/home/x50023223/smarts/examples/baseline/waymo
 local_store_path = '/home/kyber/Desktop/smarts_alfred/examples/baseline/waymo_offline/saved_model/'
 
 remote = remote_operations()
-client = remote.connect("10.193.241.238", "x50023223", "Wangjie001530@") # gx2, username, password
+client = remote.connect("10.193.241.238", "x50023223", "password") # gx2, username, password
 
 scenarios = list()
 for scenario_name in client.listdir(path):
