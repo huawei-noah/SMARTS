@@ -170,8 +170,9 @@ def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
         obstacle_angle = np.angle(rel_pos[0] + 1j * rel_pos[1]) - np.pi / 2
         obstacle_angle = (obstacle_angle + np.pi) % (2 * np.pi) - np.pi
         # Obstacle heading is the angle correction required by ego agent to face the obstacle.
-        obstacle_heading = obstacle_angle - ego_angle
+        obstacle_heading = obstacle_angle
         obstacle_heading = (obstacle_heading + np.pi) % (2 * np.pi) - np.pi
+        obstacle_angle = obstacle_angle - ego_heading
         if abs(obstacle_heading) <= obstacle_angle_th:
             obstacles.append((id, pos, dist, obstacle_heading))
 
