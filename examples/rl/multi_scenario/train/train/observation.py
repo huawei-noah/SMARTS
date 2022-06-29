@@ -72,7 +72,7 @@ class FilterObs(gym.ObservationWrapper):
             # Note: All angles returned by smarts is with respect to the map's axes.
             #       On the map, angle is zero at positive y axis, and increases anti-clockwise.
             ego_heading = (agent_obs["ego"]["heading"] + np.pi) % (2 * np.pi) - np.pi
-            ego_pos = agent_obs["ego"]["position"]
+            ego_pos = agent_obs["ego"]["pos"]
 
             # Goal's angle with respect to the ego's position.
             # Note: In np.angle(), angle is zero at positive x axis, and increases anti-clockwise.

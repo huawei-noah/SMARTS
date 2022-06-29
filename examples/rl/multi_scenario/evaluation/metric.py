@@ -76,7 +76,7 @@ class Metric:
             agent_done = dones[agent_name]
             agent_obs = agent_info["env_obs"]
             if agent_done and (
-                agent_obs.events.collisions
+                len(agent_obs.events.collisions)>0
                 | agent_obs.events.off_road
                 | agent_obs.events.off_route
                 | agent_obs.events.on_shoulder
@@ -143,16 +143,16 @@ def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
     obstacle_angle_th = np.pi * 30 / 180
     w_dist = 0.05
 
-    # Ego's position and angle with respect to the map's axes.
-    # Note: All angles returned by smarts is with respect to the map axes.
-    #       Angle is zero at positive y axis, and increases anti-clockwise, on the map.
-    ego_angle = (obs.ego_vehicle_state.heading + np.pi) % (2 * np.pi) - np.pi
+    # Ego's position and heading with respect to the map's axes.
+    # Note: All angles returned by smarts is with respect to the map's axes.
+    #       On the map, angle is zero at positive y axis, and increases anti-clockwise.
+    ego_heading = (obs.ego_vehicle_state.heading + np.pi) % (2 * np.pi) - np.pi
     ego_pos = obs.ego_vehicle_state.position
 
     # Filter neighbors by distance
     nghbs = obs.neighborhood_vehicle_states
     nghbs = [
-        (nghb.id, nghb.position, np.linalg.norm(ego_pos - nghb.position))
+        (nghb.id, nghb.position, np.linalg.norm(nghb.position - ego_pos))
         for nghb in nghbs
     ]
     nghbs = [nghb for nghb in nghbs if nghb[2] <= obstacle_dist_th]
@@ -163,10 +163,11 @@ def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
     # Filter neighbors by angle
     obstacles = []
     for id, pos, dist in nghbs:
-        # Neighbors's angle with respect to the map's axes.
-        # Note: Angle is zero at positive x axis, and increases anti-clockwise, in np.angle().
+        # Neighbors's angle with respect to the ego's position.
+        # Note: In np.angle(), angle is zero at positive x axis, and increases anti-clockwise.
         #       Hence, map_angle = np.angle() - π/2
-        obstacle_angle = np.angle(pos[0] + 1j * pos[1]) - np.pi / 2
+        rel_pos = pos - ego_pos
+        obstacle_angle = np.angle(rel_pos[0] + 1j * rel_pos[1]) - np.pi / 2
         obstacle_angle = (obstacle_angle + np.pi) % (2 * np.pi) - np.pi
         # Obstacle heading is the angle correction required by ego agent to face the obstacle.
         obstacle_heading = obstacle_angle - ego_angle
