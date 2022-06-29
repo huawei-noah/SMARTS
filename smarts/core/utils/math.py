@@ -335,6 +335,36 @@ def line_intersect(a, b, c, d) -> Union[np.ndarray, None]:
     return None
 
 
+def line_intersect_vectorized(
+    a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray
+) -> bool:
+    r = b - a
+    s = d - c
+    rs1 = np.multiply(r[:, 0], s[:, 1])
+    rs2 = np.multiply(r[:, 1], s[:, 0])
+    d = rs1 - rs2
+
+    if not np.any(d):
+        return False
+
+    u_numerator = np.multiply(c[:, 0] - a[:, 0], r[:, 1]) - np.multiply(
+        c[:, 1] - a[:, 1], r[:, 0]
+    )
+    t_numerator = np.multiply(c[:, 0] - a[:, 0], s[:, 1]) - np.multiply(
+        c[:, 1] - a[:, 1], s[:, 0]
+    )
+    u = np.divide(u_numerator, d, out=np.zeros_like(u_numerator) - 1, where=d != 0)
+    t = np.divide(t_numerator, d, out=np.zeros_like(t_numerator) - 1, where=d != 0)
+
+    u_in_range = (0 <= u) & (u <= 1)
+    t_in_range = (0 <= t) & (t <= 1)
+    combined = u_in_range & t_in_range
+
+    if np.any(combined):
+        return True
+    return False
+
+
 def ray_boundary_intersect(
     ray_start, ray_end, boundary_pts, early_return=True
 ) -> Union[np.ndarray, None]:

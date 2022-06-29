@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import rtree
 
-from smarts.core.utils.math import line_intersect
+from smarts.core.utils.math import line_intersect, line_intersect_vectorized
 from smarts.core.waymo_map import WaymoMap
 from smarts.sstudio.types import MapSpec
 
@@ -346,10 +346,72 @@ def bruteforce_rtree(map: WaymoMap) -> Dict[str, Set[str]]:
                                 # if abs(angle) < 0.04:
                                 # print(lane_id)
                                 # print(angle)
-                                continue
+                                pass
                         intersections[lane_id].add(test_lane_id)
                         done = True
                         break
+    return intersections
+
+
+def bruteforce_rtree_vectorized(map: WaymoMap) -> Dict[str, Set[str]]:
+    # build rtree
+    lane_rtree = rtree.index.Index()
+    lane_rtree.interleaved = True
+    all_lanes = [l for l in map._lanes.values() if not l.is_composite]
+    for idx, lane in enumerate(all_lanes):
+        bounding_box = (
+            lane._bbox.min_pt.x,
+            lane._bbox.min_pt.y,
+            lane._bbox.max_pt.x,
+            lane._bbox.max_pt.y,
+        )
+        lane_rtree.add(idx, bounding_box)
+
+    # Set up the intersections dict
+    intersections = defaultdict(lambda: set())
+    for lane in all_lanes:
+        intersections[lane.lane_id] = set()
+
+    for lane in all_lanes:
+        intersections[lane.lane_id] = set()
+
+        # Filter out any lanes that don't intersect this lane's bbox
+        indicies = lane_rtree.intersection(
+            (
+                lane._bbox.min_pt.x,
+                lane._bbox.min_pt.y,
+                lane._bbox.max_pt.x,
+                lane._bbox.max_pt.y,
+            )
+        )
+
+        # Filter out any other lanes we don't want to check against
+        lanes_to_test = []
+        for idx in indicies:
+            test_lane = all_lanes[idx]
+
+            # Don't check intersection with incoming/outgoing lanes or itself
+            in_ids = [l.lane_id for l in lane.incoming_lanes if l]
+            out_ids = [l.lane_id for l in lane.outgoing_lanes if l]
+            if test_lane.lane_id in in_ids + out_ids + [lane.lane_id]:
+                continue
+
+            lanes_to_test.append(test_lane)
+
+        # Main loop -- check each segment of the lane polyline against the
+        # polyline of each candidate lane
+        for test_lane in lanes_to_test:
+            line1 = np.array(lane._lane_pts)
+            line2 = np.array(test_lane._lane_pts)
+            C = np.roll(line2, 0, axis=0)[:-1]
+            D = np.roll(line2, -1, axis=0)[:-1]
+            for i in range(lane._n_pts - 1):
+                A = np.tile(line1[i], (len(C), 1))
+                B = np.tile(line1[i + 1], (len(C), 1))
+                if line_intersect_vectorized(A, B, C, D):
+                    intersections[lane.lane_id].add(test_lane.lane_id)
+                    intersections[test_lane.lane_id].add(lane.lane_id)
+                    break
     return intersections
 
 
@@ -421,6 +483,87 @@ def multiprocessing(map: WaymoMap) -> Dict[str, Set[str]]:
     return intersections
 
 
+def _worker_func_vectorized(lane, lanes_to_test):
+    # Main loop -- check each segment of the lane polyline against the
+    # polyline of each candidate lane
+    intersections = []
+    for test_lane in lanes_to_test:
+        line1 = np.array(lane._lane_pts)
+        line2 = np.array(test_lane._lane_pts)
+        C = np.roll(line2, 0, axis=0)[:-1]
+        D = np.roll(line2, -1, axis=0)[:-1]
+        for i in range(lane._n_pts - 1):
+            A = np.tile(line1[i], (len(C), 1))
+            B = np.tile(line1[i + 1], (len(C), 1))
+            if line_intersect_vectorized(A, B, C, D):
+                intersections.append(test_lane.lane_id)
+                break
+    return (lane.lane_id, intersections)
+
+
+def multiprocessing_vectorized(map: WaymoMap) -> Dict[str, Set[str]]:
+    # build rtree
+    lane_rtree = rtree.index.Index()
+    lane_rtree.interleaved = True
+    all_lanes = [l for l in map._lanes.values() if not l.is_composite]
+    for idx, lane in enumerate(all_lanes):
+        bounding_box = (
+            lane._bbox.min_pt.x,
+            lane._bbox.min_pt.y,
+            lane._bbox.max_pt.x,
+            lane._bbox.max_pt.y,
+        )
+        lane_rtree.add(idx, bounding_box)
+
+    arg_list = []
+    for lane in all_lanes:
+        lanes_to_test = []
+        bb = lane._bbox
+        indicies = lane_rtree.intersection(
+            (bb.min_pt.x, bb.min_pt.y, bb.max_pt.x, bb.max_pt.y)
+        )
+        for idx in indicies:
+            test_lane = all_lanes[idx]
+
+            # Don't check intersection with incoming/outgoing lanes or itself
+            in_ids = [l.lane_id for l in lane.incoming_lanes if l]
+            out_ids = [l.lane_id for l in lane.outgoing_lanes if l]
+            if test_lane.lane_id in in_ids + out_ids + [lane.lane_id]:
+                continue
+
+            lanes_to_test.append(test_lane)
+
+        arg_list.append((lane, lanes_to_test))
+
+    intersections = defaultdict(lambda: set())
+    cpu_count = os.cpu_count()
+    with Pool(processes=cpu_count) as pool:
+        result = pool.starmap(_worker_func_vectorized, arg_list)
+        for lane_id, intersecting_lanes in result:
+            intersections[lane_id] = set(intersecting_lanes)
+    return intersections
+
+
+def postprocess(map: WaymoMap, intersections: Dict[str, set]):
+    mappings_to_remove = []
+    for lane_id, intersect_ids in intersections.items():
+        lane = map.lane_by_id(lane_id)
+        for intersect_id in intersect_ids:
+            intersect_lane = map.lane_by_id(intersect_id)
+
+            if tuple(lane._lane_pts[0]) == tuple(intersect_lane._lane_pts[-1]):
+                # print(f"[1] {lane_id}: {intersect_id}")
+                mappings_to_remove.append((lane_id, intersect_id))
+
+            if tuple(lane._lane_pts[-1]) == tuple(intersect_lane._lane_pts[0]):
+                # print(f"[2] {lane_id}: {intersect_id}")
+                mappings_to_remove.append((lane_id, intersect_id))
+
+    for id1, id2 in mappings_to_remove:
+        intersections[id1].discard(id2)
+        intersections[id2].discard(id1)
+
+
 def plot_map(map: WaymoMap, intersections, save=True):
     plt.figure()
     mng = plt.get_current_fig_manager()
@@ -440,7 +583,8 @@ def plot_map(map: WaymoMap, intersections, save=True):
         # "92",
         # "92_6",
         # "92_32",
-        "139",
+        # "139",
+        "127",
     }
 
     intersected_ids = set()
@@ -452,7 +596,8 @@ def plot_map(map: WaymoMap, intersections, save=True):
         #     continue
 
         pts = np.array(lane._lane_pts)
-        # if lane._bbox.max_pt.y > 1875 and lane._bbox.max_pt.x > -322:
+
+        # if lane._bbox.max_pt.y > 1700 and lane._bbox.max_pt.x > -305:
         #     plt.plot(pts[:, 0], pts[:, 1])
         #     print(f"{lane_id}: {intersections[lane_id]}")
 
@@ -489,8 +634,9 @@ def main():
     for scenario_id in scenario_ids[0:10]:
 
         # scenarios = [
-        #     "e6cc567884b0e4f9",
-        #     # "ef903b7abf6fc0fa",
+        #     # "a7ea3da73ebb0ac7",
+        #     # "e6cc567884b0e4f9",
+        #     "ef903b7abf6fc0fa",
         #     # "5bcf06c493f1d374",
         # ]
         # for scenario_id in scenarios:
@@ -506,11 +652,14 @@ def main():
         algorithms = [
             # bruteforce,
             bruteforce_rtree,
+            bruteforce_rtree_vectorized,
             multiprocessing,
+            multiprocessing_vectorized,
         ]
         for algorithm in algorithms:
             start = perf_counter()
             intersections = algorithm(map)
+            postprocess(map, intersections)
             end = perf_counter()
             elapsed_time = round((end - start), 3)
             print(f"    {algorithm.__name__}: {elapsed_time} s")
@@ -528,7 +677,7 @@ def main():
             #     # if expected_intersection_dict[lane_id] != intersections[lane_id]:
             #     #     print(lane_id)
 
-            plot_map(map, intersections, save=True)
+            # plot_map(map, intersections, save=False)
 
 
 if __name__ == "__main__":
