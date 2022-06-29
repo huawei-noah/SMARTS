@@ -145,7 +145,7 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim)
                 vehicle_id = (
                     vehicle.id
                     if traffic_sim == "SUMO"
-                    else re.sub("_\d+$", "", vehicle.id)
+                    else re.sub(r"_\d+$", "", vehicle.id)
                 )
                 zone_steps = steps_driven_in_zones[bubble.id][vehicle_id]
                 if position.within(geometry.bubble):

@@ -137,7 +137,9 @@ def test_boids(smarts, scenarios, bubble):
             is_agent_controlled = vehicle.id in index.agent_vehicle_ids()
 
             vehicle_id = (
-                vehicle.id if traffic_sim == "SUMO" else re.sub("_\d+$", "", vehicle.id)
+                vehicle.id
+                if traffic_sim == "SUMO"
+                else re.sub(r"_\d+$", "", vehicle.id)
             )
             zone_steps = steps_driven_in_zones[vehicle_id]
             if position.within(geometry.bubble):
