@@ -72,16 +72,17 @@ class Metric:
             self._adjusted_steps_per_episode += 1
 
         # Count `self._incomplete_per_episode` and `self._goals_per_episode`.
-        for agent_name, agent_done in dones.items():
+        for agent_name, agent_info in infos.items():
+            agent_done = dones[agent_name]
             if agent_done and (
-                infos[agent_name].events.collisions
-                | infos[agent_name].events.off_road
-                | infos[agent_name].events.off_route
-                | infos[agent_name].events.on_shoulder
-                | infos[agent_name].events.wrong_way
+                agent_info.events.collisions
+                | agent_info.events.off_road
+                | agent_info.events.off_route
+                | agent_info.events.on_shoulder
+                | agent_info.events.wrong_way
             ):
                 self._incomplete_per_episode += 1
-            elif agent_done and infos[agent_name].events.reached_goal:
+            elif agent_done and agent_info.events.reached_goal:
                 self._goals_per_episode += 1
 
         if dones["__all__"] == True:
@@ -144,8 +145,8 @@ def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
     # Ego's position and angle with respect to the map's axes.
     # Note: All angles returned by smarts is with respect to the map axes.
     #       Angle is zero at positive y axis, and increases anti-clockwise, on the map.
-    ego_angle = (obs["ego"]["heading"] + np.pi) % (2 * np.pi) - np.pi
-    ego_pos = obs["ego"]["position"]
+    ego_angle = (obs.ego_vehicle_state.heading + np.pi) % (2 * np.pi) - np.pi
+    ego_pos = obs.ego_vehicle_state.position
 
     # Filter neighbors by distance
     nghbs = obs.neighborhood_vehicle_states
@@ -153,9 +154,10 @@ def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
         (nghb.id, nghb.position, np.linalg.norm(ego_pos - nghb.position))
         for nghb in nghbs
     ]
-    nghbs = filter(lambda x: x[2] <= obstacle_dist_th, nghbs)
+    nghbs = [nghb for nghb in nghbs if nghb[2] <= obstacle_dist_th]
+    
     if len(nghbs) == 0:
-        return 0
+        return {"dist_to_obstacles": 0}
 
     # Filter neighbors by angle
     obstacles = []
@@ -171,13 +173,17 @@ def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
         if abs(obstacle_heading) <= obstacle_angle_th:
             obstacles.append((id, pos, dist, obstacle_heading))
 
+    if len(obstacles) == 0:
+        return {"dist_to_obstacles": 0}
+
     # J_D : Distance to obstacles cost
-    _, _, di, _ = zip(**obstacles)
+    _, _, di, _ = zip(*obstacles)
     for obstacle in obstacles:
         print(f"Obstacle: {obstacle[0]}, {obstacle[1]}, {obstacle[2]}, {obstacle[3]}.")
+    di = np.array(di)
     j_d = np.amax(np.exp(-w_dist * di))
 
-    return {"distance_to_obstacles": j_d}
+    return {"dist_to_obstacles": j_d}
 
 
 def _jerk(obs: Observation) -> Dict[str, float]:
@@ -224,7 +230,7 @@ def _on_shoulder(obs: Observation) -> Dict[str, int]:
 def _steering_rate():
     _prev_steering = 0
 
-    def func(self, obs: Observation) -> Dict[str, float]:
+    def func(obs: Observation) -> Dict[str, float]:
         nonlocal _prev_steering
         steering_velocity = (obs.ego_vehicle_state.steering - _prev_steering) / 0.1
         _prev_steering = obs.ego_vehicle_state.steering
