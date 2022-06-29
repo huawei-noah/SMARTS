@@ -334,19 +334,6 @@ def bruteforce_rtree(map: WaymoMap) -> Dict[str, Set[str]]:
                     c = test_lane._lane_pts[j]
                     d = test_lane._lane_pts[j + 1]
                     if line_intersect(a, b, c, d) is not None:
-                        if i == 0 or i == lane._n_pts - 2:
-                            if tuple(lane._lane_pts[0]) == tuple(
-                                test_lane._lane_pts[-1]
-                            ) or tuple(lane._lane_pts[-1]) == tuple(
-                                test_lane._lane_pts[0]
-                            ):
-                                # v1 = (b-a) / np.linalg.norm(b-a)
-                                # v2 = (d-c) / np.linalg.norm(d-c)
-                                # angle = np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
-                                # if abs(angle) < 0.04:
-                                # print(lane_id)
-                                # print(angle)
-                                pass
                         intersections[lane_id].add(test_lane_id)
                         done = True
                         break
@@ -373,8 +360,6 @@ def bruteforce_rtree_vectorized(map: WaymoMap) -> Dict[str, Set[str]]:
         intersections[lane.lane_id] = set()
 
     for lane in all_lanes:
-        intersections[lane.lane_id] = set()
-
         # Filter out any lanes that don't intersect this lane's bbox
         indicies = lane_rtree.intersection(
             (
@@ -396,6 +381,9 @@ def bruteforce_rtree_vectorized(map: WaymoMap) -> Dict[str, Set[str]]:
             if test_lane.lane_id in in_ids + out_ids + [lane.lane_id]:
                 continue
 
+            if test_lane.lane_id in intersections[lane.lane_id]:
+                continue
+
             lanes_to_test.append(test_lane)
 
         # Main loop -- check each segment of the lane polyline against the
@@ -405,9 +393,10 @@ def bruteforce_rtree_vectorized(map: WaymoMap) -> Dict[str, Set[str]]:
             line2 = np.array(test_lane._lane_pts)
             C = np.roll(line2, 0, axis=0)[:-1]
             D = np.roll(line2, -1, axis=0)[:-1]
+            len_c = len(C)
             for i in range(lane._n_pts - 1):
-                A = np.tile(line1[i], (len(C), 1))
-                B = np.tile(line1[i + 1], (len(C), 1))
+                A = np.tile(line1[i], (len_c, 1))
+                B = np.tile(line1[i + 1], (len_c, 1))
                 if line_intersect_vectorized(A, B, C, D):
                     intersections[lane.lane_id].add(test_lane.lane_id)
                     intersections[test_lane.lane_id].add(lane.lane_id)
@@ -552,11 +541,9 @@ def postprocess(map: WaymoMap, intersections: Dict[str, set]):
             intersect_lane = map.lane_by_id(intersect_id)
 
             if tuple(lane._lane_pts[0]) == tuple(intersect_lane._lane_pts[-1]):
-                # print(f"[1] {lane_id}: {intersect_id}")
                 mappings_to_remove.append((lane_id, intersect_id))
 
             if tuple(lane._lane_pts[-1]) == tuple(intersect_lane._lane_pts[0]):
-                # print(f"[2] {lane_id}: {intersect_id}")
                 mappings_to_remove.append((lane_id, intersect_id))
 
     for id1, id2 in mappings_to_remove:
@@ -621,6 +608,7 @@ def plot_map(map: WaymoMap, intersections, save=True):
             os.mkdir(images_dir)
         image_path = images_dir / f"{map._waymo_scenario_id}.png"
         plt.savefig(image_path)
+        plt.close()
     else:
         plt.show()
 
@@ -630,19 +618,22 @@ def main():
     dataset_file = Path(dataset_path)
     print(f"Dataset File: {dataset_file.stem + dataset_file.suffix}")
 
-    scenario_ids = WaymoMap.get_scenario_ids(dataset_path)
-    for scenario_id in scenario_ids[0:10]:
-
-        # scenarios = [
-        #     # "a7ea3da73ebb0ac7",
-        #     # "e6cc567884b0e4f9",
-        #     "ef903b7abf6fc0fa",
-        #     # "5bcf06c493f1d374",
-        # ]
-        # for scenario_id in scenarios:
+    # scenario_ids = WaymoMap.get_scenario_ids(dataset_path)
+    # for scenario_id in scenario_ids[0:10]:
+    scenarios = [
+        "a7ea3da73ebb0ac7",
+        # "e6cc567884b0e4f9",
+        # "ef903b7abf6fc0fa",
+        # "5bcf06c493f1d374",
+    ]
+    for scenario_id in scenarios:
         # Load map
-        spec = MapSpec(f"{dataset_path}#{scenario_id}")
-        map = WaymoMap.from_spec(spec)
+        try:
+            spec = MapSpec(f"{dataset_path}#{scenario_id}")
+            map = WaymoMap.from_spec(spec)
+        except Exception as e:
+            print(f"Exception caught for {scenario_id}: {e}")
+            continue
 
         # Map info
         print(f"  Scenario: {scenario_id}")
@@ -651,10 +642,10 @@ def main():
         # Test intersection algorithms
         algorithms = [
             # bruteforce,
-            bruteforce_rtree,
+            # bruteforce_rtree,
             bruteforce_rtree_vectorized,
-            multiprocessing,
-            multiprocessing_vectorized,
+            # multiprocessing,
+            # multiprocessing_vectorized,
         ]
         for algorithm in algorithms:
             start = perf_counter()
@@ -677,7 +668,7 @@ def main():
             #     # if expected_intersection_dict[lane_id] != intersections[lane_id]:
             #     #     print(lane_id)
 
-            # plot_map(map, intersections, save=False)
+            plot_map(map, intersections, save=False)
 
 
 if __name__ == "__main__":
