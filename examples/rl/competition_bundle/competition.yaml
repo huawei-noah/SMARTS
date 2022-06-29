@@ -1,12 +1,12 @@
 # Drive SMARTS Competition
 ---
 title: Drive SMARTS Competition
-description: Unprotected Left Turn for Robust Agents (Drive SMARTS) Competition.
+description: Drive SMARTS Competition.
 image: logo.jpg
 has_registration: True
 end_date: null
 html:
-    overview: overview.html  # Basic overview of the challenge.
+    # overview: overview.html  # Basic overview of the challenge.
     evaluation: evaluation.html  # How is the challenge being scored?
     terms: terms_and_conditions.html  # Participation terms, licensing, etc.
     data: data.html  # Where to find data for the competition, how to download it.
