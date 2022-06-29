@@ -1,0 +1,60 @@
+# Drive SMARTS Competition
+---
+title: Drive SMARTS Competition
+description: Unprotected Left Turn for Robust Agents (Drive SMARTS) Competition.
+image: logo.jpg
+has_registration: True
+end_date: null
+html:
+    overview: overview.html  # Basic overview of the challenge.
+    evaluation: evaluation.html  # How is the challenge being scored?
+    terms: terms_and_conditions.html  # Participation terms, licensing, etc.
+    data: data.html  # Where to find data for the competition, how to download it.
+phases:  # Competitions are broken up into phases. Competitions have at least one phase.
+    1:
+        phasenumber: 1
+        label: "Track 1"
+        start_date: 2022-08-01
+        max_submissions: 1000
+        is_scoring_only: False
+        scoring_program: scoring_program.zip
+        reference_data: track1_evaluation.zip
+    2:
+        phasenumber: 2
+        label: "Track 2"
+        start_date: 2022-09-01
+        max_submissions: 1000
+        is_scoring_only: False
+        scoring_program: scoring_program.zip
+        reference_data: track2_evaluation.zip
+leaderboard:
+    leaderboards:
+        RESULTS: &RESULTS
+            label: "Results"
+            rank: 1
+    columns:
+        score:
+            leaderboard: *RESULTS
+            label: "Score"
+            rank: 1
+            sort: desc
+        completion:
+            leaderboard: *RESULTS
+            label: "Completion"
+            rank: 2
+            sort: desc
+        humanness:
+            leaderboard: *RESULTS
+            label: "Humanness"
+            rank: 3
+            sort: desc
+        rules:
+            leaderboard: *RESULTS
+            label: "Rules"
+            rank: 4
+            sort: desc
+        time:
+            leaderboard: *RESULTS
+            label: "Time"
+            rank: 5
+            sort: asc
