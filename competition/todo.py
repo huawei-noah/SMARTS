@@ -1,10 +1,10 @@
-# Things to ask and to do.
+# Things to ask.
 # 1. The scales of score are different and cannot have a single overall score.
 # 2. Maximum steps allowed for each episodes? Currently it is 3000.
 # 3. Different traffic rou.xml file is build each time. For evaluation, must fix the built rou.xml files
 # to ensure same score for same models.
 # 4. How should costs be affected if no overtake happens in overtake scenario? 
-# 5. Files organaization for Codalab. 
+# 5. Files organization for Codalab. 
 
 
 

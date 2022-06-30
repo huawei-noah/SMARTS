@@ -25,14 +25,14 @@ track2_evaluation.zip:
 	cd -
 
 scoring_program.zip:
-	cp -r multi_scenario/evaluation/* competition_bundle/scoring_program && \
+	cp -r evaluation/* competition_bundle/scoring_program && \
 	cd competition_bundle/scoring_program && \
 	zip -r $(COMPETITION_DIR)/scoring_program.zip . && \
 	cd - && \
 	rm competition_bundle/scoring_program/*.py
 
 starting_kit.zip:
-	cp -r ./multi_scenario/* ./starting_kit && \
+	cp -r ./train ./submission ./starting_kit && \
 	cd starting_kit && \
 	zip -r $(COMPETITION_DIR)/starting_kit.zip . -x '*__pycache__*' 'scenarios/pool/**/*.glb' && \
 	cd - && \

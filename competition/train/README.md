@@ -29,7 +29,7 @@ The following setup, train, evaluate, and docker, instructions are meant for get
 + This example is packaged using its own `setup.py` file.
     ```bash
     $ git clone https://github.com/huawei-noah/SMARTS.git
-    $ cd <path>/SMARTS/examples/rl/multi_scenario/train
+    $ cd <path>/SMARTS/competition/train
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
@@ -74,7 +74,7 @@ The following setup, train, evaluate, and docker, instructions are meant for get
 + Envision:
     1. First, run the server in a separate terminal. 
         ```bash
-        $ cd <path>/SMARTS/examples/rl/multi_scenario/train 
+        $ cd <path>/SMARTS/competition/train 
         $ scl envision start --scenarios ./.venv/lib/python3.8/site-packages/smarts/scenarios
         ```
     1. While instantiating the environment, set `headless` to `False`, i.e., 
@@ -100,20 +100,20 @@ The following setup, train, evaluate, and docker, instructions are meant for get
 ## Train
 1. Train
     ```bash
-    $ cd <path>/SMARTS/examples/rl/multi_scenario/train
+    $ cd <path>/SMARTS/competition/train
     $ python3.8 run.py
     ```
-1. Trained model is saved into `<path>/SMARTS/examples/rl/multi_scenario/train/logs/<folder_name>` folder.
+1. Trained model is saved into `<path>/SMARTS/competition/train/logs/<folder_name>` folder.
 
 ## Evaluate
 1. To enable visualization, run the Envision server in a separate terminal.
     ```bash
-    $ cd <path>/SMARTS/examples/rl/multi_scenario/train
+    $ cd <path>/SMARTS/competition/train
     $ scl envision start --scenarios ./.venv/lib/python3.8/site-packages/smarts/scenarios
     ```
 1. Start a new terminal and run the following to evaluate your model.
     ```bash
-    $ cd <path>/SMARTS/examples/rl/multi_scenario/train
+    $ cd <path>/SMARTS/competition/train
     $ python3.8 run.py --mode=evaluate --model="./logs/<folder_name>/<model>" --head
     ```
     + Add option `--head` to enable visualization in Envision.
@@ -123,8 +123,8 @@ The following setup, train, evaluate, and docker, instructions are meant for get
 1. Train a model inside docker
     ```bash
     $ cd <path>/SMARTS
-    $ docker build --file=./examples/rl/multi_scenario/train/Dockerfile --network=host --tag=multi_scenario .
+    $ docker build --file=./competition/train/Dockerfile --network=host --tag=multi_scenario .
     $ docker run --rm -it --network=host --gpus=all multi_scenario
-    (container) $ cd /src/examples/rl/multi_scenario/train
+    (container) $ cd /src/competition/train
     (container) $ python3.7 run.py
     ```
