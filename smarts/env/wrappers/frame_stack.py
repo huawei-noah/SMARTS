@@ -62,8 +62,10 @@ class FrameStack(gym.Wrapper):
 
         new_frames = defaultdict(tuple)
 
-        for agent_id, observation in frame.items():
-            self._frames[agent_id].appendleft(observation)
+        for agent_id, agent_obs in frame.items():
+            self._frames[agent_id].appendleft(agent_obs)
+            while len(self._frames[agent_id]) < self._num_stack:
+                self._frames[agent_id].appendleft(agent_obs)
             frames_seq = tuple(self._frames[agent_id])
             new_frames[agent_id] = copy.deepcopy(frames_seq)
 
@@ -98,8 +100,8 @@ class FrameStack(gym.Wrapper):
             Dict[str, Tuple[Any]]: Observation upon reset for each agent.
         """
         env_observations = super(FrameStack, self).reset()
-        for agent_id, observation in env_observations.items():
-            for _ in range(self._num_stack - 1):
-                self._frames[agent_id].appendleft(observation)
+
+        for agent_dequeue in self._frames.values():
+            agent_dequeue.clear()
 
         return self._get_observations(env_observations)

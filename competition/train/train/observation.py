@@ -98,7 +98,7 @@ class FilterObs(gym.ObservationWrapper):
             )
 
             # print(f"goal_angle {goal_angle*180/np.pi}")
-            # print(f"ego_angle {ego_angle*180/np.pi}")
+            # print(f"ego_angle {ego_heading*180/np.pi}")
             # print(f"goal_heading {goal_heading}")
             # print(f"goal_distance {goal_distance}")
             # plotter3d(wrapped_obs[agent_id]["rgb"], rgb_gray=3, channel_order="first",name="after",pause=0, save=True)
@@ -161,6 +161,6 @@ class Concatenate(gym.ObservationWrapper):
                 stacked_obs[key] = np.concatenate(val, axis=self._repeat_axis)
             wrapped_obs.update({agent_id: stacked_obs})
 
-            # plotter3d(wrapped_obs[agent_id]["rgb"], rgb_gray=3,channel_order="first",name="after",pause=0, save=True)
+            # plotter3d(wrapped_obs[agent_id]["rgb"], rgb_gray=3,channel_order="first",name="after",pause=0, save=False)
 
         return wrapped_obs
