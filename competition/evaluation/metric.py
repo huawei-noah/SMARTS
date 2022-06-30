@@ -7,7 +7,7 @@ from evaluation.costs import COST_FUNCS, Costs
 from smarts.core.sensors import Observation
 
 _GRACE_RADIUS = 15
-_MAX_STEPS = 3000
+_MAX_STEPS = 800
 
 
 class Metric:

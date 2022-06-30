@@ -101,7 +101,7 @@ def multi_scenario_v0_env(
     env_specs = get_env_specs(scenario)
     build_scenario([env_specs["scenario"]])
     done_criteria = env_specs["done_criteria"]
-    max_episode_steps = 3000
+    max_episode_steps = 800
     neighbor_radius = 50
     road_waypoint_horizon = 50
     waypoints_lookahead = 50
