@@ -142,7 +142,7 @@ def _collisions(obs: Observation) -> Dict[str, int]:
 
 def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
     obstacle_dist_th = 50
-    obstacle_angle_th = np.pi * 30 / 180
+    obstacle_angle_th = np.pi * 40 / 180
     w_dist = 0.05
     regexp_jn = re.compile(r":.*J")
 
@@ -165,12 +165,15 @@ def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
         nghb
         for nghb in nghbs
         if (
+            # Match neighbor and ego road id.
             nghb.road_id == ego.road_id
-            or regexp_jn.search(nghb.road_id)  # Match neighbor and ego road id.
-            or nghb.road_id  # Match neighbor road id to ':.*J' pattern.
-            in ego_road_ids  # Match neighbor road id to any road id in ego path.
+            # Match neighbor road id to ':.*J' pattern.
+            or regexp_jn.search(nghb.road_id)
+            # Match neighbor road id to any road id in ego path.
+            or nghb.road_id in ego_road_ids
         )
     ]
+
     if len(nghbs) == 0:
         return {"dist_to_obstacles": 0}
 
