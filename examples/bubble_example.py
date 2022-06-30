@@ -1,21 +1,13 @@
-from contextlib import contextmanager
-from dataclasses import replace
 from functools import lru_cache
 import logging
-import math
 from pathlib import Path
-import random
-import shutil
-import tempfile
-from typing import Dict, Iterable, Sequence, Tuple
-from unittest.mock import Mock
+from typing import Dict, Tuple
 
 from envision.client import Client as Envision
 from smarts.core import seed as random_seed
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 from smarts.core.agent_manager import AgentManager
-from smarts.core.bubble_manager import BubbleManager
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
@@ -33,8 +25,6 @@ except ImportError:
 
 logging.basicConfig(level=logging.INFO)
 
-NUM_EPISODES = 1
-
 
 class DummyAgent(Agent):
     """This is just a place holder that is used for the default agent used by the bubble."""
@@ -45,7 +35,17 @@ class DummyAgent(Agent):
         return (acceleration, angular_velocity)
 
 
-class UsedAgent(Agent):
+# Register the dummy agent for use by the bubbles 
+#  referenced as `"<module>:<locator>"` (i.e. `"examples:dummy_agent-v0"`)
+register(
+    "dummy_agent-v0",
+    entry_point=lambda **kwargs: AgentSpec(
+        interface=AgentInterface.from_type(AgentType.Direct, done_criteria= DoneCriteria(not_moving=False, off_road=False, off_route=False, on_shoulder=False, wrong_way=False)),
+        agent_builder=DummyAgent,
+    ),
+)
+
+class BubbleOverrideAgent(Agent):
     """This is just a place holder for the actual agent."""
 
     def __init__(self, logger) -> None:
@@ -62,52 +62,43 @@ class UsedAgent(Agent):
         return (acceleration, angular_velocity)
 
 
-# Register the dummy agent for use by the bubbles 
-#  referenced as `"<module>:<locator>"` (i.e. `"examples:dummy_agent-v0"`)
-register(
-    "dummy_agent-v0",
-    entry_point=lambda **kwargs: AgentSpec(
-        interface=AgentInterface.from_type(AgentType.Direct, done_criteria= DoneCriteria(not_moving=False, off_road=False, off_route=False, on_shoulder=False, wrong_way=False)),
-        agent_builder=DummyAgent,
-    ),
-)
+class MainAgent(Agent):
+    def act(self, obs: Observation):
+        nearest = obs.via_data.near_via_points[0]
+        return (
+            nearest.required_speed,
+            nearest.lane_index,
+        )
 
-# Locations from inspecting the `map.net.xml` using netedit
-bubble_locations = {
-    "i80": [
-        Bubble(
-            zone=PositionalZone(pos=(0, 0), size=(20, 100)),
-            actor=SocialAgentActor(
-                name="dummy0", agent_locator="examples:dummy_agent-v0"
-            ),
-            follow_vehicle_id="history-vehicle-314",
-            exclusion_prefixes=("history-vehicle-314",),
-            follow_offset=(0, 0),
-            margin=10
+
+
+def create_moving_bubble(vehicle_id=None, or_agent_id=None):
+    assert vehicle_id or or_agent_id
+
+    follow = dict()
+    exclusion_prefixes=()
+    if vehicle_id:
+        follow=dict(follow_vehicle_id=vehicle_id)
+        exclusion_prefixes=(vehicle_id,)
+    else:
+        follow=dict(follow_actor_id=or_agent_id)
+    
+    bubble = Bubble(
+        zone=PositionalZone(pos=(0, 0), size=(20, 100)),
+        actor=SocialAgentActor(
+            name="dummy0", agent_locator="examples:dummy_agent-v0"
         ),
-    ],
-    "peachtree": [
-        Bubble(
-            zone=MapZone(start=("E9", 0, 5), length=40, n_lanes=2),
-            actor=SocialAgentActor(
-                name="dummy0", agent_locator="examples:dummy_agent-v0"
-            ),
-        )
-    ],
-    "us101": [
-        Bubble(
-            zone=MapZone(start=("gneE01.132", 0, 1), length=120, n_lanes=5),
-            actor=SocialAgentActor(
-                name="dummy0", agent_locator="examples:dummy_agent-v0"
-            ),
-        )
-    ]
-}
+        exclusion_prefixes=exclusion_prefixes,
+        follow_offset=(0, 0),
+        margin=10,
+        **follow
+    )
+    return bubble
 
 
 def main(
     script: str,
-    ngsim_example: str,
+    example: str,
     headless: bool,
     seed: int,
     episodes: int,
@@ -129,7 +120,7 @@ def main(
     )
     random_seed(seed)
 
-    scenario = str(Path(__file__).parent.parent / "scenarios/NGSIM" / ngsim_example)
+    scenario = str(Path(example).absolute())
     scenario_list = Scenario.get_scenario_list([scenario])
     scenarios_iterator = Scenario.variations_for_all_scenario_roots(scenario_list, [])
 
@@ -144,7 +135,7 @@ def main(
 
     for scenario in scenarios_iterator:
         scenario.bubbles.clear()
-        scenario.bubbles.extend(bubble_locations[ngsim_example])
+        scenario.bubbles.extend([create_moving_bubble("history-vehicle-314")])
 
         # XXX replace with AgentSpec appropriate for IL model
         agent_manager: AgentManager = smarts.agent_manager
@@ -158,7 +149,7 @@ def main(
             traffic_history_provider: TrafficHistoryProvider = smarts.get_provider_by_type(TrafficHistoryProvider)
             used_history_ids = set()
 
-            agent = UsedAgent(logger=logger)
+            agent = BubbleOverrideAgent(logger=logger)
 
             for _ in range(run_steps):
                 for agent_id in obs_state.last_observations:
@@ -203,11 +194,11 @@ if __name__ == "__main__":
         default=1,
     )
     parser.add_argument(
-        "--ngsim-example",
+        "--example",
         "-g",
         help="The NGSIM example to run.",
         type=str,
-        default="i80",
+        default="scenarios/NGSIM/i80",
     )
     parser.add_argument(
         "--history-start-time",
@@ -227,7 +218,7 @@ if __name__ == "__main__":
 
     main(
         script=parser.prog,
-        ngsim_example=args.ngsim_example,
+        example=args.example,
         headless=args.headless,
         seed=args.seed,
         episodes=args.episodes,
