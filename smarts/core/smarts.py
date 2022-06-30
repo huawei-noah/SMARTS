@@ -941,24 +941,11 @@ class SMARTS:
         dt = provider_state.dt or self._last_dt
         for vehicle in provider_state.vehicles:
             vehicle_id = vehicle.vehicle_id
-            # either this is a pybullet agent vehicle (ego or social), or it is a social vehicle (traffic)
-            if vehicle_id in self._vehicle_index.agent_vehicle_ids():
-                # this is an agent vehicle
-                if not vehicle.updated:
-                    agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
-                    agent_interface = self._agent_manager.agent_interface_for_agent_id(
-                        agent_id
-                    )
-                    agent_action_space = agent_interface.action_space
-                    if agent_action_space not in self.dynamic_action_spaces:
-                        # This is not a pybullet agent, but it has an avatar in this world
-                        # to make it's observations. Update the avatar to match the new
-                        # state of this vehicle
-                        pybullet_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-                        assert isinstance(pybullet_vehicle.chassis, BoxChassis)
-                        pybullet_vehicle.update_state(vehicle, dt=dt)
-            else:
-                # This vehicle is a social vehicle (traffic)
+            # Either this is an agent vehicle (ego or social), or it is a social vehicle (traffic).
+            # If it's controlled by an agent, then its state will have been updated
+            # via perform_agent_actions() already (through an appropriate controller).
+            # So here, we just deal with social (traffic) vehicles...
+            if vehicle_id not in self._vehicle_index.agent_vehicle_ids():
                 if vehicle_id in self._vehicle_index.social_vehicle_ids():
                     social_vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
                 else:
