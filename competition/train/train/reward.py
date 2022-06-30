@@ -71,8 +71,7 @@ class Reward(gym.Wrapper):
 
             # Penalty for driving on road shoulder
             if obs[agent_id]["events"]["on_shoulder"]:
-                reward[agent_id] -= np.float64(10)
-                print(f"{agent_id}: Went on road shoulder.")
+                reward[agent_id] -= np.float64(1)
                 break
 
             # Penalty for driving on wrong way
