@@ -1,4 +1,6 @@
 # Add submission directory to python search path
+import os
+import argparse
 import sys
 from pathlib import Path
 
@@ -13,6 +15,7 @@ from evaluation.metric import Metric
 from evaluation.score import Score
 from submission.policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
 
+_SCORES_FILENAME = "scores.txt"
 
 def make_env(
     config: Dict[str, Any],
@@ -99,9 +102,6 @@ def evaluate():
 
     rank = score.compute()
     print("Overall Rank:\n", rank)
-    import os
-
-    os.exit(2)
 
     print("\nFinished evaluating.\n")
 
@@ -109,6 +109,18 @@ def evaluate():
     for env, _ in envs_eval.values():
         env.close()
 
+    return rank
+
+def to_codalab_scores_string(self) -> str:
+    """Convert the data in scores to a CodaLab-scores-compatible string."""
+    # NOTE: The score string names must be the same as in the competition.yaml.
+    return (
+        f"score: 0\n"
+        f"completion: {rank['completion']}\n"
+        f"humanness: {rank['humanness']}\n"
+        f"rules: {rank['rules']}\n"
+        f"time: {rank['time']}\n"
+    )
 
 def run(env, datastore: DataStore, name, policy: Policy, config: Dict[str, Any]):
     # Instantiate metric for score calculation.
@@ -133,5 +145,40 @@ def run(env, datastore: DataStore, name, policy: Policy, config: Dict[str, Any])
     return metric.results()
 
 
+def write_scores(scores, output_dir):
+    if output_dir:
+        with open(os.path.join(output_dir, _SCORES_FILENAME), "w") as output_file:
+            output_file.write(scores)
+
 if __name__ == "__main__":
-    evaluate()
+    parser = argparse.ArgumentParser(
+        prog="codalab-evaluation",
+        description=(
+            "Evaluation script run by CodaLab that outputs a contestant's leaderboard "
+            "score by running their policy in simulation."
+        ),
+    )
+
+    # Define arguments for evaluation through CodaLab.
+    parser.add_argument(
+        "--input-dir",
+        help=(
+            "The path to the directory containing the reference data and user "
+            "submission data."
+        ),
+        default=None,
+        type=str,
+    )
+    parser.add_argument(
+        "--output-dir",
+        help=(
+            "Path to the directory where the submission's scores.txt file will be "
+            "written to."
+        ),
+        default=None,
+        type=str,
+    )
+    args = parser.parse_args()
+    rank = evaluate()
+
+    write_scores(to_codalab_scores_string(rank), args.output_dir)
