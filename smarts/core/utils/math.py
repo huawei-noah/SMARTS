@@ -338,6 +338,10 @@ def line_intersect(a, b, c, d) -> Union[np.ndarray, None]:
 def line_intersect_vectorized(
     a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray
 ) -> bool:
+    """Vectorized version of `line_intersect(...)`, where C and D represent
+    the segment points for an entire line. A and B are tiled versions of a
+    single line segment to be tested against. All arguments are of the same shape.
+    """
     r = b - a
     s = d - c
     rs1 = np.multiply(r[:, 0], s[:, 1])
@@ -353,6 +357,10 @@ def line_intersect_vectorized(
     t_numerator = np.multiply(c[:, 0] - a[:, 0], s[:, 1]) - np.multiply(
         c[:, 1] - a[:, 1], s[:, 0]
     )
+
+    # Use where=d!=0 to avoid divisions by zero. The out parameter is an
+    # array of [-1, ..., -1], to make sure we're defaulting to something
+    # outside of our expected range for our return result.
     u = np.divide(u_numerator, d, out=np.zeros_like(u_numerator) - 1, where=d != 0)
     t = np.divide(t_numerator, d, out=np.zeros_like(t_numerator) - 1, where=d != 0)
 

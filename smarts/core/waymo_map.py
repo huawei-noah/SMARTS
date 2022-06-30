@@ -241,10 +241,16 @@ class WaymoMap(RoadMap):
         return left_widths, right_widths
 
     def _compute_lane_intersections(self) -> Dict[int, Set[int]]:
-        # build rtree
+        all_lane_ids = [feat_id for feat_id in self._feat_dicts.keys()]
+        intersections: Dict[int, Set[int]] = dict()
+
+        # Set up the intersections dict
+        for feat_id in all_lane_ids:
+            intersections[feat_id] = set()
+
+        # Build rtree
         lane_rtree = rtree.index.Index()
         lane_rtree.interleaved = True
-        all_lane_ids = [feat_id for feat_id in self._feat_dicts.keys()]
         bboxes = dict()
         for idx, feat_id in enumerate(all_lane_ids):
             lane_pts = np.array(self._polyline_cache[feat_id][0])
@@ -262,11 +268,7 @@ class WaymoMap(RoadMap):
             )
             lane_rtree.add(idx, coords)
 
-        # Set up the intersections dict
-        intersections: Dict[int, Set[int]] = dict()
-        for feat_id in all_lane_ids:
-            intersections[feat_id] = set()
-
+        # Loop over every lane in the map
         for feat_id in all_lane_ids:
             # Filter out any lanes that don't intersect this lane's bbox
             bbox = bboxes[feat_id]
@@ -291,6 +293,7 @@ class WaymoMap(RoadMap):
                 if cand_id in in_ids + out_ids + [feat_id]:
                     continue
 
+                # Skip intersections we've already computed
                 if cand_id in intersections[feat_id]:
                     continue
 
@@ -318,13 +321,9 @@ class WaymoMap(RoadMap):
             lane_pts = self._polyline_cache[feat_id][0]
             for intersect_id in intersect_ids:
                 intersect_lane_pts = self._polyline_cache[feat_id][0]
-
-                if tuple(lane_pts[0]) == tuple(intersect_lane_pts[-1]):
-                    print("skip 1")
-                    mappings_to_remove.append((feat_id, intersect_id))
-
-                if tuple(lane_pts[-1]) == tuple(intersect_lane_pts[0]):
-                    print("skip 2")
+                if tuple(lane_pts[0]) == tuple(intersect_lane_pts[-1]) or tuple(
+                    lane_pts[-1]
+                ) == tuple(intersect_lane_pts[0]):
                     mappings_to_remove.append((feat_id, intersect_id))
 
         for id1, id2 in mappings_to_remove:
@@ -786,6 +785,7 @@ class WaymoMap(RoadMap):
             lane_dict["lane_width"] = max_width * 2
 
         # find intersecting lanes
+        # TODO: remove profiling code
         intersections_start = time.perf_counter()
         self._intersections = self._compute_lane_intersections()
         intersections_end = time.perf_counter()
@@ -799,7 +799,7 @@ class WaymoMap(RoadMap):
         # possible heuristic:  for each feat_id, if first and last lane are in junction, then all lanes in b/w are
 
         # don't need these anymore
-        # self._polyline_cache = None
+        self._polyline_cache = None
         self._feat_dicts = None
 
         end = time.time()
@@ -819,16 +819,6 @@ class WaymoMap(RoadMap):
                 return parsed_scenario
         errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
         raise ValueError(errmsg)
-
-    @staticmethod
-    def get_scenario_ids(dataset_path: str):
-        scenario_ids = []
-        dataset_records = read_tfrecord_file(dataset_path)
-        for record in dataset_records:
-            parsed_scenario = scenario_pb2.Scenario()
-            parsed_scenario.ParseFromString(bytearray(record))
-            scenario_ids.append(parsed_scenario.scenario_id)
-        return scenario_ids
 
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
