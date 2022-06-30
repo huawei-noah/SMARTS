@@ -29,7 +29,6 @@ from smarts.core.road_map import Waypoint
 from smarts.core.sensors import (
     DrivableAreaGridMap,
     EgoVehicleObservation,
-    Observation,
     OccupancyGridMap,
     TopDownRGB,
     VehicleObservation,
