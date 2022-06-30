@@ -1,7 +1,6 @@
 from typing import Any, Dict, List
 
 import gym
-from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
 from train.action import Action as DiscreteAction
 from train.info import Info
@@ -64,7 +63,7 @@ def make(
         scenario=scenario,
         img_meters=config["img_meters"],
         img_pixels=config["img_pixels"],
-        headless=not config["head"],  # If False, enables Envision display.
+        headless=True, # If False, enables Envision display.
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
     )
 
@@ -73,45 +72,3 @@ def make(
         env = wrapper(env)
 
     return env
-
-
-# def make_all(config: Dict[str, Any]) -> gym.Env:
-#     # Create environment
-#     env = gym.make(
-#         "smarts.env:multi-all-scenario-v0",
-#         img_meters=config["img_meters"],
-#         img_pixels=config["img_pixels"],
-#         action_space=config["action_space"],
-#         headless=not config["head"],  # If False, enables Envision display.
-#         visdom=config["visdom"],  # If True, enables Visdom display.
-#         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
-#     )
-
-#     # Wrap env
-#     env = FormatObs(env=env)
-#     env = FormatAction(env=env, space=ActionSpaceType[config["action_space"]])
-#     env = Info(env=env)
-#     env = Reward(env=env)
-#     env = DiscreteAction(env=env, space=config["action_wrapper"])
-#     env = FilterObs(env=env)
-#     env = FrameStack(env=env, num_stack=config["num_stack"])
-#     env = Concatenate(env=env, channels_order="first")
-#     env = SingleAgent(env=env)
-
-#     # Check custom environment
-#     check_env(env)
-
-#     # Wrap env with SB3 wrappers
-#     env = DummyVecEnv([lambda: env])
-#     env = VecMonitor(
-#         venv=env,
-#         filename=str(config["logdir"]),
-#         info_keywords=("is_success",),
-#     )
-
-#     # print("**************************************")
-#     # print("obs space:", env.observation_space)
-#     # print("act space:", env.action_space)
-#     # print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-
-#     return env
