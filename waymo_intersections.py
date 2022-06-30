@@ -551,38 +551,38 @@ def postprocess(map: WaymoMap, intersections: Dict[str, set]):
         intersections[id2].discard(id1)
 
 
-def plot_map(map: WaymoMap, intersections, save=True):
+def plot_map(map: WaymoMap, intersections: Dict[int, Set[int]], save=True):
     plt.figure()
     mng = plt.get_current_fig_manager()
     mng.resize(1000, 1000)
     plt.title(f"Scenario {map._waymo_scenario_id}")
 
-    lane_ids = {
-        # "81",
-        # "86",
-        # "86_4",
-        # "86_16",
-        # "88",
-        # "87",
-        # "87_4",
-        # "87_26",
-        # "93",
-        # "92",
-        # "92_6",
-        # "92_32",
-        # "139",
-        "127",
-    }
+    # lane_ids = {
+    #     # "81",
+    #     # "86",
+    #     # "86_4",
+    #     # "86_16",
+    #     # "88",
+    #     # "87",
+    #     # "87_4",
+    #     # "87_26",
+    #     # "93",
+    #     # "92",
+    #     # "92_6",
+    #     # "92_32",
+    #     # "139",
+    #     "127",
+    # }
 
-    intersected_ids = set()
-    for lane_id in lane_ids:
-        intersected_ids |= intersections[lane_id]
+    # intersected_ids = set()
+    # for lane_id in lane_ids:
+    #     intersected_ids |= intersections[lane_id]
 
-    for lane_id, lane in map._lanes.items():
+    for feat_id, intersected_lanes in intersections.items():
         # if lane_id not in lane_ids:
         #     continue
 
-        pts = np.array(lane._lane_pts)
+        pts = np.array(map._polyline_cache[feat_id][0])
 
         # if lane._bbox.max_pt.y > 1700 and lane._bbox.max_pt.x > -305:
         #     plt.plot(pts[:, 0], pts[:, 1])
@@ -593,10 +593,10 @@ def plot_map(map: WaymoMap, intersections, save=True):
         # elif lane_id in intersected_ids:
         #     plt.plot(pts[:, 0], pts[:, 1], color="red")
 
-        if len(intersections[lane_id]) > 0:
+        if len(intersected_lanes) > 0:
             plt.plot(pts[:, 0], pts[:, 1], color="red")
-        elif lane.in_junction:
-            plt.plot(pts[:, 0], pts[:, 1], color="blue")
+        # elif lane.in_junction:
+        #     plt.plot(pts[:, 0], pts[:, 1], color="blue")
 
         else:
             plt.plot(pts[:, 0], pts[:, 1], linestyle=":", color="gray")
@@ -621,54 +621,60 @@ def main():
     # scenario_ids = WaymoMap.get_scenario_ids(dataset_path)
     # for scenario_id in scenario_ids[0:10]:
     scenarios = [
-        "a7ea3da73ebb0ac7",
+        "4f30f060069bbeb9",
+        # "a7ea3da73ebb0ac7",
         # "e6cc567884b0e4f9",
         # "ef903b7abf6fc0fa",
         # "5bcf06c493f1d374",
     ]
     for scenario_id in scenarios:
-        # Load map
-        try:
-            spec = MapSpec(f"{dataset_path}#{scenario_id}")
-            map = WaymoMap.from_spec(spec)
-        except Exception as e:
-            print(f"Exception caught for {scenario_id}: {e}")
-            continue
 
-        # Map info
-        print(f"  Scenario: {scenario_id}")
-        print(f"    Lanes: {len(map._lanes)}")
+        print(f"  {scenario_id}")
 
-        # Test intersection algorithms
-        algorithms = [
-            # bruteforce,
-            # bruteforce_rtree,
-            bruteforce_rtree_vectorized,
-            # multiprocessing,
-            # multiprocessing_vectorized,
-        ]
-        for algorithm in algorithms:
-            start = perf_counter()
-            intersections = algorithm(map)
-            postprocess(map, intersections)
-            end = perf_counter()
-            elapsed_time = round((end - start), 3)
-            print(f"    {algorithm.__name__}: {elapsed_time} s")
+        start = perf_counter()
 
-            # for k, v in intersections.items():
-            #     print(f"'{k}': {v},")
+        spec = MapSpec(f"{dataset_path}#{scenario_id}")
+        map = WaymoMap.from_spec(spec)
 
-            # # Check correctness
-            # for lane_id, lane in map._lanes.items():
-            #     assert lane_id in expected_intersection_dict
-            #     assert lane_id in intersections
-            #     assert (
-            #         expected_intersection_dict[lane_id] == intersections[lane_id]
-            #     ), f"expected: {expected_intersection_dict[lane_id]}, got: {intersections[lane_id]}"
-            #     # if expected_intersection_dict[lane_id] != intersections[lane_id]:
-            #     #     print(lane_id)
+        end = perf_counter()
+        elapsed_time = round((end - start), 3)
+        print(f"    Total time:    {elapsed_time} s")
+        plot_map(map, map._intersections, save=False)
 
-            plot_map(map, intersections, save=False)
+        # # Map info
+        # print(f"  Scenario: {scenario_id}")
+        # print(f"    Lanes: {len(map._lanes)}")
+
+        # # Test intersection algorithms
+        # algorithms = [
+        #     # bruteforce,
+        #     # bruteforce_rtree,
+        #     bruteforce_rtree_vectorized,
+        #     # multiprocessing,
+        #     # multiprocessing_vectorized,
+        # ]
+        # for algorithm in algorithms:
+        #     start = perf_counter()
+        #     intersections = algorithm(map)
+        #     postprocess(map, intersections)
+        #     end = perf_counter()
+        #     elapsed_time = round((end - start), 3)
+        #     print(f"    {algorithm.__name__}: {elapsed_time} s")
+
+        # for k, v in intersections.items():
+        #     print(f"'{k}': {v},")
+
+        # # Check correctness
+        # for lane_id, lane in map._lanes.items():
+        #     assert lane_id in expected_intersection_dict
+        #     assert lane_id in intersections
+        #     assert (
+        #         expected_intersection_dict[lane_id] == intersections[lane_id]
+        #     ), f"expected: {expected_intersection_dict[lane_id]}, got: {intersections[lane_id]}"
+        #     # if expected_intersection_dict[lane_id] != intersections[lane_id]:
+        #     #     print(lane_id)
+
+        # plot_map(map, intersections, save=False)
 
 
 if __name__ == "__main__":

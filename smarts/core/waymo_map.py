@@ -50,7 +50,13 @@ from .shape import (
 )
 from .utils.file import read_tfrecord_file
 from .utils.geometry import buffered_shape, generate_mesh_from_polygons
-from .utils.math import inplace_unwrap, radians_to_vec, ray_boundary_intersect, vec_2d
+from .utils.math import (
+    inplace_unwrap,
+    line_intersect_vectorized,
+    radians_to_vec,
+    ray_boundary_intersect,
+    vec_2d,
+)
 
 # pytype: disable=import-error
 
@@ -233,6 +239,99 @@ class WaymoMap(RoadMap):
                             right_widths[i] = dist
 
         return left_widths, right_widths
+
+    def _compute_lane_intersections(self) -> Dict[int, Set[int]]:
+        # build rtree
+        lane_rtree = rtree.index.Index()
+        lane_rtree.interleaved = True
+        all_lane_ids = [feat_id for feat_id in self._feat_dicts.keys()]
+        bboxes = dict()
+        for idx, feat_id in enumerate(all_lane_ids):
+            lane_pts = np.array(self._polyline_cache[feat_id][0])
+            bbox = BoundingBox(
+                min_pt=Point(x=np.amin(lane_pts[:, 0]), y=np.amin(lane_pts[:, 1])),
+                max_pt=Point(x=np.amax(lane_pts[:, 0]), y=np.amax(lane_pts[:, 1])),
+            )
+            bboxes[feat_id] = bbox
+
+            coords = (
+                bbox.min_pt.x,
+                bbox.min_pt.y,
+                bbox.max_pt.x,
+                bbox.max_pt.y,
+            )
+            lane_rtree.add(idx, coords)
+
+        # Set up the intersections dict
+        intersections: Dict[int, Set[int]] = dict()
+        for feat_id in all_lane_ids:
+            intersections[feat_id] = set()
+
+        for feat_id in all_lane_ids:
+            # Filter out any lanes that don't intersect this lane's bbox
+            bbox = bboxes[feat_id]
+            indicies = lane_rtree.intersection(
+                (
+                    bbox.min_pt.x,
+                    bbox.min_pt.y,
+                    bbox.max_pt.x,
+                    bbox.max_pt.y,
+                )
+            )
+
+            # Filter out any other lanes we don't want to check against
+            lanes_to_test = []
+            for idx in indicies:
+                cand_id = all_lane_ids[idx]
+                features = self._feat_dicts[feat_id]
+
+                # Don't check intersection with incoming/outgoing lanes or itself
+                in_ids = [l for l in features["entry_lanes"]]
+                out_ids = [l for l in features["exit_lanes"]]
+                if cand_id in in_ids + out_ids + [feat_id]:
+                    continue
+
+                if cand_id in intersections[feat_id]:
+                    continue
+
+                lanes_to_test.append(cand_id)
+
+            # Main loop -- check each segment of the lane polyline against the
+            # polyline of each candidate lane
+            line1 = np.array(self._polyline_cache[feat_id][0])
+            for cand_id in lanes_to_test:
+                line2 = np.array(self._polyline_cache[cand_id][0])
+                C = np.roll(line2, 0, axis=0)[:-1]
+                D = np.roll(line2, -1, axis=0)[:-1]
+                len_c = len(C)
+                for i in range(len(line1) - 1):
+                    A = np.tile(line1[i], (len_c, 1))
+                    B = np.tile(line1[i + 1], (len_c, 1))
+                    if line_intersect_vectorized(A, B, C, D):
+                        intersections[feat_id].add(cand_id)
+                        intersections[cand_id].add(feat_id)
+                        break
+
+        # remove "fake" incoming/outgoing lanes that aren't true intersections
+        mappings_to_remove = []
+        for feat_id, intersect_ids in intersections.items():
+            lane_pts = self._polyline_cache[feat_id][0]
+            for intersect_id in intersect_ids:
+                intersect_lane_pts = self._polyline_cache[feat_id][0]
+
+                if tuple(lane_pts[0]) == tuple(intersect_lane_pts[-1]):
+                    print("skip 1")
+                    mappings_to_remove.append((feat_id, intersect_id))
+
+                if tuple(lane_pts[-1]) == tuple(intersect_lane_pts[0]):
+                    print("skip 2")
+                    mappings_to_remove.append((feat_id, intersect_id))
+
+        for id1, id2 in mappings_to_remove:
+            intersections[id1].discard(id2)
+            intersections[id2].discard(id1)
+
+        return intersections
 
     @dataclass
     class _Split:
@@ -686,6 +785,13 @@ class WaymoMap(RoadMap):
             max_width = min(max_width, WaymoMap.DEFAULT_LANE_WIDTH / 2)
             lane_dict["lane_width"] = max_width * 2
 
+        # find intersecting lanes
+        intersections_start = time.perf_counter()
+        self._intersections = self._compute_lane_intersections()
+        intersections_end = time.perf_counter()
+        elapsed_time = round((intersections_end - intersections_start), 3)
+        print(f"    Intersections: {elapsed_time} s")
+
         feat_splits = self._find_splits()
         self._link_splits(feat_splits)
         self._create_roads_and_lanes(feat_splits)
@@ -693,7 +799,7 @@ class WaymoMap(RoadMap):
         # possible heuristic:  for each feat_id, if first and last lane are in junction, then all lanes in b/w are
 
         # don't need these anymore
-        self._polyline_cache = None
+        # self._polyline_cache = None
         self._feat_dicts = None
 
         end = time.time()
