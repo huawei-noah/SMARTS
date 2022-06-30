@@ -79,8 +79,8 @@ class TrafficHistoryProvider(TrafficProvider):
     @lru_cache(maxsize=128)
     def _get_base_id(self, vehicle_id: str):
         if vehicle_id.startswith(self._vehicle_id_prefix):
-            return vehicle_id[len("history-vehicle-"):]
-        return vehicle_id
+            return vehicle_id
+        return self._dbid_to_vehicle_id(vehicle_id)
 
     def reset(self):
         pass

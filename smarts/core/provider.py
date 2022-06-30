@@ -52,7 +52,7 @@ class ProviderState:
         """Merge state with another provider's state."""
         our_vehicles = {v.vehicle_id for v in self.vehicles}
         other_vehicles = {v.vehicle_id for v in other.vehicles}
-        # assert our_vehicles.isdisjoint(other_vehicles)
+        assert our_vehicles.isdisjoint(other_vehicles)
 
         ## TODO: Properly harmonize these vehicle ids so that there is a priority and per vehicle source
         self.vehicles += filter(lambda v: v.vehicle_id not in our_vehicles, other.vehicles)

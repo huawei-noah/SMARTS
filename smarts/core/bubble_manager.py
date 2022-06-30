@@ -229,6 +229,9 @@ class Bubble:
 
     def move_to_follow_vehicle(self, vehicle: Vehicle):
         """Move the bubble to a pose relative to the given vehicle."""
+        if not vehicle.valid:
+            return
+            
         x, y, _ = vehicle.position
 
         def _transform(geom):
@@ -373,6 +376,7 @@ class BubbleManager:
                 vehicle = self._last_vehicle_index.vehicle_by_id(bubble.follow_vehicle_id, None)
                 if vehicle is not None:
                     vehicles += [vehicle]
+            # print(self._last_vehicle_index)
             return len(vehicles) == 1
 
         return [bubble for bubble in self._bubbles if is_active(bubble)]
@@ -489,6 +493,8 @@ class BubbleManager:
                 continue
 
             vehicles = []
+            # XXX: Using a vehicle reference through the `_last_vehicle_index` is a
+            # XXX clear error since it can reference out of date vehicles.
             if bubble.follow_actor_id is not None:
                 vehicles += self._last_vehicle_index.vehicles_by_actor_id(bubble.follow_actor_id)
             if bubble.follow_vehicle_id is not None:
@@ -499,6 +505,7 @@ class BubbleManager:
                 len(vehicles) <= 1
             ), "Travelling bubbles only support pinning to a single vehicle"
 
+            # breakpoint()
             if len(vehicles) == 1:
                 bubble.move_to_follow_vehicle(vehicles[0])
 
