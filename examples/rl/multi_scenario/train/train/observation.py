@@ -79,7 +79,7 @@ class FilterObs(gym.ObservationWrapper):
             #       Hence, map_angle = np.angle() - π/2
             goal_pos = agent_obs["mission"]["goal_pos"]
             rel_pos = goal_pos - ego_pos
-            goal_angle = np.angle(rel_pos[0] + 1j*rel_pos[1]) - np.pi / 2
+            goal_angle = np.angle(rel_pos[0] + 1j * rel_pos[1]) - np.pi / 2
             goal_angle = (goal_angle + np.pi) % (2 * np.pi) - np.pi
 
             # Goal heading is the angle correction required by ego agent to face the goal.

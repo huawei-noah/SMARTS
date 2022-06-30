@@ -11,7 +11,7 @@ class Score:
             "time": 0,
         }
         self._costs = CustomDict(**{key: 0 for key in COST_FUNCS.keys()})
-        self._episodes = 0 
+        self._episodes = 0
         self._incomplete = 0
         self._steps = 0
         self._adjusted_steps = 0

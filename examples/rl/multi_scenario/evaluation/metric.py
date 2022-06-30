@@ -77,7 +77,8 @@ class Metric:
             agent_done = dones[agent_name]
             agent_obs = agent_info["env_obs"]
             if agent_done and (
-                len(agent_obs.events.collisions)>0
+                len(agent_obs.events.collisions)
+                > 0
                 | agent_obs.events.off_road
                 | agent_obs.events.off_route
                 | agent_obs.events.on_shoulder
@@ -121,17 +122,17 @@ class Metric:
 
 
 COST_FUNCS = {
-    "collisions": lambda : _collisions,
-    "dist_to_obstacles": lambda : _dist_to_obstacles,
-    "jerk": lambda : _jerk,
-    "lane_center_offset": lambda : _lane_center_offset,
-    "off_road": lambda : _off_road,
-    "off_route": lambda : _off_route,
-    "on_shoulder": lambda : _on_shoulder,
-    "steering_rate": lambda : _steering_rate(),
-    "velocity_offset": lambda : _velocity_offset,
-    "wrong_way": lambda : _wrong_way,
-    "yaw_rate": lambda : _yaw_rate,
+    "collisions": lambda: _collisions,
+    "dist_to_obstacles": lambda: _dist_to_obstacles,
+    "jerk": lambda: _jerk,
+    "lane_center_offset": lambda: _lane_center_offset,
+    "off_road": lambda: _off_road,
+    "off_route": lambda: _off_route,
+    "on_shoulder": lambda: _on_shoulder,
+    "steering_rate": lambda: _steering_rate(),
+    "velocity_offset": lambda: _velocity_offset,
+    "wrong_way": lambda: _wrong_way,
+    "yaw_rate": lambda: _yaw_rate,
 }
 
 
@@ -143,7 +144,7 @@ def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
     obstacle_dist_th = 50
     obstacle_angle_th = np.pi * 30 / 180
     w_dist = 0.05
-    regexp_jn = re.compile(r':.*J')
+    regexp_jn = re.compile(r":.*J")
 
     # Ego's position and heading with respect to the map's axes.
     # Note: All angles returned by smarts is with respect to the map's axes.
@@ -153,9 +154,9 @@ def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
     ego_pos = ego.position
     lane_ids = [wp.lane_id for path in obs.waypoint_paths for wp in path]
     lane_ids = set(lane_ids)
-    ego_road_ids = [id.split('_')[0] for id in lane_ids]
+    ego_road_ids = [id.split("_")[0] for id in lane_ids]
     ego_road_ids = set(ego_road_ids)
-    
+
     # Get neighbors.
     nghbs = obs.neighborhood_vehicle_states
 
@@ -163,19 +164,18 @@ def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
     nghbs = [
         nghb
         for nghb in nghbs
-        if (nghb.road_id == ego.road_id or # Match neighbor and ego road id.
-            regexp_jn.search(nghb.road_id) or # Match neighbor road id to ':.*J' pattern.
-            nghb.road_id in ego_road_ids # Match neighbor road id to any road id in ego path.
+        if (
+            nghb.road_id == ego.road_id
+            or regexp_jn.search(nghb.road_id)  # Match neighbor and ego road id.
+            or nghb.road_id  # Match neighbor road id to ':.*J' pattern.
+            in ego_road_ids  # Match neighbor road id to any road id in ego path.
         )
     ]
     if len(nghbs) == 0:
         return {"dist_to_obstacles": 0}
 
     # Filter neighbors by distance.
-    nghbs = [
-        (nghb.position, np.linalg.norm(nghb.position - ego_pos))
-        for nghb in nghbs
-    ]
+    nghbs = [(nghb.position, np.linalg.norm(nghb.position - ego_pos)) for nghb in nghbs]
     nghbs = [nghb for nghb in nghbs if nghb[1] <= obstacle_dist_th]
 
     if len(nghbs) == 0:
@@ -188,7 +188,7 @@ def _dist_to_obstacles(obs: Observation) -> Dict[str, float]:
         # Note: In np.angle(), angle is zero at positive x axis, and increases anti-clockwise.
         #       Hence, map_angle = np.angle() - π/2
         rel_pos = pos - ego_pos
-        obstacle_angle = np.angle(rel_pos[0] + 1j*rel_pos[1]) - np.pi / 2
+        obstacle_angle = np.angle(rel_pos[0] + 1j * rel_pos[1]) - np.pi / 2
         obstacle_angle = (obstacle_angle + np.pi) % (2 * np.pi) - np.pi
         # Obstacle heading is the angle correction required by ego agent to face the obstacle.
         obstacle_heading = obstacle_angle - ego_heading

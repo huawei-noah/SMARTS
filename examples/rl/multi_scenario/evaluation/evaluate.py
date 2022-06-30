@@ -1,6 +1,5 @@
-# Add submission directory to python search path
-import os
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -16,6 +15,7 @@ from evaluation.score import Score
 from submission.policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
 
 _SCORES_FILENAME = "scores.txt"
+
 
 def make_env(
     config: Dict[str, Any],
@@ -97,12 +97,10 @@ def evaluate():
         res = run(
             env=env, datastore=datastore, name=env_name, policy=policy, config=config
         )
-
         score.add(res)
 
     rank = score.compute()
     print("Overall Rank:\n", rank)
-
     print("\nFinished evaluating.\n")
 
     # Close all environments
@@ -110,6 +108,22 @@ def evaluate():
         env.close()
 
     return rank
+
+
+def run(env, datastore: DataStore, name, policy: Policy, config: Dict[str, Any]):
+    # Instantiate metric for score calculation.
+    metric = Metric(datastore.agent_names)
+
+    for _ in range(config["eval_episodes"]):
+        observations = env.reset()
+        dones = {"__all__": False}
+        while not dones["__all__"]:
+            actions = policy.act(observations)
+            observations, rewards, dones, infos = env.step(actions)
+            metric.store(infos=datastore.data["infos"], dones=datastore.data["dones"])
+
+    return metric.results()
+
 
 def to_codalab_scores_string(self) -> str:
     """Convert the data in scores to a CodaLab-scores-compatible string."""
@@ -122,33 +136,12 @@ def to_codalab_scores_string(self) -> str:
         f"time: {rank['time']}\n"
     )
 
-def run(env, datastore: DataStore, name, policy: Policy, config: Dict[str, Any]):
-    # Instantiate metric for score calculation.
-    metric = Metric(datastore.agent_names)
-
-    for _ in range(config["eval_episodes"]):
-        observations = env.reset()
-        dones = {"__all__": False}
-        while not dones["__all__"]:
-            actions = policy.act(observations)
-            observations, rewards, dones, infos = env.step(actions)
-
-            import time
-
-            time.sleep(0.5)
-
-            metric.store(infos=datastore.data["infos"], dones=datastore.data["dones"])
-
-    print("-----------------------")
-    print(metric.results())
-
-    return metric.results()
-
 
 def write_scores(scores, output_dir):
     if output_dir:
         with open(os.path.join(output_dir, _SCORES_FILENAME), "w") as output_file:
             output_file.write(scores)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
