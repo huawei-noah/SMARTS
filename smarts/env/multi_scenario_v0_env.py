@@ -30,6 +30,7 @@ from smarts.core.agent_interface import (
     DoneCriteria,
     DrivableAreaGridMap,
     NeighborhoodVehicles,
+    RoadWaypoints,
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
@@ -102,6 +103,8 @@ def multi_scenario_v0_env(
     done_criteria = env_specs["done_criteria"]
     max_episode_steps = 3000
     neighbor_radius = 50
+    road_waypoint_horizon = 50
+    waypoints_lookahead = 50
     agent_specs = {
         f"Agent_{i}": AgentSpec(
             interface=AgentInterface(
@@ -126,8 +129,8 @@ def multi_scenario_v0_env(
                     height=img_pixels,
                     resolution=img_meters / img_pixels,
                 ),
-                road_waypoints=False,
-                waypoints=Waypoints(lookahead=img_meters),
+                road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
+                waypoints=Waypoints(lookahead=waypoints_lookahead),
             ),
         )
         for i in range(env_specs["num_agent"])

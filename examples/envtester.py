@@ -1,3 +1,4 @@
+import re
 import logging
 
 import gym
@@ -22,7 +23,7 @@ def main(num_episodes, max_episode_steps=50):
 
     env = gym.make(
         "smarts.env:multi-scenario-v0",
-        scenario="3lane_merge_multi_agent",
+        scenario="1_to_2lane_left_turn_c",
         headless=True,
         sumo_headless=False,
         action_space="Lane",
