@@ -99,6 +99,11 @@ class WaymoMap(RoadMap):
     DEFAULT_LANE_SPEED = 16.67  # in m/s
     DEFAULT_LANE_WIDTH = 4
 
+    # For caching tfrecord data
+    _tfrecord_path = None
+    _tfrecord_generator = None
+    _scenario_cache = None
+
     def __init__(self, map_spec: MapSpec, waymo_scenario):
         self._log = logging.getLogger(self.__class__.__name__)
         self._map_spec = map_spec
@@ -785,12 +790,7 @@ class WaymoMap(RoadMap):
             lane_dict["lane_width"] = max_width * 2
 
         # find intersecting lanes
-        # TODO: remove profiling code
-        intersections_start = time.perf_counter()
         self._intersections = self._compute_lane_intersections()
-        intersections_end = time.perf_counter()
-        elapsed_time = round((intersections_end - intersections_start), 3)
-        print(f"    Intersections: {elapsed_time} s")
 
         feat_splits = self._find_splits()
         self._link_splits(feat_splits)
@@ -811,14 +811,27 @@ class WaymoMap(RoadMap):
         """Read the dataset file and get the specified scenario"""
         dataset_path = source.split("#")[0]
         scenario_id = source.split("#")[1]
-        dataset_records = read_tfrecord_file(dataset_path)
-        for record in dataset_records:
+
+        # Reset cache if this is a new TFRecord file
+        if not WaymoMap._tfrecord_path or WaymoMap._tfrecord_path != dataset_path:
+            WaymoMap._tfrecord_path = dataset_path
+            WaymoMap._tfrecord_generator = read_tfrecord_file(dataset_path)
+            WaymoMap._scenario_cache = dict()
+
+        if scenario_id in WaymoMap._scenario_cache:
+            return WaymoMap._scenario_cache[scenario_id]
+
+        while True:
+            record = next(WaymoMap._tfrecord_generator, None)
+            if not record:
+                raise ValueError(
+                    f"Dataset file does not contain scenario with id: {scenario_id}"
+                )
             parsed_scenario = scenario_pb2.Scenario()
             parsed_scenario.ParseFromString(bytearray(record))
+            WaymoMap._scenario_cache[parsed_scenario.scenario_id] = parsed_scenario
             if parsed_scenario.scenario_id == scenario_id:
                 return parsed_scenario
-        errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
-        raise ValueError(errmsg)
 
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
