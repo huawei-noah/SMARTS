@@ -1,5 +1,4 @@
 import logging
-import re
 
 import gym
 
@@ -47,20 +46,7 @@ def main(num_episodes, max_episode_steps=50):
 
             import time
 
-            time.sleep(0.1)
-
-            # for name in ["Agent_0", "Agent_1"]:
-            # if observations.get(name, None):
-            qwe = infos.keys()
-            print(f"Obs --> {qwe} {len(infos)}")
-            # {bool(qwe)} {len(observations)} {bool(observations)}")
-            print("-----------------------------")
-
-            # for agent_id, agent_obs in observations.items():
-            #     if agent_obs.events.reached_goal:
-            #         print(f"{agent_id} : HURRAY REACHED GOAL !!!")
-            #     if agent_obs.events.collisions:
-            #         print(f"{agent_id} : collided !!!")
+            time.sleep(0.5)
 
     env.close()
 

@@ -1,5 +1,6 @@
 from dataclasses import asdict
 from typing import Dict
+
 from evaluation.costs import Costs
 from evaluation.metric import Counts
 
@@ -24,7 +25,7 @@ class Score:
             new_val = getattr(self._costs, cost_name) + cost_val
             setattr(self._costs, cost_name, new_val)
 
-    def compute(self)->Dict[str,float]:
+    def compute(self) -> Dict[str, float]:
         self._results["completion"] = _completion(counts=self._counts)
         self._results["humanness"] = _humanness(counts=self._counts, costs=self._costs)
         self._results["rules"] = _rules(counts=self._counts, costs=self._costs)
@@ -33,14 +34,14 @@ class Score:
         return self._results
 
 
-def _completion(counts: Counts)->float:
+def _completion(counts: Counts) -> float:
     w_cr = 0.6
     w_ic = 0.4
 
     return (w_cr * counts.crashes + w_ic * counts.incomplete) / counts.episodes
 
 
-def _humanness(counts: Counts, costs: Costs)->float:
+def _humanness(counts: Counts, costs: Costs) -> float:
     w_d = 0.2
     w_j = 0.2
     w_lc = 0.2
@@ -58,7 +59,7 @@ def _humanness(counts: Counts, costs: Costs)->float:
     ) / counts.episodes_adjusted
 
 
-def _rules(counts: Counts, costs: Costs)->float:
+def _rules(counts: Counts, costs: Costs) -> float:
     w_c = 0.2
     w_ord = 0.2
     w_ort = 0.2
@@ -74,10 +75,5 @@ def _rules(counts: Counts, costs: Costs)->float:
     ) / counts.episodes_adjusted
 
 
-def _time(counts: Counts)->float:
+def _time(counts: Counts) -> float:
     return counts.steps_adjusted / counts.episodes
-
-
-
-def _time(adjusted_steps, episodes):
-    return adjusted_steps / episodes

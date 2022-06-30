@@ -92,15 +92,15 @@ def evaluate():
 
     # Evaluate model for each scenario
     score = Score()
-    for env_name, (env, datastore) in envs_eval.items():
-        print(f"Evaluating env {env_name}.")
-        res = run(
+    for index, (env_name, (env, datastore)) in enumerate(envs_eval.items()):
+        print(f"\n{index}. Evaluating env {env_name}.\n")
+        counts, costs = run(
             env=env, datastore=datastore, name=env_name, policy=policy, config=config
         )
-        score.add(res)
+        score.add(counts, costs)
 
     rank = score.compute()
-    print("Overall Rank:\n", rank)
+    print("\nOverall Rank:\n", rank)
     print("\nFinished evaluating.\n")
 
     # Close all environments
