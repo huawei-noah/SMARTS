@@ -14,7 +14,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -36,7 +36,7 @@ def build_env(agent_spec):
     return gym.make(
         "smarts.env:hiway-v0",
         # TODO: Switch to a test scenario that has routes, and missions
-        scenarios=["scenarios/loop"],
+        scenarios=["scenarios/sumo/loop"],
         agent_specs={AGENT_ID: agent_spec},
         headless=True,
         seed=2008,
@@ -72,6 +72,7 @@ def test_graceful_interrupt(monkeypatch):
     with pytest.raises(KeyboardInterrupt):
         obs = env.reset()
 
+        episode = 0
         # To simulate a user interrupting the sim (e.g. ctrl-c). We just need to
         # hook in to some function that SMARTS calls internally (like this one).
         with mock.patch(

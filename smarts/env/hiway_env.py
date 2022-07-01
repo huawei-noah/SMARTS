@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -25,6 +25,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple, Union
 import gym
 
 from envision.client import Client as Envision
+from envision.data_formatter import EnvisionDataFormatterArgs
 from smarts.core import seed as smarts_seed
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
@@ -132,6 +133,9 @@ class HiWayEnv(gym.Env):
                 sim_name=sim_name,
                 output_dir=envision_record_data_replay_path,
                 headless=headless,
+                data_formatter_args=EnvisionDataFormatterArgs(
+                    "base", enable_reduction=False
+                ),
             )
 
         visdom_client = None

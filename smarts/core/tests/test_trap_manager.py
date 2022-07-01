@@ -14,7 +14,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -172,8 +172,21 @@ def test_no_recapture_agent(
     smarts_two_agents: SMARTS, two_agent_capture_offset_tenth_of_second
 ):
     smarts_two_agents.reset(next(two_agent_capture_offset_tenth_of_second))
+    assert smarts_two_agents.elapsed_sim_time == 0.1
     for i in range(3):
         smarts_two_agents.step({})
     assert len(smarts_two_agents.agent_manager.pending_agent_ids) == 0
     assert len(smarts_two_agents.agent_manager.active_agents) == 2
     assert len(smarts_two_agents.vehicle_index.agent_vehicle_ids()) == 2
+
+
+def test_skip(smarts_two_agents: SMARTS, two_agent_capture_offset_tenth_of_second):
+    smarts_two_agents.reset(
+        next(two_agent_capture_offset_tenth_of_second), start_time=0.3
+    )
+    assert smarts_two_agents.elapsed_sim_time == 0.3
+    for _ in range(1):
+        smarts_two_agents.step({})
+    assert len(smarts_two_agents.agent_manager.pending_agent_ids) == 0
+    assert len(smarts_two_agents.agent_manager.active_agents) == 0
+    assert len(smarts_two_agents.vehicle_index.agent_vehicle_ids()) == 0

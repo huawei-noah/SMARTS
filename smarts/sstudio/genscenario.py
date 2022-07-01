@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -43,7 +43,7 @@ logger = logging.getLogger(__file__)
 
 def gen_scenario(
     scenario: types.Scenario,
-    output_dir: Path,
+    output_dir: Union[str, Path],
     seed: int = 42,
     overwrite: bool = False,
 ):
@@ -124,8 +124,6 @@ def gen_scenario(
         gen_friction_map(scenario=output_dir, surface_patches=scenario.friction_maps)
 
     if scenario.traffic_histories:
-        # TODO:  pass in Sumo graph offset and use to offset history coordinates
-        #    if sumo_road_network._graph._shifted_by_smarts: sumo_road_network._graph.getLocationOffset()
         gen_traffic_histories(
             scenario=output_dir,
             histories_datasets=scenario.traffic_histories,
@@ -442,7 +440,7 @@ def _validate_entry_tactic(mission):
 
 def gen_traffic_histories(
     scenario: str,
-    histories_datasets: Sequence[str],
+    histories_datasets: Sequence[Union[types.TrafficHistoryDataset, str]],
     overwrite: bool,
     map_spec: Optional[types.MapSpec] = None,
 ):
@@ -451,33 +449,43 @@ def gen_traffic_histories(
         scenario:
             The scenario directory
         histories_datasets:
-            A sequence of traffic history files.
+            A sequence of traffic history descriptors.
         overwrite:
             If to forcefully write over the previous existing output file
         map_spec:
-            An optional map specification that takes precedence over scenario directory information.
+             An optional map specification that takes precedence over scenario directory information.
     """
-    # For SUMO maps, we need to check if the map was shifted and translate the vehicle positions if so
-    xy_offset = None
-    if not map_spec:
-        road_network_path = os.path.join(scenario, "map.net.xml")
-        map_spec = types.MapSpec(road_network_path)
-    if os.path.exists(map_spec.source):
-        from smarts.core.sumo_road_network import SumoRoadNetwork
-
-        road_network = SumoRoadNetwork.from_spec(map_spec)
-        if road_network._graph and getattr(
-            road_network._graph, "_shifted_by_smarts", False
-        ):
-            xy_offset = road_network._graph.getLocationOffset()
-
-    genhistories_py = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
-    )
+    road_map = None  # shared across all history_datasets in scenario
     for hdsr in histories_datasets:
+        if isinstance(hdsr, types.TrafficHistoryDataset):
+            from smarts.sstudio import genhistories
+
+            map_bbox = None
+            if hdsr.filter_off_map:
+                if map_spec:
+                    if not road_map:
+                        road_map, _ = map_spec.builder_fn(map_spec)
+                    assert road_map
+                    map_bbox = road_map.bounding_box
+                else:
+                    logger.warn(
+                        f"no map_spec supplied, so unable to filter off-map coordinates for {hdsr.name}"
+                    )
+            genhistories.import_dataset(hdsr, scenario, overwrite, map_bbox)
+            continue
+
+        assert isinstance(hdsr, str)
+        logger.warn(
+            f"use of yaml-file dataset specs (like {hdsr}) is deprecated; update to use types.TrafficHistoryDataset in your scenario.py. "
+        )
+
         hds = os.path.join(scenario, hdsr)
         if not os.path.exists(hds):
             raise ValueError(f"Traffic history dataset file missing: {hds}")
+
+        genhistories_py = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
+        )
         cmd = [sys.executable, genhistories_py, hdsr]
         base, ext = os.path.splitext(os.path.basename(hds))
         if ext == ".json":
@@ -489,12 +497,11 @@ def gen_traffic_histories(
             )
             cmd += ["--old"]
         th_file = f"{base}.shf"
+
         if overwrite:
             cmd += ["-f"]
-        if xy_offset:
-            cmd += ["--x_offset", str(xy_offset[0])]
-            cmd += ["--y_offset", str(xy_offset[1])]
         elif os.path.exists(os.path.join(scenario, th_file)):
             continue
         cmd += [th_file]
+        # note that maps in scenarios with traffic history datasets will not be auto-shifted
         subprocess.check_call(cmd, cwd=scenario)

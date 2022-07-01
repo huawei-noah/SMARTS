@@ -12,12 +12,13 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import sys
 import time
 from collections import deque, namedtuple
 from dataclasses import dataclass
@@ -574,6 +575,19 @@ class Sensors:
             if on_lane.road in route_roads:
                 return (False, is_wrong_way)
 
+        # Check for case if there was an early merge into another incoming lane. This means the
+        # vehicle should still be following the lane direction to be valid as still on route.
+        if not is_wrong_way:
+            # See if the lane leads into the current route
+            for lane in nearest_lane.outgoing_lanes:
+                if lane.road in route_roads:
+                    (False, is_wrong_way)
+                # If outgoing lane is in a junction see if the junction lane leads into current route.
+                if lane.in_junction:
+                    for out_lane in lane.outgoing_lanes:
+                        if out_lane.road in route_roads:
+                            return (False, is_wrong_way)
+
         # Vehicle is completely off-route
         return (True, is_wrong_way)
 
@@ -846,8 +860,8 @@ class DrivenPathSensor(Sensor):
             DrivenPathSensor.Entry(timestamp=sim.elapsed_sim_time, position=pos)
         )
 
-    def __call__(self):
-        return [x.position for x in self._driven_path]  # only return the positions
+    def __call__(self, count=sys.maxsize):
+        return [x.position for x in self._driven_path][-count:]
 
     def teardown(self):
         pass

@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -154,11 +154,12 @@ class TraverseGoal(Goal):
             return False  # we can't tell anything here
         nl, dist = nearest_lanes[0]
         offset = nl.to_lane_coord(pos).s
-        nl_width = nl.width_at_offset(offset)
-        if nl.outgoing_lanes or dist < 0.5 * nl_width + 1e-1:
-            return False  # the last lane it was in was not a dead-end, or it's still in a lane
-        if offset < nl.length - 2 * nl_width:
-            return False  # it's no where near the end of the lane
+        nl_width, conf = nl.width_at_offset(offset)
+        if conf > 0.5:
+            if nl.outgoing_lanes or dist < 0.5 * nl_width + 1e-1:
+                return False  # the last lane it was in was not a dead-end, or it's still in a lane
+            if offset < nl.length - 2 * nl_width:
+                return False  # it's no where near the end of the lane
         # now check its heading to ensure it was going in roughly the right direction for this lane
         end_vec = nl.vector_at_offset(nl.length - 0.1)
         end_heading = vec_to_radians(end_vec[:2])

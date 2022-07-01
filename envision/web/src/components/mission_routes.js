@@ -12,7 +12,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -26,6 +26,7 @@ import {
 } from "@babylonjs/core";
 
 import { useRef, useEffect } from "react";
+import { SceneColors } from "../helpers/scene_colors";
 
 // Mission route geometry
 export default function MissionRoutes({ scene, worldState }) {
@@ -70,10 +71,8 @@ export default function MissionRoutes({ scene, worldState }) {
           `mission-route-shape-${vehicle_id}-${shape_id}-material`,
           scene
         );
-        polygon.material.diffuseColor = new Color4(
-          ...worldState.scene_colors["mission_route"]
-        );
-        polygon.material.alpha = worldState.scene_colors["mission_route"][3];
+        polygon.material.diffuseColor = new Color4(...SceneColors.MissionRoute);
+        polygon.material.alpha = SceneColors.MissionRoute[3];
         polygon.material.specularColor = new Color3(0, 0, 0);
         missionGeometryRef.current.push(polygon);
       });

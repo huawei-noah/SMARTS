@@ -14,7 +14,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -82,7 +82,7 @@ def missions() -> Sequence[Mission]:
 def test_generate_traffic(traffic: Traffic):
     with tempfile.TemporaryDirectory() as temp_dir:
         gen_traffic(
-            "scenarios/intersections/4lane_t",
+            "scenarios/sumo/intersections/4lane_t",
             traffic,
             output_dir=temp_dir,
             name="generated",
@@ -109,7 +109,7 @@ def _gen_map_from_spec(scenario_root: str, map_spec: MapSpec):
 
 
 def test_generate_sumo_map():
-    scenario_root = "scenarios/intersections/4lane_t"
+    scenario_root = "scenarios/sumo/intersections/4lane_t"
     map_file = "map.net.xml"
 
     map_path = os.path.join(scenario_root, map_file)
@@ -130,7 +130,7 @@ def test_generate_sumo_map():
 
 
 def test_generate_od_map():
-    scenario_root = "scenarios/od_4lane"
+    scenario_root = "scenarios/open_drive/od_4lane"
     map_file = "map.xodr"
 
     map_path = os.path.join(scenario_root, map_file)

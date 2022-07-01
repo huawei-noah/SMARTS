@@ -12,14 +12,13 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
 import math
-from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import gym
@@ -41,160 +40,159 @@ _LIDAR_SHP = 300
 _NEIGHBOR_SHP = 10
 _WAYPOINT_SHP = (4, 20)
 
+"""
+Observations in numpy array format, suitable for vectorized processing.
 
-@dataclass(frozen=True)
-class StdObs:
-    """Observations in numpy array format, suitable for vectorized
-    processing."""
-
-    dist: np.float32
-    """Total distance travelled in meters. dtype=np.float32."""
-    ego: Dict[str, Union[np.int8, np.float32, np.ndarray]]
-    """Ego vehicle state, with the following attributes.
-
-    angular_acceleration:
-        Angular acceleration vector. Requires `accelerometer` attribute enabled
-        in AgentInterface, else defaults to array of zeros. shape=(3,). 
-        dtype=np.float32.
-    angular_jerk:
-        Angular jerk vector. Requires `accelerometer` attribute enabled in
-        AgentInterface, else defaults to array of zeros. shape=(3,). 
-        dtype=np.float32.
-    angular_velocity:
-        Angular velocity vector. shape=(3,). dtype=np.float32).
-    box:
-        Length, width, and height of the vehicle bounding box. shape=(3,).
-        dtype=np.float32.
-    heading:
-        Vehicle heading in radians [-pi, pi]. dtype=np.float32.
-    lane_index:
-        Vehicle's lane number. Rightmost lane has index 0 and increases towards
-        left. dtype=np.int8.
-    linear_acceleration:
-        Vehicle acceleration in x, y, and z axes. Requires `accelerometer`
-        attribute enabled in AgentInterface, else defaults to array of zeros. 
-        shape=(3,). dtype=np.float32.
-    linear_jerk:
-        Linear jerk vector. Requires `accelerometer` attribute enabled in
-        AgentInterface, else defaults to array of zeros. shape=(3,). 
-        dtype=np.float32.
-    linear_velocity:
-        Vehicle velocity in x, y, and z axes. shape=(3,). dtype=np.float32.
-    pos:
-        Coordinate of the center of the vehicle bounding box's bottom plane.
-        shape=(3,). dtype=np.float64.
-    speed:
-        Vehicle speed in m/s. dtype=np.float32.
-    steering:
-        Angle of front wheels in radians [-pi, pi]. dtype=np.float32.
-    yaw_rate:
-        Rotation speed around vertical axis in rad/s [0, 2pi]. 
-        dtype=np.float32.
-    """
-    events: Dict[str, np.int8]
-    """ A dictionary of event markers.
+StdObs = dict({
+    Total distance travelled in meters.
+    "dist": np.float32
     
-    agents_alive_done:
-        1 if `DoneCriteria.agents_alive` is triggered, else 0.
-    collisions:
-        1 if any collisions occurred with ego vehicle, else 0.
-    not_moving:
-        1 if `DoneCriteria.not_moving` is triggered, else 0.
-    off_road:
-        1 if ego vehicle drives off road, else 0.
-    off_route:
-        1 if ego vehicle drives off mission route, else 0.
-    on_shoulder:
-        1 if ego vehicle drives on road shoulder, else 0.
-    reached_goal:
-        1 if ego vehicle reaches its goal, else 0.
-    reached_max_episode_steps:
-        1 if maximum episode steps reached, else 0.
-    wrong_way:
-        1 if ego vehicle drives in the wrong traffic direction, else 0.
-    """
-    dagm: Optional[np.ndarray] = None
-    """Drivable area grid map. Map is binary, with 255 if a cell contains a
-    road, else 0. dtype=np.uint8.
-    """
-    lidar: Optional[Dict[str, np.ndarray]] = None
-    """Lidar point cloud, with the following attributes.
+    Ego vehicle state, with the following attributes.
+    "ego": dict({
+        "angular_acceleration": 
+            Angular acceleration vector. Requires `accelerometer` attribute 
+            enabled in AgentInterface, else absent. shape=(3,). dtype=np.float32.
+        "angular_jerk":
+            Angular jerk vector. Requires `accelerometer` attribute enabled in
+            AgentInterface, else absent. shape=(3,). dtype=np.float32.
+        "angular_velocity":
+            Angular velocity vector. shape=(3,). dtype=np.float32).
+        "box":
+            Length, width, and height of the vehicle bounding box. shape=(3,).
+            dtype=np.float32.
+        "heading":
+            Vehicle heading in radians [-pi, pi]. dtype=np.float32.
+        "lane_index":
+            Vehicle's lane number. Rightmost lane has index 0 and increases 
+            towards left. dtype=np.int8.
+        "linear_acceleration":
+            Vehicle acceleration in x, y, and z axes. Requires `accelerometer`
+            attribute enabled in AgentInterface, else absent. shape=(3,).
+            dtype=np.float32.
+        "linear_jerk":
+            Linear jerk vector. Requires `accelerometer` attribute enabled in
+            AgentInterface, else absent. shape=(3,). dtype=np.float32.
+        "linear_velocity":
+            Vehicle velocity in x, y, and z axes. shape=(3,). dtype=np.float32.
+        "pos":
+            Coordinate of the center of the vehicle bounding box's bottom plane.
+            shape=(3,). dtype=np.float64.
+        "speed":
+            Vehicle speed in m/s. dtype=np.float32.
+        "steering":
+            Angle of front wheels in radians [-pi, pi]. dtype=np.float32.
+        "yaw_rate":
+            Rotation speed around vertical axis in rad/s [0, 2pi].
+            dtype=np.float32.
+    )}
     
-    hit:
-        Binary array. 1 if an object is hit, else 0. shape(300,).
-    point_cloud:
-        Coordinates of lidar point cloud. shape=(300,3). dtype=np.float64.
-    ray_origin:
-        Ray origin coordinates. shape=(300,3). dtype=np.float64.
-    ray_vector:
-        Ray vectors. shape=(300,3). dtype=np.float64.
-    """
-    neighbors: Optional[Dict[str, np.ndarray]] = None
-    """Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
+    A dictionary of event markers.
+    "events": dict({
+        "agents_alive_done":
+            1 if `DoneCriteria.agents_alive` is triggered, else 0.
+        "collisions":
+            1 if any collisions occurred with ego vehicle, else 0.
+        "not_moving":
+            1 if `DoneCriteria.not_moving` is triggered, else 0.
+        "off_road":
+            1 if ego vehicle drives off road, else 0.
+        "off_route":
+            1 if ego vehicle drives off mission route, else 0.
+        "on_shoulder":
+            1 if ego vehicle drives on road shoulder, else 0.
+        "reached_goal":
+            1 if ego vehicle reaches its goal, else 0.
+        "reached_max_episode_steps":
+            1 if maximum episode steps reached, else 0.
+        "wrong_way":
+            1 if ego vehicle drives in the wrong traffic direction, else 0.
+    })
+
+    Drivable area grid map. Map is binary, with 255 if a cell contains a road,
+    else 0. dtype=np.uint8.
+    "dagm": np.ndarray
+
+    Lidar point cloud, with the following attributes.
+    "lidar": dict({
+        "hit":
+            Binary array. 1 if an object is hit, else 0. shape(300,).
+        "point_cloud":
+            Coordinates of lidar point cloud. shape=(300,3). dtype=np.float64.
+        "ray_origin":
+            Ray origin coordinates. shape=(300,3). dtype=np.float64.
+        "ray_vector":
+            Ray vectors. shape=(300,3). dtype=np.float64.
+    })
+    
+    Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
     vehicles are insufficient, default feature values are padded.
-    
-    box:
-        Bounding box of neighbor vehicles. Defaults to np.array([0,0,0]) per 
-        vehicle. shape=(10,3). dtype=np.float32.
-    heading:
-        Heading of neighbor vehicles in radians [-pi, pi]. Defaults to 
-        np.array([0]) per vehicle. shape=(10,). dtype=np.float32.
-    lane_index:
-        Lane number of neighbor vehicles. Defaults to np.array([0]) per 
-        vehicle. shape=(10,). dtype=np.int8.
-    pos:
-        Coordinate of the center of neighbor vehicles' bounding box's bottom 
-        plane. Defaults to np.array([0,0,0]) per vehicle. shape=(10,3). 
-        dtype=np.float64.
-    speed:
-        Speed of neighbor vehicles in m/s. Defaults to np.array([0]) per
-        vehicle. shape=(10,). dtype=np.float32.
-    """
-    ogm: Optional[np.ndarray] = None
-    """Occupancy grid map. Map is binary, with 255 if a cell is occupied, else
-    0. dtype=np.uint8."""
-    rgb: Optional[np.ndarray] = None
-    """RGB image, from the top view, with ego vehicle at the center.
-    shape=(height, width, 3). dtype=np.uint8."""
-    ttc: Optional[Dict[str, Union[np.float32, np.ndarray]]] = None
-    """Time and distance to collision. Enabled only if both `waypoints` and
+    "neighbors": dict({
+        "box":
+            Bounding box of neighbor vehicles. Defaults to np.array([0,0,0]) per
+            vehicle. shape=(10,3). dtype=np.float32.
+        "heading":
+            Heading of neighbor vehicles in radians [-pi, pi]. Defaults to
+            np.array([0]) per vehicle. shape=(10,). dtype=np.float32.
+        "lane_index":
+            Lane number of neighbor vehicles. Defaults to np.array([0]) per
+            vehicle. shape=(10,). dtype=np.int8.
+        "pos":
+            Coordinate of the center of neighbor vehicles' bounding box's bottom
+            plane. Defaults to np.array([0,0,0]) per vehicle. shape=(10,3).
+            dtype=np.float64.
+        "speed":
+            Speed of neighbor vehicles in m/s. Defaults to np.array([0]) per
+            vehicle. shape=(10,). dtype=np.float32.
+    })
+
+    Occupancy grid map. Map is binary, with 255 if a cell is occupied, else 0.
+    dtype=np.uint8.
+    "ogm": np.ndarray
+
+    RGB image, from the top view, with ego vehicle at the center.
+    shape=(height, width, 3). dtype=np.uint8.
+    "rgb": np.ndarray
+
+    Time and distance to collision. Enabled only if both `waypoints` and
     `neighborhood_vehicles` attributes are enabled in AgentInterface.
-    
-    angle_error:
-        Angular error in radians [-pi, pi]. dtype=np.float32.
-    distance_from_center:
-        Distance of vehicle from lane center in meters. dtype=np.float32.
-    dtc:
-        Distance to collision on the right lane (`dtc[0]`), current lane 
-        (`dtc[1]`), and left lane (`dtc[2]`). If no lane is available, to the 
-        right or to the left, default value of 0 is padded. shape=(3,). 
-        dtype=np.float32.
-    ttc:
-        Time to collision on the right lane (`ttc[0]`), current lane
-        (`ttc[1]`), and left lane (`ttc[2]`). If no lane is available,
-        to the right or to the left, default value of 0 is padded. shape=(3,).
-        dtype=np.float32.
-    """
-    waypoints: Optional[Dict[str, np.ndarray]] = None
-    """Feature array of 20 waypoints ahead or in the mission route, from the 
+    "ttc": dict({  
+        "angle_error":
+            Angular error in radians [-pi, pi]. dtype=np.float32.
+        "distance_from_center":
+            Distance of vehicle from lane center in meters. dtype=np.float32.
+        "dtc":
+            Distance to collision on the right lane (`dtc[0]`), current lane
+            (`dtc[1]`), and left lane (`dtc[2]`). If no lane is available, to the
+            right or to the left, default value of 0 is padded. shape=(3,).
+            dtype=np.float32.
+        "ttc":
+            Time to collision on the right lane (`ttc[0]`), current lane
+            (`ttc[1]`), and left lane (`ttc[2]`). If no lane is available,
+            to the right or to the left, default value of 0 is padded. shape=(3,).
+            dtype=np.float32.
+    })
+
+    Feature array of 20 waypoints ahead or in the mission route, from the 
     nearest 4 lanes. If lanes or waypoints ahead are insufficient, default 
     values are padded.
-    
-    heading:
-        Lane heading angle at a waypoint in radians [-pi, pi]. Defaults to
-        np.array([0]) per waypoint. shape=(4,20). dtype=np.float32.
-    lane_index:
-        Lane number at a waypoint. Defaults to np.array([0]) per waypoint.
-        shape=(4,20). dtype=np.int8.
-    lane_width:
-        Lane width at a waypoint in meters. Defaults to np.array([0]) per
-        waypoint. shape=(4,20). dtype=np.float32.
-    pos:
-        Coordinate of a waypoint. Defaults to np.array([0,0,0]). 
-        shape=(4,20,3). dtype=np.float64.
-    speed_limit:
-        Lane speed limit at a waypoint in m/s. shape=(4,20). dtype=np.float32.
-    """
+    "waypoints": dict({
+        "heading":
+            Lane heading angle at a waypoint in radians [-pi, pi]. Defaults to
+            np.array([0]) per waypoint. shape=(4,20). dtype=np.float32.
+        "lane_index":
+            Lane number at a waypoint. Defaults to np.array([0]) per waypoint.
+            shape=(4,20). dtype=np.int8.
+        "lane_width":
+            Lane width at a waypoint in meters. Defaults to np.array([0]) per
+            waypoint. shape=(4,20). dtype=np.float32.
+        "pos":
+            Coordinate of a waypoint. Defaults to np.array([0,0,0]).
+            shape=(4,20,3). dtype=np.float64.
+        "speed_limit":
+            Lane speed limit at a waypoint in m/s. shape=(4,20). dtype=np.float32.
+    }) 
+})
+"""
 
 
 class FormatObs(gym.ObservationWrapper):
@@ -235,12 +233,15 @@ class FormatObs(gym.ObservationWrapper):
                 self._cmp_intrfc(intrfc, val)
                 intrfcs.update({intrfc: val})
 
-        space = _make_space(intrfcs)
+        self._space = _make_space(intrfcs)
         self.observation_space = gym.spaces.Dict(
-            {agent_id: gym.spaces.Dict(space) for agent_id in self.agent_specs.keys()}
+            {
+                agent_id: gym.spaces.Dict(self._space)
+                for agent_id in self.agent_specs.keys()
+            }
         )
 
-        self._obs = {
+        self._stdob_to_ob = {
             "dagm": "drivable_area_grid_map",
             "dist": "distance_travelled",
             "ego": "ego_vehicle_state",
@@ -252,6 +253,7 @@ class FormatObs(gym.ObservationWrapper):
             "ttc": "ttc",
             "waypoints": "waypoint_paths",
         }
+        self._accelerometer = "accelerometer" in intrfcs.keys()
 
     def _cmp_intrfc(self, intrfc: str, val: Any):
         assert all(
@@ -260,7 +262,7 @@ class FormatObs(gym.ObservationWrapper):
         ), f"To use FormatObs wrapper, all agents must have the same "
         f"AgentInterface.{intrfc} attribute."
 
-    def observation(self, obs: Dict[str, Any]) -> Dict[str, StdObs]:
+    def observation(self, obs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         """Converts SMARTS observations to gym-compliant vectorized
         observations.
 
@@ -269,14 +271,19 @@ class FormatObs(gym.ObservationWrapper):
         wrapped_obs = {}
         for agent_id, agent_obs in obs.items():
             wrapped_ob = {}
-            for stdob, ob in self._obs.items():
+            for stdob in self._space.keys():
                 func = globals()[f"_std_{stdob}"]
                 if stdob == "ttc":
-                    val = func(obs[agent_id])
+                    val = func(agent_obs)
+                elif stdob == "ego":
+                    val = func(
+                        getattr(agent_obs, self._stdob_to_ob[stdob]),
+                        self._accelerometer,
+                    )
                 else:
-                    val = func(getattr(agent_obs, ob))
+                    val = func(getattr(agent_obs, self._stdob_to_ob[stdob]))
                 wrapped_ob.update({stdob: val})
-            wrapped_obs.update({agent_id: StdObs(**wrapped_ob)})
+            wrapped_obs.update({agent_id: wrapped_ob})
 
         return wrapped_obs
 
@@ -302,32 +309,35 @@ def intrfc_to_stdobs(intrfc: str) -> Optional[str]:
     }.get(intrfc, None)
 
 
-def get_spaces() -> Tuple[Dict[str, gym.Space], Dict[str, Callable[[Any], gym.Space]]]:
-    """Returns the basic gym space and the optional gym space of a `StdObs`.
+def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
+    """Returns the available gym spaces of a `StdObs`.
 
     Returns:
-        Tuple[ Dict[str, gym.Space], Dict[str, Callable[[Any], gym.Space]] ]:
-            Basic and optional gym space of a `StdObs`.
+        Dict[str, Callable[[Any], gym.Space]]:
+            Available gym spaces of a `StdObs`.
     """
     # fmt: off
-    basic = {
-        "dist": gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
-        "ego": gym.spaces.Dict({
-            "angular_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "angular_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "angular_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-            "box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
-            "lane_index": gym.spaces.Box(low=0, high=127, shape=(), dtype=np.int8),
-            "linear_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "linear_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-            "linear_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
-            "speed": gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
-            "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
-            "yaw_rate": gym.spaces.Box(low=0, high=2*math.pi, shape=(), dtype=np.float32),
-        }),
-        "events": gym.spaces.Dict({
+    ego_basic = {
+        "angular_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+        "box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+        "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
+        "lane_index": gym.spaces.Box(low=0, high=127, shape=(), dtype=np.int8),
+        "linear_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+        "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
+        "speed": gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
+        "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
+        "yaw_rate": gym.spaces.Box(low=0, high=2*math.pi, shape=(), dtype=np.float32),
+    }
+    ego_opt = {
+        "angular_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+        "angular_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+        "linear_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+        "linear_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+    }
+    spaces = {
+        "dist": lambda _: gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
+        "ego": lambda val: gym.spaces.Dict(dict(ego_basic, **ego_opt)) if val else gym.spaces.Dict(ego_basic),
+        "events": lambda _: gym.spaces.Dict({
             "agents_alive_done": gym.spaces.MultiDiscrete(1, dtype=np.int8),
             "collisions": gym.spaces.MultiDiscrete(1, dtype=np.int8),
             "not_moving": gym.spaces.MultiDiscrete(1, dtype=np.int8),
@@ -338,9 +348,6 @@ def get_spaces() -> Tuple[Dict[str, gym.Space], Dict[str, Callable[[Any], gym.Sp
             "reached_max_episode_steps": gym.spaces.MultiDiscrete(1, dtype=np.int8),
             "wrong_way": gym.spaces.MultiDiscrete(1, dtype=np.int8),
         }),
-    }
-
-    opt = {
         "dagm": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
         "lidar": lambda _: gym.spaces.Dict({
             "hit": gym.spaces.MultiBinary(_LIDAR_SHP),
@@ -369,32 +376,39 @@ def get_spaces() -> Tuple[Dict[str, gym.Space], Dict[str, Callable[[Any], gym.Sp
             "lane_width": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
             "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=_WAYPOINT_SHP + (3,), dtype=np.float64),
             "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
-        }),
+        })
     }
     # fmt: on
 
-    return basic, opt
+    return spaces
 
 
-def _make_space(intrfcs: Dict[str, Any]) -> gym.Space:
-    space, opt_space = get_spaces()
+def _make_space(intrfcs: Dict[str, Any]) -> Dict[str, gym.Space]:
+    spaces = get_spaces()
+    space = {}
+
+    space.update(
+        {
+            "dist": spaces["dist"](None),
+            "ego": spaces["ego"]("accelerometer" in intrfcs.keys()),
+            "events": spaces["events"](None),
+        }
+    )
 
     for intrfc, val in intrfcs.items():
         opt_ob = intrfc_to_stdobs(intrfc)
         if opt_ob:
-            space.update({opt_ob: opt_space[opt_ob](val)})
+            space.update({opt_ob: spaces[opt_ob](val)})
 
     if "waypoints" in intrfcs.keys() and "neighborhood_vehicles" in intrfcs.keys():
-        space.update({"ttc": opt_space["ttc"](None)})
+        space.update({"ttc": spaces["ttc"](None)})
 
     return space
 
 
 def _std_dagm(
-    val: Optional[DrivableAreaGridMap],
-) -> Optional[np.ndarray]:
-    if not val:
-        return None
+    val: DrivableAreaGridMap,
+) -> np.ndarray:
     return val.data.astype(np.uint8)
 
 
@@ -403,35 +417,32 @@ def _std_dist(val: float) -> float:
 
 
 def _std_ego(
-    val: EgoVehicleObservation,
+    val: EgoVehicleObservation, accelerometer: bool
 ) -> Dict[str, Union[np.int8, np.float32, np.ndarray]]:
 
-    if val.angular_acceleration is None:
-        ang_accel = np.zeros((3,), dtype=np.float32)
-        ang_jerk = np.zeros((3,), dtype=np.float32)
-        lin_accel = np.zeros((3,), dtype=np.float32)
-        lin_jerk = np.zeros((3,), dtype=np.float32)
-    else:
-        ang_accel = val.angular_acceleration.astype(np.float32)
-        ang_jerk = val.angular_jerk.astype(np.float32)
-        lin_accel = val.linear_acceleration.astype(np.float32)
-        lin_jerk = val.linear_jerk.astype(np.float32)
-
-    return {
-        "angular_acceleration": ang_accel,
-        "angular_jerk": ang_jerk,
+    std_ego = {
         "angular_velocity": val.angular_velocity.astype(np.float32),
         "box": np.array(val.bounding_box.as_lwh).astype(np.float32),
         "heading": np.float32(val.heading),
         "lane_index": np.int8(val.lane_index),
-        "linear_acceleration": lin_accel,
-        "linear_jerk": lin_jerk,
         "linear_velocity": val.linear_velocity.astype(np.float32),
         "pos": val.position.astype(np.float64),
         "speed": np.float32(val.speed),
         "steering": np.float32(val.steering),
         "yaw_rate": np.float32(val.yaw_rate),
     }
+
+    if accelerometer:
+        std_ego.update(
+            {
+                "angular_acceleration": val.angular_acceleration.astype(np.float32),
+                "angular_jerk": val.angular_jerk.astype(np.float32),
+                "linear_acceleration": val.linear_acceleration.astype(np.float32),
+                "linear_jerk": val.linear_jerk.astype(np.float32),
+            }
+        )
+
+    return std_ego
 
 
 def _std_events(val: Events) -> Dict[str, int]:
@@ -449,12 +460,8 @@ def _std_events(val: Events) -> Dict[str, int]:
 
 
 def _std_lidar(
-    val: Optional[
-        Tuple[List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]]
-    ]
-) -> Optional[Dict[str, np.ndarray]]:
-    if not val:
-        return None
+    val: Tuple[List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]]
+) -> Dict[str, np.ndarray]:
 
     des_shp = _LIDAR_SHP
     hit = np.array(val[1], dtype=np.int8)
@@ -487,14 +494,21 @@ def _std_lidar(
 
 
 def _std_neighbors(
-    nghbs: Optional[List[VehicleObservation]],
-) -> Optional[Dict[str, np.ndarray]]:
-    if not nghbs:
-        return None
+    nghbs: List[VehicleObservation],
+) -> Dict[str, np.ndarray]:
 
     des_shp = _NEIGHBOR_SHP
     rcv_shp = len(nghbs)
     pad_shp = 0 if des_shp - rcv_shp < 0 else des_shp - rcv_shp
+
+    if rcv_shp == 0:
+        return {
+            "box": np.zeros((des_shp, 3), dtype=np.float32),
+            "heading": np.zeros((des_shp,), dtype=np.float32),
+            "lane_index": np.zeros((des_shp,), dtype=np.int8),
+            "pos": np.zeros((des_shp, 3), dtype=np.float64),
+            "speed": np.zeros((des_shp,), dtype=np.float32),
+        }
 
     nghbs = [
         (
@@ -531,21 +545,15 @@ def _std_neighbors(
     }
 
 
-def _std_ogm(val: Optional[OccupancyGridMap]) -> Optional[np.ndarray]:
-    if not val:
-        return None
+def _std_ogm(val: OccupancyGridMap) -> np.ndarray:
     return val.data.astype(np.uint8)
 
 
-def _std_rgb(val: Optional[TopDownRGB]) -> Optional[np.ndarray]:
-    if not val:
-        return None
+def _std_rgb(val: TopDownRGB) -> np.ndarray:
     return val.data.astype(np.uint8)
 
 
-def _std_ttc(obs: Observation) -> Optional[Dict[str, Union[np.float32, np.ndarray]]]:
-    if not obs.neighborhood_vehicle_states or not obs.waypoint_paths:
-        return None
+def _std_ttc(obs: Observation) -> Dict[str, Union[np.float32, np.ndarray]]:
 
     val = lane_ttc(obs)
     return {
@@ -557,10 +565,8 @@ def _std_ttc(obs: Observation) -> Optional[Dict[str, Union[np.float32, np.ndarra
 
 
 def _std_waypoints(
-    paths: Optional[List[List[Waypoint]]],
-) -> Optional[Dict[str, np.ndarray]]:
-    if not paths:
-        return None
+    paths: List[List[Waypoint]],
+) -> Dict[str, np.ndarray]:
 
     des_shp = _WAYPOINT_SHP
     rcv_shp = (len(paths), len(paths[0]))

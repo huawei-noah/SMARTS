@@ -12,7 +12,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -28,6 +28,7 @@ import {
 } from "@babylonjs/core";
 
 import { useEffect, useRef } from "react";
+import { SceneColors } from "../helpers/scene_colors";
 
 export default function Bubbles({ scene, worldState }) {
   if (scene == null) {
@@ -55,11 +56,9 @@ export default function Bubbles({ scene, worldState }) {
       );
       polygon.position.y = 4;
       let material = new StandardMaterial(`bubble-${idx}-material`, scene);
-      material.diffuseColor = new Color4(
-        ...worldState.scene_colors["bubble_line"]
-      );
+      material.diffuseColor = new Color4(...SceneColors.BubbleLine);
       material.specularColor = new Color3(0, 0, 0);
-      material.alpha = worldState.scene_colors["bubble_line"][3];
+      material.alpha = SceneColors.BubbleLine[3];
       polygon.material = material;
       return polygon;
     });

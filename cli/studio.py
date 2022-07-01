@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -24,7 +24,7 @@ import sys
 from multiprocessing import Process, Semaphore, synchronize
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Sequence
+from typing import Optional, Sequence
 
 import click
 
@@ -66,12 +66,13 @@ def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
     scenario_py = scenario_root / "scenario.py"
     if scenario_py.exists():
         _install_requirements(scenario_root)
-        subprocess.check_call([sys.executable, scenario_py])
+        subprocess.check_call([sys.executable, "scenario.py"], cwd=scenario_root)
 
     from smarts.core.scenario import Scenario
 
     traffic_histories = Scenario.discover_traffic_histories(scenario_root_str)
-    shift_to_origin = not allow_offset_map
+    # don't shift maps for scenarios with traffic histories since history data must line up with map
+    shift_to_origin = not allow_offset_map and not bool(traffic_histories)
 
     map_spec = Scenario.discover_map(scenario_root_str, shift_to_origin=shift_to_origin)
     road_map, _ = map_spec.builder_fn(map_spec)
@@ -160,7 +161,7 @@ def _is_scenario_folder_to_build(path: str) -> bool:
     "--allow-offset-maps",
     is_flag=True,
     default=False,
-    help="Allows road networks (maps) to be offset from the origin. If not specified, creates creates a new network file if necessary.",
+    help="Allows road networks (maps) to be offset from the origin. If not specified, a new network file is created if necessary.  Defaults to False except when there's Traffic History data associated with the scenario.",
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
 def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
@@ -208,7 +209,7 @@ def _clean(scenario: str):
         "*.rou.xml",
         "*.rou.alt.xml",
         "social_agents/*",
-        "traffic/*",
+        "traffic/*.rou.xml",
         "history_mission.pkl",
         "*.shf",
         "*-AUTOGEN.net.xml",
@@ -241,7 +242,58 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
             )
 
 
+@scenario_cli.command(
+    name="browse-waymo",
+    help="Browse Waymo TFRecord datasets using smarts/waymo/waymo_browser.py, a text-based browser utility",
+)
+@click.argument(
+    "tfrecords",
+    type=click.Path(exists=True),
+    metavar="<script>",
+    nargs=-1,
+    required=True,
+)
+@click.option(
+    "-t",
+    "--target-base-path",
+    type=click.Path(exists=True),
+    default=None,
+    help="Default target base path to export scenarios to",
+)
+@click.option(
+    "-i",
+    "--import-tags",
+    type=click.Path(exists=True),
+    default=None,
+    help=".json file to import tags for tfRecord scenarios from",
+)
+def browse_waymo_dataset(
+    tfrecords: Sequence[str],
+    target_base_path: Optional[str],
+    import_tags: Optional[str],
+):
+    if not tfrecords:
+        # nargs=-1 in combination with a default value is not supported
+        # if tfrecords is not given, set the known tfrecord directory as default
+        tfrecords = [os.path.join("smarts", "waymo", "waymo_data")]
+
+    utility_path = os.path.join("smarts", "waymo", "waymo_browser.py")
+    subprocess_command = [
+        sys.executable,
+        utility_path,
+    ]
+
+    if target_base_path is not None:
+        subprocess_command.append(f"--target-base-path={target_base_path}")
+    if import_tags is not None:
+        subprocess_command.append(f"--import-tags={import_tags}")
+
+    click.echo(f"Executing {utility_path} with arguments {tfrecords}")
+    subprocess.check_call(subprocess_command + list(tfrecords))
+
+
 scenario_cli.add_command(build_scenario)
 scenario_cli.add_command(build_all_scenarios)
 scenario_cli.add_command(clean_scenario)
 scenario_cli.add_command(replay)
+scenario_cli.add_command(browse_waymo_dataset)

@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -24,15 +24,16 @@ import gym
 import pytest
 
 from smarts.core.agent import Agent
-from smarts.core.agent_interface import AgentInterface, Waypoints
+from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
 from smarts.core.controllers import ActionSpaceType
-from smarts.env.wrappers.format_obs import FormatObs, get_spaces, intrfc_to_stdobs
+from smarts.env.wrappers.format_obs import FormatObs, intrfc_to_stdobs
 from smarts.zoo.agent_spec import AgentSpec
 
 
 def _intrfcs_init():
     return [
         [{"accelerometer": True}, {"accelerometer": False}],
+        [{"accelerometer": True}] * 2,
         [{"drivable_area_grid_map": True}] * 2,
         [{"lidar": True}] * 2,
         [{"neighborhood_vehicles": True}] * 2,
@@ -56,6 +57,8 @@ def _intrfcs_obs():
 
     return [
         [base_intrfc] * 2,
+        [dict(base_intrfc, **{"neighborhood_vehicles": NeighborhoodVehicles(radius=0)})]
+        * 2,
         [dict(base_intrfc, **{"accelerometer": False})] * 2,
         [dict(base_intrfc, **{"waypoints": Waypoints(lookahead=50)})] * 2,
     ]
@@ -87,7 +90,7 @@ def _make_agent_specs(intrfcs):
 def make_env(request):
     env = gym.make(
         "smarts.env:hiway-v0",
-        scenarios=["scenarios/figure_eight"],
+        scenarios=["scenarios/sumo/figure_eight"],
         agent_specs=_make_agent_specs(request.param),
         headless=True,
         visdom=False,
@@ -97,13 +100,8 @@ def make_env(request):
     env.close()
 
 
-@pytest.fixture(scope="module")
-def spaces():
-    return get_spaces()
-
-
 @pytest.mark.parametrize("make_env", _intrfcs_init(), indirect=True)
-def test_init(make_env, spaces):
+def test_init(make_env):
     base_env, cur_intrfcs = make_env
 
     # Test wrapping an env with non-identical agent interfaces
@@ -123,8 +121,7 @@ def test_init(make_env, spaces):
     rcv_space = env.observation_space
     rcv_space_keys = set([key for key in rcv_space[agent_id]])
 
-    basic, _ = spaces
-    des_space_keys = set(basic.keys())
+    des_space_keys = set(["dist", "ego", "events"])
     opt_space_keys = [
         intrfc_to_stdobs(intrfc)
         for intrfc, val in cur_intrfcs[0].items()
@@ -136,6 +133,16 @@ def test_init(make_env, spaces):
 
     assert rcv_space_keys == des_space_keys
 
+    # Test accelerometer space in observation space of wrapped env
+    des_ego_keys = set(
+        ["angular_acceleration", "angular_jerk", "linear_acceleration", "linear_jerk"]
+    )
+    rcv_ego_keys = set([key for key in rcv_space[agent_id]["ego"]])
+    if cur_intrfcs[0].get("accelerometer", None):
+        assert des_ego_keys.issubset(rcv_ego_keys)
+    else:
+        assert des_ego_keys.isdisjoint(rcv_ego_keys)
+
     env.close()
 
 
@@ -143,8 +150,7 @@ def _check_observation(
     rcv_space,
     obs,
 ):
-    for field1 in obs.__dataclass_fields__:
-        val1 = getattr(obs, field1)
+    for field1, val1 in obs.items():
         if isinstance(val1, dict):
             for field2, val2 in val1.items():
                 assert val2.shape == rcv_space[field1][field2].shape

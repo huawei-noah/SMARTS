@@ -12,7 +12,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -29,6 +29,7 @@ import { useRef, useEffect } from "react";
 
 import { ActorTypes } from "../enums.js";
 import { vehicleMeshColor } from "../render_helpers.js";
+import { SceneColors as SceneColors } from "../helpers/scene_colors.js";
 
 // Driven path geometry
 export default function DrivenPaths({
@@ -91,10 +92,9 @@ export default function DrivenPaths({
       );
       egoDrivenPathModel.material.specularColor = new Color3(0, 0, 0);
       egoDrivenPathModel.material.diffuseColor = new Color4(
-        ...worldState.scene_colors["ego_driven_path"]
+        ...SceneColors.EgoDrivenPath
       );
-      egoDrivenPathModel.material.alpha =
-        worldState.scene_colors["ego_driven_path"][3];
+      egoDrivenPathModel.material.alpha = SceneColors.EgoDrivenPath[3];
     }
 
     if (socialDrivenPathModel.material == null) {
@@ -103,13 +103,9 @@ export default function DrivenPaths({
         scene
       );
       socialDrivenPathModel.material.specularColor = new Color3(0, 0, 0);
-      let color = vehicleMeshColor(
-        ActorTypes.SOCIAL_AGENT,
-        worldState.scene_colors
-      );
+      let color = vehicleMeshColor(ActorTypes.SOCIAL_AGENT);
       socialDrivenPathModel.material.diffuseColor = new Color4(...color);
-      socialDrivenPathModel.material.alpha =
-        worldState.scene_colors["ego_driven_path"][3];
+      socialDrivenPathModel.material.alpha = SceneColors.EgoDrivenPath[3];
     }
 
     // Add in new driven path segments

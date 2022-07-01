@@ -50,6 +50,7 @@ jobs:
             --dist=no \
             -n auto \
             --ignore-glob="**/ros.py" \
+            --ignore-glob="**/waymo_map.py" \
             ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/core/tests/test_env_frame_rate.py \

@@ -1,4 +1,4 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -80,6 +80,12 @@ class RoadMap:
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         """Find a road in this road map that has the given identifier."""
+        raise NotImplementedError()
+
+    def nearest_surfaces(
+        self, point: Point, radius: Optional[float] = None
+    ) -> List[Tuple[RoadMap.Surface, float]]:
+        """Find surfaces (lanes, roads, etc.) on this road map that are near the given point."""
         raise NotImplementedError()
 
     def nearest_lanes(
@@ -159,7 +165,7 @@ class RoadMap:
 
         @property
         def is_drivable(self) -> bool:
-            """Returns true iff this surface is legally and physically drivable."""
+            """Returns true if this surface is legally and physically drivable."""
             raise NotImplementedError()
 
         @property
@@ -191,7 +197,9 @@ class RoadMap:
             raise NotImplementedError()
 
         def contains_point(self, point: Point) -> bool:
-            """Returns True iff this point is fully contained by this surface."""
+            """Returns True if this point is fully contained by this surface.
+            For some regions of some maps, it may not be possible to determine this.
+            In such indeterminate cases, it is recommended to return True."""
             raise NotImplementedError()
 
     class Lane(Surface):
@@ -283,7 +291,7 @@ class RoadMap:
 
         @property
         def foes(self) -> List[RoadMap.Lane]:
-            """All lanes that in some way intersect with (cross) this one,
+            """All lanes that in some ways intersect with (cross) this one,
             including those that have the same outgoing lane as this one,
             and so might require right-of-way rules.  This should only
             ever happen in junctions."""
@@ -309,8 +317,11 @@ class RoadMap:
             """Get the offset of the given point imposed on this lane."""
             raise NotImplementedError()
 
-        def width_at_offset(self, offset: float) -> float:
-            """Get the width of the lane at the given offset."""
+        def width_at_offset(self, offset: float) -> Tuple[float, float]:
+            """Get the width of the lane at the given offset as well as
+            a measure of certainty in this width between 0 and 1.0, where
+            1 indicates that the width is exact and certain, and 0 indicates
+            a width estimate with no confidence."""
             raise NotImplementedError()
 
         def project_along(
@@ -340,8 +351,10 @@ class RoadMap:
             """Get a world point on the lane from the given lane coordinate point."""
             raise NotImplementedError()
 
-        ## The next 6 methods are "reference" implementations for convenience.
+        ## The next 5 methods are "reference" implementations for convenience.
         ## Derived classes may want to extend as well as add a cache.
+
+        ## ======== Reference Methods =========
 
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
             """Convert from the given world coordinate to a lane coordinate point."""
@@ -349,7 +362,7 @@ class RoadMap:
             vector = self.vector_at_offset(s)
             normal = np.array([-vector[1], vector[0], 0])
             center_at_s = self.from_lane_coord(RefLinePoint(s=s))
-            offcenter_vector = np.array(world_point) - center_at_s
+            offcenter_vector = np.array(world_point) - np.array(center_at_s)
             t_sign = np.sign(np.dot(offcenter_vector, normal))
             t = np.linalg.norm(offcenter_vector) * t_sign
             return RefLinePoint(s=s, t=t)
@@ -358,21 +371,6 @@ class RoadMap:
             """Get the 'center' of the lane closest to the given world coordinate."""
             offset = self.offset_along_lane(point)
             return self.from_lane_coord(RefLinePoint(s=offset))
-
-        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            """Get the boundary points perpendicular to the center of the lane closest to the given
-             world coordinate.
-            Args:
-                point:
-                    A world coordinate point.
-            Returns:
-                A pair of points indicating the left boundary and right boundary of the lane.
-            """
-            offset = self.offset_along_lane(point)
-            width = self.width_at_offset(offset)
-            left_edge = RefLinePoint(s=offset, t=width / 2)
-            right_edge = RefLinePoint(s=offset, t=-width / 2)
-            return self.from_lane_coord(left_edge), self.from_lane_coord(right_edge)
 
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
             """The lane direction vector at the given offset."""
@@ -415,6 +413,8 @@ class RoadMap:
                     )
                 prev_heading_rad = heading_rad
             return lookahead / heading_deltas if heading_deltas else math.inf
+
+        ## ======== \Reference Methods =========
 
     class Road(Surface):
         """This is akin to a 'road segment' in real life.
@@ -486,17 +486,6 @@ class RoadMap:
 
         def lane_at_index(self, index: int) -> RoadMap.Lane:
             """Gets the lane with the given index."""
-            raise NotImplementedError()
-
-        def edges_at_point(self, point: Point) -> Tuple[Point, Point]:
-            """Get the boundary points perpendicular to the center of the road closest to the given
-             world coordinate.
-            Args:
-                point:
-                    A world coordinate point.
-            Returns:
-                A pair of points indicating the left boundary and right boundary of the road.
-            """
             raise NotImplementedError()
 
     class Feature:

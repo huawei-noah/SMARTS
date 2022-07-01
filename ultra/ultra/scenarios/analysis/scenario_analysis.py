@@ -14,7 +14,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -36,11 +36,10 @@ import ray
 import torch
 from matplotlib import pyplot as plt
 
-from smarts.core.agent import Agent
+from smarts.core.agent import Agent, AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType, NeighborhoodVehicles
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.utils.episodes import episodes
-from smarts.zoo.agent_spec import AgentSpec
 from ultra.scenarios.analysis.base_analysis import BaseAnalysis
 from ultra.scenarios.common.social_vehicle_definitions import get_social_vehicle_color
 from ultra.scenarios.common.visualization import (
@@ -55,7 +54,7 @@ num_gpus = 1 if torch.cuda.is_available() else 0
 @ray.remote(num_gpus=num_gpus / 2)
 class ScenarioAnalysis(BaseAnalysis):
     def __init__(self):
-        super(BaseAnalysis, self).__init__()
+        super(ScenarioAnalysis, self).__init__()
         self.analysis = {
             "stopwatcher_max_steps": [],
             "max_num_step_overall_routes": [],

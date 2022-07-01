@@ -12,13 +12,13 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from enum import Enum
-from typing import Dict, NamedTuple, Optional, Sequence, Tuple, Union
+from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple, Union
 
 from smarts.core.events import Events
 
@@ -53,9 +53,10 @@ class TrafficActorState(NamedTuple):
     actor_id: Optional[str] = None
     events: Events = None
     waypoint_paths: Sequence = []
-    driven_path: Sequence = []
+    driven_path: Sequence[Tuple[float, float]] = []
     point_cloud: Sequence = []
     mission_route_geometry: Sequence[Sequence[Tuple[float, float]]] = None
+    lane_id: Optional[str] = None
 
 
 class State(NamedTuple):
@@ -66,13 +67,8 @@ class State(NamedTuple):
     scenario_name: str
     # sequence of x, y coordinates
     bubbles: Sequence[Sequence[Tuple[float, float]]]
-    scene_colors: Dict[str, Tuple[float, float, float, float]]
     scores: Dict[str, float]
-    ego_agent_ids: list
-    position: Dict[str, Tuple[float, float]]
-    speed: Dict[str, float]
-    heading: Dict[str, float]
-    lane_ids: Dict[str, str]
+    ego_agent_ids: List[str]
     frame_time: float
 
 

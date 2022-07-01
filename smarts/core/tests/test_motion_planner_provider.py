@@ -14,7 +14,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -40,10 +40,11 @@ def motion_planner_provider():
 @pytest.fixture
 def loop_scenario():
     mission = Mission(
-        start=Start((71.65, 63.78), Heading(math.pi * 0.91)), goal=EndlessGoal()
+        start=Start(np.array([71.65, 63.78]), Heading(math.pi * 0.91)),
+        goal=EndlessGoal(),
     )
     scenario = Scenario(
-        scenario_root="scenarios/loop",
+        scenario_root="scenarios/sumo/loop",
         route="basic.rou.xml",
         missions={"Agent-007": mission},
     )

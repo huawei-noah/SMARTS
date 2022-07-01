@@ -12,7 +12,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -31,6 +31,8 @@ from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
 
 from . import types
+
+SECONDS_PER_HOUR_INV = 1 / 60 / 60
 
 
 class InvalidRoute(Exception):
@@ -249,6 +251,13 @@ class TrafficGenerator:
                 total_weight = sum(flow.actors.values())
                 route = resolved_routes[flow.route]
                 for actor_idx, (actor, weight) in enumerate(flow.actors.items()):
+                    vehs_per_hour = flow.rate * (weight / total_weight)
+                    rate_option = {}
+                    if flow.randomly_spaced:
+                        vehs_per_sec = vehs_per_hour * SECONDS_PER_HOUR_INV
+                        rate_option = dict(probability=vehs_per_sec)
+                    else:
+                        rate_option = dict(vehsPerHour=vehs_per_hour)
                     doc.stag(
                         "flow",
                         id="{}-{}-{}-{}".format(
@@ -256,7 +265,6 @@ class TrafficGenerator:
                         ),
                         type=actor.id,
                         route=route.id,
-                        vehsPerHour=flow.rate * (weight / total_weight),
                         departLane=route.begin[1],
                         departPos=route.begin[2],
                         departSpeed=actor.depart_speed,
@@ -264,6 +272,7 @@ class TrafficGenerator:
                         arrivalPos=route.end[2],
                         begin=flow.begin,
                         end=flow.end,
+                        **rate_option,
                     )
 
         with open(route_path, "w") as f:

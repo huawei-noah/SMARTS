@@ -12,7 +12,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -23,6 +23,7 @@ import { Color3, Color4, StandardMaterial } from "@babylonjs/core";
 import { useEffect, useRef } from "react";
 
 import { ActorTypes } from "../enums.js";
+import { SceneColors } from "../helpers/scene_colors.js";
 import { vehicleMeshColor } from "../render_helpers.js";
 
 export default function Waypoints({
@@ -54,10 +55,9 @@ export default function Waypoints({
       );
       egoWaypointModel.material.specularColor = new Color3(0, 0, 0);
       egoWaypointModel.material.diffuseColor = new Color4(
-        ...worldState.scene_colors["ego_waypoint"]
+        ...SceneColors.EgoWaypoint
       );
-      egoWaypointModel.material.alpha =
-        worldState.scene_colors["ego_waypoint"][3];
+      egoWaypointModel.material.alpha = SceneColors.EgoWaypoint[3];
     }
 
     if (socialWaypointModel.material == null) {
@@ -66,13 +66,9 @@ export default function Waypoints({
         scene
       );
       socialWaypointModel.material.specularColor = new Color3(0, 0, 0);
-      let color = vehicleMeshColor(
-        ActorTypes.SOCIAL_AGENT,
-        worldState.scene_colors
-      );
+      let color = vehicleMeshColor(ActorTypes.SOCIAL_AGENT);
       socialWaypointModel.material.diffuseColor = new Color4(...color);
-      socialWaypointModel.material.alpha =
-        worldState.scene_colors["ego_waypoint"][3];
+      socialWaypointModel.material.alpha = SceneColors.EgoWaypoint[3];
     }
 
     let newWaypointGeometries = [];

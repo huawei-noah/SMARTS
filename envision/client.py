@@ -14,7 +14,7 @@
 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -34,6 +34,8 @@ import numpy as np
 import websocket
 
 from envision import types
+from envision.client_config import EnvisionStateFilter
+from envision.data_formatter import EnvisionDataFormatter, EnvisionDataFormatterArgs
 from smarts.core.utils.file import unpack
 
 
@@ -79,9 +81,18 @@ class Client:
         output_dir: Optional[str] = None,
         sim_name: Optional[str] = None,
         headless: bool = False,
+        envision_state_filter: Optional[EnvisionStateFilter] = None,
+        data_formatter_args: Optional[EnvisionDataFormatterArgs] = None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self._headless = headless
+
+        self._envision_state_filter = (
+            envision_state_filter or EnvisionStateFilter.default()
+        )
+        self._data_formatter_args = data_formatter_args or EnvisionDataFormatterArgs(
+            "default"
+        )
 
         current_time = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
         client_id = current_time
@@ -102,10 +113,7 @@ class Client:
             self._logging_queue = multiprocessing.Queue()
             self._logging_process = multiprocessing.Process(
                 target=self._write_log_state,
-                args=(
-                    self._logging_queue,
-                    path,
-                ),
+                args=(self._logging_queue, path, self._data_formatter_args),
             )
             self._logging_process.daemon = True
             self._logging_process.start()
@@ -120,6 +128,7 @@ class Client:
                     f"{endpoint}/simulations/{client_id}/broadcast",
                     self._state_queue,
                     wait_between_retries,
+                    self._data_formatter_args,
                 ),
             )
             self._process.daemon = True
@@ -130,8 +139,18 @@ class Client:
         """Indicates if this client is disconnected from the remote."""
         return self._headless
 
+    @property
+    def envision_state_filter(self) -> EnvisionStateFilter:
+        """Filtering options for data."""
+        return self._envision_state_filter
+
     @staticmethod
-    def _write_log_state(queue, path):
+    def _write_log_state(
+        queue, path, data_formatter_args: Optional[EnvisionDataFormatterArgs]
+    ):
+        data_formatter = None
+        if data_formatter_args:
+            data_formatter = EnvisionDataFormatter(data_formatter_args)
         with path.open("w", encoding="utf-8") as f:
             while True:
                 state = queue.get()
@@ -139,8 +158,12 @@ class Client:
                     break
 
                 if not isinstance(state, str):
+                    if data_formatter:
+                        data_formatter.reset()
+                        data_formatter.add(state)
+                        state = data_formatter.resolve()
                     state = unpack(state)
-                    state = json.dumps(state, cls=JSONEncoder)
+                    state = json.dumps(state, cls=JSONEncoder, allow_nan=False)
 
                 f.write(f"{state}\n")
 
@@ -170,15 +193,23 @@ class Client:
         endpoint,
         state_queue,
         wait_between_retries: float = 0.05,
+        data_formatter_args: Optional[EnvisionDataFormatterArgs] = None,
     ):
         connection_established = False
         warned_about_connection = False
+        data_formatter = None
+        if data_formatter_args:
+            data_formatter = EnvisionDataFormatter(data_formatter_args)
 
         def optionally_serialize_and_write(state: Union[types.State, str], ws):
             # if not already serialized
             if not isinstance(state, str):
+                if data_formatter:
+                    data_formatter.reset()
+                    data_formatter.add(state)
+                    state = data_formatter.resolve()
                 state = unpack(state)
-                state = json.dumps(state, cls=JSONEncoder)
+                state = json.dumps(state, cls=JSONEncoder, allow_nan=False)
 
             ws.send(state)
 

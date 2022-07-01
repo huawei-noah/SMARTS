@@ -14,7 +14,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -64,7 +64,7 @@ def data_replay_path():
 
 @pytest.fixture
 def scenarios_iterator():
-    scenarios = ["scenarios/loop", "scenarios/intersections/6lane"]
+    scenarios = ["scenarios/sumo/loop", "scenarios/sumo/intersections/6lane"]
     return Scenario.scenario_variations(scenarios, [AGENT_ID])
 
 
@@ -148,7 +148,9 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
     assert new_sent_data.qsize() == 0
 
     # Now read data replay
-    Envision.read_and_send(jsonl_paths[0], fixed_timestep_sec=TIMESTEP_SEC)
+    Envision.read_and_send(
+        str(jsonl_paths[0].absolute()), fixed_timestep_sec=TIMESTEP_SEC
+    )
 
     # Verify the new data matches the original data
     assert original_sent_data.qsize() == new_sent_data.qsize()

@@ -14,7 +14,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -46,10 +46,21 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "smarts[train,test]==0.4.14",
+        "gym==0.19.0",
         "setuptools>=41.0.0,!=50.0",
+        "trimesh<=3.9.29",
         "dill",
         "black==20.8b1",
-        "ray[rllib]==1.0.1.post1",
-        "opencv-python",
+        # "ray[rllib]==1.0.1.post1",
+        "opencv-python==4.1.2.30",
     ],
+    extras_require={
+        "dev": [
+            "black==20.8b1",
+            "isort==5.7.0",
+            "pre-commit==2.16.0",
+            "pylint>=2.12.2",
+            "pytype==2022.1.13",
+        ],
+    },
 )

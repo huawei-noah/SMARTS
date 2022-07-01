@@ -12,7 +12,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -47,6 +47,8 @@ import { attrs, agentModes } from "./control_panel";
 import InfoDisplay from "./InfoDisplay";
 import ScenarioNameDisplay from "./ScenarioNameDisplay";
 import earcut from "earcut";
+import { SceneColors } from "../helpers/scene_colors.js";
+import unpack_worldstate from "../helpers/state_unpacker.js";
 
 // Required by Babylon.js
 window.earcut = earcut;
@@ -78,7 +80,6 @@ export default function Simulation({
     scenario_id: null,
     scenario_name: null,
     bubbles: [],
-    scene_colors: {},
     scores: [],
     ego_agent_ids: [],
     position: [],
@@ -181,8 +182,8 @@ export default function Simulation({
           );
           prevElapsedTime = elapsed_times[0];
         }
-
-        setWorldState(wstate);
+        let unpacked_wstate = unpack_worldstate(wstate);
+        setWorldState(unpacked_wstate);
         onElapsedTimesChanged(...elapsed_times);
         waitStartTime = Date.now();
         wstate_and_time = await it.next();
@@ -228,7 +229,7 @@ export default function Simulation({
       for (const child of meshes[0].getChildMeshes()) {
         let material = new StandardMaterial("material-map", scene);
         material.backFaceCulling = false;
-        material.diffuseColor = new Color4(...worldState.scene_colors["road"]);
+        material.diffuseColor = new Color4(...SceneColors.Road);
         material.specularColor = new Color3(0, 0, 0);
         child.material = material;
       }

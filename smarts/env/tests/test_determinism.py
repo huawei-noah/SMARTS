@@ -14,7 +14,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -201,7 +201,7 @@ def test_short_determinism():
     max_steps_per_episode = 20
     episode_count = 3
     capture_step = 5
-    scenarios = "scenarios/intersections/2lane"
+    scenarios = "scenarios/sumo/intersections/2lane"
     determinism(
         agent_spec(max_steps_per_episode), scenarios, episode_count, capture_step
     )
@@ -211,7 +211,7 @@ def test_long_determinism():
     max_steps_per_episode = 55000
     episode_count = 1
     capture_step = 13750
-    scenarios = "scenarios/intersections/2lane"
+    scenarios = "scenarios/sumo/intersections/2lane"
     determinism(
         agent_spec(max_steps_per_episode), scenarios, episode_count, capture_step
     )

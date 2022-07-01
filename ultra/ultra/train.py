@@ -14,7 +14,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -37,6 +37,8 @@ import psutil
 import ray
 import torch
 
+import ultra.baselines  # Do not delete
+import ultra.env  # Do not delete
 from smarts.zoo.registry import make
 from ultra.evaluate import collect_evaluations, evaluation_check
 from ultra.utils.common import agent_pool_value
@@ -186,7 +188,7 @@ def train(
     log_dir,
     policy_ids=None,
 ):
-    torch.set_num_threads(1)
+    getattr(torch, "set_num_threads")(1)
     total_step = 0
     finished = False
     evaluation_task_ids = dict()

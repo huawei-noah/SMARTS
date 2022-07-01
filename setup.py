@@ -13,7 +13,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.6.1rc1",
+    version="0.6.1",
     packages=find_packages(exclude=("tests", "examples")),
     include_package_data=True,
     zip_safe=True,
@@ -28,7 +28,7 @@ setup(
         "eclipse-sumo==1.10.0",  # sumo
         "gym==0.19.0",
         "numpy>=1.19.5",  # required for tf 2.4 below
-        "pandas>=1.3.4",
+        "pandas>=1.3.4",  # only used by zoo/evaluation
         "psutil>=5.8.0",
         "pybullet==3.0.6",
         "rich>=11.2.0",
@@ -51,7 +51,7 @@ setup(
         "matplotlib>=3.4.3",
         # The following are for /smarts/zoo and remote agents
         "grpcio==1.32.0",
-        "protobuf>=3.19.1",
+        "protobuf==3.20.1",
         "PyYAML>=6.0",
         "twisted>=21.7.0",
     ],
@@ -94,7 +94,9 @@ setup(
         "train": [
             "tensorflow>=2.4.0",
         ],
-        "waymo": ["waymo-open-dataset-tf-2-4-0"],
+        "waymo": [
+            "waymo-open-dataset-tf-2-4-0",
+        ],
         "opendrive": ["opendrive2lanelet>=1.2.1"],
     },
     entry_points={"console_scripts": ["scl=cli.cli:scl"]},

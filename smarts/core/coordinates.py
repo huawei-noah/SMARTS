@@ -12,24 +12,14 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import enum
 import math
 from dataclasses import dataclass
-from typing import (
-    Any,
-    NamedTuple,
-    Optional,
-    Sequence,
-    SupportsFloat,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, NamedTuple, Optional, SupportsFloat, Tuple, Union
 
 import numpy as np
 from cached_property import cached_property
@@ -164,6 +154,18 @@ class BoundingBox:
     def as_dimensions(self) -> Dimensions:
         """The box dimensions. This will lose offset information."""
         return Dimensions(length=self.length, width=self.width, height=self.height)
+
+    def contains(self, pt: Point) -> bool:
+        """returnx True iff pt is fully within the bounding box.  If any bbox coordinates are None, it's considered unbounded on that dimension/axis."""
+        return (
+            self.min_pt is None
+            or (self.min_pt.x is None or self.min_pt.x < pt.x)
+            and (self.min_pt.y is None or self.min_pt.y < pt.y)
+        ) and (
+            self.max_pt is None
+            or (self.max_pt.x is None or pt.x < self.max_pt.x)
+            and (self.max_pt.y is None or pt.y < self.max_pt.y)
+        )
 
 
 class Heading(float):
