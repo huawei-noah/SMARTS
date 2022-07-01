@@ -8,6 +8,8 @@ All text added must be human-readable.
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
+# [Unreleased]
+
 # [0.6.1]
 ### Added
 - Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make an uprotected left turn in the presence of traffic.
