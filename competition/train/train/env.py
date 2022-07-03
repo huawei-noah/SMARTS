@@ -63,7 +63,7 @@ def make(
         scenario=scenario,
         img_meters=config["img_meters"],
         img_pixels=config["img_pixels"],
-        headless=True, # If False, enables Envision display.
+        headless=True,  # If False, enables Envision display.
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
     )
 

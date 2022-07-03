@@ -97,7 +97,11 @@ def evaluate():
     for index, (env_name, (env, datastore)) in enumerate(envs_eval.items()):
         print(f"\n{index}. Evaluating env {env_name}.\n")
         counts, costs = run(
-            env=env, datastore=datastore, name=env_name, policy=policy, config=config
+            env=env,
+            datastore=datastore,
+            env_name=env_name,
+            policy=policy,
+            config=config,
         )
         score.add(counts, costs)
 
@@ -112,9 +116,11 @@ def evaluate():
     return rank
 
 
-def run(env, datastore: DataStore, name, policy: Policy, config: Dict[str, Any]):
+def run(
+    env, datastore: DataStore, env_name: str, policy: Policy, config: Dict[str, Any]
+):
     # Instantiate metric for score calculation.
-    metric = Metric(datastore.agent_names)
+    metric = Metric(env_name=env_name, agent_names=datastore.agent_names)
 
     for _ in range(config["eval_episodes"]):
         observations = env.reset()

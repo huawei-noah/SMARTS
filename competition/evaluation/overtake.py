@@ -1,17 +1,26 @@
-# class _Overtake():
-#     def __init__(self, agent_names):
-#         self._traj = {name: [[],[]] for name in agent_names}
+from smarts.core.sensors import Observation
+from typing import Set
 
-#     def reinit(self):
-#         self._traj = {name: [[],[]] for name in self._overtake.keys()}
 
-#     def __call__(self, obs: Observation, agent_name: str):
-#         lane_index = obs.ego_vehicle_state.lane_index
-#         lane_index = obs.ego_vehicle_state.lane_index
+class Overtake:
+    """This is a rudimentary overtake detector specifically designed for the
+    single agent `SMARTS/smarts/scenarios/straight/3lane_overtake/scenario.py`.
+    Not meant for other scenarios.
+    """
 
-#         self._traj[agent_name].append(lane_index)
+    def __init__(self):
+        self._infront = set() # Set of vehicles that were in front the ego agent in the past
+        self._behind = set() # Set of vehicles that were in front the ego agent in the past
 
-#     def check(agent_name: str):
-#         overtake = 0
+    def __call__(self, obs: Observation):
+        ego = obs.ego_vehicle_state
+        # ego.lane_index
+        nghbs = obs.neighborhood_vehicle_states
+        nghbs = [(nghb.id, nghb.position[0], nghb.lane_index) for nghb in nghbs]
 
-#         return {"overtake": overtake}
+        return True
+
+    def check(agent_name: str):
+        overtake = 0
+
+        return 0

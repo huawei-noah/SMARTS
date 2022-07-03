@@ -36,9 +36,9 @@ class Score:
 
 def _completion(counts: Counts) -> float:
     w_cr = 0.6
-    w_ic = 0.4
+    w_pt = 0.4
 
-    return (w_cr * counts.crashes + w_ic * counts.incomplete) / counts.episodes
+    return (w_cr * counts.crashes + w_pt * counts.partial) / counts.episodes
 
 
 def _humanness(counts: Counts, costs: Costs) -> float:
@@ -60,11 +60,11 @@ def _humanness(counts: Counts, costs: Costs) -> float:
 
 
 def _rules(counts: Counts, costs: Costs) -> float:
-    w_c = 0.2
-    w_ord = 0.2
-    w_ort = 0.2
-    w_os = 0.2
-    w_ww = 0.2
+    w_c = 0.3
+    w_ord = 0.175
+    w_ort = 0.1
+    w_os = 0.175
+    w_ww = 0.25
 
     return (
         w_c * costs.collisions
