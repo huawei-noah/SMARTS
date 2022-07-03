@@ -77,9 +77,6 @@ class Policy(BasePolicy):
         """
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
-
-            # print("Obser: GD: ", agent_obs["goal_distance"], " GH: ", agent_obs["goal_heading"])
-
             action, _ = self.model.predict(observation=agent_obs, deterministic=True)
             wrapped_act.update({agent_id: action})
 

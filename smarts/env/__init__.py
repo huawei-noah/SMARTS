@@ -31,16 +31,6 @@ register(
 )
 
 register(
-    id="merge-v0",
-    entry_point="smarts.env.merge_v0_env:merge_v0_env",
-)
-
-register(
     id="multi-scenario-v0",
     entry_point="smarts.env.multi_scenario_v0_env:multi_scenario_v0_env",
-)
-
-register(
-    id="multi-all-scenario-v0",
-    entry_point="smarts.env.multi_all_scenario_v0_env:multi_all_scenario_v0_env",
 )

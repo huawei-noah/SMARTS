@@ -76,7 +76,7 @@ def multi_scenario_v0_env(
     Solved requirement:
         If agent successfully completes the mission then `info["score"]` will
         equal 1, else it is 0. Considered solved when `info["score"] == 1` is
-        achieved over 1000 consecutive episodes.
+        achieved over 500 consecutive episodes.
 
     Args:
         scenario (str): Scenario

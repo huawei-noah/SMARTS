@@ -8,7 +8,23 @@ All text added must be human-readable.
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
-# [Unreleased]
+## [Unreleased]
+### Added
+- Added SMARTS competition code, consisting of Codalab, training, submission, evaluation, and scenario files.
+- Added a `multi-scenario-v0` environment which can build any of the following scenario, namely, `1_to_2lane_left_turn_c`, `1_to_2lane_left_turn_t`, `3lane_merge_multi_agent`, `3lane_merge_single_agent`, `3lane_cruise_multi_agent`, `3lane_cruise_single_agent`, `3lane_cut_in`, and `3lane_overtake`. 
+- Added ego's mission details into the `FormatObs` wrapper.
+
+### Changed
+- 
+
+### Removed
+- Removed time and distance to collision values from `FormatObs` wrapper as their correctness was doubtful.
+
+### Fixed
+- Modified `FrameStack` wrapper to support agents which start at a later time in the simulation.
+- Truncated all waypoint paths returned by `FormatObs` wrapper to be of the same length. Previously, variable waypoint-path lengths caused inhomogenous shape error in numpy array.
+
+## [0.6.1]
 ### Added
 - Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make an uprotected left turn in the presence of traffic.
 - Added an online RL example for solving the `intersection-v0` environment, using PPO algorithm from Stable Baselines3 library. An accompanying Colab example is also provided.
@@ -23,32 +39,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ### Fixed
 - Additional case added for avoiding off-route if merging early into a lane.
-
-### Fixed
 - Unpack utility now unpacks dataclass attributes.
 - Trap manager now uses elapsed sim time rather than step delta to associate with time.
 
-# [0.6.1]
-### Added
-- Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make an uprotected left turn in the presence of traffic.
-- Added an online RL example for solving the `intersection-v0` environment, using PPO algorithm from Stable Baselines3 library. An accompanying Colab example is also provided.
-
-### Changed
-- Updated license to 2022 version.
-- SMARTS reset now has a start time option which will skip simulation.
-- Since `gym.Space` does not support dataclass, `StdObs` type is changed from a dataclass to a dictionary.
-
-### Removed
-- Old Stable Baselines3 based example is removed in favour of the new online RL example developed using Stable Baselines3 library.
-
-### Fixed
-- Additional case added for avoiding off-route if merging early into a lane.
-
-### Fixed
-- Unpack utility now unpacks dataclass attributes.
-- Trap manager now uses elapsed sim time rather than step delta to associate with time.
-
-### [0.6.1rc1] 15-04-18
+## [0.6.1rc1] 15-04-18
 ### Added
 - Added example scenario for importing the NGSIM `peachtree` dataset.
 - Added example scenario for importing the INTERACTION `merging` dataset
@@ -62,7 +56,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed Issue #1321 such that numpy's `sliding_window_view()` is no longer needed for NGSIM traffic histories.
 - Fixed NGSIM traffic history import bugs (see Issues #1354 and #1402).
 
-### [0.6.1rc0] 15-04-16
+## [0.6.1rc0] 15-04-16
 ### Added
 - Added `smarts/waymo/waymo_browser.py`, a text-based utility to explore and export scenarios from the Waymo Motion dataset to SMARTS scenarios. 
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.

@@ -42,8 +42,7 @@ def make_env(
         img_meters=config["img_meters"],
         img_pixels=config["img_pixels"],
         action_space="Continuous",
-        # action_space="Lane",
-        # sumo_headless=False,
+        sumo_headless=True,
     )
 
     # Make a copy of original info.
@@ -127,7 +126,6 @@ def run(
         dones = {"__all__": False}
         while not dones["__all__"]:
             actions = policy.act(observations)
-            # actions = {agent_name: "keep_lane" for agent_name in observations.keys()}
             observations, rewards, dones, infos = env.step(actions)
             metric.store(infos=datastore.data["infos"], dones=datastore.data["dones"])
 
