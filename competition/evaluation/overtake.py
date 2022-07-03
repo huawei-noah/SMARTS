@@ -1,26 +1,54 @@
 from smarts.core.sensors import Observation
-from typing import Set
 
 
 class Overtake:
-    """This is a rudimentary overtake detector specifically designed for the
-    single agent `SMARTS/smarts/scenarios/straight/3lane_overtake/scenario.py`.
-    Not meant for other scenarios.
+    """A rudimentary overtake detector specifically designed for the scenario
+    `SMARTS/smarts/scenarios/straight/3lane_overtake/scenario.py`. Not meant
+    for other scenarios.
     """
 
     def __init__(self):
-        self._infront = set() # Set of vehicles that were in front the ego agent in the past
-        self._behind = set() # Set of vehicles that were in front the ego agent in the past
+        self._prev_front = set()  # Vehicles that were last seen in front the ego agent.
+        self._prev_rear = set()  # Vehicles that were last seen behind the ego agent.
+        self._once = True
+        self._desired_lane_index: int
+        self._overtake = False
 
     def __call__(self, obs: Observation):
         ego = obs.ego_vehicle_state
-        # ego.lane_index
-        nghbs = obs.neighborhood_vehicle_states
-        nghbs = [(nghb.id, nghb.position[0], nghb.lane_index) for nghb in nghbs]
 
-        return True
+        if self._once:
+            self._desired_lane_index = ego.lane_index
+            self._once = False
 
-    def check(agent_name: str):
-        overtake = 0
+        # Overtake is only complete when ego returns to its original lane.
+        # Thus, only check for `overtake` event when ego is in its original lane.
+        if ego.lane_index == self._desired_lane_index:
+            ego_x = ego.position[0]
 
-        return 0
+            # Get current neighbours at the front and at the rear.
+            cur_front = set()
+            cur_rear = set()
+            nghbs = obs.neighborhood_vehicle_states
+            nghbs = filter(
+                lambda nghb: nghb.lane_index == self._desired_lane_index, nghbs
+            )
+            for nghb in nghbs:
+                if nghb.position[0] > ego_x:
+                    cur_front.add(nghb.id)
+                else:
+                    cur_rear.add(nghb.id)
+
+            # Check whether vehicle order has changed.
+            for v_id in cur_rear:
+                if v_id in self._prev_front:
+                    self._overtake = True
+
+            # Update last known vehicles at the front and rear.
+            self._prev_front.difference_update(cur_rear)
+            self._prev_rear.difference_update(cur_front)
+            self._prev_front.update(cur_front)
+            self._prev_rear.update(cur_rear)
+
+    def check(self):
+        return self._overtake
