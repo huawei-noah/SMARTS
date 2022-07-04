@@ -10,15 +10,18 @@ import re
 import torch
 torch.cuda.empty_cache()
 import pathlib
+from d3rlpy.metrics.scorer import average_value_estimation_scorer
+from d3rlpy.metrics.scorer import td_error_scorer
+import glob
 
 prediction_step = 1
 # tfrecord-00006-of-01000/ contain scenarios
 path = '/net/storage-1/home/x50023223/smarts/examples/baseline/waymo_bev/tfrecord-00006-of-01000/' 
-remote_store_path= '/net/storage-1/home/x50023223/smarts/examples/baseline/waymo_bev/saved_model/'
-local_store_path = '/home/kyber/Desktop/smarts_alfred/examples/baseline/waymo_offline/saved_model/'
+# remote_store_path= '/net/storage-1/home/c84201475/saved_model'
+local_store_path = '/home/kyber/SMARTS/examples/baseline/waymo_offline/saved_model/'
 
 remote = remote_operations()
-client = remote.connect("10.193.241.238", "x50023223", "password") # gx2, username, password
+client = remote.connect("10.193.241.239", "c84201475", "password") # gx2, username, password
 
 scenarios = list()
 for scenario_name in client.listdir(path):
@@ -27,13 +30,14 @@ for scenario_name in client.listdir(path):
 
 
 
-if not client.listdir(remote_store_path):  # if empty
+if not os.listdir('d3rlpy_logs/'):  # if empty
     index = 0
 else:
-    existing_index = list()
-    for model_name in client.listdir(remote_store_path):
-        existing_index.append(int(re.search('model_(.*).pt', model_name).group(1)))
-    index = sorted(existing_index)[-1] + 1
+    index = len(os.listdir('d3rlpy_logs/'))
+    # existing_index = list()
+    # for model_name in client.listdir(remote_store_path):
+    #     existing_index.append(int(re.search('model_(.*).pt', model_name).group(1)))
+    # index = sorted(existing_index)[-1] + 1
 
 
 
@@ -95,21 +99,27 @@ for scenario in scenarios[0:2]:
 
     if index == 0:
         model = d3rlpy.algos.CQL(use_gpu=True, batch_size=1)
-        model.fit(dataset, 
-            eval_episodes=dataset, 
-            n_epochs = 1, 
-        )
     else:
-        saved_folder = sorted(os.listdir(str(pathlib.Path(__file__).absolute().parent/'d3rlpy_logs/')))[-1]
-        model = CQL.from_json('d3rlpy_logs/' + saved_folder + '/params.json', use_gpu=True)
-        model.fit(dataset, 
+        saved_models = glob.glob('d3rlpy_logs/*')
+        latest_model = max(saved_models, key=os.path.getctime)
+        model = CQL.from_json('d3rlpy_logs/1/params.json', use_gpu=True)
+        model.load_model(latest_model + '/model_1.pt')
+
+    model.fit(dataset, 
             eval_episodes=dataset, 
-            n_epochs = 1, 
+            n_steps_per_epoch = 1,
+            n_steps = 1, 
+            scorers={
+                        'td_error': td_error_scorer,
+                        'value_scale': average_value_estimation_scorer,
+                    }
         )
 
-
-    model.save_model(local_store_path + 'model_' + str(index) + '.pt')
-    client.put(local_store_path + 'model_' + str(index) + '.pt', remote_store_path + 'model_' + str(index) + '.pt')
+    saved_models = glob.glob('d3rlpy_logs/*')
+    latest_model = max(saved_models, key=os.path.getctime)
+    os.rename(latest_model, 'd3rlpy_logs/' + str(index + 1))
+    # model.save_model(local_store_path + 'model_' + str(index) + '.pt')
+    # client.put(local_store_path + 'model_' + str(index) + '.pt', remote_store_path + 'model_' + str(index) + '.pt')
     index += 1
 
 imgfile.close()
