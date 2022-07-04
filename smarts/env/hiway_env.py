@@ -145,9 +145,8 @@ class HiWayEnv(gym.Env):
         if visdom:
             visdom_client = VisdomClient()
 
-        smarts_traffic = LocalTrafficProvider(endless_traffic=endless_traffic)
-        traffic_sims = [smarts_traffic]
-        if Scenario.all_support_sumo_traffic(scenarios):
+        traffic_sims = []
+        if Scenario.any_support_sumo_traffic(scenarios):
             sumo_traffic = SumoTrafficSimulation(
                 headless=sumo_headless,
                 time_resolution=fixed_timestep_sec,
@@ -157,6 +156,8 @@ class HiWayEnv(gym.Env):
                 endless_traffic=endless_traffic,
             )
             traffic_sims += [sumo_traffic]
+        smarts_traffic = LocalTrafficProvider(endless_traffic=endless_traffic)
+        traffic_sims += [smarts_traffic]
 
         self._smarts = SMARTS(
             agent_interfaces=agent_interfaces,

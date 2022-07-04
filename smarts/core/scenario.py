@@ -961,13 +961,11 @@ class Scenario:
         return isinstance(self._road_map, SumoRoadNetwork)
 
     @staticmethod
-    def all_support_sumo_traffic(scenarios: Sequence[str]) -> bool:
-        """Determines if all given scenarios support traffic simulation."""
+    def any_support_sumo_traffic(scenarios: Sequence[str]) -> bool:
+        """Determines if any of the given scenarios support Sumo traffic simulation."""
         from smarts.core.sumo_road_network import SumoRoadNetwork
 
-        num_sumo = 0
-        scenario_list = Scenario.get_scenario_list(scenarios)
-        for scenario_root in scenario_list:
+        for scenario_root in Scenario.get_scenario_list(scenarios):
             try:
                 road_map, _ = Scenario.build_map(scenario_root)
             except FileNotFoundError:
@@ -975,9 +973,26 @@ class Scenario:
                     f"Unable to find network file in map_source={scenario_root}."
                 )
             if isinstance(road_map, SumoRoadNetwork):
-                num_sumo += 1
+                return True
 
-        return num_sumo == len(scenario_list)
+        return False
+
+    @staticmethod
+    def all_support_sumo_traffic(scenarios: Sequence[str]) -> bool:
+        """Determines if all given scenarios support Sumo traffic simulation."""
+        from smarts.core.sumo_road_network import SumoRoadNetwork
+
+        for scenario_root in Scenario.get_scenario_list(scenarios):
+            try:
+                road_map, _ = Scenario.build_map(scenario_root)
+            except FileNotFoundError:
+                raise FileNotFoundError(
+                    f"Unable to find network file in map_source={scenario_root}."
+                )
+            if not isinstance(road_map, SumoRoadNetwork):
+                return False
+
+        return True
 
     @property
     def missions(self) -> Dict[str, Mission]:
