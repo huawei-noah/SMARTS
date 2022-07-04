@@ -336,26 +336,24 @@ def line_intersect(a, b, c, d) -> Union[np.ndarray, None]:
 
 
 def line_intersect_vectorized(
-    a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray
+    a: np.ndarray, b: np.ndarray, C: np.ndarray, D: np.ndarray
 ) -> bool:
     """Vectorized version of `line_intersect(...)`, where C and D represent
-    the segment points for an entire line. A and B are tiled versions of a
-    single line segment to be tested against. All arguments are of the same shape.
+    the segment points for an entire line, and a and b are points of a single
+    line segment to be tested against.
     """
     r = b - a
-    s = d - c
-    rs1 = np.multiply(r[:, 0], s[:, 1])
-    rs2 = np.multiply(r[:, 1], s[:, 0])
+    S = D - C
+    rs1 = np.multiply(r[0], S[:, 1])
+    rs2 = np.multiply(r[1], S[:, 0])
     d = rs1 - rs2
 
     if not np.any(d):
         return False
 
-    u_numerator = np.multiply(c[:, 0] - a[:, 0], r[:, 1]) - np.multiply(
-        c[:, 1] - a[:, 1], r[:, 0]
-    )
-    t_numerator = np.multiply(c[:, 0] - a[:, 0], s[:, 1]) - np.multiply(
-        c[:, 1] - a[:, 1], s[:, 0]
+    u_numerator = np.multiply(C[:, 0] - a[0], r[1]) - np.multiply(C[:, 1] - a[1], r[0])
+    t_numerator = np.multiply(C[:, 0] - a[0], S[:, 1]) - np.multiply(
+        C[:, 1] - a[1], S[:, 0]
     )
 
     # Use where=d!=0 to avoid divisions by zero. The out parameter is an
@@ -368,9 +366,7 @@ def line_intersect_vectorized(
     t_in_range = (0 <= t) & (t <= 1)
     combined = u_in_range & t_in_range
 
-    if np.any(combined):
-        return True
-    return False
+    return np.any(combined)
 
 
 def ray_boundary_intersect(

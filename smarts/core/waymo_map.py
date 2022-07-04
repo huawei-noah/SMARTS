@@ -27,7 +27,7 @@ from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 import rtree
@@ -101,7 +101,7 @@ class WaymoMap(RoadMap):
 
     # For caching tfrecord data
     _tfrecord_path: Optional[str] = None
-    _tfrecord_generator = Optional[Generator[bytes, None, None]] = None
+    _tfrecord_generator: Optional[Generator[bytes, None, None]] = None
     _scenario_cache: Optional[Dict[str, Any]] = None
 
     def __init__(self, map_spec: MapSpec, waymo_scenario):
@@ -259,47 +259,35 @@ class WaymoMap(RoadMap):
         bboxes = dict()
         for idx, feat_id in enumerate(all_lane_ids):
             lane_pts = np.array(self._polyline_cache[feat_id][0])
-            bbox = BoundingBox(
-                min_pt=Point(x=np.amin(lane_pts[:, 0]), y=np.amin(lane_pts[:, 1])),
-                max_pt=Point(x=np.amax(lane_pts[:, 0]), y=np.amax(lane_pts[:, 1])),
+            bbox = (
+                np.amin(lane_pts[:, 0]),
+                np.amin(lane_pts[:, 1]),
+                np.amax(lane_pts[:, 0]),
+                np.amax(lane_pts[:, 1]),
             )
             bboxes[feat_id] = bbox
-
-            coords = (
-                bbox.min_pt.x,
-                bbox.min_pt.y,
-                bbox.max_pt.x,
-                bbox.max_pt.y,
-            )
-            lane_rtree.add(idx, coords)
+            lane_rtree.add(idx, bbox)
 
         # Loop over every lane in the map
         for feat_id in all_lane_ids:
             # Filter out any lanes that don't intersect this lane's bbox
             bbox = bboxes[feat_id]
-            indicies = lane_rtree.intersection(
-                (
-                    bbox.min_pt.x,
-                    bbox.min_pt.y,
-                    bbox.max_pt.x,
-                    bbox.max_pt.y,
-                )
-            )
+            indicies = lane_rtree.intersection(bbox)
 
             # Filter out any other lanes we don't want to check against
             lanes_to_test = []
             for idx in indicies:
                 cand_id = all_lane_ids[idx]
-                features = self._feat_dicts[feat_id]
-
-                # Don't check intersection with incoming/outgoing lanes or itself
-                in_ids = [l for l in features["entry_lanes"]]
-                out_ids = [l for l in features["exit_lanes"]]
-                if cand_id in in_ids + out_ids + [feat_id]:
-                    continue
 
                 # Skip intersections we've already computed
                 if cand_id in intersections[feat_id]:
+                    continue
+
+                # Don't check intersection with incoming/outgoing lanes or itself
+                features = self._feat_dicts[feat_id]
+                in_ids = [l for l in features["entry_lanes"]]
+                out_ids = [l for l in features["exit_lanes"]]
+                if cand_id in in_ids + out_ids + [feat_id]:
                     continue
 
                 lanes_to_test.append(cand_id)
@@ -308,19 +296,19 @@ class WaymoMap(RoadMap):
             # polyline of each candidate lane
             line1 = np.array(self._polyline_cache[feat_id][0])
             for cand_id in lanes_to_test:
-                line2 = np.array(self._polyline_cache[cand_id][0])
+                line2 = self._polyline_cache[cand_id][0]
                 C = np.roll(line2, 0, axis=0)[:-1]
                 D = np.roll(line2, -1, axis=0)[:-1]
                 len_c = len(C)
                 for i in range(len(line1) - 1):
-                    A = np.tile(line1[i], (len_c, 1))
-                    B = np.tile(line1[i + 1], (len_c, 1))
-                    if line_intersect_vectorized(A, B, C, D):
+                    a = line1[i]
+                    b = line1[i + 1]
+                    if line_intersect_vectorized(a, b, C, D):
                         intersections[feat_id].add(cand_id)
                         intersections[cand_id].add(feat_id)
                         break
 
-        # remove "fake" incoming/outgoing lanes that aren't true intersections
+        # Remove "fake" incoming/outgoing lanes that aren't true intersections
         mappings_to_remove = []
         for feat_id, intersect_ids in intersections.items():
             lane_pts = self._polyline_cache[feat_id][0]
