@@ -62,6 +62,8 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
         while not done:
             agent_action = agent.act(observation)
             observation, reward, done, info = env.step(agent_action)
+            print(observation.ego_vehicle_state.lane_id)
+            print(observation.ego_vehicle_state.road_id)
             episode.record_step(observation, reward, done, info)
 
     env.close()

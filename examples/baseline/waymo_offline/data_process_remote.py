@@ -1,4 +1,6 @@
 from remote_operations import remote_operations
+import paramiko
+import getpass
 import pickle
 import numpy as np
 import d3rlpy
@@ -20,8 +22,27 @@ path = '/net/storage-1/home/x50023223/smarts/examples/baseline/waymo_bev/tfrecor
 # remote_store_path= '/net/storage-1/home/c84201475/saved_model'
 local_store_path = '/home/kyber/SMARTS/examples/baseline/waymo_offline/saved_model/'
 
+
 remote = remote_operations()
-client = remote.connect("10.193.241.239", "c84201475", "password") # gx2, username, password
+ip_add = input("Server IP: ")
+user_name = input("Username: ")
+pswd = getpass.getpass("Password: ")
+
+if ip_add == "gx1":
+    ip_add = "10.193.241.237"
+elif ip_add == "gx2":
+    ip_add = "10.193.241.238"
+elif ip_add == "gx3":
+    ip_add = "10.193.241.239"
+
+while True:
+    try:
+        client = remote.connect(ip_add, user_name, pswd) # ip, username, password
+        break
+    except paramiko.ssh_exception.AuthenticationException:
+        print("Authentication Failed")
+        pswd = getpass.getpass("Password: ")
+
 
 scenarios = list()
 for scenario_name in client.listdir(path):
