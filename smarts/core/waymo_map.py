@@ -100,9 +100,9 @@ class WaymoMap(RoadMap):
     DEFAULT_LANE_WIDTH = 4
 
     # For caching tfrecord data
-    _tfrecord_path = None
-    _tfrecord_generator = None
-    _scenario_cache = None
+    _tfrecord_path: Optional[str] = None
+    _tfrecord_generator = Optional[Generator[bytes, None, None]] = None
+    _scenario_cache: Optional[Dict[str, Any]] = None
 
     def __init__(self, map_spec: MapSpec, waymo_scenario):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -818,8 +818,9 @@ class WaymoMap(RoadMap):
             WaymoMap._tfrecord_generator = read_tfrecord_file(dataset_path)
             WaymoMap._scenario_cache = dict()
 
-        if scenario_id in WaymoMap._scenario_cache:
-            return WaymoMap._scenario_cache[scenario_id]
+        parsed_scenario = WaymoMap._scenario_cache.get(scenario_id)
+        if parsed_scenario:
+            return parsed_scenario
 
         while True:
             record = next(WaymoMap._tfrecord_generator, None)
