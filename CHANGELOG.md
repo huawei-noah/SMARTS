@@ -10,30 +10,19 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 # [Unreleased]
 ### Added
-- Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make an uprotected left turn in the presence of traffic.
-- Added an online RL example for solving the `intersection-v0` environment, using PPO algorithm from Stable Baselines3 library. An accompanying Colab example is also provided.
 - Added a basic background traffic ("social vehicle") provider as an alternative to the SUMO traffic simulator.  This can be selected using the new `"engine"` argument to `Traffic` in Scenario Studio.
 
 ### Deprecated
-- Deprecated a few things related to traffic in the `Scenario` class, including the `route` argument to the `Scenario` initializer, the `route`, `route_filepath` and `route_files_enabled` properties, and the `discover_routes()` static method.  In general, the notion of "route" (singular) here is being replaced with "traffic_specs" (plural) that allow for specifying traffic controlled by the SMARTS engine as well as Sumo.
+- Deprecated a few things related to traffic in the `Scenario` class, including the `route` argument to the `Scenario` initializer, the `route`, `route_filepath` and `route_files_enabled` properties, and the `discover_routes()` static method.  In general, the notion of "route" (singular) here is being replaced with "`traffic_specs`" (plural) that allow for specifying traffic controlled by the SMARTS engine as well as Sumo.
 
 ### Changed
-- Updated license to 2022 version.
-- SMARTS reset now has a start time option which will skip simulation.
-- Since `gym.Space` does not support dataclass, `StdObs` type is changed from a dataclass to a dictionary.
 - Traffic history vehicles can now be hijacked within a bubble.  They will be relinquished to the SMARTS background traffic provider upon exiting the bubble.
 - Changed the name of the `Imitation` action space to `Direct`.
 
 ### Removed
-- Old Stable Baselines3 based example is removed in favour of the new online RL example developed using Stable Baselines3 library.
 
 ### Fixed
-- Additional case added for avoiding off-route if merging early into a lane.
 - Fixed bug where `yaw_rate` was always reported as 0.0 (Issue #1481).
-
-### Fixed
-- Unpack utility now unpacks dataclass attributes.
-- Trap manager now uses elapsed sim time rather than step delta to associate with time.
 
 # [0.6.1]
 ### Added
