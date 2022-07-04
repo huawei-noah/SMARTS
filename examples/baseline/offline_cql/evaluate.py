@@ -59,28 +59,39 @@ _build_scenario()
 
 
 
-with open('collected_data/1990-EGO.pkl', 'rb') as f:
+with open('collected_data/2000-EGO.pkl', 'rb') as f:
     data = pickle.load(f)
     print(len(data))
 
 saved_models = glob.glob('d3rlpy_logs/*')
 models = sorted(saved_models, key=os.path.getctime)
-
-for dir in models[0:1]:
+offline_rewards = list()
+for dir in models:
     acc_reward = 0
     value = pd.read_csv(dir + '/value_scale.csv')
     td = pd.read_csv(dir + '/td_error.csv')
     model = CQL.from_json(dir + '/params.json', use_gpu=True)
     model.load_model(dir + '/model_100.pt')
-
+    # model.load_model('d3rlpy_logs/100/model_100.pt')
+    ob = env.reset()
+    done = False
     for j in range(len(data)):
-        if data[j]['obs'] != None:
+        if not done:
             ob = data[j]['obs']
             bev = np.array([data[j]['obs'].top_down_rgb.data.reshape(3,256,256)])
             action = model.predict(bev)[0]
             agent_actions = {'EGO': action}
+
             ob, reward, done, extra = env.step(agent_actions)
+
             acc_reward += reward['EGO']
+            done = done['EGO']
+        else:
+            continue
+    offline_rewards.append(acc_reward)
+df = pd.read_csv('values.csv')
+df['offline_rewards'] = offline_rewards
+df.to_csv('values.csv', index=False)
 
 
 
