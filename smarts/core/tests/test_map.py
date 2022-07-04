@@ -569,7 +569,7 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
     # Test for lane vector when lane offset is outside lane
     l0_vector = l0.vector_at_offset(50.01)
     l0_vector = l0_vector.tolist()
-    assert l0_vector == [-0.9999973500028005, -0.0020437969740241257, 0.0]
+    assert l0_vector == [-0.5, -0.0004842499999999639, 0.0]
 
     # point on lane
     point = Point(31.0, 2.0, 0)
@@ -581,7 +581,7 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
     width, conf = l0.width_at_offset(offset)
     assert round(width, 2) == 3.12
     assert conf == 1.0
-    assert round(l0.curvature_radius_at_offset(offset), 2) == -291.53
+    assert round(l0.curvature_radius_at_offset(offset), 2) == -301.72
     assert l0.contains_point(point)
     assert l0.road.contains_point(point)
 
@@ -595,7 +595,7 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
     width, conf = l0.width_at_offset(offset)
     assert round(width, 2) == 3.12
     assert conf == 1.0
-    assert round(l0.curvature_radius_at_offset(offset), 2) == -292.24
+    assert round(l0.curvature_radius_at_offset(offset), 2) == -301.72
     assert not l0.contains_point(point)
     assert l0.road.contains_point(point)
 
@@ -730,7 +730,7 @@ def test_waymo_map():
 
     l1_vector = l1.vector_at_offset(50.01)
     l1_vector = l1_vector.tolist()
-    assert l1_vector == [-0.5304760093854384, -0.8476999406939285, 0.0]
+    assert l1_vector == [-0.2644431804683336, -0.4227687562765823, 0]
 
     # point on lane
     point = Point(2714.0, -2764.5, 0)
@@ -742,7 +742,7 @@ def test_waymo_map():
     width, conf = l1.width_at_offset(offset)
     assert round(width, 2) == 4.0
     assert conf == 1.0
-    assert round(l1.curvature_radius_at_offset(offset), 2) == -3136.8
+    assert round(l1.curvature_radius_at_offset(offset), 2) == -3118.0
     assert l1.contains_point(point)
 
     # oncoming lanes at this point

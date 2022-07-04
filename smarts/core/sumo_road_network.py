@@ -690,7 +690,7 @@ class SumoRoadNetwork(RoadMap):
         self._surfaces[road_id] = road
         return road
 
-    @lru_cache(maxsize=128)
+    @lru_cache(maxsize=1024)
     def nearest_lanes(
         self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> List[Tuple[RoadMap.Lane, float]]:
