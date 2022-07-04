@@ -591,7 +591,7 @@ class Vehicle:
             assert isinstance(self._chassis, BoxChassis)
             self.control(pose=state.pose, speed=state.speed, dt=dt)
             return
-        # Eternal actors are "privileged", which means they work directly (bypass force application).
+        # External actors are "privileged", which means they work directly (bypass force application).
         # Conceptually, this is playing 'god' with physics and should only be used
         # to defer to a co-simulator's states.
         linear_velocity, angular_velocity = None, None

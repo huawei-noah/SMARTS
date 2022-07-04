@@ -255,7 +255,7 @@ class LocalTrafficProvider(TrafficProvider):
         # Do state update in two passes so that we don't use next states in the
         # computations for actors encountered later in the iterator.
         for actor in self._my_actors.values():
-            actor.compute_next_state(dt, self._all_states)
+            actor.compute_next_state(dt)
 
         dones = []
         remap_ids: Dict[str, str] = dict()
@@ -396,7 +396,6 @@ class _TrafficActor:
 
         self._owner = owner
         self._state = None
-        self._all_vehicle_states: Sequence[VehicleState] = []
         self._flow: Dict[str, Any] = flow
         self._vtype: Dict[str, Any] = flow["vtype"]
         self._route_ind: int = 0
@@ -1122,9 +1121,8 @@ class _TrafficActor:
         assert max_decel >= 0.0
         return PID * max_decel
 
-    def compute_next_state(self, dt: float, all_vehicle_states: Sequence[VehicleState]):
+    def compute_next_state(self, dt: float):
         """Pre-computes the next state for this traffic actor."""
-        self._all_vehicle_states = all_vehicle_states
         self._compute_lane_speeds()
 
         self._pick_lane(dt)

@@ -43,7 +43,7 @@ class TrafficProvider(Provider):
         raise NotImplementedError
 
     def vehicle_collided(self, vehicle_id: str):
-        """Called when a vehicle this provder manages is detected to have
+        """Called when a vehicle this provider manages is detected to have
         collided with any other vehicles in the scenario."""
         raise NotImplementedError
 
