@@ -33,28 +33,23 @@ leaderboard:
             label: "Results"
             rank: 1
     columns:
-        score:
-            leaderboard: *RESULTS
-            label: "Score"
-            rank: 1
-            sort: desc
         completion:
             leaderboard: *RESULTS
             label: "Completion"
+            rank: 1
+            sort: asc
+        time:
+            leaderboard: *RESULTS
+            label: "Time"
             rank: 2
-            sort: desc
+            sort: asc
         humanness:
             leaderboard: *RESULTS
             label: "Humanness"
             rank: 3
-            sort: desc
+            sort: asc
         rules:
             leaderboard: *RESULTS
             label: "Rules"
             rank: 4
-            sort: desc
-        time:
-            leaderboard: *RESULTS
-            label: "Time"
-            rank: 5
             sort: asc

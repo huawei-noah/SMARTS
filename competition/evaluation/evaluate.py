@@ -136,11 +136,10 @@ def to_codalab_scores_string(self) -> str:
     """Convert the data in scores to a CodaLab-scores-compatible string."""
     # NOTE: The score string names must be the same as in the competition.yaml.
     return (
-        f"score: 0\n"
         f"completion: {rank['completion']}\n"
+        f"time: {rank['time']}\n"
         f"humanness: {rank['humanness']}\n"
         f"rules: {rank['rules']}\n"
-        f"time: {rank['time']}\n"
     )
 
 

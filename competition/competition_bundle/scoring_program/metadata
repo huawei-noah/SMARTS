@@ -1,2 +1,2 @@
-command: python $program/evaluate.py codalab --input-dir $input --output-dir $output
+command: pip install $input/res/requirements.txt && python $program/evaluate.py --input-dir $input --output-dir $output
 description: The competition evaluation program
