@@ -39,8 +39,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ### Fixed
 - Additional case added for avoiding off-route if merging early into a lane.
-
-### Fixed
 - Unpack utility now unpacks dataclass attributes.
 - Trap manager now uses elapsed sim time rather than step delta to associate with time.
 
