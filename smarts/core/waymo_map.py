@@ -701,7 +701,7 @@ class WaymoMap(RoadMap):
         self._log.info(f"Loading Waymo map took: {elapsed} ms")
 
     @staticmethod
-    def _parse_source_to_scenario(source: str):
+    def parse_source_to_scenario(source: str):
         """Read the dataset file and get the specified scenario"""
         dataset_path = source.split("#")[0]
         scenario_id = source.split("#")[1]
@@ -719,7 +719,7 @@ class WaymoMap(RoadMap):
         """Generate a road network from the given specification."""
         if len(map_spec.source.split("#")) != 2:
             return None
-        waymo_scenario = cls._parse_source_to_scenario(map_spec.source)
+        waymo_scenario = cls.parse_source_to_scenario(map_spec.source)
         assert waymo_scenario
         return cls(map_spec, waymo_scenario)
 
@@ -736,7 +736,7 @@ class WaymoMap(RoadMap):
         )
 
     def is_same_map(self, map_spec: MapSpec) -> bool:
-        waymo_scenario = WaymoMap._parse_source_to_scenario(map_spec.source)
+        waymo_scenario = WaymoMap.parse_source_to_scenario(map_spec.source)
         return (
             waymo_scenario.scenario_id == self._waymo_scenario_id
             and map_spec.lanepoint_spacing == self._map_spec.lanepoint_spacing

@@ -35,6 +35,8 @@ import numpy as np
 import ray
 import torch
 
+import ultra.baselines  # Do not delete
+import ultra.env  # Do not delete
 from smarts.zoo.registry import make
 from ultra.utils.episode import LogInfo, episodes
 from ultra.utils.ray import default_ray_kwargs
@@ -160,7 +162,7 @@ def evaluate(
     log_dir,
     eval_mode=True,
 ):
-    torch.set_num_threads(1)
+    getattr(torch, "set_num_threads")(1)
 
     # Create the agent specifications matched with their associated ID.
     agent_specs = {
@@ -260,9 +262,11 @@ def evaluate_saved_models(
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     if not all([os.path.exists(model_path) for model_path in model_paths]):
-        raise "At least one path to a model is invalid"
+        raise FileNotFoundError("At least one path to a model is invalid")
     if not all([os.listdir(model_path) for model_path in model_paths]):
-        raise "There are no models to evaluate in at least one model path"
+        raise FileNotFoundError(
+            "There are no models to evaluate in at least one model path"
+        )
 
     # Get agent IDs from the models to be evaluated.
     agent_ids_from_models = [

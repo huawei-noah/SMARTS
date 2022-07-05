@@ -12,7 +12,7 @@ agent_spec = AgentSpec(
 
 env = gym.make(
     "smarts.env:hiway-v0",
-    scenarios=["scenarios/loop"],
+    scenarios=["scenarios/sumo/loop"],
     agent_specs={agent_id: agent_spec},
 )
 

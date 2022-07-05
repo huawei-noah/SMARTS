@@ -7,6 +7,7 @@ from smarts.zoo.registry import make, register
 
 from .keep_lane_agent import KeepLaneAgent
 from .non_interactive_agent import NonInteractiveAgent
+from .waypoint_tracking_agent import WaypointTrackingAgent
 
 register(
     locator="non-interactive-agent-v0",
@@ -22,6 +23,14 @@ register(
     entry_point=lambda **kwargs: AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=20000),
         agent_builder=KeepLaneAgent,
+    ),
+)
+
+register(
+    locator="waypoint-tracking-agent-v0",
+    entry_point=lambda **kwargs: AgentSpec(
+        interface=AgentInterface.from_type(AgentType.Tracker, max_episode_steps=300),
+        agent_builder=WaypointTrackingAgent,
     ),
 )
 

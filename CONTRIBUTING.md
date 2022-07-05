@@ -114,5 +114,5 @@ mkdir -p flamegraph_dir
 curl https://raw.githubusercontent.com/brendangregg/FlameGraph/master/flamegraph.pl > ./utils/third_party/tools/flamegraph.pl
 chmod 777 {$flamegraph_dir}/flamegraph.pl
 
-make flamegraph scenario=scenarios/loop script=examples/single_agent.py
+make flamegraph scenario=scenarios/sumo/loop script=examples/single_agent.py
 ```

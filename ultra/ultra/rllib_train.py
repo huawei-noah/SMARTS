@@ -26,6 +26,8 @@ import timeit
 import gym
 
 import ultra.adapters as adapters
+import ultra.baselines  # Do not delete
+import ultra.env  # Do not delete
 from ultra.baselines.common.social_vehicle_config import get_social_vehicle_configs
 from ultra.utils.ray import default_ray_kwargs
 
@@ -42,6 +44,7 @@ import torch
 from ray import tune
 from ray.rllib.models import ModelCatalog
 
+from smarts.core.agent import AgentSpec
 from smarts.core.agent_interface import (
     OGM,
     AgentInterface,
@@ -49,7 +52,6 @@ from smarts.core.agent_interface import (
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
-from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import make
 from ultra.baselines.common.yaml_loader import load_yaml
 from ultra.baselines.rllib.agent import RllibAgent
