@@ -149,7 +149,22 @@ class LocalTrafficProvider(TrafficProvider):
                 flow["route"] = route
                 flow["begin"] = float(flow["begin"])
                 flow["end"] = float(flow["end"])
-                flow["emit_period"] = (60.0 * 60.0) / float(flow["vehsPerHour"])
+                if "vehsPerHour" in flow:
+                    freq = float(flow["vehsPerHour"])
+                    assert freq > 0.0
+                    flow["emit_period"] = 3600.0 / freq
+                elif "period" in flow:
+                    period = float(flow["period"])
+                    assert period > 0.0
+                    flow["emit_period"] = period
+                elif "probability" in flow:
+                    emit_prob = float(flow["probability"])
+                    assert 0.0 <= emit_prob <= 1.0
+                    flow["emit_prob"] = emit_prob
+                else:
+                    assert (
+                        False
+                    ), "either 'vehsPerHour' or 'probability' must be specified for Flow emission"
                 self._flows[str(flow["id"])] = flow
                 flow["route_key"] = self._cache_route_lengths(route)
 
@@ -174,14 +189,20 @@ class LocalTrafficProvider(TrafficProvider):
         self._logger.info(f"traffic actor {new_actor.actor_id} entered simulation")
         return True
 
-    def _add_actors_for_time(self, sim_time: float):
+    def _add_actors_for_time(self, sim_time: float, dt: float = 1.0):
         for flow in self._flows.values():
             if not flow["begin"] <= sim_time < flow["end"]:
                 continue
+            try_add = False
             last_added = flow.get("last_added")
-            if last_added is None or sim_time - last_added >= flow["emit_period"]:
-                if self._add_actor_in_flow(flow):
-                    flow["last_added"] = sim_time
+            emit_prob = flow.get("emit_prob")
+            emit_period = flow.get("emit_period")
+            if emit_period is not None:
+                try_add = last_added is None or sim_time - last_added >= emit_period
+            elif emit_prob is not None:
+                try_add = random.random() <= emit_prob * dt
+            if try_add and self._add_actor_in_flow(flow):
+                flow["last_added"] = sim_time
 
     @property
     def _my_actor_states(self) -> List[VehicleState]:
@@ -243,7 +264,7 @@ class LocalTrafficProvider(TrafficProvider):
         )
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
-        self._add_actors_for_time(elapsed_sim_time)
+        self._add_actors_for_time(elapsed_sim_time, dt)
         for other, _ in self._other_vehicles.values():
             if other.vehicle_id in self._reserved_areas:
                 del self._reserved_areas[other.vehicle_id]
@@ -424,7 +445,7 @@ class _TrafficActor:
         speed_dev = float(self._vtype.get("speedDev", 0.1))
         self._speed_factor = random.gauss(speed_factor, speed_dev)
         if self._speed_factor <= 0:
-            self._speed_factor = 0.1  # arbitrary minimum speed
+            self._speed_factor = 0.1  # arbitrary minimum speed is 10% of speed limit
         self._imperfection = float(self._vtype.get("sigma", 0.5))
 
         self._cutting_into = None
@@ -1015,6 +1036,9 @@ class _TrafficActor:
             return
         self._target_speed = target_lane.speed_limit
         self._target_speed *= self._speed_factor
+        # TAI: consider going faster the further left the target lane
+        # ... or let scenario creator manage this via flows?
+        # self._target_speed *= 1.0 + .05 * self._target_lane_win.lane.index
         self._slow_for_curves()
         max_speed = float(self._vtype.get("maxSpeed", 55.55))
         if self._target_speed >= max_speed:
@@ -1162,7 +1186,9 @@ class _TrafficActor:
             include_junctions=True,
         )
         if not nls:
-            self._logger.warn(f"actor {self.actor_id} out-of-lane: {self._next_pose}")
+            self._logger.warning(
+                f"actor {self.actor_id} out-of-lane: {self._next_pose}"
+            )
             self._off_route = True
             if self._owner._endless_traffic:
                 self._reroute()
