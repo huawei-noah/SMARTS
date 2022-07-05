@@ -10,24 +10,13 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 # [Unreleased]
 ### Added
-- Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make an uprotected left turn in the presence of traffic.
-- Added an online RL example for solving the `intersection-v0` environment, using PPO algorithm from Stable Baselines3 library. An accompanying Colab example is also provided.
 
 ### Changed
-- Updated license to 2022 version.
-- SMARTS reset now has a start time option which will skip simulation.
-- Since `gym.Space` does not support dataclass, `StdObs` type is changed from a dataclass to a dictionary.
 - Add `lane_offset` to `Waypoint` class and `lane_postion` to both `EgoVehicleObservation` and `VehicleObservation` classes to expose the reference-line (a.k.a. Frenet) coordinate system.
 
 ### Removed
-- Old Stable Baselines3 based example is removed in favour of the new online RL example developed using Stable Baselines3 library.
 
 ### Fixed
-- Additional case added for avoiding off-route if merging early into a lane.
-
-### Fixed
-- Unpack utility now unpacks dataclass attributes.
-- Trap manager now uses elapsed sim time rather than step delta to associate with time.
 
 # [0.6.1]
 ### Added
@@ -44,8 +33,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ### Fixed
 - Additional case added for avoiding off-route if merging early into a lane.
-
-### Fixed
 - Unpack utility now unpacks dataclass attributes.
 - Trap manager now uses elapsed sim time rather than step delta to associate with time.
 
