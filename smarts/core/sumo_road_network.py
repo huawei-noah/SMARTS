@@ -1361,6 +1361,7 @@ class SumoRoadNetwork(RoadMap):
             "headings",
             "lane_width",
             "speed_limit",
+            "lane_offset",
         ]
         discrete_variables = ["lane_id", "lane_index"]
 
@@ -1382,6 +1383,9 @@ class SumoRoadNetwork(RoadMap):
             ref_lanepoints_coordinates["lane_id"].append(lanepoint.lp.lane.lane_id)
             ref_lanepoints_coordinates["lane_index"].append(lanepoint.lp.lane.index)
             ref_lanepoints_coordinates["lane_width"].append(lanepoint.lp.lane._width)
+            ref_lanepoints_coordinates["lane_offset"].append(
+                lanepoint.lp.lane.offset_along_lane(lanepoint.lp.pose.point)
+            )
             ref_lanepoints_coordinates["speed_limit"].append(
                 lanepoint.lp.lane.speed_limit
             )
@@ -1423,6 +1427,7 @@ class SumoRoadNetwork(RoadMap):
                     speed_limit=lp.lane.speed_limit,
                     lane_id=lp.lane.lane_id,
                     lane_index=lp.lane.index,
+                    lane_offset=lp.lane.offset_along_lane(lp.pose.point),
                 )
             ]
 
@@ -1468,6 +1473,7 @@ class SumoRoadNetwork(RoadMap):
                     speed_limit=evenly_spaced_coordinates["speed_limit"][idx],
                     lane_id=evenly_spaced_coordinates["lane_id"][idx],
                     lane_index=evenly_spaced_coordinates["lane_index"][idx],
+                    lane_offset=evenly_spaced_coordinates["lane_offset"][idx],
                 )
             )
 
