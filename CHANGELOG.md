@@ -22,6 +22,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Removed `endless_traffic` option from `SumoTrafficSimulator` and instead added `repeat_route` to `Flow` type in Scenario Studio.
 
 ### Removed
+- Removed support for deprecated json-based and YAML formats for traffic histories.
 
 ### Fixed
 - Fixed bug where `yaw_rate` was always reported as 0.0 (Issue #1481).

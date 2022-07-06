@@ -45,7 +45,6 @@ setup(
         # The following are for /envision
         "tornado>=6.1",
         "websocket-client>=1.2.1",
-        # The following is used for imitation learning and envision
         "ijson>=3.1.4",
         # The following are for the /smarts/algorithms
         "matplotlib>=3.4.3",
