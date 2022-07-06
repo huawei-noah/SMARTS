@@ -29,7 +29,7 @@ import numpy as np
 
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
 from smarts.core.plan import Plan
-from smarts.core.road_map import Waypoint
+from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.utils.math import squared_dist, vec_2d, yaw_from_quaternion
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
@@ -61,6 +61,9 @@ class VehicleObservation(NamedTuple):
     """The identifier for the lane nearest to this vehicle."""
     lane_index: int
     """The index of the nearest lane on the road nearest to this vehicle."""
+    lane_position: Optional[RefLinePoint] = None
+    """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
+    See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
 
 
 class EgoVehicleObservation(NamedTuple):
@@ -100,6 +103,9 @@ class EgoVehicleObservation(NamedTuple):
     """Linear jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     angular_jerk: Optional[np.ndarray]
     """Angular jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    lane_position: Optional[RefLinePoint] = None
+    """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
+    See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
 
 
 class RoadWaypoints(NamedTuple):
@@ -245,10 +251,13 @@ class Sensors:
                 nv_lane = sim.road_map.nearest_lane(
                     nv.pose.point, radius=vehicle.length
                 )
+                nv_lane_pos = None
                 if nv_lane:
                     nv_road_id = nv_lane.road.road_id
                     nv_lane_id = nv_lane.lane_id
                     nv_lane_index = nv_lane.index
+                    if vehicle.subscribed_to_lane_position_sensor:
+                        nv_lane_pos = vehicle.lane_position_sensor(nv_lane, nv)
                 else:
                     nv_road_id = None
                     nv_lane_id = None
@@ -263,6 +272,7 @@ class Sensors:
                         road_id=nv_road_id,
                         lane_id=nv_lane_id,
                         lane_index=nv_lane_index,
+                        lane_position=nv_lane_pos,
                     )
                 )
 
@@ -276,10 +286,13 @@ class Sensors:
             )
 
         closest_lane = sim.road_map.nearest_lane(vehicle.pose.point)
+        ego_lane_pos = None
         if closest_lane:
             ego_lane_id = closest_lane.lane_id
             ego_lane_index = closest_lane.index
             ego_road_id = closest_lane.road.road_id
+            if vehicle.subscribed_to_lane_position_sensor:
+                ego_lane_pos = vehicle.lane_position_sensor(closest_lane, vehicle)
         else:
             ego_lane_id = None
             ego_lane_index = None
@@ -327,6 +340,7 @@ class Sensors:
             linear_velocity=ego_vehicle_state.linear_velocity,
             angular_velocity=ego_vehicle_state.angular_velocity,
             **acceleration_params,
+            lane_position=ego_lane_pos,
         )
 
         road_waypoints = (
@@ -1096,6 +1110,19 @@ class AccelerometerSensor(Sensor):
                 angular_jerk = angular_acc - last_angular_acc
 
         return (linear_acc, angular_acc, linear_jerk, angular_jerk)
+
+    def teardown(self):
+        pass
+
+
+class LanePositionSensor(Sensor):
+    """Tracks lane-relative RefLine (Frenet) coordinates."""
+
+    def __init__(self, vehicle):
+        pass
+
+    def __call__(self, lane: RoadMap.Lane, vehicle):
+        return lane.to_lane_coord(vehicle.pose.point)
 
     def teardown(self):
         pass

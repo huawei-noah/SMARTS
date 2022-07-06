@@ -37,6 +37,7 @@ from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
     DrivenPathSensor,
+    LanePositionSensor,
     LidarSensor,
     NeighborhoodVehiclesSensor,
     OGMSensor,
@@ -485,6 +486,9 @@ class Vehicle:
         if agent_interface.accelerometer:
             vehicle.attach_accelerometer_sensor(AccelerometerSensor(vehicle=vehicle))
 
+        if agent_interface.lane_positions:
+            vehicle.attach_lane_position_sensor(LanePositionSensor(vehicle=vehicle))
+
         if agent_interface.waypoints:
             vehicle.attach_waypoints_sensor(
                 WaypointsSensor(
@@ -666,6 +670,7 @@ class Vehicle:
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",
+            "lane_position_sensor",
             "via_sensor",
         ]
         for sensor_name in sensor_names:
