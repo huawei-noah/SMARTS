@@ -154,7 +154,7 @@ class SMARTS:
         self.add_provider(self._trajectory_interpolation_provider)
         for traffic_sim in self._traffic_sims:
             self._insert_provider(
-                0,
+                len(self._providers),
                 traffic_sim,
                 recovery_flags=ProviderRecoveryFlags.EPISODE_REQUIRED
                 | ProviderRecoveryFlags.ATTEMPT_RECOVERY,

@@ -106,6 +106,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self._sumo_proc = None
         self._num_clients = 1 + num_external_sumo_clients
         self._sumo_port = sumo_port
+        self._last_traci_state = None
         self._auto_start = auto_start
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
@@ -614,15 +615,15 @@ class SumoTrafficSimulation(TrafficProvider):
         return vehicle_id in self._sumo_vehicle_ids
 
     def _compute_traffic_vehicles(self) -> List[VehicleState]:
-        sub_results = self._traci_conn.simulation.getSubscriptionResults()
+        self._last_traci_state = self._traci_conn.simulation.getSubscriptionResults()
 
-        if sub_results is None or sub_results == {}:
+        if not self._last_traci_state:
             return []
 
         # New social vehicles that have entered the map
         newly_departed_sumo_traffic = [
             vehicle_id
-            for vehicle_id in sub_results[tc.VAR_DEPARTED_VEHICLES_IDS]
+            for vehicle_id in self._last_traci_state[tc.VAR_DEPARTED_VEHICLES_IDS]
             if vehicle_id not in self._non_sumo_vehicle_ids
         ]
 
@@ -667,7 +668,7 @@ class SumoTrafficSimulation(TrafficProvider):
         # added.
         newly_departed_non_sumo_vehicles = [
             vehicle_id
-            for vehicle_id in sub_results[tc.VAR_DEPARTED_VEHICLES_IDS]
+            for vehicle_id in self._last_traci_state[tc.VAR_DEPARTED_VEHICLES_IDS]
             if vehicle_id not in newly_departed_sumo_traffic
         ]
 
@@ -723,13 +724,16 @@ class SumoTrafficSimulation(TrafficProvider):
         return provider_vehicles
 
     def _teleport_exited_vehicles(self):
-        sub_results = self._traci_conn.simulation.getSubscriptionResults()
-        if not sub_results:
-            return
+        if not self._last_traci_state:
+            self._last_traci_state = (
+                self._traci_conn.simulation.getSubscriptionResults()
+            )
+            if not self._last_traci_state:
+                return
 
         exited_sumo_traffic = [
             vehicle_id
-            for vehicle_id in sub_results[tc.VAR_ARRIVED_VEHICLES_IDS]
+            for vehicle_id in self._last_traci_state[tc.VAR_ARRIVED_VEHICLES_IDS]
             if vehicle_id not in self._non_sumo_vehicle_ids
         ]
         for v_id in exited_sumo_traffic:
