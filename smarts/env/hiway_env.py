@@ -58,7 +58,6 @@ class HiWayEnv(gym.Env):
         sumo_headless: bool = True,
         sumo_port: Optional[str] = None,
         sumo_auto_start: bool = True,
-        endless_traffic: bool = True,
         envision_endpoint: Optional[str] = None,
         envision_record_data_replay_path: Optional[str] = None,
         zoo_addrs: Optional[str] = None,
@@ -91,8 +90,6 @@ class HiWayEnv(gym.Env):
                 SUMO GUI. Defaults to True.
             sumo_port (Optional[str], optional): SUMO port. Defaults to None.
             sumo_auto_start (bool, optional): Automatic starting of SUMO.
-                Defaults to True.
-            endless_traffic (bool, optional): SUMO's endless traffic setting.
                 Defaults to True.
             envision_endpoint (Optional[str], optional): Envision's uri.
                 Defaults to None.
@@ -153,10 +150,9 @@ class HiWayEnv(gym.Env):
                 num_external_sumo_clients=num_external_sumo_clients,
                 sumo_port=sumo_port,
                 auto_start=sumo_auto_start,
-                endless_traffic=endless_traffic,
             )
             traffic_sims += [sumo_traffic]
-        smarts_traffic = LocalTrafficProvider(endless_traffic=endless_traffic)
+        smarts_traffic = LocalTrafficProvider()
         traffic_sims += [smarts_traffic]
 
         self._smarts = SMARTS(

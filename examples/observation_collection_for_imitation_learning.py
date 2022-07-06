@@ -57,7 +57,7 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
     if Scenario.any_support_sumo_traffic(scenarios):
         sumo_traffic = SumoTrafficSimulation(headless=headless, auto_start=True)
         traffic_sims += [sumo_traffic]
-    smarts_traffic = LocalTrafficProvider(endless_traffic=False)
+    smarts_traffic = LocalTrafficProvider()
     traffic_sims += [smarts_traffic]
 
     smarts = SMARTS(

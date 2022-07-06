@@ -50,17 +50,10 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class LocalTrafficProvider(TrafficProvider):
-    """
-    A LocalTrafficProvider simulates multiple traffic actors on a generic RoadMap.
-    Args:
-        endless_traffic:
-            Traffic vehicles that exit the simulation will be reintroduced back
-            into the simulation to recycle traffic volume.
-    """
+    """A LocalTrafficProvider simulates multiple traffic actors on a generic RoadMap."""
 
-    def __init__(self, endless_traffic: bool = True):
+    def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._endless_traffic: bool = endless_traffic
         self._scenario = None
         self.road_map: RoadMap = None
         self._flows: Dict[str, Dict[str, Any]] = dict()
@@ -165,7 +158,9 @@ class LocalTrafficProvider(TrafficProvider):
                     assert (
                         False
                     ), "either 'vehsPerHour' or 'probability' must be specified for Flow emission"
-                self._flows[str(flow["id"])] = flow
+                flow_id = str(flow["id"])
+                flow["endless"] = "endless" in flow_id
+                self._flows[flow_id] = flow
                 flow["route_key"] = self._cache_route_lengths(route)
 
     def _check_actor_bbox(self, actor: "_TrafficActor") -> bool:
@@ -1200,7 +1195,7 @@ class _TrafficActor:
                 f"actor {self.actor_id} out-of-lane: {self._next_pose}"
             )
             self._off_route = True
-            if self._owner._endless_traffic:
+            if self._flow["endless"]:
                 self._reroute()
             return
         self._lane = None
@@ -1235,7 +1230,7 @@ class _TrafficActor:
         self._offset = self._lane.offset_along_lane(self._next_pose.point)
         if self._near_dest():
             if self._lane == self._dest_lane:
-                if self._owner._endless_traffic:
+                if self._flow["endless"]:
                     self._reroute()
                 else:
                     self._done_with_route = True

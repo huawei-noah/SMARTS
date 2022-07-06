@@ -261,8 +261,12 @@ class TrafficGenerator:
                         rate_option = dict(vehsPerHour=vehs_per_hour)
                     doc.stag(
                         "flow",
-                        id="{}-{}-{}-{}".format(
-                            actor.name, flow.id, flow_idx, actor_idx
+                        id="{}-{}{}-{}-{}".format(
+                            actor.name,
+                            flow.id,
+                            "-endless" if flow.repeat_route else "",
+                            flow_idx,
+                            actor_idx,
                         ),
                         type=actor.id,
                         route=route.id,

@@ -7,6 +7,7 @@ traffic = t.Traffic(
     flows=[
         t.Flow(
             route=t.RandomRoute(),
+            repeat_route=True,
             rate=60 * 60,
             actors={t.TrafficActor(name="car", vehicle_type=vehicle_type): 1},
         )

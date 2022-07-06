@@ -305,7 +305,6 @@ class BaseAnalysis:
             timestep_sec=timestep_sec,
             sumo_headless=True,
             seed=0,
-            endless_traffic=False,
         )
         visited_scenario = set()
         while len(visited_scenario) < len(scenarios):

@@ -16,6 +16,7 @@ traffic = t.Traffic(
                 begin=(route[0], random.randint(0, 2), "random"),
                 end=(route[1], random.randint(0, 2), "max"),
             ),
+            repeat_route=True,
             rate=1,
             end=10,  # `rate=1` adds 1 additional vehicle per hour. So set `end` < 1*60*60 secs to avoid addition of more vehicles after the initial flow. This prevents traffic congestion.
             actors={
