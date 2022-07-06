@@ -70,7 +70,7 @@ def multi_scenario_v0_env(
 
     Episode termination:
         Episode is terminated if any of the following occurs.
-        + Steps per episode exceed 3000.
+        + Steps per episode exceed 800.
         + Agent collides, drives off road, drives off route, or drives on wrong way.
 
     Solved requirement:
