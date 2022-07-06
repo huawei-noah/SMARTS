@@ -144,16 +144,14 @@ def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = 
 def gen_traffic(
     scenario: str,
     traffic: types.Traffic,
-    name: Optional[str] = None,
+    name: str,
     output_dir: Optional[str] = None,
     seed: int = 42,
     overwrite: bool = False,
     map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates the traffic routes for the given scenario. If the output directory is
-    not provided, the scenario directory is used. If name is not provided the default is
-    "routes".
-    """
+    not provided, the scenario directory is used."""
     assert name != "missions", "The name 'missions' is reserved for missions!"
 
     output_dir = os.path.join(output_dir or scenario, "traffic")
@@ -372,7 +370,7 @@ def _gen_missions(
         route = getattr(mission, "route", None)
         kwargs = {}
         if route:
-            kwargs["route"] = generator.resolve_route(route)
+            kwargs["route"] = generator.resolve_route(route, False)
 
         via = getattr(mission, "via", ())
         if via != ():

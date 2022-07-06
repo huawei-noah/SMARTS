@@ -35,7 +35,7 @@ from smarts.core.utils.math import (
 
 @dataclass(frozen=True)
 class Dimensions:
-    """A 3 dimension data structure representing a box."""
+    """Representation of the size of a 3-dimensional form."""
 
     length: float
     width: float
@@ -122,7 +122,7 @@ class RefLinePoint(NamedTuple):
 
 @dataclass(frozen=True)
 class BoundingBox:
-    """A fitted box generally used to encapsulate geometry."""
+    """A 2-dimensional axis aligned box located in a [x, y] coordinate system."""
 
     min_pt: Point
     max_pt: Point

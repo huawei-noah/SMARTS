@@ -24,6 +24,7 @@ from typing import Any, Dict, Optional, Set, Tuple, Union
 import cloudpickle
 
 from envision.types import format_actor_id
+from smarts.core.actor_role import ActorRole
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
@@ -481,27 +482,30 @@ class AgentManager:
             agent_model.initial_speed,
             boid=boid,
         )
-
-        matching_providers = [
-            provider
-            for provider in sim.providers
-            if agent_interface.action_space in provider.action_spaces
-        ]
-        if matching_providers:
-            assert (
-                len(matching_providers) == 1
-            ), f"Found {matching_providers} for action space {agent_interface.action_space}"
-            provider = matching_providers[0]
-            provider.create_vehicle(
-                VehicleState(
-                    vehicle_id=vehicle.id,
-                    vehicle_type=vehicle.vehicle_type,
-                    vehicle_config_type="passenger",  # XXX: vehicles in history missions will have a type
-                    pose=vehicle.pose,
-                    dimensions=vehicle.chassis.dimensions,
-                    source="NEW-AGENT",
-                )
+        role = ActorRole.EgoAgent if trainable else ActorRole.SocialAgent
+        for provider in sim.providers:
+            if agent_interface.action_space not in provider.action_spaces:
+                continue
+            state = VehicleState(
+                vehicle_id=vehicle.id,
+                vehicle_type=vehicle.vehicle_type,
+                vehicle_config_type="passenger",  # XXX: vehicles in history missions will have a type
+                pose=vehicle.pose,
+                dimensions=vehicle.chassis.dimensions,
+                source=provider.source_str,
+                role=role,
             )
+            if provider.can_accept_vehicle(state):
+                # Note: this just takes the first one that we come across,
+                # so the order in the sim.providers list matters.
+                provider.add_vehicle(state)
+                break
+        else:
+            # We should never get here because there will always be an AgentsProvider in SMARTS
+            # willing to accept SocialAgents.
+            assert (
+                False
+            ), f"could not find suitable provider supporting role={role} for action space {agent_interface.action_space}"
 
         self._agent_interfaces[agent_id] = agent_interface
         self._social_agent_data_models[agent_id] = agent_model
@@ -569,21 +573,21 @@ class AgentManager:
         # Observations contain those for social agents; filter them out
         return self._filter_for_active_ego(observations)
 
-    def agent_name(self, agent_id: str):
+    def agent_name(self, agent_id: str) -> str:
         """Get the resolved agent name."""
         if agent_id not in self._social_agent_data_models:
             return ""
 
         return self._social_agent_data_models[agent_id].name
 
-    def is_boid_agent(self, agent_id: str):
+    def is_boid_agent(self, agent_id: str) -> bool:
         """Check if an agent is a boid agent"""
         if agent_id not in self._social_agent_data_models:
             return False
 
         return self._social_agent_data_models[agent_id].is_boid
 
-    def is_boid_keep_alive_agent(self, agent_id: str):
+    def is_boid_keep_alive_agent(self, agent_id: str) -> bool:
         """Check if this is a persistent boid agent"""
         if agent_id not in self._social_agent_data_models:
             return False
@@ -605,3 +609,9 @@ class AgentManager:
             sim.vehicle_index.attach_sensors_to_vehicle(
                 sim, sv_id, agent_interface, plan
             )
+
+    def stop_agent_observation(self, sim, vehicle_id: str):
+        """Called when agent observation is finished and sensors should be removed from a vehicle"""
+        sim.vehicle_index.stop_agent_observation(vehicle_id)
+        if vehicle_id in self._vehicle_with_sensors:
+            del self._vehicle_with_sensors[vehicle_id]

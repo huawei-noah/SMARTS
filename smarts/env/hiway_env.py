@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import logging
+import os
 import warnings
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
@@ -27,9 +28,11 @@ import gym
 from envision.client import Client as Envision
 from envision.data_formatter import EnvisionDataFormatterArgs
 from smarts.core import seed as smarts_seed
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.visdom_client import VisdomClient
 from smarts.zoo.agent_spec import AgentSpec
@@ -142,22 +145,9 @@ class HiWayEnv(gym.Env):
         if visdom:
             visdom_client = VisdomClient()
 
-        all_sumo = Scenario.supports_traffic_simulation(scenarios)
-        traffic_sim = None
-        if not all_sumo:
-            # We currently only support the Native SUMO Traffic Provider and Social Agents for SUMO maps
-            if zoo_addrs:
-                warnings.warn("`zoo_addrs` can only be used with SUMO scenarios")
-                zoo_addrs = None
-            warnings.warn(
-                "We currently only support the Native SUMO Traffic Provider and Social Agents for SUMO maps."
-                "All scenarios passed need to be of SUMO, to enable SUMO Traffic Simulation and Social Agents."
-            )
-            pass
-        else:
-            from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-
-            traffic_sim = SumoTrafficSimulation(
+        traffic_sims = []
+        if Scenario.any_support_sumo_traffic(scenarios):
+            sumo_traffic = SumoTrafficSimulation(
                 headless=sumo_headless,
                 time_resolution=fixed_timestep_sec,
                 num_external_sumo_clients=num_external_sumo_clients,
@@ -165,11 +155,13 @@ class HiWayEnv(gym.Env):
                 auto_start=sumo_auto_start,
                 endless_traffic=endless_traffic,
             )
-            zoo_addrs = zoo_addrs
+            traffic_sims += [sumo_traffic]
+        smarts_traffic = LocalTrafficProvider(endless_traffic=endless_traffic)
+        traffic_sims += [smarts_traffic]
 
         self._smarts = SMARTS(
             agent_interfaces=agent_interfaces,
-            traffic_sim=traffic_sim,
+            traffic_sims=traffic_sims,
             envision=envision_client,
             visdom=visdom_client,
             fixed_timestep_sec=fixed_timestep_sec,
@@ -193,7 +185,7 @@ class HiWayEnv(gym.Env):
             Dict[str, Union[float,str]]: A dictionary with the following keys.
                 fixed_timestep_sec - Simulation timestep.
                 scenario_map - Name of the current scenario.
-                scenario_routes - Routes in the map.
+                scenario_traffic - Traffic spec(s) used.
                 mission_hash - Hash identifier for the current scenario.
         """
 
@@ -201,7 +193,7 @@ class HiWayEnv(gym.Env):
         return {
             "fixed_timestep_sec": self._smarts.fixed_timestep_sec,
             "scenario_map": scenario.name,
-            "scenario_routes": scenario.route or "",
+            "scenario_traffic": ",".join(map(os.path.basename, scenario.traffic_specs)),
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 

@@ -201,6 +201,7 @@ def clean_scenario(scenario: str):
 def _clean(scenario: str):
     to_be_removed = [
         "map.glb",
+        "map_spec.pkl",
         "bubbles.pkl",
         "missions.pkl",
         "flamegraph-perf.log",
@@ -210,6 +211,7 @@ def _clean(scenario: str):
         "*.rou.alt.xml",
         "social_agents/*",
         "traffic/*.rou.xml",
+        "traffic/*.smarts.xml",
         "history_mission.pkl",
         "*.shf",
         "*-AUTOGEN.net.xml",

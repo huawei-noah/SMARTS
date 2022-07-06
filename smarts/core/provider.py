@@ -19,9 +19,10 @@
 # THE SOFTWARE.
 from dataclasses import dataclass, field
 from enum import IntFlag
-from typing import List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from .controllers import ActionSpaceType
+from .road_map import RoadMap
 from .scenario import Scenario
 from .vehicle import VehicleState
 
@@ -43,6 +44,7 @@ class ProviderRecoveryFlags(IntFlag):
 class ProviderState:
     """State information from a provider."""
 
+    # TAI: rename to actors and ActorState
     vehicles: List[VehicleState] = field(default_factory=list)
     dt: Optional[float] = None  # most Providers can leave this blank
 
@@ -66,12 +68,17 @@ class ProviderState:
             except ValueError:
                 continue
 
+    def contains(self, vehicle_ids: Set[str]) -> bool:
+        """Returns True iff any of the vehicle_ids are contained in this ProviderState .
+        Returns False for empty-set containment."""
+        provider_vehicle_ids = {v.vehicle_id for v in self.vehicles}
+        intersection = vehicle_ids & provider_vehicle_ids
+        return bool(intersection)
+
 
 class Provider:
-    """A Provider tracks a (sub)set of vehicles that all share the same action space.
+    """A Provider manages a (sub)set of actors (e.g., vehicles) that all share the same action space(s).
     This is a base class (interface) from which all Providers should inherit."""
-
-    ## TAI: Consider renaming to VehicleSet or somesuch.
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -83,15 +90,34 @@ class Provider:
         raise NotImplementedError
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
-        """Progress the provider to generate new vehicle state."""
+        """Progress the provider to generate new vehicle state.
+        Args:
+            actions: one or more valid actions from the supported action_spaces of this provider
+            dt: time (in seconds) to simulate during this simulation step
+            elapsed_sim_time: amount of time (in seconds) that's elapsed so far in the simulation
+        Returns:
+            ProviderState representing the state of all vehicles this manages.
+        """
         raise NotImplementedError
 
     def sync(self, provider_state: ProviderState):
-        """Synchronize with external state."""
+        """Synchronize with state managed by other Providers."""
         raise NotImplementedError
 
-    def create_vehicle(self, provider_vehicle: VehicleState):
-        """Create a vehicle within the provider."""
+    def can_accept_vehicle(self, state: VehicleState) -> bool:
+        """Whether this Provider can take control of an existing vehicle
+        with state that was previously managed by another Provider.
+        The state.role field should indicate the desired role, not the
+        previous role."""
+        return False
+
+    def add_vehicle(
+        self,
+        provider_vehicle: VehicleState,
+        route: Optional[Sequence[RoadMap.Route]] = None,
+    ):
+        """Management of the vehicle with state is being transferred to this Provider.
+        Will only be called if can_accept_vehicle() has returned True."""
         raise NotImplementedError
 
     def reset(self):
@@ -126,3 +152,24 @@ class Provider:
             bool: The connection state of the provider.
         """
         return True
+
+    @property
+    def source_str(self) -> str:
+        """This property should be used to fill in the source field
+        of all VehicleState objects created/managed by this Provider."""
+        return self.__class__.__name__
+
+    def manages_vehicle(self, vehicle_id: str) -> bool:
+        """Returns True iff the vehicle referenced by vehicle_id is managed by this Provider."""
+        raise NotImplementedError
+
+    def stop_managing(self, vehicle_id: str):
+        """Tells the Provider to stop managing the specified vehicle;
+        it will be managed by another Provider now."""
+        raise NotImplementedError
+
+    def remove_vehicle(self, vehicle_id: str):
+        """The vehicle is being removed from the simulation."""
+        if self.manages_vehicle(vehicle_id):
+            self.stop_managing(vehicle_id)
+        # can be overridden to do more cleanup as necessary

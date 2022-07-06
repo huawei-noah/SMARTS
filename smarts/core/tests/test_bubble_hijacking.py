@@ -23,6 +23,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 import pytest
+import re
 from helpers.bubbles import bubble_geometry
 
 # TODO: Rename temp_scenario(...)
@@ -30,6 +31,7 @@ from helpers.scenario import temp_scenario
 from shapely.geometry import Point
 
 import smarts.sstudio.types as t
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -62,10 +64,16 @@ def bubbles():
     ]
 
 
+@pytest.fixture(params=["SUMO", "SMARTS"])
+def traffic_sim(request):
+    return getattr(request, "param", "SUMO")
+
+
 @pytest.fixture
-def scenarios(bubbles, num_vehicles):
+def scenarios(bubbles, num_vehicles, traffic_sim):
     with temp_scenario(name="6lane", map="maps/6lane.net.xml") as scenario_root:
         traffic = t.Traffic(
+            engine=traffic_sim,
             flows=[
                 t.Flow(
                     route=t.Route(
@@ -76,7 +84,7 @@ def scenarios(bubbles, num_vehicles):
                     actors={t.TrafficActor(name="car"): 1},
                 )
                 for lane in range(num_vehicles)
-            ]
+            ],
         )
 
         gen_scenario(
@@ -88,8 +96,13 @@ def scenarios(bubbles, num_vehicles):
 
 
 @pytest.fixture
-def smarts():
-    smarts = SMARTS({}, traffic_sim=SumoTrafficSimulation())
+def smarts(traffic_sim):
+    traffic_sims = (
+        [LocalTrafficProvider()]
+        if traffic_sim == "SMARTS"
+        else [SumoTrafficSimulation()]
+    )
+    smarts = SMARTS({}, traffic_sims=traffic_sims)
     yield smarts
     smarts.destroy()
 
@@ -103,7 +116,8 @@ class ZoneSteps:
 
 
 # TODO: Consider a higher-level DSL syntax to fulfill these tests
-def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles):
+@pytest.mark.parametrize("traffic_sim", ["SUMO", "SMARTS"], indirect=True)
+def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim):
     """Ensures bubble airlocking, hijacking, and relinquishing are functional.
     Additionally, we test with multiple bubbles and vehicles to ensure operation is
     correct in these conditions as well.
@@ -120,15 +134,20 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles):
     for _ in range(300):
         smarts.step({})
         for vehicle in index.vehicles:
+            position = Point(vehicle.position)
             for bubble, geometry in zip(bubbles, geometries):
-                position = Point(vehicle.position)
                 in_bubble = position.within(geometry.bubble)
                 is_shadowing = (
                     index.shadow_actor_id_from_vehicle_id(vehicle.id) is not None
                 )
                 is_agent_controlled = vehicle.id in index.agent_vehicle_ids()
 
-                zone_steps = steps_driven_in_zones[bubble.id][vehicle.id]
+                vehicle_id = (
+                    vehicle.id
+                    if traffic_sim == "SUMO"
+                    else re.sub(r"_\d+$", "", vehicle.id)
+                )
+                zone_steps = steps_driven_in_zones[bubble.id][vehicle_id]
                 if position.within(geometry.bubble):
                     zone_steps.in_bubble += 1
                     assert in_bubble and not is_shadowing and is_agent_controlled
@@ -139,8 +158,8 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles):
                     zone_steps.airlock_exit += 1
                     # TODO: Presently not implemented, but `is_shadowing` should be True
                     assert not in_bubble and not is_shadowing and is_agent_controlled
-                    if vehicle.id not in vehicles_made_to_through_bubble[bubble.id]:
-                        vehicles_made_to_through_bubble[bubble.id].append(vehicle.id)
+                    if vehicle_id not in vehicles_made_to_through_bubble[bubble.id]:
+                        vehicles_made_to_through_bubble[bubble.id].append(vehicle_id)
                 elif not any([position.within(geom.airlock) for geom in geometries]):
                     # Not in any bubble; airlock is the encompassing region
                     zone_steps.outside_bubble += 1

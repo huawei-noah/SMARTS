@@ -456,9 +456,7 @@ class BubbleManager:
                 continue
             elif cursor.transition == BubbleTransition.AirlockExited:
                 if sim.vehicle_index.vehicle_is_hijacked(cursor.vehicle_id):
-                    self._relinquish_vehicle_to_traffic_sim(
-                        sim, cursor.vehicle_id, cursor.bubble
-                    )
+                    self._relinquish_vehicle(sim, cursor.vehicle_id, cursor.bubble)
                 else:
                     self._stop_shadowing_vehicle(sim, cursor.vehicle_id, cursor.bubble)
 
@@ -542,7 +540,7 @@ class BubbleManager:
         )
         sim.create_vehicle_in_providers(vehicle, agent_id)
 
-    def _relinquish_vehicle_to_traffic_sim(self, sim, vehicle_id: str, bubble: Bubble):
+    def _relinquish_vehicle(self, sim, vehicle_id: str, bubble: Bubble):
         agent_id = sim.vehicle_index.actor_id_from_vehicle_id(vehicle_id)
         shadow_agent_id = sim.vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id)
 
@@ -554,8 +552,12 @@ class BubbleManager:
             f"shadow_agent={shadow_agent_id} sv_id={social_vehicle_id})"
         )
 
+        ss = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle_id)
         sim.vehicle_index.stop_agent_observation(vehicle_id)
-        sim.vehicle_index.relinquish_agent_control(sim, vehicle_id, social_vehicle_id)
+        vehicle = sim.vehicle_index.relinquish_agent_control(
+            sim, vehicle_id, social_vehicle_id
+        )
+        sim.provider_relinquishing_vehicle(vehicle.state, ss.plan.route)
         if bubble.is_boid and bubble.keep_alive:
             return
 
@@ -568,7 +570,7 @@ class BubbleManager:
             f"Stop shadowing vehicle={vehicle_id} (shadow_agent={shadow_agent_id})"
         )
 
-        sim.vehicle_index.stop_agent_observation(vehicle_id)
+        sim.agent_manager.stop_agent_observation(sim, vehicle_id)
 
         if bubble.is_boid and bubble.keep_alive:
             return
@@ -589,10 +591,18 @@ class BubbleManager:
         )
 
         # Setup mission (also used for observations)
-        # XXX: this is not quite right.  route may not be what the agent wants to take.
-        route = sim.traffic_sim.vehicle_route(vehicle_id=vehicle.id)
-        if len(route) > 0:
-            goal = PositionalGoal.from_road(route[-1], sim.scenario.road_map)
+        # XXX:  here we try to find where the vehicle was originally going, although
+        # the agent may or may not want to go there too.  But we preserve it
+        # in the plan so when the agent relinquishes control, the next Provider
+        # can resume going there (potentially via a different route at that point).
+        dest_road_id = None
+        for traffic_sim in sim.traffic_sims:
+            if traffic_sim.manages_vehicle(vehicle.id):
+                dest_road_id = traffic_sim.vehicle_dest_road(vehicle.id)
+                if dest_road_id is not None:
+                    break
+        if dest_road_id:
+            goal = PositionalGoal.from_road(dest_road_id, sim.scenario.road_map)
         else:
             goal = EndlessGoal()
         mission = Mission(start=Start(vehicle.position[:2], vehicle.heading), goal=goal)

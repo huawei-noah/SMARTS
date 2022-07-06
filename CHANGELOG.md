@@ -10,13 +10,20 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 # [Unreleased]
 ### Added
+- Added a basic background traffic ("social vehicle") provider as an alternative to the SUMO traffic simulator.  This can be selected using the new `"engine"` argument to `Traffic` in Scenario Studio.
+
+### Deprecated
+- Deprecated a few things related to traffic in the `Scenario` class, including the `route` argument to the `Scenario` initializer, the `route`, `route_filepath` and `route_files_enabled` properties, and the `discover_routes()` static method.  In general, the notion of "route" (singular) here is being replaced with "`traffic_specs`" (plural) that allow for specifying traffic controlled by the SMARTS engine as well as Sumo.
 
 ### Changed
 - Add `lane_offset` to `Waypoint` class and `lane_postion` to both `EgoVehicleObservation` and `VehicleObservation` classes to expose the reference-line (a.k.a. Frenet) coordinate system.
+- Traffic history vehicles can now be hijacked within a bubble.  They will be relinquished to the SMARTS background traffic provider upon exiting the bubble.
+- Changed the name of the `Imitation` action space to `Direct`.
 
 ### Removed
 
 ### Fixed
+- Fixed bug where `yaw_rate` was always reported as 0.0 (Issue #1481).
 
 # [0.6.1]
 ### Added
