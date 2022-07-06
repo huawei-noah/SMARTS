@@ -261,6 +261,8 @@ class TrafficGenerator:
                         rate_option = dict(vehsPerHour=vehs_per_hour)
                     doc.stag(
                         "flow",
+                        # have to encode the flow.repeat_route within the vehcile id b/c
+                        # duarouter complains about any additional xml tags or attributes.
                         id="{}-{}{}-{}-{}".format(
                             actor.name,
                             flow.id,

@@ -482,8 +482,12 @@ class _TrafficActor:
             new_actor._lane.vector_at_offset(new_actor._offset)[:2]
         )
         init_speed = new_actor._resolve_flow_speed(flow)
+        endless = "-endless" if flow.get("endless", False) else ""
+        vehicle_id = (
+            f"{new_actor._vtype['id']}{endless}-{new_actor._owner._actors_created}"
+        )
         new_actor._state = VehicleState(
-            vehicle_id=f"{new_actor._vtype['id']}-{new_actor._owner._actors_created}",
+            vehicle_id=vehicle_id,
             pose=Pose.from_center(position, Heading(heading)),
             dimensions=dimensions,
             vehicle_type=vehicle_type,
@@ -519,6 +523,7 @@ class _TrafficActor:
         flow["arrivalPos"] = "max"
         flow["departLane"] = f"{cur_lane.index}"  # XXX: assumption!
         flow["departPos"] = "0"
+        flow["endless"] = "endless" in state.vehicle_id
         # use default values for everything else in flow dict(s)...
         new_actor = _TrafficActor(flow, owner)
         new_actor.state = state
