@@ -26,7 +26,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
-from shapely.geometry import Polygon, box as shapely_box
+from shapely.geometry import Polygon
+from shapely.geometry import box as shapely_box
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan

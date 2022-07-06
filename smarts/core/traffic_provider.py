@@ -19,8 +19,9 @@
 # THE SOFTWARE.
 
 
-from shapely.geometry import Polygon
 from typing import Optional, Sequence
+
+from shapely.geometry import Polygon
 
 from .provider import Provider
 

@@ -23,13 +23,15 @@ from __future__ import annotations
 
 import math
 from bisect import bisect
-from cached_property import cached_property
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import List, Optional, Sequence, Set, Tuple
 
 import numpy as np
-from shapely.geometry import LineString, Point as SPoint, Polygon
+from cached_property import cached_property
+from shapely.geometry import LineString
+from shapely.geometry import Point as SPoint
+from shapely.geometry import Polygon
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .utils.math import (

@@ -38,7 +38,7 @@ from smarts.core.smarts import SMARTS
 from smarts.core.tests.helpers.scenario import temp_scenario
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
-from smarts.core.vehicle import Vehicle, VEHICLE_CONFIGS
+from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle
 from smarts.sstudio import gen_scenario
 from smarts.zoo.agent_spec import AgentSpec
 

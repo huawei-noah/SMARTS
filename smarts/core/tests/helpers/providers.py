@@ -21,8 +21,8 @@ from typing import Optional, Sequence, Set
 
 from smarts.core.actor_role import ActorRole
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.road_map import RoadMap
 from smarts.core.provider import Provider, ProviderState
+from smarts.core.road_map import RoadMap
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 

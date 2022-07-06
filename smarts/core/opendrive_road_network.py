@@ -66,7 +66,8 @@ except ImportError:
     )
 # pytype: enable=import-error
 
-from shapely.geometry import Point as SPoint, Polygon
+from shapely.geometry import Point as SPoint
+from shapely.geometry import Polygon
 from trimesh.exchange import gltf
 
 from smarts.core.road_map import RoadMap, RoadMapWithCaches, Waypoint

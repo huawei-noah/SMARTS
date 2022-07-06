@@ -37,8 +37,8 @@ from .actor_role import ActorRole
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
 from .agents_provider import (
-    AgentsProvider,
     AgentPhysicsProvider,
+    AgentsProvider,
     DirectControlProvider,
     MotionPlannerProvider,
     TrajectoryInterpolationProvider,

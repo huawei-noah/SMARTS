@@ -33,7 +33,8 @@ import numpy as np
 import rtree
 import trimesh
 from cached_property import cached_property
-from shapely.geometry import Polygon, Point as SPoint
+from shapely.geometry import Point as SPoint
+from shapely.geometry import Polygon
 from trimesh.exchange import gltf
 from waymo_open_dataset.protos import scenario_pb2
 from waymo_open_dataset.protos.map_pb2 import LaneCenter, RoadLine

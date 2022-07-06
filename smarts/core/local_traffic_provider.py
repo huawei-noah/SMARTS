@@ -31,7 +31,8 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 import numpy as np
 from cached_property import cached_property
 from shapely.affinity import rotate as shapely_rotate
-from shapely.geometry import Polygon, box as shapely_box
+from shapely.geometry import Polygon
+from shapely.geometry import box as shapely_box
 
 from .actor_role import ActorRole
 from .controllers import ActionSpaceType
@@ -41,11 +42,7 @@ from .road_map import RoadMap, Waypoint
 from .scenario import Scenario
 from .traffic_provider import TrafficProvider
 from .utils.kinematics import time_to_cover
-from .utils.math import (
-    min_angles_difference_signed,
-    radians_to_vec,
-    vec_to_radians,
-)
+from .utils.math import min_angles_difference_signed, radians_to_vec, vec_to_radians
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 
