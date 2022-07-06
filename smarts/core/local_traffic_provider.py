@@ -1095,6 +1095,13 @@ class _TrafficActor:
         self._prev_angular_err = (heading_delta, lat_err)
         return angular_velocity
 
+    def _near_dest(self, within: float = 0) -> bool:
+        if self._lane.road != self._dest_lane.road:
+            return False
+        dest_lane_offset = self._dest_lane.offset_along_lane(self._state.pose.point)
+        dist_left = self._dest_offset - dest_lane_offset
+        return dist_left <= within
+
     def _compute_acceleration(self, dt: float) -> float:
         emergency_decl = float(self._vtype.get("emergencyDecel", 4.5))
         assert emergency_decl >= 0.0
@@ -1109,7 +1116,10 @@ class _TrafficActor:
             0,
         )
         min_time_cush = float(self._vtype.get("tau", 1.0))
-        if time_cush < min_time_cush:
+        if (
+            not self._near_dest(min_time_cush * speed_denom)
+            and time_cush < min_time_cush
+        ):
             if self.speed > 0:
                 severity = 4 * (min_time_cush - time_cush) / min_time_cush
                 return -emergency_decl * np.clip(severity, 0, 1.0)
@@ -1223,11 +1233,17 @@ class _TrafficActor:
             self._route_ind += 1 if best_ri_delta is None else best_ri_delta
 
         self._offset = self._lane.offset_along_lane(self._next_pose.point)
-        if self._lane == self._dest_lane and self._offset >= self._dest_offset:
-            if self._owner._endless_traffic:
-                self._reroute()
+        if self._near_dest():
+            if self._lane == self._dest_lane:
+                if self._owner._endless_traffic:
+                    self._reroute()
+                else:
+                    self._done_with_route = True
             else:
-                self._done_with_route = True
+                self._off_route = True
+                self._logger.info(
+                    f"actor {self.actor_id} is beyond end of route in wrong lane ({self._lane.lane_id} instead of {self._dest_lane.lane_id})."
+                )
 
     def _reroute(self):
         if not self._off_route and self._route[0] in {
