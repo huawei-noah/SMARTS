@@ -61,7 +61,7 @@ def sumo_traffic_sim():
 
 @pytest.fixture
 def smarts_traffic_sim():
-    return LocalTrafficProvider(endless_traffic=True)
+    return LocalTrafficProvider()
 
 
 @pytest.fixture

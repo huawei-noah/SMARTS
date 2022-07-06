@@ -64,9 +64,6 @@ class SumoTrafficSimulation(TrafficProvider):
         auto_start:
             False to pause simulation when SMARTS runs, and wait for user to click
             start on sumo-gui.
-        endless_traffic:
-            Traffic vehicles that exit the simulation will be reintroduced back
-            into the simulation to recycle traffic volume.
         allow_reload:
             Reset SUMO instead of restarting SUMO when the current map is the same as the previous.
         remove_agents_only_mode:
@@ -83,7 +80,6 @@ class SumoTrafficSimulation(TrafficProvider):
         num_external_sumo_clients: int = 0,
         sumo_port: Optional[int] = None,
         auto_start: bool = True,
-        endless_traffic: bool = True,
         allow_reload: bool = True,
         debug: bool = True,
         remove_agents_only_mode: bool = False,
@@ -110,8 +106,8 @@ class SumoTrafficSimulation(TrafficProvider):
         self._sumo_proc = None
         self._num_clients = 1 + num_external_sumo_clients
         self._sumo_port = sumo_port
+        self._last_traci_state = None
         self._auto_start = auto_start
-        self._endless_traffic = endless_traffic
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
         self._allow_reload = allow_reload
@@ -546,9 +542,8 @@ class SumoTrafficSimulation(TrafficProvider):
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, all_checks)
             self._traci_conn.vehicle.setSpeed(vehicle_id, -1)
 
-        if self._endless_traffic:
-            self._reroute_vehicles(traffic_vehicle_states)
-            self._teleport_exited_vehicles()
+        self._reroute_vehicles(traffic_vehicle_states)
+        self._teleport_exited_vehicles()
 
     @staticmethod
     def _color_for_role(role: ActorRole) -> np.ndarray:
@@ -620,15 +615,15 @@ class SumoTrafficSimulation(TrafficProvider):
         return vehicle_id in self._sumo_vehicle_ids
 
     def _compute_traffic_vehicles(self) -> List[VehicleState]:
-        sub_results = self._traci_conn.simulation.getSubscriptionResults()
+        self._last_traci_state = self._traci_conn.simulation.getSubscriptionResults()
 
-        if sub_results is None or sub_results == {}:
+        if not self._last_traci_state:
             return []
 
         # New social vehicles that have entered the map
         newly_departed_sumo_traffic = [
             vehicle_id
-            for vehicle_id in sub_results[tc.VAR_DEPARTED_VEHICLES_IDS]
+            for vehicle_id in self._last_traci_state[tc.VAR_DEPARTED_VEHICLES_IDS]
             if vehicle_id not in self._non_sumo_vehicle_ids
         ]
 
@@ -673,7 +668,7 @@ class SumoTrafficSimulation(TrafficProvider):
         # added.
         newly_departed_non_sumo_vehicles = [
             vehicle_id
-            for vehicle_id in sub_results[tc.VAR_DEPARTED_VEHICLES_IDS]
+            for vehicle_id in self._last_traci_state[tc.VAR_DEPARTED_VEHICLES_IDS]
             if vehicle_id not in newly_departed_sumo_traffic
         ]
 
@@ -729,13 +724,16 @@ class SumoTrafficSimulation(TrafficProvider):
         return provider_vehicles
 
     def _teleport_exited_vehicles(self):
-        sub_results = self._traci_conn.simulation.getSubscriptionResults()
-        if not sub_results:
-            return
+        if not self._last_traci_state:
+            self._last_traci_state = (
+                self._traci_conn.simulation.getSubscriptionResults()
+            )
+            if not self._last_traci_state:
+                return
 
         exited_sumo_traffic = [
             vehicle_id
-            for vehicle_id in sub_results[tc.VAR_ARRIVED_VEHICLES_IDS]
+            for vehicle_id in self._last_traci_state[tc.VAR_ARRIVED_VEHICLES_IDS]
             if vehicle_id not in self._non_sumo_vehicle_ids
         ]
         for v_id in exited_sumo_traffic:
@@ -756,6 +754,8 @@ class SumoTrafficSimulation(TrafficProvider):
     def _reroute_vehicles(self, vehicle_states):
         for vehicle_id, state in vehicle_states.items():
             if vehicle_id not in self._sumo_vehicle_ids:
+                continue
+            if "endless" not in vehicle_id:
                 continue
 
             route_index = state[tc.VAR_ROUTE_INDEX]

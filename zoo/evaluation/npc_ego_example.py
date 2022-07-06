@@ -42,7 +42,6 @@ if __name__ == "__main__":
         fixed_timestep_sec=0.1,
         sumo_headless=False,
         sumo_auto_start=False,
-        endless_traffic=False,
         seed=args.seed,
         envision_record_data_replay_path=f"./{args.scenarios[0]}/data_replay",
     )

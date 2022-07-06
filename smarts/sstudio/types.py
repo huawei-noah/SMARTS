@@ -413,6 +413,8 @@ class Flow:
     """
     randomly_spaced: bool = False
     """This determines if the flow should have randomly spaced traffic. Default `False`."""
+    repeat_route: bool = False
+    """If True, vehicles that finish their route will be restarted at the beginning. Default `False`."""
 
     @property
     def id(self) -> str:

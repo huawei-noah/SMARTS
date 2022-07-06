@@ -19,6 +19,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Add `lane_offset` to `Waypoint` class and `lane_postion` to both `EgoVehicleObservation` and `VehicleObservation` classes to expose the reference-line (a.k.a. Frenet) coordinate system.
 - Traffic history vehicles can now be hijacked within a bubble.  They will be relinquished to the SMARTS background traffic provider upon exiting the bubble.
 - Changed the name of the `Imitation` action space to `Direct`.
+- Removed `endless_traffic` option from `SumoTrafficSimulator` and instead added `repeat_route` to `Flow` type in Scenario Studio.
 
 ### Removed
 

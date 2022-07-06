@@ -50,6 +50,7 @@ def scenarios(traffic_sim):
                         begin=("west", 1, 0),
                         end=("east", 1, "max"),
                     ),
+                    repeat_route=True,
                     rate=50,
                     actors={t.TrafficActor("car"): 1},
                 )
