@@ -96,7 +96,6 @@ class FilterObs(gym.ObservationWrapper):
                 }
             )
 
-
         return wrapped_obs
 
 

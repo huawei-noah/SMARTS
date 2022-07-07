@@ -1,21 +1,23 @@
-import argparse
 import os
 import sys
-import gym
 import subprocess
+import argparse
 from typing import Any, Dict, List
 
 # Get directories
 input_dir = sys.argv[1]
 output_dir = sys.argv[2]
-submit_dir = os.path.join(input_dir, 'res') 
-req_file = os.path.join(submit_dir, 'requirements.txt')
+submit_dir = os.path.join(input_dir, "res")
+req_file = os.path.join(submit_dir, "requirements.txt")
 sys.path.insert(0, submit_dir)
 
 # Install requirements
-subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
+# fmt: off
 subprocess.check_call([sys.executable, "-m", "pip", "install", "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-2"])
 subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+# fmt: on
+
+import gym
 
 from .copy_data import CopyData, DataStore
 from .metric import Metric
