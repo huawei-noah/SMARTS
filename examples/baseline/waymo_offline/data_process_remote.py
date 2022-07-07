@@ -16,13 +16,9 @@ from d3rlpy.metrics.scorer import average_value_estimation_scorer
 from d3rlpy.metrics.scorer import td_error_scorer
 import glob
 
-prediction_step = 1
-# tfrecord-00006-of-01000/ contain scenarios
-path = '/net/storage-1/home/x50023223/smarts/examples/baseline/waymo_bev/tfrecord-00006-of-01000/' 
-# remote_store_path= '/net/storage-1/home/c84201475/saved_model'
-local_store_path = '/home/kyber/SMARTS/examples/baseline/waymo_offline/saved_model/'
 
 
+path = '/net/storage-1/home/c84201475/waymo_bev/' 
 remote = remote_operations()
 ip_add = input("Server IP: ")
 user_name = input("Username: ")
@@ -62,86 +58,91 @@ else:
 
 
 
-for scenario in scenarios[0:2]:
-    obs = list()
-    actions = list()
-    rewards = list()
-    terminals = list()
-    print('processing scenario ' + scenario)
-    vehicle_ids = list()
-    
-    for filename in client.listdir(path + scenario):
-        if filename.endswith('.png'):
-            vehicle_id = re.search('vehicle-(.*).png', filename).group(1)
-            if vehicle_id not in vehicle_ids:
-                vehicle_ids.append(vehicle_id)
-
-    for id in vehicle_ids:
-        print('adding data for vehicle id ' + id + ' in scenario ' + scenario)
-
-        with client.file(path + scenario +  '/Agent-history-vehicle-' + id + '.pkl', 'rb') as f:
-            vehicle_data = pickle.load(f)
-        image_names = list()
-
+# for scenario in scenarios[index:len(scenarios)]:
+for scenario in scenarios[index:len(scenarios)]:
+    try:
+        obs = list()
+        actions = list()
+        rewards = list()
+        terminals = list()
+        print('processing scenario ' + scenario)
+        vehicle_ids = list()
+        
         for filename in client.listdir(path + scenario):
-            if filename.endswith('-' + id + '.png'):
-                image_names.append(filename)
+            if filename.endswith('.png'):
+                vehicle_id = re.search('vehicle-(.*).png', filename).group(1)
+                if vehicle_id not in vehicle_ids:
+                    vehicle_ids.append(vehicle_id)
 
-        image_names = sorted(image_names)
+        for id in vehicle_ids:
+            print('adding data for vehicle id ' + id + ' in scenario ' + scenario)
 
-        for i in range(len(image_names) - 1):
-            imgfile = client.open(path + scenario + '/' + image_names[i], 'r')
-            imgfile.seek(0)
-            image = Image.open(imgfile)
-            # image = Image.open(path + scenario + '/' + image_names[i])
+            with client.file(path + scenario +  '/Agent-history-vehicle-' + id + '.pkl', 'rb') as f:
+                vehicle_data = pickle.load(f)
+            image_names = list()
 
-            sim_time = image_names[i].split('_Agent')[0]
-            sim_time_next = image_names[i + 1].split('_Agent')[0]
-            current_position = vehicle_data[float(sim_time)]['ego']['pos']
-            next_position = vehicle_data[float(sim_time_next)]['ego']['pos']
-            dx = next_position[0] - current_position[0]
-            dy = next_position[1] - current_position[1]
-            events = vehicle_data[float(sim_time)]['events']
-            if all(value == 0 for value in events.values()):
-                terminal = 0
-            else:
-                terminal = 1
-            obs.append(np.asarray(image).reshape(3,256,256))
-            actions.append([dx, dy])
-            rewards.append(vehicle_data[float(sim_time)]['dist'])
-            terminals.append(terminal)
-        print(str(len(obs)) + ' pieces of data are added into dataset.' )
+            for filename in client.listdir(path + scenario):
+                if filename.endswith('-' + id + '.png'):
+                    image_names.append(filename)
 
-    obs = np.array(obs)
-    actions = np.array(actions)
-    rewards = np.array(rewards)
-    terminals = np.array(terminals)
-    dataset = MDPDataset(obs, actions, rewards, terminals)
+            image_names = sorted(image_names)
 
-    if index == 0:
-        model = d3rlpy.algos.CQL(use_gpu=True, batch_size=1)
-    else:
+            for i in range(len(image_names) - 1):
+                imgfile = client.open(path + scenario + '/' + image_names[i], 'r')
+                imgfile.seek(0)
+                image = Image.open(imgfile)
+                # image = Image.open(path + scenario + '/' + image_names[i])
+
+                sim_time = image_names[i].split('_Agent')[0]
+                sim_time_next = image_names[i + 1].split('_Agent')[0]
+                current_position = vehicle_data[float(sim_time)]['ego']['pos']
+                current_heading = vehicle_data[float(sim_time)]['ego']['heading']
+                next_position = vehicle_data[float(sim_time_next)]['ego']['pos']
+                next_heading = vehicle_data[float(sim_time_next)]['ego']['heading']
+                dx = next_position[0] - current_position[0]
+                dy = next_position[1] - current_position[1]
+                dheading = next_heading - current_heading
+                events = vehicle_data[float(sim_time)]['events']
+                if all(value == 0 for value in events.values()):
+                    terminal = 0
+                else:
+                    terminal = 1
+                obs.append(np.asarray(image).reshape(3,256,256))
+                actions.append([dx, dy, dheading])
+                rewards.append(vehicle_data[float(sim_time)]['dist'])
+                terminals.append(terminal)
+            print(str(len(obs)) + ' pieces of data are added into dataset.' )
+
+        obs = np.array(obs)
+        actions = np.array(actions)
+        rewards = np.array(rewards)
+        terminals = np.array(terminals)
+        dataset = MDPDataset(obs, actions, rewards, terminals)
+
+        if index == 0:
+            model = d3rlpy.algos.CQL(use_gpu=True, batch_size=32)
+        else:
+            saved_models = glob.glob('d3rlpy_logs/*')
+            latest_model = max(saved_models, key=os.path.getctime)
+            model = CQL.from_json('d3rlpy_logs/1/params.json', use_gpu=True)
+            model.load_model(latest_model + '/model_100.pt')
+
+        model.fit(dataset, 
+                eval_episodes=dataset, 
+                n_steps_per_epoch = 100,
+                n_steps = 100, 
+                scorers={
+                            'td_error': td_error_scorer,
+                            'value_scale': average_value_estimation_scorer,
+                        }
+            )
+
         saved_models = glob.glob('d3rlpy_logs/*')
         latest_model = max(saved_models, key=os.path.getctime)
-        model = CQL.from_json('d3rlpy_logs/1/params.json', use_gpu=True)
-        model.load_model(latest_model + '/model_1.pt')
-
-    model.fit(dataset, 
-            eval_episodes=dataset, 
-            n_steps_per_epoch = 1,
-            n_steps = 1, 
-            scorers={
-                        'td_error': td_error_scorer,
-                        'value_scale': average_value_estimation_scorer,
-                    }
-        )
-
-    saved_models = glob.glob('d3rlpy_logs/*')
-    latest_model = max(saved_models, key=os.path.getctime)
-    os.rename(latest_model, 'd3rlpy_logs/' + str(index + 1))
-    # model.save_model(local_store_path + 'model_' + str(index) + '.pt')
-    # client.put(local_store_path + 'model_' + str(index) + '.pt', remote_store_path + 'model_' + str(index) + '.pt')
-    index += 1
+        os.rename(latest_model, 'd3rlpy_logs/' + str(index + 1))
+        index += 1
+    except:
+        pass
 
 imgfile.close()
 client.close()

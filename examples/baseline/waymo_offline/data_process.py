@@ -20,13 +20,15 @@ scenarios = list()
 for scenario_name in os.listdir(path):
     scenarios.append(scenario_name)
 
-if not os.listdir('saved_model'):
-    index = 0
-else:
-    existing_index = list()
-    for model_name in os.listdir('saved_model'):
-        existing_index.append(int(re.search('model_(.*).pt', model_name).group(1)))
-    index = sorted(existing_index)[-1] + 1
+# if not os.listdir('saved_model'):
+#     index = 0
+# else:
+#     existing_index = list()
+#     for model_name in os.listdir('saved_model'):
+#         existing_index.append(int(re.search('model_(.*).pt', model_name).group(1)))
+#     index = sorted(existing_index)[-1] + 1
+
+index = 0
 
 
 for scenario in scenarios[0:3]:
@@ -56,16 +58,19 @@ for scenario in scenarios[0:3]:
             sim_time = image_names[i].split('_Agent')[0]
             sim_time_next = image_names[i + 1].split('_Agent')[0]
             current_position = vehicle_data[float(sim_time)]['ego']['pos']
+            current_heading = vehicle_data[float(sim_time)]['ego']['heading']
             next_position = vehicle_data[float(sim_time_next)]['ego']['pos']
+            next_heading = vehicle_data[float(sim_time_next)]['ego']['heading']
             dx = next_position[0] - current_position[0]
             dy = next_position[1] - current_position[1]
+            dheading = next_heading - current_heading
             events = vehicle_data[float(sim_time)]['events']
             if all(value == 0 for value in events.values()):
                 terminal = 0
             else:
                 terminal = 1
             obs.append(np.asarray(image).reshape(3,256,256))
-            actions.append([dx, dy])
+            actions.append([dx, dy, dheading])
             rewards.append(vehicle_data[float(sim_time)]['dist'])
             terminals.append(terminal)
         print(str(len(obs)) + ' pieces of data are added into dataset.' )
