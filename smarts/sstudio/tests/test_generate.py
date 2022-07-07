@@ -103,7 +103,7 @@ def _compare_files(file1, file2):
         generated_items = [x.items() for x in ElementTree(file=f).iter()]
 
     sorted_items = sorted(items)
-    sorted_generated_items = (generated_items)
+    sorted_generated_items = sorted(generated_items)
     if not sorted_items == sorted_generated_items:
         for a, b in zip(sorted_items, sorted_generated_items):
             assert a == b, f"{file1} is different than {file2}"
