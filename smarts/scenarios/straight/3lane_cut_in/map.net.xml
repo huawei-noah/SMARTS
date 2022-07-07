@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2022-06-14 23:36:56 by Eclipse SUMO netedit Version 1.10.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <sumo-net-file value="/home/adai/workspace/SMARTS/smarts/scenarios/straight/3lane_cut_in/map.net.xml"/>
+    </input>
+
+    <output>
+        <output-file value="/home/adai/workspace/SMARTS/smarts/scenarios/straight/3lane_cut_in/map.net.xml"/>
+    </output>
+
+    <processing>
+        <geometry.min-radius.fix.railways value="false"/>
+        <geometry.max-grade.fix value="false"/>
+        <offset.disable-normalization value="true"/>
+        <lefthand value="false"/>
+    </processing>
+
+    <junctions>
+        <no-internal-links value="true"/>
+        <no-turnarounds value="true"/>
+        <junctions.corner-detail value="5"/>
+        <junctions.limit-turn-speed value="5.5"/>
+        <rectangular-lane-cut value="false"/>
+    </junctions>
+
+    <pedestrian>
+        <walkingareas value="false"/>
+    </pedestrian>
+
+    <report>
+        <aggregate-warnings value="5"/>
+    </report>
+
+</configuration>
+-->
+
+<net version="1.9" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="0.00,0.00" convBoundary="0.00,100.00,150.00,100.00" origBoundary="-10000000000.00,-10000000000.00,10000000000.00,10000000000.00" projParameter="!"/>
+
+    <edge id="E0" from="J3" to="J0" priority="-1">
+        <lane id="E0_0" index="0" speed="13.89" length="50.00" shape="54.00,95.20 96.00,95.20"/>
+        <lane id="E0_1" index="1" speed="13.89" length="50.00" shape="54.00,98.40 96.00,98.40"/>
+    </edge>
+    <edge id="E1" from="J2" to="J3" priority="-1">
+        <lane id="E1_0" index="0" speed="13.89" length="50.00" shape="0.00,92.00 46.00,92.00"/>
+        <lane id="E1_1" index="1" speed="13.89" length="50.00" shape="0.00,95.20 46.00,95.20"/>
+        <lane id="E1_2" index="2" speed="13.89" length="50.00" shape="0.00,98.40 46.00,98.40"/>
+    </edge>
+    <edge id="E2" from="J0" to="J1" priority="-1">
+        <lane id="E2_0" index="0" speed="13.89" length="50.00" shape="104.00,92.00 150.00,92.00"/>
+        <lane id="E2_1" index="1" speed="13.89" length="50.00" shape="104.00,95.20 150.00,95.20"/>
+        <lane id="E2_2" index="2" speed="13.89" length="50.00" shape="104.00,98.40 150.00,98.40"/>
+    </edge>
+
+    <junction id="J0" type="priority" x="100.00" y="100.00" incLanes="E0_0 E0_1" intLanes="" shape="104.00,100.00 104.00,90.40 100.97,91.23 99.03,92.77 97.79,93.36 96.00,93.60 96.00,100.00">
+        <request index="0" response="000" foes="000"/>
+        <request index="1" response="000" foes="000"/>
+        <request index="2" response="000" foes="000"/>
+    </junction>
+    <junction id="J1" type="dead_end" x="150.00" y="100.00" incLanes="E2_0 E2_1 E2_2" intLanes="" shape="150.00,90.40 150.00,100.00"/>
+    <junction id="J2" type="dead_end" x="0.00" y="100.00" incLanes="" intLanes="" shape="0.00,100.00 0.00,90.40"/>
+    <junction id="J3" type="priority" x="50.00" y="100.00" incLanes="E1_0 E1_1 E1_2" intLanes="" shape="54.00,100.00 54.00,93.60 50.97,92.77 49.03,91.23 47.79,90.64 46.00,90.40 46.00,100.00">
+        <request index="0" response="010" foes="010"/>
+        <request index="1" response="000" foes="001"/>
+        <request index="2" response="000" foes="000"/>
+    </junction>
+
+    <connection from="E0" to="E2" fromLane="0" toLane="0" dir="s" state="M"/>
+    <connection from="E0" to="E2" fromLane="1" toLane="1" dir="s" state="M"/>
+    <connection from="E0" to="E2" fromLane="1" toLane="2" dir="s" state="M"/>
+    <connection from="E1" to="E0" fromLane="0" toLane="0" dir="s" state="m"/>
+    <connection from="E1" to="E0" fromLane="1" toLane="0" keepClear="0" dir="s" state="M"/>
+    <connection from="E1" to="E0" fromLane="2" toLane="1" keepClear="0" dir="s" state="M"/>
+
+</net>
