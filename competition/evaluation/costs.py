@@ -201,16 +201,16 @@ def _velocity_offset() -> Callable[[Observation], Dict[str, float]]:
     def func(obs: Observation) -> Dict[str, float]:
         nonlocal ave, step
 
-        # Nearest waypoints
+        # Nearest waypoints.
         ego = obs.ego_vehicle_state
         waypoint_paths = obs.waypoint_paths
         wps = [path[0] for path in waypoint_paths]
 
-        # Distance of vehicle from center of lane
+        # Speed limit.
         closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
         speed_limit = closest_wp.speed_limit
 
-        # Excess speed beyond speed limit
+        # Excess speed beyond speed limit.
         overspeed = speed_limit - ego.speed if speed_limit > ego.speed else 0
         j_v = overspeed ** 2
 

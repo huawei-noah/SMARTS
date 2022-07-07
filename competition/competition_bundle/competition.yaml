@@ -1,11 +1,11 @@
 # Drive SMARTS Competition
 ---
-admin_names: ma-huawei
-title: Drive SMARTS Competition
+title: Drive SMARTS Competition 2
 description: Drive SMARTS Competition.
 image: logo.jpg
 has_registration: True
-end_date: null
+end_date: 2022-11-01
+admin_names: ma-huawei,adai
 html:
     overview: overview.html  # Basic overview of the challenge.
     evaluation: evaluation.html  # How is the challenge being scored?
@@ -15,7 +15,6 @@ html:
 # Phases
 phases:
     1:
-        color: green
         phasenumber: 1
         description: Online learning
         label: "Track 1"
@@ -24,8 +23,8 @@ phases:
         is_scoring_only: False
         scoring_program: scoring_program.zip
         reference_data: track1_evaluation.zip
+        color: green
     2:
-        color: blue
         phasenumber: 2
         description: Offline learning
         label: "Track 2"
@@ -34,6 +33,7 @@ phases:
         is_scoring_only: False
         scoring_program: scoring_program.zip
         reference_data: track2_evaluation.zip
+        color: blue
 
 # Leaderboard
 leaderboard:

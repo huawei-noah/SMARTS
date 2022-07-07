@@ -36,6 +36,7 @@ The following setup, train, evaluate, and docker, instructions are meant for get
     $ pip install -e .
     ```
 + SMARTS is used as a dependent package.
++ Please use `python3.8`.
 
 ## Environment
 + Make separate environments for each scenario. 

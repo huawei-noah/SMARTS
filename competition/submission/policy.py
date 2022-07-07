@@ -28,9 +28,9 @@ def submitted_wrappers():
         List[wrappers]: List of wrappers. Default is empty list [].
     """
 
-    from train.action import Action as DiscreteAction
-    from train.observation import Concatenate, FilterObs
-    from train.reward import Reward
+    from .action import Action as DiscreteAction
+    from .observation import Concatenate, FilterObs
+    from .reward import Reward
 
     from smarts.core.controllers import ActionSpaceType
     from smarts.env.wrappers.format_action import FormatAction
