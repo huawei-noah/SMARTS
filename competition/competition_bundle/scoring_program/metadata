@@ -1,2 +1,2 @@
-command: pip install $input/res/requirements.txt && PYTHONHASHSEED=1945 python $program/evaluate.py --input-dir $input --output-dir $output
+command: python3.8 $program/evaluate.py --input-dir $input --output-dir $output
 description: The competition evaluation program

@@ -2,21 +2,36 @@ import argparse
 import os
 import sys
 import gym
-from pathlib import Path
+import subprocess
 from typing import Any, Dict, List
 
+# Get directories
+input_dir = sys.argv[1]
+output_dir = sys.argv[2]
+submit_dir = os.path.join(input_dir, 'res') 
+req_file = os.path.join(submit_dir, 'requirements.txt')
+sys.path.insert(0, submit_dir)
+
+# Install requirements
+subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
+subprocess.check_call([sys.executable, "-m", "pip", "install", "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-2"])
+subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+
+from .copy_data import CopyData, DataStore
+from .metric import Metric
+from .score import Score
+from policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
 
 
-print(f"Adding python search path: {Path(__file__).absolute().parents[1]}")
-sys.path.insert(0, str(Path(__file__).absolute().parents[1]))
+# For local testing
+# from pathlib import Path
+# print(f"Adding python search path: {Path(__file__).absolute().parents[1]}")
+# sys.path.insert(0, str(Path(__file__).absolute().parents[1]))
+# from evaluation.copy_data import CopyData, DataStore
+# from evaluation.metric import Metric
+# from evaluation.score import Score
+# from submission.policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
 
-from typing import Any, Dict, List
-
-import gym
-from evaluation.copy_data import CopyData, DataStore
-from evaluation.metric import Metric
-from evaluation.score import Score
-from submission.policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
 
 _SCORES_FILENAME = "scores.txt"
 
@@ -65,17 +80,17 @@ def evaluate():
     config = {
         "img_meters": IMG_METERS,
         "img_pixels": IMG_PIXELS,
-        "eval_episodes": 100,
+        "eval_episodes": 2,
     }
     scenarios = [
         "1_to_2lane_left_turn_c",
-        "1_to_2lane_left_turn_t",
-        "3lane_merge_multi_agent",
-        "3lane_merge_single_agent",
-        "3lane_cruise_multi_agent",
-        "3lane_cruise_single_agent",
-        "3lane_cut_in",
-        "3lane_overtake",
+        # "1_to_2lane_left_turn_t",
+        # "3lane_merge_multi_agent",
+        # "3lane_merge_single_agent",
+        # "3lane_cruise_multi_agent",
+        # "3lane_cruise_single_agent",
+        # "3lane_cut_in",
+        # "3lane_overtake",
     ]
 
     # Make evaluation environments.
