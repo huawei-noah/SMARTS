@@ -11,6 +11,12 @@ submit_dir = os.path.join(input_dir, "res")
 req_file = os.path.join(submit_dir, "requirements.txt")
 sys.path.insert(0, submit_dir)
 
+print("input_dir:",input_dir)
+print("submit_dir:",submit_dir)
+print("output_dir:",output_dir)
+print("req_file:",req_file)
+print("pwd:",os.getcwd() )
+
 # Install requirements
 # fmt: off
 subprocess.check_call([sys.executable, "-m", "pip", "install", "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-2"])
