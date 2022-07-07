@@ -37,3 +37,8 @@ starting_kit.zip:
 	zip -r $(COMPETITION_DIR)/starting_kit.zip . -x '*__pycache__*' 'scenarios/pool/**/*.glb' && \
 	cd - && \
 	rm -r ./starting_kit/*
+
+submission.zip:
+	cd submission && \
+	zip -r $(COMPETITION_DIR)/submission.zip . -x '*__pycache__*' && \
+	cd -
