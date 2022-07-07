@@ -19,3 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import os
+hashseed = os.getenv('PYTHONHASHSEED')
+if not hashseed:
+    # We replace the seed if it does not exist to make subprocesses predictable
+    os.environ['PYTHONHASHSEED'] = '42'
