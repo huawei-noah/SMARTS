@@ -27,15 +27,7 @@ import os
 import sqlite3
 import sys
 from collections import deque
-from typing import (
-    Any,
-    Callable,
-    Deque,
-    Dict,
-    Generator,
-    Iterable,
-    Optional,
-)
+from typing import Any, Callable, Deque, Dict, Generator, Iterable, Optional
 
 import numpy as np
 
