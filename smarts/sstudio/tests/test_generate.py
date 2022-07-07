@@ -105,7 +105,7 @@ def _compare_files(file1, file2):
     sorted_items = sorted(items)
     sorted_generated_items = (generated_items)
     if not sorted_items == sorted_generated_items:
-        for a, b in zip(items, generated_items):
+        for a, b in zip(sorted_items, sorted_generated_items):
             assert a == b, f"{file1} is different than {file2}"
 
 
