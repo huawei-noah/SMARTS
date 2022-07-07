@@ -1,8 +1,8 @@
 from dataclasses import asdict
 from typing import Dict
 
-from evaluation.costs import Costs
-from evaluation.metric import Counts
+from costs import Costs
+from metric import Counts
 
 
 class Score:

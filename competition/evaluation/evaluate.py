@@ -4,42 +4,6 @@ import subprocess
 import argparse
 from typing import Any, Dict, List
 
-# Get directories
-input_dir = sys.argv[1]
-output_dir = sys.argv[2]
-submit_dir = os.path.join(input_dir, "res")
-req_file = os.path.join(submit_dir, "requirements.txt")
-sys.path.insert(0, submit_dir)
-
-print("input_dir:",input_dir)
-print("submit_dir:",submit_dir)
-print("output_dir:",output_dir)
-print("req_file:",req_file)
-print("pwd:",os.getcwd() )
-
-# Install requirements
-# fmt: off
-subprocess.check_call([sys.executable, "-m", "pip", "install", "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-2"])
-subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
-# fmt: on
-
-import gym
-
-from .copy_data import CopyData, DataStore
-from .metric import Metric
-from .score import Score
-from policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
-
-
-# For local testing
-# from pathlib import Path
-# print(f"Adding python search path: {Path(__file__).absolute().parents[1]}")
-# sys.path.insert(0, str(Path(__file__).absolute().parents[1]))
-# from evaluation.copy_data import CopyData, DataStore
-# from evaluation.metric import Metric
-# from evaluation.score import Score
-# from submission.policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
-
 
 _SCORES_FILENAME = "scores.txt"
 
@@ -47,9 +11,9 @@ _SCORES_FILENAME = "scores.txt"
 def make_env(
     config: Dict[str, Any],
     scenario: str,
-    datastore: DataStore,
-    wrappers: List[gym.Wrapper] = [],
-) -> gym.Env:
+    datastore: "DataStore",
+    wrappers: List["gym.Wrapper"] = [],
+) -> "gym.Env":
     """Make environment.
 
     Args:
@@ -143,7 +107,7 @@ def evaluate():
 
 
 def run(
-    env, datastore: DataStore, env_name: str, policy: Policy, config: Dict[str, Any]
+    env, datastore: "DataStore", env_name: str, policy: "Policy", config: Dict[str, Any]
 ):
     # Instantiate metric for score calculation.
     metric = Metric(env_name=env_name, agent_names=datastore.agent_names)
@@ -177,17 +141,9 @@ def write_scores(scores, output_dir):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        prog="codalab-evaluation",
-        description=(
-            "Evaluation script run by CodaLab that outputs a contestant's leaderboard "
-            "score by running their policy in simulation."
-        ),
-    )
-
-    # Define arguments for evaluation through CodaLab.
+    parser = argparse.ArgumentParser(prog="codalab-evaluation")
     parser.add_argument(
-        "--input-dir",
+        "--input_dir",
         help=(
             "The path to the directory containing the reference data and user "
             "submission data."
@@ -196,7 +152,7 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
-        "--output-dir",
+        "--output_dir",
         help=(
             "Path to the directory where the submission's scores.txt file will be "
             "written to."
@@ -204,7 +160,38 @@ if __name__ == "__main__":
         default=None,
         type=str,
     )
+    parser.add_argument(
+        "--local",
+        help="Flag to set when running evaluate locally. Defaults to False.",
+        action="store_true",
+    )
     args = parser.parse_args()
-    rank = evaluate()
 
+    # Get directories and install requirements.
+    if args.local:
+        submit_dir = args.input_dir
+    else:
+        submit_dir = os.path.join(args.input_dir, "res")
+    req_file = os.path.join(submit_dir, "requirements.txt")
+    sys.path.insert(0, submit_dir)
+    subprocess.check_call(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-2",
+        ]
+    )
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+
+    import gym
+
+    from copy_data import CopyData, DataStore
+    from metric import Metric
+    from score import Score
+    from policy import IMG_METERS, IMG_PIXELS, Policy, submitted_wrappers
+
+    # Evaluate and write score.
+    rank = evaluate()
     write_scores(to_codalab_scores_string(rank), args.output_dir)

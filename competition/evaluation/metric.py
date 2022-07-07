@@ -4,8 +4,8 @@ from enum import Enum
 import operator
 
 import numpy as np
-from evaluation.costs import COST_FUNCS, Costs
-from evaluation.overtake import Overtake
+from costs import COST_FUNCS, Costs
+from overtake import Overtake
 
 from smarts.core.sensors import Observation
 

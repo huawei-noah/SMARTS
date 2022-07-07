@@ -6,6 +6,7 @@ competition_bundle.zip: scoring_program.zip track1_evaluation.zip track2_evaluat
 	rm -r temp_competition_bundle/scoring_program/
 	rm -r temp_competition_bundle/track1_evaluation/
 	rm -r temp_competition_bundle/track2_evaluation/
+	rm -r temp_competition_bundle/Dockerfile
 	mv scoring_program.zip temp_competition_bundle/
 	mv track1_evaluation.zip temp_competition_bundle/
 	mv track2_evaluation.zip temp_competition_bundle/
