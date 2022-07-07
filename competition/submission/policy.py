@@ -1,9 +1,10 @@
 from pathlib import Path
 from typing import Any, Dict
+import numpy as np
 
 # Environment variables (optional)
 IMG_METERS = 50  # Observation image area size in meters.
-IMG_PIXELS = 112  # Observation image size in pixels.
+IMG_PIXELS = 256  # Observation image size in pixels.
 
 
 class BasePolicy:
@@ -44,8 +45,8 @@ def submitted_wrappers():
         Reward,
         lambda env: DiscreteAction(env=env, space="Discrete"),
         FilterObs,
-        lambda env: FrameStack(env=env, num_stack=3),
-        lambda env: Concatenate(env=env, channels_order="first"),
+        # lambda env: FrameStack(env=env, num_stack=3),
+        # lambda env: Concatenate(env=env, channels_order="first"),
     ]
     # fmt: on
 
@@ -61,10 +62,14 @@ class Policy(BasePolicy):
         performed here. To be implemented by the user.
         """
 
-        import stable_baselines3 as sb3lib
+        from d3rlpy.algos import CQL
+        
 
-        model_path = Path(__file__).absolute().parents[0] / "best_model.zip"
-        self.model = sb3lib.PPO.load(model_path)
+        self.model = CQL.from_json(Path(__file__).absolute().parents[0]/'model/params.json', use_gpu=True)
+        self.model.load_model(Path(__file__).absolute().parents[0]/'model/model.pt')
+
+        # model_path = Path(__file__).absolute().parents[0] / "best_model.zip"
+        # self.model = sb3lib.PPO.load(model_path)
 
     def act(self, obs: Dict[str, Any]):
         """Act function to be implemented by user.
@@ -77,9 +82,10 @@ class Policy(BasePolicy):
         """
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
-            action, _ = self.model.predict(observation=agent_obs, deterministic=True)
+            # action, _ = self.model.predict(np.array(agent_obs['rgb'].reshape(3, 256, 256)))
+            action = self.model.predict(np.array([agent_obs['rgb']]))
             wrapped_act.update({agent_id: action})
-
+        print(wrapped_act)
         return wrapped_act
 
 
