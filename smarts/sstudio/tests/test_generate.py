@@ -102,9 +102,9 @@ def _compare_files(file1, file2):
     with open(file2) as f:
         generated_items = [x.items() for x in ElementTree(file=f).iter()]
 
-    print(sorted(items))
-    print(sorted(generated_items))
-    if not sorted(items) == sorted(generated_items):
+    sorted_items = sorted(items)
+    sorted_generated_items = (generated_items)
+    if not sorted_items == sorted_generated_items:
         for a, b in zip(items, generated_items):
             assert a == b, f"{file1} is different than {file2}"
 
@@ -118,6 +118,9 @@ def test_scenario_generation_unchanged():
             from cli.studio import _build_all_scenarios
             import re
 
+            _hashseed = os.getenv("PYTHONHASHSEED")
+            assert _hashseed not in (None, "random"), f"PYTHONHASHSEED is {_hashseed}"
+
             shutil.copytree("scenarios/sumo", loc1)
             _build_all_scenarios(True, True, [loc1], 42)
 
@@ -125,7 +128,6 @@ def test_scenario_generation_unchanged():
             _build_all_scenarios(True, True, [loc2], 42)
 
             for dirpath, dirnames, files in os.walk(loc1):
-                print(dirpath)
                 if "traffic" in dirpath:
                     assert len(files) > 0
                     for file in files:
