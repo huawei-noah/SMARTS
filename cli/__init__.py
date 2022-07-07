@@ -21,7 +21,12 @@
 # THE SOFTWARE.
 import os
 
-hashseed = os.getenv("PYTHONHASHSEED")
-if not hashseed:
+# PYTHONHASHSEED must be "random", unset (default `None`), or an integer in range [0; 4294967295] 
+_hashseed = os.getenv("PYTHONHASHSEED")
+if _hashseed is None:
+    _hashseed = 42
     # We replace the seed if it does not exist to make subprocesses predictable
-    os.environ["PYTHONHASHSEED"] = "42"
+    os.environ["PYTHONHASHSEED"] = f"{42}"
+if _hashseed == "random":
+    import logging
+    logging.warning("PYTHONHASHSEED is 'random'. Simulation and generation may be unpredictable.")
