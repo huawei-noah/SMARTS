@@ -211,10 +211,11 @@ def get_trajectory_data(waymo_scenario: scenario_pb2.Scenario) -> Dict:
             # First pass -- extract data and yield trajectory at every timestep
             for j in range(num_steps):
                 obj_state = scenario.tracks[i].states[j]
-                if not obj_state.valid:
-                    continue
                 row = dict()
                 row["vehicle_id"] = vehicle_id
+                if not obj_state.valid:
+                    row["position_x"] = None
+                    row["position_y"] = None
                 row["type"] = scenario.tracks[i].object_type
                 row["is_ego_vehicle"] = 1 if i == scenario.sdc_track_index else 0
                 row["position_x"] = obj_state.center_x
@@ -367,6 +368,13 @@ def plot_trajectories(
     handles = []
     max_len = 0
     data, points = [], []
+
+    # Need to plot something initially to get handles to the point objects,
+    # so just use a valid point from the first trajectory
+    first_traj = list(trajectories.values())[0]
+    ind = min(range(len(first_traj[1])), key=first_traj[1].__getitem__)
+    x0 = first_traj[0][ind]
+    y0 = first_traj[1][ind]
     for k, v in trajectories.items():
         xs, ys = v[0], v[1]
         is_ego = v[2]
@@ -374,10 +382,10 @@ def plot_trajectories(
         if len(xs) > max_len:
             max_len = len(xs)
         if is_ego:
-            (point,) = plt.plot(xs[0], ys[0], "c^")
+            (point,) = plt.plot(x0, y0, "c^")
         elif object_type == 1:
             if str(k) in track_ids:
-                (point,) = plt.plot(xs[0], ys[0], "r^")
+                (point,) = plt.plot(x0, y0, "r^")
                 handles.append(
                     Line2D(
                         [],
@@ -390,7 +398,7 @@ def plot_trajectories(
                     )
                 )
             elif int(k) in objects_of_interest:
-                (point,) = plt.plot(xs[0], ys[0], "g^")
+                (point,) = plt.plot(x0, y0, "g^")
                 handles.append(
                     Line2D(
                         [],
@@ -403,10 +411,10 @@ def plot_trajectories(
                     )
                 )
             else:
-                (point,) = plt.plot(xs[0], ys[0], "k^")
+                (point,) = plt.plot(x0, y0, "k^")
         elif object_type == 2:
             if str(k) in track_ids:
-                (point,) = plt.plot(xs[0], ys[0], "rd")
+                (point,) = plt.plot(x0, y0, "rd")
                 handles.append(
                     Line2D(
                         [],
@@ -419,7 +427,7 @@ def plot_trajectories(
                     )
                 )
             elif int(k) in objects_of_interest:
-                (point,) = plt.plot(xs[0], ys[0], "gd")
+                (point,) = plt.plot(x0, y0, "gd")
                 handles.append(
                     Line2D(
                         [],
@@ -432,10 +440,10 @@ def plot_trajectories(
                     )
                 )
             else:
-                (point,) = plt.plot(xs[0], ys[0], "md")
+                (point,) = plt.plot(x0, y0, "md")
         elif object_type == 3:
             if str(k) in track_ids:
-                (point,) = plt.plot(xs[0], ys[0], "r*")
+                (point,) = plt.plot(x0, y0, "r*")
                 handles.append(
                     Line2D(
                         [],
@@ -448,7 +456,7 @@ def plot_trajectories(
                     )
                 )
             elif int(k) in objects_of_interest:
-                (point,) = plt.plot(xs[0], ys[0], "g*")
+                (point,) = plt.plot(x0, y0, "g*")
                 handles.append(
                     Line2D(
                         [],
@@ -461,10 +469,10 @@ def plot_trajectories(
                     )
                 )
             else:
-                (point,) = plt.plot(xs[0], ys[0], "y*")
+                (point,) = plt.plot(x0, y0, "y*")
         else:
             if str(k) in track_ids:
-                (point,) = plt.plot(xs[0], ys[0], "r8")
+                (point,) = plt.plot(x0, y0, "r8")
                 handles.append(
                     Line2D(
                         [],
@@ -477,7 +485,7 @@ def plot_trajectories(
                     )
                 )
             elif int(k) in objects_of_interest:
-                (point,) = plt.plot(xs[0], ys[0], "g8")
+                (point,) = plt.plot(x0, y0, "g8")
                 handles.append(
                     Line2D(
                         [],
@@ -490,7 +498,7 @@ def plot_trajectories(
                     )
                 )
             else:
-                (point,) = plt.plot(xs[0], ys[0], "k8")
+                (point,) = plt.plot(x0, y0, "k8")
         data.append((xs, ys))
         points.append(point)
 
@@ -591,7 +599,7 @@ def save_plot(
         def update(i):
             drawn_pts = []
             for (xs, ys), point in zip(data, points):
-                if i < len(xs):
+                if i < len(xs) and xs[i] and ys[i]:
                     point.set_data(xs[i], ys[i])
                     drawn_pts.append(point)
             return drawn_pts
