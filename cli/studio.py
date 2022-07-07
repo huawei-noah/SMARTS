@@ -72,7 +72,7 @@ def _build_single_scenario_proc(
     allow_offset_map: bool,
     scenario: str,
     semaphore: synchronize.Semaphore,
-    seed: Optional[int],
+    seed: int,
 ):
     from smarts.sstudio.build_scenario import build_single_scenario
 
