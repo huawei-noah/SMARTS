@@ -455,51 +455,18 @@ def gen_traffic_histories(
     """
     road_map = None  # shared across all history_datasets in scenario
     for hdsr in histories_datasets:
-        if isinstance(hdsr, types.TrafficHistoryDataset):
-            from smarts.sstudio import genhistories
+        assert isinstance(hdsr, types.TrafficHistoryDataset)
+        from smarts.sstudio import genhistories
 
-            map_bbox = None
-            if hdsr.filter_off_map:
-                if map_spec:
-                    if not road_map:
-                        road_map, _ = map_spec.builder_fn(map_spec)
-                    assert road_map
-                    map_bbox = road_map.bounding_box
-                else:
-                    logger.warn(
-                        f"no map_spec supplied, so unable to filter off-map coordinates for {hdsr.name}"
-                    )
-            genhistories.import_dataset(hdsr, scenario, overwrite, map_bbox)
-            continue
-
-        assert isinstance(hdsr, str)
-        logger.warn(
-            f"use of yaml-file dataset specs (like {hdsr}) is deprecated; update to use types.TrafficHistoryDataset in your scenario.py. "
-        )
-
-        hds = os.path.join(scenario, hdsr)
-        if not os.path.exists(hds):
-            raise ValueError(f"Traffic history dataset file missing: {hds}")
-
-        genhistories_py = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "genhistories.py"
-        )
-        cmd = [sys.executable, genhistories_py, hdsr]
-        base, ext = os.path.splitext(os.path.basename(hds))
-        if ext == ".json":
-            logger.warn(
-                """
-                Converting old smarts JSON format history file.
-                scenario.py should be updated with new YAML dataset spec.
-                See SMARTS Issue #732."""
-            )
-            cmd += ["--old"]
-        th_file = f"{base}.shf"
-
-        if overwrite:
-            cmd += ["-f"]
-        elif os.path.exists(os.path.join(scenario, th_file)):
-            continue
-        cmd += [th_file]
-        # note that maps in scenarios with traffic history datasets will not be auto-shifted
-        subprocess.check_call(cmd, cwd=scenario)
+        map_bbox = None
+        if hdsr.filter_off_map or hdsr.flip_y:
+            if map_spec:
+                if not road_map:
+                    road_map, _ = map_spec.builder_fn(map_spec)
+                assert road_map
+                map_bbox = road_map.bounding_box
+            else:
+                logger.warn(
+                    f"no map_spec supplied, so unable to filter off-map coordinates and/or flip_y for {hdsr.name}"
+                )
+        genhistories.import_dataset(hdsr, scenario, overwrite, map_bbox)
