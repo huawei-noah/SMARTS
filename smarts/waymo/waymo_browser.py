@@ -599,7 +599,7 @@ def save_plot(
         def update(i):
             drawn_pts = []
             for (xs, ys), point in zip(data, points):
-                if i < len(xs) and xs[i] and ys[i]:
+                if i < len(xs) and xs[i] is not None and ys[i] is not None:
                     point.set_data(xs[i], ys[i])
                     drawn_pts.append(point)
             return drawn_pts
