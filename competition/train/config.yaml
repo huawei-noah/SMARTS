@@ -24,4 +24,3 @@ smarts:
 
   # Policy
   alg: PPO  # Stable Baselines3 algorithm.
-  alg_kwargs: combined_extractor
