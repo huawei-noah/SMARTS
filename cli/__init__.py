@@ -26,8 +26,8 @@ _hashseed = os.getenv("PYTHONHASHSEED")
 if _hashseed is None:
     _hashseed = 42
     # We replace the seed if it does not exist to make subprocesses predictable
-    os.environ["PYTHONHASHSEED"] = f"{42}"
-if _hashseed == "random":
+    os.environ["PYTHONHASHSEED"] = f"{_hashseed}"
+elif _hashseed == "random":
     import logging
 
     logging.warning(
