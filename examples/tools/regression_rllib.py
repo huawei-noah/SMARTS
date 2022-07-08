@@ -84,7 +84,7 @@ def run_experiment(log_path, experiment_name, training_iteration=100):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Standard, max_episode_steps=5000),
         agent_builder=RLlibTFSavedModelAgent,
-        agent_params=dict(
+        agent_params=(
             model_path.absolute(),
             OBSERVATION_SPACE,
         ),
