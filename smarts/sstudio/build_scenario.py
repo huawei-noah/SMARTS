@@ -40,7 +40,7 @@ def build_single_scenario(
 
     scenario_py = scenario_root / "scenario.py"
     if scenario_py.exists():
-        _install_requirements(scenario_root)
+        _install_requirements(scenario_root, log)
         subprocess.check_call([sys.executable, "scenario.py"], cwd=scenario_root)
 
     from smarts.core.scenario import Scenario
@@ -115,7 +115,8 @@ def _install_requirements(scenario_root, log: Optional[Callable[[Any], None]] = 
                 str(requirements_txt),
             ]
 
-            log(f"Installing scenario dependencies via '{' '.join(pip_install_cmd)}'")
+            if log is not None:
+                log(f"Installing scenario dependencies via '{' '.join(pip_install_cmd)}'")
 
             try:
                 subprocess.check_call(pip_install_cmd, stdout=subprocess.DEVNULL)
