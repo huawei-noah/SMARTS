@@ -652,6 +652,7 @@ class BubbleManager:
     def _start_social_agent(
         self, sim, agent_id, social_agent, social_agent_actor, bubble
     ):
+        social_agent_data_model = SocialAgent(
             id=SocialAgentId.new(social_agent_actor.name),
             name=social_agent_actor.name,
             is_boid=bubble.is_boid,
