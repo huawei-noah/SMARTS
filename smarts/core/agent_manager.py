@@ -397,8 +397,7 @@ class AgentManager:
             return
 
         self._remote_social_agents = {
-            agent_id: self._agent_buffer.acquire_agent()
-            for agent_id in social_agents
+            agent_id: self._agent_buffer.acquire_agent() for agent_id in social_agents
         }
 
         for agent_id, (social_agent, social_agent_model) in social_agents.items():

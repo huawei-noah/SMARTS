@@ -27,15 +27,17 @@ class HeterogenousAgentBuffer(AgentBuffer):
     """A buffer that manages social agents."""
 
     def __init__(self, **kwargs):
-            try:    
-                from smarts.core.remote_agent_buffer import RemoteAgentBuffer
-                self._agent_buffer = RemoteAgentBuffer(
-                    zoo_manager_addrs=kwargs["zoo_manager_addrs"]
-                )
-            
-            except (ImportError,ModuleNotFoundError):
-                from smarts.core.local_agent_buffer import LocalAgentBuffer
-                self._agent_buffer = LocalAgentBuffer()
+        try:
+            from smarts.core.remote_agent_buffer import RemoteAgentBuffer
+
+            self._agent_buffer = RemoteAgentBuffer(
+                zoo_manager_addrs=kwargs["zoo_manager_addrs"]
+            )
+
+        except (ImportError, ModuleNotFoundError):
+            from smarts.core.local_agent_buffer import LocalAgentBuffer
+
+            self._agent_buffer = LocalAgentBuffer()
 
     def destroy(self):
         self._agent_buffer.destroy()
