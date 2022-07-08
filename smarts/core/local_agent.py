@@ -24,7 +24,7 @@ from smarts.zoo.agent_spec import AgentSpec
 
 
 class LocalAgent(BufferAgent):
-    """A remotely controlled agent."""
+    """A local implementation of a buffer agent."""
 
     def __init__(self, act_executor: futures.Executor):
         self._agent = None
