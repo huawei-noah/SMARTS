@@ -355,6 +355,7 @@ class Vehicle:
     
     @property
     def valid(self) -> bool:
+        """Check if the vehicle still `exists` and is still operable."""
         return self._initialized
 
     @staticmethod
