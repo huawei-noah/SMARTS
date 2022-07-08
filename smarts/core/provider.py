@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 from dataclasses import dataclass, field
 from enum import IntFlag
-from typing import Any, List, Optional, Set, Tuple
+from typing import Any, List, Optional, Sequence, Set, Tuple
 
 from .controllers import ActionSpaceType
 from .road_map import RoadMap
