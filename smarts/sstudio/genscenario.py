@@ -114,6 +114,7 @@ def gen_scenario(
                 scenario=output_dir,
                 social_agent_actor=actors,
                 missions=missions,
+                seed=seed,
                 map_spec=map_spec,
             )
 
