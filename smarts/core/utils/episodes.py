@@ -188,10 +188,10 @@ class Episodes:
 class Episode:
     """An episode recording object"""
 
-    def __init__(self, episodes: Episodes) -> None:
+    def __init__(self, episodes: Episodes):
         self._episodes = episodes
 
-    def continues(self, observation, reward, done, info):
+    def continues(self, observation, reward, done, info) -> bool:
         """Determine if the current episode can continue."""
 
         self._episodes.current_step += 1
