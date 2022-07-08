@@ -285,6 +285,7 @@ class HiWayEnv(gym.Env):
         if "rgb_array" in self.metadata["render.modes"]:
             if self._env_renderer is None:
                 from smarts.env.utils.record import AgentCameraRGBRender
+
                 self._env_renderer = AgentCameraRGBRender(self)
 
             return self._env_renderer.render(env=self)
