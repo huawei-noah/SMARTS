@@ -25,9 +25,10 @@ phases:
         max_submissions: 1000
         is_scoring_only: False
         scoring_program: scoring_program.zip
+        reference_data: track1_evaluation.zip
         color: green
         execution_time_limit: 21600
-        max_submission_size_in_megabytes: 500
+        max_submission_size: 500
 
     2:
         phasenumber: 2
@@ -40,7 +41,7 @@ phases:
         reference_data: track2_evaluation.zip
         color: blue
         execution_time_limit: 21600
-        max_submission_size_in_megabytes: 500
+        max_submission_size: 500
 
 # Leaderboard
 leaderboard:
