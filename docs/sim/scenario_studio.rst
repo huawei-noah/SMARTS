@@ -38,6 +38,7 @@ Generate traffic
 
   # add 10 social vehicles with random routes.
   traffic = Traffic(
+      engine="SUMO",
       flows=[
           # generate flows last for 10 hours
           Flow(route=RandomRoute(), begin=0, end=10 * 60 * 60, rate=25, actors={traffic_actor: 1},)
@@ -46,6 +47,10 @@ Generate traffic
   )
 
   gen_traffic(scenario_path, traffic, name="all", output_dir=scenario_path, seed=seed_, overwrite=True)
+
+Note that the `engine` argument to `Traffic` can either be `"SUMO"` or `"SMARTS"`, with `"SUMO"` being the default.
+As `"SUMO"` can only be used on Sumo-format "road networks", if you need
+to run SMARTS with another map type you may need to change to the `"SMARTS"` engine.
 
 `traffic_actor` is used as a spec for traffic actors (e.g. Vehicles, Pedestrians, etc). The defaults provided are for a car.
 You can specify acceleration, deceleration, speed distribution, imperfection distribution and other configs for social cars.
@@ -131,10 +136,6 @@ define a `MapSpec` object in your `scenario.py`.
 
   gen_map(map_spec)
 
-However, note that the `gen_traffic()` operation is net yet supported with custom map types.
-Suggested change
-To use that feature, you may still need to convert your map to the SUMO road network format.
-
 
 Convert an existing map to SUMO
 ----------------------------
@@ -163,6 +164,10 @@ Use shortcut key "e" to change to edge mode. Click "chain" and "two-way" icons l
 .. image:: ../_static/chain_two_way.png
 
 Then click on map to start creating new edges and lanes.
+
+Note that SMARTS prefers to have "internal links" (connections) as part of any Junctions.  You can enable these by 
+going to "Processing" -> "Options", choosing the "Junctions" section, and then making sure the 
+"no-internal-links" checkbox is *unchecked*.
 
 
 Edit an existing SUMO map

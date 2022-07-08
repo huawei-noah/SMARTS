@@ -67,6 +67,7 @@ for name, routes in {
                     begin=(f"edge-{r[0]}", 0, "random"),
                     end=(f"edge-{r[1]}", 0, "random"),
                 ),
+                repeat_route=True,
                 rate=1,
                 actors={impatient_car: 0.5, patient_car: 0.5},
             )

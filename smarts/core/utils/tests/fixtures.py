@@ -26,7 +26,7 @@ import pytest
 
 import smarts.sstudio.types as t
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.coordinates import Dimensions, Heading
+from smarts.core.coordinates import Dimensions, Heading, RefLinePoint
 from smarts.core.events import Events
 from smarts.core.plan import EndlessGoal, Mission, Start
 from smarts.core.road_map import Waypoint
@@ -71,6 +71,7 @@ def large_observation():
             road_id="east",
             lane_id="east_2",
             lane_index=2,
+            lane_position=RefLinePoint(161.23485529, 0.0, 0.0),
             mission=Mission(
                 start=Start(
                     position=np.array([163.07485529, 3.2]),
@@ -106,6 +107,7 @@ def large_observation():
                 road_id="west",
                 lane_id="west_0",
                 lane_index=0,
+                lane_position=RefLinePoint(-1.33354215, 0.0, 0.0),
             ),
             VehicleObservation(
                 id="car-flow-route-west_1_0-east_1_max--852708111940723884--7266489842092764092--1-0.0",
@@ -116,6 +118,7 @@ def large_observation():
                 road_id="west",
                 lane_id="west_1",
                 lane_index=1,
+                lane_position=RefLinePoint(-1.47159011, 0.0, 0.0),
             ),
         ],
         waypoint_paths=[
@@ -127,6 +130,7 @@ def large_observation():
                     lane_width=3.2,
                     speed_limit=5.0,
                     lane_index=0,
+                    lane_offset=192.00733923,
                 ),
                 Waypoint(
                     pos=np.array([193.0, -3.2]),
@@ -135,6 +139,7 @@ def large_observation():
                     lane_width=3.2,
                     speed_limit=5.0,
                     lane_index=0,
+                    lane_offset=193.0,
                 ),
             ],
             [
@@ -145,6 +150,7 @@ def large_observation():
                     lane_width=3.2,
                     speed_limit=5.0,
                     lane_index=1,
+                    lane_offset=192.00733923,
                 ),
                 Waypoint(
                     pos=np.array([193.0, 0.0]),
@@ -153,6 +159,7 @@ def large_observation():
                     lane_width=3.2,
                     speed_limit=5.0,
                     lane_index=1,
+                    lane_offset=193.0,
                 ),
             ],
         ],
@@ -273,6 +280,7 @@ def large_observation():
                             lane_width=3.2,
                             speed_limit=5.0,
                             lane_index=0,
+                            lane_offset=180.00587138,
                         ),
                         Waypoint(
                             pos=np.array([181.0, -3.2]),
@@ -281,6 +289,7 @@ def large_observation():
                             lane_width=3.2,
                             speed_limit=5.0,
                             lane_index=0,
+                            lane_offset=181.0,
                         ),
                     ]
                 ],
@@ -293,6 +302,7 @@ def large_observation():
                             lane_width=3.2,
                             speed_limit=5.0,
                             lane_index=1,
+                            lane_offset=180.00587138,
                         ),
                         Waypoint(
                             pos=np.array([181.0, 0.0]),
@@ -301,6 +311,7 @@ def large_observation():
                             lane_width=3.2,
                             speed_limit=5.0,
                             lane_index=1,
+                            lane_offset=181.0,
                         ),
                     ]
                 ],
@@ -369,5 +380,5 @@ def adapter_data():
             (2, 4, -2.9, 20),
             (165.23485529, 1.2, 1.81238898, 20.0),
         ),
-        (ActionSpaceType.Imitation, (2, 2), (2, 2)),
+        (ActionSpaceType.Direct, (2, 2), (2, 2)),
     ]

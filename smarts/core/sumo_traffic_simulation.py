@@ -32,20 +32,22 @@ from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
 from smarts.core import gen_id
+from smarts.core.actor_role import ActorRole
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose
-from smarts.core.provider import Provider, ProviderRecoveryFlags, ProviderState
+from smarts.core.provider import ProviderRecoveryFlags, ProviderState
+from smarts.core.road_map import RoadMap
 from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 from smarts.core.utils.sumo import SUMO_PATH, traci  # isort:skip
-from traci.exceptions import FatalTraCIError, TraCIException  # isort:skip
 import traci.constants as tc  # isort:skip
 
 
-class SumoTrafficSimulation(Provider):
+class SumoTrafficSimulation(TrafficProvider):
     """
     Args:
         headless:
@@ -62,8 +64,6 @@ class SumoTrafficSimulation(Provider):
         auto_start:
             False to pause simulation when SMARTS runs, and wait for user to click
             start on sumo-gui.
-        endless_traffic:
-            Reintroduce vehicles that exit the SUMO simulation.
         allow_reload:
             Reset SUMO instead of restarting SUMO when the current map is the same as the previous.
         remove_agents_only_mode:
@@ -75,15 +75,14 @@ class SumoTrafficSimulation(Provider):
 
     def __init__(
         self,
-        headless=True,
-        time_resolution=0.1,
-        num_external_sumo_clients=0,
-        sumo_port=None,
-        auto_start=True,
-        endless_traffic=True,
-        allow_reload=True,
-        debug=True,
-        remove_agents_only_mode=False,
+        headless: bool = True,
+        time_resolution: Optional[float] = 0.1,
+        num_external_sumo_clients: int = 0,
+        sumo_port: Optional[int] = None,
+        auto_start: bool = True,
+        allow_reload: bool = True,
+        debug: bool = True,
+        remove_agents_only_mode: bool = False,
     ):
         self._remove_agents_only_mode = remove_agents_only_mode
         self._log = logging.getLogger(self.__class__.__name__)
@@ -99,6 +98,7 @@ class SumoTrafficSimulation(Provider):
         self._cumulative_sim_seconds = 0
         self._non_sumo_vehicle_ids = set()
         self._sumo_vehicle_ids = set()
+        self._hijacked = set()
         self._is_setup = False
         self._last_trigger_time = -1000000
         self._num_dynamic_ids_used = 0
@@ -106,8 +106,8 @@ class SumoTrafficSimulation(Provider):
         self._sumo_proc = None
         self._num_clients = 1 + num_external_sumo_clients
         self._sumo_port = sumo_port
+        self._last_traci_state = None
         self._auto_start = auto_start
-        self._endless_traffic = endless_traffic
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
         self._allow_reload = allow_reload
@@ -118,7 +118,10 @@ class SumoTrafficSimulation(Provider):
         self._current_reload_count = 0
         # /TODO
 
-        self._traci_exceptions = (TraCIException, FatalTraCIError)
+        self._traci_exceptions = (
+            traci.exceptions.TraCIException,
+            traci.exceptions.FatalTraCIError,
+        )
 
     def __repr__(self):
         return f"""SumoTrafficSim(
@@ -192,11 +195,11 @@ class SumoTrafficSimulation(Provider):
                         self._traci_conn.getVersion()[0] >= 20
                     ), "TraCI API version must be >= 20 (SUMO 1.5.0)"
                 # We will retry since this is our first sumo command
-                except FatalTraCIError:
+                except traci.exceptions.FatalTraCIError:
                     logging.debug("Connection closed. Retrying...")
                     self._close_traci_and_pipes()
                     continue
-                except TraCIException as e:
+                except traci.exceptions.TraCIException as e:
                     logging.debug(f"Unknown connection issue has occurred: {e}")
                     self._close_traci_and_pipes()
             except ConnectionRefusedError:
@@ -265,8 +268,11 @@ class SumoTrafficSimulation(Provider):
         ## See for more information about --route-files
         # https://sumo.dlr.de/docs/Simulation/Basic_Definition.html#traffic_demand_routes
         # https://sumo.dlr.de/docs/sumo.html#loading_order_of_input_files
-        if self._scenario.route_files_enabled:
-            load_params.append("--route-files={}".format(self._scenario.route_filepath))
+        sumo_route_files = [
+            ts for ts in self._scenario.traffic_specs if ts.endswith(".rou.xml")
+        ]
+        if sumo_route_files:
+            load_params.append("--route-files={}".format(",".join(sumo_route_files)))
 
         return load_params
 
@@ -349,7 +355,6 @@ class SumoTrafficSimulation(Provider):
             self._traci_conn.vehicle.remove(vehicle_id)
 
     def teardown(self):
-        """Clean up resources as are needed."""
         self._log.debug("Tearing down SUMO traffic sim %s" % self)
         if not self._is_setup:
             self._log.debug("Nothing to teardown")
@@ -367,6 +372,7 @@ class SumoTrafficSimulation(Provider):
             self._cumulative_sim_seconds = 0
         self._non_sumo_vehicle_ids = set()
         self._sumo_vehicle_ids = set()
+        self._hijacked = set()
         self._is_setup = False
         self._num_dynamic_ids_used = 0
         self._to_be_teleported = dict()
@@ -388,19 +394,14 @@ class SumoTrafficSimulation(Provider):
     def recover(
         self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
     ) -> Tuple[ProviderState, bool]:
-        if isinstance(error, (TraCIException, FatalTraCIError)):
+        if isinstance(error, self._traci_exceptions):
             self._handle_traci_disconnect(error)
         elif isinstance(error, Exception):
             raise error
         return ProviderState(), False
 
     def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
-        """
-        Args:
-            dt: time (in seconds) to simulate during this simulation step
-        Returns:
-            ProviderState representing the state of the SUMO simulation
-        """
+        assert not provider_actions
         if not self.connected:
             return ProviderState()
         return self._step(dt)
@@ -419,19 +420,23 @@ class SumoTrafficSimulation(Provider):
 
     def _sync(self, provider_state: ProviderState):
         provider_vehicles = {v.vehicle_id: v for v in provider_state.vehicles}
-        external_vehicles = [v for v in provider_state.vehicles if v.source != "SUMO"]
-        external_vehicle_ids = {v.vehicle_id for v in external_vehicles}
+        external_vehicle_ids = {
+            v.vehicle_id for v in provider_state.vehicles if v.source != self.source_str
+        }
+        internal_vehicle_ids = {
+            v.vehicle_id for v in provider_state.vehicles if v.source == self.source_str
+        }
 
         # Represents current state
         traffic_vehicle_states = self._traci_conn.vehicle.getAllSubscriptionResults()
         traffic_vehicle_ids = set(traffic_vehicle_states)
 
         # State / ownership changes
-        external_vehicles_that_have_left = (
-            self._non_sumo_vehicle_ids - external_vehicle_ids - traffic_vehicle_ids
-        )
         external_vehicles_that_have_joined = (
-            external_vehicle_ids - self._non_sumo_vehicle_ids - traffic_vehicle_ids
+            external_vehicle_ids
+            - self._non_sumo_vehicle_ids
+            - traffic_vehicle_ids
+            - self._hijacked
         )
         vehicles_that_have_become_external = (
             traffic_vehicle_ids & external_vehicle_ids - self._non_sumo_vehicle_ids
@@ -440,8 +445,13 @@ class SumoTrafficSimulation(Provider):
         #      because they've been destroyed from a collision. Presently we're not
         #      differentiating and will take over as social vehicles regardless.
         vehicles_that_have_become_internal = (
-            self._non_sumo_vehicle_ids - external_vehicle_ids
-        ) & traffic_vehicle_ids
+            internal_vehicle_ids & self._non_sumo_vehicle_ids & traffic_vehicle_ids
+        )
+        external_vehicles_that_have_left = (
+            self._non_sumo_vehicle_ids
+            - external_vehicle_ids
+            - vehicles_that_have_become_internal
+        )
 
         log = ""
         if external_vehicles_that_have_left:
@@ -469,7 +479,7 @@ class SumoTrafficSimulation(Provider):
                 vehicle_state.dimensions,
                 VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
             )
-            self._create_vehicle(vehicle_id, dimensions)
+            self._create_vehicle(vehicle_id, dimensions, vehicle_state.role)
             no_checks = 0b00000
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
 
@@ -490,7 +500,12 @@ class SumoTrafficSimulation(Provider):
                     sumo_heading,
                     provider_vehicle.speed,
                 )
-            except TraCIException as e:
+                # since the vehicle may have switched roles (e.g., been trapped), recolor it
+                self._traci_conn.vehicle.setColor(
+                    vehicle_id,
+                    SumoTrafficSimulation._color_for_role(provider_vehicle.role),
+                )
+            except traci.exceptions.TraCIException as e:
                 # Likely as a result of https://github.com/eclipse/sumo/issues/3993
                 # the vehicle got removed because we skipped a moveToXY call between
                 # internal stepSimulations, so we add the vehicle back here.
@@ -498,7 +513,9 @@ class SumoTrafficSimulation(Provider):
                     "Attempted to (TraCI) SUMO.moveToXY(...) on missing "
                     f"vehicle(id={vehicle_id})"
                 )
-                self._create_vehicle(vehicle_id, provider_vehicle.dimensions)
+                self._create_vehicle(
+                    vehicle_id, provider_vehicle.dimensions, provider_vehicle.role
+                )
                 self._move_vehicle(
                     provider_vehicle.vehicle_id,
                     pos,
@@ -510,13 +527,13 @@ class SumoTrafficSimulation(Provider):
             no_checks = 0b00000
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
             self._traci_conn.vehicle.setColor(
-                vehicle_id, SumoTrafficSimulation._social_agent_vehicle_color()
+                vehicle_id, SumoTrafficSimulation._color_for_role(ActorRole.SocialAgent)
             )
             self._non_sumo_vehicle_ids.add(vehicle_id)
 
         for vehicle_id in vehicles_that_have_become_internal:
             self._traci_conn.vehicle.setColor(
-                vehicle_id, SumoTrafficSimulation._social_vehicle_color()
+                vehicle_id, SumoTrafficSimulation._color_for_role(ActorRole.Social)
             )
             self._non_sumo_vehicle_ids.remove(vehicle_id)
             # Let sumo take over speed again
@@ -525,20 +542,17 @@ class SumoTrafficSimulation(Provider):
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, all_checks)
             self._traci_conn.vehicle.setSpeed(vehicle_id, -1)
 
-        if self._endless_traffic:
-            self._reroute_vehicles(traffic_vehicle_states)
-            self._teleport_exited_vehicles()
+        self._reroute_vehicles(traffic_vehicle_states)
+        self._teleport_exited_vehicles()
 
     @staticmethod
-    def _ego_agent_vehicle_color():
-        return np.array(SceneColors.Agent.value[:3]) * 255
-
-    @staticmethod
-    def _social_agent_vehicle_color():
-        return np.array(SceneColors.SocialAgent.value[:3]) * 255
-
-    @staticmethod
-    def _social_vehicle_color():
+    def _color_for_role(role: ActorRole) -> np.ndarray:
+        if role == ActorRole.EgoAgent:
+            return np.array(SceneColors.Agent.value[:3]) * 255
+        elif role == ActorRole.SocialAgent:
+            return np.array(SceneColors.SocialAgent.value[:3]) * 255
+        elif role == ActorRole.Social:
+            return np.array(SceneColors.SocialVehicle.value[:3]) * 255
         return np.array(SceneColors.SocialVehicle.value[:3]) * 255
 
     def _move_vehicle(self, vehicle_id, position, heading, speed):
@@ -554,16 +568,15 @@ class SumoTrafficSimulation(Provider):
         )
         self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
 
-    def update_route_for_vehicle(self, vehicle_id, new_route_edges):
-        """Set a new route for the given vehicle."""
+    def update_route_for_vehicle(self, vehicle_id: str, new_route_roads: Sequence[str]):
         if not self.connected:
             return
         try:
-            self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
+            self._traci_conn.vehicle.setRoute(vehicle_id, new_route_roads)
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
 
-    def _create_vehicle(self, vehicle_id, dimensions):
+    def _create_vehicle(self, vehicle_id, dimensions, role: ActorRole):
         assert (
             type(vehicle_id) == str
         ), f"SUMO expects string ids: {vehicle_id} is a {type(vehicle_id)}"
@@ -575,15 +588,7 @@ class SumoTrafficSimulation(Provider):
             routeID="",  # we don't care which route this vehicle is on
         )
 
-        # TODO: Vehicle Id should not be using prefixes this way
-        if vehicle_id.startswith("social-agent") or vehicle_id.startswith(
-            "history-vehicle"
-        ):
-            # This is based on ID convention
-            vehicle_color = SumoTrafficSimulation._social_agent_vehicle_color()
-        else:
-            vehicle_color = SumoTrafficSimulation._ego_agent_vehicle_color()
-
+        vehicle_color = SumoTrafficSimulation._color_for_role(role)
         self._traci_conn.vehicle.setColor(vehicle_id, vehicle_color)
 
         # Directly below are two of the main factors that affect vehicle secure gap for
@@ -606,16 +611,19 @@ class SumoTrafficSimulation(Provider):
             vehicles=self._compute_traffic_vehicles(),
         )
 
-    def _compute_traffic_vehicles(self) -> List[VehicleState]:
-        sub_results = self._traci_conn.simulation.getSubscriptionResults()
+    def manages_vehicle(self, vehicle_id: str) -> bool:
+        return vehicle_id in self._sumo_vehicle_ids
 
-        if sub_results is None or sub_results == {}:
+    def _compute_traffic_vehicles(self) -> List[VehicleState]:
+        self._last_traci_state = self._traci_conn.simulation.getSubscriptionResults()
+
+        if not self._last_traci_state:
             return []
 
         # New social vehicles that have entered the map
         newly_departed_sumo_traffic = [
             vehicle_id
-            for vehicle_id in sub_results[tc.VAR_DEPARTED_VEHICLES_IDS]
+            for vehicle_id in self._last_traci_state[tc.VAR_DEPARTED_VEHICLES_IDS]
             if vehicle_id not in self._non_sumo_vehicle_ids
         ]
 
@@ -660,7 +668,7 @@ class SumoTrafficSimulation(Provider):
         # added.
         newly_departed_non_sumo_vehicles = [
             vehicle_id
-            for vehicle_id in sub_results[tc.VAR_DEPARTED_VEHICLES_IDS]
+            for vehicle_id in self._last_traci_state[tc.VAR_DEPARTED_VEHICLES_IDS]
             if vehicle_id not in newly_departed_sumo_traffic
         ]
 
@@ -668,8 +676,11 @@ class SumoTrafficSimulation(Provider):
             if vehicle_id in self._reserved_areas:
                 del self._reserved_areas[vehicle_id]
 
+        # Note: we cannot just pop() the self._hijacked from sumo_vehicle_state here,
+        # as this (bizarrely) affects the self._traci_conn.vehicle.getAllSubscriptionResults() call
+        # in _sync() below!
         self._sumo_vehicle_ids = (
-            set(sumo_vehicle_state.keys()) - self._non_sumo_vehicle_ids
+            set(sumo_vehicle_state.keys()) - self._non_sumo_vehicle_ids - self._hijacked
         )
         provider_vehicles = []
 
@@ -682,6 +693,8 @@ class SumoTrafficSimulation(Provider):
         ).reshape(-1, 2)
 
         for i, (sumo_id, sumo_vehicle) in enumerate(sumo_vehicle_state.items()):
+            if sumo_id in self._hijacked:
+                continue
             # XXX: We can safely rely on iteration order over dictionaries being
             #      stable on py3.7.
             #      See: https://www.python.org/downloads/release/python-370/
@@ -703,20 +716,24 @@ class SumoTrafficSimulation(Provider):
                     ),
                     dimensions=dimensions,
                     speed=speed,
-                    source="SUMO",
+                    source=self.source_str,
+                    role=ActorRole.Social,
                 )
             )
 
         return provider_vehicles
 
     def _teleport_exited_vehicles(self):
-        sub_results = self._traci_conn.simulation.getSubscriptionResults()
-        if not sub_results:
-            return
+        if not self._last_traci_state:
+            self._last_traci_state = (
+                self._traci_conn.simulation.getSubscriptionResults()
+            )
+            if not self._last_traci_state:
+                return
 
         exited_sumo_traffic = [
             vehicle_id
-            for vehicle_id in sub_results[tc.VAR_ARRIVED_VEHICLES_IDS]
+            for vehicle_id in self._last_traci_state[tc.VAR_ARRIVED_VEHICLES_IDS]
             if vehicle_id not in self._non_sumo_vehicle_ids
         ]
         for v_id in exited_sumo_traffic:
@@ -724,6 +741,7 @@ class SumoTrafficSimulation(Provider):
                 route = self._to_be_teleported[v_id]["route"]
                 type_id = self._to_be_teleported[v_id]["type_id"]
                 self._teleport_vehicle(v_id, route, 0, type_id)
+                # XXX:  del self._to_be_teleported[v_id]
 
     def _teleport_vehicle(self, vehicle_id, route, lane_offset, type_id):
         self._log.debug(
@@ -736,6 +754,8 @@ class SumoTrafficSimulation(Provider):
     def _reroute_vehicles(self, vehicle_states):
         for vehicle_id, state in vehicle_states.items():
             if vehicle_id not in self._sumo_vehicle_ids:
+                continue
+            if "endless" not in vehicle_id:
                 continue
 
             route_index = state[tc.VAR_ROUTE_INDEX]
@@ -762,39 +782,40 @@ class SumoTrafficSimulation(Provider):
             new_route_edges = route_edges[-1:] + route_edges
             self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
 
-    def vehicle_route(self, vehicle_id) -> Sequence[str]:
-        """Get the route of the given vehicle."""
+    def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
         if not self.connected:
-            return []
+            return None
         try:
             route = self._traci_conn.vehicle.getRoute(vehicle_id)
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
-            return []
-        return route
+            return None
+        return route[-1]
 
     def reserve_traffic_location_for_vehicle(
         self,
         vehicle_id: str,
         reserved_location: Polygon,
     ):
-        """Reserve an area around a location where vehicles cannot spawn until a given vehicle
-        is added.
-        Args:
-            vehicle_id: The vehicle to wait for.
-            reserved_location: The space the vehicle takes up.
-        """
         self._reserved_areas[vehicle_id] = reserved_location
 
-    def remove_traffic_vehicle(self, vehicle_id: str):
-        """Remove the given vehicle from the traffic simulation."""
+    def vehicle_collided(self, vehicle_id):
+        # Sumo should already know about this and deal with it appropriately.
+        pass
+
+    def stop_managing(self, vehicle_id: str):
+        self._hijacked.add(vehicle_id)
+
+    def remove_vehicle(self, vehicle_id: str):
         if not self.connected:
             return
         try:
             self._traci_conn.vehicle.remove(vehicle_id)
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
-        self._sumo_vehicle_ids.remove(vehicle_id)
+        self._sumo_vehicle_ids.discard(vehicle_id)
+        self._hijacked.discard(vehicle_id)
+        self._non_sumo_vehicle_ids.discard(vehicle_id)
 
     def _shape_of_vehicle(self, sumo_vehicle_state, vehicle_id):
         p = sumo_vehicle_state[vehicle_id][tc.VAR_POSITION]
@@ -823,3 +844,23 @@ class SumoTrafficSimulation(Provider):
             departLane=lane_index,
         )
         return vehicle_id
+
+    def can_accept_vehicle(self, state: VehicleState) -> bool:
+        # We only accept transferred vehicles we previously used to own that
+        # have since been relinquished to us by the agent that hijacked them.
+        # (This is a conservative policy to avoid "glitches"; we may relax it
+        # in the future.)
+        return state.role == ActorRole.Social and state.vehicle_id in self._hijacked
+
+    def add_vehicle(
+        self,
+        provider_vehicle: VehicleState,
+        route: Optional[Sequence[RoadMap.Route]] = None,
+    ):
+        assert provider_vehicle.vehicle_id in self._hijacked
+        self._hijacked.remove(provider_vehicle.vehicle_id)
+        provider_vehicle.source = self.source_str
+        provider_vehicle.role = ActorRole.Social
+        self._log.info(
+            f"traffic actor {provider_vehicle.vehicle_id} transferred to {self.source_str}."
+        )

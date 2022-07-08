@@ -26,10 +26,17 @@ from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
     ActuatorDynamicControllerState,
 )
-from smarts.core.controllers.imitation_controller import ImitationController
+from smarts.core.controllers.direct_controller import DirectController
 from smarts.core.controllers.lane_following_controller import (
     LaneFollowingController,
     LaneFollowingControllerState,
+)
+from smarts.core.controllers.motion_planner_controller import (
+    MotionPlannerController,
+    MotionPlannerControllerState,
+)
+from smarts.core.controllers.trajectory_interpolation_controller import (
+    TrajectoryInterpolationController,
 )
 from smarts.core.controllers.trajectory_tracking_controller import (
     TrajectoryTrackingController,
@@ -51,7 +58,7 @@ class ActionSpaceType(Enum):
     MultiTargetPose = 6  # for boid control
     MPC = 7
     TrajectoryWithTime = 8  # for pure interpolation provider
-    Imitation = 9
+    Direct = 9
 
 
 class Controllers:
@@ -142,10 +149,20 @@ class Controllers:
                 perform_lane_following(target_speed=12.5, lane_change=1)
             elif action == "change_lane_right":
                 perform_lane_following(target_speed=12.5, lane_change=-1)
-        elif action_space == ActionSpaceType.Imitation:
-            ImitationController.perform_action(sim.last_dt, vehicle, action)
+        elif action_space == ActionSpaceType.Direct:
+            DirectController.perform_action(sim.last_dt, vehicle, action)
+        elif action_space in (
+            ActionSpaceType.TargetPose,
+            ActionSpaceType.MultiTargetPose,
+        ):
+            MotionPlannerController.perform_action(
+                controller_state, sim.last_dt, vehicle, action
+            )
+        elif action_space == ActionSpaceType.TrajectoryWithTime:
+            TrajectoryInterpolationController.perform_action(
+                sim.last_dt, vehicle, action
+            )
         else:
-            # Note: TargetPose and MultiTargetPose use a MotionPlannerProvider directly
             raise ValueError(
                 f"perform_action(action_space={action_space}, ...) has failed "
                 "inside controller"
@@ -185,6 +202,12 @@ class ControllerState:
 
         if action_space == ActionSpaceType.MPC:
             return TrajectoryTrackingControllerState()
+
+        if action_space in (
+            ActionSpaceType.TargetPose,
+            ActionSpaceType.MultiTargetPose,
+        ):
+            return MotionPlannerControllerState()
 
         # Other action spaces do not need a controller state object
         return None

@@ -10,17 +10,26 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Added a basic background traffic ("social vehicle") provider as an alternative to the SUMO traffic simulator.  This can be selected using the new `"engine"` argument to `Traffic` in Scenario Studio.
 - Added SMARTS competition code, consisting of Codalab, training, submission, evaluation, and scenario files.
 - Added a `multi-scenario-v0` environment which can build any of the following scenario, namely, `1_to_2lane_left_turn_c`, `1_to_2lane_left_turn_t`, `3lane_merge_multi_agent`, `3lane_merge_single_agent`, `3lane_cruise_multi_agent`, `3lane_cruise_single_agent`, `3lane_cut_in`, and `3lane_overtake`. 
 - Added ego's mission details into the `FormatObs` wrapper.
 
+### Deprecated
+- Deprecated a few things related to traffic in the `Scenario` class, including the `route` argument to the `Scenario` initializer, the `route`, `route_filepath` and `route_files_enabled` properties, and the `discover_routes()` static method.  In general, the notion of "route" (singular) here is being replaced with "`traffic_specs`" (plural) that allow for specifying traffic controlled by the SMARTS engine as well as Sumo.
+
 ### Changed
-- 
+- Add `lane_offset` to `Waypoint` class and `lane_postion` to both `EgoVehicleObservation` and `VehicleObservation` classes to expose the reference-line (a.k.a. Frenet) coordinate system.
+- Traffic history vehicles can now be hijacked within a bubble.  They will be relinquished to the SMARTS background traffic provider upon exiting the bubble.
+- Changed the name of the `Imitation` action space to `Direct`.
+- Removed `endless_traffic` option from `SumoTrafficSimulator` and instead added `repeat_route` to `Flow` type in Scenario Studio.
 
 ### Removed
+- Removed support for deprecated json-based and YAML formats for traffic histories.
 - Removed time and distance to collision values from `FormatObs` wrapper as their correctness was doubtful.
 
 ### Fixed
+- Fixed bug where `yaw_rate` was always reported as 0.0 (Issue #1481).
 - Modified `FrameStack` wrapper to support agents which start at a later time in the simulation.
 - Truncated all waypoint paths returned by `FormatObs` wrapper to be of the same length. Previously, variable waypoint-path lengths caused inhomogenous shape error in numpy array.
 

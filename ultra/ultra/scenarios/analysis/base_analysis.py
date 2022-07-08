@@ -74,7 +74,7 @@ class DefaultPolicy(Agent):
 class BaseAnalysis:
     def __init__(self):
         self.social_vehicles_states = {}
-        self.social_vehicles_ids = set()
+        self.social_vehicles_ids = {}
         self.finished_social_vehicles_ids = set()
         self.analysis = {}
 
@@ -118,6 +118,7 @@ class BaseAnalysis:
     def get_agent(self, ego, policy, max_episode_steps):
         observation_adapter = None
         if ego:
+            # pytype: disable=name-error
             config = get_agent_config_by_type(policy)
             agent_spec = AgentSpec(
                 interface=config["interface"],
@@ -131,6 +132,7 @@ class BaseAnalysis:
                 timestep_sec=config["env"]["timestep_sec"],
                 **config["other"],
             )
+            # pytype: enable=name-error
         else:
             # Lane Following agent
             agent_spec = AgentSpec(
@@ -303,7 +305,6 @@ class BaseAnalysis:
             timestep_sec=timestep_sec,
             sumo_headless=True,
             seed=0,
-            endless_traffic=False,
         )
         visited_scenario = set()
         while len(visited_scenario) < len(scenarios):
@@ -313,6 +314,8 @@ class BaseAnalysis:
 
             # only run scenario once
             if scenario_path not in visited_scenario:
+                from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
                 with open(f"{scenario_path}/metadata.json", "r") as metadata_rd:
                     metadata = json.load(metadata_rd)
                 visited_scenario.add(scenario_path)
@@ -368,16 +371,19 @@ class BaseAnalysis:
                         if not stopwatcher_logged:
                             print("stopwatcher detected!")
                             stopwatcher_logged = True
+
                     if (
                         step > (init_time_skip / timestep_sec)
                         and step % int(1 / timestep_sec) == 0
                     ):
-                        for func in custom_traci_functions:
-                            func(
-                                env._smarts.traffic_sim._traci_conn,
-                                simulation_data,
-                                last_step=step,
-                            )
+                        for traffic_sim in env._smarts.traffic_sims:
+                            if isinstance(traffic_sim, SumoTrafficSimulation):
+                                for func in custom_traci_functions:
+                                    func(
+                                        traffic_sim._traci_conn,
+                                        simulation_data,
+                                        last_step=step,
+                                    )
 
                     step += 1
                     episode_time += timestep_sec

@@ -7,6 +7,7 @@ from envision.client import Client as Envision
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ControllerOutOfLaneException
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
@@ -50,15 +51,18 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
         agent_builder=None,
     )
 
-    # Make sure we can use SUMO traffic for these scenarios
-    all_sumo = Scenario.supports_traffic_simulation(scenarios)
-    traffic_sim = (
-        SumoTrafficSimulation(headless=headless, auto_start=True) if all_sumo else None
-    )
+    # In case we have any bubbles or additional non-history traffic
+    # in one of the scenarios, we need to add some traffic providers.
+    traffic_sims = []
+    if Scenario.any_support_sumo_traffic(scenarios):
+        sumo_traffic = SumoTrafficSimulation(headless=headless, auto_start=True)
+        traffic_sims += [sumo_traffic]
+    smarts_traffic = LocalTrafficProvider()
+    traffic_sims += [smarts_traffic]
 
     smarts = SMARTS(
         agent_interfaces={},
-        traffic_sim=traffic_sim,
+        traffic_sims=traffic_sims,
         envision=None if headless else Envision(),
     )
 
@@ -73,27 +77,32 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
         # could also include "motorcycle" or "truck" in this set if desired
         vehicle_types = frozenset({"car"})
 
-        # filter off-road vehicles from observations
-        vehicles_off_road = set()
-
         while True:
             smarts.step({})
-            current_vehicles = smarts.vehicle_index.social_vehicle_ids(
+            history_vehicles = smarts.vehicle_index.social_vehicle_ids(
                 vehicle_types=vehicle_types
             )
+            history_vehicles = {
+                v
+                for v in history_vehicles
+                if smarts.traffic_history_provider.manages_vehicle(v)
+            }
 
-            if collected_data and not current_vehicles:
+            if collected_data and not history_vehicles:
                 print("no more vehicles.  exiting...")
                 break
 
-            for veh_id in current_vehicles:
+            # filter off-road vehicles from observations
+            vehicles_off_road = set()
+
+            for veh_id in history_vehicles:
                 try:
                     smarts.attach_sensors_to_vehicles(agent_spec.interface, {veh_id})
                 except ControllerOutOfLaneException:
                     logger.warning(f"{veh_id} out of lane, skipped attaching sensors")
                     vehicles_off_road.add(veh_id)
 
-            valid_vehicles = {v for v in current_vehicles if v not in vehicles_off_road}
+            valid_vehicles = {v for v in history_vehicles if v not in vehicles_off_road}
             obs, _, _, dones = smarts.observe_from(list(valid_vehicles))
             _record_data(smarts.elapsed_sim_time, obs, collected_data)
 

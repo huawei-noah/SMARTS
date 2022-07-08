@@ -232,7 +232,6 @@ class BoxChassis(Chassis):
         if self._pose:
             self._last_heading = self._pose.heading
         self._last_dt = dt
-        self._pose = force_pose
         if linear_velocity is not None or angular_velocity is not None:
             assert linear_velocity is not None
             assert angular_velocity is not None
@@ -245,6 +244,7 @@ class BoxChassis(Chassis):
         self.set_pose(force_pose)
 
     def set_pose(self, pose: Pose):
+        self._pose = pose
         position, orientation = pose.as_bullet()
         self._client.resetBasePositionAndOrientation(
             self.bullet_id, position, orientation

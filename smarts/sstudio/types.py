@@ -108,8 +108,11 @@ class _SumoParams(collections_abc.Mapping):
 class LaneChangingModel(_SumoParams):
     """Models how the actor acts with respect to lane changes."""
 
+    # For SUMO-specific attributes, see:
+    # https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models
+
     def __init__(self, **kwargs):
-        super().__init__("lc", mode=_SUMO_PARAMS_MODE.KEEP_SNAKE_CASE, **kwargs)
+        super().__init__("lc", whitelist=["minGapLat"], **kwargs)
 
 
 class JunctionModel(_SumoParams):
@@ -117,6 +120,33 @@ class JunctionModel(_SumoParams):
 
     def __init__(self, **kwargs):
         super().__init__("jm", whitelist=["impatience"], **kwargs)
+
+
+class SmartsLaneChangingModel(LaneChangingModel):
+    """Implements the simple lane-changing model built-into SMARTS.
+    Args:
+        cutin_prob:
+            Float value between 0 and 1 that determines the probabilty this vehicle will
+            "arbitrarily" cut in front of an adjacent (Agent) vehicle when it has a chance,
+            even if there would otherwise be no reason to change lanes at that point.  Higher
+            values risk a situation where this vehicle ends up in a lane where it cannot
+            maintain its planned route.  If that happens, this vehicle will perform whatever
+            its default behavior is when it completes its route.  default: 0.0.
+        assertive:
+            Willingness to accept lower front and rear gaps in the target lane.
+            The required gap is divided by this value. default: 1.0, range: positive floats.
+            Attempts to match the semantics of the attribute in SUMO's default lane-changing model,
+            see: https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models
+        dogmatic:
+            If True, will cutin when a suitable opportunity presents itself based on the above parameters,
+            even if it means the risk of not not completing the assigned route; otherwise, will forego
+            the chance.
+    """
+
+    def __init__(
+        self, cutin_prob: float = 0.0, assertive: float = 1.0, dogmatic: bool = True
+    ):
+        super().__init__(cutin_prob=cutin_prob, assertive=assertive, dogmatic=dogmatic)
 
 
 @dataclass(frozen=True)
@@ -189,13 +219,13 @@ class TrafficActor(Actor):
     name: str
     """The name of the traffic actor. It must be unique."""
     accel: float = 2.6
-    """The acceleration value of the actor."""
+    """The maximum acceleration value of the actor (in m/s^2)."""
     decel: float = 4.5
-    """The deceleration value of the actor."""
+    """The maximum deceleration value of the actor (in m/s^2)."""
     tau: float = 1.0
     """The minimum time headway"""
     sigma: float = 0.5
-    """The driver imperfection"""
+    """The driver imperfection"""  # TODO: appears to not be used in generators.py
     depart_speed: Union[float, str] = "max"
     """The starting speed of the actor"""
     emergency_decel: float = 4.5
@@ -203,11 +233,11 @@ class TrafficActor(Actor):
     speed: Distribution = Distribution(mean=1.0, sigma=0.1)
     """The speed distribution of this actor in m/s."""
     imperfection: Distribution = Distribution(mean=0.5, sigma=0)
-    """Imperfection within range [0..1]"""
+    """Driver imperfection within range [0..1]"""
     min_gap: Distribution = Distribution(mean=2.5, sigma=0)
-    """Minimum gap in meters."""
+    """Minimum gap (when standing) in meters."""
     max_speed: float = 55.5
-    """The vehicle's maximum velocity (in m/s), defaults 200 km/h for vehicles"""
+    """The vehicle's maximum velocity (in m/s), defaults to 200 km/h for vehicles"""
     vehicle_type: str = "passenger"
     """The configured vehicle type this actor will perform as. ("passenger", "bus", "coach", "truck", "trailer")"""
     lane_changing_model: LaneChangingModel = field(
@@ -383,6 +413,8 @@ class Flow:
     """
     randomly_spaced: bool = False
     """Determines if the flow should have randomly spaced traffic. Defaults to `False`."""
+    repeat_route: bool = False
+    """If True, vehicles that finish their route will be restarted at the beginning. Defaults to `False`."""
 
     @property
     def id(self) -> str:
@@ -444,6 +476,10 @@ class Traffic:
 
     flows: Sequence[Flow]
     """Flows are used to define a steady supply of vehicles."""
+    # TODO: consider moving TrafficHistory stuff in here (and rename to Trajectory)
+    # TODO:  - treat history points like Vias (no guarantee on history timesteps anyway)
+    engine: str = "SUMO"
+    """The traffic-generation engine to use. Supported values include: SUMO, SMARTS.  SUMO requires using a SumoRoadNetwork for the RoadMap."""
 
 
 @dataclass(frozen=True)
