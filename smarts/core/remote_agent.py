@@ -87,12 +87,11 @@ class RemoteAgent(BufferAgent):
         def result_wrapper(f):
             @wraps(f)
             def wrapper():
-                action = cloudpickle.loads(
-                            f().action
-                        )   
+                action = cloudpickle.loads(f().action)
                 return action
+
             return wrapper
-        
+
         setattr(self._grpc_future, "result", result_wrapper(self._grpc_future.result))
 
         return self._grpc_future

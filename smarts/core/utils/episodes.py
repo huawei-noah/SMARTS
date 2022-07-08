@@ -196,7 +196,6 @@ class Episode:
 
         self._episodes.current_step += 1
 
-
         if self._episodes.current_step >= self._episodes.max_steps:
             return False
         if isinstance(done, dict):
