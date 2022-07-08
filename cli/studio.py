@@ -120,13 +120,16 @@ def _is_scenario_folder_to_build(path: str) -> bool:
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
 def build_all_scenarios(
-    clean: bool, allow_offset_maps: bool, scenarios: str, seed: int
+    clean: bool, allow_offset_maps: bool, scenarios: List[str], seed: int
 ):
     _build_all_scenarios(clean, allow_offset_maps, scenarios, seed)
 
 
 def _build_all_scenarios(
-    clean: bool, allow_offset_maps: bool, scenarios: List[str], seed: Optional[int] = None
+    clean: bool,
+    allow_offset_maps: bool,
+    scenarios: List[str],
+    seed: Optional[int] = None,
 ):
     if not scenarios:
         # nargs=-1 in combination with a default value is not supported
