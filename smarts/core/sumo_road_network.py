@@ -212,7 +212,7 @@ class SumoRoadNetwork(RoadMap):
                 map_spec.shift_to_origin == self._map_spec.shift_to_origin
                 or (
                     not map_spec.shift_to_origin
-                    and not getattr(self._graph, "_shifted_by_smarts", None)
+                    and not getattr(self._graph, "_shifted_by_smarts", False)
                 )
             )
         )
