@@ -7,4 +7,4 @@
 # 6. Preferably, redirect participants to get the competition starter code from SMARTS Github repository.
 # 7. Time limit for execution of submission in codalab, currently at six hours.
 # 8. Number of disk space and resources for parallel submissions might be limited in Codalab.
-# 9.
+# 9. Using self hosted Codalab instances.

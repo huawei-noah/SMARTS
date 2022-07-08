@@ -128,11 +128,11 @@ def run(
             config["model"], print_system_info=True
         )
         for env_name, env_eval in envs_eval.items():
-            print(f"Evaluating env {env_name}.")
+            print(f"\nEvaluating env {env_name}.")
             mean_reward, std_reward = evaluate_policy(
                 model, env_eval, n_eval_episodes=config["eval_eps"], deterministic=True
             )
-            print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}")
+            print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}\n")
         print("\nFinished evaluating.\n")
 
 
