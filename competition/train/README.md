@@ -127,5 +127,5 @@ The following setup, train, evaluate, and docker, instructions are meant for get
     $ docker build --file=./competition/train/Dockerfile --network=host --tag=multi_scenario .
     $ docker run --rm -it --network=host --gpus=all multi_scenario
     (container) $ cd /src/competition/train
-    (container) $ python3.7 run.py
+    (container) $ python3.8 run.py
     ```
