@@ -128,6 +128,8 @@ class SumoRoadNetwork(RoadMap):
                 [
                     "netconvert",
                     "--offset.disable-normalization=FALSE",
+                    "--seed",
+                    42,  # TODO: replace with: random.randint(0, 2147483648),
                     "-s",
                     net_file_path,
                     "-o",
