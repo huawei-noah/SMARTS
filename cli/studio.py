@@ -24,7 +24,7 @@ import sys
 from multiprocessing import Process, Semaphore, synchronize
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 
 import click
 
@@ -126,7 +126,7 @@ def build_all_scenarios(
 
 
 def _build_all_scenarios(
-    clean: bool, allow_offset_maps: bool, scenarios: str, seed: Optional[int] = None
+    clean: bool, allow_offset_maps: bool, scenarios: List[str], seed: Optional[int] = None
 ):
     if not scenarios:
         # nargs=-1 in combination with a default value is not supported
