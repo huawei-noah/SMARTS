@@ -129,7 +129,7 @@ class SumoRoadNetwork(RoadMap):
                     "netconvert",
                     "--offset.disable-normalization=FALSE",
                     "--seed",
-                    random.randint(0, 2147483648),
+                    f"{random.randint(0, 2147483648)}",
                     "-s",
                     net_file_path,
                     "-o",
