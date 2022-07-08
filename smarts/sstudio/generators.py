@@ -353,6 +353,7 @@ class TrafficGenerator:
 
         _hashseed = os.getenv("PYTHONHASHSEED")
         assert _hashseed not in (None, "random"), f"PYTHONHASHSEED is {_hashseed}"
+        assert _hashseed == '42'
         if not self._random_route_generator:
             road_map = self._map_for_route(route)
             # Lazy-load to improve performance when not using random route generation.
