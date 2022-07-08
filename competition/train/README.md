@@ -28,7 +28,7 @@ The example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-b
 **This example is only meant to demonstrate one potential method of developing an RL model for the `multi-scenario-v0` environments. The trained RL policy here does not fully solve the task environments.**
 
 ## Setup
-+ Please use `python3.8` to develop your model.
++ Use `python3.8` to develop your model.
 + This example is packaged using its own `setup.py` file.
     ```bash
     $ cd <path>/SMARTS/competition/train
