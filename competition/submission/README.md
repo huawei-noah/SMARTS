@@ -3,7 +3,7 @@ These instructions only pertain to the NeurIPS 2022 competition.
 
 Once a model has been trained for `multi-scenario-v0` environments, place all necessary files to run the trained model inside this folder named `submission`. 
 
-The files named `policy.py` and `requirements.txt` must be included with the submission. Its contents are explained below.
+The files named `policy.py`, `requirements.txt`, and `explanation.md`, must be included with the submission. Its contents are explained below.
 
 ## Policy
 + The file `policy.py` must include a `Policy` class which inherits from the `BasePolicy` class.
@@ -19,3 +19,6 @@ The files named `policy.py` and `requirements.txt` must be included with the sub
 ## Requirements
 + Create a `requirements.txt` file containing all the dependencies needed to run the submitted model. 
 + The dependencies will be installed prior to evaluating the submitted code.
+
+## Explanation
++ Include an `explanation.md` file explaining the key techniques used in developing the submitted model.
