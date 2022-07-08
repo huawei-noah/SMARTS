@@ -16,7 +16,7 @@ smarts:
   # Training
   epochs: 5e3 # Number of training loops.
 
-  # Trianing per scenario
+  # Training per scenario
   train_steps: 1e5
   checkpoint_freq: 5e4 # Save a model every checkpoint_freq calls to env.step().
   eval_eps: 100 # Number of evaluation epsiodes.

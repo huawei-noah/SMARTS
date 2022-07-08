@@ -1,49 +1,23 @@
 <h2>Evaluation</h2>
 
-<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
+<h3>Track-1: Online Learning</h3>
+(a) Submitted models will be evaluated on scenarios similar to those given for training, namely, intersection, merging, cruising, and cut-in scenarios.<br>
+(b) Evaluation code is available at:
+    <pre><code class="bash">
+    $ git clone https://github.com/huawei-noah/SMARTS.git
+    $ git checkout comp-4
+    $ cd <path>/SMARTS/competition/evaluation    
+    </code></pre>
+(c) Submitted models are scored on four aspects, namely,<br>
+    <ul>
+    <li>Completion: Number of goals completed.</li>
+    <li>Time: Number of steps taken to complete the scenarios.</li>
+    <li>Humanness: Similarity to human behaviour.</li>
+    <li>Rules: Compliance with traffic rules.</li>
+    </ul>
+(d) Each score component must be minimized. The lower the value, the better it is.<br>
+(e) Overall rank is obtained by sorting each score component in ascending order, with a priority order of Completion > Time > Humanness > Rules .<br>
+(f) For more information, see <code>/SMARTS/competition/evaluation/README.md</code></li>
 
-<p>
-    Evaluation of your submission will be performed in the same manner as outlined in this
-    competition's starting kit. However, the scenarios that are used for evaluation will
-    be different.
-</p>
-
-<p>
-    Evaluation will run your agent in multiple scenarios to evaluate its performance.
-    The type of scenarios that are used will depend on your submission track.
-</p>
-<ul>
-<li>Track 1 will consist of left-turn scenarios with no traffic.</li>
-<li>Track 2 will consist of left-turn scenarios with varying degrees and types of traffic.</li>
-</ul>
-
-<p>
-    During evaluation, multiple metrics are logged and displayed on the leaderboard 
-    alongside your submission.
-</p>
-<ul>
-<li>completion: Amount of goals completed</li>
-<li>time: The amount of time spent.</li>
-<li>humanness: How close to human behaviour.</li>
-<li>rules: How close the traffic rules were followed.</li>
-<li></li>
-</ul>
-
-<p>
-    Submissions on the leaderboard will be ranked according to the "Score" metric. For
-    each evaluation scenario, a "score" will be calculated. "Score" is the average of
-    the scores over all the evaluation scenarios for that track. The formula for "score"
-    is shown below:
-</p>
-
-$$ {\text{score}=\big(\text{reached_goal == 1.0}\big)\times\big(\text{speed_violation} == 0.0\big)\times\frac{\text{EXPECTED_STEPS}}{\text{steps}}} $$
-
-<p>
-    The score for the evaluation scenario will be 0 if the agent fails to reach the goal
-    (an agent fails to reach the goal if they collide, go off road, go off route, go the
-    wrong way, or time out), or if they have exceeded the speed limit by more than 10%.
-    Otherwise, the score will be inversely proportional to the number of steps the agent
-    took to complete the evaluation scenario ("steps").
-</p>
-
-<p>This "Score" is what will be used to determine the winners of the competition.</p>
+<h3>Track-2: Offline Learning</h3>
+(a)

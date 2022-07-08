@@ -1,30 +1,27 @@
-<h2>Dataset</h2>
+<h2>Data</h2>
 
-<p>
-    The starting kit provides utility that can be used to train and test your agent submission.
-</p>
+<h3>Track-1: Online Learning</h3>
+(a) There are 8 scenarios, namely,<br>
+    <ul>
+        <li><code>1_to_2lane_left_turn_c</code></li>
+        <li><code>1_to_2lane_left_turn_t</code></li>
+        <li><code>3lane_merge_multi_agent</code></li>
+        <li><code>3lane_merge_single_agent</code></li>
+        <li><code>3lane_cruise_multi_agent</code></li>
+        <li><code>3lane_cruise_single_agent</code></li>
+        <li><code>3lane_cut_in</code></li>
+        <li><code>3lane_overtake</code></li>
+    </ul>
+(b) The scenarios are pre-built when instantiating the environment.<br>
+    <pre><code class="python">
+    env = gym.make(
+        "smarts.env:multi-scenario-v0",
+        scenario=<name-of-scenario>
+    )
+    </code></pre>
+(c) Participants may choose to alter the pre-built scenarios by modifying their 
+    corresponding <code>scenario.py</code> file, in order to yield higher scenario 
+    diversity during training.<br>
 
-<p>In addition to building your own scenarios, you are also allowed to:</p>
-<ul>
-<li>Modify your agent's reward function</li>
-<li>Modify any code used for your agent</li>
-<li>Build your agent off of any baseline in the starting kit</li>
-<li>Change the maximum number of steps per episode your agent is allowed to take</li>
-<li>Change the amount of time per timestep</li>
-<li>Change the seeding of the environment and scenarios</li>
-</ul>
-
-<p>
-    The only two requirements are that your action space converts to [dx, dy], and that
-    your agent uses the allowable observation spaces. If you have concerns
-    about whether your agent will be accepted, the starting kit provides the exact
-    evaluation script we will use to evaluate your agent, and instructions on how to use
-    this evaluation script. If your agent successfully runs in the evaluation script, it
-    will have met all the requirements of a valid submission.
-</p>
-
-<p>
-    The evaluation scenarios for both Track 1 and Track 2 were created using the
-    provided maps, and thus, will be similar to the training scenarios that you create
-    for your agent. See the evaluation section for more details.
-</p>
+<h3>Track-2: Offline Learning</h3>
+(a)
