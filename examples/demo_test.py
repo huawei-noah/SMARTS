@@ -3,7 +3,7 @@ import sys
 sys.path.insert(0, "./")
 import gym
 
-import examples.env.figure_eight_v0_env
+import examples.env.figure_eight_env
 import zoo.policies.keep_lane_agent
 
 from smarts.core.utils.episodes import episode_range
