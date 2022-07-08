@@ -21,7 +21,7 @@
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Union
+from typing import Optional, Union
 
 import tableprint as tp
 
@@ -32,11 +32,11 @@ class EpisodeLogs:
     def __init__(self, col_width, total_episodes: Union[str, int] = "?") -> None:
         self._col_width = col_width
         self._table = self.context(col_width)
-        self._current_episode = None
+        self._current_episode: Optional[EpisodeLog] = None
         self._total_episodes = total_episodes
         self._current_episode_num = 0
 
-    def reset(self):
+    def reset(self) -> "EpisodeLog":
         """Record an episode reset."""
 
         e = self._current_episode
@@ -47,6 +47,7 @@ class EpisodeLogs:
         return self._current_episode
 
     def _write_row(self):
+        assert isinstance(self._current_episode, EpisodeLog)
         e = self._current_episode
         row = (
             f"{e.index}/{self._total_episodes}",
@@ -54,7 +55,7 @@ class EpisodeLogs:
             e.steps,
             f"{e.steps_per_second:.2f}",
             e.scenario_map[: self._col_width],
-            e.scenario_routes[: self._col_width],
+            e.scenario_traffic[: self._col_width],
             e.mission_hash[: self._col_width],
         )
 
