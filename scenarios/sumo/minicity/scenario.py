@@ -7,7 +7,6 @@ from smarts.sstudio import types as t
 NUM_TRAFFIC_FLOWS = 350
 
 traffic = t.Traffic(
-    engine="SMARTS",  # TODO STEVE TEMP
     flows=[
         t.Flow(
             route=t.RandomRoute(),
