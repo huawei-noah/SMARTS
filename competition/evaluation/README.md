@@ -1,7 +1,8 @@
 # Evaluation
+This folder contains the python script that CodaLab uses to evaluate the submissions.
 
-
-## To evaluate locally
+## Local evaluation
++ To evaluate the trained model locally, do the following:
 ```bash
 $ cd <path>/SMARTS/competition/evaluate
 $ python3.8 -m venv ./.venv
