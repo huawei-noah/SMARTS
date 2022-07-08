@@ -20,7 +20,7 @@ setup(
         "setuptools>=41.0.0,!=50.0",
         "protobuf==3.20.1",
         "ruamel.yaml==0.17.17",
-        "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-2",
+        "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-4",
         "stable-baselines3==1.4.0",
         "tensorboard==2.2.0",
     ],
