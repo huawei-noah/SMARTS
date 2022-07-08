@@ -1,5 +1,26 @@
-import shutil
+# MIT License
+#
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 import os
+import shutil
 import tempfile
 from xml.etree.ElementTree import ElementTree
 
@@ -24,8 +45,9 @@ def test_scenario_generation_unchanged():
         with tempfile.TemporaryDirectory() as temp_dir2:
             loc1 = temp_dir1 + "/scenarios"
             loc2 = temp_dir2 + "/scenarios"
-            from cli.studio import _build_all_scenarios
             import re
+
+            from cli.studio import _build_all_scenarios
 
             _hashseed = os.getenv("PYTHONHASHSEED")
             assert _hashseed not in (None, "random"), f"PYTHONHASHSEED is {_hashseed}"
