@@ -8,6 +8,7 @@ NUM_TRAFFIC_FLOWS = 350
 
 traffic = t.Traffic(
     flows=[
+        engine="SMARTS",  # STEVE TODO REMOVE
         t.Flow(
             route=t.RandomRoute(),
             repeat_route=True,
