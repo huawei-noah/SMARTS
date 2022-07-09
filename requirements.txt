@@ -62,7 +62,7 @@ importlib-metadata==4.12.0
 importlib-resources==5.8.0
 incremental==21.3.0
 iniconfig==1.1.1
-ipykernel==6.15.0
+ipykernel==6.15.1
 ipython==7.34.0
 jedi==0.18.1
 Jinja2==3.1.2
@@ -70,7 +70,7 @@ jsonpatch==1.32
 jsonpointer==2.3
 jsonschema==4.6.2
 jupyter-client==7.3.4
-jupyter-core==4.11.0
+jupyter-core==4.11.1
 jupyter-server==1.18.1
 jupyter-server-mathjax==0.2.5
 jupyterlab-pygments==0.2.2
