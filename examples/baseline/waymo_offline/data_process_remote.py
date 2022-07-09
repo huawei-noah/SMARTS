@@ -1,4 +1,5 @@
 from remote_operations import remote_operations
+from remote_operations import goal_region_reward
 import paramiko
 import getpass
 import pickle
@@ -87,6 +88,10 @@ for scenario in scenarios[index:len(scenarios)]:
 
             image_names = sorted(image_names)
 
+            goal_pos_x = vehicle_data[float(image_names[-1].split('_Agent')[0])]['ego']['pos'][0]
+            goal_pos_y = vehicle_data[float(image_names[-1].split('_Agent')[0])]['ego']['pos'][1]
+            threshold = 0.2
+
             for i in range(len(image_names) - 1):
                 imgfile = client.open(path + scenario + '/' + image_names[i], 'r')
                 imgfile.seek(0)
@@ -109,7 +114,9 @@ for scenario in scenarios[index:len(scenarios)]:
                     terminal = 1
                 obs.append(np.asarray(image).reshape(3,256,256))
                 actions.append([dx, dy, dheading])
-                rewards.append(vehicle_data[float(sim_time)]['dist'])
+                dist_reward = vehicle_data[float(sim_time)]['dist'] # contains many 0's ?
+                goal_reward = goal_region_reward(threshold, goal_pos_x, goal_pos_y, current_position[0], current_position[1])
+                rewards.append(dist_reward + goal_reward)
                 terminals.append(terminal)
             print(str(len(obs)) + ' pieces of data are added into dataset.' )
 
