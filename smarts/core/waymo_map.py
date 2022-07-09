@@ -27,7 +27,7 @@ from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 import rtree
@@ -46,7 +46,13 @@ from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, RoadMapWithCaches, Waypoint
 from .utils.file import read_tfrecord_file
 from .utils.geometry import buffered_shape, generate_mesh_from_polygons
-from .utils.math import inplace_unwrap, radians_to_vec, ray_boundary_intersect, vec_2d
+from .utils.math import (
+    inplace_unwrap,
+    line_intersect_vectorized,
+    radians_to_vec,
+    ray_boundary_intersect,
+    vec_2d,
+)
 
 # pytype: disable=import-error
 
@@ -88,6 +94,11 @@ class WaymoMap(RoadMapWithCaches):
 
     DEFAULT_LANE_SPEED = 16.67  # in m/s
     DEFAULT_LANE_WIDTH = 4
+
+    # For caching tfrecord data
+    _tfrecord_path: Optional[str] = None
+    _tfrecord_generator: Optional[Generator[bytes, None, None]] = None
+    _scenario_cache: Optional[Dict[str, Any]] = None
 
     def __init__(self, map_spec: MapSpec, waymo_scenario):
         super().__init__()
@@ -230,6 +241,86 @@ class WaymoMap(RoadMapWithCaches):
                             right_widths[i] = dist
 
         return left_widths, right_widths
+
+    def _compute_lane_intersections(self) -> Dict[int, Set[int]]:
+        all_lane_ids = [feat_id for feat_id in self._feat_dicts.keys()]
+        intersections: Dict[int, Set[int]] = dict()
+
+        # Set up the intersections dict
+        for feat_id in all_lane_ids:
+            intersections[feat_id] = set()
+
+        # Build rtree
+        lane_rtree = rtree.index.Index()
+        lane_rtree.interleaved = True
+        bboxes = dict()
+        for idx, feat_id in enumerate(all_lane_ids):
+            lane_pts = np.array(self._polyline_cache[feat_id][0])
+            bbox = (
+                np.amin(lane_pts[:, 0]),
+                np.amin(lane_pts[:, 1]),
+                np.amax(lane_pts[:, 0]),
+                np.amax(lane_pts[:, 1]),
+            )
+            bboxes[feat_id] = bbox
+            lane_rtree.add(idx, bbox)
+
+        # Loop over every lane in the map
+        for feat_id in all_lane_ids:
+            # Filter out any lanes that don't intersect this lane's bbox
+            bbox = bboxes[feat_id]
+            indicies = lane_rtree.intersection(bbox)
+
+            # Filter out any other lanes we don't want to check against
+            lanes_to_test = []
+            for idx in indicies:
+                cand_id = all_lane_ids[idx]
+
+                # Skip intersections we've already computed
+                if cand_id in intersections[feat_id]:
+                    continue
+
+                # Don't check intersection with incoming/outgoing lanes or itself
+                features = self._feat_dicts[feat_id]
+                in_ids = [l for l in features["entry_lanes"]]
+                out_ids = [l for l in features["exit_lanes"]]
+                if cand_id in in_ids + out_ids + [feat_id]:
+                    continue
+
+                lanes_to_test.append(cand_id)
+
+            # Main loop -- check each segment of the lane polyline against the
+            # polyline of each candidate lane
+            line1 = np.array(self._polyline_cache[feat_id][0])
+            for cand_id in lanes_to_test:
+                line2 = self._polyline_cache[cand_id][0]
+                C = np.roll(line2, 0, axis=0)[:-1]
+                D = np.roll(line2, -1, axis=0)[:-1]
+                len_c = len(C)
+                for i in range(len(line1) - 1):
+                    a = line1[i]
+                    b = line1[i + 1]
+                    if line_intersect_vectorized(a, b, C, D):
+                        intersections[feat_id].add(cand_id)
+                        intersections[cand_id].add(feat_id)
+                        break
+
+        # Remove "fake" incoming/outgoing lanes that aren't true intersections
+        mappings_to_remove = []
+        for feat_id, intersect_ids in intersections.items():
+            lane_pts = self._polyline_cache[feat_id][0]
+            for intersect_id in intersect_ids:
+                intersect_lane_pts = self._polyline_cache[feat_id][0]
+                if tuple(lane_pts[0]) == tuple(intersect_lane_pts[-1]) or tuple(
+                    lane_pts[-1]
+                ) == tuple(intersect_lane_pts[0]):
+                    mappings_to_remove.append((feat_id, intersect_id))
+
+        for id1, id2 in mappings_to_remove:
+            intersections[id1].discard(id2)
+            intersections[id2].discard(id1)
+
+        return intersections
 
     @dataclass
     class _Split:
@@ -683,6 +774,9 @@ class WaymoMap(RoadMapWithCaches):
             max_width = min(max_width, WaymoMap.DEFAULT_LANE_WIDTH / 2)
             lane_dict["lane_width"] = max_width * 2
 
+        # find intersecting lanes
+        self._intersections = self._compute_lane_intersections()
+
         feat_splits = self._find_splits()
         self._link_splits(feat_splits)
         self._create_roads_and_lanes(feat_splits)
@@ -702,14 +796,28 @@ class WaymoMap(RoadMapWithCaches):
         """Read the dataset file and get the specified scenario"""
         dataset_path = source.split("#")[0]
         scenario_id = source.split("#")[1]
-        dataset_records = read_tfrecord_file(dataset_path)
-        for record in dataset_records:
+
+        # Reset cache if this is a new TFRecord file
+        if not WaymoMap._tfrecord_path or WaymoMap._tfrecord_path != dataset_path:
+            WaymoMap._tfrecord_path = dataset_path
+            WaymoMap._tfrecord_generator = read_tfrecord_file(dataset_path)
+            WaymoMap._scenario_cache = dict()
+
+        parsed_scenario = WaymoMap._scenario_cache.get(scenario_id)
+        if parsed_scenario:
+            return parsed_scenario
+
+        while True:
+            record = next(WaymoMap._tfrecord_generator, None)
+            if not record:
+                raise ValueError(
+                    f"Dataset file does not contain scenario with id: {scenario_id}"
+                )
             parsed_scenario = scenario_pb2.Scenario()
             parsed_scenario.ParseFromString(bytearray(record))
+            WaymoMap._scenario_cache[parsed_scenario.scenario_id] = parsed_scenario
             if parsed_scenario.scenario_id == scenario_id:
                 return parsed_scenario
-        errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
-        raise ValueError(errmsg)
 
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
