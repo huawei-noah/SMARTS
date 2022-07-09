@@ -351,9 +351,6 @@ class TrafficGenerator:
         if not isinstance(route, types.RandomRoute):
             return self._fill_in_gaps(route) if fill_in_gaps else route
 
-        _hashseed = os.getenv("PYTHONHASHSEED")
-        assert _hashseed not in (None, "random"), f"PYTHONHASHSEED is {_hashseed}"
-        assert _hashseed == "42"
         if not self._random_route_generator:
             road_map = self._map_for_route(route)
             # Lazy-load to improve performance when not using random route generation.
