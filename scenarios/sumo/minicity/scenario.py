@@ -7,8 +7,8 @@ from smarts.sstudio import types as t
 NUM_TRAFFIC_FLOWS = 350
 
 traffic = t.Traffic(
+    engine="SMARTS",  # STEVE TODO REMOVE
     flows=[
-        engine="SMARTS",  # STEVE TODO REMOVE
         t.Flow(
             route=t.RandomRoute(),
             repeat_route=True,
