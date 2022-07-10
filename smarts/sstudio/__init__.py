@@ -55,5 +55,5 @@ def build_scenario(scenario: List[str]):
     Args:
         scenario (List[str]): Scenarios to build.
     """
-    build_scenario = " ".join(["scl scenario build-all "] + scenario)
+    build_scenario = " ".join(["scl scenario build-all --clean"] + scenario)
     subprocess.call(build_scenario, shell=True)
