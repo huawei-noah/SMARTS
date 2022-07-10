@@ -507,7 +507,7 @@ class _TrafficActor:
         route: Optional[RoadMap.Route],
     ):
         """Factory to construct a _TrafficActor object from an existing VehiclState object."""
-        cur_lane = owner.road_map.nearest_lane(state.pose.point)
+        cur_lane = owner.road_map.nearest_lane(state.pose.point, radius=100)
         if not route or not route.roads:
             route = owner.road_map.random_route(starting_road=cur_lane.road)
         route_roads = [road.road_id for road in route.roads]
