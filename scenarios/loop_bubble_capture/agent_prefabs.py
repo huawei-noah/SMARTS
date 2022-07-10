@@ -13,6 +13,7 @@ class DummyAgent(Agent):
         angular_vel = 0
         return [0, 0]
 
+
 register(
     locator="interface-dummy-imitation-v0",
     entry_point=lambda **kwargs: AgentSpec(

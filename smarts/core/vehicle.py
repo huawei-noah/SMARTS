@@ -352,7 +352,7 @@ class Vehicle:
     def vehicle_type(self) -> str:
         """Get the vehicle type identifier."""
         return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
-    
+
     @property
     def valid(self) -> bool:
         """Check if the vehicle still `exists` and is still operable."""

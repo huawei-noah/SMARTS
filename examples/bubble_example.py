@@ -49,7 +49,11 @@ class SocialAgent(Agent):
 class EgoAgent(Agent):
     def act(self, obs: Observation):
         speed_limit = int(obs.waypoint_paths[0][0].speed_limit)
-        return (random.randint(speed_limit - 15, speed_limit + 4), random.randint(-1, 1))
+        return (
+            random.randint(speed_limit - 15, speed_limit + 4),
+            random.randint(-1, 1),
+        )
+
 
 def register_dummy_locator(interface, name="dummy_agent-v0"):
     class DummyAgent(Agent):
@@ -60,8 +64,7 @@ def register_dummy_locator(interface, name="dummy_agent-v0"):
             angular_velocity = 0.0
             return (acceleration, angular_velocity)
 
-
-    # Register the dummy agent for use by the bubbles 
+    # Register the dummy agent for use by the bubbles
     #  referenced as `"<module>:<locator>"` (i.e. `"examples:dummy_agent-v0"`)
     register(
         name,
@@ -71,18 +74,23 @@ def register_dummy_locator(interface, name="dummy_agent-v0"):
         ),
     )
 
-def create_moving_bubble(follow_vehicle_id=None, follow_agent_id=None, social_agent_name="dummy_agent-v0"):
+
+def create_moving_bubble(
+    follow_vehicle_id=None, follow_agent_id=None, social_agent_name="dummy_agent-v0"
+):
     assert follow_vehicle_id or follow_agent_id, "Must follow a vehicle or agent"
-    assert not (follow_vehicle_id and follow_agent_id), "Must follow only one of vehicle or agent"
+    assert not (
+        follow_vehicle_id and follow_agent_id
+    ), "Must follow only one of vehicle or agent"
 
     follow = dict()
-    exclusion_prefixes=()
+    exclusion_prefixes = ()
     if follow_vehicle_id:
-        follow=dict(follow_vehicle_id=follow_vehicle_id)
-        exclusion_prefixes=(follow_vehicle_id,)
+        follow = dict(follow_vehicle_id=follow_vehicle_id)
+        exclusion_prefixes = (follow_vehicle_id,)
     else:
-        follow=dict(follow_actor_id=follow_agent_id)
-    
+        follow = dict(follow_actor_id=follow_agent_id)
+
     bubble = Bubble(
         zone=PositionalZone(pos=(0, 0), size=(20, 40)),
         actor=SocialAgentActor(
@@ -91,9 +99,10 @@ def create_moving_bubble(follow_vehicle_id=None, follow_agent_id=None, social_ag
         exclusion_prefixes=exclusion_prefixes,
         follow_offset=(0, 0),
         margin=5,
-        **follow
+        **follow,
     )
     return bubble
+
 
 def resolve_agent_missions(
     scenario: Scenario,
@@ -106,9 +115,9 @@ def resolve_agent_missions(
         f"agent-{mission.vehicle_spec.veh_id}": mission
         for mission in random.sample(
             scenario.history_missions_for_window(
-                start_time, start_time+run_time, run_time/2
-            ), 
-            k=count
+                start_time, start_time + run_time, run_time / 2
+            ),
+            k=count,
         )
     }
     # pytype: enable=attribute-error
@@ -134,20 +143,20 @@ def main(
     timestep = 0.1
     run_steps = int(run_time / timestep)
     social_interface = AgentInterface.from_type(
-        AgentType.Direct, 
-        done_criteria= DoneCriteria(
+        AgentType.Direct,
+        done_criteria=DoneCriteria(
             not_moving=False,
-            off_road=False, 
-            off_route=False, 
-            on_shoulder=False, 
-            wrong_way=False
-        )
+            off_road=False,
+            off_route=False,
+            on_shoulder=False,
+            wrong_way=False,
+        ),
     )
     register_dummy_locator(social_interface)
 
     ego_interface = AgentInterface.from_type(
         AgentType.LanerWithSpeed,
-        done_criteria= DoneCriteria(
+        done_criteria=DoneCriteria(
             not_moving=False,
             off_road=False,
             off_route=False,
@@ -175,10 +184,10 @@ def main(
 
         def observation_callback(self, obs: Observation):
             self.last_observations = obs
-    
+
     obs_state = ObservationState()
 
-    social_agents_seen = defaultdict(lambda:0)
+    social_agents_seen = defaultdict(lambda: 0)
     scenario: Scenario
     for scenario in scenarios_iterator:
         # XXX replace with AgentSpec appropriate for IL model
@@ -189,12 +198,16 @@ def main(
 
         for episode in range(episodes):
             logger.info(f"setting up ego agents in scenario...")
-            agent_missions = resolve_agent_missions(scenario, start_time, run_time, num_agents)
-            agent_interfaces = { a_id: ego_interface for a_id in agent_missions.keys()}
+            agent_missions = resolve_agent_missions(
+                scenario, start_time, run_time, num_agents
+            )
+            agent_interfaces = {a_id: ego_interface for a_id in agent_missions.keys()}
 
             logger.info(f"setting up moving bubbles...")
             scenario.bubbles.clear()
-            scenario.bubbles.extend([create_moving_bubble(follow_agent_id=a_id) for a_id in agent_missions])
+            scenario.bubbles.extend(
+                [create_moving_bubble(follow_agent_id=a_id) for a_id in agent_missions]
+            )
 
             scenario.set_ego_missions(agent_missions)
             smarts.switch_ego_agents(agent_interfaces)
@@ -203,8 +216,12 @@ def main(
             ego_agent = EgoAgent()
             social_agent = SocialAgent(logger=logger)
 
-            traffic_history_provider: TrafficHistoryProvider = smarts.get_provider_by_type(TrafficHistoryProvider)
-            agent_vehicles = {mission.vehicle_spec.veh_id for mission in agent_missions.values()}
+            traffic_history_provider: TrafficHistoryProvider = (
+                smarts.get_provider_by_type(TrafficHistoryProvider)
+            )
+            agent_vehicles = {
+                mission.vehicle_spec.veh_id for mission in agent_missions.values()
+            }
             used_history_ids = set(agent_vehicles)
 
             logger.info(f"resetting episode {episode}...")
@@ -225,15 +242,25 @@ def main(
                     if obs_state.last_observations[agent_id].has_vehicle_control:
                         used_history_ids |= {social_agent_ob.ego_vehicle_state.id}
                 # Step SMARTS
-                ego_actions = {ego_agent_id: ego_agent.act(obs) for ego_agent_id, obs in ego_observations.items() if not dones[ego_agent_id]}
-                ego_observations, _, dones, _ = smarts.step(ego_actions) # observation_callback is called, obs_state updated
+                ego_actions = {
+                    ego_agent_id: ego_agent.act(obs)
+                    for ego_agent_id, obs in ego_observations.items()
+                    if not dones[ego_agent_id]
+                }
+                ego_observations, _, dones, _ = smarts.step(
+                    ego_actions
+                )  # observation_callback is called, obs_state updated
                 for a_id in dones:
                     if dones[a_id]:
                         dones_count += 1
-                        logger.info(f"agent=`{a_id}` is done because `{ego_observations[a_id].events}`...")
-                
+                        logger.info(
+                            f"agent=`{a_id}` is done because `{ego_observations[a_id].events}`..."
+                        )
+
                 # Currently ensure vehicles are removed permanently when they leave bubble
-                traffic_history_provider.set_replaced_ids(used_history_ids | agent_vehicles)
+                traffic_history_provider.set_replaced_ids(
+                    used_history_ids | agent_vehicles
+                )
                 # Update the current bubble in case there are new active bubbles
 
                 # Iterate through the observations
@@ -243,7 +270,8 @@ def main(
                     if obs_state.last_observations[agent_id].events.collisions:
                         logger.info(
                             "social_agent={} collided @ {}".format(
-                                agent_id, obs_state.last_observations[agent_id].events.collisions
+                                agent_id,
+                                obs_state.last_observations[agent_id].events.collisions,
                             )
                         )
                     elif obs_state.last_observations[agent_id].events.reached_goal:

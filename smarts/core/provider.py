@@ -55,7 +55,9 @@ class ProviderState:
         assert our_vehicles.isdisjoint(other_vehicles)
 
         ## TODO: Properly harmonize these vehicle ids so that there is a priority and per vehicle source
-        self.vehicles += filter(lambda v: v.vehicle_id not in our_vehicles, other.vehicles)
+        self.vehicles += filter(
+            lambda v: v.vehicle_id not in our_vehicles, other.vehicles
+        )
 
         self.dt = max(self.dt, other.dt, key=lambda x: x if x else 0)
 

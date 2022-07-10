@@ -371,7 +371,14 @@ class AgentManager:
             self._remote_social_agents_action[agent_id] = future_action
         self._reserved_social_agent_actions.clear()
         for callback in self._social_agent_observation_callbacks.values():
-            callback(dict(filter(lambda k: k[0] in self._remote_social_agents, observations.items())))
+            callback(
+                dict(
+                    filter(
+                        lambda k: k[0] in self._remote_social_agents,
+                        observations.items(),
+                    )
+                )
+            )
         for agent_id, remote_agent in self._remote_social_agents.items():
             if self._remote_social_agents_action.get(agent_id) != None:
                 continue

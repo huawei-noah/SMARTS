@@ -402,7 +402,10 @@ class Sensors:
                 elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
                 ego_vehicle_state=ego_vehicle,
-                has_vehicle_control=agent_id == sim.vehicle_index.actor_id_from_vehicle_id(ego_vehicle_state.vehicle_id),
+                has_vehicle_control=agent_id
+                == sim.vehicle_index.actor_id_from_vehicle_id(
+                    ego_vehicle_state.vehicle_id
+                ),
                 neighborhood_vehicle_states=neighborhood_vehicles,
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
@@ -412,7 +415,7 @@ class Sensors:
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
                 via_data=via_data,
-                steps_completed=sensor_state.steps_completed
+                steps_completed=sensor_state.steps_completed,
             ),
             done,
         )

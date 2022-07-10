@@ -118,7 +118,10 @@ class RemoteAgent(BufferAgent):
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 # Do nothing as RPC server has been terminated.
                 pass
-            elif e.code() == grpc.StatusCode.INVALID_ARGUMENT and "nonexistent worker" in e.details():
+            elif (
+                e.code() == grpc.StatusCode.INVALID_ARGUMENT
+                and "nonexistent worker" in e.details()
+            ):
                 pass
             else:
                 raise e
@@ -128,4 +131,3 @@ class RemoteAgent(BufferAgent):
                 self._manager_channel.close()
             except:
                 pass
-

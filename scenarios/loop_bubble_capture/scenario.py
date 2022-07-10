@@ -39,7 +39,7 @@ laner_actor = t.SocialAgentActor(
 
 dummy_actor = t.SocialAgentActor(
     name="dummy-actor",
-    agent_locator="scenarios.loop_bubble_capture.agent_prefabs:interface-dummy-imitation-v0"
+    agent_locator="scenarios.loop_bubble_capture.agent_prefabs:interface-dummy-imitation-v0",
 )
 
 gen_scenario(

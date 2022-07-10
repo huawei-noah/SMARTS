@@ -74,7 +74,9 @@ class TrafficHistoryProvider(TrafficProvider):
 
     def set_replaced_ids(self, vehicle_ids: Iterable[str]):
         """Replace the given vehicles, excluding them from control by this provider."""
-        self._replaced_vehicle_ids.update(self._get_base_id(v_id) for v_id in vehicle_ids)
+        self._replaced_vehicle_ids.update(
+            self._get_base_id(v_id) for v_id in vehicle_ids
+        )
 
     @lru_cache(maxsize=128)
     def _get_base_id(self, vehicle_id: str):
