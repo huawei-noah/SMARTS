@@ -326,16 +326,16 @@ class Plan:
 
         start_lane = self._road_map.nearest_lane(
             self._mission.start.point,
-            include_junctions=False,
+            include_junctions=True,
         )
-        assert start_lane, "route must start in a lane"
+        assert start_lane is not None, "route must start in a lane"
         start_road = start_lane.road
 
         end_lane = self._road_map.nearest_lane(
             self._mission.goal.position,
             include_junctions=False,
         )
-        assert end_lane, "route must end in a lane"
+        assert end_lane is not None, "route must end in a lane"
         end_road = end_lane.road
 
         via_roads = [self._road_map.road_by_id(via) for via in self._mission.route_vias]
