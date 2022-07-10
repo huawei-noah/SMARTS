@@ -62,7 +62,7 @@ class Policy(BasePolicy):
         """
 
         import stable_baselines3 as sb3lib
-        import network
+        from . import network
 
         model_path = Path(__file__).absolute().parents[0] / "best_model.zip"
         self.model = sb3lib.PPO.load(model_path)

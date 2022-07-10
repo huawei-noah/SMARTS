@@ -2,7 +2,7 @@ import os
 import sys
 import subprocess
 import argparse
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 
 _SCORES_FILENAME = "scores.txt"
@@ -12,8 +12,8 @@ def make_env(
     config: Dict[str, Any],
     scenario: str,
     datastore: "DataStore",
-    wrappers: List["gym.Wrapper"] = [],
-) -> "gym.Env":
+    wrappers=[],
+):
     """Make environment.
 
     Args:
