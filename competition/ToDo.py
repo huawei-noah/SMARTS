@@ -8,3 +8,4 @@
 # 7. Using self hosted Codalab instances.
 # 8. How will TargetPose action space affect the scoring of steering rate and yaw rate.
 # 9. PyType error due to dupbuild
+# 10. HTML rendering does not occur properly in Codalab competition description.
