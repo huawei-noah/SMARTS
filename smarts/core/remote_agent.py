@@ -114,11 +114,18 @@ class RemoteAgent(BufferAgent):
             self._manager_stub.stop_worker(
                 manager_pb2.Port(num=self._worker_address[1])
             )
-            # Close manager channel
-            self._manager_channel.close()
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 # Do nothing as RPC server has been terminated.
                 pass
+            elif e.code() == grpc.StatusCode.INVALID_ARGUMENT and "nonexistent worker" in e.details():
+                pass
             else:
                 raise e
+        finally:
+            try:
+                # Close manager channel
+                self._manager_channel.close()
+            except:
+                pass
+
