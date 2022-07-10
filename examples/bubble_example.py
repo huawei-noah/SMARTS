@@ -1,3 +1,4 @@
+from collections import defaultdict
 from functools import lru_cache
 import logging
 import random
@@ -24,7 +25,7 @@ try:
 except ImportError:
     from .argument_parser import default_argument_parser
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class SocialAgent(Agent):
@@ -35,7 +36,8 @@ class SocialAgent(Agent):
 
     @lru_cache(maxsize=1)
     def called(self):
-        self._logger.info("Social agent act called first time.")
+        # prints once per instance because of method cache.
+        self._logger.info("social agent instance act called first time.")
 
     def act(self, obs: Observation) -> Tuple[float, float]:
         self.called()
@@ -46,7 +48,8 @@ class SocialAgent(Agent):
 
 class EgoAgent(Agent):
     def act(self, obs: Observation):
-        return (obs.waypoint_paths[0][0].speed_limit - 10, 0)
+        speed_limit = int(obs.waypoint_paths[0][0].speed_limit)
+        return (random.randint(speed_limit - 15, speed_limit + 4), random.randint(-1, 1))
 
 def register_dummy_locator(interface, name="dummy_agent-v0"):
     class DummyAgent(Agent):
@@ -121,6 +124,7 @@ def main(
     episodes: int,
     start_time: float,
     run_time: float,
+    num_agents: float,
 ):
     logger = logging.getLogger(script)
     logger.setLevel(logging.INFO)
@@ -132,7 +136,7 @@ def main(
     social_interface = AgentInterface.from_type(
         AgentType.Direct, 
         done_criteria= DoneCriteria(
-            not_moving=False, 
+            not_moving=False,
             off_road=False, 
             off_route=False, 
             on_shoulder=False, 
@@ -144,6 +148,7 @@ def main(
     ego_interface = AgentInterface.from_type(
         AgentType.LanerWithSpeed,
         done_criteria= DoneCriteria(
+            not_moving=False,
             off_road=False,
             off_route=False,
             on_shoulder=False,
@@ -154,7 +159,7 @@ def main(
 
     smarts = SMARTS(
         agent_interfaces={},
-        traffic_sims=[LocalTrafficProvider(endless_traffic=False)],
+        traffic_sims=[LocalTrafficProvider()],
         envision=None if headless else Envision(),
         fixed_timestep_sec=timestep,
     )
@@ -173,6 +178,7 @@ def main(
     
     obs_state = ObservationState()
 
+    social_agents_seen = defaultdict(lambda:0)
     scenario: Scenario
     for scenario in scenarios_iterator:
         # XXX replace with AgentSpec appropriate for IL model
@@ -183,7 +189,7 @@ def main(
 
         for episode in range(episodes):
             logger.info(f"setting up ego agents in scenario...")
-            agent_missions = resolve_agent_missions(scenario, start_time, run_time, 2)
+            agent_missions = resolve_agent_missions(scenario, start_time, run_time, num_agents)
             agent_interfaces = { a_id: ego_interface for a_id in agent_missions.keys()}
 
             logger.info(f"setting up moving bubbles...")
@@ -204,23 +210,27 @@ def main(
             logger.info(f"resetting episode {episode}...")
             ego_observations = smarts.reset(scenario, start_time=start_time)
             dones = {a_id: False for a_id in ego_observations}
+            dones_count = 0
 
             logger.info(f"beginning episode {episode}...")
-            for _ in range(run_steps):
+            while dones_count < num_agents:
                 for agent_id in obs_state.last_observations:
                     if agent_id not in obs_state.last_observations:
                         continue
+                    social_agent_ob = obs_state.last_observations[agent_id]
                     # Replace the original action that the social agent would do
                     agent_manager.reserve_social_agent_action(
-                        agent_id, social_agent.act(obs_state.last_observations[agent_id])
+                        agent_id, social_agent.act(social_agent_ob)
                     )
-                    used_history_ids |= {obs_state.last_observations[agent_id].ego_vehicle_state.id}
+                    if obs_state.last_observations[agent_id].has_vehicle_control:
+                        used_history_ids |= {social_agent_ob.ego_vehicle_state.id}
                 # Step SMARTS
                 ego_actions = {ego_agent_id: ego_agent.act(obs) for ego_agent_id, obs in ego_observations.items() if not dones[ego_agent_id]}
                 ego_observations, _, dones, _ = smarts.step(ego_actions) # observation_callback is called, obs_state updated
                 for a_id in dones:
                     if dones[a_id]:
-                        logger.info(f"agent is done: {a_id} because {ego_observations[a_id].events}...")
+                        dones_count += 1
+                        logger.info(f"agent=`{a_id}` is done because `{ego_observations[a_id].events}`...")
                 
                 # Currently ensure vehicles are removed permanently when they leave bubble
                 traffic_history_provider.set_replaced_ids(used_history_ids | agent_vehicles)
@@ -229,7 +239,14 @@ def main(
                 # Iterate through the observations
                 # The agent ids of agents can be found here.
                 for agent_id in obs_state.last_observations.keys():
-                    if obs_state.last_observations[agent_id].events.reached_goal:
+                    social_agents_seen[agent_id] += 1
+                    if obs_state.last_observations[agent_id].events.collisions:
+                        logger.info(
+                            "social_agent={} collided @ {}".format(
+                                agent_id, obs_state.last_observations[agent_id].events.collisions
+                            )
+                        )
+                    elif obs_state.last_observations[agent_id].events.reached_goal:
                         logger.info(
                             "agent_id={} reached goal @ sim_time={}".format(
                                 agent_id, smarts.elapsed_sim_time
@@ -240,6 +257,7 @@ def main(
                                 obs_state.last_observations[agent_id].events
                             )
                         )
+            logger.info(f"social agents seen: {dict(social_agents_seen)}")
             logger.info(f"ending episode {episode}...")
 
     logger.info(f"ending simulation...")
@@ -267,7 +285,7 @@ if __name__ == "__main__":
         "-s",
         help="The start time of the simulated history.",
         type=float,
-        default=0.1,
+        default=90,
     )
     parser.add_argument(
         "--run-time",
@@ -275,6 +293,13 @@ if __name__ == "__main__":
         help="The running time (s) of the simulation.",
         type=float,
         default=40,
+    )
+    parser.add_argument(
+        "--num-agents",
+        "-n",
+        help="The number of agents to add to the scenario.",
+        type=float,
+        default=2,
     )
     args = parser.parse_args()
 
@@ -286,4 +311,5 @@ if __name__ == "__main__":
         episodes=args.episodes,
         start_time=args.history_start_time,
         run_time=args.run_time,
+        num_agents=args.num_agents,
     )

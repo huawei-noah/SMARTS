@@ -195,6 +195,8 @@ class Observation:
     elapsed_sim_time/step_count."""
     events: Events
     ego_vehicle_state: EgoVehicleObservation
+    has_vehicle_control: bool
+    """If the agent currently has control of the vehicle."""
     neighborhood_vehicle_states: Optional[List[VehicleObservation]]
     waypoint_paths: Optional[List[List[Waypoint]]]
     distance_travelled: float
@@ -208,6 +210,7 @@ class Observation:
     top_down_rgb: Optional[TopDownRGB]
     road_waypoints: Optional[RoadWaypoints]
     via_data: Vias
+    steps_completed: int
 
 
 @dataclass
@@ -383,12 +386,14 @@ class Sensors:
             sim, agent_id, vehicle, sensor_state
         )
 
-        if (
-            done
-            and sensor_state.steps_completed == 1
-            and agent_id in sim.agent_manager.ego_agent_ids
-        ):
-            logger.warning(f"Agent Id: {agent_id} is done on the first step")
+        if done and sensor_state.steps_completed <= 2:
+            agent_type = "Social agent"
+            if agent_id in sim.agent_manager.ego_agent_ids:
+                agent_type = "Ego agent"
+            logger.warning(
+                f"{agent_type} with Agent ID: {agent_id} is done on the first step"
+            )
+            assert False
 
         return (
             Observation(
@@ -397,6 +402,7 @@ class Sensors:
                 elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
                 ego_vehicle_state=ego_vehicle,
+                has_vehicle_control=agent_id == sim.vehicle_index.actor_id_from_vehicle_id(ego_vehicle_state.vehicle_id),
                 neighborhood_vehicle_states=neighborhood_vehicles,
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
@@ -406,6 +412,7 @@ class Sensors:
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
                 via_data=via_data,
+                steps_completed=sensor_state.steps_completed
             ),
             done,
         )
