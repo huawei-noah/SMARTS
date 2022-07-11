@@ -22,7 +22,7 @@ class DataStore:
 
     @agent_names.setter
     def agent_names(self, names: Iterable[str]):
-        self._agent_names = names
+        self._agent_names = copy.deepcopy(names)
 
 
 class CopyData(gym.Wrapper):

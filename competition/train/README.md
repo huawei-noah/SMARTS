@@ -60,7 +60,7 @@ The example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-b
 + Default reward is distance travelled per step in meters.
 + Action space for each agent: `smarts.core.controllers.ActionSpaceType.TargetPose` a sequence of [x-coordinate, y-coordinate, heading, and time-delta].
     + ```python
-      action_space = gym.spaces.Box(low=np.array([-1e10, -1e10, -π, 0]), high=np.array([1e10, 1e10, π, 1e10]), dtype=np.float)
+      action_space = gym.spaces.Box(low=np.array([-1e10, -1e10, -π, 0]), high=np.array([1e10, 1e10, π, 1e10]), dtype=np.float32)
       ```
     + ego's next x-coordinate on the map: [-1e10,1e10]
     + ego's next y-coordinate on the map: [-1e10,1e10]
