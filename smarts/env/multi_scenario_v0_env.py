@@ -43,7 +43,7 @@ def multi_scenario_v0_env(
     scenario: str,
     img_meters: int = 64,
     img_pixels: int = 256,
-    action_space="Continuous",
+    action_space="TargetPose",
     headless: bool = True,
     visdom: bool = False,
     sumo_headless: bool = True,
@@ -51,18 +51,24 @@ def multi_scenario_v0_env(
 ):
     """An environment with a mission to be completed by a single or multiple ego agents.
 
-    Observation:
+    Observation space for each agent:
         A `smarts.core.sensors.Observation` is returned as observation.
 
-    Actions:
-        Type: gym.spaces.Box(
-            low=-1.0, high=1.0, shape=(3,), dtype=np.float32
-        )
+    Action space for each agent:
+        A `smarts.core.controllers.ActionSpaceType.TargetPose`, which is a 
+        sequence of [x-coordinate, y-coordinate, heading, and time-delta].
 
-        Action     Value range
-        Throttle   [ 0, 1]
-        Brake      [ 0, 1]
-        Steering   [-1, 1]
+        Type: gym.spaces.Box(
+                low=np.array([-1e10, -1e10, -π, 0]), 
+                high=np.array([1e10, 1e10, π, 1e10]), 
+                dtype=np.float32
+            )
+
+        Action                                              Value range
+        Ego's next x-coordinate on the map                  [-1e10,1e10]
+        Ego's next y-coordinate on the map                  [-1e10,1e10]
+        Ego's next heading with respect to the map's axes   [-π,π]
+        Time delta to reach the given pose                  [-1e10,1e10]
 
     Reward:
         Reward is distance travelled (in meters) in each step, including the
