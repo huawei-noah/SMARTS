@@ -212,6 +212,13 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
     DEFAULT_LANE_WIDTH = 3.7
     DEFAULT_LANE_SPEED = 16.67  # in m/s
 
+    # Values to convert to m/s for each allowable unit type (see OpenDRIVE spec, section 2.3.2)
+    SPEED_CONVERSION = {
+        "m/s": 1.0,
+        "km/h": 0.27778,
+        "mph": 0.44704,
+    }
+
     def __init__(
         self,
         xodr_file: str,
@@ -303,6 +310,13 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
                 and road_elem.types[0].speed.max
             ):
                 road_elem_speed = float(road_elem.types[0].speed.max)
+                unit = road_elem.types[0].speed.unit
+                if unit:
+                    multiplier = OpenDriveRoadNetwork.SPEED_CONVERSION.get(unit, None)
+                    assert (
+                        multiplier is not None
+                    ), f"invalid unit type for lane speed: {unit}"
+                    road_elem_speed *= multiplier
             else:
                 road_elem_speed = self._default_lane_speed
 
