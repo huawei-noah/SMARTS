@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 import gym
 import numpy as np
@@ -44,8 +44,8 @@ class FilterObs(gym.ObservationWrapper):
         )
 
     def observation(
-        self, obs: Dict[str, Dict[str, gym.Space]]
-    ) -> Dict[str, Dict[str, gym.Space]]:
+        self, obs: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, Dict[str, Any]]:
         """Adapts the wrapped environment's observation.
 
         Note: Users should not directly call this method.

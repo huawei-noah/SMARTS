@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 import gym
 import numpy as np
@@ -46,7 +46,7 @@ class Reward(gym.Wrapper):
         return obs, wrapped_reward, done, info
 
     def _reward(
-        self, obs: Dict[str, Dict[str, gym.Space]], env_reward: Dict[str, np.float64]
+        self, obs: Dict[str, Dict[str, Any]], env_reward: Dict[str, np.float64]
     ) -> Dict[str, np.float64]:
         reward = {agent_id: np.float64(0) for agent_id in env_reward.keys()}
 
