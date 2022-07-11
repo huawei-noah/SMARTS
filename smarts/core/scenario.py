@@ -23,6 +23,7 @@ import os
 import pickle
 import random
 import uuid
+import warnings
 from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
@@ -68,13 +69,13 @@ VehicleWindow = TrafficHistory.TrafficHistoryVehicleWindow
 
 class Scenario:
     """The purpose of the Scenario is to provide an aggregate of all
-    code/configuration/assets that is specialized to a scenario using SUMO.
+    code/configuration/assets that is specialized to a scenario.
 
     Args:
         scenario_root:
             The scenario asset folder ie. './scenarios/trigger'.
-        route:
-            The social vehicle traffic spec.
+        traffic_specs:
+            The social vehicle traffic specs.
         missions:
             agent_id to mission mapping.
         map_spec:
@@ -87,18 +88,26 @@ class Scenario:
     def __init__(
         self,
         scenario_root: str,
-        route: Optional[str] = None,
+        traffic_specs: Sequence[str] = [],
         missions: Optional[Dict[str, Mission]] = None,
         social_agents: Optional[Dict[str, SocialAgent]] = None,
         log_dir: Optional[str] = None,
         surface_patches: Optional[Sequence[Dict[str, Any]]] = None,
         traffic_history: Optional[str] = None,
         map_spec: Optional[MapSpec] = None,
+        route: Optional[str] = None,  # deprecated: use traffic_specs instead
     ):
 
         self._logger = logging.getLogger(self.__class__.__name__)
         self._root = scenario_root
-        self._route = route
+        self._traffic_specs = traffic_specs
+        if route:
+            warnings.warn(
+                "Scenario route property has been deprecated in favor of traffic_specs.  Please update your code.",
+                category=DeprecationWarning,
+            )
+            traffic_path = os.path.join(scenario_root, "traffic")
+            self._traffic_specs = [os.path.join(traffic_path, route)]
         self._missions = missions or {}
         self._bubbles = Scenario._discover_bubbles(scenario_root)
         self._social_agents = social_agents or {}
@@ -127,7 +136,7 @@ class Scenario:
     def __repr__(self):
         return f"""Scenario(
   _root={self._root},
-  _route={self._route},
+  _traffic_specs={self._traffic_specs},
   _missions={self._missions},
 )"""
 
@@ -208,31 +217,31 @@ class Scenario:
 
             # `or [None]` so that product(...) will not return an empty result
             # but insted a [(..., `None`), ...].
-            routes = Scenario.discover_routes(scenario_root) or [None]
             agent_missions = agent_missions or [None]
             social_agents = social_agents or [None]
             traffic_histories = Scenario.discover_traffic_histories(scenario_root) or [
                 None
             ]
+            traffic = Scenario.discover_traffic(scenario_root) or [[]]
 
-            roll_routes = 0
+            roll_traffic = 0
             roll_agent_missions = 0
             roll_social_agents = 0
             roll_traffic_histories = 0
 
             if shuffle_scenarios:
-                roll_routes = random.randint(0, len(routes))
+                roll_traffic = random.randint(0, len(traffic))
                 roll_agent_missions = random.randint(0, len(agent_missions))
                 roll_social_agents = random.randint(0, len(social_agents))
                 roll_traffic_histories = 0  # random.randint(0, len(traffic_histories))
 
             for (
-                concrete_route,
+                concrete_traffic,
                 concrete_agent_missions,
                 concrete_social_agents,
                 concrete_traffic_history,
             ) in product(
-                np.roll(routes, roll_routes, 0),
+                np.roll(traffic, roll_traffic, 0),
                 np.roll(agent_missions, roll_agent_missions, 0),
                 np.roll(social_agents, roll_social_agents, 0),
                 np.roll(traffic_histories, roll_traffic_histories, 0),
@@ -254,7 +263,7 @@ class Scenario:
 
                 yield Scenario(
                     scenario_root,
-                    route=concrete_route,
+                    traffic_specs=concrete_traffic,
                     missions={
                         **(concrete_agent_missions or {}),
                         **concrete_social_agent_missions,
@@ -450,25 +459,6 @@ class Scenario:
         return map_spec.builder_fn(map_spec)
 
     @staticmethod
-    def supports_traffic_simulation(scenarios):
-        """Determines if all given scenarios support traffic simulation."""
-        from smarts.core.sumo_road_network import SumoRoadNetwork
-
-        num_sumo = 0
-        scenario_list = Scenario.get_scenario_list(scenarios)
-        for scenario_root in scenario_list:
-            try:
-                road_map, _ = Scenario.build_map(scenario_root)
-            except FileNotFoundError:
-                raise FileNotFoundError(
-                    f"Unable to find network file in map_source={scenario_root}."
-                )
-            if isinstance(road_map, SumoRoadNetwork):
-                num_sumo += 1
-
-        return num_sumo == len(scenario_list)
-
-    @staticmethod
     def discover_map(
         scenario_root: str,
         lanepoint_spacing: Optional[float] = None,
@@ -511,12 +501,29 @@ class Scenario:
         >>> Scenario.discover_routes("scenarios/sumo/loop") # loop does not have any routes
         ['basic.rou.xml']
         """
+        warnings.warn(
+            "Scenario.discover_routes() has been deprecated in favor of Scenario.discover_traffic().  Please update your code.",
+            category=DeprecationWarning,
+        )
         return sorted(
             [
                 os.path.basename(r)
                 for r in glob.glob(os.path.join(scenario_root, "traffic", "*.rou.xml"))
             ]
         )
+
+    @staticmethod
+    def discover_traffic(scenario_root: str) -> List[Optional[List[str]]]:
+        """Discover the traffic spec files in the given scenario."""
+        traffic_path = os.path.join(scenario_root, "traffic")
+        # combine any SMARTS and SUMO traffic together...
+        sumo_traffic = glob.glob(os.path.join(traffic_path, "*.rou.xml"))
+        smarts_traffic = glob.glob(os.path.join(traffic_path, "*.smarts.xml"))
+        if sumo_traffic and not smarts_traffic:
+            return [[ts] for ts in sumo_traffic]
+        elif not sumo_traffic and smarts_traffic:
+            return [[ts] for ts in smarts_traffic]
+        return [list(ts) for ts in product(sumo_traffic, smarts_traffic)]
 
     @staticmethod
     def _discover_bubbles(scenario_root):
@@ -895,19 +902,42 @@ class Scenario:
         return os.path.join(self._root, "controller_parameters.yaml")
 
     @property
-    def route(self) -> str:
+    def traffic_specs(self) -> Sequence[str]:
+        """The traffic spec file names to use for this scenario."""
+        return self._traffic_specs
+
+    @property
+    def route(self) -> Optional[str]:
         """The traffic route file name."""
-        return self._route
+        warnings.warn(
+            "Scenario route property has been deprecated in favor of traffic_specs.  Please update your code.",
+            category=DeprecationWarning,
+        )
+        assert len(self._traffic_specs) <= 1
+        return (
+            os.path.basename(self._traffic_specs[0])
+            if len(self._traffic_specs) == 1
+            else None
+        )
 
     @property
     def route_files_enabled(self):
         """If there is a traffic route file."""
-        return bool(self._route)
+        warnings.warn(
+            "Scenario route_file_enabled property has been deprecated in favor of traffic_specs.  Please update your code.",
+            category=DeprecationWarning,
+        )
+        return bool(self._traffic_specs)
 
     @property
     def route_filepath(self):
         """The filepath to the traffic route file."""
-        return os.path.join(self._root, "traffic", self._route)
+        warnings.warn(
+            "Scenario route_filepath property has been deprecated in favor of traffic_specs.  Please update your code.",
+            category=DeprecationWarning,
+        )
+        assert len(self._traffic_specs) == 1
+        return self._traffic_specs[0]
 
     @property
     def map_glb_filepath(self):
@@ -922,6 +952,47 @@ class Scenario:
     def road_map(self) -> RoadMap:
         """The road map of the scenario."""
         return self._road_map
+
+    @property
+    def supports_sumo_traffic(self) -> bool:
+        """Returns True if this scenario uses a Sumo road network."""
+        from smarts.core.sumo_road_network import SumoRoadNetwork
+
+        return isinstance(self._road_map, SumoRoadNetwork)
+
+    @staticmethod
+    def any_support_sumo_traffic(scenarios: Sequence[str]) -> bool:
+        """Determines if any of the given scenarios support Sumo traffic simulation."""
+        from smarts.core.sumo_road_network import SumoRoadNetwork
+
+        for scenario_root in Scenario.get_scenario_list(scenarios):
+            try:
+                road_map, _ = Scenario.build_map(scenario_root)
+            except FileNotFoundError:
+                raise FileNotFoundError(
+                    f"Unable to find network file in map_source={scenario_root}."
+                )
+            if isinstance(road_map, SumoRoadNetwork):
+                return True
+
+        return False
+
+    @staticmethod
+    def all_support_sumo_traffic(scenarios: Sequence[str]) -> bool:
+        """Determines if all given scenarios support Sumo traffic simulation."""
+        from smarts.core.sumo_road_network import SumoRoadNetwork
+
+        for scenario_root in Scenario.get_scenario_list(scenarios):
+            try:
+                road_map, _ = Scenario.build_map(scenario_root)
+            except FileNotFoundError:
+                raise FileNotFoundError(
+                    f"Unable to find network file in map_source={scenario_root}."
+                )
+            if not isinstance(road_map, SumoRoadNetwork):
+                return False
+
+        return True
 
     @property
     def missions(self) -> Dict[str, Mission]:

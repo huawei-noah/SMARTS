@@ -19,6 +19,7 @@ traffic = types.Traffic(
     flows=[
         types.Flow(
             route=shared_route,
+            repeat_route=True,
             rate=1,
             actors={patient_car: 1},
         )

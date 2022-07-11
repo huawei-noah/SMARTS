@@ -343,6 +343,7 @@ def _format_waypoint(obj: Waypoint, data_formatter: EnvisionDataFormatter):
     data_formatter.add_primitive(obj.lane_width)
     data_formatter.add_primitive(obj.speed_limit)
     data_formatter.add_primitive(obj.lane_index)
+    data_formatter.add_primitive(obj.lane_offset)
 
 
 def _format_list(l: Union[list, tuple], data_formatter: EnvisionDataFormatter):

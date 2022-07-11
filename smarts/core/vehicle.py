@@ -25,11 +25,15 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from shapely.affinity import rotate as shapely_rotate
+from shapely.geometry import Polygon
+from shapely.geometry import box as shapely_box
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
 
 from . import models
+from .actor_role import ActorRole
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import Colors, SceneColors
 from .coordinates import Dimensions, Heading, Pose
@@ -37,6 +41,7 @@ from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
     DrivenPathSensor,
+    LanePositionSensor,
     LidarSensor,
     NeighborhoodVehiclesSensor,
     OGMSensor,
@@ -68,16 +73,28 @@ class VehicleState:
     angular_velocity: Optional[np.ndarray] = None
     linear_acceleration: Optional[np.ndarray] = None
     angular_acceleration: Optional[np.ndarray] = None
-    _privileged: bool = False
-
-    def set_privileged(self):
-        """For deferring to external co-simulators only. Use with caution!"""
-        self._privileged = True
+    role: ActorRole = ActorRole.Unknown
 
     @property
-    def privileged(self) -> bool:
-        """If the vehicle state is privilaged over the internal simulation state."""
-        return self._privileged
+    def bbox(self) -> Polygon:
+        """Returns a bounding box around the vehicle."""
+        pos = self.pose.point
+        half_len = 0.5 * self.dimensions.length
+        half_width = 0.5 * self.dimensions.width
+        poly = shapely_box(
+            pos.x - half_width,
+            pos.y - half_len,
+            pos.x + half_width,
+            pos.y + half_len,
+        )
+        return shapely_rotate(poly, self.pose.heading, use_radians=True)
+
+    def __lt__(self, other):
+        """Allows ordering VehicleStates for use in sorted data-structures."""
+        assert isinstance(other, VehicleState)
+        return self.vehicle_id < other.vehicle_id or (
+            self.vehicle_id == other.vehicle_id and id(self) < id(other)
+        )
 
 
 @dataclass(frozen=True)
@@ -265,7 +282,7 @@ class Vehicle:
         return VehicleState(
             vehicle_id=self.id,
             vehicle_type=self.vehicle_type,
-            vehicle_config_type=None,  # it's hard to invert
+            vehicle_config_type=self._vehicle_config_type,
             pose=self.pose,
             dimensions=self._chassis.dimensions,
             speed=self.speed,
@@ -273,7 +290,7 @@ class Vehicle:
             steering=self._chassis.steering,
             # pytype: enable=attribute-error
             yaw_rate=self._chassis.yaw_rate,
-            source="SMARTS",
+            source="SMARTS",  # this is the "ground truth" state
             linear_velocity=self._chassis.velocity_vectors[0],
             angular_velocity=self._chassis.velocity_vectors[1],
         )
@@ -406,7 +423,6 @@ class Vehicle:
         )
 
         chassis = None
-        # change this to dynamic_action_spaces later when pr merged
         if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
             if mission.vehicle_spec:
                 logger = logging.getLogger(cls.__name__)
@@ -484,6 +500,9 @@ class Vehicle:
 
         if agent_interface.accelerometer:
             vehicle.attach_accelerometer_sensor(AccelerometerSensor(vehicle=vehicle))
+
+        if agent_interface.lane_positions:
+            vehicle.attach_lane_position_sensor(LanePositionSensor(vehicle=vehicle))
 
         if agent_interface.waypoints:
             vehicle.attach_waypoints_sensor(
@@ -573,11 +592,11 @@ class Vehicle:
     def update_state(self, state: VehicleState, dt: float):
         """Update the vehicle's state"""
         state.updated = True
-        if not state.privileged:
+        if state.role != ActorRole.External:
             assert isinstance(self._chassis, BoxChassis)
             self.control(pose=state.pose, speed=state.speed, dt=dt)
             return
-        # "Privileged" means we can work directly (bypass force application).
+        # External actors are "privileged", which means they work directly (bypass force application).
         # Conceptually, this is playing 'god' with physics and should only be used
         # to defer to a co-simulator's states.
         linear_velocity, angular_velocity = None, None
@@ -666,14 +685,24 @@ class Vehicle:
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",
+            "lane_position_sensor",
             "via_sensor",
         ]
         for sensor_name in sensor_names:
 
             def attach_sensor(self, sensor, sensor_name=sensor_name):
-                assert (
-                    getattr(self, f"_{sensor_name}", None) is None
-                ), f"{sensor_name} already added to {self.id}"
+                # replace previously-attached sensor with this one
+                # (to allow updating its parameters).
+                # Sensors might have been attached to a non-agent vehicle
+                # (for example, for observation collection from history vehicles),
+                # but if that vehicle gets hijacked, we want to use the sensors
+                # specified by the hijacking agent's interface.
+                detach = getattr(self, f"detach_{sensor_name}")
+                if detach:
+                    detach(sensor_name)
+                    self._log.info(
+                        f"replacing existing {sensor_name} on vehicle {self.id}"
+                    )
                 setattr(self, f"_{sensor_name}", sensor)
                 self._sensors[sensor_name] = sensor
 
@@ -690,7 +719,7 @@ class Vehicle:
 
             def sensor_property(self, sensor_name=sensor_name):
                 sensor = getattr(self, f"_{sensor_name}", None)
-                assert sensor is not None, f"{sensor_name} is not attached"
+                assert sensor is not None, f"{sensor_name} is not attached to {self.id}"
                 return sensor
 
             setattr(Vehicle, f"_{sensor_name}", None)

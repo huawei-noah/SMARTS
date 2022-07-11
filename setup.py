@@ -13,7 +13,7 @@ setup(
     description="Scalable Multi-Agent RL Training School",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version="0.6.1rc1",
+    version="0.6.1",
     packages=find_packages(exclude=("tests", "examples")),
     include_package_data=True,
     zip_safe=True,
@@ -45,7 +45,6 @@ setup(
         # The following are for /envision
         "tornado>=6.1",
         "websocket-client>=1.2.1",
-        # The following is used for imitation learning and envision
         "ijson>=3.1.4",
         # The following are for the /smarts/algorithms
         "matplotlib>=3.4.3",

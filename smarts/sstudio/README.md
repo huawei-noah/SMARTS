@@ -14,7 +14,7 @@ Scenario creation is done through an asset pipeline configured through `make`. T
 3. If you want social vehicle traffic or agent missions define a traffic spec (see below) in a `scenario.py` file under your scenario directory
 4. Build the scenario by running,
     ```bash
-    # Assuming your scenario is under SMARTS/scenarios, and you're CWD=SMARTS/
+    # Assuming your scenario is under SMARTS/scenarios, and your CWD=SMARTS/
     make build-scenario scenario=scenarios/<your_scenario_dir>
     ```
 
@@ -31,6 +31,7 @@ MapSpec(source="path_or_uri", builder_fn=custom_map_builder)
 
 # Traffic
 Traffic(
+    engine="SUMO",
     flows=[
         Flow(
             route=Route(begin=("edge-A", 0, "base"), end=("edge-B", 0, "max")),

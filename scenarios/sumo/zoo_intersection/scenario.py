@@ -49,6 +49,7 @@ for name, routes in {
                 route=Route(
                     begin=(f"edge-{r[0]}", 0, "random"), end=(f"edge-{r[1]}", 0, "max")
                 ),
+                repeat_route=True,
                 rate=random.randint(50, 100),
                 actors={cooperative_car: 0.35, car: 0.20, aggressive_car: 0.45},
             )

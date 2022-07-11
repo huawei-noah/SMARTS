@@ -106,6 +106,13 @@ class Accelerometer:
     pass
 
 
+@dataclass
+class LanePositions:
+    """Computation and reporting of lane-relative RefLine (Frenet) coordinates for all vehicles."""
+
+    pass
+
+
 class AgentType(IntEnum):
     """Used to select preconfigured agent interfaces."""
 
@@ -135,8 +142,8 @@ class AgentType(IntEnum):
     """Agent performs trajectory tracking using model predictive control."""
     TrajectoryInterpolator = 11
     """Agent performs linear trajectory interpolation."""
-    Imitation = 12
-    """Agent sees neighbor vehicles and performs actions based on imitation-learned model (acceleration, angular_velocity)."""
+    Direct = 12
+    """Agent sees neighbor vehicles and performs actions based on direct updates to (acceleration, angular_velocity)."""
 
 
 @dataclass(frozen=True)
@@ -263,7 +270,7 @@ class AgentInterface:
 
     action: Optional[ActionSpaceType] = None
     """
-    The choice of action space, this action space also decides the controller that will be enabled.
+    The choice of action space; this also decides the controller that will be enabled and the chassis type that will be used.
     """
 
     vehicle_type: str = "sedan"
@@ -274,6 +281,11 @@ class AgentInterface:
     accelerometer: Union[Accelerometer, bool] = True
     """
     Enable acceleration and jerk observations.
+    """
+
+    lane_positions: Union[LanePositions, bool] = True
+    """
+    Enable lane-relative position reporting.
     """
 
     def __post_init__(self):
@@ -292,6 +304,9 @@ class AgentInterface:
         self.lidar = AgentInterface._resolve_config(self.lidar, Lidar)
         self.accelerometer = AgentInterface._resolve_config(
             self.accelerometer, Accelerometer
+        )
+        self.lane_positions = AgentInterface._resolve_config(
+            self.lane_positions, LanePositions
         )
         assert self.vehicle_type in {"sedan", "bus"}
 
@@ -380,11 +395,11 @@ class AgentInterface:
                 neighborhood_vehicles=True,
                 action=ActionSpaceType.Continuous,
             )
-        # For testing imitation learners
-        elif requested_type == AgentType.Imitation:
+        # Has been useful for testing imitation learners
+        elif requested_type == AgentType.Direct:
             interface = AgentInterface(
                 neighborhood_vehicles=True,
-                action=ActionSpaceType.Imitation,
+                action=ActionSpaceType.Direct,
             )
         else:
             raise Exception("Unsupported agent type %s" % requested_type)

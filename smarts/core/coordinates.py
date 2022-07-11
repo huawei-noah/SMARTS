@@ -35,7 +35,7 @@ from smarts.core.utils.math import (
 
 @dataclass(frozen=True)
 class Dimensions:
-    """A 3 dimension data structure representing a box."""
+    """Representation of the size of a 3-dimensional form."""
 
     length: float
     width: float
@@ -112,6 +112,7 @@ class RefLinePoint(NamedTuple):
     """A reference line coordinate.
     See the Reference Line coordinate system in OpenDRIVE here:
        https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems
+    Also known as the Frenet coordinate system.
     """
 
     s: float  # offset along lane from start of lane
@@ -121,7 +122,7 @@ class RefLinePoint(NamedTuple):
 
 @dataclass(frozen=True)
 class BoundingBox:
-    """A fitted box generally used to encapsulate geometry."""
+    """A 2-dimensional axis aligned box located in a [x, y] coordinate system."""
 
     min_pt: Point
     max_pt: Point

@@ -25,6 +25,7 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 import smarts
 from envision.client import Client as Envision
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -65,6 +66,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
     """
 
     def __init__(self, config):
+        self._log = logging.getLogger(self.__class__.__name__)
         seed = int(config.get("seed", 42))
 
         # See https://docs.ray.io/en/latest/rllib-env.html#configuring-environments
@@ -89,7 +91,10 @@ class RLlibHiWayEnv(MultiAgentEnv):
         self._sumo_headless = config.get("sumo_headless", True)
         self._sumo_port = config.get("sumo_port")
         self._sumo_auto_start = config.get("sumo_auto_start", True)
-        self._endless_traffic = config.get("endless_traffic", True)
+        if "endless_traffic" in config:
+            self._log.warning(
+                "The endless_traffic option has been moved into Scenario Studio.  Please update your scenario code.",
+            )
 
         self._envision_endpoint = config.get("envision_endpoint", None)
         self._envision_record_data_replay_path = config.get(
@@ -106,7 +111,6 @@ class RLlibHiWayEnv(MultiAgentEnv):
         )
         self._smarts = None  # Created on env.setup()
         self._dones_registered = 0
-        self._log = logging.getLogger(self.__class__.__name__)
 
     def step(self, agent_actions):
         """Environment step"""
@@ -208,16 +212,18 @@ class RLlibHiWayEnv(MultiAgentEnv):
                 headless=self._headless,
             )
 
+        sumo_traffic = SumoTrafficSimulation(
+            headless=self._sumo_headless,
+            time_resolution=self._fixed_timestep_sec,
+            num_external_sumo_clients=self._num_external_sumo_clients,
+            sumo_port=self._sumo_port,
+            auto_start=self._sumo_auto_start,
+        )
+        smarts_traffic = LocalTrafficProvider()
+
         sim = SMARTS(
             agent_interfaces=agent_interfaces,
-            traffic_sim=SumoTrafficSimulation(
-                headless=self._sumo_headless,
-                time_resolution=self._fixed_timestep_sec,
-                num_external_sumo_clients=self._num_external_sumo_clients,
-                sumo_port=self._sumo_port,
-                auto_start=self._sumo_auto_start,
-                endless_traffic=self._endless_traffic,
-            ),
+            traffic_sims=[sumo_traffic, smarts_traffic],
             envision=envision,
             fixed_timestep_sec=self._fixed_timestep_sec,
         )

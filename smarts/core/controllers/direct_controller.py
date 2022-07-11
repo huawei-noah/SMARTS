@@ -27,8 +27,9 @@ from smarts.core.coordinates import Pose
 from smarts.core.utils.math import fast_quaternion_from_angle, radians_to_vec
 
 
-class ImitationController:
-    """A controller that is useful for imitation learning."""
+class DirectController:
+    """A controller that directly sets a vehicle's acceleration and angular velocity
+    (rather than applying forces like torque) based on kinematics."""
 
     @classmethod
     def perform_action(

@@ -177,7 +177,7 @@ class ROSDriver:
 
         self._smarts = SMARTS(
             agent_interfaces={},
-            traffic_sim=traffic_sim,
+            traffic_sims=[traffic_sim],
             fixed_timestep_sec=None,
             envision=None if headless else Envision(),
             external_provider=True,
@@ -367,7 +367,6 @@ class ROSDriver:
         veh_type = ROSDriver._decode_entity_type(entity.entity_type)
         veh_dims = Dimensions(entity.length, entity.width, entity.height)
         vs = VehicleState(
-            source="EXTERNAL",
             vehicle_id=veh_id,
             vehicle_config_type=veh_type,
             pose=Pose(
@@ -380,7 +379,6 @@ class ROSDriver:
             linear_acceleration=ROSDriver._xyz_to_vect(entity.acceleration.linear),
             angular_acceleration=ROSDriver._xyz_to_vect(entity.acceleration.angular),
         )
-        vs.set_privileged()
         vs.speed = np.linalg.norm(vs.linear_velocity)
         return vs
 
@@ -637,9 +635,11 @@ class ROSDriver:
                 self._most_recent_state_sent = None
                 self._warned_about_freq = False
                 map_spec = self._get_map_spec()
-                routes = Scenario.discover_routes(self._scenario_path) or [None]
+                traffic = Scenario.discover_traffic(self._scenario_path) or [[]]
                 return self._smarts.reset(
-                    Scenario(self._scenario_path, map_spec=map_spec, route=routes[0])
+                    Scenario(
+                        self._scenario_path, map_spec=map_spec, traffic_specs=traffic[0]
+                    )
                 )
         return None
 

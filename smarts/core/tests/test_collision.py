@@ -327,7 +327,7 @@ def smarts():
     agents = {AGENT_1: laner, AGENT_2: buddha}
     smarts = SMARTS(
         agents,
-        traffic_sim=SumoTrafficSimulation(headless=True),
+        traffic_sims=[SumoTrafficSimulation(headless=True)],
         envision=None,
     )
 

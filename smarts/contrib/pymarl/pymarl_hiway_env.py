@@ -126,7 +126,9 @@ class PyMARLHiWayEnv:
 
         self._smarts = SMARTS(
             agent_interfaces=agent_interfaces,
-            traffic_sim=SumoTrafficSimulation(time_resolution=self._fixed_timestep_sec),
+            traffic_sims=[
+                SumoTrafficSimulation(time_resolution=self._fixed_timestep_sec)
+            ],
             envision=envision,
             fixed_timestep_sec=self._fixed_timestep_sec,
         )

@@ -265,7 +265,7 @@ def _egocentric_multi_target_pose_adapter(
     )
 
 
-def _egocentric_imitation_adapter(
+def _egocentric_direct_adapter(
     act: Union[float, Tuple[float, float]], last_obs: Optional[Observation] = None
 ):
     return act
@@ -309,7 +309,7 @@ def get_egocentric_adapters(action_space: ActionSpaceType):
         ActionSpaceType.MPC: _egocentric_mpc_adapter,
         ActionSpaceType.TargetPose: _egocentric_target_pose_adapter,
         ActionSpaceType.MultiTargetPose: _egocentric_multi_target_pose_adapter,
-        ActionSpaceType.Imitation: _egocentric_imitation_adapter,
+        ActionSpaceType.Direct: _egocentric_direct_adapter,
     }
 
     return _pair_adapters(ego_centric_observation_adapter, m.get(action_space))

@@ -24,6 +24,7 @@ from helpers.scenario import temp_scenario
 
 import smarts.sstudio.types as t
 from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -33,20 +34,27 @@ AGENT_ID = "006"
 AGENT_ID_2 = "007"
 
 
+@pytest.fixture(params=["SUMO", "SMARTS"])
+def traffic_sim(request):
+    return getattr(request, "param", "SUMO")
+
+
 @pytest.fixture
-def scenarios():
+def scenarios(traffic_sim):
     with temp_scenario(name="straight", map="maps/straight.net.xml") as scenario_root:
         traffic = t.Traffic(
+            engine=traffic_sim,
             flows=[
                 t.Flow(
                     route=t.Route(
                         begin=("west", 1, 0),
                         end=("east", 1, "max"),
                     ),
+                    repeat_route=True,
                     rate=50,
                     actors={t.TrafficActor("car"): 1},
                 )
-            ]
+            ],
         )
 
         missions = [
@@ -124,12 +132,17 @@ def two_agent_capture_offset_tenth_of_second():
 
 
 @pytest.fixture
-def smarts():
+def smarts(traffic_sim):
+    traffic_sims = (
+        [LocalTrafficProvider()]
+        if traffic_sim == "SMARTS"
+        else [SumoTrafficSimulation(time_resolution=0.1)]
+    )
     smarts_ = SMARTS(
         agent_interfaces={
             AGENT_ID: AgentInterface.from_type(AgentType.Laner, max_episode_steps=30)
         },
-        traffic_sim=SumoTrafficSimulation(time_resolution=0.1),
+        traffic_sims=traffic_sims,
     )
     yield smarts_
     smarts_.destroy()
@@ -142,18 +155,23 @@ def smarts_two_agents():
             AGENT_ID: AgentInterface.from_type(AgentType.Laner, max_episode_steps=30),
             AGENT_ID_2: AgentInterface.from_type(AgentType.Laner, max_episode_steps=30),
         },
-        traffic_sim=SumoTrafficSimulation(time_resolution=0.1),
+        traffic_sims=[SumoTrafficSimulation(time_resolution=0.1)],
     )
     yield smarts_
     smarts_.destroy()
 
 
-def test_capture_vehicle(smarts: SMARTS, scenarios):
-    vehicle_prefix = "car-flow-route-west_1_0-east_1_max"
+@pytest.mark.parametrize("traffic_sim", ["SUMO", "SMARTS"], indirect=True)
+def test_capture_vehicle(smarts: SMARTS, scenarios, traffic_sim):
     smarts.reset(next(scenarios))
-
-    vehicle_id = list(smarts.vehicle_index.agent_vehicle_ids())[0]
-    assert vehicle_id.startswith(vehicle_prefix)
+    if traffic_sim == "SMARTS":
+        vehicle_prefix = "actor-car"
+        vehicle_id = list(smarts.vehicle_index.agent_vehicle_ids())[0]
+        assert vehicle_id.startswith(vehicle_prefix)
+    else:
+        vehicle_prefix = "car-flow-route-west_1_0-east_1_max"
+        vehicle_id = list(smarts.vehicle_index.agent_vehicle_ids())[0]
+        assert vehicle_id.startswith(vehicle_prefix)
     assert smarts.elapsed_sim_time < 1
     assert len(smarts.vehicle_index.agent_vehicle_ids()) == 1
     assert smarts.vehicle_index.actor_id_from_vehicle_id(vehicle_id).startswith(
@@ -161,6 +179,7 @@ def test_capture_vehicle(smarts: SMARTS, scenarios):
     )
 
 
+@pytest.mark.parametrize("traffic_sim", ["SUMO", "SMARTS"], indirect=True)
 def test_emit_on_default(smarts: SMARTS, empty_scenarios):
     smarts.reset(next(empty_scenarios))
     assert round(smarts.elapsed_sim_time, 2) == 3.1
