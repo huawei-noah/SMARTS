@@ -117,6 +117,3 @@ class RandomPolicy(BasePolicy):
             wrapped_act.update({agent_id: action})
 
         return wrapped_act
-
-policy = Policy()
-print(1)
