@@ -148,6 +148,9 @@ class SmartsLaneChangingModel(LaneChangingModel):
         slow_down_after:
             Target speed during the hold_period will be scaled by this value.
             Must be non-negative.  default: 1.0.
+        multi_lane_cutin:
+            If True, this vehicle will consider changing across multiple lanes at once in order
+            to cutin upon an agent vehicle when there's an opportunity.  default: False.
     """
 
     def __init__(
@@ -157,6 +160,7 @@ class SmartsLaneChangingModel(LaneChangingModel):
         dogmatic: bool = True,
         hold_period: float = 3.0,
         slow_down_after: float = 1.0,
+        multi_lane_cutin: bool = False,
     ):
         super().__init__(
             cutin_prob=cutin_prob,
@@ -164,6 +168,7 @@ class SmartsLaneChangingModel(LaneChangingModel):
             dogmatic=dogmatic,
             hold_period=hold_period,
             slow_down_after=slow_down_after,
+            multi_lane_cutin=multi_lane_cutin,
         )
 
 

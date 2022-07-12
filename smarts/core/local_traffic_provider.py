@@ -457,10 +457,11 @@ class _TrafficActor:
                 "illegal probability {self._cutin_prob} for 'cutin_prob' lane-changing parameter will be ignored"
             )
             self._cutin_prob = 0.0
-        self._dogmatic = bool(self._vtype.get("lcDogmatic", False))
+        self._dogmatic = self._vtype.get("lcDogmatic", "False") == "True"
         self._cutin_slow_down = float(self._vtype.get("lcSlowDownAfter", 1.0))
         if self._cutin_slow_down < 0:
             self._cutin_slow_down = 0
+        self._multi_lane_cutin = self._vtype.get("lcMultiLaneCutin", "False") == "True"
 
         self._max_angular_velocity = 26  # arbitrary, based on limited testing
         self._prev_angular_err = None
@@ -940,14 +941,14 @@ class _TrafficActor:
         return cross_time, True
 
     def _should_cutin(self, lw: _LaneWindow) -> bool:
-        if lw.lane.index == self._lane.index:
+        target_ind = lw.lane.index
+        if target_ind == self._lane.index:
+            return False
+        if not self._multi_lane_cutin and abs(target_ind - self._lane.index) > 1:
             return False
         min_gap = self._target_cutin_gap / self._aggressiveness
         max_gap = self._target_cutin_gap + 2
-        if (
-            min_gap < lw.agent_gap < max_gap
-            and self._crossing_time_into(lw.lane.index)[1]
-        ):
+        if min_gap < lw.agent_gap < max_gap and self._crossing_time_into(target_ind)[1]:
             return random.random() < self._cutin_prob
         return False
 
