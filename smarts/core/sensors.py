@@ -1049,7 +1049,7 @@ class RoadWaypointsSensor(Sensor):
         else:
             start_offset = lane.length + overflow_offset
 
-        incoming_lanes = lane.incoming_lanes  # XXX: was "getIncoming(onlyDirect=True)"
+        incoming_lanes = lane.incoming_lanes
         if start_offset < 0 and len(incoming_lanes) > 0:
             paths = []
             for lane in incoming_lanes:
