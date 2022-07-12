@@ -620,6 +620,8 @@ class SumoRoadNetwork(RoadMap):
                 self._sumo_edge.getFromNode(),
                 self._sumo_edge.getToNode(),
             )
+            # XXX: not that in most junctions from_node==to_node, so the following will
+            # include ALL internal edges within a junction (even those crossing this one).
             return [
                 self._map.road_by_id(edge.getID())
                 for edge in from_node.getOutgoing()
