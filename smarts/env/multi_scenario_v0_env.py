@@ -55,12 +55,12 @@ def multi_scenario_v0_env(
         A `smarts.core.sensors.Observation` is returned as observation.
 
     Action space for each agent:
-        A `smarts.core.controllers.ActionSpaceType.TargetPose`, which is a 
+        A `smarts.core.controllers.ActionSpaceType.TargetPose`, which is a
         sequence of [x-coordinate, y-coordinate, heading, and time-delta].
 
         Type: gym.spaces.Box(
-                low=np.array([-1e10, -1e10, -π, 0]), 
-                high=np.array([1e10, 1e10, π, 1e10]), 
+                low=np.array([-1e10, -1e10, -π, 0]),
+                high=np.array([1e10, 1e10, π, 1e10]),
                 dtype=np.float32
             )
 

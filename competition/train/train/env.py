@@ -4,7 +4,7 @@ import gym
 from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
 from train.action import Action as DiscreteAction
 from train.info import Info
-from train.observation import Concatenate, FilterObs
+from train.observation import Concatenate, FilterObs, SaveObs
 from train.reward import Reward
 
 from smarts.core.controllers import ActionSpaceType
@@ -24,8 +24,10 @@ def wrappers(config: Dict[str, Any]):
         Info,
         # Used to shape rewards.
         Reward,
+        # Used to save selected observation parameters for use in DiscreteAction wrapper.
+        SaveObs,
         # Used to discretize action space for easier RL training.
-        lambda env: DiscreteAction(env=env, space=config["action_wrapper"]),
+        DiscreteAction,
         # Used to filter only the selected observation parameters.
         FilterObs,
         # Used to stack sequential observations to include temporal information. 

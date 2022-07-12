@@ -1,8 +1,39 @@
 from typing import Any, Dict
-
+import copy
 import gym
 import numpy as np
 from train.util import plotter3d
+
+
+class SaveObs(gym.ObservationWrapper):
+    """Saves several selected observation parameters."""
+
+    def __init__(self, env: gym.Env):
+        """
+        Args:
+            env (gym.Env): Environment to be wrapped.
+        """
+        super().__init__(env)
+        self.saved_obs: Dict[str, Dict[str, Any]]
+
+    def observation(self, obs: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+        """Adapts the wrapped environment's observation.
+
+        Note: Users should not directly call this method.
+        """
+
+        obs_data = {}
+        for agent_id, agent_obs in obs.items():
+            obs_data.update(
+                {
+                    agent_id: {
+                        "pos": copy.deepcopy(agent_obs.ego.pos),
+                        "heading": copy.deepcopy(agent_obs.ego.heading),
+                    }
+                }
+            )
+        self.saved_obs = obs_data
+        return obs
 
 
 class FilterObs(gym.ObservationWrapper):
@@ -43,9 +74,7 @@ class FilterObs(gym.ObservationWrapper):
             }
         )
 
-    def observation(
-        self, obs: Dict[str, Dict[str, Any]]
-    ) -> Dict[str, Dict[str, Any]]:
+    def observation(self, obs: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
         """Adapts the wrapped environment's observation.
 
         Note: Users should not directly call this method.
