@@ -83,7 +83,11 @@ class Policy(BasePolicy):
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
             # action, _ = self.model.predict(np.array(agent_obs['rgb'].reshape(3, 256, 256)))
-            action = self.model.predict(np.array([agent_obs['rgb']]))[0]
+            # action = self.model.predict(np.array([agent_obs['rgb']]))[0]
+            agent_x = agent_obs.position[0]
+            agent_y = agent_obs.position[1]
+            agent_heading = agent_obs.heading
+            action = self.model.predict(np.array([agent_x, agent_y, agent_heading]))
             wrapped_act.update({agent_id: action})
         return wrapped_act
 
