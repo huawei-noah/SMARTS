@@ -17,7 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
+
 from typing import Optional
 
 import psutil
@@ -32,7 +33,7 @@ class LocalAgentBuffer(AgentBuffer):
 
     def __init__(self):
         num_cpus = max(2, psutil.cpu_count(logical=False) or (psutil.cpu_count() - 1))
-        self._act_executor = ThreadPoolExecutor(num_cpus)
+        self._act_executor = ProcessPoolExecutor(num_cpus)
 
     def destroy(self):
         self._act_executor.shutdown(wait=True)
