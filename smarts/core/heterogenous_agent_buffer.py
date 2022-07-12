@@ -31,7 +31,7 @@ class HeterogenousAgentBuffer(AgentBuffer):
             from smarts.core.remote_agent_buffer import RemoteAgentBuffer
 
             self._agent_buffer = RemoteAgentBuffer(
-                zoo_manager_addrs=kwargs["zoo_manager_addrs"]
+                zoo_manager_addrs=kwargs.get("zoo_manager_addrs")
             )
 
         except (ImportError, ModuleNotFoundError):
