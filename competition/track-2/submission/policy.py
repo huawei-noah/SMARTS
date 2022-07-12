@@ -66,7 +66,7 @@ class Policy(BasePolicy):
 
 
         self.model = CQL.from_json(Path(__file__).absolute().parents[0]/'model/params.json', use_gpu=True)
-        self.model.load_model(Path(__file__).absolute().parents[0]/'model/model_274.pt')
+        self.model.load_model(Path(__file__).absolute().parents[0]/'model/model.pt')
 
         # model_path = Path(__file__).absolute().parents[0] / "best_model.zip"
         # self.model = sb3lib.PPO.load(model_path)
