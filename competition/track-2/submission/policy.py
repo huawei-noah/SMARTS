@@ -84,6 +84,7 @@ class Policy(BasePolicy):
         for agent_id, agent_obs in obs.items():
             # action, _ = self.model.predict(np.array(agent_obs['rgb'].reshape(3, 256, 256)))
             action = self.model.predict(np.array([agent_obs['rgb']]))[0]
+            # new action: TargetPose: Sequence[float, float, float, float] [x,y,heading, delta time]
             new_action = [action[0] + agent_obs['pos'][0], action[1] + agent_obs['pos'][1], action[2] + agent_obs['heading'], 0.1]
             wrapped_act.update({agent_id: new_action})
         return wrapped_act
