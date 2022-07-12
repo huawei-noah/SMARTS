@@ -92,8 +92,12 @@ class _GLBData:
 class WaymoMap(RoadMapWithCaches):
     """A map associated with a Waymo dataset"""
 
+    # Default values to fall back to
     DEFAULT_LANE_SPEED = 16.67  # in m/s
     DEFAULT_LANE_WIDTH = 4
+
+    # Avg z-coord difference between intersecting lanes
+    OVERPASS_THRESHOLD = 5.0
 
     # For caching tfrecord data
     _tfrecord_path: Optional[str] = None
@@ -112,6 +116,7 @@ class WaymoMap(RoadMapWithCaches):
         self._default_lane_width = WaymoMap.DEFAULT_LANE_WIDTH
         self._lane_rtree = None
         self._no_composites = False  # for debugging purposes
+        self.has_overpasses = False
         self._load_from_scenario(waymo_scenario)
 
         self._waypoints_cache = WaymoMap._WaypointsCache()
@@ -305,17 +310,28 @@ class WaymoMap(RoadMapWithCaches):
                         intersections[cand_id].add(feat_id)
                         break
 
-        # Remove "fake" incoming/outgoing lanes that aren't true intersections
+        # Remove lanes that aren't true intersections
         mappings_to_remove = []
         for feat_id, intersect_ids in intersections.items():
-            lane_pts = self._polyline_cache[feat_id][0]
+            lane_pts = np.array(self._polyline_cache[feat_id][0])
+            z_avg = np.average(lane_pts[:, 2])
             for intersect_id in intersect_ids:
-                intersect_lane_pts = self._polyline_cache[feat_id][0]
-                if tuple(lane_pts[0]) == tuple(intersect_lane_pts[-1]) or tuple(
-                    lane_pts[-1]
-                ) == tuple(intersect_lane_pts[0]):
+                intersect_lane_pts = np.array(self._polyline_cache[intersect_id][0])
+                intlane_z_avg = np.average(intersect_lane_pts[:, 2])
+
+                # Remove "overpasses" that have large z-coordinate differences
+                if abs(z_avg - intlane_z_avg) > WaymoMap.OVERPASS_THRESHOLD:
+                    self.has_overpasses = True
+                    mappings_to_remove.append((feat_id, intersect_id))
+                    continue  # already removing this pair, so skip next check
+
+                # Remove "fake" incoming/outgoing lanes that intersect by their end points
+                if np.all(np.equal(lane_pts[0], intersect_lane_pts[-1])) or np.all(
+                    np.equal(lane_pts[-1], intersect_lane_pts[0])
+                ):
                     mappings_to_remove.append((feat_id, intersect_id))
 
+        # Can't do this while iterating over the sets, so do as separate step
         for id1, id2 in mappings_to_remove:
             intersections[id1].discard(id2)
             intersections[id2].discard(id1)
@@ -1252,7 +1268,7 @@ class WaymoMap(RoadMapWithCaches):
                 if self._road_type == -1:
                     self._road_type = lane._type
                 elif lane._type != self._road_type:
-                    self._road_type = LaneCenter.LanesType.TYPE_UNDEFINED
+                    self._road_type = LaneCenter.LaneType.TYPE_UNDEFINED
                 if lane.is_drivable:
                     self._drivable = True
                 if lane.is_composite:
