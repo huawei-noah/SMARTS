@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from concurrent import futures
+
 from smarts.core.buffer_agent import BufferAgent
 from smarts.zoo.agent_spec import AgentSpec
 
