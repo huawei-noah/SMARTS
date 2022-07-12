@@ -27,8 +27,8 @@ class SaveObs(gym.ObservationWrapper):
             obs_data.update(
                 {
                     agent_id: {
-                        "pos": copy.deepcopy(agent_obs.ego.pos),
-                        "heading": copy.deepcopy(agent_obs.ego.heading),
+                        "pos": copy.deepcopy(agent_obs["ego"]["pos"]),
+                        "heading": copy.deepcopy(agent_obs["ego"]["heading"]),
                     }
                 }
             )
