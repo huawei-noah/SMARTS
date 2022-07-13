@@ -1,10 +1,6 @@
 from pathlib import Path
 from typing import Any, Dict
 
-# Environment variables (optional)
-IMG_METERS = 50  # Observation image area size in meters.
-IMG_PIXELS = 112  # Observation image size in pixels.
-
 
 class BasePolicy:
     def act(self, obs: Dict[str, Any]):

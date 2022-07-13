@@ -1,0 +1,3 @@
+validate: TRUE
+evaluate: TRUE
+eval_episodes: 2
