@@ -17,7 +17,7 @@ class SaveObs(gym.ObservationWrapper):
         self.saved_obs: Dict[str, Dict[str, Any]]
 
     def observation(self, obs: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
-        """Adapts the wrapped environment's observation.
+        """Saves the wrapped environment's observation.
 
         Note: Users should not directly call this method.
         """
@@ -33,6 +33,7 @@ class SaveObs(gym.ObservationWrapper):
                 }
             )
         self.saved_obs = obs_data
+
         return obs
 
 
