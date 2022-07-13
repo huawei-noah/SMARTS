@@ -4,7 +4,6 @@ smarts:
   img_meters: 50 # Observation image area size in meters.
   img_pixels: 112 # Observation image size in pixels.
   num_stack: 3 # Number of frames to stack as input to policy network.
-  action_space: "TargetPose"
   scenarios: 
     - "1_to_2lane_left_turn_c"
     - "1_to_2lane_left_turn_t"

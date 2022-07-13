@@ -20,7 +20,7 @@ def wrappers(config: Dict[str, Any]):
         # Used to format observation space such that it becomes gym-space compliant.
         FormatObs,
         # Used to format action space such that it becomes gym-space compliant.
-        lambda env: FormatAction(env=env, space=ActionSpaceType[config["action_space"]]),
+        lambda env: FormatAction(env=env, space=ActionSpaceType["TargetPose"]),
         Info,
         # Used to shape rewards.
         Reward,
