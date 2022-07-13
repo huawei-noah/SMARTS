@@ -3,7 +3,6 @@ import logging
 import os
 import subprocess
 import sys
-import yaml
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -257,19 +256,20 @@ if __name__ == "__main__":
     )
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
 
-    evaluation_config = resolve_config(load_config_yaml(Path(evaluation_dir)/"config.yaml"), _DEFAULT_EVALUATION_CONFIG)
-    submission_config = resolve_config(load_config_yaml(Path(submit_dir)/"config.yaml"), _DEFAULT_SUBMISSION_CONFIG)
-
-    unaccepted_keys = {*evaluation_config.keys()} - _EVALUATION_CONFIG_KEYS
-    assert len(unaccepted_keys) == 0, f"Unaccepted evaluation config keys: {unaccepted_keys}"
-
     import gym
+    import yaml
 
     from copy_data import CopyData, DataStore
     from metric import Metric
     from score import Score
 
     from policy import Policy, submitted_wrappers
+
+    evaluation_config = resolve_config(load_config_yaml(Path(evaluation_dir)/"config.yaml"), _DEFAULT_EVALUATION_CONFIG)
+    submission_config = resolve_config(load_config_yaml(Path(submit_dir)/"config.yaml"), _DEFAULT_SUBMISSION_CONFIG)
+
+    unaccepted_keys = {*evaluation_config.keys()} - _EVALUATION_CONFIG_KEYS
+    assert len(unaccepted_keys) == 0, f"Unaccepted evaluation config keys: {unaccepted_keys}"
 
     # Skip this if there is no evaluation
     if evaluation_config["evaluate"]:
