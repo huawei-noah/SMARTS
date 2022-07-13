@@ -1,4 +1,5 @@
 # Drive SMARTS Competition
+# See https://github.com/codalab/codalab-competitions/wiki/Organizer_Codalab-competition-YAML-definition-language
 ---
 admin_names: ma-huawei, adai
 title: Drive SMARTS Competition 2
@@ -17,12 +18,25 @@ hide_chart: True
 
 # Phases
 phases:
+    0:
+        phasenumber: 0
+        description: Validate submissions
+        label: "Test Submission"
+        start_date: 2022-07-01
+        max_submissions: 1000
+        is_scoring_only: False
+        scoring_program: scoring_program.zip
+        reference_data: validation_evaluation.zip
+        color: grey
+        execution_time_limit: 21600
+        max_submission_size: 500
+        phase_never_ends: True
     1:
         phasenumber: 1
         description: Online learning
         label: "Track 1"
         start_date: 2022-07-01
-        max_submissions: 1000
+        max_submissions: 2
         is_scoring_only: False
         scoring_program: scoring_program.zip
         reference_data: track1_evaluation.zip
@@ -35,7 +49,7 @@ phases:
         description: Offline learning
         label: "Track 2"
         start_date: 2022-09-01
-        max_submissions: 1000
+        max_submissions: 2
         is_scoring_only: False
         scoring_program: scoring_program.zip
         reference_data: track2_evaluation.zip
