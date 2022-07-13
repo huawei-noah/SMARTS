@@ -57,10 +57,10 @@ def _discrete() -> Tuple[Callable[[Dict[str, int]], Dict[str, np.ndarray]], gym.
             new_heading = saved_obs[agent_id]["heading"] + action_map[agent_action][1]
             new_heading = (new_heading + np.pi) % (2 * np.pi) - np.pi
             magnitude = action_map[agent_action][0]
+            cur_coord = saved_obs[agent_id]["pos"][0] + 1j*saved_obs[agent_id]["pos"][1]  
             # Note: On the map, angle is zero at positive y axis, and increases anti-clockwise.
             #       In np.exp(), angle is zero at positive x axis, and increases anti-clockwise.
             #       Hence, numpy_angle = map_angle + π/2
-            cur_coord = saved_obs[agent_id]["pos"][0] + 1j*saved_obs[agent_id]["pos"][1]          
             new_pos = cur_coord + magnitude * np.exp(
                 1j * (new_heading + np.pi / 2)
             )

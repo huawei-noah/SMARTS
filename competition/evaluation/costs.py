@@ -52,8 +52,8 @@ def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
     def func(obs: Observation) -> Dict[str, float]:
         nonlocal ave, step, regexp_jn, obstacle_dist_th, obstacle_angle_th, w_dist
 
-        # Ego's position and heading with respect to the map's axes.
-        # Note: All angles returned by smarts is with respect to the map's axes.
+        # Ego's position and heading with respect to the map's coordinate system.
+        # Note: All angles returned by smarts is with respect to the map's coordinate system.
         #       On the map, angle is zero at positive y axis, and increases anti-clockwise.
         ego = obs.ego_vehicle_state
         ego_heading = (ego.heading + np.pi) % (2 * np.pi) - np.pi

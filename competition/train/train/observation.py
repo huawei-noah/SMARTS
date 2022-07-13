@@ -97,8 +97,8 @@ class FilterObs(gym.ObservationWrapper):
                 dtype=np.float32,
             )
 
-            # Ego's heading with respect to the map's axes.
-            # Note: All angles returned by smarts is with respect to the map's axes.
+            # Ego's heading with respect to the map's coordinate system.
+            # Note: All angles returned by smarts is with respect to the map's coordinate system.
             #       On the map, angle is zero at positive y axis, and increases anti-clockwise.
             ego_heading = (agent_obs["ego"]["heading"] + np.pi) % (2 * np.pi) - np.pi
             ego_pos = agent_obs["ego"]["pos"]
