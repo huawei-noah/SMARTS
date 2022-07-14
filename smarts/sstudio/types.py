@@ -811,8 +811,8 @@ class Bubble:
     is over.
     """
     follow_vehicle_id: Optional[str] = None
-    """Vehicle ID of agent we want to pin to. Doing so makes this a "travelling bubble"
-    which means it moves to follow the `follow_actor_id`'s vehicle. Offset is from the
+    """Vehicle ID of a vehicle we want to pin to. Doing so makes this a "travelling bubble"
+    which means it moves to follow the `follow_vehicle_id`'s vehicle. Offset is from the
     vehicle's center position to the bubble's center position.
     """
 
