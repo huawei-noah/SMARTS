@@ -33,7 +33,7 @@ class Action(gym.ActionWrapper):
         return wrapped_act
 
 
-def _discrete() -> Tuple[Callable[[Dict[str, int]], Dict[str, np.ndarray]], gym.Space]:
+def _discrete() -> Tuple[Callable[[Dict[str, int], Dict[str,Any]], Dict[str, np.ndarray]], gym.Space]:
     space = gym.spaces.Discrete(n=4)
 
     time_delta = 0.1  # Time, in seconds, between steps.

@@ -9,7 +9,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
 from smarts.env.wrappers.single_agent import SingleAgent
-from smarts.sstudio import build_scenario
+from smarts import sstudio
 from smarts.zoo.agent_spec import AgentSpec
 
 logging.basicConfig(level=logging.INFO)
@@ -81,7 +81,7 @@ if __name__ == "__main__":
             )
         ]
 
-    build_scenario(args.scenarios)
+    sstudio.build_scenario(scenario=args.scenarios)
 
     main(
         scenarios=args.scenarios,

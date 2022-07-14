@@ -6,7 +6,7 @@ from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
-from smarts.sstudio import build_scenario
+from smarts import sstudio
 from smarts.zoo.agent_spec import AgentSpec
 
 N_AGENTS = 4
@@ -72,7 +72,7 @@ if __name__ == "__main__":
             )
         ]
 
-    build_scenario(args.scenarios)
+    sstudio.build_scenario(scenario=args.scenarios)
 
     main(
         scenarios=args.scenarios,

@@ -37,7 +37,7 @@ from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.format_action import FormatAction
 from smarts.env.wrappers.format_obs import FormatObs
 from smarts.env.wrappers.single_agent import SingleAgent
-from smarts.sstudio import build_scenario
+from smarts import sstudio
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -108,7 +108,7 @@ def intersection_v0_env(
             / "1_to_1lane_left_turn_c"
         )
     ]
-    build_scenario(scenario)
+    sstudio.build_scenario(scenario=scenario)
 
     done_criteria = DoneCriteria(
         collision=True,

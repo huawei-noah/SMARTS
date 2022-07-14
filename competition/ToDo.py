@@ -6,7 +6,7 @@
 # 3. Issue 1453 - Envision display : Incomplete JSONError lexical Error invalid char in json text
 
 # ToDo
-# 1. Action space changed to Targetpose --> Now debugging
+# 1. Steering and YawRate are None when using TargetPose action space. Cost function needs to be modified.
 # 2. Merge deterministic scenario builds - PR1492.
 # 3. Replace Cut-in scenario from Patrick.
 # 4. Remove Overtake detector according to Soheil's suggestion.

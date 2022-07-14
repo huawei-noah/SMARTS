@@ -35,7 +35,7 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.hiway_env import HiWayEnv
-from smarts.sstudio import build_scenario
+from smarts import sstudio
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -105,7 +105,7 @@ def multi_scenario_v0_env(
     """
 
     env_specs = get_env_specs(scenario)
-    build_scenario([env_specs["scenario"]])
+    sstudio.build_scenario(scenario=[env_specs["scenario"]])
     done_criteria = env_specs["done_criteria"]
     max_episode_steps = 800
     neighbor_radius = 50

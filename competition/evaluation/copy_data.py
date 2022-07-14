@@ -29,7 +29,7 @@ class CopyData(gym.Wrapper):
     def __init__(self, env: gym.Env, datastore: DataStore):
         super(CopyData, self).__init__(env)
         self._datastore = datastore
-        self._datastore.agent_names = env.agent_specs.keys()
+        self._datastore.agent_names = list(env.agent_specs.keys())
 
     def step(
         self, action: Dict[str, Any]
