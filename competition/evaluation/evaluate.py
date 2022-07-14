@@ -158,18 +158,16 @@ def to_codalab_scores_string(self) -> str:
 
 
 def resolve_codalab_dirs(
-    root_path: str,
-    input_dir: Optional[str] = None,
-    output_dir: Optional[str] = None,
-    local: bool = False,
+    root_path: str, input_dir: str = None, output_dir: str = None, local: bool = False,
 ) -> Tuple[str, str, str]:
     """Returns directories needed for the completion of the evaluation submission.
 
     Args:
-        root_path (str): The path to this file.
+        root_path (str): The path to the calling file.
         input_dir (str): The path containing the "res" and "ref" directories provided by
             CodaLab.
-        ouptut_dir (str): The path to output the scores.txt file.
+        output_dir (str): The path to output the scores.txt file.
+        local (bool): If local directories should be used.
 
     Returns:
         Tuple[str, str, str]: The submission, evaluation-scenarios, and the scores directory,
@@ -235,7 +233,7 @@ if __name__ == "__main__":
             "The path to the directory containing the reference data and user "
             "submission data."
         ),
-        default=None,
+        required=True,
         type=str,
     )
     parser.add_argument(
@@ -244,7 +242,7 @@ if __name__ == "__main__":
             "Path to the directory where the submission's scores.txt file will be "
             "written to."
         ),
-        default=None,
+        required=True,
         type=str,
     )
     parser.add_argument(
