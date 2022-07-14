@@ -359,7 +359,7 @@ class AgentManager:
         """Remove a subscription to social agents."""
         del self._social_agent_observation_callbacks[id]
 
-    def reserve_social_agent_action(self, agent_id, action):
+    def reserve_social_agent_action(self, agent_id: str, action):
         """Override a current social agent action."""
         self._reserved_social_agent_actions[agent_id] = action
 
