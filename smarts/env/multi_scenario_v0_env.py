@@ -23,6 +23,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import gym
 
+from smarts import sstudio
 from smarts.core.agent_interface import (
     OGM,
     RGB,
@@ -35,7 +36,6 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.hiway_env import HiWayEnv
-from smarts import sstudio
 from smarts.zoo.agent_spec import AgentSpec
 
 

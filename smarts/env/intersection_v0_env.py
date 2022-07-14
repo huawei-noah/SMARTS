@@ -23,6 +23,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import gym
 
+from smarts import sstudio
 from smarts.core.agent_interface import (
     OGM,
     RGB,
@@ -37,7 +38,6 @@ from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.format_action import FormatAction
 from smarts.env.wrappers.format_obs import FormatObs
 from smarts.env.wrappers.single_agent import SingleAgent
-from smarts import sstudio
 from smarts.zoo.agent_spec import AgentSpec
 
 

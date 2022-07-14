@@ -4,12 +4,12 @@ import pathlib
 import gym
 
 from examples.argument_parser import default_argument_parser
+from smarts import sstudio
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
 from smarts.env.wrappers.single_agent import SingleAgent
-from smarts import sstudio
 from smarts.zoo.agent_spec import AgentSpec
 
 logging.basicConfig(level=logging.INFO)

@@ -28,12 +28,14 @@ class Action(gym.ActionWrapper):
 
         Note: Users should not directly call this method.
         """
-        wrapped_act = self._wrapper(action=action, saved_obs=self.saved_obs)
+        wrapped_act = self._wrapper(action, self.saved_obs)
 
         return wrapped_act
 
 
-def _discrete() -> Tuple[Callable[[Dict[str, int], Dict[str,Any]], Dict[str, np.ndarray]], gym.Space]:
+def _discrete() -> Tuple[
+    Callable[[Dict[str, int], Dict[str, Any]], Dict[str, np.ndarray]], gym.Space
+]:
     space = gym.spaces.Discrete(n=4)
 
     time_delta = 0.1  # Time, in seconds, between steps.
