@@ -34,10 +34,10 @@ future==0.18.2
 gast==0.4.0
 google==3.0.0
 google-api-core==2.8.2
-google-auth==2.9.0
+google-auth==2.9.1
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
-googleapis-common-protos==1.56.3
+googleapis-common-protos==1.56.4
 gpustat==0.6.0
 grpcio==1.47.0
 gym==0.19.0
@@ -135,5 +135,5 @@ Werkzeug==2.1.2
 wrapt==1.14.1
 yarl==1.7.2
 yattag==1.14.0
-zipp==3.8.0
+zipp==3.8.1
 zope.interface==5.4.0
