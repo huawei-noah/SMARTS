@@ -380,7 +380,7 @@ class AgentManager:
                 )
             )
         for agent_id, remote_agent in self._remote_social_agents.items():
-            if self._remote_social_agents_action.get(agent_id) != None:
+            if self._remote_social_agents_action.get(agent_id) is not None:
                 continue
             obs = observations[agent_id]
             self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
