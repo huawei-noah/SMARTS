@@ -29,7 +29,7 @@ def build_single_scenario(
     clean: bool,
     allow_offset_map: bool,
     scenario: str,
-    seed: Optional[int],
+    seed: Optional[int] = None,
     log: Optional[Callable[[Any], None]] = None,
 ):
     """Build a scenario."""
