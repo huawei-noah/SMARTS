@@ -158,7 +158,7 @@ def to_codalab_scores_string(self) -> str:
 
 
 def resolve_codalab_dirs(
-    root_path: str, input_dir: str = None, output_dir: str = None, local: bool = False,
+    root_path: str, input_dir: str, output_dir: str, local: bool = False,
 ) -> Tuple[str, str, str]:
     """Returns directories needed for the completion of the evaluation submission.
 
