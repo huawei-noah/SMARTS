@@ -21,96 +21,55 @@
 import random
 from itertools import combinations
 from pathlib import Path
+from numpy import random
+from pandas import cut
 
 from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import (
-    Flow,
-    LaneChangingModel,
-    Mission,
-    Route,
-    Scenario,
-    Traffic,
-    TrafficActor,
-)
+from smarts.sstudio.types import Distribution, Flow, Mission, Route, Scenario, SmartsLaneChangingModel, Traffic, TrafficActor
 
 normal = TrafficActor(
     name="car",
-    lane_changing_model=LaneChangingModel(
-        pushy=1,
-        impatience=1,
-        cooperative=0.1,
-        speed_Gain=1,
-    ),
+    sigma=1,
+    speed=Distribution(sigma=0.3,mean=1.5),
+    min_gap=Distribution(sigma=0, mean=1),
+    lane_changing_model=SmartsLaneChangingModel(
+        cutin_prob=1,
+        assertive=10,
+        dogmatic=True,
+    )
 )
-
-# See SUMO doc
-# Lane changing model
-# https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models
-# Junction model
-# https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#junction_model_parameters
-
-# cooperative = TrafficActor(
-#     name="cooperative",
-#     speed=Distribution(sigma=0.3, mean=1.0),
-#     lane_changing_model=LaneChangingModel(
-#         pushy=0.1,
-#         impatience=0.1,
-#         cooperative=0.9,
-#         speed_Gain=0.8,
-#     ),
-#     junction_model=JunctionModel(
-#         impatience=0.1,
-#     ),
-# )
-# aggressive = TrafficActor(
-#     name="aggressive",
-#     speed=Distribution(sigma=0.3, mean=1.0),
-#     lane_changing_model=LaneChangingModel(
-#         pushy=0.8,
-#         impatience=1,
-#         cooperative=0.1,
-#         speed_Gain=2.0,
-#     ),
-#     junction_model=JunctionModel(
-#         impatience=0.6,
-#     ),
-# )
 
 # flow_name = (start_lane, end_lane,)
 route_opt = [
     (0, 0),
-    (0, 1),
-    (0, 2),
-    (1, 0),
     (1, 1),
-    (1, 2),
-    (2, 0),
-    (2, 1),
     (2, 2),
 ]
 
+# Traffic combinations = 3C2 + 3C3 = 3 + 1 = 4
+# Repeated traffic combinations = 4 * 100 = 400
 min_flows = 3
-max_flows = 7
+max_flows = 3
 route_comb = [
     com
     for elems in range(min_flows, max_flows + 1)
     for com in combinations(route_opt, elems)
-]
+]*100
 
 traffic = {}
 for name, routes in enumerate(route_comb):
     traffic[str(name)] = Traffic(
+        engine="SMARTS",
         flows=[
             Flow(
                 route=Route(
-                    begin=("E1", r[0], 0),
-                    # via=("E0"),
-                    end=("E2", r[1], "max"),
+                    begin=("gneE3", r[0], 0),
+                    end=("gneE3", r[1], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=60 * random.uniform(10, 20),
+                rate=50 * random.uniform(15, 25),
                 # Random flow start time, between x and y seconds.
-                begin=random.uniform(0, 5),
+                begin=random.exponential(1.8),
                 # For an episode with maximum_episode_steps=3000 and step
                 # time=0.1s, maximum episode time=300s. Hence, traffic set to
                 # end at 900s, which is greater than maximum episode time of
@@ -123,10 +82,12 @@ for name, routes in enumerate(route_comb):
         ]
     )
 
+
+route = Route(begin=("gneE3", 0, 10), end=("gneE3", 0, "max"))
 ego_missions = [
     Mission(
-        Route(begin=("E1", 1, 10), end=("E2", 1, "max")),
-        start_time=14,
+        route=route,
+        start_time=10,  # Delayed start, to ensure road has prior traffic.
     )
 ]
 
