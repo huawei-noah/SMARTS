@@ -408,7 +408,7 @@ def _std_ego(
         "pos": val.position.astype(np.float64),
         "speed": np.float32(val.speed),
         "steering": np.float32(val.steering),
-        "yaw_rate": np.float32(val.yaw_rate),
+        "yaw_rate": np.float32(val.yaw_rate) if val.yaw_rate else np.float32(0),
     }
 
     if accelerometer:
