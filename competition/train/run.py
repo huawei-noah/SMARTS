@@ -84,11 +84,6 @@ def run(
 
     if config["mode"] == "train":
         print("\nStart training.\n")
-        checkpoint_callback = CheckpointCallback(
-            save_freq=config["checkpoint_freq"],
-            save_path=config["logdir"] / "checkpoint",
-            name_prefix=config["alg"],
-        )
         scenarios_iter = cycle(config["scenarios"])
         model = getattr(sb3lib, config["alg"])(
             env=envs_train[next(scenarios_iter)],
@@ -96,11 +91,16 @@ def run(
             tensorboard_log=config["logdir"] / "tensorboard",
             **network.combined_extractor(config),
         )
-        for _ in range(config["epochs"]):
+        for index in range(config["epochs"]):
             scen = next(scenarios_iter)
             env_train = envs_train[scen]
             env_eval = envs_eval[scen]
             print(f"\nTraining on {scen}.\n")
+            checkpoint_callback = CheckpointCallback(
+                save_freq=config["checkpoint_freq"],
+                save_path=config["logdir"] / "checkpoint",
+                name_prefix=f"{config['alg']}_{index}",
+            )
             eval_callback = EvalCallback(
                 eval_env=env_eval,
                 n_eval_episodes=config["eval_eps"],
