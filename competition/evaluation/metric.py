@@ -1,11 +1,10 @@
 from dataclasses import asdict, dataclass
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Union
 from enum import Enum
 import operator
 
 import numpy as np
 from costs import COST_FUNCS, Costs
-from overtake import Overtake
 
 from smarts.core.sensors import Observation
 
@@ -30,9 +29,6 @@ class Metric:
         self._completion: Dict[str, _Completion]
         """ A dictionary storing the completion state of each agent.
         """
-        self._overtake: Dict[str, Optional[Overtake]]
-        """An overtake detector, used only in overtake scenarios.
-        """
         self._reinit()
 
         self._counts = Counts()
@@ -53,10 +49,6 @@ class Metric:
         self._completion = {
             agent_name: _Completion.Crashed for agent_name in self._agent_names
         }
-        self._overtake = {
-            agent_name: Overtake() if "overtake" in self._env_name else None
-            for agent_name in self._agent_names
-        }
 
     def store(self, infos: Dict[str, Any], dones: Dict[str, bool]):
         # Only count steps in which an ego agent was present.
@@ -74,25 +66,11 @@ class Metric:
                 for cost_name, cost_val in res.items():
                     self._cost_per_episode[agent_name][cost_name] += cost_val
 
-            # Compute optional metrics.
-            if self._overtake[agent_name]:
-                self._overtake[agent_name](agent_obs)
-
             # If done, categorize agent's completion state.
             if agent_done:
                 self._completion[agent_name] = _classify(obs=agent_obs)
 
         if dones["__all__"] == True:
-            # In overtake scenario, if goal was achieved without overtaking, decrement the
-            # agent's completion from `Goal` to `Partial`.
-            for agent_name, ovrtk in self._overtake.items():
-                if (
-                    ovrtk is not None
-                    and not ovrtk.check()
-                    and self._completion[agent_name] == _Completion.Goal
-                ):
-                    self._completion[agent_name] = _Completion.Partial
-
             # Update counts.
             self._counts.episodes += 1
             num_crashes = operator.countOf(
