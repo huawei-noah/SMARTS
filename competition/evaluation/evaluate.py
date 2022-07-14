@@ -4,15 +4,22 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, Tuple
-
+from typing import Any, Dict, Optional, Tuple
 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__file__)
 
 _SCORES_FILENAME = "scores.txt"
-_EVALUATION_CONFIG_KEYS = {"img_meters", "img_pixels", "validate", "evaluate", "eval_episodes", "seed", "scenarios"}
+_EVALUATION_CONFIG_KEYS = {
+    "img_meters",
+    "img_pixels",
+    "validate",
+    "evaluate",
+    "eval_episodes",
+    "seed",
+    "scenarios",
+}
 _DEFAULT_EVALUATION_CONFIG = dict(
     validate=True,
     evaluate=True,
@@ -27,20 +34,17 @@ _DEFAULT_EVALUATION_CONFIG = dict(
         # "3lane_cruise_single_agent",
         # "3lane_cut_in",
         # "3lane_overtake",
-    ]
+    ],
 )
-_SUBMISSION_CONFIG_KEYS = {"img_meters", "img_pixels",}
-_DEFAULT_SUBMISSION_CONFIG = dict(
-    img_meters=50,
-    img_pixels=112,
-)
+_SUBMISSION_CONFIG_KEYS = {
+    "img_meters",
+    "img_pixels",
+}
+_DEFAULT_SUBMISSION_CONFIG = dict(img_meters=50, img_pixels=112,)
 
 
 def make_env(
-    config: Dict[str, Any],
-    scenario: str,
-    datastore: "DataStore",
-    wrappers=[],
+    config: Dict[str, Any], scenario: str, datastore: "DataStore", wrappers=[],
 ):
     """Make environment.
 
@@ -120,8 +124,10 @@ def evaluate(evaluation_config, submission_config):
 
     return rank
 
+
 def try_policy_instantiation():
     Policy()
+
 
 def run(
     env, datastore: "DataStore", env_name: str, policy: "Policy", config: Dict[str, Any]
@@ -150,8 +156,12 @@ def to_codalab_scores_string(self) -> str:
         f"rules: {rank['rules']}\n"
     )
 
+
 def resolve_codalab_dirs(
-    root_path: str, input_dir: str = None, output_dir: str = None, local: bool = False
+    root_path: str,
+    input_dir: Optional[str] = None,
+    output_dir: Optional[str] = None,
+    local: bool = False,
 ) -> Tuple[str, str, str]:
     """Returns directories needed for the completion of the evaluation submission.
 
@@ -192,24 +202,30 @@ def resolve_codalab_dirs(
 
     return submission_dir, evaluation_dir, scores_dir
 
+
 def write_scores(scores, output_dir):
     if output_dir:
         with open(os.path.join(output_dir, _SCORES_FILENAME), "w") as output_file:
             output_file.write(scores)
 
-def load_config_yaml(path: Path) -> Dict[str, Any]:
+
+def load_config_yaml(path: Path) -> Optional[Dict[str, Any]]:
     task_config = None
     if path.exists():
         with open(path, "r") as task_file:
             task_config = yaml.safe_load(task_file)
     return task_config
 
-def resolve_config(base_config: Dict[str, Any], defaults: Dict[str, Any]) -> Dict[str, Any]:
+
+def resolve_config(
+    base_config: Dict[str, Any], defaults: Dict[str, Any]
+) -> Dict[str, Any]:
     # Use the default if None or empty.
     if not base_config:
         return defaults
     # Otherwise merge the two with the user config winning the tiebreaker
     return {**defaults, **base_config}
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="codalab-evaluation")
@@ -265,11 +281,18 @@ if __name__ == "__main__":
 
     from policy import Policy, submitted_wrappers
 
-    evaluation_config = resolve_config(load_config_yaml(Path(evaluation_dir)/"config.yaml"), _DEFAULT_EVALUATION_CONFIG)
-    submission_config = resolve_config(load_config_yaml(Path(submit_dir)/"config.yaml"), _DEFAULT_SUBMISSION_CONFIG)
+    evaluation_config = resolve_config(
+        load_config_yaml(Path(evaluation_dir) / "config.yaml"),
+        _DEFAULT_EVALUATION_CONFIG,
+    )
+    submission_config = resolve_config(
+        load_config_yaml(Path(submit_dir) / "config.yaml"), _DEFAULT_SUBMISSION_CONFIG
+    )
 
     unaccepted_keys = {*evaluation_config.keys()} - _EVALUATION_CONFIG_KEYS
-    assert len(unaccepted_keys) == 0, f"Unaccepted evaluation config keys: {unaccepted_keys}"
+    assert (
+        len(unaccepted_keys) == 0
+    ), f"Unaccepted evaluation config keys: {unaccepted_keys}"
 
     # Skip this if there is no evaluation
     if evaluation_config["evaluate"]:
