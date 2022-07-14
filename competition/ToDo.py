@@ -9,11 +9,8 @@
 # 1. Steering and YawRate are None when using TargetPose action space. Cost function needs to be modified.
 # 2. Merge deterministic scenario builds - PR1492.
 # 3. Replace Cut-in scenario from Patrick.
-# 4. Remove Overtake detector according to Soheil's suggestion.
-# 5. Change distance to obstacles according to Soheil's suggestion.
+# 4. Add secret scenarios to evaluation.
+# 5. Remove Overtake detector according to Soheil's suggestion.
+# 6. Change distance to obstacles according to Soheil's suggestion.
 
 # Minor
-# 1. Can both tracks run concurrently and how to do it in Codalab.
-# 2. How will TargetPose action space affect the scoring of steering rate.
-# 3. Codalab disk space, time, and resources.
-# 4. HTML rendering does not occur properly in Codalab competition description.
