@@ -71,6 +71,7 @@ from shapely.geometry import Polygon
 from trimesh.exchange import gltf
 
 from smarts.core.road_map import RoadMap, RoadMapWithCaches, Waypoint
+from smarts.core.route_cache import RouteWithCache
 from smarts.core.utils.geometry import generate_mesh_from_polygons
 from smarts.core.utils.key_wrapper import KeyWrapper
 from smarts.core.utils.math import (
@@ -833,6 +834,9 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             self._lane_to_right = None, True
             self._in_junction = None
 
+        def __hash__(self) -> int:
+            return hash(self.lane_id) + hash(self._map)
+
         @property
         def is_drivable(self) -> bool:
             return self._is_drivable
@@ -1194,6 +1198,9 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             self._parallel_roads = []
             self._total_lanes = total_lanes
 
+        def __hash__(self) -> int:
+            return hash(self.road_id) ^ hash(self._map)
+
         @property
         def road_id(self) -> str:
             return self._road_id
@@ -1422,13 +1429,13 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
                 return nl.road
         return None
 
-    class Route(RoadMapWithCaches.Route):
+    class Route(RouteWithCache):
         """Describes a route between two OpenDRIVE roads."""
 
         def __init__(self, road_map):
+            super().__init__(road_map)
             self._roads = []
             self._length = 0
-            self._map = road_map
 
         @property
         def roads(self) -> List[RoadMap.Road]:
@@ -1445,84 +1452,6 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
             return [list(road.shape(1.0).exterior.coords) for road in self.roads]
-
-        @lru_cache(maxsize=8)
-        def distance_between(self, start: Point, end: Point) -> Optional[float]:
-            radius = 30
-            for cand_start_lane, _ in self._map.nearest_lanes(
-                start, radius, include_junctions=False
-            ):
-                try:
-                    sind = self._roads.index(cand_start_lane.road)
-                    break
-                except ValueError:
-                    pass
-            else:
-                logging.warning("unable to find road on route near start point")
-                return None
-            start_road = cand_start_lane.road
-            for cand_end_lane, _ in self._map.nearest_lanes(
-                end, radius, include_junctions=False
-            ):
-                try:
-                    eind = self._roads.index(cand_end_lane.road)
-                    break
-                except ValueError:
-                    pass
-            else:
-                logging.warning("unable to find road on route near end point")
-                return None
-            end_road = cand_end_lane.road
-            d = 0
-            start_offset = cand_start_lane.offset_along_lane(start)
-            end_offset = cand_end_lane.offset_along_lane(end)
-            if start_road == end_road:
-                return end_offset - start_offset
-            negate = False
-            if sind > eind:
-                cand_start_lane = cand_end_lane
-                start_road, end_road = end_road, start_road
-                start_offset, end_offset = end_offset, start_offset
-                negate = True
-            for road in self._roads:
-                if d == 0 and road == start_road:
-                    d += cand_start_lane.length - start_offset
-                elif road == end_road:
-                    d += end_offset
-                    break
-                elif d > 0:
-                    d += road.length
-            return -d if negate else d
-
-        @lru_cache(maxsize=8)
-        def project_along(
-            self, start: Point, distance: float
-        ) -> Optional[Set[Tuple[RoadMapWithCaches.Lane, float]]]:
-            radius = 30.0
-            route_roads = set(self._roads)
-            for cand_start_lane, _ in self._map.nearest_lanes(
-                start, radius, include_junctions=False
-            ):
-                if cand_start_lane.road in route_roads:
-                    break
-            else:
-                logging.warning("unable to find road on route near start point")
-                return None
-            started = False
-            for road in self._roads:
-                if not started:
-                    if road != cand_start_lane.road:
-                        continue
-                    started = True
-                    lane_pt = cand_start_lane.to_lane_coord(start)
-                    start_offset = lane_pt.s
-                else:
-                    start_offset = 0
-                if distance > road.length - start_offset:
-                    distance -= road.length - start_offset
-                    continue
-                return {(lane, distance) for lane in road.lanes}
-            return set()
 
     @staticmethod
     def _shortest_route(start: RoadMap.Road, end: RoadMap.Road) -> List[RoadMap.Road]:
@@ -1611,6 +1540,9 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
 
     def empty_route(self) -> RoadMap.Route:
         return OpenDriveRoadNetwork.Route(self)
+
+    def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
+        return OpenDriveRoadNetwork.Route.from_road_ids(self, road_ids)
 
     class _WaypointsCache:
         def __init__(self):

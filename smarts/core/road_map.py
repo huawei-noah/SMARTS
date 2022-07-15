@@ -152,6 +152,10 @@ class RoadMap:
         """Generate an empty route."""
         raise NotImplementedError()
 
+    def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
+        """Generate a route containing the specified roads."""
+        raise NotImplementedError()
+
     def waypoint_paths(
         self,
         pose: Pose,
@@ -214,6 +218,15 @@ class RoadMap:
 
     class Lane(Surface):
         """Describes a lane surface."""
+
+        def __hash__(self) -> int:
+            """Derived classes must implement a suitable hash function
+            so that Lane objects may be used deterministicly in sets."""
+            raise NotImplementedError()
+
+        def __eq__(self, other) -> bool:
+            """Required for set usage; derived classes may override this."""
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
 
         @property
         def lane_id(self) -> str:
@@ -435,6 +448,15 @@ class RoadMap:
         """This is akin to a 'road segment' in real life.
         Many of these might correspond to a single named road in reality."""
 
+        def __hash__(self) -> int:
+            """Derived classes must implement a suitable hash function
+            so that Road objects may be used deterministicly in sets."""
+            raise NotImplementedError()
+
+        def __eq__(self, other) -> bool:
+            """Required for set usage; derived classes may override this."""
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
+
         @property
         def road_id(self) -> str:
             """The identifier for this road."""
@@ -529,9 +551,23 @@ class RoadMap:
     class Route:
         """Describes a route between two roads."""
 
+        def __hash__(self) -> int:
+            """Derived classes must implement a suitable hash function
+            so that Route objects may be used deterministicly in sets."""
+            raise NotImplementedError()
+
+        def __eq__(self, other) -> bool:
+            """Required for set usage; derived classes may override this."""
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
+
         @property
         def roads(self) -> List[RoadMap.Road]:
             """A possibly-unordered list of roads that this route covers"""
+            return []
+
+        @property
+        def road_ids(self) -> List[str]:
+            """A possibly-unordered list of road-ids that this route covers"""
             return []
 
         @property
@@ -544,16 +580,56 @@ class RoadMap:
             """A sequence of polygon vertices describing the shape of each road on the route"""
             return []
 
-        def distance_between(self, start: Point, end: Point) -> float:
+        @dataclass(frozen=True)
+        class RoutePoint:
+            """A Point within a Route."""
+
+            pt: Point
+            # Because Routes may contain sub-cycles, we may need to specify the
+            # index into the roads sequence where we currently expect to be
+            road_index: Optional[int] = None
+
+        @dataclass(frozen=True)
+        class RouteLane:
+            """A Lane within a Route."""
+
+            lane: RoadMap.Lane
+            # Because Routes may contain sub-cycles, we may need to specify the
+            # index into the roads sequence where we currently expect to be
+            road_index: Optional[int] = None
+
+            def __hash__(self) -> int:
+                return hash(self.lane) + hash(self.road_index)
+
+            def __eq__(self, other) -> bool:
+                return self.__class__ == other.__class__ and hash(self) == hash(other)
+
+        def distance_between(self, start: RoutePoint, end: RoutePoint) -> float:
             """Distance along route between two points."""
             raise NotImplementedError()
 
         def project_along(
-            self, start: Point, distance: float
+            self, start: RoutePoint, distance: float
         ) -> Set[Tuple[RoadMap.Lane, float]]:
             """Starting at point on the route, returns a set of possible
             locations (lane and offset pairs) further along the route that
             are distance away, not including lane changes."""
+            raise NotImplementedError()
+
+        def distance_from(
+            self, cur_lane: RouteLane, route_road: Optional[RoadMap.Road] = None
+        ) -> Optional[float]:
+            """Returns the distance along the route from the beginning of the current lane
+            to the beginning of the next occurrence of route_road, or if route_road is None,
+            then to the end of the route."""
+            raise NotImplementedError()
+
+        def next_junction(
+            self, cur_lane: RouteLane
+        ) -> Optional[Tuple[RoadMap.Lane, float]]:
+            """Returns a lane within the next junction along the route from beginning
+            of the current lane to the returned lane it connects with in the junction,
+            and the distance to it, or None if there aren't any."""
             raise NotImplementedError()
 
 

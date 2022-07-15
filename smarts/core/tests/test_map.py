@@ -29,6 +29,7 @@ from matplotlib import pyplot as plt
 
 from smarts.core.coordinates import Point
 from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
+from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.sstudio.types import MapSpec
@@ -126,10 +127,12 @@ def test_sumo_map(sumo_scenario):
     assert len(routes[0].roads) == 4
 
     route = routes[0]
-    db = route.distance_between(point, (198, 65.20, 0))
+    rpt = RoadMap.Route.RoutePoint(pt=point)
+    rendpt = RoadMap.Route.RoutePoint(pt=Point(198, 65.20))
+    db = route.distance_between(rpt, rendpt)
     assert db == 134.01
 
-    cands = route.project_along(point, 134.01)
+    cands = route.project_along(rpt, 134.01)
     for r2lane in r2.lanes:
         assert (r2lane, 53.6) in cands
 
@@ -370,8 +373,8 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert lane_ids_under_wps == ["52_0_R_-1", "58_0_R_-1", "56_0_R_-1"]
 
     # distance between points along route
-    start_point = Point(x=148.0, y=-28.0, z=0.0)
-    end_point = Point(x=116.0, y=-58.0, z=0.0)
+    start_point = RoadMap.Route.RoutePoint(pt=Point(148.0, -28.0))
+    end_point = RoadMap.Route.RoutePoint(pt=Point(116.0, -58.0))
     assert round(route_52_to_56[0].distance_between(start_point, end_point), 2) == 60.55
 
     # project along route
@@ -405,8 +408,8 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert lane_ids_under_wps == ["50_0_R_-1", "63_0_R_-1", "54_0_R_-1"]
 
     # distance between points along route
-    start_point = Point(x=176.0, y=-58.0, z=0.0)
-    end_point = Point(x=148.0, y=-121.0, z=0.0)
+    start_point = RoadMap.Route.RoutePoint(pt=Point(176.0, -58.0))
+    end_point = RoadMap.Route.RoutePoint(pt=Point(148.0, -121.0))
     assert round(route_50_to_54[0].distance_between(start_point, end_point), 2) == 81.55
 
     # project along route
@@ -639,8 +642,8 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
     assert {"1_0_R_-2", "1_1_R_-3"} in lane_ids_under_wps
 
     # distance between points along route
-    start_point = Point(x=17.56, y=-1.67, z=0.0)
-    end_point = Point(x=89.96, y=2.15, z=0.0)
+    start_point = RoadMap.Route.RoutePoint(pt=Point(17.56, -1.67))
+    end_point = RoadMap.Route.RoutePoint(pt=Point(89.96, 2.15))
     assert round(route[0].distance_between(start_point, end_point), 2) == 72.4
     # project along route
     candidates = route[0].project_along(start_point, 70)
@@ -896,8 +899,8 @@ def test_waymo_map():
     }
 
     # distance between points along route
-    start_point = Point(x=2778.00, y=-2639.5, z=0)
-    end_point = Point(2714.0, -2764.5, 0)
+    start_point = RoadMap.Route.RoutePoint(pt=Point(2778.00, -2639.5))
+    end_point = RoadMap.Route.RoutePoint(pt=Point(2714.0, -2764.5))
     assert (
         round(route_120_to_100[0].distance_between(start_point, end_point), 2) == 141.42
     )

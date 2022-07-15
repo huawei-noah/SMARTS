@@ -38,6 +38,7 @@ from smarts.sstudio.types import MapSpec
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
+from .route_cache import RouteWithCache
 from .utils.geometry import buffered_shape, generate_mesh_from_polygons
 from .utils.math import inplace_unwrap, radians_to_vec, vec_2d
 
@@ -264,6 +265,9 @@ class SumoRoadNetwork(RoadMap):
             self._road = road_map.road_by_id(sumo_lane.getEdge().getID())
             assert self._road
 
+        def __hash__(self) -> int:
+            return hash(self.lane_id) ^ hash(self._map)
+
         @property
         def lane_id(self) -> str:
             return self._lane_id
@@ -338,11 +342,15 @@ class SumoRoadNetwork(RoadMap):
 
         @cached_property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
-            # XXX: we restrict these to just direct connections, so
-            # we don't skip over the internal connection lanes coming into this one.
+            # XXX: we bias these to direct connections first, so we don't skip over
+            # the internal connection lanes coming into this one.  However, I've
+            # encountered bugs with this within "compound junctions", so we
+            # also allow for indirect if there are no direct.
+            incoming_lanes = self._sumo_lane.getIncoming(
+                onlyDirect=True
+            ) or self._sumo_lane.getIncoming(onlyDirect=False)
             return [
-                self._map.lane_by_id(incoming.getID())
-                for incoming in self._sumo_lane.getIncoming(onlyDirect=True)
+                self._map.lane_by_id(incoming.getID()) for incoming in incoming_lanes
             ]
 
         @cached_property
@@ -404,6 +412,18 @@ class SumoRoadNetwork(RoadMap):
                     foe_in_roads = set(il.road for il in foe.incoming_lanes)
                     if not bool(in_roads & foe_in_roads):
                         result.append(foe)
+
+                node = self.road._from_node
+                int_lanes = node.getInternal()
+                try:
+                    mi = int_lanes.index(self.lane_id)
+                    for fi, foe_id in enumerate(int_lanes):
+                        if node.areFoes(mi, fi):
+                            foe = self._map.lane_by_id(foe_id)
+                            result.append(foe)
+                except ValueError:
+                    pass
+
             return list(set(result))
 
         def waypoint_paths_for_pose(
@@ -569,9 +589,20 @@ class SumoRoadNetwork(RoadMap):
             self._road_id = road_id
             self._sumo_edge = sumo_edge
 
+        def __hash__(self) -> int:
+            return hash(self.road_id) + hash(self._map)
+
         @cached_property
         def is_junction(self) -> bool:
             return self._sumo_edge.isSpecial()
+
+        @property
+        def _to_node(self):
+            return self._sumo_edge.getToNode()
+
+        @property
+        def _from_node(self):
+            return self._sumo_edge.getFromNode()
 
         @cached_property
         def length(self) -> float:
@@ -837,7 +868,7 @@ class SumoRoadNetwork(RoadMap):
         while next_edges and len(route.roads) < max_route_len:
             choice = random.choice(next_edges)
             if cur_edge:
-                # include internal connection edges as well (TAI:  don't count these towrads max_route_len?)
+                # include internal connection edges as well (TAI:  don't count these towards max_route_len?)
                 connection_roads = set()
                 for cnxn in cur_edge.getConnections(choice):
                     via_lane_id = cnxn.getViaLaneID()
@@ -853,6 +884,9 @@ class SumoRoadNetwork(RoadMap):
 
     def empty_route(self) -> RoadMap.Route:
         return SumoRoadNetwork.Route(self)
+
+    def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
+        return SumoRoadNetwork.Route.from_road_ids(self, road_ids)
 
     def waypoint_paths(
         self,
@@ -923,13 +957,13 @@ class SumoRoadNetwork(RoadMap):
             waypoint_paths += lane._waypoint_paths_at(point, lookahead, route)
         return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
 
-    class Route(RoadMap.Route):
+    class Route(RouteWithCache):
         """Describes a route between two Sumo roads."""
 
         def __init__(self, road_map):
+            super().__init__(road_map)
             self._roads = []
             self._length = 0
-            self._map = road_map
 
         @property
         def roads(self) -> List[RoadMap.Road]:
@@ -954,76 +988,6 @@ class SumoRoadNetwork(RoadMap):
                 )
                 for road in self.roads
             ]
-
-        @lru_cache(maxsize=8)
-        def distance_between(self, start: Point, end: Point) -> Optional[float]:
-            for cand_start_lane, _ in self._map.nearest_lanes(start, 30.0, False):
-                try:
-                    sind = self._roads.index(cand_start_lane.road)
-                    break
-                except ValueError:
-                    pass
-            else:
-                logging.warning("unable to find road on route near start point")
-                return None
-            start_road = cand_start_lane.road
-            for cand_end_lane, _ in self._map.nearest_lanes(end, 30.0, False):
-                try:
-                    eind = self._roads.index(cand_end_lane.road)
-                    break
-                except ValueError:
-                    pass
-            else:
-                logging.warning("unable to find road on route near end point")
-                return None
-            end_road = cand_end_lane.road
-            d = 0
-            start_offset = cand_start_lane.offset_along_lane(start)
-            end_offset = cand_end_lane.offset_along_lane(end)
-            if start_road == end_road:
-                return end_offset - start_offset
-            negate = False
-            if sind > eind:
-                cand_start_lane = cand_end_lane
-                start_road, end_road = end_road, start_road
-                start_offset, end_offset = end_offset, start_offset
-                negate = True
-            for road in self._roads:
-                if d == 0 and road == start_road:
-                    d += cand_start_lane.length - start_offset
-                elif road == end_road:
-                    d += end_offset
-                    break
-                elif d > 0:
-                    d += road.length
-            return -d if negate else d
-
-        @lru_cache(maxsize=8)
-        def project_along(
-            self, start: Point, distance: float
-        ) -> Optional[Set[Tuple[RoadMap.Lane, float]]]:
-            route_roads = set(self._roads)
-            for cand_start_lane, _ in self._map.nearest_lanes(start, 30.0, False):
-                if cand_start_lane.road in route_roads:
-                    break
-            else:
-                logging.warning("unable to find road on route near start point")
-                return None
-            started = False
-            for road in self._roads:
-                if not started:
-                    if road != cand_start_lane.road:
-                        continue
-                    started = True
-                    lane_pt = cand_start_lane.to_lane_coord(start)
-                    start_offset = lane_pt.s
-                else:
-                    start_offset = 0
-                if distance > road.length - start_offset:
-                    distance -= road.length - start_offset
-                    continue
-                return {(lane, distance) for lane in road.lanes}
-            return set()
 
     def _compute_road_polygons(self):
         lane_to_poly = {}
