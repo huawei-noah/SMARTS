@@ -65,6 +65,9 @@ class TrafficHistoryProvider(TrafficProvider):
 
     def setup(self, scenario) -> ProviderState:
         """Initialize this provider with the given scenario."""
+        if "_history_vehicle_ids" in self.__dict__:
+            # clear the cached_property
+            del self.__dict__["_history_vehicle_ids"]
         self._scenario = scenario
         self._histories = scenario.traffic_history
         if self._histories:
@@ -149,7 +152,7 @@ class TrafficHistoryProvider(TrafficProvider):
         self._last_step_vehicles = vehicle_ids
         return ProviderState(vehicles=vehicles)
 
-    @property
+    @cached_property
     def _history_vehicle_ids(self) -> Set[str]:
         if not self._histories:
             return set()
