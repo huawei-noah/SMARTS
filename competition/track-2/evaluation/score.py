@@ -42,18 +42,16 @@ def _completion(counts: Counts) -> float:
 
 
 def _humanness(counts: Counts, costs: Costs) -> float:
-    w_d = 0.2
-    w_j = 0.2
+    w_d = 0.25
+    w_j = 0.25
     w_lc = 0.2
-    w_sr = 0.15
     w_vo = 0.15
-    w_yr = 0.1
+    w_yr = 0.15
 
     return (
         w_d * costs.dist_to_obstacles
         + w_j * costs.jerk
         + w_lc * costs.lane_center_offset
-        + w_sr * costs.steering_rate
         + w_vo * costs.velocity_offset
         + w_yr * costs.yaw_rate
     ) / counts.episodes_adjusted

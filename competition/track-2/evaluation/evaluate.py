@@ -32,7 +32,7 @@ def make_env(
         scenario=scenario,
         img_meters=config["img_meters"],
         img_pixels=config["img_pixels"],
-        action_space="Continuous",
+        action_space="TargetPose",
         sumo_headless=True,
     )
 
@@ -43,6 +43,7 @@ def make_env(
 
     # Wrap the environment
     for wrapper in wrappers:
+        #breakpoint()
         env = wrapper(env)
 
     return env

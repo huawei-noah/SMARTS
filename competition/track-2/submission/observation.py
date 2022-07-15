@@ -1,7 +1,39 @@
-from typing import Dict
-
+from typing import Any, Dict
+import copy
 import gym
 import numpy as np
+
+
+class SaveObs(gym.ObservationWrapper):
+    """Saves several selected observation parameters."""
+
+    def __init__(self, env: gym.Env):
+        """
+        Args:
+            env (gym.Env): Environment to be wrapped.
+        """
+        super().__init__(env)
+        self.saved_obs: Dict[str, Dict[str, Any]]
+
+    def observation(self, obs: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+        """Saves the wrapped environment's observation.
+
+        Note: Users should not directly call this method.
+        """
+
+        obs_data = {}
+        for agent_id, agent_obs in obs.items():
+            obs_data.update(
+                {
+                    agent_id: {
+                        "pos": copy.deepcopy(agent_obs["ego"]["pos"]),
+                        "heading": copy.deepcopy(agent_obs["ego"]["heading"]),
+                    }
+                }
+            )
+        self.saved_obs = obs_data
+
+        return obs
 
 
 class FilterObs(gym.ObservationWrapper):
@@ -42,9 +74,7 @@ class FilterObs(gym.ObservationWrapper):
             }
         )
 
-    def observation(
-        self, obs: Dict[str, Dict[str, gym.Space]]
-    ) -> Dict[str, Dict[str, gym.Space]]:
+    def observation(self, obs: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
         """Adapts the wrapped environment's observation.
 
         Note: Users should not directly call this method.
@@ -67,8 +97,8 @@ class FilterObs(gym.ObservationWrapper):
                 dtype=np.float32,
             )
 
-            # Ego's heading with respect to the map's axes.
-            # Note: All angles returned by smarts is with respect to the map's axes.
+            # Ego's heading with respect to the map's coordinate system.
+            # Note: All angles returned by smarts is with respect to the map's coordinate system.
             #       On the map, angle is zero at positive y axis, and increases anti-clockwise.
             ego_heading = (agent_obs["ego"]["heading"] + np.pi) % (2 * np.pi) - np.pi
             ego_pos = agent_obs["ego"]["pos"]

@@ -2,7 +2,7 @@
 This folder contains the python script that CodaLab uses to evaluate the submissions.
 
 ## Test cases for Track-1
-+ Submitted models will be evaluated on scenarios similar to those given for training, namely, intersection, merging, cruising, and cut-in scenarios.
++ Submitted models will be evaluated on scenarios similar to those given for training and on additional hidden scenarios. Test scenarios include intersections, merging, cruising, cut-ins, curved roads, etc.
 
 ## Score for Track-1
 + Submitted models are scored on four aspects, namely,
@@ -14,7 +14,6 @@ This folder contains the python script that CodaLab uses to evaluate the submiss
     + distance to obstacles
     + jerk
     + lane center offset
-    + steering rate
     + velocity offset
     + yaw rate
 + Factors included in the `Rules` aspect, include events such as 
