@@ -30,7 +30,7 @@ def submitted_wrappers():
     """
 
     from action import Action as DiscreteAction
-    from observation import Concatenate, FilterObs
+    from observation import Concatenate, FilterObs, SaveObs
     from reward import Reward
 
     from smarts.core.controllers import ActionSpaceType
@@ -41,12 +41,14 @@ def submitted_wrappers():
     # fmt: off
     wrappers = [
         FormatObs,
-        lambda env: FormatAction(env=env, space=ActionSpaceType["Continuous"]),
+        lambda env: FormatAction(env=env, space=ActionSpaceType["TargetPose"]),
         Reward,
-        lambda env: DiscreteAction(env=env, space="Discrete"),
-        FilterObs,
-        # lambda env: FrameStack(env=env, num_stack=3),
-        # lambda env: Concatenate(env=env, channels_order="first"),
+        SaveObs,
+        lambda env: DiscreteAction(env=env, space='Discrete'),
+        #DiscreteAction,
+        #FilterObs,
+        #lambda env: FrameStack(env=env, num_stack=3),
+        #lambda env: Concatenate(env=env, channels_order="first"),
     ]
     # fmt: on
 
@@ -66,7 +68,7 @@ class Policy(BasePolicy):
 
 
         self.model = CQL.from_json(Path(__file__).absolute().parents[0]/'model/params.json', use_gpu=True)
-        self.model.load_model(Path(__file__).absolute().parents[0]/'model/model.pt')
+        self.model.load_model(Path(__file__).absolute().parents[0]/'model/model_100.pt')
 
         # model_path = Path(__file__).absolute().parents[0] / "best_model.zip"
         # self.model = sb3lib.PPO.load(model_path)
@@ -82,12 +84,11 @@ class Policy(BasePolicy):
         """
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
-            # action, _ = self.model.predict(np.array(agent_obs['rgb'].reshape(3, 256, 256)))
-            breakpoint()
-            action = self.model.predict(np.array([agent_obs['rgb']]))[0]
-            # new action: TargetPose: Sequence[float, float, float, float] [x,y,heading, delta time]
-            # new_action = [action[0] + agent_obs['pos'][0], action[1] + agent_obs['pos'][1], action[2] + agent_obs['heading'], 0.1]
-            wrapped_act.update({agent_id: new_action})
+            #breakpoint()
+            action = self.model.predict(np.array([agent_obs['rgb'].reshape(3, 256, 256)]))[0]
+            
+            target_pose = [action[0] + agent_obs['ego']['pos'][0], action[1] + agent_obs['ego']['pos'][1], action[2] + agent_obs['ego']['heading'], 0.1]
+            wrapped_act.update({agent_id: target_pose})
         return wrapped_act
 
 
