@@ -1075,12 +1075,6 @@ class WaymoMap(RoadMapWithCaches):
                 for incoming in outgoing.incoming_lanes
                 if incoming != self
             }
-            if self.in_junction:
-                in_roads = set(il.road for il in self.incoming_lanes)
-                for foe in self.road.lanes:
-                    foe_in_roads = set(il.road for il in foe.incoming_lanes)
-                    if not bool(in_roads & foe_in_roads):
-                        result.add(foe)
             return list(result)
 
         @property
@@ -1338,6 +1332,7 @@ class WaymoMap(RoadMapWithCaches):
                 return True
             for lane in self._lanes:
                 if lane.foes:
+                    self._is_junction = True
                     return True
             return False
 
