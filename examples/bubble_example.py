@@ -187,7 +187,6 @@ def main(
 
     obs_state = ObservationState()
 
-    social_agents_seen = defaultdict(lambda: 0)
     scenario: Scenario
     for scenario in scenarios_iterator:
         # XXX replace with AgentSpec appropriate for IL model
@@ -266,7 +265,6 @@ def main(
                 # Iterate through the observations
                 # The agent ids of agents can be found here.
                 for agent_id in obs_state.last_observations.keys():
-                    social_agents_seen[agent_id] += 1
                     if obs_state.last_observations[agent_id].events.collisions:
                         logger.info(
                             "social_agent={} collided @ {}".format(
@@ -285,7 +283,6 @@ def main(
                                 obs_state.last_observations[agent_id].events
                             )
                         )
-            logger.info(f"social agents seen: {dict(social_agents_seen)}")
             logger.info(f"ending episode {episode}...")
 
     logger.info(f"ending simulation...")
