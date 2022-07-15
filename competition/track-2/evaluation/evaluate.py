@@ -43,6 +43,7 @@ def make_env(
 
     # Wrap the environment
     for wrapper in wrappers:
+        #breakpoint()
         env = wrapper(env)
 
     return env

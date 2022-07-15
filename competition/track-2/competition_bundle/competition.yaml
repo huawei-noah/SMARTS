@@ -28,20 +28,20 @@ phases:
         reference_data: track1_evaluation.zip
         color: green
         execution_time_limit: 21600
-        max_submission_size: 1000
+        max_submission_size: 500
 
     2:
         phasenumber: 2
         description: Offline learning
         label: "Track 2"
-        start_date: 2022-07-01
+        start_date: 2022-09-01
         max_submissions: 1000
         is_scoring_only: False
         scoring_program: scoring_program.zip
         reference_data: track2_evaluation.zip
         color: blue
         execution_time_limit: 21600
-        max_submission_size: 1000
+        max_submission_size: 500
 
 # Leaderboard
 leaderboard:
