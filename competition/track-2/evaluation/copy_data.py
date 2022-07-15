@@ -22,14 +22,14 @@ class DataStore:
 
     @agent_names.setter
     def agent_names(self, names: Iterable[str]):
-        self._agent_names = names
+        self._agent_names = copy.deepcopy(names)
 
 
 class CopyData(gym.Wrapper):
     def __init__(self, env: gym.Env, datastore: DataStore):
         super(CopyData, self).__init__(env)
         self._datastore = datastore
-        self._datastore.agent_names = env.agent_specs.keys()
+        self._datastore.agent_names = list(env.agent_specs.keys())
 
     def step(
         self, action: Dict[str, Any]

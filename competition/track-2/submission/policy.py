@@ -44,7 +44,7 @@ def submitted_wrappers():
         lambda env: FormatAction(env=env, space=ActionSpaceType["TargetPose"]),
         Reward,
         SaveObs,
-        lambda env: DiscreteAction(env=env, space='Discrete'),
+        # lambda env: DiscreteAction(env=env, space='Discrete'),
         #DiscreteAction,
         #FilterObs,
         #lambda env: FrameStack(env=env, num_stack=3),
@@ -87,7 +87,7 @@ class Policy(BasePolicy):
             #breakpoint()
             action = self.model.predict(np.array([agent_obs['rgb'].reshape(3, 256, 256)]))[0]
             
-            target_pose = [action[0] + agent_obs['ego']['pos'][0], action[1] + agent_obs['ego']['pos'][1], action[2] + agent_obs['ego']['heading'], 0.1]
+            target_pose = np.array([action[0] + agent_obs['ego']['pos'][0], action[1] + agent_obs['ego']['pos'][1], action[2] + agent_obs['ego']['heading'], 0.1])
             wrapped_act.update({agent_id: target_pose})
         return wrapped_act
 

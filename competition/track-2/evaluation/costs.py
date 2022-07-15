@@ -16,7 +16,6 @@ class Costs:
     off_road: int = 0
     off_route: int = 0
     on_shoulder: int = 0
-    steering_rate: float = 0
     velocity_offset: float = 0
     wrong_way: int = 0
     yaw_rate: float = 0
@@ -30,7 +29,6 @@ COST_FUNCS = {
     "off_road": lambda: _off_road,
     "off_route": lambda: _off_route,
     "on_shoulder": lambda: _on_shoulder,
-    "steering_rate": lambda: _steering_rate(),
     "velocity_offset": lambda: _velocity_offset(),
     "wrong_way": lambda: _wrong_way,
     "yaw_rate": lambda: _yaw_rate(),
@@ -52,8 +50,8 @@ def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
     def func(obs: Observation) -> Dict[str, float]:
         nonlocal ave, step, regexp_jn, obstacle_dist_th, obstacle_angle_th, w_dist
 
-        # Ego's position and heading with respect to the map's axes.
-        # Note: All angles returned by smarts is with respect to the map's axes.
+        # Ego's position and heading with respect to the map's coordinate system.
+        # Note: All angles returned by smarts is with respect to the map's coordinate system.
         #       On the map, angle is zero at positive y axis, and increases anti-clockwise.
         ego = obs.ego_vehicle_state
         ego_heading = (ego.heading + np.pi) % (2 * np.pi) - np.pi
@@ -178,22 +176,6 @@ def _on_shoulder(obs: Observation) -> Dict[str, int]:
     return {"on_shoulder": int(obs.events.on_shoulder)}
 
 
-def _steering_rate() -> Callable[[Observation], Dict[str, float]]:
-    ave = 0
-    step = 0
-    prev_steering = 0
-
-    def func(obs: Observation) -> Dict[str, float]:
-        nonlocal ave, step, prev_steering
-        steering_velocity = (obs.ego_vehicle_state.steering - prev_steering) / 0.1
-        prev_steering = obs.ego_vehicle_state.steering
-        j_sr = steering_velocity ** 2
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_sr)
-        return {"steering_rate": ave}
-
-    return func
-
-
 def _velocity_offset() -> Callable[[Observation], Dict[str, float]]:
     ave = 0
     step = 0
@@ -230,7 +212,10 @@ def _yaw_rate() -> Callable[[Observation], Dict[str, float]]:
 
     def func(obs: Observation) -> Dict[str, float]:
         nonlocal ave, step
-        j_y = obs.ego_vehicle_state.yaw_rate ** 2
+        yaw_rate = (
+            obs.ego_vehicle_state.yaw_rate if obs.ego_vehicle_state.yaw_rate else 0
+        )
+        j_y = yaw_rate ** 2
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_y)
         return {"yaw_rate": ave}
 
