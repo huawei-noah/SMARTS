@@ -1328,10 +1328,15 @@ class WaymoMap(RoadMapWithCaches):
         def is_composite(self) -> bool:
             return self._is_composite
 
-        @property
+        @cached_property
         def is_junction(self) -> bool:
             # XXX: Waymo does not indicate whether a road is in junction or not, but we can *sometimes* tell.
-            return self._is_junction
+            if self._is_junction:
+                return True
+            for lane in self._lanes:
+                if lane.foes:
+                    return True
+            return False
 
         @property
         def length(self) -> float:
