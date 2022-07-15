@@ -374,8 +374,8 @@ class AgentManager:
             callback(
                 dict(
                     filter(
-                        lambda k: k in self._remote_social_agents,
-                        observations.keys(),
+                        lambda k: k[0] in self._remote_social_agents,
+                        observations.items(),
                     )
                 )
             )
