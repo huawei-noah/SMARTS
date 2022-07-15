@@ -939,6 +939,8 @@ class _TrafficActor:
             self._cutting_into = None
             self._cutting_in = False
             self._in_front_secs = 0
+            if lw.lane.in_junction:
+                continue
             if lw.agent_gap and self._should_cutin(lw):
                 best_lw = lw
                 self._cutting_into = lw
@@ -1036,6 +1038,19 @@ class _TrafficActor:
             return True
         return False
 
+    def _backtrack_until_long_enough(
+        self,
+        result: Set[RoadMap.Lane],
+        lane: RoadMap.Lane,
+        cur_length: float,
+        min_length: float,
+    ):
+        result.add(lane)
+        cur_length += lane.length
+        if cur_length < min_length:
+            for il in lane.incoming_lanes:
+                self._backtrack_until_long_enough(result, il, cur_length, min_length)
+
     def _handle_junctions(self, dt: float, window: int = 5, max_range: float = 100.0):
         rl = RoadMap.Route.RouteLane(self._target_lane_win.lane, self._route_ind)
         njl, nj_dist = self._route.next_junction(rl)
@@ -1045,7 +1060,12 @@ class _TrafficActor:
         my_pos = self._state.pose.position
         my_heading = self._state.pose.heading
         for foe in njl.foes:
-            for check_lane in [foe] + foe.incoming_lanes:
+            check_lanes = set()
+            self._backtrack_until_long_enough(check_lanes, foe, 0, max_range)
+            assert check_lanes
+            for check_lane in check_lanes:
+                if check_lane == self._lane:
+                    continue
                 lbc = self._owner._lane_bumpers_cache.get(check_lane, [])
                 for _, fv in lbc:
                     if fv.vehicle_id in updated:
@@ -1066,7 +1086,7 @@ class _TrafficActor:
                         if fv_range < max_range and not self._higher_priority(
                             njl, nj_dist, check_lane, fv, rel_bearing
                         ):
-                            # self._logger.debug(f"{self.actor_id} slowing down to avoid collision with {fv.vehicle_id} in {check_lane.lane_id}")
+                            # self._logger.debug(f"{self.actor_id} slowing down to avoid collision @ {njl.lane_id} with {fv.vehicle_id} currently in {check_lane.lane_id}")
                             self._target_speed *= fv_range / max_range
                         ttc = time_to_cover(
                             nj_dist, self._target_speed, self.acceleration
