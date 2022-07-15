@@ -286,12 +286,15 @@ class WaymoMap(RoadMapWithCaches):
                 # Don't check intersection with incoming/outgoing lanes
                 if cand_id in lane.incoming_lanes or cand_id in lane.outgoing_lanes:
                     continue
+                # or lanes in same road (TAI?)
+                if lane.road == self._lanes[cand_id].road:
+                    continue
                 lanes_to_test.append(cand_id)
             if not lanes_to_test:
                 continue
 
             # Main loop -- check each segment of the lane polyline against the
-            # polyline of each candidate lane
+            # polyline of each candidate lane (--> algorithm is O(l^2)
             line1 = np.array(lane._lane_pts)
             for cand_id in lanes_to_test:
                 line2 = np.array(self._lanes[cand_id]._lane_pts)
