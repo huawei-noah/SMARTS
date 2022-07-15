@@ -68,7 +68,7 @@ class Policy(BasePolicy):
 
 
         self.model = CQL.from_json(Path(__file__).absolute().parents[0]/'model/params.json', use_gpu=True)
-        self.model.load_model(Path(__file__).absolute().parents[0]/'model/model_100.pt')
+        self.model.load_model(Path(__file__).absolute().parents[0]/'model/model.pt')
 
         # model_path = Path(__file__).absolute().parents[0] / "best_model.zip"
         # self.model = sb3lib.PPO.load(model_path)
@@ -86,7 +86,7 @@ class Policy(BasePolicy):
         for agent_id, agent_obs in obs.items():
             #breakpoint()
             action = self.model.predict(np.array([agent_obs['rgb'].reshape(3, 256, 256)]))[0]
-            
+            print(action)
             target_pose = np.array([action[0] + agent_obs['ego']['pos'][0], action[1] + agent_obs['ego']['pos'][1], action[2] + agent_obs['ego']['heading'], 0.1])
             wrapped_act.update({agent_id: target_pose})
         return wrapped_act

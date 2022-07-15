@@ -33,7 +33,7 @@ def make_env(
         img_meters=config["img_meters"],
         img_pixels=config["img_pixels"],
         action_space="TargetPose",
-        sumo_headless=True,
+        sumo_headless=False,
     )
 
     # Make a copy of original info.
@@ -53,17 +53,17 @@ def evaluate():
     config = {
         "img_meters": IMG_METERS,
         "img_pixels": IMG_PIXELS,
-        "eval_episodes": 2,
+        "eval_episodes": 100,
     }
     scenarios = [
-        "1_to_2lane_left_turn_c",
+        # "1_to_2lane_left_turn_c",
         # "1_to_2lane_left_turn_t",
         # "3lane_merge_multi_agent",
         # "3lane_merge_single_agent",
         # "3lane_cruise_multi_agent",
         # "3lane_cruise_single_agent",
         # "3lane_cut_in",
-        # "3lane_overtake",
+        "3lane_overtake",
     ]
 
     # Make evaluation environments.
