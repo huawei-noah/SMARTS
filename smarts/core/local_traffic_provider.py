@@ -398,8 +398,9 @@ class _TrafficActor:
         self._imperfection = float(self._vtype.get("sigma", 0.5))
 
         self._cutting_into = None
+        self._cutting_in = False
         self._in_front_after_cutin_secs = 0
-        self._cutin_hold_secs = 3
+        self._cutin_hold_secs = float(self._vtype.get("lcHoldPeriod", 3.0))
         self._target_cutin_gap = 2.5 * self._min_space_cush
         self._aggressiveness = float(self._vtype.get("lcAssertive", 1.0))
         if self._aggressiveness <= 0:
@@ -413,7 +414,11 @@ class _TrafficActor:
                 "illegal probability {self._cutin_prob} for 'cutin_prob' lane-changing parameter will be ignored"
             )
             self._cutin_prob = 0.0
-        self._dogmatic = bool(self._vtype.get("lcDogmatic", False))
+        self._dogmatic = self._vtype.get("lcDogmatic", "False") == "True"
+        self._cutin_slow_down = float(self._vtype.get("lcSlowDownAfter", 1.0))
+        if self._cutin_slow_down < 0:
+            self._cutin_slow_down = 0
+        self._multi_lane_cutin = self._vtype.get("lcMultiLaneCutin", "False") == "True"
 
         self._max_angular_velocity = 26  # arbitrary, based on limited testing
         self._prev_angular_err = None
@@ -891,14 +896,14 @@ class _TrafficActor:
         return cross_time, True
 
     def _should_cutin(self, lw: _LaneWindow) -> bool:
-        if lw.lane.index == self._lane.index:
+        target_ind = lw.lane.index
+        if target_ind == self._lane.index:
+            return False
+        if not self._multi_lane_cutin and abs(target_ind - self._lane.index) > 1:
             return False
         min_gap = self._target_cutin_gap / self._aggressiveness
         max_gap = self._target_cutin_gap + 2
-        if (
-            min_gap < lw.agent_gap < max_gap
-            and self._crossing_time_into(lw.lane.index)[1]
-        ):
+        if min_gap < lw.agent_gap < max_gap and self._crossing_time_into(target_ind)[1]:
             return random.random() < self._cutin_prob
         return False
 
@@ -932,10 +937,12 @@ class _TrafficActor:
                 if self._in_front_after_cutin_secs < self._cutin_hold_secs:
                     break
             self._cutting_into = None
+            self._cutting_in = False
             self._in_front_secs = 0
             if lw.agent_gap and self._should_cutin(lw):
                 best_lw = lw
                 self._cutting_into = lw
+                self._cutting_in = True
             elif lw.adj_time_left > best_lw.adj_time_left or (
                 lw.adj_time_left == best_lw.adj_time_left
                 and (
@@ -1080,9 +1087,8 @@ class _TrafficActor:
             return
         self._target_speed = target_lane.speed_limit
         self._target_speed *= self._speed_factor
-        # TAI: consider going faster the further left the target lane
-        # ... or let scenario creator manage this via flows?
-        # self._target_speed *= 1.0 + .05 * self._target_lane_win.lane.index
+        if self._cutting_in:
+            self._target_speed *= self._cutin_slow_down
         self._slow_for_curves()
         self._handle_junctions(dt)
         max_speed = float(self._vtype.get("maxSpeed", 55.55))
