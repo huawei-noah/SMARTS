@@ -13,16 +13,7 @@ class Action(gym.ActionWrapper):
             env (gym.Env): Gym env to be wrapped.
         """
         super().__init__(env)
-<<<<<<< HEAD
         self._wrapper, action_space = _discrete()
-=======
-        space_map = {
-            "Discrete": _discrete(),
-        }
-        # breakpoint()
-        self._wrapper, action_space = space_map.get(space)
-        #action_space = space_map.get(space)[1]
->>>>>>> 40d7179642ae82a9c386289a5a2c93aad8357c15
 
         self.action_space = gym.spaces.Dict(
             {agent_id: action_space for agent_id in env.action_space.spaces.keys()}
@@ -30,13 +21,10 @@ class Action(gym.ActionWrapper):
 
     def action(self, action):
         """Adapts the action input to the wrapped environment.
-<<<<<<< HEAD
 
         `self.saved_obs` is retrieved from SaveObs wrapper. It contains previously
         saved observation parameters.
 
-=======
->>>>>>> 40d7179642ae82a9c386289a5a2c93aad8357c15
         Note: Users should not directly call this method.
         """
         wrapped_act = self._wrapper(action, self.saved_obs)
@@ -64,7 +52,6 @@ def _discrete() -> Tuple[
         3: [dist, -angle],  # turn_right
     }
 
-<<<<<<< HEAD
     def wrapper(
         action: Dict[str, int], saved_obs: Dict[str, Any]
     ) -> Dict[str, np.ndarray]:
@@ -93,15 +80,5 @@ def _discrete() -> Tuple[
             )
 
         return wrapped_obs
-=======
-    def wrapper(action: Dict[str, int]) -> Dict[str, np.ndarray]:
-        final = {}
-        for agent_id, agent_action in action.items():
-            final.update({agent_id, action_map[agent_action]})
-        return final
-        # return {
-        #     agent_id: action_map[agent_action] for agent_id, agent_action in action.items()
-        # }
->>>>>>> 40d7179642ae82a9c386289a5a2c93aad8357c15
 
     return wrapper, space
