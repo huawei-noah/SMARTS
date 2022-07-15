@@ -386,14 +386,13 @@ class Sensors:
             sim, agent_id, vehicle, sensor_state
         )
 
-        if done and sensor_state.steps_completed <= 2:
+        if done and sensor_state.steps_completed == 1:
             agent_type = "Social agent"
             if agent_id in sim.agent_manager.ego_agent_ids:
                 agent_type = "Ego agent"
             logger.warning(
                 f"{agent_type} with Agent ID: {agent_id} is done on the first step"
             )
-            assert False
 
         return (
             Observation(
