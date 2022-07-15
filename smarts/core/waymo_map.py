@@ -283,11 +283,15 @@ class WaymoMap(RoadMapWithCaches):
                 # Skip intersections we've already computed
                 if cand_id in lane_intersections:
                     continue
+                # ... and sub-lanes of the same original lane
+                cand_lane = self._lanes[cand_id]
+                if lane._feature_id == cand_lane._feature_id:
+                    continue
                 # Don't check intersection with incoming/outgoing lanes
                 if cand_id in lane.incoming_lanes or cand_id in lane.outgoing_lanes:
                     continue
-                # or lanes in same road (TAI?)
-                if lane.road == self._lanes[cand_id].road:
+                # ... or lanes in same road (TAI?)
+                if lane.road == cand_lane.road:
                     continue
                 lanes_to_test.append(cand_id)
             if not lanes_to_test:
