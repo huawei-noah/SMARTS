@@ -513,6 +513,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
                         foe_in_roads = set(il.road for il in foe.incoming_lanes)
                         if not bool(in_roads & foe_in_roads):
                             result.append(foe)
+                    # TODO: above will not get lanes that simply cross
                 lane._foes = list(set(result))
 
             # recompute lane to left using road geometry if the map was converted from SUMO to OpenDRIVE
