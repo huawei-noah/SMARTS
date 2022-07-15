@@ -9,16 +9,17 @@ class Action(gym.ActionWrapper):
 
     def __init__(self, env: gym.Env, space: str):
         """Sets identical action space, denoted by `space`, for all agents.
-
         Args:
             env (gym.Env): Gym env to be wrapped.
             space (str): Denotes the desired action space type.
         """
         super().__init__(env)
         space_map = {
-            "Discrete": _discrete,
+            "Discrete": _discrete(),
         }
-        self._wrapper, action_space = space_map.get(space)()
+        # breakpoint()
+        self._wrapper, action_space = space_map.get(space)
+        #action_space = space_map.get(space)[1]
 
         self.action_space = gym.spaces.Dict(
             {agent_id: action_space for agent_id in env.action_space.spaces.keys()}
@@ -26,7 +27,6 @@ class Action(gym.ActionWrapper):
 
     def action(self, action):
         """Adapts the action input to the wrapped environment.
-
         Note: Users should not directly call this method.
         """
         return action
@@ -44,9 +44,12 @@ def _discrete() -> Tuple[Callable[[Dict[str, int]], Dict[str, np.ndarray]], gym.
     }
 
     def wrapper(action: Dict[str, int]) -> Dict[str, np.ndarray]:
-        return {
-            agent_id: action_map[agent_action]
-            for agent_id, agent_action in action.items()
-        }
+        final = {}
+        for agent_id, agent_action in action.items():
+            final.update({agent_id, action_map[agent_action]})
+        return final
+        # return {
+        #     agent_id: action_map[agent_action] for agent_id, agent_action in action.items()
+        # }
 
     return wrapper, space
