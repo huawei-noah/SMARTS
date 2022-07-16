@@ -419,6 +419,7 @@ class _TrafficActor:
         if self._cutin_slow_down < 0:
             self._cutin_slow_down = 0
         self._multi_lane_cutin = self._vtype.get("lcMultiLaneCutin", "False") == "True"
+        self._yield_to_agents = self._vtype.get("jmYieldToAgents", "normal")
 
         self._max_angular_velocity = 26  # arbitrary, based on limited testing
         self._prev_angular_err = None
@@ -1027,7 +1028,14 @@ class _TrafficActor:
         traffic_veh: VehicleState,
         bearing: float,
     ) -> bool:
-        # TODO: always yield to agents?  or add an option?
+        if traffic_veh.role in (ActorRole.EgoAgent, ActorRole.SocialAgent):
+            if self._yield_to_agents == "never":
+                return True
+            elif self._yield_to_agents == "always":
+                return False
+            assert (
+                self._yield_to_agents == "normal"
+            ), f"unknown yield_to_agents value: {self._yield_to_agents}"
         # TODO: straight-goer over turner (can determine if traffic_veh is one of ours)
         # TODO:     turning if projected heading nj_dist ahead changes by more than ~30 degrees
         my_lanes = len(self._lane.road.lanes)
