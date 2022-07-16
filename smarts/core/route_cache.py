@@ -236,7 +236,7 @@ class RouteWithCache(RoadMap.Route):
 
     def next_junction(
         self, cur_lane: RoadMap.Route.RouteLane
-    ) -> Optional[Tuple[RoadMap.Lane, float]]:
+    ) -> Tuple[Optional[RoadMap.Lane], float]:
         self.add_to_cache()
         lc = _route_sub_lengths[self._cache_key].get(cur_lane)
         if lc:

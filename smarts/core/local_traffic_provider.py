@@ -58,7 +58,7 @@ class LocalTrafficProvider(TrafficProvider):
         self._flows: Dict[str, Dict[str, Any]] = dict()
         self._my_actors: Dict[str, _TrafficActor] = dict()
         self._other_vehicles: Dict[
-            str, Tuple[VehicleState, Optional[Sequence[str]]]
+            str, Tuple[VehicleState, Optional[RoadMap.Route]]
         ] = dict()
         self._reserved_areas: Dict[str, Polygon] = dict()
         self._actors_created: int = 0
@@ -336,7 +336,8 @@ class LocalTrafficProvider(TrafficProvider):
             return traffic_actor.route.road_ids[-1]
         other = self._other_vehicles.get(vehicle_id)
         if other:
-            return other[1].road_ids[-1] if other[1] else None
+            _, oroute = other
+            return oroute.road_ids[-1] if oroute else None
         assert False, f"unknown vehicle_id: {vehicle_id}"
 
     def can_accept_vehicle(self, state: VehicleState) -> bool:
@@ -424,7 +425,7 @@ class _TrafficActor:
         self._max_angular_velocity = 26  # arbitrary, based on limited testing
         self._prev_angular_err = None
 
-        self._junction_foes: Dict[str, Deque] = dict()
+        self._junction_foes: Dict[Tuple[str, bool], Deque] = dict()
         self._owner._actors_created += 1
 
     @classmethod

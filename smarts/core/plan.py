@@ -268,7 +268,7 @@ class LapMission(Mission):
     def __post_init__(self):
         # TAI: consider allowing LapMissions for TraverseGoal goals (num_laps ~ num_traversals)
         assert self.goal.is_specific
-        if route_length is None:
+        if self.route_length is None:
             # TAI: could just assert here, but may want to be more clever...
             self.route_length = 1
 
@@ -325,7 +325,7 @@ class Plan:
             self._route = self._road_map.empty_route()
             return self._mission
 
-        assert self._mission.goal.is_specific
+        assert isinstance(self._mission.goal, PositionalGoal)
 
         start_lane = self._road_map.nearest_lane(
             self._mission.start.point,
