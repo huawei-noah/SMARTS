@@ -1020,6 +1020,20 @@ class _TrafficActor:
         bearing_del /= len(window) - 1
         return range_del < 0 and abs(bearing_del) < 0.007 * math.pi
 
+    @staticmethod
+    @lru_cache(maxsize=32)
+    def _turn_angle(junction: RoadMap.Lane, approach_index: int) -> float:
+        next_lane = junction.outgoing_lanes[0]
+        mli = min(approach_index, len(junction.incoming_lanes) - 1)
+        prev_lane = junction.incoming_lanes[mli]
+
+        nlv = next_lane.vector_at_offset(0.5 * next_lane.length)
+        nla = vec_to_radians(nlv[:2])
+        plv = prev_lane.vector_at_offset(prev_lane.length - 1)
+        pla = vec_to_radians(plv[:2])
+
+        return min_angles_difference_signed(nla, pla)
+
     def _higher_priority(
         self,
         junction: RoadMap.Lane,
@@ -1027,7 +1041,9 @@ class _TrafficActor:
         traffic_lane: RoadMap.Lane,
         traffic_veh: VehicleState,
         bearing: float,
+        foe: RoadMap.Lane,
     ) -> bool:
+        # Smith vs. Neo
         if traffic_veh.role in (ActorRole.EgoAgent, ActorRole.SocialAgent):
             if self._yield_to_agents == "never":
                 return True
@@ -1036,12 +1052,32 @@ class _TrafficActor:
             assert (
                 self._yield_to_agents == "normal"
             ), f"unknown yield_to_agents value: {self._yield_to_agents}"
-        # TODO: straight-goer over turner (can determine if traffic_veh is one of ours)
-        # TODO:     turning if projected heading nj_dist ahead changes by more than ~30 degrees
+
+        # Straight > Right > Left priority
+        turn_thresh = 0.166 * math.pi
+        my_ta = self._turn_angle(junction, self._lane.index)
+        their_ta = self._turn_angle(foe, traffic_lane.index)
+        if my_ta >= turn_thresh and their_ta < turn_thresh:
+            # me left, them not left
+            return False
+        if abs(my_ta) < turn_thresh and abs(their_ta) >= turn_thresh:
+            # me straight, them turning
+            return True
+        if my_ta <= -turn_thresh:
+            # me right
+            if their_ta >= turn_thresh:
+                # them left
+                return True
+            if abs(their_ta) < turn_thresh:
+                # them straight
+                return False
+
+        # Major over minor roads
         my_lanes = len(self._lane.road.lanes)
         their_lanes = len(traffic_lane.road.lanes)
         if my_lanes > their_lanes:
             return True
+        # Vehicle to the right (couter clockwise)
         elif my_lanes == their_lanes and bearing > 0:
             return True
         return False
@@ -1076,23 +1112,24 @@ class _TrafficActor:
                     continue
                 lbc = self._owner._lane_bumpers_cache.get(check_lane, [])
                 for _, fv in lbc:
-                    if fv.vehicle_id in updated:
-                        # vehicles can be in the bumpers_cache more than once
-                        # (for their front and back bumpers)
-                        continue
+                    # vehicles can be in the bumpers_cache more than once
+                    # (for their front and back bumpers).  We need to check
+                    # both bumpers for collisions here as (especially for
+                    # longer vehicles) the answer can come out differently.
+                    second_bumper = fv.vehicle_id in updated
                     bvec = fv.pose.position - my_pos
                     fv_range = np.linalg.norm(bvec)
                     rel_bearing = min_angles_difference_signed(
                         vec_to_radians(bvec[:2]), my_heading
                     )
                     fv_win = self._junction_foes.setdefault(
-                        fv.vehicle_id, deque(maxlen=window)
+                        (fv.vehicle_id, second_bumper), deque(maxlen=window)
                     )
                     fv_win.append(self._RelativeVehInfo(fv_range, rel_bearing, dt))
                     updated.add(fv.vehicle_id)
                     if self._predict_collision(fv_win, max_range):
                         if fv_range < max_range and not self._higher_priority(
-                            njl, nj_dist, check_lane, fv, rel_bearing
+                            njl, nj_dist, check_lane, fv, rel_bearing, foe
                         ):
                             # self._logger.debug(f"{self.actor_id} slowing down to avoid collision @ {njl.lane_id} with {fv.vehicle_id} currently in {check_lane.lane_id}")
                             self._target_speed *= fv_range / max_range
@@ -1105,7 +1142,12 @@ class _TrafficActor:
                         self._target_lane_win.gap = min(
                             fv_range, self._target_lane_win.gap
                         )
-        self._junction_foes = {uv: self._junction_foes[uv] for uv in updated}
+        self._junction_foes = {
+            (uv, bumper): self._junction_foes[(uv, bumper)]
+            for uv in updated
+            for bumper in (False, True)
+            if (uv, bumper) in self._junction_foes
+        }
 
     def _check_speed(self, dt: float):
         target_lane = self._target_lane_win.lane

@@ -184,10 +184,12 @@ class SmartsJunctionModel(JunctionModel):
                 - "normal" - traffic actors will attempt to honor normal
                   right-of-way conventions, only yielding when an agent
                   has the right-of-way.  Examples of such conventions include:
+                    - Vehicles going stright have the right-of-way over
+                      turning vehicles;
                     - Vehicles on roads with more lanes have the right-of-way
                       relative to vehicles on intersecting roads with less lanes;
                     - All other things being equal, the vehicle to the right
-                      (in the clockwise direction) has the right-of-way.
+                      (in the counter-clockwise direction) has the right-of-way.
     """
 
     def __init__(self, yield_to_agents: str = "normal"):

@@ -793,8 +793,8 @@ class WaymoMap(RoadMapWithCaches):
         self._feat_dicts = None
 
         # find intersecting lanes
-        self._compute_lane_intersections(False)
-        self._compute_lane_intersections(True)
+        self._compute_lane_intersections(composites=False)
+        self._compute_lane_intersections(composites=True)
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
