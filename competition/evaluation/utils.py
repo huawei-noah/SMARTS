@@ -12,21 +12,21 @@ def resolve_codalab_dirs(
     output_dir: str,
     local: bool = False,
 ) -> Tuple[str, str, str]:
-    """Returns directories needed for the completion of the evaluation submission.
+    """Returns appropriate directories for Codalab remote and local evaluation.
 
     Args:
         root_path (str): The path to the calling file.
-        input_dir (str): The path containing the "res" and "ref" directories provided by
-            CodaLab.
+        input_dir (str): The path containing the "res" and "ref" directories
+            provided by CodaLab.
         output_dir (str): The path to output the scores.txt file.
         local (bool): If local directories should be used.
 
     Returns:
-        Tuple[str, str, str]: The submission, evaluation-scenarios, and the scores directory,
-            respectively. The submission directory contains the user submitted files,
-            the evaluation scenarios directory contains the contents of the unzipped
-            evaluation scenarios, and the scores directory is the directory in which
-            to write the scores.txt file that is used to update the leaderboard.
+        Tuple[str, str, str]: The submission, evaluation-scenarios, and the
+            scores directory, respectively. The submission directory contains
+            the user submitted files, the evaluation-scenarios directory
+            contains the contents of the unzipped evaluation scenarios, and the
+            scores directory is where the scores.txt file is written.
     """
     logger.info(f"root_path={root_path}")
     logger.info(f"input_dir={input_dir}")
@@ -74,3 +74,9 @@ def merge_config(self: Dict[str, Any], other: Dict[str, Any]) -> Dict[str, Any]:
 def validate_config(config: Dict[str, Any], keys: Set[str]) -> bool:
     unaccepted_keys = {*config.keys()} - keys
     assert len(unaccepted_keys) == 0, f"Unaccepted config keys: {unaccepted_keys}"
+
+
+def write_output(text, output_dir):
+    if output_dir:
+        with open(output_dir, "w") as file:
+            file.write(text)

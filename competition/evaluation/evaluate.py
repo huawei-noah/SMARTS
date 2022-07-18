@@ -143,21 +143,17 @@ def run(
     return metric.results()
 
 
-def to_codalab_scores_string(self) -> str:
-    """Convert the data in scores to a CodaLab-scores-compatible string."""
-    # NOTE: The score string names must be the same as in the competition.yaml.
+def to_codalab_scores_string(rank) -> str:
+    """Convert the data in scores to a CodaLab-scores-compatible string.
+
+    Note: The score string names must be the same as in the competition.yaml.
+    """
     return (
         f"completion: {rank['completion']}\n"
         f"time: {rank['time']}\n"
         f"humanness: {rank['humanness']}\n"
         f"rules: {rank['rules']}\n"
     )
-
-
-def write_scores(scores, output_dir):
-    if output_dir:
-        with open(os.path.join(output_dir, _SCORES_FILENAME), "w") as output_file:
-            output_file.write(scores)
 
 
 if __name__ == "__main__":
@@ -216,7 +212,7 @@ if __name__ == "__main__":
     from copy_data import CopyData, DataStore
     from metric import Metric
     from score import Score
-    from utils import load_config, merge_config, validate_config
+    from utils import load_config, merge_config, validate_config, write_output
     from policy import Policy, submitted_wrappers
 
     evaluation_config = merge_config(
@@ -234,7 +230,9 @@ if __name__ == "__main__":
         # Evaluate and write score.
         config = merge_config(self=evaluation_config, other=submission_config)
         rank = evaluate(config)
-        write_scores(to_codalab_scores_string(rank), args.output_dir)
+        output_dir = os.path.join(scores_dir, _SCORES_FILENAME)
+        text = to_codalab_scores_string(rank)
+        write_output(text=text, output_dir=output_dir)
     elif evaluation_config["validate"]:
         # Only validate instantiation of submitted policy.
         Policy()
