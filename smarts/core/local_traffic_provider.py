@@ -682,6 +682,8 @@ class _TrafficActor:
 
         @property
         def drive_time(self) -> float:
+            """The amount of time this vehicle might drive in the
+            target lane under present conditions."""
             return min(self.ttc, self.adj_time_left)
 
         @cached_property
@@ -1046,7 +1048,7 @@ class _TrafficActor:
         def __init__(self, width: int = 5):
             self._width = width
             self._junction_foes: Dict[
-                Tuple[str, bool], Deque[_TrafficActor._RelativeVehInfo]
+                Tuple[str, bool], Deque[_TrafficActor._RelWindow._RelativeVehInfo]
             ] = dict()
 
         def add(
@@ -1058,6 +1060,7 @@ class _TrafficActor:
             my_heading: float,
             dt: float,
         ) -> Tuple[float, float]:
+            """Add a relative observation of veh_id over the last dt secs."""
             bvec = fv_pos - my_pos
             fv_range = np.linalg.norm(bvec)
             rel_bearing = min_angles_difference_signed(vec_to_radians(bvec), my_heading)
@@ -1068,6 +1071,7 @@ class _TrafficActor:
             return rel_bearing, fv_range
 
         def predict_crash_in(self, veh_id: str, bumper: bool) -> float:
+            """Estimate if and when I might collide with veh_id."""
             window = self._junction_foes[(veh_id, bumper)]
             if len(window) <= 1:
                 return math.inf
@@ -1092,6 +1096,7 @@ class _TrafficActor:
             return math.inf
 
         def purge_unseen(self, seen: Set[str]):
+            """Remove unseen vehicle IDs from this cache."""
             self._junction_foes = {
                 (sv, bumper): self._junction_foes[(sv, bumper)]
                 for sv in seen
