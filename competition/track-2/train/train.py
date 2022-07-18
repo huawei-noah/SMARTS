@@ -1,5 +1,6 @@
-from remote_operations import remote_operations
-from remote_operations import goal_region_reward
+from utility import remote_operations
+from utility import goal_region_reward
+from utility import get_goal_layer
 import paramiko
 import getpass
 import pickle
@@ -16,7 +17,6 @@ import pathlib
 from d3rlpy.metrics.scorer import average_value_estimation_scorer
 from d3rlpy.metrics.scorer import td_error_scorer
 import glob
-from reward import goal_region_reward
 
 
 
@@ -104,11 +104,17 @@ for scenario in scenarios[index:len(scenarios)]:
                     terminal = 0
                 else:
                     terminal = 1
-                obs.append(np.asarray(image).reshape(3,256,256))
+                
+                img_obs = np.asarray(image).reshape(3,256,256)
+                goal_obs = get_goal_layer(goal_pos_x, goal_pos_y, current_position[0], current_position[1], current_heading)
+                obs.append(np.concatenate((img_obs, goal_obs), axis=0))
+
                 actions.append([dx, dy, dheading])
+
                 dist_reward = vehicle_data[float(sim_time)]['dist']
                 goal_reward = goal_region_reward(threshold, goal_pos_x, goal_pos_y, current_position[0], current_position[1])
                 rewards.append(dist_reward + goal_reward)
+                
                 terminals.append(terminal)
             print(str(len(obs)) + ' pieces of data are added into dataset.' )
 
