@@ -214,10 +214,6 @@ if __name__ == "__main__":
     from utils import load_config, merge_config, validate_config
     from policy import Policy, submitted_wrappers
 
-    evaluation_config = resolve_config(
-        load_config_yaml(Path(evaluation_dir) / "config.yaml"),
-        _DEFAULT_EVALUATION_CONFIG,
-    )
     evaluation_config = merge_config(
         self=_DEFAULT_EVALUATION_CONFIG,
         other=load_config(Path(evaluation_dir) / "config.yaml"),
