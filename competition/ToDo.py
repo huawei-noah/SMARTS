@@ -6,9 +6,8 @@
 # 3. Issue 1453 - Envision display : Incomplete JSONError lexical Error invalid char in json text
 
 # ToDo
-# 1. Merge deterministic scenario builds - PR1492.
-# 2. Merge distance travelled calculator - PR1492.
-# 3. Add secret scenarios to evaluation - big work.
-# 4. Change distance to obstacles according to Soheil's suggestion.
+# 1. Merge comp-4 into comp-1.
+# 2. Add secret scenarios to evaluation - big work.
+# 3. Change distance to obstacles according to Soheil's suggestion.
 
 # Minor
