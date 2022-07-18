@@ -187,10 +187,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    root_path = str(Path(__file__).absolute().parent)
     # Get directories and install requirements.
     from utils import resolve_codalab_dirs
     submit_dir, evaluation_dir, scores_dir = resolve_codalab_dirs(
-        os.path.dirname(__file__), args.input_dir, args.output_dir, args.local
+        root_path, args.input_dir, args.output_dir, args.local
     )
 
     req_file = os.path.join(submit_dir, "requirements.txt")
