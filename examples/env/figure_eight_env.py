@@ -2,9 +2,9 @@ from pathlib import Path
 
 import gym
 
-from smarts.zoo.agent_spec import AgentSpec
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.env.wrappers.single_agent import SingleAgent
+from smarts.zoo.agent_spec import AgentSpec
 
 agent_spec = AgentSpec(
     interface=AgentInterface.from_type(

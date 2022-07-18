@@ -121,7 +121,7 @@ class PositionalGoal(Goal):
         a = vehicle.position
         b = self.position
         sqr_dist = (a[0] - b.x) ** 2 + (a[1] - b.y) ** 2
-        return sqr_dist <= self.radius ** 2
+        return sqr_dist <= self.radius**2
 
 
 class TraverseGoal(Goal):

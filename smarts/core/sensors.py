@@ -952,7 +952,9 @@ class TripMeterSensor(Sensor):
         )
 
     @staticmethod
-    def _compute_additional_dist_travelled(recent_wp: Waypoint, new_waypoint: Waypoint, vehicle_pose: Pose):
+    def _compute_additional_dist_travelled(
+        recent_wp: Waypoint, new_waypoint: Waypoint, vehicle_pose: Pose
+    ):
         wp_disp_vec = new_waypoint.pos - recent_wp.pos
         pose_disp_vec = vehicle_pose.position[:2] - recent_wp.pos[:2]
         direction = np.sign(np.dot(pose_disp_vec, wp_disp_vec))
@@ -1153,7 +1155,7 @@ class ViaSensor(Sensor):
             closest_position_on_lane = closest_position_on_lane[:2]
 
             dist_from_lane_sq = squared_dist(vehicle_position, closest_position_on_lane)
-            if dist_from_lane_sq > self._acquisition_range ** 2:
+            if dist_from_lane_sq > self._acquisition_range**2:
                 continue
 
             point = ViaPoint(
@@ -1166,7 +1168,7 @@ class ViaSensor(Sensor):
             near_points.append(point)
             dist_from_point_sq = squared_dist(vehicle_position, via.position)
             if (
-                dist_from_point_sq <= via.hit_distance ** 2
+                dist_from_point_sq <= via.hit_distance**2
                 and via not in self._consumed_via_points
                 and np.isclose(
                     self._vehicle.speed, via.required_speed, atol=self._speed_accuracy

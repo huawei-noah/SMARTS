@@ -60,7 +60,7 @@ class MetricKeys:
 
 
 class BasicMetricHandler(MetricHandler):
-    """ MetricHandler serves for the metric """
+    """MetricHandler serves for the metric"""
 
     def __init__(self):
         """Create a MetricHandler instance to record the"""
@@ -80,7 +80,7 @@ class BasicMetricHandler(MetricHandler):
         self._logs[episode].record_step(observations, actions, rewards, dones, infos)
 
     def show_plots(self, **kwargs):
-        """ Show behavior metric plots, support only one algorithm now. """
+        """Show behavior metric plots, support only one algorithm now."""
 
         behavior_metric = BehaviorMetric()
         results, metric_keys = behavior_metric.compute(self)
