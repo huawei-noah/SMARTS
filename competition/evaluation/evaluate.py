@@ -187,9 +187,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    root_path = str(Path(__file__).absolute().parent)
     # Get directories and install requirements.
     from utils import resolve_codalab_dirs
+    root_path = str(Path(__file__).absolute().parent)
     submit_dir, evaluation_dir, scores_dir = resolve_codalab_dirs(
         root_path, args.input_dir, args.output_dir, args.local
     )
@@ -202,7 +202,7 @@ if __name__ == "__main__":
             "-m",
             "pip",
             "install",
-            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
+            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-4",
         ]
     )
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
