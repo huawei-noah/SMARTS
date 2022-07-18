@@ -40,7 +40,12 @@ scoring_program.zip:
 	cd -
 	rm -r temp_scoring_program
 
-submission.zip:
-	cd submission && \
-	zip -r $(COMPETITION_DIR)/submission.zip . -x '*__pycache__*' && \
+track1_submission.zip:
+	cd track1/submission && \
+	zip -r $(COMPETITION_DIR)/track1_submission.zip . -x '*__pycache__*' && \
+	cd -
+
+track2_submission.zip:
+	cd track2/submission && \
+	zip -r $(COMPETITION_DIR)/track2_submission.zip . -x '*__pycache__*' && \
 	cd -

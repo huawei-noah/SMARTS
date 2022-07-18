@@ -1,7 +1,7 @@
 # Multiple Scenarios
 
 ## Objective
-Objective is to train a single reinforcement learning (RL) policy capable of controlling single-agent or multi-agent to complete different tasks in various scenarios. In each scenario the ego-agents must drive towards their respective goal locations. The scenario names and their missions are as follows.
+Objective is to train a single reinforcement learning (RL) policy capable of controlling single-agent or multi-agent to complete different tasks in various scenarios. In each scenario the ego-agents must drive towards their respective goal locations. The scenario names and their missions, given for training, are as follows.
 
 - 1_to_2lane_left_turn_c 
     + A single ego agent must make a left turn at an uprotected cross-junction.
@@ -31,7 +31,7 @@ The example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-b
 + Use `python3.8` to develop your model.
 + This example is packaged using its own `setup.py` file.
     ```bash
-    $ cd <path>/SMARTS/competition/train
+    $ cd <path>/SMARTS/competition/track1/train
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
@@ -80,21 +80,21 @@ The example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-b
             sumo_headless=False,
         )
         ```
-    1. This can be achieved by setting `sumo_gui: True` in the `SMARTS/competition/train/config.yaml` file. 
+    1. This can be achieved by setting `sumo_gui: True` in the `SMARTS/competition/track1/train/config.yaml` file. 
     1. A SUMO gui will automatically pop up during simulation.
 
 ## Train
 1. Train
     ```bash
-    $ cd <path>/SMARTS/competition/train
+    $ cd <path>/SMARTS/competition/track1/train
     $ python3.8 run.py
     ```
-1. Trained model is saved into `<path>/SMARTS/competition/train/logs/<folder_name>` folder.
+1. Trained model is saved into `<path>/SMARTS/competition/track1/train/logs/<folder_name>` folder.
 
 ## Evaluate
 1. Run to evaluate your model.
     ```bash
-    $ cd <path>/SMARTS/competition/train
+    $ cd <path>/SMARTS/competition/track1/train
     $ python3.8 run.py --mode=evaluate --model="./logs/<folder_name>/<model>"
     ```
 
@@ -102,8 +102,8 @@ The example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-b
 1. Train a model inside docker
     ```bash
     $ cd <path>/SMARTS
-    $ docker build --file=./competition/train/Dockerfile --network=host --tag=multi_scenario .
+    $ docker build --file=./competition/track1/train/Dockerfile --network=host --tag=multi_scenario .
     $ docker run --rm -it --network=host --gpus=all multi_scenario
-    (container) $ cd /src/competition/train
+    (container) $ cd /src/competition/track1/train
     (container) $ python3.8 run.py
     ```

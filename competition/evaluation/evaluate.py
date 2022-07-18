@@ -191,7 +191,10 @@ if __name__ == "__main__":
     from utils import resolve_codalab_dirs
     root_path = str(Path(__file__).absolute().parent)
     submit_dir, evaluation_dir, scores_dir = resolve_codalab_dirs(
-        root_path, args.input_dir, args.output_dir, args.local
+        root_path=root_path, 
+        input_dir=args.input_dir, 
+        output_dir=args.output_dir, 
+        local=args.local
     )
 
     req_file = os.path.join(submit_dir, "requirements.txt")
