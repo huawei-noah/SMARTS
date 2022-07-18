@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
 
 logging.basicConfig(level=logging.INFO)
@@ -62,8 +62,8 @@ def make_env(
     env = gym.make(
         "smarts.env:multi-scenario-v0",
         scenario=scenario,
-        img_meters=config["img_meters"],
-        img_pixels=config["img_pixels"],
+        img_meters=int(config["img_meters"]),
+        img_pixels=int(config["img_pixels"]),
         action_space="Continuous",
         sumo_headless=True,
     )
@@ -214,6 +214,13 @@ def load_config_yaml(path: Path) -> Optional[Dict[str, Any]]:
             task_config = yaml.safe_load(task_file)
     return task_config
 
+def validate_config(
+    config: Dict[str, Any], keys: Set[str]
+) -> bool:
+    unaccepted_keys = {*config.keys()} - keys
+    assert (
+        len(unaccepted_keys) == 0
+    ), f"Unaccepted evaluation config keys: {unaccepted_keys}"
 
 def resolve_config(
     base_config: Dict[str, Any], defaults: Dict[str, Any]
@@ -283,14 +290,11 @@ if __name__ == "__main__":
         load_config_yaml(Path(evaluation_dir) / "config.yaml"),
         _DEFAULT_EVALUATION_CONFIG,
     )
+    validate_config(evaluation_config, _EVALUATION_CONFIG_KEYS)
     submission_config = resolve_config(
         load_config_yaml(Path(submit_dir) / "config.yaml"), _DEFAULT_SUBMISSION_CONFIG
     )
-
-    unaccepted_keys = {*evaluation_config.keys()} - _EVALUATION_CONFIG_KEYS
-    assert (
-        len(unaccepted_keys) == 0
-    ), f"Unaccepted evaluation config keys: {unaccepted_keys}"
+    validate_config(evaluation_config, _SUBMISSION_CONFIG_KEYS)
 
     # Skip this if there is no evaluation
     if evaluation_config["evaluate"]:
