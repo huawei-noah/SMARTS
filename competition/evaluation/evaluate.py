@@ -23,7 +23,7 @@ _DEFAULT_EVALUATION_CONFIG = dict(
     seed=42,
     scenarios=[
         "1_to_2lane_left_turn_c",
-        # "1_to_2lane_left_turn_t",
+        "1_to_2lane_left_turn_t",
         # "3lane_merge_multi_agent",
         # "3lane_merge_single_agent",
         # "3lane_cruise_multi_agent",
@@ -224,7 +224,7 @@ if __name__ == "__main__":
         self=_DEFAULT_SUBMISSION_CONFIG,
         other=load_config(Path(submit_dir) / "config.yaml"),
     )
-    validate_config(config=evaluation_config, keys=_SUBMISSION_CONFIG_KEYS)
+    validate_config(config=submission_config, keys=_SUBMISSION_CONFIG_KEYS)
 
     if evaluation_config["evaluate"]:
         # Evaluate and write score.
@@ -234,5 +234,5 @@ if __name__ == "__main__":
         text = to_codalab_scores_string(rank)
         write_output(text=text, output_dir=output_dir)
     elif evaluation_config["validate"]:
-        # Only validate instantiation of submitted policy.
+        # Validate instantiation of submitted policy.
         Policy()
