@@ -37,7 +37,7 @@ def time_to_cover(dist: float, speed: float, acc: float = 0.0) -> float:
             return math.inf
         t = dist / speed
         return t if t >= 0 else math.inf
-    discriminant = speed ** 2 + 2 * acc * dist
+    discriminant = speed**2 + 2 * acc * dist
     if discriminant < 0:
         return math.inf
     rad = math.sqrt(discriminant)

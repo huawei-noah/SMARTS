@@ -83,6 +83,7 @@ Options:
   --clean             Clean previously generated artifacts first
   --allow-offset-map  Allows road network to be offset from the origin. If not
                       specified, creates a new network file if necessary.
+  --seed INTEGER      Set the base seed of the scenario.
   --help              Show this message and exit.
 
 build-all
@@ -98,6 +99,7 @@ Options:
                        origin. If not specified, a new network file is created
                        if necessary.  Defaults to False except when there's
                        Traffic History data associated with the scenario.
+  --seed INTEGER       Set the base seed of the scenarios.
   --help               Show this message and exit.
 
 clean

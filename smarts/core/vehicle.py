@@ -480,7 +480,7 @@ class Vehicle:
         vehicle.attach_trip_meter_sensor(
             TripMeterSensor(
                 vehicle=vehicle,
-                sim=sim,
+                road_map=sim.road_map,
                 plan=plan,
             )
         )

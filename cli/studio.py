@@ -24,7 +24,7 @@ import sys
 from multiprocessing import Process, Semaphore, synchronize
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 
 import click
 
@@ -50,22 +50,35 @@ def scenario_cli():
     default=False,
     help="Allows road network to be offset from the origin. If not specified, creates a new network file if necessary.",
 )
+@click.option(
+    "--seed",
+    type=int,
+    default=42,
+    help="Set the base seed of the scenario.",
+)
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def build_scenario(clean: bool, allow_offset_map: bool, scenario: str):
+def build_scenario(clean: bool, allow_offset_map: bool, scenario: str, seed: int):
     click.echo(f"build-scenario {scenario}")
+
     from smarts.sstudio.build_scenario import build_single_scenario
 
-    build_single_scenario(clean, allow_offset_map, scenario, click.echo)
+    assert seed == None or isinstance(seed, (int))
+
+    build_single_scenario(clean, allow_offset_map, scenario, seed, click.echo)
 
 
 def _build_single_scenario_proc(
-    clean: bool, allow_offset_map: bool, scenario: str, semaphore: synchronize.Semaphore
+    clean: bool,
+    allow_offset_map: bool,
+    scenario: str,
+    semaphore: synchronize.Semaphore,
+    seed: int,
 ):
     from smarts.sstudio.build_scenario import build_single_scenario
 
     semaphore.acquire()
     try:
-        build_single_scenario(clean, allow_offset_map, scenario, click.echo)
+        build_single_scenario(clean, allow_offset_map, scenario, seed, click.echo)
     finally:
         semaphore.release()
 
@@ -99,8 +112,25 @@ def _is_scenario_folder_to_build(path: str) -> bool:
     default=False,
     help="Allows road networks (maps) to be offset from the origin. If not specified, a new network file is created if necessary.  Defaults to False except when there's Traffic History data associated with the scenario.",
 )
+@click.option(
+    "--seed",
+    type=int,
+    default=42,
+    help="Set the base seed of the scenarios.",
+)
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
+def build_all_scenarios(
+    clean: bool, allow_offset_maps: bool, scenarios: List[str], seed: int
+):
+    _build_all_scenarios(clean, allow_offset_maps, scenarios, seed)
+
+
+def _build_all_scenarios(
+    clean: bool,
+    allow_offset_maps: bool,
+    scenarios: List[str],
+    seed: Optional[int] = None,
+):
     if not scenarios:
         # nargs=-1 in combination with a default value is not supported
         # if scenarios is not given, set /scenarios as default
@@ -116,7 +146,7 @@ def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
                 scenario = f"{scenarios_path}/{p.relative_to(scenarios_path)}"
                 proc = Process(
                     target=_build_single_scenario_proc,
-                    args=(clean, allow_offset_maps, scenario, sema),
+                    args=(clean, allow_offset_maps, scenario, sema, seed),
                 )
                 all_processes.append((scenario, proc))
                 proc.start()

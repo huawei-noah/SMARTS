@@ -31,25 +31,25 @@ class MetricHandler(metaclass=ABCMeta):
 
     @abstractmethod
     def log_step(self, **kwargs):
-        """ Called at each time step to log the step information """
+        """Called at each time step to log the step information"""
         pass
 
     @abstractmethod
     def show_plots(self, **kwargs):
-        """ Do visualization """
+        """Do visualization"""
         pass
 
     @abstractmethod
     def write_to_csv(self, csv_dir):
-        """ Write logs to csv files """
+        """Write logs to csv files"""
         pass
 
     @abstractmethod
     def read_logs(self, csv_dir):
-        """ Read logs from local csv files"""
+        """Read logs from local csv files"""
         pass
 
     @abstractmethod
     def compute(self, **kwargs):
-        """ Analysis with given metrics """
+        """Analysis with given metrics"""
         pass
