@@ -21,15 +21,15 @@ phases:
     0:
         phasenumber: 0
         description: Validate submissions
-        label: "Test Submission"
+        label: "Validate Submission"
         start_date: 2022-07-01
         max_submissions: 1000
         is_scoring_only: False
         scoring_program: scoring_program.zip
         reference_data: validation_evaluation.zip
-        color: grey
+        color: orange
         execution_time_limit: 21600
-        max_submission_size: 500
+        max_submission_size: 300
         phase_never_ends: True
     1:
         phasenumber: 1
@@ -42,7 +42,7 @@ phases:
         reference_data: track1_evaluation.zip
         color: green
         execution_time_limit: 21600
-        max_submission_size: 500
+        max_submission_size: 300
 
     2:
         phasenumber: 2
@@ -55,7 +55,7 @@ phases:
         reference_data: track2_evaluation.zip
         color: blue
         execution_time_limit: 21600
-        max_submission_size: 500
+        max_submission_size: 300
 
 # Leaderboard
 leaderboard:
