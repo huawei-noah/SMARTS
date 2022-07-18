@@ -1,5 +1,5 @@
-validate: TRUEIMG_PIXELS
-evaluate: TRUE
+validate: False
+evaluate: True
 eval_episodes: 2
 scenarios : [
     '1_to_2lane_left_turn_c',

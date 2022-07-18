@@ -1,2 +1,2 @@
-validate: TRUE
-evaluate: FALSE
+validate: True
+evaluate: False

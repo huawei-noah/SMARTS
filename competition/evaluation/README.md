@@ -32,7 +32,8 @@ This folder contains the python script that CodaLab uses to evaluate the submiss
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
-    $ python3.8 evaluate.py --input_dir=<path/to/submission/folder> --local
+    $ python3.8 evaluate.py --input_dir=<path/to/submission/folder> --output_dir=<path/to/output/folder> --local
+    # Evaluation scores will be written to the output_dir folder.
     # For example:
-    $ python3.8 evaluate.py --input_dir=<path>/SMARTS/competition/submission --local
+    $ python3.8 evaluate.py --input_dir=<path>/SMARTS/competition/submission --output_dir=../output --local
     ```

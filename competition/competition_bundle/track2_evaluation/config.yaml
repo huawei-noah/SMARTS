@@ -1,3 +1,3 @@
-validate: TRUE
-evaluate: TRUE
+validate: False
+evaluate: True
 eval_episodes: 2
