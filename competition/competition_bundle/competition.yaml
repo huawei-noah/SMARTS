@@ -2,10 +2,11 @@
 # See https://github.com/codalab/codalab-competitions/wiki/Organizer_Codalab-competition-YAML-definition-language
 ---
 admin_names: ma-huawei, adai
-title: Drive SMARTS Competition 2
+title: Drive SMARTS Competition
 description: Drive SMARTS Competition.
 image: logo.jpg
 force_submission_to_leaderboard: True
+disallow_leaderboard_modifying: True
 has_registration: True
 end_date: 2022-11-01
 html:
