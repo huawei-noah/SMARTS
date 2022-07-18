@@ -233,3 +233,4 @@ if __name__ == "__main__":
     elif evaluation_config["validate"]:
         # Only validate instantiation of submitted policy.
         Policy()
+
