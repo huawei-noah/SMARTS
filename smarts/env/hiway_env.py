@@ -231,7 +231,7 @@ class HiWayEnv(gym.Env):
         ), "Expected Dict[str, any]"
 
         observations, rewards, dones, extras = None, None, None, None
-        with timeit("SMARTS Simulation/Scenario Step", self._log):
+        with timeit("SMARTS Simulation/Scenario Step", self._log.info):
             observations, rewards, dones, extras = self._smarts.step(agent_actions)
 
         infos = {
