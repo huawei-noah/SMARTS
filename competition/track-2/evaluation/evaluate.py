@@ -56,14 +56,14 @@ def evaluate():
         "eval_episodes": 100,
     }
     scenarios = [
-        # "1_to_2lane_left_turn_c",
+        "1_to_2lane_left_turn_c",
         # "1_to_2lane_left_turn_t",
         # "3lane_merge_multi_agent",
         # "3lane_merge_single_agent",
         # "3lane_cruise_multi_agent",
         # "3lane_cruise_single_agent",
         # "3lane_cut_in",
-        "3lane_overtake",
+        # "3lane_overtake",
     ]
 
     # Make evaluation environments.
