@@ -341,7 +341,11 @@ class LocalTrafficProvider(TrafficProvider):
         assert False, f"unknown vehicle_id: {vehicle_id}"
 
     def can_accept_vehicle(self, state: VehicleState) -> bool:
-        return state.role == ActorRole.Social or state.role == ActorRole.Unknown
+        # We don't accept vehicles that aren't on the road
+        # (those should currently be removed from the simultation).
+        return (
+            state.role == ActorRole.Social or state.role == ActorRole.Unknown
+        ) and self.road_map.nearest_lane(state.pose.point) is not None
 
     def add_vehicle(
         self,
@@ -477,6 +481,9 @@ class _TrafficActor:
     ):
         """Factory to construct a _TrafficActor object from an existing VehiclState object."""
         cur_lane = owner.road_map.nearest_lane(state.pose.point)
+        assert (
+            cur_lane
+        ), f"LocalTrafficProvider accepted a vehicle that's off road?  pos={state.pose.point}"
         if not route or not route.roads:
             route = owner.road_map.random_route(starting_road=cur_lane.road)
         route.add_to_cache()
