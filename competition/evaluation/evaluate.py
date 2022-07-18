@@ -183,7 +183,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Get directories and install requirements.
+    # Get directories.
     from utils import resolve_codalab_dirs
 
     root_path = str(Path(__file__).absolute().parent)
@@ -194,6 +194,7 @@ if __name__ == "__main__":
         local=args.local,
     )
 
+    # Install requirements.
     req_file = os.path.join(submit_dir, "requirements.txt")
     sys.path.insert(0, submit_dir)
     subprocess.check_call(
@@ -215,6 +216,7 @@ if __name__ == "__main__":
     from utils import load_config, merge_config, validate_config, write_output
     from policy import Policy, submitted_wrappers
 
+    # Get config parameters.
     evaluation_config = merge_config(
         self=_DEFAULT_EVALUATION_CONFIG,
         other=load_config(Path(evaluation_dir) / "config.yaml"),
