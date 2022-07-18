@@ -141,12 +141,35 @@ class SmartsLaneChangingModel(LaneChangingModel):
             If True, will cutin when a suitable opportunity presents itself based on the above parameters,
             even if it means the risk of not not completing the assigned route; otherwise, will forego
             the chance.
+        hold_period:
+            The minimum amount of time (in seconds) to remain in the agent's lane after cutting into it
+            (including the time it takes within the lane to complete the maneuver). Must be non-negative.
+            default: 3.0.
+        slow_down_after:
+            Target speed during the hold_period will be scaled by this value.
+            Must be non-negative.  default: 1.0.
+        multi_lane_cutin:
+            If True, this vehicle will consider changing across multiple lanes at once in order
+            to cutin upon an agent vehicle when there's an opportunity.  default: False.
     """
 
     def __init__(
-        self, cutin_prob: float = 0.0, assertive: float = 1.0, dogmatic: bool = True
+        self,
+        cutin_prob: float = 0.0,
+        assertive: float = 1.0,
+        dogmatic: bool = True,
+        hold_period: float = 3.0,
+        slow_down_after: float = 1.0,
+        multi_lane_cutin: bool = False,
     ):
-        super().__init__(cutin_prob=cutin_prob, assertive=assertive, dogmatic=dogmatic)
+        super().__init__(
+            cutin_prob=cutin_prob,
+            assertive=assertive,
+            dogmatic=dogmatic,
+            hold_period=hold_period,
+            slow_down_after=slow_down_after,
+            multi_lane_cutin=multi_lane_cutin,
+        )
 
 
 @dataclass(frozen=True)
@@ -376,6 +399,12 @@ class Route:
         """All roads that are used within this route."""
         return (self.begin[0],) + self.via + (self.end[0],)
 
+    def __hash__(self):
+        return _pickle_hash(self)
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and hash(self) == hash(other)
+
 
 @dataclass(frozen=True)
 class RandomRoute:
@@ -388,6 +417,12 @@ class RandomRoute:
     map_spec: Optional[MapSpec] = None
     """All routes are relative to a road map.  If not specified here,
     the default map_spec for the scenario is used."""
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and hash(self) == hash(other)
 
 
 @dataclass(frozen=True)

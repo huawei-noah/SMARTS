@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import os
 import subprocess
 from typing import List
 
@@ -32,6 +33,20 @@ from .genscenario import (
     gen_traffic,
     gen_traffic_histories,
 )
+
+
+# PYTHONHASHSEED must be "random", unset (default `None`), or an integer in range [0; 4294967295]
+_hashseed = os.getenv("PYTHONHASHSEED")
+if _hashseed is None:
+    _hashseed = 42
+    # We replace the seed if it does not exist to make subprocesses predictable
+    os.environ["PYTHONHASHSEED"] = f"{_hashseed}"
+elif _hashseed == "random":
+    import logging
+
+    logging.warning(
+        "PYTHONHASHSEED is 'random'. Simulation and generation may be unpredictable."
+    )
 
 
 def build_scenario(scenario: List[str]):

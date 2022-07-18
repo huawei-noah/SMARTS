@@ -21,14 +21,13 @@
 import logging
 from typing import Any, Dict, Optional, Set, Tuple, Union
 
-import cloudpickle
-
 from envision.types import format_actor_id
 from smarts.core.actor_role import ActorRole
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.plan import Plan
+from smarts.core.heterogenous_agent_buffer import HeterogenousAgentBuffer
 from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState
@@ -45,7 +44,7 @@ class AgentManager:
 
     def __init__(self, interfaces, zoo_addrs=None):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._remote_agent_buffer = None
+        self._agent_buffer = None
         self._zoo_addrs = zoo_addrs
         self._ego_agent_ids = set()
         self._social_agent_ids = set()
@@ -79,9 +78,9 @@ class AgentManager:
 
     def destroy(self):
         """Clean up remaining resources for deletion."""
-        if self._remote_agent_buffer:
-            self._remote_agent_buffer.destroy()
-            self._remote_agent_buffer = None
+        if self._agent_buffer:
+            self._agent_buffer.destroy()
+            self._agent_buffer = None
 
     @property
     def agent_ids(self) -> Set[str]:
@@ -283,9 +282,7 @@ class AgentManager:
         try:
             social_agent_actions = {
                 agent_id: (
-                    cloudpickle.loads(
-                        self._remote_social_agents_action[agent_id].result().action
-                    )
+                    self._remote_social_agents_action[agent_id].result()
                     if self._remote_social_agents_action.get(agent_id, None)
                     else None
                 )
@@ -385,22 +382,22 @@ class AgentManager:
         for agent_id, agent_interface in self._initial_interfaces.items():
             self.add_ego_agent(agent_id, agent_interface)
 
+    def _setup_agent_buffer(self):
+        if not self._agent_buffer:
+            self._agent_buffer = HeterogenousAgentBuffer(
+                zoo_manager_addrs=self._zoo_addrs
+            )
+
     def setup_social_agents(self, sim):
         """Initialize all social agents."""
         social_agents = sim.scenario.social_agents
         if social_agents:
-            if not self._remote_agent_buffer:
-                from smarts.core.remote_agent_buffer import RemoteAgentBuffer
-
-                self._remote_agent_buffer = RemoteAgentBuffer(
-                    zoo_manager_addrs=self._zoo_addrs
-                )
+            self._setup_agent_buffer()
         else:
             return
 
         self._remote_social_agents = {
-            agent_id: self._remote_agent_buffer.acquire_remote_agent()
-            for agent_id in social_agents
+            agent_id: self._agent_buffer.acquire_agent() for agent_id in social_agents
         }
 
         for agent_id, (social_agent, social_agent_model) in social_agents.items():
@@ -512,13 +509,8 @@ class AgentManager:
 
     def start_social_agent(self, agent_id, social_agent, agent_model):
         """Starts a managed social agent."""
-        if not self._remote_agent_buffer:
-            from smarts.core.remote_agent_buffer import RemoteAgentBuffer
-
-            self._remote_agent_buffer = RemoteAgentBuffer(
-                zoo_manager_addrs=self._zoo_addrs
-            )
-        remote_agent = self._remote_agent_buffer.acquire_remote_agent()
+        self._setup_agent_buffer()
+        remote_agent = self._agent_buffer.acquire_agent()
         remote_agent.start(social_agent)
         self._remote_social_agents[agent_id] = remote_agent
         self._agent_interfaces[agent_id] = social_agent.interface
