@@ -54,10 +54,10 @@ jsonpointer==2.3
 jsonschema==4.7.2
 keras==2.9.0
 Keras-Preprocessing==1.1.2
-kiwisolver==1.4.3
+kiwisolver==1.4.4
 libclang==14.0.1
 lz4==4.0.1
-Markdown==3.3.7
+Markdown==3.4.1
 matplotlib==3.5.2
 msgpack==1.0.4
 multidict==6.0.2
@@ -105,7 +105,7 @@ rich==12.5.1
 rsa==4.8
 Rtree==1.0.0
 scipy==1.7.3
-sh==1.14.2
+sh==1.14.3
 Shapely==1.8.2
 six==1.16.0
 soupsieve==2.3.2.post1
