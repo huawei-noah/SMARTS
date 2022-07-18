@@ -6,8 +6,7 @@
 # 3. Issue 1453 - Envision display : Incomplete JSONError lexical Error invalid char in json text
 
 # ToDo
-# 1. Merge comp-4 into comp-1.
-# 2. Add secret scenarios to evaluation - big work.
-# 3. Change distance to obstacles according to Soheil's suggestion.
+# 1. Add secret scenarios to evaluation - big work.
+# 2. Change distance to obstacles according to Soheil's suggestion.
 
 # Minor
