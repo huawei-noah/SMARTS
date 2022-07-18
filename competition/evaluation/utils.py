@@ -73,6 +73,4 @@ def merge_config(self: Dict[str, Any], other: Dict[str, Any]) -> Dict[str, Any]:
 
 def validate_config(config: Dict[str, Any], keys: Set[str]) -> bool:
     unaccepted_keys = {*config.keys()} - keys
-    assert (
-        len(unaccepted_keys) == 0
-    ), f"Unaccepted config keys: {unaccepted_keys}"
+    assert len(unaccepted_keys) == 0, f"Unaccepted config keys: {unaccepted_keys}"

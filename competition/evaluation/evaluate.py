@@ -189,12 +189,13 @@ if __name__ == "__main__":
 
     # Get directories and install requirements.
     from utils import resolve_codalab_dirs
+
     root_path = str(Path(__file__).absolute().parent)
     submit_dir, evaluation_dir, scores_dir = resolve_codalab_dirs(
-        root_path=root_path, 
-        input_dir=args.input_dir, 
-        output_dir=args.output_dir, 
-        local=args.local
+        root_path=root_path,
+        input_dir=args.input_dir,
+        output_dir=args.output_dir,
+        local=args.local,
     )
 
     req_file = os.path.join(submit_dir, "requirements.txt")
@@ -225,7 +226,7 @@ if __name__ == "__main__":
     validate_config(config=evaluation_config, keys=_EVALUATION_CONFIG_KEYS)
     submission_config = merge_config(
         self=_DEFAULT_SUBMISSION_CONFIG,
-        other=load_config(Path(submit_dir) / "config.yaml"), 
+        other=load_config(Path(submit_dir) / "config.yaml"),
     )
     validate_config(config=evaluation_config, keys=_SUBMISSION_CONFIG_KEYS)
 
@@ -237,4 +238,3 @@ if __name__ == "__main__":
     elif evaluation_config["validate"]:
         # Only validate instantiation of submitted policy.
         Policy()
-

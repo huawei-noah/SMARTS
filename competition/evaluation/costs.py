@@ -156,7 +156,7 @@ def _lane_center_offset() -> Callable[[Observation], Dict[str, float]]:
         norm_dist_from_center = signed_dist_from_center / lane_hwidth
 
         # J_LC : Lane center offset
-        j_lc = norm_dist_from_center ** 2
+        j_lc = norm_dist_from_center**2
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_lc)
         return {"lane_center_offset": ave}
@@ -194,7 +194,7 @@ def _velocity_offset() -> Callable[[Observation], Dict[str, float]]:
 
         # Excess speed beyond speed limit.
         overspeed = speed_limit - ego.speed if speed_limit > ego.speed else 0
-        j_v = overspeed ** 2
+        j_v = overspeed**2
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_v)
         return {"velocity_offset": ave}
@@ -215,7 +215,7 @@ def _yaw_rate() -> Callable[[Observation], Dict[str, float]]:
         yaw_rate = (
             obs.ego_vehicle_state.yaw_rate if obs.ego_vehicle_state.yaw_rate else 0
         )
-        j_y = yaw_rate ** 2
+        j_y = yaw_rate**2
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_y)
         return {"yaw_rate": ave}
 
