@@ -201,7 +201,7 @@ if __name__ == "__main__":
             "-m",
             "pip",
             "install",
-            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-4",
+            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
         ]
     )
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
