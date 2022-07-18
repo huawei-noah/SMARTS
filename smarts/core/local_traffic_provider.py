@@ -43,7 +43,7 @@ from .road_map import RoadMap, Waypoint
 from .route_cache import RouteWithCache
 from .scenario import Scenario
 from .traffic_provider import TrafficProvider
-from .utils.kinematics import time_to_cover
+from .utils.kinematics import distance_covered, time_to_cover
 from .utils.math import min_angles_difference_signed, radians_to_vec, vec_to_radians
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
@@ -427,7 +427,9 @@ class _TrafficActor:
         self._max_angular_velocity = 26  # arbitrary, based on limited testing
         self._prev_angular_err = None
 
-        self._junction_foes: Dict[Tuple[str, bool], Deque] = dict()
+        self._bumper_wins_front = _TrafficActor._RelWindow(5)
+        self._bumper_wins_back = _TrafficActor._RelWindow(5)
+
         self._owner._actors_created += 1
 
     @classmethod
@@ -970,11 +972,13 @@ class _TrafficActor:
             # (since it makes collision avoidance harder for everyone!)
             if lw.lane.in_junction:
                 continue
-            # also don't change lanes if we can't *finish* before entering a junction
-            rl = RoadMap.Route.RouteLane(lw.lane, self._route_ind)
-            _, nj_dist = self._route.next_junction(rl, self._offset)
-            if change_time > time_to_cover(nj_dist, self.speed, self.acceleration):
-                continue
+            if change_time < lw.time_left:
+                # also don't change lanes if we can't *finish* before entering a junction
+                # (unless our lane is ending)
+                rl = RoadMap.Route.RouteLane(lw.lane, self._route_ind)
+                _, nj_dist = self._route.next_junction(rl, self._offset)
+                if change_time > time_to_cover(nj_dist, self.speed, self.acceleration):
+                    continue
             # if there's an agent behind me, possibly cut in on it
             if lw.agent_gap and self._should_cutin(lw):
                 best_lw = lw
@@ -1031,37 +1035,69 @@ class _TrafficActor:
         # TODO:  also depends on vehicle type (traction, length, etc.)
         self._target_speed = min(abs(radius) * 0.5714, self._target_speed)
 
-    @dataclass
-    class _RelativeVehInfo:
-        dist: float
-        bearing: float
-        heading: float
-        dt: float
+    class _RelWindow:
+        @dataclass
+        class _RelativeVehInfo:
+            dist: float
+            bearing: float
+            heading: float
+            dt: float
 
-    def _predict_collision(
-        self, window: List[_RelativeVehInfo], max_range: float
-    ) -> bool:
-        if len(window) <= 1:
-            return False
-        if window[-1].dist > max_range:
-            return False
-        prev_range, prev_bearing, prev_heading = None, None, None
-        range_del = 0.0
-        bearing_del = 0.0
-        for rvi in window:
-            if prev_range is not None:
-                range_del += (rvi.dist - prev_range) / rvi.dt
-            if prev_bearing is not None:
-                bearing_del += (
-                    min_angles_difference_signed(rvi.bearing, prev_bearing)
-                    + min_angles_difference_signed(rvi.heading, prev_heading)
-                ) / rvi.dt
-            prev_range = rvi.dist
-            prev_bearing = rvi.bearing
-            prev_heading = rvi.heading
-        range_del /= len(window) - 1
-        bearing_del /= len(window) - 1
-        return range_del < 0 and abs(bearing_del) < 0.015 * math.pi
+        def __init__(self, width: int = 5):
+            self._width = width
+            self._junction_foes: Dict[
+                Tuple[str, bool], Deque[_TrafficActor._RelativeVehInfo]
+            ] = dict()
+
+        def add(
+            self,
+            veh_id: str,
+            bumper: bool,
+            fv_pos: float,
+            my_pos: float,
+            my_heading: float,
+            dt: float,
+        ) -> Tuple[float, float]:
+            bvec = fv_pos - my_pos
+            fv_range = np.linalg.norm(bvec)
+            rel_bearing = min_angles_difference_signed(vec_to_radians(bvec), my_heading)
+            fv_win = self._junction_foes.setdefault(
+                (veh_id, bumper), deque(maxlen=self._width)
+            )
+            fv_win.append(self._RelativeVehInfo(fv_range, rel_bearing, my_heading, dt))
+            return rel_bearing, fv_range
+
+        def predict_crash_in(self, veh_id: str, bumper: bool) -> float:
+            window = self._junction_foes[(veh_id, bumper)]
+            if len(window) <= 1:
+                return math.inf
+            prev_range, prev_bearing, prev_heading = None, None, None
+            range_del = 0.0
+            bearing_del = 0.0
+            for rvi in window:
+                if prev_range is not None:
+                    range_del += (rvi.dist - prev_range) / rvi.dt
+                if prev_bearing is not None:
+                    bearing_del += (
+                        min_angles_difference_signed(rvi.bearing, prev_bearing)
+                        + min_angles_difference_signed(rvi.heading, prev_heading)
+                    ) / rvi.dt
+                prev_range = rvi.dist
+                prev_bearing = rvi.bearing
+                prev_heading = rvi.heading
+            range_del /= len(window) - 1
+            bearing_del /= len(window) - 1
+            if range_del < 0 and abs(bearing_del) < 0.007 * math.pi:
+                return -window[-1].dist / range_del
+            return math.inf
+
+        def purge_unseen(self, seen: Set[str]):
+            self._junction_foes = {
+                (sv, bumper): self._junction_foes[(sv, bumper)]
+                for sv in seen
+                for bumper in (False, True)
+                if (sv, bumper) in self._junction_foes
+            }
 
     @staticmethod
     @lru_cache(maxsize=32)
@@ -1096,6 +1132,22 @@ class _TrafficActor:
             assert (
                 self._yield_to_agents == "normal"
             ), f"unknown yield_to_agents value: {self._yield_to_agents}"
+
+        # if already blocking the foes's path then don't yield
+        if dist_to_junction <= 0 and self._lane == junction:
+
+            def _in_lane(lane):
+                for _, vs in self._owner._lane_bumpers_cache.get(lane, []):
+                    if vs.vehicle_id == self.actor_id:
+                        return True
+                return False
+
+            if _in_lane(traffic_lane):
+                return True
+            if traffic_lane != junction:
+                for ogtl in traffic_lane.outgoing_lanes:
+                    if _in_lane(ogtl):
+                        return True
 
         # Straight > Right > Left priority
         turn_thresh = 0.166 * math.pi
@@ -1145,8 +1197,13 @@ class _TrafficActor:
         if not njl or nj_dist > max_range:
             return
         updated = set()
-        my_pos = self._state.pose.position
+        my_pos = self._state.pose.position[:2]
         my_heading = self._state.pose.heading
+        half_len = 0.5 * self._state.dimensions.length
+        hv = radians_to_vec(my_heading)
+        my_front = my_pos + half_len * hv
+        my_back = my_pos - half_len * hv
+        min_range = max_range
         for foe in njl.foes:
             check_lanes = set()
             self._backtrack_until_long_enough(check_lanes, foe, 0, max_range)
@@ -1156,60 +1213,75 @@ class _TrafficActor:
                     continue
                 handled = set()
                 lbc = self._owner._lane_bumpers_cache.get(check_lane, [])
-                for b_offset, fv in lbc:
+                for offset, fv in lbc:
+                    if fv.vehicle_id == self.actor_id:
+                        continue
                     # vehicles can be in the bumpers_cache more than once
                     # (for their front and back bumpers).  We need to check
                     # both bumpers for collisions here as (especially for
                     # longer vehicles) the answer can come out differently.
                     second_bumper = fv.vehicle_id in updated
-                    fv_pos = check_lane.from_lane_coord(RefLinePoint(b_offset))
-                    bvec = fv_pos - my_pos
-                    fv_range = np.linalg.norm(bvec)
-                    rel_bearing = min_angles_difference_signed(
-                        vec_to_radians(bvec[:2]), my_heading
+                    fv_pos = check_lane.from_lane_coord(RefLinePoint(offset))[:2]
+                    f_rb, f_rng = self._bumper_wins_front.add(
+                        fv.vehicle_id, second_bumper, fv_pos, my_front, my_heading, dt
                     )
-                    fv_win = self._junction_foes.setdefault(
-                        (fv.vehicle_id, second_bumper), deque(maxlen=window)
-                    )
-                    fv_win.append(
-                        self._RelativeVehInfo(fv_range, rel_bearing, my_heading, dt)
+                    b_rb, b_rng = self._bumper_wins_back.add(
+                        fv.vehicle_id, second_bumper, fv_pos, my_back, my_heading, dt
                     )
                     updated.add(fv.vehicle_id)
                     # we will only do something if the potential collider is "ahead" of us...
-                    if (
-                        abs(rel_bearing) < 0.45 * math.pi
-                        and self._predict_collision(fv_win, max_range)
-                        and not fv.vehicle_id in handled
+                    if min(abs(f_rb), abs(b_rb)) >= 0.45 * math.pi:
+                        continue
+                    est_front_crash = (
+                        self._bumper_wins_front.predict_crash_in(
+                            fv.vehicle_id, second_bumper
+                        )
+                        if f_rng < max_range
+                        else math.inf
+                    )
+                    est_back_crash = (
+                        self._bumper_wins_back.predict_crash_in(
+                            fv.vehicle_id, second_bumper
+                        )
+                        if b_rng < max_range
+                        else math.inf
+                    )
+                    if est_front_crash <= est_back_crash:
+                        est_crash = est_front_crash
+                        rel_bearing = f_rb
+                        fv_range = f_rng
+                    else:
+                        est_crash = est_back_crash
+                        rel_bearing = b_rb
+                        fv_range = b_rng
+                    if est_crash > 60.0:
+                        # ignore future crash if after arbitrarily-high threshold of 1 min...
+                        continue
+                    if fv.vehicle_id not in handled and not self._higher_priority(
+                        njl, nj_dist, check_lane, fv, rel_bearing, foe
                     ):
-                        if fv_range < max_range and not self._higher_priority(
-                            njl, nj_dist, check_lane, fv, rel_bearing, foe
-                        ):
-                            self._logger.debug(
-                                f"{self.actor_id} slowing down to avoid collision @ {njl.lane_id} with {fv.vehicle_id} currently in {check_lane.lane_id}"
-                            )
-                            self._target_speed *= fv_range / (1.5 * max_range)
-                            handled.add(fv.vehicle_id)
-                        if check_lane == foe:
-                            # we've already picked our lane, but we still
-                            # update our gaps and ttc because these are
-                            # also used by the acceleration PID controller.
-                            dist = nj_dist if nj_dist > 0 else fv_range
-                            ttc = time_to_cover(
-                                dist, self._target_speed, self.acceleration
-                            )
-                            self._target_lane_win.ttc = min(
-                                ttc, self._target_lane_win.ttc
-                            )
-                            self._target_lane_win.gap = min(
-                                fv_range, self._target_lane_win.gap
-                            )
-                            handled.add(fv.vehicle_id)
-        self._junction_foes = {
-            (uv, bumper): self._junction_foes[(uv, bumper)]
-            for uv in updated
-            for bumper in (False, True)
-            if (uv, bumper) in self._junction_foes
-        }
+                        self._logger.debug(
+                            f"{self.actor_id} may slow down to avoid collision @ {njl.lane_id} with {fv.vehicle_id} currently in {check_lane.lane_id}"
+                        )
+                        rng = nj_dist if nj_dist > 0 else fv_range
+                        if rng < min_range:
+                            min_range = rng
+                        handled.add(fv.vehicle_id)
+                    if check_lane == foe:
+                        # we've already picked our lane, but we still update our gaps and ttc
+                        # because these are also used by the acceleration PID controller.
+                        self._target_lane_win.ttc = min(
+                            est_crash, self._target_lane_win.ttc
+                        )
+                        crash_dist = distance_covered(
+                            est_crash, self.speed, self.acceleration
+                        )
+                        self._target_lane_win.gap = min(
+                            crash_dist, self._target_lane_win.gap
+                        )
+        self._bumper_wins_front.purge_unseen(updated)
+        self._bumper_wins_back.purge_unseen(updated)
+        self._target_speed *= math.pow(min_range / max_range, 0.75)
 
     def _check_speed(self, dt: float):
         target_lane = self._target_lane_win.lane
