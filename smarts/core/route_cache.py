@@ -38,7 +38,7 @@ class _LaneContinuation:
     """Struct containing information about the future of a Lane along a Route."""
 
     dist_to_end: float = 0.0
-    dist_to_junction: float = 0.0
+    dist_to_junction: float = math.inf
     next_junction: RoadMap.Lane = None
     dist_to_road: Dict[RoadMap.Road, float] = field(default_factory=dict)
 
@@ -133,7 +133,11 @@ class RouteWithCache(RoadMap.Route):
                 rl = RoadMap.Route.RouteLane(lane, r_ind)
                 assert rl not in _route_sub_lengths[cache_key]
                 _backprop_length(lane, lane.length, r_ind, lane.in_junction, lane)
-                _route_sub_lengths[cache_key][rl] = _LaneContinuation(lane.length)
+                lc = _LaneContinuation(lane.length)
+                if lane.in_junction:
+                    lc.next_junction = lane
+                    lc.dist_to_junction = 0.0
+                _route_sub_lengths[cache_key][rl] = lc
 
         if not road:
             return
@@ -235,10 +239,14 @@ class RouteWithCache(RoadMap.Route):
         return lc.dist_to_end
 
     def next_junction(
-        self, cur_lane: RoadMap.Route.RouteLane
+        self, cur_lane: RoadMap.Route.RouteLane, offset: float
     ) -> Tuple[Optional[RoadMap.Lane], float]:
         self.add_to_cache()
         lc = _route_sub_lengths[self._cache_key].get(cur_lane)
         if lc:
-            return lc.next_junction, lc.dist_to_junction
+            dist = lc.dist_to_junction
+            if lc.dist_to_junction > 0:
+                dist -= offset
+                assert dist >= 0
+            return lc.next_junction, dist
         return None, math.inf

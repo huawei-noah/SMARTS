@@ -397,6 +397,8 @@ class _TrafficActor:
         if self._speed_factor <= 0:
             self._speed_factor = 0.1  # arbitrary minimum speed is 10% of speed limit
         self._imperfection = float(self._vtype.get("sigma", 0.5))
+        self._max_accel = float(self._vtype.get("accel", 2.6))
+        assert self._max_accel >= 0.0
 
         self._cutting_into = None
         self._cutting_in = False
@@ -661,6 +663,7 @@ class _TrafficActor:
             self,
             lane: RoadMap.Lane,
             time_left: float,
+            ttc: float,
             ttre: float,
             gap: float,
             lane_coord: RefLinePoint,
@@ -669,10 +672,15 @@ class _TrafficActor:
             self.lane = lane
             self.time_left = time_left
             self.adj_time_left = time_left  # could eventually be negative
+            self.ttc = ttc
             self.ttre = ttre  # time until we'd get rear-ended
             self.gap = gap  # just the gap ahead (in meters)
             self.lane_coord = lane_coord
             self.agent_gap = agent_gap
+
+        @property
+        def drive_time(self) -> float:
+            return min(self.ttc, self.adj_time_left)
 
         @cached_property
         def width(self) -> float:
@@ -860,7 +868,8 @@ class _TrafficActor:
 
         self._lane_windows[lane.index] = _TrafficActor._LaneWindow(
             lane,
-            min(lane_time_left, lane_ttc),
+            lane_time_left,
+            lane_ttc,
             lane_ttre,
             ahead_dist,
             lane_coord,
@@ -878,14 +887,20 @@ class _TrafficActor:
         my_idx = self._lane.index
         if my_idx == target_idx:
             return 0.0, True
+        accel = self.acceleration
+        max_speed = self._lane_windows[target_idx].lane.speed_limit * self._speed_factor
+        if self.speed < max_speed:
+            # using my current acceleration is too conservative b/c I could
+            # accelerate to a new speed as I change lanes (for example,
+            # if moving from a stopped lane of traffic to a new one).
+            bumped_accel = self._max_accel * (1.0 - self.speed / max_speed)
+            accel = max(bumped_accel, accel, self._max_accel)
         min_idx = min(target_idx, my_idx + 1)
         max_idx = max(target_idx + 1, my_idx)
-        cross_time = self._lane_windows[my_idx].exit_time(
-            self.speed, target_idx, self.acceleration
-        )
+        cross_time = self._lane_windows[my_idx].exit_time(self.speed, target_idx, accel)
         for i in range(min_idx, max_idx):
             lw = self._lane_windows[i]
-            lct = lw.crossing_time_at_speed(target_idx, self.speed, self.acceleration)
+            lct = lw.crossing_time_at_speed(target_idx, self.speed, accel)
             if i == target_idx:
                 lct *= 0.75
             cross_time += lct
@@ -893,7 +908,7 @@ class _TrafficActor:
         # to try to thread our way through the gaps independently... nah.
         for i in range(min_idx, max_idx):
             lw = self._lane_windows[i]
-            if min(lw.time_left, lw.ttre) <= cross_time:
+            if min(lw.ttc, lw.time_left, lw.ttre) <= cross_time:
                 return cross_time, False
         return cross_time, True
 
@@ -910,15 +925,22 @@ class _TrafficActor:
         return False
 
     def _pick_lane(self, dt: float):
+        # first, survey the state of the road around me
         self._compute_lane_windows()
         my_idx = self._lane.index
-        self._lane_win = my_lw = self._lane_windows[my_idx]
+        self._lane_win = self._lane_windows[my_idx]
+        # Try to find the best among available lanes...
         best_lw = self._lane_windows[my_idx]
         for l in range(len(self._lane_windows)):
             idx = (my_idx + l) % len(self._lane_windows)
-            if l > 0 and not self._crossing_time_into(idx)[1]:
-                continue
+            # if I can't safely reach the lane, don't consider it
+            change_time = 0
+            if l > 0:
+                change_time, can_cross = self._crossing_time_into(idx)
+                if not can_cross:
+                    continue
             lw = self._lane_windows[idx]
+            # if my route destination is available, prefer that
             if (
                 lw.lane == self._dest_lane
                 and lw.lane_coord.s + lw.gap >= self._dest_offset
@@ -927,36 +949,54 @@ class _TrafficActor:
                 best_lw = lw
                 if not self._dogmatic:
                     break
+            # if I'm in the process of changing lanes, continue (unless it's no longer safe)
             if (
                 self._cutting_into
-                and self._cutting_into.lane.index < len(self._lane_windows)
-                and self._crossing_time_into(self._cutting_into.lane.index)[1]
+                and self._cutting_into.index < len(self._lane_windows)
+                and self._crossing_time_into(self._cutting_into.index)[1]
             ):
-                best_lw = self._cutting_into
-                if self._cutting_into.lane != self._lane:
+                best_lw = self._lane_windows[self._cutting_into.index]
+                if self._cutting_into != self._lane:
                     break
+                # so I'm finally in the target cut-in lane, but now I gotta
+                # stay there a bit to not appear indecisive
                 self._in_front_after_cutin_secs += dt
                 if self._in_front_after_cutin_secs < self._cutin_hold_secs:
                     break
             self._cutting_into = None
             self._cutting_in = False
             self._in_front_secs = 0
+            # don't change lanes in junctions, except for the above reasons
+            # (since it makes collision avoidance harder for everyone!)
             if lw.lane.in_junction:
                 continue
+            # also don't change lanes if we can't *finish* before entering a junction
+            rl = RoadMap.Route.RouteLane(lw.lane, self._route_ind)
+            _, nj_dist = self._route.next_junction(rl, self._offset)
+            if change_time > time_to_cover(nj_dist, self.speed, self.acceleration):
+                continue
+            # if there's an agent behind me, possibly cut in on it
             if lw.agent_gap and self._should_cutin(lw):
                 best_lw = lw
-                self._cutting_into = lw
+                self._cutting_into = lw.lane
                 self._cutting_in = True
-            elif lw.adj_time_left > best_lw.adj_time_left or (
-                lw.adj_time_left == best_lw.adj_time_left
+                continue
+            # otherwise, keep track of the remaining options and eventually
+            # pick the lane with the longest available driving time on my route
+            # or, in the case of ties, the right-most lane (assuming I'm not
+            # cutting anyone off to get there).
+            if lw.drive_time > best_lw.drive_time or (
+                lw.drive_time == best_lw.drive_time
                 and (
                     (lw.lane == self._dest_lane and self._offset < self._dest_offset)
                     or (lw.ttre > best_lw.ttre and idx < best_lw.lane.index)
                 )
             ):
                 best_lw = lw
+        # keep track of the fact I'm changing lanes for next step
+        # so I don't swerve back and forth indecesively
         if best_lw.lane != self._lane and not self._cutting_into:
-            self._cutting_into = best_lw
+            self._cutting_into = best_lw.lane
         self._target_lane_win = best_lw
 
     def _compute_lane_speeds(self):
@@ -995,6 +1035,7 @@ class _TrafficActor:
     class _RelativeVehInfo:
         dist: float
         bearing: float
+        heading: float
         dt: float
 
     def _predict_collision(
@@ -1004,8 +1045,7 @@ class _TrafficActor:
             return False
         if window[-1].dist > max_range:
             return False
-        prev_range = None
-        prev_bearing = None
+        prev_range, prev_bearing, prev_heading = None, None, None
         range_del = 0.0
         bearing_del = 0.0
         for rvi in window:
@@ -1013,17 +1053,20 @@ class _TrafficActor:
                 range_del += (rvi.dist - prev_range) / rvi.dt
             if prev_bearing is not None:
                 bearing_del += (
-                    min_angles_difference_signed(rvi.bearing, prev_bearing) / rvi.dt
-                )
+                    min_angles_difference_signed(rvi.bearing, prev_bearing)
+                    + min_angles_difference_signed(rvi.heading, prev_heading)
+                ) / rvi.dt
             prev_range = rvi.dist
             prev_bearing = rvi.bearing
+            prev_heading = rvi.heading
         range_del /= len(window) - 1
         bearing_del /= len(window) - 1
-        return range_del < 0 and abs(bearing_del) < 0.007 * math.pi
+        return range_del < 0 and abs(bearing_del) < 0.015 * math.pi
 
     @staticmethod
     @lru_cache(maxsize=32)
     def _turn_angle(junction: RoadMap.Lane, approach_index: int) -> float:
+        # TAI: consider moving this into RoadMap.Lane
         next_lane = junction.outgoing_lanes[0]
         mli = min(approach_index, len(junction.incoming_lanes) - 1)
         prev_lane = junction.incoming_lanes[mli]
@@ -1098,7 +1141,7 @@ class _TrafficActor:
 
     def _handle_junctions(self, dt: float, window: int = 5, max_range: float = 100.0):
         rl = RoadMap.Route.RouteLane(self._target_lane_win.lane, self._route_ind)
-        njl, nj_dist = self._route.next_junction(rl)
+        njl, nj_dist = self._route.next_junction(rl, self._offset)
         if not njl or nj_dist > max_range:
             return
         updated = set()
@@ -1111,14 +1154,16 @@ class _TrafficActor:
             for check_lane in check_lanes:
                 if check_lane == self._lane:
                     continue
+                handled = set()
                 lbc = self._owner._lane_bumpers_cache.get(check_lane, [])
-                for _, fv in lbc:
+                for b_offset, fv in lbc:
                     # vehicles can be in the bumpers_cache more than once
                     # (for their front and back bumpers).  We need to check
                     # both bumpers for collisions here as (especially for
                     # longer vehicles) the answer can come out differently.
                     second_bumper = fv.vehicle_id in updated
-                    bvec = fv.pose.position - my_pos
+                    fv_pos = check_lane.from_lane_coord(RefLinePoint(b_offset))
+                    bvec = fv_pos - my_pos
                     fv_range = np.linalg.norm(bvec)
                     rel_bearing = min_angles_difference_signed(
                         vec_to_radians(bvec[:2]), my_heading
@@ -1126,23 +1171,39 @@ class _TrafficActor:
                     fv_win = self._junction_foes.setdefault(
                         (fv.vehicle_id, second_bumper), deque(maxlen=window)
                     )
-                    fv_win.append(self._RelativeVehInfo(fv_range, rel_bearing, dt))
+                    fv_win.append(
+                        self._RelativeVehInfo(fv_range, rel_bearing, my_heading, dt)
+                    )
                     updated.add(fv.vehicle_id)
-                    if self._predict_collision(fv_win, max_range):
+                    # we will only do something if the potential collider is "ahead" of us...
+                    if (
+                        abs(rel_bearing) < 0.45 * math.pi
+                        and self._predict_collision(fv_win, max_range)
+                        and not fv.vehicle_id in handled
+                    ):
                         if fv_range < max_range and not self._higher_priority(
                             njl, nj_dist, check_lane, fv, rel_bearing, foe
                         ):
-                            # self._logger.debug(f"{self.actor_id} slowing down to avoid collision @ {njl.lane_id} with {fv.vehicle_id} currently in {check_lane.lane_id}")
-                            self._target_speed *= fv_range / max_range
-                        ttc = time_to_cover(
-                            nj_dist, self._target_speed, self.acceleration
-                        )
-                        self._target_lane_win.adj_time_left = min(
-                            ttc, self._target_lane_win.adj_time_left
-                        )
-                        self._target_lane_win.gap = min(
-                            fv_range, self._target_lane_win.gap
-                        )
+                            self._logger.debug(
+                                f"{self.actor_id} slowing down to avoid collision @ {njl.lane_id} with {fv.vehicle_id} currently in {check_lane.lane_id}"
+                            )
+                            self._target_speed *= fv_range / (1.5 * max_range)
+                            handled.add(fv.vehicle_id)
+                        if check_lane == foe:
+                            # we've already picked our lane, but we still
+                            # update our gaps and ttc because these are
+                            # also used by the acceleration PID controller.
+                            dist = nj_dist if nj_dist > 0 else fv_range
+                            ttc = time_to_cover(
+                                dist, self._target_speed, self.acceleration
+                            )
+                            self._target_lane_win.ttc = min(
+                                ttc, self._target_lane_win.ttc
+                            )
+                            self._target_lane_win.gap = min(
+                                fv_range, self._target_lane_win.gap
+                            )
+                            handled.add(fv.vehicle_id)
         self._junction_foes = {
             (uv, bumper): self._junction_foes[(uv, bumper)]
             for uv in updated
@@ -1154,10 +1215,12 @@ class _TrafficActor:
         target_lane = self._target_lane_win.lane
         if target_lane.speed_limit is None:
             self._target_speed = self.speed
-            self._slow_for_curves()
-            return
-        self._target_speed = target_lane.speed_limit
-        self._target_speed *= self._speed_factor
+            # XXX: on a road like this, we can only slow down
+            # (due to curves and traffic) but we never speed back up!
+            # TAI: setting the target_speed to some fixed default instead?
+        else:
+            self._target_speed = target_lane.speed_limit
+            self._target_speed *= self._speed_factor
         if self._cutting_in:
             self._target_speed *= self._cutin_slow_down
         self._slow_for_curves()
@@ -1228,12 +1291,18 @@ class _TrafficActor:
         emergency_decl = float(self._vtype.get("emergencyDecel", 4.5))
         assert emergency_decl >= 0.0
         speed_denom = self.speed if self.speed else 0.1
+        # usually target_lane == lane, in which case the later terms here are redundant.
+        # when they are different, we still care about lane because we are exiting it.
+        # Rather than recompute the exit time from our current t-coord, we just
+        # use twice the current lane time left as a short-cut.
         time_cush = max(
             min(
-                self._target_lane_win.time_left,
+                self._target_lane_win.ttc,
                 self._target_lane_win.gap / speed_denom,
-                self._lane_win.time_left,
+                self._target_lane_win.time_left,
+                self._lane_win.ttc,
                 self._lane_win.gap / speed_denom,
+                2 * self._lane_win.time_left,
             ),
             0,
         )
@@ -1269,9 +1338,7 @@ class _TrafficActor:
         PID = np.clip(PID, -1.0, 1.0)
 
         if PID > 0:
-            max_accel = float(self._vtype.get("accel", 2.6))
-            assert max_accel >= 0.0
-            return PID * max_accel
+            return PID * self._max_accel
 
         max_decel = float(self._vtype.get("decel", 4.5))
         assert max_decel >= 0.0

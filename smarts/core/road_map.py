@@ -625,11 +625,11 @@ class RoadMap:
             raise NotImplementedError()
 
         def next_junction(
-            self, cur_lane: RouteLane
+            self, cur_lane: RouteLane, offset: float
         ) -> Optional[Tuple[RoadMap.Lane, float]]:
             """Returns a lane within the next junction along the route from beginning
             of the current lane to the returned lane it connects with in the junction,
-            and the distance to it, or None if there aren't any."""
+            and the distance to it from this offset, or (None, inf) if there aren't any."""
             raise NotImplementedError()
 
 
