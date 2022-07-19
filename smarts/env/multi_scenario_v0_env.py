@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import pathlib
+import os
 from typing import Any, Dict, Optional, Tuple
 
 import gym
@@ -85,7 +86,7 @@ def multi_scenario_v0_env(
         achieved over 500 consecutive episodes.
 
     Args:
-        scenario (str): Scenario
+        scenario (str): Scenario name or path to scenario folder.
         img_meters (int): Ground square size covered by image observations.
             Defaults to 64 x 64 meter (height x width) square.
         img_pixels (int): Pixels representing the square image observations.
@@ -318,6 +319,27 @@ def get_env_specs(scenario: str):
                 agents_alive=None,
             ),
         }
+    elif os.path.isdir(scenario):
+        import re
+        regexp_agent = re.compile(r"agent_\d+")
+        regexp_num = re.compile(r"\d+")
+        matches_agent = regexp_agent.search(scenario)
+        if not matches_agent:
+            raise Exception(f"Scenario path should match regexp of 'agent_\d+', but got {scenario}")
+        num_agent = regexp_num.search(matches_agent.group(0))
+        return {
+            "scenario": str(scenario),
+            "num_agent": int(num_agent.group(0)),
+            "done_criteria": DoneCriteria(
+                collision=True,
+                off_road=True,
+                off_route=True,
+                on_shoulder=True,
+                wrong_way=True,
+                not_moving=False,
+                agents_alive=None,
+            ),
+        }    
     else:
         raise Exception(f"Unknown scenario {scenario}.")
 

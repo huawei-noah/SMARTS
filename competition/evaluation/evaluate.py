@@ -37,8 +37,8 @@ _SUBMISSION_CONFIG_KEYS = {
     "img_pixels",
 }
 _DEFAULT_SUBMISSION_CONFIG = dict(
-    img_meters=50,
-    img_pixels=112,
+    img_meters=64,
+    img_pixels=256,
 )
 
 
