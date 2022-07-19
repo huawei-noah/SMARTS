@@ -1272,7 +1272,7 @@ class WaymoMap(RoadMapWithCaches):
             self._is_junction = is_junction
             self._road_id = "waymo_road"
 
-            self._drivaable = False
+            self._drivable = False
             self._road_type = -1
             self._length = 0
             x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
@@ -1626,10 +1626,16 @@ class WaymoMap(RoadMapWithCaches):
         return result
 
     def random_route(
-        self, max_route_len: int = 10, starting_road: Optional[RoadMap.Road] = None
+        self,
+        max_route_len: int = 10,
+        starting_road: Optional[RoadMap.Road] = None,
+        only_drivable: bool = True,
     ) -> RoadMap.Route:
+        assert not starting_road or not only_drivable or starting_road.is_drivable
         route = WaymoMap.Route(self)
         next_roads = [starting_road] if starting_road else list(self._roads.values())
+        if only_drivable:
+            next_roads = [r for r in next_roads if r.is_drivable]
         while next_roads and len(route.roads) < max_route_len:
             cur_road = random.choice(next_roads)
             route._add_road(cur_road)

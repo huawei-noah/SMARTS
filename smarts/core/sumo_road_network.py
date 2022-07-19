@@ -860,12 +860,18 @@ class SumoRoadNetwork(RoadMap):
         return routes
 
     def random_route(
-        self, max_route_len: int = 10, starting_road: Optional[RoadMap.Road] = None
+        self,
+        max_route_len: int = 10,
+        starting_road: Optional[RoadMap.Road] = None,
+        only_drivable: bool = True,
     ) -> RoadMap.Route:
+        assert not starting_road or not only_drivable or starting_road.is_drivable
         route = SumoRoadNetwork.Route(self)
         next_edges = (
             [starting_road._sumo_edge] if starting_road else self._graph.getEdges(False)
         )
+        if only_drivable:
+            next_edges = [e for e in next_edges if e.is_drivable]
         cur_edge = None
         while next_edges and len(route.roads) < max_route_len:
             choice = random.choice(next_edges)

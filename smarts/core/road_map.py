@@ -135,7 +135,10 @@ class RoadMap:
         raise NotImplementedError()
 
     def random_route(
-        self, max_route_len: int = 10, starting_road: Optional[RoadMap.Road] = None
+        self,
+        max_route_len: int = 10,
+        starting_road: Optional[RoadMap.Road] = None,
+        only_drivable: bool = True,
     ) -> RoadMap.Route:
         """Generate a random route contained in this road map.
         Args:
@@ -143,6 +146,9 @@ class RoadMap:
                 The total number of roads in the route.
             starting_road:
                 If specified, the route will start with this road.
+            only_drivable:
+                If True, will restrict the route to only driveable roads;
+                otherwise can incl. non-drivable roads (such as bikelanes) too.
         Returns:
             A randomly generated route.
         """

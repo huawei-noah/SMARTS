@@ -944,13 +944,16 @@ class _TrafficActor:
         best_lw = self._lane_windows[my_idx]
         for l in range(len(self._lane_windows)):
             idx = (my_idx + l) % len(self._lane_windows)
+            lw = self._lane_windows[idx]
+            # skip lanes I can't drive in (e.g., bike lanes on waymo maps)
+            if not lw.lane.is_drivable:
+                continue
             # if I can't safely reach the lane, don't consider it
             change_time = 0
             if l > 0:
                 change_time, can_cross = self._crossing_time_into(idx)
                 if not can_cross:
                     continue
-            lw = self._lane_windows[idx]
             # if my route destination is available, prefer that
             if (
                 lw.lane == self._dest_lane
@@ -1151,6 +1154,9 @@ class _TrafficActor:
     @lru_cache(maxsize=32)
     def _turn_angle(junction: RoadMap.Lane, approach_index: int) -> float:
         # TAI: consider moving this into RoadMap.Lane
+        assert (
+            junction.outgoing_lanes
+        ), f"junction lane with no ougoing lanes?  {junction.lane_id}"
         next_lane = junction.outgoing_lanes[0]
         mli = min(approach_index, len(junction.incoming_lanes) - 1)
         prev_lane = junction.incoming_lanes[mli]
@@ -1237,6 +1243,8 @@ class _TrafficActor:
         cur_length += lane.length
         if cur_length < min_length:
             for il in lane.incoming_lanes:
+                if not il.is_drivable:
+                    continue
                 self._backtrack_until_long_enough(result, il, cur_length, min_length)
 
     def _handle_junctions(self, dt: float, window: int = 5, max_range: float = 100.0):
