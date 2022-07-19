@@ -985,7 +985,8 @@ class _TrafficActor:
                 # also don't change lanes if we can't *finish* before entering a junction
                 # (unless our lane is ending)
                 rl = RoadMap.Route.RouteLane(lw.lane, self._route_ind)
-                _, nj_dist = self._route.next_junction(rl, self._offset)
+                l_offset = self._owner._cached_lane_offset(self._state, lw.lane)
+                _, nj_dist = self._route.next_junction(rl, l_offset)
                 if change_time > time_to_cover(nj_dist, self.speed, self.acceleration):
                     continue
             # if there's an agent behind me, possibly cut in on it
