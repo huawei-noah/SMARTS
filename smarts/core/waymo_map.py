@@ -171,7 +171,6 @@ class WaymoMap(RoadMapWithCaches):
                 for n in lane_dict["left_neighbors"]:
                     if not (n.self_start_index <= i <= n.self_end_index):
                         continue
-                    feature = self._waymo_features[n.feature_id]
                     boundary_pts = self._polyline_cache[n.feature_id][0]
                     intersect_pt = ray_boundary_intersect(
                         ray_start, ray_end, boundary_pts
@@ -186,7 +185,6 @@ class WaymoMap(RoadMapWithCaches):
                 for n in lane_dict["right_neighbors"]:
                     if not (n.self_start_index <= i <= n.self_end_index):
                         continue
-                    feature = self._waymo_features[n.feature_id]
                     boundary_pts = self._polyline_cache[n.feature_id][0]
                     intersect_pt = ray_boundary_intersect(
                         ray_start, ray_end, boundary_pts
