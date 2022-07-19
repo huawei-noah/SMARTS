@@ -337,6 +337,12 @@ class WaymoMap(RoadMapWithCaches):
         index: int
         structural: bool
 
+        def __hash__(self) -> int:
+            return hash(self.feat_id) ^ hash(self.index) ^ hash(self.structural)
+
+        def __eq__(self, other) -> bool:
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
+
     @dataclass
     class _LinkedSplit:
         split: "WaymoMap._Split"
@@ -345,6 +351,12 @@ class WaymoMap(RoadMapWithCaches):
         next_split: Optional["WaymoMap._LinkedSplit"] = None
         prev_split: Optional["WaymoMap._LinkedSplit"] = None
         used: bool = False
+
+        def __hash__(self) -> int:
+            return hash(self.split)
+
+        def __eq__(self, other) -> bool:
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
 
     class _SDict(Dict[int, _LinkedSplit]):
         @cached_property
@@ -574,9 +586,11 @@ class WaymoMap(RoadMapWithCaches):
         linked_split: _LinkedSplit,
         lanes: List["WaymoMap.Lane"],
         feat_splits: _FeatureSplits,
+        seen: Set[_LinkedSplit],
     ) -> Tuple[bool, bool]:
         structural_split = linked_split.split.structural
         # if there's more than one lane adjacent to this at the same point, it's in a junction
+        seen.add(linked_split)
         in_junction = (
             len(linked_split.right_splits) > 1 or len(linked_split.left_splits) > 1
         )
@@ -587,10 +601,11 @@ class WaymoMap(RoadMapWithCaches):
                 not rt_lsplit.next_split
                 or rt_lsplit.split.index >= rfeat.sorted_keys[-1] - 1
                 or rt_lsplit.used
+                or rt_lsplit in seen
             ):
                 continue
             rt_structural, rt_in_junction = self._add_right_lanes(
-                rt_lsplit, lanes, feat_splits
+                rt_lsplit, lanes, feat_splits, seen
             )
             in_junction = in_junction or rt_in_junction
             structural_split = structural_split or rt_structural
@@ -715,8 +730,9 @@ class WaymoMap(RoadMapWithCaches):
                 if linked_split.used:
                     continue
                 road_lanes = []
+                seen = set()
                 rt_structural, rt_junction = self._add_right_lanes(
-                    linked_split, road_lanes, feat_splits
+                    linked_split, road_lanes, feat_splits, seen
                 )
                 lft_structural, lft_junction = self._add_left_lanes(
                     linked_split, road_lanes, feat_splits
