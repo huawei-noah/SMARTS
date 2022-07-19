@@ -23,7 +23,7 @@ def goal_region_reward(threshold, goal_x, goal_y, cur_x, cur_y):
         return 0
 
 def inside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
-    ratio = 256 / 25   # 256 pixels corresonds to 25 meters
+    ratio = 256 / 50   # 256 pixels corresonds to 50 meters
     x_diff = abs(goal_x - cur_x)
     y_diff = abs(goal_y - cur_y)
 
@@ -47,13 +47,13 @@ def inside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
         x_pixel_loc = min(128 + round(x_diff * ratio), 255)    # cap on 256 which is the right edge
         y_pixel_loc = min(128 + round(y_diff * ratio), 255)     # cap on 256 which is the bottom edge
 
-    # To find if cur is at goal
-    elif goal_x == cur_x and goal_y == cur_y:
+    # To find if goal is at cur
+    if (abs(0.98*cur_x) <= abs(goal_x) <= abs(1.02*cur_x)) and  (abs(0.98*cur_y) <= abs(goal_y) <= abs(1.02*cur_y)):
         x_pixel_loc = 128
         y_pixel_loc = 128
 
     # On x-axis
-    elif goal_y == cur_y and goal_x != cur_x:
+    elif (abs(0.98*cur_y) <= abs(goal_y) <= abs(1.02*cur_y)) and goal_x != cur_x:
         if goal_x >= cur_x:
             x_pixel_loc = min(128 + round(x_diff * ratio), 255)
         else:
@@ -61,7 +61,7 @@ def inside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
         y_pixel_loc = min(128 + round(y_diff * ratio), 255)
 
     # On y-axis
-    elif goal_x == cur_x and goal_y != cur_y:
+    elif (abs(0.98*cur_x) <= abs(goal_x) <= abs(1.02*cur_x)) and goal_y != cur_y:
         if goal_y >= cur_y:
             y_pixel_loc = max(127 - round(y_diff * ratio), 0)
         else:
@@ -73,7 +73,7 @@ def inside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
     return goal_obs
 
 def outside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
-    ratio = 256 / 25   # 256 pixels corresonds to 25 meters
+    ratio = 256 / 50   # 256 pixels corresonds to 25 meters
     x_diff = abs(goal_x - cur_x)
     y_diff = abs(goal_y - cur_y)
 
@@ -82,9 +82,9 @@ def outside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
         theta = math.atan(y_diff / x_diff)
         if 0 < theta < (math.pi / 4):
             x_pixel_loc = 255
-            y_pixel_loc = max(127 - round((12.5 * (y_diff/x_diff)) * ratio), 0)
+            y_pixel_loc = max(127 - round((25 * (y_diff/x_diff)) * ratio), 0)
         elif (math.pi / 4) < theta < (math.pi / 2):
-            x_pixel_loc = min(128 + round((12.5 / (y_diff/x_diff)) * ratio), 255)
+            x_pixel_loc = min(128 + round((25 / (y_diff/x_diff)) * ratio), 255)
             y_pixel_loc = 0
         elif theta == (math.pi / 4):
             x_pixel_loc = 255
@@ -95,9 +95,9 @@ def outside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
         theta = math.atan(y_diff / x_diff)
         if 0 < theta < (math.pi / 4):
             x_pixel_loc = 0
-            y_pixel_loc = max(127 - round((12.5 * (y_diff/x_diff)) * ratio), 0)
+            y_pixel_loc = max(127 - round((25 * (y_diff/x_diff)) * ratio), 0)
         elif (math.pi / 4) < theta < (math.pi / 2):
-            x_pixel_loc = max(127 - round((12.5 / (y_diff/x_diff)) * ratio), 0)
+            x_pixel_loc = max(127 - round((25 / (y_diff/x_diff)) * ratio), 0)
             y_pixel_loc = 0
         elif theta == (math.pi / 4):
             x_pixel_loc = 0
@@ -108,9 +108,9 @@ def outside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
         theta = math.atan(y_diff / x_diff)
         if 0 < theta < (math.pi / 4):
             x_pixel_loc = 0
-            y_pixel_loc = min(128 + round((12.5 * (y_diff/x_diff)) * ratio), 255)
+            y_pixel_loc = min(128 + round((25 * (y_diff/x_diff)) * ratio), 255)
         elif (math.pi / 4) < theta < (math.pi / 2):
-            x_pixel_loc = max(127 - round((12.5 / (y_diff/x_diff)) * ratio), 0)
+            x_pixel_loc = max(127 - round((25 / (y_diff/x_diff)) * ratio), 0)
             y_pixel_loc = 255
         elif theta == (math.pi / 4):
             x_pixel_loc = 0
@@ -121,16 +121,16 @@ def outside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
         theta = math.atan(y_diff / x_diff)
         if 0 < theta < (math.pi / 4):
             x_pixel_loc = 255
-            y_pixel_loc = min(128 + round((12.5 * (y_diff/x_diff)) * ratio), 255)
+            y_pixel_loc = min(128 + round((25 * (y_diff/x_diff)) * ratio), 255)
         elif (math.pi / 4) < theta < (math.pi / 2):
-            x_pixel_loc = min(128 + round((12.5 / (y_diff/x_diff)) * ratio), 255)
+            x_pixel_loc = min(128 + round((25 / (y_diff/x_diff)) * ratio), 255)
             y_pixel_loc = 255
         elif theta == (math.pi / 4):
             x_pixel_loc = 255
             y_pixel_loc = 255
 
     # On x-axis
-    elif goal_y == cur_y and goal_x != cur_x:
+    if (abs(0.98*cur_y) <= abs(goal_y) <= abs(1.02*cur_y)) and goal_x != cur_x:
         if goal_x >= cur_x:
             x_pixel_loc = 255
         else:
@@ -138,7 +138,7 @@ def outside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
         y_pixel_loc = 128
 
     # On y-axis
-    elif goal_x == cur_x and goal_y != cur_y:
+    elif (abs(0.98*cur_x) <= abs(goal_x) <= abs(1.02*cur_x)) and goal_y != cur_y:
         if goal_y >= cur_y:
             y_pixel_loc = 0
         else:
@@ -170,8 +170,8 @@ def get_goal_layer(goal_x, goal_y, cur_x, cur_y, cur_heading):
     trans_cur = np.round(np.matmul(trans_matrix, cur_pos), 5)
     trans_goal = np.round(np.matmul(trans_matrix, goal_pos), 5)
 
-    if (trans_cur[0,0] - 12.5) <= trans_goal[0,0] <= (trans_cur[0,0] + 12.5):
-        if (trans_cur[1,0] - 12.5) <= trans_goal[1,0] <= (trans_cur[1,0] + 12.5):
+    if (trans_cur[0,0] - 25) <= trans_goal[0,0] <= (trans_cur[0,0] + 25):
+        if (trans_cur[1,0] - 25) <= trans_goal[1,0] <= (trans_cur[1,0] + 25):
             inside = True
         else:
             inside = False
