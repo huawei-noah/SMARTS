@@ -11,6 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 # [Unreleased]
 ### Added
 - Added a basic background traffic ("social vehicle") provider as an alternative to the SUMO traffic simulator.  This can be selected using the new `"engine"` argument to `Traffic` in Scenario Studio.
+- Added `SmartsLaneChangingModel` and `SmartsJunctionModel` to types available for use with the new smarts traffic engine within Scenario Studio.
 
 ### Deprecated
 - Deprecated a few things related to traffic in the `Scenario` class, including the `route` argument to the `Scenario` initializer, the `route`, `route_filepath` and `route_files_enabled` properties, and the `discover_routes()` static method.  In general, the notion of "route" (singular) here is being replaced with "`traffic_specs`" (plural) that allow for specifying traffic controlled by the SMARTS engine as well as Sumo.
