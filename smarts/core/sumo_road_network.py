@@ -870,8 +870,6 @@ class SumoRoadNetwork(RoadMap):
         next_edges = (
             [starting_road._sumo_edge] if starting_road else self._graph.getEdges(False)
         )
-        if only_drivable:
-            next_edges = [e for e in next_edges if e.is_drivable]
         cur_edge = None
         while next_edges and len(route.roads) < max_route_len:
             choice = random.choice(next_edges)
@@ -886,7 +884,9 @@ class SumoRoadNetwork(RoadMap):
                             route._add_road(via_road)
                             connection_roads.add(via_road)
             cur_edge = choice
-            route._add_road(self.road_by_id(cur_edge.getID()))
+            rroad = self.road_by_id(cur_edge.getID())
+            assert rroad.is_drivable
+            route._add_road(rroad)
             next_edges = list(cur_edge.getOutgoing().keys())
         return route
 
