@@ -500,7 +500,7 @@ class WaymoMap(RoadMapWithCaches):
                 prev_linked_split = linked_split
 
     @staticmethod
-    def _polyline_dists(polyline) -> Tuple[List[np.ndarray], np.ndarray]:
+    def _polyline_dists(polyline) -> Tuple[np.ndarray, np.ndarray]:
         lane_pts = np.array([[p.x, p.y, p.z] for p in polyline])
 
         class _Accum:
