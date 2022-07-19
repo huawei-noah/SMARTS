@@ -54,11 +54,6 @@ from .utils.math import (
     vec_2d,
 )
 
-# pytype: disable=import-error
-
-
-# pytype: enable=import-error
-
 
 def _convert_camera(camera):
     result = {
@@ -116,7 +111,7 @@ class WaymoMap(RoadMapWithCaches):
         self._default_lane_width = WaymoMap.DEFAULT_LANE_WIDTH
         self._lane_rtree = None
         self._no_composites = False  # for debugging purposes
-        self.has_overpasses = False
+        self._has_overpasses = False
         self._load_from_scenario(waymo_scenario)
 
         self._waypoints_cache = WaymoMap._WaypointsCache()
@@ -177,7 +172,7 @@ class WaymoMap(RoadMapWithCaches):
                     if not (n.self_start_index <= i <= n.self_end_index):
                         continue
                     feature = self._waymo_features[n.feature_id]
-                    boundary_pts = [np.array([p.x, p.y]) for p in feature.polyline]
+                    boundary_pts = self._polyline_cache[n.feature_id][0]
                     intersect_pt = ray_boundary_intersect(
                         ray_start, ray_end, boundary_pts
                     )
@@ -192,7 +187,7 @@ class WaymoMap(RoadMapWithCaches):
                     if not (n.self_start_index <= i <= n.self_end_index):
                         continue
                     feature = self._waymo_features[n.feature_id]
-                    boundary_pts = [np.array([p.x, p.y]) for p in feature.polyline]
+                    boundary_pts = self._polyline_cache[n.feature_id][0]
                     intersect_pt = ray_boundary_intersect(
                         ray_start, ray_end, boundary_pts
                     )
@@ -260,7 +255,7 @@ class WaymoMap(RoadMapWithCaches):
         lane_rtree.interleaved = True
         bboxes = dict()
         for idx, feat_id in enumerate(all_lane_ids):
-            lane_pts = np.array(self._polyline_cache[feat_id][0])
+            lane_pts = self._polyline_cache[feat_id][0]
             bbox = (
                 np.amin(lane_pts[:, 0]),
                 np.amin(lane_pts[:, 1]),
@@ -296,12 +291,11 @@ class WaymoMap(RoadMapWithCaches):
 
             # Main loop -- check each segment of the lane polyline against the
             # polyline of each candidate lane
-            line1 = np.array(self._polyline_cache[feat_id][0])
+            line1 = self._polyline_cache[feat_id][0]
             for cand_id in lanes_to_test:
                 line2 = self._polyline_cache[cand_id][0]
                 C = np.roll(line2, 0, axis=0)[:-1]
                 D = np.roll(line2, -1, axis=0)[:-1]
-                len_c = len(C)
                 for i in range(len(line1) - 1):
                     a = line1[i]
                     b = line1[i + 1]
@@ -313,15 +307,15 @@ class WaymoMap(RoadMapWithCaches):
         # Remove lanes that aren't true intersections
         mappings_to_remove = []
         for feat_id, intersect_ids in intersections.items():
-            lane_pts = np.array(self._polyline_cache[feat_id][0])
+            lane_pts = self._polyline_cache[feat_id][0]
             z_avg = np.average(lane_pts[:, 2])
             for intersect_id in intersect_ids:
-                intersect_lane_pts = np.array(self._polyline_cache[intersect_id][0])
+                intersect_lane_pts = self._polyline_cache[intersect_id][0]
                 intlane_z_avg = np.average(intersect_lane_pts[:, 2])
 
                 # Remove "overpasses" that have large z-coordinate differences
                 if abs(z_avg - intlane_z_avg) > WaymoMap.OVERPASS_THRESHOLD:
-                    self.has_overpasses = True
+                    self._has_overpasses = True
                     mappings_to_remove.append((feat_id, intersect_id))
                     continue  # already removing this pair, so skip next check
 
@@ -507,7 +501,7 @@ class WaymoMap(RoadMapWithCaches):
 
     @staticmethod
     def _polyline_dists(polyline) -> Tuple[List[np.ndarray], np.ndarray]:
-        lane_pts = [np.array([p.x, p.y, p.z]) for p in polyline]
+        lane_pts = np.array([[p.x, p.y, p.z] for p in polyline])
 
         class _Accum:
             def __init__(self):
@@ -765,7 +759,7 @@ class WaymoMap(RoadMapWithCaches):
 
         # cache feature info about lanes
         self._feat_dicts: Dict[int, Dict[str, Any]] = {}
-        self._polyline_cache: Dict[int, Tuple[List[np.ndarray], np.ndarray]] = {}
+        self._polyline_cache: Dict[int, Tuple[np.ndarray, np.ndarray]] = {}
         for map_feature in waymo_scenario.map_features:
             key = map_feature.WhichOneof("feature_data")
             if key is None:
@@ -847,6 +841,10 @@ class WaymoMap(RoadMapWithCaches):
     @property
     def source(self) -> str:
         return self._map_spec.source
+
+    @property
+    def has_overpasses(self) -> bool:
+        return self._has_overpasses
 
     @staticmethod
     def _spec_lane_width(map_spec: MapSpec) -> float:
