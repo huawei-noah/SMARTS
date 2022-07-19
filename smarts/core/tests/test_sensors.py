@@ -79,6 +79,7 @@ def scenarios():
             [str(scenario_root)], [AGENT_ID]
         )
 
+
 def test_trip_meter_sensor(scenarios):
     scenario: Scenario = next(scenarios)
 
@@ -96,7 +97,6 @@ def test_trip_meter_sensor(scenarios):
 
     sensor = TripMeterSensor(vehicle, scenario.road_map, plan)
     waypoints_sensor = WaypointsSensor(vehicle, plan)
-    
 
     positions = [(x, 0, 0) for x in range(0, 100, 10)]
     sim_times = list(range(0, 50, 5))
@@ -111,9 +111,13 @@ def test_trip_meter_sensor(scenarios):
         waypoint_paths = waypoints_sensor()
         sensor.update_distance_wps_record(waypoint_paths=waypoint_paths)
 
-    assert sensor() == sum(wpf.dist_to(wps.pos) for wpf, wps in zip(sensor._wps_for_distance[:-1], sensor._wps_for_distance[1:]))
+    assert sensor() == sum(
+        wpf.dist_to(wps.pos)
+        for wpf, wps in zip(sensor._wps_for_distance[:-1], sensor._wps_for_distance[1:])
+    )
 
     sensor.teardown()
+
 
 def test_waypoints_sensor(scenarios):
     scenario = next(scenarios)

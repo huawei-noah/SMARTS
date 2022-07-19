@@ -952,7 +952,9 @@ class TripMeterSensor(Sensor):
         )
 
     @staticmethod
-    def _compute_additional_dist_travelled(recent_wp: Waypoint, new_waypoint: Waypoint, vehicle_pose: Pose):
+    def _compute_additional_dist_travelled(
+        recent_wp: Waypoint, new_waypoint: Waypoint, vehicle_pose: Pose
+    ):
         wp_disp_vec = new_waypoint.pos - recent_wp.pos
         pose_disp_vec = vehicle_pose.position[:2] - recent_wp.pos[:2]
         direction = np.sign(np.dot(pose_disp_vec, wp_disp_vec))

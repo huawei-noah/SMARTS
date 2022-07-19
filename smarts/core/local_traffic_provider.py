@@ -1078,7 +1078,39 @@ class _TrafficActor:
             return rel_bearing, fv_range
 
         def predict_crash_in(self, veh_id: str, bumper: bool) -> float:
-            """Estimate if and when I might collide with veh_id."""
+            """Estimate if and when I might collide with veh_id using
+            the constant bearing, decreasing range (CBDR) techique, but
+            attempting to correct for non-linearities."""
+            # CBDR is a good approximation at distance over time with
+            # both vehicles behaving "steadily" (ideally, driving
+            # straight at a constant speed).  It breaks down, thankfully
+            # in preictable ways, if these assumptions are violated.
+            #
+            # Range Dependency:
+            # As range gets small, bearing can fluctuate more, but will also
+            # tend to start to change steadily when on a collision course.
+            # To overcome this here, we just make our "CB" computation
+            # depend on range.
+            #
+            # When range is on the order of car length(s), the following might eventually
+            # help with evasive maneuvers:
+            # - for side impacts to me, the absolute value of the rel_bearing from my front bumper
+            #   will increase monotonically (and rapidly) just before impact, meanwhile the value
+            #   from my back bumper will decrease analogously.
+            # - for side impacts to them, the rel_bearing to their front bumper from mine will change
+            #   signs just before impact, while abs(rel_bearing) to their back bumper will dramatically
+            #   reduce.
+            #
+            # Heading Changes:
+            # - If we turn, we need to consider how this will change rel_bearing from our perspective.
+            #   Adding to the heading will increase apparent rel_bearing, but this instaneous change
+            #   should not count against CBDR, so we correct for it here.
+            # - If they turn, we don't need to do anything (CBDR as implemented here still works
+            #   to predict collisions).
+            #
+            # (Relative) Acceleration:
+            # - if there is a difference in our accelerations, rel_bearing for a collision course
+            #   will change quadratically in a complicated way.  We don't try to mitigate this.
             window = self._junction_foes[(veh_id, bumper)]
             if len(window) <= 1:
                 return math.inf
@@ -1098,8 +1130,11 @@ class _TrafficActor:
                 prev_heading = rvi.heading
             range_del /= len(window) - 1
             bearing_del /= len(window) - 1
-            if range_del < 0 and abs(bearing_del) < 0.007 * math.pi:
-                return -window[-1].dist / range_del
+            final_range = window[-1].dist
+
+            # the exponent here was determined by trial and error
+            if range_del < 0 and abs(bearing_del) < math.pi / final_range ** 1.4:
+                return -final_range / range_del
             return math.inf
 
         def purge_unseen(self, seen: Set[str]):
