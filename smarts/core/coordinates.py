@@ -135,6 +135,8 @@ class Point(NamedTuple):
     def __del__(self):
         if _shapely_points and self in _shapely_points:
             del _shapely_points[self]
+        if _numpy_points and self in _numpy_points:
+            del _numpy_points[self]
 
 
 class RefLinePoint(NamedTuple):
