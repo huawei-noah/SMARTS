@@ -98,7 +98,7 @@ def create_moving_bubble(
         ),
         exclusion_prefixes=exclusion_prefixes,
         follow_offset=(0, 0),
-        margin=5,
+        margin=0,
         **follow,
     )
     return bubble

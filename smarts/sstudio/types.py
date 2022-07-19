@@ -817,7 +817,7 @@ class Bubble:
     """
 
     def __post_init__(self):
-        if self.margin <= 0:
+        if self.margin < 0:
             raise ValueError("Airlocking margin must be greater than 0")
 
         if (self.follow_actor_id is not None and self.follow_vehicle_id is not None):
