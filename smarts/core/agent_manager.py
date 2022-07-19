@@ -26,8 +26,8 @@ from smarts.core.actor_role import ActorRole
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
-from smarts.core.plan import Plan
 from smarts.core.heterogenous_agent_buffer import HeterogenousAgentBuffer
+from smarts.core.plan import Plan
 from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState

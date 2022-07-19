@@ -206,7 +206,7 @@ class XRef:
         heading_vector = [cs.cos(self.theta), cs.sin(self.theta)]
 
         lateral_error = (self.x - other.x) ** 2 + (self.y - other.y) ** 2
-        pos_err_theta = gain.position * lateral_error ** 1
+        pos_err_theta = gain.position * lateral_error**1
         return (
             gain.position * pos_errx,
             gain.position * pos_erry,
@@ -266,8 +266,8 @@ class UTrajectory:
         for t in range(1, self.N):
             prev_u_t = self[t - 1]
             u_t = self[t]
-            cost += 0.1 * gain.u_accel * u_t.accel ** 2
-            cost += 0.1 * gain.u_yaw_rate * u_t.yaw_rate ** 2
+            cost += 0.1 * gain.u_accel * u_t.accel**2
+            cost += 0.1 * gain.u_yaw_rate * u_t.yaw_rate**2
             cost += 0.5 * gain.rate * (u_t.yaw_rate - prev_u_t.yaw_rate) ** 2
 
         return cost
@@ -331,7 +331,7 @@ def build_problem(N, SV_N, WP_N, ts):
             min_dist = VehicleModel.LENGTH
             cost += gain.obstacle * cs.fmax(
                 -1,
-                min_dist ** 2 - ((ego.x - sv.x) ** 2 + 9 * (ego.y - sv.y) ** 2),
+                min_dist**2 - ((ego.x - sv.x) ** 2 + 9 * (ego.y - sv.y) ** 2),
             )
 
     # To stabilize the trajectory, we attach a higher weight to the final x_ref
@@ -342,7 +342,7 @@ def build_problem(N, SV_N, WP_N, ts):
     cost += u_traj.integration_cost(gain)
 
     # force acceleration when we become increasingly impatient
-    cost += gain.impatience * ((u_traj[0].accel - 1.0) * impatience.value ** 2 * -(1.0))
+    cost += gain.impatience * ((u_traj[0].accel - 1.0) * impatience.value**2 * -(1.0))
     # cost=0
 
     bounds = og.constraints.Rectangle(

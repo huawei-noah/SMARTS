@@ -362,7 +362,7 @@ class Sensors:
         )
 
         if waypoint_paths:
-            vehicle.trip_meter_sensor.append_waypoint_if_new(waypoint_paths[0][0])
+            vehicle.trip_meter_sensor.update_distance_wps_record(waypoint_paths)
         distance_travelled = vehicle.trip_meter_sensor(sim)
 
         vehicle.driven_path_sensor.track_latest_driven_path(sim)
@@ -906,33 +906,27 @@ class DrivenPathSensor(Sensor):
 
 
 class TripMeterSensor(Sensor):
-    """Tracks distance travelled along the route (in KM). Kilometeres driven while
+    """Tracks distance travelled along the route (in meters). Meters driven while
     off-route are not counted as part of the total.
     """
 
-    def __init__(self, vehicle, sim, plan):
+    def __init__(self, vehicle, road_map, plan):
         self._vehicle = vehicle
-        self._sim = sim
+        self._road_map: RoadMap = road_map
         self._plan = plan
-        self._wps_for_distance = []
+        self._wps_for_distance: List[Waypoint] = []
         self._dist_travelled = 0.0
         self._last_dist_travelled = 0.0
-        waypoint_paths = sim.road_map.waypoint_paths(
-            vehicle.pose,
-            lookahead=1,
-            within_radius=vehicle.length,
-        )
-        if waypoint_paths:
-            self._wps_for_distance.append(waypoint_paths[0][0])
 
-    def append_waypoint_if_new(self, new_wp):
+    def update_distance_wps_record(self, waypoint_paths):
         """Append a waypoint to the history if it is not already counted."""
         # Distance calculation. Intention is the shortest trip travelled at the lane
         # level the agent has travelled. This is to prevent lateral movement from
         # increasing the total distance travelled.
         self._last_dist_travelled = self._dist_travelled
 
-        wp_road = self._sim.road_map.lane_by_id(new_wp.lane_id).road.road_id
+        new_wp = waypoint_paths[0][0]
+        wp_road = self._road_map.lane_by_id(new_wp.lane_id).road.road_id
 
         should_count_wp = (
             # if we do not have a fixed route, we count all waypoints we accumulate
@@ -952,17 +946,19 @@ class TripMeterSensor(Sensor):
             np.linalg.norm(new_wp.pos - most_recent_wp.pos) > threshold_for_counting_wp
             and should_count_wp
         ):
-            self._dist_travelled += TripMeterSensor._compute_additional_dist_travelled(
-                most_recent_wp, new_wp
-            )
             self._wps_for_distance.append(new_wp)
+        self._dist_travelled += TripMeterSensor._compute_additional_dist_travelled(
+            most_recent_wp, new_wp, self._vehicle.pose
+        )
 
     @staticmethod
-    def _compute_additional_dist_travelled(recent_wp, waypoint):
-        heading_vec = recent_wp.heading.direction_vector()
-        disp_vec = waypoint.pos - recent_wp.pos
-        direction = np.sign(np.dot(heading_vec, disp_vec))
-        distance = np.linalg.norm(disp_vec)
+    def _compute_additional_dist_travelled(
+        recent_wp: Waypoint, new_waypoint: Waypoint, vehicle_pose: Pose
+    ):
+        wp_disp_vec = new_waypoint.pos - recent_wp.pos
+        pose_disp_vec = vehicle_pose.position[:2] - recent_wp.pos[:2]
+        direction = np.sign(np.dot(pose_disp_vec, wp_disp_vec))
+        distance = np.linalg.norm(wp_disp_vec)
         return direction * distance
 
     def __call__(self, increment=False):
@@ -1159,7 +1155,7 @@ class ViaSensor(Sensor):
             closest_position_on_lane = closest_position_on_lane[:2]
 
             dist_from_lane_sq = squared_dist(vehicle_position, closest_position_on_lane)
-            if dist_from_lane_sq > self._acquisition_range ** 2:
+            if dist_from_lane_sq > self._acquisition_range**2:
                 continue
 
             point = ViaPoint(
@@ -1172,7 +1168,7 @@ class ViaSensor(Sensor):
             near_points.append(point)
             dist_from_point_sq = squared_dist(vehicle_position, via.position)
             if (
-                dist_from_point_sq <= via.hit_distance ** 2
+                dist_from_point_sq <= via.hit_distance**2
                 and via not in self._consumed_via_points
                 and np.isclose(
                     self._vehicle.speed, via.required_speed, atol=self._speed_accuracy

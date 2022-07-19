@@ -27,7 +27,7 @@ from xml.etree.ElementTree import ElementTree
 import pytest
 
 from smarts.core.scenario import Scenario
-from smarts.sstudio import gen_map, gen_missions, gen_traffic
+from smarts.sstudio import gen_map, gen_traffic
 from smarts.sstudio.types import (
     Distribution,
     Flow,
@@ -88,15 +88,24 @@ def test_generate_traffic(traffic: Traffic):
             name="generated",
         )
 
-        with open("smarts/sstudio/tests/baseline.rou.xml") as f:
-            items = [x.items() for x in ElementTree(file=f).iter()]
+        _compare_files(
+            "smarts/sstudio/tests/baseline.rou.xml",
+            os.path.join(temp_dir, "traffic", "generated.rou.xml"),
+        )
 
-        with open(os.path.join(temp_dir, "traffic", "generated.rou.xml")) as f:
-            generated_items = [x.items() for x in ElementTree(file=f).iter()]
 
-        print(sorted(items))
-        print(sorted(generated_items))
-        assert sorted(items) == sorted(generated_items)
+def _compare_files(file1, file2):
+    with open(file1) as f:
+        items = [x.items() for x in ElementTree(file=f).iter()]
+
+    with open(file2) as f:
+        generated_items = [x.items() for x in ElementTree(file=f).iter()]
+
+    sorted_items = sorted(items)
+    sorted_generated_items = sorted(generated_items)
+    if not sorted_items == sorted_generated_items:
+        for a, b in zip(sorted_items, sorted_generated_items):
+            assert a == b, f"{file1} is different than {file2}"
 
 
 def _gen_map_from_spec(scenario_root: str, map_spec: MapSpec):

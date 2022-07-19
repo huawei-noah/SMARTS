@@ -95,7 +95,7 @@ class BezierMotionPlanner:
             return (
                 3 * (1 - t) ** 2 * (p1 - p0)
                 + 6 * (1 - t) * t * (p2 - p1)
-                + 3 * t ** 2 * (p3 - p2)
+                + 3 * t**2 * (p3 - p2)
             )
 
         positions = cubic_bezier(dts, p0s, p1s, p2s, p3s)

@@ -20,6 +20,7 @@
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -28,6 +29,7 @@ def build_single_scenario(
     clean: bool,
     allow_offset_map: bool,
     scenario: str,
+    seed: Optional[int] = None,
     log: Optional[Callable[[Any], None]] = None,
 ):
     """Build a scenario."""
@@ -41,7 +43,18 @@ def build_single_scenario(
     scenario_py = scenario_root / "scenario.py"
     if scenario_py.exists():
         _install_requirements(scenario_root, log)
-        subprocess.check_call([sys.executable, "scenario.py"], cwd=scenario_root)
+        if seed is not None:
+            with tempfile.NamedTemporaryFile("w", suffix=".py", dir=scenario_root) as c:
+                with open(scenario_py, "r") as o:
+                    c.write(f"import smarts.core; smarts.core.seed({seed});\n")
+                    c.write(o.read())
+
+                c.flush()
+                subprocess.check_call(
+                    [sys.executable, Path(c.name).name], cwd=scenario_root
+                )
+        else:
+            subprocess.check_call([sys.executable, "scenario.py"], cwd=scenario_root)
 
     from smarts.core.scenario import Scenario
 
@@ -116,7 +129,9 @@ def _install_requirements(scenario_root, log: Optional[Callable[[Any], None]] = 
             ]
 
             if log is not None:
-                log(f"Installing scenario dependencies via '{' '.join(pip_install_cmd)}'")
+                log(
+                    f"Installing scenario dependencies via '{' '.join(pip_install_cmd)}'"
+                )
 
             try:
                 subprocess.check_call(pip_install_cmd, stdout=subprocess.DEVNULL)
