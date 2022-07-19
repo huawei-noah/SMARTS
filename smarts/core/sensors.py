@@ -327,7 +327,7 @@ class Sensors:
 
         ego_vehicle = EgoVehicleObservation(
             id=ego_vehicle_state.vehicle_id,
-            position=np.array(ego_vehicle_state.pose.position),
+            position=ego_vehicle_state.pose.point.as_np_array,
             bounding_box=ego_vehicle_state.dimensions,
             heading=Heading(ego_vehicle_state.pose.heading),
             speed=ego_vehicle_state.speed,
@@ -1155,7 +1155,7 @@ class ViaSensor(Sensor):
             closest_position_on_lane = closest_position_on_lane[:2]
 
             dist_from_lane_sq = squared_dist(vehicle_position, closest_position_on_lane)
-            if dist_from_lane_sq > self._acquisition_range ** 2:
+            if dist_from_lane_sq > self._acquisition_range**2:
                 continue
 
             point = ViaPoint(
@@ -1168,7 +1168,7 @@ class ViaSensor(Sensor):
             near_points.append(point)
             dist_from_point_sq = squared_dist(vehicle_position, via.position)
             if (
-                dist_from_point_sq <= via.hit_distance ** 2
+                dist_from_point_sq <= via.hit_distance**2
                 and via not in self._consumed_via_points
                 and np.isclose(
                     self._vehicle.speed, via.required_speed, atol=self._speed_accuracy

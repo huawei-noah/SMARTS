@@ -63,5 +63,5 @@ def calculate_angle(ego_location, goal_location, ego_direction):
 
 
 def calculate_distance(location_a, location_b):
-    """ calculate distance between a and b"""
+    """calculate distance between a and b"""
     return np.linalg.norm(location_a - location_b)
