@@ -75,6 +75,7 @@ class Dimensions:
         )
 
 
+_numpy_points = {}
 _shapely_points = {}
 
 
@@ -84,6 +85,34 @@ class Point(NamedTuple):
     x: float
     y: float
     z: Optional[float] = 0
+
+    @classmethod
+    def from_np_array(cls, np_array: np.ndarray):
+        """Factor for constructing a Point object from a numpy array."""
+        assert 2 <= len(np.array) <= 3
+        z = np_array[2] if len(np_array) > 2 else 0.0
+        return cls(np_array[0], np_array[1], z)
+
+    @property
+    def as_np_array(self) -> np.ndarray:
+        """Convert this Point to a numpy array and cache the result."""
+        # Since this happens frequently and numpy array construction
+        # involves memory allocation, we include this convenience method
+        # with a cache of the result.
+        # Note that before python3.8, @cached_property was not thread safe,
+        # nor can it be used in a NamedTuple (which doesn't have a __dict__).
+        # (Points can be used by multi-threaded client code, even when
+        # SMARTS is still single-threaded, so we want to be safe here.)
+        # So we use the private global _numpy_points as a cache instead.
+        # Here we are relying on CPython's implementation of dict
+        # to be thread-safe.
+        cached = _shapely_points.get(self)
+        cached = _numpy_points.get(self)
+        if cached is not None:
+            return cached
+        npt = np.array((self.x, self.y, self.z))
+        _numpy_points[self] = npt
+        return npt
 
     @property
     def as_shapely(self) -> SPoint:
