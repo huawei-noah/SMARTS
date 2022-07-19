@@ -138,7 +138,7 @@ def main(
     logger = logging.getLogger(script)
     logger.setLevel(logging.INFO)
 
-    logger.debug("initializing SMARTS")
+    logger.info("initializing SMARTS")
 
     timestep = 0.1
     run_steps = int(run_time / timestep)
