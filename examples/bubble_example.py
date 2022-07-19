@@ -15,6 +15,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
+from smarts.core.utils.logging import timeit
 from smarts.sstudio.types import Bubble, MapZone, PositionalZone, SocialAgentActor
 from smarts.zoo.agent_spec import AgentSpec
 
@@ -180,7 +181,7 @@ def main(
 
     class ObservationState:
         def __init__(self) -> None:
-            self.last_observations: Dict[str, Observation] = None
+            self.last_observations: Dict[str, Observation] = {}
 
         def observation_callback(self, obs: Observation):
             self.last_observations = obs
@@ -196,95 +197,94 @@ def main(
         )
 
         for episode in range(episodes):
-            logger.info(f"setting up ego agents in scenario...")
-            agent_missions = resolve_agent_missions(
-                scenario, start_time, run_time, num_agents
-            )
-            agent_interfaces = {a_id: ego_interface for a_id in agent_missions.keys()}
-
-            logger.info(f"setting up moving bubbles...")
-            scenario.bubbles.clear()
-            scenario.bubbles.extend(
-                [create_moving_bubble(follow_agent_id=a_id) for a_id in agent_missions]
-            )
-
-            scenario.set_ego_missions(agent_missions)
-            smarts.switch_ego_agents(agent_interfaces)
-
-            logger.info(f"initializing agent policy...")
-            ego_agent = EgoAgent()
-            social_agent = SocialAgent(logger=logger)
-
-            traffic_history_provider: TrafficHistoryProvider = (
-                smarts.get_provider_by_type(TrafficHistoryProvider)
-            )
-            agent_vehicles = {
-                mission.vehicle_spec.veh_id for mission in agent_missions.values()
-            }
-            used_history_ids = set(agent_vehicles)
-
-            logger.info(f"resetting episode {episode}...")
-            ego_observations = smarts.reset(scenario, start_time=start_time)
-            dones = {a_id: False for a_id in ego_observations}
-            dones_count = 0
-
-            logger.info(f"beginning episode {episode}...")
-            while dones_count < num_agents:
-                for agent_id in obs_state.last_observations:
-                    if agent_id not in obs_state.last_observations:
-                        continue
-                    social_agent_ob = obs_state.last_observations[agent_id]
-                    # Replace the original action that the social agent would do
-                    agent_manager.reserve_social_agent_action(
-                        agent_id, social_agent.act(social_agent_ob)
-                    )
-                    if obs_state.last_observations[agent_id].has_vehicle_control:
-                        used_history_ids |= {social_agent_ob.ego_vehicle_state.id}
-                # Step SMARTS
-                ego_actions = {
-                    ego_agent_id: ego_agent.act(obs)
-                    for ego_agent_id, obs in ego_observations.items()
-                    if not dones[ego_agent_id]
-                }
-                ego_observations, _, dones, _ = smarts.step(
-                    ego_actions
-                )  # observation_callback is called, obs_state updated
-                for a_id in dones:
-                    if dones[a_id]:
-                        dones_count += 1
-                        logger.info(
-                            f"agent=`{a_id}` is done because `{ego_observations[a_id].events}`..."
-                        )
-
-                # Currently ensure vehicles are removed permanently when they leave bubble
-                traffic_history_provider.set_replaced_ids(
-                    used_history_ids | agent_vehicles
+            with timeit(f"setting up ego agents in scenario...", logger.info):
+                agent_missions = resolve_agent_missions(
+                    scenario, start_time, run_time, num_agents
                 )
-                # Update the current bubble in case there are new active bubbles
+                agent_interfaces = {a_id: ego_interface for a_id in agent_missions.keys()}
 
-                # Iterate through the observations
-                # The agent ids of agents can be found here.
-                for agent_id in obs_state.last_observations.keys():
-                    if obs_state.last_observations[agent_id].events.collisions:
-                        logger.info(
-                            "social_agent={} collided @ {}".format(
-                                agent_id,
-                                obs_state.last_observations[agent_id].events.collisions,
-                            )
-                        )
-                    elif obs_state.last_observations[agent_id].events.reached_goal:
-                        logger.info(
-                            "agent_id={} reached goal @ sim_time={}".format(
-                                agent_id, smarts.elapsed_sim_time
-                            )
-                        )
-                        logger.debug(
-                            "   ... with {}".format(
-                                obs_state.last_observations[agent_id].events
-                            )
-                        )
-            logger.info(f"ending episode {episode}...")
+            with timeit(f"setting up moving bubbles...", logger.info):
+                scenario.bubbles.clear()
+                scenario.bubbles.extend(
+                    [create_moving_bubble(follow_agent_id=a_id) for a_id in agent_missions]
+                )
 
+                scenario.set_ego_missions(agent_missions)
+                smarts.switch_ego_agents(agent_interfaces)
+
+            with timeit(f"initializing agent policy...", logger.info):
+                ego_agent = EgoAgent()
+                social_agent = SocialAgent(logger=logger)
+
+                traffic_history_provider: TrafficHistoryProvider = (
+                    smarts.get_provider_by_type(TrafficHistoryProvider)
+                )
+                agent_vehicles = {
+                    mission.vehicle_spec.veh_id for mission in agent_missions.values()
+                }
+                used_history_ids = set(agent_vehicles)
+
+            with timeit(f"resetting episode {episode}...", logger.info):
+                ego_observations = smarts.reset(scenario, start_time=start_time)
+                dones = {a_id: False for a_id in ego_observations}
+                dones_count = 0
+
+            with timeit(f"running episode {episode}...", logger.info):
+                while dones_count < num_agents:
+                    with timeit(f"SMARTS simulation/scenario step with {len(obs_state.last_observations)} socials", logger.info):
+                        for agent_id in obs_state.last_observations:
+                            if agent_id not in obs_state.last_observations:
+                                continue
+                            social_agent_ob = obs_state.last_observations[agent_id]
+                            # Replace the original action that the social agent would do
+                            agent_manager.reserve_social_agent_action(
+                                agent_id, social_agent.act(social_agent_ob)
+                            )
+                            if obs_state.last_observations[agent_id].has_vehicle_control:
+                                used_history_ids |= {social_agent_ob.ego_vehicle_state.id}
+                        # Step SMARTS
+                        ego_actions = {
+                            ego_agent_id: ego_agent.act(obs)
+                            for ego_agent_id, obs in ego_observations.items()
+                            if not dones[ego_agent_id]
+                        }
+                        ego_observations, _, dones, _ = smarts.step(
+                            ego_actions
+                        )  # observation_callback is called, obs_state updated
+                        for a_id in dones:
+                            if dones[a_id]:
+                                dones_count += 1
+                                logger.info(
+                                    f"agent=`{a_id}` is done because `{ego_observations[a_id].events}`..."
+                                )
+
+                        # Currently ensure vehicles are removed permanently when they leave bubble
+                        traffic_history_provider.set_replaced_ids(
+                            used_history_ids | agent_vehicles
+                        )
+                        # Update the current bubble in case there are new active bubbles
+
+                        # Iterate through the observations
+                        # The agent ids of agents can be found here.
+                        for agent_id in obs_state.last_observations.keys():
+                            if obs_state.last_observations[agent_id].events.collisions:
+                                logger.info(
+                                    "social_agent={} collided @ {}".format(
+                                        agent_id,
+                                        obs_state.last_observations[agent_id].events.collisions,
+                                    )
+                                )
+                            elif obs_state.last_observations[agent_id].events.reached_goal:
+                                logger.info(
+                                    "agent_id={} reached goal @ sim_time={}".format(
+                                        agent_id, smarts.elapsed_sim_time
+                                    )
+                                )
+                                logger.debug(
+                                    "   ... with {}".format(
+                                        obs_state.last_observations[agent_id].events
+                                    )
+                                )
     logger.info(f"ending simulation...")
     smarts.destroy()
 
