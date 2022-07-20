@@ -124,7 +124,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         ), "Expected Dict[str, any]"
 
         observations, rewards, dones, extras = None, None, None, None
-        with timeit("SMARTS simulation/scenario step", self._log):
+        with timeit("SMARTS simulation/scenario step", self._log.info):
             observations, rewards, dones, extras = self._smarts.step(agent_actions)
 
         # Agent termination: RLlib expects that we return a "last observation"
