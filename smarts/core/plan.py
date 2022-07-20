@@ -21,6 +21,7 @@
 # to allow for typing to refer to class being defined (Mission)...
 from __future__ import annotations
 
+import logging
 import math
 import random
 from dataclasses import dataclass, field
@@ -328,7 +329,11 @@ class Plan:
             self._mission.start.point,
             include_junctions=True,
         )
-        assert start_lane is not None, "route must start in a lane"
+        if start_lane is None:
+            self._route = self._road_map.empty_route()
+            logging.warning("route must start in a lane: defaulting to endless mission.")
+            return Mission.random_endless_mission(self._road_map)
+            
         start_road = start_lane.road
 
         end_lane = self._road_map.nearest_lane(
