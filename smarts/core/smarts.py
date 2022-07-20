@@ -1319,6 +1319,8 @@ class SMARTS:
             "coach": envision_types.VehicleType.Coach,
             "truck": envision_types.VehicleType.Truck,
             "trailer": envision_types.VehicleType.Trailer,
+            "motorcycle": envision_types.VehicleType.Motorcycle,
+            "pedestrian": envision_types.VehicleType.Pedestrian,
         }
         for v in provider_state.vehicles:
             if v.vehicle_id in agent_vehicle_ids:
