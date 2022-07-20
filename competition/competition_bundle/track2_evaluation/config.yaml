@@ -1,5 +1,5 @@
 validate: False
 evaluate: True
-eval_episodes: 2
+eval_episodes: 200
 seed: 42
 scenarios: []
