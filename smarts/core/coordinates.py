@@ -106,7 +106,6 @@ class Point(NamedTuple):
         # So we use the private global _numpy_points as a cache instead.
         # Here we are relying on CPython's implementation of dict
         # to be thread-safe.
-        cached = _shapely_points.get(self)
         cached = _numpy_points.get(self)
         if cached is not None:
             return cached
