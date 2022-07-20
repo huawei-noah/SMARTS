@@ -223,7 +223,7 @@ class Collision:
 
 def _make_vehicle_observation(road_map, neighborhood_vehicle):
     nv_lane = road_map.nearest_lane(
-        neighborhood_vehicle.pose.point.snap_to_grid(1), radius=3
+        neighborhood_vehicle.pose.point, radius=3
     )
     if nv_lane:
         nv_road_id = nv_lane.road.road_id
