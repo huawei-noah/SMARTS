@@ -222,9 +222,7 @@ class Collision:
 
 
 def _make_vehicle_observation(road_map, neighborhood_vehicle):
-    nv_lane = road_map.nearest_lane(
-        neighborhood_vehicle.pose.point, radius=3
-    )
+    nv_lane = road_map.nearest_lane(neighborhood_vehicle.pose.point, radius=3)
     if nv_lane:
         nv_road_id = nv_lane.road.road_id
         nv_lane_id = nv_lane.lane_id
@@ -233,7 +231,7 @@ def _make_vehicle_observation(road_map, neighborhood_vehicle):
         nv_road_id = None
         nv_lane_id = None
         nv_lane_index = None
-    
+
     return VehicleObservation(
         id=neighborhood_vehicle.vehicle_id,
         position=neighborhood_vehicle.pose.position,
@@ -279,9 +277,16 @@ class Sensors:
             for nv in vehicle.neighborhood_vehicles_sensor():
                 veh_obs = _make_vehicle_observation(sim.road_map, nv)
                 nv_lane_pos = None
-                if veh_obs.lane_id is not None and vehicle.subscribed_to_lane_position_sensor:
-                    nv_lane_pos = vehicle.lane_position_sensor(sim.road_map.lane_by_id(veh_obs.lane_id), nv)
-                neighborhood_vehicles.append(veh_obs._replace(lane_position=nv_lane_pos))
+                if (
+                    veh_obs.lane_id is not None
+                    and vehicle.subscribed_to_lane_position_sensor
+                ):
+                    nv_lane_pos = vehicle.lane_position_sensor(
+                        sim.road_map.lane_by_id(veh_obs.lane_id), nv
+                    )
+                neighborhood_vehicles.append(
+                    veh_obs._replace(lane_position=nv_lane_pos)
+                )
 
         if vehicle.subscribed_to_waypoints_sensor:
             waypoint_paths = vehicle.waypoints_sensor()

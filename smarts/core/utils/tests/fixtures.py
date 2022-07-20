@@ -319,7 +319,7 @@ def large_observation():
             }
         ),
         via_data=Vias(near_via_points=[], hit_via_points=[]),
-        steps_completed=4
+        steps_completed=4,
     )
 
 

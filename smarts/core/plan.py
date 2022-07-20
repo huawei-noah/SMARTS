@@ -227,6 +227,7 @@ class Mission:
     def endless_mission(
         start_pose: Pose,
     ) -> Mission:
+        """Generate an endless mission."""
         return Mission(
             start=Start(start_pose.as_position2d(), start_pose.heading),
             goal=EndlessGoal(),

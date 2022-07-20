@@ -201,12 +201,17 @@ def main(
                 agent_missions = resolve_agent_missions(
                     scenario, start_time, run_time, num_agents
                 )
-                agent_interfaces = {a_id: ego_interface for a_id in agent_missions.keys()}
+                agent_interfaces = {
+                    a_id: ego_interface for a_id in agent_missions.keys()
+                }
 
             with timeit(f"setting up moving bubbles...", logger.info):
                 scenario.bubbles.clear()
                 scenario.bubbles.extend(
-                    [create_moving_bubble(follow_agent_id=a_id) for a_id in agent_missions]
+                    [
+                        create_moving_bubble(follow_agent_id=a_id)
+                        for a_id in agent_missions
+                    ]
                 )
 
                 scenario.set_ego_missions(agent_missions)
@@ -232,7 +237,7 @@ def main(
             with timeit(f"running episode {episode}...", logger.info):
                 while dones_count < num_agents:
                     with timeit(
-                        f"SMARTS simulation/scenario step with {len(obs_state.last_observations)} social agents", 
+                        f"SMARTS simulation/scenario step with {len(obs_state.last_observations)} social agents",
                         logger.info,
                     ):
                         for agent_id in obs_state.last_observations:
@@ -243,8 +248,12 @@ def main(
                             agent_manager.reserve_social_agent_action(
                                 agent_id, social_agent.act(social_agent_ob)
                             )
-                            if obs_state.last_observations[agent_id].has_vehicle_control:
-                                used_history_ids |= {social_agent_ob.ego_vehicle_state.id}
+                            if obs_state.last_observations[
+                                agent_id
+                            ].has_vehicle_control:
+                                used_history_ids |= {
+                                    social_agent_ob.ego_vehicle_state.id
+                                }
                         # Step SMARTS
                         ego_actions = {
                             ego_agent_id: ego_agent.act(obs)
@@ -274,10 +283,14 @@ def main(
                                 logger.info(
                                     "social_agent={} collided @ {}".format(
                                         agent_id,
-                                        obs_state.last_observations[agent_id].events.collisions,
+                                        obs_state.last_observations[
+                                            agent_id
+                                        ].events.collisions,
                                     )
                                 )
-                            elif obs_state.last_observations[agent_id].events.reached_goal:
+                            elif obs_state.last_observations[
+                                agent_id
+                            ].events.reached_goal:
                                 logger.info(
                                     "agent_id={} reached goal @ sim_time={}".format(
                                         agent_id, smarts.elapsed_sim_time
@@ -336,7 +349,7 @@ if __name__ == "__main__":
         example=args.example,
         headless=args.headless,
         seed=args.seed,
-        episodes=args.episodes,
+        episodes=3,
         start_time=args.history_start_time,
         run_time=args.run_time,
         num_agents=args.num_agents,
