@@ -48,7 +48,7 @@ class CubicPolynomial:
         )
 
     def eval(self, ds: float) -> float:
-        """ Evaluate a value along the polynomial."""
+        """Evaluate a value along the polynomial."""
         return self.a + self.b * ds + self.c * ds * ds + self.d * ds * ds * ds
 
 
@@ -134,7 +134,7 @@ def rotate_quat(quat, vect):
 
 
 def clip(val, min_val, max_val):
-    """Constrain a value between a min and max by clamping exterior values to the extremes. """
+    """Constrain a value between a min and max by clamping exterior values to the extremes."""
     assert (
         min_val <= max_val
     ), f"min_val({min_val}) must be less than max_val({max_val})"
@@ -463,7 +463,7 @@ def get_bezier_curve(points):
     """
     n = len(points) - 1
     return lambda t: sum(
-        comb(n, i) * t ** i * (1 - t) ** (n - i) * points[i] for i in range(n + 1)
+        comb(n, i) * t**i * (1 - t) ** (n - i) * points[i] for i in range(n + 1)
     )
 
 

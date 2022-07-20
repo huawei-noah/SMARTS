@@ -122,7 +122,7 @@ class PositionalGoal(Goal):
         a = vehicle.position
         b = self.position
         sqr_dist = (a[0] - b.x) ** 2 + (a[1] - b.y) ** 2
-        return sqr_dist <= self.radius ** 2
+        return sqr_dist <= self.radius**2
 
 
 class TraverseGoal(Goal):
@@ -329,11 +329,17 @@ class Plan:
             self._mission.start.point,
             include_junctions=True,
         )
-        if start_lane is None:
-            self._route = self._road_map.empty_route()
-            logging.warning("route must start in a lane: defaulting to endless mission.")
-            return Mission.random_endless_mission(self._road_map)
-            
+
+        if not start_lane:
+            # it's possible that the Mission's start point wasn't explicitly
+            # specified by a user, but rather determined during the scenario run
+            # from the current position of a vehicle, in which case it may be
+            # in a junction.  But we only allow this if the previous query fails.
+            start_lane = self._road_map.nearest_lane(
+                self._mission.start.point,
+                include_junctions=True,
+            )
+        assert start_lane, "route must start in a lane"
         start_road = start_lane.road
 
         end_lane = self._road_map.nearest_lane(

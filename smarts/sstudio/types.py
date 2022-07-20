@@ -399,6 +399,12 @@ class Route:
         """All roads that are used within this route."""
         return (self.begin[0],) + self.via + (self.end[0],)
 
+    def __hash__(self):
+        return _pickle_hash(self)
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and hash(self) == hash(other)
+
 
 @dataclass(frozen=True)
 class RandomRoute:
@@ -411,6 +417,12 @@ class RandomRoute:
     map_spec: Optional[MapSpec] = None
     """All routes are relative to a road map.  If not specified here,
     the default map_spec for the scenario is used."""
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and hash(self) == hash(other)
 
 
 @dataclass(frozen=True)
