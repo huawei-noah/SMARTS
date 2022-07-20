@@ -224,6 +224,16 @@ class Mission:
         return self.goal.is_reached(vehicle)
 
     @staticmethod
+    def endless_mission(
+        start_pose: Pose,
+    ) -> Mission:
+        return Mission(
+            start=Start(start_pose.as_position2d(), start_pose.heading),
+            goal=EndlessGoal(),
+            entry_tactic=None,
+        )
+
+    @staticmethod
     def random_endless_mission(
         road_map: RoadMap,
         min_range_along_lane: float = 0.3,
@@ -244,11 +254,7 @@ class Mission:
         offset *= n_lane.length
         coord = n_lane.from_lane_coord(RefLinePoint(offset))
         target_pose = n_lane.center_pose_at_point(coord)
-        return Mission(
-            start=Start(target_pose.as_position2d(), target_pose.heading),
-            goal=EndlessGoal(),
-            entry_tactic=None,
-        )
+        return Mission.endless_mission(start_pose=target_pose)
 
 
 @dataclass(frozen=True)
@@ -316,7 +322,11 @@ class Plan:
         return self._road_map
 
     def create_route(self, mission: Mission) -> Mission:
-        """Generates a mission that conforms to this plan."""
+        """Generates a mission that conforms to this plan.
+        Args:
+            mission (Mission):
+                A mission the agent should follow. Defaults to endless if `None`.
+        """
         assert not self._route, "already called create_route()"
         self._mission = mission or Mission.random_endless_mission(self._road_map)
 
@@ -339,7 +349,8 @@ class Plan:
                 self._mission.start.point,
                 include_junctions=True,
             )
-        assert start_lane, "route must start in a lane"
+        if start_lane is None:
+            raise PlanningError("Cannot find start lane. Route must start in a lane.")
         start_road = start_lane.road
 
         end_lane = self._road_map.nearest_lane(
