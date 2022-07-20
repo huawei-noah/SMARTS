@@ -56,7 +56,9 @@ for scenario in scenarios[index:len(scenarios)]:
         
         for filename in client.listdir(path + scenario):
             if filename.endswith('.png'):
-                vehicle_id = re.search('vehicle-(.*).png', filename).group(1)
+                match = re.search('vehicle-(.*).png', filename)
+                assert match is not None:
+                vehicle_id = match.group(1)
                 if vehicle_id not in vehicle_ids:
                     vehicle_ids.append(vehicle_id)
 
