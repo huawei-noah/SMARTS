@@ -84,6 +84,8 @@ const VEHICLE_TYPE_MAP = Object.freeze({
   2: "truck",
   3: "trailer",
   4: "car",
+  5: "motorcycle",
+  6: "pedestrian",
 });
 
 function unpack_bubbles(bubbles) {
