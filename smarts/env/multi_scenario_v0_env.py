@@ -180,7 +180,7 @@ def get_env_specs(scenario: str):
                 collision=True,
                 off_road=True,
                 off_route=True,
-                on_shoulder=True,
+                on_shoulder=False,
                 wrong_way=True,
                 not_moving=False,
                 agents_alive=None,
@@ -199,7 +199,7 @@ def get_env_specs(scenario: str):
                 collision=True,
                 off_road=True,
                 off_route=True,
-                on_shoulder=True,
+                on_shoulder=False,
                 wrong_way=True,
                 not_moving=False,
                 agents_alive=None,
@@ -256,7 +256,7 @@ def get_env_specs(scenario: str):
                 collision=True,
                 off_road=True,
                 off_route=True,
-                on_shoulder=True,
+                on_shoulder=False,
                 wrong_way=True,
                 not_moving=False,
                 agents_alive=None,
@@ -275,7 +275,7 @@ def get_env_specs(scenario: str):
                 collision=True,
                 off_road=True,
                 off_route=True,
-                on_shoulder=True,
+                on_shoulder=False,
                 wrong_way=True,
                 not_moving=False,
                 agents_alive=None,
@@ -294,7 +294,7 @@ def get_env_specs(scenario: str):
                 collision=True,
                 off_road=True,
                 off_route=True,
-                on_shoulder=True,
+                on_shoulder=False,
                 wrong_way=True,
                 not_moving=False,
                 agents_alive=None,
@@ -313,7 +313,7 @@ def get_env_specs(scenario: str):
                 collision=True,
                 off_road=True,
                 off_route=True,
-                on_shoulder=True,
+                on_shoulder=False,
                 wrong_way=True,
                 not_moving=False,
                 agents_alive=None,
@@ -327,7 +327,7 @@ def get_env_specs(scenario: str):
         regexp_merge = re.compile(r"merge")
 
         matches_merge = regexp_merge.search(scenario)
-        off_route, on_shoulder = (False, False) if matches_merge else (True, True)
+        off_route = False if matches_merge else True
         matches_agent = regexp_agent.search(scenario)
         if not matches_agent:
             raise Exception(
@@ -342,7 +342,7 @@ def get_env_specs(scenario: str):
                 collision=True,
                 off_road=True,
                 off_route=off_route,
-                on_shoulder=on_shoulder,
+                on_shoulder=False,
                 wrong_way=True,
                 not_moving=False,
                 agents_alive=None,
