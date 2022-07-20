@@ -56,7 +56,7 @@ setup(
     extras_require={
         "camera-obs": ["Panda3D==1.10.9", "panda3d-gltf==0.13"],
         "dev": [
-            "black==22.6.0",
+            "black[jupyter]==22.6.0",
             "grpcio-tools==1.32.0",
             "isort==5.7.0",
             "pre-commit==2.16.0",

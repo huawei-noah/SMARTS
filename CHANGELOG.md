@@ -23,6 +23,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Traffic history vehicles can now be hijacked within a bubble.  They will be relinquished to the SMARTS background traffic provider upon exiting the bubble.
 - Changed the name of the `Imitation` action space to `Direct`.
 - Removed `endless_traffic` option from `SumoTrafficSimulator` and instead added `repeat_route` to `Flow` type in Scenario Studio.
+- Renamed `examples/observation_collection_for_imitation_learning.py` to `examples/traffic_histories_to_observations.py`.
+- Renamed `examples/history_vehicles_replacement_for_imitation_learning.py` to `examples/traffic_histories_vehicle_replacement.py`.
 
 ### Removed
 - Removed support for deprecated json-based and YAML formats for traffic histories.
