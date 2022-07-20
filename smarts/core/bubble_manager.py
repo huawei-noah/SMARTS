@@ -58,6 +58,7 @@ class BubbleState(Enum):
 
     InBubble = 0
     InAirlock = 1
+    WasInBubble = 2
 
 
 class Bubble:
@@ -90,7 +91,7 @@ class Bubble:
                 )
                 bubble_limit = BubbleLimits(hijack_limit, shadow_limit)
 
-        self._bubble_heading = 0
+        self._bubble_heading = 0.0
         self._bubble = bubble
         self._limit = bubble_limit
         self._cached_inner_geometry = geometry
@@ -308,7 +309,7 @@ class Cursor:
         if was_in_this_bubble and (is_shadowed or is_hijacked):
             transition = BubbleTransition.AirlockExited
         return cls(
-            vehicle_id=vehicle_id, transition=transition, state=None, bubble=bubble
+            vehicle_id=vehicle_id, transition=transition, state=BubbleState.WasInBubble, bubble=bubble
         )
 
     @classmethod
@@ -351,11 +352,11 @@ class Cursor:
         #       time-based airlocking. For robust code we'll want to handle these
         #       scenarios (e.g. hijacking if didn't airlock first)
         transition = None
-        if is_social and not is_shadowed and is_airlock_admissible and in_airlock_zone:
+        if is_social and not is_shadowed and is_airlock_admissible and (in_airlock_zone or in_bubble_zone):
             transition = BubbleTransition.AirlockEntered
-        elif is_shadowed and is_hijack_admissible and in_bubble_zone:
+        elif is_social and is_shadowed and is_hijack_admissible and in_bubble_zone:
             transition = BubbleTransition.Entered
-        elif was_in_this_bubble and is_hijacked and in_airlock_zone:
+        elif was_in_this_bubble and is_hijacked and in_airlock_zone and not in_bubble_zone:
             # XXX: This may get called repeatedly because we don't actually change
             #      any state when this happens.
             transition = BubbleTransition.Exited
@@ -516,8 +517,6 @@ class BubbleManager:
                     vehicle_ids_per_bubble=vehicle_ids_per_bubble,
                     running_cursors=cursors,
                 )
-                if cursor.state not in (BubbleState.InAirlock, BubbleState.InBubble) and cursor.transition not in (BubbleTransition.AirlockExited,):
-                    continue
                 cursors.add(
                     cursor
                 )
@@ -543,9 +542,10 @@ class BubbleManager:
             elif cursor.transition == BubbleTransition.Exited:
                 continue
             elif cursor.transition == BubbleTransition.AirlockExited:
-                if sim.vehicle_index.vehicle_is_hijacked(cursor.vehicle_id):
+                hijacked, shadowed = sim.vehicle_index.vehicle_is_hijacked_or_shadowed(cursor.vehicle_id)
+                if hijacked:
                     self._relinquish_vehicle(sim, cursor.vehicle_id, cursor.bubble)
-                else:
+                elif shadowed:
                     self._stop_shadowing_vehicle(sim, cursor.vehicle_id, cursor.bubble)
 
     def _move_travelling_bubbles(self, sim):
