@@ -19,17 +19,17 @@ _EVALUATION_CONFIG_KEYS = {
 _DEFAULT_EVALUATION_CONFIG = dict(
     validate=False,
     evaluate=True,
-    eval_episodes=2,
+    eval_episodes=400,
     seed=42,
     scenarios=[
         "1_to_2lane_left_turn_c",
         "1_to_2lane_left_turn_t",
-        # "3lane_merge_multi_agent",
-        # "3lane_merge_single_agent",
-        # "3lane_cruise_multi_agent",
-        # "3lane_cruise_single_agent",
-        # "3lane_cut_in",
-        # "3lane_overtake",
+        "3lane_merge_multi_agent",
+        "3lane_merge_single_agent",
+        "3lane_cruise_multi_agent",
+        "3lane_cruise_single_agent",
+        "3lane_cut_in",
+        "3lane_overtake",
     ],
 )
 _SUBMISSION_CONFIG_KEYS = {
@@ -228,6 +228,12 @@ if __name__ == "__main__":
     )
     validate_config(config=submission_config, keys=_SUBMISSION_CONFIG_KEYS)
 
+    # Add scenario paths for remote evaluation.
+    if not args.local:
+        for dirpath, dirnames, filenames in os.walk(evaluation_dir):
+            if not dirnames:
+                evaluation_config["scenarios"].append(dirpath)
+    
     if evaluation_config["evaluate"]:
         # Evaluate and write score.
         config = merge_config(self=evaluation_config, other=submission_config)

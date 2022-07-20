@@ -2,3 +2,4 @@ validate: False
 evaluate: True
 eval_episodes: 2
 seed: 42
+scenarios: []

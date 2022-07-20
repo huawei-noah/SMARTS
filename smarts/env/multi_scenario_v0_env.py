@@ -323,18 +323,23 @@ def get_env_specs(scenario: str):
         import re
         regexp_agent = re.compile(r"agent_\d+")
         regexp_num = re.compile(r"\d+")
+        regexp_merge = re.compile(r"merge")
+
+        matches_merge = regexp_merge.search(scenario)
+        off_route, on_shoulder = (False,False) if matches_merge else (True,True)
         matches_agent = regexp_agent.search(scenario)
         if not matches_agent:
             raise Exception(f"Scenario path should match regexp of 'agent_\d+', but got {scenario}")
         num_agent = regexp_num.search(matches_agent.group(0))
+
         return {
             "scenario": str(scenario),
             "num_agent": int(num_agent.group(0)),
             "done_criteria": DoneCriteria(
                 collision=True,
                 off_road=True,
-                off_route=True,
-                on_shoulder=True,
+                off_route=off_route,
+                on_shoulder=on_shoulder,
                 wrong_way=True,
                 not_moving=False,
                 agents_alive=None,

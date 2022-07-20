@@ -2,7 +2,6 @@ from typing import Any, Dict
 
 import gym
 import numpy as np
-from train.util import plotter3d
 
 
 class Reward(gym.Wrapper):
@@ -37,11 +36,6 @@ class Reward(gym.Wrapper):
                 else:
                     print("Events: ", obs[agent_id]["events"])
                     raise Exception("Episode ended for unknown reason.")
-
-                # plot_obs = np.uint8(obs["rgb"])
-                # plot_obs_dagm = np.uint8(obs["dagm"])
-                # plotter3d(plot_obs, rgb_gray=3,channel_order="last",name="after",pause=0)
-                # plotter3d(plot_obs_dagm, rgb_gray=1,channel_order="last",name="after",pause=0)
 
         return obs, wrapped_reward, done, info
 

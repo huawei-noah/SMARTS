@@ -27,13 +27,13 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip install --upgrade pip wheel
 
 # Install requirements.txt .
-COPY ./competition/train/requirements.txt /tmp/requirements.txt
+COPY ./competition/track1/train/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy source files and install.
 COPY . /src
 WORKDIR /src
-RUN pip install --no-cache-dir -e ./competition/train
+RUN pip install --no-cache-dir -e ./competition/track1/train
 
 # For Envision.
 EXPOSE 8081
