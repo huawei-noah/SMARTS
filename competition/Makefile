@@ -22,9 +22,13 @@ validation_evaluation.zip:
 	cd -
 
 track1_evaluation.zip:
-	cd competition_bundle/track1_evaluation && \
+	mkdir temp_track1_evaluation/
+	cp -r competition_bundle/track1_evaluation/* temp_track1_evaluation/
+	cp -r eval_scenarios temp_track1_evaluation
+	cd temp_track1_evaluation && \
 	zip -r $(COMPETITION_DIR)/track1_evaluation.zip . && \
 	cd -
+	rm -r temp_track1_evaluation
 
 track2_evaluation.zip:
 	cd competition_bundle/track2_evaluation && \
