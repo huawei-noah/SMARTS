@@ -80,36 +80,36 @@ for scenario in scenarios[index:len(scenarios)]:
             threshold = 3
 
             for i in range(len(image_names) - 1):
-                imgfile = client.open(path + scenario + '/' + image_names[i], 'r')
-                imgfile.seek(0)
-                image = Image.open(imgfile)
+                with client.open(path + scenario + '/' + image_names[i], 'r') as imgfile:
+                    imgfile.seek(0)
+                    image = Image.open(imgfile)
 
-                sim_time = image_names[i].split('_Agent')[0]
-                sim_time_next = image_names[i + 1].split('_Agent')[0]
-                current_position = vehicle_data[float(sim_time)]['ego']['pos']
-                current_heading = vehicle_data[float(sim_time)]['ego']['heading']
-                next_position = vehicle_data[float(sim_time_next)]['ego']['pos']
-                next_heading = vehicle_data[float(sim_time_next)]['ego']['heading']
-                dx = next_position[0] - current_position[0]
-                dy = next_position[1] - current_position[1]
-                dheading = next_heading - current_heading
-                events = vehicle_data[float(sim_time)]['events']
-                if all(value == 0 for value in events.values()):
-                    terminal = 0
-                else:
-                    terminal = 1
-                
-                img_obs = np.asarray(image).reshape(3,256,256)
-                goal_obs = get_goal_layer(goal_pos_x, goal_pos_y, current_position[0], current_position[1], current_heading)
-                obs.append(np.concatenate((img_obs, goal_obs), axis=0))
+                    sim_time = image_names[i].split('_Agent')[0]
+                    sim_time_next = image_names[i + 1].split('_Agent')[0]
+                    current_position = vehicle_data[float(sim_time)]['ego']['pos']
+                    current_heading = vehicle_data[float(sim_time)]['ego']['heading']
+                    next_position = vehicle_data[float(sim_time_next)]['ego']['pos']
+                    next_heading = vehicle_data[float(sim_time_next)]['ego']['heading']
+                    dx = next_position[0] - current_position[0]
+                    dy = next_position[1] - current_position[1]
+                    dheading = next_heading - current_heading
+                    events = vehicle_data[float(sim_time)]['events']
+                    if all(value == 0 for value in events.values()):
+                        terminal = 0
+                    else:
+                        terminal = 1
+                    
+                    img_obs = np.asarray(image).reshape(3,256,256)
+                    goal_obs = get_goal_layer(goal_pos_x, goal_pos_y, current_position[0], current_position[1], current_heading)
+                    obs.append(np.concatenate((img_obs, goal_obs), axis=0))
 
-                actions.append([dx, dy, dheading])
+                    actions.append([dx, dy, dheading])
 
-                dist_reward = vehicle_data[float(sim_time)]['dist']
-                goal_reward = goal_region_reward(threshold, goal_pos_x, goal_pos_y, current_position[0], current_position[1])
-                rewards.append(dist_reward + goal_reward)
-                
-                terminals.append(terminal)
+                    dist_reward = vehicle_data[float(sim_time)]['dist']
+                    goal_reward = goal_region_reward(threshold, goal_pos_x, goal_pos_y, current_position[0], current_position[1])
+                    rewards.append(dist_reward + goal_reward)
+                    
+                    terminals.append(terminal)
             print(str(len(obs)) + ' pieces of data are added into dataset.' )
 
         obs = np.array(obs, dtype=np.uint8)
@@ -143,7 +143,6 @@ for scenario in scenarios[index:len(scenarios)]:
     except:
         pass
 
-imgfile.close()
 client.close()
 print("Finish Processing")
 
