@@ -322,7 +322,7 @@ def get_env_specs(scenario: str):
     elif os.path.isdir(scenario):
         import re
 
-        regexp_agent = re.compile(r"agent_\d+")
+        regexp_agent = re.compile(r"agents_\d+")
         regexp_num = re.compile(r"\d+")
         regexp_merge = re.compile(r"merge")
 

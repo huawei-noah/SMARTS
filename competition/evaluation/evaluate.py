@@ -233,7 +233,7 @@ if __name__ == "__main__":
         for dirpath, dirnames, filenames in os.walk(evaluation_dir):
             if not dirnames:
                 evaluation_config["scenarios"].append(dirpath)
-    
+
     if evaluation_config["evaluate"]:
         # Evaluate and write score.
         config = merge_config(self=evaluation_config, other=submission_config)
