@@ -700,7 +700,7 @@ class SumoRoadNetwork(RoadMap):
         self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> List[Tuple[RoadMap.Lane, float]]:
         if radius is None:
-            radius = max(10, 2 * self._default_lane_width)
+            radius = self._default_lane_width
         # XXX: note that this getNeighboringLanes() call is fairly heavy/expensive (as revealed by profiling)
         # The includeJunctions parameter is the opposite of include_junctions because
         # what it does in the Sumo query is attach the "node" that is the junction (node)
