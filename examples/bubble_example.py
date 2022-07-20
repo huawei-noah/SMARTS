@@ -231,7 +231,10 @@ def main(
 
             with timeit(f"running episode {episode}...", logger.info):
                 while dones_count < num_agents:
-                    with timeit(f"SMARTS simulation/scenario step with {len(obs_state.last_observations)} socials", logger.info):
+                    with timeit(
+                        f"SMARTS simulation/scenario step with {len(obs_state.last_observations)} social agents", 
+                        logger.info,
+                    ):
                         for agent_id in obs_state.last_observations:
                             if agent_id not in obs_state.last_observations:
                                 continue
