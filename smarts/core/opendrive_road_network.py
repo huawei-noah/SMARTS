@@ -1672,9 +1672,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         if route and route.roads:
             road_ids = [road.road_id for road in route.roads]
         if road_ids:
-            return self._waypoint_paths_along_route(
-                pose.point, lookahead, road_ids
-            )
+            return self._waypoint_paths_along_route(pose.point, lookahead, road_ids)
         closest_lps = self._lanepoints.closest_lanepoints(
             [pose], within_radius=within_radius
         )

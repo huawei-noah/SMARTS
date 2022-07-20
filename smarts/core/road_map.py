@@ -664,7 +664,9 @@ class RoadMapWithCaches(RoadMap):
         @lru_cache(maxsize=1024)
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
             lc = RefLinePoint(s=self.offset_along_lane(world_point))
-            offcenter_vector = world_point.as_np_array - self.from_lane_coord(lc).as_np_array
+            offcenter_vector = (
+                world_point.as_np_array - self.from_lane_coord(lc).as_np_array
+            )
             t_sign = np.sign(np.dot(offcenter_vector, self._normal_at_offset(lc.s)))
             return lc._replace(t=np.linalg.norm(offcenter_vector) * t_sign)
 
