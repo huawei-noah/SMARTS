@@ -221,6 +221,32 @@ class Collision:
     collidee_id: str
 
 
+def _make_vehicle_observation(road_map, neighborhood_vehicle):
+    nv_lane = road_map.nearest_lane(
+        neighborhood_vehicle.pose.point.snap_to_grid(1), radius=3
+    )
+    if nv_lane:
+        nv_road_id = nv_lane.road.road_id
+        nv_lane_id = nv_lane.lane_id
+        nv_lane_index = nv_lane.index
+    else:
+        nv_road_id = None
+        nv_lane_id = None
+        nv_lane_index = None
+    
+    return VehicleObservation(
+        id=neighborhood_vehicle.vehicle_id,
+        position=neighborhood_vehicle.pose.position,
+        bounding_box=neighborhood_vehicle.dimensions,
+        heading=neighborhood_vehicle.pose.heading,
+        speed=neighborhood_vehicle.speed,
+        road_id=nv_road_id,
+        lane_id=nv_lane_id,
+        lane_index=nv_lane_index,
+        lane_position=None,
+    )
+
+
 class Sensors:
     """Sensor utility"""
 
@@ -251,33 +277,11 @@ class Sensors:
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:
             neighborhood_vehicles = []
             for nv in vehicle.neighborhood_vehicles_sensor():
-                nv_lane = sim.road_map.nearest_lane(
-                    nv.pose.point, radius=vehicle.length
-                )
+                veh_obs = _make_vehicle_observation(sim.road_map, nv)
                 nv_lane_pos = None
-                if nv_lane:
-                    nv_road_id = nv_lane.road.road_id
-                    nv_lane_id = nv_lane.lane_id
-                    nv_lane_index = nv_lane.index
-                    if vehicle.subscribed_to_lane_position_sensor:
-                        nv_lane_pos = vehicle.lane_position_sensor(nv_lane, nv)
-                else:
-                    nv_road_id = None
-                    nv_lane_id = None
-                    nv_lane_index = None
-                neighborhood_vehicles.append(
-                    VehicleObservation(
-                        id=nv.vehicle_id,
-                        position=nv.pose.position,
-                        bounding_box=nv.dimensions,
-                        heading=nv.pose.heading,
-                        speed=nv.speed,
-                        road_id=nv_road_id,
-                        lane_id=nv_lane_id,
-                        lane_index=nv_lane_index,
-                        lane_position=nv_lane_pos,
-                    )
-                )
+                if veh_obs.lane_id is not None and vehicle.subscribed_to_lane_position_sensor:
+                    nv_lane_pos = vehicle.lane_position_sensor(sim.road_map.lane_by_id(veh_obs.lane_id), nv)
+                neighborhood_vehicles.append(veh_obs._replace(lane_position=nv_lane_pos))
 
         if vehicle.subscribed_to_waypoints_sensor:
             waypoint_paths = vehicle.waypoints_sensor()
