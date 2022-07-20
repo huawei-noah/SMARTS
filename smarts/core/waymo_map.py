@@ -1190,7 +1190,7 @@ class WaymoMap(RoadMapWithCaches):
             if not self.is_drivable:
                 return []
             road_ids = [road.road_id for road in route.roads] if route else None
-            return self._waypoint_paths_at(pose.position, lookahead, road_ids)
+            return self._waypoint_paths_at(pose.point, lookahead, road_ids)
 
         def waypoint_paths_at_offset(
             self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
@@ -1203,7 +1203,7 @@ class WaymoMap(RoadMapWithCaches):
 
         def _waypoint_paths_at(
             self,
-            point: Sequence,
+            point: Point,
             lookahead: int,
             filter_road_ids: Optional[Sequence[str]] = None,
         ) -> List[List[Waypoint]]:
@@ -1218,7 +1218,7 @@ class WaymoMap(RoadMapWithCaches):
                 closest_linked_lp,
                 lookahead,
                 tuple(filter_road_ids) if filter_road_ids else (),
-                tuple(point),
+                point,
             )
 
     class Road(RoadMapWithCaches.Road, Surface):
@@ -1675,7 +1675,7 @@ class WaymoMap(RoadMapWithCaches):
     class _WaypointsCache:
         def __init__(self):
             self.lookahead = 0
-            self.point = (0, 0, 0)
+            self.point = Point(0, 0)
             self.filter_road_ids = ()
             self._starts = {}
 
@@ -1693,7 +1693,7 @@ class WaymoMap(RoadMapWithCaches):
         def update(
             self,
             lookahead: int,
-            point: Tuple[float, float, float],
+            point: Point,
             filter_road_ids: tuple,
             llp,
             paths: List[List[Waypoint]],
@@ -1709,7 +1709,7 @@ class WaymoMap(RoadMapWithCaches):
         def query(
             self,
             lookahead: int,
-            point: Tuple[float, float, float],
+            point: Point,
             filter_road_ids: tuple,
             llp,
         ) -> Optional[List[List[Waypoint]]]:
@@ -1732,18 +1732,18 @@ class WaymoMap(RoadMapWithCaches):
         if route and route.roads:
             road_ids = [road.road_id for road in route.roads]
         if road_ids:
-            return self._waypoint_paths_along_route(pose.position, lookahead, road_ids)
+            return self._waypoint_paths_along_route(pose.point, lookahead, road_ids)
         closest_lps = self._lanepoints.closest_lanepoints(
             [pose], within_radius=within_radius
         )
         closest_lane = closest_lps[0].lane
         waypoint_paths = []
         for lane in closest_lane.road.lanes:
-            waypoint_paths += lane._waypoint_paths_at(pose.position, lookahead)
+            waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
         return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
 
     def _waypoint_paths_along_route(
-        self, point, lookahead: int, route: Sequence[str]
+        self, point: Point, lookahead: int, route: Sequence[str]
     ) -> List[List[Waypoint]]:
         """finds the closest lane to vehicle's position that is on its route,
         then gets waypoint paths from all lanes in its road there."""
@@ -1768,7 +1768,7 @@ class WaymoMap(RoadMapWithCaches):
     @staticmethod
     def _equally_spaced_path(
         path: Sequence[LinkedLanePoint],
-        point: Tuple[float, float, float],
+        point: Point,
         lp_spacing: float,
     ) -> List[Waypoint]:
         """given a list of LanePoints starting near point, return corresponding
@@ -1818,9 +1818,9 @@ class WaymoMap(RoadMapWithCaches):
             ref_lanepoints_coordinates["headings"]
         )
         first_lp_heading = ref_lanepoints_coordinates["headings"][0]
-        lp_position = path[0].lp.pose.as_position2d()
-        vehicle_pos = np.array(point[:2])
-        heading_vec = np.array(radians_to_vec(first_lp_heading))
+        lp_position = path[0].lp.pose.point.as_np_array[:2]
+        vehicle_pos = point.as_np_array[:2]
+        heading_vec = radians_to_vec(first_lp_heading)
         projected_distant_lp_vehicle = np.inner(
             (vehicle_pos - lp_position), heading_vec
         )
@@ -1907,7 +1907,7 @@ class WaymoMap(RoadMapWithCaches):
         lanepoint: LinkedLanePoint,
         lookahead: int,
         filter_road_ids: tuple,
-        point: Tuple[float, float, float],
+        point: Point,
     ) -> List[List[Waypoint]]:
         """computes equally-spaced Waypoints for all lane paths starting at lanepoint
         up to lookahead waypoints ahead, constrained to filter_road_ids if specified."""

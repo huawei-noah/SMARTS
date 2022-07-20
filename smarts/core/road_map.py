@@ -372,7 +372,7 @@ class RoadMap:
             vector = self.vector_at_offset(s)
             normal = np.array([-vector[1], vector[0], 0])
             center_at_s = self.from_lane_coord(RefLinePoint(s=s))
-            offcenter_vector = np.array(world_point) - np.array(center_at_s)
+            offcenter_vector = world_point.as_np_array - center_at_s.as_np_array
             t_sign = np.sign(np.dot(offcenter_vector, normal))
             t = np.linalg.norm(offcenter_vector) * t_sign
             return RefLinePoint(s=s, t=t)
@@ -393,7 +393,7 @@ class RoadMap:
             s_offset = max(s_offset, 0)
             p1 = self.from_lane_coord(RefLinePoint(s=s_offset))
             p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
-            return np.array(p2) - np.array(p1)
+            return p2.as_np_array - p1.as_np_array
 
         def center_pose_at_point(self, point: Point) -> Pose:
             """The pose at the center of the lane closest to the given point."""
@@ -664,7 +664,7 @@ class RoadMapWithCaches(RoadMap):
         @lru_cache(maxsize=1024)
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
             lc = RefLinePoint(s=self.offset_along_lane(world_point))
-            offcenter_vector = np.array(world_point) - self.from_lane_coord(lc)
+            offcenter_vector = world_point.as_np_array - self.from_lane_coord(lc).as_np_array
             t_sign = np.sign(np.dot(offcenter_vector, self._normal_at_offset(lc.s)))
             return lc._replace(t=np.linalg.norm(offcenter_vector) * t_sign)
 
