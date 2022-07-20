@@ -18,8 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import pathlib
 import os
+import pathlib
 from typing import Any, Dict, Optional, Tuple
 
 import gym
@@ -321,15 +321,18 @@ def get_env_specs(scenario: str):
         }
     elif os.path.isdir(scenario):
         import re
+
         regexp_agent = re.compile(r"agent_\d+")
         regexp_num = re.compile(r"\d+")
         regexp_merge = re.compile(r"merge")
 
         matches_merge = regexp_merge.search(scenario)
-        off_route, on_shoulder = (False,False) if matches_merge else (True,True)
+        off_route, on_shoulder = (False, False) if matches_merge else (True, True)
         matches_agent = regexp_agent.search(scenario)
         if not matches_agent:
-            raise Exception(f"Scenario path should match regexp of 'agent_\d+', but got {scenario}")
+            raise Exception(
+                f"Scenario path should match regexp of 'agent_\d+', but got {scenario}"
+            )
         num_agent = regexp_num.search(matches_agent.group(0))
 
         return {
@@ -344,7 +347,7 @@ def get_env_specs(scenario: str):
                 not_moving=False,
                 agents_alive=None,
             ),
-        }    
+        }
     else:
         raise Exception(f"Unknown scenario {scenario}.")
 
