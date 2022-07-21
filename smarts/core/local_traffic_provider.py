@@ -368,7 +368,7 @@ class _TrafficActor:
 
     def __init__(self, flow: Dict[str, Any], owner: LocalTrafficProvider):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._logger.setLevel(logging.INFO)
+        self._logger.setLevel(logging.INFO)  # TODO: remove this once done debugging
 
         self._owner = owner
         self._state = None
@@ -1249,7 +1249,10 @@ class _TrafficActor:
 
     def _handle_junctions(self, dt: float, window: int = 5, max_range: float = 100.0):
         rl = RoadMap.Route.RouteLane(self._target_lane_win.lane, self._route_ind)
-        njl, nj_dist = self._route.next_junction(rl, self._offset)
+        l_offset = self._owner._cached_lane_offset(
+            self._state, self._target_lane_win.lane
+        )
+        njl, nj_dist = self._route.next_junction(rl, l_offset)
         if not njl or nj_dist > max_range:
             return
         updated = set()
