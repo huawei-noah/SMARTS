@@ -19,7 +19,7 @@ _EVALUATION_CONFIG_KEYS = {
 _DEFAULT_EVALUATION_CONFIG = dict(
     validate=False,
     evaluate=True,
-    eval_episodes=400,
+    eval_episodes=200,
     seed=42,
     scenarios=[
         "1_to_2lane_left_turn_c",
@@ -231,16 +231,14 @@ if __name__ == "__main__":
     # Add scenario paths for remote evaluation.
     if not args.local:
         for dirpath, dirnames, filenames in os.walk(evaluation_dir):
-            if not dirnames:
+            if "scenario.py" in filenames and "map.net.xml" in filenames:
                 evaluation_config["scenarios"].append(dirpath)
 
-    if evaluation_config["evaluate"]:
-        # Evaluate and write score.
-        config = merge_config(self=evaluation_config, other=submission_config)
-        rank = evaluate(config)
-        output_dir = os.path.join(scores_dir, _SCORES_FILENAME)
-        text = to_codalab_scores_string(rank)
-        write_output(text=text, output_dir=output_dir)
-    elif evaluation_config["validate"]:
-        # Validate instantiation of submitted policy.
-        Policy()
+    config = merge_config(self=evaluation_config, other=submission_config)
+    rank = evaluate(config)
+    if evaluation_config["validate"]:
+        # In validation phase, score will not be revealed.
+        rank = dict.fromkeys(rank, 0)
+    text = to_codalab_scores_string(rank)
+    output_dir = os.path.join(scores_dir, _SCORES_FILENAME)
+    write_output(text=text, output_dir=output_dir)
