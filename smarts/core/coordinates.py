@@ -354,7 +354,7 @@ class Pose:
         )
 
     @classmethod
-    def from_center(cls, base_position, heading):
+    def from_center(cls, base_position, heading: Heading):
         """Convert from centred location
 
         Args:
@@ -374,7 +374,11 @@ class Pose:
 
     @classmethod
     def from_explicit_offset(
-        cls, offset_from_centre, base_position, heading, local_heading
+        cls,
+        offset_from_centre,
+        base_position: np.ndarray,
+        heading: Heading,
+        local_heading: Heading,
     ):
         """Convert from an explicit offset
 
@@ -442,3 +446,7 @@ class Pose:
     def as_panda3d(self):
         """Convert to panda3D (object bounds centre position, heading)"""
         return (self.position, self.heading.as_panda3d)
+
+    @classmethod
+    def origin(cls):
+        return cls(np.repeat([0], 3), np.array([0, 0, 0, 1]))
