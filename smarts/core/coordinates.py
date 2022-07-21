@@ -449,4 +449,5 @@ class Pose:
 
     @classmethod
     def origin(cls):
+        """Pose at the origin coordinate of smarts."""
         return cls(np.repeat([0], 3), np.array([0, 0, 0, 1]))
