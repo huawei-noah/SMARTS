@@ -196,7 +196,7 @@ class Observation:
     events: Events
     ego_vehicle_state: EgoVehicleObservation
     under_this_agent_control: bool
-    """If the agent currently has control of the vehicle."""
+    """If this agent currently has control of the vehicle."""
     neighborhood_vehicle_states: Optional[List[VehicleObservation]]
     waypoint_paths: Optional[List[List[Waypoint]]]
     distance_travelled: float
