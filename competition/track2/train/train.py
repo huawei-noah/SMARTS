@@ -1,4 +1,5 @@
 from utility import remote_operations
+from utility import get_trans_coor
 from utility import goal_region_reward
 from utility import get_goal_layer
 import paramiko
@@ -98,9 +99,14 @@ for scenario in scenarios[index : len(scenarios)]:
                     current_heading = vehicle_data[float(sim_time)]["ego"]["heading"]
                     next_position = vehicle_data[float(sim_time_next)]["ego"]["pos"]
                     next_heading = vehicle_data[float(sim_time_next)]["ego"]["heading"]
-                    dx = next_position[0] - current_position[0]
-                    dy = next_position[1] - current_position[1]
-                    dheading = next_heading - current_heading
+
+                    trans_coor = get_trans_coor(next_position[0], next_position[1], current_position[0], current_position[1], current_heading)
+                    trans_cur = trans_coor[0]
+                    trans_next = trans_coor[1]
+                    dx = trans_next[0, 0] - trans_cur[0, 0]
+                    dy = trans_next[1, 0] - trans_cur[1, 0]
+                    dheading = next_heading - current_heading  # positive means steer to the left, negative means steer to the right
+
                     events = vehicle_data[float(sim_time)]["events"]
                     if all(value == 0 for value in events.values()):
                         terminal = 0

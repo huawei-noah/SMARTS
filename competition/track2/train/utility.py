@@ -32,49 +32,31 @@ def inside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
 
     # find true condition of first quadrant
     if goal_x > cur_x and goal_y > cur_y:
-        x_pixel_loc = min(
-            128 + round(x_diff * ratio), 255
-        )  # cap on 256 which is the right edge
-        y_pixel_loc = max(
-            127 - round(y_diff * ratio), 0
-        )  # cap on 0 which is the upper edge
+        x_pixel_loc = min(128 + round(x_diff * ratio), 255)  # cap on 256 which is the right edge
+        y_pixel_loc = max(127 - round(y_diff * ratio), 0)  # cap on 0 which is the upper edge
 
     # find second quadrant
     elif goal_x < cur_x and goal_y > cur_y:
-        x_pixel_loc = max(
-            127 - round(x_diff * ratio), 0
-        )  # cap on 0 which is the left edge
-        y_pixel_loc = max(
-            127 - round(y_diff * ratio), 0
-        )  # cap on 0 which is the upper edge
+        x_pixel_loc = max(127 - round(x_diff * ratio), 0)  # cap on 0 which is the left edge
+        y_pixel_loc = max(127 - round(y_diff * ratio), 0)  # cap on 0 which is the upper edge
 
     # To find third quadrant
     elif goal_x < cur_x and goal_y < cur_y:
-        x_pixel_loc = max(
-            127 - round(x_diff * ratio), 0
-        )  # cap on 0 which is the left edge
-        y_pixel_loc = min(
-            128 + round(y_diff * ratio), 255
-        )  # cap on 256 which is the bottom edge
+        x_pixel_loc = max(127 - round(x_diff * ratio), 0)  # cap on 0 which is the left edge
+        y_pixel_loc = min(128 + round(y_diff * ratio), 255)  # cap on 256 which is the bottom edge
 
     # To find Fourth quadrant
     elif goal_x > cur_x and goal_y < cur_y:
-        x_pixel_loc = min(
-            128 + round(x_diff * ratio), 255
-        )  # cap on 256 which is the right edge
-        y_pixel_loc = min(
-            128 + round(y_diff * ratio), 255
-        )  # cap on 256 which is the bottom edge
+        x_pixel_loc = min(128 + round(x_diff * ratio), 255)  # cap on 256 which is the right edge
+        y_pixel_loc = min(128 + round(y_diff * ratio), 255)  # cap on 256 which is the bottom edge
 
-    # To find if goal is at cur
-    if (abs(0.98 * cur_x) <= abs(goal_x) <= abs(1.02 * cur_x)) and (
-        abs(0.98 * cur_y) <= abs(goal_y) <= abs(1.02 * cur_y)
-    ):
+    # To find if goal is at cur (do not change to elif)
+    if (abs(cur_x)-0.05 <= abs(goal_x) <= abs(cur_x)+0.05) and (abs(cur_y)-0.05 <= abs(goal_y) <= abs(cur_y)+0.05):
         x_pixel_loc = 128
         y_pixel_loc = 128
 
     # On x-axis
-    elif (abs(0.98 * cur_y) <= abs(goal_y) <= abs(1.02 * cur_y)) and goal_x != cur_x:
+    elif (abs(cur_y)-0.05 <= abs(goal_y) <= abs(cur_y)+0.05) and goal_x != cur_x:
         if goal_x >= cur_x:
             x_pixel_loc = min(128 + round(x_diff * ratio), 255)
         else:
@@ -82,7 +64,7 @@ def inside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
         y_pixel_loc = min(128 + round(y_diff * ratio), 255)
 
     # On y-axis
-    elif (abs(0.98 * cur_x) <= abs(goal_x) <= abs(1.02 * cur_x)) and goal_y != cur_y:
+    elif (abs(cur_x)-0.05 <= abs(goal_x) <= abs(cur_x)+0.05) and goal_y != cur_y:
         if goal_y >= cur_y:
             y_pixel_loc = max(127 - round(y_diff * ratio), 0)
         else:
@@ -151,8 +133,8 @@ def outside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
             x_pixel_loc = 255
             y_pixel_loc = 255
 
-    # On x-axis
-    if (abs(0.98 * cur_y) <= abs(goal_y) <= abs(1.02 * cur_y)) and goal_x != cur_x:
+    # On x-axis (do not change to elif)
+    if (abs(cur_y)-0.05 <= abs(goal_y) <= abs(cur_y)+0.05) and goal_x != cur_x:
         if goal_x >= cur_x:
             x_pixel_loc = 255
         else:
@@ -160,7 +142,7 @@ def outside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
         y_pixel_loc = 128
 
     # On y-axis
-    elif (abs(0.98 * cur_x) <= abs(goal_x) <= abs(1.02 * cur_x)) and goal_y != cur_y:
+    elif (abs(cur_x)-0.05 <= abs(goal_x) <= abs(cur_x)+0.05) and goal_y != cur_y:
         if goal_y >= cur_y:
             y_pixel_loc = 0
         else:
@@ -172,8 +154,7 @@ def outside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
     return goal_obs
 
 
-# mark goal position with integer 1, other entries are all 0
-def get_goal_layer(goal_x, goal_y, cur_x, cur_y, cur_heading):
+def get_trans_coor(goal_x, goal_y, cur_x, cur_y, cur_heading):
 
     if 0 < cur_heading < math.pi:  # Facing Left Half
         theta = cur_heading
@@ -187,13 +168,21 @@ def get_goal_layer(goal_x, goal_y, cur_x, cur_y, cur_heading):
     elif (cur_heading == math.pi) or (cur_heading == -(math.pi)):  # Facing South
         theta = 2 * math.pi + cur_heading
 
-    trans_matrix = np.array(
-        [[math.cos(theta), math.sin(theta)], [-math.sin(theta), math.cos(theta)]]
-    )
+    trans_matrix = np.array([[math.cos(theta), math.sin(theta)], [-math.sin(theta), math.cos(theta)]])
     cur_pos = np.array([[cur_x], [cur_y]])
     goal_pos = np.array([[goal_x], [goal_y]])
     trans_cur = np.round(np.matmul(trans_matrix, cur_pos), 5)
     trans_goal = np.round(np.matmul(trans_matrix, goal_pos), 5)
+
+    return [trans_cur, trans_goal]
+
+
+# mark goal position with integer 256, other entries are all 0
+def get_goal_layer(goal_x, goal_y, cur_x, cur_y, cur_heading):
+
+    trans_coor = get_trans_coor(goal_x, goal_y, cur_x, cur_y, cur_heading)
+    trans_cur = trans_coor[0]
+    trans_goal = trans_coor[1]
 
     if (trans_cur[0, 0] - 25) <= trans_goal[0, 0] <= (trans_cur[0, 0] + 25):
         if (trans_cur[1, 0] - 25) <= trans_goal[1, 0] <= (trans_cur[1, 0] + 25):
@@ -204,12 +193,8 @@ def get_goal_layer(goal_x, goal_y, cur_x, cur_y, cur_heading):
         inside = False
 
     if inside:
-        goal_obs = inside_coor_to_pixel(
-            trans_goal[0, 0], trans_goal[1, 0], trans_cur[0, 0], trans_cur[1, 0]
-        )
+        goal_obs = inside_coor_to_pixel(trans_goal[0, 0], trans_goal[1, 0], trans_cur[0, 0], trans_cur[1, 0])
     else:
-        goal_obs = outside_coor_to_pixel(
-            trans_goal[0, 0], trans_goal[1, 0], trans_cur[0, 0], trans_cur[1, 0]
-        )
+        goal_obs = outside_coor_to_pixel(trans_goal[0, 0], trans_goal[1, 0], trans_cur[0, 0], trans_cur[1, 0])
 
     return goal_obs
