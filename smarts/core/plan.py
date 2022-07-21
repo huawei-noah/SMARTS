@@ -351,6 +351,7 @@ class Plan:
                 include_junctions=True,
             )
         if start_lane is None:
+            self._mission = None
             raise PlanningError("Cannot find start lane. Route must start in a lane.")
         start_road = start_lane.road
 
@@ -368,6 +369,7 @@ class Plan:
         )[0]
 
         if len(self._route.roads) == 0:
+            self._mission = None
             raise PlanningError(
                 "Unable to find a route between start={} and end={}. If either of "
                 "these are junctions (not well supported today) please switch to "

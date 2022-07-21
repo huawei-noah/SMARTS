@@ -735,7 +735,6 @@ class BubbleManager:
         try:
             plan.create_route(mission)
         except PlanningError:
-            plan.mission = None
             plan.route = sim.road_map.empty_route()
 
     def _start_social_agent(
