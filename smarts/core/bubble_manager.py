@@ -523,7 +523,7 @@ class BubbleManager:
                     cursor = Cursor.for_removed(
                         vehicle_id=vehicle.id,
                         bubble=bubble,
-                        index=vehicle_index,
+                        index=persisted_vehicle_index,
                         vehicle_ids_per_bubble=vehicle_ids_per_bubble,
                     )
                     if cursor.transition not in (BubbleTransition.AirlockExited,):
@@ -543,7 +543,7 @@ class BubbleManager:
                     pos=point,
                     vehicle_id=vehicle.id,
                     bubble=bubble,
-                    index=vehicle_index,
+                    index=persisted_vehicle_index,
                     vehicle_ids_per_bubble=vehicle_ids_per_bubble,
                     running_cursors=cursors,
                 )
