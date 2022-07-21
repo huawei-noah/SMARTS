@@ -456,8 +456,8 @@ class ModelFileHandler(FileHandler):
                 "coach.glb": "coach.glb",
                 "truck.glb": "truck.glb",
                 "trailer.glb": "trailer.glb",
-                "pedestrian.glb": "pedestrian.glb",
                 "motorcycle.glb": "motorcycle.glb",
+                "pedestrian.glb": "pedestrian.glb",
             }
         )
 
