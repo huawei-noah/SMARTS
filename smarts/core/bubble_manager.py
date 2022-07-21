@@ -485,7 +485,7 @@ class BubbleManager:
             if bc.state != BubbleState.InBubble:
                 continue
             agent_id = sim.vehicle_index.actor_id_from_vehicle_id(bc.vehicle_id)
-            if agent_id != None:
+            if agent_id is not None:
                 agent_ids.add(agent_id)
         return agent_ids
 
