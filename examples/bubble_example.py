@@ -313,7 +313,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--history-start-time",
         "-s",
-        help="The start time of the simulated history.",
+        help="The start time of the simulation relative to the history dataset.",
         type=float,
         default=90,
     )
