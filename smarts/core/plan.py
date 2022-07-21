@@ -53,7 +53,7 @@ class Start:
     @property
     def point(self) -> Point:
         """The coordinate of this starting location."""
-        return Point(*self.position)
+        return Point.from_np_array(self.position)
 
     @classmethod
     def from_pose(cls, pose: Pose):
@@ -142,18 +142,16 @@ class TraverseGoal(Goal):
         return False
 
     def is_reached(self, vehicle) -> bool:
-        return self._drove_off_map(vehicle.position, vehicle.heading)
+        pose = vehicle.pose
+        return self._drove_off_map(pose.point, pose.heading)
 
-    def _drove_off_map(
-        self, veh_position: Tuple[float, float, float], veh_heading: float
-    ) -> bool:
+    def _drove_off_map(self, veh_pos: Point, veh_heading: float) -> bool:
         # try to determine if the vehicle "exited" the map by driving beyond the end of a dead-end lane.
-        pos = Point(*veh_position)
-        nearest_lanes = self._road_map.nearest_lanes(pos)
+        nearest_lanes = self._road_map.nearest_lanes(veh_pos)
         if not nearest_lanes:
             return False  # we can't tell anything here
         nl, dist = nearest_lanes[0]
-        offset = nl.to_lane_coord(pos).s
+        offset = nl.to_lane_coord(veh_pos).s
         nl_width, conf = nl.width_at_offset(offset)
         if conf > 0.5:
             if nl.outgoing_lanes or dist < 0.5 * nl_width + 1e-1:

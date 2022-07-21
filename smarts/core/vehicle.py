@@ -323,15 +323,15 @@ class Vehicle:
         return self._chassis.pose.heading
 
     @property
-    def position(self) -> Sequence:
+    def position(self) -> np.ndarray:
         """The position of this vehicle."""
         self._assert_initialized()
-        pos, _ = self._chassis.pose.as_panda3d()
-        return pos
+        return self._chassis.pose.position
 
     @property
     def bounding_box(self) -> List[np.ndarray]:
         """The minimum fitting heading aligned bounding box. Four 2D points representing the minimum fitting box."""
+        # XXX: this doesn't return a smarts.core.coordinates.BoundingBox!
         self._assert_initialized()
         # Assuming the position is the centre,
         # calculate the corner coordinates of the bounding_box

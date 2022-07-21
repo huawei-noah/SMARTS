@@ -512,7 +512,7 @@ class Sensors:
 
     @classmethod
     def _vehicle_is_off_road(cls, sim, vehicle):
-        return not sim.scenario.road_map.road_with_point(Point(*vehicle.position))
+        return not sim.scenario.road_map.road_with_point(vehicle.pose.point)
 
     @classmethod
     def _vehicle_is_on_shoulder(cls, sim, vehicle):
@@ -558,7 +558,7 @@ class Sensors:
         sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
         route_roads = sensor_state.plan.route.roads
 
-        vehicle_pos = Point(*vehicle.position)
+        vehicle_pos = vehicle.pose.point
         vehicle_minimum_radius_bounds = (
             np.linalg.norm(vehicle.chassis.dimensions.as_lwh[:2]) * 0.5
         )
@@ -607,7 +607,7 @@ class Sensors:
 
     @staticmethod
     def _vehicle_is_wrong_way(vehicle, closest_lane):
-        target_pose = closest_lane.center_pose_at_point(Point(*vehicle.pose.position))
+        target_pose = closest_lane.center_pose_at_point(vehicle.pose.point)
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
             np.fabs(vehicle.pose.heading.relative_to(target_pose.heading)) > 0.5 * np.pi
@@ -1040,7 +1040,7 @@ class RoadWaypointsSensor(Sensor):
         """Gets waypoint paths along the given lane."""
         # XXX: the following assumes waypoint spacing is 1m
         if overflow_offset is None:
-            offset = lane.offset_along_lane(Point(*self._vehicle.position))
+            offset = lane.offset_along_lane(self._vehicle.pose.point)
             start_offset = offset - self._horizon
         else:
             start_offset = lane.length + overflow_offset

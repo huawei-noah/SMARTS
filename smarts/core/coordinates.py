@@ -330,7 +330,7 @@ class Pose:
     @cached_property
     def point(self) -> Point:
         """The positional value of this pose as a point."""
-        return Point(*self.position)
+        return Point.from_np_array(self.position)
 
     @classmethod
     def from_front_bumper(cls, front_bumper_position, heading, length):
