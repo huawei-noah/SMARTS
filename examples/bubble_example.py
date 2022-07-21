@@ -227,7 +227,6 @@ def main(
                 agent_vehicles = {
                     mission.vehicle_spec.veh_id for mission in agent_missions.values()
                 }
-                used_history_ids = set(agent_vehicles)
 
             with timeit(f"resetting episode {episode}...", logger.info):
                 ego_observations = smarts.reset(scenario, start_time=start_time)
@@ -248,12 +247,6 @@ def main(
                             agent_manager.reserve_social_agent_action(
                                 agent_id, social_agent.act(social_agent_ob)
                             )
-                            if obs_state.last_observations[
-                                agent_id
-                            ].under_this_agent_control:
-                                used_history_ids |= {
-                                    social_agent_ob.ego_vehicle_state.id
-                                }
                         # Step SMARTS
                         ego_actions = {
                             ego_agent_id: ego_agent.act(obs)
