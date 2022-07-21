@@ -20,7 +20,7 @@
 
 from concurrent import futures
 import logging
-from typing import Any, Dict, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Union
 
 from envision.types import format_actor_id
 from smarts.core.actor_role import ActorRole
@@ -351,15 +351,17 @@ class AgentManager:
 
         return social_agent_actions
 
-    def add_social_agent_observation_callback(self, callback, id):
+    def add_social_agent_observation_callback(
+        self, callback: Callable[[Any], None], id: str
+    ):
         """Suscribe to observe social agents."""
         self._social_agent_observation_callbacks[id] = callback
 
-    def remove_social_agent_observation_callback(self, id):
+    def remove_social_agent_observation_callback(self, id: str):
         """Remove a subscription to social agents."""
         del self._social_agent_observation_callbacks[id]
 
-    def reserve_social_agent_action(self, agent_id: str, action):
+    def reserve_social_agent_action(self, agent_id: str, action: Any):
         """Override a current social agent action."""
         self._reserved_social_agent_actions[agent_id] = action
 
