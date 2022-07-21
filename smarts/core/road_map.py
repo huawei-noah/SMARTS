@@ -62,6 +62,11 @@ class RoadMap:
         raise NotImplementedError()
 
     @property
+    def has_overpasses(self) -> bool:
+        """Whether the map has lanes with overlapping z-coordinates."""
+        return False
+
+    @property
     def scale_factor(self) -> float:
         """The ratio between 1 unit on the map and 1 meter."""
         # map units per meter
