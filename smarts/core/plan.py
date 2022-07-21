@@ -338,7 +338,7 @@ class Plan:
 
         start_lane = self._road_map.nearest_lane(
             self._mission.start.point,
-            include_junctions=True,
+            include_junctions=False,
         )
 
         if not start_lane:
