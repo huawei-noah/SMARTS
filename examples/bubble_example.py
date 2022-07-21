@@ -270,10 +270,6 @@ def main(
                                     f"agent=`{a_id}` is done because `{ego_observations[a_id].events}`..."
                                 )
 
-                        # Currently ensure vehicles are removed permanently when they leave bubble
-                        traffic_history_provider.set_replaced_ids(
-                            used_history_ids | agent_vehicles
-                        )
                         # Update the current bubble in case there are new active bubbles
 
                         # Iterate through the observations
