@@ -351,11 +351,11 @@ class AgentManager:
 
         return social_agent_actions
 
-    def add_social_observation_callback(self, callback, id):
+    def add_social_agent_observation_callback(self, callback, id):
         """Suscribe to observe social agents."""
         self._social_agent_observation_callbacks[id] = callback
 
-    def remove_social_observation_callback(self, id):
+    def remove_social_agent_observation_callback(self, id):
         """Remove a subscription to social agents."""
         del self._social_agent_observation_callbacks[id]
 

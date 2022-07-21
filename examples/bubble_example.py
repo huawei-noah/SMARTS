@@ -192,7 +192,7 @@ def main(
     for scenario in scenarios_iterator:
         # XXX replace with AgentSpec appropriate for IL model
         agent_manager: AgentManager = smarts.agent_manager
-        agent_manager.add_social_observation_callback(
+        agent_manager.add_social_agent_observation_callback(
             obs_state.observation_callback, "bubble_watcher"
         )
 
