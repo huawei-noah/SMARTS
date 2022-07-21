@@ -119,7 +119,7 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("observation-collection-example")
+    parser = default_argument_parser("traffic-histories-to-observations-example")
     args = parser.parse_args()
 
     main(

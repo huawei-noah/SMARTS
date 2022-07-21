@@ -311,6 +311,8 @@ def _format_vehicle_type(obj: VehicleType, data_formatter: EnvisionDataFormatter
         VehicleType.Truck: 2,
         VehicleType.Trailer: 3,
         VehicleType.Car: 4,
+        VehicleType.Motorcycle: 5,
+        VehicleType.Pedestrian: 6,
     }
     data_formatter.add_primitive(mapping[obj])
 
