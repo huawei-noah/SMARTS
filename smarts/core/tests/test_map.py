@@ -181,7 +181,8 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
 
     r2_0_R = road_map.road_by_id("53_0_R")
     assert r2_0_R
-    assert not r2_0_R.is_junction
+    # since roads 61, 65 and 69 all join into 53, we consider it a junction
+    assert r2_0_R.is_junction
     assert r2_0_R.length == 55.6
     assert len(r2_0_R.lanes) == 2
     assert r2_0_R.lane_at_index(0).road.road_id == "53_0_R"
@@ -299,7 +300,16 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert l3.is_drivable
 
     foes = l3.foes
-    assert set(f.lane_id for f in foes) == {"58_0_R_-1", "62_0_R_-1"}
+    assert set(f.lane_id for f in foes) == {
+        "58_0_R_-1",
+        "59_0_R_-1",
+        "59_0_R_-2",
+        "62_0_R_-1",
+        "63_0_R_-1",
+        "68_0_R_-1",
+        "68_0_R_-2",
+        "69_0_R_-1",
+    }
 
     # nearest lane for a point outside road
     point = Point(164.0, -68.0, 0)
