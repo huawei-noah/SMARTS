@@ -97,7 +97,7 @@ def large_observation():
             linear_jerk=np.array([0.0, 0.0, 0.0]),
             angular_jerk=np.array([0.0, 0.0, 0.0]),
         ),
-        has_vehicle_control=True,
+        under_this_agent_control=True,
         neighborhood_vehicle_states=[
             VehicleObservation(
                 id="car-flow-route-west_0_0-east_0_max-7845114534199723832--7266489842092764092--0-0.0",

@@ -250,7 +250,7 @@ def main(
                             )
                             if obs_state.last_observations[
                                 agent_id
-                            ].has_vehicle_control:
+                            ].under_this_agent_control:
                                 used_history_ids |= {
                                     social_agent_ob.ego_vehicle_state.id
                                 }

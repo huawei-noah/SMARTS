@@ -195,7 +195,7 @@ class Observation:
     elapsed_sim_time/step_count."""
     events: Events
     ego_vehicle_state: EgoVehicleObservation
-    has_vehicle_control: bool
+    under_this_agent_control: bool
     """If the agent currently has control of the vehicle."""
     neighborhood_vehicle_states: Optional[List[VehicleObservation]]
     waypoint_paths: Optional[List[List[Waypoint]]]
@@ -410,7 +410,7 @@ class Sensors:
                 elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
                 ego_vehicle_state=ego_vehicle,
-                has_vehicle_control=agent_id
+                under_this_agent_control=agent_id
                 == sim.vehicle_index.actor_id_from_vehicle_id(
                     ego_vehicle_state.vehicle_id
                 ),
