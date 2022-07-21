@@ -1348,7 +1348,7 @@ class WaymoMap(RoadMapWithCaches):
             if self._is_junction:
                 return True
             for lane in self._lanes:
-                if lane.foes:
+                if lane.foes or len(lane.incoming_lanes) > 1:
                     self._is_junction = True
                     return True
             return False

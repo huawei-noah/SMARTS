@@ -41,9 +41,8 @@ from .utils.math import (
     vec_to_radians,
 )
 
-# TODO:
-# - also consider Esri, QGIS and Google Maps formats
-# -https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09
+
+# TODO:  also consider OSM, Esri, QGIS and Google Maps formats
 
 
 class RoadMap:

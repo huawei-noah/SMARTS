@@ -27,7 +27,7 @@ import time
 from bisect import bisect
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Generator, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import rtree
@@ -41,6 +41,10 @@ from cached_property import cached_property
 try:
     from lxml import etree
     from opendrive2lanelet.opendriveparser.elements.geometry import Line as LineGeometry
+    from opendrive2lanelet.opendriveparser.elements.junction import (
+        Connection as ConnectionElement,
+        Junction as JunctionElement,
+    )
     from opendrive2lanelet.opendriveparser.elements.opendrive import (
         OpenDrive as OpenDriveElement,
     )
@@ -79,6 +83,7 @@ from smarts.core.utils.math import (
     constrain_angle,
     get_linear_segments_for_range,
     inplace_unwrap,
+    line_intersect_vectorized,
     radians_to_vec,
     vec_2d,
 )
@@ -209,6 +214,9 @@ class LaneBoundary:
 
 class OpenDriveRoadNetwork(RoadMapWithCaches):
     """A road map for an OpenDRIVE source."""
+
+    # The ASAM OpenDRIVE v1.6.1 spec is here:
+    # https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09
 
     DEFAULT_LANE_WIDTH = 3.7
     DEFAULT_LANE_SPEED = 16.67  # in m/s
@@ -376,7 +384,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
                         self._lanes[lane_id] = lane
                         assert lane_id not in self._surfaces
                         self._surfaces[lane_id] = lane
-                        road.lanes.append(lane)
+                        road._lanes.append(lane)
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"First pass: {elapsed} ms")
@@ -483,6 +491,11 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Second pass: {elapsed} ms")
 
+        start = time.time()
+        self._compute_lane_intersections(od)
+        end = time.time()
+        self._log.info(f"Intersections pass: {elapsed} ms")
+
         # Third pass: everything that depends on lane connections
         start = time.time()
         for road in list(self._roads.values()):
@@ -490,31 +503,42 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             in_roads = set()
             out_roads = set()
             for lane in road.lanes:
-                for in_lane in lane.incoming_lanes:
-                    if in_lane.road.road_id != road.road_id:
-                        in_roads.add(in_lane.road)
                 for out_lane in lane.outgoing_lanes:
                     if out_lane.road.road_id != road.road_id:
                         out_roads.add(out_lane.road)
+                    # due to junctions, sometimes incoming lanes from junction connections
+                    # are not found by _compute_lane_connections() (because the elementType of the predecessor
+                    # is "junction" and not "road", so we repair that here.
+                    if lane not in out_lane.incoming_lanes:
+                        out_lane.incoming_lanes.append(lane)
+                        if lane.road not in out_lane.road.incoming_roads:
+                            out_lane.road.incoming_roads.append(lane.road)
+            for lane in road.lanes:
+                for in_lane in lane.incoming_lanes:
+                    if in_lane.road.road_id != road.road_id:
+                        in_roads.add(in_lane.road)
+                    # due to junctions, sometimes outgoing lanes from junction connections
+                    # are not found by _compute_lane_connections (because the elementType of the successor
+                    # is "junction" and not "road", so we repair that here.
+                    if lane not in in_lane.outgoing_lanes:
+                        in_lane.outgoing_lanes.append(lane)
+                        if lane.road not in in_lane.road.outgoing_roads:
+                            in_lane.road.outgoing_roads.append(lane.road)
             road.incoming_roads.extend(list(in_roads))
             road.outgoing_roads.extend(list(out_roads))
 
             for lane in road.lanes:
                 # Compute lane foes
-                result = [
+                foes = set(lane._intersections)
+                foes |= {
                     incoming
                     for outgoing in lane.outgoing_lanes
                     for incoming in outgoing.incoming_lanes
                     if incoming != lane
-                ]
-                if lane.in_junction:
-                    in_roads = set(il.road for il in lane.incoming_lanes)
-                    for foe in lane.road.lanes:
-                        foe_in_roads = set(il.road for il in foe.incoming_lanes)
-                        if not bool(in_roads & foe_in_roads):
-                            result.append(foe)
-                    # TODO: above will not get lanes that simply cross
-                lane._foes = list(set(result))
+                }
+                lane._foes = list(set(foes))
+                if lane.foes or len(lane.incoming_lanes) > 1:
+                    road._is_junction = True
 
             # recompute lane to left using road geometry if the map was converted from SUMO to OpenDRIVE
             curr_leftmost_lane = road.lane_at_index(len(road.lanes) - 1)
@@ -644,6 +668,54 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
                         lane.incoming_lanes.append(succ_lane)
                     if lane not in succ_lane.outgoing_lanes:
                         succ_lane.outgoing_lanes.append(lane)
+
+    def _junction_road_lanes(
+        self, jx_elem: JunctionElement, od: OpenDriveElement
+    ) -> Generator[List[RoadMap.Lane], None, None]:
+        for cnxn_elem in jx_elem.connections:
+            cnxn_elem: ConnectionElement = cnxn_elem
+            cnxn_road_elem = od.getRoad(cnxn_elem.connectingRoad)
+            croad_lanes = []
+            for section_elem in cnxn_road_elem.lanes.lane_sections:
+                section_elem: LaneSectionElement = section_elem
+                for sub_road, suffix in [
+                    (section_elem.leftLanes, "L"),
+                    (section_elem.rightLanes, "R"),
+                ]:
+                    if not sub_road:
+                        continue
+                    road_id = OpenDriveRoadNetwork._elem_id(section_elem, suffix)
+                    croad_lanes += self._roads[road_id].lanes
+            yield croad_lanes
+
+    @staticmethod
+    def _check_intersection(line1: np.ndarray, line2: np.ndarray) -> bool:
+        C = np.roll(line2, 0, axis=0)[:-1]
+        D = np.roll(line2, -1, axis=0)[:-1]
+        for i in range(len(line1) - 1):
+            a = line1[i]
+            b = line1[i + 1]
+            ignore_start_pt = i == 0
+            if line_intersect_vectorized(a, b, C, D, ignore_start_pt):
+                return True
+        return False
+
+    def _compute_lane_intersections(self, od: OpenDriveElement):
+        intersections: Dict[
+            OpenDriveRoadNetwork.Lane, Set[OpenDriveRoadNetwork.Lane]
+        ] = dict()
+        for jx_elem in od.junctions:
+            for jx_road_lanes1 in self._junction_road_lanes(jx_elem, od):
+                for jx_road_lanes2 in self._junction_road_lanes(jx_elem, od):
+                    if jx_road_lanes2 == jx_road_lanes1:
+                        continue
+                    for jl1 in jx_road_lanes1:
+                        line1 = jl1._center_polyline_arr
+                        for jl2 in jx_road_lanes2:
+                            line2 = jl2._center_polyline_arr
+                            if self._check_intersection(line1, line2):
+                                jl1._intersections.add(jl2)
+                                jl2._intersections.add(jl1)
 
     @property
     def source(self) -> str:
@@ -834,6 +906,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             self._lane_to_left = None, True
             self._lane_to_right = None, True
             self._in_junction = None
+            self._intersections = set()
 
         def __hash__(self) -> int:
             return hash(self.lane_id) + hash(self._map)
@@ -869,6 +942,10 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         @property
         def center_polyline(self) -> List[Point]:
             return self._centerline_points
+
+        @cached_property
+        def _center_polyline_arr(self) -> np.ndarray:
+            return np.array([p.as_np_array[:2] for p in self._centerline_points])
 
         @property
         def incoming_lanes(self) -> List[RoadMapWithCaches.Lane]:
