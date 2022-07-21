@@ -280,6 +280,9 @@ class Bubble:
   follow_vehicle_id={self.follow_vehicle_id},
 )"""
 
+    def __hash__(self) -> int:
+        return hash(self.id)
+
 
 @dataclass(frozen=True, eq=True)
 class Cursor:
@@ -400,6 +403,9 @@ class Cursor:
 
     def __repr__(self):
         return f"Cursor(state={self.state}, transition={self.transition}, vehicle_id={self.vehicle_id})"
+
+    def __hash__(self) -> int:
+        return hash((self.vehicle_id, self.state, self.transition, self.bubble.id))
 
 
 class BubbleManager:
