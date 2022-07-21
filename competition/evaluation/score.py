@@ -16,6 +16,10 @@ class Score:
         self._counts = Counts()
         self._costs = Costs()
 
+    @property
+    def keys(self):
+        return list(self._results.keys())
+
     def add(self, counts: Counts, costs: Costs):
         for count_name, count_val in asdict(counts).items():
             new_val = getattr(self._counts, count_name) + count_val

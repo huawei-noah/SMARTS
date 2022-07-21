@@ -1,5 +1,5 @@
-validate: True
-evaluate: False
+phase: validation
 eval_episodes: 1
 seed: 42
-scenarios: []
+scenarios:
+  - 1_to_2lane_left_turn_c

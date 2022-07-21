@@ -1,5 +1,4 @@
-validate: False
-evaluate: True
+phase: track2
 eval_episodes: 200
 seed: 42
 scenarios: []

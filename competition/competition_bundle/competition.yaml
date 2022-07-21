@@ -21,8 +21,8 @@ hide_chart: True
 phases:
     0:
         phasenumber: 0
-        description: Validate submissions
-        label: "Validate Submission"
+        description: Validation
+        label: "Validation"
         start_date: 2022-07-01
         max_submissions: 1000
         is_scoring_only: False

@@ -9,16 +9,15 @@ from typing import Any, Dict
 logger = logging.getLogger(__file__)
 
 _SCORES_FILENAME = "scores.txt"
+_PHASES = ["validation", "track1", "track2"]
 _EVALUATION_CONFIG_KEYS = {
-    "validate",
-    "evaluate",
+    "phase",
     "eval_episodes",
     "seed",
     "scenarios",
 }
 _DEFAULT_EVALUATION_CONFIG = dict(
-    validate=False,
-    evaluate=True,
+    phase="track1",
     eval_episodes=200,
     seed=42,
     scenarios=[
@@ -227,18 +226,26 @@ if __name__ == "__main__":
         other=load_config(Path(submit_dir) / "config.yaml"),
     )
     validate_config(config=submission_config, keys=_SUBMISSION_CONFIG_KEYS)
-
-    # Add scenario paths for remote evaluation.
-    if not args.local:
-        for dirpath, dirnames, filenames in os.walk(evaluation_dir):
-            if "scenario.py" in filenames and "map.net.xml" in filenames:
-                evaluation_config["scenarios"].append(dirpath)
-
     config = merge_config(self=evaluation_config, other=submission_config)
-    rank = evaluate(config)
-    if evaluation_config["validate"]:
-        # In validation phase, score will not be revealed.
+    assert config["phase"] in _PHASES, f"Unknown phase config key: {config['phase']}"
+
+    # Run validation, track1, or track2.
+    if config["phase"]=="validation":
+        rank = evaluate(config)
         rank = dict.fromkeys(rank, 0)
+    elif config["phase"] == "track1":
+        # Add scenario paths for remote evaluation.
+        if not args.local:
+            config["scenarios"] = []
+            for dirpath, dirnames, filenames in os.walk(evaluation_dir):
+                if "scenario.py" in filenames and "map.net.xml" in filenames:
+                    config["scenarios"].append(dirpath)
+
+        rank = evaluate(config)
+    elif config["phase"] == "track2":
+        score = Score()
+        rank = dict.fromkeys(score.keys, 0)
+
     text = to_codalab_scores_string(rank)
     output_dir = os.path.join(scores_dir, _SCORES_FILENAME)
     write_output(text=text, output_dir=output_dir)
