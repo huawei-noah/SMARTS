@@ -1137,7 +1137,7 @@ class _TrafficActor:
             final_range = window[-1].dist
 
             # the exponent here was determined by trial and error
-            if range_del < 0 and abs(bearing_del) < math.pi / final_range ** 1.4:
+            if range_del < 0 and abs(bearing_del) < math.pi / final_range**1.4:
                 return -final_range / range_del
             return math.inf
 

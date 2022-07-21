@@ -646,7 +646,11 @@ class LanePoints:
 
     @staticmethod
     def _closest_linked_lp_in_kd_tree_batched(
-        points: Sequence[Point], linked_lps, tree: KDTree, k: int = 1, filter_composites: bool = False
+        points: Sequence[Point],
+        linked_lps,
+        tree: KDTree,
+        k: int = 1,
+        filter_composites: bool = False,
     ):
         p2ds = np.array([p.as_np_array[:2] for p in points])
         _, closest_indices = tree.query(p2ds, k=min(k, len(linked_lps)))
@@ -777,7 +781,9 @@ class LanePoints:
             [point], self._lanepoints_by_lane_id[lane_id], lane_kd_tree, k=1
         )[0][0]
 
-    def closest_linked_lanepoint_on_road(self, point: Point, road_id: str) -> LinkedLanePoint:
+    def closest_linked_lanepoint_on_road(
+        self, point: Point, road_id: str
+    ) -> LinkedLanePoint:
         """Returns the closest linked lanepoint on the given road."""
         return LanePoints._closest_linked_lp_in_kd_tree_batched(
             [point],
