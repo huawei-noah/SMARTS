@@ -89,7 +89,7 @@ class Point(NamedTuple):
     @classmethod
     def from_np_array(cls, np_array: np.ndarray):
         """Factory for constructing a Point object from a numpy array."""
-        assert 2 <= len(np.array) <= 3
+        assert 2 <= len(np_array) <= 3
         z = np_array[2] if len(np_array) > 2 else 0.0
         return cls(np_array[0], np_array[1], z)
 
@@ -330,7 +330,7 @@ class Pose:
     @cached_property
     def point(self) -> Point:
         """The positional value of this pose as a point."""
-        return Point.from_np_array(self.position)
+        return Point(*self.position)
 
     @classmethod
     def from_front_bumper(cls, front_bumper_position, heading, length):
