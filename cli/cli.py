@@ -26,6 +26,7 @@ from cli.envision import envision_cli
 from cli.run import run_experiment
 from cli.studio import scenario_cli
 from cli.ultra import ultra_cli
+from cli.waymo import waymo_cli
 from cli.zoo import zoo_cli
 
 
@@ -43,6 +44,7 @@ scl.add_command(scenario_cli)
 scl.add_command(ultra_cli)
 scl.add_command(zoo_cli)
 scl.add_command(run_experiment)
+scl.add_command(waymo_cli)
 
 if __name__ == "__main__":
     scl()
