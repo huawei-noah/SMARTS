@@ -440,7 +440,10 @@ class BubbleManager:
                 )
                 if vehicle is not None:
                     vehicles += [vehicle]
-            # print(self._last_vehicle_index)
+            if len(vehicles) > 1:
+                logging.error(
+                    f"bubble `{bubble.id} follows multiple vehicles: {[v.id for v in vehicles]}"
+                )
             return len(vehicles) == 1
 
         active_bubbles = []
