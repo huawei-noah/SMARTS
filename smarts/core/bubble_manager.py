@@ -374,8 +374,10 @@ class Cursor:
             and is_airlock_admissible
             and (in_airlock_zone or in_bubble_zone)
         ):
+            # In this case a vehicle has just entered the airlock
             transition = BubbleTransition.AirlockEntered
         elif is_social and is_shadowed and is_hijack_admissible and in_bubble_zone:
+            # In this case a vehicle has just entered the bubble
             transition = BubbleTransition.Entered
         elif (
             was_in_this_bubble
@@ -385,10 +387,12 @@ class Cursor:
         ):
             # XXX: This may get called repeatedly because we don't actually change
             #      any state when this happens.
+            # In this case a vehicle has just exited the bubble
             transition = BubbleTransition.Exited
         elif (
             was_in_this_bubble and (is_shadowed or is_hijacked) and not in_airlock_zone
         ):
+            # In this case a vehicle has just exited the airlock around the bubble
             transition = BubbleTransition.AirlockExited
 
         state = None
@@ -658,10 +662,10 @@ class BubbleManager:
         else:
             agent_id = BubbleManager._make_social_agent_id(vehicle_id)
 
-        try:
-            agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        except KeyError:
-            return
+        # try:
+        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
+        # except KeyError:
+        #     return
         vehicle = sim.vehicle_index.switch_control_to_agent(
             sim,
             vehicle_id,
