@@ -19,6 +19,8 @@
 # THE SOFTWARE.
 from dataclasses import dataclass, field
 from enum import IntFlag
+import logging
+
 from typing import Any, List, Optional, Sequence, Set, Tuple
 
 from .controllers import ActionSpaceType
@@ -52,7 +54,17 @@ class ProviderState:
         """Merge state with another provider's state."""
         our_vehicles = {v.vehicle_id for v in self.vehicles}
         other_vehicles = {v.vehicle_id for v in other.vehicles}
-        assert our_vehicles.isdisjoint(other_vehicles)
+        if not our_vehicles.isdisjoint(other_vehicles):
+            overlap = our_vehicles & other_vehicles
+            logging.warning(
+                f"multiple providers control the same vehicles: {overlap}. "
+                "Later added providers will take priority. "
+            )
+            logging.info(
+                "Conflicting vehicle states: \n"
+                f"Previous: {[(v.vehicle_id, v.source) for v in self.vehicles if v.vehicle_id in overlap]}\n"
+                f"Later: {[(v.vehicle_id, v.source) for v in other.vehicles if v.vehicle_id in overlap]}\n"
+            )
 
         ## TODO: Properly harmonize these vehicle ids so that there is a priority and per vehicle source
         self.vehicles += filter(
