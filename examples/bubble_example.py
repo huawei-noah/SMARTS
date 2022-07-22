@@ -233,8 +233,6 @@ def main(
                         logger.info,
                     ):
                         for agent_id in obs_state.last_observations:
-                            if agent_id not in obs_state.last_observations:
-                                continue
                             social_agent_ob = obs_state.last_observations[agent_id]
                             # Replace the original action that the social agent would do
                             agent_manager.reserve_social_agent_action(
