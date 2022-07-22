@@ -634,7 +634,7 @@ class SMARTS:
                 provider.add_vehicle(state, cur_route)
                 return
         self._log.warning(
-            f"could not find a provider to assume control of vehicle {state.vehicle_id} with role={state.role} after being relinquished.  removing it."
+            f"could not find a provider to assume control of vehicle {state.vehicle_id} with role={state.role.name} after being relinquished.  removing it."
         )
         self._teardown_vehicles({state.vehicle_id})
 
