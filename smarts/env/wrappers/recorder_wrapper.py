@@ -29,6 +29,9 @@ from smarts.env.wrappers.gif_recorder import GifRecorder
 
 
 class RecorderWrapper(gym.Wrapper):
+    """
+    A Wrapper that interacts the gym environment with the GifRecorder to record video step by step.
+    """
     def __init__(self, dir, env):
 
         try:
@@ -44,6 +47,9 @@ class RecorderWrapper(gym.Wrapper):
         self.current_frame = -1
 
     def reset(self, **kwargs):
+        """
+        Reset the gym environment and restart recording.
+        """
         observations = super().reset(**kwargs)
         if self.recording == False:
             self.start_recording()
@@ -51,6 +57,9 @@ class RecorderWrapper(gym.Wrapper):
         return observations
 
     def start_recording(self):
+        """
+        Start the gif recorder and capture the first frame.
+        """
         if self.gif_recorder is None:
             self.gif_recorder = GifRecorder(self.dir, self.env)
         image = super().render(mode="rgb_array")
@@ -58,9 +67,15 @@ class RecorderWrapper(gym.Wrapper):
         self.recording = True
 
     def stop_recording(self):
+        """
+        Stop recording.
+        """
         self.recording = False
 
     def step(self, action):
+        """
+        Step the environment using the action and record the next frame.
+        """
         observations, rewards, dones, infos = super().step(action)
         if self.recording == True:
             image = super().render(mode="rgb_array")
@@ -69,10 +84,16 @@ class RecorderWrapper(gym.Wrapper):
         return observations, rewards, dones, infos
 
     def next_frame_id(self):
+        """
+        Get the id for next frame.
+        """
         self.current_frame += 1
         return self.current_frame
 
     def close(self):
+        """
+        Close the recorder by deleting the image folder and generate the gif file.
+        """
         if self.gif_recorder is not None:
             self.gif_recorder.generate_gif()
             self.gif_recorder.close_recorder()
