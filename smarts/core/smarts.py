@@ -1273,11 +1273,11 @@ class SMARTS:
 
     def _check_ground_plane(self):
         rescale_plane = False
-        map_min = np.array(self._map_bb.min_pt[:2]) if self._map_bb else None
-        map_max = np.array(self._map_bb.max_pt[:2]) if self._map_bb else None
+        map_min = self._map_bb.min_pt.as_np_array[:2] if self._map_bb else None
+        map_max = self._map_bb.max_pt.as_np_array[:2] if self._map_bb else None
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            map_spot = np.array(vehicle.pose.as_position2d())
+            map_spot = vehicle.pose.point.as_np_array[:2]
             if map_min is None:
                 map_min = map_spot
                 rescale_plane = True
@@ -1319,6 +1319,8 @@ class SMARTS:
             "coach": envision_types.VehicleType.Coach,
             "truck": envision_types.VehicleType.Truck,
             "trailer": envision_types.VehicleType.Trailer,
+            "motorcycle": envision_types.VehicleType.Motorcycle,
+            "pedestrian": envision_types.VehicleType.Pedestrian,
         }
         for v in provider_state.vehicles:
             if v.vehicle_id in agent_vehicle_ids:
