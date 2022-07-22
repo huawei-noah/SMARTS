@@ -184,24 +184,6 @@ def test_bubble_manager_limit(smarts, mock_provider, time_resolution):
     ), "Only 1 vehicle should have been hijacked according to the limit"
 
 
-def test_vehicle_spawned_in_bubble_is_not_captured(smarts, mock_provider):
-    # Spawned inside bubble, didn't "drive through" airlocking region, so should _not_
-    # get captured
-    vehicle_id = "vehicle"
-    for x in range(20):
-        mock_provider.override_next_provider_state(
-            vehicles=[
-                (
-                    vehicle_id,
-                    Pose.from_center((100 + x, 0, 0), Heading(-math.pi / 2)),
-                    10,  # speed
-                )
-            ]
-        )
-        smarts.step({})
-        assert not smarts.vehicle_index.vehicle_is_hijacked(vehicle_id)
-
-
 def test_vehicle_spawned_outside_bubble_is_captured(smarts, mock_provider):
     # Spawned vehicle drove through airlock so _should_ get captured
     vehicle_id = "vehicle"
