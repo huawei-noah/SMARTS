@@ -217,7 +217,8 @@ class SMARTS:
         ), "cannot switch from fixed- to variable-time steps mid-simulation"
 
         try:
-            return self._step(agent_actions, time_delta_since_last_step)
+            with timeit("Last step", self._log.info):
+                return self._step(agent_actions, time_delta_since_last_step)
         except (KeyboardInterrupt, SystemExit):
             # ensure we clean-up if the user exits the simulation
             self._log.info("Simulation was interrupted by the user.")
@@ -267,23 +268,23 @@ class SMARTS:
         self._elapsed_sim_time = self._rounder(self._elapsed_sim_time + self._last_dt)
 
         # 1. Fetch agent actions
-        with timeit("Fetching agent actions", self._log.info):
+        with timeit("Fetching agent actions", self._log.debug):
             all_agent_actions = self._agent_manager.fetch_agent_actions(
                 self, agent_actions
             )
 
         # 2. Step all providers and harmonize state
-        with timeit("Stepping all providers and harmonizing state", self._log.info):
+        with timeit("Stepping all providers and harmonizing state", self._log.debug):
             provider_state = self._step_providers(all_agent_actions)
-        with timeit("Checking if all agents are active", self._log.info):
+        with timeit("Checking if all agents are active", self._log.debug):
             self._check_if_acting_on_active_agents(agent_actions)
 
         # 3. Step bubble manager and trap manager
-        with timeit("Syncing vehicle index", self._log.info):
+        with timeit("Syncing vehicle index", self._log.debug):
             self._vehicle_index.sync()
-        with timeit("Stepping through bubble manager", self._log.info):
+        with timeit("Stepping through bubble manager", self._log.debug):
             self._bubble_manager.step(self)
-        with timeit("Stepping through trap manager", self._log.info):
+        with timeit("Stepping through trap manager", self._log.debug):
             self._trap_manager.step(self)
 
         # 4. Calculate observation and reward
@@ -294,36 +295,36 @@ class SMARTS:
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
 
         # Agents
-        with timeit("Stepping through sensors", self._log.info):
+        with timeit("Stepping through sensors", self._log.debug):
             self._agent_manager.step_sensors(self)
 
         if self._renderer:
             # runs through the render pipeline (for camera-based sensors)
             # MUST perform this after step_sensors() above, and before observe() below,
             # so that all updates are ready before rendering happens per
-            with timeit("Running through the render pipeline", self._log.info):
+            with timeit("Running through the render pipeline", self._log.debug):
                 self._renderer.render()
 
-        with timeit("Calculating observations and rewards", self._log.info):
+        with timeit("Calculating observations and rewards", self._log.debug):
             observations, rewards, scores, dones = self._agent_manager.observe(self)
 
-        with timeit("Filtering response for ego", self._log.info):
+        with timeit("Filtering response for ego", self._log.debug):
             response_for_ego = self._agent_manager.filter_response_for_ego(
                 (observations, rewards, scores, dones)
             )
 
         # 5. Send observations to social agents
-        with timeit("Sending observations to social agents", self._log.info):
+        with timeit("Sending observations to social agents", self._log.debug):
             self._agent_manager.send_observations_to_social_agents(observations)
 
         # 6. Clear done agents
-        with timeit("Clearing done agents", self._log.info):
+        with timeit("Clearing done agents", self._log.debug):
             self._teardown_done_agents_and_vehicles(dones)
 
         # 7. Perform visualization
-        with timeit("Trying to emit the envision state", self._log.info):
+        with timeit("Trying to emit the envision state", self._log.debug):
             self._try_emit_envision_state(provider_state, observations, scores)
-        with timeit("Trying to emit the visdom observations", self._log.info):
+        with timeit("Trying to emit the visdom observations", self._log.debug):
             self._try_emit_visdom_obs(observations)
 
         observations, rewards, scores, dones = response_for_ego
@@ -1106,10 +1107,9 @@ class SMARTS:
             if isinstance(provider, AgentsProvider):
                 provider.perform_agent_actions(agent_actions)
 
-        with timeit("Physics cost", self._log.info):
-            self._check_ground_plane()
-            self._step_pybullet()
-            self._process_collisions()
+        self._check_ground_plane()
+        self._step_pybullet()
+        self._process_collisions()
 
         accumulated_provider_state = ProviderState()
 
