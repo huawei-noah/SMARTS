@@ -347,7 +347,9 @@ class TrapManager:
                 drive_distance = lane_speed * default_zone_dist
 
                 start_offset_in_lane = vehicle_offset_into_lane - drive_distance
-                start_offset_in_lane = clip(start_offset_in_lane, 1e-6, lane_length - 1e-6)
+                start_offset_in_lane = clip(
+                    start_offset_in_lane, 1e-6, lane_length - 1e-6
+                )
                 length = max(1e-6, vehicle_offset_into_lane - start_offset_in_lane)
 
                 zone = MapZone(
