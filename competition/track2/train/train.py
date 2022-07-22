@@ -1,29 +1,66 @@
+# from utility import remote_operations
+# from utility import goal_region_reward
+# from utility import get_goal_layer
+#from utility import get_trans_coor
+# import paramiko
+# import getpass
+# import pickle
+# import numpy as np
+# import glob
+# import os
+# import re
+# import d3rlpy
+# from d3rlpy.dataset import MDPDataset
+# from d3rlpy.algos import CQL
+# from PIL import Image
+# import torch
+
+# torch.cuda.empty_cache()
+# from d3rlpy.metrics.scorer import average_value_estimation_scorer
+# from d3rlpy.metrics.scorer import td_error_scorer
+
+
+# path = input("User path")
+# remote = remote_operations()
+# ip_add = input("Server IP: ")
+# user_name = input("Username: ")
+# pswd = getpass.getpass("Password: ")
+
 from utility import remote_operations
 from utility import goal_region_reward
 from utility import get_goal_layer
+from utility import get_trans_coor
 import paramiko
 import getpass
 import pickle
 import numpy as np
-import glob
-import os
-import re
 import d3rlpy
 from d3rlpy.dataset import MDPDataset
-from d3rlpy.algos import CQL
+from d3rlpy.algos import CQL, BCQ
+import os
 from PIL import Image
+import re
 import torch
-
 torch.cuda.empty_cache()
+import pathlib
 from d3rlpy.metrics.scorer import average_value_estimation_scorer
 from d3rlpy.metrics.scorer import td_error_scorer
+import glob
 
 
-path = input("User path")
+
+path = '/net/storage-1/home/c84201475/waymo_bev/' 
 remote = remote_operations()
 ip_add = input("Server IP: ")
 user_name = input("Username: ")
 pswd = getpass.getpass("Password: ")
+
+if ip_add == "gx1":
+    ip_add = "10.193.241.237"
+elif ip_add == "gx2":
+    ip_add = "10.193.241.238"
+elif ip_add == "gx3":
+    ip_add = "10.193.241.239"
 
 while True:
     try:
@@ -98,8 +135,17 @@ for scenario in scenarios[index : len(scenarios)]:
                     current_heading = vehicle_data[float(sim_time)]["ego"]["heading"]
                     next_position = vehicle_data[float(sim_time_next)]["ego"]["pos"]
                     next_heading = vehicle_data[float(sim_time_next)]["ego"]["heading"]
-                    dx = next_position[0] - current_position[0]
-                    dy = next_position[1] - current_position[1]
+                    trans_coor = get_trans_coor(
+                        next_position[0], 
+                        next_position[1], 
+                        current_position[0], 
+                        current_position[1], 
+                        current_heading
+                    )
+                    trans_cur = trans_coor[0]
+                    trans_next = trans_coor[1]
+                    dx = trans_next[0, 0] - trans_cur[0, 0]
+                    dy = trans_next[1, 0] - trans_cur[1, 0]
                     dheading = next_heading - current_heading
                     events = vehicle_data[float(sim_time)]["events"]
                     if all(value == 0 for value in events.values()):
@@ -107,27 +153,30 @@ for scenario in scenarios[index : len(scenarios)]:
                     else:
                         terminal = 1
 
-                    img_obs = np.asarray(image).reshape(3, 256, 256)
-                    goal_obs = get_goal_layer(
-                        goal_pos_x,
-                        goal_pos_y,
-                        current_position[0],
-                        current_position[1],
-                        current_heading,
-                    )
-                    obs.append(np.concatenate((img_obs, goal_obs), axis=0))
+                    bev = np.moveaxis(np.asarray(image), -1, 0)
+                    # goal_obs = get_goal_layer(
+                    #     goal_pos_x,
+                    #     goal_pos_y,
+                    #     current_position[0],
+                    #     current_position[1],
+                    #     current_heading,
+                    # )
+                    # obs.append(np.concatenate((img_obs, goal_obs), axis=0))
 
+                    # actions.append([dx, dy, dheading])
+                    obs.append(bev)
                     actions.append([dx, dy, dheading])
-
+                    # print([dx, dy, dheading])
                     dist_reward = vehicle_data[float(sim_time)]["dist"]
-                    goal_reward = goal_region_reward(
-                        threshold,
-                        goal_pos_x,
-                        goal_pos_y,
-                        current_position[0],
-                        current_position[1],
-                    )
-                    rewards.append(dist_reward + goal_reward)
+                    # goal_reward = goal_region_reward(
+                    #     threshold,
+                    #     goal_pos_x,
+                    #     goal_pos_y,
+                    #     current_position[0],
+                    #     current_position[1],
+                    # )
+                    # rewards.append(dist_reward + goal_reward)
+                    rewards.append(dist_reward)
 
                     terminals.append(terminal)
             print(str(len(obs)) + " pieces of data are added into dataset.")
@@ -144,13 +193,13 @@ for scenario in scenarios[index : len(scenarios)]:
             saved_models = glob.glob("d3rlpy_logs/*")
             latest_model = max(saved_models, key=os.path.getctime)
             model = CQL.from_json("d3rlpy_logs/1/params.json", use_gpu=True)
-            model.load_model(latest_model + "/model_1.pt")
+            model.load_model(latest_model + "/model_100.pt")
 
         model.fit(
             dataset,
             eval_episodes=dataset,
-            n_steps_per_epoch=1,
-            n_steps=1,
+            n_steps_per_epoch=100,
+            n_steps=100,
             scorers={
                 "td_error": td_error_scorer,
                 "value_scale": average_value_estimation_scorer,
