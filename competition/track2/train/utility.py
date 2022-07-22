@@ -198,3 +198,30 @@ def get_goal_layer(goal_x, goal_y, cur_x, cur_y, cur_heading):
         goal_obs = outside_coor_to_pixel(trans_goal[0, 0], trans_goal[1, 0], trans_cur[0, 0], trans_cur[1, 0])
 
     return goal_obs
+
+def global_target_pose(action, agent_obs):
+
+    cur_x = agent_obs["ego"]["pos"][0]
+    cur_y = agent_obs["ego"]["pos"][1]
+    cur_heading = agent_obs["ego"]["heading"]
+
+    if 0 < cur_heading < math.pi:  # Facing Left Half
+        theta = cur_heading
+
+    elif -(math.pi) < cur_heading < 0:  # Facing Right Half
+        theta = 2 * math.pi + cur_heading
+
+    elif cur_heading == 0:  # Facing up North
+        theta = 0
+
+    elif (cur_heading == math.pi) or (cur_heading == -(math.pi)):  # Facing South
+        theta = 2 * math.pi + cur_heading
+
+    trans_matrix = np.array([[math.cos(theta), math.sin(theta)], [-math.sin(theta), math.cos(theta)]])
+    cur_pos = np.array([[cur_x], [cur_y]])
+    trans_cur = np.round(np.matmul(trans_matrix, cur_pos), 5)
+    trans_next = np.array([[trans_cur[0,0] + action[0]], [trans_cur[1,0] + action[1]]])
+    global_next = np.round(np.matmul(np.transpose(trans_matrix), trans_next), 5)
+    target_pose = np.array([global_next[0,0], global_next[1,0], action[2] + cur_heading, 0.1])
+
+    return target_pose

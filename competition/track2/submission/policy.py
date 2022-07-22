@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict
 import numpy as np
-from utility import get_trans_coor
+from train.utility import global_target_pose
 
 
 class BasePolicy:
@@ -70,17 +70,9 @@ class Policy(BasePolicy):
         """
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
-            action = self.model.predict(
-                np.array([np.moveaxis(agent_obs["rgb"], -1, 0)])
-            )[0]
-            print(action)
-            target_pose = np.array(
-                [
-                    (action[0] + agent_obs["ego"]["pos"][0]),
-                    action[1] + agent_obs["ego"]["pos"][1],
-                    action[2] + agent_obs["ego"]["heading"],
-                    0.1,
-                ]
-            )
+            action = self.model.predict(np.array([np.moveaxis(agent_obs["rgb"], -1, 0)]))[0]
+
+            # print(action)
+            target_pose = global_target_pose(action, agent_obs)
             wrapped_act.update({agent_id: target_pose})
         return wrapped_act
