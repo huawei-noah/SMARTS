@@ -931,6 +931,10 @@ class _TrafficActor:
             return False
         if not self._multi_lane_cutin and abs(target_ind - self._lane.index) > 1:
             return False
+        if not self._dogmatic and lw.time_left < stopping_time(
+            self.speed, self._max_decel
+        ):
+            return False
         min_gap = self._target_cutin_gap / self._aggressiveness
         max_gap = self._target_cutin_gap + 2
         if min_gap < lw.agent_gap < max_gap and self._crossing_time_into(target_ind)[1]:
@@ -985,10 +989,6 @@ class _TrafficActor:
             # don't change lanes in junctions, except for the above reasons
             # (since it makes collision avoidance harder for everyone!)
             if lw.lane.in_junction:
-                continue
-            min_stop_time = stopping_time(self.speed, self._max_decel)
-            if min_stop_time < lw.time_left:
-                # also don't change lanes if we can't *finish* before it ends
                 continue
             if change_time < lw.time_left:
                 # also don't change lanes if we can't *finish* before entering a junction
