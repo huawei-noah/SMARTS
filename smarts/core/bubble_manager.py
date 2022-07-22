@@ -229,7 +229,7 @@ class Bubble:
             return False, False
 
         in_bubble = position.within(self._cached_inner_geometry)
-        return in_bubble, in_airlock
+        return in_bubble, in_airlock and not in_bubble
 
     @property
     def is_travelling(self):
@@ -383,14 +383,15 @@ class Cursor:
             was_in_this_bubble
             and is_hijacked
             and in_airlock_zone
-            and not in_bubble_zone
         ):
             # XXX: This may get called repeatedly because we don't actually change
             #      any state when this happens.
             # In this case a vehicle has just exited the bubble
             transition = BubbleTransition.Exited
         elif (
-            was_in_this_bubble and (is_shadowed or is_hijacked) and not in_airlock_zone
+            was_in_this_bubble
+            and (is_shadowed or is_hijacked)
+            and not (in_airlock_zone or in_bubble_zone)
         ):
             # In this case a vehicle has just exited the airlock around the bubble
             transition = BubbleTransition.AirlockExited
