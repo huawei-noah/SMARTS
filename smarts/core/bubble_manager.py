@@ -379,11 +379,7 @@ class Cursor:
         elif is_social and is_shadowed and is_hijack_admissible and in_bubble_zone:
             # In this case a vehicle has just entered the bubble
             transition = BubbleTransition.Entered
-        elif (
-            was_in_this_bubble
-            and is_hijacked
-            and in_airlock_zone
-        ):
+        elif was_in_this_bubble and is_hijacked and in_airlock_zone:
             # XXX: This may get called repeatedly because we don't actually change
             #      any state when this happens.
             # In this case a vehicle has just exited the bubble

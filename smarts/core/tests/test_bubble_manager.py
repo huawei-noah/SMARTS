@@ -172,7 +172,8 @@ def test_bubble_manager_limit(smarts, mock_provider, time_resolution):
                 ),
                 speed,  # speed
             )
-            for y, v_id in step_vehicle_ids if v_id in current_vehicle_ids
+            for y, v_id in step_vehicle_ids
+            if v_id in current_vehicle_ids
         ]
         mock_provider.override_next_provider_state(vehicles=vehicles)
         smarts.step({})
