@@ -85,4 +85,4 @@ class MockProvider(Provider):
         pass
 
     def can_accept_vehicle(self, state: VehicleState) -> bool:
-        return True
+        return False
