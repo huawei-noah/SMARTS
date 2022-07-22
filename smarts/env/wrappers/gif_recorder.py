@@ -21,8 +21,8 @@
 # THE SOFTWARE.
 import os
 
-from moviepy.editor import *
-import gym.envs
+from moviepy.editor import ImageClip
+from moviepy.editor import ImageSequenceClip
 import shutil
 import time
 from pathlib import Path
@@ -30,6 +30,9 @@ from pathlib import Path
 
 class GifRecorder:
     def __init__(self, dir, env):
+        """
+        Use images(rgb_array) to create a gif file.
+        """
         timestamp_str = time.strftime("%Y%m%d-%H%M%S")
         self.dir = dir + "_" + timestamp_str
         self.env = env
@@ -42,15 +45,24 @@ class GifRecorder:
         self._dir_name = str(Path(dir).name)
 
     def capture_frame(self, step_num, image):
+        """
+        Create image according to the rgb_array and store it with step number in the destinated folder
+        """
         with ImageClip(image) as image_clip:
             image_clip.save_frame(f"{self.dir}/{self._dir_name}_{step_num}.jpeg")
 
     def generate_gif(self):
+        """
+        Use the images in the same folder to create a gif file.
+        """
         with ImageSequenceClip(self.dir, fps=10) as clip:
             clip.write_gif(f"videos/{self._dir_name}.gif")
         clip.close()
 
     def close_recorder(self):
+        """
+        close the recorder by deleting the image folder.
+        """
         try:
             shutil.rmtree(self.dir)
         except:
