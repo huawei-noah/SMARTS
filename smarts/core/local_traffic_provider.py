@@ -43,7 +43,7 @@ from .road_map import RoadMap, Waypoint
 from .route_cache import RouteWithCache
 from .scenario import Scenario
 from .traffic_provider import TrafficProvider
-from .utils.kinematics import distance_covered, time_to_cover
+from .utils.kinematics import distance_covered, time_to_cover, stopping_time
 from .utils.math import min_angles_difference_signed, radians_to_vec, vec_to_radians
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
@@ -403,6 +403,8 @@ class _TrafficActor:
         self._imperfection = float(self._vtype.get("sigma", 0.5))
         self._max_accel = float(self._vtype.get("accel", 2.6))
         assert self._max_accel >= 0.0
+        self._max_decel = float(self._vtype.get("decel", 4.5))
+        assert self._max_decel >= 0.0
 
         self._cutting_into = None
         self._cutting_in = False
@@ -984,6 +986,10 @@ class _TrafficActor:
             # (since it makes collision avoidance harder for everyone!)
             if lw.lane.in_junction:
                 continue
+            min_stop_time = stopping_time(self.speed, self._max_decel)
+            if min_stop_time < lw.time_left:
+                # also don't change lanes if we can't *finish* before it ends
+                continue
             if change_time < lw.time_left:
                 # also don't change lanes if we can't *finish* before entering a junction
                 # (unless our lane is ending)
@@ -1471,9 +1477,7 @@ class _TrafficActor:
         if PID > 0:
             return PID * self._max_accel
 
-        max_decel = float(self._vtype.get("decel", 4.5))
-        assert max_decel >= 0.0
-        return PID * max_decel
+        return PID * self._max_decel
 
     def compute_next_state(self, dt: float):
         """Pre-computes the next state for this traffic actor."""
