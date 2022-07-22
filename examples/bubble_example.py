@@ -134,7 +134,7 @@ def main(
     episodes: int,
     start_time: float,
     run_time: float,
-    num_agents: float,
+    num_agents: int,
 ):
     logger = logging.getLogger(script)
     logger.setLevel(logging.INFO)
@@ -220,13 +220,6 @@ def main(
             with timeit(f"initializing agent policy...", logger.info):
                 ego_agent = EgoAgent()
                 social_agent = SocialAgent(logger=logger)
-
-                traffic_history_provider: TrafficHistoryProvider = (
-                    smarts.get_provider_by_type(TrafficHistoryProvider)
-                )
-                agent_vehicles = {
-                    mission.vehicle_spec.veh_id for mission in agent_missions.values()
-                }
 
             with timeit(f"resetting episode {episode}...", logger.info):
                 ego_observations = smarts.reset(scenario, start_time=start_time)
