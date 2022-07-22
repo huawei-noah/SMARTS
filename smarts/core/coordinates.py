@@ -89,7 +89,7 @@ class Point(NamedTuple):
     @classmethod
     def from_np_array(cls, np_array: np.ndarray):
         """Factory for constructing a Point object from a numpy array."""
-        assert 2 <= len(np.array) <= 3
+        assert 2 <= len(np_array) <= 3
         z = np_array[2] if len(np.array) > 2 else 0.0
         return cls(np_array[0], np_array[1], z)
 
