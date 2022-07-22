@@ -1273,8 +1273,8 @@ class SMARTS:
 
     def _check_ground_plane(self):
         rescale_plane = False
-        map_min = self._map_bb.min_pt.as_np_array[:2] if self._map_bb else None
-        map_max = self._map_bb.max_pt.as_np_array[:2] if self._map_bb else None
+        map_min = np.array(self._map_bb.min_pt)[:2] if self._map_bb else None
+        map_max = np.array(self._map_bb.max_pt)[:2] if self._map_bb else None
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
             map_spot = vehicle.pose.point.as_np_array[:2]
