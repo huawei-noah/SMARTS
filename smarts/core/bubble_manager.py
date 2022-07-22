@@ -665,7 +665,7 @@ class BubbleManager:
         try:
             agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         except KeyError:
-           return
+            return
         vehicle = sim.vehicle_index.switch_control_to_agent(
             sim,
             vehicle_id,
