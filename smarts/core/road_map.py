@@ -210,7 +210,7 @@ class RoadMap:
         @property
         def features(self) -> List[RoadMap.Feature]:
             """The features that this surface contains."""
-            raise NotImplementedError()
+            return []
 
         def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
             """The features on this surface near the given pose."""
