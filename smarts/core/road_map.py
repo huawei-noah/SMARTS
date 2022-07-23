@@ -547,16 +547,19 @@ class RoadMap:
         CROSSWALK = 1
         SPEED_BUMP = 2
         STOP_SIGN = 3
-        SIGNAL = 4
+
+        # Note that some signals can move around.  For example, flashing
+        # arrows on the back of trucks to funnel vehicles into
+        # one lane in construction zones (and towable signs that do
+        # the same thing), flashing lights on other caution signs,
+        # signals on closed sections of roads, etc.
+        # Such signals are not *map* features.
+        # For these, we (also) need a DynamicStateProvider.
+        FIXED_LOC_SIGNAL = 4
+
         CUSTOM = 5
 
-    # Note that some signals can move around.  For example, flashing
-    # arrows on the back of trucks to funnel vehicles into
-    # one lane in construction zones (and towable signs that do
-    # the same thing), flashing lights on other caution signs,
-    # signals on closed sections of roads, etc.
-    # Such signals are not *map* features.
-    # For these, we (also) need a DynamicStateProvider.
+    # TODO:  move this to DynamicStateProvider
     class DynamicFeatureState(IntEnum):
         """States that a dynamic feature may take; note that these may be combined into a bitmask."""
 
@@ -595,7 +598,7 @@ class RoadMap:
         def is_dynamic(self) -> bool:
             """True iff this feature has dynamic state (such as a traffic light); False otherwise."""
             # this may be overridden in the case of custom feature types
-            return self.type == RoadMap.FeatureType.SIGNAL
+            return self.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL
 
     class Route:
         """Describes a route between two roads."""

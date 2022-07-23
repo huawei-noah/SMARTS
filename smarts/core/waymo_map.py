@@ -858,16 +858,25 @@ class WaymoMap(RoadMapWithCaches):
                 # surfaces (lanes, roads, etc.) and add crosswalks and speed bumps
                 # to their features.
                 pass
-        # also associate *staticallly-located* traffic signals with lanes here
+        # also associate *fixed-location* traffic signals with lanes here
         # but handle the dynamic signals and states themselves elsewhere...
-        # TODO:  only collect and add static signals here
         lane_signals = {
             (ls.lane, self._map_pt_to_point(ls.stop_point))
             for ds in waymo_scenario.dynamic_map_states
             for ls in ds.lane_states
         }
-        sigs = 0
+        # remove non-fixed-location signals...
+        static_lane_signals = dict()
+        non_fixed = set()
         for lane_signal, stop_point in lane_signals:
+            sp = static_lane_signals.setdefault(lane_signal, stop_point)
+            if sp.x != stop_point.x and sp.y != stop_point.y:
+                non_fixed.add(lane_signal)
+        static_lane_signals = dict(
+            filter(lambda item: item[0] not in non_fixed, static_lane_signals.items())
+        )
+        sigs = 0
+        for lane_signal, stop_point in static_lane_signals.items():
             sp = self._map_pt_to_point(stop_point)
             for lane, _ in self.nearest_lanes(sp):
                 if lane._feature_id == lane_signal:
@@ -1628,7 +1637,7 @@ class WaymoMap(RoadMapWithCaches):
             if isinstance(feat_proto, StopSign):
                 return RoadMap.FeatureType.STOP_SIGN
             if isinstance(feat_proto, Point):
-                return RoadMap.FeatureType.SIGNAL
+                return RoadMap.FeatureType.FIXED_LOC_SIGNAL
             return RoadMap.FeatureType.UNKNOWN
 
         @property
