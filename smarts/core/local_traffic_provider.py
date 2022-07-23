@@ -1530,7 +1530,7 @@ class _TrafficActor:
 
         # magic numbers / weights here were just what looked reasonable in limited testing
         P = 0.0060 * (self._target_speed - my_speed)
-        I = -0.0150 / space_cush + -0.030 / time_cush
+        I = -0.0150 / space_cush + -0.0333 / time_cush
         D = -0.0010 * my_acc
         PID = (P + I + D) / dt
 
