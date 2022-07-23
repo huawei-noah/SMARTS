@@ -580,11 +580,17 @@ class WaymoMap(RoadMapWithCaches):
                 WaymoMap._lane_id(feat_id, linked_split.prev_split.split.index)
             ]
         else:
-            # XXX: there ought to be a better way than this!
-            lane_dict["incoming_lane_ids"] = [
-                WaymoMap._lane_id(el, feat_splits[el].sorted_keys[-2])
-                for el in feat_dict["entry_lanes"]
-            ]
+            # XXX: there ought to be a better way than this!!
+            incoming = []
+            for el in feat_dict["entry_lanes"]:
+                entry_max = len(self._polyline_cache[el][0]) - 1
+                for i in reversed(feat_splits[el].sorted_keys):
+                    if i < entry_max:
+                        break
+                else:
+                    i = 0
+                incoming.append(WaymoMap._lane_id(el, i))
+            lane_dict["incoming_lane_ids"] = incoming
         if next_split_pt < len(orig_polyline) - 1:
             lane_dict["outgoing_lane_ids"] = [WaymoMap._lane_id(feat_id, next_split_pt)]
         else:
@@ -746,6 +752,9 @@ class WaymoMap(RoadMapWithCaches):
                     and linked_split.split.index < linked_split.next_split.split.index
                 )
                 if linked_split.split.index >= last_valid:
+                    # XXX:  disallows 1-point polyline lanes, which do exist in about 15% of scenarios.
+                    # To allow these require changes that will cascade though.
+                    # Practically this means that incoming_lanes ids will sometimes not be found.
                     continue
                 if linked_split.used:
                     continue
@@ -849,8 +858,9 @@ class WaymoMap(RoadMapWithCaches):
                 # surfaces (lanes, roads, etc.) and add crosswalks and speed bumps
                 # to their features.
                 pass
-        # also associate traffic signals with lanes here
-        # but handle the dynamic states themselves elsewhere...
+        # also associate *staticallly-located* traffic signals with lanes here
+        # but handle the dynamic signals and states themselves elsewhere...
+        # TODO:  only collect and add static signals here
         lane_signals = {
             (ls.lane, self._map_pt_to_point(ls.stop_point))
             for ds in waymo_scenario.dynamic_map_states
@@ -1518,17 +1528,15 @@ class WaymoMap(RoadMapWithCaches):
             return self._lanes[index]
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
-        road = self._roads.get(road_id)
-        if not road:
-            self._log.warning(f"WaymoMap got request for unknown road_id '{road_id}'")
-        return road
+        # XXX: If this raises a key exception, it's probably because this
+        #  map contains single-point polyline lanes, which we don't yet handle.
+        return self._roads[road_id]
 
     def lane_by_id(self, lane_id: str) -> RoadMapWithCaches.Lane:
         # note: all lanes were cached already by _load()
-        lane = self._lanes.get(lane_id)
-        if not lane:
-            self._log.warning(f"WaymoMap got request for unknown lane_id '{lane_id}'")
-        return lane
+        # XXX: If this raises a key exception, it's probably because this
+        #  map contains single-point polyline lanes, which we don't yet handle.
+        return self._lanes[lane_id]
 
     @cached_property
     def _simple_lanes(self) -> List[RoadMapWithCaches.Lane]:

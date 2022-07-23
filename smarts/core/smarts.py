@@ -131,7 +131,7 @@ class SMARTS:
         self._total_sim_time = 0.0
         self._step_count = 0
 
-        # TODO: the following should be filled in by self._traffic_history_provider and/or by a DynamicMapStateProvider (TBD).
+        # TODO: the following should be filled in by self._traffic_history_provider and/or by a DynamicStateProvider (TBD).
         # TODO: also, see PR #1083 for how this might be exposed via Observations to Agents.
         self._dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState] = dict()
 

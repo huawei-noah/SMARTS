@@ -550,6 +550,13 @@ class RoadMap:
         SIGNAL = 4
         CUSTOM = 5
 
+    # Note that some signals can move around.  For example, flashing
+    # arrows on the back of trucks to funnel vehicles into
+    # one lane in construction zones (and towable signs that do
+    # the same thing), flashing lights on other caution signs,
+    # signals on closed sections of roads, etc.
+    # Such signals are not *map* features.
+    # For these, we (also) need a DynamicStateProvider.
     class DynamicFeatureState(IntEnum):
         """States that a dynamic feature may take; note that these may be combined into a bitmask."""
 
