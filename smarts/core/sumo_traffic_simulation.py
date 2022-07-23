@@ -312,7 +312,7 @@ class SumoTrafficSimulation(TrafficProvider):
         # XXX: SUMO caches the previous subscription results. Calling `simulationStep`
         #      effectively flushes the results. We need to use epsilon instead of zero
         #      as zero will step according to a default (non-zero) step-size.
-        self.step({}, 1e-6, 0)
+        self.step({}, 1e-6, 0, dict())
 
         self._is_setup = True
 
