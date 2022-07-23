@@ -402,7 +402,7 @@ class SumoTrafficSimulation(TrafficProvider):
 
     def step(
         self,
-        actions,
+        provider_actions,
         dt: float,
         elapsed_sim_time: float,
         dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState],

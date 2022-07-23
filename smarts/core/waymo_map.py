@@ -839,7 +839,7 @@ class WaymoMap(RoadMapWithCaches):
             feature_id = f"{feat_id}"
             feature = WaymoMap.Feature(self, feature_id, map_feat_pb)
             self._features[feature_id] = feature
-            if feature.type == WaymoMap.FeatureType.STOP_SIGN:
+            if feature.type == RoadMap.FeatureType.STOP_SIGN:
                 pos = self._map_pt_to_point(map_feat_pb.position)
                 for lane, _ in self.nearest_lanes(pos):
                     if lane._feature_id == map_feat_pb.lane:
@@ -1603,6 +1603,8 @@ class WaymoMap(RoadMapWithCaches):
         return None
 
     class Feature(RoadMap.Feature):
+        """Feature representation for Waymo maps"""
+
         def __init__(self, road_map, feature_id: str, feat_proto):
             self._map = road_map
             self._feature_id = feature_id
@@ -1612,14 +1614,14 @@ class WaymoMap(RoadMapWithCaches):
         @staticmethod
         def _proto_type_to_type(feat_proto) -> int:
             if isinstance(feat_proto, Crosswalk):
-                return WaymoMap.FeatureType.CROSSWALK
+                return RoadMap.FeatureType.CROSSWALK
             if isinstance(feat_proto, SpeedBump):
-                return WaymoMap.FeatureType.SPEED_BUMP
+                return RoadMap.FeatureType.SPEED_BUMP
             if isinstance(feat_proto, StopSign):
-                return WaymoMap.FeatureType.STOP_SIGN
+                return RoadMap.FeatureType.STOP_SIGN
             if isinstance(feat_proto, Point):
-                return WaymoMap.FeatureType.SIGNAL
-            return WaymoMap.FeatureType.UNKNOWN
+                return RoadMap.FeatureType.SIGNAL
+            return RoadMap.FeatureType.UNKNOWN
 
         @property
         def feature_id(self) -> str:
