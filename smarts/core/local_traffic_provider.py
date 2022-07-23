@@ -376,7 +376,7 @@ class LocalTrafficProvider(TrafficProvider):
             f"traffic actor {xfrd_actor.actor_id} transferred to {self.source_str}."
         )
 
-    def signal_state_means_stop(
+    def _signal_state_means_stop(
         self, lane: RoadMap.Lane, signal_feat: RoadMap.Feature
     ) -> bool:
         feat_state = self._dynamic_map_state.get(signal_feat)
@@ -1399,7 +1399,7 @@ class _TrafficActor:
         for feat in upcoming_feats:
             if feat.type == RoadMap.FeatureType.STOP_SIGN or (
                 feat.is_dynamic
-                and self._owner.signal_state_means_stop(self._lane, feat)
+                and self._owner._signal_state_means_stop(self._lane, feat)
             ):
                 self._target_speed = 0
                 break

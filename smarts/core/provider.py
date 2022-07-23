@@ -94,7 +94,7 @@ class Provider:
         actions,
         dt: float,
         elapsed_sim_time: float,
-        dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState],
+        dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState] = dict(),
     ) -> ProviderState:
         """Progress the provider to generate new vehicle state.
         Args:

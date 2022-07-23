@@ -541,6 +541,8 @@ class RoadMap:
             raise NotImplementedError()
 
     class FeatureType(IntEnum):
+        """Built-in feature types usable across all map implementations."""
+
         UNKNOWN = 0
         CROSSWALK = 1
         SPEED_BUMP = 2
@@ -549,11 +551,12 @@ class RoadMap:
         CUSTOM = 5
 
     class DynamicFeatureState(IntEnum):
+        """States that a dynamic feature may take; note that these may be combined into a bitmask."""
+
         UNKNOWN = 0
         STOP = 1
         CAUTION = 2
         GO = 4
-        # Can OR these with the above to make a bitmask...
         FLASHING = 8
         ARROW = 16
 
