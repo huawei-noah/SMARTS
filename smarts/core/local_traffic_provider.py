@@ -380,7 +380,7 @@ class LocalTrafficProvider(TrafficProvider):
         self, lane: RoadMap.Lane, signal_feat: RoadMap.Feature
     ) -> bool:
         feat_state = self._dynamic_map_state.get(signal_feat)
-        return feat_state and not feat_state & RoadMap.DynamiceFeatureState.GO
+        return feat_state and not feat_state & RoadMap.DynamicFeatureState.GO
 
 
 class _TrafficActor:
