@@ -37,7 +37,14 @@ from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 from trimesh.exchange import gltf
 from waymo_open_dataset.protos import scenario_pb2
-from waymo_open_dataset.protos.map_pb2 import LaneCenter, RoadLine
+from waymo_open_dataset.protos.map_pb2 import (
+    Crosswalk,
+    LaneCenter,
+    RoadLine,
+    SpeedBump,
+    StopSign,
+    TrafficSignalLaneState,
+)
 
 from smarts.sstudio.types import MapSpec
 
@@ -108,6 +115,7 @@ class WaymoMap(RoadMapWithCaches):
         self._surfaces: Dict[str, WaymoMap.Surface] = dict()
         self._lanes: Dict[str, WaymoMap.Lane] = dict()
         self._roads: Dict[str, WaymoMap.Road] = dict()
+        self._features: Dict[str, WaymoMap.Feature] = dict()
         self._waymo_features: Dict[int, Any] = dict()
         self._default_lane_width = WaymoMap.DEFAULT_LANE_WIDTH
         self._lane_rtree = None
@@ -519,8 +527,12 @@ class WaymoMap(RoadMapWithCaches):
                 prev_linked_split = linked_split
 
     @staticmethod
+    def _map_pt_to_point(map_point) -> Point:
+        return Point(map_point.x, map_point.y, map_point.z)
+
+    @staticmethod
     def _polyline_dists(polyline) -> Tuple[np.ndarray, np.ndarray]:
-        lane_pts = np.array([[p.x, p.y, p.z] for p in polyline])
+        lane_pts = np.array([WaymoMap._map_pt_to_point(p) for p in polyline])
 
         class _Accum:
             def __init__(self):
@@ -820,6 +832,40 @@ class WaymoMap(RoadMapWithCaches):
         self._compute_lane_intersections(composites=False)
         self._compute_lane_intersections(composites=True)
 
+        # associate map features with surfaces
+        for feat_id, map_feat_pb in self._waymo_features.items():
+            if not isinstance(map_feat_pb, (StopSign, Crosswalk, SpeedBump)):
+                continue
+            feature_id = f"{feat_id}"
+            feature = WaymoMap.Feature(self, feature_id, map_feat_pb)
+            self._features[feature_id] = feature
+            if feature.type == WaymoMap.FeatureType.STOP_SIGN:
+                pos = self._map_pt_to_point(map_feat_pb.position)
+                for lane, _ in self.nearest_lanes(pos):
+                    if lane._feature_id == map_feat_pb.lane:
+                        lane._features[feature_id] = feature
+            else:
+                # TODO:  use self.nearest_surface() (NYI) to find nearest
+                # surfaces (lanes, roads, etc.) and add crosswalks and speed bumps
+                # to their features.
+                pass
+        # also associate traffic signals with lanes here
+        # but handle the dynamic states themselves elsewhere...
+        lane_signals = {
+            (ls.lane, self._map_pt_to_point(ls.stop_point))
+            for ds in waymo_scenario.dynamic_map_states
+            for ls in ds.lane_states
+        }
+        sigs = 0
+        for lane_signal, stop_point in lane_signals:
+            sp = self._map_pt_to_point(stop_point)
+            for lane, _ in self.nearest_lanes(sp):
+                if lane._feature_id == lane_signal:
+                    sigs += 1
+                    feature_id = f"signal_{sigs}"
+                    feature = WaymoMap.Feature(self, feature_id, stop_point)
+                    lane._features[feature_id] = feature
+
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"Loading Waymo map took: {elapsed} ms")
@@ -968,6 +1014,7 @@ class WaymoMap(RoadMapWithCaches):
         def __init__(self, surface_id: str, road_map):
             self._surface_id = surface_id
             self._map = road_map
+            self._features: Dict[str, RoadMapWithCaches.Feature] = dict()
 
         @property
         def surface_id(self) -> str:
@@ -977,6 +1024,17 @@ class WaymoMap(RoadMapWithCaches):
         def is_drivable(self) -> bool:
             # XXX: this may be over-riden below
             return True
+
+        @property
+        def features(self) -> List[RoadMap.Feature]:
+            return list(self._features.values())
+
+        def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
+            result = []
+            for feat in self._features.values():
+                if feat.geometry.near(pose.point, radius):
+                    result.append(feat)
+            return result
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
         return self._surfaces.get(surface_id)
@@ -1543,6 +1601,52 @@ class WaymoMap(RoadMapWithCaches):
             if nl.contains_point(point):
                 return nl.road
         return None
+
+    class Feature(RoadMap.Feature):
+        def __init__(self, road_map, feature_id: str, feat_proto):
+            self._map = road_map
+            self._feature_id = feature_id
+            self._feat_proto = feat_proto
+            self._type = self._proto_type_to_type(feat_proto)
+
+        @staticmethod
+        def _proto_type_to_type(feat_proto) -> int:
+            if isinstance(feat_proto, Crosswalk):
+                return WaymoMap.FeatureType.CROSSWALK
+            if isinstance(feat_proto, SpeedBump):
+                return WaymoMap.FeatureType.SPEED_BUMP
+            if isinstance(feat_proto, StopSign):
+                return WaymoMap.FeatureType.STOP_SIGN
+            if isinstance(feat_proto, Point):
+                return WaymoMap.FeatureType.SIGNAL
+            return WaymoMap.FeatureType.UNKNOWN
+
+        @property
+        def feature_id(self) -> str:
+            return self._feature_id
+
+        @property
+        def type(self) -> RoadMap.FeatureType:
+            return self._type
+
+        @property
+        def type_as_str(self) -> str:
+            return self._feat_proto.__class_.__name__
+
+        @property
+        def geometry(self) -> List[Point]:
+            if isinstance(self._feat_proto, Point):
+                return [self._feat_proto]
+            point = getattr(self._feat_proto, "position", None)
+            if point:
+                return [self._map_pt_to_point(point)]
+            polygon = getattr(self._feat_proto, "polygon", None)
+            if polygon:
+                return [self._map_pt_to_point(pt) for pt in polygon]
+            return []
+
+    def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
+        return self._features.get(feature_id)
 
     class Route(RouteWithCache):
         """Describes a route between Waymo roads."""

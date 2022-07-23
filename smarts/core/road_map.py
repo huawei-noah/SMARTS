@@ -24,6 +24,7 @@ from __future__ import annotations
 import math
 from bisect import bisect
 from dataclasses import dataclass
+from enum import IntEnum
 from functools import lru_cache
 from typing import List, Optional, Sequence, Set, Tuple
 
@@ -89,6 +90,10 @@ class RoadMap:
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         """Find a road in this road map that has the given identifier."""
+        raise NotImplementedError()
+
+    def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
+        """Find a feature in this road map that has the given identifier."""
         raise NotImplementedError()
 
     def nearest_surfaces(
@@ -535,6 +540,23 @@ class RoadMap:
             """Gets the lane with the given index."""
             raise NotImplementedError()
 
+    class FeatureType(IntEnum):
+        UNKNOWN = 0
+        CROSSWALK = 1
+        SPEED_BUMP = 2
+        STOP_SIGN = 3
+        SIGNAL = 4
+        CUSTOM = 5
+
+    class DynamicFeatureState(IntEnum):
+        UNKNOWN = 0
+        STOP = 1
+        CAUTION = 2
+        GO = 4
+        # Can OR these with the above to make a bitmask...
+        FLASHING = 8
+        ARROW = 16
+
     class Feature:
         """Describes a map feature."""
 
@@ -544,19 +566,26 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
-        def type(self) -> int:
+        def type(self) -> RoadMap.FeatureType:
             """The type of this feature."""
             raise NotImplementedError()
 
         @property
         def type_as_str(self) -> str:
-            """The type of this feature."""
+            """The type of this feature as a string.
+            This is useful for resolving CUSTOM feature types."""
             raise NotImplementedError()
 
         @property
         def geometry(self) -> List[Point]:
             """The geometry that represents this feature."""
             raise NotImplementedError()
+
+        @property
+        def is_dynamic(self) -> bool:
+            """True iff this feature has dynamic state (such as a traffic light); False otherwise."""
+            # this may be overridden in the case of custom feature types
+            return self.type == RoadMap.FeatureType.SIGNAL
 
     class Route:
         """Describes a route between two roads."""
@@ -719,10 +748,16 @@ class RoadMapWithCaches(RoadMap):
         super().__init__()
         self._seg_cache = RoadMapWithCaches._SegmentCache()
 
-    class Lane(RoadMap.Lane, RoadMap.Surface):
+    class Lane(RoadMap.Lane):
         """Describes a RoadMapWithCaches lane surface."""
 
         def __init__(self, lane_id: str, road_map):
+            # The following is needed b/c derived classes are using
+            # multiple-inheritance.  This will call the next class's init
+            # in the MRO (which is probably a descendent of Surface).
+            # pytype: disable=wrong-arg-count
+            super().__init__(lane_id, road_map)
+            # pytype: enable=wrong-arg-count
             self._lane_id = lane_id
             self._map = road_map
 

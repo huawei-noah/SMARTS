@@ -24,7 +24,7 @@ import random
 import subprocess
 import time
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -400,7 +400,13 @@ class SumoTrafficSimulation(TrafficProvider):
             raise error
         return ProviderState(), False
 
-    def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
+    def step(
+        self,
+        actions,
+        dt: float,
+        elapsed_sim_time: float,
+        dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState],
+    ) -> ProviderState:
         assert not provider_actions
         if not self.connected:
             return ProviderState()

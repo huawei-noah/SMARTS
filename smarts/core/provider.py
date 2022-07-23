@@ -89,12 +89,20 @@ class Provider:
         """Initialize the provider with a scenario."""
         raise NotImplementedError
 
-    def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
+    def step(
+        self,
+        actions,
+        dt: float,
+        elapsed_sim_time: float,
+        dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState],
+    ) -> ProviderState:
         """Progress the provider to generate new vehicle state.
         Args:
             actions: one or more valid actions from the supported action_spaces of this provider
             dt: time (in seconds) to simulate during this simulation step
             elapsed_sim_time: amount of time (in seconds) that's elapsed so far in the simulation
+            dynamic_map_state: current state of dynamic map elements (like signals) if known,
+                if a feature_id is not found in this dict, it's state is unknown.
         Returns:
             ProviderState representing the state of all vehicles this manages.
         """

@@ -43,7 +43,12 @@ from .road_map import RoadMap, Waypoint
 from .route_cache import RouteWithCache
 from .scenario import Scenario
 from .traffic_provider import TrafficProvider
-from .utils.kinematics import distance_covered, time_to_cover, stopping_time
+from .utils.kinematics import (
+    distance_covered,
+    stopping_distance,
+    stopping_time,
+    time_to_cover,
+)
 from .utils.math import min_angles_difference_signed, radians_to_vec, vec_to_radians
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
@@ -66,6 +71,7 @@ class LocalTrafficProvider(TrafficProvider):
             RoadMap.Lane, List[Tuple[float, VehicleState]]
         ] = dict()
         self._offsets_cache: Dict[str, Dict[str, float]] = dict()
+        self._dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState] = dict()
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -213,7 +219,13 @@ class LocalTrafficProvider(TrafficProvider):
             lane.lane_id, lane.offset_along_lane(vs.pose.point)
         )
 
-    def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
+    def step(
+        self,
+        actions,
+        dt: float,
+        elapsed_sim_time: float,
+        dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState],
+    ) -> ProviderState:
         self._add_actors_for_time(elapsed_sim_time, dt)
         for other, _ in self._other_vehicles.values():
             if other.vehicle_id in self._reserved_areas:
@@ -227,6 +239,8 @@ class LocalTrafficProvider(TrafficProvider):
         # computations for actors encountered later in the iterator.
         for actor in self._my_actors.values():
             actor.compute_next_state(dt)
+
+        self._dynamic_map_state = dynamic_map_state
 
         dones = []
         remap_ids: Dict[str, str] = dict()
@@ -361,6 +375,12 @@ class LocalTrafficProvider(TrafficProvider):
         self._logger.info(
             f"traffic actor {xfrd_actor.actor_id} transferred to {self.source_str}."
         )
+
+    def signal_state_means_stop(
+        self, lane: RoadMap.Lane, signal_feat: RoadMap.Feature
+    ) -> bool:
+        feat_state = self._dynamic_map_state.get(signal_feat)
+        return feat_state and not feat_state & RoadMap.DynamiceFeatureState.GO
 
 
 class _TrafficActor:
@@ -1348,6 +1368,46 @@ class _TrafficActor:
         self._bumper_wins_back.purge_unseen(updated)
         self._target_speed *= math.pow(min_range / max_range, 0.75)
 
+    def _find_features_ahead(
+        self,
+        rl: RoadMap.Route.RouteLane,
+        lookahead: float,
+        upcoming_feats: List[RoadMap.Feature],
+    ):
+        lane = rl.lane
+        upcoming_feats += lane.features
+        lookahead -= lane.length
+        if lane == self._lane:
+            lookahead += self._offset
+        if lookahead <= 0:
+            return
+        nri = rl.road_index + 1
+        if nri >= len(self._route.roads):
+            return
+        for ogl in lane.outgoing_lanes:
+            if ogl.road == self._route.roads[nri]:
+                nrl = RoadMap.Route.RouteLane(ogl, nri)
+                self._find_features_ahead(nrl, lookahead, upcoming_feats)
+
+    def _handle_features(self):
+        lookahead = 2 * stopping_distance(self.speed, self._max_decel)
+        upcoming_feats = []
+        rl = RoadMap.Route.RouteLane(self._lane, self._route_ind)
+        self._find_features_ahead(rl, lookahead, upcoming_feats)
+        if not upcoming_feats:
+            return
+        for feat in upcoming_feats:
+            if feat.type == RoadMap.FeatureType.STOP_SIGN or (
+                feat.is_dynamic
+                and self._owner.signal_state_means_stop(self._lane, feat)
+            ):
+                self._target_speed = 0
+                break
+            # if feat.type == RoadMap.FeatureType.CROSSWALK and TODO:
+            # self._target_speed = 0
+            if feat.type == RoadMap.FeatureType.SPEED_BUMP:
+                self._target_speed *= 0.5
+
     def _check_speed(self, dt: float):
         target_lane = self._target_lane_win.lane
         if target_lane.speed_limit is None:
@@ -1361,10 +1421,14 @@ class _TrafficActor:
         if self._cutting_in:
             self._target_speed *= self._cutin_slow_down
         self._slow_for_curves()
-        self._handle_junctions(dt)
-        max_speed = float(self._vtype.get("maxSpeed", 55.55))
-        if self._target_speed >= max_speed:
-            self._target_speed = max_speed
+        if self._target_speed > 0:
+            self._handle_features()
+        if self._target_speed > 0:
+            self._handle_junctions(dt)
+        if self._target_speed > 0:
+            max_speed = float(self._vtype.get("maxSpeed", 55.55))
+            if self._target_speed >= max_speed:
+                self._target_speed = max_speed
 
     def _angle_to_lane(self, dt: float) -> float:
         my_heading = self._state.pose.heading

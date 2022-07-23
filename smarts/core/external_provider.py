@@ -18,13 +18,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass, field, replace
-from typing import List, Sequence, Set
+from typing import Dict, List, Sequence, Set
 
 import numpy as np
 
 from .actor_role import ActorRole
 from .controllers import ActionSpaceType
 from .provider import Provider, ProviderState
+from .road_map import RoadMap
 from .scenario import Scenario
 from .vehicle import VehicleState
 
@@ -71,7 +72,13 @@ class ExternalProvider(Provider):
     def setup(self, scenario: Scenario) -> ProviderState:
         return self._provider_state
 
-    def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
+    def step(
+        self,
+        actions,
+        dt: float,
+        elapsed_sim_time: float,
+        dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState],
+    ) -> ProviderState:
         return self._provider_state
 
     def sync(self, provider_state: ProviderState):

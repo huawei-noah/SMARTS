@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 import logging
-from typing import Iterable, Optional, Sequence, Set
+from typing import Dict, Iterable, Optional, Sequence, Set
 
 from cached_property import cached_property
 from shapely.geometry import Polygon
@@ -28,6 +28,7 @@ from .actor_role import ActorRole
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose
 from .provider import ProviderState
+from .road_map import RoadMap
 from .traffic_provider import TrafficProvider
 from .utils.math import rounder_for_dt
 from .vehicle import VEHICLE_CONFIGS, VehicleState
@@ -101,7 +102,11 @@ class TrafficHistoryProvider(TrafficProvider):
         return self._vehicle_id_prefix + str(dbid)
 
     def step(
-        self, provider_actions, dt: float, elapsed_sim_time: float
+        self,
+        provider_actions,
+        dt: float,
+        elapsed_sim_time: float,
+        dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState],
     ) -> ProviderState:
         if not self._histories:
             return ProviderState(vehicles=[])

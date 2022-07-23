@@ -131,6 +131,10 @@ class SMARTS:
         self._total_sim_time = 0.0
         self._step_count = 0
 
+        # TODO: the following should be filled in by self._traffic_history_provider and/or by a DynamicMapStateProvider (TBD).
+        # TODO: also, see PR #1083 for how this might be exposed via Observations to Agents.
+        self._dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState] = dict()
+
         self._agent_physics_provider = AgentPhysicsProvider(self)
         self._direct_control_provider = DirectControlProvider(self)
         self._motion_planner_provider = MotionPlannerProvider(self)
@@ -1116,6 +1120,7 @@ class SMARTS:
                     provider_vehicle_actions[provider],
                     self._last_dt,
                     self._elapsed_sim_time,
+                    self._dynamic_map_state,
                 )
             except Exception as provider_error:
                 provider_state = self._handle_provider(provider, provider_error)

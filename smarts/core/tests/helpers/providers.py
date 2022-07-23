@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Optional, Sequence, Set
+from typing import Dict, Optional, Sequence, Set
 
 from smarts.core.actor_role import ActorRole
 from smarts.core.controllers import ActionSpaceType
@@ -59,7 +59,9 @@ class MockProvider(Provider):
     def sync(self, provider_state):
         pass
 
-    def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
+    def step(
+        self, provider_actions, dt, elapsed_sim_time, dynamic_map_state
+    ) -> ProviderState:
         if self._next_provider_state is None:
             return ProviderState(vehicles=[])
 

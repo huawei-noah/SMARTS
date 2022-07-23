@@ -136,7 +136,13 @@ class AgentsProvider(Provider):
                 provider_state.vehicles.append(vs)
         return provider_state
 
-    def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
+    def step(
+        self,
+        actions,
+        dt: float,
+        elapsed_sim_time: float,
+        dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState],
+    ) -> ProviderState:
         # all actions should have already been handled by perform_agent_action()
         # TAI:  double-check that here?
         return self._provider_state
