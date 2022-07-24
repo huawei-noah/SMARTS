@@ -484,18 +484,18 @@ class AgentManager:
             if agent_interface.action_space not in provider.action_spaces:
                 continue
             state = VehicleState(
-                vehicle_id=vehicle.id,
-                vehicle_type=vehicle.vehicle_type,
+                actor_id=vehicle.id,
+                actor_type=vehicle.vehicle_type,
+                source=provider.source_str,
+                role=role,
                 vehicle_config_type="passenger",  # XXX: vehicles in history missions will have a type
                 pose=vehicle.pose,
                 dimensions=vehicle.chassis.dimensions,
-                source=provider.source_str,
-                role=role,
             )
-            if provider.can_accept_vehicle(state):
+            if provider.can_accept_actor(state):
                 # Note: this just takes the first one that we come across,
                 # so the order in the sim.providers list matters.
-                provider.add_vehicle(state)
+                provider.add_actor(state)
                 break
         else:
             # We should never get here because there will always be an AgentsProvider in SMARTS

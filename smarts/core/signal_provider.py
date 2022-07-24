@@ -97,6 +97,7 @@ class SignalProvider(Provider):
     def sync(self, provider_state: ProviderState):
         for actor_state in provider_state.actors:
             if actor_state.actor_id in self._my_signals:
+                assert isinstance(actor_state, SignalState)
                 self._my_signals[actor_state.actor_id] = actor_state
 
     def can_accept_actor(self, state: ActorState) -> bool:
