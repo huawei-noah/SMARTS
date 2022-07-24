@@ -310,6 +310,23 @@ class TrafficHistory:
         rows = self._query_list(query, (start_time, end_time))
         return (TrafficHistory.VehicleRow(*row) for row in rows)
 
+    class TrafficLightRow(NamedTuple):
+        sim_time: float
+        state: int
+        stop_point_x: float
+        stop_point_y: float
+        lane_id: int
+
+    def traffic_light_states_between(
+        self, start_time: float, end_time: float
+    ) -> Generator[TrafficHistory.TrafficLightRow, None, None]:
+        query = """SELECT sim_time, state, stop_point_x, stop_point_y, lane
+                   FROM TrafficLightState
+                   WHERE sim_time > ? AND sim_time <= ?
+                   ORDER BY sim_time ASC"""
+        rows = self._query_list(query, (start_time, end_time))
+        return (TrafficHistory.TrafficLightRow(*row) for row in rows)
+
     @staticmethod
     def _greatest_n_per_group_format(
         select, table, group_by, greatest_of_group, where=None, operation="MAX"

@@ -29,6 +29,7 @@ from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose
 from .provider import ProviderState
 from .road_map import RoadMap
+from .signal_provider import SignalLightState, SignalState
 from .traffic_provider import TrafficProvider
 from .utils.math import rounder_for_dt
 from .vehicle import VEHICLE_CONFIGS, VehicleState
@@ -45,6 +46,7 @@ class TrafficHistoryProvider(TrafficProvider):
         self._replaced_actor_ids = set()
         self._last_step_vehicles = set()
         self._this_step_dones = set()
+        self._lane_sig_state = dict()
         self._vehicle_id_prefix = "history-vehicle-"
         self._start_time_offset = 0
 
@@ -63,12 +65,18 @@ class TrafficHistoryProvider(TrafficProvider):
         """The vehicles that are to be removed this step."""
         return self._this_step_dones
 
+    def _reset_scenario_state(self):
+        self._replaced_actor_ids = set()
+        self._last_step_vehicles = set()
+        self._lane_sig_state = dict()
+
     def setup(self, scenario) -> ProviderState:
         """Initialize this provider with the given scenario."""
         self._scenario = scenario
         self._histories = scenario.traffic_history
         if self._histories:
             self._histories.connect_for_multiple_queries()
+        self._reset_scenario_state()
         self._is_setup = True
         return ProviderState()
 
@@ -85,7 +93,7 @@ class TrafficHistoryProvider(TrafficProvider):
             self._histories.disconnect()
             self._histories = None
         self._scenario = None
-        self._replaced_actor_ids = set()
+        self._reset_scenario_state()
 
     def destroy(self):
         pass
@@ -111,6 +119,7 @@ class TrafficHistoryProvider(TrafficProvider):
         rounder = rounder_for_dt(dt)
         history_time = rounder(self._start_time_offset + elapsed_sim_time)
         prev_time = rounder(history_time - dt)
+
         rows = self._histories.vehicles_active_between(prev_time, history_time)
         for hr in rows:
             v_id = self._dbid_to_actor_id(hr.vehicle_id)
@@ -139,8 +148,35 @@ class TrafficHistoryProvider(TrafficProvider):
             )
         self._this_step_dones = self._last_step_vehicles - vehicle_ids
         self._last_step_vehicles = vehicle_ids
-        # TODO:  also add SignalStates here for any traffic lights in the dataset
+
         signals = []
+        last_changed = None
+        rows = self._histories.traffic_light_states_between(prev_time, history_time)
+        for tls in rows:
+            stop_pt = Point(tls.stop_point_x, tls.stop_point_y)
+            prev_state = self._lane_sig_state.setdefault(
+                tls.lane_id, dict()
+            ).setdefault(stop_pt, tls.state)
+            last_changed = tls.sim_time if prev_state != tls.state else None
+            self._lane_sig_state[tls.lane_id][stop_pt] = tls.state
+            lane_sigs_count = len(self._lane_sig_state[tls.lane_id])
+            actor_id = f"signal_{tls.lane_id}_{lane_sigs_count}"
+            # XXX: note that tls.lane_id may or may not correspond to a lane_id in the RoadMap
+            # TAI: look through self._scenario.road_map.nearest_lanes(stop_pt) for something corresponding with tls.lane_id
+            controlled_lanes = None
+            signals.append(
+                SignalState(
+                    actor_id=actor_id,
+                    actor_type="signal",
+                    source=self.source_str,
+                    role=ActorRole.Signal,
+                    state=SignalLightState(tls.state),
+                    stopping_pos=stop_pt,
+                    controlled_lanes=controlled_lanes,
+                    last_changed=last_changed,
+                )
+            )
+
         return ProviderState(actors=vehicles + signals)
 
     @property

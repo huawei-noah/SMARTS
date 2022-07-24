@@ -23,7 +23,7 @@ import logging
 import math
 import random
 import time
-from collections import deque
+from collections import defaultdict, deque
 from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -875,13 +875,13 @@ class WaymoMap(RoadMapWithCaches):
         static_lane_signals = dict(
             filter(lambda item: item[0] not in non_fixed, static_lane_signals.items())
         )
-        sigs = 0
+        lane_sig_count = defaultdict(int)
         for lane_signal, stop_point in static_lane_signals.items():
             sp = self._map_pt_to_point(stop_point)
             for lane, _ in self.nearest_lanes(sp):
                 if lane._feature_id == lane_signal:
-                    sigs += 1
-                    feature_id = f"signal_{sigs}"
+                    lane_sig_count[lane_signal] += 1
+                    feature_id = f"signal_{lane_signal}_{lane_sig_count[lane_signal]}"
                     feature = WaymoMap.Feature(self, feature_id, (stop_point, lane))
                     self._features[feature_id] = feature
                     lane._features[feature_id] = feature
@@ -1679,7 +1679,7 @@ class WaymoMap(RoadMapWithCaches):
         def min_dist_from(self, point: Point) -> float:
             pt = point.as_np_array
             return min(
-                np.linalg.norm(go_pt.as_np_array - pt) for geo_pt in self.geometry
+                np.linalg.norm(geo_pt.as_np_array - pt) for geo_pt in self.geometry
             )
 
     def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
