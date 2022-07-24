@@ -594,6 +594,11 @@ class RoadMap:
             # this may be overridden in the case of custom feature types
             return self.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL
 
+        def min_dist_from(self, point: Point) -> float:
+            """Returns the euclidian (as-the-crow-flies) distance
+            between point and the nearest part of this feature."""
+            raise NotImplementedError()
+
     class Route:
         """Describes a route between two roads."""
 

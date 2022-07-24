@@ -1054,11 +1054,12 @@ class WaymoMap(RoadMapWithCaches):
             return list(self._features.values())
 
         def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
-            result = []
-            for feat in self._features.values():
-                if feat.geometry.near(pose.point, radius):  # TODO
-                    result.append(feat)
-            return result
+            pt = pose.point
+            return [
+                feat
+                for feat in self._features.values()
+                if radius >= feat.min_dist_from(pt)
+            ]
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
         return self._surfaces.get(surface_id)
@@ -1668,6 +1669,12 @@ class WaymoMap(RoadMapWithCaches):
             if polygon:
                 return [self._map_pt_to_point(pt) for pt in polygon]
             return []
+
+        def min_dist_from(self, point: Point) -> float:
+            pt = point.as_np_array
+            return min(
+                np.linalg.norm(go_pt.as_np_array - pt) for geo_pt in self.geometry
+            )
 
     def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
         return self._features.get(feature_id)

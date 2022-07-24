@@ -1204,7 +1204,7 @@ class _TrafficActor:
         bearing: float,
         foe: RoadMap.Lane,
     ) -> bool:
-        # TODO:  take into account TLS
+        # TODO:  take into account TLS (don't yield to TL-stopped vehicles)
         # Smith vs. Neo
         if traffic_veh.role in (ActorRole.EgoAgent, ActorRole.SocialAgent):
             if self._yield_to_agents == "never":
@@ -1392,20 +1392,22 @@ class _TrafficActor:
                 self._find_features_ahead(nrl, lookahead, upcoming_feats)
 
     def _handle_features_and_signals(self):
-        lookahead = 2 * stopping_distance(self.speed, self._max_decel)
+        my_stopping_dist = stopping_distance(self.speed, self._max_decel)
+        lookahead = 2 * my_stopping_dist
         upcoming_feats = []
         rl = RoadMap.Route.RouteLane(self._lane, self._route_ind)
         self._find_features_ahead(rl, lookahead, upcoming_feats)
         if not upcoming_feats:
             return
         for feat in upcoming_feats:
-            # TODO:  check that its location is ahead of me
+            # TODO:  check that its location is *ahead* of me
             if feat.type == RoadMap.FeatureType.STOP_SIGN or (
                 feat.is_dynamic
                 and self._owner._signal_state_means_stop(self._lane, feat)
             ):
-                # TODO: decelerate to the intersection...
-                self._target_speed = 0
+                # TAI: could decline to do this if my_stopping_dist >> dist_to_stop
+                dist_to_stop = feat.min_dist_from(self._state.pose.point)
+                self._target_lane_win.gap = min(dist_to_stop, self._target_lane_win.gap)
                 break
             # if feat.type == RoadMap.FeatureType.CROSSWALK and TODO:
             # self._target_speed = 0

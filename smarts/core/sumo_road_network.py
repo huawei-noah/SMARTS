@@ -184,11 +184,13 @@ class SumoRoadNetwork(RoadMap):
         for tls in self._graph.getTrafficLights():
             tls_id = tls.getID()
             for s, cnxn in enumerate(tls.getConnections()):
-                feature_id = f"tls_{tls_id}-{s}"
+                in_lane, to_lane, link_ind = cnxn
+                feature_id = f"tls_{tls_id}-{link_ind}"
+                via = in_lane.getConnection(to_lane).getViaLaneID()
+                via = self.lane_by_id(via)
                 feature = SumoRoadNetwork.Feature(self, feature_id, cnxn)
                 self._features[feature_id] = feature
-                in_lane = self.lane_by_id(cnxn[0].getID())
-                in_lane._features[feature_id] = feature
+                via._features[feature_id] = feature
 
     @property
     def source(self) -> str:
@@ -276,11 +278,12 @@ class SumoRoadNetwork(RoadMap):
             return list(self._features.values())
 
         def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
-            result = []
-            for feat in self._features.values():
-                if feat.geometry.near(pose.point, radius):  # TODO
-                    result.append(feat)
-            return result
+            pt = pose.point
+            return [
+                feat
+                for feat in self._features.values()
+                if radius >= feat.min_dist_from(pt)
+            ]
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
         return self._surfaces.get(surface_id)
@@ -1021,10 +1024,13 @@ class SumoRoadNetwork(RoadMap):
 
         @cached_property
         def geometry(self) -> List[Point]:
-            assert isinstance(self._feat_data, tuple)
+            assert isinstance(self._feat_data, list), f"{self._feat_data}"
             in_lane = self._map.lane_by_id(self._feat_data[0].getID())
             stop_pos = in_lane.from_lane_coord(RefLinePoint(s=in_lane.length))
             return [stop_pos]
+
+        def min_dist_from(self, point: Point) -> float:
+            return np.linalg.norm(self.geometry[0].as_np_array - point.as_np_array)
 
     def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
         return self._features.get(feature_id)
