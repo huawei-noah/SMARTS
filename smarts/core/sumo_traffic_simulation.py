@@ -421,12 +421,18 @@ class SumoTrafficSimulation(TrafficProvider):
         return self._sync(provider_state)
 
     def _sync(self, provider_state: ProviderState):
-        provider_vehicles = {v.actor_id: v for v in provider_state.actors}
+        provider_vehicles = {
+            v.actor_id: v for v in provider_state.actors if isinstance(v, VehicleState)
+        }
         external_vehicle_ids = {
-            v.actor_id for v in provider_state.actors if v.source != self.source_str
+            v.actor_id
+            for v in provider_vehicles.values()
+            if v.source != self.source_str
         }
         internal_vehicle_ids = {
-            v.actor_id for v in provider_state.actors if v.source == self.source_str
+            v.actor_id
+            for v in provider_vehicles.values()
+            if v.source == self.source_str
         }
 
         # Represents current state

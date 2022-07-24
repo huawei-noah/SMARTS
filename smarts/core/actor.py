@@ -53,7 +53,7 @@ class ActorState:
 
     def __lt__(self, other) -> bool:
         """Allows ordering ActorStates for use in sorted data-structures."""
-        assert isinstance(other, ActoreState)
+        assert isinstance(other, ActorState)
         return self.actor_id < other.actor_id or (
             self.actor_id == other.actor_id and id(self) < id(other)
         )

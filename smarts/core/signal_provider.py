@@ -50,6 +50,7 @@ class SignalState(ActorState):
     state: Optional[SignalLightState] = None
     last_changed: Optional[float] = None
     location: Optional[Point] = None
+    # TAI: controlled_lanes: Optional[List[RoadMap.Lane]] = None
 
     def __post_init__(self):
         assert self.state is not None
