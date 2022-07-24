@@ -264,7 +264,7 @@ class Sensors:
                     nv_lane_index = None
                 neighborhood_vehicles.append(
                     VehicleObservation(
-                        id=nv.vehicle_id,
+                        id=nv.actor_id,
                         position=nv.pose.position,
                         bounding_box=nv.dimensions,
                         heading=nv.pose.heading,
@@ -326,7 +326,7 @@ class Sensors:
             )
 
         ego_vehicle = EgoVehicleObservation(
-            id=ego_vehicle_state.vehicle_id,
+            id=ego_vehicle_state.actor_id,
             position=ego_vehicle_state.pose.point.as_np_array,
             bounding_box=ego_vehicle_state.dimensions,
             heading=Heading(ego_vehicle_state.pose.heading),

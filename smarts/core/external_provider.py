@@ -18,11 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass, field, replace
-from typing import Dict, List, Sequence, Set
+from typing import List, Sequence, Set
 
 import numpy as np
 
-from .actor_role import ActorRole
+from .actor import ActorRole
 from .controllers import ActionSpaceType
 from .provider import Provider, ProviderState
 from .road_map import RoadMap
@@ -67,18 +67,12 @@ class ExternalProvider(Provider):
         if id(self._ext_vehicle_states) != id(self._sent_states):
             self._last_fresh_step = self._sim.elapsed_sim_time
             self._sent_states = self._ext_vehicle_states
-        return ProviderState(vehicles=self._ext_vehicle_states, dt=dt)
+        return ProviderState(actors=self._ext_vehicle_states, dt=dt)
 
     def setup(self, scenario: Scenario) -> ProviderState:
         return self._provider_state
 
-    def step(
-        self,
-        actions,
-        dt: float,
-        elapsed_sim_time: float,
-        dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState],
-    ) -> ProviderState:
+    def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
         return self._provider_state
 
     def sync(self, provider_state: ProviderState):
@@ -101,8 +95,8 @@ class ExternalProvider(Provider):
             result.append(vehicle.state)
         return result
 
-    def manages_vehicle(self, vehicle_id: str) -> bool:
+    def manages_actor(self, actor_id: str) -> bool:
         for vs in self._ext_vehicle_states:
-            if vs.vehicle_id == vehicle_id:
+            if vs.actor_id == actor_id:
                 return True
         return False

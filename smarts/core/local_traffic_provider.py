@@ -35,13 +35,14 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
-from .actor_role import ActorRole
+from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .provider import ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap, Waypoint
 from .route_cache import RouteWithCache
 from .scenario import Scenario
+from .signal_provider import SignalLightState, SignalState
 from .traffic_provider import TrafficProvider
 from .utils.kinematics import (
     distance_covered,
@@ -62,8 +63,8 @@ class LocalTrafficProvider(TrafficProvider):
         self.road_map: RoadMap = None
         self._flows: Dict[str, Dict[str, Any]] = dict()
         self._my_actors: Dict[str, _TrafficActor] = dict()
-        self._other_vehicles: Dict[
-            str, Tuple[VehicleState, Optional[RoadMap.Route]]
+        self._other_actors: Dict[
+            str, Tuple[ActorState, Optional[RoadMap.Route]]
         ] = dict()
         self._reserved_areas: Dict[str, Polygon] = dict()
         self._actors_created: int = 0
@@ -71,14 +72,13 @@ class LocalTrafficProvider(TrafficProvider):
             RoadMap.Lane, List[Tuple[float, VehicleState]]
         ] = dict()
         self._offsets_cache: Dict[str, Dict[str, float]] = dict()
-        self._dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState] = dict()
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
         return set()
 
-    def manages_vehicle(self, vehicle_id: str) -> bool:
-        return vehicle_id in self._my_actors
+    def manages_actor(self, actor_id: str) -> bool:
+        return actor_id in self._my_actors
 
     def _load_traffic_flows(self, traffic_spec: str):
         vtypes = {}
@@ -132,8 +132,8 @@ class LocalTrafficProvider(TrafficProvider):
         for my_actor in self._my_actors.values():
             if actor != my_actor and my_actor.bbox().intersects(actor_bbox):
                 return False
-        for other, _ in self._other_vehicles.values():
-            if other.bbox.intersects(actor_bbox):
+        for other, _ in self._other_actors.values():
+            if isinstance(other, VehicleState) and other.bbox.intersects(actor_bbox):
                 return False
         return True
 
@@ -166,7 +166,11 @@ class LocalTrafficProvider(TrafficProvider):
 
     @property
     def _other_vehicle_states(self) -> List[VehicleState]:
-        return [other for other, _ in self._other_vehicles.values()]
+        return [
+            other
+            for other, _ in self._other_actors.values()
+            if isinstance(other, VehicleState)
+        ]
 
     @property
     def _all_states(self) -> List[VehicleState]:
@@ -174,7 +178,7 @@ class LocalTrafficProvider(TrafficProvider):
 
     @property
     def _provider_state(self) -> ProviderState:
-        return ProviderState(vehicles=self._my_actor_states)
+        return ProviderState(actors=self._my_actor_states)
 
     def setup(self, scenario: Scenario) -> ProviderState:
         self._scenario = scenario
@@ -214,22 +218,16 @@ class LocalTrafficProvider(TrafficProvider):
                 insort(self._lane_bumpers_cache[front_lane], (fake_back_offset, ovs))
 
     def _cached_lane_offset(self, vs: VehicleState, lane: RoadMap.Lane):
-        lane_offsets = self._offsets_cache.setdefault(vs.vehicle_id, dict())
+        lane_offsets = self._offsets_cache.setdefault(vs.actor_id, dict())
         return lane_offsets.setdefault(
             lane.lane_id, lane.offset_along_lane(vs.pose.point)
         )
 
-    def step(
-        self,
-        actions,
-        dt: float,
-        elapsed_sim_time: float,
-        dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState],
-    ) -> ProviderState:
+    def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
         self._add_actors_for_time(elapsed_sim_time, dt)
-        for other, _ in self._other_vehicles.values():
-            if other.vehicle_id in self._reserved_areas:
-                del self._reserved_areas[other.vehicle_id]
+        for other in self._other_vehicle_states:
+            if other.actor_id in self._reserved_areas:
+                del self._reserved_areas[other.actor_id]
 
         # precompute nearest lanes and offsets for all vehicles and cache
         # (this prevents having to do it O(ovs^2) times)
@@ -239,8 +237,6 @@ class LocalTrafficProvider(TrafficProvider):
         # computations for actors encountered later in the iterator.
         for actor in self._my_actors.values():
             actor.compute_next_state(dt)
-
-        self._dynamic_map_state = dynamic_map_state
 
         dones = []
         remap_ids: Dict[str, str] = dict()
@@ -263,7 +259,7 @@ class LocalTrafficProvider(TrafficProvider):
 
     def sync(self, provider_state: ProviderState):
         missing = self._my_actors.keys() - {
-            psv.vehicle_id for psv in provider_state.vehicles
+            psv.actor_id for psv in provider_state.actors
         }
         for left in missing:
             self._logger.warning(
@@ -271,27 +267,27 @@ class LocalTrafficProvider(TrafficProvider):
             )
             del self._my_actors[left]
         hijacked = self._my_actors.keys() & {
-            psv.vehicle_id
-            for psv in provider_state.vehicles
+            psv.actor_id
+            for psv in provider_state.actors
             if psv.source != self.source_str
         }
         for jack in hijacked:
             self.stop_managing(jack)
-        self._other_vehicles = dict()
-        for vs in provider_state.vehicles:
-            my_actor = self._my_actors.get(vs.vehicle_id)
+        self._other_actors = dict()
+        for os in provider_state.actors:
+            my_actor = self._my_actors.get(os.actor_id)
             if my_actor:
-                assert vs.source == self.source_str
+                assert os.source == self.source_str
                 # here we override our state with the "consensus" state...
                 # (Note: this is different from what Sumo does;
                 # we're allowing for true "harmonization" if necessary.
                 # "You may say that I'm a dreamer, but I'm not the only one,
                 # I hope that one day you'll join us, and the world will
                 # be as one." ;)
-                my_actor.state = vs
+                my_actor.state = os
             else:
-                assert vs.source != self.source_str
-                self._other_vehicles[vs.vehicle_id] = (vs, None)
+                assert os.source != self.source_str
+                self._other_actors[os.actor_id] = (os, None)
 
     def reset(self):
         # Unify interfaces with other providers
@@ -299,18 +295,18 @@ class LocalTrafficProvider(TrafficProvider):
 
     def teardown(self):
         self._my_actors = dict()
-        self._other_vehicles = dict()
+        self._other_actors = dict()
         self._reserved_areas = dict()
 
     def destroy(self):
         pass
 
-    def stop_managing(self, vehicle_id: str):
+    def stop_managing(self, actor_id: str):
         # called when agent hijacks this vehicle
         assert (
-            vehicle_id in self._my_actors
-        ), f"stop_managing() called for non-tracked vehicle id '{vehicle_id}'"
-        del self._my_actors[vehicle_id]
+            actor_id in self._my_actors
+        ), f"stop_managing() called for non-tracked vehicle id '{actor_id}'"
+        del self._my_actors[actor_id]
 
     def reserve_traffic_location_for_vehicle(
         self,
@@ -338,9 +334,9 @@ class LocalTrafficProvider(TrafficProvider):
         if traffic_actor:
             traffic_actor.update_route(new_route)
             return
-        other = self._other_vehicles.get(vehicle_id)
+        other = self._other_actors.get(vehicle_id)
         if other:
-            self._other_vehicles[vehicle_id] = (other[0], new_route)
+            self._other_actors[vehicle_id] = (other[0], new_route)
             return
         assert False, f"unknown vehicle_id: {vehicle_id}"
 
@@ -348,30 +344,33 @@ class LocalTrafficProvider(TrafficProvider):
         traffic_actor = self._my_actors.get(vehicle_id)
         if traffic_actor:
             return traffic_actor.route.road_ids[-1]
-        other = self._other_vehicles.get(vehicle_id)
+        other = self._other_actors.get(vehicle_id)
         if other:
             _, oroute = other
             return oroute.road_ids[-1] if oroute else None
         assert False, f"unknown vehicle_id: {vehicle_id}"
 
-    def can_accept_vehicle(self, state: VehicleState) -> bool:
+    def can_accept_actor(self, state: ActorState) -> bool:
         # We don't accept vehicles that aren't on the road
         # (those should currently be removed from the simultation).
         return (
-            state.role == ActorRole.Social or state.role == ActorRole.Unknown
-        ) and self.road_map.nearest_lane(state.pose.point) is not None
+            isinstance(state, VehicleState)
+            and (state.role == ActorRole.Social or state.role == ActorRole.Unknown)
+            and self.road_map.nearest_lane(state.pose.point) is not None
+        )
 
-    def add_vehicle(
+    def add_actor(
         self,
-        provider_vehicle: VehicleState,
+        provider_actor: ActorState,
         route: Optional[Sequence[RouteWithCache]] = None,
     ):
-        provider_vehicle.source = self.source_str
-        provider_vehicle.role = ActorRole.Social
-        xfrd_actor = _TrafficActor.from_state(provider_vehicle, self, route)
+        assert isinstance(provider_actor, VehicleState)
+        provider_actor.source = self.source_str
+        provider_actor.role = ActorRole.Social
+        xfrd_actor = _TrafficActor.from_state(provider_actor, self, route)
         self._my_actors[xfrd_actor.actor_id] = xfrd_actor
-        if xfrd_actor.actor_id in self._other_vehicles:
-            del self._other_vehicles[xfrd_actor.actor_id]
+        if xfrd_actor.actor_id in self._other_actors:
+            del self._other_actors[xfrd_actor.actor_id]
         self._logger.info(
             f"traffic actor {xfrd_actor.actor_id} transferred to {self.source_str}."
         )
@@ -379,8 +378,12 @@ class LocalTrafficProvider(TrafficProvider):
     def _signal_state_means_stop(
         self, lane: RoadMap.Lane, signal_feat: RoadMap.Feature
     ) -> bool:
-        feat_state = self._dynamic_map_state.get(signal_feat)
-        return feat_state and not feat_state & RoadMap.DynamicFeatureState.GO
+        feat_state = self._other_actors.get(signal_feat.feature_id)
+        if not feat_state:
+            return False
+        feat_state = feat_state[0]
+        assert isinstance(feat_state, SignalState)
+        return not feat_state.state & SignalLightState.GO
 
 
 class _TrafficActor:
@@ -479,15 +482,15 @@ class _TrafficActor:
             f"{new_actor._vtype['id']}{endless}-{new_actor._owner._actors_created}"
         )
         new_actor._state = VehicleState(
-            vehicle_id=vehicle_id,
+            actor_id=vehicle_id,
+            actor_type=vehicle_type,
+            source=new_actor._owner.source_str,
+            role=ActorRole.Social,
             pose=Pose.from_center(position, Heading(heading)),
             dimensions=dimensions,
-            vehicle_type=vehicle_type,
             vehicle_config_type=vclass,
             speed=init_speed,
             linear_acceleration=np.array((0.0, 0.0, 0.0)),
-            source=new_actor._owner.source_str,
-            role=ActorRole.Social,
         )
         new_actor._dest_lane, new_actor._dest_offset = new_actor._resolve_flow_pos(
             flow, "arrival", dimensions
@@ -516,7 +519,7 @@ class _TrafficActor:
         flow["arrivalPos"] = "max"
         flow["departLane"] = f"{cur_lane.index}"  # XXX: assumption!
         flow["departPos"] = "0"
-        flow["endless"] = "endless" in state.vehicle_id
+        flow["endless"] = "endless" in state.actor_id
         # use default values for everything else in flow dict(s)...
         new_actor = _TrafficActor(flow, owner)
         new_actor.state = state
@@ -596,14 +599,14 @@ class _TrafficActor:
     @property
     def actor_id(self) -> str:
         """A unique id identifying this actor."""
-        return self._state.vehicle_id
+        return self._state.actor_id
 
     def bump_id(self):
         """Changes the id of a teleporting vehicle."""
-        mm = re.match(r"([^_]+)(_(\d+))?$", self._state.vehicle_id)
+        mm = re.match(r"([^_]+)(_(\d+))?$", self._state.actor_id)
         assert mm
         ver = int(mm.group(3)) if mm.group(3) else 0
-        self._state.vehicle_id = f"{mm.group(1)}_{ver + 1}"
+        self._state.actor_id = f"{mm.group(1)}_{ver + 1}"
 
     @property
     def route(self) -> RoadMap.Route:
@@ -785,7 +788,7 @@ class _TrafficActor:
                 fi = 0
                 while fi < len(lbc):
                     ogl_offset, ogl_vs = lbc[fi]
-                    if ogl_vs.vehicle_id != self.actor_id:
+                    if ogl_vs.actor_id != self.actor_id:
                         break
                     fi += 1
                 if fi == len(lbc):
@@ -810,9 +813,7 @@ class _TrafficActor:
             # if we're at an angle to the lane, it's possible for the
             # first thing we hit to be our own entries in the bumpers cache,
             # which we need to skip.
-            while (
-                lane_spot < len(lbc) and self.actor_id == lbc[lane_spot][1].vehicle_id
-            ):
+            while lane_spot < len(lbc) and self.actor_id == lbc[lane_spot][1].actor_id:
                 lane_spot += 1
             if lane_spot < len(lbc):
                 lane_offset, nvs = lbc[lane_spot]
@@ -834,7 +835,7 @@ class _TrafficActor:
             # if we're at an angle to the lane, it's possible for the
             # first thing we hit to be our own entries in the bumpers cache,
             # which we need to skip.
-            while lane_spot > 0 and self.actor_id == lbc[lane_spot - 1][1].vehicle_id:
+            while lane_spot > 0 and self.actor_id == lbc[lane_spot - 1][1].actor_id:
                 lane_spot -= 1
             if lane_spot > 0:
                 lane_offset, bv_vs = lbc[lane_spot - 1]
@@ -852,7 +853,7 @@ class _TrafficActor:
                 continue
             bi = -1
             bv_offset, bv_vs = plbc[bi]
-            while bi > -len(plbc) and bv_vs.vehicle_id == self.actor_id:
+            while bi > -len(plbc) and bv_vs.actor_id == self.actor_id:
                 bi -= 1
                 bv_offset, bv_vs = plbc[bi]
             bv_dist = inl.length - bv_offset
@@ -1218,7 +1219,7 @@ class _TrafficActor:
 
             def _in_lane(lane):
                 for _, vs in self._owner._lane_bumpers_cache.get(lane, []):
-                    if vs.vehicle_id == self.actor_id:
+                    if vs.actor_id == self.actor_id:
                         return True
                 return False
 
@@ -1299,34 +1300,34 @@ class _TrafficActor:
                 handled = set()
                 lbc = self._owner._lane_bumpers_cache.get(check_lane, [])
                 for offset, fv in lbc:
-                    if fv.vehicle_id == self.actor_id:
+                    if fv.actor_id == self.actor_id:
                         continue
                     # vehicles can be in the bumpers_cache more than once
                     # (for their front and back bumpers).  We need to check
                     # both bumpers for collisions here as (especially for
                     # longer vehicles) the answer can come out differently.
-                    second_bumper = fv.vehicle_id in updated
+                    second_bumper = fv.actor_id in updated
                     fv_pos = check_lane.from_lane_coord(RefLinePoint(offset))[:2]
                     f_rb, f_rng = self._bumper_wins_front.add(
-                        fv.vehicle_id, second_bumper, fv_pos, my_front, my_heading, dt
+                        fv.actor_id, second_bumper, fv_pos, my_front, my_heading, dt
                     )
                     b_rb, b_rng = self._bumper_wins_back.add(
-                        fv.vehicle_id, second_bumper, fv_pos, my_back, my_heading, dt
+                        fv.actor_id, second_bumper, fv_pos, my_back, my_heading, dt
                     )
-                    updated.add(fv.vehicle_id)
+                    updated.add(fv.actor_id)
                     # we will only do something if the potential collider is "ahead" of us...
                     if min(abs(f_rb), abs(b_rb)) >= 0.45 * math.pi:
                         continue
                     est_front_crash = (
                         self._bumper_wins_front.predict_crash_in(
-                            fv.vehicle_id, second_bumper
+                            fv.actor_id, second_bumper
                         )
                         if f_rng < max_range
                         else math.inf
                     )
                     est_back_crash = (
                         self._bumper_wins_back.predict_crash_in(
-                            fv.vehicle_id, second_bumper
+                            fv.actor_id, second_bumper
                         )
                         if b_rng < max_range
                         else math.inf
@@ -1342,16 +1343,16 @@ class _TrafficActor:
                     if est_crash > 60.0:
                         # ignore future crash if after arbitrarily-high threshold of 1 min...
                         continue
-                    if fv.vehicle_id not in handled and not self._higher_priority(
+                    if fv.actor_id not in handled and not self._higher_priority(
                         njl, nj_dist, check_lane, fv, rel_bearing, foe
                     ):
                         self._logger.debug(
-                            f"{self.actor_id} may slow down to avoid collision @ {njl.lane_id} with {fv.vehicle_id} currently in {check_lane.lane_id}"
+                            f"{self.actor_id} may slow down to avoid collision @ {njl.lane_id} with {fv.actor_id} currently in {check_lane.lane_id}"
                         )
                         rng = nj_dist if nj_dist > 0 else fv_range
                         if rng < min_range:
                             min_range = rng
-                        handled.add(fv.vehicle_id)
+                        handled.add(fv.actor_id)
                     if check_lane == foe:
                         # we've already picked our lane, but we still update our gaps and ttc
                         # because these are also used by the acceleration PID controller.
@@ -1389,7 +1390,7 @@ class _TrafficActor:
                 nrl = RoadMap.Route.RouteLane(ogl, nri)
                 self._find_features_ahead(nrl, lookahead, upcoming_feats)
 
-    def _handle_features(self):
+    def _handle_features_and_signals(self):
         lookahead = 2 * stopping_distance(self.speed, self._max_decel)
         upcoming_feats = []
         rl = RoadMap.Route.RouteLane(self._lane, self._route_ind)
@@ -1397,6 +1398,7 @@ class _TrafficActor:
         if not upcoming_feats:
             return
         for feat in upcoming_feats:
+            # TODO:  check that its location is ahead of me
             if feat.type == RoadMap.FeatureType.STOP_SIGN or (
                 feat.is_dynamic
                 and self._owner._signal_state_means_stop(self._lane, feat)
@@ -1407,6 +1409,7 @@ class _TrafficActor:
             # self._target_speed = 0
             if feat.type == RoadMap.FeatureType.SPEED_BUMP:
                 self._target_speed *= 0.5
+        # TODO:  check non-fixed-location signals here too
 
     def _check_speed(self, dt: float):
         target_lane = self._target_lane_win.lane
@@ -1422,7 +1425,7 @@ class _TrafficActor:
             self._target_speed *= self._cutin_slow_down
         self._slow_for_curves()
         if self._target_speed > 0:
-            self._handle_features()
+            self._handle_features_and_signals()
         if self._target_speed > 0:
             self._handle_junctions(dt)
         if self._target_speed > 0:

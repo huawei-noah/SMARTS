@@ -72,6 +72,11 @@ class RoadMap:
         # map units per meter
         return 1.0
 
+    @property
+    def dynamic_features(self) -> List[RoadMap.Feature]:
+        """All dynamic features associated with this road map."""
+        return []
+
     def is_same_map(self, map_spec) -> bool:
         """Check if the MapSpec Object source points to the same RoadMap instance as the current"""
         raise NotImplementedError
@@ -558,17 +563,6 @@ class RoadMap:
         FIXED_LOC_SIGNAL = 4
 
         CUSTOM = 5
-
-    # TODO:  move this to DynamicStateProvider
-    class DynamicFeatureState(IntEnum):
-        """States that a dynamic feature may take; note that these may be combined into a bitmask."""
-
-        UNKNOWN = 0
-        STOP = 1
-        CAUTION = 2
-        GO = 4
-        FLASHING = 8
-        ARROW = 16
 
     class Feature:
         """Describes a map feature."""

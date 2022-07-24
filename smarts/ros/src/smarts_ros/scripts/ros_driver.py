@@ -367,7 +367,7 @@ class ROSDriver:
         veh_type = ROSDriver._decode_entity_type(entity.entity_type)
         veh_dims = Dimensions(entity.length, entity.width, entity.height)
         vs = VehicleState(
-            vehicle_id=veh_id,
+            actor_id=veh_id,
             vehicle_config_type=veh_type,
             pose=Pose(
                 ROSDriver._xyz_to_vect(entity.pose.position),
@@ -554,8 +554,8 @@ class ROSDriver:
         entities.header.stamp = rospy.Time.now()
         for vehicle in smarts_state:
             entity = EntityState()
-            entity.entity_id = vehicle.vehicle_id
-            entity.entity_type = ROSDriver._encode_entity_type(vehicle.vehicle_type)
+            entity.entity_id = vehicle.actor_id
+            entity.entity_type = ROSDriver._encode_entity_type(vehicle.actor_type)
             entity.length = vehicle.dimensions.length
             entity.width = vehicle.dimensions.width
             entity.height = vehicle.dimensions.height

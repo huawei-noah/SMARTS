@@ -24,7 +24,7 @@ import math
 import numpy as np
 import pytest
 
-from smarts.core.actor_role import ActorRole
+from smarts.core.actor import ActorRole
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface, DoneCriteria
 from smarts.core.agents_provider import MotionPlannerProvider
 from smarts.core.coordinates import Heading, Pose

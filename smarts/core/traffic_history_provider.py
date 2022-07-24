@@ -19,12 +19,12 @@
 # THE SOFTWARE.
 
 import logging
-from typing import Dict, Iterable, Optional, Sequence, Set
+from typing import Iterable, Optional, Sequence, Set
 
 from cached_property import cached_property
 from shapely.geometry import Polygon
 
-from .actor_role import ActorRole
+from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose
 from .provider import ProviderState
@@ -42,7 +42,7 @@ class TrafficHistoryProvider(TrafficProvider):
         self._histories = None
         self._scenario = None
         self._is_setup = False
-        self._replaced_vehicle_ids = set()
+        self._replaced_actor_ids = set()
         self._last_step_vehicles = set()
         self._this_step_dones = set()
         self._vehicle_id_prefix = "history-vehicle-"
@@ -72,9 +72,9 @@ class TrafficHistoryProvider(TrafficProvider):
         self._is_setup = True
         return ProviderState()
 
-    def set_replaced_ids(self, vehicle_ids: Iterable[str]):
+    def set_replaced_ids(self, actor_ids: Iterable[str]):
         """Replace the given vehicles, excluding them from control by this provider."""
-        self._replaced_vehicle_ids.update(vehicle_ids)
+        self._replaced_actor_ids.update(actor_ids)
 
     def reset(self):
         pass
@@ -85,7 +85,7 @@ class TrafficHistoryProvider(TrafficProvider):
             self._histories.disconnect()
             self._histories = None
         self._scenario = None
-        self._replaced_vehicle_ids = set()
+        self._replaced_actor_ids = set()
 
     def destroy(self):
         pass
@@ -98,18 +98,14 @@ class TrafficHistoryProvider(TrafficProvider):
         # Ignore other sim state
         pass
 
-    def _dbid_to_vehicle_id(self, dbid) -> str:
-        return self._vehicle_id_prefix + str(dbid)
+    def _dbid_to_actor_id(self, dbid) -> str:
+        return self._actor_id_prefix + str(dbid)
 
     def step(
-        self,
-        provider_actions,
-        dt: float,
-        elapsed_sim_time: float,
-        dynamic_map_state: Dict[str, RoadMap.DynamicFeatureState],
+        self, provider_actions, dt: float, elapsed_sim_time: float
     ) -> ProviderState:
         if not self._histories:
-            return ProviderState(vehicles=[])
+            return ProviderState(actors=[])
         vehicles = []
         vehicle_ids = set()
         rounder = rounder_for_dt(dt)
@@ -117,14 +113,16 @@ class TrafficHistoryProvider(TrafficProvider):
         prev_time = rounder(history_time - dt)
         rows = self._histories.vehicles_active_between(prev_time, history_time)
         for hr in rows:
-            v_id = self._dbid_to_vehicle_id(hr.vehicle_id)
-            if v_id in vehicle_ids or v_id in self._replaced_vehicle_ids:
+            v_id = self._dbid_to_actor_id(hr.vehicle_id)
+            if v_id in vehicle_ids or v_id in self._replaced_actor_ids:
                 continue
             vehicle_ids.add(v_id)
             vehicle_config_type = self._histories.decode_vehicle_type(hr.vehicle_type)
             vehicles.append(
                 VehicleState(
-                    vehicle_id=v_id,
+                    actor_id=v_id,
+                    source=self.source_str,
+                    role=ActorRole.Social,
                     vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_center(
                         (hr.position_x, hr.position_y, 0), Heading(hr.heading_rad)
@@ -137,31 +135,31 @@ class TrafficHistoryProvider(TrafficProvider):
                         defaults=VEHICLE_CONFIGS[vehicle_config_type].dimensions,
                     ),
                     speed=hr.speed,
-                    source=self.source_str,
-                    role=ActorRole.Social,
                 )
             )
         self._this_step_dones = self._last_step_vehicles - vehicle_ids
         self._last_step_vehicles = vehicle_ids
-        return ProviderState(vehicles=vehicles)
+        # TODO:  also add SignalStates here for any traffic lights in the dataset
+        signals = []
+        return ProviderState(actors=vehicles + signals)
 
     @property
     def _history_vehicle_ids(self) -> Set[str]:
         if not self._histories:
             return set()
         return {
-            self._dbid_to_vehicle_id(hvid) for hvid in self._histories.all_vehicle_ids()
+            self._dbid_to_actor_id(hvid) for hvid in self._histories.all_vehicle_ids()
         }
 
     @property
     def _my_vehicles(self) -> Set[str]:
-        return self._history_vehicle_ids - self._replaced_vehicle_ids
+        return self._history_vehicle_ids - self._replaced_actor_ids
 
-    def manages_vehicle(self, vehicle_id: str) -> bool:
-        return vehicle_id in self._my_vehicles
+    def manages_actor(self, actor_id: str) -> bool:
+        return actor_id in self._my_vehicles
 
-    def stop_managing(self, vehicle_id: str):
-        self._replaced_vehicle_ids.add(vehicle_id)
+    def stop_managing(self, actor_id: str):
+        self._replaced_actor_ids.add(actor_id)
 
     def reserve_traffic_location_for_vehicle(
         self, vehicle_id: str, reserved_location: Polygon
@@ -170,7 +168,7 @@ class TrafficHistoryProvider(TrafficProvider):
 
     def vehicle_collided(self, vehicle_id: str):
         # Here we might remove the vehicle_id from history replay, i.e.:
-        #     self.stop_managing(vehicle_id)
+        #     self.stop_managing(actor_id)
         # OR we might consider handing the vehicle off to another
         # provider to manage from here on out.
         # But this collision MIGHT have explicitly been part of the original
@@ -189,7 +187,7 @@ class TrafficHistoryProvider(TrafficProvider):
             )
             return None
 
-    def can_accept_vehicle(self, state: VehicleState) -> bool:
+    def can_accept_actor(self, state: ActorState) -> bool:
         # TAI consider:
-        # return state.vehicle_id in self._replaced_vehicle_ids and state.pose "is close to" self._histories.vehicle_pose_at_time(state.vehicle_id, self._sim.elapsed_sim_time)
+        # return state.actor_id in self._replaced_actor_ids and state.pose "is close to" self._histories.vehicle_pose_at_time(state.actor_id, self._sim.elapsed_sim_time)
         return False

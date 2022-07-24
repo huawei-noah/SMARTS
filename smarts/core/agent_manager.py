@@ -22,7 +22,7 @@ import logging
 from typing import Any, Dict, Optional, Set, Tuple, Union
 
 from envision.types import format_actor_id
-from smarts.core.actor_role import ActorRole
+from smarts.core.actor import ActorRole
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent

@@ -30,7 +30,7 @@ from smarts.core.utils import resources
 from smarts.core.utils.cache import cache, clear_cache
 from smarts.core.utils.string import truncate
 
-from .actor_role import ActorRole
+from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
 from .sensors import SensorState
@@ -556,7 +556,7 @@ class VehicleIndex:
 
         # Reserve space inside the traffic sim
         for traffic_sim in sim.traffic_sims:
-            if traffic_sim.manages_vehicle(vehicle.id):
+            if traffic_sim.manages_actor(vehicle.id):
                 traffic_sim.reserve_traffic_location_for_vehicle(
                     vehicle.id, vehicle.chassis.to_polygon
                 )
@@ -565,7 +565,7 @@ class VehicleIndex:
         self.teardown_vehicles_by_vehicle_ids([vehicle.id])
         # HACK: Directly remove the vehicle from the traffic provider (should do this via the sim instead)
         for traffic_sim in sim.traffic_sims:
-            if traffic_sim.manages_vehicle(vehicle.id):
+            if traffic_sim.manages_actor(vehicle.id):
                 # TAI:  we probably should call "remove_vehicle(vehicle.id)" here instead,
                 # and then call "add_vehicle(new_vehicle.state)", but since
                 # the old and new vehicle-id and state are supposed to be the same

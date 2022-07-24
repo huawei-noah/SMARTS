@@ -597,7 +597,7 @@ class BubbleManager:
         # can resume going there (potentially via a different route at that point).
         dest_road_id = None
         for traffic_sim in sim.traffic_sims:
-            if traffic_sim.manages_vehicle(vehicle.id):
+            if traffic_sim.manages_actor(vehicle.id):
                 dest_road_id = traffic_sim.vehicle_dest_road(vehicle.id)
                 if dest_road_id is not None:
                     break

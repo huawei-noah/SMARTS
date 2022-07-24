@@ -934,6 +934,10 @@ class WaymoMap(RoadMapWithCaches):
     def has_overpasses(self) -> bool:
         return self._has_overpasses
 
+    @property
+    def dynamic_features(self) -> List[RoadMap.Feature]:
+        return [f for f in self._features.values() if f.is_dynamic]
+
     @staticmethod
     def _spec_lane_width(map_spec: MapSpec) -> float:
         return (

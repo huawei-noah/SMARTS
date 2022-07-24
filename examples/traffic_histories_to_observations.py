@@ -85,7 +85,7 @@ def main(script: str, scenarios: Sequence[str], headless: bool, seed: int):
             history_vehicles = {
                 v
                 for v in history_vehicles
-                if smarts.traffic_history_provider.manages_vehicle(v)
+                if smarts.traffic_history_provider.manages_actor(v)
             }
 
             if collected_data and not history_vehicles:

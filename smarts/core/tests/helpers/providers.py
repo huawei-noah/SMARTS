@@ -17,9 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Dict, Optional, Sequence, Set
+from typing import Optional, Sequence, Set
 
-from smarts.core.actor_role import ActorRole
+from smarts.core.actor import ActorRole, ActorState
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.provider import Provider, ProviderState
 from smarts.core.road_map import RoadMap
@@ -32,9 +32,9 @@ class MockProvider(Provider):
 
     def override_next_provider_state(self, vehicles: Sequence):
         self._next_provider_state = ProviderState(
-            vehicles=[
+            actors=[
                 VehicleState(
-                    vehicle_id=vehicle_id,
+                    actor_id=vehicle_id,
                     vehicle_config_type="passenger",
                     pose=pose,
                     dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
@@ -59,17 +59,18 @@ class MockProvider(Provider):
     def sync(self, provider_state):
         pass
 
-    def step(
-        self, provider_actions, dt, elapsed_sim_time, dynamic_map_state
-    ) -> ProviderState:
+    def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
         if self._next_provider_state is None:
-            return ProviderState(vehicles=[])
+            return ProviderState(actors=[])
 
         return self._next_provider_state
 
-    def add_vehicle(
+    def can_accept_actor(self, state: ActorState) -> bool:
+        return True
+
+    def add_actor(
         self,
-        provider_vehicle: VehicleState,
+        provider_actor: ActorState,
         route: Optional[Sequence[RoadMap.Route]] = None,
     ):
         pass
@@ -80,8 +81,8 @@ class MockProvider(Provider):
     def teardown(self):
         self._next_provider_state = None
 
-    def manages_vehicle(self, vehicle_id: str) -> bool:
+    def manages_actor(self, actor_id: str) -> bool:
         return True
 
-    def stop_managing(self, vehicle_id: str):
+    def stop_managing(self, actor_id: str):
         pass
