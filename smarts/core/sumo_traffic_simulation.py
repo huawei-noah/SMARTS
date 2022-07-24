@@ -113,6 +113,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self._reserved_areas = dict()
         self._allow_reload = allow_reload
         self._traffic_lights = dict()
+        self._tls_cache = dict()
 
         # TODO: remove when SUMO fixes SUMO reset memory growth bug.
         # `sumo-gui` memory growth is faster.
@@ -637,6 +638,31 @@ class SumoTrafficSimulation(TrafficProvider):
             return SignalLightState.OFF
         return SignalLightState.UNKNOWN
 
+    def _create_signal_state(
+        self, sig_id: str, controlled_links: Sequence[Tuple[str, str, int]]
+    ) -> SignalState:
+        incoming_lane_id = None
+        controlled_lanes = []
+        for link in controlled_links:
+            in_lane_id, out_lane_id, via_id = link
+            via_lane = self._scenario.road_map.lane_by_id(via_id)
+            assert via_lane
+            controlled_lanes.append(via_lane)
+            assert not incoming_lane_id or incoming_lane_id == in_lane_id
+            incoming_lane_id = in_lane_id
+        incoming_lane = self._scenario.road_map.lane_by_id(incoming_lane_id)
+        loc = incoming_lane.from_lane_coord(RefLinePoint(s=incoming_lane.length))
+        return SignalState(
+            actor_id=sig_id,
+            actor_type="signal",
+            source=self.source_str,
+            role=ActorRole.Signal,
+            state=SignalLightState.UNKNOWN,
+            stopping_pos=loc,
+            controlled_lanes=controlled_lanes,
+            last_changed=None,
+        )
+
     def _traffic_light_states(self) -> List[SignalState]:
         signal_states = []
         traffic_light_states = self._traci_conn.trafficlight.getAllSubscriptionResults()
@@ -645,32 +671,15 @@ class SumoTrafficSimulation(TrafficProvider):
             tls_control = self._traffic_lights.get(tls_id)
             assert tls_control
             for s, controlled_links in enumerate(tls_control):
-                state = self._decode_tls_state(tls_state[s])
-                incoming_lane_id = None
-                controlled_lanes = []
-                for link in controlled_links:
-                    in_lane_id, out_lane_id, via_id = link
-                    via_lane = self._scenario.road_map.lane_by_id(via_id)
-                    assert via_lane
-                    controlled_lanes.append(via_lane)
-                    assert not incoming_lane_id or incoming_lane_id == in_lane_id
-                    incoming_lane_id = in_lane_id
-                # TODO: shouldn't have to recompute stopping position on every step
-                incoming_lane = self._scenario.road_map.lane_by_id(incoming_lane_id)
-                loc = incoming_lane.from_lane_coord(
-                    RefLinePoint(s=incoming_lane.length)
+                sig_id = f"tls_{tls_id}-{s}"
+                sig_state = self._tls_cache.setdefault(
+                    sig_id, self._create_signal_state(sig_id, controlled_links)
                 )
-                ss = SignalState(
-                    actor_id=f"tls_{tls_id}-{s}",
-                    actor_type="signal",
-                    source=self.source_str,
-                    role=ActorRole.Signal,
-                    state=state,
-                    controlled_lanes=controlled_lanes,
-                    stopping_pos=loc,
-                    # last_changed=TODO
-                )
-                signal_states.append(ss)
+                prev_state = sig_state.state
+                sig_state.state = self._decode_tls_state(tls_state[s])
+                if sig_state.state != prev_state:
+                    sig_state.last_changed = self._cumulative_sim_seconds
+                signal_states.append(sig_state)
         return signal_states
 
     def _compute_provider_state(self) -> ProviderState:

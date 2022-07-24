@@ -49,9 +49,9 @@ class SignalState(ActorState):
     # TODO: see PR #1083 for how this state might be exposed via Observations to Agents.
 
     state: Optional[SignalLightState] = None
-    controlled_lanes: Optional[List[RoadMap.Lane]] = None
     stopping_pos: Optional[Point] = None
-    last_changed: Optional[float] = None
+    controlled_lanes: Optional[List[RoadMap.Lane]] = None
+    last_changed: Optional[float] = None  # will be None if not known
 
     def __post_init__(self):
         assert self.state is not None
@@ -82,19 +82,21 @@ class SignalProvider(Provider):
         if scenario.traffic_history is None and not scenario.supports_sumo_traffic:
             for feature in self._road_map.dynamic_features:
                 if feature.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL:
+                    controlled_lanes = [feature.type_specific_info]
                     self._my_signals[feature.feature_id] = SignalState(
                         actor_id=feature.feature_id,
                         actor_type="signal",
                         source=self.source_str,
                         role=ActorRole.Signal,
                         state=SignalLightState.UNKNOWN,
-                        #controlled_lanes=TODO,
                         stopping_pos=feature.geometry[0],
+                        controlled_lanes=controlled_lanes,
                         last_changed=None,
                     )
         return self._provider_state
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
+        # TODO:  update state of signals we control here based on some reasonable/simple default program
         return self._provider_state
 
     def sync(self, provider_state: ProviderState):

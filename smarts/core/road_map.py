@@ -26,7 +26,7 @@ from bisect import bisect
 from dataclasses import dataclass
 from enum import IntEnum
 from functools import lru_cache
-from typing import List, Optional, Sequence, Set, Tuple
+from typing import Any, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 from cached_property import cached_property
@@ -593,6 +593,11 @@ class RoadMap:
             """True iff this feature has dynamic state (such as a traffic light); False otherwise."""
             # this may be overridden in the case of custom feature types
             return self.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL
+
+        @property
+        def type_specific_info(self) -> Optional[Any]:
+            """Can be anything specific to the feature type; defaults to None."""
+            return None
 
         def min_dist_from(self, point: Point) -> float:
             """Returns the euclidian (as-the-crow-flies) distance

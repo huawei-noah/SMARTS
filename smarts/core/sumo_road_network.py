@@ -22,7 +22,7 @@ import os
 import random
 from functools import lru_cache
 from subprocess import check_output
-from typing import List, Optional, Sequence, Set, Tuple
+from typing import Any, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import trimesh
@@ -1028,6 +1028,13 @@ class SumoRoadNetwork(RoadMap):
             in_lane = self._map.lane_by_id(self._feat_data[0].getID())
             stop_pos = in_lane.from_lane_coord(RefLinePoint(s=in_lane.length))
             return [stop_pos]
+
+        @cached_property
+        def type_specific_info(self) -> Optional[Any]:
+            # the only type we currently handle is FIXED_LOC_SIGNAL
+            in_lane, to_lane, _ = self._feat_data
+            via_id = in_lane.getConnection(to_lane).getViaLaneID()
+            return self.lane_by_id(via_id)
 
         def min_dist_from(self, point: Point) -> float:
             return np.linalg.norm(self.geometry[0].as_np_array - point.as_np_array)

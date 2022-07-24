@@ -882,7 +882,7 @@ class WaymoMap(RoadMapWithCaches):
                 if lane._feature_id == lane_signal:
                     sigs += 1
                     feature_id = f"signal_{sigs}"
-                    feature = WaymoMap.Feature(self, feature_id, stop_point)
+                    feature = WaymoMap.Feature(self, feature_id, (stop_point, lane))
                     self._features[feature_id] = feature
                     lane._features[feature_id] = feature
 
@@ -1642,7 +1642,7 @@ class WaymoMap(RoadMapWithCaches):
                 return RoadMap.FeatureType.SPEED_BUMP
             if isinstance(feat_proto, StopSign):
                 return RoadMap.FeatureType.STOP_SIGN
-            if isinstance(feat_proto, Point):
+            if isinstance(feat_proto, tuple):
                 return RoadMap.FeatureType.FIXED_LOC_SIGNAL
             return RoadMap.FeatureType.UNKNOWN
 
@@ -1656,12 +1656,12 @@ class WaymoMap(RoadMapWithCaches):
 
         @property
         def type_as_str(self) -> str:
-            return self._feat_proto.__class_.__name__
+            return self._type.name
 
         @property
         def geometry(self) -> List[Point]:
-            if isinstance(self._feat_proto, Point):
-                return [self._feat_proto]
+            if isinstance(self._feat_proto, tuple):
+                return [self._feat_proto[0]]
             point = getattr(self._feat_proto, "position", None)
             if point:
                 return [self._map_pt_to_point(point)]
@@ -1669,6 +1669,12 @@ class WaymoMap(RoadMapWithCaches):
             if polygon:
                 return [self._map_pt_to_point(pt) for pt in polygon]
             return []
+
+        @cached_property
+        def type_specific_info(self) -> Optional[Any]:
+            if self._type == RoadMap.FeatureType.FIXED_LOC_SIGNAL:
+                return self._feat_proto[1]
+            return None
 
         def min_dist_from(self, point: Point) -> float:
             pt = point.as_np_array
