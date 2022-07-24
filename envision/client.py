@@ -71,7 +71,7 @@ class CustomJSONEncoder(json.JSONEncoder):
         elif isinstance(obj, (list, tuple)):
             return [self.default(x) for x in obj]
         elif isinstance(obj, dict):
-            return self.default(unpack(obj))
+            return {k: self.default(v) for k, v in obj.items()}
         elif isinstance(obj, np.bool_):
             return bool(obj)
         elif isinstance(obj, np.ndarray):
@@ -229,7 +229,6 @@ class Client:
                 state = json.dumps(
                     JSONEncodingState(state), cls=CustomJSONEncoder, allow_nan=False
                 )
-
             ws.send(state)
 
         def on_close(ws, code=None, reason=None):
