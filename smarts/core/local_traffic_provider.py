@@ -1204,6 +1204,7 @@ class _TrafficActor:
         bearing: float,
         foe: RoadMap.Lane,
     ) -> bool:
+        # TODO:  take into account TLS
         # Smith vs. Neo
         if traffic_veh.role in (ActorRole.EgoAgent, ActorRole.SocialAgent):
             if self._yield_to_agents == "never":

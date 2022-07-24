@@ -88,8 +88,9 @@ class SignalProvider(Provider):
                         source=self.source_str,
                         role=ActorRole.Signal,
                         state=SignalLightState.UNKNOWN,
+                        #controlled_lanes=TODO,
+                        stopping_pos=feature.geometry[0],
                         last_changed=None,
-                        location=feature.geometry[0],
                     )
         return self._provider_state
 
