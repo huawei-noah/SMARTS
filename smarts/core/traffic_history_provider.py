@@ -99,7 +99,7 @@ class TrafficHistoryProvider(TrafficProvider):
         pass
 
     def _dbid_to_actor_id(self, dbid) -> str:
-        return self._actor_id_prefix + str(dbid)
+        return self._vehicle_id_prefix + str(dbid)
 
     def step(
         self, provider_actions, dt: float, elapsed_sim_time: float
