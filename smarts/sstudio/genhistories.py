@@ -143,7 +143,8 @@ class _TrajectoryDataset:
         return self._scale
 
     @property
-    def traffic_light_rows(self):
+    def traffic_light_rows(self) -> Iterable:
+        """Iterable dataset rows representing traffic light states (if present)."""
         raise NotImplementedError
 
     @property
@@ -930,7 +931,7 @@ class Waymo(_TrajectoryDataset):
                 rows[j]["heading_rad"] = constrain_angle(rows[j]["heading_rad"])
                 yield rows[j]
 
-    def _encode_tl_state(self, waymo_state: TrafficSignalLaneState) -> SignalLightState:
+    def _encode_tl_state(self, waymo_state) -> SignalLightState:
         if waymo_state == TrafficSignalLaneState.LANE_STATE_STOP:
             return SignalLightState.STOP
         if waymo_state == TrafficSignalLaneState.LANE_STATE_CAUTION:
