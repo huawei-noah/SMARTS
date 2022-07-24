@@ -1377,10 +1377,19 @@ class _TrafficActor:
         upcoming_feats: List[RoadMap.Feature],
     ):
         lane = rl.lane
-        upcoming_feats += lane.features
         lookahead -= lane.length
-        if lane == self._lane:
+        if lane != self._lane:
+            upcoming_feats += lane.features
+        else:
             lookahead += self._offset
+            # make sure the feature is ahead of me...
+            half_len = 0.5 * self._state.dimensions.length
+            my_bb = self._offset - half_len
+            for feat in lane.features:
+                for pt in feat.geometry:
+                    if lane.offset_along_lane(pt) >= my_bb:
+                        upcoming_feats.append(feat)
+                        break
         if lookahead <= 0:
             return
         nri = rl.road_index + 1
@@ -1400,7 +1409,6 @@ class _TrafficActor:
         if not upcoming_feats:
             return
         for feat in upcoming_feats:
-            # TODO:  check that its location is *ahead* of me
             if feat.type == RoadMap.FeatureType.STOP_SIGN or (
                 feat.is_dynamic
                 and self._owner._signal_state_means_stop(self._lane, feat)
