@@ -34,9 +34,10 @@ from shapely.geometry import box as shapely_box
 from smarts.core import gen_id
 from smarts.core.actor import ActorRole, ActorState
 from smarts.core.colors import SceneColors
-from smarts.core.coordinates import Dimensions, Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
 from smarts.core.provider import ProviderRecoveryFlags, ProviderState
 from smarts.core.road_map import RoadMap
+from smarts.core.signal_provider import SignalLightState, SignalState
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils import networking
@@ -111,6 +112,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
         self._allow_reload = allow_reload
+        self._traffic_lights = dict()
 
         # TODO: remove when SUMO fixes SUMO reset memory growth bug.
         # `sumo-gui` memory growth is faster.
@@ -308,6 +310,15 @@ class SumoTrafficSimulation(TrafficProvider):
         self._traci_conn.simulation.subscribe(
             [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
         )
+
+        self._traffic_lights = dict()
+        for tls_id in self._traci_conn.trafficlight.getIDList():
+            self._traffic_lights[
+                tls_id
+            ] = self._traci_conn.trafficlight.getControlledLinks(tls_id)
+            self._traci_conn.trafficlight.subscribe(
+                tls_id, [tc.TL_RED_YELLOW_GREEN_STATE]
+            )
 
         # XXX: SUMO caches the previous subscription results. Calling `simulationStep`
         #      effectively flushes the results. We need to use epsilon instead of zero
@@ -614,9 +625,58 @@ class SumoTrafficSimulation(TrafficProvider):
         self._traci_conn.vehicle.setWidth(vehicle_id, dimensions.width)
         self._traci_conn.vehicle.setHeight(vehicle_id, dimensions.height)
 
+    def _decode_tls_state(self, tls_state: str) -> SignalLightState:
+        assert len(tls_state) == 1
+        if tls_state in "gG":
+            return SignalLightState.GO
+        if tls_state in "rRs":
+            return SignalLightState.STOP
+        if tls_state in "yY":
+            return SignalLightState.CAUTION
+        if tls_state in "oO":
+            return SignalLightState.OFF
+        return SignalLightState.UNKNOWN
+
+    def _traffic_light_states(self) -> List[SignalState]:
+        signal_states = []
+        traffic_light_states = self._traci_conn.trafficlight.getAllSubscriptionResults()
+        for tls_id, tls_state in traffic_light_states.items():
+            tls_state = tls_state[tc.TL_RED_YELLOW_GREEN_STATE]
+            tls_control = self._traffic_lights.get(tls_id)
+            assert tls_control
+            for s, controlled_links in enumerate(tls_control):
+                state = self._decode_tls_state(tls_state[s])
+                incoming_lane_id = None
+                controlled_lanes = []
+                for link in controlled_links:
+                    in_lane_id, out_lane_id, via_id = link
+                    via_lane = self._scenario.road_map.lane_by_id(via_id)
+                    assert via_lane
+                    controlled_lanes.append(via_lane)
+                    assert not incoming_lane_id or incoming_lane_id == in_lane_id
+                    incoming_lane_id = in_lane_id
+                # TODO: shouldn't have to recompute stopping position on every step
+                incoming_lane = self._scenario.road_map.lane_by_id(incoming_lane_id)
+                loc = incoming_lane.from_lane_coord(
+                    RefLinePoint(s=incoming_lane.length)
+                )
+                ss = SignalState(
+                    actor_id=f"tls_{tls_id}-{s}",
+                    actor_type="signal",
+                    source=self.source_str,
+                    role=ActorRole.Signal,
+                    state=state,
+                    controlled_lanes=controlled_lanes,
+                    stopping_pos=loc,
+                    # last_changed=TODO
+                )
+                signal_states.append(ss)
+        return signal_states
+
     def _compute_provider_state(self) -> ProviderState:
+        self._traffic_light_states()
         return ProviderState(
-            actors=self._compute_traffic_vehicles(),
+            actors=self._compute_traffic_vehicles() + self._traffic_light_states()
         )
 
     def manages_actor(self, actor_id: str) -> bool:

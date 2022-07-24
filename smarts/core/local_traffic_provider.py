@@ -383,7 +383,7 @@ class LocalTrafficProvider(TrafficProvider):
             return False
         feat_state = feat_state[0]
         assert isinstance(feat_state, SignalState)
-        return not feat_state.state & SignalLightState.GO
+        return not (feat_state.state & SignalLightState.GO)
 
 
 class _TrafficActor:
@@ -1403,6 +1403,7 @@ class _TrafficActor:
                 feat.is_dynamic
                 and self._owner._signal_state_means_stop(self._lane, feat)
             ):
+                # TODO: decelerate to the intersection...
                 self._target_speed = 0
                 break
             # if feat.type == RoadMap.FeatureType.CROSSWALK and TODO:

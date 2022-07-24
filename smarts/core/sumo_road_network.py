@@ -90,9 +90,10 @@ class SumoRoadNetwork(RoadMap):
         self._net_file = net_file
         self._map_spec = map_spec
         self._default_lane_width = SumoRoadNetwork._spec_lane_width(map_spec)
-        self._surfaces = {}
-        self._lanes = {}
-        self._roads = {}
+        self._surfaces = dict()
+        self._lanes = dict()
+        self._roads = dict()
+        self._features = dict()
         self._waypoints_cache = SumoRoadNetwork._WaypointsCache()
         self._lanepoints = None
         if map_spec.lanepoint_spacing is not None:
@@ -101,6 +102,7 @@ class SumoRoadNetwork(RoadMap):
             self._lanepoints = LanePoints.from_sumo(
                 self, spacing=map_spec.lanepoint_spacing
             )
+        self._load_traffic_lights()
 
     @staticmethod
     def _check_net_origin(bbox):
@@ -178,6 +180,16 @@ class SumoRoadNetwork(RoadMap):
 
         return cls(G, net_file, map_spec)
 
+    def _load_traffic_lights(self):
+        for tls in self._graph.getTrafficLights():
+            tls_id = tls.getID()
+            for s, cnxn in enumerate(tls.getConnections()):
+                feature_id = f"tls_{tls_id}-{s}"
+                feature = SumoRoadNetwork.Feature(self, feature_id, cnxn)
+                self._features[feature_id] = feature
+                in_lane = self.lane_by_id(cnxn[0].getID())
+                in_lane._features[feature_id] = feature
+
     @property
     def source(self) -> str:
         """This is the net.xml file that corresponds with our possibly-offset coordinates."""
@@ -228,6 +240,10 @@ class SumoRoadNetwork(RoadMap):
             min_pt=Point(x=bb[0], y=bb[1]), max_pt=Point(x=bb[2], y=bb[3])
         )
 
+    @cached_property
+    def dynamic_features(self) -> List[RoadMap.Feature]:
+        return [f for f in self._features.values() if f.is_dynamic]
+
     @property
     def scale_factor(self) -> float:
         # map units per meter
@@ -244,6 +260,7 @@ class SumoRoadNetwork(RoadMap):
         def __init__(self, surface_id: str, road_map):
             self._surface_id = surface_id
             self._map = road_map
+            self._features = dict()
 
         @property
         def surface_id(self) -> str:
@@ -253,6 +270,17 @@ class SumoRoadNetwork(RoadMap):
         def is_drivable(self) -> bool:
             # all surfaces on Sumo road networks are drivable
             return True
+
+        @property
+        def features(self) -> List[RoadMap.Feature]:
+            return list(self._features.values())
+
+        def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
+            result = []
+            for feat in self._features.values():
+                if feat.geometry.near(pose.point, radius):  # TODO
+                    result.append(feat)
+            return result
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
         return self._surfaces.get(surface_id)
@@ -962,6 +990,44 @@ class SumoRoadNetwork(RoadMap):
         for lane in closest_lane.road.lanes:
             waypoint_paths += lane._waypoint_paths_at(point, lookahead, route)
         return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
+
+    class Feature(RoadMap.Feature):
+        """Feature representation for Sumo road networks"""
+
+        def __init__(
+            self,
+            road_map,
+            feature_id: str,
+            feat_data,
+            feat_type=RoadMap.FeatureType.FIXED_LOC_SIGNAL,
+        ):
+            self._map = road_map
+            self._feature_id = feature_id
+            self._feat_data = feat_data
+            # we only know how to get traffic light signals out of Sumo maps so far...
+            self._type = feat_type
+
+        @property
+        def feature_id(self) -> str:
+            return self._feature_id
+
+        @property
+        def type(self) -> RoadMap.FeatureType:
+            return self._type
+
+        @property
+        def type_as_str(self) -> str:
+            return self._type.name
+
+        @cached_property
+        def geometry(self) -> List[Point]:
+            assert isinstance(self._feat_data, tuple)
+            in_lane = self._map.lane_by_id(self._feat_data[0].getID())
+            stop_pos = in_lane.from_lane_coord(RefLinePoint(s=in_lane.length))
+            return [stop_pos]
+
+    def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
+        return self._features.get(feature_id)
 
     class Route(RouteWithCache):
         """Describes a route between two Sumo roads."""

@@ -34,6 +34,7 @@ class SignalLightState(IntFlag):
     note that these may be combined into a bitmask."""
 
     UNKNOWN = 0
+    OFF = 0
     STOP = 1
     CAUTION = 2
     GO = 4
@@ -48,9 +49,9 @@ class SignalState(ActorState):
     # TODO: see PR #1083 for how this state might be exposed via Observations to Agents.
 
     state: Optional[SignalLightState] = None
+    controlled_lanes: Optional[List[RoadMap.Lane]] = None
+    stopping_pos: Optional[Point] = None
     last_changed: Optional[float] = None
-    location: Optional[Point] = None
-    # TAI: controlled_lanes: Optional[List[RoadMap.Lane]] = None
 
     def __post_init__(self):
         assert self.state is not None

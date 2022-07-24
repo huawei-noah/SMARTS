@@ -883,6 +883,7 @@ class WaymoMap(RoadMapWithCaches):
                     sigs += 1
                     feature_id = f"signal_{sigs}"
                     feature = WaymoMap.Feature(self, feature_id, stop_point)
+                    self._features[feature_id] = feature
                     lane._features[feature_id] = feature
 
         end = time.time()
@@ -1055,7 +1056,7 @@ class WaymoMap(RoadMapWithCaches):
         def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
             result = []
             for feat in self._features.values():
-                if feat.geometry.near(pose.point, radius):
+                if feat.geometry.near(pose.point, radius):  # TODO
                     result.append(feat)
             return result
 
