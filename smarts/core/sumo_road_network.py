@@ -602,11 +602,9 @@ class SumoRoadNetwork(RoadMap):
         if lane:
             return lane
         sumo_lane = self._graph.getLane(lane_id)
-        if not sumo_lane:
-            self._log.warning(
-                f"SumoRoadNetwork got request for unknown lane_id '{lane_id}'"
-            )
-            return None
+        assert (
+            sumo_lane
+        ), f"SumoRoadNetwork got request for unknown lane_id: '{lane_id}'"
         lane = SumoRoadNetwork.Lane(lane_id, sumo_lane, self)
         self._lanes[lane_id] = lane
         assert lane_id not in self._surfaces
@@ -748,11 +746,9 @@ class SumoRoadNetwork(RoadMap):
         if road:
             return road
         sumo_edge = self._graph.getEdge(road_id)
-        if not sumo_edge:
-            self._log.warning(
-                f"SumoRoadNetwork got request for unknown road_id '{road_id}'"
-            )
-            return None
+        assert (
+            sumo_edge
+        ), f"SumoRoadNetwork got request for unknown road_id: '{road_id}'"
         road = SumoRoadNetwork.Road(road_id, sumo_edge, self)
         self._roads[road_id] = road
         assert road_id not in self._surfaces

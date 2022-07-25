@@ -1543,15 +1543,17 @@ class WaymoMap(RoadMapWithCaches):
             return self._lanes[index]
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
-        # XXX: If this raises a key exception, it's probably because this
-        #  map contains single-point polyline lanes, which we don't yet handle.
-        return self._roads[road_id]
+        road = self._roads.get(road_id)
+        # XXX: If this asserts, it's probably because this map contains single-point polyline lanes, which we don't yet handle.
+        assert road, f"WaymoMap got request for unknown road_id: '{road_id}'"
+        return road
 
     def lane_by_id(self, lane_id: str) -> RoadMapWithCaches.Lane:
         # note: all lanes were cached already by _load()
-        # XXX: If this raises a key exception, it's probably because this
-        #  map contains single-point polyline lanes, which we don't yet handle.
-        return self._lanes[lane_id]
+        lane = self._lanes.get(lane_id)
+        # XXX: If this asserts, it's probably because this map contains single-point polyline lanes, which we don't yet handle.
+        assert lane, f"WaymoMap got request for unknown lane_id: '{lane_id}'"
+        return lane
 
     @lru_cache(maxsize=4)
     def dynamic_features_near(

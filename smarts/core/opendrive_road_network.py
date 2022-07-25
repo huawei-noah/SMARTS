@@ -1246,10 +1246,9 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
 
     def lane_by_id(self, lane_id: str) -> RoadMapWithCaches.Lane:
         lane = self._lanes.get(lane_id)
-        if not lane:
-            self._log.warning(
-                f"OpenDriveRoadNetwork got request for unknown lane_id '{lane_id}'"
-            )
+        assert (
+            lane
+        ), f"OpenDriveRoadNetwork got request for unknown lane_id: '{lane_id}'"
         return lane
 
     class Road(RoadMapWithCaches.Road, Surface):
@@ -1435,10 +1434,9 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         road = self._roads.get(road_id)
-        if not road:
-            self._log.warning(
-                f"OpenDriveRoadNetwork got request for unknown road_id '{road_id}'"
-            )
+        assert (
+            road
+        ), f"OpenDriveRoadNetwork got request for unknown road_id: '{road_id}'"
         return road
 
     @cached_property
