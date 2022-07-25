@@ -29,6 +29,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ### Fixed
 - Fixed bug where `yaw_rate` was always reported as 0.0 (Issue #1481).
+- Fixed minor bugs causing some Waymo maps not to load properly.
 
 # [0.6.1]
 ### Added
