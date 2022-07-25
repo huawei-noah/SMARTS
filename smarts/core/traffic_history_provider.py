@@ -161,9 +161,14 @@ class TrafficHistoryProvider(TrafficProvider):
             self._lane_sig_state[tls.lane_id][stop_pt] = tls.state
             lane_sigs_count = len(self._lane_sig_state[tls.lane_id])
             actor_id = f"signal_{tls.lane_id}_{lane_sigs_count}"
-            # XXX: note that tls.lane_id may or may not correspond to a lane_id in the RoadMap
-            # TAI: look through self._scenario.road_map.nearest_lanes(stop_pt) for something corresponding with tls.lane_id
-            controlled_lanes = None
+            controlled_lanes = []
+            for feat, _ in self._scenario.road_map.dynamic_features_near(stop_pt, 4):
+                if feat.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL:
+                    feat_lane = feat.type_specific_info
+                    # XXX: note that tls.lane_id may or may not correspond to a lane_id in the RoadMap
+                    # Here we assume that it will at least be part of the naming scheme somehow.
+                    if str(tls.lane_id) in feat_lane.lane_id:
+                        controlled_lanes.append(feat_lane)
             signals.append(
                 SignalState(
                     actor_id=actor_id,

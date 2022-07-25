@@ -101,6 +101,17 @@ class RoadMap:
         """Find a feature in this road map that has the given identifier."""
         raise NotImplementedError()
 
+    def dynamic_features_near(
+        self, point: Point, radius: float
+    ) -> List[Tuple[RoadMap.Feature, float]]:
+        """Find features within radius meters of the given point."""
+        result = []
+        for feat in self.dynamic_features:
+            dist = feat.min_dist_from(point)
+            if dist <= radius:
+                result.append((feat, dist))
+        return result
+
     def nearest_surfaces(
         self, point: Point, radius: Optional[float] = None
     ) -> List[Tuple[RoadMap.Surface, float]]:

@@ -840,7 +840,7 @@ class _TrafficActor:
                     return my_offset - lane_offset, bv_vs
                 return 0, bv_vs
 
-        def find_last(ll: RoadMap.Lane) -> Tuple[float, VehicleState]:
+        def find_last(ll: RoadMap.Lane) -> Tuple[float, Optional[VehicleState]]:
             plbc = self._owner._lane_bumpers_cache.get(ll)
             if not plbc:
                 return math.inf, None
@@ -865,7 +865,7 @@ class _TrafficActor:
 
         # we hit a split without looking very far...
         # so go down each split branch until looked 100m back
-        def _backtrack_to_len(ll, looked, rind):
+        def _backtrack_to_len(ll, looked, rind) -> Tuple[float, Optional[VehicleState]]:
             if rind < 0 or looked >= min_to_look:
                 return math.inf, None
             best_offset = math.inf
@@ -1108,12 +1108,12 @@ class _TrafficActor:
                 Tuple[str, bool], Deque[_TrafficActor._RelWindow._RelativeVehInfo]
             ] = dict()
 
-        def add(
+        def add_to_win(
             self,
             veh_id: str,
             bumper: bool,
-            fv_pos: float,
-            my_pos: float,
+            fv_pos: np.ndarray,
+            my_pos: np.ndarray,
             my_heading: float,
             dt: float,
         ) -> Tuple[float, float]:
@@ -1306,7 +1306,7 @@ class _TrafficActor:
         if not njl or nj_dist > max_range:
             return
         updated = set()
-        my_pos = self._state.pose.position[:2]
+        my_pos = self._state.pose.point.as_np_array[:2]
         my_heading = self._state.pose.heading
         half_len = 0.5 * self._state.dimensions.length
         hv = radians_to_vec(my_heading)
@@ -1330,11 +1330,13 @@ class _TrafficActor:
                     # both bumpers for collisions here as (especially for
                     # longer vehicles) the answer can come out differently.
                     second_bumper = fv.actor_id in updated
-                    fv_pos = check_lane.from_lane_coord(RefLinePoint(offset))[:2]
-                    f_rb, f_rng = self._bumper_wins_front.add(
+                    fv_pos = check_lane.from_lane_coord(
+                        RefLinePoint(offset)
+                    ).as_np_array[:2]
+                    f_rb, f_rng = self._bumper_wins_front.add_to_win(
                         fv.actor_id, second_bumper, fv_pos, my_front, my_heading, dt
                     )
-                    b_rb, b_rng = self._bumper_wins_back.add(
+                    b_rb, b_rng = self._bumper_wins_back.add_to_win(
                         fv.actor_id, second_bumper, fv_pos, my_back, my_heading, dt
                     )
                     updated.add(fv.actor_id)

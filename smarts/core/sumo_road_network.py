@@ -759,6 +759,12 @@ class SumoRoadNetwork(RoadMap):
         self._surfaces[road_id] = road
         return road
 
+    @lru_cache(maxsize=4)
+    def dynamic_features_near(
+        self, point: Point, radius: float
+    ) -> List[Tuple[RoadMap.Feature, float]]:
+        return super().dynamic_features_near(point, radius)
+
     @lru_cache(maxsize=1024)
     def nearest_lanes(
         self, point: Point, radius: Optional[float] = None, include_junctions=True

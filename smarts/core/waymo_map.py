@@ -1553,6 +1553,12 @@ class WaymoMap(RoadMapWithCaches):
         #  map contains single-point polyline lanes, which we don't yet handle.
         return self._lanes[lane_id]
 
+    @lru_cache(maxsize=4)
+    def dynamic_features_near(
+        self, point: Point, radius: float
+    ) -> List[Tuple[RoadMap.Feature, float]]:
+        return super().dynamic_features_near(point, radius)
+
     @cached_property
     def _simple_lanes(self) -> List[RoadMapWithCaches.Lane]:
         return [lane for lane in self._lanes.values() if not lane.is_composite]
