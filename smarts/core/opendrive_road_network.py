@@ -329,8 +329,6 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             else:
                 road_elem_speed = self._default_lane_speed
 
-            # TODO:  get signals here and add as Features to Road object
-
             # Create new road for each lane section
             for section_elem in road_elem.lanes.lane_sections:
                 section_elem: LaneSectionElement = section_elem
@@ -391,6 +389,8 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
         self._log.info(f"First pass: {elapsed} ms")
+
+        # TODO:  get signals and objects (crosswalks) here and add as Features to Road/Lane objects
 
         # Second pass: compute road and lane connections, compute lane boundaries and polygon
         start = time.time()

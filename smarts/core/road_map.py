@@ -552,6 +552,7 @@ class RoadMap:
         CROSSWALK = 1
         SPEED_BUMP = 2
         STOP_SIGN = 3
+        ROAD_SIGN = 4  # except for stop signs
 
         # Note that some signals can move around.  For example, flashing
         # arrows on the back of trucks to funnel vehicles into
@@ -559,13 +560,15 @@ class RoadMap:
         # the same thing), flashing lights on other caution signs,
         # signals on closed sections of roads, etc.
         # Such signals are not *map* features.
-        # For these, we (also) need a DynamicStateProvider.
-        FIXED_LOC_SIGNAL = 4
+        # (For these, we can use a specialized SignalProvider.)
+        FIXED_LOC_SIGNAL = 5
 
-        CUSTOM = 5
+        CUSTOM = 6
 
     class Feature:
         """Describes a map feature."""
+
+        # TAI: consider support for repeating Features
 
         @property
         def feature_id(self) -> str:

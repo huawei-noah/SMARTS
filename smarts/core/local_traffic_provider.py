@@ -1185,12 +1185,15 @@ class _TrafficActor:
             junction.outgoing_lanes
         ), f"junction lane with no ougoing lanes?  {junction.lane_id}"
         next_lane = junction.outgoing_lanes[0]
-        mli = min(approach_index, len(junction.incoming_lanes) - 1)
-        prev_lane = junction.incoming_lanes[mli]
-
         nlv = next_lane.vector_at_offset(0.5 * next_lane.length)
         nla = vec_to_radians(nlv[:2])
-        plv = prev_lane.vector_at_offset(prev_lane.length - 1)
+
+        mli = min(approach_index, len(junction.incoming_lanes) - 1)
+        if mli >= 0:
+            prev_lane = junction.incoming_lanes[mli]
+            plv = prev_lane.vector_at_offset(prev_lane.length - 1)
+        else:
+            plv = junction.vector_at_offset(0)
         pla = vec_to_radians(plv[:2])
 
         return min_angles_difference_signed(nla, pla)
