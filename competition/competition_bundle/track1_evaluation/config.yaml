@@ -1,4 +1,0 @@
-phase: track1
-eval_episodes: 2
-seed: 42
-scenarios: []

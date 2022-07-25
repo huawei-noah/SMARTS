@@ -107,7 +107,15 @@ def multi_scenario_v0_env(
 
     env_specs = get_env_specs(scenario)
     sstudio.build_scenario(scenario=[env_specs["scenario"]])
-    done_criteria = env_specs["done_criteria"]
+    done_criteria = DoneCriteria(
+        collision=True,
+        off_road=True,
+        off_route=False,
+        on_shoulder=False,
+        wrong_way=False,
+        not_moving=False,
+        agents_alive=None,
+    )
     max_episode_steps = 800
     neighbor_radius = 50
     road_waypoint_horizon = 50
@@ -176,15 +184,6 @@ def get_env_specs(scenario: str):
                 / "1_to_2lane_left_turn_c"
             ),
             "num_agent": 1,
-            "done_criteria": DoneCriteria(
-                collision=True,
-                off_road=True,
-                off_route=True,
-                on_shoulder=False,
-                wrong_way=True,
-                not_moving=False,
-                agents_alive=None,
-            ),
         }
     elif scenario == "1_to_2lane_left_turn_t":
         return {
@@ -195,15 +194,6 @@ def get_env_specs(scenario: str):
                 / "1_to_2lane_left_turn_t"
             ),
             "num_agent": 1,
-            "done_criteria": DoneCriteria(
-                collision=True,
-                off_road=True,
-                off_route=True,
-                on_shoulder=False,
-                wrong_way=True,
-                not_moving=False,
-                agents_alive=None,
-            ),
         }
     elif scenario == "3lane_merge_multi_agent":
         return {
@@ -214,15 +204,6 @@ def get_env_specs(scenario: str):
                 / "3lane_multi_agent"
             ),
             "num_agent": 2,
-            "done_criteria": DoneCriteria(
-                collision=True,
-                off_road=True,
-                off_route=False,
-                on_shoulder=False,
-                wrong_way=True,
-                not_moving=False,
-                agents_alive=None,
-            ),
         }
     elif scenario == "3lane_merge_single_agent":
         return {
@@ -233,15 +214,6 @@ def get_env_specs(scenario: str):
                 / "3lane_single_agent"
             ),
             "num_agent": 1,
-            "done_criteria": DoneCriteria(
-                collision=True,
-                off_road=True,
-                off_route=False,
-                on_shoulder=False,
-                wrong_way=True,
-                not_moving=False,
-                agents_alive=None,
-            ),
         }
     elif scenario == "3lane_cruise_multi_agent":
         return {
@@ -252,15 +224,6 @@ def get_env_specs(scenario: str):
                 / "3lane_cruise_multi_agent"
             ),
             "num_agent": 3,
-            "done_criteria": DoneCriteria(
-                collision=True,
-                off_road=True,
-                off_route=True,
-                on_shoulder=False,
-                wrong_way=True,
-                not_moving=False,
-                agents_alive=None,
-            ),
         }
     elif scenario == "3lane_cruise_single_agent":
         return {
@@ -271,15 +234,6 @@ def get_env_specs(scenario: str):
                 / "3lane_cruise_single_agent"
             ),
             "num_agent": 1,
-            "done_criteria": DoneCriteria(
-                collision=True,
-                off_road=True,
-                off_route=True,
-                on_shoulder=False,
-                wrong_way=True,
-                not_moving=False,
-                agents_alive=None,
-            ),
         }
     elif scenario == "3lane_cut_in":
         return {
@@ -290,15 +244,6 @@ def get_env_specs(scenario: str):
                 / "3lane_cut_in"
             ),
             "num_agent": 1,
-            "done_criteria": DoneCriteria(
-                collision=True,
-                off_road=True,
-                off_route=True,
-                on_shoulder=False,
-                wrong_way=True,
-                not_moving=False,
-                agents_alive=None,
-            ),
         }
     elif scenario == "3lane_overtake":
         return {
@@ -309,25 +254,12 @@ def get_env_specs(scenario: str):
                 / "3lane_overtake"
             ),
             "num_agent": 1,
-            "done_criteria": DoneCriteria(
-                collision=True,
-                off_road=True,
-                off_route=True,
-                on_shoulder=False,
-                wrong_way=True,
-                not_moving=False,
-                agents_alive=None,
-            ),
         }
     elif os.path.isdir(scenario):
         import re
 
         regexp_agent = re.compile(r"agents_\d+")
         regexp_num = re.compile(r"\d+")
-        regexp_merge = re.compile(r"merge")
-
-        matches_merge = regexp_merge.search(scenario)
-        off_route = False if matches_merge else True
         matches_agent = regexp_agent.search(scenario)
         if not matches_agent:
             raise Exception(
@@ -338,15 +270,6 @@ def get_env_specs(scenario: str):
         return {
             "scenario": str(scenario),
             "num_agent": int(num_agent.group(0)),
-            "done_criteria": DoneCriteria(
-                collision=True,
-                off_road=True,
-                off_route=off_route,
-                on_shoulder=False,
-                wrong_way=True,
-                not_moving=False,
-                agents_alive=None,
-            ),
         }
     else:
         raise Exception(f"Unknown scenario {scenario}.")
