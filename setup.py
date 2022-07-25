@@ -69,7 +69,7 @@ setup(
             "sphinxcontrib-apidoc>=0.3.0",
         ],
         "extras": ["pynput>=1.7.4"],  # Used by HumanKeyboardAgent
-        "gym": ["moviepy = 1.0.3"],
+        "gym": ["moviepy == 1.0.3"],
         "remote_agent": ["grpcio==1.32.0"],
         "rllib": [
             "opencv-python==4.1.2.30",
