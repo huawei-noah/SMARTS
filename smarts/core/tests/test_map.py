@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import math
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -700,6 +701,10 @@ def test_waymo_map():
     dataset_path = os.path.join(dataset_root, dataset_file)
 
     if not os.path.exists(dataset_path):
+        print(
+            "WARNING: skipping test_waymo_map() test as dataset not found at {dataset_path}",
+            file=sys.stderr,
+        )
         return
 
     source_str = f"{dataset_path}#{scenario_id}"

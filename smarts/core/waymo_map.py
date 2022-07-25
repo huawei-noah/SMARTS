@@ -588,6 +588,11 @@ class WaymoMap(RoadMapWithCaches):
                     if i < entry_max:
                         break
                 else:
+                    if entry_max == 0:
+                        self._log.warning(
+                            f"ignoring 'entry_lane' feature={el} for feature={feat_id} as it only has a single point in its polyline."
+                        )
+                        continue
                     i = 0
                 incoming.append(WaymoMap._lane_id(el, i))
             lane_dict["incoming_lane_ids"] = incoming
@@ -753,7 +758,7 @@ class WaymoMap(RoadMapWithCaches):
                 )
                 if linked_split.split.index >= last_valid:
                     # XXX:  disallows 1-point polyline lanes, which do exist in about 15% of scenarios.
-                    # To allow these require changes that will cascade though.
+                    # To allow these requires changes that will cascade though.
                     # Practically this means that incoming_lanes ids will sometimes not be found.
                     continue
                 if linked_split.used:
