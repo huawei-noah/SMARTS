@@ -391,7 +391,6 @@ class _TrafficActor:
 
     def __init__(self, flow: Dict[str, Any], owner: LocalTrafficProvider):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._logger.setLevel(logging.INFO)  # TODO: remove this once done debugging
 
         self._owner = owner
         self._state = None
@@ -559,9 +558,7 @@ class _TrafficActor:
             raise Exception(
                 f"{base_err}:  starting offset {offset} invalid for road_id '{road.road_id}'."
             )
-        # convert to composite system...
         target_pt = lane.from_lane_coord(RefLinePoint(s=offset))
-        lane = lane.composite_lane
         offset = lane.offset_along_lane(target_pt)
         return (lane, offset)
 
@@ -778,7 +775,6 @@ class _TrafficActor:
         nv_ahead_vs = None
         rind += 1
         for ogl in lane.outgoing_lanes:
-            ogl = ogl.composite_lane
             rt_oln = RoadMap.Route.RouteLane(ogl, rind)
             len_to_end = self._route.distance_from(rt_oln)
             if len_to_end is None:
@@ -843,27 +839,50 @@ class _TrafficActor:
                 if lane_offset < my_offset:
                     return my_offset - lane_offset, bv_vs
                 return 0, bv_vs
-        # only look back one lane...
-        bv_behind_dist = math.inf
-        bv_behind_vs = None
-        for inl in lane.incoming_lanes:
-            inl = inl.composite_lane
-            plbc = self._owner._lane_bumpers_cache.get(inl)
+
+        def find_last(ll: RoadMap.Lane) -> Tuple[float, VehicleState]:
+            plbc = self._owner._lane_bumpers_cache.get(ll)
             if not plbc:
-                continue
-            bi = -1
-            bv_offset, bv_vs = plbc[bi]
-            while bi > -len(plbc) and bv_vs.actor_id == self.actor_id:
-                bi -= 1
-                bv_offset, bv_vs = plbc[bi]
-            bv_dist = inl.length - bv_offset
-            if bv_dist < bv_behind_dist:
-                bv_behind_dist = bv_dist
-                bv_behind_vs = bv_vs
-        return my_offset + bv_behind_dist, bv_behind_vs
+                return math.inf, None
+            for bv_offset, bv_vs in reversed(plbc):
+                if bv_vs.actor_id != self.actor_id:
+                    return bv_offset, bv_vs
+            return math.inf, None
+
+        # look back until split entry or vehicle found
+        min_to_look = 100
+        rind = self._route_ind - 1
+        dist_looked = my_offset
+        while len(lane.incoming_lanes) == 1 and rind >= 0:
+            lane = lane.incoming_lanes[0]
+            rind -= 1
+            dist_looked += lane.length
+            bv_offset, bv_vs = find_last(lane)
+            if bv_vs:
+                return dist_looked - bv_offset, bv_vs
+        if rind == 0 or dist_looked > min_to_look:
+            return math.inf, None
+
+        # we hit a split without looking very far...
+        # so go down each split branch until looked 100m back
+        def _backtrack_to_len(ll, looked, rind):
+            if rind < 0 or looked >= min_to_look:
+                return math.inf, None
+            best_offset = math.inf
+            best_vs = None
+            for inl in ll.incoming_lanes:
+                il_offset, il_vs = find_last(inl)
+                if il_vs:
+                    return looked + inl.length - il_offset, il_vs
+                il_offset, il_vs = _backtrack_to_len(inl, looked + inl.length, rind - 1)
+                if il_offset < best_offset:
+                    best_offset = il_offset
+                    best_vs = il_vs
+            return best_offset, best_vs
+
+        return _backtrack_to_len(lane, dist_looked, rind)
 
     def _compute_lane_window(self, lane: RoadMap.Lane):
-        lane = lane.composite_lane
         lane_coord = lane.to_lane_coord(self._state.pose.point)
         my_offset = lane_coord.s
         my_speed, my_acc = self._lane_speed[lane.index]
@@ -1181,11 +1200,11 @@ class _TrafficActor:
     @lru_cache(maxsize=32)
     def _turn_angle(junction: RoadMap.Lane, approach_index: int) -> float:
         # TAI: consider moving this into RoadMap.Lane
-        assert (
-            junction.outgoing_lanes
-        ), f"junction lane with no ougoing lanes?  {junction.lane_id}"
-        next_lane = junction.outgoing_lanes[0]
-        nlv = next_lane.vector_at_offset(0.5 * next_lane.length)
+        if junction.outgoing_lanes:
+            next_lane = junction.outgoing_lanes[0]
+            nlv = next_lane.vector_at_offset(0.5 * next_lane.length)
+        else:
+            nlv = junction.vector_at_offset(junction.length)
         nla = vec_to_radians(nlv[:2])
 
         mli = min(approach_index, len(junction.incoming_lanes) - 1)
@@ -1634,7 +1653,6 @@ class _TrafficActor:
             self._logger.info(
                 f"actor {self.actor_id} is off of its route.  now in lane {self._lane.lane_id}."
             )
-        self._lane = self._lane.composite_lane
 
         road_id = self._lane.road.road_id
         if road_id != prev_road_id:

@@ -111,7 +111,6 @@ class RouteWithCache(RoadMap.Route):
             assert rind >= 0
             rind -= 1
             for il in bplane.incoming_lanes:
-                il = il.composite_lane
                 rl = RoadMap.Route.RouteLane(il, rind)
                 il_cont = _route_sub_lengths[cache_key].get(rl)
                 if il_cont is not None:
@@ -128,7 +127,6 @@ class RouteWithCache(RoadMap.Route):
         road = None
         for r_ind, road in enumerate(self.roads):
             for lane in road.lanes:
-                lane = lane.composite_lane
                 # r_ind is required to correctly handle routes with sub-cycles
                 rl = RoadMap.Route.RouteLane(lane, r_ind)
                 assert rl not in _route_sub_lengths[cache_key]
@@ -145,10 +143,9 @@ class RouteWithCache(RoadMap.Route):
         # give lanes that would form a loop an advantage...
         first_road = self.roads[0]
         for lane in road.lanes:
-            lane = lane.composite_lane
             rl = RoadMap.Route.RouteLane(lane, r_ind)
             for og in lane.outgoing_lanes:
-                if og.road == first_road or og.road.composite_road == first_road:
+                if og.road == first_road:
                     _route_sub_lengths[cache_key][rl].dist_to_end += 1
 
     def _find_along(
