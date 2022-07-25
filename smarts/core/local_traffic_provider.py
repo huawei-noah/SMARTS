@@ -24,7 +24,7 @@ import random
 import re
 import xml.etree.ElementTree as XET
 from bisect import bisect_left, bisect_right, insort
-from collections import deque
+from collections import defaultdict, deque
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any, Deque, Dict, List, Optional, Sequence, Set, Tuple
@@ -451,6 +451,9 @@ class _TrafficActor:
             self._cutin_slow_down = 0
         self._multi_lane_cutin = self._vtype.get("lcMultiLaneCutin", "False") == "True"
         self._yield_to_agents = self._vtype.get("jmYieldToAgents", "normal")
+        self._wait_to_restart = float(self._vtype.get("jmWaitToRestart", 0.0))
+        self._stopped_at_feat = dict()
+        self._waiting_at_feat = defaultdict(float)
 
         self._max_angular_velocity = 26  # arbitrary, based on limited testing
         self._prev_angular_err = None
@@ -1424,28 +1427,58 @@ class _TrafficActor:
                 nrl = RoadMap.Route.RouteLane(ogl, nri)
                 self._find_features_ahead(nrl, lookahead, upcoming_feats)
 
-    def _handle_features_and_signals(self):
+    def _handle_features_and_signals(self, dt: float):
         my_stopping_dist = stopping_distance(self.speed, self._max_decel)
         lookahead = 2 * my_stopping_dist
         upcoming_feats = []
         rl = RoadMap.Route.RouteLane(self._lane, self._route_ind)
         self._find_features_ahead(rl, lookahead, upcoming_feats)
+        # TODO:  check non-fixed-location signals here too
         if not upcoming_feats:
             return
         for feat in upcoming_feats:
-            if feat.type == RoadMap.FeatureType.STOP_SIGN or (
-                feat.is_dynamic
-                and self._owner._signal_state_means_stop(self._lane, feat)
-            ):
-                # TAI: could decline to do this if my_stopping_dist >> dist_to_stop
-                dist_to_stop = feat.min_dist_from(self._state.pose.point)
-                self._target_lane_win.gap = min(dist_to_stop, self._target_lane_win.gap)
-                break
-            # if feat.type == RoadMap.FeatureType.CROSSWALK and TODO:
-            # self._target_speed = 0
             if feat.type == RoadMap.FeatureType.SPEED_BUMP:
                 self._target_speed *= 0.5
-        # TODO:  check non-fixed-location signals here too
+                continue
+            # if feat.type == RoadMap.FeatureType.CROSSWALK and TODO:
+            #     self._target_speed = 0
+            #     continue
+            if feat.type == RoadMap.FeatureType.STOP_SIGN:
+                dist_to_stop = feat.min_dist_from(self._state.pose.point)
+                if dist_to_stop < 3 and self.speed == 0.0:
+                    self._stopped_at_feat[feat.feature_id] = True
+                    self._waiting_at_feat[feat.feature_id] += dt
+                    if self._waiting_at_feat[feat.feature_id] > self._wait_to_restart:
+                        del self._waiting_at_feat[feat.feature_id]
+                        continue
+                if (
+                    not self._stopped_at_feat.get(feat.feature_id, False)
+                    or feat.feature_id in self._waiting_at_feat
+                ):
+                    self._target_lane_win.gap = min(
+                        dist_to_stop, self._target_lane_win.gap
+                    )
+                continue
+            if feat.is_dynamic:
+                should_stop = self._owner._signal_state_means_stop(self._lane, feat)
+                if should_stop and self.speed == 0.0:
+                    self._stopped_at_feat[feat.feature_id] = True
+                elif not should_stop and self._stopped_at_feat.get(
+                    feat.feature_id, False
+                ):
+                    del self._stopped_at_feat[feat.feature_id]
+                    self._waiting_at_feat[feat.feature_id] = 0.0
+                if feat.feature_id in self._waiting_at_feat:
+                    if self._waiting_at_feat[feat.feature_id] > self._wait_to_restart:
+                        del self._waiting_at_feat[feat.feature_id]
+                        continue
+                    self._waiting_at_feat[feat.feature_id] += dt
+                if should_stop or feat.feature_id in self._waiting_at_feat:
+                    # TAI: could decline to do this if my_stopping_dist >> dist_to_stop
+                    dist_to_stop = feat.min_dist_from(self._state.pose.point)
+                    self._target_lane_win.gap = min(
+                        dist_to_stop, self._target_lane_win.gap
+                    )
 
     def _check_speed(self, dt: float):
         target_lane = self._target_lane_win.lane
@@ -1461,7 +1494,7 @@ class _TrafficActor:
             self._target_speed *= self._cutin_slow_down
         self._slow_for_curves()
         if self._target_speed > 0:
-            self._handle_features_and_signals()
+            self._handle_features_and_signals(dt)
         if self._target_speed > 0:
             self._handle_junctions(dt)
         if self._target_speed > 0:
@@ -1697,7 +1730,7 @@ class _TrafficActor:
         self._state.updated = False
         self._route_ind = 0
         if not self._owner._check_actor_bbox(self):
-            self._logger.warning(
+            self._logger.info(
                 f"{self.actor_id} could not teleport back to beginning of its route b/c it was already occupied; just removing it."
             )
             self._done_with_route = True

@@ -190,10 +190,15 @@ class SmartsJunctionModel(JunctionModel):
                       relative to vehicles on intersecting roads with less lanes;
                     - All other things being equal, the vehicle to the right
                       (in the counter-clockwise direction) has the right-of-way.
+        wait_to_restart:
+            The amount of time in seconds after stopping at a signal or stop sign
+            befor this vehicle will start to go again.  Default:  0.0
     """
 
-    def __init__(self, yield_to_agents: str = "normal"):
-        super().__init__(yield_to_agents=yield_to_agents)
+    def __init__(self, yield_to_agents: str = "normal", wait_to_restart: float = 0.0):
+        super().__init__(
+            yield_to_agents=yield_to_agents, wait_to_restart=wait_to_restart
+        )
 
 
 @dataclass(frozen=True)
