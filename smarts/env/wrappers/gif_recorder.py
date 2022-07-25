@@ -29,10 +29,17 @@ from pathlib import Path
 
 
 class GifRecorder:
+<<<<<<< HEAD
     """
     Use images(rgb_array) to create a gif file.
     """
     def __init__(self, dir, env):
+=======
+    def __init__(self, dir, env):
+        """
+        Use images(rgb_array) to create a gif file.
+        """
+>>>>>>> 0e381a2cc8d0e152f65f134220446f788cbb1b56
         timestamp_str = time.strftime("%Y%m%d-%H%M%S")
         self.dir = dir + "_" + timestamp_str
         self.env = env
