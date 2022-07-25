@@ -89,13 +89,13 @@ class Point(NamedTuple):
     @classmethod
     def from_np_array(cls, np_array: np.ndarray):
         """Factory for constructing a Point object from a numpy array."""
-        assert 2 <= len(np.array) <= 3
+        assert 2 <= len(np_array) <= 3
         z = np_array[2] if len(np_array) > 2 else 0.0
         return cls(np_array[0], np_array[1], z)
 
     @property
     def as_np_array(self) -> np.ndarray:
-        """Convert this Point to a numpy array and cache the result."""
+        """Convert this Point to a read-only numpy array and cache the result."""
         # Since this happens frequently and numpy array construction
         # involves memory allocation, we include this convenience method
         # with a cache of the result.
@@ -110,6 +110,8 @@ class Point(NamedTuple):
         if cached is not None:
             return cached
         npt = np.array((self.x, self.y, self.z))
+        # the array shouln't be changed independently of this Point object now...
+        npt.setflags(write=False)
         _numpy_points[self] = npt
         return npt
 
