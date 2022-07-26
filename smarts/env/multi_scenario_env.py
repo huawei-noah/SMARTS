@@ -105,7 +105,7 @@ def multi_scenario_v0_env(
         An environment described by the input argument `scenario`.
     """
 
-    env_specs = get_env_specs(scenario)
+    env_specs = _get_env_specs(scenario)
     sstudio.build_scenario(scenario=[env_specs["scenario"]])
     done_criteria = DoneCriteria(
         collision=True,
@@ -165,7 +165,7 @@ def multi_scenario_v0_env(
     return env
 
 
-def get_env_specs(scenario: str):
+def _get_env_specs(scenario: str):
     """Returns the appropriate environment parameters for each scenario.
 
     Args:

@@ -27,10 +27,10 @@ register(
 
 register(
     id="intersection-v0",
-    entry_point="smarts.env.intersection_v0_env:intersection_v0_env",
+    entry_point="smarts.env.intersection_env:intersection_v0_env",
 )
 
 register(
     id="multi-scenario-v0",
-    entry_point="smarts.env.multi_scenario_v0_env:multi_scenario_v0_env",
+    entry_point="smarts.env.multi_scenario_env:multi_scenario_v0_env",
 )
