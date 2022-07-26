@@ -1354,6 +1354,9 @@ class _TrafficActor:
                     # (for their front and back bumpers, and b/c they may straddle lanes).
                     # We need to check both bumpers for collisions here as (especially
                     # for longer vehicles) the answer can come out differently.
+                    if bumper == 0:
+                        # don't worry about the "fake back bumper"
+                        continue
                     fv_pos = check_lane.from_lane_coord(
                         RefLinePoint(offset)
                     ).as_np_array[:2]
