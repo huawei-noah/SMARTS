@@ -243,6 +243,7 @@ class LocalTrafficProvider(TrafficProvider):
         for actor_id, actor in self._my_actors.items():
             actor.step(dt)
             if actor.finished_route or actor.off_route:
+                # TODO:  insead, we should just _release_ control of off_route actors
                 dones.append(actor.actor_id)
             elif actor.teleporting:
                 # pybullet doesn't like it when a vehicle jumps from one side of the map to another,
@@ -1069,7 +1070,7 @@ class _TrafficActor:
                 lw.drive_time == best_lw.drive_time
                 and (
                     (lw.lane == self._dest_lane and self._offset < self._dest_offset)
-                    or (lw.ttre > best_lw.ttre and idx < best_lw.lane.index)
+                    or (lw.ttre >= best_lw.ttre and idx < best_lw.lane.index)
                 )
             ):
                 best_lw = lw

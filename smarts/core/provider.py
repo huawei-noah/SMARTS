@@ -155,7 +155,7 @@ class Provider:
     @property
     def source_str(self) -> str:
         """This property should be used to fill in the source field
-        of all Actortate objects created/managed by this Provider."""
+        of all ActorState objects created/managed by this Provider."""
         return self.__class__.__name__
 
     def manages_actor(self, actor_id: str) -> bool:

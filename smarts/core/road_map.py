@@ -252,7 +252,7 @@ class RoadMap:
 
         def __hash__(self) -> int:
             """Derived classes must implement a suitable hash function
-            so that Lane objects may be used deterministicly in sets."""
+            so that Lane objects may be used deterministically in sets."""
             raise NotImplementedError()
 
         def __eq__(self, other) -> bool:
@@ -481,7 +481,7 @@ class RoadMap:
 
         def __hash__(self) -> int:
             """Derived classes must implement a suitable hash function
-            so that Road objects may be used deterministicly in sets."""
+            so that Road objects may be used deterministically in sets."""
             raise NotImplementedError()
 
         def __eq__(self, other) -> bool:
@@ -623,7 +623,7 @@ class RoadMap:
 
         def __hash__(self) -> int:
             """Derived classes must implement a suitable hash function
-            so that Route objects may be used deterministicly in sets."""
+            so that Route objects may be used deterministically in sets."""
             raise NotImplementedError()
 
         def __eq__(self, other) -> bool:
