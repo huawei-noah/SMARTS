@@ -207,15 +207,15 @@ class LocalTrafficProvider(TrafficProvider):
             if back_lane:
                 back_offset = back_lane.offset_along_lane(back)
                 lbc = self._lane_bumpers_cache.setdefault(back_lane, [])
-                insort(lbc, (back_offset, ovs))
+                insort(lbc, (back_offset, ovs, 1))
             if front_lane:
                 front_offset = front_lane.offset_along_lane(front)
                 lbc = self._lane_bumpers_cache.setdefault(front_lane, [])
-                insort(lbc, (front_offset, ovs))
+                insort(lbc, (front_offset, ovs, 2))
             if front_lane and back_lane != front_lane:
                 # it's changing lanes, don't misjudge the target lane...
                 fake_back_offset = front_lane.offset_along_lane(back)
-                insort(self._lane_bumpers_cache[front_lane], (fake_back_offset, ovs))
+                insort(self._lane_bumpers_cache[front_lane], (fake_back_offset, ovs, 0))
 
     def _cached_lane_offset(self, vs: VehicleState, lane: RoadMap.Lane):
         lane_offsets = self._offsets_cache.setdefault(vs.actor_id, dict())
@@ -384,6 +384,12 @@ class LocalTrafficProvider(TrafficProvider):
         feat_state = feat_state[0]
         assert isinstance(feat_state, SignalState)
         return not (feat_state.state & SignalLightState.GO)
+
+    def _stopped_at_features(self, actor_id: str) -> List[str]:
+        actor = self._my_actors.get(actor_id)
+        if actor:
+            return actor.stopped_at_features
+        return []
 
 
 class _TrafficActor:
@@ -692,6 +698,12 @@ class _TrafficActor:
         )
         return shapely_rotate(poly, self._state.pose.heading, use_radians=True)
 
+    @property
+    def stopped_at_features(self) -> List[str]:
+        """If this vehicle is currently stopped at any features,
+        returns their feature_ids, otherwise an empty list."""
+        return list(self._stopped_at_feat.keys())
+
     class _LaneWindow:
         def __init__(
             self,
@@ -786,7 +798,7 @@ class _TrafficActor:
             if lbc:
                 fi = 0
                 while fi < len(lbc):
-                    ogl_offset, ogl_vs = lbc[fi]
+                    ogl_offset, ogl_vs, _ = lbc[fi]
                     if ogl_vs.actor_id != self.actor_id:
                         break
                     fi += 1
@@ -808,14 +820,14 @@ class _TrafficActor:
     ) -> Tuple[float, Optional[VehicleState]]:
         lbc = self._owner._lane_bumpers_cache.get(lane)
         if lbc:
-            lane_spot = bisect_right(lbc, (search_start, self._state))
+            lane_spot = bisect_right(lbc, (search_start, self._state, 3))
             # if we're at an angle to the lane, it's possible for the
             # first thing we hit to be our own entries in the bumpers cache,
             # which we need to skip.
             while lane_spot < len(lbc) and self.actor_id == lbc[lane_spot][1].actor_id:
                 lane_spot += 1
             if lane_spot < len(lbc):
-                lane_offset, nvs = lbc[lane_spot]
+                lane_offset, nvs, _ = lbc[lane_spot]
                 assert lane_offset >= search_start
                 if lane_offset > my_offset:
                     return lane_offset - my_offset, nvs
@@ -830,14 +842,14 @@ class _TrafficActor:
     ) -> Tuple[float, Optional[VehicleState]]:
         lbc = self._owner._lane_bumpers_cache.get(lane)
         if lbc:
-            lane_spot = bisect_left(lbc, (search_start, self._state))
+            lane_spot = bisect_left(lbc, (search_start, self._state, -1))
             # if we're at an angle to the lane, it's possible for the
             # first thing we hit to be our own entries in the bumpers cache,
             # which we need to skip.
             while lane_spot > 0 and self.actor_id == lbc[lane_spot - 1][1].actor_id:
                 lane_spot -= 1
             if lane_spot > 0:
-                lane_offset, bv_vs = lbc[lane_spot - 1]
+                lane_offset, bv_vs, _ = lbc[lane_spot - 1]
                 assert lane_offset <= search_start
                 if lane_offset < my_offset:
                     return my_offset - lane_offset, bv_vs
@@ -847,7 +859,7 @@ class _TrafficActor:
             plbc = self._owner._lane_bumpers_cache.get(ll)
             if not plbc:
                 return math.inf, None
-            for bv_offset, bv_vs in reversed(plbc):
+            for bv_offset, bv_vs, _ in reversed(plbc):
                 if bv_vs.actor_id != self.actor_id:
                     return bv_offset, bv_vs
             return math.inf, None
@@ -1114,7 +1126,7 @@ class _TrafficActor:
         def add_to_win(
             self,
             veh_id: str,
-            bumper: bool,
+            bumper: int,
             fv_pos: np.ndarray,
             my_pos: np.ndarray,
             my_heading: float,
@@ -1130,7 +1142,7 @@ class _TrafficActor:
             fv_win.append(self._RelativeVehInfo(fv_range, rel_bearing, my_heading, dt))
             return rel_bearing, fv_range
 
-        def predict_crash_in(self, veh_id: str, bumper: bool) -> float:
+        def predict_crash_in(self, veh_id: str, bumper: int) -> float:
             """Estimate if and when I might collide with veh_id using
             the constant bearing, decreasing range (CBDR) techique, but
             attempting to correct for non-linearities."""
@@ -1229,7 +1241,14 @@ class _TrafficActor:
         bearing: float,
         foe: RoadMap.Lane,
     ) -> bool:
-        # TODO:  take into account TLS (don't yield to TL-stopped vehicles)
+        # take into account TLS (don't yield to TL-stopped vehicles)
+        # XXX: we currently only determine this for actors we're controlling
+        if (
+            traffic_veh.source == self._owner.source_str
+            and self._owner._stopped_at_features(traffic_veh.actor_id)
+        ):
+            return True
+
         # Smith vs. Neo
         if traffic_veh.role in (ActorRole.EgoAgent, ActorRole.SocialAgent):
             if self._yield_to_agents == "never":
@@ -1244,7 +1263,7 @@ class _TrafficActor:
         if dist_to_junction <= 0 and self._lane == junction:
 
             def _in_lane(lane):
-                for _, vs in self._owner._lane_bumpers_cache.get(lane, []):
+                for _, vs, _ in self._owner._lane_bumpers_cache.get(lane, []):
                     if vs.actor_id == self.actor_id:
                         return True
                 return False
@@ -1252,6 +1271,7 @@ class _TrafficActor:
             if _in_lane(traffic_lane):
                 return True
             if traffic_lane != junction:
+                # XXX: might need to go deeper (but don't know their route)...
                 for ogtl in traffic_lane.outgoing_lanes:
                     if _in_lane(ogtl):
                         return True
@@ -1325,38 +1345,33 @@ class _TrafficActor:
                     continue
                 handled = set()
                 lbc = self._owner._lane_bumpers_cache.get(check_lane, [])
-                for offset, fv in lbc:
+                for offset, fv, bumper in lbc:
                     if fv.actor_id == self.actor_id:
                         continue
                     # vehicles can be in the bumpers_cache more than once
-                    # (for their front and back bumpers).  We need to check
-                    # both bumpers for collisions here as (especially for
-                    # longer vehicles) the answer can come out differently.
-                    second_bumper = fv.actor_id in updated
+                    # (for their front and back bumpers, and b/c they may straddle lanes).
+                    # We need to check both bumpers for collisions here as (especially
+                    # for longer vehicles) the answer can come out differently.
                     fv_pos = check_lane.from_lane_coord(
                         RefLinePoint(offset)
                     ).as_np_array[:2]
                     f_rb, f_rng = self._bumper_wins_front.add_to_win(
-                        fv.actor_id, second_bumper, fv_pos, my_front, my_heading, dt
+                        fv.actor_id, bumper, fv_pos, my_front, my_heading, dt
                     )
                     b_rb, b_rng = self._bumper_wins_back.add_to_win(
-                        fv.actor_id, second_bumper, fv_pos, my_back, my_heading, dt
+                        fv.actor_id, bumper, fv_pos, my_back, my_heading, dt
                     )
                     updated.add(fv.actor_id)
                     # we will only do something if the potential collider is "ahead" of us...
                     if min(abs(f_rb), abs(b_rb)) >= 0.45 * math.pi:
                         continue
                     est_front_crash = (
-                        self._bumper_wins_front.predict_crash_in(
-                            fv.actor_id, second_bumper
-                        )
+                        self._bumper_wins_front.predict_crash_in(fv.actor_id, bumper)
                         if f_rng < max_range
                         else math.inf
                     )
                     est_back_crash = (
-                        self._bumper_wins_back.predict_crash_in(
-                            fv.actor_id, second_bumper
-                        )
+                        self._bumper_wins_back.predict_crash_in(fv.actor_id, bumper)
                         if b_rng < max_range
                         else math.inf
                     )
