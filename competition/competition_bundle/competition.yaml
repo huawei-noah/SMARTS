@@ -8,7 +8,7 @@ image: logo.jpg
 force_submission_to_leaderboard: True
 disallow_leaderboard_modifying: True
 has_registration: True
-end_date: 2022-11-01
+end_date: 2022-11-05
 html:
     overview: overview.html  # Basic overview of the challenge.
     evaluation: evaluation.html  # How is the challenge being scored?
@@ -23,7 +23,7 @@ phases:
         phasenumber: 0
         description: Validation
         label: "Validation"
-        start_date: 2022-07-01
+        start_date: 2022-08-01
         max_submissions: 1000
         is_scoring_only: False
         scoring_program: scoring_program.zip
@@ -37,7 +37,7 @@ phases:
         phasenumber: 1
         description: Online learning
         label: "Track 1"
-        start_date: 2022-07-01
+        start_date: 2022-09-01
         max_submissions: 2
         is_scoring_only: False
         scoring_program: scoring_program.zip
@@ -50,7 +50,7 @@ phases:
         phasenumber: 2
         description: Offline learning
         label: "Track 2"
-        start_date: 2022-09-01
+        start_date: 2022-11-01
         max_submissions: 2
         is_scoring_only: False
         scoring_program: scoring_program.zip
