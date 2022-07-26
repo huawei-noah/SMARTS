@@ -48,7 +48,7 @@ normal = TrafficActor(
     ),
 )
 
-# flow_name = (start_lane, end_lane,)
+# flow_name = (start_lane, end_lane)
 route_opt = [
     (0, 0),
     (1, 1),
@@ -72,8 +72,8 @@ for name, routes in enumerate(route_comb):
         flows=[
             Flow(
                 route=Route(
-                    begin=("gneE3", r[0], 0),
-                    end=("gneE3", r[1], "max"),
+                    begin=("gneE3", start_lane, 0),
+                    end=("gneE3", end_lane, "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
                 rate=60 * random.uniform(15, 25),
@@ -87,7 +87,7 @@ for name, routes in enumerate(route_comb):
                 actors={normal: 1},
                 randomly_spaced=True,
             )
-            for r in routes
+            for start_lane, end_lane in routes
         ],
     )
 

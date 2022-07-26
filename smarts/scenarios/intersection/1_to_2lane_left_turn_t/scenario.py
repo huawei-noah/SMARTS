@@ -58,8 +58,8 @@ for name, routes in enumerate(route_comb):
         flows=[
             Flow(
                 route=Route(
-                    begin=(f"{r[0]}", r[1], 0),
-                    end=(f"{r[2]}", r[3], "max"),
+                    begin=(start_edge, start_lane, 0),
+                    end=(end_edge, end_lane, "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
                 rate=60 * random.uniform(5, 10),
@@ -72,7 +72,7 @@ for name, routes in enumerate(route_comb):
                 end=60 * 15,
                 actors={normal: 1},
             )
-            for r in routes
+            for start_edge, start_lane, end_edge, end_lane in routes
         ]
     )
 
