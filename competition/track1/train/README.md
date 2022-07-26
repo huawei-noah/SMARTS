@@ -67,7 +67,7 @@ The example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-b
     + ego's next heading with respect to the map's axes: [-π,π]
     + time delta to reach the given pose: [-1e10,1e10]
 + Observation space for each agent: `smarts.core.sensors.Observation`
-    + For more details on the contents of `Observation` class, see https://github.com/huawei-noah/SMARTS/blob/master/smarts/core/sensors.py#L179
+    + For more details on the contents of `Observation` class, see https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186
 + In each environment, each agent's mission goal is given in the observation returned at each time step. The mission goal could be accessed as `observation.ego_vehicle_state.mission.goal.position` which gives an `(x, y, z)` map coordinate of the goal location.
 
 ## Visualize

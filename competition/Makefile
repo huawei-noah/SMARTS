@@ -50,6 +50,6 @@ track1_submission.zip:
 	cd -
 
 track2_submission.zip:
-	cd track2/submission && \
-	zip -r $(COMPETITION_DIR)/track2_submission.zip . -x '*__pycache__*' && \
+	cd track2 && \
+	zip -r $(COMPETITION_DIR)/track2.zip . -x '*__pycache__*' && \
 	cd -
