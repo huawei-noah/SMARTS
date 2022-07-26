@@ -1,5 +1,5 @@
 # Submission
-Once a model has been trained for `multi-scenario-v0` environments, place all necessary files to run the trained model inside this folder named `submission`. 
+Once a model has been trained for `multi-scenario-v0` environments, place all necessary files to run the trained model for inference inside this folder named `submission`. 
 
 The files named `policy.py`, `requirements.txt`, and `explanation.md`, must be included with the submission. Its contents are explained below.
 
@@ -23,7 +23,11 @@ The files named `policy.py`, `requirements.txt`, and `explanation.md`, must be i
 
 ## Submit to Codalab
 + Zip the `submission` folder. 
-    + If the `submission` folder is located at `<path>/SMARTS/competition/track1/submission`, then run `make track1_submission.zip` from `<path>/SMARTS/competition` directory to easily create a zipped submission folder. 
+    + If the `submission` folder is located at `<path>/SMARTS/competition/track1/submission`, then run the following to easily create a zipped submission folder. 
+        ```bash
+        $ cd <path>/SMARTS/competition
+        $ make track1_submission.zip 
+        ```
 + Upload the `track1_submission.zip` to CodaLab.
     + Go to the [CodaLab competition page](https://codalab.lisn.upsaclay.fr/).
     + Click `My Competitions -> Competitions I'm In`.
