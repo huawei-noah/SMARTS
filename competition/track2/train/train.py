@@ -11,6 +11,7 @@
 # import re
 # import d3rlpy
 # from d3rlpy.dataset import MDPDataset
+#from d3rlpy.preprocessing import MinMaxActionScaler
 # from d3rlpy.algos import CQL
 # from PIL import Image
 # import torch
@@ -36,6 +37,7 @@ import pickle
 import numpy as np
 import d3rlpy
 from d3rlpy.dataset import MDPDataset
+from d3rlpy.preprocessing import MinMaxActionScaler
 from d3rlpy.algos import CQL, BCQ
 import os
 from PIL import Image
@@ -99,7 +101,7 @@ for scenario in scenarios[index : len(scenarios)]:
                 if vehicle_id not in vehicle_ids:
                     vehicle_ids.append(vehicle_id)
 
-        for id in vehicle_ids[0:2]:
+        for id in vehicle_ids:
             print("adding data for vehicle id " + id + " in scenario " + scenario)
 
             with client.file(
@@ -188,7 +190,11 @@ for scenario in scenarios[index : len(scenarios)]:
         dataset = MDPDataset(obs, actions, rewards, terminals)
 
         if index == 0:
-            model = d3rlpy.algos.CQL(use_gpu=True, batch_size=32)
+            scaler = MinMaxActionScaler(dataset)
+            minimum = actions.min(axis=0)
+            maximum = actions.max(axis=0)
+            action_scaler = MinMaxActionScaler(minimum=minimum, maximum=maximum)
+            model = d3rlpy.algos.CQL(use_gpu=True, batch_size=32, action_scaler=action_scaler)
         else:
             saved_models = glob.glob("d3rlpy_logs/*")
             latest_model = max(saved_models, key=os.path.getctime)

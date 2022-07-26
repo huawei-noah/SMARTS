@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict
 import numpy as np
-from train.utility import global_target_pose
+from utility import global_target_pose
 
 
 class BasePolicy:
@@ -57,7 +57,7 @@ class Policy(BasePolicy):
         self.model = CQL.from_json(
             Path(__file__).absolute().parents[0] / "model/params.json", use_gpu=True
         )
-        self.model.load_model(Path(__file__).absolute().parents[0] / "model/model.pt")
+        self.model.load_model(Path(__file__).absolute().parents[0] / "model/model_100.pt")
 
     def act(self, obs: Dict[str, Any]):
         """Act function to be implemented by user.
@@ -72,7 +72,7 @@ class Policy(BasePolicy):
         for agent_id, agent_obs in obs.items():
             action = self.model.predict(np.array([np.moveaxis(agent_obs["rgb"], -1, 0)]))[0]
 
-            # print(action)
+            print(action)
             target_pose = global_target_pose(action, agent_obs)
             wrapped_act.update({agent_id: target_pose})
         return wrapped_act
