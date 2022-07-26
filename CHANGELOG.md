@@ -27,7 +27,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ### Removed
 - Removed support for deprecated json-based and YAML formats for traffic histories.
-- Removed time and distance to collision values from `FormatObs` wrapper as their correctness was doubtful.
+- Removed time and distance to collision values from `FormatObs` wrapper as the current implementation's correctness was in doubt.
 
 ### Fixed
 - Fixed bug where `yaw_rate` was always reported as 0.0 (Issue #1481).
