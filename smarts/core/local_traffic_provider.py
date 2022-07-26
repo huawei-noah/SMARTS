@@ -634,6 +634,8 @@ class _TrafficActor:
         if not self._stranded:
             self._logger.info(f"{self.actor_id} stranded")
             self._stranded = True
+            self._state.speed = 0
+            self._state.linear_acceleration = None
 
     @property
     def finished_route(self) -> bool:
@@ -753,7 +755,7 @@ class _TrafficActor:
             # here we correct for the local road curvature (which affects how far we must travel)...
             T = self.radius / self.width
             assert (
-                abs(T) > 1.5
+                abs(T) > 1.0
             ), f"abnormally high curvature?  radius={self.radius}, width={self.width} at offset {self.lane_coord.s} of lane {self.lane.lane_id}"
             if to_index > self.lane.index:
                 se = T * (T - 1)
@@ -1459,20 +1461,29 @@ class _TrafficActor:
             #     self._target_speed = 0
             #     continue
             if feat.type == RoadMap.FeatureType.STOP_SIGN:
-                dist_to_stop = feat.min_dist_from(self._state.pose.point)
-                if dist_to_stop < 3 and self.speed == 0.0:
-                    self._stopped_at_feat[feat.feature_id] = True
+
+                def dist_to_stop():
+                    dist_to_sign = feat.min_dist_from(self._state.pose.point)
+                    lw, _ = self._lane.width_at_offset(self._offset)
+                    hdist_to_sign = 0.5 * lw + 2
+                    if hdist_to_sign >= dist_to_sign:
+                        return 0.0
+                    dts = math.sqrt(dist_to_sign**2 - hdist_to_sign**2)
+                    dts -= 0.5 * self._state.dimensions.length
+                    return max(dts, 0.0)
+
+                if feat.feature_id not in self._stopped_at_feat:
+                    dts = dist_to_stop()
+                    if self.speed < 0.1 and dts <= self._min_space_cush:
+                        self._stopped_at_feat[feat.feature_id] = True
+                    self._lane_win.gap = min(dts, self._lane_win.gap)
+                elif self._stopped_at_feat[feat.feature_id]:
                     self._waiting_at_feat[feat.feature_id] += dt
                     if self._waiting_at_feat[feat.feature_id] > self._wait_to_restart:
                         del self._waiting_at_feat[feat.feature_id]
-                        continue
-                if (
-                    not self._stopped_at_feat.get(feat.feature_id, False)
-                    or feat.feature_id in self._waiting_at_feat
-                ):
-                    self._target_lane_win.gap = min(
-                        dist_to_stop, self._target_lane_win.gap
-                    )
+                        self._stopped_at_feat[feat.feature_id] = False
+                    else:
+                        self._lane_win.gap = min(dist_to_stop(), self._lane_win.gap)
                 continue
             if feat.is_dynamic:
                 should_stop = self._owner._signal_state_means_stop(self._lane, feat)
@@ -1491,9 +1502,7 @@ class _TrafficActor:
                 if should_stop or feat.feature_id in self._waiting_at_feat:
                     # TAI: could decline to do this if my_stopping_dist >> dist_to_stop
                     dist_to_stop = feat.min_dist_from(self._state.pose.point)
-                    self._target_lane_win.gap = min(
-                        dist_to_stop, self._target_lane_win.gap
-                    )
+                    self._lane_win.gap = min(dist_to_stop, self._lane_win.gap)
 
     def _check_speed(self, dt: float):
         target_lane = self._target_lane_win.lane

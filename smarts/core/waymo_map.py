@@ -850,13 +850,13 @@ class WaymoMap(RoadMapWithCaches):
         for feat_id, map_feat_pb in self._waymo_features.items():
             if not isinstance(map_feat_pb, (StopSign, Crosswalk, SpeedBump)):
                 continue
-            feature_id = f"{feat_id}"
+            feature_id = f"feature_{feat_id}"
             feature = WaymoMap.Feature(self, feature_id, map_feat_pb)
             self._features[feature_id] = feature
             if feature.type == RoadMap.FeatureType.STOP_SIGN:
                 pos = self._map_pt_to_point(map_feat_pb.position)
                 for lane, _ in self.nearest_lanes(pos):
-                    if lane._feature_id == map_feat_pb.lane:
+                    if lane._feature_id in map_feat_pb.lane:
                         lane._features[feature_id] = feature
             else:
                 # TODO:  use self.nearest_surface() (NYI) to find nearest
@@ -1677,10 +1677,10 @@ class WaymoMap(RoadMapWithCaches):
                 return [self._feat_proto[0]]
             point = getattr(self._feat_proto, "position", None)
             if point:
-                return [self._map_pt_to_point(point)]
+                return [self._map._map_pt_to_point(point)]
             polygon = getattr(self._feat_proto, "polygon", None)
             if polygon:
-                return [self._map_pt_to_point(pt) for pt in polygon]
+                return [self._map._map_pt_to_point(pt) for pt in polygon]
             return []
 
         @cached_property
