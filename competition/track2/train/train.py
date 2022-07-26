@@ -15,10 +15,8 @@
 # from d3rlpy.algos import CQL
 # from PIL import Image
 # import torch
-
 # torch.cuda.empty_cache()
-# from d3rlpy.metrics.scorer import average_value_estimation_scorer
-# from d3rlpy.metrics.scorer import td_error_scorer
+
 
 
 # path = input("User path")
@@ -45,8 +43,6 @@ import re
 import torch
 torch.cuda.empty_cache()
 import pathlib
-from d3rlpy.metrics.scorer import average_value_estimation_scorer
-from d3rlpy.metrics.scorer import td_error_scorer
 import glob
 
 
@@ -66,7 +62,7 @@ elif ip_add == "gx3":
 
 while True:
     try:
-        client = remote.connect(ip_add, user_name, pswd)  # ip, username, password
+        client = remote.connect(ip_add, user_name, pswd)  
         break
     except paramiko.ssh_exception.AuthenticationException:
         print("Authentication Failed")
@@ -206,10 +202,6 @@ for scenario in scenarios[index : len(scenarios)]:
             eval_episodes=dataset,
             n_steps_per_epoch=100,
             n_steps=100,
-            scorers={
-                "td_error": td_error_scorer,
-                "value_scale": average_value_estimation_scorer,
-            },
         )
 
         saved_models = glob.glob("d3rlpy_logs/*")
