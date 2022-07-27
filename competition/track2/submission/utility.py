@@ -202,7 +202,6 @@ def get_goal_layer(goal_x, goal_y, cur_x, cur_y, cur_heading):
 def global_target_pose(action, agent_obs):
     if abs(action[2]) < 0.002:
         action[2] = 0
-    # breakpoint()
     cur_x = agent_obs["ego"]["pos"][0]
     cur_y = agent_obs["ego"]["pos"][1]
     cur_heading = agent_obs["ego"]["heading"]
