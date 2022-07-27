@@ -39,7 +39,7 @@ class ExternalProvider(Provider):
     def __init__(self, sim):
         self._sim = weakref.ref(sim)
         # start with the default recovery flags...
-        self._recovery_flags = super().recovery_flags()
+        self._recovery_flags = super().recovery_flags
         self.reset()
 
     @property
