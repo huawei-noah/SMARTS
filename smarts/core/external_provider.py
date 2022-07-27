@@ -41,10 +41,12 @@ class ExternalProvider(Provider):
         self.reset()
 
     def reset(self):
+        sim = self._sim()
+        assert sim
         self._ext_vehicle_states = []
         self._sent_states = None
         self._last_step_delta = None
-        self._last_fresh_step = self._sim.elapsed_sim_time
+        self._last_fresh_step = sim.elapsed_sim_time
 
     def state_update(
         self,
