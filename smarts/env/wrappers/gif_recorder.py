@@ -21,15 +21,15 @@
 # THE SOFTWARE.
 import os
 import sys
-import subprocess
 
 try:
     from moviepy.editor import ImageClip
     from moviepy.editor import ImageSequenceClip
-except:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "moviepy"])
-    from moviepy.editor import ImageClip
-    from moviepy.editor import ImageSequenceClip
+except (ImportError, ModuleNotFoundError):
+    print(sys.exc_info())
+    print(
+        "You may not have installed the [gym] dependencies required to capture the video. Install them first using the command `pip install -e .[gym]` at the source directory."
+    )
 import shutil
 import time
 from pathlib import Path
