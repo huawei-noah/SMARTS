@@ -632,9 +632,9 @@ class _TrafficActor:
     def bump_id(self):
         """Changes the id of a teleporting vehicle."""
         mm = re.match(r"([^_]+)(_(\d+))?$", self._state.actor_id)
-        assert mm
-        ver = int(mm.group(3)) if mm.group(3) else 0
-        self._state.actor_id = f"{mm.group(1)}_{ver + 1}"
+        if mm:
+            ver = int(mm.group(3)) if mm.group(3) else 0
+            self._state.actor_id = f"{mm.group(1)}_{ver + 1}"
 
     @property
     def route(self) -> RoadMap.Route:

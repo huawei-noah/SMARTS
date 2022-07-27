@@ -1123,7 +1123,10 @@ class SMARTS:
             return provider_state
 
         # see if any other provider can take control of its actors...
-        for actor in provider.actors:
+        self._log.warning(
+            "attempting to transfer actors from {provider.source_str} to other providers..."
+        )
+        for actor in provider_state.actors:
             self.provider_relinquishing_actor(provider, actor)
 
         if recovery_flags & ProviderRecoveryFlags.EPISODE_REQUIRED:

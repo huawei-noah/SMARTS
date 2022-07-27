@@ -354,7 +354,13 @@ class SumoTrafficSimulation(TrafficProvider):
     def _handle_traci_disconnect(self, e):
         logging.error(f"TraCI has disconnected with: {e}")
         self._close_traci_and_pipes()
-        # TODO: handoff here?
+        sim = self._sim()
+        if sim:
+            self._log.warning(
+                "attempting to transfer SUMO vehicles to other providers..."
+            )
+            for actor in self._last_provider_state.actors:
+                sim.provider_relinquishing_actor(self, actor)
 
     def _remove_vehicles(self):
         vehicles_to_remove = None
@@ -946,7 +952,8 @@ class SumoTrafficSimulation(TrafficProvider):
         # (This is a conservative policy to avoid "glitches"; we may relax it
         # in the future.)
         return (
-            isinstance(state, VehicleState)
+            self.connected
+            and isinstance(state, VehicleState)
             and state.role == ActorRole.Social
             and state.actor_id in self._hijacked
         )
