@@ -24,7 +24,7 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
 from .coordinates import Point
-from .provider import Provider, ProviderState
+from .provider import Provider, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Scenario
 
@@ -62,7 +62,17 @@ class SignalProvider(Provider):
 
     def __init__(self):
         self._my_signals: Dict[str, SignalState] = dict()
+        # start with the default recovery flags...
+        self._recovery_flags = super().recovery_flags
         self._road_map = None
+
+    @property
+    def recovery_flags(self) -> ProviderRecoveryFlags:
+        return self._recovery_flags
+
+    @recovery_flags.setter
+    def recovery_flags(self, flags: ProviderRecoveryFlags):
+        self._recovery_flags = flags
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:

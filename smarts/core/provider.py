@@ -38,6 +38,8 @@ class ProviderRecoveryFlags(IntFlag):
     """Needed for the experiment. Results in exception if an error is thrown."""
     ATTEMPT_RECOVERY = 0x00001000
     """Provider should attempt to recover from the exception or disconnection."""
+    RELINQUISH_ACTORS = 0x00010000
+    """Provider should relinquish its agents if it cannot / will not recover."""
 
 
 @dataclass
@@ -78,6 +80,20 @@ class ProviderState:
 class Provider:
     """A Provider manages a (sub)set of actors (e.g., vehicles) that all share the same action space(s).
     This is a base class (interface) from which all Providers should inherit."""
+
+    @property
+    def recovery_flags(self) -> ProviderRecoveryFlags:
+        """Flags specifying what this provider should do if it fails.
+        (May be overridden by child classes.)"""
+        return (
+            ProviderRecoveryFlags.EXPERIMENT_REQUIRED
+            | ProviderRecoveryFlags.RELINQUISH_ACTORS
+        )
+
+    @recovery_flags.setter
+    def recovery_flags(self, flags: ProviderRecoveryFlags):
+        """Setter to allow recovery flags to be changed."""
+        raise NotImplementedError
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:

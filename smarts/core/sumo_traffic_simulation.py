@@ -35,7 +35,7 @@ from smarts.core import gen_id
 from smarts.core.actor import ActorRole, ActorState
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
-from smarts.core.provider import Provider, ProviderState
+from smarts.core.provider import Provider, ProviderRecoveryFlags, ProviderState
 from smarts.core.road_map import RoadMap
 from smarts.core.signal_provider import SignalLightState, SignalState
 from smarts.core.sumo_road_network import SumoRoadNetwork
@@ -116,6 +116,9 @@ class SumoTrafficSimulation(TrafficProvider):
         self._tls_cache = dict()
         self._last_provider_state = ProviderState()
 
+        # start with the default recovery flags...
+        self._recovery_flags = super().recovery_flags
+
         # TODO: remove when SUMO fixes SUMO reset memory growth bug.
         # `sumo-gui` memory growth is faster.
         self._reload_count = 50
@@ -151,6 +154,14 @@ class SumoTrafficSimulation(TrafficProvider):
             return
         self._sumo_proc.terminate()
         self._sumo_proc.wait()
+
+    @property
+    def recovery_flags(self) -> ProviderRecoveryFlags:
+        return self._recovery_flags
+
+    @recovery_flags.setter
+    def recovery_flags(self, flags: ProviderRecoveryFlags):
+        self._recovery_flags = flags
 
     @property
     def headless(self):
@@ -355,7 +366,7 @@ class SumoTrafficSimulation(TrafficProvider):
         logging.error(f"TraCI has disconnected with: {e}")
         self._close_traci_and_pipes()
         sim = self._sim()
-        if sim:
+        if sim and self.recovery_flags & ProviderRecoveryFlags.RELINQUISH_ACTORS:
             self._log.warning(
                 "attempting to transfer SUMO vehicles to other providers..."
             )

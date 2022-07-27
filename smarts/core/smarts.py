@@ -140,7 +140,6 @@ class SMARTS:
         self._motion_planner_provider = MotionPlannerProvider(self)
         self._traffic_history_provider = TrafficHistoryProvider()
         self._trajectory_interpolation_provider = TrajectoryInterpolationProvider(self)
-        self._provider_recovery_flags: Dict[Provider, ProviderRecoveryFlags] = {}
 
         self._traffic_sims = traffic_sims
         self._traffic_sims.append(self._traffic_history_provider)
@@ -160,12 +159,12 @@ class SMARTS:
         self.add_provider(self._motion_planner_provider)
         self.add_provider(self._trajectory_interpolation_provider)
         for traffic_sim in self._traffic_sims:
-            self._insert_provider(
-                len(self._providers),
-                traffic_sim,
-                recovery_flags=ProviderRecoveryFlags.EPISODE_REQUIRED
-                | ProviderRecoveryFlags.ATTEMPT_RECOVERY,
+            recovery_flags = (
+                ProviderRecoveryFlags.EPISODE_REQUIRED
+                | ProviderRecoveryFlags.ATTEMPT_RECOVERY
+                | ProviderRecoveryFlags.RELINQUISH_ACTORS
             )
+            self._insert_provider(len(self._providers), traffic_sim, recovery_flags)
         if external_provider:
             self._external_provider = ExternalProvider(self)
             self._insert_provider(0, self._external_provider)
@@ -498,8 +497,8 @@ class SMARTS:
         recovery_flags: ProviderRecoveryFlags = ProviderRecoveryFlags.EXPERIMENT_REQUIRED,
     ):
         assert isinstance(provider, Provider)
+        provider.recovery_flags = recovery_flags
         self._providers.insert(index, provider)
-        self._provider_recovery_flags[provider] = recovery_flags
 
     def switch_ego_agents(self, agent_interfaces: Dict[str, AgentInterface]):
         """Change the ego agents in the simulation. Effective on the next reset."""
@@ -1108,9 +1107,7 @@ class SMARTS:
         if not provider_problem:
             return None
 
-        recovery_flags = self._provider_recovery_flags.get(
-            provider, ProviderRecoveryFlags.EXPERIMENT_REQUIRED
-        )
+        recovery_flags = provider.recovery_flags
         recovered = False
         provider_state = None
         if recovery_flags & ProviderRecoveryFlags.ATTEMPT_RECOVERY:
@@ -1122,12 +1119,13 @@ class SMARTS:
         if recovered:
             return provider_state
 
-        # see if any other provider can take control of its actors...
-        self._log.warning(
-            "attempting to transfer actors from {provider.source_str} to other providers..."
-        )
-        for actor in provider_state.actors:
-            self.provider_relinquishing_actor(provider, actor)
+        if recovery_flags & ProviderRecoveryFlags.RELINQUISH_ACTORS:
+            # see if any other provider can take control of its actors...
+            self._log.warning(
+                "attempting to transfer actors from {provider.source_str} to other providers..."
+            )
+            for actor in provider_state.actors:
+                self.provider_relinquishing_actor(provider, actor)
 
         if recovery_flags & ProviderRecoveryFlags.EPISODE_REQUIRED:
             self._reset_required = True

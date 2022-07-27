@@ -73,6 +73,16 @@ class LocalTrafficProvider(TrafficProvider):
             RoadMap.Lane, List[Tuple[float, VehicleState]]
         ] = dict()
         self._offsets_cache: Dict[str, Dict[str, float]] = dict()
+        # start with the default recovery flags...
+        self._recovery_flags = super().recovery_flags
+
+    @property
+    def recovery_flags(self) -> ProviderRecoveryFlags:
+        return self._recovery_flags
+
+    @recovery_flags.setter
+    def recovery_flags(self, flags: ProviderRecoveryFlags):
+        self._recovery_flags = flags
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:

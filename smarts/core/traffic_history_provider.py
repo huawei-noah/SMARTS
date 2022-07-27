@@ -27,7 +27,7 @@ from shapely.geometry import Polygon
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose
-from .provider import ProviderState
+from .provider import ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .signal_provider import SignalLightState, SignalState
 from .traffic_provider import TrafficProvider
@@ -49,6 +49,16 @@ class TrafficHistoryProvider(TrafficProvider):
         self._lane_sig_state = dict()
         self._vehicle_id_prefix = "history-vehicle-"
         self._start_time_offset = 0
+        # start with the default recovery flags...
+        self._recovery_flags = super().recovery_flags
+
+    @property
+    def recovery_flags(self) -> ProviderRecoveryFlags:
+        return self._recovery_flags
+
+    @recovery_flags.setter
+    def recovery_flags(self, flags: ProviderRecoveryFlags):
+        self._recovery_flags = flags
 
     @property
     def start_time(self):

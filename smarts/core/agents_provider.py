@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType, Controllers
-from .provider import Provider, ProviderState
+from .provider import Provider, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .vehicle import VehicleState
 
@@ -37,7 +37,17 @@ class AgentsProvider(Provider):
     def __init__(self, sim):
         self._log = logging.getLogger(self.__class__.__name__)
         self._sim = weakref.ref(sim)
+        # start with the default recovery flags...
+        self._recovery_flags = super().recovery_flags
         self._my_agent_actors: Dict[str, List[ActorState]] = dict()
+
+    @property
+    def recovery_flags(self) -> ProviderRecoveryFlags:
+        return self._recovery_flags
+
+    @recovery_flags.setter
+    def recovery_flags(self, flags: ProviderRecoveryFlags):
+        self._recovery_flags = flags
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
