@@ -40,13 +40,12 @@ def _collisions(obs: Observation) -> Dict[str, int]:
 def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
     ave = 0
     step = 0
-    regexp_jn = re.compile(r":.*J")
-    obstacle_dist_th = 50
-    obstacle_angle_th = np.pi * 40 / 180
+    rel_angle_th = np.pi * 40 / 180
+    rel_heading_th = np.pi * 179 / 180
     w_dist = 0.05
 
     def func(obs: Observation) -> Dict[str, float]:
-        nonlocal ave, step, regexp_jn, obstacle_dist_th, obstacle_angle_th, w_dist
+        nonlocal ave, step, rel_angle_th, rel_heading_th, w_dist
 
         # Ego's position and heading with respect to the map's coordinate system.
         # Note: All angles returned by smarts is with respect to the map's coordinate system.
@@ -54,60 +53,46 @@ def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
         ego = obs.ego_vehicle_state
         ego_heading = (ego.heading + np.pi) % (2 * np.pi) - np.pi
         ego_pos = ego.position
-        lane_ids = [wp.lane_id for path in obs.waypoint_paths for wp in path]
-        lane_ids = set(lane_ids)
-        ego_road_ids = [id.split("_")[0] for id in lane_ids]
-        ego_road_ids = set(ego_road_ids)
+
+        # Set obstacle distance threshold using 3-second rule
+        obstacle_dist_th = ego.speed * 3
+        if obstacle_dist_th == 0:
+            return {"dist_to_obstacles": 0}
 
         # Get neighbors.
         nghbs = obs.neighborhood_vehicle_states
 
-        # Filter neighbors by road id.
-        nghbs = [
-            nghb
-            for nghb in nghbs
-            if (
-                # Match neighbor and ego road id.
-                nghb.road_id == ego.road_id
-                # Match neighbor road id to ':.*J' pattern.
-                or regexp_jn.search(nghb.road_id)
-                # Match neighbor road id to any road id in ego path.
-                or nghb.road_id in ego_road_ids
-            )
-        ]
-
-        if len(nghbs) == 0:
-            return {"dist_to_obstacles": 0}
-
         # Filter neighbors by distance.
-        nghbs = [
-            (nghb.position, np.linalg.norm(nghb.position - ego_pos)) for nghb in nghbs
-        ]
-        nghbs = [nghb for nghb in nghbs if nghb[1] <= obstacle_dist_th]
-
-        if len(nghbs) == 0:
+        nghbs_state = [(nghb, np.linalg.norm(nghb.position - ego_pos)) for nghb in nghbs]
+        nghbs_state = [nghb_state for nghb_state in nghbs_state if nghb_state[1] <= obstacle_dist_th]
+        if len(nghbs_state) == 0:
             return {"dist_to_obstacles": 0}
 
-        # Filter neighbors by angle.
+        # Filter neighbors within ego's visual field.
         obstacles = []
-        for pos, dist in nghbs:
+        for nghb_state in nghbs_state:
             # Neighbors's angle with respect to the ego's position.
             # Note: In np.angle(), angle is zero at positive x axis, and increases anti-clockwise.
             #       Hence, map_angle = np.angle() - π/2
-            rel_pos = pos - ego_pos
+            rel_pos = np.array(nghb_state[0].position) - ego_pos
             obstacle_angle = np.angle(rel_pos[0] + 1j * rel_pos[1]) - np.pi / 2
             obstacle_angle = (obstacle_angle + np.pi) % (2 * np.pi) - np.pi
-            # Obstacle heading is the angle correction required by ego agent to face the obstacle.
-            obstacle_heading = obstacle_angle - ego_heading
-            obstacle_heading = (obstacle_heading + np.pi) % (2 * np.pi) - np.pi
-            if abs(obstacle_heading) <= obstacle_angle_th:
-                obstacles.append((pos, dist, obstacle_heading))
+            # Relative angle is the angle correction required by ego agent to face the obstacle.
+            rel_angle = obstacle_angle - ego_heading
+            rel_angle = (rel_angle + np.pi) % (2 * np.pi) - np.pi
+            if abs(rel_angle) <= rel_angle_th:
+                obstacles.append(nghb_state)
+        nghbs_state = obstacles
+        if len(nghbs_state) == 0:
+            return {"dist_to_obstacles": 0}
 
-        if len(obstacles) == 0:
+        # Filter neighbors by their relative heading to that of ego's heading.
+        nghbs_state = [nghb_state for nghb_state in nghbs_state if abs(nghb_state[0].heading.relative_to(ego.heading)) <= rel_heading_th]       
+        if len(nghbs_state) == 0:
             return {"dist_to_obstacles": 0}
 
         # J_D : Distance to obstacles cost
-        _, di, _ = zip(*obstacles)
+        di = [nghb_state[1] for nghb_state in nghbs_state]
         di = np.array(di)
         j_d = np.amax(np.exp(-w_dist * di))
 

@@ -7,20 +7,16 @@ This folder contains the python script that CodaLab uses to evaluate the submiss
 ## Score for Track-1
 + Submitted models are scored on four aspects, namely,
     + Completion: Number of goals completed.
-    + Time: Number of steps taken to complete the scenarios.
+    + Time: Number of steps taken and the final distance to goal.
     + Humanness: Similarity to human behaviour.
     + Rules: Compliance with traffic rules.
 + Factors included in `Humanness` aspect, include 
     + distance to obstacles
-    + jerk
+    + angular jerk
+    + linear jeark
     + lane center offset
-    + velocity offset
-    + yaw rate
 + Factors included in the `Rules` aspect, include events such as 
-    + collisions
-    + driving off road
-    + driving off route 
-    + driving on shoulder
+    + exceeding speed limit
     + driving wrong way
 + Each score component must be minimized. The lower the value, the better it is.
 + Overall rank is obtained by sorting each score component in ascending order, with a priority order of Completion > Time > Humanness > Rules .
