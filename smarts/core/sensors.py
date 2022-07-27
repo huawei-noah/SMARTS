@@ -186,6 +186,8 @@ class Vias:
 
 @dataclass(frozen=True)
 class SignalObservation:
+    """Describes an observation of a traffic signal (light) on this timestep."""
+
     state: SignalLightState
     """The state of the traffic signal."""
     stop_point: Point
