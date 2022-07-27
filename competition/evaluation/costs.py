@@ -10,28 +10,26 @@ from smarts.core.sensors import Observation
 @dataclass
 class Costs:
     collisions: int = 0
+    dist_to_goal: float = 0
     dist_to_obstacles: float = 0
-    jerk: float = 0
+    jerk_angular: float = 0
+    jerk_linear: float = 0
     lane_center_offset: float = 0
     off_road: int = 0
-    off_route: int = 0
-    on_shoulder: int = 0
-    velocity_offset: float = 0
+    speed_limit: float = 0
     wrong_way: int = 0
-    yaw_rate: float = 0
 
 
 COST_FUNCS = {
     "collisions": lambda: _collisions,
+    "dist_to_goal": lambda: _dist_to_goal,
     "dist_to_obstacles": lambda: _dist_to_obstacles(),
-    "jerk": lambda: _jerk(),
+    "jerk_angular": lambda: _jerk_angular(),
+    "jerk_linear": lambda: _jerk_linear(),
     "lane_center_offset": lambda: _lane_center_offset(),
     "off_road": lambda: _off_road,
-    "off_route": lambda: _off_route,
-    "on_shoulder": lambda: _on_shoulder,
-    "velocity_offset": lambda: _velocity_offset(),
-    "wrong_way": lambda: _wrong_way,
-    "yaw_rate": lambda: _yaw_rate(),
+    "speed_limit": lambda: _speed_limit(),
+    "wrong_way": lambda: _wrong_way(),
 }
 
 
@@ -119,20 +117,38 @@ def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
     return func
 
 
-def _jerk() -> Callable[[Observation], Dict[str, float]]:
+def _dist_to_goal(obs: Observation) -> Dict[str, float]:
+    rel = obs.ego_vehicle_state.position[:2] - obs.ego_vehicle_state.mission.goal.position[:2]
+    rel_abs = abs(rel)
+    dist = sum(rel_abs)
+    print(f"rel: {rel}, rel_abs {rel_abs} , dist: {dist}, -------------------------------------")
+    return {"dist_to_goal": dist}
+
+
+def _jerk_angular() -> Callable[[Observation], Dict[str, float]]:
     ave = 0
     step = 0
-    w_jerk = [0.7, 0.3]
 
     def func(obs: Observation) -> Dict[str, float]:
-        nonlocal ave, step, w_jerk
+        nonlocal ave, step
 
-        lj_squared = np.sum(np.square(obs.ego_vehicle_state.linear_jerk))
-        aj_squared = np.sum(np.square(obs.ego_vehicle_state.angular_jerk))
-        j_j = np.dot(w_jerk, [lj_squared, aj_squared])
+        ja_squared = np.sum(np.square(obs.ego_vehicle_state.angular_jerk))
+        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=ja_squared)
+        return {"jerk_angular": ave}
 
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_j)
-        return {"jerk": ave}
+    return func
+
+
+def _jerk_linear() -> Callable[[Observation], Dict[str, float]]:
+    ave = 0
+    step = 0
+
+    def func(obs: Observation) -> Dict[str, float]:
+        nonlocal ave, step
+
+        jl_squared = np.sum(np.square(obs.ego_vehicle_state.linear_jerk))
+        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=jl_squared)
+        return {"jerk_linear": ave}
 
     return func
 
@@ -168,15 +184,7 @@ def _off_road(obs: Observation) -> Dict[str, int]:
     return {"off_road": obs.events.off_road}
 
 
-def _off_route(obs: Observation) -> Dict[str, int]:
-    return {"off_route": obs.events.off_route}
-
-
-def _on_shoulder(obs: Observation) -> Dict[str, int]:
-    return {"on_shoulder": int(obs.events.on_shoulder)}
-
-
-def _velocity_offset() -> Callable[[Observation], Dict[str, float]]:
+def _speed_limit() -> Callable[[Observation], Dict[str, float]]:
     ave = 0
     step = 0
 
@@ -197,27 +205,23 @@ def _velocity_offset() -> Callable[[Observation], Dict[str, float]]:
         j_v = overspeed**2
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_v)
-        return {"velocity_offset": ave}
+        return {"speed_limit": ave}
 
     return func
 
 
-def _wrong_way(obs: Observation) -> Dict[str, int]:
-    return {"wrong_way": obs.events.wrong_way}
-
-
-def _yaw_rate() -> Callable[[Observation], Dict[str, float]]:
+def _wrong_way() -> Callable[[Observation], Dict[str, float]]:
     ave = 0
     step = 0
 
     def func(obs: Observation) -> Dict[str, float]:
         nonlocal ave, step
-        yaw_rate = (
-            obs.ego_vehicle_state.yaw_rate if obs.ego_vehicle_state.yaw_rate else 0
-        )
-        j_y = yaw_rate**2
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_y)
-        return {"yaw_rate": ave}
+        wrong_way = 0
+        if obs.events.wrong_way:
+            wrong_way = 1
+
+        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=wrong_way)
+        return {"wrong_way": ave}
 
     return func
 
