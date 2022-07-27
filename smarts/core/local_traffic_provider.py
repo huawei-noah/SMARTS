@@ -611,9 +611,9 @@ class _TrafficActor:
     def bump_id(self):
         """Changes the id of a teleporting vehicle."""
         mm = re.match(r"([^_]+)(_(\d+))?$", self._state.actor_id)
-        assert mm
-        ver = int(mm.group(3)) if mm.group(3) else 0
-        self._state.actor_id = f"{mm.group(1)}_{ver + 1}"
+        if mm:
+            ver = int(mm.group(3)) if mm.group(3) else 0
+            self._state.actor_id = f"{mm.group(1)}_{ver + 1}"
 
     @property
     def route(self) -> RoadMap.Route:
@@ -626,7 +626,7 @@ class _TrafficActor:
         self._route = route
         self._route.add_to_cache()
         self._dest_lane, self._dest_offset = self._resolve_flow_pos(
-            self._flow, "arrival", self._state.dimensions.length
+            self._flow, "arrival", self._state.dimensions
         )
         self._route_ind = 0
 
