@@ -200,7 +200,9 @@ def get_goal_layer(goal_x, goal_y, cur_x, cur_y, cur_heading):
     return goal_obs
 
 def global_target_pose(action, agent_obs):
-
+    if abs(action[2]) < 0.002:
+        action[2] = 0
+    # breakpoint()
     cur_x = agent_obs["ego"]["pos"][0]
     cur_y = agent_obs["ego"]["pos"][1]
     cur_heading = agent_obs["ego"]["heading"]
@@ -218,10 +220,20 @@ def global_target_pose(action, agent_obs):
         theta = 2 * math.pi + cur_heading
 
     trans_matrix = np.array([[math.cos(theta), math.sin(theta)], [-math.sin(theta), math.cos(theta)]])
+    # print(trans_matrix)
     cur_pos = np.array([[cur_x], [cur_y]])
-    trans_cur = np.round(np.matmul(trans_matrix, cur_pos), 5)
-    trans_next = np.array([[trans_cur[0,0] + action[0]], [trans_cur[1,0] + action[1]]])
-    global_next = np.round(np.matmul(np.transpose(trans_matrix), trans_next), 5)
-    target_pose = np.array([global_next[0,0], global_next[1,0], action[2] + cur_heading, 0.1])
+    action_bev = np.array([[action[0]], [action[1]]])
+    # trans_cur = np.matmul(trans_matrix, cur_pos)
+    # trans_next = np.array([[trans_cur[0,0] + action[0]], [trans_cur[1,0] + action[1]]])
+    print(action, cur_heading)
+    action_global = np.matmul(np.transpose(trans_matrix), action_bev)
+    # print(action_global)
+    # global_next = np.matmul(np.transpose(trans_matrix), trans_next)
+    # target_pose = np.array([global_next[0,0], global_next[1,0], action[2] + cur_heading, 0.1])
+    # if abs(action[2]) < 0.005:
+    #     target_pose = np.array([cur_x + action_global[0], cur_y + action_global[1], cur_heading, 0.1])
+    # else:
+    #     target_pose = np.array([cur_x + action_global[0], cur_y + action_global[1], action[2] + cur_heading, 0.1])
+    target_pose = np.array([cur_x + action_global[0], cur_y + action_global[1], action[2] + cur_heading, 0.1])
 
     return target_pose
