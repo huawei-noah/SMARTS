@@ -1404,7 +1404,7 @@ class SMARTS:
             "pedestrian": envision_types.VehicleType.Pedestrian,
         }
         for v in provider_state.actors:
-            if not isinstance(v, SignalState):
+            if isinstance(v, SignalState):
                 env_ss = envision_types.SignalLightState.Unknown
                 if v.state == SignalLightState.OFF:
                     env_ss = envision_types.SignalLightState.Off
