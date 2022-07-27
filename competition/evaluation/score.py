@@ -33,49 +33,28 @@ class Score:
         self._results["completion"] = _completion(counts=self._counts)
         self._results["humanness"] = _humanness(counts=self._counts, costs=self._costs)
         self._results["rules"] = _rules(counts=self._counts, costs=self._costs)
-        self._results["time"] = _time(counts=self._counts)
+        self._results["time"] = _time(counts=self._counts, costs=self._costs)
 
         return self._results
 
 
 def _completion(counts: Counts) -> float:
-    w_cr = 0.6
-    w_pt = 0.4
-
-    return (w_cr * counts.crashes + w_pt * counts.partial) / counts.episodes
+    return counts.crashes / counts.episodes
 
 
 def _humanness(counts: Counts, costs: Costs) -> float:
-    w_d = 0.25
-    w_j = 0.25
-    w_lc = 0.2
-    w_vo = 0.15
-    w_yr = 0.15
 
     return (
-        w_d * costs.dist_to_obstacles
-        + w_j * costs.jerk
-        + w_lc * costs.lane_center_offset
-        + w_vo * costs.velocity_offset
-        + w_yr * costs.yaw_rate
-    ) / counts.episodes_adjusted
+        costs.dist_to_obstacles
+        + costs.jerk_angular
+        + costs.jerk_linear
+        + costs.lane_center_offset
+    ) / counts.episode_agents
 
 
 def _rules(counts: Counts, costs: Costs) -> float:
-    w_c = 0.3
-    w_ord = 0.175
-    w_ort = 0.1
-    w_os = 0.175
-    w_ww = 0.25
-
-    return (
-        w_c * costs.collisions
-        + w_ord * costs.off_road
-        + w_ort * costs.off_route
-        + w_os * costs.on_shoulder
-        + w_ww * costs.wrong_way
-    ) / counts.episodes_adjusted
+    return (costs.speed_limit + 10 * costs.wrong_way) / counts.episode_agents
 
 
-def _time(counts: Counts) -> float:
-    return counts.steps_adjusted / counts.episodes
+def _time(counts: Counts, costs: Costs) -> float:
+    return (counts.steps_adjusted + costs.dist_to_goal) / counts.episodes

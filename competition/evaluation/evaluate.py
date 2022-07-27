@@ -202,7 +202,7 @@ if __name__ == "__main__":
             "-m",
             "pip",
             "install",
-            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-4",
+            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
         ]
     )
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     assert config["phase"] in _PHASES, f"Unknown phase config key: {config['phase']}"
 
     # Run validation, track1, or track2.
-    if config["phase"]=="validation":
+    if config["phase"] == "validation":
         rank = evaluate(config)
         rank = dict.fromkeys(rank, 0)
     elif config["phase"] == "track1":
