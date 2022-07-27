@@ -579,7 +579,7 @@ class SMARTS:
 
         return vehicle
 
-    def _provider_for_actor(self, actor_id: str) -> Provider:
+    def _provider_for_actor(self, actor_id: str) -> Optional[Provider]:
         for provider in self.providers:
             if provider.manages_actor(actor_id):
                 return provider
