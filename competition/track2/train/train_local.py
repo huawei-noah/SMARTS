@@ -1,30 +1,25 @@
-
-
-from utility import remote_operations
-from utility import goal_region_reward
-from utility import get_goal_layer
-from utility import get_trans_coor
-import paramiko
-import getpass
-import pickle
-import numpy as np
-import d3rlpy
-from d3rlpy.dataset import MDPDataset
-from d3rlpy.preprocessing import MinMaxActionScaler
-from d3rlpy.algos import CQL, BCQ
 import os
-from PIL import Image
-import re
-import torch
-torch.cuda.empty_cache()
-import pathlib
-import glob
 import argparse
 from pathlib import Path
-
-
+import subprocess
+import sys
 
 def train(path):
+    from utility import goal_region_reward
+    from utility import get_goal_layer
+    from utility import get_trans_coor
+    import pickle
+    import numpy as np
+    import d3rlpy
+    from d3rlpy.dataset import MDPDataset
+    from d3rlpy.preprocessing import MinMaxActionScaler
+    from d3rlpy.algos import CQL, BCQ
+    from PIL import Image
+    import re
+    import torch
+    torch.cuda.empty_cache()
+    import glob
+
     path = path
 
     scenarios = list()
@@ -115,11 +110,12 @@ def train(path):
                             current_position[1],
                             current_heading,
                         )
-                        obs.append(np.concatenate((img_obs, goal_obs), axis=0))
-                        
+                        # obs.append(np.concatenate((img_obs, goal_obs), axis=0))
+                        # obs.append(bev)
+                        obs.append(np.concatenate((bev, goal_obs), axis=0))
+
                         actions.append([dx, dy, dheading])
-                        obs.append(bev)
-                        actions.append([dx, dy, dheading])
+
                         dist_reward = vehicle_data[float(sim_time)]["dist"]
                         goal_reward = goal_region_reward(
                             threshold,
@@ -183,5 +179,20 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    # Install requirements.
+    req_file = os.path.join(str(Path(__file__).absolute().parent), "requirements.txt")
+    sys.path.insert(0, str(Path(__file__).absolute().parent))
+    subprocess.check_call(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
+        ]
+    )
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+
     main(args)
 
