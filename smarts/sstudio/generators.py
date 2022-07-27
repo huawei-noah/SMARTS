@@ -368,3 +368,36 @@ class TrafficGenerator:
             log_dir = make_dir_in_smarts_log_dir("_duarouter_routing")
 
         return os.path.abspath(log_dir)
+
+
+    def tripwritexml(resolve_route, traffic, doc):
+        """Wrtes a traffic spec into a route file. Typically this would be the source
+        data to Sumo's DUAROUTER.
+        """
+        # Make sure all routes are "resolved" (e.g. `RandomRoute` are converted to
+        # `Route`) so that we can write them all to file.
+        resolved_routes = {}
+        for route in {trip.route for trip in traffic.trips}:
+            resolved_routes[route] = resolve_route(route)
+
+        for route in set(resolved_routes.values()):
+            doc.stag("route", id=route.id + "trip", edges=" ".join(route.roads))
+
+            # We don't de-dup flows since defining the same flow multiple times should
+            # create multiple traffic flows. Since IDs can't be reused, we also unique
+            # them here.
+        for trip_idx, trip in enumerate(traffic.trips):
+            route = resolved_routes[trip.route]
+            actor = trip.actor
+            doc.stag(
+                "vehicle",
+                id="{}".format(trip.vehicle_name),
+                type=actor.id,
+                route=route.id,
+                depart=trip.depart,
+                departLane=route.begin[1],
+                departPos=route.begin[2],
+                departSpeed=actor.depart_speed,
+                arrivalLane=route.end[1],
+                arrivalPos=route.end[2],
+            )

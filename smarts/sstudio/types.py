@@ -501,6 +501,37 @@ class Flow:
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
 
+@dataclass(frozen=True)
+class Trip:
+    """A route with a single actor type with name and unique id."""
+    def __init__(
+        self,
+        vehicle_name: str,
+        actor: TrafficActor,
+        route: Union[RandomRoute, Route],
+        depart: float = 0,
+    ):
+        self.vehicle_name = vehicle_name
+        self.actor = TrafficActor(self.vehicle_name)
+        self.route = route
+        """The route for the actor to attempt to follow."""
+        self.depart = depart
+        """Start time in seconds."""
+        # XXX: Defaults to 1 hour of traffic. We may want to change this to be "continual
+        #      traffic", effectively an infinite end.
+
+    @property
+    def id(self) -> str:
+        """The unique id of this trip."""
+        return self.vehicle_name
+
+    def __hash__(self):
+        # Custom hash since self.actors is not hashable, here we first convert to a
+        # frozenset.
+        return _pickle_hash((self.route, self.actor))
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and hash(self) == hash(other)
 
 @dataclass(frozen=True)
 class JunctionEdgeIDResolver:
@@ -547,6 +578,8 @@ class Traffic:
     """Flows are used to define a steady supply of vehicles."""
     # TODO: consider moving TrafficHistory stuff in here (and rename to Trajectory)
     # TODO:  - treat history points like Vias (no guarantee on history timesteps anyway)
+    trips: Sequence[Trip]
+    """Trips are used to define a series of single vehicle trip."""
     engine: str = "SUMO"
     """The traffic-generation engine to use. Supported values include: SUMO, SMARTS.  SUMO requires using a SumoRoadNetwork for the RoadMap."""
 
