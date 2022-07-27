@@ -33,8 +33,9 @@ from smarts.core.utils.string import truncate
 from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
+from .road_map import RoadMap
 from .sensors import SensorState
-from .vehicle import Vehicle
+from .vehicle import Vehicle, VehicleState
 
 VEHICLE_INDEX_ID_LENGTH = 128
 
@@ -469,15 +470,19 @@ class VehicleIndex:
         return vehicle
 
     @clear_cache
-    def relinquish_agent_control(self, sim, vehicle_id, social_vehicle_id):
+    def relinquish_agent_control(
+        self, sim, vehicle_id: str
+    ) -> Tuple[VehicleState, RoadMap.Route]:
         """Give control of the vehicle back to its original controller."""
-        self._log.debug(
-            f"Relinquishing agent control v_id={vehicle_id} sv_id={social_vehicle_id}"
-        )
+        self._log.debug(f"Relinquishing agent control v_id={vehicle_id}")
 
-        vehicle_id, social_vehicle_id = _2id(vehicle_id), _2id(social_vehicle_id)
+        v_id = _2id(vehicle_id)
 
-        vehicle = self._vehicles[vehicle_id]
+        ss = self._sensor_states[v_id]
+        route = ss.plan.route
+        self.stop_agent_observation(vehicle_id)
+
+        vehicle = self._vehicles[v_id]
         box_chassis = BoxChassis(
             pose=vehicle.chassis.pose,
             speed=vehicle.chassis.speed,
@@ -486,7 +491,7 @@ class VehicleIndex:
         )
         vehicle.swap_chassis(box_chassis)
 
-        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        v_index = self._controlled_by["vehicle_id"] == v_id
         entity = self._controlled_by[v_index][0]
         entity = _ControlEntity(*entity)
         self._controlled_by[v_index] = tuple(
@@ -499,7 +504,7 @@ class VehicleIndex:
             )
         )
 
-        return vehicle
+        return vehicle.state, route
 
     @clear_cache
     def attach_sensors_to_vehicle(self, sim, vehicle_id, agent_interface, plan):

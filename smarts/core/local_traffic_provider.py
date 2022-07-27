@@ -38,7 +38,7 @@ from shapely.geometry import box as shapely_box
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
-from .provider import ProviderRecoveryFlags, ProviderState
+from .provider import Provider, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap, Waypoint
 from .route_cache import RouteWithCache
 from .scenario import Scenario
@@ -59,6 +59,7 @@ class LocalTrafficProvider(TrafficProvider):
 
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._sim = None
         self._scenario = None
         self.road_map: RoadMap = None
         self._flows: Dict[str, Dict[str, Any]] = dict()
@@ -181,6 +182,9 @@ class LocalTrafficProvider(TrafficProvider):
         return ProviderState(actors=self._my_actor_states)
 
     def setup(self, scenario: Scenario) -> ProviderState:
+        assert self._sim is not None
+        sim = self._sim()
+        assert sim
         self._scenario = scenario
         self.road_map = scenario.road_map
         traffic_specs = [
@@ -224,6 +228,8 @@ class LocalTrafficProvider(TrafficProvider):
         )
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
+        sim = self._sim()
+        assert sim
         self._add_actors_for_time(elapsed_sim_time, dt)
         for other in self._other_vehicle_states:
             if other.actor_id in self._reserved_areas:
@@ -239,18 +245,26 @@ class LocalTrafficProvider(TrafficProvider):
             actor.compute_next_state(dt)
 
         dones = []
+        losts = []
         remap_ids: Dict[str, str] = dict()
         for actor_id, actor in self._my_actors.items():
             actor.step(dt)
-            if actor.finished_route or actor.off_route:
-                # TODO:  insead, we should just _release_ control of off_route actors
+            if actor.finished_route:
                 dones.append(actor.actor_id)
+            elif actor.off_route:
+                losts.append(actor)
             elif actor.teleporting:
                 # pybullet doesn't like it when a vehicle jumps from one side of the map to another,
                 # so we need to give teleporting vehicles a new id and thus a new chassis.
                 actor.bump_id()
                 remap_ids[actor_id] = actor.actor_id
+        for actor in losts:
+            new_prov = sim.provider_relinquishing_actor(self, actor.state)
+            del self._my_actors[actor.actor_id]
         for actor_id in dones:
+            sim.provider_removing_actor(actor.state)
+            # The following is not really necessary due to the above calling teardown(),
+            # but it doesn't hurt...
             del self._my_actors[actor_id]
         for orig_id, new_id in remap_ids.items():
             self._my_actors[new_id] = self._my_actors[orig_id]
@@ -329,8 +343,7 @@ class LocalTrafficProvider(TrafficProvider):
             return
         traffic_actor.stay_put()
 
-    def update_route_for_vehicle(self, vehicle_id: str, new_route_roads: Sequence[str]):
-        new_route = self.road_map.route_from_road_ids(new_route_roads)
+    def update_route_for_vehicle(self, vehicle_id: str, new_route: RoadMap.Route):
         traffic_actor = self._my_actors.get(vehicle_id)
         if traffic_actor:
             traffic_actor.update_route(new_route)
@@ -341,15 +354,19 @@ class LocalTrafficProvider(TrafficProvider):
             return
         assert False, f"unknown vehicle_id: {vehicle_id}"
 
-    def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
+    def route_for_vehicle(self, vehicle_id: str) -> Optional[RoadMap.Route]:
         traffic_actor = self._my_actors.get(vehicle_id)
         if traffic_actor:
-            return traffic_actor.route.road_ids[-1]
+            return traffic_actor.route
         other = self._other_actors.get(vehicle_id)
         if other:
             _, oroute = other
-            return oroute.road_ids[-1] if oroute else None
+            return oroute if oroute else None
         assert False, f"unknown vehicle_id: {vehicle_id}"
+
+    def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
+        route = self.route_for_vehicle(vehicle_id)
+        return route.road_ids[-1]
 
     def can_accept_actor(self, state: ActorState) -> bool:
         # We don't accept vehicles that aren't on the road
@@ -361,11 +378,13 @@ class LocalTrafficProvider(TrafficProvider):
         )
 
     def add_actor(
-        self,
-        provider_actor: ActorState,
-        route: Optional[Sequence[RouteWithCache]] = None,
+        self, provider_actor: ActorState, from_provider: Optional[Provider] = None
     ):
         assert isinstance(provider_actor, VehicleState)
+        route = None
+        if from_provider and isinstance(from_provider, TrafficProvider):
+            route = from_provider.route_for_vehicle(provider_actor.actor_id)
+            assert not route or isinstance(route, RouteWithCache)
         provider_actor.source = self.source_str
         provider_actor.role = ActorRole.Social
         xfrd_actor = _TrafficActor.from_state(provider_actor, self, route)
@@ -399,6 +418,7 @@ class _TrafficActor:
     def __init__(self, flow: Dict[str, Any], owner: LocalTrafficProvider):
         self._logger = logging.getLogger(self.__class__.__name__)
 
+        # self._owner = weakref.ref(owner)
         self._owner = owner
         self._state = None
         self._flow: Dict[str, Any] = flow
@@ -519,6 +539,7 @@ class _TrafficActor:
             cur_lane
         ), f"LocalTrafficProvider accepted a vehicle that's off road?  pos={state.pose.point}"
         if not route or not route.roads:
+            # initialize with a random route, which will probably be replaced
             route = owner.road_map.random_route(starting_road=cur_lane.road)
         route.add_to_cache()
         flow = dict()
@@ -626,7 +647,7 @@ class _TrafficActor:
         self._route = route
         self._route.add_to_cache()
         self._dest_lane, self._dest_offset = self._resolve_flow_pos(
-            self._flow, "arrival", self._state.dimensions.length
+            self._flow, "arrival", self._state.dimensions
         )
         self._route_ind = 0
 

@@ -69,9 +69,7 @@ class MockProvider(Provider):
         return True
 
     def add_actor(
-        self,
-        provider_actor: ActorState,
-        route: Optional[Sequence[RoadMap.Route]] = None,
+        self, provider_actor: ActorState, from_provider: Optional[Provider] = None
     ):
         pass
 

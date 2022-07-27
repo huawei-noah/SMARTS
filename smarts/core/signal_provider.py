@@ -109,9 +109,7 @@ class SignalProvider(Provider):
         return isinstance(state, SignalState)
 
     def add_actor(
-        self,
-        provider_actor: ActorState,
-        route: Optional[Sequence[RoadMap.Route]] = None,
+        self, provider_actor: ActorState, from_provider: Optional[Provider] = None
     ):
         assert not route
         assert isinstance(provider_actor, SignalState)

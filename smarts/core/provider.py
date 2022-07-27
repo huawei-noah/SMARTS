@@ -111,11 +111,10 @@ class Provider:
         return False
 
     def add_actor(
-        self,
-        provider_actor: ActorState,
-        route: Optional[Sequence[RoadMap.Route]] = None,
+        self, provider_actor: ActorState, from_provider: Optional["Provider"] = None
     ):
-        """Management of the actor with state is being transferred to this Provider.
+        """Management of the actor with state is being assigned
+        (or transferred if from_provider is not None) to this Provider.
         Will only be called if can_accept_actor() has returned True."""
         raise NotImplementedError
 
@@ -131,12 +130,13 @@ class Provider:
         self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
     ) -> Tuple[ProviderState, bool]:
         """Attempt to reconnect the provider if an error or disconnection occurred.
-        Implementations may choose to e-raise the passed in exception.
+        Implementations may choose to re-raise the passed in exception.
         Args:
             scenario (Scenario): The scenario of the current episode.
             elapsed_sim_time (float): The current elapsed simulation time.
             error (Optional[Exception]): An exception if an exception was thrown.
         Returns:
+            ProviderState: the state of the provider upon recovery
             bool: The success/failure of the attempt to reconnect.
         """
         if error:

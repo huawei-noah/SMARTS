@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import weakref
 from dataclasses import dataclass, field, replace
 from typing import List, Sequence, Set
 
@@ -36,7 +37,7 @@ class ExternalProvider(Provider):
     and may have privileged VehicleStates."""
 
     def __init__(self, sim):
-        self._sim = sim
+        self._sim = weakref.ref(sim)
         self.reset()
 
     def reset(self):
@@ -63,9 +64,11 @@ class ExternalProvider(Provider):
 
     @property
     def _provider_state(self):
-        dt = self._sim.elapsed_sim_time - self._last_fresh_step
+        sim = self._sim()
+        assert sim
+        dt = sim.elapsed_sim_time - self._last_fresh_step
         if id(self._ext_vehicle_states) != id(self._sent_states):
-            self._last_fresh_step = self._sim.elapsed_sim_time
+            self._last_fresh_step = sim.elapsed_sim_time
             self._sent_states = self._ext_vehicle_states
         return ProviderState(actors=self._ext_vehicle_states, dt=dt)
 
@@ -84,8 +87,10 @@ class ExternalProvider(Provider):
     @property
     def all_vehicle_states(self) -> List[VehicleState]:
         """Get all current vehicle states."""
+        sim = self._sim()
+        assert sim
         result = []
-        for vehicle in self._sim.vehicle_index.vehicles:
+        for vehicle in sim.vehicle_index.vehicles:
             if vehicle.subscribed_to_accelerometer_sensor:
                 linear_acc, angular_acc, _, _ = vehicle.accelerometer_sensor(
                     vehicle.state.linear_velocity,

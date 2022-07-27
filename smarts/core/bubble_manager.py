@@ -455,10 +455,8 @@ class BubbleManager:
             elif cursor.transition == BubbleTransition.Exited:
                 continue
             elif cursor.transition == BubbleTransition.AirlockExited:
-                if sim.vehicle_index.vehicle_is_hijacked(cursor.vehicle_id):
-                    self._relinquish_vehicle(sim, cursor.vehicle_id, cursor.bubble)
-                else:
-                    self._stop_shadowing_vehicle(sim, cursor.vehicle_id, cursor.bubble)
+                teardown = not cursor.bubble.is_boid or not cursor.bubble.keep_alive
+                sim.vehicle_exited_bubble(cursor.vehicle_id, teardown)
 
     def _move_travelling_bubbles(self, sim):
         for bubble in self._active_bubbles():
@@ -539,43 +537,6 @@ class BubbleManager:
             agent_interface=agent_interface,
         )
         sim.create_vehicle_in_providers(vehicle, agent_id)
-
-    def _relinquish_vehicle(self, sim, vehicle_id: str, bubble: Bubble):
-        agent_id = sim.vehicle_index.actor_id_from_vehicle_id(vehicle_id)
-        shadow_agent_id = sim.vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id)
-
-        # TODO: Remove this assumption. Elsewhere in the code, social_vehicle_id does
-        #       not have to be equal to vehicle_id.
-        social_vehicle_id = vehicle_id
-        self._log.debug(
-            f"Relinquish vehicle={vehicle_id} to traffic simulation (agent={agent_id}) "
-            f"shadow_agent={shadow_agent_id} sv_id={social_vehicle_id})"
-        )
-
-        ss = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle_id)
-        sim.vehicle_index.stop_agent_observation(vehicle_id)
-        vehicle = sim.vehicle_index.relinquish_agent_control(
-            sim, vehicle_id, social_vehicle_id
-        )
-        sim.provider_relinquishing_vehicle(vehicle.state, ss.plan.route)
-        if bubble.is_boid and bubble.keep_alive:
-            return
-
-        teardown_agent_ids = [agent_id] + ([shadow_agent_id] if shadow_agent_id else [])
-        sim.teardown_agents_without_vehicles(teardown_agent_ids)
-
-    def _stop_shadowing_vehicle(self, sim, vehicle_id: str, bubble: Bubble):
-        shadow_agent_id = sim.vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id)
-        self._log.debug(
-            f"Stop shadowing vehicle={vehicle_id} (shadow_agent={shadow_agent_id})"
-        )
-
-        sim.agent_manager.stop_agent_observation(sim, vehicle_id)
-
-        if bubble.is_boid and bubble.keep_alive:
-            return
-
-        sim.teardown_agents_without_vehicles([shadow_agent_id])
 
     def _prepare_sensors_for_agent_control(
         self, sim, vehicle_id, agent_id, agent_interface, bubble
