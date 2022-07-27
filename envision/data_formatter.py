@@ -346,6 +346,7 @@ def _format_signal_light_state(
     t = type(obj)
     assert t is SignalLightState
     mapping = {
+        SignalLightState.Unknown: 0,
         SignalLightState.Off: 0,
         SignalLightState.Stop: 1,
         SignalLightState.Caution: 2,

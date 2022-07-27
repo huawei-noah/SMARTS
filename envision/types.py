@@ -65,7 +65,7 @@ class SignalLightState(str, Enum):
     """Possible states for an individual traffic signal light."""
 
     # TODO: add flashing and arrow states too...
-    Uknown = "unknown"
+    Unknown = "unknown"
     Off = "off"
     Stop = "stop"
     Caution = "caution"
