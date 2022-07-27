@@ -37,7 +37,7 @@ from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
 from smarts.core.provider import Provider, ProviderRecoveryFlags, ProviderState
 from smarts.core.road_map import RoadMap
-from smarts.core.signal_provider import SignalLightState, SignalState
+from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils import networking

@@ -17,44 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from dataclasses import dataclass
-from enum import IntFlag
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Optional, Sequence, Set, Tuple
 
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
-from .coordinates import Point
 from .provider import Provider, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Scenario
-
-
-class SignalLightState(IntFlag):
-    """States that a traffic signal light may take;
-    note that these may be combined into a bitmask."""
-
-    UNKNOWN = 0
-    OFF = 0
-    STOP = 1
-    CAUTION = 2
-    GO = 4
-    FLASHING = 8
-    ARROW = 16
-
-
-@dataclass
-class SignalState(ActorState):
-    """Traffic signal state information."""
-
-    # TODO: see PR #1083 for how this state might be exposed via Observations to Agents.
-
-    state: Optional[SignalLightState] = None
-    stopping_pos: Optional[Point] = None
-    controlled_lanes: Optional[List[RoadMap.Lane]] = None
-    last_changed: Optional[float] = None  # will be None if not known
-
-    def __post_init__(self):
-        assert self.state is not None
+from .signals import SignalLightState, SignalState
 
 
 class SignalProvider(Provider):

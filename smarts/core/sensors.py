@@ -31,6 +31,7 @@ import numpy as np
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
 from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
+from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.utils.math import squared_dist, vec_2d, yaw_from_quaternion
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
@@ -183,6 +184,20 @@ class Vias:
     """List of points that were hit in the previous step"""
 
 
+@dataclass(frozen=True)
+class SignalObservation:
+    state: SignalLightState
+    """The state of the traffic signal."""
+    stop_point: Point
+    """The stopping point for traffic controlled by the signal, i.e., the
+    point where actors should stop when the signal is in a stop state."""
+    controlled_lanes: List[str]
+    """If known, the lane_ids of all lanes controlled-by this signal.
+    May be empty if this is not easy to determine."""
+    last_changed: Optional[float]
+    """If known, the simulation time this signal last changed its state."""
+
+
 @dataclass
 class Observation:
     """The simulation observation."""
@@ -209,6 +224,7 @@ class Observation:
     top_down_rgb: Optional[TopDownRGB]
     road_waypoints: Optional[RoadWaypoints]
     via_data: Vias
+    signals: Optional[List[SignalObservation]]
 
 
 @dataclass
@@ -340,8 +356,8 @@ class Sensors:
             mission=sensor_state.plan.mission,
             linear_velocity=ego_vehicle_state.linear_velocity,
             angular_velocity=ego_vehicle_state.angular_velocity,
-            **acceleration_params,
             lane_position=ego_lane_pos,
+            **acceleration_params,
         )
 
         road_waypoints = (
@@ -389,7 +405,18 @@ class Sensors:
             and sensor_state.steps_completed == 1
             and agent_id in sim.agent_manager.ego_agent_ids
         ):
-            logger.warning(f"Agent Id: {agent_id} is done on the first step")
+            _log.warning(f"Agent Id: {agent_id} is done on the first step")
+
+        signals = None
+        if vehicle.subscribed_to_signals_sensor:
+            provider_state = sim._last_provider_state
+            signals = vehicle.signals_sensor(
+                closest_lane,
+                ego_lane_pos,
+                ego_vehicle_state,
+                sensor_state.plan,
+                provider_state,
+            )
 
         return (
             Observation(
@@ -407,6 +434,7 @@ class Sensors:
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
                 via_data=via_data,
+                signals=signals,
             ),
             done,
         )
@@ -638,7 +666,7 @@ class Sensor:
 class SensorState:
     """Sensor state information"""
 
-    def __init__(self, max_episode_steps, plan):
+    def __init__(self, max_episode_steps: int, plan):
         self._max_episode_steps = max_episode_steps
         self._plan = plan
         self._step = 0
@@ -648,7 +676,7 @@ class SensorState:
         self._step += 1
 
     @property
-    def reached_max_episode_steps(self):
+    def reached_max_episode_steps(self) -> bool:
         """Inbuilt sensor information that describes if episode step limit has been reached."""
         if self._max_episode_steps is None:
             return False
@@ -661,7 +689,7 @@ class SensorState:
         return self._plan
 
     @property
-    def steps_completed(self):
+    def steps_completed(self) -> int:
         """Get the number of steps where this sensor has been updated."""
         return self._step
 
@@ -1187,6 +1215,91 @@ class ViaSensor(Sensor):
             ),
             hit_points,
         )
+
+    def teardown(self):
+        pass
+
+
+class SignalsSensor(Sensor):
+    """Reports state of traffic signals (lights) in the lanes ahead of vehicle."""
+
+    def __init__(self, vehicle, road_map: RoadMap, lookahead: float):
+        self._vehicle = vehicle
+        self._road_map = road_map
+        self._lookahead = lookahead
+
+    @staticmethod
+    def _is_signal_type(feature: RoadMap.Feature) -> bool:
+        # XXX:  eventually if we add other types of dynamic features, we'll need to update this.
+        return (
+            feature.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL or feature.is_dynamic
+        )
+
+    def __call__(
+        self,
+        lane: Optional[RoadMap.Lane],
+        lane_pos: RefLinePoint,
+        state,  # VehicleState
+        plan: Plan,
+        provider_state,  # ProviderState
+    ) -> List[SignalObservation]:
+        upcoming_signals = []
+        half_len = 0.5 * state.dimensions.length
+        # make sure the signal is not behind me...
+        my_bb = lane_pos.s - half_len
+        for feat in lane.features:
+            if not self._is_signal_type(feat):
+                continue
+            for pt in feat.geometry:
+                if lane.offset_along_lane(pt) >= my_bb:
+                    upcoming_signal.append(feat)
+                    break
+        lookahead = self._lookahead - lane.length + lane_pos.s
+        self._find_signals_ahead(lane, lookahead, plan.route, upcoming_signals)
+
+        result = []
+        for signal in upcoming_signals:
+            for actor_state in provider_state.actors:
+                if actor_state.actor_id == signal.feature_id:
+                    signal_state = actor_state
+                    break
+            else:
+                _log.warning(
+                    "could not find signal state corresponding with feature_id={signal.feature_id}"
+                )
+                continue
+            assert isinstance(signal_state, SignalState)
+            controlled_lanes = None
+            if signal_state.controlled_lanes:
+                controlled_lanes = [cl.lane_id for cl in signal_state.controlled_lanes]
+            result.append(
+                SignalObservation(
+                    state=signal_state.state,
+                    stop_point=signal_state.stopping_pos,
+                    controlled_lanes=controlled_lanes,
+                    last_changed=signal_state.last_changed,
+                )
+            )
+
+        return result
+
+    def _find_signals_ahead(
+        self,
+        lane: RoadMap.Lane,
+        lookahead: float,
+        route: Optional[RoadMap.Route],
+        upcoming_signals: List[RoadMap.Feature],
+    ):
+        if lookahead <= 0:
+            return
+        for ogl in lane.outgoing_lanes:
+            if route and ogl.road not in route.roads:
+                continue
+            upcoming_signals += [
+                feat for feat in lane.features if self._is_signal_type(feat)
+            ]
+            lookahead -= lane.length
+            self._find_signals_ahead(ogl, lookahead, route, upcoming_signals)
 
     def teardown(self):
         pass

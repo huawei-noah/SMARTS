@@ -42,7 +42,7 @@ from .provider import Provider, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap, Waypoint
 from .route_cache import RouteWithCache
 from .scenario import Scenario
-from .signal_provider import SignalLightState, SignalState
+from .signals import SignalLightState, SignalState
 from .traffic_provider import TrafficProvider
 from .utils.kinematics import (
     distance_covered,
@@ -1461,7 +1461,7 @@ class _TrafficActor:
             upcoming_feats += lane.features
         else:
             lookahead += self._offset
-            # make sure the feature is ahead of me...
+            # make sure the feature is not behind me...
             half_len = 0.5 * self._state.dimensions.length
             my_bb = self._offset - half_len
             for feat in lane.features:

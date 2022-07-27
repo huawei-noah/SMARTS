@@ -31,6 +31,7 @@ from smarts.core.sensors import (
     EgoVehicleObservation,
     Observation,
     OccupancyGridMap,
+    SignalObservation,
     TopDownRGB,
     VehicleObservation,
 )
@@ -39,6 +40,7 @@ from smarts.env.custom_observations import lane_ttc
 _LIDAR_SHP = 300
 _NEIGHBOR_SHP = 10
 _WAYPOINT_SHP = (4, 20)
+_SIGNALS_SHP = 3
 
 """
 Observations in numpy array format, suitable for vectorized processing.
@@ -191,6 +193,22 @@ StdObs = dict({
         "speed_limit":
             Lane speed limit at a waypoint in m/s. shape=(4,20). dtype=np.float32.
     }) 
+
+    Feature array of 3 upcoming signals.  If there aren't this many signals ahead,
+    default values are padded.
+    "signals": dict({
+        "state":
+            The state of the traffic signal.
+            See smarts.core.signal_provider.SignalLightState for interpretation.
+            Defaults to np.array([0]) per signal.  shape=(3,), dtype=np.int8.
+        "stop_point":
+            The stopping point for traffic controlled by the signal, i.e., the
+            point where actors should stop when the signal is in a stop state.
+            Defaults to np.array([0, 0]) per signal.  shape=(3,2), dtype=np.float64.
+        "last_changed":
+            If known, the simulation time this signal last changed its state.
+            Defaults to np.array([0]) per signal.  shape=(3,), dtype=np.float32.
+    })
 })
 """
 
@@ -227,6 +245,7 @@ class FormatObs(gym.ObservationWrapper):
             "ogm",
             "rgb",
             "waypoints",
+            "signals",
         }:
             val = getattr(self.agent_specs[agent_id].interface, intrfc)
             if val:
@@ -252,6 +271,7 @@ class FormatObs(gym.ObservationWrapper):
             "rgb": "top_down_rgb",
             "ttc": "ttc",
             "waypoints": "waypoint_paths",
+            "signals": "signals",
         }
         self._accelerometer = "accelerometer" in intrfcs.keys()
 
@@ -306,6 +326,7 @@ def intrfc_to_stdobs(intrfc: str) -> Optional[str]:
         "ogm": "ogm",
         "rgb": "rgb",
         "waypoints": "waypoints",
+        "signals": "signals",
     }.get(intrfc, None)
 
 
@@ -376,7 +397,12 @@ def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
             "lane_width": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
             "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=_WAYPOINT_SHP + (3,), dtype=np.float64),
             "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
-        })
+        }),
+        "signals": lambda _: gym.spaces.Dict({
+            "state": gym.spaces.Box(low=0, high=32, shape=(_SIGNALS_SHP,), dtype=np.int8),
+            "stop_point": gym.spaces.Box(low=-1e10, high=1e10, shape=(_SIGNALS_SHP, 2), dtype=np.float64),
+            "last_changed": gym.spaces.Box(low=0, high=1e10, shape=(_SIGNALS_SHP,), dtype=np.float32),
+        }),
     }
     # fmt: on
 
@@ -606,4 +632,38 @@ def _std_waypoints(
         "lane_width": lane_width,
         "pos": pos,
         "speed_limit": speed_limit,
+    }
+
+
+def _std_signals(
+    signals: List[SignalObservation],
+) -> Dict[str, np.ndarray]:
+
+    des_shp = _SIGNALS_SHP
+    rcv_shp = len(signals)
+    pad_shp = max(0, des_shp - rcv_shp)
+
+    if rcv_shp == 0:
+        return {
+            "state": np.zeros((des_shp,), dtype=np.int8),
+            "stop_point": np.zeros((des_shp, 2), dtype=np.float64),
+            "last_changed": np.zeros((des_shp,), dtype=np.float32),
+        }
+
+    signals = [
+        (signal.state, signal.stop_point, signal.last_changed)
+        for signal in signals[:des_shp]
+    ]
+    state, stop_point, last_changed = zip(*signals)
+
+    # fmt: off
+    state = np.pad(state, ((0, pad_shp)), mode='constant', constant_values=0)
+    stop_point = np.pad(state, ((0, pad_shp), (0, 0)), mode='constant', constant_values=0)
+    last_changed = np.pad(last_changed, ((0, pad_shp)), mode='constant', constant_values=0)
+    # fmt: on
+
+    return {
+        "state": state,
+        "stop_point": stop_point,
+        "last_changed": last_changed,
     }

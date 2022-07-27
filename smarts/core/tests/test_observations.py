@@ -34,6 +34,7 @@ from smarts.core.agent_interface import (
     DrivableAreaGridMap,
     NeighborhoodVehicles,
     RoadWaypoints,
+    Signals,
 )
 from smarts.core.colors import SceneColors
 from smarts.core.controllers import ActionSpaceType
@@ -69,6 +70,7 @@ def agent_spec():
             ogm=OGM(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
             rgb=RGB(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
             action=ActionSpaceType.Lane,
+            signals=Signals(100.0),
         ),
         agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
     )
@@ -231,3 +233,6 @@ def test_observations(env, agent_spec):
             assert np.count_nonzero(
                 drivable_area.data[drivable_area_last_wp_x, drivable_area_last_wp_y, :]
             )
+
+    # TODO:  test out signals here too...
+    assert len(observations[AGENT_ID].signals) == 0
