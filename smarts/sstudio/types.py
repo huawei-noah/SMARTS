@@ -578,7 +578,7 @@ class Traffic:
     """Flows are used to define a steady supply of vehicles."""
     # TODO: consider moving TrafficHistory stuff in here (and rename to Trajectory)
     # TODO:  - treat history points like Vias (no guarantee on history timesteps anyway)
-    trips: Sequence[Trip]
+    trips: Sequence[Trip] = None
     """Trips are used to define a series of single vehicle trip."""
     engine: str = "SUMO"
     """The traffic-generation engine to use. Supported values include: SUMO, SMARTS.  SUMO requires using a SumoRoadNetwork for the RoadMap."""

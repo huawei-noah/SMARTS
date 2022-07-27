@@ -282,7 +282,8 @@ class TrafficGenerator:
                         **rate_option,
                     )
         # write trip into xml format
-        tripwritexml(self.resolve_route, traffic, doc)
+        if traffic.trips is not None:
+            tripwritexml(self.resolve_route, traffic, doc)
 
         with open(route_path, "w") as f:
             f.write(
