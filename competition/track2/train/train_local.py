@@ -44,8 +44,8 @@ import torch
 torch.cuda.empty_cache()
 import pathlib
 import glob
-import sys
-import getopt
+import argparse
+from pathlib import Path
 
 '''
 path = '/net/storage-1/home/c84201475/waymo_bev/' 
@@ -128,6 +128,7 @@ def train(path):
                     with Image.open(
                         path + scenario + "/" + image_names[i], "r"
                     ) as image:
+                        image.seek(0)
                         #imgfile.seek(0)
                         #image = Image.open(imgfile)
 
@@ -201,14 +202,12 @@ def train(path):
                 latest_model = max(saved_models, key=os.path.getctime)
                 model = CQL.from_json("d3rlpy_logs/1/params.json", use_gpu=True)
                 model.load_model(latest_model + "/model_100.pt")
-
             model.fit(
                 dataset,
                 eval_episodes=dataset,
                 n_steps_per_epoch=100,
                 n_steps=100,
             )
-
             saved_models = glob.glob("d3rlpy_logs/*")
             latest_model = max(saved_models, key=os.path.getctime)
             os.rename(latest_model, "d3rlpy_logs/" + str(index + 1))
@@ -218,24 +217,21 @@ def train(path):
 
     print("Finish Processing")
 
-def main(argv):
-    arg_path = ""
-    arg_help = "python3.8 {0} -i <input_dir_path>".format(argv[0])
-    
-    try:
-        opts, args = getopt.getopt(argv[1:], "hi:", ["help", "input_dir="])
-    except getopt.GetoptError:
-        print(arg_help)
-        sys.exit(2)
-    
-    for opt, arg in opts:
-        if opt in ("-h", "--help"):
-            print(arg_help)  # print the help message
-            sys.exit(2)
-        elif opt in ("-i", "--input_dir"):
-            arg_path = arg
+def main(args: argparse.Namespace):
+    path = args.input_dir
+    train(path)
 
-    train(arg_path)
 
 if __name__ == "__main__":
-    main(sys.argv)
+    program = Path(__file__).stem
+    parser = argparse.ArgumentParser(program)
+    parser.add_argument(
+        "--input_dir",
+        help="The path to the directory containing the offline training data",
+        required=True,
+        type=str,
+    )
+
+    args = parser.parse_args()
+    main(args)
+
