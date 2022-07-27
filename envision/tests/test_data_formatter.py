@@ -172,6 +172,7 @@ def complex_data():
                     )
                     for i in range(2)
                 },
+                signals=dict(),
                 scenario_id="scene_id",
                 scenario_name="scene_name",
                 bubbles=[],
@@ -217,6 +218,7 @@ def complex_data():
                         0,
                     ],
                 ],
+                [],
                 [],
                 [],
                 [0],
@@ -339,6 +341,7 @@ def sim_data():
                 4,
             ],
         ],
+        [],
         [[90.0, -10.0, 90.0, 10.0, 110.0, 10.0, 110.0, -10.0, 90.0, -10.0]],  # bubbles
         [],
         [4],

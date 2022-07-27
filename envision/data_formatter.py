@@ -293,13 +293,13 @@ def _format_state(obj: State, data_formatter: EnvisionDataFormatter):
     data_formatter.add(obj.frame_time)
     data_formatter.add(obj.scenario_id)
     data_formatter.add(obj.scenario_name)
-    for s in data_formatter.layer(obj.signals.values()):
-        with data_formatter.layer():
-            data_formatter.add(s)
     for t in data_formatter.layer(obj.traffic.values()):
         with data_formatter.layer():
             # context.add(_id, op=Operation.REDUCE)
             data_formatter.add(t)
+    for s in data_formatter.layer(obj.signals.values()):
+        with data_formatter.layer():
+            data_formatter.add(s)
     # TODO: On delta use position+heading as alternative
     for bubble in data_formatter.layer(obj.bubbles):
         for p in data_formatter.layer(bubble):

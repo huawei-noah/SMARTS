@@ -407,7 +407,7 @@ class Sensors:
             and sensor_state.steps_completed == 1
             and agent_id in sim.agent_manager.ego_agent_ids
         ):
-            _log.warning(f"Agent Id: {agent_id} is done on the first step")
+            Sensors._log.warning(f"Agent Id: {agent_id} is done on the first step")
 
         signals = None
         if vehicle.subscribed_to_signals_sensor:
