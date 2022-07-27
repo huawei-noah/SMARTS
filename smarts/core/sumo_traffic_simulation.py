@@ -886,7 +886,7 @@ class SumoTrafficSimulation(TrafficProvider):
             new_route_edges = route_edges[-1:] + route_edges
             self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
 
-    def _route_for_vehicle(self, vehicle_id: str) -> List[str]:
+    def _route_for_vehicle(self, vehicle_id: str) -> Optional[List[str]]:
         if not self.connected:
             return None
         try:
@@ -898,11 +898,11 @@ class SumoTrafficSimulation(TrafficProvider):
 
     def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
         route = self._route_for_vehicle(vehicle_id)
-        return route[-1]
+        return route[-1] if route else None
 
     def route_for_vehicle(self, vehicle_id: str) -> Optional[RoadMap.Route]:
         route = self._route_for_vehicle(vehicle_id)
-        return self.route_from_road_ids(route)
+        return self.route_from_road_ids(route) if route else None
 
     def reserve_traffic_location_for_vehicle(
         self,
