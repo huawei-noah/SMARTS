@@ -184,7 +184,7 @@ class SmartsJunctionModel(JunctionModel):
                 - "normal" - traffic actors will attempt to honor normal
                   right-of-way conventions, only yielding when an agent
                   has the right-of-way.  Examples of such conventions include:
-                    - Vehicles going stright have the right-of-way over
+                    - Vehicles going straight have the right-of-way over
                       turning vehicles;
                     - Vehicles on roads with more lanes have the right-of-way
                       relative to vehicles on intersecting roads with less lanes;
@@ -192,7 +192,7 @@ class SmartsJunctionModel(JunctionModel):
                       (in the counter-clockwise direction) has the right-of-way.
         wait_to_restart:
             The amount of time in seconds after stopping at a signal or stop sign
-            befor this vehicle will start to go again.  Default:  0.0
+            before this vehicle will start to go again.  Default:  0.0
     """
 
     def __init__(self, yield_to_agents: str = "normal", wait_to_restart: float = 0.0):
