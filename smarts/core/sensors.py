@@ -1226,6 +1226,7 @@ class SignalsSensor(Sensor):
     """Reports state of traffic signals (lights) in the lanes ahead of vehicle."""
 
     def __init__(self, vehicle, road_map: RoadMap, lookahead: float):
+        self._logger = logging.getLogger(self.__class__.__name__)
         self._vehicle = vehicle
         self._road_map = road_map
         self._lookahead = lookahead
@@ -1245,6 +1246,9 @@ class SignalsSensor(Sensor):
         plan: Plan,
         provider_state,  # ProviderState
     ) -> List[SignalObservation]:
+        result = []
+        if not lane:
+            return result
         upcoming_signals = []
         half_len = 0.5 * state.dimensions.length
         # make sure the signal is not behind me...
@@ -1254,19 +1258,18 @@ class SignalsSensor(Sensor):
                 continue
             for pt in feat.geometry:
                 if lane.offset_along_lane(pt) >= my_bb:
-                    upcoming_signal.append(feat)
+                    upcoming_signals.append(feat)
                     break
         lookahead = self._lookahead - lane.length + lane_pos.s
         self._find_signals_ahead(lane, lookahead, plan.route, upcoming_signals)
 
-        result = []
         for signal in upcoming_signals:
             for actor_state in provider_state.actors:
                 if actor_state.actor_id == signal.feature_id:
                     signal_state = actor_state
                     break
             else:
-                _log.warning(
+                self._logger.warning(
                     "could not find signal state corresponding with feature_id={signal.feature_id}"
                 )
                 continue
