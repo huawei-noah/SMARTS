@@ -36,6 +36,17 @@ def _collisions(obs: Observation) -> Dict[str, int]:
     return {"collisions": len(obs.events.collisions)}
 
 
+def _dist_to_goal(obs: Observation) -> Dict[str, float]:
+    mission_goal = obs.ego_vehicle_state.mission.goal
+    assert hasattr(
+        mission_goal, "position"
+    ), "Mission has no goal position, thus `dist_to_goal` cannot be calculated."
+
+    rel = obs.ego_vehicle_state.position[:2] - mission_goal.position[:2]
+    dist = sum(abs(rel))
+    return {"dist_to_goal": dist}
+
+
 def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
     ave = 0
     step = 0
@@ -109,17 +120,6 @@ def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
         return {"dist_to_obstacles": ave}
 
     return func
-
-
-def _dist_to_goal(obs: Observation) -> Dict[str, float]:
-    mission_goal = obs.ego_vehicle_state.mission.goal
-    assert hasattr(
-        mission_goal, "position"
-    ), "Mission has no goal position, thus `dist_to_goal` cannot be calculated."
-
-    rel = obs.ego_vehicle_state.position[:2] - mission_goal.position[:2]
-    dist = sum(abs(rel))
-    return {"dist_to_goal": dist}
 
 
 def _jerk_angular() -> Callable[[Observation], Dict[str, float]]:
