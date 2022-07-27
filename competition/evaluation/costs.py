@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass
 from typing import Callable, Dict, Tuple
 
@@ -113,10 +112,12 @@ def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
 
 
 def _dist_to_goal(obs: Observation) -> Dict[str, float]:
-    rel = (
-        obs.ego_vehicle_state.position[:2]
-        - obs.ego_vehicle_state.mission.goal.position[:2]
-    )
+    mission_goal = obs.ego_vehicle_state.mission.goal
+    assert hasattr(
+        mission_goal, "position"
+    ), "Mission has no goal position, thus `dist_to_goal` cannot be calculated."
+
+    rel = obs.ego_vehicle_state.position[:2] - mission_goal.position[:2]
     dist = sum(abs(rel))
     return {"dist_to_goal": dist}
 
