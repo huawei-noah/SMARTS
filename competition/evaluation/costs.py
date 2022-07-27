@@ -119,9 +119,7 @@ def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
 
 def _dist_to_goal(obs: Observation) -> Dict[str, float]:
     rel = obs.ego_vehicle_state.position[:2] - obs.ego_vehicle_state.mission.goal.position[:2]
-    rel_abs = abs(rel)
-    dist = sum(rel_abs)
-    print(f"rel: {rel}, rel_abs {rel_abs} , dist: {dist}, -------------------------------------")
+    dist = sum(abs(rel))
     return {"dist_to_goal": dist}
 
 
@@ -201,7 +199,7 @@ def _speed_limit() -> Callable[[Observation], Dict[str, float]]:
         speed_limit = closest_wp.speed_limit
 
         # Excess speed beyond speed limit.
-        overspeed = speed_limit - ego.speed if speed_limit > ego.speed else 0
+        overspeed = ego.speed - speed_limit if ego.speed > speed_limit else 0
         j_v = overspeed**2
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_v)

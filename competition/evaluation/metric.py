@@ -72,7 +72,6 @@ class Metric:
                 self._completion[agent_name] = _reason(obs=agent_obs)
 
         if dones["__all__"] == True:
-            print(f"ALL DONE ACHIEVED wih non zero agents !!!!!")
             # Update counts.
             self._counts.episodes += 1
             num_crashes = operator.countOf(
