@@ -5,39 +5,9 @@ import subprocess
 import sys
 
 def train(path):
-    # from utility import remote_operations
-    # from utility import goal_region_reward
-    # from utility import get_goal_layer
-    #from utility import get_trans_coor
-    # import paramiko
-    # import getpass
-    # import pickle
-    # import numpy as np
-    # import glob
-    # import os
-    # import re
-    # import d3rlpy
-    # from d3rlpy.dataset import MDPDataset
-    #from d3rlpy.preprocessing import MinMaxActionScaler
-    # from d3rlpy.algos import CQL
-    # from PIL import Image
-    # import torch
-    # torch.cuda.empty_cache()
-
-
-
-    # path = input("User path")
-    # remote = remote_operations()
-    # ip_add = input("Server IP: ")
-    # user_name = input("Username: ")
-    # pswd = getpass.getpass("Password: ")
-
-    from utility import remote_operations
     from utility import goal_region_reward
     from utility import get_goal_layer
     from utility import get_trans_coor
-    import paramiko
-    import getpass
     import pickle
     import numpy as np
     import d3rlpy
@@ -48,31 +18,7 @@ def train(path):
     import re
     import torch
     torch.cuda.empty_cache()
-    import pathlib
     import glob
-
-    '''
-    path = '/net/storage-1/home/c84201475/waymo_bev/' 
-    remote = remote_operations()
-    ip_add = input("Server IP: ")
-    user_name = input("Username: ")
-    pswd = getpass.getpass("Password: ")
-
-    if ip_add == "gx1":
-        ip_add = "10.193.241.237"
-    elif ip_add == "gx2":
-        ip_add = "10.193.241.238"
-    elif ip_add == "gx3":
-        ip_add = "10.193.241.239"
-
-    while True:
-        try:
-            client = remote.connect(ip_add, user_name, pswd)  
-            break
-        except paramiko.ssh_exception.AuthenticationException:
-            print("Authentication Failed")
-            pswd = getpass.getpass("Password: ")
-    '''
 
     path = path
 
@@ -132,9 +78,6 @@ def train(path):
                         path + scenario + "/" + image_names[i], "r"
                     ) as image:
                         image.seek(0)
-                        #imgfile.seek(0)
-                        #image = Image.open(imgfile)
-
                         sim_time = image_names[i].split("_Agent")[0]
                         sim_time_next = image_names[i + 1].split("_Agent")[0]
                         current_position = vehicle_data[float(sim_time)]["ego"]["pos"]
@@ -160,29 +103,29 @@ def train(path):
                             terminal = 1
 
                         bev = np.moveaxis(np.asarray(image), -1, 0)
-                        # goal_obs = get_goal_layer(
-                        #     goal_pos_x,
-                        #     goal_pos_y,
-                        #     current_position[0],
-                        #     current_position[1],
-                        #     current_heading,
-                        # )
+                        goal_obs = get_goal_layer(
+                            goal_pos_x,
+                            goal_pos_y,
+                            current_position[0],
+                            current_position[1],
+                            current_heading,
+                        )
                         # obs.append(np.concatenate((img_obs, goal_obs), axis=0))
-                        
-                        # actions.append([dx, dy, dheading])
-                        obs.append(bev)
+                        # obs.append(bev)
+                        obs.append(np.concatenate((bev, goal_obs), axis=0))
+
                         actions.append([dx, dy, dheading])
-                        # print([dx, dy, dheading])
+
                         dist_reward = vehicle_data[float(sim_time)]["dist"]
-                        # goal_reward = goal_region_reward(
-                        #     threshold,
-                        #     goal_pos_x,
-                        #     goal_pos_y,
-                        #     current_position[0],
-                        #     current_position[1],
-                        # )
-                        # rewards.append(dist_reward + goal_reward)
-                        rewards.append(dist_reward)
+                        goal_reward = goal_region_reward(
+                            threshold,
+                            goal_pos_x,
+                            goal_pos_y,
+                            current_position[0],
+                            current_position[1],
+                        )
+                        rewards.append(dist_reward + goal_reward)
+
 
                         terminals.append(terminal)
 
