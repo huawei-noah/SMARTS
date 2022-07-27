@@ -63,8 +63,14 @@ def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
         nghbs = obs.neighborhood_vehicle_states
 
         # Filter neighbors by distance.
-        nghbs_state = [(nghb, np.linalg.norm(nghb.position - ego_pos)) for nghb in nghbs]
-        nghbs_state = [nghb_state for nghb_state in nghbs_state if nghb_state[1] <= obstacle_dist_th]
+        nghbs_state = [
+            (nghb, np.linalg.norm(nghb.position - ego_pos)) for nghb in nghbs
+        ]
+        nghbs_state = [
+            nghb_state
+            for nghb_state in nghbs_state
+            if nghb_state[1] <= obstacle_dist_th
+        ]
         if len(nghbs_state) == 0:
             return {"dist_to_obstacles": 0}
 
@@ -87,7 +93,11 @@ def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
             return {"dist_to_obstacles": 0}
 
         # Filter neighbors by their relative heading to that of ego's heading.
-        nghbs_state = [nghb_state for nghb_state in nghbs_state if abs(nghb_state[0].heading.relative_to(ego.heading)) <= rel_heading_th]       
+        nghbs_state = [
+            nghb_state
+            for nghb_state in nghbs_state
+            if abs(nghb_state[0].heading.relative_to(ego.heading)) <= rel_heading_th
+        ]
         if len(nghbs_state) == 0:
             return {"dist_to_obstacles": 0}
 
@@ -103,7 +113,10 @@ def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
 
 
 def _dist_to_goal(obs: Observation) -> Dict[str, float]:
-    rel = obs.ego_vehicle_state.position[:2] - obs.ego_vehicle_state.mission.goal.position[:2]
+    rel = (
+        obs.ego_vehicle_state.position[:2]
+        - obs.ego_vehicle_state.mission.goal.position[:2]
+    )
     dist = sum(abs(rel))
     return {"dist_to_goal": dist}
 

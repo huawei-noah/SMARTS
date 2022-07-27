@@ -53,7 +53,7 @@ class Metric:
     def store(self, infos: Dict[str, Any], dones: Dict[str, bool]):
         # Only count steps in which an ego agent was present.
         if len(infos) == 0:
-            return 
+            return
         self._counts.steps += 1
         self._steps_adjusted_per_episode += 1
 
@@ -108,14 +108,14 @@ class _Completion(Enum):
 def _reason(obs) -> _Completion:
     if obs.events.reached_goal:
         return _Completion.Goal
-    elif len(obs.events.collisions) > 0 or \
-        obs.events.off_road or \
-        obs.events.reached_max_episode_steps:
+    elif (
+        len(obs.events.collisions) > 0
+        or obs.events.off_road
+        or obs.events.reached_max_episode_steps
+    ):
         return _Completion.Crashed
     else:
-        raise Exception(
-            f"Unsupported agent done reason. Events: {obs.events}."
-        )
+        raise Exception(f"Unsupported agent done reason. Events: {obs.events}.")
 
 
 @dataclass

@@ -53,10 +53,7 @@ def _humanness(counts: Counts, costs: Costs) -> float:
 
 
 def _rules(counts: Counts, costs: Costs) -> float:
-    return (
-        costs.speed_limit
-        + 10 * costs.wrong_way
-    ) / counts.episode_agents
+    return (costs.speed_limit + 10 * costs.wrong_way) / counts.episode_agents
 
 
 def _time(counts: Counts, costs: Costs) -> float:
