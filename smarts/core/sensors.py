@@ -226,7 +226,7 @@ class Observation:
     top_down_rgb: Optional[TopDownRGB]
     road_waypoints: Optional[RoadWaypoints]
     via_data: Vias
-    signals: Optional[List[SignalObservation]]
+    signals: Optional[List[SignalObservation]] = None
 
 
 @dataclass
