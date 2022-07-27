@@ -111,7 +111,6 @@ class SignalProvider(Provider):
     def add_actor(
         self, provider_actor: ActorState, from_provider: Optional[Provider] = None
     ):
-        assert not route
         assert isinstance(provider_actor, SignalState)
         self._my_signals[provider_actor.actor_id] = provider_actor
 
