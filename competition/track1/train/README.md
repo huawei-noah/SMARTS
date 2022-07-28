@@ -25,7 +25,7 @@ The setup, train, evaluate, and docker, instructions are meant for getting start
 
 The example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3) reinforcement learning library.
 
-**This example is only meant to demonstrate one potential method of developing an RL model for the `multi-scenario-v0` environments. The trained RL policy here does not fully solve the task environments.**
+**This example is only meant to demonstrate one potential method of developing an RL model for the `multi-scenario-v0` environments. The RL policy here has not been trained to solve the task environments.**
 
 ## Setup
 + Use `python3.8` to develop your model.
