@@ -1,5 +1,5 @@
 # Submission
-Once an RL model has been trained offline, place all necessary files to run the saved model for inference inside this folder named `submission`. 
+Once a model has been trained offline, place all necessary files to run the saved model for inference inside this folder named `submission`. 
 
 The files named `policy.py`, `requirements.txt`, and `explanation.md`, must be included within this folder. Its contents are identical to that of Track-1 and they are explained at 
 + [Policy](../../track1/submission/README.md#Policy)
