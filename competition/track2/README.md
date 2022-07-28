@@ -3,11 +3,29 @@
 ## Objective
 Objective is to train a single **offline** reinforcement learning (RL) policy capable of controlling single-agent or multi-agent to complete different tasks in various scenarios. In each scenario the ego-agents must drive towards their respective goal locations. 
 
+The challenge of this track is to develop a model that can be trained using an offline dataset, without any interactions with an online environment.
+
 ## Data and RL Model
-1. For offline RL training, use Waymo datasets.
+1. For offline RL training, consider downloading and using the following two Naturalistic Autonomous Driving datasets 
+    + [Waymo Open Motion dataset](https://waymo.com/open/data/motion/) 
+    + [Next Generation Simulation (NGSIM)](https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm).
+1. and use the following tools to extract and convert the training data into SMARTS observations.
+    + Waymo utilities from https://github.com/huawei-noah/SMARTS/tree/saul/waymo-extraction/smarts/waymo, can be used to  
+        + to browse Waymo dataset, and 
+        + to convert offline training data from Waymo into SMARTS observation space.
+    + NGSIM utilities from <TBD>, can be used to 
+        + to simulate NGSIM dataset in SMARTS, and
+        + to extract offline training data from NGSIM into SMARTS observation space.
+
+
 1. Waymo utilities from https://github.com/huawei-noah/SMARTS/tree/saul/waymo-extraction/smarts/waymo, can be used to  
    + to browse Waymo dataset, and 
    + to extract Waymo data into SMARTS observations.
+
+1. We have provided a subset of each Waymo and NGSIM datasets that we found to include useful and interesting trajectories for training. You can use this subset to limit the size of your training set and exclude irrelevant scenes. The data extraction tools for each dataset are capable to extracting data from the provided subset. (these subsets are subject to be updated!)
+
+
+
 1. Trained RL model should accept multi-agent observation of the format `Dict[agent_name: agent_observation]`. Observation space for each agent is `smarts.core.sensors.Observation`. For more details on the contents of `Observation` class, see https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186
 1. Each agent's mission goal is given in the observation returned at each time step. The mission goal could be accessed as `observation.ego_vehicle_state.mission.goal.position` which gives an `(x, y, z)` map coordinate of the goal location.
 1. Trained RL model should output multi-agent action of the format `Dict[agent_name: agent_action]`. Action space for each agent is `smarts.core.controllers.ActionSpaceType.TargetPose` which is a sequence of `[x-coordinate, y-coordinate, heading, and time-delta]`. Use `time-delta=0.1`.
@@ -72,7 +90,7 @@ Objective is to train a single **offline** reinforcement learning (RL) policy ca
     ```
 1. Training a new RL model should start once the above command is executed.
 1. New offline data is made available to the container via a mapped volume at `/offline_data` directory.
-1. The `/offline_data` directory contains selected offline datasets.
+1. The `/offline_data` directory contains selected Waymo and NGSIM datasets.
 1. Inside the container, on completion of training,  the trained model should be saved in `/track2/submission` folder such that calling `/track2/submission/policy.py::Policy.act(obs)` with a SMARTS observation returns an action.
 1. The `/track2/submission` folder will be mapped out from the container and then evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
 1. During development, it is strongly suggested for you to submit your zipped `track2/submission` folder to the Validation Track in Codalab, to verify that the evaluation works without errors.
