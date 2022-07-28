@@ -2,6 +2,6 @@
 
 Include explanation of your model here.
 
-Provide a GitHub link to your code.
+Provide a link to your source code, preferably in GitHub.
 
-Provide a DockerHub link to your Docker image.
+Provide a link to your Docker image.
