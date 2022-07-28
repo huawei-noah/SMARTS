@@ -68,13 +68,6 @@ class Policy(BasePolicy):
         Returns:
             Dict[str, Any]: A dictionary of actions for each ego agent.
         """
-        # wrapped_act = {}
-        # for agent_id, agent_obs in obs.items():
-        #     action = self.model.predict(np.array([np.moveaxis(agent_obs["rgb"], -1, 0)]))[0]
-
-        #     target_pose = global_target_pose(action, agent_obs)
-        #     wrapped_act.update({agent_id: target_pose})
-        # return wrapped_act
 
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
