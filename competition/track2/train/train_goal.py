@@ -187,19 +187,19 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # # Install requirements.
-    # req_file = os.path.join(str(Path(__file__).absolute().parent), "requirements.txt")
-    # sys.path.insert(0, str(Path(__file__).absolute().parent))
-    # subprocess.check_call(
-    #     [
-    #         sys.executable,
-    #         "-m",
-    #         "pip",
-    #         "install",
-    #         "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
-    #     ]
-    # )
-    # subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+    # Install requirements.
+    req_file = os.path.join(str(Path(__file__).absolute().parent), "requirements.txt")
+    sys.path.insert(0, str(Path(__file__).absolute().parent))
+    subprocess.check_call(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
+        ]
+    )
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
 
     main(args)
 
