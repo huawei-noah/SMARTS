@@ -1,11 +1,13 @@
 # Offline Learning
 
 ## Objective
-Objective is to train a single **offline** learning policy capable of controlling single-agent or multi-agent to complete different tasks in various scenarios. In each scenario the ego-agents must drive towards their respective goal locations. The challenge of this track is that participants have to develop a model that can be trained on offline dataset, without interactions with the simulator or any online adjustments. We require participants to submit the codes (not models) for us to train on the offline dataset, and then we used the trained model for evaluation. Examples of approaches for track 2 are Imitation Learning and Offline Reinforcement Learning. 
+The objective is to train a single **offline** learning policy capable of controlling single-agent or multi-agent to complete different tasks in various scenarios. In each scenario, the ego-agents must drive towards their respective goal locations. The challenge of this track is that participants have to develop a model that can be trained using offline dataset, without interactions with the simulator or any online adjustments. 
+
+Important: we require participants to submit the code for us to train using offline dataset, and then we will use the trained model for evaluations. Do not submit a trained model. The contestants should also provide the training code with an argument to specify the location of the offline dataset. See example below.  
 
 ## Data and RL Model
 1. For offline training, we provide information and tools for extracting training dataset from two Naturalistic Autonomous Driving datasets: [Waymo Open Motion dataset](https://waymo.com/open/data/motion/) and [Next Generation Simulation (NGSIM)](https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm).
-1. Participants can download these 2 datasets, and use the provided tools to extract training data. 
+1. Participants can download these two datasets, and use the provided tools to extract training data. 
 1. It is required that the training dataset to be compatible with the SMARTS simulator. you can find the tools for visualize and extract the training data compatible with SMARTS here:
    1. Waymo utilities from https://github.com/huawei-noah/SMARTS/tree/saul/waymo-extraction/smarts/waymo, can be used to  
       + to browse Waymo dataset, and 
@@ -41,10 +43,49 @@ Objective is to train a single **offline** learning policy capable of controllin
 1. The `track2/train/train.py` code should be capable of reading in new offline data fed in by the competition organizers, train a new model with offline data from scratch, and save the newly trained model into a `Policy` class in `track2/submission/policy.py` file.
 1. The command 
     ```bash
-    $ python3.8 track2/train/train.py --input_dir=<path>/offline_data
+    $ python3.8 track2/train/train.py --input_dir=<path_to_offline_dataset>
     ```
     will be executed on the submitted code to train a new model using new offline data. Therefore, the training script should be named `track2/train/train.py` and take an argument `--input_dir` stating the path to the new offline data.
 1. The `offline_data` directory contains a combination of selected Waymo and NGSIM datasets.
 1. On completion of training, `track2/train/train.py` should save the trained model such that calling the `act(observation)` method of `submission/policy.py::Policy` returns an action.
 1. The `track2/submission` folder will be read and evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../../evaluation/README.md).
 1.  Finally, the offline training code in `track2/train` will be manually scrutinised. 
+
+
+# Example
+
+The example uses Conservative Q-learning (CQL) method from [d3rlpy](https://github.com/takuseno/d3rlpy) offline RL library.
+
+**This example is only meant to demonstrate one potential method of developing an offline RL model using waymo dataset. The trained policy here does not fully solve the task environments.**
+
+## Setup
++ Use `python3.8` to develop your model.
+    ```bash
+    $ cd <path>/SMARTS/competition/track2/train
+    $ python3.8 -m venv ./.venv
+    $ source ./.venv/bin/activate
+    $ pip install --upgrade pip
+    $ pip install -e .
+    ```
++ SMARTS is used as a dependent package.
+
+## Preparing data for offline RL
++ Observations: We use a 3-channel rgb birds eye view image plus an extended channel containing the location of the goal as the observation for offline RL. So the observation is of the form (4, 256, 256)
+
++ Actions: The action space (output of the policy) is using dx, dy and dh, which are the value change per step in x, y direction and heading for the ego vehicle in its birds eye view image coordinate. Since dx and dy can not be directly obtained from smarts observation, we have to get displacement change in global coordinate first and use a rotation matrix w.r.t the heading to get dx, dy. The bound for the action space is 
+    + dx: [-0.1, 0.1]
+    + dy: [0, 2]
+    + dh: [-0.1, 0.1]
+
++ Rewards: The reward use the default reward in SMARTS which is the distance travelled per step plus an extra reward for reaching the goal. Since there is not a "goal" concept in the training set, we use the last point of each trajectory as the goal position for training. 
+
+
+
+## Train
+1. Train
+    ```bash
+    $ cd <path>/SMARTS/competition/track2/train
+    $ python3.8 train.py --input_dir=<path_to_offline_dataset>
+    ```
+1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. After the end of each training iteration, we will save the model in `<path>/SMARTS/competition/track2/train/d3rlpy_logs/<scenario_index>`. The next trainig iteration will keep training on the latest trained model. At the end of the whole trainig, the last model will be save to  `<path>/SMARTS/competition/track2/submission/model` automatically for evaluation. 
+
