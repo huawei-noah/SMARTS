@@ -14,12 +14,16 @@ import os
 from PIL import Image
 import re
 import torch
-torch.cuda.empty_cache()
 import pathlib
 import glob
 import argparse
 from pathlib import Path
+import shutil
+import sys
+import subprocess
 
+
+d3rlpy.seed(313)
 
 def train(path):
     path = path
@@ -29,8 +33,9 @@ def train(path):
         scenarios.append(scenario_name)
 
 
-    if not os.listdir("d3rlpy_logs/"):  # if empty
+    if not os.path.isdir("d3rlpy_logs/"):
         index = 0
+        os.mkdir('d3rlpy_logs')
     else:
         index = len(os.listdir("d3rlpy_logs/"))
 
@@ -112,7 +117,8 @@ def train(path):
                             current_position[1],
                             current_heading,
                         )
-                        obs.append(np.concatenate((img_obs, goal_obs), axis=0))
+                        extended_ob = np.concatenate((bev, goal_obs), axis=0)
+                        obs.append(extended_ob)
                         actions.append([dx, dy, dheading])
                         dist_reward = vehicle_data[float(sim_time)]["dist"]
                         goal_reward = goal_region_reward(
@@ -136,9 +142,8 @@ def train(path):
             dataset = MDPDataset(obs, actions, rewards, terminals)
 
             if index == 0:
-                scaler = MinMaxActionScaler(dataset)
-                minimum = actions.min(axis=0)
-                maximum = actions.max(axis=0)
+                minimum = [-0.1, 0, -0.1]
+                maximum = [0.1, 2, 0.1]
                 action_scaler = MinMaxActionScaler(minimum=minimum, maximum=maximum)
                 model = d3rlpy.algos.CQL(use_gpu=True, batch_size=32, action_scaler=action_scaler)
             else:
@@ -158,8 +163,12 @@ def train(path):
             index += 1
         except:
             pass
+    saved_models = glob.glob("d3rlpy_logs/*")
+    latest_model = max(saved_models, key=os.path.getctime)
+    os.rename(latest_model, "d3rlpy_logs/model")
+    shutil.copytree('d3rlpy_logs/model', '../submission/model')
 
-    print("Finish Processing")
+
 
 def main(args: argparse.Namespace):
     path = args.input_dir
@@ -177,5 +186,20 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    # Install requirements.
+    req_file = os.path.join(str(Path(__file__).absolute().parent), "requirements.txt")
+    sys.path.insert(0, str(Path(__file__).absolute().parent))
+    subprocess.check_call(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
+        ]
+    )
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+
     main(args)
 

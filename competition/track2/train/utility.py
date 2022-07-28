@@ -218,10 +218,8 @@ def global_target_pose(action, agent_obs):
         theta = 2 * math.pi + cur_heading
 
     trans_matrix = np.array([[math.cos(theta), math.sin(theta)], [-math.sin(theta), math.cos(theta)]])
-    cur_pos = np.array([[cur_x], [cur_y]])
-    trans_cur = np.round(np.matmul(trans_matrix, cur_pos), 5)
-    trans_next = np.array([[trans_cur[0,0] + action[0]], [trans_cur[1,0] + action[1]]])
-    global_next = np.round(np.matmul(np.transpose(trans_matrix), trans_next), 5)
-    target_pose = np.array([global_next[0,0], global_next[1,0], action[2] + cur_heading, 0.1])
+    action_bev = np.array([[action[0]], [action[1]]])
+    action_global = np.matmul(np.transpose(trans_matrix), action_bev)
+    target_pose = np.array([cur_x + action_global[0], cur_y + action_global[1], action[2] + cur_heading, 0.1])
 
     return target_pose
