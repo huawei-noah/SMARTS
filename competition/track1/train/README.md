@@ -58,14 +58,14 @@ The example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-b
     + `dones`: Dict[agent_name: agent_done, \_\_all\_\_: all_done]
     Here `dones["__all__"]` becomes true when all agents are done, else false.
 + Default reward is distance travelled per step in meters.
-+ Action space for each agent: `smarts.core.controllers.ActionSpaceType.TargetPose` a sequence of [x-coordinate, y-coordinate, heading, and time-delta].
++ Action space for each agent: `smarts.core.controllers.ActionSpaceType.TargetPose` a sequence of `[x-coordinate, y-coordinate, heading, and time-delta]`. Use `time-delta=0.1`.
     + ```python
       action_space = gym.spaces.Box(low=np.array([-1e10, -1e10, -π, 0]), high=np.array([1e10, 1e10, π, 1e10]), dtype=np.float32)
       ```
     + ego's next x-coordinate on the map: [-1e10,1e10]
     + ego's next y-coordinate on the map: [-1e10,1e10]
     + ego's next heading with respect to the map's axes: [-π,π]
-    + time delta to reach the given pose: [-1e10,1e10]
+    + time delta to reach the given pose: [0,1e10]
 + Observation space for each agent: `smarts.core.sensors.Observation`
     + For more details on the contents of `Observation` class, see https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186
 + In each environment, each agent's mission goal is given in the observation returned at each time step. The mission goal could be accessed as `observation.ego_vehicle_state.mission.goal.position` which gives an `(x, y, z)` map coordinate of the goal location.
