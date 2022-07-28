@@ -1301,7 +1301,7 @@ class SignalsSensor(Sensor):
             if route and ogl.road not in route.roads:
                 continue
             upcoming_signals += [
-                feat for feat in lane.features if self._is_signal_type(feat)
+                feat for feat in ogl.features if self._is_signal_type(feat)
             ]
             lookahead -= lane.length
             self._find_signals_ahead(ogl, lookahead, route, upcoming_signals)

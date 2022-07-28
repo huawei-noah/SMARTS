@@ -704,7 +704,10 @@ class SumoTrafficSimulation(TrafficProvider):
                 )
                 prev_state = sig_state.state
                 sig_state.state = self._decode_tls_state(tls_state[s])
-                if sig_state.state != prev_state:
+                if (
+                    sig_state.state != prev_state
+                    and prev_state != SignalLightState.UNKNOWN
+                ):
                     sig_state.last_changed = self._cumulative_sim_seconds
                 signal_states.append(sig_state)
         return signal_states
