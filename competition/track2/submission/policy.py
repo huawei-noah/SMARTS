@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict
 import numpy as np
-from utility import global_target_pose
+from utility import get_goal_layer, global_target_pose
 
 
 class BasePolicy:
@@ -78,16 +78,20 @@ class Policy(BasePolicy):
 
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
-            bev = np.moveaxis(agent_obs["rgb"], -1, 0)
-            goal_obs = np.zeros((1, 256, 256))
-            goal_obs[0, 0, 128] = 255
-            obs = list()
-            obs.append(np.concatenate((bev, goal_obs), axis=0))
-            obs = np.array(obs, dtype=np.uint8)
+            bev_obs= np.moveaxis(agent_obs["rgb"], -1, 0)
 
-            action = self.model.predict(obs)[0]
+            goal_x = agent_obs['mission']['goal_pos'][0]
+            goal_y = agent_obs['mission']['goal_pos'][1]
+            current_x = agent_obs["ego"]["pos"][0]
+            current_y = agent_obs["ego"]["pos"][1]
+            current_heading = agent_obs["ego"]["heading"]
+            goal_obs = get_goal_layer(goal_x, goal_y, current_x, current_y, current_heading)
+
+            final_obs = list()
+            final_obs.append(np.concatenate((bev_obs, goal_obs), axis=0))
+            final_obs = np.array(final_obs, dtype=np.uint8)
+            action = self.model.predict(final_obs)[0]
 
             target_pose = global_target_pose(action, agent_obs)
             wrapped_act.update({agent_id: target_pose})
-            breakpoint()
         return wrapped_act
