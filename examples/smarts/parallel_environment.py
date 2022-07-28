@@ -7,7 +7,7 @@ gym.logger.set_level(40)
 from functools import partial
 from typing import Dict, Sequence, Tuple
 
-from examples.argument_parser import default_argument_parser
+from examples.utility.argument_parser import default_argument_parser
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType

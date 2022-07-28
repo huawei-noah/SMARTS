@@ -18,9 +18,9 @@ from smarts.core.utils.math import rounder_for_dt
 from smarts.zoo.agent_spec import AgentSpec
 
 try:
-    from argument_parser import default_argument_parser
+    from examples.utility.argument_parser import default_argument_parser
 except ImportError:
-    from .argument_parser import default_argument_parser
+    from .utility.argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
