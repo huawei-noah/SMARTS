@@ -224,7 +224,7 @@ def global_target_pose(action, agent_obs):
     action_bev = np.array([[action[0]], [action[1]]])
     # trans_cur = np.matmul(trans_matrix, cur_pos)
     # trans_next = np.array([[trans_cur[0,0] + action[0]], [trans_cur[1,0] + action[1]]])
-    print(action, cur_heading)
+    # print(action, cur_heading)
     action_global = np.matmul(np.transpose(trans_matrix), action_bev)
     # print(action_global)
     # global_next = np.matmul(np.transpose(trans_matrix), trans_next)
@@ -236,3 +236,5 @@ def global_target_pose(action, agent_obs):
     target_pose = np.array([cur_x + action_global[0], cur_y + action_global[1], action[2] + cur_heading, 0.1])
 
     return target_pose
+
+    
