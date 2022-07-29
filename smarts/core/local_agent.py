@@ -26,22 +26,22 @@ from smarts.zoo.agent_spec import AgentSpec
 class LocalAgent(BufferAgent):
     """A local implementation of a buffer agent."""
 
-    def __init__(self, act_executor: futures.Executor):
+    def __init__(self):
         self._agent = None
         self._agent_spec = None
-        self._act_executor = act_executor
 
     def act(self, obs):
         """Call the agent's act function asynchronously and return a Future."""
 
-        def obtain_future(obs):
+        def obtain_future_result(obs):
             adapted_obs = self._agent_spec.observation_adapter(obs)
             action = self._agent.act(adapted_obs)
             adapted_action = self._agent_spec.action_adapter(action)
 
             return adapted_action
 
-        act_future = self._act_executor.submit(obtain_future, obs)
+        act_future = futures.Future()
+        act_future.set_result(obtain_future_result(obs))
         return act_future
 
     def start(self, agent_spec: AgentSpec):

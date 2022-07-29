@@ -21,6 +21,7 @@
 # to allow for typing to refer to class being defined (Mission)...
 from __future__ import annotations
 
+import logging
 import math
 import random
 from dataclasses import dataclass, field
@@ -223,6 +224,17 @@ class Mission:
         return self.goal.is_reached(vehicle)
 
     @staticmethod
+    def endless_mission(
+        start_pose: Pose,
+    ) -> Mission:
+        """Generate an endless mission."""
+        return Mission(
+            start=Start(start_pose.as_position2d(), start_pose.heading),
+            goal=EndlessGoal(),
+            entry_tactic=None,
+        )
+
+    @staticmethod
     def random_endless_mission(
         road_map: RoadMap,
         min_range_along_lane: float = 0.3,
@@ -243,11 +255,7 @@ class Mission:
         offset *= n_lane.length
         coord = n_lane.from_lane_coord(RefLinePoint(offset))
         target_pose = n_lane.center_pose_at_point(coord)
-        return Mission(
-            start=Start(target_pose.as_position2d(), target_pose.heading),
-            goal=EndlessGoal(),
-            entry_tactic=None,
-        )
+        return Mission.endless_mission(start_pose=target_pose)
 
 
 @dataclass(frozen=True)
@@ -315,7 +323,11 @@ class Plan:
         return self._road_map
 
     def create_route(self, mission: Mission) -> Mission:
-        """Generates a mission that conforms to this plan."""
+        """Generates a mission that conforms to this plan.
+        Args:
+            mission (Mission):
+                A mission the agent should follow. Defaults to endless if `None`.
+        """
         assert not self._route, "already called create_route()"
         self._mission = mission or Mission.random_endless_mission(self._road_map)
 
@@ -328,6 +340,7 @@ class Plan:
             self._mission.start.point,
             include_junctions=False,
         )
+
         if not start_lane:
             # it's possible that the Mission's start point wasn't explicitly
             # specified by a user, but rather determined during the scenario run
@@ -337,14 +350,16 @@ class Plan:
                 self._mission.start.point,
                 include_junctions=True,
             )
-        assert start_lane, "route must start in a lane"
+        if start_lane is None:
+            self._mission = Mission.endless_mission(Pose.origin())
+            raise PlanningError("Cannot find start lane. Route must start in a lane.")
         start_road = start_lane.road
 
         end_lane = self._road_map.nearest_lane(
             self._mission.goal.position,
             include_junctions=False,
         )
-        assert end_lane, "route must end in a lane"
+        assert end_lane is not None, "route must end in a lane"
         end_road = end_lane.road
 
         via_roads = [self._road_map.road_by_id(via) for via in self._mission.route_vias]
@@ -354,6 +369,7 @@ class Plan:
         )[0]
 
         if len(self._route.roads) == 0:
+            self._mission = Mission.endless_mission(Pose.origin())
             raise PlanningError(
                 "Unable to find a route between start={} and end={}. If either of "
                 "these are junctions (not well supported today) please switch to "

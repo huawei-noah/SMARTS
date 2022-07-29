@@ -17,9 +17,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import logging
 from dataclasses import dataclass, field
 from enum import IntFlag
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Any, List, Optional, Sequence, Set, Tuple
 
 from .controllers import ActionSpaceType
 from .road_map import RoadMap
@@ -52,9 +53,23 @@ class ProviderState:
         """Merge state with another provider's state."""
         our_vehicles = {v.vehicle_id for v in self.vehicles}
         other_vehicles = {v.vehicle_id for v in other.vehicles}
-        assert our_vehicles.isdisjoint(other_vehicles)
+        if not our_vehicles.isdisjoint(other_vehicles):
+            overlap = our_vehicles & other_vehicles
+            logging.warning(
+                f"multiple providers control the same vehicles: {overlap}. "
+                "Later added providers will take priority. "
+            )
+            logging.info(
+                "Conflicting vehicle states: \n"
+                f"Previous: {[(v.vehicle_id, v.source) for v in self.vehicles if v.vehicle_id in overlap]}\n"
+                f"Later: {[(v.vehicle_id, v.source) for v in other.vehicles if v.vehicle_id in overlap]}\n"
+            )
 
-        self.vehicles += other.vehicles
+        ## TODO: Properly harmonize these vehicle ids so that there is a priority and per vehicle source
+        self.vehicles += filter(
+            lambda v: v.vehicle_id not in our_vehicles, other.vehicles
+        )
+
         self.dt = max(self.dt, other.dt, key=lambda x: x if x else 0)
 
     def filter(self, vehicle_ids):
