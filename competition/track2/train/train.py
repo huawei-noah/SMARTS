@@ -190,6 +190,7 @@ if __name__ == "__main__":
         help="The path to the directory containing the offline training data",
         required=True,
         type=str,
+        default="/offline_dataset"
     )
 
     args = parser.parse_args()
