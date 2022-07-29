@@ -1,8 +1,9 @@
 from collections import defaultdict
 import os
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import click
+from matplotlib.animation import FuncAnimation
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
@@ -27,6 +28,54 @@ MAP_HANDLES = [
         linestyle="None",
         markersize=5,
         label="Stop Sign",
+    ),
+]
+
+TRAJECTORY_HANDLES = [
+    Line2D(
+        [],
+        [],
+        color="cyan",
+        marker="^",
+        linestyle="None",
+        markersize=5,
+        label="Ego Vehicle",
+    ),
+    Line2D(
+        [],
+        [],
+        color="black",
+        marker="^",
+        linestyle="None",
+        markersize=5,
+        label="Car",
+    ),
+    Line2D(
+        [],
+        [],
+        color="magenta",
+        marker="d",
+        linestyle="None",
+        markersize=5,
+        label="Pedestrian",
+    ),
+    Line2D(
+        [],
+        [],
+        color="yellow",
+        marker="*",
+        linestyle="None",
+        markersize=5,
+        label="Cyclist",
+    ),
+    Line2D(
+        [],
+        [],
+        color="black",
+        marker="8",
+        linestyle="None",
+        markersize=5,
+        label="Other",
     ),
 ]
 
@@ -132,16 +181,55 @@ def _get_map_features(scenario: scenario_pb2.Scenario) -> Dict[str, List]:
 
 def _get_trajectories(
     scenario: scenario_pb2.Scenario,
-) -> Dict[int, List[Optional[Tuple[float, float]]]]:
+) -> Dict[int, Dict[str, Any]]:
     num_steps = len(scenario.timestamps_seconds)
-    trajectories = defaultdict(lambda: [None] * num_steps)
+    trajectories = defaultdict(lambda: {"positions": [None] * num_steps})
     for i in range(len(scenario.tracks)):
         vehicle_id = scenario.tracks[i].id
+        trajectories[vehicle_id]["is_ego"] = i == scenario.sdc_track_index
+        trajectories[vehicle_id]["object_type"] = scenario.tracks[i].object_type
         for j in range(num_steps):
             obj_state = scenario.tracks[i].states[j]
             if obj_state.valid:
-                trajectories[vehicle_id][j] = (obj_state.center_x, obj_state.center_y)
+                trajectories[vehicle_id]["positions"][j] = (
+                    obj_state.center_x,
+                    obj_state.center_y,
+                )
     return trajectories
+
+
+def _plot_trajectories(
+    trajectories: Dict[str, Any]
+) -> Tuple[List[Line2D], List[Optional[Tuple[float, float]]]]:
+    points, data = [], []
+
+    # Need to plot something initially to get handles to the point objects,
+    # so just use a valid point from the first trajectory
+    first_traj = list(trajectories.values())[0]["positions"]
+    ind = None
+    for i in range(len(first_traj)):
+        if first_traj[i] is not None:
+            ind = i
+            break
+    assert ind is not None, "No valid point in first trajectory"
+    x0 = first_traj[ind][0]
+    y0 = first_traj[ind][1]
+    for v_id, props in trajectories.items():
+        xs = [p[0] for p in props["positions"] if p]
+        ys = [p[1] for p in props["positions"] if p]
+        if props["is_ego"]:
+            (point,) = plt.plot(x0, y0, "c^")
+        elif props["object_type"] == 1:
+            (point,) = plt.plot(x0, y0, "k^")
+        elif props["object_type"] == 2:
+            (point,) = plt.plot(x0, y0, "md")
+        elif props["object_type"] == 3:
+            (point,) = plt.plot(x0, y0, "y*")
+        else:
+            (point,) = plt.plot(x0, y0, "k8")
+        data.append((xs, ys))
+        points.append(point)
+    return points, data
 
 
 @waymo_cli.command(
@@ -175,19 +263,36 @@ def preview(
     mng = plt.get_current_fig_manager()
     mng.resize(1000, 1000)
     map_features = _get_map_features(scenario)
+    handles = MAP_HANDLES
     if plot_trajectories:
+        handles.extend(TRAJECTORY_HANDLES)
         trajectories = _get_trajectories(scenario)
-        for v_id, positions in trajectories.items():
-            xs = [p[0] for p in positions if p]
-            ys = [p[1] for p in positions if p]
+        for v_id, props in trajectories.items():
+            xs = [p[0] for p in props["positions"] if p]
+            ys = [p[1] for p in props["positions"] if p]
             plt.scatter(xs[0], ys[0], marker="o", c="blue")
             bbox_props = dict(boxstyle="square,pad=0.1", fc="white", ec=None)
             plt.text(xs[0] + 1, ys[0] + 1, f"{v_id}", bbox=bbox_props)
-    if animate_trajectories:
-        pass  # TODO
+    elif animate_trajectories:
+        handles.extend(TRAJECTORY_HANDLES)
+        trajectories = _get_trajectories(scenario)
+        points, data = _plot_trajectories(trajectories)
+
+        def update(i):
+            drawn_pts = []
+            for (xs, ys), point in zip(data, points):
+                if i < len(xs) and xs[i] is not None and ys[i] is not None:
+                    point.set_data(xs[i], ys[i])
+                    drawn_pts.append(point)
+            return drawn_pts
+
+        num_steps = len(scenario.timestamps_seconds)
+        anim = FuncAnimation(
+            fig, update, frames=range(1, num_steps), blit=True, interval=100
+        )
     _plot_map_features(map_features)
     plt.title(f"Scenario {scenario_id}")
-    plt.legend(handles=MAP_HANDLES)
+    plt.legend(handles=handles)
     plt.axis("equal")
     plt.show()
 
