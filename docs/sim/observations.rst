@@ -122,4 +122,4 @@ Actions
 - `ActionSpaceType.MPC`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space using trajectory as x coordinates, y coordinates, headings, and speeds to adaptively perform controls on the vehicle model in an attempt to match the given trajectory. 
 - `ActionSpaceType.TargetPose`: `Sequence[float, float, float, float]` continuous action space with a single vehicle x coordinate, y coordinate, heading, and time delta to reach the given pose.
 - `ActionSpaceType.MultiTargetPose`: `Dict[str, (float, float, float, float)]` continuous action space that provides actions for multiple vehicles with each vehicle id mapped to pose as x coordinate, y coordinate, heading, and time delta to reach the given pose. 
-- `ActionSpaceType.Direct``: `Union[float, (float,float)]` continuous action space where you can pass either (a) initial speed upon reset or (b) linear acceleration and angular velocity for other steps.
+- `ActionSpaceType.Direct`: `Union[float, (float,float)]` continuous action space where you can pass either (a) initial speed upon reset or (b) linear acceleration and angular velocity for other steps.
