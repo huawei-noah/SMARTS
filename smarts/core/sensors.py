@@ -208,6 +208,7 @@ class Observation:
     """Amount of simulation time the last step took."""
     step_count: int
     """Number of steps taken by SMARTS thus far."""
+    steps_completed: int
     elapsed_sim_time: float
     """Amout of simulation time elapsed. Average step_time can be computed as 
     elapsed_sim_time/step_count."""
@@ -229,7 +230,6 @@ class Observation:
     road_waypoints: Optional[RoadWaypoints]
     via_data: Vias
     signals: Optional[List[SignalObservation]] = None
-    steps_completed: int
 
 
 @dataclass
@@ -441,6 +441,7 @@ class Sensors:
             Observation(
                 dt=sim.last_dt,
                 step_count=sim.step_count,
+                steps_completed=sensor_state.steps_completed,
                 elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
                 ego_vehicle_state=ego_vehicle,
@@ -455,7 +456,6 @@ class Sensors:
                 road_waypoints=road_waypoints,
                 via_data=via_data,
                 signals=signals,
-                steps_completed=sensor_state.steps_completed,
             ),
             done,
         )
