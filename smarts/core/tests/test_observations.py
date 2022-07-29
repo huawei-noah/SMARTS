@@ -291,7 +291,9 @@ def test_signal_observations(smarts, scenario):
         signals = observations[AGENT_ID].signals
         if step < 155:
             # it's out of range...
-            assert len(signals) == 0, f"step={step}"
+            assert (
+                len(signals) == 0
+            ), f"step={step}, {observations[AGENT_ID].ego_vehicle_state.position}"
         else:
             assert len(signals) == 1, f"step={step}"
             assert (
