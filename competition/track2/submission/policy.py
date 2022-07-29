@@ -1,6 +1,4 @@
-from pathlib import Path
 from typing import Any, Dict
-import numpy as np
 
 
 class BasePolicy:
@@ -25,19 +23,9 @@ def submitted_wrappers():
         List[wrappers]: List of wrappers. Default is empty list [].
     """
 
-    from reward import Reward
-
-    from smarts.core.controllers import ActionSpaceType
-    from smarts.env.wrappers.format_action import FormatAction
-    from smarts.env.wrappers.format_obs import FormatObs
-
-    # fmt: off
     wrappers = [
-        FormatObs,
-        lambda env: FormatAction(env=env, space=ActionSpaceType["TargetPose"]),
-        Reward,
+        # Insert wrappers here, if any.
     ]
-    # fmt: on
 
     return wrappers
 
@@ -51,12 +39,8 @@ class Policy(BasePolicy):
         performed here. To be implemented by the user.
         """
 
-        from d3rlpy.algos import CQL
-
-        self.model = CQL.from_json(
-            Path(__file__).absolute().parents[0] / "model/params.json", use_gpu=True
-        )
-        self.model.load_model(Path(__file__).absolute().parents[0] / "model/model.pt")
+        # Load saved RL model and instantiate any needed objects.
+        self.model = ... 
 
     def act(self, obs: Dict[str, Any]):
         """Act function to be implemented by user.
@@ -69,16 +53,7 @@ class Policy(BasePolicy):
         """
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
-            action = self.model.predict(
-                np.array([agent_obs["rgb"].reshape(3, 256, 256)])
-            )[0]
-            target_pose = np.array(
-                [
-                    (action[0] + agent_obs["ego"]["pos"][0]),
-                    action[1] + agent_obs["ego"]["pos"][1],
-                    action[2] + agent_obs["ego"]["heading"],
-                    0.1,
-                ]
-            )
-            wrapped_act.update({agent_id: target_pose})
+            # Use saved model to predict multi-agent action output given multi-agent SMARTS observation input.
+            action = ... 
+            wrapped_act.update({agent_id: action})
         return wrapped_act
