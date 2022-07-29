@@ -42,10 +42,11 @@ from smarts.core.utils.math import (
 from smarts.sstudio import types
 
 try:
-    from waymo_open_dataset.protos import scenario_pb2  # pytype: disable=import-error
-    from waymo_open_dataset.protos.map_pb2 import (
-        TrafficSignalLaneState,
-    )  # pytype: disable=import-error
+    # pytype: disable=import-error
+    from waymo_open_dataset.protos import scenario_pb2
+    from waymo_open_dataset.protos.map_pb2 import TrafficSignalLaneState
+
+    # pytype: enable=import-error
 except ImportError:
     print(
         "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
