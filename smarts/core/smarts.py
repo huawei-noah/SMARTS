@@ -67,7 +67,7 @@ from .vehicle_index import VehicleIndex
 logging.basicConfig(
     format="%(asctime)s.%(msecs)03d %(levelname)s: {%(module)s} %(message)s",
     datefmt="%Y-%m-%d,%H:%M:%S",
-    level=logging.INFO,
+    level=logging.ERROR,
 )
 
 MAX_PYBULLET_FREQ = 240
