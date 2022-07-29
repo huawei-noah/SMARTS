@@ -363,7 +363,10 @@ class SumoTrafficSimulation(TrafficProvider):
         self._traci_conn = None
 
     def _handle_traci_disconnect(
-        self, e, actors_relinquishable: bool = True, removed_actor_id: str = None
+        self,
+        e,
+        actors_relinquishable: bool = True,
+        removed_actor_id: Optional[str] = None,
     ):
         logging.error(f"TraCI has disconnected with: {e}")
         self._close_traci_and_pipes()
@@ -931,7 +934,7 @@ class SumoTrafficSimulation(TrafficProvider):
         try:
             self._traci_conn.vehicle.remove(actor_id)
         except self._traci_exceptions as e:
-            self._handle_traci_disconnect(e, removed_actor=actor_id)
+            self._handle_traci_disconnect(e, removed_actor_id=actor_id)
         self._sumo_vehicle_ids.discard(actor_id)
         self._hijacked.discard(actor_id)
         self._non_sumo_vehicle_ids.discard(actor_id)
