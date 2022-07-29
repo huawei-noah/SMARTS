@@ -5,7 +5,7 @@ import sys
 import subprocess
 
 
-def train(path):
+def train(input_path, output_path):
     from utility import goal_region_reward
     from utility import get_goal_layer
     from utility import get_trans_coor
@@ -23,7 +23,7 @@ def train(path):
     d3rlpy.seed(313)
 
     scenarios = list()
-    for scenario_name in os.listdir(path):
+    for scenario_name in os.listdir(input_path):
         scenarios.append(scenario_name)
 
     if not os.path.isdir("d3rlpy_logs/"):
@@ -41,7 +41,7 @@ def train(path):
         print("processing scenario " + scenario)
         vehicle_ids = list()
 
-        for filename in os.listdir(path + scenario):
+        for filename in os.listdir(input_path + scenario):
             if filename.endswith(".png"):
                 match = re.search("vehicle-(.*).png", filename)
                 assert match is not None
@@ -57,12 +57,12 @@ def train(path):
                 print("adding data for vehicle id " + id + " in scenario " + scenario)
 
                 with open(
-                    path + scenario + "/Agent-history-vehicle-" + id + ".pkl", "rb"
+                    input_path + scenario + "/Agent-history-vehicle-" + id + ".pkl", "rb"
                 ) as f:
                     vehicle_data = pickle.load(f)
                 image_names = list()
 
-                for filename in os.listdir(path + scenario):
+                for filename in os.listdir(input_path + scenario):
                     if filename.endswith("-" + id + ".png"):
                         image_names.append(filename)
 
@@ -78,7 +78,7 @@ def train(path):
 
                 for i in range(len(image_names) - 1):
                     with Image.open(
-                        path + scenario + "/" + image_names[i], "r"
+                        input_path + scenario + "/" + image_names[i], "r"
                     ) as image:
                         image.seek(0)
                         sim_time = image_names[i].split("_Agent")[0]
@@ -169,17 +169,18 @@ def train(path):
     os.rename(latest_model, "d3rlpy_logs/model")
 
 
-    if os.path.isdir('../submission/model'):
-        shutil.rmtree('../submission/model')
+    if os.path.isdir('output/'):
+        shutil.rmtree('output/')
 
-    shutil.copytree('d3rlpy_logs/model', '../submission/model')
+    shutil.copytree('d3rlpy_logs/model', output_path)
 
 
 
 
 def main(args: argparse.Namespace):
-    path = args.input_dir
-    train(path)
+    input_path = args.input_dir
+    output_path = args.output_dir
+    train(input_path, output_path)
 
 
 if __name__ == "__main__":
@@ -188,9 +189,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--input_dir",
         help="The path to the directory containing the offline training data",
-        required=True,
         type=str,
-        default="/offline_dataset"
+        default="offline_dataset/"
+    )
+    parser.add_argument(
+        "--output_dir",
+        help="The path to the directory storing the trained model",
+        type=str,
+        default="output/model"
     )
 
     args = parser.parse_args()
