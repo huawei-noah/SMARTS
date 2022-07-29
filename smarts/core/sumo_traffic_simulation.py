@@ -362,16 +362,23 @@ class SumoTrafficSimulation(TrafficProvider):
         self._sumo_proc = None
         self._traci_conn = None
 
-    def _handle_traci_disconnect(self, e):
+    def _handle_traci_disconnect(
+        self, e, actors_relinquishable: bool = True, removed_actor_id: str = None
+    ):
         logging.error(f"TraCI has disconnected with: {e}")
         self._close_traci_and_pipes()
         sim = self._sim()
-        if sim and self.recovery_flags & ProviderRecoveryFlags.RELINQUISH_ACTORS:
+        if (
+            sim
+            and actors_relinquishable
+            and self.recovery_flags & ProviderRecoveryFlags.RELINQUISH_ACTORS
+        ):
             self._log.warning(
                 "attempting to transfer SUMO vehicles to other providers..."
             )
             for actor in self._last_provider_state.actors:
-                sim.provider_relinquishing_actor(self, actor)
+                if actor.actor_id != removed_actor_id:
+                    sim.provider_relinquishing_actor(self, actor)
 
     def _remove_vehicles(self):
         vehicles_to_remove = None
@@ -397,7 +404,7 @@ class SumoTrafficSimulation(TrafficProvider):
             try:
                 self._remove_vehicles()
             except self._traci_exceptions as e:
-                self._handle_traci_disconnect(e)
+                self._handle_traci_disconnect(e, actors_relinquishable=False)
 
         if self._allow_reload:
             self._cumulative_sim_seconds = 0
@@ -924,7 +931,7 @@ class SumoTrafficSimulation(TrafficProvider):
         try:
             self._traci_conn.vehicle.remove(actor_id)
         except self._traci_exceptions as e:
-            self._handle_traci_disconnect(e)
+            self._handle_traci_disconnect(e, removed_actor=actor_id)
         self._sumo_vehicle_ids.discard(actor_id)
         self._hijacked.discard(actor_id)
         self._non_sumo_vehicle_ids.discard(actor_id)
