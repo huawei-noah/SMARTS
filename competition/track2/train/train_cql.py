@@ -167,14 +167,21 @@ def train(input_path, output_path):
     saved_models = glob.glob("d3rlpy_logs/*")
     latest_model = max(saved_models, key=os.path.getctime)
     os.rename(latest_model, "d3rlpy_logs/model")
+    model_path = f"{os.path.dirname(os.path.abspath(__file__))}/../submission/model"
 
+    if os.path.isdir(model_path):
+        shutil.rmtree(model_path)
 
+<<<<<<< HEAD:competition/track2/train/train_cql.py
     if os.path.isdir('output/'):
         shutil.rmtree('output/')
 
     shutil.copytree('d3rlpy_logs/model', output_path)
 
 
+=======
+    shutil.copytree('d3rlpy_logs/model', model_path)
+>>>>>>> 668f6f3b57908ea38d180ffdf84ea47399b51400:competition/track2/train/train.py
 
 
 def main(args: argparse.Namespace):
