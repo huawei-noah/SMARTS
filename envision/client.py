@@ -26,13 +26,13 @@ import multiprocessing
 import re
 import time
 import warnings
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, Union
 
 import numpy as np
 import websocket
-from dataclasses import dataclass
 
 from envision import types
 from envision.client_config import EnvisionStateFilter
