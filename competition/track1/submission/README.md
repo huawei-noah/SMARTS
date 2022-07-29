@@ -1,5 +1,5 @@
 # Submission
-Once a model has been trained for `multi-scenario-v0` environments, place all necessary files to run the trained model for inference inside this folder named `submission`. 
+Once a model has been trained, save it into the `track1/submission` folder. Place all necessary files to run the saved model for inference inside the `track1/submission` folder.
 
 The files named `policy.py`, `requirements.txt`, and `explanation.md`, must be included with the submission. Its contents are explained below.
 
@@ -7,7 +7,8 @@ The files named `policy.py`, `requirements.txt`, and `explanation.md`, must be i
 + The file `policy.py` must include a `Policy` class which inherits from the `BasePolicy` class.
 + The `Policy` class must implement an `act` method which accepts observations and returns actions.
 + Any policy initialization, including loading of model may be performed inside the `__init__` method of the `Policy` class.
-+ A random policy named `RandomPolicy` class is provided for reference.
++ The `submission/policy.py::Policy.act(obs)` will be called during evaluation, with a multi-agent SMARTS observation as input and a multi-agent action as the expected return value.
++ A random policy named `RandomPolicy` class is provided merely for reference.
 
 ## Wrappers
 + The file `policy.py` must include a `submitted_wrappers()` function.
@@ -20,6 +21,7 @@ The files named `policy.py`, `requirements.txt`, and `explanation.md`, must be i
 
 ## Explanation
 + Include an `explanation.md` file explaining the key techniques used in developing the submitted model.
++ Provide a link to your source code, preferably in GitHub.
 
 ## Submit to Codalab
 + Zip the `submission` folder. 

@@ -20,4 +20,3 @@ The files named `policy.py`, `requirements.txt`, and `explanation.md`, must be i
     + Select the SMARTS competition.
     + Click `Participate -> Submit/View Results -> Submit`
     + Upload the zipped folder.
-

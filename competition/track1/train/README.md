@@ -1,7 +1,9 @@
-# Multiple Scenarios
+# Track-1
 
 ## Objective
-Objective is to train a single reinforcement learning (RL) policy capable of controlling single-agent or multi-agent to complete different tasks in various scenarios. In each scenario the ego-agents must drive towards their respective goal locations. The scenario names and their missions, given for training, are as follows.
+Objective is to train a single policy capable of controlling single-agent or multi-agent to complete different driving tasks in various scenarios. In each scenario the ego-agents must drive towards their respective goal locations. Any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models, predictive models, etc, may be used to develop the policy.
+
+The scenario names and their missions, given for training, are as follows.
 
 - 1_to_2lane_left_turn_c 
     + A single ego agent must make a left turn at an uprotected cross-junction.
@@ -21,11 +23,13 @@ Objective is to train a single reinforcement learning (RL) policy capable of con
     + One ego agent, while driving along a 3-lane highway, must overtake a column of slow moving traffic vehicles and return to the same lane which it started at.
 
 # Example
-The setup, train, evaluate, and docker, instructions are meant for getting started. The steps are illustrated using an example.
+The setup, train, evaluate, and docker, instructions are meant for getting started. These steps are illustrated using an example.
 
 The example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3) reinforcement learning library.
 
-**This example is only meant to demonstrate one potential method of developing an RL model for the `multi-scenario-v0` environments. The trained RL policy here does not fully solve the task environments.**
+**The policy here has not yet been trained to fully solve the task environments.** 
+
+**This example is only meant to demonstrate one potential method of developing a policy for the `multi-scenario-v0` environments. Here, any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models, predictive models, etc, may be used to develop the policy.**
 
 ## Setup
 + Use `python3.8` to develop your model.
@@ -58,14 +62,14 @@ The example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-b
     + `dones`: Dict[agent_name: agent_done, \_\_all\_\_: all_done]
     Here `dones["__all__"]` becomes true when all agents are done, else false.
 + Default reward is distance travelled per step in meters.
-+ Action space for each agent: `smarts.core.controllers.ActionSpaceType.TargetPose` a sequence of [x-coordinate, y-coordinate, heading, and time-delta].
++ Action space for each agent: `smarts.core.controllers.ActionSpaceType.TargetPose` a sequence of `[x-coordinate, y-coordinate, heading, and time-delta]`. Use `time-delta=0.1`.
     + ```python
       action_space = gym.spaces.Box(low=np.array([-1e10, -1e10, -π, 0]), high=np.array([1e10, 1e10, π, 1e10]), dtype=np.float32)
       ```
     + ego's next x-coordinate on the map: [-1e10,1e10]
     + ego's next y-coordinate on the map: [-1e10,1e10]
     + ego's next heading with respect to the map's axes: [-π,π]
-    + time delta to reach the given pose: [-1e10,1e10]
+    + time delta to reach the given pose: [0,1e10]
 + Observation space for each agent: `smarts.core.sensors.Observation`
     + For more details on the contents of `Observation` class, see https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186
 + In each environment, each agent's mission goal is given in the observation returned at each time step. The mission goal could be accessed as `observation.ego_vehicle_state.mission.goal.position` which gives an `(x, y, z)` map coordinate of the goal location.
