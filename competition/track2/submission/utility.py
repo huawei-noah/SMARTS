@@ -18,31 +18,49 @@ def inside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
 
     # find true condition of first quadrant
     if goal_x > cur_x and goal_y > cur_y:
-        x_pixel_loc = min(128 + round(x_diff * ratio), 255)  # cap on 256 which is the right edge
-        y_pixel_loc = max(127 - round(y_diff * ratio), 0)  # cap on 0 which is the upper edge
+        x_pixel_loc = min(
+            128 + round(x_diff * ratio), 255
+        )  # cap on 256 which is the right edge
+        y_pixel_loc = max(
+            127 - round(y_diff * ratio), 0
+        )  # cap on 0 which is the upper edge
 
     # find second quadrant
     elif goal_x < cur_x and goal_y > cur_y:
-        x_pixel_loc = max(127 - round(x_diff * ratio), 0)  # cap on 0 which is the left edge
-        y_pixel_loc = max(127 - round(y_diff * ratio), 0)  # cap on 0 which is the upper edge
+        x_pixel_loc = max(
+            127 - round(x_diff * ratio), 0
+        )  # cap on 0 which is the left edge
+        y_pixel_loc = max(
+            127 - round(y_diff * ratio), 0
+        )  # cap on 0 which is the upper edge
 
     # To find third quadrant
     elif goal_x < cur_x and goal_y < cur_y:
-        x_pixel_loc = max(127 - round(x_diff * ratio), 0)  # cap on 0 which is the left edge
-        y_pixel_loc = min(128 + round(y_diff * ratio), 255)  # cap on 256 which is the bottom edge
+        x_pixel_loc = max(
+            127 - round(x_diff * ratio), 0
+        )  # cap on 0 which is the left edge
+        y_pixel_loc = min(
+            128 + round(y_diff * ratio), 255
+        )  # cap on 256 which is the bottom edge
 
     # To find Fourth quadrant
     elif goal_x > cur_x and goal_y < cur_y:
-        x_pixel_loc = min(128 + round(x_diff * ratio), 255)  # cap on 256 which is the right edge
-        y_pixel_loc = min(128 + round(y_diff * ratio), 255)  # cap on 256 which is the bottom edge
+        x_pixel_loc = min(
+            128 + round(x_diff * ratio), 255
+        )  # cap on 256 which is the right edge
+        y_pixel_loc = min(
+            128 + round(y_diff * ratio), 255
+        )  # cap on 256 which is the bottom edge
 
     # To find if goal is at cur (do not change to elif)
-    if (abs(cur_x)-0.05 <= abs(goal_x) <= abs(cur_x)+0.05) and (abs(cur_y)-0.05 <= abs(goal_y) <= abs(cur_y)+0.05):
+    if (abs(cur_x) - 0.05 <= abs(goal_x) <= abs(cur_x) + 0.05) and (
+        abs(cur_y) - 0.05 <= abs(goal_y) <= abs(cur_y) + 0.05
+    ):
         x_pixel_loc = 128
         y_pixel_loc = 128
 
     # On x-axis
-    elif (abs(cur_y)-0.05 <= abs(goal_y) <= abs(cur_y)+0.05) and goal_x != cur_x:
+    elif (abs(cur_y) - 0.05 <= abs(goal_y) <= abs(cur_y) + 0.05) and goal_x != cur_x:
         if goal_x >= cur_x:
             x_pixel_loc = min(128 + round(x_diff * ratio), 255)
         else:
@@ -50,7 +68,7 @@ def inside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
         y_pixel_loc = min(128 + round(y_diff * ratio), 255)
 
     # On y-axis
-    elif (abs(cur_x)-0.05 <= abs(goal_x) <= abs(cur_x)+0.05) and goal_y != cur_y:
+    elif (abs(cur_x) - 0.05 <= abs(goal_x) <= abs(cur_x) + 0.05) and goal_y != cur_y:
         if goal_y >= cur_y:
             y_pixel_loc = max(127 - round(y_diff * ratio), 0)
         else:
@@ -120,7 +138,7 @@ def outside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
             y_pixel_loc = 255
 
     # On x-axis (do not change to elif)
-    if (abs(cur_y)-0.05 <= abs(goal_y) <= abs(cur_y)+0.05) and goal_x != cur_x:
+    if (abs(cur_y) - 0.05 <= abs(goal_y) <= abs(cur_y) + 0.05) and goal_x != cur_x:
         if goal_x >= cur_x:
             x_pixel_loc = 255
         else:
@@ -128,7 +146,7 @@ def outside_coor_to_pixel(goal_x, goal_y, cur_x, cur_y):
         y_pixel_loc = 128
 
     # On y-axis
-    elif (abs(cur_x)-0.05 <= abs(goal_x) <= abs(cur_x)+0.05) and goal_y != cur_y:
+    elif (abs(cur_x) - 0.05 <= abs(goal_x) <= abs(cur_x) + 0.05) and goal_y != cur_y:
         if goal_y >= cur_y:
             y_pixel_loc = 0
         else:
@@ -154,7 +172,9 @@ def get_trans_coor(goal_x, goal_y, cur_x, cur_y, cur_heading):
     elif (cur_heading == math.pi) or (cur_heading == -(math.pi)):  # Facing South
         theta = 2 * math.pi + cur_heading
 
-    trans_matrix = np.array([[math.cos(theta), math.sin(theta)], [-math.sin(theta), math.cos(theta)]])
+    trans_matrix = np.array(
+        [[math.cos(theta), math.sin(theta)], [-math.sin(theta), math.cos(theta)]]
+    )
     cur_pos = np.array([[cur_x], [cur_y]])
     goal_pos = np.array([[goal_x], [goal_y]])
     trans_cur = np.round(np.matmul(trans_matrix, cur_pos), 5)
@@ -179,15 +199,19 @@ def get_goal_layer(goal_x, goal_y, cur_x, cur_y, cur_heading):
         inside = False
 
     if inside:
-        goal_obs = inside_coor_to_pixel(trans_goal[0, 0], trans_goal[1, 0], trans_cur[0, 0], trans_cur[1, 0])
+        goal_obs = inside_coor_to_pixel(
+            trans_goal[0, 0], trans_goal[1, 0], trans_cur[0, 0], trans_cur[1, 0]
+        )
     else:
-        goal_obs = outside_coor_to_pixel(trans_goal[0, 0], trans_goal[1, 0], trans_cur[0, 0], trans_cur[1, 0])
+        goal_obs = outside_coor_to_pixel(
+            trans_goal[0, 0], trans_goal[1, 0], trans_cur[0, 0], trans_cur[1, 0]
+        )
 
     return goal_obs
 
+
 def global_target_pose(action, agent_obs):
-    if abs(action[2]) < 0.002:
-        action[2] = 0
+
     cur_x = agent_obs["ego"]["pos"][0]
     cur_y = agent_obs["ego"]["pos"][1]
     cur_heading = agent_obs["ego"]["heading"]
@@ -204,11 +228,18 @@ def global_target_pose(action, agent_obs):
     elif (cur_heading == math.pi) or (cur_heading == -(math.pi)):  # Facing South
         theta = 2 * math.pi + cur_heading
 
-    trans_matrix = np.array([[math.cos(theta), math.sin(theta)], [-math.sin(theta), math.cos(theta)]])
+    trans_matrix = np.array(
+        [[math.cos(theta), math.sin(theta)], [-math.sin(theta), math.cos(theta)]]
+    )
     action_bev = np.array([[action[0]], [action[1]]])
     action_global = np.matmul(np.transpose(trans_matrix), action_bev)
-    target_pose = np.array([cur_x + action_global[0], cur_y + action_global[1], action[2] + cur_heading, 0.1])
+    target_pose = np.array(
+        [
+            cur_x + action_global[0],
+            cur_y + action_global[1],
+            action[2] + cur_heading,
+            0.1,
+        ]
+    )
 
     return target_pose
-
-    

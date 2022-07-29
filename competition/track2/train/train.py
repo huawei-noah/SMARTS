@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import subprocess
 
+
 def train(path):
     from utility import goal_region_reward
     from utility import get_goal_layer
@@ -25,13 +26,11 @@ def train(path):
     for scenario_name in os.listdir(path):
         scenarios.append(scenario_name)
 
-
     if not os.path.isdir("d3rlpy_logs/"):
         index = 0
-        os.mkdir('d3rlpy_logs')
+        os.mkdir("d3rlpy_logs")
     else:
         index = len(os.listdir("d3rlpy_logs/"))
-
 
     for scenario in scenarios[index : len(scenarios)]:
         try:
@@ -49,7 +48,7 @@ def train(path):
                     vehicle_id = match.group(1)
                     if vehicle_id not in vehicle_ids:
                         vehicle_ids.append(vehicle_id)
-            
+
             for id in vehicle_ids:
                 print("adding data for vehicle id " + id + " in scenario " + scenario)
 
@@ -64,15 +63,15 @@ def train(path):
                         image_names.append(filename)
 
                 image_names = sorted(image_names)
-                
-                goal_pos_x = vehicle_data[float(image_names[-1].split("_Agent")[0])]["ego"][
-                    "pos"
-                ][0]
-                goal_pos_y = vehicle_data[float(image_names[-1].split("_Agent")[0])]["ego"][
-                    "pos"
-                ][1]
+
+                goal_pos_x = vehicle_data[float(image_names[-1].split("_Agent")[0])][
+                    "ego"
+                ]["pos"][0]
+                goal_pos_y = vehicle_data[float(image_names[-1].split("_Agent")[0])][
+                    "ego"
+                ]["pos"][1]
                 threshold = 3
-                
+
                 for i in range(len(image_names) - 1):
                     with Image.open(
                         path + scenario + "/" + image_names[i], "r"
@@ -81,15 +80,19 @@ def train(path):
                         sim_time = image_names[i].split("_Agent")[0]
                         sim_time_next = image_names[i + 1].split("_Agent")[0]
                         current_position = vehicle_data[float(sim_time)]["ego"]["pos"]
-                        current_heading = vehicle_data[float(sim_time)]["ego"]["heading"]
+                        current_heading = vehicle_data[float(sim_time)]["ego"][
+                            "heading"
+                        ]
                         next_position = vehicle_data[float(sim_time_next)]["ego"]["pos"]
-                        next_heading = vehicle_data[float(sim_time_next)]["ego"]["heading"]
+                        next_heading = vehicle_data[float(sim_time_next)]["ego"][
+                            "heading"
+                        ]
                         trans_coor = get_trans_coor(
-                            next_position[0], 
-                            next_position[1], 
-                            current_position[0], 
-                            current_position[1], 
-                            current_heading
+                            next_position[0],
+                            next_position[1],
+                            current_position[0],
+                            current_position[1],
+                            current_heading,
                         )
                         trans_cur = trans_coor[0]
                         trans_next = trans_coor[1]
@@ -138,7 +141,9 @@ def train(path):
                 minimum = [-0.1, 0, -0.1]
                 maximum = [0.1, 2, 0.1]
                 action_scaler = MinMaxActionScaler(minimum=minimum, maximum=maximum)
-                model = d3rlpy.algos.CQL(use_gpu=True, batch_size=32, action_scaler=action_scaler)
+                model = d3rlpy.algos.CQL(
+                    use_gpu=True, batch_size=32, action_scaler=action_scaler
+                )
             else:
                 saved_models = glob.glob("d3rlpy_logs/*")
                 latest_model = max(saved_models, key=os.path.getctime)
@@ -159,8 +164,7 @@ def train(path):
     saved_models = glob.glob("d3rlpy_logs/*")
     latest_model = max(saved_models, key=os.path.getctime)
     os.rename(latest_model, "d3rlpy_logs/model")
-    shutil.copytree('d3rlpy_logs/model', '../submission/model')
-
+    shutil.copytree("d3rlpy_logs/model", "../submission/model")
 
 
 def main(args: argparse.Namespace):
@@ -195,4 +199,3 @@ if __name__ == "__main__":
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
 
     main(args)
-
