@@ -36,7 +36,7 @@ phases:
 
     1:
         phasenumber: 1
-        description: Online learning
+        description: Track-1
         label: "Track 1"
         start_date: 2022-09-01
         max_submissions: 2
@@ -49,7 +49,7 @@ phases:
 
     2:
         phasenumber: 2
-        description: Offline learning
+        description: Track-2
         label: "Track 2"
         start_date: 2022-11-01
         max_submissions: 2

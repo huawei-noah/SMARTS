@@ -1,5 +1,5 @@
 # Submission
-Once an RL model has been trained, save it into the `track1/submission` folder. Place all necessary files to run the saved model for inference inside the `track1/submission` folder.
+Once a model has been trained, save it into the `track1/submission` folder. Place all necessary files to run the saved model for inference inside the `track1/submission` folder.
 
 The files named `policy.py`, `requirements.txt`, and `explanation.md`, must be included with the submission. Its contents are explained below.
 

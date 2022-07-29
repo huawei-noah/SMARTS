@@ -1,7 +1,9 @@
-# Multiple Scenarios
+# Track-1
 
 ## Objective
-Objective is to train a single reinforcement learning (RL) policy capable of controlling single-agent or multi-agent to complete different tasks in various scenarios. In each scenario the ego-agents must drive towards their respective goal locations. The scenario names and their missions, given for training, are as follows.
+Objective is to train a single policy capable of controlling single-agent or multi-agent to complete different driving tasks in various scenarios. In each scenario the ego-agents must drive towards their respective goal locations. Any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models, predictive models, etc, may be used to develop the policy.
+
+The scenario names and their missions, given for training, are as follows.
 
 - 1_to_2lane_left_turn_c 
     + A single ego agent must make a left turn at an uprotected cross-junction.
@@ -21,11 +23,13 @@ Objective is to train a single reinforcement learning (RL) policy capable of con
     + One ego agent, while driving along a 3-lane highway, must overtake a column of slow moving traffic vehicles and return to the same lane which it started at.
 
 # Example
-The setup, train, evaluate, and docker, instructions are meant for getting started. The steps are illustrated using an example.
+The setup, train, evaluate, and docker, instructions are meant for getting started. These steps are illustrated using an example.
 
 The example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3) reinforcement learning library.
 
-**This example is only meant to demonstrate one potential method of developing an RL model for the `multi-scenario-v0` environments. The RL policy here has not yet been trained to fully solve the task environments.**
+**The policy here has not yet been trained to fully solve the task environments.** 
+
+**This example is only meant to demonstrate one potential method of developing a policy for the `multi-scenario-v0` environments. Here, any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models, predictive models, etc, may be used to develop the policy.**
 
 ## Setup
 + Use `python3.8` to develop your model.

@@ -39,7 +39,7 @@ class Policy(BasePolicy):
         performed here. To be implemented by the user.
         """
 
-        # Load saved RL model and instantiate any needed objects.
+        # Load saved model and instantiate any needed objects.
         self.model = ...
 
     def act(self, obs: Dict[str, Any]):
