@@ -72,13 +72,13 @@ Track-2 participants are required to submit a training code for us to train a ne
 1. During evaluation, the docker image will be pulled and executed as follows. 
     ```bash
     $ docker run --rm -it \
-        --volume=<path>/offline_data:/offline_data
+        --volume=<path>/offline_datasets:/offline_datasets
         --volume=<path>/output:/output
         <username/imagename:version>
     ```
 1. Training of a new RL model should start once the above command is executed.
-1. New offline data is made available to the container via a mapped volume at `/offline_data` directory.
-1. The `/offline_data` directory contains selected Waymo and NGSIM datasets.
+1. New offline data is made available to the container via a mapped volume at `/offline_datasets` directory.
+1. The `/offline_datasets` directory contains selected Waymo and NGSIM datasets.
 1. Inside the container, on completion of training, the trained model should be saved in `/track2/submission` folder such that calling `/track2/submission/policy.py::Policy.act(obs)` with a multi-agent SMARTS observation returns a multi-agent `TargetPose` action.
 1. The `/track2/submission` folder will be mapped out from the container and evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
 1. During development, it is strongly suggested to submit your zipped `track2/submission` folder to the Validation Track in Codalab, to verify that the evaluation works without errors.

@@ -35,4 +35,4 @@ COPY . /track2
 
 # [Do Not Modify]
 # Run entrypoint script.
-ENTRYPOINT ["sh","/track2/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh","/track2/entrypoint.sh"]
