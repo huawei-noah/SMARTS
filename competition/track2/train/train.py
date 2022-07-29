@@ -167,14 +167,12 @@ def train(path):
     saved_models = glob.glob("d3rlpy_logs/*")
     latest_model = max(saved_models, key=os.path.getctime)
     os.rename(latest_model, "d3rlpy_logs/model")
+    model_path = f"{os.path.dirname(os.path.abspath(__file__))}/../submission/model"
 
+    if os.path.isdir(model_path):
+        shutil.rmtree(model_path)
 
-    if os.path.isdir('../submission/model'):
-        shutil.rmtree('../submission/model')
-
-    shutil.copytree('d3rlpy_logs/model', '../submission/model')
-
-
+    shutil.copytree('d3rlpy_logs/model', model_path)
 
 
 def main(args: argparse.Namespace):
