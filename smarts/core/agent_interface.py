@@ -344,6 +344,7 @@ class AgentInterface:
                 ogm=True,
                 rgb=True,
                 lidar=True,
+                signals=True,
                 action=ActionSpaceType.Continuous,
             )
         # Uses low dimensional observations
