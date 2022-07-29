@@ -30,13 +30,13 @@ phases:
         scoring_program: scoring_program.zip
         reference_data: validation_evaluation.zip
         color: orange
-        execution_time_limit: 21600
+        execution_time_limit: 64800
         max_submission_size: 300
         phase_never_ends: True
 
     1:
         phasenumber: 1
-        description: Online learning
+        description: Track-1
         label: "Track 1"
         start_date: 2022-09-01
         max_submissions: 2
@@ -44,12 +44,12 @@ phases:
         scoring_program: scoring_program.zip
         reference_data: track1_evaluation.zip
         color: green
-        execution_time_limit: 21600
+        execution_time_limit: 64800
         max_submission_size: 300
 
     2:
         phasenumber: 2
-        description: Offline learning
+        description: Track-2
         label: "Track 2"
         start_date: 2022-11-01
         max_submissions: 2
@@ -57,7 +57,7 @@ phases:
         scoring_program: scoring_program.zip
         reference_data: track2_evaluation.zip
         color: blue
-        execution_time_limit: 21600
+        execution_time_limit: 64800
         max_submission_size: 300
 
 # Leaderboard

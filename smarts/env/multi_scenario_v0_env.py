@@ -31,7 +31,6 @@ from smarts.core.agent_interface import (
     AgentInterface,
     DoneCriteria,
     DrivableAreaGridMap,
-    NeighborhoodVehicles,
     RoadWaypoints,
     Waypoints,
 )
@@ -53,7 +52,6 @@ def resolve_agent_interface(
         agents_alive=None,
     )
     max_episode_steps = 800
-    neighbor_radius = 50
     road_waypoint_horizon = 50
     waypoints_lookahead = 50
     return (
@@ -68,7 +66,7 @@ def resolve_agent_interface(
             ),
             lidar=True,
             max_episode_steps=max_episode_steps,
-            neighborhood_vehicles=NeighborhoodVehicles(neighbor_radius),
+            neighborhood_vehicles=True,
             ogm=OGM(
                 width=img_pixels,
                 height=img_pixels,
@@ -152,7 +150,7 @@ def multi_scenario_v0_env(
 
     env_specs = get_env_specs(scenario)
     sstudio.build_scenario(scenario=[env_specs["scenario"]])
-
+    
     agent_specs = {
         f"Agent_{i}": AgentSpec(
             interface=resolve_agent_interface(img_meters, img_pixels, action_space)
