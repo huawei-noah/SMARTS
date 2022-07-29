@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import logging
 from dataclasses import dataclass, field
 from enum import IntFlag
 from typing import List, Optional, Sequence, Set, Tuple
@@ -51,9 +52,21 @@ class ProviderState:
         """Merge state with another provider's state."""
         our_actors = {a.actor_id for a in self.actors}
         other_actors = {a.actor_id for a in other.actors}
-        assert our_actors.isdisjoint(other_actors)
+        if not our_actors.isdisjoint(other_actors):
+            overlap = our_actors & other_actors
+            logging.warning(
+                f"multiple providers control the same actors: {overlap}. "
+                "Later added providers will take priority. "
+            )
+            logging.info(
+                "Conflicting actor states: \n"
+                f"Previous: {[(a.actor_id, a.source) for a in self.actors if a.actor_id in overlap]}\n"
+                f"Later: {[(a.actor_id, a.source) for a in other.actors if a.actor_id in overlap]}\n"
+            )
 
-        self.actors += other.actors
+        ## TODO: Properly harmonize these actor ids so that there is a priority and per actor source
+        self.actors += filter(lambda a: a.actor_id not in our_actors, other.actors)
+
         self.dt = max(self.dt, other.dt, key=lambda x: x if x else 0)
 
     def filter(self, actor_ids):

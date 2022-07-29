@@ -86,3 +86,6 @@ class MockProvider(Provider):
 
     def stop_managing(self, actor_id: str):
         pass
+
+    def can_accept_vehicle(self, state: VehicleState) -> bool:
+        return False
