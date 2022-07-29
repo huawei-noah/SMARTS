@@ -1,6 +1,6 @@
 from collections import defaultdict
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 import click
 import numpy as np
@@ -130,6 +130,20 @@ def _get_map_features(scenario: scenario_pb2.Scenario) -> Dict[str, List]:
     return map_features
 
 
+def _get_trajectories(
+    scenario: scenario_pb2.Scenario,
+) -> Dict[int, List[Optional[Tuple[float, float]]]]:
+    num_steps = len(scenario.timestamps_seconds)
+    trajectories = defaultdict(lambda: [None] * num_steps)
+    for i in range(len(scenario.tracks)):
+        vehicle_id = scenario.tracks[i].id
+        for j in range(num_steps):
+            obj_state = scenario.tracks[i].states[j]
+            if obj_state.valid:
+                trajectories[vehicle_id][j] = (obj_state.center_x, obj_state.center_y)
+    return trajectories
+
+
 @waymo_cli.command(
     name="preview", help="Plot the map and trajectories of the scenario."
 )
@@ -138,16 +152,16 @@ def _get_map_features(scenario: scenario_pb2.Scenario) -> Dict[str, List]:
 )
 @click.argument("scenario_id", type=str, metavar="<scenario_id>")
 @click.option(
-    "--animate-trajectories",
+    "--animate_trajectories",
     is_flag=True,
     default=False,
     help="Animate the vehicle trajectories.",
 )
 @click.option(
-    "--plot-trajectories",
+    "--plot_trajectories",
     is_flag=True,
     default=False,
-    help="Plot the vehicle trajectories.",
+    help="Plot the initial positions of all vehicles with their IDs.",
 )
 def preview(
     tfrecord_file: str,
@@ -161,9 +175,15 @@ def preview(
     mng = plt.get_current_fig_manager()
     mng.resize(1000, 1000)
     map_features = _get_map_features(scenario)
-    if animate_trajectories:
-        pass  # TODO
     if plot_trajectories:
+        trajectories = _get_trajectories(scenario)
+        for v_id, positions in trajectories.items():
+            xs = [p[0] for p in positions if p]
+            ys = [p[1] for p in positions if p]
+            plt.scatter(xs[0], ys[0], marker="o", c="blue")
+            bbox_props = dict(boxstyle="square,pad=0.1", fc="white", ec=None)
+            plt.text(xs[0] + 1, ys[0] + 1, f"{v_id}", bbox=bbox_props)
+    if animate_trajectories:
         pass  # TODO
     _plot_map_features(map_features)
     plt.title(f"Scenario {scenario_id}")
