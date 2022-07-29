@@ -5,14 +5,14 @@ Objective is to train a single **offline** learning policy capable of controllin
 
 The challenge is to develop a model that can be trained using only offline datasets, without any interactions with any online environments.
 
-Track-2 participants are required to submit their training code for us to train a new model from scratch using hidden offline datasets. The newly trained model will then be evaluated.
+Track-2 participants are required to submit their training code for us to train a new model from scratch using hidden offline dataset. The newly trained model will then be evaluated.
 
 ## Data and Model
 1. For offline training, consider downloading and using the following two naturalistic autonomous driving datasets.
     + [Waymo Open Motion](https://waymo.com/open/data/motion/) 
     + [Next Generation Simulation (NGSIM)](https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm). 
 1. In order (i) to browse/simulate and (ii) to convert, Waymo and NGSIM datasets into an equivalent offline SMARTS observation dataset, use the following [tool](https://github.com/huawei-noah/SMARTS/tree/saul/waymo-extraction/smarts/waymo). 
-1. A subset of Waymo and NGSIM datasets which have useful and interesting trajectories are provided [here](https://github.com/smarts-project/smarts-project.offline-datasets). This subset may be used to focus the training. The provided data conversion tool can be used to convert these datasets into equivalent offline SMARTS observation datasets.
+1. A subset of Waymo and NGSIM datasets which have useful and interesting trajectories are provided [here](https://github.com/smarts-project/smarts-project.offline-datasets). This subset may be used to focus the training. The provided data conversion tool can be used to convert these datasets into an equivalent offline SMARTS observation dataset.
 1. The trained model should accept multi-agent observation of the format `Dict[agent_name: agent_observation]`. Observation space for each agent is `smarts.core.sensors.Observation`. For more details on the contents of `Observation` class, see https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186
 1. Each agent's mission goal is given in the observation returned at each time step. The mission goal could be accessed as `observation.ego_vehicle_state.mission.goal.position` which gives an `(x, y, z)` map coordinate of the goal location.
 1. Trained model should output multi-agent action of the format `Dict[agent_name: agent_action]`. Action space for each agent is `smarts.core.controllers.ActionSpaceType.TargetPose` which is a sequence of `[x-coordinate, y-coordinate, heading, and time-delta]`. Use `time-delta=0.1`.
@@ -71,17 +71,17 @@ Track-2 participants are required to submit their training code for us to train 
 1. During evaluation, the docker image will be pulled and executed as follows. 
     ```bash
     $ docker run --rm -it \
-        --volume=<path>/offline_datasets:/offline_datasets
+        --volume=<path>/offline_dataset:/offline_dataset
         --volume=<path>/output:/output
         <username/imagename:version>
     ```
 1. Training of a new model should start once the above command is executed.
-1. New offline data is made available to the container via a mapped volume at `/offline_datasets` directory.
-1. The `/offline_datasets` directory contains selected Waymo and NGSIM datasets.
+1. New offline data is made available to the container via a mapped volume at `/offline_dataset` directory.
+1. The `/offline_dataset` directory contains selected Waymo and NGSIM datasets.
 1. Inside the container, on completion of training, the trained model should be saved in `/track2/submission` folder such that calling `/track2/submission/policy.py::Policy.act(obs)` with a multi-agent SMARTS observation as input returns a multi-agent `TargetPose` action as output.
-1. The `/track2/submission` folder will be mapped out from the container and evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
-1. During development, it is strongly suggested to submit your zipped `track2/submission` folder to the Validation stage in Codalab, to verify that the evaluation works without errors.
-1. Finally, the offline training code in `/track2/train` directory will be manually scrutinised. 
+2. The `/track2/submission` folder will be zipped, mapped out from the container, and evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
+3. During development, it is strongly suggested to submit your zipped `track2/submission` folder to the Validation stage in Codalab, to verify that the evaluation works without errors.
+4. Finally, the offline training code in `/track2/train` directory will be manually scrutinised. 
 
 ### Submit to Codalab
 + Zip the entire `track2` folder. 
