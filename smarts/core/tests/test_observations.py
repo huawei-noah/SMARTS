@@ -252,7 +252,7 @@ def test_observations(env, agent_spec):
 def scenario():
     mission = Mission(
         start=Start(np.array((7, 68.40)), Heading(-0.5 * math.pi)),
-        goal=PositionalGoal(Point(128.40, 0), 10),
+        goal=PositionalGoal(Point(128.395, 0), 10),
         entry_tactic=default_entry_tactic(1.0),
     )
     return Scenario(
@@ -291,9 +291,7 @@ def test_signal_observations(smarts, scenario):
         signals = observations[AGENT_ID].signals
         if step < 155:
             # it's out of range...
-            assert (
-                len(signals) == 0
-            ), f"step={step}, {observations[AGENT_ID].ego_vehicle_state.position}"
+            assert len(signals) == 0, f"step={step}"
         else:
             assert len(signals) == 1, f"step={step}"
             assert (
