@@ -811,9 +811,9 @@ class Waymo(_TrajectoryDataset):
             parsed_scenario.ParseFromString(bytearray(record))
             if parsed_scenario.scenario_id == scenario_id:
                 return parsed_scenario
-        errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
-        self._log.error(errmsg)
-        raise ValueError(errmsg)
+        raise ValueError(
+            f"Dataset file does not contain scenario with id: {scenario_id}"
+        )
 
     @property
     def rows(self) -> Generator[Dict, None, None]:
