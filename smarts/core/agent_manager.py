@@ -18,8 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from concurrent import futures
 import logging
-from typing import Any, Dict, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Union
 
 from envision.types import format_actor_id
 from smarts.core.actor_role import ActorRole
@@ -67,6 +68,8 @@ class AgentManager:
         # We send observations and receive actions for all values in this dictionary
         self._remote_social_agents = {}
         self._remote_social_agents_action = {}
+        self._social_agent_observation_callbacks = {}
+        self._reserved_social_agent_actions = {}
 
     def teardown(self):
         """Clean up resources."""
@@ -348,14 +351,47 @@ class AgentManager:
 
         return social_agent_actions
 
-    def send_observations_to_social_agents(self, observations):
+    def add_social_agent_observations_callback(
+        self, callback: Callable[[Any], None], callback_id: str
+    ):
+        """Suscribe to observe social agents."""
+        self._social_agent_observation_callbacks[callback_id] = callback
+
+    def remove_social_agent_observations_callback(self, callback_id: str):
+        """Remove a subscription to social agents."""
+        del self._social_agent_observation_callbacks[callback_id]
+
+    def reserve_social_agent_action(self, agent_id: str, action: Any):
+        """Override a current social agent action."""
+        self._reserved_social_agent_actions[agent_id] = action
+
+    def _send_observations_to_social_agents(self, observations: Dict[str, Observation]):
+        self._remote_social_agents_action = {}
+        for agent_id, action in self._reserved_social_agent_actions.items():
+            future_action = futures.Future()
+            future_action.set_result(action)
+            self._remote_social_agents_action[agent_id] = future_action
+        self._reserved_social_agent_actions.clear()
+        for callback in self._social_agent_observation_callbacks.values():
+            callback(
+                dict(
+                    filter(
+                        lambda k: k[0] in self._remote_social_agents,
+                        observations.items(),
+                    )
+                )
+            )
+        for agent_id, remote_agent in self._remote_social_agents.items():
+            if self._remote_social_agents_action.get(agent_id) is not None:
+                continue
+            obs = observations[agent_id]
+            self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
+
+    def send_observations_to_social_agents(self, observations: Dict[str, Observation]):
         """Forwards observations to managed social agents."""
         # TODO: Don't send observations (or receive actions) from agents that have done
         #       vehicles.
-        self._remote_social_agents_action = {}
-        for agent_id, remote_agent in self._remote_social_agents.items():
-            obs = observations[agent_id]
-            self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
+        self._send_observations_to_social_agents(observations)
 
     def switch_initial_agents(self, agent_interfaces: Dict[str, AgentInterface]):
         """Replaces the initial agent interfaces with a new group. This comes into effect on next reset."""
@@ -557,10 +593,7 @@ class AgentManager:
 
     def reset_agents(self, observations: Dict[str, Observation]):
         """Reset agents, feeding in an initial observation."""
-        self._remote_social_agents_action = {}
-        for agent_id, remote_agent in self._remote_social_agents.items():
-            obs = observations[agent_id]
-            self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
+        self._send_observations_to_social_agents(observations)
 
         # Observations contain those for social agents; filter them out
         return self._filter_for_active_ego(observations)

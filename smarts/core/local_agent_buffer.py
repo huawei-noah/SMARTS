@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from concurrent.futures import ProcessPoolExecutor
+
 from typing import Optional
 
 import psutil
@@ -31,14 +32,13 @@ class LocalAgentBuffer(AgentBuffer):
     """A buffer that manages social agents."""
 
     def __init__(self):
-        num_cpus = max(2, psutil.cpu_count(logical=False) or (psutil.cpu_count() - 1))
-        self._act_executor = ProcessPoolExecutor(num_cpus)
+        pass
 
     def destroy(self):
-        self._act_executor.shutdown(wait=True)
+        pass
 
     def acquire_agent(
         self, retries: int = 3, timeout: Optional[float] = None
     ) -> BufferAgent:
-        localAgent = LocalAgent(self._act_executor)
+        localAgent = LocalAgent()
         return localAgent
