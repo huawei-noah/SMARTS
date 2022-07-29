@@ -43,7 +43,7 @@ from smarts.core.utils.file import unpack
 @dataclass
 class JSONEncodingState:
     """This class is necessary to ensure that the custom json encoder tries to deserialize the data.
-    This is vital to ensure that non-standard json literals like `Infinity`, `-Infinity`, `NaN` are not added.
+    This is vital to ensure that non-standard json literals like `Infinity`, `-Infinity`, `NaN` are not added to the output json.
     """
 
     data: Any
