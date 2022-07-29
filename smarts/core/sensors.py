@@ -234,7 +234,7 @@ def _make_vehicle_observation(road_map, neighborhood_vehicle):
         nv_lane_index = None
 
     return VehicleObservation(
-        id=neighborhood_vehicle.vehicle_id,
+        id=neighborhood_vehicle.actor_id,
         position=neighborhood_vehicle.pose.position,
         bounding_box=neighborhood_vehicle.dimensions,
         heading=neighborhood_vehicle.pose.heading,

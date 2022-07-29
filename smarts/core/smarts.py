@@ -629,7 +629,7 @@ class SMARTS:
         # there should always be an AgentsProvider present, so we just assert here
         assert (
             False
-        ), f"could not find a provider to accept vehicle {vehicle.id} for agent {agent_id} with role={role}"
+        ), f"could not find a provider to accept vehicle {vehicle.id} for agent {agent_id} with role={role.name}"
 
     def vehicle_exited_bubble(self, vehicle_id: str, teardown_agents: bool):
         """Bubbles call this when a vehicle is exiting the bubble.
@@ -696,7 +696,7 @@ class SMARTS:
                 new_provider.add_actor(state, provider)
                 return new_provider
         self._log.warning(
-            f"could not find a provider to assume control of vehicle {state.vehicle_id} with role={state.role.name} after being relinquished.  removing it."
+            f"could not find a provider to assume control of vehicle {state.actor_id} with role={state.role.name} after being relinquished.  removing it."
         )
         self.provider_removing_actor(state)
         return None
