@@ -403,6 +403,10 @@ class Sensors:
                 f"{agent_type} with Agent ID: {agent_id} is done on the first step"
             )
 
+        agent_controls = agent_id == sim.vehicle_index.actor_id_from_vehicle_id(
+            ego_vehicle_state.actor_id
+        )
+
         return (
             Observation(
                 dt=sim.last_dt,
@@ -410,10 +414,7 @@ class Sensors:
                 elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
                 ego_vehicle_state=ego_vehicle,
-                under_this_agent_control=agent_id
-                == sim.vehicle_index.actor_id_from_vehicle_id(
-                    ego_vehicle_state.vehicle_id
-                ),
+                under_this_agent_control=agent_controls,
                 neighborhood_vehicle_states=neighborhood_vehicles,
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
