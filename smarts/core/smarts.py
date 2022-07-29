@@ -620,7 +620,7 @@ class SMARTS:
         # there should always be an AgentsProvider present, so we just assert here
         assert (
             False
-        ), f"could not find a provider to accept vehicle {vehicle.id} for agent {agent_id} with role={role}"
+        ), f"could not find a provider to accept vehicle {vehicle.id} for agent {agent_id} with role={role.name}"
 
     def provider_relinquishing_vehicle(
         self, state: VehicleState, cur_route: Optional[RoadMap.Route]
@@ -639,7 +639,7 @@ class SMARTS:
                 provider.add_actor(state, cur_route)
                 return
         self._log.warning(
-            f"could not find a provider to assume control of vehicle {state.vehicle_id} with role={state.role.name} after being relinquished.  removing it."
+            f"could not find a provider to assume control of vehicle {state.actor_id} with role={state.role.name} after being relinquished.  removing it."
         )
         self._teardown_vehicles({state.actor_id})
 
