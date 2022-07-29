@@ -53,7 +53,7 @@ Important: we require participants to submit the code for us to train using offl
 
 
 # Example
-
+This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://github.com/takuseno/d3rlpy) offline RL libranry.
 **This example is only meant to demonstrate one potential method of developing an offline model using waymo dataset. The trained policy here does not fully solve the task environments.**
 
 ## Setup
