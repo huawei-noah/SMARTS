@@ -18,7 +18,7 @@ _EVALUATION_CONFIG_KEYS = {
 }
 _DEFAULT_EVALUATION_CONFIG = dict(
     phase="track1",
-    eval_episodes=200,
+    eval_episodes=50,
     seed=42,
     scenarios=[
         "1_to_2lane_left_turn_c",
