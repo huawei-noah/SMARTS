@@ -3,7 +3,7 @@
 ## Objective
 The objective is to train a single **offline** learning policy capable of controlling single-agent or multi-agent to complete different tasks in various scenarios. In each scenario, the ego-agents must drive towards their respective goal locations. The challenge of this track is that participants have to develop a model that can be trained using offline dataset, without interactions with the simulator or any online adjustments. 
 
-Important: we require participants to submit the code for us to train using offline dataset, and then we will use the trained model for evaluations. Do not submit a trained model. The contestants should also provide the training code with an argument to specify the location of the offline dataset. See example below.  
+Important: we require participants to submit the code for us to train using offline dataset, and then we will use the trained model for evaluations. Do not submit a trained model. The contestants should also provide the training code as required. See example below.  
 
 ## Data and Model
 1. For offline training, we provide information and tools for extracting training dataset from two Naturalistic Autonomous Driving datasets: [Waymo Open Motion dataset](https://waymo.com/open/data/motion/) and [Next Generation Simulation (NGSIM)](https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm).
@@ -53,7 +53,11 @@ Important: we require participants to submit the code for us to train using offl
 
 
 # Example
-This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://github.com/takuseno/d3rlpy) offline RL libranry.
+
+1. Offline RL
+
+This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://github.com/takuseno/d3rlpy) offline RL library.
+
 **This example is only meant to demonstrate one potential method of developing an offline model using waymo dataset. The trained policy here does not fully solve the task environments.**
 
 ## Setup
@@ -83,7 +87,12 @@ This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://git
 1. Train
     ```bash
     $ cd <path>/SMARTS/competition/track2/train
-    $ python3.8 train.py --input_dir=<path_to_offline_dataset>
+    $ python3.8 train.py --input_dir=<path_to_data> --ouput_dir=<path_to_saved_model>
     ```
-1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. After the end of each training iteration, we will save the model in `<path>/SMARTS/competition/track2/train/d3rlpy_logs/<scenario_index>`. The next trainig iteration will keep training on the latest trained model. At the end of the whole trainig, the last model will be save to  `<path>/SMARTS/competition/track2/submission/model` automatically for evaluation. 
 
+    The default value for `input_dir` and `output_dir` are `<path_to_SMARTS>/SMARTS/competition/track2/train/offline_dataset` and `<path_to_SMARTS>/SMARTS/competition/track2/train/output`
+ 1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. After the end of each training iteration, we will save the model in `<path>/SMARTS/competition/track2/train/d3rlpy_logs/<scenario_index>`. The next trainig iteration will keep training on the latest trained model.  
+
+1. Imitation learning
+
++ adsf
