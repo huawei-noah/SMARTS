@@ -642,7 +642,7 @@ class Scenario:
                 [Iterable[VehicleWindow]],
                 Iterable[VehicleWindow],
             ]
-        ],
+        ] = None,
     ) -> Sequence[Mission]:
         """Discovers vehicle missions for the given window of time.
         Args:

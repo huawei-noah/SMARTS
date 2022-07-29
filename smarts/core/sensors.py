@@ -213,6 +213,8 @@ class Observation:
     elapsed_sim_time/step_count."""
     events: Events
     ego_vehicle_state: EgoVehicleObservation
+    under_this_agent_control: bool
+    """If this agent currently has control of the vehicle."""
     neighborhood_vehicle_states: Optional[List[VehicleObservation]]
     waypoint_paths: Optional[List[List[Waypoint]]]
     distance_travelled: float
@@ -227,6 +229,7 @@ class Observation:
     road_waypoints: Optional[RoadWaypoints]
     via_data: Vias
     signals: Optional[List[SignalObservation]] = None
+    steps_completed: int
 
 
 @dataclass
@@ -235,6 +238,30 @@ class Collision:
 
     # XXX: This might not work for boid agents
     collidee_id: str
+
+
+def _make_vehicle_observation(road_map, neighborhood_vehicle):
+    nv_lane = road_map.nearest_lane(neighborhood_vehicle.pose.point, radius=3)
+    if nv_lane:
+        nv_road_id = nv_lane.road.road_id
+        nv_lane_id = nv_lane.lane_id
+        nv_lane_index = nv_lane.index
+    else:
+        nv_road_id = None
+        nv_lane_id = None
+        nv_lane_index = None
+
+    return VehicleObservation(
+        id=neighborhood_vehicle.actor_id,
+        position=neighborhood_vehicle.pose.position,
+        bounding_box=neighborhood_vehicle.dimensions,
+        heading=neighborhood_vehicle.pose.heading,
+        speed=neighborhood_vehicle.speed,
+        road_id=nv_road_id,
+        lane_id=nv_lane_id,
+        lane_index=nv_lane_index,
+        lane_position=None,
+    )
 
 
 class Sensors:
@@ -267,32 +294,17 @@ class Sensors:
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:
             neighborhood_vehicles = []
             for nv in vehicle.neighborhood_vehicles_sensor():
-                nv_lane = sim.road_map.nearest_lane(
-                    nv.pose.point, radius=vehicle.length
-                )
+                veh_obs = _make_vehicle_observation(sim.road_map, nv)
                 nv_lane_pos = None
-                if nv_lane:
-                    nv_road_id = nv_lane.road.road_id
-                    nv_lane_id = nv_lane.lane_id
-                    nv_lane_index = nv_lane.index
-                    if vehicle.subscribed_to_lane_position_sensor:
-                        nv_lane_pos = vehicle.lane_position_sensor(nv_lane, nv)
-                else:
-                    nv_road_id = None
-                    nv_lane_id = None
-                    nv_lane_index = None
-                neighborhood_vehicles.append(
-                    VehicleObservation(
-                        id=nv.actor_id,
-                        position=nv.pose.position,
-                        bounding_box=nv.dimensions,
-                        heading=nv.pose.heading,
-                        speed=nv.speed,
-                        road_id=nv_road_id,
-                        lane_id=nv_lane_id,
-                        lane_index=nv_lane_index,
-                        lane_position=nv_lane_pos,
+                if (
+                    veh_obs.lane_id is not None
+                    and vehicle.subscribed_to_lane_position_sensor
+                ):
+                    nv_lane_pos = vehicle.lane_position_sensor(
+                        sim.road_map.lane_by_id(veh_obs.lane_id), nv
                     )
+                neighborhood_vehicles.append(
+                    veh_obs._replace(lane_position=nv_lane_pos)
                 )
 
         if vehicle.subscribed_to_waypoints_sensor:
@@ -402,12 +414,13 @@ class Sensors:
             sim, agent_id, vehicle, sensor_state
         )
 
-        if (
-            done
-            and sensor_state.steps_completed == 1
-            and agent_id in sim.agent_manager.ego_agent_ids
-        ):
-            Sensors._log.warning(f"Agent Id: {agent_id} is done on the first step")
+        if done and sensor_state.steps_completed == 1:
+            agent_type = "Social agent"
+            if agent_id in sim.agent_manager.ego_agent_ids:
+                agent_type = "Ego agent"
+            logger.warning(
+                f"{agent_type} with Agent ID: {agent_id} is done on the first step"
+            )
 
         signals = None
         if vehicle.subscribed_to_signals_sensor:
@@ -427,6 +440,10 @@ class Sensors:
                 elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
                 ego_vehicle_state=ego_vehicle,
+                under_this_agent_control=agent_id
+                == sim.vehicle_index.actor_id_from_vehicle_id(
+                    ego_vehicle_state.vehicle_id
+                ),
                 neighborhood_vehicle_states=neighborhood_vehicles,
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
@@ -437,6 +454,7 @@ class Sensors:
                 road_waypoints=road_waypoints,
                 via_data=via_data,
                 signals=signals,
+                steps_completed=sensor_state.steps_completed,
             ),
             done,
         )

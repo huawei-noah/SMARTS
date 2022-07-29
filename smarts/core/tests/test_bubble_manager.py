@@ -20,13 +20,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+from typing import Dict
 
 import pytest
 from helpers.scenario import temp_scenario
 
 import smarts.sstudio.types as t
+from smarts.core.agent_manager import AgentManager
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
+from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.tests.helpers.providers import MockProvider
@@ -148,10 +151,13 @@ def test_bubble_manager_state_change(smarts, mock_provider):
 @pytest.mark.parametrize("bubble", [t.BubbleLimits(1, 1)], indirect=True)
 def test_bubble_manager_limit(smarts, mock_provider, time_resolution):
     vehicle_ids = ["vehicle-1", "vehicle-2", "vehicle-3"]
+    current_vehicle_ids = [*vehicle_ids]
+    step_vehicle_ids = [(y, id_) for y, id_ in enumerate(vehicle_ids)]
     speed = 2.5
     distance_per_step = speed * time_resolution
-    for x in range(200):
-        vehicle_ids = {
+
+    for x in range(59, 69):
+        current_vehicle_ids = {
             v_id
             for v_id in vehicle_ids
             if not smarts.vehicle_index.vehicle_is_hijacked(v_id)
@@ -161,38 +167,21 @@ def test_bubble_manager_limit(smarts, mock_provider, time_resolution):
             (
                 v_id,
                 Pose.from_center(
-                    (80 + y * 0.5 + x * distance_per_step, y * 4 - 4, 0),
+                    (80 + x * distance_per_step, y * 4 - 4, 0),
                     Heading(-math.pi / 2),
                 ),
                 speed,  # speed
             )
-            for y, v_id in enumerate(vehicle_ids)
+            for y, v_id in step_vehicle_ids
+            if v_id in current_vehicle_ids
         ]
         mock_provider.override_next_provider_state(vehicles=vehicles)
         smarts.step({})
 
     # 3 total vehicles, 1 hijacked and removed according to limit, 2 remaining
     assert (
-        len(vehicle_ids) == 2
+        len(current_vehicle_ids) == 2
     ), "Only 1 vehicle should have been hijacked according to the limit"
-
-
-def test_vehicle_spawned_in_bubble_is_not_captured(smarts, mock_provider):
-    # Spawned inside bubble, didn't "drive through" airlocking region, so should _not_
-    # get captured
-    vehicle_id = "vehicle"
-    for x in range(20):
-        mock_provider.override_next_provider_state(
-            vehicles=[
-                (
-                    vehicle_id,
-                    Pose.from_center((100 + x, 0, 0), Heading(-math.pi / 2)),
-                    10,  # speed
-                )
-            ]
-        )
-        smarts.step({})
-        assert not smarts.vehicle_index.vehicle_is_hijacked(vehicle_id)
 
 
 def test_vehicle_spawned_outside_bubble_is_captured(smarts, mock_provider):
