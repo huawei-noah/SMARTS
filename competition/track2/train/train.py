@@ -33,21 +33,25 @@ def train(path):
         index = len(os.listdir("d3rlpy_logs/"))
 
     for scenario in scenarios[index : len(scenarios)]:
-        try:
-            obs = list()
-            actions = list()
-            rewards = list()
-            terminals = list()
-            print("processing scenario " + scenario)
-            vehicle_ids = list()
 
-            for filename in os.listdir(path + scenario):
-                if filename.endswith(".png"):
-                    match = re.search("vehicle-(.*).png", filename)
-                    assert match is not None
-                    vehicle_id = match.group(1)
-                    if vehicle_id not in vehicle_ids:
-                        vehicle_ids.append(vehicle_id)
+        obs = list()
+        actions = list()
+        rewards = list()
+        terminals = list()
+        print("processing scenario " + scenario)
+        vehicle_ids = list()
+
+        for filename in os.listdir(path + scenario):
+            if filename.endswith(".png"):
+                match = re.search("vehicle-(.*).png", filename)
+                assert match is not None
+                vehicle_id = match.group(1)
+                if vehicle_id not in vehicle_ids:
+                    vehicle_ids.append(vehicle_id)
+        
+        if len(vehicle_ids) < 2:
+            continue
+        else:
 
             for id in vehicle_ids:
                 print("adding data for vehicle id " + id + " in scenario " + scenario)
@@ -159,12 +163,18 @@ def train(path):
             latest_model = max(saved_models, key=os.path.getctime)
             os.rename(latest_model, "d3rlpy_logs/" + str(index + 1))
             index += 1
-        except:
-            pass
+
     saved_models = glob.glob("d3rlpy_logs/*")
     latest_model = max(saved_models, key=os.path.getctime)
     os.rename(latest_model, "d3rlpy_logs/model")
-    shutil.copytree("d3rlpy_logs/model", "../submission/model")
+
+
+    if os.path.isdir('../submission/model'):
+        shutil.rmtree('../submission/model')
+
+    shutil.copytree('d3rlpy_logs/model', '../submission/model')
+
+
 
 
 def main(args: argparse.Namespace):
