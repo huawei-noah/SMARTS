@@ -17,10 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import logging
 from dataclasses import dataclass, field
 from enum import IntFlag
-import logging
-
 from typing import Any, List, Optional, Sequence, Set, Tuple
 
 from .controllers import ActionSpaceType

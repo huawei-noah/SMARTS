@@ -1,7 +1,7 @@
-from collections import defaultdict
-from functools import lru_cache
 import logging
 import random
+from collections import defaultdict
+from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Tuple
 
@@ -18,7 +18,6 @@ from smarts.core.traffic_history_provider import TrafficHistoryProvider
 from smarts.core.utils.logging import timeit
 from smarts.sstudio.types import Bubble, MapZone, PositionalZone, SocialAgentActor
 from smarts.zoo.agent_spec import AgentSpec
-
 from smarts.zoo.registry import register
 
 try:
