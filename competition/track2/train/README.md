@@ -52,7 +52,7 @@ Important: we require participants to submit the code for us to train using offl
 1.  Finally, the offline training code in `track2/train` will be manually scrutinised. 
 
 
-# Example
+# Examples
 
 ## Offline RL
 
@@ -90,22 +90,18 @@ This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://git
     $ python3.8 train.py --input_dir=<path_to_data> --ouput_dir=<path_to_saved_model>
     ```
 
-    The default value for `input_dir` and `output_dir` are `<path_to_SMARTS>/SMARTS/competition/track2/train/offline_dataset` and `<path_to_SMARTS>/SMARTS/competition/track2/train/output`
+    The default value for `input_dir` and `output_dir` are `/offline_dataset` and `/output`
  1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. After the end of each training iteration, we will save the model in `<path>/SMARTS/competition/track2/train/d3rlpy_logs/<scenario_index>`. The next trainig iteration will keep training on the latest trained model.  
 
-# Imitation Learning
+## Imitation Learning
 
-## Preparing data
-
- ```bash
-    $ python prepare_data.py --dataset_path <path_to_offline_dataset> [--save_path] <path_to_save_dir>
-```
-where the directory `<path_to_offline_dataset>` looks like
+### Preparing data
+The directory `/offline_dataset` looks like
 
 ```text
-<path_to_offline_dataset>                    
-    ├── <scenario_id>                    # each scene in tfrecord
-    |   ├── <time>_<vehicle_id>.png # ego-oriented bird-eye view image
+/offline_dataset                
+    ├── <scenario_id>               # each scene in tfrecord
+    |   ├── <time>_<vehicle_id>.png # ego-centric bird-eye view image
     |   |  .
     |   |  .
     |   |  <vehicle_id>.pkl # state space of the vehicle
@@ -114,9 +110,8 @@ where the directory `<path_to_offline_dataset>` looks like
     |   .
    
 ```
-`prepare_data.py` outputs `<path_to_save_dir>/dataset.npy` which contains the observations and actions for training.
 
-## Data
+### Data
 + Observations: We use a 3-channel rgb birds eye view image of the form (3, 256, 256) plus oridented and normalized dx & dy between the position of the ego vehicle and the goal location at each time step. dx & dy are calculated by first orienting both the current position and the goal location with respect to the current heading then substracting the oriented current position from the oriented goal location. dx & dy are then normalized using MinMaxScaler whose bound is (-0.1, 0.1).
 
 + Actions: The action space (output of the policy) is using dx, dy and dh, which are the value change per step in x, y direction and heading for the ego vehicle in its birds eye view image coordinate. dh is normalized by multiplying the values by 100. Since dx and dy can not be directly obtained from smarts observation, we have to get displacement change in global coordinate first and use a rotation matrix w.r.t the heading to get dx, dy. The bound for the action space is 
@@ -127,12 +122,14 @@ where the directory `<path_to_offline_dataset>` looks like
 + Rewards: The reward use the default reward in SMARTS which is the distance travelled per step plus an extra reward for reaching the goal. Since there is not a "goal" concept in the training set, we use the last point of each trajectory as the goal position for training. 
 
 
-## Train
+### Train
 ```bash
-$ python train.py --dataset_path <path_to_data/datsaet.npy> \
-                    --checkpoint_path <path_to_checkpoint_path> \
+$ python train.py --dataset_path /offline_dataset \
+                    --output_path ./output \
+                    [--cache] False \
                     [--learning_rate] 0.001 \
                     [--save_steps] 10 \
                     [--batch_size] 32 \
                     [--num_epochs] 100 \
 ```
+First time running `train.py`, please set `cache=False`, the processed data will be saved to `./output/dataset.npy`. For later use, set `cache=True` and it will use the cached dataset.
