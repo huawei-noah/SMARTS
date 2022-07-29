@@ -178,7 +178,7 @@ class SmartsJunctionModel(JunctionModel):
         yield_to_agents:
             There are 3 possible values for this:
                 - "always" - traffic actors will yield to Ego and Social
-                  agents within juncions;
+                  agents within junctions;
                 - "never" - traffic actors will never yield to Ego or Social
                   agents within junctions;
                 - "normal" - traffic actors will attempt to honor normal
