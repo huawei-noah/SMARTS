@@ -5,7 +5,7 @@ The objective is to train a single **offline** learning policy capable of contro
 
 Important: we require participants to submit the code for us to train using offline dataset, and then we will use the trained model for evaluations. Do not submit a trained model. The contestants should also provide the training code with an argument to specify the location of the offline dataset. See example below.  
 
-## Data and RL Model
+## Data and Model
 1. For offline training, we provide information and tools for extracting training dataset from two Naturalistic Autonomous Driving datasets: [Waymo Open Motion dataset](https://waymo.com/open/data/motion/) and [Next Generation Simulation (NGSIM)](https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm).
 1. Participants can download these two datasets, and use the provided tools to extract training data. 
 1. It is required that the training dataset to be compatible with the SMARTS simulator. you can find the tools for visualize and extract the training data compatible with SMARTS here:
@@ -16,9 +16,9 @@ Important: we require participants to submit the code for us to train using offl
       + to simulate NGSIM dataset in SMARTS, and
       + to extract offline training data from NGSIM in form of  SMARTS observation space.
 1. We have provided a subset of each Waymo and NGSIM datasets that we found to include useful and interesting trajectories for training. You can use this subset to limit the size of your training set and exclude irrelevant scenes. The data extraction tools for each dataset are capable to extracting data from the provided subset. (these subsets are subject to be updated!)
-1. Trained RL model should accept multi-agent observation of the format `Dict[agent_name: agent_observation]`. Observation space for each agent is `smarts.core.sensors.Observation`. For more details on the contents of `Observation` class, see https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186
+1. Trained model should accept multi-agent observation of the format `Dict[agent_name: agent_observation]`. Observation space for each agent is `smarts.core.sensors.Observation`. For more details on the contents of `Observation` class, see https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186
 1. Each agent's mission goal location is given in the observation returned at each time step. The mission goal could be accessed as `observation.ego_vehicle_state.mission.goal.position` which gives an `(x, y, z)` map coordinate of the goal location.
-1. Trained RL model should output multi-agent action of the format `Dict[agent_name: agent_action]`. Action space for each agent is `smarts.core.controllers.ActionSpaceType.TargetPose` which is a sequence of [x-coordinate, y-coordinate, heading, and time-delta].
+1. Trained model should output multi-agent action of the format `Dict[agent_name: agent_action]`. Action space for each agent is `smarts.core.controllers.ActionSpaceType.TargetPose` which is a sequence of [x-coordinate, y-coordinate, heading, and time-delta].
 
 ## Process Overview
 1. Use `python3.8` to develop your model.
@@ -54,9 +54,7 @@ Important: we require participants to submit the code for us to train using offl
 
 # Example
 
-The example uses Conservative Q-learning (CQL) method from [d3rlpy](https://github.com/takuseno/d3rlpy) offline RL library.
-
-**This example is only meant to demonstrate one potential method of developing an offline RL model using waymo dataset. The trained policy here does not fully solve the task environments.**
+**This example is only meant to demonstrate one potential method of developing an offline model using waymo dataset. The trained policy here does not fully solve the task environments.**
 
 ## Setup
 + Use `python3.8` to develop your model.
@@ -69,8 +67,8 @@ The example uses Conservative Q-learning (CQL) method from [d3rlpy](https://gith
     ```
 + SMARTS is used as a dependent package.
 
-## Preparing data for offline RL
-+ Observations: We use a 3-channel rgb birds eye view image plus an extended channel containing the location of the goal as the observation for offline RL. So the observation is of the form (4, 256, 256)
+## Preparing data
++ Observations: We use a 3-channel rgb birds eye view image plus an extended channel containing the location of the goal as the observation training. So the observation is of the form (4, 256, 256)
 
 + Actions: The action space (output of the policy) is using dx, dy and dh, which are the value change per step in x, y direction and heading for the ego vehicle in its birds eye view image coordinate. Since dx and dy can not be directly obtained from smarts observation, we have to get displacement change in global coordinate first and use a rotation matrix w.r.t the heading to get dx, dy. The bound for the action space is 
     + dx: [-0.1, 0.1]
