@@ -54,13 +54,13 @@ Important: we require participants to submit the code for us to train using offl
 
 # Example
 
-1. Offline RL
+## Offline RL
 
 This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://github.com/takuseno/d3rlpy) offline RL library.
 
 **This example is only meant to demonstrate one potential method of developing an offline model using waymo dataset. The trained policy here does not fully solve the task environments.**
 
-## Setup
+### Setup
 + Use `python3.8` to develop your model.
     ```bash
     $ cd <path>/SMARTS/competition/track2/train
@@ -71,7 +71,7 @@ This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://git
     ```
 + SMARTS is used as a dependent package.
 
-## Preparing data
+### Preparing data
 + Observations: We use a 3-channel rgb birds eye view image plus an extended channel containing the location of the goal as the observation training. So the observation is of the form (4, 256, 256)
 
 + Actions: The action space (output of the policy) is using dx, dy and dh, which are the value change per step in x, y direction and heading for the ego vehicle in its birds eye view image coordinate. Since dx and dy can not be directly obtained from smarts observation, we have to get displacement change in global coordinate first and use a rotation matrix w.r.t the heading to get dx, dy. The bound for the action space is 
@@ -83,7 +83,7 @@ This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://git
 
 
 
-## Train
+### Train
 1. Train
     ```bash
     $ cd <path>/SMARTS/competition/track2/train
@@ -93,6 +93,6 @@ This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://git
     The default value for `input_dir` and `output_dir` are `<path_to_SMARTS>/SMARTS/competition/track2/train/offline_dataset` and `<path_to_SMARTS>/SMARTS/competition/track2/train/output`
  1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. After the end of each training iteration, we will save the model in `<path>/SMARTS/competition/track2/train/d3rlpy_logs/<scenario_index>`. The next trainig iteration will keep training on the latest trained model.  
 
-1. Imitation learning
+# Imitation learning
 
-+ adsf
+## adsf
