@@ -40,7 +40,7 @@ class Policy(BasePolicy):
         """
 
         # Load saved RL model and instantiate any needed objects.
-        self.model = ... 
+        self.model = ...
 
     def act(self, obs: Dict[str, Any]):
         """Act function to be implemented by user.
@@ -54,6 +54,6 @@ class Policy(BasePolicy):
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
             # Use saved model to predict multi-agent action output given multi-agent SMARTS observation input.
-            action = ... 
+            action = ...
             wrapped_act.update({agent_id: action})
         return wrapped_act

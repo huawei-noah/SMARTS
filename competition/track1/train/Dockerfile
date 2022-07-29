@@ -35,10 +35,4 @@ COPY . /src
 WORKDIR /src
 RUN pip install --no-cache-dir -e ./competition/track1/train
 
-# For Envision.
-EXPOSE 8081
-
-# Suppress message of missing /dev/input folder.
-RUN echo "mkdir -p /dev/input" >> ~/.bashrc
-
 SHELL ["/bin/bash", "-c", "-l"]

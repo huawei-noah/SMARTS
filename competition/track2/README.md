@@ -1,32 +1,20 @@
-# Offline Reinforcement Learning
+# Offline Learning
 
 ## Objective
-Objective is to train a single **offline** reinforcement learning (RL) policy capable of controlling single-agent or multi-agent to complete different tasks in various scenarios. In each scenario the ego-agents must drive towards their respective goal locations. 
+Objective is to train a single **offline** learning policy capable of controlling single-agent or multi-agent to complete different tasks in various scenarios. In each scenario the ego-agents must drive towards their respective goal locations. 
 
-The challenge of this track is to develop a model that can be trained using an offline dataset, without any interactions with an online environment.
+The challenge is to develop a model that can be trained using an offline dataset, without any interactions with an online environment.
 
-## Data and RL Model
-1. For offline RL training, consider downloading and using the following two Naturalistic Autonomous Driving datasets 
-    + [Waymo Open Motion dataset](https://waymo.com/open/data/motion/) 
-    + [Next Generation Simulation (NGSIM)](https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm).
-1. and use the following tools to extract and convert the training data into SMARTS observations.
-    + Waymo utilities from https://github.com/huawei-noah/SMARTS/tree/saul/waymo-extraction/smarts/waymo, can be used to  
-        + to browse Waymo dataset, and 
-        + to convert offline training data from Waymo into SMARTS observation space.
-    + NGSIM utilities from <TBD>, can be used to 
-        + to simulate NGSIM dataset in SMARTS, and
-        + to extract offline training data from NGSIM into SMARTS observation space.
+Track-2 participants are required to submit a training code for us to train a new model from scratch using a hidden offline dataset. The newly trained model will then be evaluated.
 
-
-1. Waymo utilities from https://github.com/huawei-noah/SMARTS/tree/saul/waymo-extraction/smarts/waymo, can be used to  
-   + to browse Waymo dataset, and 
-   + to extract Waymo data into SMARTS observations.
-
-1. We have provided a subset of each Waymo and NGSIM datasets that we found to include useful and interesting trajectories for training. You can use this subset to limit the size of your training set and exclude irrelevant scenes. The data extraction tools for each dataset are capable to extracting data from the provided subset. (these subsets are subject to be updated!)
-
-
-
-1. Trained RL model should accept multi-agent observation of the format `Dict[agent_name: agent_observation]`. Observation space for each agent is `smarts.core.sensors.Observation`. For more details on the contents of `Observation` class, see https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186
+## Data and Reinforcement Learning (RL) Model
+1. For offline training, consider downloading and using the following two naturalistic autonomous driving datasets.
+    + [Waymo Open Motion](https://waymo.com/open/data/motion/) 
+    + [Next Generation Simulation (NGSIM)](https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm). 
+1. In order (i) to browse/simulate and (ii) to convert, Waymo and NGSIM datasets into an equivalent offline SMARTS observation dataset, use the following tool.
+    + [utility](https://github.com/huawei-noah/SMARTS/tree/saul/waymo-extraction/smarts/waymo) 
+1. A subset of Waymo and NGSIM datasets which have useful and interesting trajectories are provided for training. This subset may be used to focus the training. The provided data conversion tool can be used to convert these datasets into equivalent offline SMARTS observation datasets.
+1. The trained RL model should accept multi-agent observation of the format `Dict[agent_name: agent_observation]`. Observation space for each agent is `smarts.core.sensors.Observation`. For more details on the contents of `Observation` class, see https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186
 1. Each agent's mission goal is given in the observation returned at each time step. The mission goal could be accessed as `observation.ego_vehicle_state.mission.goal.position` which gives an `(x, y, z)` map coordinate of the goal location.
 1. Trained RL model should output multi-agent action of the format `Dict[agent_name: agent_action]`. Action space for each agent is `smarts.core.controllers.ActionSpaceType.TargetPose` which is a sequence of `[x-coordinate, y-coordinate, heading, and time-delta]`. Use `time-delta=0.1`.
 
@@ -35,7 +23,7 @@ The challenge of this track is to develop a model that can be trained using an o
 1. The submitted folder structure for Track-2 should be as follows. The folder and file names are to be maintained.
     ```text
     track2                       # Main folder.
-    ├── train                    # Contains code to train an offline RL model.
+    ├── train                    # Contains code to train a RL model offline.
     │   ├── train.py             # Primary training script for training a new model.
     │   ├── ...                  # Other necessary training files.
     |   .
@@ -51,24 +39,26 @@ The challenge of this track is to develop a model that can be trained using an o
     |    .
     └── Dockerfile                # Dockerfile to build and run the RL training code.
     ```
+1. Do not include any pre-trained models within the submitted folder for Track-2.
 
 ### Train Folder
 1. Use `python3.8` to develop your model.
 1. The `track2/train/train.py` code should be capable of reading in new offline data fed in by the competition organizers, train a new RL model offline from scratch, and automatically save the newly trained model into the `track2/submission` folder.
 
 ### Submission Folder
-1. On completion of training, the `track2/train/train.py` code should automatically save the trained RL model into the `track2/submission` folder. Place all necessary files to run the saved model for inference inside the `track2/submission` folder. 
-1. Besides the saved RL model, the files named `policy.py`, `requirements.txt`, and `explanation.md`, must be included within this folder. Its contents are identical to that of Track-1 and they are explained at 
+1. On completion of training, the `track2/train/train.py` code should automatically save the trained RL model into the `track2/submission` folder. 
+1. Place all necessary files to run the saved model for inference inside the `track2/submission` folder. 
+1. The files named `policy.py`, `requirements.txt`, and `explanation.md`, must be included within this folder. Its contents are identical to that of Track-1 and they are explained at 
     + [Policy](../track1/submission/README.md#Policy)
     + [Wrappers](../track1/submission/README.md#Wrappers)
     + [Requirements](../track1/submission/README.md#Requirements)
     + [Explanation](../track1/submission/README.md#Explanation)
 
-### Dockerfile, DockerHub, Retraining, and Evaluation
+### Dockerfile, DockerHub, Training, and Evaluation
 1. The submitted `track2` folder must contain a `track2/Dockerfile`. 
-1. Build upon the template Dockerfile provided at `track2/Dockerfile`. Do not modify sections labelled as `[Do not modify]`. Feel free to use any desired base image, install any additional packages, etc.
-1. The Dockerfile must start training upon execution of `docker run` command, hence do not change the `ENTRYPOINT` command. Avoid using `CMD` as it might be superseeded by external commands when running the container.
-1. Build the docker image locally and push the built docker image to [DockerHub](https://hub.docker.com/). 
+1. Build upon the base Dockerfile provided at `track2/Dockerfile`. Feel free to use any desired base image, install any additional packages, etc.
+1. The Docker image should start training upon execution of `docker run` command, hence do not change the `ENTRYPOINT` command and do not change the `/track2/entrypoint.sh` script.
+1. Build the docker image and push it to [DockerHub](https://hub.docker.com/). 
     ```bash
     $ cd <path>/SMARTS/competition/track2
     $ docker build \
@@ -78,23 +68,21 @@ The challenge of this track is to develop a model that can be trained using an o
         .
     ```
 1. Provide the link to the DockerHub image in `track2/submission/explanation.md` file.
-1. After uploading your Docker image to DockerHub, proceed to submitting the entire `track2` folder to Codalab Track2. 
-1. During evaluation, the docker image will be pulled and run with the following commands. 
+1. After uploading your Docker image, proceed to submit the entire `track2` folder to Codalab Track-2.
+1. During evaluation, the docker image will be pulled and executed as follows. 
     ```bash
-    $ docker pull <username/imagename:version>
     $ docker run --rm -it \
-        --gpus=all \
         --volume=<path>/offline_data:/offline_data
-        --volume=<path>/track2/submission:/track2/submission 
+        --volume=<path>/output:/output
         <username/imagename:version>
     ```
-1. Training a new RL model should start once the above command is executed.
+1. Training of a new RL model should start once the above command is executed.
 1. New offline data is made available to the container via a mapped volume at `/offline_data` directory.
 1. The `/offline_data` directory contains selected Waymo and NGSIM datasets.
-1. Inside the container, on completion of training,  the trained model should be saved in `/track2/submission` folder such that calling `/track2/submission/policy.py::Policy.act(obs)` with a SMARTS observation returns an action.
-1. The `/track2/submission` folder will be mapped out from the container and then evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
-1. During development, it is strongly suggested for you to submit your zipped `track2/submission` folder to the Validation Track in Codalab, to verify that the evaluation works without errors.
-1. Finally, the offline RL training code in `/track2/train` directory will be manually scrutinised. 
+1. Inside the container, on completion of training, the trained model should be saved in `/track2/submission` folder such that calling `/track2/submission/policy.py::Policy.act(obs)` with a multi-agent SMARTS observation returns a multi-agent `TargetPose` action.
+1. The `/track2/submission` folder will be mapped out from the container and evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
+1. During development, it is strongly suggested to submit your zipped `track2/submission` folder to the Validation Track in Codalab, to verify that the evaluation works without errors.
+1. Finally, the offline training code in `/track2/train` directory will be manually scrutinised. 
 
 ### Submit to Codalab
 + Zip the entire `track2` folder. 

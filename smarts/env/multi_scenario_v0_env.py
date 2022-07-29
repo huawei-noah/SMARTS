@@ -117,7 +117,6 @@ def multi_scenario_v0_env(
         agents_alive=None,
     )
     max_episode_steps = 800
-    neighbor_radius = 50
     road_waypoint_horizon = 50
     waypoints_lookahead = 50
     agent_specs = {
@@ -133,7 +132,7 @@ def multi_scenario_v0_env(
                 ),
                 lidar=True,
                 max_episode_steps=max_episode_steps,
-                neighborhood_vehicles=NeighborhoodVehicles(neighbor_radius),
+                neighborhood_vehicles=True,
                 ogm=OGM(
                     width=img_pixels,
                     height=img_pixels,
