@@ -4,6 +4,7 @@ FROM pytorch/pytorch:1.7.1-cuda11.0-cudnn8-runtime
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install libraries.
+# Zip is needed to zip the output files.
 RUN apt-get update --fix-missing && \
     apt-get install -y \
         software-properties-common && \
@@ -13,7 +14,8 @@ RUN apt-get update --fix-missing && \
         libspatialindex-dev \
         python3.8 \
         python3.8-venv \
-        xorg && \
+        xorg \
+        zip && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
