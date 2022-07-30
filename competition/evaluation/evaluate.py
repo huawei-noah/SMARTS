@@ -84,6 +84,7 @@ def make_env(
 def evaluate(config):
     scenarios = config["scenarios"]
 
+    # TODO: Wrap bubble_env
     # Make evaluation environments.
     envs_eval = {}
     for scen in scenarios:
@@ -101,6 +102,8 @@ def evaluate(config):
     # Instantiate submitted policy.
     policy = Policy()
 
+    # TODO: Score bubble_env
+    # TAI: Use a bonus scoring for bubble_env
     # Evaluate model for each scenario
     score = Score()
     for index, (env_name, (env, datastore)) in enumerate(envs_eval.items()):
@@ -196,6 +199,8 @@ if __name__ == "__main__":
     # Install requirements.
     req_file = os.path.join(submit_dir, "requirements.txt")
     sys.path.insert(0, submit_dir)
+    # TODO: Install bubble_env
+    # TODO: git lfs pull bubble_env
     subprocess.check_call(
         [
             sys.executable,
