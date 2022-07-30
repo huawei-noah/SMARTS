@@ -109,7 +109,7 @@ def multi_scenario_v0_env(
 
     agent_specs = {
         f"Agent_{i}": AgentSpec(
-            interface=_resolve_agent_interface(img_meters, img_pixels, action_space)
+            interface=resolve_agent_interface(img_meters, img_pixels, action_space)
         )
         for i in range(env_specs["num_agent"])
     }
@@ -238,7 +238,7 @@ def _get_env_specs(scenario: str):
         raise Exception(f"Unknown scenario {scenario}.")
 
 
-def _resolve_agent_interface(
+def resolve_agent_interface(
     img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose", **kwargs
 ):
     done_criteria = DoneCriteria(

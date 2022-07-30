@@ -1,0 +1,3 @@
+[submodule "competition/contrib/smarts-project.bubble_env"]
+	path = competition/contrib/smarts-project.bubble_env
+	url = https://github.com/smarts-project/smarts-project.bubble_env
