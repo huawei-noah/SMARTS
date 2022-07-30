@@ -52,7 +52,7 @@ Important: we require participants to submit the code for us to train using offl
 1.  Finally, the offline training code in `track2/train` will be manually scrutinised. 
 
 
-# Example
+# Examples
 
 ## Offline RL
 
@@ -90,7 +90,7 @@ This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://git
     $ python3.8 train.py --input_dir=<path_to_data> --ouput_dir=<path_to_saved_model>
     ```
 
-    The default value for `input_dir` and `output_dir` are `<path_to_SMARTS>/SMARTS/competition/track2/train/offline_dataset` and `<path_to_SMARTS>/SMARTS/competition/track2/train/output`
+    The default value for `input_dir` and `output_dir` are `/offline_dataset` and `/output`
  1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. After the end of each training iteration, we will save the model in `<path>/SMARTS/competition/track2/train/d3rlpy_logs/<scenario_index>`. The next trainig iteration will keep training on the latest trained model.  
 
 ## Imitation Learning
