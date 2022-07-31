@@ -1,5 +1,5 @@
 import copy
-from typing import Any, Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 import gym
 
@@ -26,10 +26,10 @@ class DataStore:
 
 
 class CopyData(gym.Wrapper):
-    def __init__(self, env: gym.Env, datastore: DataStore):
+    def __init__(self, env: gym.Env, agent_ids: List[str], datastore: DataStore):
         super(CopyData, self).__init__(env)
         self._datastore = datastore
-        self._datastore.agent_names = list(env.agent_specs.keys())
+        self._datastore.agent_names = agent_ids
 
     def step(
         self, action: Dict[str, Any]

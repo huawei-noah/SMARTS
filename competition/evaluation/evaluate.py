@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__file__)
 
@@ -45,7 +45,7 @@ _DEFAULT_SUBMISSION_CONFIG = dict(
 )
 
 
-def wrap_env(env, datastore: "DataStore", wrappers=[],):
+def wrap_env(env: "gym.Env", agent_ids: List[str], datastore: "DataStore", wrappers=[],):
     """Make environment.
 
     Args:
@@ -57,7 +57,7 @@ def wrap_env(env, datastore: "DataStore", wrappers=[],):
         gym.Env: Environment wrapped for evaluation.
     """
     # Make a copy of original info.
-    env = CopyData(env, datastore)
+    env = CopyData(env, agent_ids, datastore)
     # Disallow modification of attributes starting with "_" by external users.
     env = gym.Wrapper(env)
 
@@ -88,6 +88,7 @@ def evaluate(config):
         envs_eval[f"{scenario}"] = (
             wrap_env(
                 env,
+                agent_ids=list(env.agent_specs.keys()),
                 datastore=datastore,
                 wrappers=submitted_wrappers(),
             ),
@@ -104,6 +105,7 @@ def evaluate(config):
         envs_eval[f"{scenario}"] = (
             wrap_env(
                 env,
+                agent_ids=list(env.agent_ids),
                 datastore=datastore,
                 wrappers=submitted_wrappers(),
             ),
