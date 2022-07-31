@@ -213,8 +213,6 @@ if __name__ == "__main__":
     # Install requirements.
     req_file = os.path.join(submit_dir, "requirements.txt")
     sys.path.insert(0, submit_dir)
-    # TODO: Install bubble_env
-    # TODO: git lfs pull bubble_env
     subprocess.check_call(
         [
             sys.executable,
@@ -222,9 +220,7 @@ if __name__ == "__main__":
             "pip",
             "install",
             "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@bubble_traffic/comp-1",
-            "torch~=1.10",
-            "opencv-python==4.1.2.30",
-            "opencv-python-headless==4.1.2.30",
+            "bubble_env @ git+https://bitbucket.org/malban/bubble_env.git@master",
         ]
     )
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
