@@ -58,7 +58,7 @@ class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, JSONEncodingState):
             return self.default(unpack(obj.data))
-        elif isinstance(obj, float):
+        elif isinstance(obj, (int, float)):
             if np.isposinf(obj):
                 obj = "Infinity"
             elif np.isneginf(obj):
@@ -66,7 +66,7 @@ class CustomJSONEncoder(json.JSONEncoder):
             elif np.isnan(obj):
                 obj = "NaN"
             return obj
-        elif obj is None or isinstance(obj, (str, bool, int)):
+        elif obj is None or isinstance(obj, (str, bool)):
             return obj
         elif isinstance(obj, (list, tuple)):
             return [self.default(x) for x in obj]
