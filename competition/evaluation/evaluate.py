@@ -102,7 +102,8 @@ def evaluate(config):
             "bubble_env_contrib:bubble_env-v0",
             **shared_configs
         )
-        envs_eval[f"{scenario}"] = (
+        datastore = DataStore()
+        envs_eval[f"bubble_env_{seed}"] = (
             wrap_env(
                 env,
                 agent_ids=list(env.agent_ids),
@@ -136,7 +137,7 @@ def evaluate(config):
     logger.info("\nFinished evaluating.\n")
 
     # Close all environments
-    for env, _ in envs_eval.values():
+    for env, _, _ in envs_eval.values():
         env.close()
 
     return rank

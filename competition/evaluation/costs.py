@@ -38,12 +38,14 @@ def _collisions(obs: Observation) -> Dict[str, int]:
 
 def _dist_to_goal(obs: Observation) -> Dict[str, float]:
     mission_goal = obs.ego_vehicle_state.mission.goal
-    assert hasattr(
+    if hasattr(
         mission_goal, "position"
-    ), "Mission has no goal position, thus `dist_to_goal` cannot be calculated."
+    ):
+        rel = obs.ego_vehicle_state.position[:2] - mission_goal.position[:2]
+        dist = sum(abs(rel))
+    else:
+        dist = 0
 
-    rel = obs.ego_vehicle_state.position[:2] - mission_goal.position[:2]
-    dist = sum(abs(rel))
     return {"dist_to_goal": dist}
 
 
