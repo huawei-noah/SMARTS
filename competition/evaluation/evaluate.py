@@ -31,9 +31,7 @@ _DEFAULT_EVALUATION_CONFIG = dict(
         "3lane_cut_in",
         "3lane_overtake",
     ],
-    bubble_env_evaluation_seeds=[
-        6
-    ]
+    bubble_env_evaluation_seeds=[6],
 )
 _SUBMISSION_CONFIG_KEYS = {
     "img_meters",
@@ -45,7 +43,12 @@ _DEFAULT_SUBMISSION_CONFIG = dict(
 )
 
 
-def wrap_env(env: "gym.Env", agent_ids: List[str], datastore: "DataStore", wrappers=[],):
+def wrap_env(
+    env: "gym.Env",
+    agent_ids: List[str],
+    datastore: "DataStore",
+    wrappers=[],
+):
     """Make environment.
 
     Args:
@@ -71,7 +74,7 @@ def wrap_env(env: "gym.Env", agent_ids: List[str], datastore: "DataStore", wrapp
 def evaluate(config):
     base_scenarios = config["scenarios"]
     shared_configs = dict(
-        action_space = "TargetPose",
+        action_space="TargetPose",
         img_meters=int(config["img_meters"]),
         img_pixels=int(config["img_pixels"]),
         sumo_headless=True,
@@ -80,9 +83,7 @@ def evaluate(config):
     envs_eval = {}
     for scenario in base_scenarios:
         env = gym.make(
-            "smarts.env:multi-scenario-v0",
-            scenario=scenario,
-            **shared_configs
+            "smarts.env:multi-scenario-v0", scenario=scenario, **shared_configs
         )
         datastore = DataStore()
         envs_eval[f"{scenario}"] = (
@@ -93,15 +94,12 @@ def evaluate(config):
                 wrappers=submitted_wrappers(),
             ),
             datastore,
-            None
+            None,
         )
-    
+
     bonus_eval_seeds = config.get("bubble_env_evaluation_seeds", [])
     for seed in bonus_eval_seeds:
-        env = gym.make(
-            "bubble_env_contrib:bubble_env-v0",
-            **shared_configs
-        )
+        env = gym.make("bubble_env_contrib:bubble_env-v0", **shared_configs)
         datastore = DataStore()
         envs_eval[f"bubble_env_{seed}"] = (
             wrap_env(
@@ -111,9 +109,8 @@ def evaluate(config):
                 wrappers=submitted_wrappers(),
             ),
             datastore,
-            seed
+            seed,
         )
-
 
     # Instantiate submitted policy.
     policy = Policy()
@@ -128,7 +125,7 @@ def evaluate(config):
             env_name=env_name,
             policy=policy,
             config=config,
-            seed=seed
+            seed=seed,
         )
         score.add(counts, costs)
 
@@ -144,7 +141,12 @@ def evaluate(config):
 
 
 def run(
-    env, datastore: "DataStore", env_name: str, policy: "Policy", config: Dict[str, Any], seed: Optional[int]
+    env,
+    datastore: "DataStore",
+    env_name: str,
+    policy: "Policy",
+    config: Dict[str, Any],
+    seed: Optional[int],
 ):
     # Instantiate metric for score calculation.
     metric = Metric(env_name=env_name, agent_names=datastore.agent_names)
