@@ -178,9 +178,7 @@ class Client:
                         data_formatter.reset()
                         data_formatter.add(state)
                         state = data_formatter.resolve()
-                    state = json.dumps(
-                        JSONEncodingState(state), cls=CustomJSONEncoder
-                    )
+                    state = json.dumps(JSONEncodingState(state), cls=CustomJSONEncoder)
 
                 f.write(f"{state}\n")
 
@@ -226,9 +224,7 @@ class Client:
                     data_formatter.reset()
                     data_formatter.add(state)
                     state = data_formatter.resolve()
-                state = json.dumps(
-                    JSONEncodingState(state), cls=CustomJSONEncoder
-                )
+                state = json.dumps(JSONEncodingState(state), cls=CustomJSONEncoder)
             ws.send(state)
 
         def on_close(ws, code=None, reason=None):
