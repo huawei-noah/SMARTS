@@ -237,6 +237,13 @@ class LocalTrafficProvider(TrafficProvider):
             lane.lane_id, lane.offset_along_lane(vs.pose.point)
         )
 
+    def _relinquish_actor(self, actor_state: ActorState):
+        sim = self._sim()
+        assert sim
+        sim.provider_relinquishing_actor(self, actor_state)
+        if actor_state.actor_id in self._my_actors:
+            del self._my_actors[actor_state.actor_id]
+
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
         sim = self._sim()
         assert sim
@@ -269,13 +276,13 @@ class LocalTrafficProvider(TrafficProvider):
                 actor.bump_id()
                 remap_ids[actor_id] = actor.actor_id
         for actor in losts:
-            new_prov = sim.provider_relinquishing_actor(self, actor.state)
-            del self._my_actors[actor.actor_id]
+            self._relinquish_actor(actor.state)
         for actor_id in dones:
             sim.provider_removing_actor(actor.state)
             # The following is not really necessary due to the above calling teardown(),
             # but it doesn't hurt...
-            del self._my_actors[actor_id]
+            if actor_id in self._my_actors:
+                del self._my_actors[actor_id]
         for orig_id, new_id in remap_ids.items():
             self._my_actors[new_id] = self._my_actors[orig_id]
             del self._my_actors[orig_id]
@@ -341,16 +348,17 @@ class LocalTrafficProvider(TrafficProvider):
         self._reserved_areas[vehicle_id] = reserved_location
 
     def vehicle_collided(self, vehicle_id: str):
-        # TAI:  consider removing the vehicle?
-        # If collidee(s) include(s) an EgoAgent, it will likely be marked "done" and things will end.
-        # (But this is not guaranteed depending on the criteria that were set.)
-        # Probably the most realistic thing we can do is leave the vehicle sitting in the road, blocking traffic!
-        # (... and then add a "rubber-neck mode" for all nearby vehicles?! ;)
-        # Let's do that for now, but we should also consider just removing the vehicle.
         traffic_actor = self._my_actors.get(vehicle_id)
         if not traffic_actor:
             # guess we already removed it for some other reason (off route?)
             return
+        # TAI:  consider relinquishing / removing the vehicle? Like:
+        # self._relinquish_actor(traffic_actor.state)
+        # If collidee(s) include(s) an EgoAgent, it will likely be # marked "done" and things will end anyway.
+        # (But this is not guaranteed depending on the done criteria that were set.)
+        # Probably the most realistic thing we can do is leave the vehicle sitting in the road, blocking traffic!
+        # (... and then add a "rubber-neck mode" for all nearby vehicles?! ;)
+        # Let's do that for now, but we should also consider just removing the vehicle.
         traffic_actor.stay_put()
 
     def update_route_for_vehicle(self, vehicle_id: str, new_route: RoadMap.Route):

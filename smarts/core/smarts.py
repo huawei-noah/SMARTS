@@ -688,6 +688,8 @@ class SMARTS:
         if isinstance(state, VehicleState):
             state.role = ActorRole.Social  # XXX ASSUMPTION: might use Unknown instead?
         for new_provider in self.providers:
+            if new_provider == provider:
+                continue
             if new_provider.can_accept_actor(state):
                 # Here we just use the first provider we find that accepts it.
                 # If we want to give preference to, say, Sumo over SMARTS traffic,
@@ -707,7 +709,7 @@ class SMARTS:
         (For vehicles, pybullet_provider_sync() will also call teardown when it
         notices a social vehicle has exited the simulation.)"""
         if isinstance(actor_state, VehicleState):
-            self._teardown_vehicles(actor_state.actor_id)
+            self._teardown_vehicles([actor_state.actor_id])
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()
