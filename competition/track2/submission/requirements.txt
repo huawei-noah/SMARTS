@@ -1,4 +1,1 @@
-d3rlpy==1.1.1
-numpy==1.23.1
-Pillow==9.2.0
-torch==1.11.0
+# Add required packages for Track-2 training code.
