@@ -44,7 +44,7 @@ _DEFAULT_SUBMISSION_CONFIG = dict(
 
 
 def wrap_env(
-    env: "gym.Env",
+    env,
     agent_ids: List[str],
     datastore: "DataStore",
     wrappers=[],
