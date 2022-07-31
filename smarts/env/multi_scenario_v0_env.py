@@ -241,6 +241,8 @@ def _get_env_specs(scenario: str):
 def resolve_agent_interface(
     img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose", **kwargs
 ):
+    """Resolve an agent interface for the environments in this module."""
+
     done_criteria = DoneCriteria(
         collision=True,
         off_road=True,
