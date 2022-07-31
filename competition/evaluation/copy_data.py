@@ -10,7 +10,10 @@ class DataStore:
         self._agent_names = None
 
     def __call__(self, **kwargs):
-        self._data = copy.deepcopy(dict(**kwargs))
+        try:
+            self._data = copy.deepcopy(dict(**kwargs))
+        except RecursionError:
+            self._data = copy.copy(dict(**kwargs))
 
     @property
     def data(self):
