@@ -34,5 +34,5 @@ The files named `policy.py`, `requirements.txt`, and `explanation.md`, must be i
     + Go to the [CodaLab competition page](https://codalab.lisn.upsaclay.fr/).
     + Click `My Competitions -> Competitions I'm In`.
     + Select the SMARTS competition.
-    + Click `Participate -> Submit/View Results -> Submit`
+    + Click `Participate -> Submit/View Results ->  Track 1 -> Submit`
     + Upload the zipped submission folder.

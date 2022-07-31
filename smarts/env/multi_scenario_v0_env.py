@@ -253,32 +253,30 @@ def _resolve_agent_interface(
     max_episode_steps = 800
     road_waypoint_horizon = 50
     waypoints_lookahead = 50
-    return (
-        AgentInterface(
-            accelerometer=True,
-            action=ActionSpaceType[action_space],
-            done_criteria=done_criteria,
-            drivable_area_grid_map=DrivableAreaGridMap(
-                width=img_pixels,
-                height=img_pixels,
-                resolution=img_meters / img_pixels,
-            ),
-            lidar=True,
-            max_episode_steps=max_episode_steps,
-            neighborhood_vehicles=True,
-            ogm=OGM(
-                width=img_pixels,
-                height=img_pixels,
-                resolution=img_meters / img_pixels,
-            ),
-            rgb=RGB(
-                width=img_pixels,
-                height=img_pixels,
-                resolution=img_meters / img_pixels,
-            ),
-            road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
-            waypoints=Waypoints(lookahead=waypoints_lookahead),
+    return AgentInterface(
+        accelerometer=True,
+        action=ActionSpaceType[action_space],
+        done_criteria=done_criteria,
+        drivable_area_grid_map=DrivableAreaGridMap(
+            width=img_pixels,
+            height=img_pixels,
+            resolution=img_meters / img_pixels,
         ),
+        lidar=True,
+        max_episode_steps=max_episode_steps,
+        neighborhood_vehicles=True,
+        ogm=OGM(
+            width=img_pixels,
+            height=img_pixels,
+            resolution=img_meters / img_pixels,
+        ),
+        rgb=RGB(
+            width=img_pixels,
+            height=img_pixels,
+            resolution=img_meters / img_pixels,
+        ),
+        road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
+        waypoints=Waypoints(lookahead=waypoints_lookahead),
     )
 
 
