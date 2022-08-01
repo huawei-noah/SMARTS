@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import logging
+import weakref
 from functools import lru_cache
 from typing import Iterable, Optional, Set
 
@@ -28,7 +29,7 @@ from shapely.geometry import Polygon
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose
-from .provider import ProviderRecoveryFlags, ProviderState
+from .provider import ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .signals import SignalLightState, SignalState
 from .traffic_provider import TrafficProvider
@@ -60,6 +61,9 @@ class TrafficHistoryProvider(TrafficProvider):
     @recovery_flags.setter
     def recovery_flags(self, flags: ProviderRecoveryFlags):
         self._recovery_flags = flags
+
+    def set_manager(self, manager: ProviderManager):
+        self._sim = weakref.ref(manager)
 
     @property
     def start_time(self):
@@ -250,5 +254,5 @@ class TrafficHistoryProvider(TrafficProvider):
 
     def can_accept_actor(self, state: ActorState) -> bool:
         # TAI consider:
-        # return state.actor_id in self._replaced_actor_ids and state.pose "is close to" self._histories.vehicle_pose_at_time(state.actor_id, self._sim.elapsed_sim_time)
+        # return state.actor_id in self._replaced_actor_ids and state.pose "is close to" self._histories.vehicle_pose_at_time(state.actor_id, self._sim().elapsed_sim_time)
         return False
