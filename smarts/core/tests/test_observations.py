@@ -251,8 +251,8 @@ def test_observations(env, agent_spec):
 @pytest.fixture
 def scenario():
     mission = Mission(
-        start=Start(np.array((7, 68.40)), Heading(-0.5 * math.pi)),
-        goal=PositionalGoal(Point(128.35, 0), 10),
+        start=Start(np.array((7, 68.35)), Heading(-0.5 * math.pi)),
+        goal=PositionalGoal(Point(128.40, 0), 10),
         entry_tactic=default_entry_tactic(1.0),
     )
     return Scenario(
