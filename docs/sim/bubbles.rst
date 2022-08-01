@@ -53,7 +53,7 @@ Bubbles that are vehicle-relative can be attached to specific actors by specifyi
 
 Dynamic Bubbles
 ===============
-There is currently no interface for dynamically-created bubbles. However, if the `scenario` is exposed then the following is possible to define a bubble outside of `scenario studio``:
+There is currently no interface for dynamically-created bubbles. However, if the `scenario` is exposed then the following is possible to define a bubble outside of `scenario studio`:
 
 .. code-block:: python
     import smarts.sstudio.types as t
