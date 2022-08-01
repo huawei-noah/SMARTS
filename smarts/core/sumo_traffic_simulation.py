@@ -463,8 +463,11 @@ class SumoTrafficSimulation(TrafficProvider):
     def _step(self, dt):
         # we tell SUMO to step through dt more seconds of the simulation
         self._cumulative_sim_seconds += dt
-        self._traci_conn.simulationStep(self._cumulative_sim_seconds)
-
+        try:
+            self._traci_conn.simulationStep(self._cumulative_sim_seconds)
+        except self._traci_exceptions as e:
+            self._handle_traci_disconnect(e)
+            return ProviderState()
         return self._compute_provider_state()
 
     def sync(self, provider_state: ProviderState):

@@ -46,6 +46,24 @@ class ExternalProvider(Provider):
         self._sim = weakref.ref(manager)
 
     @property
+    def _sim_time(self) -> float:
+        sim = self._sim()
+        assert sim
+        # pytype: disable=attribute-error
+        # TAI: consider adding to ProviderManager interface
+        return sim.elapsed_sim_time
+        # pytype: enable=attribute-error
+
+    @property
+    def _vehicle_index(self):
+        sim = self._sim()
+        assert sim
+        # pytype: disable=attribute-error
+        # TAI: consider adding to ProviderManager interface
+        return sim.vehicle_index
+        # pytype: enable=attribute-error
+
+    @property
     def recovery_flags(self) -> ProviderRecoveryFlags:
         return self._recovery_flags
 
@@ -54,12 +72,10 @@ class ExternalProvider(Provider):
         self._recovery_flags = flags
 
     def reset(self):
-        sim = self._sim()
-        assert sim
         self._ext_vehicle_states = []
         self._sent_states = None
         self._last_step_delta = None
-        self._last_fresh_step = sim.elapsed_sim_time
+        self._last_fresh_step = self._sim_time
 
     def state_update(
         self,
@@ -79,11 +95,9 @@ class ExternalProvider(Provider):
 
     @property
     def _provider_state(self):
-        sim = self._sim()
-        assert sim
-        dt = sim.elapsed_sim_time - self._last_fresh_step
+        dt = self._sim_time - self._last_fresh_step
         if id(self._ext_vehicle_states) != id(self._sent_states):
-            self._last_fresh_step = sim.elapsed_sim_time
+            self._last_fresh_step = self._sim_time
             self._sent_states = self._ext_vehicle_states
         return ProviderState(actors=self._ext_vehicle_states, dt=dt)
 
@@ -102,10 +116,8 @@ class ExternalProvider(Provider):
     @property
     def all_vehicle_states(self) -> List[VehicleState]:
         """Get all current vehicle states."""
-        sim = self._sim()
-        assert sim
         result = []
-        for vehicle in sim.vehicle_index.vehicles:
+        for vehicle in self._vehicle_index.vehicles:
             if vehicle.subscribed_to_accelerometer_sensor:
                 linear_acc, angular_acc, _, _ = vehicle.accelerometer_sensor(
                     vehicle.state.linear_velocity,

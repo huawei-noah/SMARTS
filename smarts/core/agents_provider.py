@@ -53,6 +53,24 @@ class AgentsProvider(Provider):
         self._sim = weakref.ref(manager)
 
     @property
+    def _vehicle_index(self):
+        sim = self._sim()
+        assert sim
+        # pytype: disable=attribute-error
+        # TAI: consider adding to ProviderManager interface
+        return sim.vehicle_index
+        # pytype: enable=attribute-error
+
+    @property
+    def _agent_manager(self):
+        sim = self._sim()
+        assert sim
+        # pytype: disable=attribute-error
+        # TAI: consider adding to ProviderManager interface
+        return sim.agent_manager
+        # pytype: enable=attribute-error
+
+    @property
     def action_spaces(self) -> Set[ActionSpaceType]:
         # must be implemented by derived classes
         raise NotImplementedError
@@ -73,8 +91,6 @@ class AgentsProvider(Provider):
         self.teardown()
 
     def _remove_missing_actors(self, agent_actions: Dict[str, Any]):
-        sim = self._sim()
-        assert sim
         missing_agents = self._my_agent_actors.keys() - agent_actions.keys()
         for agent_id in missing_agents:
             self._log.info(
@@ -89,7 +105,7 @@ class AgentsProvider(Provider):
         }
         boid_vehicle_ids = boid_actors_map.keys()
         for agent_id, action in agent_actions.items():
-            if sim.agent_manager.is_boid_agent(agent_id):
+            if self._agent_manager.is_boid_agent(agent_id):
                 boid_vehicle_ids -= action.keys()
         for missing in boid_vehicle_ids:
             self._log.info(
@@ -106,15 +122,15 @@ class AgentsProvider(Provider):
         Args:
             agent_actions: a dictionary from each agent_id to its actions for this step.
         """
-        sim = self._sim()
-        assert sim
         self._remove_missing_actors(agent_actions)
         actions_without_agents = agent_actions.keys() - self._my_agent_actors.keys()
         assert (
             not actions_without_agents
         ), f"actions specified for non-tracked agents:  {actions_without_agents}"
-        agent_manager = sim.agent_manager
-        vehicle_index = sim.vehicle_index
+        agent_manager = self._agent_manager
+        vehicle_index = self._vehicle_index
+        sim = self._sim()
+        assert sim
         for agent_id, vehicle_states in self._my_agent_actors.items():
             action = agent_actions.get(agent_id)
             if action is None or len(action) == 0:
@@ -142,12 +158,10 @@ class AgentsProvider(Provider):
 
     @property
     def _provider_state(self) -> ProviderState:
-        sim = self._sim()
-        assert sim
         provider_state = ProviderState()
         for agent_id, vehicle_states in self._my_agent_actors.items():
             for vs in vehicle_states:
-                vehicle = sim.vehicle_index.vehicle_by_id(vs.actor_id)
+                vehicle = self._vehicle_index.vehicle_by_id(vs.actor_id)
                 vs.pose = vehicle.pose
                 vs.speed = vehicle.speed
                 vs.source = self.source_str
@@ -168,10 +182,8 @@ class AgentsProvider(Provider):
     def add_actor(
         self, provider_actor: ActorState, from_provider: Optional[Provider] = None
     ):
-        sim = self._sim()
-        assert sim
         provider_actor.source = self.source_str
-        agent_id = sim.vehicle_index.actor_id_from_vehicle_id(provider_actor.actor_id)
+        agent_id = self._vehicle_index.actor_id_from_vehicle_id(provider_actor.actor_id)
         self._my_agent_actors.setdefault(agent_id, []).append(provider_actor)
 
     def _agent_for_vehicle(self, vehicle_id: str) -> Optional[Tuple[str, int]]:
