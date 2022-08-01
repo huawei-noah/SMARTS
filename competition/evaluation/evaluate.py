@@ -224,7 +224,7 @@ if __name__ == "__main__":
             "-m",
             "pip",
             "install",
-            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@bubble_traffic/comp-1",
+            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
             "bubble_env @ git+https://bitbucket.org/malban/bubble_env.git@master",
         ]
     )
