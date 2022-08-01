@@ -52,6 +52,7 @@ class ObservationRecorder:
         assert scenario, "--scenario must be used to specify a scenario"
         scenario_iter = Scenario.variations_for_all_scenario_roots([scenario], [])
         self._scenario = next(scenario_iter)
+        assert self._scenario
         # TAI:  also record from social vehicles?
         assert self._scenario.traffic_history is not None
 
@@ -96,6 +97,7 @@ class ObservationRecorder:
             headless (bool, optional):
                 Whether to run the simulation in headless mode.  Defaults to True.
         """
+        assert self._scenario and self._scenario.traffic_history is not None
 
         # In case we have any bubbles or additional non-history traffic
         # in the scenario, we need to add some traffic providers.
@@ -183,7 +185,7 @@ class ObservationRecorder:
         if self._output_dir:
             # Save recorded observations as pickle files
             for car, data in collected_data.items():
-                outfile = self._output_dir / f"{car}.pkl"
+                outfile = os.path.join(self._output_dir, f"{car}.pkl")
                 with open(outfile, "wb") as of:
                     pickle.dump(data, of)
 
@@ -211,11 +213,12 @@ class ObservationRecorder:
                 off_road_vehicles.add(veh_id)
 
         # Get observations from each vehicle and record them
-        obs: Dict[str, Observation] = {}
+        obs = dict()
         obs, _, _, _ = self._smarts.observe_from(list(valid_vehicles))
         resolutions = {}
         for id_ in list(obs):
-            resolutions[id_] = obs[id_].top_down_rgb.metadata.resolution
+            if obs[id_].top_down_rgb:
+                resolutions[id_] = obs[id_].top_down_rgb.metadata.resolution
             ego_state = obs[id_].ego_vehicle_state
             if ego_state.lane_index is None:
                 del obs[id_]
@@ -242,18 +245,18 @@ class ObservationRecorder:
             h, w = agent_obs["rgb"].shape[0], agent_obs["rgb"].shape[1]
             shape = [
                 (
-                    h / 2 - 1.47 / 2 / resolutions[id_],
-                    w / 2 - 3.68 / 2 / resolutions[id_],
+                    h / 2 - 1.47 / 2 / resolutions[agent_id],
+                    w / 2 - 3.68 / 2 / resolutions[agent_id],
                 ),
                 (
-                    h / 2 + 1.47 / 2 / resolutions[id_],
-                    w / 2 + 3.68 / 2 / resolutions[id_],
+                    h / 2 + 1.47 / 2 / resolutions[agent_id],
+                    w / 2 + 3.68 / 2 / resolutions[agent_id],
                 ),
             ]
             img = Image.fromarray(agent_obs["rgb"], "RGB")
             rect_image = ImageDraw.Draw(img)
             rect_image.rectangle(shape, fill="red")
-            img.save(output_dir / f"{t}_{agent_id}.png")
+            img.save(os.path.join(self._output_dir, f"{t}_{agent_id}.png"))
 
 
 if __name__ == "__main__":
