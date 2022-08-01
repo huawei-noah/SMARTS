@@ -243,7 +243,7 @@ class ObservationRecorder:
             if "rgb" not in agent_obs:
                 continue
             h, w = agent_obs["rgb"].shape[0], agent_obs["rgb"].shape[1]
-            shape = [
+            shape = (
                 (
                     h / 2 - 1.47 / 2 / resolutions[agent_id],
                     w / 2 - 3.68 / 2 / resolutions[agent_id],
@@ -252,7 +252,7 @@ class ObservationRecorder:
                     h / 2 + 1.47 / 2 / resolutions[agent_id],
                     w / 2 + 3.68 / 2 / resolutions[agent_id],
                 ),
-            ]
+            )
             img = Image.fromarray(agent_obs["rgb"], "RGB")
             rect_image = ImageDraw.Draw(img)
             rect_image.rectangle(shape, fill="red")
