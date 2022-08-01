@@ -251,7 +251,7 @@ def test_observations(env, agent_spec):
 @pytest.fixture
 def scenario():
     mission = Mission(
-        start=Start(np.array((6.95, 68.40)), Heading(-0.5 * math.pi)),
+        start=Start(np.array((6.97, 68.40)), Heading(-0.5 * math.pi)),
         goal=PositionalGoal(Point(128.40, 0), 10),
         entry_tactic=default_entry_tactic(1.0),
     )
@@ -288,12 +288,14 @@ def test_signal_observations(smarts, scenario):
         observations, _, dones, _ = smarts.step({AGENT_ID: agent_action})
         if dones[AGENT_ID]:
             break
-        signals = observations[AGENT_ID].signals
+        my_obs = observations[AGENT_ID]
+        signals = my_obs.signals
+        pos = my_obs.ego_vehicle_state.position
         if step < 155:
             # it's out of range...
-            assert len(signals) == 0, f"step={step}"
+            assert len(signals) == 0, f"step={step}, pos={pos}"
         else:
-            assert len(signals) == 1, f"step={step}"
+            assert len(signals) == 1, f"step={step}, pos={pos}"
             assert (
                 signals[0].controlled_lanes[0] == ":junction-intersection_9_0"
             ), f"step={step}"
