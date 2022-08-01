@@ -21,7 +21,12 @@ from typing import Optional, Sequence, Set
 
 from smarts.core.actor import ActorRole, ActorState
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.provider import Provider, ProviderRecoveryFlags, ProviderState
+from smarts.core.provider import (
+    Provider,
+    ProviderManager,
+    ProviderRecoveryFlags,
+    ProviderState,
+)
 from smarts.core.road_map import RoadMap
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
@@ -60,6 +65,9 @@ class MockProvider(Provider):
     @recovery_flags.setter
     def recovery_flags(self, flags: ProviderRecoveryFlags):
         self._recovery_flags = flags
+
+    def set_manager(self, manager: ProviderManager):
+        pass
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:

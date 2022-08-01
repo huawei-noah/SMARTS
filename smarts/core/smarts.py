@@ -21,7 +21,6 @@ import importlib.resources as pkg_resources
 import logging
 import os
 import warnings
-import weakref
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
@@ -49,7 +48,7 @@ from .bubble_manager import BubbleManager
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
-from .provider import Provider, ProviderRecoveryFlags, ProviderState
+from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
 from .sensors import Collision, Observation
@@ -87,7 +86,7 @@ class SMARTSDestroyedError(Exception):
     pass
 
 
-class SMARTS:
+class SMARTS(ProviderManager):
     """The core SMARTS simulator. This is the direct interface to all parts of the simulation.
     Args:
         agent_interfaces: The interfaces providing SMARTS with the understanding of what features each agent needs.
@@ -150,9 +149,9 @@ class SMARTS:
                 category=DeprecationWarning,
             )
             self._traffic_sims += [traffic_sim]
+        # we didn't create these; but we assume management of them...
         for ts in self._traffic_sims:
-            # inject ourself for provider callback use
-            ts._sim = weakref.ref(self)
+            ts.set_manager(self)
 
         self._providers: List[Provider] = []
         self.add_provider(self._agent_physics_provider)
@@ -700,14 +699,12 @@ class SMARTS:
         self._log.warning(
             f"could not find a provider to assume control of vehicle {state.actor_id} with role={state.role.name} after being relinquished.  removing it."
         )
-        self.provider_removing_actor(state)
+        self.provider_removing_actor(provider, state)
         return None
 
-    def provider_removing_actor(self, actor_state: ActorState):
-        """Called by a Provider when it is removing an actor from the simulation.
-        This was added for convenience, but it isn't always necessary to be called.
-        (For vehicles, pybullet_provider_sync() will also call teardown when it
-        notices a social vehicle has exited the simulation.)"""
+    def provider_removing_actor(self, provider: Provider, actor_state: ActorState):
+        # Note: for vehicles, pybullet_provider_sync() will also call teardown
+        # when it notices a social vehicle has exited the simulation.
         if isinstance(actor_state, VehicleState):
             self._teardown_vehicles([actor_state.actor_id])
 

@@ -22,6 +22,7 @@ import logging
 import math
 import random
 import re
+import weakref
 import xml.etree.ElementTree as XET
 from bisect import bisect_left, bisect_right, insort
 from collections import defaultdict, deque
@@ -38,7 +39,7 @@ from shapely.geometry import box as shapely_box
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
-from .provider import Provider, ProviderRecoveryFlags, ProviderState
+from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap, Waypoint
 from .route_cache import RouteWithCache
 from .scenario import Scenario
@@ -83,6 +84,9 @@ class LocalTrafficProvider(TrafficProvider):
     @recovery_flags.setter
     def recovery_flags(self, flags: ProviderRecoveryFlags):
         self._recovery_flags = flags
+
+    def set_manager(self, manager: ProviderManager):
+        self._sim = weakref.ref(manager)
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -278,7 +282,7 @@ class LocalTrafficProvider(TrafficProvider):
         for actor in losts:
             self._relinquish_actor(actor.state)
         for actor_id in dones:
-            sim.provider_removing_actor(actor.state)
+            sim.provider_removing_actor(self, actor.state)
             # The following is not really necessary due to the above calling teardown(),
             # but it doesn't hurt...
             if actor_id in self._my_actors:
@@ -436,8 +440,9 @@ class _TrafficActor:
     def __init__(self, flow: Dict[str, Any], owner: LocalTrafficProvider):
         self._logger = logging.getLogger(self.__class__.__name__)
 
-        # self._owner = weakref.ref(owner)
-        self._owner = owner
+        self._owner = weakref.ref(owner)
+        self._lane_bumpers_cache = owner._lane_bumpers_cache
+
         self._state = None
         self._flow: Dict[str, Any] = flow
         self._vtype: Dict[str, Any] = flow["vtype"]
@@ -506,7 +511,7 @@ class _TrafficActor:
         self._bumper_wins_front = _TrafficActor._RelWindow(5)
         self._bumper_wins_back = _TrafficActor._RelWindow(5)
 
-        self._owner._actors_created += 1
+        owner._actors_created += 1
 
     @classmethod
     def from_flow(cls, flow: Dict[str, Any], owner: LocalTrafficProvider):
@@ -525,13 +530,12 @@ class _TrafficActor:
         )
         init_speed = new_actor._resolve_flow_speed(flow)
         endless = "-endless" if flow.get("endless", False) else ""
-        vehicle_id = (
-            f"{new_actor._vtype['id']}{endless}-{new_actor._owner._actors_created}"
-        )
+        vehicle_id = f"{new_actor._vtype['id']}{endless}-{owner._actors_created}"
+
         new_actor._state = VehicleState(
             actor_id=vehicle_id,
             actor_type=vehicle_type,
-            source=new_actor._owner.source_str,
+            source=owner.source_str,
             role=ActorRole.Social,
             pose=Pose.from_center(position, Heading(heading)),
             dimensions=dimensions,
@@ -836,7 +840,7 @@ class _TrafficActor:
             len_to_end = self._route.distance_from(rt_oln)
             if len_to_end is None:
                 continue
-            lbc = self._owner._lane_bumpers_cache.get(ogl)
+            lbc = self._lane_bumpers_cache.get(ogl)
             if lbc:
                 fi = 0
                 while fi < len(lbc):
@@ -860,7 +864,7 @@ class _TrafficActor:
     def _find_vehicle_ahead(
         self, lane: RoadMap.Lane, my_offset: float, search_start: float
     ) -> Tuple[float, Optional[VehicleState]]:
-        lbc = self._owner._lane_bumpers_cache.get(lane)
+        lbc = self._lane_bumpers_cache.get(lane)
         if lbc:
             lane_spot = bisect_right(lbc, (search_start, self._state, 3))
             # if we're at an angle to the lane, it's possible for the
@@ -882,7 +886,7 @@ class _TrafficActor:
     def _find_vehicle_behind(
         self, lane: RoadMap.Lane, my_offset: float, search_start: float
     ) -> Tuple[float, Optional[VehicleState]]:
-        lbc = self._owner._lane_bumpers_cache.get(lane)
+        lbc = self._lane_bumpers_cache.get(lane)
         if lbc:
             lane_spot = bisect_left(lbc, (search_start, self._state, -1))
             # if we're at an angle to the lane, it's possible for the
@@ -898,7 +902,7 @@ class _TrafficActor:
                 return 0, bv_vs
 
         def find_last(ll: RoadMap.Lane) -> Tuple[float, Optional[VehicleState]]:
-            plbc = self._owner._lane_bumpers_cache.get(ll)
+            plbc = self._lane_bumpers_cache.get(ll)
             if not plbc:
                 return math.inf, None
             for bv_offset, bv_vs, _ in reversed(plbc):
@@ -1091,7 +1095,9 @@ class _TrafficActor:
                 # also don't change lanes if we can't *finish* before entering a junction
                 # (unless our lane is ending)
                 rl = RoadMap.Route.RouteLane(lw.lane, self._route_ind)
-                l_offset = self._owner._cached_lane_offset(self._state, lw.lane)
+                owner = self._owner()
+                assert owner
+                l_offset = owner._cached_lane_offset(self._state, lw.lane)
                 _, nj_dist = self._route.next_junction(rl, l_offset)
                 if change_time > time_to_cover(nj_dist, self.speed, self.acceleration):
                     continue
@@ -1120,8 +1126,11 @@ class _TrafficActor:
         self._target_lane_win = best_lw
 
     def _compute_lane_speeds(self):
+        owner = self._owner()
+        assert owner
+
         def _get_radius(lane: RoadMap.Lane) -> float:
-            l_offset = self._owner._cached_lane_offset(self._state, lane)
+            l_offset = owner._cached_lane_offset(self._state, lane)
             # we round the offset in an attempt to reduce the unique hits on the LRU caches...
             l_offset = round(l_offset)
             l_width, _ = lane.width_at_offset(l_offset)
@@ -1285,9 +1294,10 @@ class _TrafficActor:
     ) -> bool:
         # take into account TLS (don't yield to TL-stopped vehicles)
         # XXX: we currently only determine this for actors we're controlling
-        if (
-            traffic_veh.source == self._owner.source_str
-            and self._owner._stopped_at_features(traffic_veh.actor_id)
+        owner = self._owner()
+        assert owner
+        if traffic_veh.source == owner.source_str and owner._stopped_at_features(
+            traffic_veh.actor_id
         ):
             return True
 
@@ -1305,7 +1315,7 @@ class _TrafficActor:
         if dist_to_junction <= 0 and self._lane == junction:
 
             def _in_lane(lane):
-                for _, vs, _ in self._owner._lane_bumpers_cache.get(lane, []):
+                for _, vs, _ in self._lane_bumpers_cache.get(lane, []):
                     if vs.actor_id == self.actor_id:
                         return True
                 return False
@@ -1364,9 +1374,9 @@ class _TrafficActor:
 
     def _handle_junctions(self, dt: float, window: int = 5, max_range: float = 100.0):
         rl = RoadMap.Route.RouteLane(self._target_lane_win.lane, self._route_ind)
-        l_offset = self._owner._cached_lane_offset(
-            self._state, self._target_lane_win.lane
-        )
+        owner = self._owner()
+        assert owner
+        l_offset = owner._cached_lane_offset(self._state, self._target_lane_win.lane)
         njl, nj_dist = self._route.next_junction(rl, l_offset)
         if not njl or nj_dist > max_range:
             return
@@ -1386,7 +1396,7 @@ class _TrafficActor:
                 if check_lane == self._lane:
                     continue
                 handled = set()
-                lbc = self._owner._lane_bumpers_cache.get(check_lane, [])
+                lbc = self._lane_bumpers_cache.get(check_lane, [])
                 for offset, fv, bumper in lbc:
                     if fv.actor_id == self.actor_id:
                         continue
@@ -1529,7 +1539,9 @@ class _TrafficActor:
                         self._lane_win.gap = min(dist_to_stop(), self._lane_win.gap)
                 continue
             if feat.is_dynamic:
-                should_stop = self._owner._signal_state_means_stop(self._lane, feat)
+                owner = self._owner()
+                assert owner
+                should_stop = owner._signal_state_means_stop(self._lane, feat)
                 if should_stop and self.speed == 0.0:
                     self._stopped_at_feat[feat.feature_id] = True
                 elif not should_stop and self._stopped_at_feat.get(
@@ -1717,7 +1729,9 @@ class _TrafficActor:
         self.bbox.cache_clear()
 
         # if there's more than one lane near us (like in a junction) pick closest one that's in our route
-        nls = self._owner.road_map.nearest_lanes(
+        owner = self._owner()
+        assert owner
+        nls = owner.road_map.nearest_lanes(
             self._next_pose.point,
             radius=self._state.dimensions.length,
             include_junctions=True,
@@ -1796,7 +1810,9 @@ class _TrafficActor:
         self._state.linear_acceleration = np.array((0.0, 0.0, 0.0))
         self._state.updated = False
         self._route_ind = 0
-        if not self._owner._check_actor_bbox(self):
+        owner = self._owner()
+        assert owner
+        if not owner._check_actor_bbox(self):
             self._logger.info(
                 f"{self.actor_id} could not teleport back to beginning of its route b/c it was already occupied; just removing it."
             )

@@ -23,6 +23,7 @@ import os
 import random
 import subprocess
 import time
+import weakref
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
 
@@ -35,7 +36,12 @@ from smarts.core import gen_id
 from smarts.core.actor import ActorRole, ActorState
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
-from smarts.core.provider import Provider, ProviderRecoveryFlags, ProviderState
+from smarts.core.provider import (
+    Provider,
+    ProviderManager,
+    ProviderRecoveryFlags,
+    ProviderState,
+)
 from smarts.core.road_map import RoadMap
 from smarts.core.signal_provider import SignalLightState, SignalState
 from smarts.core.sumo_road_network import SumoRoadNetwork
@@ -162,6 +168,9 @@ class SumoTrafficSimulation(TrafficProvider):
     @recovery_flags.setter
     def recovery_flags(self, flags: ProviderRecoveryFlags):
         self._recovery_flags = flags
+
+    def set_manager(self, manager: ProviderManager):
+        self._sim = weakref.ref(manager)
 
     @property
     def headless(self):

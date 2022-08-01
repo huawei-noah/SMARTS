@@ -90,6 +90,25 @@ class ProviderState:
         return bool(intersection)
 
 
+class ProviderManager:
+    """Interface to be implemented by a class that manages a set of Providers
+    that jointly control a set of actors, such that they can hand these off to
+    each other when necessary.  Providers can call these methods on the
+    manager to do so."""
+
+    def provider_relinquishing_actor(
+        self, provider: "Provider", state: ActorState
+    ) -> Optional["Provider"]:
+        """Find a new provider for an actor.  Returns the new provider
+        or None if a suitable one could not be found."""
+        raise NotImplementedError
+
+    def provider_removing_actor(self, provider: "Provider", actor_state: ActorState):
+        """Called by a Provider when it is removing an actor from the simulation.
+        This was added for convenience, but it isn't always necessary to be called."""
+        raise NotImplementedError
+
+
 class Provider:
     """A Provider manages a (sub)set of actors (e.g., vehicles) that all share the same action space(s).
     This is a base class (interface) from which all Providers should inherit."""
@@ -106,6 +125,10 @@ class Provider:
     @recovery_flags.setter
     def recovery_flags(self, flags: ProviderRecoveryFlags):
         """Setter to allow recovery flags to be changed."""
+        raise NotImplementedError
+
+    def set_manager(self, manager: ProviderManager):
+        """Indicate the manager that this provider should inform of all actor handoffs."""
         raise NotImplementedError
 
     @property

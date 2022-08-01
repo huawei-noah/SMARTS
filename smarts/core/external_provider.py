@@ -25,7 +25,7 @@ import numpy as np
 
 from .actor import ActorRole
 from .controllers import ActionSpaceType
-from .provider import Provider, ProviderRecoveryFlags, ProviderState
+from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Scenario
 from .vehicle import VehicleState
@@ -37,10 +37,13 @@ class ExternalProvider(Provider):
     and may have privileged VehicleStates."""
 
     def __init__(self, sim):
-        self._sim = weakref.ref(sim)
         # start with the default recovery flags...
         self._recovery_flags = super().recovery_flags
+        self.set_manager(sim)
         self.reset()
+
+    def set_manager(self, manager: ProviderManager):
+        self._sim = weakref.ref(manager)
 
     @property
     def recovery_flags(self) -> ProviderRecoveryFlags:
