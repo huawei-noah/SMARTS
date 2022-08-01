@@ -32,9 +32,9 @@ RUN pip install --upgrade pip wheel
 COPY ./submission/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Copy all source files.
-COPY . /track2
+# Copy only Track-2 files.
+COPY . /SMARTS/competition/track2
 
 # [Do Not Modify]
 # Run entrypoint script.
-ENTRYPOINT ["/bin/sh","/track2/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh","/SMARTS/competition/track2/entrypoint.sh"]

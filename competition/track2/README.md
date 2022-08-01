@@ -19,7 +19,7 @@ Track-2 participants are required to submit their training code for us to train 
 
 ## Process Overview
 ### Folder Structure
-1. The submitted folder structure for Track-2 should be as follows. The folder and file names are to be maintained.
+1. The structure of the zipped folder uploaded for Track-2 should be as follows. The folder and file names are to be maintained.
     ```text
     track2                       # Main folder.
     ├── train                    # Contains code to train a model offline.
@@ -56,7 +56,7 @@ Track-2 participants are required to submit their training code for us to train 
 ### Dockerfile, DockerHub, Training, and Evaluation
 1. The submitted `track2` folder must contain a `track2/Dockerfile`. 
 1. Build upon the base Dockerfile provided at `track2/Dockerfile`. Feel free to use any desired base image, install any additional packages, etc.
-1. The Docker image should start training upon execution of `docker run` command, hence do not change the `ENTRYPOINT` command and do not change the `/track2/entrypoint.sh` script.
+1. The Docker image should start training upon execution of `docker run` command, hence do not change the `ENTRYPOINT` command and do not change the `track2/entrypoint.sh` script.
 1. Build the docker image and push it to [DockerHub](https://hub.docker.com/). 
     ```bash
     $ cd <path>/SMARTS/competition/track2
@@ -67,21 +67,20 @@ Track-2 participants are required to submit their training code for us to train 
         .
     ```
 1. Provide the link to the DockerHub image in `track2/submission/explanation.md` file.
-1. After uploading your Docker image, proceed to submit the entire `track2` folder to Codalab Track-2.
-1. During evaluation, the docker image will be pulled and executed as follows. 
+1. After uploading your Docker image, proceed to zip the entire `track2` folder and submit to Codalab Track-2.
+1. In the server, the docker image will be pulled and executed as follows to train a new model. 
     ```bash
     $ docker run --rm -it \
-        --volume=<path>/offline_dataset:/offline_dataset
-        --volume=<path>/output:/output
+        --volume=<path>/offline_dataset:/SMARTS/competition/offline_dataset
+        --volume=<path>/output:/SMARTS/competition/output
         <username/imagename:version>
     ```
-1. Training of a new model should start once the above command is executed.
-1. New offline data is made available to the container via a mapped volume at `/offline_dataset` directory.
-1. The `/offline_dataset` directory contains selected Waymo and NGSIM datasets.
-1. Inside the container, on completion of training, the trained model should be saved in `/track2/submission` folder such that calling `/track2/submission/policy.py::Policy.act(obs)` with a multi-agent SMARTS observation as input returns a multi-agent `TargetPose` action as output.
-2. The `/track2/submission` folder will be zipped, mapped out from the container, and evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
-3. During development, it is strongly suggested to submit your zipped `track2/submission` folder to the Validation stage in Codalab, to verify that the evaluation works without errors.
-4. Finally, the offline training code in `/track2/train` directory will be manually scrutinised. 
+1. New offline dataset is made available to the container via a mapped volume at `/SMARTS/competition/offline_dataset` directory.
+1. The `/SMARTS/competition/offline_dataset` directory contains equivalent SMARTS observations, converted from selected Waymo and NGSIM datasets.
+1. Inside the container, on completion of training, the trained model should be saved in `/SMARTS/competition/track2/submission` folder such that calling `/SMARTS/competition/track2/submission/policy.py::Policy.act(obs)` with a multi-agent SMARTS observation as input returns a multi-agent `TargetPose` action as output.
+1. The `/SMARTS/competition/track2/submission` folder will be zipped, mapped out from the container, and evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
+1. During development, it is strongly suggested to submit your zipped `track2/submission` folder to the Validation stage in Codalab, to verify that the evaluation works without errors.
+1. Finally, the offline training code in `track2/train` directory will be manually scrutinised. 
 
 ### Submit to Codalab
 + Zip the entire `track2` folder. 
@@ -94,5 +93,5 @@ Track-2 participants are required to submit their training code for us to train 
     + Go to the [CodaLab competition page](https://codalab.lisn.upsaclay.fr/).
     + Click `My Competitions -> Competitions I'm In`.
     + Select the SMARTS competition.
-    + Click `Participate -> Submit/View Results -> Submit`
+    + Click `Participate -> Submit/View Results -> Track 2 -> Submit`
     + Upload the zipped folder.

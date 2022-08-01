@@ -102,6 +102,7 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
     """
 
     def step_through_episodes(agent_spec, smarts, scenarios_iterator):
+        steps = 0
         for i in range(NUM_EPISODES):
             agent = agent_spec.build_agent()
             scenario = next(scenarios_iterator)
@@ -114,6 +115,9 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
                 action = agent_spec.action_adapter(action)
                 obs, _, dones, _ = smarts.step({AGENT_ID: action})
                 done = dones[AGENT_ID]
+                steps += 1
+
+        return steps
 
     # 1. Inspect sent data during SMARTS simulation
 
@@ -129,7 +133,8 @@ def test_data_replay(agent_spec, scenarios_iterator, data_replay_path, monkeypat
         envision=envision,
         fixed_timestep_sec=TIMESTEP_SEC,
     )
-    step_through_episodes(agent_spec, smarts, scenarios_iterator)
+    steps = step_through_episodes(agent_spec, smarts, scenarios_iterator)
+    assert steps > 0, "not enough steps to send data"
     smarts.destroy()
 
     data_replay_path = Path(data_replay_path)
