@@ -19,7 +19,8 @@
 # THE SOFTWARE.
 
 import logging
-from typing import Iterable, Optional, Sequence, Set
+from functools import lru_cache
+from typing import Iterable, Optional, Set
 
 from cached_property import cached_property
 from shapely.geometry import Polygon
@@ -64,6 +65,9 @@ class TrafficHistoryProvider(TrafficProvider):
 
     def setup(self, scenario) -> ProviderState:
         """Initialize this provider with the given scenario."""
+        if "_history_vehicle_ids" in self.__dict__:
+            # clear the cached_property
+            del self.__dict__["_history_vehicle_ids"]
         self._scenario = scenario
         self._histories = scenario.traffic_history
         if self._histories:
@@ -73,7 +77,15 @@ class TrafficHistoryProvider(TrafficProvider):
 
     def set_replaced_ids(self, vehicle_ids: Iterable[str]):
         """Replace the given vehicles, excluding them from control by this provider."""
-        self._replaced_vehicle_ids.update(vehicle_ids)
+        self._replaced_vehicle_ids.update(
+            self._get_base_id(v_id) for v_id in vehicle_ids
+        )
+
+    @lru_cache(maxsize=128)
+    def _get_base_id(self, vehicle_id: str):
+        if vehicle_id.startswith(self._vehicle_id_prefix):
+            return vehicle_id
+        return self._dbid_to_vehicle_id(vehicle_id)
 
     def reset(self):
         pass
@@ -140,7 +152,7 @@ class TrafficHistoryProvider(TrafficProvider):
         self._last_step_vehicles = vehicle_ids
         return ProviderState(vehicles=vehicles)
 
-    @property
+    @cached_property
     def _history_vehicle_ids(self) -> Set[str]:
         if not self._histories:
             return set()

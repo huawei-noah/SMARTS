@@ -1,0 +1,21 @@
+<h2>Evaluation</h2>
+
+<h2>Track-1</h2>
+(a) Submitted models will be evaluated on scenarios similar to those given for training, namely, intersection, merging, cruising, and cut-in scenarios.<br>
+(b) Evaluation code is available at <code>/SMARTS/competition/evaluation</code>.<br>
+(c) Submitted models are scored on four aspects, namely,<br>
+    <ul>
+    <li>Completion: Number of goals completed.</li>
+    <li>Time: Number of steps taken and the final distance to goal.</li>
+    <li>Humanness: Similarity to human behaviour.</li>
+    <li>Rules: Compliance with traffic rules.</li>
+    </ul>
+(d) Each score component must be minimized. The lower the value, the better it is.<br>
+(e) Overall rank is obtained by sorting each score component in ascending order, with a priority order of:<br> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Completion > Time > Humanness > Rules<br>
+(f) For more information, see <code>/SMARTS/competition/evaluation/README.md</code><br>
+
+<h2>Track-2</h2>
+(a) Submitted <code>track2</code> code will be retrained using new offline data to produce a new model.<br>
+(b) The newly retrained model will be evaluated in a manner identical to that of Track-1 above.<br>
+(c) Additionally, the submitted offline training code will be manually scrutinised.<br>

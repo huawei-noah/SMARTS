@@ -1,0 +1,30 @@
+<h2>Data</h2>
+
+<h2>Track-1</h2>
+(a) There are 8 scenarios provided for training, namely,<br>
+    <ul>
+        <li><code>1_to_2lane_left_turn_c</code></li>
+        <li><code>1_to_2lane_left_turn_t</code></li>
+        <li><code>3lane_merge_multi_agent</code></li>
+        <li><code>3lane_merge_single_agent</code></li>
+        <li><code>3lane_cruise_multi_agent</code></li>
+        <li><code>3lane_cruise_single_agent</code></li>
+        <li><code>3lane_cut_in</code></li>
+        <li><code>3lane_overtake</code></li>
+    </ul>
+(b) The scenarios are pre-built when instantiating the environment.<br>
+<pre><code>
+env = gym.make(
+    "smarts.env:multi-scenario-v0",
+    scenario=&lt;name-of-scenario&gt;
+)
+</code></pre>
+(c) Participants may choose to alter the pre-built scenarios by modifying the 
+    corresponding <code>scenario.py</code> and <code>map.net.xml</code> files, 
+    in order to create more scenarios and maps for higher training diversity.<br>
+(d) Refer to <a href=https://github.com/huawei-noah/SMARTS/tree/comp-1/smarts/sstudio>Scenario Studio</a>
+    to build and modify new scenarios.<br>
+
+<h2>Track-2</h2>
+(a) For offline training, consider using Waymo and NGSIM datasets.<br>
+(b) Refer to <code>/SMARTS/competition/track2/README.md</code> for further information.<br>

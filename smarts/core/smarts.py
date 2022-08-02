@@ -31,6 +31,7 @@ from envision.client import Client as EnvisionClient
 from smarts import VERSION
 from smarts.core.chassis import BoxChassis
 from smarts.core.plan import Plan
+from smarts.core.utils.logging import timeit
 
 from . import models
 from .actor_role import ActorRole
@@ -216,7 +217,8 @@ class SMARTS:
         ), "cannot switch from fixed- to variable-time steps mid-simulation"
 
         try:
-            return self._step(agent_actions, time_delta_since_last_step)
+            with timeit("Last SMARTS Simulation Step", self._log.info):
+                return self._step(agent_actions, time_delta_since_last_step)
         except (KeyboardInterrupt, SystemExit):
             # ensure we clean-up if the user exits the simulation
             self._log.info("Simulation was interrupted by the user.")
@@ -266,22 +268,24 @@ class SMARTS:
         self._elapsed_sim_time = self._rounder(self._elapsed_sim_time + self._last_dt)
 
         # 1. Fetch agent actions
-        self._log.info("Fetching agent actions")
-        all_agent_actions = self._agent_manager.fetch_agent_actions(self, agent_actions)
+        with timeit("Fetching agent actions", self._log.debug):
+            all_agent_actions = self._agent_manager.fetch_agent_actions(
+                self, agent_actions
+            )
 
         # 2. Step all providers and harmonize state
-        self._log.info("Stepping all providers and harmonizing state")
-        provider_state = self._step_providers(all_agent_actions)
-        self._log.info("Checking if all agents are active")
-        self._check_if_acting_on_active_agents(agent_actions)
+        with timeit("Stepping all providers and harmonizing state", self._log.debug):
+            provider_state = self._step_providers(all_agent_actions)
+        with timeit("Checking if all agents are active", self._log.debug):
+            self._check_if_acting_on_active_agents(agent_actions)
 
         # 3. Step bubble manager and trap manager
-        self._log.info("Syncing vehicle index")
-        self._vehicle_index.sync()
-        self._log.info("Stepping through bubble manager")
-        self._bubble_manager.step(self)
-        self._log.info("Stepping through trap manager")
-        self._trap_manager.step(self)
+        with timeit("Syncing vehicle index", self._log.debug):
+            self._vehicle_index.sync()
+        with timeit("Stepping through bubble manager", self._log.debug):
+            self._bubble_manager.step(self)
+        with timeit("Stepping through trap manager", self._log.debug):
+            self._trap_manager.step(self)
 
         # 4. Calculate observation and reward
         # We pre-compute vehicle_states here because we *think* the users will
@@ -291,37 +295,37 @@ class SMARTS:
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
 
         # Agents
-        self._log.info("Stepping through sensors")
-        self._agent_manager.step_sensors(self)
+        with timeit("Stepping through sensors", self._log.debug):
+            self._agent_manager.step_sensors(self)
 
         if self._renderer:
             # runs through the render pipeline (for camera-based sensors)
             # MUST perform this after step_sensors() above, and before observe() below,
             # so that all updates are ready before rendering happens per
-            self._log.info("Running through the render pipeline")
-            self._renderer.render()
+            with timeit("Running through the render pipeline", self._log.debug):
+                self._renderer.render()
 
-        self._log.info("Calculating observations and rewards")
-        observations, rewards, scores, dones = self._agent_manager.observe(self)
+        with timeit("Calculating observations and rewards", self._log.debug):
+            observations, rewards, scores, dones = self._agent_manager.observe(self)
 
-        self._log.info("Filtering response for ego")
-        response_for_ego = self._agent_manager.filter_response_for_ego(
-            (observations, rewards, scores, dones)
-        )
+        with timeit("Filtering response for ego", self._log.debug):
+            response_for_ego = self._agent_manager.filter_response_for_ego(
+                (observations, rewards, scores, dones)
+            )
 
         # 5. Send observations to social agents
-        self._log.info("Sending observations to social agents")
-        self._agent_manager.send_observations_to_social_agents(observations)
+        with timeit("Sending observations to social agents", self._log.debug):
+            self._agent_manager.send_observations_to_social_agents(observations)
 
         # 6. Clear done agents
-        self._log.info("Clearing done agents")
-        self._teardown_done_agents_and_vehicles(dones)
+        with timeit("Clearing done agents", self._log.debug):
+            self._teardown_done_agents_and_vehicles(dones)
 
         # 7. Perform visualization
-        self._log.info("Trying to emit the envision state")
-        self._try_emit_envision_state(provider_state, observations, scores)
-        self._log.info("Trying to emit the visdom observations")
-        self._try_emit_visdom_obs(observations)
+        with timeit("Trying to emit the envision state", self._log.debug):
+            self._try_emit_envision_state(provider_state, observations, scores)
+        with timeit("Trying to emit the visdom observations", self._log.debug):
+            self._try_emit_visdom_obs(observations)
 
         observations, rewards, scores, dones = response_for_ego
         extras = dict(scores=scores)
@@ -631,7 +635,7 @@ class SMARTS:
                 provider.add_vehicle(state, cur_route)
                 return
         self._log.warning(
-            f"could not find a provider to assume control of vehicle {state.vehicle_id} with role={state.role} after being relinquished.  removing it."
+            f"could not find a provider to assume control of vehicle {state.vehicle_id} with role={state.role.name} after being relinquished.  removing it."
         )
         self._teardown_vehicles({state.vehicle_id})
 
@@ -1273,8 +1277,8 @@ class SMARTS:
 
     def _check_ground_plane(self):
         rescale_plane = False
-        map_min = self._map_bb.min_pt.as_np_array[:2] if self._map_bb else None
-        map_max = self._map_bb.max_pt.as_np_array[:2] if self._map_bb else None
+        map_min = np.array(self._map_bb.min_pt)[:2] if self._map_bb else None
+        map_max = np.array(self._map_bb.max_pt)[:2] if self._map_bb else None
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
             map_spot = vehicle.pose.point.as_np_array[:2]
