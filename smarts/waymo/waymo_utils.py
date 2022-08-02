@@ -155,17 +155,16 @@ def _get_trajectories(
         trajectories[vehicle_id]["object_type"] = scenario.tracks[i].object_type
         for j in range(num_steps):
             obj_state = scenario.tracks[i].states[j]
-            if obj_state.valid:
-                trajectories[vehicle_id]["positions"][j] = (
-                    obj_state.center_x,
-                    obj_state.center_y,
-                )
+            trajectories[vehicle_id]["positions"][j] = (
+                obj_state.center_x if obj_state.valid else None,
+                obj_state.center_y if obj_state.valid else None,
+            )
     return trajectories
 
 
 def _plot_trajectories(
-    trajectories: Dict[str, Any]
-) -> Tuple[List[Line2D], List[Optional[Tuple[float, float]]]]:
+    trajectories: Dict[int, Dict[str, Any]]
+) -> Tuple[List[Line2D], List[Optional[Tuple[list, list]]]]:
     points, data = [], []
 
     # Need to plot something initially to get handles to the point objects,
@@ -180,8 +179,8 @@ def _plot_trajectories(
     x0 = first_traj[ind][0]
     y0 = first_traj[ind][1]
     for v_id, props in trajectories.items():
-        xs = [p[0] for p in props["positions"] if p]
-        ys = [p[1] for p in props["positions"] if p]
+        xs = [p[0] for p in props["positions"]]
+        ys = [p[1] for p in props["positions"]]
         if props["is_ego"]:
             (point,) = plt.plot(x0, y0, "c^")
         elif props["object_type"] == 1:
