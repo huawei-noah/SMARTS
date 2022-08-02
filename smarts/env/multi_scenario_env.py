@@ -31,7 +31,6 @@ from smarts.core.agent_interface import (
     AgentInterface,
     DoneCriteria,
     DrivableAreaGridMap,
-    NeighborhoodVehicles,
     RoadWaypoints,
     Waypoints,
 )
@@ -107,46 +106,10 @@ def multi_scenario_v0_env(
 
     env_specs = _get_env_specs(scenario)
     sstudio.build_scenario(scenario=[env_specs["scenario"]])
-    done_criteria = DoneCriteria(
-        collision=True,
-        off_road=True,
-        off_route=False,
-        on_shoulder=False,
-        wrong_way=False,
-        not_moving=False,
-        agents_alive=None,
-    )
-    max_episode_steps = 800
-    neighbor_radius = 50
-    road_waypoint_horizon = 50
-    waypoints_lookahead = 50
+
     agent_specs = {
         f"Agent_{i}": AgentSpec(
-            interface=AgentInterface(
-                accelerometer=True,
-                action=ActionSpaceType[action_space],
-                done_criteria=done_criteria,
-                drivable_area_grid_map=DrivableAreaGridMap(
-                    width=img_pixels,
-                    height=img_pixels,
-                    resolution=img_meters / img_pixels,
-                ),
-                lidar=True,
-                max_episode_steps=max_episode_steps,
-                neighborhood_vehicles=NeighborhoodVehicles(neighbor_radius),
-                ogm=OGM(
-                    width=img_pixels,
-                    height=img_pixels,
-                    resolution=img_meters / img_pixels,
-                ),
-                rgb=RGB(
-                    width=img_pixels,
-                    height=img_pixels,
-                    resolution=img_meters / img_pixels,
-                ),
-                road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
-                waypoints=Waypoints(lookahead=waypoints_lookahead),
-            ),
+            interface=resolve_agent_interface(img_meters, img_pixels, action_space)
         )
         for i in range(env_specs["num_agent"])
     }
@@ -273,6 +236,50 @@ def _get_env_specs(scenario: str):
         }
     else:
         raise Exception(f"Unknown scenario {scenario}.")
+
+
+def resolve_agent_interface(
+    img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose", **kwargs
+):
+    """Resolve an agent interface for the environments in this module."""
+
+    done_criteria = DoneCriteria(
+        collision=True,
+        off_road=True,
+        off_route=False,
+        on_shoulder=False,
+        wrong_way=False,
+        not_moving=False,
+        agents_alive=None,
+    )
+    max_episode_steps = 800
+    road_waypoint_horizon = 50
+    waypoints_lookahead = 50
+    return AgentInterface(
+        accelerometer=True,
+        action=ActionSpaceType[action_space],
+        done_criteria=done_criteria,
+        drivable_area_grid_map=DrivableAreaGridMap(
+            width=img_pixels,
+            height=img_pixels,
+            resolution=img_meters / img_pixels,
+        ),
+        lidar=True,
+        max_episode_steps=max_episode_steps,
+        neighborhood_vehicles=True,
+        ogm=OGM(
+            width=img_pixels,
+            height=img_pixels,
+            resolution=img_meters / img_pixels,
+        ),
+        rgb=RGB(
+            width=img_pixels,
+            height=img_pixels,
+            resolution=img_meters / img_pixels,
+        ),
+        road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
+        waypoints=Waypoints(lookahead=waypoints_lookahead),
+    )
 
 
 class _InfoScore(gym.Wrapper):
