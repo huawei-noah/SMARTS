@@ -21,8 +21,8 @@ def train(input_path, output_path):
     import shutil
 
     d3rlpy.seed(313)
-
     scenarios = list()
+    os.chdir("..")
     for scenario_name in os.listdir(input_path):
         scenarios.append(scenario_name)
 
@@ -32,7 +32,7 @@ def train(input_path, output_path):
     else:
         index = len(os.listdir("d3rlpy_logs/"))
 
-    for scenario in scenarios[index : len(scenarios)]:
+    for scenario in scenarios[index : 3]:
 
         obs = list()
         actions = list()
@@ -53,7 +53,7 @@ def train(input_path, output_path):
             continue
         else:
 
-            for id in vehicle_ids:
+            for id in vehicle_ids[0:2]:
                 print("adding data for vehicle id " + id + " in scenario " + scenario)
 
                 with open(
@@ -189,29 +189,29 @@ if __name__ == "__main__":
         "--input_dir",
         help="The path to the directory containing the offline training data",
         type=str,
-        default="offline_dataset/"
+        default="/offline_dataset"
     )
     parser.add_argument(
         "--output_dir",
         help="The path to the directory storing the trained model",
         type=str,
-        default="output/model"
+        default="/output/model"
     )
 
     args = parser.parse_args()
 
     # Install requirements.
-    req_file = os.path.join(str(Path(__file__).absolute().parent), "requirements.txt")
-    sys.path.insert(0, str(Path(__file__).absolute().parent))
-    subprocess.check_call(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
-        ]
-    )
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+    # req_file = os.path.join(str(Path(__file__).absolute().parent), "requirements.txt")
+    # sys.path.insert(0, str(Path(__file__).absolute().parent))
+    # subprocess.check_call(
+    #     [
+    #         sys.executable,
+    #         "-m",
+    #         "pip",
+    #         "install",
+    #         "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
+    #     ]
+    # )
+    # subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
 
     main(args)
