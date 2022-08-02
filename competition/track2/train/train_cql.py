@@ -189,7 +189,11 @@ if __name__ == "__main__":
         help="The path to the directory containing the offline training data",
         type=str,
 <<<<<<< HEAD
+<<<<<<< HEAD
         default="/offline_dataset"
+=======
+        default="offline_dataset/",
+>>>>>>> 81ada6f7bdc6656e8cfe6b76c9343c434737d8ee
 =======
         default="offline_dataset/",
 >>>>>>> 81ada6f7bdc6656e8cfe6b76c9343c434737d8ee
@@ -199,7 +203,11 @@ if __name__ == "__main__":
         help="The path to the directory storing the trained model",
         type=str,
 <<<<<<< HEAD
+<<<<<<< HEAD
         default="/output/model"
+=======
+        default="output/model",
+>>>>>>> 81ada6f7bdc6656e8cfe6b76c9343c434737d8ee
 =======
         default="output/model",
 >>>>>>> 81ada6f7bdc6656e8cfe6b76c9343c434737d8ee
