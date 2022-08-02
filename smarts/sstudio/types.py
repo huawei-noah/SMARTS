@@ -447,9 +447,9 @@ class Flow:
         The chance of this actor appearing as a ratio over total weight.
     """
     randomly_spaced: bool = False
-    """This determines if the flow should have randomly spaced traffic. Default `False`."""
+    """Determines if the flow should have randomly spaced traffic. Defaults to `False`."""
     repeat_route: bool = False
-    """If True, vehicles that finish their route will be restarted at the beginning. Default `False`."""
+    """If True, vehicles that finish their route will be restarted at the beginning. Defaults to `False`."""
 
     @property
     def id(self) -> str:

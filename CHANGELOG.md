@@ -8,9 +8,11 @@ All text added must be human-readable.
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
-# [Unreleased]
+## [Unreleased]
 ### Added
 - Added a basic background traffic ("social vehicle") provider as an alternative to the SUMO traffic simulator.  This can be selected using the new `"engine"` argument to `Traffic` in Scenario Studio.
+- Added a `multi-scenario-v0` environment which can build any of the following scenario, namely, `1_to_2lane_left_turn_c`, `1_to_2lane_left_turn_t`, `3lane_merge_multi_agent`, `3lane_merge_single_agent`, `3lane_cruise_multi_agent`, `3lane_cruise_single_agent`, `3lane_cut_in`, and `3lane_overtake`. Additional scenarios can also be built by supplying the paths to the scenario directories.
+- Added ego's mission details into the `FormatObs` wrapper.
 
 ### Deprecated
 - Deprecated a few things related to traffic in the `Scenario` class, including the `route` argument to the `Scenario` initializer, the `route`, `route_filepath` and `route_files_enabled` properties, and the `discover_routes()` static method.  In general, the notion of "route" (singular) here is being replaced with "`traffic_specs`" (plural) that allow for specifying traffic controlled by the SMARTS engine as well as Sumo.
@@ -25,11 +27,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ### Removed
 - Removed support for deprecated json-based and YAML formats for traffic histories.
+- Removed time and distance to collision values from `FormatObs` wrapper as the current implementation's correctness was in doubt.
 
 ### Fixed
 - Fixed bug where `yaw_rate` was always reported as 0.0 (Issue #1481).
+- Modified `FrameStack` wrapper to support agents which start at a later time in the simulation.
+- Truncated all waypoint paths returned by `FormatObs` wrapper to be of the same length. Previously, variable waypoint-path lengths caused inhomogenous shape error in numpy array.
 
-# [0.6.1]
+## [0.6.1]
 ### Added
 - Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make an uprotected left turn in the presence of traffic.
 - Added an online RL example for solving the `intersection-v0` environment, using PPO algorithm from Stable Baselines3 library. An accompanying Colab example is also provided.
@@ -47,7 +52,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Unpack utility now unpacks dataclass attributes.
 - Trap manager now uses elapsed sim time rather than step delta to associate with time.
 
-### [0.6.1rc1] 15-04-18
+## [0.6.1rc1] 15-04-18
 ### Added
 - Added example scenario for importing the NGSIM `peachtree` dataset.
 - Added example scenario for importing the INTERACTION `merging` dataset
@@ -61,7 +66,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed Issue #1321 such that numpy's `sliding_window_view()` is no longer needed for NGSIM traffic histories.
 - Fixed NGSIM traffic history import bugs (see Issues #1354 and #1402).
 
-### [0.6.1rc0] 15-04-16
+## [0.6.1rc0] 15-04-16
 ### Added
 - Added `smarts/waymo/waymo_browser.py`, a text-based utility to explore and export scenarios from the Waymo Motion dataset to SMARTS scenarios. 
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
