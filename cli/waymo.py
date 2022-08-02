@@ -20,7 +20,6 @@
 import os
 
 import click
-from smarts.waymo import waymo_utils
 from tabulate import tabulate
 
 
@@ -39,6 +38,8 @@ def waymo_cli():
     "tfrecord_file", type=click.Path(exists=True), metavar="<tfrecord_file>"
 )
 def overview(tfrecord_file: str):
+    from smarts.waymo import waymo_utils
+
     scenarios = waymo_utils.get_tfrecord_info(tfrecord_file)
     rows = [
         [k, v["timestamps"], v["vehicles"], v["pedestrians"]]
@@ -82,6 +83,8 @@ def preview(
     animate: bool,
     label_vehicles: bool,
 ):
+    from smarts.waymo import waymo_utils
+
     waymo_utils.plot_scenario(tfrecord_file, scenario_id, animate, label_vehicles)
 
 
@@ -100,6 +103,8 @@ def export(
     scenario_id: str,
     export_folder: str,
 ):
+    from smarts.waymo import waymo_utils
+
     scenario_folder = os.path.join(export_folder, scenario_id)
     if not os.path.exists(scenario_folder):
         os.makedirs(scenario_folder)
