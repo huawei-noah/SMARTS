@@ -87,7 +87,7 @@ This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://git
 1. Train
     ```bash
     $ cd <path>/SMARTS/competition/track2/train
-    $ python3.8 train.py --input_dir=<path_to_data> --ouput_dir=<path_to_saved_model>
+    $ python3.8 train_cql.py --input_dir=<path_to_data> --ouput_dir=<path_to_saved_model>
     ```
 
     The default value for `input_dir` and `output_dir` are `/offline_dataset` and `/output`
@@ -124,13 +124,13 @@ The directory `/offline_dataset` looks like
 
 ### Train
 ```bash
-$ python train.py --dataset_path /offline_dataset \
-                    --output_path ./output \
+$ python train.py --dataset_path <path_to_data> \
+                    --output_path <path_to_saved_model> \
                     [--cache] False \
                     [--learning_rate] 0.001 \
                     [--save_steps] 10 \
                     [--batch_size] 32 \
                     [--num_epochs] 100 \
 ```
-First time running `train.py`, please set `cache=False`, the processed data will be saved to `./output/dataset.npy`. For later use, set `cache=True` and it will use the cached dataset.
+First time running `train_IL.py`, please set `cache=False`, the processed data will be saved to `./output/dataset.npy`. For later use, set `cache=True` and it will use the cached dataset.
 ```
