@@ -124,7 +124,7 @@ The directory `/offline_dataset` looks like
 
 ### Train
 ```bash
-$ python train.py --dataset_path <path_to_data> \
+$ python train_IL.py --dataset_path <path_to_data> \
                     --output_path <path_to_saved_model> \
                     [--cache] False \
                     [--learning_rate] 0.001 \

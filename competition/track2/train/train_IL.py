@@ -366,13 +366,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--dataset_path",
-        default=None,
+        default='/offline_dataset',
         type=str,
         required=True,
     )
     parser.add_argument(
         "--output_path",
-        default="./output",
+        default="/output",
         type=str,
         required=False,
     )
