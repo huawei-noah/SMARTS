@@ -79,9 +79,9 @@ for name, routes in enumerate(route_comb):
                 # Random flow start time, between 0 and 10 seconds.
                 begin=random.uniform(0, 10),
                 # For an episode with maximum_episode_steps=3000 and step
-                # time=0.1s, maximum episode time=300s. Hence, traffic set to
-                # end at 900s, which is greater than maximum episode time of
-                # 300s.
+                # time=0.1s, the maximum episode time=300s. Hence, traffic is
+                # set to end at 900s, which is greater than maximum episode
+                # time of 300s.
                 end=60 * 15,
                 actors={intersection_car: 1},
             )

@@ -38,12 +38,12 @@ def _collisions(obs: Observation) -> Dict[str, int]:
 
 def _dist_to_goal(obs: Observation) -> Dict[str, float]:
     mission_goal = obs.ego_vehicle_state.mission.goal
-    assert hasattr(
-        mission_goal, "position"
-    ), "Mission has no goal position, thus `dist_to_goal` cannot be calculated."
+    if hasattr(mission_goal, "position"):
+        rel = obs.ego_vehicle_state.position[:2] - mission_goal.position[:2]
+        dist = sum(abs(rel))
+    else:
+        dist = 0
 
-    rel = obs.ego_vehicle_state.position[:2] - mission_goal.position[:2]
-    dist = sum(abs(rel))
     return {"dist_to_goal": dist}
 
 
@@ -169,7 +169,7 @@ def _lane_center_offset() -> Callable[[Observation], Dict[str, float]]:
         norm_dist_from_center = signed_dist_from_center / lane_hwidth
 
         # J_LC : Lane center offset
-        j_lc = norm_dist_from_center**2
+        j_lc = norm_dist_from_center ** 2
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_lc)
         return {"lane_center_offset": ave}
@@ -199,7 +199,7 @@ def _speed_limit() -> Callable[[Observation], Dict[str, float]]:
 
         # Excess speed beyond speed limit.
         overspeed = ego.speed - speed_limit if ego.speed > speed_limit else 0
-        j_v = overspeed**2
+        j_v = overspeed ** 2
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_v)
         return {"speed_limit": ave}
