@@ -301,6 +301,7 @@ def _scenario_code(dataset_path, scenario_id):
     return f"""from pathlib import Path
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
+
 dataset_path = "{dataset_path}"
 scenario_id = "{scenario_id}"
 traffic_histories = [
@@ -311,6 +312,7 @@ traffic_histories = [
         scenario_id=scenario_id,
     )
 ]
+
 gen_scenario(
     t.Scenario(
         map_spec=t.MapSpec(
@@ -333,26 +335,17 @@ gen_scenario(
 @click.argument(
     "export_folder", type=click.Path(exists=False), metavar="<export_folder>"
 )
-@click.option(
-    "--generate-offline-data",
-    is_flag=True,
-    default=False,
-    help="Extract observations and birds-eye view images for a selected set of vehicles for the scenario, for use in offline RL.",
-)
 def export(
     tfrecord_file: str,
     scenario_id: str,
     export_folder: str,
-    generate_offline_data: bool,
 ):
-    if not os.path.exists(export_folder):
-        os.makedirs(export_folder)
-    scenario_file = os.path.join(export_folder, "scenario.py")
+    scenario_folder = os.path.join(export_folder, scenario_id)
+    if not os.path.exists(scenario_folder):
+        os.makedirs(scenario_folder)
+    scenario_file = os.path.join(scenario_folder, "scenario.py")
     with open(scenario_file, "w") as f:
         f.write(_scenario_code(tfrecord_file, scenario_id))
-
-    if generate_offline_data:
-        pass  # TODO
 
 
 waymo_cli.add_command(overview)
