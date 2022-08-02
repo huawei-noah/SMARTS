@@ -91,7 +91,7 @@ This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://git
     ```
 
     The default value for `input_dir` and `output_dir` are `/offline_dataset` and `/output`
- 1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. After the end of each training iteration, we will save the model in `<path>/SMARTS/competition/track2/train/d3rlpy_logs/<scenario_index>`. The next trainig iteration will keep training on the latest trained model.  
+ 1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. After the end of each training iteration, the model will be saved in `<path>/SMARTS/competition/track2/train/d3rlpy_logs/<scenario_index>`. The next trainig iteration will keep training on the latest trained model. And at the end of the training, the last model will be copied to `/output`.
 
 ## Imitation Learning
 

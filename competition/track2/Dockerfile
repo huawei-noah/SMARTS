@@ -4,6 +4,7 @@ FROM pytorch/pytorch:1.7.1-cuda11.0-cudnn8-runtime
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install libraries.
+# Zip is needed to zip the output files.
 RUN apt-get update --fix-missing && \
     apt-get install -y \
         software-properties-common && \
@@ -13,7 +14,8 @@ RUN apt-get update --fix-missing && \
         libspatialindex-dev \
         python3.8 \
         python3.8-venv \
-        xorg && \
+        xorg \
+        zip && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
@@ -30,9 +32,9 @@ RUN pip install --upgrade pip wheel
 COPY ./submission/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Copy all source files.
-COPY . /track2
+# Copy only Track-2 files.
+COPY . /SMARTS/competition/track2
 
 # [Do Not Modify]
 # Run entrypoint script.
-ENTRYPOINT ["/bin/sh","/track2/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh","/SMARTS/competition/track2/entrypoint.sh"]
