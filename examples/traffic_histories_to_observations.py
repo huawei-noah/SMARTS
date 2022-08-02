@@ -3,23 +3,27 @@ import logging
 import os
 import pickle
 from dataclasses import replace
-from itertools import cycle
-from typing import Dict, Optional, Sequence
-
-import gym
-from PIL import Image, ImageDraw
+from typing import Optional, Sequence
 
 from envision.client import Client as Envision
+from PIL import Image, ImageDraw
 from smarts.core import seed as smarts_seed
-from smarts.core.controllers import ControllerOutOfLaneException
+from smarts.core.agent_interface import (
+    OGM,
+    RGB,
+    AgentInterface,
+    DoneCriteria,
+    DrivableAreaGridMap,
+    RoadWaypoints,
+    Waypoints,
+)
+from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.plan import PositionalGoal
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.env.wrappers.format_obs import FormatObs
-
+from smarts.sstudio import build_scenario
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,7 +33,6 @@ class ObservationRecorder:
         self,
         scenario: str,
         output_dir: Optional[str],
-        env_locator: str = "smarts.env:multi-scenario-v0",
         seed: int = 42,
     ):
         """Generate Observations from the perspective of one or more
@@ -43,9 +46,6 @@ class ObservationRecorder:
             output_dir (str):
                 Path to the directory for the output files.
                 Will be created if necessary.
-            env_locator (str):
-                Locator for a gym environment to use.
-                Defaults to  "smarts.env:multi-scenario-v0".
             seed (int):
                 Seed for random number generation.  Default:  42.
         """
@@ -64,12 +64,8 @@ class ObservationRecorder:
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
         self._smarts = None
-
-        # Need dummy environment to configure sensors and use StdObs; it won't be stepped.
-        self._env = gym.make(env_locator, scenario=scenario)
-        self._std_obs_wrapper = FormatObs(env=self._env)
-
         self._create_missions()
+        self._create_agent_interface()
 
     def _create_missions(self):
         self._missions = dict()
@@ -82,14 +78,56 @@ class ObservationRecorder:
                 mission, goal=PositionalGoal(veh_goal, radius=3)
             )
 
+    def _create_agent_interface(
+        self, img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose"
+    ):
+        # In future, allow for explicit mapping of vehicle_ids to agent_ids.
+        done_criteria = DoneCriteria(
+            collision=True,
+            off_road=True,
+            off_route=False,
+            on_shoulder=False,
+            wrong_way=False,
+            not_moving=False,
+            agents_alive=None,
+        )
+        max_episode_steps = 800
+        road_waypoint_horizon = 50
+        waypoints_lookahead = 50
+        self.agent_interface = AgentInterface(
+            accelerometer=True,
+            action=ActionSpaceType[action_space],
+            done_criteria=done_criteria,
+            drivable_area_grid_map=DrivableAreaGridMap(
+                width=img_pixels,
+                height=img_pixels,
+                resolution=img_meters / img_pixels,
+            ),
+            lidar=True,
+            max_episode_steps=max_episode_steps,
+            neighborhood_vehicles=True,
+            ogm=OGM(
+                width=img_pixels,
+                height=img_pixels,
+                resolution=img_meters / img_pixels,
+            ),
+            rgb=RGB(
+                width=img_pixels,
+                height=img_pixels,
+                resolution=img_meters / img_pixels,
+            ),
+            road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
+            waypoints=Waypoints(lookahead=waypoints_lookahead),
+        )
+
     def collect(
-        self, vehicles_with_sensors: Optional[Sequence[str]], headless: bool = True
+        self, vehicles_with_sensors: Optional[Sequence[int]], headless: bool = True
     ):
         """Generate Observations from the perspective of one or more
         social/history vehicles within a SMARTS scenario.
 
         Args:
-            vehicles_with_sensors (Sequence[str], optional):
+            vehicles_with_sensors (Sequence[int], optional):
                 A list of vehicle_ids within the scenario to which to attach
                 sensors and record Observations.  If not specified, this will default
                 the ego vehicle of the scenario if there is one.  If not,
@@ -131,7 +169,7 @@ class ObservationRecorder:
                     f"No vehicle IDs specifed. Defaulting to ego vehicle ({ego_id})"
                 )
             else:
-                vehicles_with_sensor = self._scenario.traffic_history.all_vehicle_ids()
+                vehicles_with_sensors = self._scenario.traffic_history.all_vehicle_ids()
                 self._logger.warning(
                     f"No vehicle IDs specifed. Defaulting to all vehicles"
                 )
@@ -198,16 +236,11 @@ class ObservationRecorder:
         off_road_vehicles,
         selected_vehicles,
     ):
-        # In future, allow for explicit mapping of vehicle_ids to agent_ids.
-        agent_ids = cycle(self._env.agent_specs.keys())
-
         # Attach sensors to each vehicle
         valid_vehicles = (current_vehicles - off_road_vehicles) & selected_vehicles
         for veh_id in valid_vehicles:
-            agent_id = next(agent_ids)
-            agent_interface = self._env.agent_specs[agent_id].interface
             try:
-                self._smarts.attach_sensors_to_vehicles(agent_interface, {veh_id})
+                self._smarts.attach_sensors_to_vehicles(self.agent_interface, {veh_id})
             except ControllerOutOfLaneException:
                 self._logger.warning(f"{veh_id} out of lane, skipped attaching sensors")
                 off_road_vehicles.add(veh_id)
@@ -229,7 +262,6 @@ class ObservationRecorder:
                     new_ego_state = ego_state._replace(mission=mission)
                     obs[id_] = replace(obs[id_], ego_vehicle_state=new_ego_state)
         # TODO: handle case where neighboring vehicle has lane_index of None too
-        obs = self._std_obs_wrapper.observation(obs)
         t = self._smarts.elapsed_sim_time
         for car, car_obs in obs.items():
             collected_data.setdefault(car, {}).setdefault(t, {})
@@ -240,9 +272,8 @@ class ObservationRecorder:
 
         # Write top-down RGB image to a file for each vehicle if we have one
         for agent_id, agent_obs in obs.items():
-            if "rgb" not in agent_obs:
-                continue
-            h, w = agent_obs["rgb"].shape[0], agent_obs["rgb"].shape[1]
+            rgb_data = agent_obs.top_down_rgb.data
+            h, w = rgb_data.shape[0], rgb_data.shape[1]
             shape = (
                 (
                     h / 2 - 1.47 / 2 / resolutions[agent_id],
@@ -253,7 +284,7 @@ class ObservationRecorder:
                     w / 2 + 3.68 / 2 / resolutions[agent_id],
                 ),
             )
-            img = Image.fromarray(agent_obs["rgb"], "RGB")
+            img = Image.fromarray(rgb_data, "RGB")
             rect_image = ImageDraw.Draw(img)
             rect_image.rectangle(shape, fill="red")
             img.save(os.path.join(self._output_dir, f"{t}_{agent_id}.png"))
@@ -269,9 +300,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--vehicles_with_sensors",
         "-v",
-        help="A list of vehicle IDs to attach sensors to record observations from.  If none specified, defaults to the ego vehicle of the scenario if there is one; if not, defaults to all vehicles in the scenario."
-        "",
-        type=str,
+        help="A list of vehicle IDs to attach sensors to record observations from.  If none specified, defaults to the ego vehicle of the scenario if there is one; if not, defaults to all vehicles in the scenario.",
+        type=int,
         nargs="*",
     )
     parser.add_argument(
@@ -281,22 +311,17 @@ if __name__ == "__main__":
         type=str,
         default=None,
     )
-    parser.add_argument(
-        "--env",
-        help="Locator for a gym environment to use.",
-        type=str,
-        default="smarts.env:multi-scenario-v0",
-    )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
         "--headless", help="Run the simulation in headless mode.", action="store_true"
     )
     args = parser.parse_args()
 
+    build_scenario([args.scenario])
+
     recorder = ObservationRecorder(
         scenario=args.scenario,
         output_dir=args.output_dir,
-        env_locator=args.env,
         seed=args.seed,
     )
     recorder.collect(args.vehicles_with_sensors, headless=args.headless)
