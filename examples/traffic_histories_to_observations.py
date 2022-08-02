@@ -139,7 +139,6 @@ class ObservationRecorder:
 
         # In case we have any bubbles or additional non-history traffic
         # in the scenario, we need to add some traffic providers.
-        sumo_headless = True
         traffic_sims = []
         if self._scenario.supports_sumo_traffic:
             sumo_traffic = SumoTrafficSimulation()
