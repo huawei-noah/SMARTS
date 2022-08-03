@@ -33,6 +33,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed bug where `yaw_rate` was always reported as 0.0 (Issue #1481).
 - Modified `FrameStack` wrapper to support agents which start at a later time in the simulation.
 - Truncated all waypoint paths returned by `FormatObs` wrapper to be of the same length. Previously, variable waypoint-path lengths caused inhomogenous shape error in numpy array.
+- Fixed a bug where traffic providers would leak across instances due to the ~~(awful design decision of python)~~ reference types defaults in arguments sharing across instances.
 
 ## [0.6.1]
 ### Added
