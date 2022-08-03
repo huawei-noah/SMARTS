@@ -19,8 +19,6 @@ There are two tracks in the competition.
 
 Track 1: The participants may use any method and training data to develop their solutions.
 
-Bonus task: Track 1 includes a fast adaptation task. The goal is to learn from a small sample of new tasks. To test this, the submissions that selected to participate in this task will be trained on a small unseen dataset.
-
 Track 2: The participants are only allowed to train their methods on the offline datasets.
 
 ## Prizes
