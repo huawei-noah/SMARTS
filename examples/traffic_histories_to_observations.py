@@ -7,6 +7,7 @@ from typing import Optional, Sequence
 
 from envision.client import Client as Envision
 from PIL import Image, ImageDraw
+from smarts import sstudio
 from smarts.core import seed as smarts_seed
 from smarts.core.agent_interface import (
     OGM,
@@ -23,7 +24,6 @@ from smarts.core.plan import PositionalGoal
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.sstudio import build_scenario
 
 logging.basicConfig(level=logging.INFO)
 
@@ -271,22 +271,23 @@ class ObservationRecorder:
 
         # Write top-down RGB image to a file for each vehicle if we have one
         for agent_id, agent_obs in obs.items():
-            rgb_data = agent_obs.top_down_rgb.data
-            h, w = rgb_data.shape[0], rgb_data.shape[1]
-            shape = (
-                (
-                    h / 2 - 1.47 / 2 / resolutions[agent_id],
-                    w / 2 - 3.68 / 2 / resolutions[agent_id],
-                ),
-                (
-                    h / 2 + 1.47 / 2 / resolutions[agent_id],
-                    w / 2 + 3.68 / 2 / resolutions[agent_id],
-                ),
-            )
-            img = Image.fromarray(rgb_data, "RGB")
-            rect_image = ImageDraw.Draw(img)
-            rect_image.rectangle(shape, fill="red")
-            img.save(os.path.join(self._output_dir, f"{t}_{agent_id}.png"))
+            if agent_obs.top_down_rgb is not None:
+                rgb_data = agent_obs.top_down_rgb.data
+                h, w = rgb_data.shape[0], rgb_data.shape[1]
+                shape = (
+                    (
+                        h / 2 - 1.47 / 2 / resolutions[agent_id],
+                        w / 2 - 3.68 / 2 / resolutions[agent_id],
+                    ),
+                    (
+                        h / 2 + 1.47 / 2 / resolutions[agent_id],
+                        w / 2 + 3.68 / 2 / resolutions[agent_id],
+                    ),
+                )
+                img = Image.fromarray(rgb_data, "RGB")
+                rect_image = ImageDraw.Draw(img)
+                rect_image.rectangle(shape, fill="red")
+                img.save(os.path.join(self._output_dir, f"{t}_{agent_id}.png"))
 
 
 if __name__ == "__main__":
@@ -316,7 +317,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    build_scenario([args.scenario])
+    sstudio.build_scenario([args.scenario])
 
     recorder = ObservationRecorder(
         scenario=args.scenario,
