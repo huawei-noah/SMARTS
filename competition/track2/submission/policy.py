@@ -1,6 +1,10 @@
 from typing import Any, Dict
 import numpy as np
 from utility import get_goal_layer, global_target_pose
+from pathlib import Path
+from smarts.env.wrappers.format_action import FormatAction
+from smarts.env.wrappers.format_obs import FormatObs
+from smarts.core.controllers import ActionSpaceType
 
 
 class BasePolicy:
@@ -26,7 +30,8 @@ def submitted_wrappers():
     """
 
     wrappers = [
-        # Insert wrappers here, if any.
+        FormatObs,
+        lambda env: FormatAction(env=env, space=ActionSpaceType["TargetPose"]),
     ]
 
     return wrappers
@@ -63,7 +68,6 @@ class Policy(BasePolicy):
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
             bev_obs = np.moveaxis(agent_obs["rgb"], -1, 0)
-
             goal_x = agent_obs["mission"]["goal_pos"][0]
             goal_y = agent_obs["mission"]["goal_pos"][1]
             current_x = agent_obs["ego"]["pos"][0]
