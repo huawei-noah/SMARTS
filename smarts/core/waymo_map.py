@@ -1060,10 +1060,9 @@ class WaymoMap(RoadMapWithCaches):
 
         @cached_property
         def incoming_lanes(self) -> List[RoadMapWithCaches.Lane]:
-            lanes = [
+            return [
                 self._map.lane_by_id(il) for il in self._lane_dict["incoming_lane_ids"]
             ]
-            return [l for l in lanes if l is not None]
 
         @cached_property
         def outgoing_lanes(self) -> List[RoadMapWithCaches.Lane]:
