@@ -222,7 +222,10 @@ class ObservationRecorder:
         if self._output_dir:
             # Save recorded observations as pickle files
             for car, data in collected_data.items():
-                outfile = os.path.join(self._output_dir, f"{car}.pkl")
+                outfile = os.path.join(
+                    self._output_dir,
+                    f"{self._scenario.name}_{self._scenario.traffic_history.name}_{car}.pkl",
+                )
                 with open(outfile, "wb") as of:
                     pickle.dump(data, of)
 

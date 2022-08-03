@@ -103,7 +103,7 @@ class TrafficHistory:
     @cached_property
     def dataset_source(self) -> str:
         """The known source of the history data"""
-        query = "SELECT value FROM Spec where key='source'"
+        query = "SELECT value FROM Spec where key='source_type'"
         return self._query_val(str, query)
 
     @cached_property
