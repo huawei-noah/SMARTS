@@ -1,3 +1,73 @@
+# Welcome to the 2022 NeurIPS Driving SMARTS Competition
+
+Thank you for your interest in the 2022 NeurIPS Driving SMARTS competition. Please also take a look at the [smarts-project](https://smarts-project.github.io/) site and [submission site](https://codalab.lisn.upsaclay.fr/competitions/6618).
+
+## Registering for the Competition
+To register for the competition you are required to fill out a response to the following form. The consequences of not doing so will be that you will be ineligible for any rewards:
+
+### Registration Form:      
+```
+# Email response to smarts4ad@gmail.com
+Public group name [required]:      
+Group members [required]:      
+Declared affiliations (orgs or any relation to organisers) [required]:      
+Primary contact email [required]:
+```
+
+## Competition tracks
+There are two tracks in the competition.
+
+Track 1: The participants may use any method and training data to develop their solutions.
+
+Track 2: The participants are only allowed to train their methods on the offline datasets.
+
+## Prizes
+Top participants in each track will receive the following prizes:
+
+* Gold US$6000
+* Silver US$4000
+* Bronze US$2000
+
+Additional prizes:
+
+* US$1000 for the most innovative approach out of top-6 entries in both tracks
+* US$1000 given to one of the valid submissions not in top-3 positions in either track
+
+Winners in each track will receive cash prizes and will get a chance to present their innovative solutions during the virtual ceremony.
+
+## First Steps
+Code and instructions related to the competition may be found in the [competition directory](./competition/) where it recommended you read the READMEs of each section:
+
+- [Track 1 submission README](./competition/track1/submission/README.md)
+- [Track 1 training README](./competition/track1/train/README.md)
+- ~~[Track 2 submission README](./competition/track2/submission/README.md)~~
+- ~~[Track 2 training README](./competition/track2/submission/README.md)~~
+
+## Starting Kits
+Starting code may be found for each track in the following locations:
+
+### --- [Track 1](./competition/track1/)
+### --- [Track 2](./competition/track1/)
+
+## Submission of Deliverables
+Deliverables may be submitted to the following site: 
+
+### [Deliverable submission](https://codalab.lisn.upsaclay.fr/competitions/6618#participate-submit_results)
+
+Track deliverables can only be submitted to twice per track. However, the validation submission may be used number of times (within reason) to ensure your model does not encounter errors during submission.
+
+The main evaluations schedule is as follows:
+
+- Track 1 Released: September 1st
+- Track 1 Evaluated: October 1st
+- Track 2: Released on-or-before October 1st
+- Track 2 Evaluated: November 1st
+
+
+
+=====================================================================
+=====================================================================
+
 # SMARTS
 [![SMARTS CI Base Tests Linux](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-base-tests-linux.yml/badge.svg?branch=master)](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-base-tests-linux.yml?query=branch%3Amaster) 
 [![SMARTS CI Format](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-format.yml/badge.svg?branch=master)](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-format.yml?query=branch%3Amaster)
