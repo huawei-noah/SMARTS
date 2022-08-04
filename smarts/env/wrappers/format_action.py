@@ -30,8 +30,8 @@ class FormatAction(gym.ActionWrapper):
     """Sets gym-compliant action space for SMARTS environment.
 
     Note:
-        (a) Only "ActionSpaceType.Continuous" and "ActionSpaceType.Lane"
-            are supported by this wrapper now.
+        (a) Only "ActionSpaceType.Continuous", "ActionSpaceType.Lane", and
+            "ActionSpaceType.TargetPose" are supported by this wrapper now.
         (c) All agents should have the same action space.
         (b) Action adapters should not be used inside the `step` method of the
             base environment.
@@ -46,7 +46,11 @@ class FormatAction(gym.ActionWrapper):
                 `smarts.core.controllers.ActionSpaceType`.
         """
         super().__init__(env)
-        space_map = {"Continuous": _continuous, "Lane": _lane}
+        space_map = {
+            "Continuous": _continuous,
+            "Lane": _lane,
+            "TargetPose": _target_pose,
+        }
         self._wrapper, action_space = space_map.get(space.name)()
 
         self.action_space = gym.spaces.Dict(
@@ -87,5 +91,20 @@ def _lane() -> Tuple[Callable[[Dict[str, int]], Dict[str, str]], gym.Space]:
 
     def wrapper(action: Dict[str, int]) -> Dict[str, str]:
         return {k: action_map[v] for k, v in action.items()}
+
+    return wrapper, space
+
+
+def _target_pose() -> Tuple[
+    Callable[[Dict[str, np.ndarray]], Dict[str, np.ndarray]], gym.Space
+]:
+    space = gym.spaces.Box(
+        low=np.array([-1e10, -1e10, -np.pi, 0]),
+        high=np.array([1e10, 1e10, np.pi, 1e10]),
+        dtype=np.float32,
+    )
+
+    def wrapper(action: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        return {k: v.astype(np.float32) for k, v in action.items()}
 
     return wrapper, space

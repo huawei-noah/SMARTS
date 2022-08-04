@@ -106,7 +106,7 @@ class SMARTS(ProviderManager):
         agent_interfaces: Dict[str, AgentInterface],
         # traffic_sim is deprecated:  use traffic_sims instead
         traffic_sim: Optional[TrafficProvider] = None,
-        traffic_sims: List[TrafficProvider] = [],
+        traffic_sims: Optional[List[TrafficProvider]] = None,
         envision: Optional[EnvisionClient] = None,
         visdom: Optional[VisdomClient] = None,
         fixed_timestep_sec: Optional[float] = 0.1,
@@ -142,7 +142,7 @@ class SMARTS(ProviderManager):
         self._traffic_history_provider = TrafficHistoryProvider()
         self._trajectory_interpolation_provider = TrajectoryInterpolationProvider(self)
 
-        self._traffic_sims = traffic_sims
+        self._traffic_sims = traffic_sims or []
         self._traffic_sims.append(self._traffic_history_provider)
         if traffic_sim:
             warnings.warn(
