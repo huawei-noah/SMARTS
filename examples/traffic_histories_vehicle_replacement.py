@@ -198,7 +198,6 @@ def main(
             ego_missions = {}
             sample = set()
 
-            print(scenario.traffic_history.dataset_source)
             if scenario.traffic_history.dataset_source == "Waymo":
                 # For Waymo, we only hijack the vehicle that was autonomous in the dataset
                 waymo_ego_id = scenario.traffic_history.ego_vehicle_id
