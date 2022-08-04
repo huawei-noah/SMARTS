@@ -121,15 +121,13 @@ def test_init(make_env):
     rcv_space = env.observation_space
     rcv_space_keys = set([key for key in rcv_space[agent_id]])
 
-    des_space_keys = set(["dist", "ego", "events"])
+    des_space_keys = set(["dist", "ego", "events", "mission"])
     opt_space_keys = [
         intrfc_to_stdobs(intrfc)
         for intrfc, val in cur_intrfcs[0].items()
         if val and intrfc_to_stdobs(intrfc)
     ]
     des_space_keys.update(opt_space_keys)
-    if "waypoints" in opt_space_keys and "neighbors" in opt_space_keys:
-        des_space_keys.update(["ttc"])
 
     assert rcv_space_keys == des_space_keys
 
