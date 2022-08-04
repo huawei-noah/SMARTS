@@ -56,11 +56,12 @@ Deliverables may be submitted to the following site:
 
 Track deliverables can only be submitted to twice per track. However, the validation submission may be used number of times (within reason) to ensure your model does not encounter errors during submission.
 
-The main evaluations will open up at the following dates:
+The main evaluations schedule is as follows:
 
-- Track 1: September 1st
-- Track 2: November 1st
-
+- Track 1 Released: September 1st
+- Track 1 Evaluated: October 1st
+- Track 2: Released on-or-before October 1st
+- Track 2 Evaluated: November 1st
 
 
 
