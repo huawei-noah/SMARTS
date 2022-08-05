@@ -958,7 +958,7 @@ class Waymo(_TrajectoryDataset):
         for i in range(num_steps):
             dynamic_states = scenario.dynamic_map_states[i]
             sim_time = scenario.timestamps_seconds[i] * 1000
-            for _, lane_state in enumerate(dynamic_states.lane_states):
+            for lane_state in dynamic_states.lane_states:
                 row = {
                     "sim_time": sim_time,
                     "state": self._encode_tl_state(lane_state.state).value,
