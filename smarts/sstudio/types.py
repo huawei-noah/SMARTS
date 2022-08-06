@@ -30,6 +30,7 @@ from sys import maxsize
 from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from shapely.affinity import rotate as shapely_rotate, translate as shapely_translate
 from shapely.geometry import (
     GeometryCollection,
     LineString,
@@ -765,13 +766,19 @@ class PositionalZone(Zone):
     """A (x,y) position of the zone in the scenario."""
     size: Tuple[float, float]
     """The (length, width) dimensions of the zone."""
+    rotation: Optional[float] = None
+    """The heading direction of the bubble. (radians, clock-wise rotation)"""
 
     def to_geometry(self, road_map: Optional[RoadMap] = None) -> Polygon:
         """Generates a box zone at the given position."""
         w, h = self.size
-        p0 = (self.pos[0] - w / 2, self.pos[1] - h / 2)  # min
-        p1 = (self.pos[0] + w / 2, self.pos[1] + h / 2)  # max
-        return Polygon([p0, (p0[0], p1[1]), p1, (p1[0], p0[1])])
+        x, y = self.pos[:2]
+        p0 = (-w / 2, -h / 2)  # min
+        p1 = (w / 2, h / 2)  # max
+        poly = Polygon([p0, (p0[0], p1[1]), p1, (p1[0], p0[1])])
+        if self.rotation is not None:
+            poly = shapely_rotate(poly, self.rotation, use_radians=True)
+        return shapely_translate(poly, xoff=x, yoff=y)
 
 
 @dataclass(frozen=True)
