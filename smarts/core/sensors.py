@@ -209,6 +209,7 @@ class Observation:
     step_count: int
     """Number of steps taken by SMARTS thus far."""
     steps_completed: int
+    """The number of steps this agent has taken within SMARTS."""
     elapsed_sim_time: float
     """Amout of simulation time elapsed. Average step_time can be computed as 
     elapsed_sim_time/step_count."""
@@ -1269,14 +1270,14 @@ class SignalsSensor(Sensor):
         if not lane:
             return result
         upcoming_signals = []
-        half_len = 0.5 * state.dimensions.length
-        # make sure the signal is not behind me...
-        my_bb = lane_pos.s - half_len
         for feat in lane.features:
             if not self._is_signal_type(feat):
                 continue
             for pt in feat.geometry:
-                if lane.offset_along_lane(pt) >= my_bb:
+                # TAI: we might want to use the position of our back bumper
+                # instead of centroid to allow agents to have some (even more)
+                # imprecision in their handling of stopping at signals.
+                if lane.offset_along_lane(pt) >= lane_pos.s:
                     upcoming_signals.append(feat)
                     break
         lookahead = self._lookahead - lane.length + lane_pos.s

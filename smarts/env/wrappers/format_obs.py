@@ -38,7 +38,7 @@ from smarts.core.sensors import (
 _LIDAR_SHP = 300
 _NEIGHBOR_SHP = 10
 _WAYPOINT_SHP = (4, 20)
-_SIGNALS_SHP = 3
+_SIGNALS_SHP = (3,)
 
 """
 Observations in numpy array format, suitable for vectorized processing.
@@ -380,9 +380,9 @@ def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
             "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
         }),
         "signals": lambda _: gym.spaces.Dict({
-            "state": gym.spaces.Box(low=0, high=32, shape=(_SIGNALS_SHP,), dtype=np.int8),
-            "stop_point": gym.spaces.Box(low=-1e10, high=1e10, shape=(_SIGNALS_SHP, 2), dtype=np.float64),
-            "last_changed": gym.spaces.Box(low=0, high=1e10, shape=(_SIGNALS_SHP,), dtype=np.float32),
+            "state": gym.spaces.Box(low=0, high=32, shape=_SIGNALS_SHP, dtype=np.int8),
+            "stop_point": gym.spaces.Box(low=-1e10, high=1e10, shape=_SIGNALS_SHP + (2,), dtype=np.float64),
+            "last_changed": gym.spaces.Box(low=0, high=1e10, shape=_SIGNALS_SHP, dtype=np.float32),
         }),
     }
     # fmt: on
