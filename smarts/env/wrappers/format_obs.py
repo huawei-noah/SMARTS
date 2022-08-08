@@ -625,18 +625,18 @@ def _std_signals(
 
     des_shp = _SIGNALS_SHP
     rcv_shp = len(signals)
-    pad_shp = max(0, des_shp - rcv_shp)
+    pad_shp = max(0, des_shp[0] - rcv_shp)
 
     if rcv_shp == 0:
         return {
-            "state": np.zeros((des_shp,), dtype=np.int8),
-            "stop_point": np.zeros((des_shp, 2), dtype=np.float64),
-            "last_changed": np.zeros((des_shp,), dtype=np.float32),
+            "state": np.zeros(des_shp, dtype=np.int8),
+            "stop_point": np.zeros(des_shp + (2,), dtype=np.float64),
+            "last_changed": np.zeros(des_shp, dtype=np.float32),
         }
 
     signals = [
         (signal.state, signal.stop_point, signal.last_changed)
-        for signal in signals[:des_shp]
+        for signal in signals[: des_shp[0]]
     ]
     state, stop_point, last_changed = zip(*signals)
 
