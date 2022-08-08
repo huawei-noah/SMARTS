@@ -30,7 +30,8 @@ from sys import maxsize
 from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from shapely.affinity import rotate as shapely_rotate, translate as shapely_translate
+from shapely.affinity import rotate as shapely_rotate
+from shapely.affinity import translate as shapely_translate
 from shapely.geometry import (
     GeometryCollection,
     LineString,
