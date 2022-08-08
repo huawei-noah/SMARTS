@@ -93,14 +93,22 @@ class ProviderState:
 class ProviderManager:
     """Interface to be implemented by a class that manages a set of Providers
     that jointly control a set of actors, such that they can hand these off to
-    each other when necessary.  Providers can call these methods on the
-    manager to do so."""
+    each other when necessary.  Actors can only be passed among Providers that
+    are managed by the same ProviderManager.  Providers can call these methods
+    on the manager to do so."""
+
+    # TODO:  do this is in a way such that external providers do not require any
+    # sort of "injection" call (like set_manager() below) to set a manager reference.
+    # One possibility:  instead of calling "provider_relinquishing_actor()", they
+    # could just set the "source" field in the ActorState object to None and
+    # other Providers that are willing to accept new actors could watch for this.
 
     def provider_relinquishing_actor(
         self, provider: "Provider", state: ActorState
     ) -> Optional["Provider"]:
-        """Find a new provider for an actor.  Returns the new provider
-        or None if a suitable one could not be found."""
+        """Find a new Provider for an actor from among the Providers managed
+        by this ProviderManager.  Returns the new provider or None if a suitable
+        one could not be found, in which case the actor is removed."""
         raise NotImplementedError
 
     def provider_removing_actor(self, provider: "Provider", actor_state: ActorState):
