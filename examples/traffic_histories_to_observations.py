@@ -276,7 +276,7 @@ class ObservationRecorder:
         for agent_id, agent_obs in obs.items():
             if agent_obs.top_down_rgb is not None:
                 rgb_data = agent_obs.top_down_rgb.data
-                h, w = rgb_data.shape[0], rgb_data.shape[1]
+                h, w = rgb_data.shape
                 shape = (
                     (
                         h / 2 - 1.47 / 2 / resolutions[agent_id],
