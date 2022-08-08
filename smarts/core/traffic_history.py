@@ -322,7 +322,7 @@ class TrafficHistory:
     def traffic_light_states_between(
         self, start_time: float, end_time: float
     ) -> Generator[TrafficHistory.TrafficLightRow, None, None]:
-        """Find all traffic light states betwen the given history times."""
+        """Find all traffic light states between the given history times."""
         query = """SELECT sim_time, state, stop_point_x, stop_point_y, lane
                    FROM TrafficLightState
                    WHERE sim_time > ? AND sim_time <= ?
