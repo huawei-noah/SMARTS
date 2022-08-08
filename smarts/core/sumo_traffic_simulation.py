@@ -632,6 +632,12 @@ class SumoTrafficSimulation(TrafficProvider):
         self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
 
     def update_route_for_vehicle(self, vehicle_id: str, new_route: RoadMap.Route):
+        """Sets a new route for vehicle_id, but only if it is different
+        from the previously-set route (otherwise, avoids the TraCI call).
+
+        Any sumo-special roads (e.g., junction) are removed from the new
+        route before setting it because Sumo doesn't allow specifying these
+        in the call to its setRoute() and will raise an exception otherwise."""
         if not self.connected:
             return
         old_route = self._route_for_vehicle(vehicle_id)
