@@ -630,7 +630,7 @@ class SMARTS(ProviderManager):
             False
         ), f"could not find a provider to accept vehicle {vehicle.id} for agent {agent_id} with role={role.name}"
 
-    def vehicle_exited_bubble(self, vehicle_id: str, teardown_agents: bool):
+    def vehicle_exited_bubble(self, vehicle_id: str, teardown_agent: bool):
         """Bubbles call this when a vehicle is exiting the bubble.
         Will try to find a new provider for the vehicle if necessary."""
         agent_id = None
@@ -646,7 +646,7 @@ class SMARTS(ProviderManager):
                 self, vehicle_id
             )
             new_prov = self.agent_relinquishing_actor(
-                agent_id, state, teardown_agents, shadow_agent_id
+                agent_id, state, teardown_agent, shadow_agent_id
             )
             if route and isinstance(new_prov, TrafficProvider):
                 new_prov.update_route_for_vehicle(vehicle_id, route)
@@ -655,21 +655,21 @@ class SMARTS(ProviderManager):
                 f"shadow_agent={shadow_agent_id} will stop shadowing vehicle={vehicle_id}"
             )
             self._agent_manager.detach_sensors_from_vehicle(vehicle_id)
-            if teardown_agents:
+            if teardown_agent:
                 self.teardown_agents_without_actors([shadow_agent_id])
 
     def agent_relinquishing_actor(
         self,
         agent_id: str,
         state: ActorState,
-        teardown_agents: bool,
+        teardown_agent: bool,
         shadow_agent_id: Optional[str] = None,
     ) -> Optional[Provider]:
         """Find a new provider for an actor previously managed by an agent.
         Returns the new provider or None if a suitable one could not be found."""
         provider = self._provider_for_actor(state.actor_id)
         new_prov = self.provider_relinquishing_actor(provider, state)
-        if teardown_agents:
+        if teardown_agent:
             teardown_agent_ids = [agent_id]
             if shadow_agent_id:
                 teardown_agent_ids.append(shadow_agent_id)
