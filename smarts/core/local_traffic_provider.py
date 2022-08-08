@@ -1508,9 +1508,6 @@ class _TrafficActor:
             if feat.type == RoadMap.FeatureType.SPEED_BUMP:
                 self._target_speed *= 0.5
                 continue
-            # if feat.type == RoadMap.FeatureType.CROSSWALK and TODO:
-            #     self._target_speed = 0
-            #     continue
             if feat.type == RoadMap.FeatureType.STOP_SIGN:
 
                 def dist_to_stop():
