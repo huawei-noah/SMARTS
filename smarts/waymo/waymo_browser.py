@@ -26,7 +26,6 @@ import copy
 import json
 import os
 import re
-import shutil
 import struct
 import sys
 from itertools import product
@@ -36,7 +35,6 @@ from typing import Dict, Generator, List, Optional, Tuple, Union
 from smarts.waymo import waymo_utils
 
 import matplotlib.pyplot as plt
-import yaml
 from matplotlib.animation import FFMpegWriter, FuncAnimation
 from matplotlib.lines import Line2D
 

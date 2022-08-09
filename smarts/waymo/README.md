@@ -4,7 +4,7 @@ This is a text-based utility to browse, explore, and export  Waymo TFRecord data
 ## Setup
 1. Install the extra dependencies.
     ```bash
-    $ pip install waymo-open-dataset-tf-2-4-0 tabulate==0.8.9 pathos==0.2.8 readline
+    $ pip install waymo-open-dataset-tf-2-4-0 tabulate==0.8.9 pathos==0.2.8
     ```
 
 2. Download the [Waymo Motion Dataset](https://waymo.com/open/download/) files to the folder `scenarios/waymo/waymo_data` or to your folder of choice. It is recommended to download `waymo_open_dataset_motion_v_1_1_0/uncompressed/scenario/training_20s` dataset as they have the full traffic capture for each scenario.
