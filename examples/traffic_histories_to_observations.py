@@ -34,7 +34,7 @@ class ObservationRecorder:
         scenario: str,
         output_dir: Optional[str],
         seed: int = 42,
-        agent_interface: AgentInterface = None,
+        agent_interface: Optional[AgentInterface] = None,
     ):
         """Generate Observations from the perspective of one or more
         social/history vehicles within a SMARTS scenario.
@@ -73,7 +73,7 @@ class ObservationRecorder:
         if agent_interface is not None:
             self.agent_interface = agent_interface
         else:
-            self.agent_interface = ObservationRecorder._create_default_interface()
+            self.agent_interface = self._create_default_interface()
 
     def _create_missions(self):
         self._missions = dict()
@@ -87,7 +87,7 @@ class ObservationRecorder:
             )
 
     def _create_default_interface(
-        img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose"
+        self, img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose"
     ) -> AgentInterface:
         # In future, allow for explicit mapping of vehicle_ids to agent_ids.
         done_criteria = DoneCriteria(
