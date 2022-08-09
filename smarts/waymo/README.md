@@ -4,10 +4,10 @@ Users are able to tag scenarios based on their interactive behavior and export a
 
 ## Setup
 
-The utility is independent of SMARTS and only has two dependencies.  You can install the `[waymo]` dependencies of SMARTS to install the `waymo-dataset` and `tabulate` packages using the following command:
+First, install the extra dependencies:
 
 ```bash
-pip install -e .[waymo]
+pip install waymo-open-dataset-tf-2-4-0 tabulate==0.8.9 pathos==0.2.8 readline
 ```
 
 Next, download the dataset files from [Waymo Motion Dataset](https://waymo.com/open/download/#) to the folder `smarts/waymo/waymo_data` or your folder of choice. It is recommended to download the dataset files from the `uncompressed/scenario/training_20s` folder as they have the full traffic capture for each scenario.
@@ -22,14 +22,6 @@ Ex:
 python smarts/waymo/waymo_browser.py scenarios/waymo_motion/waymo_data
 ```
 
-Or you can also use the scl command line at the source directory to launch the browser:
-```bash
-scl scenario browse-waymo <path/to/waymo_dataset_directories> -t=<default/path/to/export/scenarios> -i=<path/to/tag/containing/json/file/>
-```
-Ex:
-```bash
-scl scenario browse-waymo scenarios/waymo_motion/waymo_data
-```
 Some things to keep in mind:
 * You can pass in multiple paths to datasets which can be either TFRecord files or directories. The paths need to be separated by space.
 * `--target-base-path=<default/path/to/export/scenarios>` is an optional argument that can be passed to have a default target path to export scenarios, map images, and trajectory animations of all scenarios of a TFRecord file. The path passed must be a valid directory path that exists.
@@ -297,5 +289,4 @@ Commands you can execute at this level:
 * `animate all` uses `ffmpeg` writer to save the animations which don't exist by default in linux and MacOS machines. 
    So you can install it using `sudo apt install ffmpeg` in linux or `brew install ffmpeg` in MacOS. You can read more about this issue [here](https://github.com/kkroening/ffmpeg-python/issues/251).
 * `animate <indexes>` command is relatively slow, so it is recommended to animate only a small number of scenarios together.
-* Do not modify files in `smarts/waymo/templates` contains the template for `scenario.py` that is exported during the `export` command.
 ```
