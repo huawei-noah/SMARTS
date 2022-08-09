@@ -174,6 +174,35 @@ class SmartsLaneChangingModel(LaneChangingModel):
         )
 
 
+class SmartsJunctionModel(JunctionModel):
+    """Implements the simple junction model built-into SMARTS.
+    Args:
+        yield_to_agents:
+            There are 3 possible values for this:
+                - "always" - traffic actors will yield to Ego and Social
+                  agents within junctions;
+                - "never" - traffic actors will never yield to Ego or Social
+                  agents within junctions;
+                - "normal" - traffic actors will attempt to honor normal
+                  right-of-way conventions, only yielding when an agent
+                  has the right-of-way.  Examples of such conventions include:
+                    - Vehicles going straight have the right-of-way over
+                      turning vehicles;
+                    - Vehicles on roads with more lanes have the right-of-way
+                      relative to vehicles on intersecting roads with less lanes;
+                    - All other things being equal, the vehicle to the right
+                      (in the counter-clockwise direction) has the right-of-way.
+        wait_to_restart:
+            The amount of time in seconds after stopping at a signal or stop sign
+            before this vehicle will start to go again.  Default:  0.0
+    """
+
+    def __init__(self, yield_to_agents: str = "normal", wait_to_restart: float = 0.0):
+        super().__init__(
+            yield_to_agents=yield_to_agents, wait_to_restart=wait_to_restart
+        )
+
+
 @dataclass(frozen=True)
 class Distribution:
     """A gaussian distribution used for randomized parameters."""

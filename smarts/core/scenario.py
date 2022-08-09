@@ -758,8 +758,8 @@ class Scenario:
 
             return tuple(s_vias)
 
-        # For now we discard the route and just take the start and end to form our
-        # missions.
+        # XXX: For now we discard the route and just take the start and end to form our missions.
+        # In the future, we could create a Plan object here too when there's a route specified.
         if isinstance(mission, sstudio_types.Mission):
             position, heading = to_position_and_heading(
                 *mission.route.begin,
@@ -821,11 +821,11 @@ class Scenario:
                 start=Start(start_position, start_heading),
                 goal=PositionalGoal(end_position, radius=2),
                 route_vias=mission.route.via,
-                num_laps=mission.num_laps,
-                route_length=route.road_length,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
-                via_points=to_scenario_via(mission.via, road_map),
+                via=to_scenario_via(mission.via, road_map),
+                num_laps=mission.num_laps,
+                route_length=route.road_length,
             )
 
         raise RuntimeError(

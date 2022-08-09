@@ -54,7 +54,7 @@ class Start:
     @property
     def point(self) -> Point:
         """The coordinate of this starting location."""
-        return Point(*self.position)
+        return Point.from_np_array(self.position)
 
     @classmethod
     def from_pose(cls, pose: Pose):
@@ -70,9 +70,9 @@ class Start:
 class Goal:
     """Describes an expected end state for a route or mission."""
 
-    def is_endless(self) -> bool:
-        """If the goal can never be reached."""
-        return True
+    def is_specific(self) -> bool:
+        """If the goal is reachable at a specific position."""
+        return False
 
     def is_reached(self, vehicle) -> bool:
         """If the goal has been completed."""
@@ -115,8 +115,8 @@ class PositionalGoal(Goal):
         position = lane.from_lane_coord(RefLinePoint(lane_offset))
         return cls(position=position, radius=radius)
 
-    def is_endless(self) -> bool:
-        return False
+    def is_specific(self) -> bool:
+        return True
 
     def is_reached(self, vehicle) -> bool:
         a = vehicle.position
@@ -139,22 +139,20 @@ class TraverseGoal(Goal):
         super().__init__()
         self._road_map = road_map
 
-    def is_endless(self) -> bool:
-        return True
+    def is_specific(self) -> bool:
+        return False
 
     def is_reached(self, vehicle) -> bool:
-        return self._drove_off_map(vehicle.position, vehicle.heading)
+        pose = vehicle.pose
+        return self._drove_off_map(pose.point, pose.heading)
 
-    def _drove_off_map(
-        self, veh_position: Tuple[float, float, float], veh_heading: float
-    ) -> bool:
+    def _drove_off_map(self, veh_pos: Point, veh_heading: float) -> bool:
         # try to determine if the vehicle "exited" the map by driving beyond the end of a dead-end lane.
-        pos = Point(*veh_position)
-        nearest_lanes = self._road_map.nearest_lanes(pos)
+        nearest_lanes = self._road_map.nearest_lanes(veh_pos)
         if not nearest_lanes:
             return False  # we can't tell anything here
         nl, dist = nearest_lanes[0]
-        offset = nl.to_lane_coord(pos).s
+        offset = nl.to_lane_coord(veh_pos).s
         nl_width, conf = nl.width_at_offset(offset)
         if conf > 0.5:
             if nl.outgoing_lanes or dist < 0.5 * nl_width + 1e-1:
@@ -201,7 +199,12 @@ class VehicleSpec:
 
 @dataclass(frozen=True)
 class Mission:
-    """A navigation mission."""
+    """A navigation mission describing a desired trip."""
+
+    # XXX: Note that this Mission differs from sstudio.types.Mission in that
+    # this can be less specific as to the particular route taken to the goal,
+    # whereas sstudio.type.Mission includes a specific, predetermined/static route
+    # (which might be random, but is still determined before running the scenario).
 
     start: Start
     goal: Goal
@@ -215,9 +218,9 @@ class Mission:
     vehicle_spec: Optional[VehicleSpec] = None
 
     @property
-    def has_fixed_route(self) -> bool:
-        """If the route is fixed and immutable."""
-        return not self.goal.is_endless()
+    def requires_route(self) -> bool:
+        """If the mission requires a route to be generated."""
+        return self.goal.is_specific()
 
     def is_complete(self, vehicle, distance_travelled: float) -> bool:
         """If the mission has been completed successfully."""
@@ -259,24 +262,21 @@ class Mission:
 
 
 @dataclass(frozen=True)
-class LapMission:
+class LapMission(Mission):
     """A mission requiring a number of laps through the goal."""
 
-    start: Start
-    goal: Goal
-    route_length: float
     num_laps: Optional[int] = None  # None means infinite # of laps
-    # An optional list of road IDs between the start and end goal that we want to
-    # ensure the mission includes
-    route_vias: Tuple[str, ...] = field(default_factory=tuple)
-    start_time: float = 0.1
-    entry_tactic: Optional[EntryTactic] = None
-    via_points: Tuple[Via, ...] = ()
 
-    @property
-    def has_fixed_route(self) -> bool:
-        """If the route in this mission is immutable."""
-        return True
+    # If a route was specified in a sstudio.types.LapMission object,
+    # then this should be set to its road length
+    route_length: Optional[float] = None
+
+    def __post_init__(self):
+        # TAI: consider allowing LapMissions for TraverseGoal goals (num_laps ~ num_traversals)
+        assert self.goal.is_specific
+        if self.route_length is None:
+            # TAI: could just assert here, but may want to be more clever...
+            self.route_length = 1
 
     def is_complete(self, vehicle, distance_travelled: float) -> bool:
         """If the mission has been completed."""
@@ -287,7 +287,7 @@ class LapMission:
 
 
 class Plan:
-    """Describes a navigation plan."""
+    """Describes a navigation plan (route) to fulfill a mission."""
 
     def __init__(
         self,
@@ -313,17 +313,17 @@ class Plan:
 
     @property
     def mission(self) -> Optional[Mission]:
-        """The mission generated from this plan."""
+        """The mission this plan is meant to fulfill."""
         # XXX: This currently can be `None`
         return self._mission
 
     @property
     def road_map(self) -> RoadMap:
-        """The road map this plan is for."""
+        """The road map this plan is relative to."""
         return self._road_map
 
     def create_route(self, mission: Mission) -> Mission:
-        """Generates a mission that conforms to this plan.
+        """Generates a route that conforms to a mission.
         Args:
             mission (Mission):
                 A mission the agent should follow. Defaults to endless if `None`.
@@ -331,9 +331,10 @@ class Plan:
         assert not self._route, "already called create_route()"
         self._mission = mission or Mission.random_endless_mission(self._road_map)
 
-        if not self._mission.has_fixed_route:
+        if not self._mission.requires_route:
             self._route = self._road_map.empty_route()
             return self._mission
+
         assert isinstance(self._mission.goal, PositionalGoal)
 
         start_lane = self._road_map.nearest_lane(
