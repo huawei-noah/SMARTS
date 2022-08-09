@@ -42,7 +42,6 @@ from .utils.math import (
     vec_to_radians,
 )
 
-
 # TODO:  also consider OSM, Esri, QGIS and Google Maps formats
 
 

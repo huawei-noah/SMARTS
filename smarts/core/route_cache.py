@@ -28,7 +28,6 @@ from cached_property import cached_property
 
 from .road_map import RoadMap
 
-
 # cache_keys shouldn't be exposed/used outside of this Route
 _RouteKey = int
 

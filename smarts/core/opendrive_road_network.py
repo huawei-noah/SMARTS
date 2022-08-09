@@ -43,6 +43,8 @@ try:
     from opendrive2lanelet.opendriveparser.elements.geometry import Line as LineGeometry
     from opendrive2lanelet.opendriveparser.elements.junction import (
         Connection as ConnectionElement,
+    )
+    from opendrive2lanelet.opendriveparser.elements.junction import (
         Junction as JunctionElement,
     )
     from opendrive2lanelet.opendriveparser.elements.opendrive import (
