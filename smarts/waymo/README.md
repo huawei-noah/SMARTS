@@ -2,16 +2,17 @@
 This is a text-based utility to browse, explore, and export  Waymo TFRecord datasets to SMARTS scenarios. Users are able to tag scenarios and export/import the tags to/from a JSON file.
 
 ## Setup
-Install the extra dependencies.
-```bash
-pip install waymo-open-dataset-tf-2-4-0 tabulate==0.8.9 pathos==0.2.8 readline
-```
+1. Install the extra dependencies.
+    ```bash
+    $ pip install waymo-open-dataset-tf-2-4-0 tabulate==0.8.9 pathos==0.2.8 readline
+    ```
 
-Download the [Waymo Motion Dataset](https://waymo.com/open/download/) files to the folder `scenarios/waymo/waymo_data` or to your folder of choice. It is recommended to download `waymo_open_dataset_motion_v_1_1_0/uncompressed/scenario/training_20s` dataset as they have the full traffic capture for each scenario.
+2. Download the [Waymo Motion Dataset](https://waymo.com/open/download/) files to the folder `scenarios/waymo/waymo_data` or to your folder of choice. It is recommended to download `waymo_open_dataset_motion_v_1_1_0/uncompressed/scenario/training_20s` dataset as they have the full traffic capture for each scenario.
 
 ## Running the Utility
-It is recommended to run this script from the root or source level directory of the repo. The script can be run using the following command:
+Execute the following command to run the script.
 ```bash
+$ cd <path>/SMARTS
 $ python smarts/waymo/waymo_browser.py <path/to/waymo_dataset> --target-base-path=<default/path/to/export/scenarios> --import-tags=<path/to/tag/containing/json/file/>
 ```
 An example would be:
