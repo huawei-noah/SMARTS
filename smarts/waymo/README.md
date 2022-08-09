@@ -2,9 +2,9 @@
 This is a text-based utility to browse, explore, and export  Waymo TFRecord datasets to SMARTS scenarios. Users are able to tag scenarios and export/import the tags to/from a JSON file.
 
 ## Setup
-Install the necessary dependencies.
+Install the extra dependencies.
 ```bash
-$ pip install -e .[waymo]
+pip install waymo-open-dataset-tf-2-4-0 tabulate==0.8.9 pathos==0.2.8 readline
 ```
 
 Download the [Waymo Motion Dataset](https://waymo.com/open/download/) files to the folder `scenarios/waymo/waymo_data` or to your folder of choice. It is recommended to download `waymo_open_dataset_motion_v_1_1_0/uncompressed/scenario/training_20s` dataset as they have the full traffic capture for each scenario.
@@ -14,23 +14,14 @@ It is recommended to run this script from the root or source level directory of 
 ```bash
 $ python smarts/waymo/waymo_browser.py <path/to/waymo_dataset> --target-base-path=<default/path/to/export/scenarios> --import-tags=<path/to/tag/containing/json/file/>
 ```
-An example could be:
+An example would be:
 ```bash
 $ python smarts/waymo/waymo_browser.py scenarios/waymo/waymo_data
-```
-
-Or you can also use the `scl` command line at the source directory to launch the browser.
-```bash
-$ scl scenario browse-waymo <path/to/waymo_dataset_directories> -t=<default/path/to/export/scenarios> -i=<path/to/tag/containing/json/file/>
-```
-An example could be:
-```bash
-$ scl scenario browse-waymo scenarios/waymo_motion/waymo_data
 ```
 Note:
 + Multiple paths to either TFRecord files or directories, which are separated by spaces, can be passed in.
 + Optional argument `--target-base-path=<default/path/to/export/scenarios>` to set default target path to export scenarios, map images, and trajectory animations of all scenarios from a TFRecord file. Target-path directory must exist.
-+ Optional argument `--import-tags=<path/to/tag/containing/json/file/>` to set pre-import tags for scenarios from a TFRecord file. The path should be a `.json` file containing a dictionary of structure `Dict["TFRecord Basename", Dict["Scenario ID", List["Tags"]]]`. Ensure the basename of the TFRecord files is not modified.
++ Optional argument `--import-tags=<path/to/tag/containing/json/file/>` to set pre-import tags for scenarios from a TFRecord file. The path should be a `.json` file containing a dictionary of structure `Dict["TFRecord Basename", Dict["Scenario ID", List["Tags"]]]`. Ensure the basename of the TFRecord files have not been modified.
 
 ## TFRecord Browser
 After running the program the first browser you will see is the `TFRecord Browser` which shows all the TFRecords you loaded in and the commands you can use to browse them further:
@@ -294,5 +285,4 @@ Commands you can execute at this level:
 * `animate all` uses `ffmpeg` writer to save the animations which don't exist by default in linux and MacOS machines. 
    So you can install it using `sudo apt install ffmpeg` in linux or `brew install ffmpeg` in MacOS. You can read more about this issue [here](https://github.com/kkroening/ffmpeg-python/issues/251).
 * `animate <indexes>` command is relatively slow, so it is recommended to animate only a small number of scenarios together.
-* Do not modify files in `smarts/waymo/templates` contains the template for `scenario.py` that is exported during the `export` command.
 ```
