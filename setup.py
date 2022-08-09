@@ -97,6 +97,7 @@ setup(
         ],
         "waymo": [
             "waymo-open-dataset-tf-2-4-0",
+            "tabulate>=0.8.10"
         ],
         "opendrive": [
             "opendrive2lanelet>=1.2.1",
