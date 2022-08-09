@@ -34,6 +34,7 @@ class ObservationRecorder:
         scenario: str,
         output_dir: Optional[str],
         seed: int = 42,
+        agent_interface: AgentInterface = None,
     ):
         """Generate Observations from the perspective of one or more
         social/history vehicles within a SMARTS scenario.
@@ -48,6 +49,9 @@ class ObservationRecorder:
                 Will be created if necessary.
             seed (int):
                 Seed for random number generation.  Default:  42.
+            agent_interface (AgentInterface, optional):
+                Agent interface to be used for recorded vehicles. If not provided,
+                will use a default interface with all sensors enabled.
         """
         assert scenario, "--scenario must be used to specify a scenario"
         scenario_iter = Scenario.variations_for_all_scenario_roots([scenario], [])
@@ -65,7 +69,11 @@ class ObservationRecorder:
             os.makedirs(output_dir)
         self._smarts = None
         self._create_missions()
-        self._create_agent_interface()
+
+        if agent_interface is not None:
+            self.agent_interface = agent_interface
+        else:
+            self.agent_interface = ObservationRecorder._create_default_interface()
 
     def _create_missions(self):
         self._missions = dict()
@@ -78,9 +86,9 @@ class ObservationRecorder:
                 mission, goal=PositionalGoal(veh_goal, radius=3)
             )
 
-    def _create_agent_interface(
-        self, img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose"
-    ):
+    def _create_default_interface(
+        img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose"
+    ) -> AgentInterface:
         # In future, allow for explicit mapping of vehicle_ids to agent_ids.
         done_criteria = DoneCriteria(
             collision=True,
@@ -94,7 +102,7 @@ class ObservationRecorder:
         max_episode_steps = 800
         road_waypoint_horizon = 50
         waypoints_lookahead = 50
-        self.agent_interface = AgentInterface(
+        return AgentInterface(
             accelerometer=True,
             action=ActionSpaceType[action_space],
             done_criteria=done_criteria,
@@ -276,7 +284,7 @@ class ObservationRecorder:
         for agent_id, agent_obs in obs.items():
             if agent_obs.top_down_rgb is not None:
                 rgb_data = agent_obs.top_down_rgb.data
-                h, w = rgb_data.shape
+                h, w, _ = rgb_data.shape
                 shape = (
                     (
                         h / 2 - 1.47 / 2 / resolutions[agent_id],
