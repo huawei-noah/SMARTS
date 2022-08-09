@@ -240,11 +240,13 @@ def plot_scenario(
         handles.extend(TRAJECTORY_HANDLES)
         trajectories = _get_trajectories(scenario)
         for v_id, props in trajectories.items():
-            xs = [p[0] for p in props["positions"] if p]
-            ys = [p[1] for p in props["positions"] if p]
-            plt.scatter(xs[0], ys[0], marker="o", c="blue")
-            bbox_props = dict(boxstyle="square,pad=0.1", fc="white", ec=None)
-            plt.text(xs[0] + 1, ys[0] + 1, f"{v_id}", bbox=bbox_props)
+            valid_pts = [p for p in props["positions"] if p[0] is not None]
+            if len(valid_pts) > 0:
+                x = valid_pts[0][0]
+                y = valid_pts[0][1]
+                plt.scatter(x, y, marker="o", c="blue")
+                bbox_props = dict(boxstyle="square,pad=0.1", fc="white", ec=None)
+                plt.text(x + 1, y + 1, f"{v_id}", bbox=bbox_props)
     elif animate:
         handles.extend(TRAJECTORY_HANDLES)
         trajectories = _get_trajectories(scenario)
