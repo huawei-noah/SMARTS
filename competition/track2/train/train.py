@@ -195,7 +195,7 @@ if __name__ == "__main__":
         "--output_dir",
         help="The path to the directory storing the trained model",
         type=str,
-        default="/SMARTS/competition/track2/submission/model"
+        default="/SMARTS/competition/track2/submission/"
     )
 
     args = parser.parse_args()
