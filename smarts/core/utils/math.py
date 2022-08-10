@@ -336,11 +336,17 @@ def line_intersect(a, b, c, d) -> Union[np.ndarray, None]:
 
 
 def line_intersect_vectorized(
-    a: np.ndarray, b: np.ndarray, C: np.ndarray, D: np.ndarray
+    a: np.ndarray,
+    b: np.ndarray,
+    C: np.ndarray,
+    D: np.ndarray,
+    ignore_start_pt: bool = False,
 ) -> bool:
     """Vectorized version of `line_intersect(...)`, where C and D represent
     the segment points for an entire line, and a and b are points of a single
     line segment to be tested against.
+    If ignore_start_pt is True, then two diverging lines that *only* intersect at
+    their starting points will cause this to return False.
     """
     r = b - a
     S = D - C
@@ -366,7 +372,7 @@ def line_intersect_vectorized(
     t_in_range = (0 <= t) & (t <= 1)
     combined = u_in_range & t_in_range
 
-    return np.any(combined)
+    return np.any(combined) and (not ignore_start_pt or any(combined[1:]) or t[0] > 0.0)
 
 
 def ray_boundary_intersect(

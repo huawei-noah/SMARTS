@@ -18,17 +18,49 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from dataclasses import dataclass
 from enum import IntEnum
+from typing import Optional
 
 
 class ActorRole(IntEnum):
     """Used to specify the role an actor (e.g. vehicle) is currently playing in the simulation."""
 
     Unknown = 0
+
+    # Vehicle Roles
     Social = 1  # Traffic
     SocialAgent = 2
     EgoAgent = 3
 
+    # Non-vehicle Roles
+    Signal = 4
+
     # For deferring to external co-simulators only. Cannot be hijacked or trapped.
     # Privileged state, so use with caution!
-    External = 4
+    External = 5
+
+
+@dataclass
+class ActorState:
+    """Actor state information."""
+
+    actor_id: str  # must be unique within the simulation
+    actor_type: Optional[str] = None
+    source: Optional[str] = None  # the source of truth for this Actor's state
+    role: ActorRole = ActorRole.Unknown
+    updated: bool = False
+
+    def __lt__(self, other) -> bool:
+        """Allows ordering ActorStates for use in sorted data-structures."""
+        assert isinstance(other, ActorState)
+        return self.actor_id < other.actor_id or (
+            self.actor_id == other.actor_id and id(self) < id(other)
+        )
+
+    def __hash__(self) -> int:
+        # actor_id must be unique within the simulation
+        return hash(self.actor_id)
+
+    def __eq__(self, other) -> bool:
+        return self.__class__ == other.__class__ and hash(self) == hash(other)

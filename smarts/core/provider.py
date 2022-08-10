@@ -20,12 +20,12 @@
 import logging
 from dataclasses import dataclass, field
 from enum import IntFlag
-from typing import Any, List, Optional, Sequence, Set, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
+from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
 from .road_map import RoadMap
 from .scenario import Scenario
-from .vehicle import VehicleState
 
 
 class ProviderRecoveryFlags(IntFlag):
@@ -45,49 +45,46 @@ class ProviderRecoveryFlags(IntFlag):
 class ProviderState:
     """State information from a provider."""
 
-    # TAI: rename to actors and ActorState
-    vehicles: List[VehicleState] = field(default_factory=list)
+    actors: List[ActorState] = field(default_factory=list)
     dt: Optional[float] = None  # most Providers can leave this blank
 
     def merge(self, other: "ProviderState"):
         """Merge state with another provider's state."""
-        our_vehicles = {v.vehicle_id for v in self.vehicles}
-        other_vehicles = {v.vehicle_id for v in other.vehicles}
-        if not our_vehicles.isdisjoint(other_vehicles):
-            overlap = our_vehicles & other_vehicles
+        our_actors = {a.actor_id for a in self.actors}
+        other_actors = {a.actor_id for a in other.actors}
+        if not our_actors.isdisjoint(other_actors):
+            overlap = our_actors & other_actors
             logging.warning(
-                f"multiple providers control the same vehicles: {overlap}. "
+                f"multiple providers control the same actors: {overlap}. "
                 "Later added providers will take priority. "
             )
             logging.info(
-                "Conflicting vehicle states: \n"
-                f"Previous: {[(v.vehicle_id, v.source) for v in self.vehicles if v.vehicle_id in overlap]}\n"
-                f"Later: {[(v.vehicle_id, v.source) for v in other.vehicles if v.vehicle_id in overlap]}\n"
+                "Conflicting actor states: \n"
+                f"Previous: {[(a.actor_id, a.source) for a in self.actors if a.actor_id in overlap]}\n"
+                f"Later: {[(a.actor_id, a.source) for a in other.actors if a.actor_id in overlap]}\n"
             )
 
-        ## TODO: Properly harmonize these vehicle ids so that there is a priority and per vehicle source
-        self.vehicles += filter(
-            lambda v: v.vehicle_id not in our_vehicles, other.vehicles
-        )
+        ## TODO: Properly harmonize these actor ids so that there is a priority and per actor source
+        self.actors += filter(lambda a: a.actor_id not in our_actors, other.actors)
 
         self.dt = max(self.dt, other.dt, key=lambda x: x if x else 0)
 
-    def filter(self, vehicle_ids):
-        """Filter vehicle states down to the given vehicles."""
-        provider_vehicle_ids = [v.vehicle_id for v in self.vehicles]
-        for v_id in vehicle_ids:
+    def filter(self, actor_ids):
+        """Filter actor states down to the given actors."""
+        provider_actor_ids = [a.actor_id for a in self.actors]
+        for a_id in actor_ids:
             try:
-                index = provider_vehicle_ids.index(v_id)
-                del provider_vehicle_ids[index]
-                del self.vehicles[index]
+                index = provider_actor_ids.index(a_id)
+                del provider_actor_ids[index]
+                del self.actors[index]
             except ValueError:
                 continue
 
-    def contains(self, vehicle_ids: Set[str]) -> bool:
-        """Returns True iff any of the vehicle_ids are contained in this ProviderState .
+    def contains(self, actor_ids: Set[str]) -> bool:
+        """Returns True iff any of the actor_ids are contained in this ProviderState .
         Returns False for empty-set containment."""
-        provider_vehicle_ids = {v.vehicle_id for v in self.vehicles}
-        intersection = vehicle_ids & provider_vehicle_ids
+        provider_actor_ids = {a.actor_id for a in self.actors}
+        intersection = actor_ids & provider_actor_ids
         return bool(intersection)
 
 
@@ -105,13 +102,13 @@ class Provider:
         raise NotImplementedError
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
-        """Progress the provider to generate new vehicle state.
+        """Progress the provider to generate new actor state.
         Args:
             actions: one or more valid actions from the supported action_spaces of this provider
             dt: time (in seconds) to simulate during this simulation step
             elapsed_sim_time: amount of time (in seconds) that's elapsed so far in the simulation
         Returns:
-            ProviderState representing the state of all vehicles this manages.
+            ProviderState representing the state of all actors this manages.
         """
         raise NotImplementedError
 
@@ -119,20 +116,20 @@ class Provider:
         """Synchronize with state managed by other Providers."""
         raise NotImplementedError
 
-    def can_accept_vehicle(self, state: VehicleState) -> bool:
-        """Whether this Provider can take control of an existing vehicle
+    def can_accept_actor(self, state: ActorState) -> bool:
+        """Whether this Provider can take control of an existing actor
         with state that was previously managed by another Provider.
         The state.role field should indicate the desired role, not the
         previous role."""
         return False
 
-    def add_vehicle(
+    def add_actor(
         self,
-        provider_vehicle: VehicleState,
+        provider_actor: ActorState,
         route: Optional[Sequence[RoadMap.Route]] = None,
     ):
-        """Management of the vehicle with state is being transferred to this Provider.
-        Will only be called if can_accept_vehicle() has returned True."""
+        """Management of the actor with state is being transferred to this Provider.
+        Will only be called if can_accept_actor() has returned True."""
         raise NotImplementedError
 
     def reset(self):
@@ -171,20 +168,20 @@ class Provider:
     @property
     def source_str(self) -> str:
         """This property should be used to fill in the source field
-        of all VehicleState objects created/managed by this Provider."""
+        of all ActorState objects created/managed by this Provider."""
         return self.__class__.__name__
 
-    def manages_vehicle(self, vehicle_id: str) -> bool:
-        """Returns True iff the vehicle referenced by vehicle_id is managed by this Provider."""
+    def manages_actor(self, actor_id: str) -> bool:
+        """Returns True iff the actor referenced by actor_id is managed by this Provider."""
         raise NotImplementedError
 
-    def stop_managing(self, vehicle_id: str):
-        """Tells the Provider to stop managing the specified vehicle;
+    def stop_managing(self, actor_id: str):
+        """Tells the Provider to stop managing the specified actor;
         it will be managed by another Provider now."""
         raise NotImplementedError
 
-    def remove_vehicle(self, vehicle_id: str):
-        """The vehicle is being removed from the simulation."""
-        if self.manages_vehicle(vehicle_id):
-            self.stop_managing(vehicle_id)
+    def remove_actor(self, actor_id: str):
+        """The actor is being removed from the simulation."""
+        if self.manages_actor(actor_id):
+            self.stop_managing(actor_id)
         # can be overridden to do more cleanup as necessary
