@@ -49,7 +49,7 @@ class Policy(BasePolicy):
         from d3rlpy.algos import CQL
 
         self.model = CQL.from_json(
-            Path(__file__).absolute().parents[0] / "model/params.json", use_gpu=True
+            Path(__file__).absolute().parents[0] / "model/params.json"
         )
         self.model.load_model(
             Path(__file__).absolute().parents[0] / "model/model_100.pt"

@@ -6,9 +6,9 @@ import subprocess
 
 
 def train(input_path):
-    from utility_cql import goal_region_reward
-    from utility_cql import get_goal_layer
-    from utility_cql import get_trans_coor
+    from utility import goal_region_reward
+    from utility import get_goal_layer
+    from utility import get_trans_coor
     import pickle
     import numpy as np
     import d3rlpy
@@ -145,7 +145,7 @@ def train(input_path):
                 maximum = [0.1, 2, 0.1]
                 action_scaler = MinMaxActionScaler(minimum=minimum, maximum=maximum)
                 model = d3rlpy.algos.CQL(
-                    use_gpu=True, batch_size=32, action_scaler=action_scaler
+                    use_gpu=True, batch_size=1, action_scaler=action_scaler
                 )
             else:
                 saved_models = glob.glob("d3rlpy_logs/*")
