@@ -1,30 +1,84 @@
-<h2>Overview</h2>
-This competition consists of two parts, namely<br>
-(a) Track-1<br>
-(b) Track-2<br>
+<h1>Overview</h1>
 
-<h2>Registering</h2>
-In order to participate, please fill out the following form and send it to `smarts4ad@gmail.com`:<br>
+<h2><a href="https://smarts-project.github.io/#the-competition">The Competition</a></h2>
+<p>
+    Autonomous driving (AD) is the next frontier of artificial intelligence and machine learning. 
+    Intending to further research in AD, we invite you to participate in an autonomous driving 
+    competition organised by Huawei Technologies Ltd. and academic collaborators.
+</p>
+
+<h2><a href="https://smarts-project.github.io/#tasks-and-evaluation">Tasks and Evaluation</a></h2>
+<p>
+    This competition seeks to advance autonomous driving by developing agents that can drive as 
+    quickly and safely as possible from the start to destination amid background traffic. Data 
+    for the competition are mined from large-scale naturalistic driving data, manipulated, and 
+    replayed in <a href="https://github.com/huawei-noah/SMARTS">SMARTS</a> simulation environment. 
+    The following typical driving scenarios are tested: cruising, overtaking, merging, left turns 
+    at unsignalized intersections and being cut off by another vehicle. For some scenarios, 
+    interactive background vehicles are added in SMARTS.
+</p>
+<p>
+    Agents will be ranked according to their task completion (i.e., % of completed scenarios), completion 
+    time (e.g., time steps taken to complete scenario), human-likeness (e.g., jerkiness, acceleration, 
+    and distance to surrounding vehicles, etc), and safety (e.g., traffic rule violations).
+</p>
+
+<h2><a href="https://smarts-project.github.io/#competition-tracks">Competition Tracks</a></h2>
+<p>There are two tracks in the competition.<br>
+    <strong>Track 1</strong>: The participants may use&nbsp;<em>any</em>&nbsp;method to develop their solutions.<br>
+    <strong>Track 2</strong>: The participants are only allowed to train their models on&nbsp;<em>offline datasets</em>.<br>
+    <br>
+    Winners in each track will receive cash prizes and will get a chance to present their innovative solutions during the virtual ceremony.
+</p>
+
+<h2><a href="https://smarts-project.github.io/#prizes">Prizes</a></h2>
+Top participants in <strong>each track</strong> will receive the following prizes:<br>
+<ul>
+    <li><strong>Gold</strong>&nbsp;US$6000</li>
+    <li><strong>Silver</strong>&nbsp;US$4000</li>
+    <li><strong>Bronze</strong>&nbsp;US$2000</li>
+</ul>
+Additional prizes:<br>
+<ul>
+    <li>US$1000 for the&nbsp;<strong>most innovative</strong>&nbsp;approach out of top-6 entries in both tracks.</li>
+    <li>US$1000 given to one of the valid submissions not in top-3 positions in either track.</li>
+</ul>
+
+<h2>Registration</h2>
+In order to participate, either fill out the following form:
+<h4><a href="https://docs.google.com/forms/d/1bIXTQL420q-cB65j1df2vhbh-79NMlm0M2G0uQtwvds">Registration form</a></h4>
+Or send a response to smarts4ad@gmail.com including the following information:
     <blockquote>
-    <b>Registration Form</b><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Public group name <b>[required]</b><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Group members <b>[required]</b><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Declared affiliations (orgs or any relation to organisers) <b>[required]</b><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Primary contact email <b>[required]</b><br>
+    <strong>Registration Form</strong><br /> 
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Public group name <strong>[required]</strong><br> 
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Group members <strong>[required]</strong><br> 
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Declared affiliations (orgs or any relation to organisers) <strong>[required]</strong><br> 
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Primary contact email <strong>[required]</strong><br>
     </blockquote>
 
 <h2>Code</h2>
 (a) Use python3.8 to develop your model.<br>
 (b) All necessary code for the competition is provided at <code>SMARTS/competition/</code> directory in branch <code>comp-1</code> of the <a href="https://github.com/huawei-noah/SMARTS/tree/comp-1">SMARTS repository</a>.<br>
-(c) Install SMARTS package from <code>comp-1</code> branch as:
-<pre><code>
-$ pip install "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1"
+(c) Install SMARTS package from <code>comp-1</code> branch as:<br>
+<pre><code>$ pip install "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1"
 </code></pre>
-(d) To obtain the entire code, run the following:
-<pre><code>
-$ git clone https://github.com/huawei-noah/SMARTS.git
+(d) To obtain the base code, run the following:<br>
+<pre><code>$ git clone https://github.com/huawei-noah/SMARTS.git
 $ git checkout comp-1
 $ cd &lt;path&gt;/SMARTS/competition    
+</code></pre>
+
+<h2>Extended Environment "bubble_env"</h2>
+(a) An additional evaluation environment is available and it is used as part of the evaluation.<br>
+(b) It can be acquired in a few ways. The easiest way is to install it through <code>pip</code>.<br>
+<pre><code>$ pip install "bubble_env @ git+https://malban@bitbucket.org/malban/bubble_env.git"</code></pre>
+(c) To directly obtain the additional environment and resources you may instead do the following:<br>
+<pre><code>$ cd &lt;path&gt;
+$ git clone https://malban@bitbucket.org/malban/bubble_env.git
+$ cd bubble_env
+$ git lfs pull # or follow instructions in ./README.md
+$ pip install -e .
+$ cd &lt;path&gt;/SMARTS/competition 
 </code></pre>
 
 <h2>Validation</h2>
