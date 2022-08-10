@@ -1,7 +1,7 @@
 # Track-1
 
 ## Objective
-Objective is to develop a single policy capable of controlling single-agent or multi-agent to complete different driving scenarios in the `multi-scenario-v0` environment. A `TargetPose` action space must be used for each agent in the `multi-scenario-v0` environment. Refer below for [environment details](#environment).
+Objective is to develop a single policy capable of controlling single-agent or multi-agent to complete different driving scenarios in the `multi-scenario-v0` environment. A `TargetPose` action space must be used for each agent. Refer below for `multi-scenario-v0` environment [details](#environment).
 
 In each driving scenario, the ego-agents must drive towards their respective goal locations. Any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models, predictive models, etc, may be used to develop the policy.
 
