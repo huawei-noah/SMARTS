@@ -96,6 +96,8 @@ setup(
             "tensorflow>=2.4.0",
         ],
         "waymo": [
+            "pathos==0.2.8",
+            "tabulate>=0.8.10",
             "waymo-open-dataset-tf-2-4-0",
         ],
         "opendrive": [
