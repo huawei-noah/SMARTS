@@ -5,8 +5,9 @@ import pickle
 from dataclasses import replace
 from typing import Optional, Sequence
 
-from envision.client import Client as Envision
 from PIL import Image, ImageDraw
+
+from envision.client import Client as Envision
 from smarts import sstudio
 from smarts.core import seed as smarts_seed
 from smarts.core.agent_interface import (

@@ -46,6 +46,7 @@ scl.add_command(run_experiment)
 
 try:
     from cli.waymo import waymo_cli
+
     scl.add_command(waymo_cli)
 except (ModuleNotFoundError, ImportError):
     print(

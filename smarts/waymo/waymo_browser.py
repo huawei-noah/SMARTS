@@ -31,11 +31,12 @@ from itertools import product
 from multiprocessing import cpu_count
 from pathlib import Path
 from typing import Dict, Generator, List, Optional, Tuple, Union
-from smarts.waymo import waymo_utils
 
 import matplotlib.pyplot as plt
 from matplotlib.animation import FFMpegWriter, FuncAnimation
 from matplotlib.lines import Line2D
+
+from smarts.waymo import waymo_utils
 
 try:
     import readline
@@ -45,6 +46,7 @@ try:
     from waymo_open_dataset.protos import scenario_pb2
 except (ModuleNotFoundError, ImportError):
     import sys
+
     print(sys.exc_info())
     print(
         "Unable to run Waymo utility. To enable, pip install the missing dependencies.\n"
