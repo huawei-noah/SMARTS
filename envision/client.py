@@ -58,7 +58,7 @@ class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, JSONEncodingState):
             return self.default(unpack(obj.data))
-        elif isinstance(obj, float):
+        elif isinstance(obj, (int, float)):
             if np.isposinf(obj):
                 obj = "Infinity"
             elif np.isneginf(obj):
@@ -66,7 +66,7 @@ class CustomJSONEncoder(json.JSONEncoder):
             elif np.isnan(obj):
                 obj = "NaN"
             return obj
-        elif obj is None or isinstance(obj, (str, bool, int)):
+        elif obj is None or isinstance(obj, (str, bool)):
             return obj
         elif isinstance(obj, (list, tuple)):
             return [self.default(x) for x in obj]
@@ -75,7 +75,7 @@ class CustomJSONEncoder(json.JSONEncoder):
         elif isinstance(obj, np.bool_):
             return bool(obj)
         elif isinstance(obj, np.ndarray):
-            return self.default(obj.tolist())
+            return [self.default(x) for x in obj]
 
         return super().default(obj)
 
@@ -178,9 +178,7 @@ class Client:
                         data_formatter.reset()
                         data_formatter.add(state)
                         state = data_formatter.resolve()
-                    state = json.dumps(
-                        JSONEncodingState(state), cls=CustomJSONEncoder, allow_nan=False
-                    )
+                    state = json.dumps(JSONEncodingState(state), cls=CustomJSONEncoder)
 
                 f.write(f"{state}\n")
 
@@ -226,9 +224,8 @@ class Client:
                     data_formatter.reset()
                     data_formatter.add(state)
                     state = data_formatter.resolve()
-                state = json.dumps(
-                    JSONEncodingState(state), cls=CustomJSONEncoder, allow_nan=False
-                )
+                state = json.dumps(JSONEncodingState(state), cls=CustomJSONEncoder)
+
             ws.send(state)
 
         def on_close(ws, code=None, reason=None):
