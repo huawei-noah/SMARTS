@@ -20,6 +20,7 @@
 import logging
 import sys
 import time
+import weakref
 from collections import deque, namedtuple
 from dataclasses import dataclass
 from functools import lru_cache
@@ -995,7 +996,7 @@ class NeighborhoodVehiclesSensor(Sensor):
 
     def __init__(self, vehicle, sim, radius=None):
         self._vehicle = vehicle
-        self._sim = sim
+        self._sim = weakref.ref(sim)
         self._radius = radius
 
     @property
@@ -1004,7 +1005,9 @@ class NeighborhoodVehiclesSensor(Sensor):
         return self._radius
 
     def __call__(self):
-        return self._sim.neighborhood_vehicles_around_vehicle(
+        sim = self._sim()
+        assert sim
+        return sim.neighborhood_vehicles_around_vehicle(
             self._vehicle, radius=self._radius
         )
 
