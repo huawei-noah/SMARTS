@@ -22,7 +22,7 @@ import logging
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
-from .actor_role import ActorRole
+from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType, Controllers
 from .provider import Provider, ProviderState
 from .road_map import RoadMap
@@ -66,7 +66,7 @@ class AgentsProvider(Provider):
             )
             del self._my_agent_vehicles[agent_id]
         boid_vehicles_map = {
-            vs.vehicle_id: agent_id
+            vs.actor_id: agent_id
             for agent_id, vss in self._my_agent_vehicles.items()
             for vs in vss
             if len(vss) > 1
@@ -83,7 +83,7 @@ class AgentsProvider(Provider):
             self._my_agent_vehicles[boid_agent] = [
                 vs
                 for vs in self._my_agent_vehicles[boid_agent]
-                if vs.vehicle_id != missing
+                if vs.actor_id != missing
             ]
 
     def perform_agent_actions(self, agent_actions: Dict[str, Any]):
@@ -107,7 +107,7 @@ class AgentsProvider(Provider):
             agent_interface = agent_manager.agent_interface_for_agent_id(agent_id)
             is_boid_agent = agent_manager.is_boid_agent(agent_id)
             for vs in vehicle_states:
-                vehicle = vehicle_index.vehicle_by_id(vs.vehicle_id)
+                vehicle = vehicle_index.vehicle_by_id(vs.actor_id)
                 vehicle_action = action[vehicle.id] if is_boid_agent else action
                 controller_state = vehicle_index.controller_state_for_vehicle_id(
                     vehicle.id
@@ -129,11 +129,11 @@ class AgentsProvider(Provider):
         provider_state = ProviderState()
         for agent_id, vehicle_states in self._my_agent_vehicles.items():
             for vs in vehicle_states:
-                vehicle = self._sim.vehicle_index.vehicle_by_id(vs.vehicle_id)
+                vehicle = self._sim.vehicle_index.vehicle_by_id(vs.actor_id)
                 vs.pose = vehicle.pose
                 vs.speed = vehicle.speed
                 vs.source = self.source_str
-                provider_state.vehicles.append(vs)
+                provider_state.actors.append(vs)
         return provider_state
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
@@ -141,32 +141,34 @@ class AgentsProvider(Provider):
         # TAI:  double-check that here?
         return self._provider_state
 
-    def can_accept_vehicle(self, state: VehicleState) -> bool:
-        return state.role == ActorRole.SocialAgent or state.role == ActorRole.EgoAgent
+    def can_accept_actor(self, state: ActorState) -> bool:
+        return isinstance(state, VehicleState) and (
+            state.role == ActorRole.SocialAgent or state.role == ActorRole.EgoAgent
+        )
 
-    def add_vehicle(
+    def add_actor(
         self,
-        provider_vehicle: VehicleState,
+        provider_actor: ActorState,
         route: Optional[Sequence[RoadMap.Route]] = None,
     ):
-        provider_vehicle.source = self.source_str
+        provider_actor.source = self.source_str
         agent_id = self._sim.vehicle_index.actor_id_from_vehicle_id(
-            provider_vehicle.vehicle_id
+            provider_actor.actor_id
         )
-        self._my_agent_vehicles.setdefault(agent_id, []).append(provider_vehicle)
+        self._my_agent_vehicles.setdefault(agent_id, []).append(provider_actor)
 
     def _agent_for_vehicle(self, vehicle_id: str) -> Optional[Tuple[str, int]]:
         for agent_id, vss in self._my_agent_vehicles.items():
             for i, vs in enumerate(vss):
-                if vs.vehicle_id == vehicle_id:
+                if vs.actor_id == vehicle_id:
                     return agent_id, i
         return None
 
-    def manages_vehicle(self, vehicle_id: str) -> bool:
-        return self._agent_for_vehicle(vehicle_id) is not None
+    def manages_actor(self, actor_id: str) -> bool:
+        return self._agent_for_vehicle(actor_id) is not None
 
-    def stop_managing(self, vehicle_id: str):
-        agent_tup = self._agent_for_vehicle(vehicle_id)
+    def stop_managing(self, actor_id: str):
+        agent_tup = self._agent_for_vehicle(actor_id)
         if agent_tup:
             agent_id, i = agent_tup
             self._my_agent_vehicles[agent_id].pop(i)

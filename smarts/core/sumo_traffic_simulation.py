@@ -32,11 +32,12 @@ from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
 from smarts.core import gen_id
-from smarts.core.actor_role import ActorRole
+from smarts.core.actor import ActorRole, ActorState
 from smarts.core.colors import SceneColors
-from smarts.core.coordinates import Dimensions, Heading, Pose
+from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
 from smarts.core.provider import ProviderRecoveryFlags, ProviderState
 from smarts.core.road_map import RoadMap
+from smarts.core.signal_provider import SignalLightState, SignalState
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils import networking
@@ -111,6 +112,8 @@ class SumoTrafficSimulation(TrafficProvider):
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
         self._allow_reload = allow_reload
+        self._traffic_lights = dict()
+        self._tls_cache = dict()
 
         # TODO: remove when SUMO fixes SUMO reset memory growth bug.
         # `sumo-gui` memory growth is faster.
@@ -309,6 +312,15 @@ class SumoTrafficSimulation(TrafficProvider):
             [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
         )
 
+        self._traffic_lights = dict()
+        for tls_id in self._traci_conn.trafficlight.getIDList():
+            self._traffic_lights[
+                tls_id
+            ] = self._traci_conn.trafficlight.getControlledLinks(tls_id)
+            self._traci_conn.trafficlight.subscribe(
+                tls_id, [tc.TL_RED_YELLOW_GREEN_STATE]
+            )
+
         # XXX: SUMO caches the previous subscription results. Calling `simulationStep`
         #      effectively flushes the results. We need to use epsilon instead of zero
         #      as zero will step according to a default (non-zero) step-size.
@@ -400,7 +412,9 @@ class SumoTrafficSimulation(TrafficProvider):
             raise error
         return ProviderState(), False
 
-    def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
+    def step(
+        self, provider_actions, dt: float, elapsed_sim_time: float
+    ) -> ProviderState:
         assert not provider_actions
         if not self.connected:
             return ProviderState()
@@ -419,12 +433,18 @@ class SumoTrafficSimulation(TrafficProvider):
         return self._sync(provider_state)
 
     def _sync(self, provider_state: ProviderState):
-        provider_vehicles = {v.vehicle_id: v for v in provider_state.vehicles}
+        provider_vehicles = {
+            v.actor_id: v for v in provider_state.actors if isinstance(v, VehicleState)
+        }
         external_vehicle_ids = {
-            v.vehicle_id for v in provider_state.vehicles if v.source != self.source_str
+            v.actor_id
+            for v in provider_vehicles.values()
+            if v.source != self.source_str
         }
         internal_vehicle_ids = {
-            v.vehicle_id for v in provider_state.vehicles if v.source == self.source_str
+            v.actor_id
+            for v in provider_vehicles.values()
+            if v.source == self.source_str
         }
 
         # Represents current state
@@ -495,7 +515,7 @@ class SumoTrafficSimulation(TrafficProvider):
             # for flag values
             try:
                 self._move_vehicle(
-                    provider_vehicle.vehicle_id,
+                    provider_vehicle.actor_id,
                     pos,
                     sumo_heading,
                     provider_vehicle.speed,
@@ -517,7 +537,7 @@ class SumoTrafficSimulation(TrafficProvider):
                     vehicle_id, provider_vehicle.dimensions, provider_vehicle.role
                 )
                 self._move_vehicle(
-                    provider_vehicle.vehicle_id,
+                    provider_vehicle.actor_id,
                     pos,
                     sumo_heading,
                     provider_vehicle.speed,
@@ -606,13 +626,70 @@ class SumoTrafficSimulation(TrafficProvider):
         self._traci_conn.vehicle.setWidth(vehicle_id, dimensions.width)
         self._traci_conn.vehicle.setHeight(vehicle_id, dimensions.height)
 
-    def _compute_provider_state(self) -> ProviderState:
-        return ProviderState(
-            vehicles=self._compute_traffic_vehicles(),
+    def _decode_tls_state(self, tls_state: str) -> SignalLightState:
+        assert len(tls_state) == 1
+        if tls_state in "gG":
+            return SignalLightState.GO
+        if tls_state in "rRs":
+            return SignalLightState.STOP
+        if tls_state in "yY":
+            return SignalLightState.CAUTION
+        if tls_state in "oO":
+            return SignalLightState.OFF
+        return SignalLightState.UNKNOWN
+
+    def _create_signal_state(
+        self, sig_id: str, controlled_links: Sequence[Tuple[str, str, int]]
+    ) -> SignalState:
+        incoming_lane_id = None
+        controlled_lanes = []
+        for link in controlled_links:
+            in_lane_id, out_lane_id, via_id = link
+            via_lane = self._scenario.road_map.lane_by_id(via_id)
+            assert via_lane
+            controlled_lanes.append(via_lane)
+            assert not incoming_lane_id or incoming_lane_id == in_lane_id
+            incoming_lane_id = in_lane_id
+        incoming_lane = self._scenario.road_map.lane_by_id(incoming_lane_id)
+        loc = incoming_lane.from_lane_coord(RefLinePoint(s=incoming_lane.length))
+        return SignalState(
+            actor_id=sig_id,
+            actor_type="signal",
+            source=self.source_str,
+            role=ActorRole.Signal,
+            state=SignalLightState.UNKNOWN,
+            stopping_pos=loc,
+            controlled_lanes=controlled_lanes,
+            last_changed=None,
         )
 
-    def manages_vehicle(self, vehicle_id: str) -> bool:
-        return vehicle_id in self._sumo_vehicle_ids
+    def _traffic_light_states(self) -> List[SignalState]:
+        signal_states = []
+        traffic_light_states = self._traci_conn.trafficlight.getAllSubscriptionResults()
+        for tls_id, tls_state in traffic_light_states.items():
+            tls_state = tls_state[tc.TL_RED_YELLOW_GREEN_STATE]
+            tls_control = self._traffic_lights.get(tls_id)
+            assert tls_control
+            for s, controlled_links in enumerate(tls_control):
+                sig_id = f"tls_{tls_id}-{s}"
+                sig_state = self._tls_cache.setdefault(
+                    sig_id, self._create_signal_state(sig_id, controlled_links)
+                )
+                prev_state = sig_state.state
+                sig_state.state = self._decode_tls_state(tls_state[s])
+                if sig_state.state != prev_state:
+                    sig_state.last_changed = self._cumulative_sim_seconds
+                signal_states.append(sig_state)
+        return signal_states
+
+    def _compute_provider_state(self) -> ProviderState:
+        self._traffic_light_states()
+        return ProviderState(
+            actors=self._compute_traffic_vehicles() + self._traffic_light_states()
+        )
+
+    def manages_actor(self, actor_id: str) -> bool:
+        return actor_id in self._sumo_vehicle_ids
 
     def _compute_traffic_vehicles(self) -> List[VehicleState]:
         self._last_traci_state = self._traci_conn.simulation.getSubscriptionResults()
@@ -709,15 +786,15 @@ class SumoTrafficSimulation(TrafficProvider):
                 VehicleState(
                     # XXX: In the case of the SUMO traffic provider, the vehicle ID is
                     #      the sumo ID is the actor ID.
-                    vehicle_id=sumo_id,
+                    actor_id=sumo_id,
+                    source=self.source_str,
+                    role=ActorRole.Social,
                     vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_front_bumper(
                         front_bumper_pos, heading, dimensions.length
                     ),
                     dimensions=dimensions,
                     speed=speed,
-                    source=self.source_str,
-                    role=ActorRole.Social,
                 )
             )
 
@@ -803,19 +880,19 @@ class SumoTrafficSimulation(TrafficProvider):
         # Sumo should already know about this and deal with it appropriately.
         pass
 
-    def stop_managing(self, vehicle_id: str):
-        self._hijacked.add(vehicle_id)
+    def stop_managing(self, actor_id: str):
+        self._hijacked.add(actor_id)
 
-    def remove_vehicle(self, vehicle_id: str):
+    def remove_actor(self, actor_id: str):
         if not self.connected:
             return
         try:
-            self._traci_conn.vehicle.remove(vehicle_id)
+            self._traci_conn.vehicle.remove(actor_id)
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
-        self._sumo_vehicle_ids.discard(vehicle_id)
-        self._hijacked.discard(vehicle_id)
-        self._non_sumo_vehicle_ids.discard(vehicle_id)
+        self._sumo_vehicle_ids.discard(actor_id)
+        self._hijacked.discard(actor_id)
+        self._non_sumo_vehicle_ids.discard(actor_id)
 
     def _shape_of_vehicle(self, sumo_vehicle_state, vehicle_id):
         p = sumo_vehicle_state[vehicle_id][tc.VAR_POSITION]
@@ -845,22 +922,27 @@ class SumoTrafficSimulation(TrafficProvider):
         )
         return vehicle_id
 
-    def can_accept_vehicle(self, state: VehicleState) -> bool:
+    def can_accept_actor(self, state: ActorState) -> bool:
         # We only accept transferred vehicles we previously used to own that
         # have since been relinquished to us by the agent that hijacked them.
         # (This is a conservative policy to avoid "glitches"; we may relax it
         # in the future.)
-        return state.role == ActorRole.Social and state.vehicle_id in self._hijacked
+        return (
+            isinstance(state, VehicleState)
+            and state.role == ActorRole.Social
+            and state.actor_id in self._hijacked
+        )
 
-    def add_vehicle(
+    def add_actor(
         self,
-        provider_vehicle: VehicleState,
+        provider_actor: ActorState,
         route: Optional[Sequence[RoadMap.Route]] = None,
     ):
-        assert provider_vehicle.vehicle_id in self._hijacked
-        self._hijacked.remove(provider_vehicle.vehicle_id)
-        provider_vehicle.source = self.source_str
-        provider_vehicle.role = ActorRole.Social
+        assert isinstance(provider_actor, VehicleState)
+        assert provider_actor.actor_id in self._hijacked
+        self._hijacked.remove(provider_actor.actor_id)
+        provider_actor.source = self.source_str
+        provider_actor.role = ActorRole.Social
         self._log.info(
-            f"traffic actor {provider_vehicle.vehicle_id} transferred to {self.source_str}."
+            f"traffic actor {provider_actor.actor_id} transferred to {self.source_str}."
         )

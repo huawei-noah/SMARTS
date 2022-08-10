@@ -30,6 +30,8 @@ from sys import maxsize
 from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from shapely.affinity import rotate as shapely_rotate
+from shapely.affinity import translate as shapely_translate
 from shapely.geometry import (
     GeometryCollection,
     LineString,
@@ -169,6 +171,35 @@ class SmartsLaneChangingModel(LaneChangingModel):
             hold_period=hold_period,
             slow_down_after=slow_down_after,
             multi_lane_cutin=multi_lane_cutin,
+        )
+
+
+class SmartsJunctionModel(JunctionModel):
+    """Implements the simple junction model built-into SMARTS.
+    Args:
+        yield_to_agents:
+            There are 3 possible values for this:
+                - "always" - traffic actors will yield to Ego and Social
+                  agents within junctions;
+                - "never" - traffic actors will never yield to Ego or Social
+                  agents within junctions;
+                - "normal" - traffic actors will attempt to honor normal
+                  right-of-way conventions, only yielding when an agent
+                  has the right-of-way.  Examples of such conventions include:
+                    - Vehicles going straight have the right-of-way over
+                      turning vehicles;
+                    - Vehicles on roads with more lanes have the right-of-way
+                      relative to vehicles on intersecting roads with less lanes;
+                    - All other things being equal, the vehicle to the right
+                      (in the counter-clockwise direction) has the right-of-way.
+        wait_to_restart:
+            The amount of time in seconds after stopping at a signal or stop sign
+            before this vehicle will start to go again.  Default:  0.0
+    """
+
+    def __init__(self, yield_to_agents: str = "normal", wait_to_restart: float = 0.0):
+        super().__init__(
+            yield_to_agents=yield_to_agents, wait_to_restart=wait_to_restart
         )
 
 
@@ -765,13 +796,19 @@ class PositionalZone(Zone):
     """A (x,y) position of the zone in the scenario."""
     size: Tuple[float, float]
     """The (length, width) dimensions of the zone."""
+    rotation: Optional[float] = None
+    """The heading direction of the bubble. (radians, clock-wise rotation)"""
 
     def to_geometry(self, road_map: Optional[RoadMap] = None) -> Polygon:
         """Generates a box zone at the given position."""
         w, h = self.size
-        p0 = (self.pos[0] - w / 2, self.pos[1] - h / 2)  # min
-        p1 = (self.pos[0] + w / 2, self.pos[1] + h / 2)  # max
-        return Polygon([p0, (p0[0], p1[1]), p1, (p1[0], p0[1])])
+        x, y = self.pos[:2]
+        p0 = (-w / 2, -h / 2)  # min
+        p1 = (w / 2, h / 2)  # max
+        poly = Polygon([p0, (p0[0], p1[1]), p1, (p1[0], p0[1])])
+        if self.rotation is not None:
+            poly = shapely_rotate(poly, self.rotation, use_radians=True)
+        return shapely_translate(poly, xoff=x, yoff=y)
 
 
 @dataclass(frozen=True)
