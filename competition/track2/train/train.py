@@ -145,12 +145,12 @@ def train(input_path):
                 maximum = [0.1, 2, 0.1]
                 action_scaler = MinMaxActionScaler(minimum=minimum, maximum=maximum)
                 model = d3rlpy.algos.CQL(
-                    use_gpu=True, batch_size=1, action_scaler=action_scaler
+                     batch_size=1, action_scaler=action_scaler
                 )
             else:
                 saved_models = glob.glob("d3rlpy_logs/*")
                 latest_model = max(saved_models, key=os.path.getctime)
-                model = CQL.from_json("d3rlpy_logs/1/params.json", use_gpu=True)
+                model = CQL.from_json("d3rlpy_logs/1/params.json")
                 model.load_model(latest_model + "/model_1.pt")
             model.fit(
                 dataset,
@@ -189,7 +189,7 @@ if __name__ == "__main__":
         "--input_dir",
         help="The path to the directory containing the offline training data",
         type=str,
-        default="../../offline_dataset/"
+        default="/SMARTS/competition/offline_dataset/"
     )
     # parser.add_argument(
     #     "--output_dir",
