@@ -23,6 +23,7 @@ import os
 import random
 import subprocess
 import time
+import weakref
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
 
@@ -35,7 +36,12 @@ from smarts.core import gen_id
 from smarts.core.actor import ActorRole, ActorState
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
-from smarts.core.provider import ProviderRecoveryFlags, ProviderState
+from smarts.core.provider import (
+    Provider,
+    ProviderManager,
+    ProviderRecoveryFlags,
+    ProviderState,
+)
 from smarts.core.road_map import RoadMap
 from smarts.core.signal_provider import SignalLightState, SignalState
 from smarts.core.sumo_road_network import SumoRoadNetwork
@@ -114,6 +120,10 @@ class SumoTrafficSimulation(TrafficProvider):
         self._allow_reload = allow_reload
         self._traffic_lights = dict()
         self._tls_cache = dict()
+        self._last_provider_state = ProviderState()
+
+        # start with the default recovery flags...
+        self._recovery_flags = super().recovery_flags
 
         # TODO: remove when SUMO fixes SUMO reset memory growth bug.
         # `sumo-gui` memory growth is faster.
@@ -150,6 +160,17 @@ class SumoTrafficSimulation(TrafficProvider):
             return
         self._sumo_proc.terminate()
         self._sumo_proc.wait()
+
+    @property
+    def recovery_flags(self) -> ProviderRecoveryFlags:
+        return self._recovery_flags
+
+    @recovery_flags.setter
+    def recovery_flags(self, flags: ProviderRecoveryFlags):
+        self._recovery_flags = flags
+
+    def set_manager(self, manager: ProviderManager):
+        self._sim = weakref.ref(manager)
 
     @property
     def headless(self):
@@ -350,9 +371,26 @@ class SumoTrafficSimulation(TrafficProvider):
         self._sumo_proc = None
         self._traci_conn = None
 
-    def _handle_traci_disconnect(self, e):
+    def _handle_traci_disconnect(
+        self,
+        e,
+        actors_relinquishable: bool = True,
+        removed_actor_id: Optional[str] = None,
+    ):
         logging.error(f"TraCI has disconnected with: {e}")
         self._close_traci_and_pipes()
+        sim = self._sim()
+        if (
+            sim
+            and actors_relinquishable
+            and self.recovery_flags & ProviderRecoveryFlags.RELINQUISH_ACTORS
+        ):
+            self._log.warning(
+                "attempting to transfer SUMO vehicles to other providers..."
+            )
+            for actor in self._last_provider_state.actors:
+                if actor.actor_id != removed_actor_id:
+                    sim.provider_relinquishing_actor(self, actor)
 
     def _remove_vehicles(self):
         vehicles_to_remove = None
@@ -378,7 +416,7 @@ class SumoTrafficSimulation(TrafficProvider):
             try:
                 self._remove_vehicles()
             except self._traci_exceptions as e:
-                self._handle_traci_disconnect(e)
+                self._handle_traci_disconnect(e, actors_relinquishable=False)
 
         if self._allow_reload:
             self._cumulative_sim_seconds = 0
@@ -410,21 +448,26 @@ class SumoTrafficSimulation(TrafficProvider):
             self._handle_traci_disconnect(error)
         elif isinstance(error, Exception):
             raise error
-        return ProviderState(), False
+        return self._last_provider_state, False
 
     def step(
         self, provider_actions, dt: float, elapsed_sim_time: float
     ) -> ProviderState:
         assert not provider_actions
         if not self.connected:
-            return ProviderState()
-        return self._step(dt)
+            self._last_provider_state = ProviderState()
+        else:
+            self._last_provider_state = self._step(dt)
+        return self._last_provider_state
 
     def _step(self, dt):
         # we tell SUMO to step through dt more seconds of the simulation
         self._cumulative_sim_seconds += dt
-        self._traci_conn.simulationStep(self._cumulative_sim_seconds)
-
+        try:
+            self._traci_conn.simulationStep(self._cumulative_sim_seconds)
+        except self._traci_exceptions as e:
+            self._handle_traci_disconnect(e)
+            return ProviderState()
         return self._compute_provider_state()
 
     def sync(self, provider_state: ProviderState):
@@ -588,11 +631,23 @@ class SumoTrafficSimulation(TrafficProvider):
         )
         self._traci_conn.vehicle.setSpeed(vehicle_id, speed)
 
-    def update_route_for_vehicle(self, vehicle_id: str, new_route_roads: Sequence[str]):
+    def update_route_for_vehicle(self, vehicle_id: str, new_route: RoadMap.Route):
+        """Sets a new route for vehicle_id, but only if it is different
+        from the previously-set route (otherwise, avoids the TraCI call).
+
+        Any sumo-special roads (e.g., junction) are removed from the new
+        route before setting it because Sumo doesn't allow specifying these
+        in the call to its setRoute() and will raise an exception otherwise."""
         if not self.connected:
             return
+        old_route = self._route_for_vehicle(vehicle_id)
+        if old_route:
+            new_route_ids = [rr for rr in new_route.road_ids if rr[0] != ":"]
+            if new_route_ids == list(old_route):
+                return
         try:
-            self._traci_conn.vehicle.setRoute(vehicle_id, new_route_roads)
+            # Note:  the first edge of the route must be the edge we're currently on...
+            self._traci_conn.vehicle.setRoute(vehicle_id, new_route.road_ids)
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
 
@@ -859,7 +914,7 @@ class SumoTrafficSimulation(TrafficProvider):
             new_route_edges = route_edges[-1:] + route_edges
             self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
 
-    def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
+    def _route_for_vehicle(self, vehicle_id: str) -> Optional[List[str]]:
         if not self.connected:
             return None
         try:
@@ -867,7 +922,15 @@ class SumoTrafficSimulation(TrafficProvider):
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
             return None
-        return route[-1]
+        return route
+
+    def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
+        route = self._route_for_vehicle(vehicle_id)
+        return route[-1] if route else None
+
+    def route_for_vehicle(self, vehicle_id: str) -> Optional[RoadMap.Route]:
+        route = self._route_for_vehicle(vehicle_id)
+        return self.route_from_road_ids(route) if route else None
 
     def reserve_traffic_location_for_vehicle(
         self,
@@ -889,7 +952,7 @@ class SumoTrafficSimulation(TrafficProvider):
         try:
             self._traci_conn.vehicle.remove(actor_id)
         except self._traci_exceptions as e:
-            self._handle_traci_disconnect(e)
+            self._handle_traci_disconnect(e, removed_actor_id=actor_id)
         self._sumo_vehicle_ids.discard(actor_id)
         self._hijacked.discard(actor_id)
         self._non_sumo_vehicle_ids.discard(actor_id)
@@ -928,21 +991,22 @@ class SumoTrafficSimulation(TrafficProvider):
         # (This is a conservative policy to avoid "glitches"; we may relax it
         # in the future.)
         return (
-            isinstance(state, VehicleState)
+            self.connected
+            and isinstance(state, VehicleState)
             and state.role == ActorRole.Social
             and state.actor_id in self._hijacked
         )
 
     def add_actor(
-        self,
-        provider_actor: ActorState,
-        route: Optional[Sequence[RoadMap.Route]] = None,
+        self, provider_actor: ActorState, from_provider: Optional[Provider] = None
     ):
         assert isinstance(provider_actor, VehicleState)
         assert provider_actor.actor_id in self._hijacked
         self._hijacked.remove(provider_actor.actor_id)
         provider_actor.source = self.source_str
         provider_actor.role = ActorRole.Social
+        # no need to get the route from from_provider because this vehicle
+        # is one that we used to manage, and Sumo/Traci should remember it.
         self._log.info(
             f"traffic actor {provider_actor.actor_id} transferred to {self.source_str}."
         )

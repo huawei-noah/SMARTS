@@ -109,6 +109,8 @@ def test_bubble_manager_state_change(smarts, mock_provider):
         (108, 0, 0): (False, False),
     }
 
+    route = smarts.road_map.route_from_road_ids(["west", "east"])
+
     for position, (shadowed, hijacked) in state_at_position.items():
         mock_provider.override_next_provider_state(
             vehicles=[
@@ -133,9 +135,7 @@ def test_bubble_manager_state_change(smarts, mock_provider):
             # XXX: note this doesn't update the plan.route for the agent stored in sensor_state,
             # XXX: so the agent will be marked off-route and done as soon as it crosses from
             # XXX: "west" to "east".
-            smarts.traffic_sims[0].update_route_for_vehicle(
-                vehicle_id, ["west", "east"]
-            )
+            smarts.traffic_sims[0].update_route_for_vehicle(vehicle_id, route)
 
         got_shadowed = index.vehicle_is_shadowed(vehicle_id)
         got_hijacked = index.vehicle_is_hijacked(vehicle_id)

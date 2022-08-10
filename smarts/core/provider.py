@@ -39,6 +39,8 @@ class ProviderRecoveryFlags(IntFlag):
     """Needed for the experiment. Results in exception if an error is thrown."""
     ATTEMPT_RECOVERY = 0x00001000
     """Provider should attempt to recover from the exception or disconnection."""
+    RELINQUISH_ACTORS = 0x00010000
+    """Provider should relinquish its agents if it cannot / will not recover."""
 
 
 @dataclass
@@ -88,9 +90,54 @@ class ProviderState:
         return bool(intersection)
 
 
+class ProviderManager:
+    """Interface to be implemented by a class that manages a set of Providers
+    that jointly control a set of actors, such that they can hand these off to
+    each other when necessary.  Actors can only be passed among Providers that
+    are managed by the same ProviderManager.  Providers can call these methods
+    on the manager to do so."""
+
+    # TODO:  do this is in a way such that external providers do not require any
+    # sort of "injection" call (like set_manager() below) to set a manager reference.
+    # One possibility:  instead of calling "provider_relinquishing_actor()", they
+    # could just set the "source" field in the ActorState object to None and
+    # other Providers that are willing to accept new actors could watch for this.
+
+    def provider_relinquishing_actor(
+        self, provider: "Provider", state: ActorState
+    ) -> Optional["Provider"]:
+        """Find a new Provider for an actor from among the Providers managed
+        by this ProviderManager.  Returns the new provider or None if a suitable
+        one could not be found, in which case the actor is removed."""
+        raise NotImplementedError
+
+    def provider_removing_actor(self, provider: "Provider", actor_state: ActorState):
+        """Called by a Provider when it is removing an actor from the simulation.
+        This was added for convenience, but it isn't always necessary to be called."""
+        raise NotImplementedError
+
+
 class Provider:
     """A Provider manages a (sub)set of actors (e.g., vehicles) that all share the same action space(s).
     This is a base class (interface) from which all Providers should inherit."""
+
+    @property
+    def recovery_flags(self) -> ProviderRecoveryFlags:
+        """Flags specifying what this provider should do if it fails.
+        (May be overridden by child classes.)"""
+        return (
+            ProviderRecoveryFlags.EXPERIMENT_REQUIRED
+            | ProviderRecoveryFlags.RELINQUISH_ACTORS
+        )
+
+    @recovery_flags.setter
+    def recovery_flags(self, flags: ProviderRecoveryFlags):
+        """Setter to allow recovery flags to be changed."""
+        raise NotImplementedError
+
+    def set_manager(self, manager: ProviderManager):
+        """Indicate the manager that this provider should inform of all actor handoffs."""
+        raise NotImplementedError
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
@@ -124,11 +171,10 @@ class Provider:
         return False
 
     def add_actor(
-        self,
-        provider_actor: ActorState,
-        route: Optional[Sequence[RoadMap.Route]] = None,
+        self, provider_actor: ActorState, from_provider: Optional["Provider"] = None
     ):
-        """Management of the actor with state is being transferred to this Provider.
+        """Management of the actor with state is being assigned
+        (or transferred if from_provider is not None) to this Provider.
         Will only be called if can_accept_actor() has returned True."""
         raise NotImplementedError
 
@@ -144,12 +190,13 @@ class Provider:
         self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
     ) -> Tuple[ProviderState, bool]:
         """Attempt to reconnect the provider if an error or disconnection occurred.
-        Implementations may choose to e-raise the passed in exception.
+        Implementations may choose to re-raise the passed in exception.
         Args:
             scenario (Scenario): The scenario of the current episode.
             elapsed_sim_time (float): The current elapsed simulation time.
             error (Optional[Exception]): An exception if an exception was thrown.
         Returns:
+            ProviderState: the state of the provider upon recovery
             bool: The success/failure of the attempt to reconnect.
         """
         if error:
