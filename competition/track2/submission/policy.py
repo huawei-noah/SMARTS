@@ -52,7 +52,7 @@ class Policy(BasePolicy):
             Path(__file__).absolute().parents[0] / "model/params.json"
         )
         self.model.load_model(
-            Path(__file__).absolute().parents[0] / "model/model_100.pt"
+            Path(__file__).absolute().parents[0] / "model/model_1.pt"
         )
 
     def act(self, obs: Dict[str, Any]):

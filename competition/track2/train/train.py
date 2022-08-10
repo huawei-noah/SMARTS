@@ -5,7 +5,7 @@ import sys
 import subprocess
 
 
-def train(input_path):
+def train(input_path, output_path):
     from utility import goal_region_reward
     from utility import get_goal_layer
     from utility import get_trans_coor
@@ -178,8 +178,8 @@ def train(input_path):
 
 def main(args: argparse.Namespace):
     input_path = args.input_dir
-    # output_path = args.output_dir
-    train(input_path)
+    output_path = args.output_dir
+    train(input_path, output_path)
 
 
 if __name__ == "__main__":
@@ -191,12 +191,12 @@ if __name__ == "__main__":
         type=str,
         default="/SMARTS/competition/offline_dataset/"
     )
-    # parser.add_argument(
-    #     "--output_dir",
-    #     help="The path to the directory storing the trained model",
-    #     type=str,
-    #     default="/output/model"
-    # )
+    parser.add_argument(
+        "--output_dir",
+        help="The path to the directory storing the trained model",
+        type=str,
+        default="/SMARTS/competition/track2/submission/model"
+    )
 
     args = parser.parse_args()
 
