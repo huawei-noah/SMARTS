@@ -173,7 +173,7 @@ def _plot_trajectories(
     first_traj = list(trajectories.values())[0]["positions"]
     ind = None
     for i in range(len(first_traj)):
-        if first_traj[i] is not None:
+        if first_traj[i][0] is not None:
             ind = i
             break
     assert ind is not None, "No valid point in first trajectory"
