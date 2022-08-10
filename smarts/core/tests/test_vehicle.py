@@ -69,12 +69,12 @@ def social_vehicle(position, heading, speed, bullet_client):
 @pytest.fixture
 def provider_vehicle(position, heading, speed):
     return VehicleState(
-        vehicle_id="sv-132",
+        actor_id="sv-132",
+        source="TESTS",
         vehicle_config_type="truck",
         pose=Pose.from_center(position, heading),
         dimensions=Dimensions(length=3, width=1, height=2),
         speed=speed,
-        source="TESTS",
     )
 
 

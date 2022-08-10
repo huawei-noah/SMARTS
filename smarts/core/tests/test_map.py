@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import math
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -29,6 +30,7 @@ from matplotlib import pyplot as plt
 
 from smarts.core.coordinates import Point
 from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
+from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.sstudio.types import MapSpec
@@ -106,9 +108,10 @@ def test_sumo_map(sumo_scenario):
 
     foes = out_lanes[0].foes
     assert foes
-    assert len(foes) == 1
+    assert len(foes) == 2
     foe_set = set(f.lane_id for f in foes)
     assert ":junction-intersection_5_0" in foe_set  # crossing from east-to-west
+    assert ":junction-intersection_5_1" in foe_set  # specified in junction's foes field
 
     # Test the lane vector for a refline point outside lane
     lane_heading_at_offset = lane.vector_at_offset(55.7)
@@ -126,10 +129,12 @@ def test_sumo_map(sumo_scenario):
     assert len(routes[0].roads) == 4
 
     route = routes[0]
-    db = route.distance_between(point, (198, 65.20, 0))
+    rpt = RoadMap.Route.RoutePoint(pt=point)
+    rendpt = RoadMap.Route.RoutePoint(pt=Point(198, 65.20))
+    db = route.distance_between(rpt, rendpt)
     assert db == 134.01
 
-    cands = route.project_along(point, 134.01)
+    cands = route.project_along(rpt, 134.01)
     for r2lane in r2.lanes:
         assert (r2lane, 53.6) in cands
 
@@ -177,7 +182,8 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
 
     r2_0_R = road_map.road_by_id("53_0_R")
     assert r2_0_R
-    assert not r2_0_R.is_junction
+    # since roads 61, 65 and 69 all join into 53, we consider it a junction
+    assert r2_0_R.is_junction
     assert r2_0_R.length == 55.6
     assert len(r2_0_R.lanes) == 2
     assert r2_0_R.lane_at_index(0).road.road_id == "53_0_R"
@@ -295,7 +301,16 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert l3.is_drivable
 
     foes = l3.foes
-    assert set(f.lane_id for f in foes) == {"58_0_R_-1", "62_0_R_-1"}
+    assert set(f.lane_id for f in foes) == {
+        "58_0_R_-1",
+        "59_0_R_-1",
+        "59_0_R_-2",
+        "62_0_R_-1",
+        "63_0_R_-1",
+        "68_0_R_-1",
+        "68_0_R_-2",
+        "69_0_R_-1",
+    }
 
     # nearest lane for a point outside road
     point = Point(164.0, -68.0, 0)
@@ -370,8 +385,8 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert lane_ids_under_wps == ["52_0_R_-1", "58_0_R_-1", "56_0_R_-1"]
 
     # distance between points along route
-    start_point = Point(x=148.0, y=-28.0, z=0.0)
-    end_point = Point(x=116.0, y=-58.0, z=0.0)
+    start_point = RoadMap.Route.RoutePoint(pt=Point(148.0, -28.0))
+    end_point = RoadMap.Route.RoutePoint(pt=Point(116.0, -58.0))
     assert round(route_52_to_56[0].distance_between(start_point, end_point), 2) == 60.55
 
     # project along route
@@ -405,8 +420,8 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     assert lane_ids_under_wps == ["50_0_R_-1", "63_0_R_-1", "54_0_R_-1"]
 
     # distance between points along route
-    start_point = Point(x=176.0, y=-58.0, z=0.0)
-    end_point = Point(x=148.0, y=-121.0, z=0.0)
+    start_point = RoadMap.Route.RoutePoint(pt=Point(176.0, -58.0))
+    end_point = RoadMap.Route.RoutePoint(pt=Point(148.0, -121.0))
     assert round(route_50_to_54[0].distance_between(start_point, end_point), 2) == 81.55
 
     # project along route
@@ -463,8 +478,16 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
             assert lane.speed_limit == 16.67
 
     # Nonexistent road/lane tests
-    assert road_map.road_by_id("") is None
-    assert road_map.lane_by_id("") is None
+    try:
+        bad_road = road_map.road_by_id("")
+        assert False, "should not get to here."
+    except:
+        pass
+    try:
+        bad_lane = road_map.lane_by_id("")
+        assert False, "should not get to here."
+    except:
+        pass
 
     # Surface tests
     surface = road_map.surface_by_id("1_1_R")
@@ -639,8 +662,8 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
     assert {"1_0_R_-2", "1_1_R_-3"} in lane_ids_under_wps
 
     # distance between points along route
-    start_point = Point(x=17.56, y=-1.67, z=0.0)
-    end_point = Point(x=89.96, y=2.15, z=0.0)
+    start_point = RoadMap.Route.RoutePoint(pt=Point(17.56, -1.67))
+    end_point = RoadMap.Route.RoutePoint(pt=Point(89.96, 2.15))
     assert round(route[0].distance_between(start_point, end_point), 2) == 72.4
     # project along route
     candidates = route[0].project_along(start_point, 70)
@@ -678,6 +701,10 @@ def test_waymo_map():
     dataset_path = os.path.join(dataset_root, dataset_file)
 
     if not os.path.exists(dataset_path):
+        print(
+            "WARNING: skipping test_waymo_map() test as dataset not found at {dataset_path}",
+            file=sys.stderr,
+        )
         return
 
     source_str = f"{dataset_path}#{scenario_id}"
@@ -896,8 +923,8 @@ def test_waymo_map():
     }
 
     # distance between points along route
-    start_point = Point(x=2778.00, y=-2639.5, z=0)
-    end_point = Point(2714.0, -2764.5, 0)
+    start_point = RoadMap.Route.RoutePoint(pt=Point(2778.00, -2639.5))
+    end_point = RoadMap.Route.RoutePoint(pt=Point(2714.0, -2764.5))
     assert (
         round(route_120_to_100[0].distance_between(start_point, end_point), 2) == 141.42
     )

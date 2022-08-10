@@ -26,19 +26,17 @@ import copy
 import json
 import os
 import re
-import shutil
 import struct
-import sys
 from itertools import product
 from multiprocessing import cpu_count
 from pathlib import Path
 from typing import Dict, Generator, List, Optional, Tuple, Union
-from smarts.waymo import waymo_utils
 
 import matplotlib.pyplot as plt
-import yaml
 from matplotlib.animation import FFMpegWriter, FuncAnimation
 from matplotlib.lines import Line2D
+
+from smarts.waymo import waymo_utils
 
 try:
     import readline
@@ -47,11 +45,12 @@ try:
     from tabulate import tabulate
     from waymo_open_dataset.protos import scenario_pb2
 except (ModuleNotFoundError, ImportError):
+    import sys
+
     print(sys.exc_info())
     print(
-        "You may not have installed the [waymo] dependencies required to run this Waymo Utility. \n"
-        "Install them first using the following command at the source directory:\n"
-        "pip install waymo-open-dataset-tf-2-4-0 tabulate==0.8.9 pathos==0.2.8 readline"
+        "Unable to run Waymo utility. To enable, pip install the missing dependencies.\n"
+        "pip install pathos==0.2.8 tabulate>=0.8.10 waymo-open-dataset-tf-2-4-0"
     )
     exit()
 

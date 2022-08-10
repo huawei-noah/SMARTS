@@ -28,6 +28,6 @@ class Info(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
 
         for agent_id in info.keys():
-            info[agent_id]["is_success"] = bool(info[agent_id].get("score", True))
+            info[agent_id]["is_success"] = bool(info[agent_id]["score"])
 
         return obs, reward, done, info

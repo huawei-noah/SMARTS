@@ -19,8 +19,6 @@
 # THE SOFTWARE.
 import multiprocessing
 import os
-import subprocess
-import sys
 from multiprocessing import Process, Semaphore, synchronize
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
