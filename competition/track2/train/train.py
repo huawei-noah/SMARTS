@@ -5,7 +5,7 @@ import sys
 import subprocess
 
 
-def train(input_path, output_path):
+def train(input_path):
     from utility_cql import goal_region_reward
     from utility_cql import get_goal_layer
     from utility_cql import get_trans_coor
@@ -31,7 +31,7 @@ def train(input_path, output_path):
     else:
         index = len(os.listdir("d3rlpy_logs/"))
 
-    for scenario in scenarios[index : len(scenarios)]:
+    for scenario in scenarios[index : 2]:
 
         obs = list()
         actions = list()
@@ -52,7 +52,7 @@ def train(input_path, output_path):
             continue
         else:
 
-            for id in vehicle_ids:
+            for id in vehicle_ids[0:2]:
                 print("adding data for vehicle id " + id + " in scenario " + scenario)
 
                 with open(
@@ -167,18 +167,19 @@ def train(input_path, output_path):
     latest_model = max(saved_models, key=os.path.getctime)
     os.rename(latest_model, "d3rlpy_logs/model")
 
-    if os.path.isdir('output/'):
-        shutil.rmtree('output/')
+    # if os.path.isdir('output/'):
+    #     shutil.rmtree('output/')
 
-    shutil.copytree('d3rlpy_logs/model', output_path)
+    shutil.copytree('d3rlpy_logs/model', '../submission/model')
+    shutil.rmtree('d3rlpy_logs')
 
 
 
 
 def main(args: argparse.Namespace):
     input_path = args.input_dir
-    output_path = args.output_dir
-    train(input_path, output_path)
+    # output_path = args.output_dir
+    train(input_path)
 
 
 if __name__ == "__main__":
@@ -188,29 +189,29 @@ if __name__ == "__main__":
         "--input_dir",
         help="The path to the directory containing the offline training data",
         type=str,
-        default="/offline_dataset"
+        default="../../offline_dataset/"
     )
-    parser.add_argument(
-        "--output_dir",
-        help="The path to the directory storing the trained model",
-        type=str,
-        default="/output/model"
-    )
+    # parser.add_argument(
+    #     "--output_dir",
+    #     help="The path to the directory storing the trained model",
+    #     type=str,
+    #     default="/output/model"
+    # )
 
     args = parser.parse_args()
 
-    # Install requirements.
-    req_file = os.path.join(str(Path(__file__).absolute().parent), "requirements.txt")
-    sys.path.insert(0, str(Path(__file__).absolute().parent))
-    subprocess.check_call(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
-        ]
-    )
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+    # # Install requirements.
+    # req_file = os.path.join(str(Path(__file__).absolute().parent), "requirements.txt")
+    # sys.path.insert(0, str(Path(__file__).absolute().parent))
+    # subprocess.check_call(
+    #     [ 
+    #         sys.executable,
+    #         "-m",
+    #         "pip",
+    #         "install",
+    #         "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
+    #     ]
+    # )
+    # subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
 
     main(args)
