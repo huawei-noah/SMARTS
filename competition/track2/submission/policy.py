@@ -46,6 +46,7 @@ class Policy(BasePolicy):
         performed here. To be implemented by the user.
         """
 
+        # Load saved model and instantiate any needed objects.
         from d3rlpy.algos import CQL
 
         self.model = CQL.from_json(
@@ -63,6 +64,7 @@ class Policy(BasePolicy):
             Dict[str, Any]: A dictionary of actions for each ego agent.
         """
 
+        # Use saved model to predict multi-agent action output given multi-agent SMARTS observation input.
         wrapped_act = {}
         for agent_id, agent_obs in obs.items():
             bev_obs = np.moveaxis(agent_obs["rgb"], -1, 0)
