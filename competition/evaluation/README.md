@@ -13,13 +13,33 @@ This folder contains the python script that CodaLab uses to evaluate the submiss
 + Factors included in `Humanness` aspect, include 
     + distance to obstacles
     + angular jerk
-    + linear jeark
+    + linear jerk
     + lane center offset
 + Factors included in the `Rules` aspect, include events such as 
     + exceeding speed limit
     + driving wrong way
 + Each score component must be minimized. The lower the value, the better it is.
 + Overall rank is obtained by sorting each score component in ascending order, with a priority order of Completion > Time > Humanness > Rules .
+
+## Setup
++ There is a utility for setting up the base dependencies.
++ Be aware that you will need [git lfs](git-lfs.github.com) in order to get all dependencies.
+
+    ```bash
+    # Use --no-cache if you wish a full reinstall
+    $ python -m auto_install
+    ```
++ The alternative is to install from source.
+
+    ```bash
+    $ cd <to/your/repo/storage>
+    $ git clone <smarts_repo> # likely already located at ../.. from this file
+    $ pip install -e <smarts_repo>
+    # check that git lfs is installed:
+    $ git lfs --version
+    $ git clone https://malban@bitbucket.org/malban/bubble_env.git
+    $ pip install -e ./bubble_env
+    ```
 
 ## Local evaluation
 + To evaluate the trained model locally, do the following:

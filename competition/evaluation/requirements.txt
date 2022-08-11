@@ -1,0 +1,2 @@
+smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1
+bubble_env @ git+https://bitbucket.org/malban/bubble_env.git@master

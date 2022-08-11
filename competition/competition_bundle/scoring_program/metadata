@@ -1,2 +1,2 @@
-command: python3.8 $program/evaluate.py --input_dir=$input --output_dir=$output
+command: python3.8 $program/evaluate.py --input_dir=$input --output_dir=$output --auto_install_pip_deps
 description: The competition evaluation program
