@@ -31,7 +31,7 @@ def train(input_path, output_path):
     else:
         index = len(os.listdir("d3rlpy_logs/"))
 
-    for scenario in scenarios[index : 2]:
+    for scenario in scenarios[index:2]:
 
         obs = list()
         actions = list()
@@ -47,7 +47,7 @@ def train(input_path, output_path):
                 vehicle_id = match.group(1)
                 if vehicle_id not in vehicle_ids:
                     vehicle_ids.append(vehicle_id)
-        
+
         if len(vehicle_ids) < 2:
             continue
         else:
@@ -56,7 +56,8 @@ def train(input_path, output_path):
                 print("adding data for vehicle id " + id + " in scenario " + scenario)
 
                 with open(
-                    input_path + scenario + "/Agent-history-vehicle-" + id + ".pkl", "rb"
+                    input_path + scenario + "/Agent-history-vehicle-" + id + ".pkl",
+                    "rb",
                 ) as f:
                     vehicle_data = pickle.load(f)
                 image_names = list()
@@ -144,9 +145,7 @@ def train(input_path, output_path):
                 minimum = [-0.1, 0, -0.1]
                 maximum = [0.1, 2, 0.1]
                 action_scaler = MinMaxActionScaler(minimum=minimum, maximum=maximum)
-                model = d3rlpy.algos.CQL(
-                     batch_size=1, action_scaler=action_scaler
-                )
+                model = d3rlpy.algos.CQL(batch_size=1, action_scaler=action_scaler)
             else:
                 saved_models = glob.glob("d3rlpy_logs/*")
                 latest_model = max(saved_models, key=os.path.getctime)
@@ -165,10 +164,8 @@ def train(input_path, output_path):
 
     saved_models = glob.glob("d3rlpy_logs/*")
     latest_model = max(saved_models, key=os.path.getctime)
-    os.rename(latest_model, os.path.join(output_path, 'model'))
-    shutil.rmtree('d3rlpy_logs')
-
-
+    os.rename(latest_model, os.path.join(output_path, "model"))
+    shutil.rmtree("d3rlpy_logs")
 
 
 def main(args: argparse.Namespace):
@@ -184,29 +181,15 @@ if __name__ == "__main__":
         "--input_dir",
         help="The path to the directory containing the offline training data",
         type=str,
-        default="/SMARTS/competition/offline_dataset/"
+        default="/SMARTS/competition/offline_dataset/",
     )
     parser.add_argument(
         "--output_dir",
         help="The path to the directory storing the trained model",
         type=str,
-        default="/SMARTS/competition/track2/submission/"
+        default="/SMARTS/competition/track2/submission/",
     )
 
     args = parser.parse_args()
-
-    # # Install requirements.
-    # req_file = os.path.join(str(Path(__file__).absolute().parent), "requirements.txt")
-    # sys.path.insert(0, str(Path(__file__).absolute().parent))
-    # subprocess.check_call(
-    #     [ 
-    #         sys.executable,
-    #         "-m",
-    #         "pip",
-    #         "install",
-    #         "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
-    #     ]
-    # )
-    # subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
 
     main(args)

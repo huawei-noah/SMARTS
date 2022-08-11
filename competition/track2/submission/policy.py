@@ -51,9 +51,7 @@ class Policy(BasePolicy):
         self.model = CQL.from_json(
             Path(__file__).absolute().parents[0] / "model/params.json"
         )
-        self.model.load_model(
-            Path(__file__).absolute().parents[0] / "model/model_1.pt"
-        )
+        self.model.load_model(Path(__file__).absolute().parents[0] / "model/model_1.pt")
 
     def act(self, obs: Dict[str, Any]):
         """Act function to be implemented by user.
@@ -76,11 +74,12 @@ class Policy(BasePolicy):
             goal_obs = get_goal_layer(
                 goal_x, goal_y, current_x, current_y, current_heading
             )
-
             final_obs = list()
             final_obs.append(np.concatenate((bev_obs, goal_obs), axis=0))
             final_obs = np.array(final_obs, dtype=np.uint8)
+
             action = self.model.predict(final_obs)[0]
             target_pose = global_target_pose(action, agent_obs)
             wrapped_act.update({agent_id: target_pose})
+
         return wrapped_act
