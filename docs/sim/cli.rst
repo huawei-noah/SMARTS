@@ -19,7 +19,8 @@ Commands:
   envision  Commands to utilize an Envision server.
   run       Run an experiment on a scenario
   scenario  Generate, replay or clean scenarios.
-  ultra     Utilites for working with the ULTRA benchmark.
+  ultra     Utilities for working with the ULTRA benchmark.
+  waymo     Utilities for using the Waymo Motion Dataset with SMARTS.
   zoo       Build, install, or instantiate workers.
 
 --------
@@ -66,11 +67,10 @@ Options:
   --help  Show this message and exit.
 
 Commands:
-  browse-waymo  Browse Waymo TFRecord datasets using...
-  build         Generate a single scenario
-  build-all     Generate all scenarios under the given directories
-  clean         Remove previously generated scenario artifacts.
-  replay        Play saved Envision data files in Envision.
+  build      Generate a single scenario
+  build-all  Generate all scenarios under the given directories
+  clean      Remove previously generated scenario artifacts.
+  replay     Play saved Envision data files in Envision.
 
 build
 ^^^^^
@@ -125,27 +125,13 @@ Options:
   --endpoint TEXT
   --help                Show this message and exit.
 
-browse-waymo
-^^^^^^^^^^^^
-
-Usage: scl scenario browse-waymo [OPTIONS] <script>
-
-  Browse Waymo TFRecord datasets using smarts/waymo/waymo_browser.py, a text-
-  based browser utility
-
-Options:
-  -t, --target-base-path PATH  Default target base path to export scenarios to
-  -i, --import-tags PATH       .json file to import tags for tfRecord
-                               scenarios from
-  --help                       Show this message and exit.
-
 -----
 ultra
 -----
 
 Usage: scl ultra [OPTIONS] COMMAND [ARGS]...
 
-  Utilites for working with the ULTRA benchmark.
+  Utilities for working with the ULTRA benchmark.
 
 Options:
   --help  Show this message and exit.
@@ -223,4 +209,54 @@ Options:
                             when running an experiment
   -p, --envision_port TEXT  Port on which Envision will run.
   --help                    Show this message and exit.
+
+-----
+waymo
+-----
+
+Usage: scl waymo [OPTIONS] COMMAND [ARGS]...
+
+  Utilities for using the Waymo Motion Dataset with SMARTS. See `scl waymo
+  COMMAND --help` for further options.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  export    Export the Waymo scenario to a SMARTS scenario.
+  overview  Display summary info for each scenario in the TFRecord file.
+  preview   Plot the map and trajectories of the scenario.
+
+overview
+^^^^^^^^
+
+Usage: scl waymo overview [OPTIONS] <tfrecord_file>
+
+  Display summary info for each scenario in the TFRecord file.
+
+Options:
+  --help  Show this message and exit.
+
+preview
+^^^^^^^
+
+Usage: scl waymo preview [OPTIONS] <tfrecord_file> <scenario_id>
+
+  Plot the map and trajectories of the scenario.
+
+Options:
+  --animate         Animate the vehicle trajectories.
+  --label_vehicles  Plot the initial positions of all vehicles with their IDs.
+  --help            Show this message and exit.
+
+export
+^^^^^^
+
+Usage: scl waymo export [OPTIONS] <tfrecord_file> <scenario_id>
+                        <export_folder>
+
+  Export the Waymo scenario to a SMARTS scenario.
+
+Options:
+  --help  Show this message and exit.
 
