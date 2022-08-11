@@ -79,7 +79,24 @@ Track-2 participants are required to submit their training code for us to train 
         --volume=<path>/output:/SMARTS/competition/output
         <username/imagename:version>
     ```
-1. New offline dataset is made available to the container via a mapped volume at `/SMARTS/competition/offline_dataset` directory.
+1. New offline dataset is made available to the container via a mapped volume at `/SMARTS/competition/offline_dataset` directory. The directory has the following structure.
+    ```text
+    offline_dataset                
+        ├── <scenario_id>                                          # each scene in tfrecord
+        |   ├── <time>_<vehicle_id>.png                            # ego-centric bird-eye view image
+        |   ├── <time>_<vehicle_id>.png                            # ego-centric bird-eye view image        
+        |   |  .
+        |   |  .
+        |   └── <scenario_name>_<traffic_name>_<vehicle_id>.pkl    # state space of the vehicle
+        ├── <scenario_id>                                          # each scene in tfrecord
+        |   ├── <time>_<vehicle_id>.png                            # ego-centric bird-eye view image
+        |   ├── <time>_<vehicle_id>.png                            # ego-centric bird-eye view image        
+        |   |  .
+        |   |  .
+        |   └── <scenario_name>_<traffic_name>_<vehicle_id>.pkl    # state space of the vehicle
+        |   .
+        |   .
+    ```
 1. The `/SMARTS/competition/offline_dataset` directory contains equivalent SMARTS observations, converted from selected Waymo and NGSIM datasets.
 1. Inside the container, on completion of training, the trained model should be saved in `/SMARTS/competition/track2/submission` folder such that calling `/SMARTS/competition/track2/submission/policy.py::Policy.act(obs)` with a multi-agent SMARTS observation as input returns a multi-agent `TargetPose` action as output.
 1. The `/SMARTS/competition/track2/submission` folder will be zipped, mapped out from the container, and evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
