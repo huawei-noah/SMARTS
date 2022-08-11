@@ -24,8 +24,9 @@ from __future__ import annotations
 import math
 from bisect import bisect
 from dataclasses import dataclass
+from enum import IntEnum
 from functools import lru_cache
-from typing import List, Optional, Sequence, Set, Tuple
+from typing import Any, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 from cached_property import cached_property
@@ -41,9 +42,7 @@ from .utils.math import (
     vec_to_radians,
 )
 
-# TODO:
-# - also consider Esri, QGIS and Google Maps formats
-# -https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09
+# TODO:  also consider OSM, Esri, QGIS and Google Maps formats
 
 
 class RoadMap:
@@ -72,6 +71,11 @@ class RoadMap:
         # map units per meter
         return 1.0
 
+    @property
+    def dynamic_features(self) -> List[RoadMap.Feature]:
+        """All dynamic features associated with this road map."""
+        return []
+
     def is_same_map(self, map_spec) -> bool:
         """Check if the MapSpec Object source points to the same RoadMap instance as the current"""
         raise NotImplementedError
@@ -91,6 +95,21 @@ class RoadMap:
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         """Find a road in this road map that has the given identifier."""
         raise NotImplementedError()
+
+    def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
+        """Find a feature in this road map that has the given identifier."""
+        raise NotImplementedError()
+
+    def dynamic_features_near(
+        self, point: Point, radius: float
+    ) -> List[Tuple[RoadMap.Feature, float]]:
+        """Find features within radius meters of the given point."""
+        result = []
+        for feat in self.dynamic_features:
+            dist = feat.min_dist_from(point)
+            if dist <= radius:
+                result.append((feat, dist))
+        return result
 
     def nearest_surfaces(
         self, point: Point, radius: Optional[float] = None
@@ -140,7 +159,10 @@ class RoadMap:
         raise NotImplementedError()
 
     def random_route(
-        self, max_route_len: int = 10, starting_road: Optional[RoadMap.Road] = None
+        self,
+        max_route_len: int = 10,
+        starting_road: Optional[RoadMap.Road] = None,
+        only_drivable: bool = True,
     ) -> RoadMap.Route:
         """Generate a random route contained in this road map.
         Args:
@@ -148,6 +170,9 @@ class RoadMap:
                 The total number of roads in the route.
             starting_road:
                 If specified, the route will start with this road.
+            only_drivable:
+                If True, will restrict the route to only driveable roads;
+                otherwise can incl. non-drivable roads (such as bikelanes) too.
         Returns:
             A randomly generated route.
         """
@@ -155,6 +180,10 @@ class RoadMap:
 
     def empty_route(self) -> RoadMap.Route:
         """Generate an empty route."""
+        raise NotImplementedError()
+
+    def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
+        """Generate a route containing the specified roads."""
         raise NotImplementedError()
 
     def waypoint_paths(
@@ -196,7 +225,7 @@ class RoadMap:
         @property
         def features(self) -> List[RoadMap.Feature]:
             """The features that this surface contains."""
-            raise NotImplementedError()
+            return []
 
         def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
             """The features on this surface near the given pose."""
@@ -219,6 +248,15 @@ class RoadMap:
 
     class Lane(Surface):
         """Describes a lane surface."""
+
+        def __hash__(self) -> int:
+            """Derived classes must implement a suitable hash function
+            so that Lane objects may be used deterministically in sets."""
+            raise NotImplementedError()
+
+        def __eq__(self, other) -> bool:
+            """Required for set usage; derived classes may override this."""
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
 
         @property
         def lane_id(self) -> str:
@@ -440,6 +478,15 @@ class RoadMap:
         """This is akin to a 'road segment' in real life.
         Many of these might correspond to a single named road in reality."""
 
+        def __hash__(self) -> int:
+            """Derived classes must implement a suitable hash function
+            so that Road objects may be used deterministically in sets."""
+            raise NotImplementedError()
+
+        def __eq__(self, other) -> bool:
+            """Required for set usage; derived classes may override this."""
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
+
         @property
         def road_id(self) -> str:
             """The identifier for this road."""
@@ -508,8 +555,30 @@ class RoadMap:
             """Gets the lane with the given index."""
             raise NotImplementedError()
 
+    class FeatureType(IntEnum):
+        """Built-in feature types usable across all map implementations."""
+
+        UNKNOWN = 0
+        CROSSWALK = 1
+        SPEED_BUMP = 2
+        STOP_SIGN = 3
+        ROAD_SIGN = 4  # except for stop signs
+
+        # Note that some signals can move around.  For example, flashing
+        # arrows on the back of trucks to funnel vehicles into
+        # one lane in construction zones (and towable signs that do
+        # the same thing), flashing lights on other caution signs,
+        # signals on closed sections of roads, etc.
+        # Such signals are not *map* features.
+        # (For these, we can use a specialized SignalProvider.)
+        FIXED_LOC_SIGNAL = 5
+
+        CUSTOM = 6
+
     class Feature:
         """Describes a map feature."""
+
+        # TAI: consider support for repeating Features
 
         @property
         def feature_id(self) -> str:
@@ -517,13 +586,14 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
-        def type(self) -> int:
+        def type(self) -> RoadMap.FeatureType:
             """The type of this feature."""
             raise NotImplementedError()
 
         @property
         def type_as_str(self) -> str:
-            """The type of this feature."""
+            """The type of this feature as a string.
+            This is useful for resolving CUSTOM feature types."""
             raise NotImplementedError()
 
         @property
@@ -531,12 +601,42 @@ class RoadMap:
             """The geometry that represents this feature."""
             raise NotImplementedError()
 
+        @property
+        def is_dynamic(self) -> bool:
+            """True iff this feature has dynamic state (such as a traffic light); False otherwise."""
+            # this may be overridden in the case of custom feature types
+            return self.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL
+
+        @property
+        def type_specific_info(self) -> Optional[Any]:
+            """Can be anything specific to the feature type; defaults to None."""
+            return None
+
+        def min_dist_from(self, point: Point) -> float:
+            """Returns the euclidian (as-the-crow-flies) distance
+            between point and the nearest part of this feature."""
+            raise NotImplementedError()
+
     class Route:
         """Describes a route between two roads."""
+
+        def __hash__(self) -> int:
+            """Derived classes must implement a suitable hash function
+            so that Route objects may be used deterministically in sets."""
+            raise NotImplementedError()
+
+        def __eq__(self, other) -> bool:
+            """Required for set usage; derived classes may override this."""
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
 
         @property
         def roads(self) -> List[RoadMap.Road]:
             """A possibly-unordered list of roads that this route covers"""
+            return []
+
+        @property
+        def road_ids(self) -> List[str]:
+            """A possibly-unordered list of road-ids that this route covers"""
             return []
 
         @property
@@ -549,16 +649,56 @@ class RoadMap:
             """A sequence of polygon vertices describing the shape of each road on the route"""
             return []
 
-        def distance_between(self, start: Point, end: Point) -> float:
+        @dataclass(frozen=True)
+        class RoutePoint:
+            """A Point within a Route."""
+
+            pt: Point
+            # Because Routes may contain sub-cycles, we may need to specify the
+            # index into the roads sequence where we currently expect to be
+            road_index: Optional[int] = None
+
+        @dataclass(frozen=True)
+        class RouteLane:
+            """A Lane within a Route."""
+
+            lane: RoadMap.Lane
+            # Because Routes may contain sub-cycles, we may need to specify the
+            # index into the roads sequence where we currently expect to be
+            road_index: Optional[int] = None
+
+            def __hash__(self) -> int:
+                return hash(self.lane) + hash(self.road_index)
+
+            def __eq__(self, other) -> bool:
+                return self.__class__ == other.__class__ and hash(self) == hash(other)
+
+        def distance_between(self, start: RoutePoint, end: RoutePoint) -> float:
             """Distance along route between two points."""
             raise NotImplementedError()
 
         def project_along(
-            self, start: Point, distance: float
+            self, start: RoutePoint, distance: float
         ) -> Set[Tuple[RoadMap.Lane, float]]:
             """Starting at point on the route, returns a set of possible
             locations (lane and offset pairs) further along the route that
             are distance away, not including lane changes."""
+            raise NotImplementedError()
+
+        def distance_from(
+            self, cur_lane: RouteLane, route_road: Optional[RoadMap.Road] = None
+        ) -> Optional[float]:
+            """Returns the distance along the route from the beginning of the current lane
+            to the beginning of the next occurrence of route_road, or if route_road is None,
+            then to the end of the route."""
+            raise NotImplementedError()
+
+        def next_junction(
+            self, cur_lane: RouteLane, offset: float
+        ) -> Optional[Tuple[RoadMap.Lane, float]]:
+            """Returns a lane within the next junction along the route from beginning
+            of the current lane to the returned lane it connects with in the junction,
+            and the distance to it from this offset, or (None, inf) if there aren't any."""
             raise NotImplementedError()
 
 
@@ -638,10 +778,16 @@ class RoadMapWithCaches(RoadMap):
         super().__init__()
         self._seg_cache = RoadMapWithCaches._SegmentCache()
 
-    class Lane(RoadMap.Lane, RoadMap.Surface):
+    class Lane(RoadMap.Lane):
         """Describes a RoadMapWithCaches lane surface."""
 
         def __init__(self, lane_id: str, road_map):
+            # The following is needed b/c derived classes are using
+            # multiple-inheritance.  This will call the next class's init
+            # in the MRO (which is probably a descendent of Surface).
+            # pytype: disable=wrong-arg-count
+            super().__init__(lane_id, road_map)
+            # pytype: enable=wrong-arg-count
             self._lane_id = lane_id
             self._map = road_map
 

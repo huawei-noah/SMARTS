@@ -32,6 +32,7 @@ from typing import Any, Callable, Deque, Dict, Generator, Iterable, Optional
 import numpy as np
 
 from smarts.core.coordinates import BoundingBox, Point
+from smarts.core.signal_provider import SignalLightState
 from smarts.core.utils.file import read_tfrecord_file
 from smarts.core.utils.math import (
     circular_mean,
@@ -41,9 +42,12 @@ from smarts.core.utils.math import (
 from smarts.sstudio import types
 
 try:
-    from waymo_open_dataset.protos import scenario_pb2  # pytype: disable=import-error
+    # pytype: disable=import-error
+    from waymo_open_dataset.protos import scenario_pb2
+    from waymo_open_dataset.protos.map_pb2 import TrafficSignalLaneState
+
+    # pytype: enable=import-error
 except ImportError:
-    print(sys.exc_info())
     print(
         "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
     )
@@ -140,6 +144,11 @@ class _TrajectoryDataset:
         return self._scale
 
     @property
+    def traffic_light_rows(self) -> Iterable:
+        """Iterable dataset rows representing traffic light states (if present)."""
+        raise NotImplementedError
+
+    @property
     def rows(self) -> Iterable:
         """The iterable rows of the dataset."""
         raise NotImplementedError
@@ -204,6 +213,15 @@ class _TrajectoryDataset:
                    FOREIGN KEY (vehicle_id) REFERENCES Vehicle(id)
                ) WITHOUT ROWID"""
         )
+        ccur.execute(
+            """CREATE TABLE TrafficLightState (
+                   sim_time REAL NOT NULL,
+                   state INTEGER NOT NULL,
+                   stop_point_x REAL NOT NULL,
+                   stop_point_y REAL NOT NULL,
+                   lane INTEGER NOT NULL
+               )"""
+        )
         dbconxn.commit()
         ccur.close()
 
@@ -230,6 +248,9 @@ class _TrajectoryDataset:
         # TAI:  can use executemany() and batch insert rows together if this turns out to be too slow...
         insert_vehicle_sql = "INSERT INTO Vehicle VALUES (?, ?, ?, ?, ?, ?)"
         insert_traj_sql = "INSERT INTO Trajectory VALUES (?, ?, ?, ?, ?, ?, ?)"
+        insert_traffic_light_sql = (
+            "INSERT INTO TrafficLightState VALUES (?, ?, ?, ?, ?)"
+        )
         vehicle_ids = set()
         itcur = dbconxn.cursor()
 
@@ -274,6 +295,26 @@ class _TrajectoryDataset:
             # Ignore datapoints with NaNs
             if not any(a is not None and np.isnan(a) for a in traj_args):
                 itcur.execute(insert_traj_sql, traj_args)
+
+        # Insert traffic light states if available
+        try:
+            for row in self.traffic_light_rows:
+                tls_args = (
+                    round(
+                        float(self.column_val_in_row(row, "sim_time")) / 1000,
+                        time_precision,
+                    ),
+                    int(self.column_val_in_row(row, "state")),
+                    float(self.column_val_in_row(row, "stop_point_x") + x_offset)
+                    * self.scale,
+                    float(self.column_val_in_row(row, "stop_point_y") + y_offset)
+                    * self.scale,
+                    float(self.column_val_in_row(row, "lane")),
+                )
+                itcur.execute(insert_traffic_light_sql, tls_args)
+        except NotImplementedError:
+            pass
+
         itcur.close()
         dbconxn.commit()
 
@@ -291,6 +332,9 @@ class _TrajectoryDataset:
         icur.execute("CREATE INDEX Trajectory_Time ON Trajectory (sim_time)")
         icur.execute("CREATE INDEX Trajectory_Vehicle ON Trajectory (vehicle_id)")
         icur.execute("CREATE INDEX Vehicle_Type ON Vehicle (type)")
+        icur.execute(
+            "CREATE INDEX TrafficLightState_SimTime ON TrafficLightState (sim_time)"
+        )
         dbconxn.commit()
         icur.close()
 
@@ -753,6 +797,24 @@ class Waymo(_TrajectoryDataset):
     def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
 
+    def _get_scenario(self):
+        if "scenario_id" not in self._dataset_spec:
+            errmsg = "Dataset spec requires scenario_id to be set"
+            self._log.error(errmsg)
+            raise ValueError(errmsg)
+        scenario_id = self._dataset_spec["scenario_id"]
+        # Loop over the scenarios in the TFRecord and check its ID for a match
+        scenario = None
+        dataset = read_tfrecord_file(self._dataset_spec["input_path"])
+        for record in dataset:
+            parsed_scenario = scenario_pb2.Scenario()
+            parsed_scenario.ParseFromString(bytearray(record))
+            if parsed_scenario.scenario_id == scenario_id:
+                return parsed_scenario
+        raise ValueError(
+            f"Dataset file does not contain scenario with id: {scenario_id}"
+        )
+
     @property
     def rows(self) -> Generator[Dict, None, None]:
         def lerp(a: float, b: float, t: float) -> float:
@@ -765,26 +827,7 @@ class Waymo(_TrajectoryDataset):
                 angle -= 2 * math.pi
             return angle
 
-        if "scenario_id" not in self._dataset_spec:
-            errmsg = "Dataset spec requires scenario_id to be set"
-            self._log.error(errmsg)
-            raise ValueError(errmsg)
-        scenario_id = self._dataset_spec["scenario_id"]
-
-        # Loop over the scenarios in the TFRecord and check its ID for a match
-        scenario = None
-        dataset = read_tfrecord_file(self._dataset_spec["input_path"])
-        for record in dataset:
-            parsed_scenario = scenario_pb2.Scenario()
-            parsed_scenario.ParseFromString(bytearray(record))
-            if parsed_scenario.scenario_id == scenario_id:
-                scenario = parsed_scenario
-                break
-
-        if not scenario:
-            errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
-            self._log.error(errmsg)
-            raise ValueError(errmsg)
+        scenario = self._get_scenario()
 
         for i in range(len(scenario.tracks)):
             vehicle_id = scenario.tracks[i].id
@@ -888,6 +931,42 @@ class Waymo(_TrajectoryDataset):
                 rows[j]["sim_time"] *= 1000.0
                 rows[j]["heading_rad"] = constrain_angle(rows[j]["heading_rad"])
                 yield rows[j]
+
+    def _encode_tl_state(self, waymo_state) -> SignalLightState:
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_STOP:
+            return SignalLightState.STOP
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_CAUTION:
+            return SignalLightState.CAUTION
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_GO:
+            return SignalLightState.GO
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_ARROW_STOP:
+            return SignalLightState.STOP | SignalLightState.ARROW
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_ARROW_CAUTION:
+            return SignalLightState.CAUTION | SignalLightState.ARROW
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_ARROW_GO:
+            return SignalLightState.GO | SignalLightState.ARROW
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_FLASHING_STOP:
+            return SignalLightState.STOP | SignalLightState.FLASHING
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_FLASHING_CAUTION:
+            return SignalLightState.CAUTION | SignalLightState.FLASHING
+        return SignalLightState.UNKNOWN
+
+    @property
+    def traffic_light_rows(self) -> Generator[Dict, None, None]:
+        scenario = self._get_scenario()
+        num_steps = len(scenario.timestamps_seconds)
+        for i in range(num_steps):
+            dynamic_states = scenario.dynamic_map_states[i]
+            sim_time = scenario.timestamps_seconds[i] * 1000
+            for lane_state in dynamic_states.lane_states:
+                row = {
+                    "sim_time": sim_time,
+                    "state": self._encode_tl_state(lane_state.state).value,
+                    "stop_point_x": lane_state.stop_point.x,
+                    "stop_point_y": lane_state.stop_point.y,
+                    "lane": lane_state.lane,
+                }
+                yield row
 
     @staticmethod
     def _lookup_agent_type(agent_type: int) -> int:

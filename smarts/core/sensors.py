@@ -233,7 +233,7 @@ def _make_vehicle_observation(road_map, neighborhood_vehicle):
         nv_lane_index = None
 
     return VehicleObservation(
-        id=neighborhood_vehicle.vehicle_id,
+        id=neighborhood_vehicle.actor_id,
         position=neighborhood_vehicle.pose.position,
         bounding_box=neighborhood_vehicle.dimensions,
         heading=neighborhood_vehicle.pose.heading,
@@ -338,7 +338,7 @@ class Sensors:
             )
 
         ego_vehicle = EgoVehicleObservation(
-            id=ego_vehicle_state.vehicle_id,
+            id=ego_vehicle_state.actor_id,
             position=ego_vehicle_state.pose.point.as_np_array,
             bounding_box=ego_vehicle_state.dimensions,
             heading=Heading(ego_vehicle_state.pose.heading),
@@ -403,6 +403,10 @@ class Sensors:
                 f"{agent_type} with Agent ID: {agent_id} is done on the first step"
             )
 
+        agent_controls = agent_id == sim.vehicle_index.actor_id_from_vehicle_id(
+            ego_vehicle_state.actor_id
+        )
+
         return (
             Observation(
                 dt=sim.last_dt,
@@ -410,10 +414,7 @@ class Sensors:
                 elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
                 ego_vehicle_state=ego_vehicle,
-                under_this_agent_control=agent_id
-                == sim.vehicle_index.actor_id_from_vehicle_id(
-                    ego_vehicle_state.vehicle_id
-                ),
+                under_this_agent_control=agent_controls,
                 neighborhood_vehicle_states=neighborhood_vehicles,
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
@@ -530,7 +531,7 @@ class Sensors:
 
     @classmethod
     def _vehicle_is_off_road(cls, sim, vehicle):
-        return not sim.scenario.road_map.road_with_point(Point(*vehicle.position))
+        return not sim.scenario.road_map.road_with_point(vehicle.pose.point)
 
     @classmethod
     def _vehicle_is_on_shoulder(cls, sim, vehicle):
@@ -576,7 +577,7 @@ class Sensors:
         sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
         route_roads = sensor_state.plan.route.roads
 
-        vehicle_pos = Point(*vehicle.position)
+        vehicle_pos = vehicle.pose.point
         vehicle_minimum_radius_bounds = (
             np.linalg.norm(vehicle.chassis.dimensions.as_lwh[:2]) * 0.5
         )
@@ -625,7 +626,7 @@ class Sensors:
 
     @staticmethod
     def _vehicle_is_wrong_way(vehicle, closest_lane):
-        target_pose = closest_lane.center_pose_at_point(Point(*vehicle.pose.position))
+        target_pose = closest_lane.center_pose_at_point(vehicle.pose.point)
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
             np.fabs(vehicle.pose.heading.relative_to(target_pose.heading)) > 0.5 * np.pi
@@ -948,7 +949,7 @@ class TripMeterSensor(Sensor):
 
         should_count_wp = (
             # if we do not have a fixed route, we count all waypoints we accumulate
-            not self._plan.mission.has_fixed_route
+            not self._plan.mission.requires_route
             # if we have a route to follow, only count wps on route
             or wp_road in [road.road_id for road in self._plan.route.roads]
         )
@@ -1058,7 +1059,7 @@ class RoadWaypointsSensor(Sensor):
         """Gets waypoint paths along the given lane."""
         # XXX: the following assumes waypoint spacing is 1m
         if overflow_offset is None:
-            offset = lane.offset_along_lane(Point(*self._vehicle.position))
+            offset = lane.offset_along_lane(self._vehicle.pose.point)
             start_offset = offset - self._horizon
         else:
             start_offset = lane.length + overflow_offset

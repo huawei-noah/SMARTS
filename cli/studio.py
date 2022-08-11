@@ -19,8 +19,6 @@
 # THE SOFTWARE.
 import multiprocessing
 import os
-import subprocess
-import sys
 from multiprocessing import Process, Semaphore, synchronize
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -187,58 +185,7 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
             )
 
 
-@scenario_cli.command(
-    name="browse-waymo",
-    help="Browse Waymo TFRecord datasets using smarts/waymo/waymo_browser.py, a text-based browser utility",
-)
-@click.argument(
-    "tfrecords",
-    type=click.Path(exists=True),
-    metavar="<script>",
-    nargs=-1,
-    required=True,
-)
-@click.option(
-    "-t",
-    "--target-base-path",
-    type=click.Path(exists=True),
-    default=None,
-    help="Default target base path to export scenarios to",
-)
-@click.option(
-    "-i",
-    "--import-tags",
-    type=click.Path(exists=True),
-    default=None,
-    help=".json file to import tags for tfRecord scenarios from",
-)
-def browse_waymo_dataset(
-    tfrecords: Sequence[str],
-    target_base_path: Optional[str],
-    import_tags: Optional[str],
-):
-    if not tfrecords:
-        # nargs=-1 in combination with a default value is not supported
-        # if tfrecords is not given, set the known tfrecord directory as default
-        tfrecords = [os.path.join("smarts", "waymo", "waymo_data")]
-
-    utility_path = os.path.join("smarts", "waymo", "waymo_browser.py")
-    subprocess_command = [
-        sys.executable,
-        utility_path,
-    ]
-
-    if target_base_path is not None:
-        subprocess_command.append(f"--target-base-path={target_base_path}")
-    if import_tags is not None:
-        subprocess_command.append(f"--import-tags={import_tags}")
-
-    click.echo(f"Executing {utility_path} with arguments {tfrecords}")
-    subprocess.check_call(subprocess_command + list(tfrecords))
-
-
 scenario_cli.add_command(build_scenario)
 scenario_cli.add_command(build_all_scenarios)
 scenario_cli.add_command(clean_scenario)
 scenario_cli.add_command(replay)
-scenario_cli.add_command(browse_waymo_dataset)

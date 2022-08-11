@@ -1,7 +1,7 @@
 # Track-2: Offline Learning
 
 ## Objective
-Objective is to train a single **offline** learning policy capable of controlling single-agent or multi-agent to complete different driving tasks in various scenarios. In each scenario the ego-agents must drive towards their respective goal locations. 
+Objective is to develop a single **offline** learning policy capable of controlling single-agent or multi-agent to complete different driving scenarios. In each driving scenario the ego-agents must drive towards their respective goal locations. 
 
 The challenge is to develop a model that can be trained using only offline datasets, without any interactions with any online environments.
 
@@ -11,9 +11,13 @@ Track-2 participants are required to submit their training code for us to train 
 1. For offline training, consider downloading and using the following two naturalistic autonomous driving datasets.
     + [Waymo Open Motion](https://waymo.com/open/data/motion/) 
     + [Next Generation Simulation (NGSIM)](https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm). 
-1. In order (i) to browse/simulate and (ii) to convert, Waymo and NGSIM datasets into an equivalent offline SMARTS observation dataset, use the following [tool](https://github.com/huawei-noah/SMARTS/tree/saul/waymo-extraction/smarts/waymo). 
+1. In order to browse and replay Waymo Dataset, use the `scl waymo overview` and `scl waymo preview` [commands](https://github.com/huawei-noah/SMARTS/blob/comp-1/cli/waymo.py).
+1. In order to convert a Waymo dataset into an equivalent SMARTS scenario, use the `scl waymo export` [command](https://github.com/huawei-noah/SMARTS/blob/comp-1/cli/waymo.py).
+1. In order to convert a Waymo dataset into an equivalent SMARTS dataset, do the following. 
+   + First, convert the Waymo dataset into an equivalent SMARTS scenario and build the scenario.
+   + Then, use the [traffic_histories_to_observations.py script](https://github.com/huawei-noah/SMARTS/blob/comp-1/examples/traffic_histories_to_observations.py) to generate equivalent SMARTS observations.
 1. A subset of Waymo and NGSIM datasets which have useful and interesting trajectories are provided [here](https://github.com/smarts-project/smarts-project.offline-datasets). This subset may be used to focus the training. The provided data conversion tool can be used to convert these datasets into an equivalent offline SMARTS observation dataset.
-1. The trained model should accept multi-agent observation of the format `Dict[agent_name: agent_observation]`. Observation space for each agent is `smarts.core.sensors.Observation`. For more details on the contents of `Observation` class, see https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186
+1. The trained model should accept multi-agent observation of the format `Dict[agent_name: agent_observation]`. Observation space for each agent is `smarts.core.sensors.Observation`. For more details on the contents of `Observation` class, see [here](https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186).
 1. Each agent's mission goal is given in the observation returned at each time step. The mission goal could be accessed as `observation.ego_vehicle_state.mission.goal.position` which gives an `(x, y, z)` map coordinate of the goal location.
 1. Trained model should output multi-agent action of the format `Dict[agent_name: agent_action]`. Action space for each agent is `smarts.core.controllers.ActionSpaceType.TargetPose` which is a sequence of `[x-coordinate, y-coordinate, heading, and time-delta]`. Use `time-delta=0.1`.
 
