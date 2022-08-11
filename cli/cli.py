@@ -44,5 +44,17 @@ scl.add_command(ultra_cli)
 scl.add_command(zoo_cli)
 scl.add_command(run_experiment)
 
+try:
+    from cli.waymo import waymo_cli
+
+    scl.add_command(waymo_cli)
+except (ModuleNotFoundError, ImportError):
+    print(
+        "The `scl waymo` command is unavailable. To enable, pip install the missing dependencies.\n"
+        "pip install pathos==0.2.8 tabulate>=0.8.10 waymo-open-dataset-tf-2-4-0"
+    )
+    pass
+
+
 if __name__ == "__main__":
     scl()
