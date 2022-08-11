@@ -14,7 +14,7 @@ def train(input_path, output_path):
     import d3rlpy
     from d3rlpy.dataset import MDPDataset
     from d3rlpy.preprocessing import MinMaxActionScaler
-    from d3rlpy.algos import CQL, BCQ
+    from d3rlpy.algos import CQL
     from PIL import Image
     import re
     import glob
@@ -165,12 +165,7 @@ def train(input_path, output_path):
 
     saved_models = glob.glob("d3rlpy_logs/*")
     latest_model = max(saved_models, key=os.path.getctime)
-    os.rename(latest_model, "d3rlpy_logs/model")
-
-    # if os.path.isdir('output/'):
-    #     shutil.rmtree('output/')
-
-    shutil.copytree('d3rlpy_logs/model', '../submission/model')
+    os.rename(latest_model, os.path.join(output_path, 'model'))
     shutil.rmtree('d3rlpy_logs')
 
 
