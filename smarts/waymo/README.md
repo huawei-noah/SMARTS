@@ -56,27 +56,27 @@ Commands you can execute at this level:
 3. `explore <index>` &rarr; Explore the TFRecord file at this index of the table. This opens up another browser, `TFRecord Explorer`. The index passed should be an integer between 1 and the number of TFRecord files loaded in. You can see the total in the table printed above.
 4. `import tags` &rarr; Import the tags of TFRecords from a previously saved .json file. Only tags of TFRecords which are displayed above will be imported. Ensure the names of the TFRecords match with the ones displayed above. If the filenames of the TFRecords don't match the ones loaded in, they won't be displayed.
 5. `export tags all/<indexes>` &rarr; Export the tags of the TFRecords at these indexes to a .json file. Optionally you can use all instead to export tags of all TFRecords. You will be asked to pass in the path to the .json file in a subsequent prompt where the path passed should be valid. An example of how the tags will be imported:
-```json
-{
-  "uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000": {
-    "c84cde79e51b087c": [
-      "2d"
-    ],
-    "6cec26a9347e8574": [
-      "2d"
-    ],
-    "fe6141aeb4061824": [
-      "2d"
-    ],
-    "cc6e41f0505f273": [
-      "2d"
-    ],
-    "d9a14485bb4f49e8": [
-      "2d"
-    ]
-  }
-}
-```
+    ```json
+    {
+      "uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000": {
+        "c84cde79e51b087c": [
+          "2d"
+        ],
+        "6cec26a9347e8574": [
+          "2d"
+        ],
+        "fe6141aeb4061824": [
+          "2d"
+        ],
+        "cc6e41f0505f273": [
+          "2d"
+        ],
+        "d9a14485bb4f49e8": [
+          "2d"
+        ]
+      }
+    }
+    ```
 6. `exit` &rarr; To exit the program. You can also exit the program at any time by pressing `Ctrl + D`.
 
 ## TFRecord Explorer
