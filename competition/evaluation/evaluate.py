@@ -202,6 +202,11 @@ if __name__ == "__main__":
         help="Flag to set when running evaluate locally. Defaults to False.",
         action="store_true",
     )
+    parser.add_argument(
+        "--auto_install_pip_deps",
+        help="Automatically install dependencies through pip.",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     # Get directories.
@@ -218,16 +223,12 @@ if __name__ == "__main__":
     # Install requirements.
     req_file = os.path.join(submit_dir, "requirements.txt")
     sys.path.insert(0, submit_dir)
-    subprocess.check_call(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
-            "bubble_env @ git+https://bitbucket.org/malban/bubble_env.git@master",
-        ]
-    )
+
+    if args.auto_install_pip_deps:
+        from auto_install import install_evaluation_deps
+
+        install_evaluation_deps(Path(root_path), True)
+
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
 
     import gym

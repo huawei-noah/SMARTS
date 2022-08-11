@@ -1,7 +1,7 @@
 # Steps to build and push minimal SMARTS docker image
 # ```bash
 # $ cd </path/to/SMARTS>
-# $ export VERSION=v0.6.1
+# $ export VERSION=<version> # e.g. VERSION=v0.6.1
 # $ docker build --no-cache -f ./utils/docker/Dockerfile.minimal -t huaweinoah/smarts:$VERSION-minimal .
 # $ docker login
 # $ docker push huaweinoah/smarts:$VERSION-minimal
@@ -19,6 +19,7 @@ RUN apt-get update --fix-missing && \
     apt-get update && \
     apt-get install -y \
         git \
+        git-lfs \
         libspatialindex-dev \
         python3.8 \
         python3.8-venv \
