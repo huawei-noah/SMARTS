@@ -21,7 +21,12 @@ from typing import Optional, Sequence, Set
 
 from smarts.core.actor import ActorRole, ActorState
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.provider import Provider, ProviderState
+from smarts.core.provider import (
+    Provider,
+    ProviderManager,
+    ProviderRecoveryFlags,
+    ProviderState,
+)
 from smarts.core.road_map import RoadMap
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
@@ -29,6 +34,7 @@ from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 class MockProvider(Provider):
     def __init__(self):
         self._next_provider_state = None
+        self._recovery_flags = super().recovery_flags
 
     def override_next_provider_state(self, vehicles: Sequence):
         self._next_provider_state = ProviderState(
@@ -53,6 +59,17 @@ class MockProvider(Provider):
         return ProviderState()
 
     @property
+    def recovery_flags(self) -> ProviderRecoveryFlags:
+        return self._recovery_flags
+
+    @recovery_flags.setter
+    def recovery_flags(self, flags: ProviderRecoveryFlags):
+        self._recovery_flags = flags
+
+    def set_manager(self, manager: ProviderManager):
+        pass
+
+    @property
     def action_spaces(self) -> Set[ActionSpaceType]:
         return {ActionSpaceType.TargetPose}
 
@@ -69,9 +86,7 @@ class MockProvider(Provider):
         return True
 
     def add_actor(
-        self,
-        provider_actor: ActorState,
-        route: Optional[Sequence[RoadMap.Route]] = None,
+        self, provider_actor: ActorState, from_provider: Optional[Provider] = None
     ):
         pass
 

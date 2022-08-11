@@ -24,6 +24,7 @@ from typing import Optional, Sequence
 from shapely.geometry import Polygon
 
 from .provider import Provider
+from .road_map import RoadMap
 
 
 class TrafficProvider(Provider):
@@ -48,13 +49,17 @@ class TrafficProvider(Provider):
         collided with any other vehicles in the scenario."""
         raise NotImplementedError
 
-    def update_route_for_vehicle(self, vehicle_id: str, new_route_roads: Sequence[str]):
+    def update_route_for_vehicle(self, vehicle_id: str, new_route: RoadMap.Route):
         """Set a new route for the given vehicle."""
         raise NotImplementedError
 
     def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
         """Get the final road_id in the route of the given vehicle."""
         raise NotImplementedError
+
+    def route_for_vehicle(self, vehicle_id: str) -> Optional[RoadMap.Route]:
+        """Gets the current Route for the specified vehicle, if known."""
+        return None
 
     def destroy(self):
         """Clean up any connections/resources."""
