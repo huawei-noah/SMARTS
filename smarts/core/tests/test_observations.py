@@ -20,9 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import math
 
 import gym
-import math
 import numpy as np
 import pytest
 from panda3d.core import OrthographicLens, Point2, Point3
@@ -38,9 +38,9 @@ from smarts.core.agent_interface import (
     Signals,
 )
 from smarts.core.colors import SceneColors
-from smarts.core.coordinates import Heading, Point
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.plan import default_entry_tactic, Mission, PositionalGoal, Start
+from smarts.core.coordinates import Heading, Point
+from smarts.core.plan import Mission, PositionalGoal, Start, default_entry_tactic
 from smarts.core.scenario import Scenario
 from smarts.core.signals import SignalLightState
 from smarts.core.smarts import SMARTS
