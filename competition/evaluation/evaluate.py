@@ -221,14 +221,22 @@ if __name__ == "__main__":
     )
 
     # Install requirements.
-    req_file = os.path.join(submit_dir, "requirements.txt")
-    sys.path.insert(0, submit_dir)
-
     if args.auto_install_pip_deps:
         from auto_install import install_evaluation_deps
 
         install_evaluation_deps(Path(root_path), True)
 
+    try:
+        import smarts
+        import bubble_env_contrib
+    except:
+        raise ImportError(
+            "Missing evaluation dependencies. Please refer to the Setup section of README.md"
+            " as to how to install the dependencies or use the `--auto_install_pip_deps` flag."
+        )
+
+    req_file = os.path.join(submit_dir, "requirements.txt")
+    sys.path.insert(0, submit_dir)
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
 
     import gym
