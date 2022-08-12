@@ -25,11 +25,15 @@ This folder contains the python script that CodaLab uses to evaluate the submiss
 + There is a utility for setting up the base dependencies.
 + Be aware that you will need [git lfs](git-lfs.github.com) in order to get all dependencies.
 
+### Option 1
++ Install dependencies using the utility script.
+
     ```bash
     # Use --no-cache if you wish a full reinstall
     $ python -m auto_install
     ```
-+ The alternative is to install from source.
+### Option 2
++ The alternative is to install from source. This allows for updates of the source.
 
     ```bash
     $ cd <to/your/repo/storage>
@@ -37,7 +41,7 @@ This folder contains the python script that CodaLab uses to evaluate the submiss
     $ pip install -e <smarts_repo>
     # check that git lfs is installed:
     $ git lfs --version
-    $ git clone https://malban@bitbucket.org/malban/bubble_env.git
+    $ git clone https://malban:ATBByMTp2W2MnVGsxHBYwEbNsVca00608BD5@bitbucket.org/malban/bubble_env.git
     $ pip install -e ./bubble_env
     ```
 
