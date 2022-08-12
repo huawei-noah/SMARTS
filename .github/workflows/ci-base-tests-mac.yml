@@ -55,7 +55,7 @@ jobs:
           export SUMO_HOME="/usr/local/opt/sumo/share/sumo"
           open -g -a XQuartz.app
           make build-all-scenarios
-          PYTHONPATH="." PYTHONHASHSEED=42 pytest -v \
+          PYTHONPATH=$PWD PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
             -n auto \
             --ignore-glob="**/waymo_map.py" \
