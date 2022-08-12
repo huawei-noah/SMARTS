@@ -45,7 +45,7 @@ jobs:
         run: |
           . ${{env.venv_dir}}/bin/activate
           make build-all-scenarios
-          PYTHONHASHSEED=42 pytest -v \
+          PYTHONPATH="." PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
             --forked \
             --dist=no \
