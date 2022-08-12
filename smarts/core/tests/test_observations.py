@@ -22,6 +22,7 @@
 import logging
 
 import gym
+import math
 import numpy as np
 import pytest
 from panda3d.core import OrthographicLens, Point2, Point3
@@ -34,9 +35,16 @@ from smarts.core.agent_interface import (
     DrivableAreaGridMap,
     NeighborhoodVehicles,
     RoadWaypoints,
+    Signals,
 )
 from smarts.core.colors import SceneColors
+from smarts.core.coordinates import Heading, Point
 from smarts.core.controllers import ActionSpaceType
+from smarts.core.plan import default_entry_tactic, Mission, PositionalGoal, Start
+from smarts.core.scenario import Scenario
+from smarts.core.signals import SignalLightState
+from smarts.core.smarts import SMARTS
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.zoo.agent_spec import AgentSpec
 
 logging.basicConfig(level=logging.INFO)
@@ -55,21 +63,26 @@ ROAD_COLOR = np.array(SceneColors.Road.value[0:3]) * 255
 
 
 @pytest.fixture
-def agent_spec():
-    return AgentSpec(
-        interface=AgentInterface(
-            road_waypoints=RoadWaypoints(40),
-            neighborhood_vehicles=NeighborhoodVehicles(
-                radius=max(MAP_WIDTH * MAP_RESOLUTION, MAP_HEIGHT * MAP_RESOLUTION)
-                * 0.5
-            ),
-            drivable_area_grid_map=DrivableAreaGridMap(
-                width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION
-            ),
-            ogm=OGM(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
-            rgb=RGB(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
-            action=ActionSpaceType.Lane,
+def agent_interface():
+    return AgentInterface(
+        road_waypoints=RoadWaypoints(40),
+        neighborhood_vehicles=NeighborhoodVehicles(
+            radius=max(MAP_WIDTH * MAP_RESOLUTION, MAP_HEIGHT * MAP_RESOLUTION) * 0.5
         ),
+        drivable_area_grid_map=DrivableAreaGridMap(
+            width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION
+        ),
+        ogm=OGM(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
+        rgb=RGB(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
+        action=ActionSpaceType.Lane,
+        signals=Signals(100.0),
+    )
+
+
+@pytest.fixture
+def agent_spec(agent_interface):
+    return AgentSpec(
+        interface=agent_interface,
         agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
     )
 
@@ -231,3 +244,71 @@ def test_observations(env, agent_spec):
             assert np.count_nonzero(
                 drivable_area.data[drivable_area_last_wp_x, drivable_area_last_wp_y, :]
             )
+
+    assert len(observations[AGENT_ID].signals) == 0
+
+
+@pytest.fixture
+def scenario():
+    mission = Mission(
+        start=Start(np.array((20.40, 68.40)), Heading(-0.5 * math.pi)),
+        goal=PositionalGoal(Point(128.40, 0), 10),
+        entry_tactic=default_entry_tactic(1.0),
+    )
+    return Scenario(
+        scenario_root="scenarios/sumo/intersections/2lane",
+        traffic_specs=["scenarios/sumo/intersections/2lane/traffic/vertical.rou.xml"],
+        missions={AGENT_ID: mission},
+    )
+
+
+@pytest.fixture
+def smarts(agent_interface):
+    ai = agent_interface
+    ai.action = ActionSpaceType.LaneWithContinuousSpeed
+    smarts = SMARTS(
+        {AGENT_ID: ai},
+        traffic_sims=[SumoTrafficSimulation(headless=True)],
+        envision=None,
+    )
+    yield smarts
+    smarts.destroy()
+
+
+def test_signal_observations(smarts, scenario):
+    observations = smarts.reset(scenario)
+
+    # go REAL SLOW so the light can change...
+    agent = Agent.from_function(lambda _: (1.0, 0))
+
+    # Let the agent step for a while
+    for step in range(900):
+        agent_obs = observations[AGENT_ID]
+        agent_action = agent.act(agent_obs)
+        observations, _, dones, _ = smarts.step({AGENT_ID: agent_action})
+        if dones[AGENT_ID]:
+            break
+        my_obs = observations[AGENT_ID]
+        signals = my_obs.signals
+        pos = my_obs.ego_vehicle_state.position
+        if step < 2:
+            # it's out of range...
+            assert len(signals) == 0, f"step={step}, pos={pos}"
+        else:
+            assert len(signals) == 1, f"step={step}, pos={pos}"
+            assert (
+                signals[0].controlled_lanes[0] == ":junction-intersection_9_0"
+            ), f"step={step}"
+            assert len(signals[0].controlled_lanes) == 1, f"step={step}"
+            if step < 449:
+                assert signals[0].state == SignalLightState.STOP, f"{step}"
+                assert signals[0].last_changed is None, f"{step}"
+            elif step < 799:
+                assert signals[0].state == SignalLightState.GO, f"{step}"
+                assert np.isclose(signals[0].last_changed, 45.1), f"{step}"
+            elif step < 899:
+                assert signals[0].state == SignalLightState.CAUTION, f"{step}"
+                assert np.isclose(signals[0].last_changed, 80.1), f"{step}"
+            else:
+                assert signals[0].state == SignalLightState.STOP, f"{step}"
+                assert np.isclose(signals[0].last_changed, 90.1), f"{step}"
