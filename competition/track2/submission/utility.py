@@ -239,7 +239,7 @@ def global_target_pose(action, agent_obs):
             cur_y + action_global[1],
             action[2] + cur_heading,
             0.1,
-        ]
+        ], dtype=object
     )
 
     return target_pose

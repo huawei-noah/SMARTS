@@ -23,8 +23,8 @@ An example solution for Track-2 offline learning based model development is pres
 1. Train
     ```bash
     $ cd <path>/SMARTS/competition/track2/train
-    $ python3.8 train_cql.py --input_dir=<path_to_data> --ouput_dir=<path_to_saved_model>
+    $ python3.8 train.py --input_dir=<path_to_data> --ouput_dir=<path_to_saved_model>
     ```
 
-    The default value for `input_dir` and `output_dir` are `/offline_dataset` and `/output`.
- 1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. After the end of each training iteration, the model will be saved in `<path>/SMARTS/competition/track2/train/d3rlpy_logs/<scenario_index>`. The next trainig iteration will keep training on the latest trained model. And at the end of the training, the last model will be copied to `/output`.
+    The default value for `input_dir` and `output_dir` are `"/SMARTS/competition/offline_dataset/"` and `/SMARTS/competition/track2/submission/`.
+ 1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. After the end of each training iteration, the model will be saved in `<path>/SMARTS/competition/track2/train/d3rlpy_logs/<scenario_index>`. The next trainig iteration will keep training on the latest trained model. And at the end of the training, the last model will be copied to `/SMARTS/competition/track2/submission/`.
