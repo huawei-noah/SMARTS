@@ -1,7 +1,8 @@
 # Example : Conservative Q-Learning
-An example solution for Track-2 offline learning based model development is presented here. This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://github.com/takuseno/d3rlpy) offline RL library.
-+ **The policy here has not yet been trained to fully solve the task environments.** 
-+ **This example is only meant to demonstrate one potential method of developing an offline learning using Waymo dataset. Here, any offline learning method may be used to develop the policy.**
+1. An example solution for Track-2 offline learning based model development is presented here. This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://github.com/takuseno/d3rlpy) offline RL library.
+    + **The policy here has not yet been trained to fully solve the task environments.**
+    + **This example is only meant to demonstrate one potential method of developing an offline learning using Waymo dataset. Here, any offline learning method may be used to develop the policy.**
+1. Additional example solutions to Track2 developed using offline learning methods are available [here](https://github.com/smarts-project/smarts-project.rl/tree/master/neurips2022).
 
 ## Setup
 + Use `python3.8` to develop your model.
