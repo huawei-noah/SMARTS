@@ -176,35 +176,40 @@ class TrafficHistoryProvider(TrafficProvider):
         signals = []
         last_changed = None
         rows = self._histories.traffic_light_states_between(prev_time, history_time)
-        for tls in rows:
-            stop_pt = Point(tls.stop_point_x, tls.stop_point_y)
-            prev_state = self._lane_sig_state.setdefault(
-                tls.lane_id, dict()
-            ).setdefault(stop_pt, tls.state)
-            last_changed = tls.sim_time if prev_state != tls.state else None
-            self._lane_sig_state[tls.lane_id][stop_pt] = tls.state
-            lane_sigs_count = len(self._lane_sig_state[tls.lane_id])
-            actor_id = f"signal_{tls.lane_id}_{lane_sigs_count}"
-            controlled_lanes = []
-            for feat, _ in self._scenario.road_map.dynamic_features_near(stop_pt, 4):
-                if feat.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL:
-                    feat_lane = feat.type_specific_info
-                    # XXX: note that tls.lane_id may or may not correspond to a lane_id in the RoadMap
-                    # Here we assume that it will at least be part of the naming scheme somehow.
-                    if str(tls.lane_id) in feat_lane.lane_id:
-                        controlled_lanes.append(feat_lane)
-            signals.append(
-                SignalState(
-                    actor_id=actor_id,
-                    actor_type="signal",
-                    source=self.source_str,
-                    role=ActorRole.Signal,
-                    state=SignalLightState(tls.state),
-                    stopping_pos=stop_pt,
-                    controlled_lanes=controlled_lanes,
-                    last_changed=last_changed,
+        try:
+            for tls in rows:
+                stop_pt = Point(tls.stop_point_x, tls.stop_point_y)
+                prev_state = self._lane_sig_state.setdefault(
+                    tls.lane_id, dict()
+                ).setdefault(stop_pt, tls.state)
+                last_changed = tls.sim_time if prev_state != tls.state else None
+                self._lane_sig_state[tls.lane_id][stop_pt] = tls.state
+                lane_sigs_count = len(self._lane_sig_state[tls.lane_id])
+                actor_id = f"signal_{tls.lane_id}_{lane_sigs_count}"
+                controlled_lanes = []
+                for feat, _ in self._scenario.road_map.dynamic_features_near(
+                    stop_pt, 4
+                ):
+                    if feat.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL:
+                        feat_lane = feat.type_specific_info
+                        # XXX: note that tls.lane_id may or may not correspond to a lane_id in the RoadMap
+                        # Here we assume that it will at least be part of the naming scheme somehow.
+                        if str(tls.lane_id) in feat_lane.lane_id:
+                            controlled_lanes.append(feat_lane)
+                signals.append(
+                    SignalState(
+                        actor_id=actor_id,
+                        actor_type="signal",
+                        source=self.source_str,
+                        role=ActorRole.Signal,
+                        state=SignalLightState(tls.state),
+                        stopping_pos=stop_pt,
+                        controlled_lanes=controlled_lanes,
+                        last_changed=last_changed,
+                    )
                 )
-            )
+        except:
+            pass
 
         return ProviderState(actors=vehicles + signals)
 

@@ -30,6 +30,7 @@ def submitted_wrappers():
         List[wrappers]: List of wrappers. Default is empty list [].
     """
 
+    # Insert wrappers here, if any.
     wrappers = [
         FormatObs,
         lambda env: FormatAction(env=env, space=ActionSpaceType["TargetPose"]),
@@ -86,6 +87,7 @@ class Policy(BasePolicy):
             final_obs = list()
             final_obs.append(np.concatenate((bev_obs, goal_obs), axis=0))
             final_obs = np.array(final_obs, dtype=np.uint8)
+            
             action = self.model.predict(final_obs)[0]
             target_pose = global_target_pose(action, agent_obs)
             wrapped_act.update({agent_id: target_pose})
