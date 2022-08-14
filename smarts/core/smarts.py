@@ -53,6 +53,7 @@ from .road_map import RoadMap
 from .scenario import Mission, Scenario
 from .sensors import Collision, Observation
 from .signal_provider import SignalProvider
+from .signals import SignalLightState, SignalState
 from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
 from .traffic_provider import TrafficProvider
@@ -280,6 +281,7 @@ class SMARTS(ProviderManager):
         # 2. Step all providers and harmonize state
         with timeit("Stepping all providers and harmonizing state", self._log.debug):
             provider_state = self._step_providers(all_agent_actions)
+        self._last_provider_state = provider_state
         with timeit("Checking if all agents are active", self._log.debug):
             self._check_if_acting_on_active_agents(agent_actions)
 
@@ -1390,6 +1392,7 @@ class SMARTS(ProviderManager):
         filter = self._envision.envision_state_filter
 
         traffic = {}
+        signals = dict()
         lane_ids = {}
         agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         vt_mapping = {
@@ -1402,8 +1405,20 @@ class SMARTS(ProviderManager):
             "pedestrian": envision_types.VehicleType.Pedestrian,
         }
         for v in provider_state.actors:
+            if isinstance(v, SignalState):
+                env_ss = envision_types.SignalLightState.Unknown
+                if v.state == SignalLightState.OFF:
+                    env_ss = envision_types.SignalLightState.Off
+                elif v.state | SignalLightState.STOP:
+                    env_ss = envision_types.SignalLightState.STOP
+                elif v.state | SignalLightState.CAUTION:
+                    env_ss = envision_types.SignalLightState.CAUTION
+                elif v.state | SignalLightState.GO:
+                    env_ss = envision_types.SignalLightState.GO
+                # TODO: eventually do flashing and arrow states too
+                signals[v.actor_id] = envision_types.SignalState(v.actor_id, env_ss)
+                continue
             if not isinstance(v, VehicleState):
-                # TODO: eventually send signal state to Envision too
                 continue
             if v.actor_id in agent_vehicle_ids:
                 # this is an agent controlled vehicle
@@ -1516,6 +1531,7 @@ class SMARTS(ProviderManager):
 
         state = envision_types.State(
             traffic=traffic,
+            signals=signals,
             scenario_id=self.scenario.scenario_hash,
             scenario_name=scenario_name,
             bubbles=bubble_geometry,

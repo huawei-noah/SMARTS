@@ -41,7 +41,14 @@ from typing import (
 
 import numpy as np
 
-from envision.types import State, TrafficActorState, TrafficActorType, VehicleType
+from envision.types import (
+    SignalLightState,
+    SignalState,
+    State,
+    TrafficActorState,
+    TrafficActorType,
+    VehicleType,
+)
 from smarts.core.events import Events
 from smarts.core.road_map import Waypoint
 from smarts.core.utils.file import unpack
@@ -290,6 +297,9 @@ def _format_state(obj: State, data_formatter: EnvisionDataFormatter):
         with data_formatter.layer():
             # context.add(_id, op=Operation.REDUCE)
             data_formatter.add(t)
+    for s in data_formatter.layer(obj.signals.values()):
+        with data_formatter.layer():
+            data_formatter.add(s)
     # TODO: On delta use position+heading as alternative
     for bubble in data_formatter.layer(obj.bubbles):
         for p in data_formatter.layer(bubble):
@@ -330,6 +340,28 @@ def _format_traffic_actor_type(
     data_formatter.add_primitive(mapping[obj])
 
 
+def _format_signal_light_state(
+    obj: SignalLightState, data_formatter: EnvisionDataFormatter
+):
+    t = type(obj)
+    assert t is SignalLightState
+    mapping = {
+        SignalLightState.Unknown: 0,
+        SignalLightState.Off: 0,
+        SignalLightState.Stop: 1,
+        SignalLightState.Caution: 2,
+        SignalLightState.Go: 3,
+    }
+    data_formatter.add_primitive(mapping[obj])
+
+
+def _format_signal_state(obj: SignalState, data_formatter: EnvisionDataFormatter):
+    assert type(obj) is SignalState
+    data_formatter.add(obj.signal_id, op=Operation.REDUCE)
+    assert type(obj.signal_light_state) is SignalLightState
+    data_formatter.add(obj.signal_light_state)
+
+
 def _format_events(obj: Events, data_formatter: EnvisionDataFormatter):
     t = type(obj)
     assert t is Events
@@ -356,6 +388,8 @@ def _format_list(l: Union[list, tuple], data_formatter: EnvisionDataFormatter):
 
 _formatter_map[TrafficActorState] = _format_traffic_actor
 _formatter_map[State] = _format_state
+_formatter_map[SignalState] = _format_signal_state
+_formatter_map[SignalLightState] = _format_signal_light_state
 _formatter_map[VehicleType] = _format_vehicle_type
 _formatter_map[TrafficActorType] = _format_traffic_actor_type
 _formatter_map[Events] = _format_events

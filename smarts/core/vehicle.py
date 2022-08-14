@@ -47,6 +47,7 @@ from .sensors import (
     OGMSensor,
     RGBSensor,
     RoadWaypointsSensor,
+    SignalsSensor,
     TripMeterSensor,
     ViaSensor,
     WaypointsSensor,
@@ -573,6 +574,14 @@ class Vehicle:
             )
         )
 
+        if agent_interface.signals:
+            lookahead = agent_interface.signals.lookahead
+            vehicle.attach_signals_sensor(
+                SignalsSensor(
+                    vehicle=vehicle, road_map=sim.road_map, lookahead=lookahead
+                )
+            )
+
     def step(self, current_simulation_time):
         """Update internal state."""
         self._has_stepped = True
@@ -683,6 +692,7 @@ class Vehicle:
             "accelerometer_sensor",
             "lane_position_sensor",
             "via_sensor",
+            "signals_sensor",
         ]
         for sensor_name in sensor_names:
 
