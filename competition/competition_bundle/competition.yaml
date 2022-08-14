@@ -31,7 +31,7 @@ phases:
         reference_data: validation_evaluation.zip
         color: orange
         execution_time_limit: 64800
-        max_submission_size: 300
+        max_submission_size: 0
         phase_never_ends: True
 
     1:
@@ -45,7 +45,7 @@ phases:
         reference_data: track1_evaluation.zip
         color: green
         execution_time_limit: 64800
-        max_submission_size: 300
+        max_submission_size: 0
 
     2:
         phasenumber: 2
@@ -58,7 +58,7 @@ phases:
         reference_data: track2_evaluation.zip
         color: blue
         execution_time_limit: 64800
-        max_submission_size: 300
+        max_submission_size: 0
 
 # Leaderboard
 leaderboard:
