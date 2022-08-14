@@ -1,7 +1,7 @@
 # Example : Conservative Q-Learning
 An example solution for Track-2 offline learning based model development is presented here. This example uses Convervative Q-learning (CQL) method from [d3rlpy](https://github.com/takuseno/d3rlpy) offline RL library.
 + **The policy here has not yet been trained to fully solve the task environments.** 
-+ **This example is only meant to demonstrate one potential method of developing a offline learning using Waymo dataset. Here, any offline learning method may be used to develop the policy.**
++ **This example is only meant to demonstrate one potential method of developing an offline learning using Waymo dataset. Here, any offline learning method may be used to develop the policy.**
 
 ## Setup
 + Use `python3.8` to develop your model.
@@ -12,7 +12,6 @@ An example solution for Track-2 offline learning based model development is pres
     $ pip install --upgrade pip
     $ pip install -e .
     ```
-+ SMARTS is used as a dependent package.
 
 ## Notes on the used Observation, Action, and Reward
 + Observations: A 3-channel RGB birds eye-view image plus an extended channel containing the location of the goal, is used as the input for to the model. Hence, the model input is of the form (4, 256, 256).

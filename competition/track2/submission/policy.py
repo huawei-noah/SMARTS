@@ -56,10 +56,9 @@ class Policy(BasePolicy):
         )
         model_name = None
         for file_name in os.listdir(Path(__file__).absolute().parents[0] / "model"):
-            if file_name.endswith('.pt'):
+            if file_name.endswith(".pt"):
                 model_name = file_name
-        model_name = 'model/' + model_name
-        print(model_name)
+        model_name = "model/" + model_name
         self.model.load_model(Path(__file__).absolute().parents[0] / model_name)
 
     def act(self, obs: Dict[str, Any]):
@@ -87,7 +86,7 @@ class Policy(BasePolicy):
             final_obs = list()
             final_obs.append(np.concatenate((bev_obs, goal_obs), axis=0))
             final_obs = np.array(final_obs, dtype=np.uint8)
-            
+
             action = self.model.predict(final_obs)[0]
             target_pose = global_target_pose(action, agent_obs)
             wrapped_act.update({agent_id: target_pose})

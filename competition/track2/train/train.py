@@ -4,14 +4,10 @@
 import os
 import argparse
 from pathlib import Path
-import sys
-import subprocess
 
 
 def train(input_path, output_path):
-    from utility import goal_region_reward
-    from utility import get_goal_layer
-    from utility import get_trans_coor
+    from utility import goal_region_reward, get_goal_layer, get_trans_coor
     import pickle
     import numpy as np
     import d3rlpy
