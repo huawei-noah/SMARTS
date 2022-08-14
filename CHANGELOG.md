@@ -14,6 +14,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added a `multi-scenario-v0` environment which can build any of the following scenario, namely, `1_to_2lane_left_turn_c`, `1_to_2lane_left_turn_t`, `3lane_merge_multi_agent`, `3lane_merge_single_agent`, `3lane_cruise_multi_agent`, `3lane_cruise_single_agent`, `3lane_cut_in`, and `3lane_overtake`. Additional scenarios can also be built by supplying the paths to the scenario directories.
 - Added ego's mission details into the `FormatObs` wrapper.
 - Added `SmartsLaneChangingModel` and `SmartsJunctionModel` to types available for use with the new smarts traffic engine within Scenario Studio.
+- Added option to `AgentInterface` to include traffic signals (lights) in `EgoVehicleObservation` objects.
 - Added SMARTS competition code, consisting of Codalab, training, submission, evaluation, and scenario files.
 
 ### Deprecated
