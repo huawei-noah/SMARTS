@@ -31,7 +31,7 @@ from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose
 from .provider import ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
-from .signal_provider import SignalLightState, SignalState
+from .signals import SignalLightState, SignalState
 from .traffic_provider import TrafficProvider
 from .utils.math import rounder_for_dt
 from .vehicle import VEHICLE_CONFIGS, VehicleState
