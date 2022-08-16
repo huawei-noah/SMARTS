@@ -43,6 +43,7 @@ class HeterogenousAgentBuffer(AgentBuffer):
 
     @property
     def backup_buffer(self):
+        """The buffer fallback if the regular buffer fails."""
         if self._backup_buffer == None:
             from smarts.core.local_agent_buffer import LocalAgentBuffer
 
