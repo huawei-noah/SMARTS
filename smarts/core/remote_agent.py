@@ -24,15 +24,9 @@ from typing import Tuple
 import cloudpickle
 import grpc
 
-from smarts.core.buffer_agent import BufferAgent
+from smarts.core.buffer_agent import BufferAgent, RemoteAgentException
 from smarts.zoo import manager_pb2, manager_pb2_grpc, worker_pb2, worker_pb2_grpc
 from smarts.zoo.agent_spec import AgentSpec
-
-
-class RemoteAgentException(Exception):
-    """An exception describing issues relating to maintaining connection with a remote agent."""
-
-    pass
 
 
 class RemoteAgent(BufferAgent):

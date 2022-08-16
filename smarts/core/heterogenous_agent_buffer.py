@@ -21,6 +21,7 @@ from typing import Optional
 
 from smarts.core.agent_buffer import AgentBuffer
 from smarts.core.buffer_agent import BufferAgent
+from smarts.core.remote_agent import RemoteAgentException
 
 
 class HeterogenousAgentBuffer(AgentBuffer):
@@ -31,18 +32,30 @@ class HeterogenousAgentBuffer(AgentBuffer):
             from smarts.core.remote_agent_buffer import RemoteAgentBuffer
 
             self._agent_buffer = RemoteAgentBuffer(
-                zoo_manager_addrs=kwargs.get("zoo_manager_addrs")
+                timeout=0.05, zoo_manager_addrs=kwargs.get("zoo_manager_addrs")
             )
 
-        except (ImportError, ModuleNotFoundError):
+        except (ImportError, ModuleNotFoundError, RemoteAgentException):
             from smarts.core.local_agent_buffer import LocalAgentBuffer
 
             self._agent_buffer = LocalAgentBuffer()
+        self._backup_buffer = None
+
+    @property
+    def backup_buffer(self):
+        if self._backup_buffer == None:
+            from smarts.core.local_agent_buffer import LocalAgentBuffer
+
+            self._backup_buffer = LocalAgentBuffer()
+        return self._backup_buffer
 
     def destroy(self):
         self._agent_buffer.destroy()
+        if self._backup_buffer is not None:
+            self._backup_buffer.destroy()
 
-    def acquire_agent(
-        self, retries: int = 3, timeout: Optional[float] = None
-    ) -> BufferAgent:
-        return self._agent_buffer.acquire_agent(retries=retries, timeout=timeout)
+    def acquire_agent(self, timeout: Optional[float] = None) -> BufferAgent:
+        try:
+            return self._agent_buffer.acquire_agent(timeout=timeout)
+        except RemoteAgentException:
+            return self.backup_buffer.acquire_agent(timeout=timeout)

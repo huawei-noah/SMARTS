@@ -36,8 +36,6 @@ class LocalAgentBuffer(AgentBuffer):
     def destroy(self):
         pass
 
-    def acquire_agent(
-        self, retries: int = 3, timeout: Optional[float] = None
-    ) -> BufferAgent:
+    def acquire_agent(self, timeout: Optional[float] = None) -> BufferAgent:
         localAgent = LocalAgent()
         return localAgent

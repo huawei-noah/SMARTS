@@ -31,8 +31,8 @@ from typing import Optional, Tuple
 import grpc
 
 from smarts.core.agent_buffer import AgentBuffer
-from smarts.core.buffer_agent import BufferAgent
-from smarts.core.remote_agent import RemoteAgent, RemoteAgentException
+from smarts.core.buffer_agent import BufferAgent, RemoteAgentException
+from smarts.core.remote_agent import RemoteAgent
 from smarts.core.utils.networking import find_free_port
 from smarts.zoo import manager_pb2, manager_pb2_grpc
 
@@ -46,6 +46,7 @@ class RemoteAgentBuffer(AgentBuffer):
         buffer_size: int = 3,
         max_workers: int = 4,
         timeout: float = 10,
+        startup_timeout: float = 10,
     ):
         """Creates a local manager (if `zoo_manager_addrs=None`) or connects to a remote manager, to create and manage workers
         which execute agents.
@@ -56,7 +57,8 @@ class RemoteAgentBuffer(AgentBuffer):
             buffer_size (int, optional): Number of RemoteAgents to pre-initialize and keep running in the background, must be
                 non-zero. Defaults to 3.
             max_workers (int, optional): Maximum number of threads used for creation of workers. Defaults to 4.
-            timeout (float, optional): Time (seconds) to wait for startup or response from server. Defaults to 10.
+            timeout (float): Time (seconds) to wait for startup or response from server. Defaults to 10.
+            startup_timeout (float): Time (seconds) to wait for startup of the server. Defaults to 10.
         """
         assert buffer_size > 0
 
@@ -97,7 +99,7 @@ class RemoteAgentBuffer(AgentBuffer):
         # Populate zoo manager connection with channel and stub details.
         for conn in self._zoo_manager_conns:
             conn["channel"], conn["stub"] = get_manager_channel_stub(
-                conn["address"], self._timeout
+                conn["address"], startup_timeout
             )
 
         self._buffer_size = buffer_size
@@ -192,9 +194,7 @@ class RemoteAgentBuffer(AgentBuffer):
         remote_agent = future.result(timeout=timeout)
         return remote_agent
 
-    def acquire_agent(
-        self, retries: int = 3, timeout: Optional[float] = None
-    ) -> BufferAgent:
+    def acquire_agent(self, timeout: Optional[float] = None) -> BufferAgent:
         """Creates RemoteAgent objects.
 
         Args:
@@ -204,7 +204,7 @@ class RemoteAgentBuffer(AgentBuffer):
                 Defaults to None, which does not timeout.
 
         Raises:
-            RemoteAgentException: If fail to acquire a RemoteAgent.
+            RemoteAgentException: If the buffer fails to acquire a RemoteAgent.
 
         Returns:
             RemoteAgent: A new RemoteAgent object.
@@ -212,14 +212,10 @@ class RemoteAgentBuffer(AgentBuffer):
         if timeout == None:
             timeout = self._timeout
 
-        for retry in range(retries):
-            try:
-                return self._try_to_acquire_remote_agent(timeout)
-            except Exception as e:
-                self._log.debug(
-                    f"Failed {retry+1}/{retries} times in acquiring remote agent. {repr(e)}"
-                )
-                time.sleep(0.1)
+        try:
+            return self._try_to_acquire_remote_agent(timeout)
+        except Exception as e:
+            self._log.debug(f"Failed in acquiring remote agent. {repr(e)}")
 
         raise RemoteAgentException("Failed to acquire remote agent.")
 

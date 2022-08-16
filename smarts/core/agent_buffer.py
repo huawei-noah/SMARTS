@@ -32,8 +32,6 @@ class AgentBuffer(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def acquire_agent(
-        self, retries: int = 3, timeout: Optional[float] = None
-    ) -> BufferAgent:
+    def acquire_agent(self, timeout: Optional[float] = None) -> BufferAgent:
         """Get an agent from the buffer."""
         raise NotImplementedError

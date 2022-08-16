@@ -25,6 +25,12 @@ from abc import abstractmethod
 from smarts.zoo.agent_spec import AgentSpec
 
 
+class RemoteAgentException(Exception):
+    """An exception describing issues relating to maintaining connection with a remote agent."""
+
+    pass
+
+
 class BufferAgent(metaclass=abc.ABCMeta):
     """An agent which is part of a buffer."""
 
