@@ -23,8 +23,7 @@ import os
 import sys
 
 try:
-    from moviepy.editor import ImageClip
-    from moviepy.editor import ImageSequenceClip
+    from moviepy.editor import ImageClip, ImageSequenceClip
 except (ImportError, ModuleNotFoundError):
     print(sys.exc_info())
     print(
