@@ -592,7 +592,7 @@ class _TrafficActor:
             else self._route.roads[-1]
         )
         assert road, "invalid route"
-        lane_ind = max(0, min(int(flow[f"{depart_arrival}Lane"]), len(road.lanes)))
+        lane_ind = max(0, min(int(flow[f"{depart_arrival}Lane"]), len(road.lanes) - 1))
         lane = road.lanes[lane_ind]
         offset = flow[f"{depart_arrival}Pos"]
         if offset == "max":
