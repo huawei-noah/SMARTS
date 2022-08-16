@@ -173,7 +173,7 @@ class Bubble:
         running_cursors: Set["Cursor"],
     ):
         """The vehicle_id we are querying for and the `other_vehicle_ids` _presently in
-        this `sstudio.types.Bubble`_.
+        this `sstudio.types.Bubble`.
         """
         for prefix in self.exclusion_prefixes:
             if vehicle_id.startswith(prefix):

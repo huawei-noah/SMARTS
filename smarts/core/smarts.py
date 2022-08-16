@@ -207,14 +207,12 @@ class SMARTS(ProviderManager):
         Dict[str, Dict[str, float]],
     ]:
         """Progress the simulation by a fixed or specified time.
-        Args:
-            agent_actions:
-                Actions that the agents want to perform on their actors.
-            time_delta_since_last_step:
-                Overrides the simulation step length. Progress simulation time by the given amount.
-                Note the time_delta_since_last_step param is in (nominal) seconds.
-        Returns:
-            observations, rewards, dones, infos
+
+        :param agent_actions: Actions that the agents want to perform on their actors.
+        :param time_delta_since_last_step: Overrides the simulation step length. 
+            Progress simulation time by the given amount.
+            Note the time_delta_since_last_step param is in (nominal) seconds.
+        :return: observations, rewards, dones, infos
         """
         if not self._is_setup:
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
@@ -380,20 +378,20 @@ class SMARTS(ProviderManager):
         self, scenario: Scenario, start_time: float = 0.0
     ) -> Dict[str, Observation]:
         """Reset the simulation, reinitialize with the specified scenario. Then progress the
-         simulation up to the first time an agent returns an observation, or `start_time` if there
+         simulation up to the first time an agent returns an observation, or ``start_time`` if there
          are no agents in the simulation.
-        Args:
-            scenario(Scenario):
-                The scenario to reset the simulation with.
-            start_time(float):
+         
+        :param scenario: The scenario to reset the simulation with.
+        :type scenario: class: Scenario
+        :param start_time:
                 The initial amount of simulation time to skip. This has implications on all time
                 dependent systems. NOTE: SMARTS simulates a step and then updates vehicle control.
-                If you want a vehicle to enter at exactly `0.3` with a step of `0.1` it means the
-                simulation should start at `start_time==0.2`.
-        Returns:
-            Agent observations. This observation is as follows:
-                - If no agents: the initial simulation observation at `start_time`
-                - If agents: the first step of the simulation with an agent observation
+                If you want a vehicle to enter at exactly ``0.3`` with a step of ``0.1`` it means the
+                simulation should start at ``start_time==0.2``.
+        :type start_time: float
+        :return: Agent observations. This observation is as follows:
+            - If no agents: the initial simulation observation at ``start_time``
+            - If agents: the first step of the simulation with an agent observation
         """
         tries = 2
         first_exception = None
@@ -963,8 +961,8 @@ class SMARTS(ProviderManager):
         """
         Teardown agents in the given list that have no actors registered as
         controlled-by or shadowed-by
-        Params:
-            agent_ids: Sequence of agent ids
+        
+        :param agent_ids: Sequence of agent ids
         """
         self._check_valid()
         agents_to_teardown = {

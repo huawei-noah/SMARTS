@@ -65,16 +65,13 @@ class MotionPlannerController:
         action: Optional[np.ndarray],
     ):
         """Performs an action adapting to the underlying chassis.
-        Args:
-            controller_state:
-                the previous controller state from this controller
-            dt (float):
-                the amount of time that has passed since the last action
-            vehicle (Vehicle):
-                he vehicle to control
-            action:
-                [x, y, heading, seconds_into_future]
-                 pose we would like to have this many seconds into the future
+        :param controller_state: the previous controller state from this controller
+        :type controller_state: class: `MotionPlannerControllerState`
+        :param dt: the amount of time that has passed since the last action
+        :type dt: float
+        :param vehicle: The vehicle to control
+        :type vehicle: class: Vehicle
+        :param action: [x, y, heading, seconds_into_future] Pose we would like to have this many seconds into the future
         """
         assert isinstance(vehicle.chassis, BoxChassis)
         assert len(action) >= 4, f"{action}"

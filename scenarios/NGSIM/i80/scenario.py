@@ -9,7 +9,7 @@ traffic_histories = [
     t.TrafficHistoryDataset(
         name=f"i80_{hd}",
         source_type="NGSIM",
-        input_path=None,  # for example: f"./trajectories-{hd}.txt"
+        input_path=f"./trajectories-{hd}.txt",  # for example: f"./trajectories-{hd}.txt"
         x_margin_px=60.0,
         swap_xy=True,
         flip_y=True,

@@ -53,51 +53,49 @@ def intersection_v0_env(
     unprotected left turn in the presence of traffic and without traffic
     lights. Traffic vehicles stop before entering the junction.
 
-    Observation:
-        A `smarts.env.wrappers.format_obs:StdObs` dict, containing enabled keys,
+    Observation: A ``smarts.env.wrappers.format_obs:StdObs`` dict, containing enabled keys,
         is returned as observation.
 
     Actions:
-        Type: gym.spaces.Box(
+
+    ..code-block:: python
+
+        Type:
+
+            gym.spaces.Box(
             low=-1.0, high=1.0, shape=(3,), dtype=np.float32
-        )
+            )
 
         Action     Value range
         Throttle   [ 0, 1]
         Brake      [ 0, 1]
         Steering   [-1, 1]
 
-    Reward:
-        Reward is distance travelled (in meters) in each step, including the
-        termination step.
+    Reward: Reward is distance travelled (in meters) in each step, including the termination step.
 
-    Episode termination:
-        Episode is terminated if any of the following occurs.
+    Episode termination: Episode is terminated if any of the following occurs.
         + Steps per episode exceed 3000.
-        + Agent collides, drives off road, drives off route, drives on shoulder,
-          or drives on wrong way.
+        + Agent collides, drives off road, drives off route, drives on shoulder, or drives on wrong way.
 
-    Solved requirement:
-        If agent successfully navigates the intersection then `info["score"]`
-        will equal 1, else it is 0. Considered solved when `info["score"] == 1`
+    Solved requirement: If agent successfully navigates the intersection then ``info["score"]`` 
+        will equal 1, else it is 0. Considered solved when ``info["score"] == 1`` 
         is achieved over 800 consecutive episodes.
 
-    Args:
-        headless (bool, optional): If True, disables visualization in
-            Envision. Defaults to False.
-        visdom (bool, optional): If True, enables visualization of observed
-            RGB images in Visdom. Defaults to False.
-        sumo_headless (bool, optional): If True, disables visualization in
-            SUMO GUI. Defaults to True.
-        envision_record_data_replay_path (Optional[str], optional):
-            Envision's data replay output directory. Defaults to None.
-        img_meters (int): Ground square size covered by image observations.
+    :param headless: If True, disables visualization in Envision. Defaults to False.
+    :type headless: bool, optional
+    :param visdom: If True, enables visualization of observed RGB images in Visdom. Defaults to False.
+    :type visdom: bool, optional
+    :param sumo_headless: If True, disables visualization in SUMO GUI. Defaults to True.
+    :type sumo_headless: bool, optional
+    :param envision_record_data_replay_path: Envision's data replay output directory. Defaults to None.
+    :type envision_record_data_replay_path: Optional[str], optional
+    :param img_meters: Ground square size covered by image observations.
             Defaults to 64 x 64 meter (height x width) square.
-        img_pixels (int): Pixels representing the square image observations.
+    :type img_meters: int
+    :param img_pixels: Pixels representing the square image observations.
             Defaults to 256 x 256 pixels (height x width) square.
-
-    Returns:
-        A single-agent unprotected left turn intersection environment.
+    :type img_pixels: int
+    :return: A single-agent unprotected left turn intersection environment.
     """
 
     scenario = [

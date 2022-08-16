@@ -114,7 +114,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self._num_clients = 1 + num_external_sumo_clients
         self._sumo_port = sumo_port
         self._last_traci_state = None
-        self._auto_start = auto_start
+        self._auto_start = False
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
         self._allow_reload = allow_reload

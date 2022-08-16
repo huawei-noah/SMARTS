@@ -77,7 +77,7 @@ Here we are implementing a simple lane following agent using the BezierMotionPla
 
 
 AgentSpec :class:`smarts.zoo.agent_spec.AgentSpec`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These pieces are brought together by the :class:`smarts.zoo.agent_spec.AgentSpec`:
 

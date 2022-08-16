@@ -30,20 +30,24 @@ class FormatAction(gym.ActionWrapper):
     """Sets gym-compliant action space for SMARTS environment.
 
     Note:
-        (a) Only "ActionSpaceType.Continuous", "ActionSpaceType.Lane", and
-            "ActionSpaceType.TargetPose" are supported by this wrapper now.
-        (c) All agents should have the same action space.
-        (b) Action adapters should not be used inside the `step` method of the
+    
+        (a) Only ``ActionSpaceType.Continuous``, ``ActionSpaceType.Lane``, and
+            ``ActionSpaceType.TargetPose`` are supported by this wrapper now.
+
+        (b) All agents should have the same action space.
+
+        (c) Action adapters should not be used inside the ``step`` method of the
             base environment.
     """
 
     def __init__(self, env: gym.Env, space: ActionSpaceType):
-        """Sets identical action space, denoted by `space`, for all agents.
+        """Sets identical action space, denoted by ``space``, for all agents.
 
-        Args:
-            env (gym.Env): Gym env to be wrapped.
-            space (str): Denotes the desired action space type from
-                `smarts.core.controllers.ActionSpaceType`.
+        :param env: Gym env to be wrapped.
+        :type env: class: gym.Env
+        :param space: Denotes the desired action space type from
+                ``smarts.core.controllers.ActionSpaceType``.
+        :type space: str
         """
         super().__init__(env)
         space_map = {
