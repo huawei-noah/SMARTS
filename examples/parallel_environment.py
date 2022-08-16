@@ -15,7 +15,7 @@ from smarts.core.sensors import Observation
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.parallel_env import ParallelEnv
-from smarts.sstudio import build_scenario
+from smarts.sstudio import scenario_construction
 from smarts.zoo.agent_spec import AgentSpec
 
 

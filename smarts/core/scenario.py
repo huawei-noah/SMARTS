@@ -657,7 +657,7 @@ class Scenario:
         :param filter: A filter in the form of ``(func(Sequence[TrafficHistoryVehicleWindow]) -> Sequence[TrafficHistoryVehicleWindow])``,
             which passes in traffic vehicle information and then should be used purely to filter the sequence down. 
         :return: A set of missions derived from the traffic history.
-        :rtype: (List[Mission])
+        :rtype: List[smarts.core.plan.Mission]
         """
         vehicle_windows = self._traffic_history.vehicle_windows_in_range(
             exists_at_or_after, ends_before, minimum_vehicle_window
