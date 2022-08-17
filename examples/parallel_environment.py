@@ -1,6 +1,7 @@
 import pathlib
 
 import gym
+from smarts import sstudio
 
 gym.logger.set_level(40)
 
@@ -15,7 +16,6 @@ from smarts.core.utils.argument_parser import default_argument_parser
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.parallel_env import ParallelEnv
-from smarts.sstudio import build_scenario
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -226,7 +226,7 @@ if __name__ == "__main__":
             )
         ]
 
-    build_scenario(args.scenarios)
+    sstudio.build_scenario(args.scenarios)
 
     print("\nParallel environments with asynchronous episodes.")
     main(
