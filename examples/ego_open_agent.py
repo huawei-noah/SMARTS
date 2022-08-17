@@ -8,7 +8,6 @@ import importlib
 import logging
 
 import gym
-
 from smarts.core.utils.episodes import episodes
 
 try:
@@ -18,7 +17,7 @@ except ModuleNotFoundError as e:
         f"Ensure that the open-agent has been installed with `pip install open-agent"
     )
 
-from examples.argument_parser import default_argument_parser
+from smarts.core.utils.argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
