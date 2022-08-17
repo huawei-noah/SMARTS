@@ -1,8 +1,9 @@
 import logging
 
 import gym
-from smarts.core.utils.argument_parser import default_argument_parser
 from smarts.core.utils.episodes import episodes
+
+from argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 

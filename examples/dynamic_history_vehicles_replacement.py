@@ -10,8 +10,9 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.core.plan import PlanningError
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.utils.argument_parser import default_argument_parser
 from smarts.zoo.agent_spec import AgentSpec
+
+from argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 

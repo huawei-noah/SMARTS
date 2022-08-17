@@ -1,9 +1,9 @@
+import sys
 import tempfile
 from pathlib import Path
 
 import psutil
 import pytest
-
 from smarts.core.utils import import_utils
 
 import_utils.import_module_from_file(
@@ -17,6 +17,9 @@ import_utils.import_module_from_file(
     # TODO: "ego_open_agent" and "human_in_the_loop" are causing aborts, fix later
 )
 def test_examples(example):
+    # necessary to import default_argument_parser properly in the examples
+    sys.path.insert(0, str(Path(__file__).parents[1]))
+
     if example == "egoless":
         from examples import egoless as current_example
     if example == "single_agent":

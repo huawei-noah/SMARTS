@@ -14,9 +14,10 @@ from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
-from smarts.core.utils.argument_parser import default_argument_parser
 from smarts.core.utils.math import radians_to_vec, rounder_for_dt
 from smarts.zoo.agent_spec import AgentSpec
+
+from argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
