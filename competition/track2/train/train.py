@@ -4,6 +4,8 @@
 import os
 import argparse
 from pathlib import Path
+import sys
+import subprocess
 
 
 def train(input_path, output_path):
@@ -20,8 +22,6 @@ def train(input_path, output_path):
     import shutil
 
     d3rlpy.seed(313)
-    n_steps = 2
-    n_steps_per_epoch = 2
     scenarios = list()
     for scenario_name in os.listdir(input_path):
         scenarios.append(scenario_name)
@@ -31,8 +31,11 @@ def train(input_path, output_path):
         os.mkdir("d3rlpy_logs")
     else:
         index = len(os.listdir("d3rlpy_logs/"))
+    
+    if not os.path.isdir("policies/"):
+        os.mkdir("policies")
 
-    for scenario in scenarios[index:2]:
+    for scenario in scenarios[index : len(scenarios)]: #[index:2]
 
         obs = list()
         actions = list()
@@ -150,26 +153,32 @@ def train(input_path, output_path):
             else:
                 saved_models = glob.glob("d3rlpy_logs/*")
                 latest_model = max(saved_models, key=os.path.getctime)
-                print(latest_model)
                 model = CQL.from_json("d3rlpy_logs/1/params.json")
-                model_name = [model_name for model_name in os.listdir(Path(__file__).absolute().parents[0]/latest_model)\
-                     if model_name.endswith('pt')][0]
-                model.load_model(Path(__file__).absolute().parents[0] / latest_model / model_name)
+                model.load_model(latest_model + "/model_10.pt")
             model.fit(
                 dataset,
                 eval_episodes=dataset,
-                n_steps_per_epoch=n_steps_per_epoch,
-                n_steps=n_steps,
+                n_steps_per_epoch=10,
+                n_steps=10,
             )
-            saved_models = glob.glob("d3rlpy_logs/*")
-            latest_model = max(saved_models, key=os.path.getctime)
-            os.rename(latest_model, "d3rlpy_logs/" + str(index + 1))
-            index += 1
+            saved_models = glob.glob("d3rlpy_logs/*") #
+            latest_model = max(saved_models, key=os.path.getctime) #
+            os.rename(latest_model, "d3rlpy_logs/" + str(index + 1)) #
+
+            model.save_policy(str(index+1) + '.pt')
+            os.rename(os.getcwd() + '/'+ str(index+1) + '.pt', os.getcwd() + '/policies/'+ str(index+1) + '.pt')
+
+            index += 1 #
 
     saved_models = glob.glob("d3rlpy_logs/*")
     latest_model = max(saved_models, key=os.path.getctime)
     os.rename(latest_model, os.path.join(output_path, "model"))
-    shutil.rmtree("d3rlpy_logs")
+    #shutil.rmtree("d3rlpy_logs")
+
+    saved_policies = glob.glob("policies/*")
+    latest_policy = max(saved_policies, key=os.path.getctime)
+    os.rename(latest_policy, os.path.join(output_path, "policy.pt"))
+    #shutil.rmtree("policies")
 
 
 def main(args: argparse.Namespace):
@@ -196,4 +205,19 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Install requirements.
+    req_file = os.path.join(str(Path(__file__).absolute().parent), "requirements.txt")
+    sys.path.insert(0, str(Path(__file__).absolute().parent))
+    subprocess.check_call(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1",
+        ]
+    )
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
+
     main(args)
+

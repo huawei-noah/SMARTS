@@ -18,7 +18,7 @@ _EVALUATION_CONFIG_KEYS = {
     "bubble_env_evaluation_seeds",
 }
 _DEFAULT_EVALUATION_CONFIG = dict(
-    phase="track1",
+    phase="track2",
     eval_episodes=50,
     seed=42,
     scenarios=[
