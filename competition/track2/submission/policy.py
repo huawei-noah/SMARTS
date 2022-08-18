@@ -54,10 +54,8 @@ class Policy(BasePolicy):
         self.model = CQL.from_json(
             Path(__file__).absolute().parents[0] / "model/params.json"
         )
-        model_name = None
-        for file_name in os.listdir(Path(__file__).absolute().parents[0] / "model"):
-            if file_name.endswith(".pt"):
-                model_name = file_name
+        model_name = [model_name for model_name in os.listdir(Path(__file__).absolute().parents[0]/latest_model)\
+                     if model_name.endswith('pt')][0]
         model_name = "model/" + model_name
         self.model.load_model(Path(__file__).absolute().parents[0] / model_name)
 

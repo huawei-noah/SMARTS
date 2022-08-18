@@ -20,6 +20,8 @@ def train(input_path, output_path):
     import shutil
 
     d3rlpy.seed(313)
+    n_steps = 2
+    n_steps_per_epoch = 2
     scenarios = list()
     for scenario_name in os.listdir(input_path):
         scenarios.append(scenario_name)
@@ -148,13 +150,16 @@ def train(input_path, output_path):
             else:
                 saved_models = glob.glob("d3rlpy_logs/*")
                 latest_model = max(saved_models, key=os.path.getctime)
+                print(latest_model)
                 model = CQL.from_json("d3rlpy_logs/1/params.json")
-                model.load_model(latest_model + "/model_1.pt")
+                model_name = [model_name for model_name in os.listdir(Path(__file__).absolute().parents[0]/latest_model)\
+                     if model_name.endswith('pt')][0]
+                model.load_model(Path(__file__).absolute().parents[0] / latest_model / model_name)
             model.fit(
                 dataset,
                 eval_episodes=dataset,
-                n_steps_per_epoch=1,
-                n_steps=1,
+                n_steps_per_epoch=n_steps_per_epoch,
+                n_steps=n_steps,
             )
             saved_models = glob.glob("d3rlpy_logs/*")
             latest_model = max(saved_models, key=os.path.getctime)
