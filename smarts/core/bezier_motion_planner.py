@@ -78,7 +78,7 @@ class BezierMotionPlanner:
         p3s = target_poses_at_t[:, :2].repeat(n, axis=0)
         dts = (np.array(range(1, n + 1)) * dt).reshape(-1, 1).repeat(
             len(current_poses), axis=1
-        ).T.reshape(-1, 1) / real_times.repeat(n, axis=0).clip(dt, None)
+        ).T.reshape(-1, 1) / real_times
 
         def linear_bezier(t, p0, p1):
             return (1 - t) * p0 + t * p1
@@ -99,7 +99,7 @@ class BezierMotionPlanner:
         #     )
 
         def curve_lengths(subsections, t, p0, p1, p2, p3):
-            # TAI: subsections could be scaled by time, magnitude between p0 and p3, 
+            # TAI: subsections could be scaled by time, magnitude between p0 and p3,
             # and directional difference between p1 and p2
             lengths = []
             inverse_subsection = 1 / subsections
@@ -125,7 +125,9 @@ class BezierMotionPlanner:
 
         positions = cubic_bezier(dts, p0s, p1s, p2s, p3s)
         # TODO: this could be optimized to use the positions already generated
-        lengths = curve_lengths(self._speed_calculation_resolution, dts, p0s, p1s, p2s, p3s)
+        lengths = curve_lengths(
+            self._speed_calculation_resolution, dts, p0s, p1s, p2s, p3s
+        )
         speeds = length_to_speed(real_times.reshape(n), lengths)
 
         # angle interp. equations come from:
