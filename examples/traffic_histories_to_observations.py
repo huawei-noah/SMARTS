@@ -202,12 +202,12 @@ class ObservationRecorder:
         current_vehicles = self._smarts.vehicle_index.social_vehicle_ids(
             vehicle_types=vehicle_types
         )
-        # self._record_data(
-        #     collected_data,
-        #     current_vehicles,
-        #     off_road_vehicles,
-        #     selected_vehicles,
-        # )
+        self._record_data(
+            collected_data,
+            current_vehicles,
+            off_road_vehicles,
+            selected_vehicles,
+        )
 
         while True:
             if self._smarts.elapsed_sim_time > self._max_sim_time:
@@ -221,12 +221,12 @@ class ObservationRecorder:
                 self._logger.info("No more vehicles. Exiting...")
                 break
 
-            # self._record_data(
-            #     collected_data,
-            #     current_vehicles,
-            #     off_road_vehicles,
-            #     selected_vehicles,
-            # )
+            self._record_data(
+                collected_data,
+                current_vehicles,
+                off_road_vehicles,
+                selected_vehicles,
+            )
 
         if self._output_dir:
             # Save recorded observations as pickle files
