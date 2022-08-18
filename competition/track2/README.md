@@ -82,18 +82,19 @@ Track-2 participants are required to submit their training code for us to train 
 1. New offline dataset is made available to the container via a mapped volume at `/SMARTS/competition/offline_dataset` directory. The directory has the following structure.
     ```text
     offline_dataset                
-        ├── <scenario_id>                                          # each scene in tfrecord
-        |   ├── <time>_<vehicle_id>.png                            # ego-centric bird-eye view image
-        |   ├── <time>_<vehicle_id>.png                            # ego-centric bird-eye view image        
+        ├── <scenario_id>                      # One scene of variable time length
+        |   ├── <time>_<vehicle_id>.png        # bird-eye view image of <vehicle_id> at <time>
+        |   ├── <time>_<vehicle_id>.png        # bird-eye view image of <vehicle_id> at <time>         
         |   |  .
         |   |  .
-        |   └── <scenario_name>_<traffic_name>_<vehicle_id>.pkl    # state space of the vehicle
-        ├── <scenario_id>                                          # each scene in tfrecord
-        |   ├── <time>_<vehicle_id>.png                            # ego-centric bird-eye view image
-        |   ├── <time>_<vehicle_id>.png                            # ego-centric bird-eye view image        
+        |   └── <vehicle_id>.pkl               # state space of <vehicle_id> over all time        
+        ├── <scenario_id>                      # One scene of variable time length
+        |   ├── <time>_<vehicle_id>.png        # bird-eye view image of <vehicle_id> at <time>
+        |   ├── <time>_<vehicle_id>.png        # bird-eye view image of <vehicle_id> at <time>        
         |   |  .
         |   |  .
-        |   └── <scenario_name>_<traffic_name>_<vehicle_id>.pkl    # state space of the vehicle
+        |   ├── <vehicle_id>.pkl               # state space of <vehicle_id> over all time
+        |   └── <vehicle_id>.pkl               # state space of <vehicle_id> over all time
         |   .
         |   .
     ```
