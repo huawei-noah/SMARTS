@@ -91,26 +91,19 @@ class BezierMotionPlanner:
                 t, quadratic_bezier(t, p0, p1, p2), quadratic_bezier(t, p1, p2, p3)
             )
 
-        # def cubic_bezier_derivative(t, p0, p1, p2, p3):
-        #     return (
-        #         3 * (1 - t) ** 2 * (p1 - p0)
-        #         + 6 * (1 - t) * t * (p2 - p1)
-        #         + 3 * t**2 * (p3 - p2)
-        #     )
-
         def curve_lengths(subsections, t, p0, p1, p2, p3):
             # TAI: subsections could be scaled by time, magnitude between p0 and p3,
             # and directional difference between p1 and p2
             lengths = []
             inverse_subsection = 1 / subsections
-            # get s subsection points in [p(t0):p(t1)]
             for (ti, p0i, p1i, p2i, p3i) in zip(t, p0, p1, p2, p3):
-                # accumulate position deltas [s[t+1] - s[t]]
+                # get s subsection points in [p(0):p(t)]
                 tss = [ts * inverse_subsection * ti for ts in range(subsections + 1)]
                 points = [cubic_bezier(ts, p0i, p1i, p2i, p3i) for ts in tss]
                 subsection_length_total = 0
-                # convert deltas to magnitudes
+                # accumulate position deltas [s[t+1] - s[t]]
                 for (ps, ps1) in zip(points[:-1], points[1:]):
+                    # convert deltas to magnitudes
                     delta_dist = ps1 - ps
                     # add magnitudes
                     subsection_length = np.linalg.norm(delta_dist)
