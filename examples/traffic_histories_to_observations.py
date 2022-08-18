@@ -233,7 +233,7 @@ class ObservationRecorder:
             for car, data in collected_data.items():
                 outfile = os.path.join(
                     self._output_dir,
-                    f"{self._scenario.name}_{self._scenario.traffic_history.name}_{car}.pkl",
+                    f"{car}.pkl",
                 )
                 with open(outfile, "wb") as of:
                     pickle.dump(data, of)
