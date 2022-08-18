@@ -5,6 +5,8 @@ import random
 from typing import Dict, Iterable, Sequence, Tuple
 from unittest.mock import Mock
 
+from argument_parser import default_argument_parser
+
 from envision.client import Client as Envision
 from smarts.core import seed as random_seed
 from smarts.core.agent import Agent
@@ -16,11 +18,6 @@ from smarts.core.traffic_history import TrafficHistory
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
 from smarts.core.utils.math import radians_to_vec, rounder_for_dt
 from smarts.zoo.agent_spec import AgentSpec
-
-try:
-    from argument_parser import default_argument_parser
-except ImportError:
-    from .argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 

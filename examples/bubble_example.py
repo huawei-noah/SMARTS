@@ -1,9 +1,10 @@
 import logging
 import random
-from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Tuple
+
+from argument_parser import default_argument_parser
 
 from envision.client import Client as Envision
 from smarts.core import seed as random_seed
@@ -14,16 +15,10 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
-from smarts.core.traffic_history_provider import TrafficHistoryProvider
 from smarts.core.utils.logging import timeit
-from smarts.sstudio.types import Bubble, MapZone, PositionalZone, SocialAgentActor
+from smarts.sstudio.types import Bubble, PositionalZone, SocialAgentActor
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import register
-
-try:
-    from argument_parser import default_argument_parser
-except ImportError:
-    from .argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.DEBUG)
 
