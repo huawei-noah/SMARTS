@@ -39,7 +39,7 @@ class MotionPlannerControllerState:
         dt: float,
         target_pose_at_t: Optional[np.ndarray],
     ) -> Tuple[Pose, float]:
-        """Computes a cubic bezier curbe to the target_pose_at_t."""
+        """Computes a cubic bezier curve to the target_pose_at_t."""
         cur_state = np.array(
             [*cur_pose.position[:2], float(cur_pose.heading), cur_speed]
         ).astype(float)
