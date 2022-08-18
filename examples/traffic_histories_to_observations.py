@@ -329,7 +329,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # sstudio.build_scenario([args.scenario])
+    sstudio.build_scenario([args.scenario])
 
     recorder = ObservationRecorder(
         scenario=args.scenario,
