@@ -4,6 +4,7 @@ from pathlib import Path
 
 import psutil
 import pytest
+
 from smarts.core.utils import import_utils
 
 # necessary to import default_argument_parser properly in the examples

@@ -6,6 +6,7 @@ import sys
 
 import gym
 from argument_parser import default_argument_parser
+
 from smarts.core.utils.episodes import episodes
 from smarts.zoo.registry import make as zoo_make
 

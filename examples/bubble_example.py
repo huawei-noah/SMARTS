@@ -4,6 +4,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Tuple
 
+from argument_parser import default_argument_parser
+
 from envision.client import Client as Envision
 from smarts.core import seed as random_seed
 from smarts.core.agent import Agent
@@ -17,8 +19,6 @@ from smarts.core.utils.logging import timeit
 from smarts.sstudio.types import Bubble, PositionalZone, SocialAgentActor
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import register
-
-from argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.DEBUG)
 

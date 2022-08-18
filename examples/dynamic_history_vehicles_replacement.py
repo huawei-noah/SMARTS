@@ -2,6 +2,8 @@ import logging
 import random
 from typing import Any, Callable, Dict, Sequence
 
+from argument_parser import default_argument_parser
+
 from envision.client import Client as Envision
 from smarts.core import seed as random_seed
 from smarts.core.agent import Agent
@@ -11,8 +13,6 @@ from smarts.core.plan import PlanningError
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.zoo.agent_spec import AgentSpec
-
-from argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 
