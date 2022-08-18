@@ -66,6 +66,8 @@ class BezierMotionPlanner:
             * self._extend
         )
 
+        # FIXME: speed control still needed for values of t != dt !!!
+        #  Reason being that the tangents (therefore speed) along a bezier curve will vary.
         real_times = target_poses_at_t[:, 3:4].repeat(n, axis=0).clip(dt, None)
         p0s = current_poses[:, :2].repeat(n, axis=0)
         p1s = (
@@ -113,7 +115,7 @@ class BezierMotionPlanner:
             return np.array(lengths)
 
         def length_to_speed(t, length):
-            speeds = [l / t if t > 0 else 0 for (t, l) in zip(t, length)]
+            speeds = [l / t if t > 0 else -1 for (t, l) in zip(t, length)]
             return np.array(speeds)
 
         positions = cubic_bezier(dts, p0s, p1s, p2s, p3s)
