@@ -49,7 +49,7 @@ def train(input_path, output_path):
                 if vehicle_id not in vehicle_ids:
                     vehicle_ids.append(vehicle_id)
 
-        if len(vehicle_ids) < 2:
+        if len(vehicle_ids) < 3:
             continue
         else:
 
