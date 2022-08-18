@@ -150,7 +150,7 @@ class ObservationRecorder:
         # in the scenario, we need to add some traffic providers.
         traffic_sims = []
         if self._scenario.supports_sumo_traffic:
-            sumo_traffic = SumoTrafficSimulation(headless=False)
+            sumo_traffic = SumoTrafficSimulation()
             traffic_sims += [sumo_traffic]
         smarts_traffic = LocalTrafficProvider()
         traffic_sims += [smarts_traffic]
