@@ -232,7 +232,7 @@ if __name__ == "__main__":
     except:
         raise ImportError(
             "Missing evaluation dependencies. Please refer to the Setup section of README.md"
-            " as to how to install the dependencies or use the `--auto_install_pip_deps` flag."
+            " on how to install the dependencies or use the `--auto_install_pip_deps` flag."
         )
 
     req_file = os.path.join(submit_dir, "requirements.txt")
@@ -270,9 +270,8 @@ if __name__ == "__main__":
         if not args.local:
             config["scenarios"] = []
             for dirpath, dirnames, filenames in os.walk(evaluation_dir):
-                if "scenario.py" in filenames and "map.net.xml" in filenames:
+                if "scenario.py" in filenames:
                     config["scenarios"].append(dirpath)
-
         rank = evaluate(config)
     elif config["phase"] == "track2":
         score = Score()
