@@ -300,8 +300,8 @@ def is_close(a: float, b: float, rel_tol: float = 1e-09, abs_tol: float = 0.0) -
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
-def rotate_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
-    """Rotate a point around a given origin."""
+def rotate_cw_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
+    """Rotate a point clockwise around a given origin."""
     x, y = point
     ox, oy = origin
 
