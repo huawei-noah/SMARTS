@@ -32,7 +32,7 @@ def train(input_path, output_path):
     else:
         index = len(os.listdir("d3rlpy_logs/"))
 
-    for scenario in scenarios[index:2]:
+    for scenario in scenarios[index:3]:
 
         obs = list()
         actions = list()
@@ -165,10 +165,7 @@ def train(input_path, output_path):
             latest_model = max(saved_models, key=os.path.getctime)
             os.rename(latest_model, "d3rlpy_logs/" + str(index + 1))
             index += 1
-
-    saved_models = glob.glob("d3rlpy_logs/*")
-    latest_model = max(saved_models, key=os.path.getctime)
-    os.rename(latest_model, os.path.join(output_path, "model"))
+    model.save_policy(os.path.join(output_path, "model.pt"))
     shutil.rmtree("d3rlpy_logs")
 
 
