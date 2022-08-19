@@ -53,7 +53,7 @@ from .sensors import (
     WaypointsSensor,
 )
 from .utils.custom_exceptions import RendererException
-from .utils.math import rotate_around_point
+from .utils.math import rotate_cw_around_point
 
 
 @dataclass
@@ -324,9 +324,9 @@ class Vehicle:
         corners = np.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
         heading = self.heading
         return [
-            rotate_around_point(
+            rotate_cw_around_point(
                 point=origin + corner * dimensions,
-                radians=heading,
+                radians=Heading.flip_clockwise(heading),
                 origin=origin,
             )
             for corner in corners
