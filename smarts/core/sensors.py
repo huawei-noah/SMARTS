@@ -43,6 +43,10 @@ from .plan import Mission, Via
 
 logger = logging.getLogger(__name__)
 
+EGO_LANE_ID_CONSTANT = "off_lane"
+EGO_ROAD_ID_CONSTANT = "off_road"
+EGO_LANE_INDEX_CONSTANT = -1
+
 
 class VehicleObservation(NamedTuple):
     """Perceived vehicle information."""
@@ -326,9 +330,9 @@ class Sensors:
             if vehicle.subscribed_to_lane_position_sensor:
                 ego_lane_pos = vehicle.lane_position_sensor(closest_lane, vehicle)
         else:
-            ego_lane_id = None
-            ego_lane_index = None
-            ego_road_id = None
+            ego_lane_id = EGO_LANE_ID_CONSTANT
+            ego_lane_index = EGO_LANE_INDEX_CONSTANT
+            ego_road_id = EGO_ROAD_ID_CONSTANT
         ego_vehicle_state = vehicle.state
 
         acceleration_params = {
