@@ -650,7 +650,11 @@ class SMARTS(ProviderManager):
             new_prov = self.agent_relinquishing_actor(
                 agent_id, state, teardown_agent, shadow_agent_id
             )
-            if route and isinstance(new_prov, TrafficProvider):
+            if (
+                route is not None
+                and route.road_length > 0
+                and isinstance(new_prov, TrafficProvider)
+            ):
                 new_prov.update_route_for_vehicle(vehicle_id, route)
         elif shadow_agent_id:
             self._log.debug(

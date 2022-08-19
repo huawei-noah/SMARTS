@@ -22,7 +22,7 @@ hide_chart: True
 phases:
     0:
         phasenumber: 0
-        description: Validation
+        description: Validation Stage to validate that your submission will work during Track1 and Track2 evaluation.
         label: "Validation"
         start_date: 2022-08-01
         max_submissions: 1000
