@@ -224,7 +224,9 @@ if __name__ == "__main__":
     if args.auto_install_pip_deps:
         from auto_install import install_evaluation_deps
 
-        install_evaluation_deps(requirements_dir=Path(root_path), reset_wheelhouse_cache=True)
+        install_evaluation_deps(
+            requirements_dir=Path(root_path), reset_wheelhouse_cache=True
+        )
 
     try:
         import smarts
