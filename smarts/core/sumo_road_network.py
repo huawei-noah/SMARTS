@@ -793,7 +793,7 @@ class SumoRoadNetwork(RoadMap):
     @lru_cache(maxsize=16)
     def road_with_point(self, point: Point) -> RoadMap.Road:
         radius = max(5, 2 * self._default_lane_width)
-        for nl, dist in self.nearest_lanes(point, radius):
+        for nl, dist in self.nearest_lanes(point, radius, False):
             if dist < 0.5 * nl._width + 1e-1:
                 return nl.road
         return None
