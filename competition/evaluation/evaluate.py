@@ -31,7 +31,7 @@ _DEFAULT_EVALUATION_CONFIG = dict(
         "3lane_cut_in",
         "3lane_overtake",
     ],
-    bubble_env_evaluation_seeds=[],
+    bubble_env_evaluation_seeds=[6],
 )
 _SUBMISSION_CONFIG_KEYS = {
     "img_meters",

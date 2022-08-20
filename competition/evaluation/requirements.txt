@@ -1,2 +1,5 @@
 smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1
 bubble_env @ git+https://malban:ATBByMTp2W2MnVGsxHBYwEbNsVca00608BD5@bitbucket.org/malban/bubble_env.git@master
+waymo-open-dataset-tf-2-4-0==1.4.1
+tabulate==0.8.9 
+pathos==0.2.8
