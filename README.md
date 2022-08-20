@@ -1,22 +1,24 @@
 # Welcome to the 2022 NeurIPS Driving SMARTS Competition
-
-Thank you for your interest in the 2022 NeurIPS Driving SMARTS competition. Please also take a look at the [smarts-project](https://smarts-project.github.io/) site and [submission site](https://codalab.lisn.upsaclay.fr/competitions/6618).
+Thank you for your interest in the 2022 NeurIPS Driving SMARTS competition. Please take a look at the [competition site](https://codalab.lisn.upsaclay.fr/competitions/6618).
 
 ## Registration
-To register for the competition you are required to fill out a response to the following form. The consequences of not doing so will be that you will be ineligible for any rewards:
+In order to be elligible for any rewards, either 
 
-### Registration Form:      
-```
-# Email response to smarts4ad@gmail.com
-Public group name [required]:      
-Group members [required]:      
-Declared affiliations (orgs or any relation to organisers) [required]:      
-Primary contact email [required]:
-```
++ Fill out the following form: [Registration Form](https://docs.google.com/forms/d/1bIXTQL420q-cB65j1df2vhbh-79NMlm0M2G0uQtwvds)
 
-## Competition tracks
-There are two tracks in the competition.
-+ Track 1: The participants may use any method and training data to develop their solutions.
++ Or, send a response to smarts4ad@gmail.com including the following information:
+    ```text
+    Public group name [required]:      
+    Group members [required]:      
+    Declared affiliations (orgs or any relation to organisers) [required]:      
+    Primary contact email [required]:
+    ```
+
+## Competition Tracks
+Validation Stage: This stage is to validate that your submission will work without errors during Track1 and Track2 evaluation.
+
+There are two competition tracks.
++ Track 1: The participants may use any method to develop their solutions.
 + Track 2: The participants are only allowed to train their methods on the offline datasets.
 
 ## Prizes
@@ -31,7 +33,7 @@ Additional prizes:
 * US$1000 for the most innovative approach out of top-6 entries in both tracks
 * US$1000 given to one of the valid submissions not in top-3 positions in either track
 
-Winners in each track will receive cash prizes and will get a chance to present their innovative solutions during the virtual ceremony.
+Winners in each track will receive cash prizes and will get a chance to present their innovative solutions during a virtual ceremony.
 
 ## First Steps
 Code and instructions related to the competition may be found in the [competition directory](./competition/) where it is recommended you read the READMEs of each section.
@@ -45,16 +47,10 @@ Starting code may be found for each track in the following locations.
 - [Track 1](./competition/track1/)
 - [Track 2](./competition/track2/)
 
-## Submission of Deliverables
+## Submission
 Deliverables may be submitted to the following site: https://codalab.lisn.upsaclay.fr/competitions/6618#participate-submit_results
 
-Track deliverables can only be submitted twice per track. However, the validation stage may be used a number of times (within reason) to ensure your model does not encounter errors during submission.
-
-The main evaluations schedule is as follows.
-- Track 1 Released  : 1st September
-- Track 1 Evaluated : 1st October
-- Track 2           : Released on-or-before 1st October
-- Track 2 Evaluated : 1st November
+Track1 and Track2 deliverables can only be submitted a limited number of times. Therefore, the Validation Stage may be used to ensure your model does not encounter errors during Track1 and Track2 submission.
 
 #
 
