@@ -25,6 +25,6 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
 ENV VIRTUAL_ENV=/opt/.venv
 RUN python3.8 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-RUN pip install --upgrade pip wheel
+RUN pip install --upgrade pip setuptools wheel
 
 SHELL ["/bin/bash", "-c", "-l"]

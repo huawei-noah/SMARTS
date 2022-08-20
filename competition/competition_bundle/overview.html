@@ -12,7 +12,7 @@
     This competition seeks to advance autonomous driving by developing agents that can drive as 
     quickly and safely as possible from the start to destination amid background traffic. Data 
     for the competition are mined from large-scale naturalistic driving data, manipulated, and 
-    replayed in <a href="https://github.com/huawei-noah/SMARTS">SMARTS</a> simulation environment. 
+    replayed in <a href="https://github.com/huawei-noah/SMARTS/tree/comp-1">SMARTS</a> simulation environment. 
     The following typical driving scenarios are tested: cruising, overtaking, merging, left turns 
     at unsignalized intersections and being cut off by another vehicle. For some scenarios, 
     interactive background vehicles are added in SMARTS.
@@ -95,19 +95,6 @@ $ git checkout comp-1
 $ cd &lt;path&gt;/SMARTS/competition    
 </code></pre>
 
-<h2>Extended Environment "bubble_env"</h2>
-(a) An additional evaluation environment is available and it is used as part of the evaluation.<br>
-(b) It can be acquired in a few ways. The easiest way is to install it through <code>pip</code>.<br>
-<pre><code>$ pip install "bubble_env @ git+https://malban@bitbucket.org/malban/bubble_env.git"</code></pre>
-(c) To directly obtain the additional environment and resources you may instead do the following:<br>
-<pre><code>$ cd &lt;path&gt;
-$ git clone https://malban@bitbucket.org/malban/bubble_env.git
-$ cd bubble_env
-$ git lfs pull # or follow instructions in ./README.md
-$ pip install -e .
-$ cd &lt;path&gt;/SMARTS/competition 
-</code></pre>
-
 <h2>Validation</h2>
 (a) Since Track-1 and Track-2 has limited number of submissions, a Validation stage is made available.<br>
 (b) Participants may submit their zipped Track-1 and Track-2 code to Validation stage, to check whether their code executes without errors.<br>
@@ -119,11 +106,29 @@ $ cd &lt;path&gt;/SMARTS/competition
 (b) Any method such as reinforcement learning, offline reinforcement learning,
     behaviour cloning, generative models, predictive models, etc, may be used
     to develop the policy.<br>
-(b) For more instructions and explanations, see the accompanying <code>README.md</code> file of each stage.<br>       
+(c) For more instructions and explanations, see the accompanying <code>README.md</code> file of each stage.<br>       
     <ul>
         <li>Training: <code>/SMARTS/competition/track1/train/README.md</code></li>
         <li>Submission: <code>/SMARTS/competition/track1/submission/README.md</code></li>
         <li>Evaluation: <code>/SMARTS/competition/evaluation/README.md</code></li>
+    </ul>
+(d) [Optional] Environment "bubble_env".
+<ul>
+    <li> An additional environment, named <code>bubble_env</code>, is used during evaluation.</li>
+    <li> Participants may optionally choose to train their Track1 solution using this additional <code>bubble_env</code>.</li>
+    <li> Install <code>bubble_env</code> through either one of the methods below.</li>
+        <ul>
+            <li>Easiest way is to install via <code>pip</code>.</li>
+            <pre><code>$ sudo apt-get install git-lfs
+$ pip install "bubble_env @ git+https://malban@bitbucket.org/malban/bubble_env.git"
+</code></pre>
+            <li>To install from source code, do the following.</li>
+            <pre><code>$ sudo apt-get install git-lfs
+$ git clone https://malban:ATBByMTp2W2MnVGsxHBYwEbNsVca00608BD5@bitbucket.org/malban/bubble_env.git
+$ cd bubble_env
+$ pip install -e .
+</code></pre>
+        </ul>
     </ul>
 
 <h2>Track-2: Offline Learning</h2>
