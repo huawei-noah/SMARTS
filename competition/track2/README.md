@@ -79,7 +79,7 @@ Track-2 participants are required to submit their training code for us to train 
         --volume=<path>/output:/SMARTS/competition/output
         <username/imagename:version>
     ```
-1. New offline dataset is made available to the container via a mapped volume at `/SMARTS/competition/offline_dataset` directory. The directory has the following structure.
+1. New offline dataset is made available to the container via a mapped volume at `/SMARTS/competition/offline_dataset` directory. The directory has the following structure. The state space of each vehicle follows the SMARTS observation format, except for the RGB images which are saved individually as `<time>_<vehicle_id>.png`.
     ```text
     offline_dataset                
         ├── <scenario_id>                      # One scene of variable time length
@@ -98,7 +98,6 @@ Track-2 participants are required to submit their training code for us to train 
         |   .
         |   .
     ```
-1. The `/SMARTS/competition/offline_dataset` directory contains equivalent SMARTS observations, converted from selected Waymo and NGSIM datasets.
 1. Inside the container, on completion of training, the trained model should be saved in `/SMARTS/competition/track2/submission` folder such that calling `/SMARTS/competition/track2/submission/policy.py::Policy.act(obs)` with a multi-agent SMARTS observation as input returns a multi-agent `TargetPose` action as output.
 1. The `/SMARTS/competition/track2/submission` folder will be zipped, mapped out from the container, and evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
 1. During development, it is strongly suggested to submit your zipped `track2/submission` folder to the Validation stage in Codalab, to verify that the evaluation works without errors.
