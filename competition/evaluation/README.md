@@ -22,27 +22,9 @@ This folder contains the python script that CodaLab uses to evaluate the submiss
 + Overall rank is obtained by sorting each score component in ascending order, with a priority order of Completion > Time > Humanness > Rules .
 
 ## Setup
-+ There is a utility for setting up the base dependencies.
-+ Be aware that you will need [git lfs](git-lfs.github.com) in order to get all dependencies.
-
-### Option 1
-+ Install dependencies using the utility script.
-
+1. Install [git lfs](https://git-lfs.github.com/).
     ```bash
-    # Use --no-cache if you wish a full reinstall
-    $ python -m auto_install
-    ```
-### Option 2
-+ The alternative is to install from source. This allows for updates of the source.
-
-    ```bash
-    $ cd <to/your/repo/storage>
-    $ git clone <smarts_repo> # likely already located at ../.. from this file
-    $ pip install -e <smarts_repo>
-    # check that git lfs is installed:
-    $ git lfs --version
-    $ git clone https://malban:ATBByMTp2W2MnVGsxHBYwEbNsVca00608BD5@bitbucket.org/malban/bubble_env.git
-    $ pip install -e ./bubble_env
+    $ sudo apt-get install git-lfs
     ```
 
 ## Local evaluation
@@ -51,9 +33,9 @@ This folder contains the python script that CodaLab uses to evaluate the submiss
     $ cd <path>/SMARTS/competition/evaluation
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
-    $ pip install --upgrade pip
-    $ python3.8 evaluate.py --input_dir=<path/to/submission/folder> --output_dir=<path/to/output/folder> --local
+    $ pip install --upgrade pip setuptools wheel
+    $ python3.8 evaluate.py --input_dir=<path/to/submission/folder> --output_dir=<path/to/output/folder> --auto_install_pip_deps --local 
     # Evaluation scores will be written to the output_dir folder.
     # For example:
-    $ python3.8 evaluate.py --input_dir=<path>/SMARTS/competition/track1/submission --output_dir=../output --local
+    $ python3.8 evaluate.py --input_dir=<path>/SMARTS/competition/track1/submission --output_dir=../output --auto_install_pip_deps --local
     ```
