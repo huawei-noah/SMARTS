@@ -72,14 +72,14 @@ Track-2 participants are required to submit their training code for us to train 
     ```
 1. Provide the link to the DockerHub image in `track2/submission/explanation.md` file.
 1. After uploading your Docker image, proceed to zip the entire `track2` folder and submit to Codalab Track-2.
-1. In the server, the docker image will be pulled and executed as follows to train a new model. 
+1. In the server, during evaluation, the docker image will be pulled and executed as follows to train a new model. 
     ```bash
     $ docker run --rm -it \
         --volume=<path>/offline_dataset:/SMARTS/competition/offline_dataset
         --volume=<path>/output:/SMARTS/competition/output
         <username/imagename:version>
     ```
-1. New offline dataset is made available to the container via a mapped volume at `/SMARTS/competition/offline_dataset` directory. The directory has the following structure. The state space of each vehicle follows the SMARTS observation format, except for the RGB images which are saved individually as `<time>_<vehicle_id>.png`.
+    New offline dataset is made available to the container for training via a mapped volume at `/SMARTS/competition/offline_dataset` directory. The directory has the following structure. The state space of each vehicle follows the SMARTS observation format, except for the RGB images which are saved individually as `<time>_<vehicle_id>.png`.
     ```text
     offline_dataset                
         ├── <scenario_id>                      # One scene of variable time length
