@@ -46,7 +46,7 @@ from smarts.core.coordinates import RefLinePoint
 from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.utils.math import rotate_around_point
+from smarts.core.utils.math import rotate_cw_around_point
 
 
 class _SUMO_PARAMS_MODE(IntEnum):
@@ -718,13 +718,13 @@ class MapZone(Zone):
             point = np.array(lane.from_lane_coord(RefLinePoint(offset)))[:2]
             lane_vec = lane.vector_at_offset(offset)[:2]
 
-            perp_vec_right = rotate_around_point(lane_vec, np.pi / 2, origin=(0, 0))
+            perp_vec_right = rotate_cw_around_point(lane_vec, np.pi / 2, origin=(0, 0))
             perp_vec_right = (
                 perp_vec_right / max(np.linalg.norm(perp_vec_right), 1e-3) * width_2
                 + point
             )
 
-            perp_vec_left = rotate_around_point(lane_vec, -np.pi / 2, origin=(0, 0))
+            perp_vec_left = rotate_cw_around_point(lane_vec, -np.pi / 2, origin=(0, 0))
             perp_vec_left = (
                 perp_vec_left / max(np.linalg.norm(perp_vec_left), 1e-3) * width_2
                 + point

@@ -298,8 +298,9 @@ class VehicleIndex:
             return
 
         for vehicle_id in vehicle_ids:
-            self._vehicles[vehicle_id].teardown()
-            del self._vehicles[vehicle_id]
+            vehicle = self._vehicles.pop(vehicle_id, None)
+            if vehicle is not None:
+                vehicle.teardown()
 
             # popping since sensor_states/controller_states may not include the
             # vehicle if it's not being controlled by an agent
