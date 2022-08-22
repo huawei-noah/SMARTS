@@ -158,9 +158,11 @@ class SumoRoadNetwork(RoadMap):
         with open(net_file, "rb", 0) as file, mmap.mmap(
             file.fileno(), 0, access=mmap.ACCESS_READ
         ) as s:
+            # pytype: disable=wrong-arg-types
             match = re.search(
                 rb'(?i)((?:<junction id=".* type="(?!dead_end).* intLanes="".*>))', s
             )
+            # pytype: enable=wrong-arg-types
             if match:
                 logging.error(
                     f"Junctions not included in map file. Simulation may get incomplete information: `{net_file}`"
@@ -809,8 +811,6 @@ class SumoRoadNetwork(RoadMap):
         for nl, dist in self.nearest_lanes(point, radius):
             if dist < 0.5 * nl._width + 1e-1:
                 return nl.road
-        else:
-            print(f"Point is off at {point}")
         return None
 
     def generate_routes(
