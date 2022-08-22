@@ -141,32 +141,34 @@ def train(input_path, output_path):
             rewards = np.array(rewards)
             terminals = np.array(terminals)
             dataset = MDPDataset(obs, actions, rewards, terminals)
-
+            save_directory = Path(__file__).absolute().parents[0]/"d3rlpy_logs"
             if index == 0:
                 minimum = [-0.1, 0, -0.1]
                 maximum = [0.1, 2, 0.1]
                 action_scaler = MinMaxActionScaler(minimum=minimum, maximum=maximum)
                 model = d3rlpy.algos.CQL(batch_size=1, action_scaler=action_scaler)
             else:
-                saved_models = glob.glob("d3rlpy_logs/*")
+                saved_models = glob.glob(str(save_directory) + "/*")
                 latest_model = max(saved_models, key=os.path.getctime)
-                print(latest_model)
-                model = CQL.from_json("d3rlpy_logs/1/params.json")
-                model_name = [model_name for model_name in os.listdir(Path(__file__).absolute().parents[0]/latest_model)\
+                model = CQL.from_json(str(save_directory) + "/1/params.json")
+                model_name = [model_name for model_name in os.listdir(save_directory/latest_model)\
                      if model_name.endswith('pt')][0]
-                model.load_model(Path(__file__).absolute().parents[0] / latest_model / model_name)
+                model.load_model(save_directory / latest_model / model_name)
             model.fit(
                 dataset,
                 eval_episodes=dataset,
                 n_steps_per_epoch=n_steps_per_epoch,
                 n_steps=n_steps,
+                logdir=save_directory
             )
-            saved_models = glob.glob("d3rlpy_logs/*")
+            saved_models = glob.glob(str(save_directory) + "/*")
             latest_model = max(saved_models, key=os.path.getctime)
-            os.rename(latest_model, "d3rlpy_logs/" + str(index + 1))
+            os.rename(latest_model, str(save_directory) + '/' + str(index + 1))
             index += 1
+    
+    shutil.rmtree(save_directory)
     model.save_policy(os.path.join(output_path, "model.pt"))
-    shutil.rmtree("d3rlpy_logs")
+
 
 
 def main(args: argparse.Namespace):

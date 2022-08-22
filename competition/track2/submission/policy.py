@@ -7,7 +7,7 @@ from smarts.env.wrappers.format_obs import FormatObs
 from smarts.core.controllers import ActionSpaceType
 import os
 import torch
-import onnxruntime as ort
+
 
 
 class BasePolicy:
