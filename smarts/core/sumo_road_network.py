@@ -152,6 +152,19 @@ class SumoRoadNetwork(RoadMap):
         """Generate a road network from the given map specification."""
         net_file = SumoRoadNetwork._map_path(map_spec)
 
+        import mmap
+        import re
+
+        with open(net_file, "rb", 0) as file, mmap.mmap(
+            file.fileno(), 0, access=mmap.ACCESS_READ
+        ) as s:
+            match = re.search(
+                rb'(?i)((?:<junction id=".* type="(?!dead_end).* intLanes="".*>))', s
+            )
+            if match:
+                logging.error(
+                    f"Junctions not included in map file. Simulation may get incomplete information: `{net_file}`"
+                )
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
         # loaded into the network graph.
@@ -796,6 +809,8 @@ class SumoRoadNetwork(RoadMap):
         for nl, dist in self.nearest_lanes(point, radius):
             if dist < 0.5 * nl._width + 1e-1:
                 return nl.road
+        else:
+            print(f"Point is off at {point}")
         return None
 
     def generate_routes(
