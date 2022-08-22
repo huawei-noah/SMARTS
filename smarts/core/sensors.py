@@ -302,7 +302,7 @@ class Sensors:
                 veh_obs = _make_vehicle_observation(sim.road_map, nv)
                 nv_lane_pos = None
                 if (
-                    veh_obs.lane_id >= 0
+                    veh_obs.lane_id is not LANE_ID_CONSTANT
                     and vehicle.subscribed_to_lane_position_sensor
                 ):
                     nv_lane_pos = vehicle.lane_position_sensor(
