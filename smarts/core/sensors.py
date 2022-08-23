@@ -43,6 +43,10 @@ from .plan import Mission, Via
 
 logger = logging.getLogger(__name__)
 
+LANE_ID_CONSTANT = "off_lane"
+ROAD_ID_CONSTANT = "off_road"
+LANE_INDEX_CONSTANT = -1
+
 
 class VehicleObservation(NamedTuple):
     """Perceived vehicle information."""
@@ -248,9 +252,9 @@ def _make_vehicle_observation(road_map, neighborhood_vehicle):
         nv_lane_id = nv_lane.lane_id
         nv_lane_index = nv_lane.index
     else:
-        nv_road_id = None
-        nv_lane_id = None
-        nv_lane_index = None
+        nv_road_id = ROAD_ID_CONSTANT
+        nv_lane_id = LANE_ID_CONSTANT
+        nv_lane_index = LANE_INDEX_CONSTANT
 
     return VehicleObservation(
         id=neighborhood_vehicle.actor_id,
@@ -298,7 +302,7 @@ class Sensors:
                 veh_obs = _make_vehicle_observation(sim.road_map, nv)
                 nv_lane_pos = None
                 if (
-                    veh_obs.lane_id is not None
+                    veh_obs.lane_id is not LANE_ID_CONSTANT
                     and vehicle.subscribed_to_lane_position_sensor
                 ):
                     nv_lane_pos = vehicle.lane_position_sensor(
@@ -326,9 +330,9 @@ class Sensors:
             if vehicle.subscribed_to_lane_position_sensor:
                 ego_lane_pos = vehicle.lane_position_sensor(closest_lane, vehicle)
         else:
-            ego_lane_id = None
-            ego_lane_index = None
-            ego_road_id = None
+            ego_lane_id = LANE_ID_CONSTANT
+            ego_lane_index = LANE_INDEX_CONSTANT
+            ego_road_id = ROAD_ID_CONSTANT
         ego_vehicle_state = vehicle.state
 
         acceleration_params = {
