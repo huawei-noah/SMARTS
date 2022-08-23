@@ -232,6 +232,8 @@ class SumoTrafficSimulation(TrafficProvider):
                 )
                 self._close_traci_and_pipes()
                 continue
+            except KeyboardInterrupt as e:
+                raise e
             except:
                 logging.debug("Retrying TraCI connection...")
                 self._close_traci_and_pipes()

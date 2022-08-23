@@ -38,7 +38,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Truncated all waypoint paths returned by `FormatObs` wrapper to be of the same length. Previously, variable waypoint-path lengths caused inhomogenous shape error in numpy array.
 - Fixed a bug where traffic providers would leak across instances due to the ~~(awful design decision of python)~~ reference types defaults in arguments sharing across instances.
 - Fixed minor bugs causing some Waymo maps not to load properly.
-- Fixed issue where the ego vehicle observation was returning `None` for the nearby `lane_id`, `lane_index`, and `road_id`. These now default to constants `off_lane`, `-1`, and `off_road` respectively. 
+- Fixed bug where `Vehicle.bounding_box` was mirrored over Y causing on shoulder events to fire inappropriately.
+- Fixed issue where the ego and neighbour vehicle observation was returning `None` for the nearby `lane_id`, `lane_index`, and `road_id`. These now default to constants `off_lane`, `-1`, and `off_road` respectively.
 
 ## [0.6.1]
 ### Added
