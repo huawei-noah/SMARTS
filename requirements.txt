@@ -129,7 +129,7 @@ tornado==6.2
 trimesh==3.9.29
 Twisted==22.4.0
 typing_extensions==4.3.0
-urllib3==1.26.11
+urllib3==1.26.12
 visdom==0.1.8.9
 wcwidth==0.2.5
 websocket-client==1.3.3
