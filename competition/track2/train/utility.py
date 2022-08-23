@@ -1,6 +1,7 @@
 import math
 import numpy as np
-
+from pathlib import Path
+from typing import Any, Dict, Optional, Set
 
 def goal_region_reward(threshold, goal_x, goal_y, cur_x, cur_y):
     eucl_distance = math.sqrt((goal_x - cur_x) ** 2 + (goal_y - cur_y) ** 2)
@@ -243,3 +244,25 @@ def global_target_pose(action, agent_obs):
     )
 
     return target_pose
+
+def load_config(path: Path) -> Optional[Dict[str, Any]]:
+    import yaml
+
+    config = None
+    if path.exists():
+        with open(path, "r") as file:
+            config = yaml.safe_load(file)
+    return config
+
+
+def merge_config(self: Dict[str, Any], other: Dict[str, Any]) -> Dict[str, Any]:
+    # If other is None or empty, return self.
+    if not other:
+        return self
+    # Else, merge the two, with the other winning any tiebreakers.
+    return {**self, **other}
+
+
+def validate_config(config: Dict[str, Any], keys: Set[str]) -> bool:
+    unaccepted_keys = {*config.keys()} - keys
+    assert len(unaccepted_keys) == 0, f"Unaccepted config keys: {unaccepted_keys}"
