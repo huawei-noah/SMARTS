@@ -147,34 +147,35 @@ class SumoRoadNetwork(RoadMap):
             )
         return False
 
+    @staticmethod
+    def _check_junctions(file_path):
+        # Validate that the file contains junctions with junction lanes.
+        import mmap
+        import re
+
+        with open(file_path, "rb", 0) as file, mmap.mmap(
+            file.fileno(), 0, access=mmap.ACCESS_READ
+        ) as s:
+            # pytype: disable=wrong-arg-types
+            match = re.search(
+                rb'(?i)((?:<junction id=".* type="(?!dead_end).* intLanes="".*>))',
+                s,
+            )
+            # pytype: enable=wrong-arg-types
+            if match:
+                logging.error(
+                    f"Junctions not included in map file. Simulation may get incomplete information: `{file_path}`"
+                )
+
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
         """Generate a road network from the given map specification."""
         net_file = SumoRoadNetwork._map_path(map_spec)
 
-        # Validate that the file contains junctions with junction lanes.
-        def _check_junctions(file_path):
-            import mmap
-            import re
-
-            with open(file_path, "rb", 0) as file, mmap.mmap(
-                file.fileno(), 0, access=mmap.ACCESS_READ
-            ) as s:
-                # pytype: disable=wrong-arg-types
-                match = re.search(
-                    rb'(?i)((?:<junction id=".* type="(?!dead_end).* intLanes="".*>))',
-                    s,
-                )
-                # pytype: enable=wrong-arg-types
-                if match:
-                    logging.error(
-                        f"Junctions not included in map file. Simulation may get incomplete information: `{file_path}`"
-                    )
-
         import multiprocessing
 
         junction_check_proc = multiprocessing.Process(
-            target=_check_junctions, args=(net_file,), daemon=True
+            target=cls._check_junctions, args=(net_file,), daemon=True
         )
         junction_check_proc.start()
 
@@ -823,6 +824,8 @@ class SumoRoadNetwork(RoadMap):
         for nl, dist in self.nearest_lanes(point, radius):
             if dist < 0.5 * nl._width + 1e-1:
                 return nl.road
+        else:
+            print(f"Point is off at {point}")
         return None
 
     def generate_routes(
