@@ -106,9 +106,7 @@ def run(
     config: Dict[str, Any],
     seed: Optional[int],
 ):
-    # Instantiate metric for score calculation.
 
-    # Ensure deterministic seeding
     env.seed((seed or 0) + config["seed"])
     for _ in range(config["eval_episodes"]):
         observations = env.reset()
@@ -118,47 +116,7 @@ def run(
             observations, rewards, dones, infos = env.step(actions)
     
 
-
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser(prog="codalab-evaluation")
-    # parser.add_argument(
-    #     "--input_dir",
-    #     help=(
-    #         "The path to the directory containing the reference data and user "
-    #         "submission data."
-    #     ),
-    #     required=True,
-    #     type=str,
-    # )
-    # parser.add_argument(
-    #     "--output_dir",
-    #     help=(
-    #         "Path to the directory where the submission's scores.txt file will be "
-    #         "written to."
-    #     ),
-    #     required=True,
-    #     type=str,
-    # )
-    # parser.add_argument(
-    #     "--local",
-    #     help="Flag to set when running evaluate locally. Defaults to False.",
-    #     action="store_true",
-    # )
-    # args = parser.parse_args()
-
-    # Get directories.
-    # from utils import resolve_codalab_dirs
-
-    # root_path = str(Path(__file__).absolute().parent)
-    # submit_dir, evaluation_dir, scores_dir = resolve_codalab_dirs(
-    #     root_path=root_path,
-    #     input_dir=args.input_dir,
-    #     # output_dir=args.output_dir,
-    #     local=args.local,
-    # )
-   
-    # req_file = os.path.join(submit_dir, "requirements.txt")
-    # sys.path.insert(0, submit_dir) 
 
     import gym
     from copy_data import CopyData, DataStore
@@ -171,7 +129,7 @@ if __name__ == "__main__":
                             # "3lane_merge_single_agent",
                             # "3lane_cruise_multi_agent",
                             # "3lane_cruise_single_agent",
-                            "3lane_cut_in",
+                            # "3lane_cut_in",
                             "3lane_overtake",], 
               'bubble_env_evaluation_seeds': [], 'img_meters': 64, 'img_pixels': 256}
 

@@ -25,13 +25,18 @@
     $ cd <path>/SMARTS/competition/track2/train
     $ python3.8 train.py --input_dir=<path_to_data> --ouput_dir=<path_to_saved_model>
     # for example
-    python3.8 train.py --input_dir=<path_to_SMARTS>/SMARTS/competition/offline_dataset/ --ouput_dir=<path_to_SMARTS>/SMARTS/
+    python3.8 train.py --input_dir=<path_to_SMARTS>/SMARTS/competition/offline_dataset/ --output_dir=<path_to_SMARTS>/SMARTS/
     competition/track2/submission/
     ```
-     
-
     The default value for `input_dir` and `output_dir` are `"/SMARTS/competition/offline_dataset/"` and `/SMARTS/competition/track2/submission/`.
- 1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. After the end of each training iteration, the model will be saved in `<path>/SMARTS/competition/track2/train/d3rlpy_logs/<scenario_index>`. The next trainig iteration will keep training on the latest trained model. And at the end of the training, the last model will be copied to `/SMARTS/competition/track2/submission/`.
+ 1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. The models will be saved in `<path>/SMARTS/competition/track2/train/d3rlpy_logs` at the end of each training iteration and the next trainig iteration will keep training on the latest trained model. And at the end of the training, the last model will be saved to `/SMARTS/competition/track2/submission/` for submission and `/SMARTS/competition/track2/train/local_evaluation` for local evaluation and visualization.
 
 ## Train in docker
 1. To run this example using docker, please folow this [instructions](https://github.com/huawei-noah/SMARTS/tree/comp-1/competition/track2#dockerfile-dockerhub-training-and-evaluation).
+
+## Local evaluation and visualization
+1. Use following command to load a trained model and visualize the evaluation.
+```bash
+    $ cd <path>/SMARTS/competition/track2/train/local_evaluation
+    $ python3.8 visualize.py
+    ```
