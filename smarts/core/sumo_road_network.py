@@ -824,8 +824,6 @@ class SumoRoadNetwork(RoadMap):
         for nl, dist in self.nearest_lanes(point, radius):
             if dist < 0.5 * nl._width + 1e-1:
                 return nl.road
-        else:
-            print(f"Point is off at {point}")
         return None
 
     def generate_routes(
