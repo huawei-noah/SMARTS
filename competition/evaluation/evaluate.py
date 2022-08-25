@@ -36,10 +36,12 @@ _DEFAULT_EVALUATION_CONFIG = dict(
 _SUBMISSION_CONFIG_KEYS = {
     "img_meters",
     "img_pixels",
+    "gpu"
 }
 _DEFAULT_SUBMISSION_CONFIG = dict(
     img_meters=64,
     img_pixels=256,
+    gpu=False
 )
 
 
