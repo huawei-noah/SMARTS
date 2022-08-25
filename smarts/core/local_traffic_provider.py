@@ -801,9 +801,9 @@ class _TrafficActor:
             # we need to correct for not going straight across.
             # other things being equal, we target ~30 degrees (sin(30)=.5) on average.
             if abs(self.radius) > 1e5 or self.radius == 0:
-                return _safe_division(1.0, math.sin(theta))
+                return _safe_division(1.0, math.sin(theta), 1e6)
             # here we correct for the local road curvature (which affects how far we must travel)...
-            T = _safe_division(self.radius, self.width)
+            T = _safe_division(self.radius, self.width, 1e6)
             assert (
                 abs(T) > 1.0
             ), f"abnormally high curvature?  radius={self.radius}, width={self.width} at offset {self.lane_coord.s} of lane {self.lane.lane_id}"
@@ -814,7 +814,10 @@ class _TrafficActor:
                     * (
                         se
                         + 0.5
-                        - se * math.cos(_safe_division(1, (math.tan(theta) * (T - 1))))
+                        - se
+                        * math.cos(
+                            _safe_division(1, (math.tan(theta) * (T - 1)), default=0)
+                        )
                     )
                 )
             se = T * (T + 1)
@@ -823,7 +826,10 @@ class _TrafficActor:
                 * (
                     se
                     + 0.5
-                    - se * math.cos(_safe_division(1, (math.tan(theta) * (T + 1))))
+                    - se
+                    * math.cos(
+                        _safe_division(1, (math.tan(theta) * (T + 1)), default=0)
+                    )
                 )
             )
 
@@ -1054,7 +1060,9 @@ class _TrafficActor:
             self.speed, self._max_decel
         ):
             return False
-        min_gap = _safe_division(self._target_cutin_gap, self._aggressiveness)
+        min_gap = _safe_division(
+            self._target_cutin_gap, self._aggressiveness, default=1e5
+        )
         max_gap = self._target_cutin_gap + 2
         if min_gap < lw.agent_gap < max_gap and self._crossing_time_into(target_ind)[1]:
             return random.random() < self._cutin_prob
@@ -1163,7 +1171,7 @@ class _TrafficActor:
             if l != self._lane and abs(my_radius) < 1e5:
                 l_radius = _get_radius(l)
                 if abs(l_radius) < 1e5:
-                    ratio = _safe_division(l_radius, my_radius)
+                    ratio = _safe_division(l_radius, my_radius, default=0)
                     if ratio < 0:
                         ratio = 1.0
             self._lane_speed[l.index] = (ratio * self.speed, ratio * self.acceleration)
