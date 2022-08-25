@@ -1,6 +1,6 @@
 from typing import Any, Dict
 import numpy as np
-from utility import get_goal_layer, global_target_pose
+from local_funcs import get_goal_layer, global_target_pose
 from pathlib import Path
 from smarts.env.wrappers.format_action import FormatAction
 from smarts.env.wrappers.format_obs import FormatObs
