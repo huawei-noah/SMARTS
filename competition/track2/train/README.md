@@ -30,7 +30,8 @@
     ```
     The default value for `input_dir` and `output_dir` are `"/SMARTS/competition/offline_dataset/"` and `/SMARTS/competition/track2/submission/`.
  1. Since we can not load too many images in the training dataset at each time, we are training using data in one scenario at each time. The models will be saved in `<path>/SMARTS/competition/track2/train/d3rlpy_logs` at the end of each training iteration and the next trainig iteration will keep training on the latest trained model. And at the end of the training, the last model will be saved to `/SMARTS/competition/track2/submission/` for submission and `/SMARTS/competition/track2/train/local_evaluation` for local evaluation and visualization.
- 1. The training specifications can be modified in `/SMARTS/competition/track2/train/config.yaml` including number of scenarios used, number of vehicles in each scenario, training steps and so on. **Important: if the model is trained using gpu, i.e., `gpu=True` in the `config.yaml`, you have to also set `gpu=True` in `/SMARTS/competition/track2/submission/config.yaml` for submission and `/SMARTS/competition/track2/train/local_evaluation/config.yaml` for local evaluation (see example below)**
+ 1. The training specifications can be modified in `/SMARTS/competition/track2/train/config.yaml` including number of scenarios used, number of vehicles in each scenario, training steps and so on. 
+ **Attention: if the model is trained using gpu, i.e., `gpu=True` in the `config.yaml`, you have to also set `gpu=True` in `/SMARTS/competition/track2/submission/config.yaml` for submission and `/SMARTS/competition/track2/train/local_evaluation/config.yaml` for local evaluation (see example below)**. 
 
 ## Train in docker
 1. To run this example using docker, please folow this [instructions](https://github.com/huawei-noah/SMARTS/tree/comp-1/competition/track2#dockerfile-dockerhub-training-and-evaluation).
