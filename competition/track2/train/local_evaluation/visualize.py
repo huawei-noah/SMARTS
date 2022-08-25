@@ -119,7 +119,7 @@ def run(
 if __name__ == "__main__":
 
     import gym
-    from copy_data import CopyData, DataStore
+    from local_copy_data import CopyData, DataStore
     from policy import Policy, submitted_wrappers
     config = {'phase': 'track1', 'eval_episodes': 50, 'seed': 42, 
               'scenarios': [
