@@ -101,18 +101,10 @@ def run(
                 save_path=config["logdir"] / "checkpoint",
                 name_prefix=f"{config['alg']}_{index}",
             )
-            eval_callback = EvalCallback(
-                eval_env=env_eval,
-                n_eval_episodes=config["eval_eps"],
-                eval_freq=config["eval_freq"],
-                log_path=config["logdir"] / "eval",
-                best_model_save_path=config["logdir"] / "eval",
-                deterministic=True,
-            )
             model.set_env(env_train)
             model.learn(
                 total_timesteps=config["train_steps"],
-                callback=[checkpoint_callback, eval_callback],
+                callback=[checkpoint_callback],
             )
 
         # Save trained model.

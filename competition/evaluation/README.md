@@ -23,9 +23,6 @@ This folder contains the python script that CodaLab uses to evaluate the submiss
 
 ## Setup
 1. Install [git lfs](https://git-lfs.github.com/).
-    ```bash
-    $ sudo apt-get install git-lfs
-    ```
 
 ## Local evaluation
 + To evaluate the trained model locally, do the following:

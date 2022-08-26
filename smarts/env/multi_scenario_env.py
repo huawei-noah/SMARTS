@@ -226,7 +226,7 @@ def _get_env_specs(scenario: str):
         matches_agent = regexp_agent.search(scenario)
         if not matches_agent:
             raise Exception(
-                f"Scenario path should match regexp of 'agent_\d+', but got {scenario}"
+                f"Scenario path should match regexp of 'agents_\d+', but got {scenario}"
             )
         num_agent = regexp_num.search(matches_agent.group(0))
 
