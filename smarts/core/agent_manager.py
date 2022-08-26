@@ -30,7 +30,6 @@ from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.heterogenous_agent_buffer import HeterogenousAgentBuffer
 from smarts.core.plan import Plan
-from smarts.core.provider import Provider
 from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState
@@ -133,11 +132,12 @@ class AgentManager:
         self._pending_agent_ids -= agent_ids
 
     def observe_from(
-        self, vehicle_ids: Set[str], done_this_step: Set[str] = set()
+        self, vehicle_ids: Set[str], done_this_step: Optional[Set[str]] = None
     ) -> Tuple[
         Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]
     ]:
         """Attempt to generate observations from the given vehicles."""
+        done_this_step = done_this_step or set()
         sim = self._sim()
         assert sim
         observations = {}
@@ -219,11 +219,7 @@ class AgentManager:
                     for vehicle_id in sensor_states.keys()
                 }
             else:
-                assert len(vehicle_ids) == 1, (
-                    "Unless this vehicle is part of a boid then we should only have a "
-                    f"single vehicle under agent_id={agent_id}\n "
-                    f"(vehicle_ids={vehicle_ids})"
-                )
+                self._diagnose_mismatched_observation_vehicles(vehicle_ids, agent_id)
 
                 vehicle = self._vehicle_index.vehicle_by_id(vehicle_ids[0])
                 sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(
@@ -251,6 +247,25 @@ class AgentManager:
             dones["__sim__"] = True
 
         return observations, rewards, scores, dones
+
+    def _diagnose_mismatched_observation_vehicles(self, vehicle_ids, agent_id: str):
+        try:
+            assert len(vehicle_ids) == 1, (
+                "Unless this vehicle is part of a boid then we should only have a "
+                f"single vehicle under agent_id={agent_id}\n "
+                f"(vehicle_ids={vehicle_ids})"
+            )
+        except AssertionError as error:
+            if agent_id.startswith("BUBBLE-AGENT"):
+                related_vehicle_ids = [
+                    v_id
+                    for v_id, _ in self._vehicle_index.vehicleitems()
+                    if v_id.endswith(agent_id[-5:])
+                ]
+                logging.error(
+                    "Vehicles of interest for `%s`: `%s`", agent_id, related_vehicle_ids
+                )
+            raise error
 
     def _vehicle_reward(self, vehicle_id: str) -> float:
         return self._vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor(
