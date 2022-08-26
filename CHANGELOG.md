@@ -28,6 +28,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Renamed `examples/observation_collection_for_imitation_learning.py` to `examples/traffic_histories_to_observations.py`.
 - Renamed `examples/history_vehicles_replacement_for_imitation_learning.py` to `examples/traffic_histories_vehicle_replacement.py`.
 - `SumoTrafficSimulation` will now try to hand-off the vehicles it controls to the new SMARTS background traffic provider by default if the Sumo provider crashes.
+- SMARTS now gives an error about a suspected lack of junction edges in sumo maps on loading of them.
 
 ### Removed
 - Removed support for deprecated json-based and YAML formats for traffic histories.
