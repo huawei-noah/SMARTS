@@ -421,11 +421,12 @@ class SMARTS(ProviderManager):
             and self._reset_agents_only
             and not self._reset_required
         ):
-            vehicle_ids_to_teardown = []
+            vehicle_ids_to_teardown = set()
             agent_ids = self._agent_manager.teardown_ego_agents()
+            agent_ids |= self.agent_manager.teardown_social_agents()
             for agent_id in agent_ids:
                 ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
-                vehicle_ids_to_teardown.extend(ids)
+                vehicle_ids_to_teardown |= set(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
             self._reset_providers()
             assert self._trap_manager
@@ -636,6 +637,7 @@ class SMARTS(ProviderManager):
         """Bubbles call this when a vehicle is exiting the bubble.
         Will try to find a new provider for the vehicle if necessary."""
         agent_id = None
+        # FIXME: This only gets the first shadow agent and this shadow agent is not specific to a bubble!!!!!!
         shadow_agent_id = self._vehicle_index.shadow_actor_id_from_vehicle_id(
             vehicle_id
         )
@@ -647,39 +649,40 @@ class SMARTS(ProviderManager):
             state, route = self._vehicle_index.relinquish_agent_control(
                 self, vehicle_id
             )
-            new_prov = self.agent_relinquishing_actor(
-                agent_id, state, teardown_agent, shadow_agent_id
-            )
+            new_prov = self._agent_relinquishing_actor(agent_id, state, teardown_agent)
             if (
                 route is not None
                 and route.road_length > 0
                 and isinstance(new_prov, TrafficProvider)
             ):
                 new_prov.update_route_for_vehicle(vehicle_id, route)
-        elif shadow_agent_id:
+        if shadow_agent_id:
             self._log.debug(
                 f"shadow_agent={shadow_agent_id} will stop shadowing vehicle={vehicle_id}"
             )
-            self._agent_manager.detach_sensors_from_vehicle(vehicle_id)
             if teardown_agent:
-                self.teardown_agents_without_actors([shadow_agent_id])
+                self.teardown_social_agents([shadow_agent_id])
+        if self._vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id) is None:
+            self._agent_manager.detach_sensors_from_vehicle(vehicle_id)
 
-    def agent_relinquishing_actor(
+        if teardown_agent:
+            assert (
+                shadow_agent_id not in self._agent_manager.active_agents
+            ), f"Agent ids {shadow_agent_id}, {self._agent_manager.active_agents}"
+            assert agent_id not in self._agent_manager.active_agents
+
+    def _agent_relinquishing_actor(
         self,
         agent_id: str,
         state: ActorState,
         teardown_agent: bool,
-        shadow_agent_id: Optional[str] = None,
     ) -> Optional[Provider]:
         """Find a new provider for an actor previously managed by an agent.
         Returns the new provider or None if a suitable one could not be found."""
         provider = self._provider_for_actor(state.actor_id)
         new_prov = self.provider_relinquishing_actor(provider, state)
         if teardown_agent:
-            teardown_agent_ids = [agent_id]
-            if shadow_agent_id:
-                teardown_agent_ids.append(shadow_agent_id)
-            self.teardown_agents_without_actors(teardown_agent_ids)
+            self.teardown_social_agents_without_actors([agent_id])
         return new_prov
 
     def provider_relinquishing_actor(
@@ -963,18 +966,32 @@ class SMARTS(ProviderManager):
         """SMARTS version."""
         return VERSION
 
-    def teardown_agents_without_actors(self, agent_ids: Iterable[str]):
+    def teardown_social_agents(self, agent_ids: Iterable[str]):
+        """
+        Teardown agents in the given sequence
+        Params:
+            agent_ids: Sequence of agent ids
+        """
+        agents_to_teardown = {
+            id_
+            for id_ in agent_ids
+            if not self.agent_manager.is_boid_keep_alive_agent(id_)
+        }
+        self.agent_manager.teardown_social_agents(filter_ids=agents_to_teardown)
+
+    def teardown_social_agents_without_actors(self, agent_ids: Iterable[str]):
         """
         Teardown agents in the given list that have no actors registered as
-        controlled-by or shadowed-by
+        controlled-by or shadowed-by (for each given agent.)
         Params:
             agent_ids: Sequence of agent ids
         """
         self._check_valid()
+        original_agents = set(agent_ids)
         agents_to_teardown = {
             agent_id
-            for agent_id in agent_ids
-            # Only clean-up when there are no controlled agents left (e.g. boids)
+            for agent_id in original_agents
+            # Only clean-up when there is no actor association left
             if len(
                 self._vehicle_index.vehicles_by_actor_id(
                     agent_id, include_shadowers=True
@@ -982,13 +999,15 @@ class SMARTS(ProviderManager):
             )
             == 0
         }
+        if self._log.isEnabledFor(logging.WARNING):
+            skipped_agents = original_agents - agents_to_teardown
+            if len(skipped_agents) > 0:
+                self._log.warning(
+                    "Some agents were skipped because they still had vehicles: %s",
+                    skipped_agents,
+                )
 
-        agents_to_teardown = {
-            id_
-            for id_ in agents_to_teardown
-            if not self.agent_manager.is_boid_keep_alive_agent(id_)
-        }
-        self.agent_manager.teardown_social_agents(filter_ids=agents_to_teardown)
+        self.teardown_social_agents(agent_ids=agents_to_teardown)
 
     def _teardown_vehicles_and_agents(self, vehicle_ids):
         shadow_and_controlling_agents = set()
@@ -1004,7 +1023,7 @@ class SMARTS(ProviderManager):
                 shadow_and_controlling_agents.add(shadow_agent_id)
 
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
-        self.teardown_agents_without_actors(shadow_and_controlling_agents)
+        self.teardown_social_agents_without_actors(shadow_and_controlling_agents)
         # XXX: don't remove vehicle from its (traffic) Provider here, as it may be being teleported
         # (and needs to remain registered in Traci during this step).
 
