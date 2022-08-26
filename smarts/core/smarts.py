@@ -650,7 +650,11 @@ class SMARTS(ProviderManager):
             new_prov = self.agent_relinquishing_actor(
                 agent_id, state, teardown_agent, shadow_agent_id
             )
-            if route and isinstance(new_prov, TrafficProvider):
+            if (
+                route is not None
+                and route.road_length > 0
+                and isinstance(new_prov, TrafficProvider)
+            ):
                 new_prov.update_route_for_vehicle(vehicle_id, route)
         elif shadow_agent_id:
             self._log.debug(
@@ -1410,11 +1414,11 @@ class SMARTS(ProviderManager):
                 if v.state == SignalLightState.OFF:
                     env_ss = envision_types.SignalLightState.Off
                 elif v.state | SignalLightState.STOP:
-                    env_ss = envision_types.SignalLightState.STOP
+                    env_ss = envision_types.SignalLightState.Stop
                 elif v.state | SignalLightState.CAUTION:
-                    env_ss = envision_types.SignalLightState.CAUTION
+                    env_ss = envision_types.SignalLightState.Caution
                 elif v.state | SignalLightState.GO:
-                    env_ss = envision_types.SignalLightState.GO
+                    env_ss = envision_types.SignalLightState.Go
                 # TODO: eventually do flashing and arrow states too
                 signals[v.actor_id] = envision_types.SignalState(v.actor_id, env_ss)
                 continue

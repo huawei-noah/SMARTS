@@ -53,7 +53,7 @@ from .sensors import (
     WaypointsSensor,
 )
 from .utils.custom_exceptions import RendererException
-from .utils.math import rotate_around_point
+from .utils.math import rotate_cw_around_point
 
 
 @dataclass
@@ -170,7 +170,6 @@ class Vehicle:
         self._chassis: Chassis = chassis
         self._vehicle_config_type = vehicle_config_type
         self._action_space = action_space
-        self._speed = None
 
         self._meta_create_sensor_functions()
         self._sensors = {}
@@ -235,14 +234,7 @@ class Vehicle:
     def speed(self) -> float:
         """The current speed of this vehicle."""
         self._assert_initialized()
-        if self._speed is not None:
-            return self._speed
-        else:
-            return self._chassis.speed
-
-    def set_speed(self, speed):
-        """Set the current speed of this vehicle."""
-        self._speed = speed
+        return self._chassis.speed
 
     @property
     def sensors(self) -> dict:
@@ -332,9 +324,9 @@ class Vehicle:
         corners = np.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
         heading = self.heading
         return [
-            rotate_around_point(
+            rotate_cw_around_point(
                 point=origin + corner * dimensions,
-                radians=heading,
+                radians=Heading.flip_clockwise(heading),
                 origin=origin,
             )
             for corner in corners

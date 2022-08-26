@@ -1,3 +1,4 @@
+import sys
 import tempfile
 from pathlib import Path
 
@@ -5,6 +6,9 @@ import psutil
 import pytest
 
 from smarts.core.utils import import_utils
+
+# necessary to import default_argument_parser properly in the examples
+sys.path.insert(0, str(Path(__file__).parents[1]))
 
 import_utils.import_module_from_file(
     "examples", Path(__file__).parents[1] / "__init__.py"

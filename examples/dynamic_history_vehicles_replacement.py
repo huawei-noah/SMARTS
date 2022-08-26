@@ -2,8 +2,9 @@ import logging
 import random
 from typing import Any, Callable, Dict, Sequence
 
+from argument_parser import default_argument_parser
+
 from envision.client import Client as Envision
-from examples.argument_parser import default_argument_parser
 from smarts.core import seed as random_seed
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface
