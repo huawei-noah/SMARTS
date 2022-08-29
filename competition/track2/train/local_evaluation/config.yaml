@@ -1,3 +1,0 @@
-# Environment variables (optional)
-img_meters: 64 # Observation image area size in meters.
-img_pixels: 256 # Observation image size in pixels.

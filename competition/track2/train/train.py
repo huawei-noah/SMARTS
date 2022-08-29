@@ -13,10 +13,10 @@ _TRAIN_CONFIG_KEYS = {
     "gpu",
 }
 _DEFAULT_TRAIN_CONFIG = dict(
-    n_steps=1, 
-    n_steps_per_epoch=1, 
-    n_scenarios=2, 
-    n_vehicles=2, 
+    n_steps=1,
+    n_steps_per_epoch=1,
+    n_scenarios=2,
+    n_vehicles=2,
     gpu=False,
 )
 
@@ -107,12 +107,12 @@ def train(input_path, output_path):
 
             image_names = sorted(image_names)
 
-            goal_pos_x = vehicle_data[float(image_names[-1].split("_Agent")[0])][
-                "ego"
-            ]["pos"][0]
-            goal_pos_y = vehicle_data[float(image_names[-1].split("_Agent")[0])][
-                "ego"
-            ]["pos"][1]
+            goal_pos_x = vehicle_data[float(image_names[-1].split("_Agent")[0])]["ego"][
+                "pos"
+            ][0]
+            goal_pos_y = vehicle_data[float(image_names[-1].split("_Agent")[0])]["ego"][
+                "pos"
+            ][1]
             threshold = 3
 
             for i in range(len(image_names) - 1):
@@ -121,13 +121,9 @@ def train(input_path, output_path):
                     sim_time = image_names[i].split("_Agent")[0]
                     sim_time_next = image_names[i + 1].split("_Agent")[0]
                     current_position = vehicle_data[float(sim_time)]["ego"]["pos"]
-                    current_heading = vehicle_data[float(sim_time)]["ego"][
-                        "heading"
-                    ]
+                    current_heading = vehicle_data[float(sim_time)]["ego"]["heading"]
                     next_position = vehicle_data[float(sim_time_next)]["ego"]["pos"]
-                    next_heading = vehicle_data[float(sim_time_next)]["ego"][
-                        "heading"
-                    ]
+                    next_heading = vehicle_data[float(sim_time_next)]["ego"]["heading"]
                     trans_coor = get_trans_coor(
                         next_position[0],
                         next_position[1],
@@ -191,9 +187,7 @@ def train(input_path, output_path):
         else:
             saved_models = glob.glob(str(save_directory / "*"))
             latest_model = max(saved_models, key=os.path.getctime)
-            model = CQL.from_json(
-                str(save_directory) + "/1/params.json", use_gpu=gpu
-            )
+            model = CQL.from_json(str(save_directory/"1"/"params.json"), use_gpu=gpu)
             model_name = [
                 model_name
                 for model_name in os.listdir(save_directory / latest_model)
