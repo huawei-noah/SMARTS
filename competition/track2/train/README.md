@@ -33,7 +33,7 @@
 1. To run this example using Docker, please folow these [instructions](../README.md#dockerfile-dockerhub-training-and-evaluation).
 
 ## Evaluate trained model
-1. Execute the followiong to evaluate a trained model.
+1. Execute the following to evaluate a trained model.
 ```bash
     $ cd <path>/SMARTS/competition/track2
     $ python3.8 train/evaluate.py
