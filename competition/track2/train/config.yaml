@@ -1,5 +1,5 @@
-# Environment variables (optional)
-# n_scenarios & n_vehicles can be specified as max(all scenarios/vehicles) or min(1 scenario/vehicle)
+# n_scenarios & n_vehicles can be specified as max (all scenarios/vehicles) or 
+# as min (1 scenario/vehicle).
 n_steps: 2               # total number of steps
 n_steps_per_epoch: 2     # number of steps per epoch
 n_scenarios: 2           # number of training scenarios

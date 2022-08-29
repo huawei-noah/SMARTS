@@ -1,7 +1,5 @@
 import math
 import numpy as np
-from pathlib import Path
-from typing import Any, Dict, Optional, Set
 
 
 def goal_region_reward(threshold, goal_x, goal_y, cur_x, cur_y):
