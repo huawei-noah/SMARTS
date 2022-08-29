@@ -42,7 +42,7 @@ def evaluate(config):
         )
 
     # Close all environments
-    for env, _, _ in envs_eval.values():
+    for env in envs_eval.values():
         env.close()
 
 
@@ -69,8 +69,8 @@ if __name__ == "__main__":
             # "1_to_2lane_left_turn_t",
             # "3lane_merge_multi_agent",
             # "3lane_merge_single_agent",
-            # "3lane_cruise_multi_agent",
-            "3lane_cruise_single_agent",
+            "3lane_cruise_multi_agent",
+            # "3lane_cruise_single_agent",
             # "3lane_cut_in",
             # "3lane_overtake",
         ],

@@ -65,11 +65,12 @@ def train(input_path, output_path):
     for scenario_name in os.listdir(input_path):
         scenarios.append(scenario_name)
 
-    if not os.path.isdir("d3rlpy_logs/"):
+    save_directory = Path(__file__).absolute().parents[0] / "d3rlpy_logs"
+    if not os.path.isdir(save_directory):
         index = 0
-        os.mkdir("d3rlpy_logs")
+        os.mkdir(save_directory)
     else:
-        index = len(os.listdir("d3rlpy_logs/"))
+        index = len(os.listdir(save_directory))
 
     if n_scenarios == "max" or n_scenarios > len(scenarios):
         n_scenarios = len(scenarios)
@@ -182,7 +183,7 @@ def train(input_path, output_path):
         rewards = np.array(rewards)
         terminals = np.array(terminals)
         dataset = MDPDataset(obs, actions, rewards, terminals)
-        save_directory = Path(__file__).absolute().parents[0] / "d3rlpy_logs"
+
         if index == 0:
             minimum = [-0.1, 0, -0.1]
             maximum = [0.1, 2, 0.1]

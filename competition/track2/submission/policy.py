@@ -1,18 +1,23 @@
-from typing import Any, Dict
 import numpy as np
-from utility import (
+import os
+import sys
+import torch
+from pathlib import Path
+from typing import Any, Dict
+from smarts.env.wrappers.format_action import FormatAction
+from smarts.env.wrappers.format_obs import FormatObs
+from smarts.core.controllers import ActionSpaceType
+
+# To import submission folder
+sys.path.insert(0, str(Path(__file__).parents[1]))
+
+from submission.utility import (
     get_goal_layer,
     global_target_pose,
     load_config,
     merge_config,
     validate_config,
 )
-from pathlib import Path
-from smarts.env.wrappers.format_action import FormatAction
-from smarts.env.wrappers.format_obs import FormatObs
-from smarts.core.controllers import ActionSpaceType
-import os
-import torch
 
 _POLICY_CONFIG_KEYS = {
     "img_meters",

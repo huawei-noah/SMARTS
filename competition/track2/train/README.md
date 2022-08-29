@@ -7,11 +7,11 @@
 ## Setup
 + Use `python3.8` to develop your model.
     ```bash
-    $ cd <path>/SMARTS/competition/track2/train
+    $ cd <path>/SMARTS/competition/track2
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
-    $ pip install -e .
+    $ pip install -e ./train
     ```
 
 ## Notes on the used Observation, Action, and Reward
