@@ -29,7 +29,7 @@
 1. Since we cannot load too many images in the training dataset at each time, we are training using data in one scenario at each time. The models will be saved in `track2/train/d3rlpy_logs` at the end of each training iteration and the next trainig iteration will continue training on the latest trained model. At the end of the training, the last model will be saved to the `output_dir` for submission and for local evaluation.
 1. Training specifications such as number of scenarios, number of vehicles in each scenario, training steps, etc., can be modified at `track2/train/config.yaml`.
 
-## Train in Docker
+## Train inside Docker container
 1. To run this example using Docker, please folow these [instructions](../README.md#dockerfile-dockerhub-training-and-evaluation).
 
 ## Evaluate trained model
