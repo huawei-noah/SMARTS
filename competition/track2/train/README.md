@@ -23,19 +23,17 @@
 1. Train
     ```bash
     $ cd <path>/SMARTS/competition/track2
-    $ python3.8 train/train.py --input_dir=<path_to_data> --output_dir=<path>/SMARTS/competition/track2/submission/
-    # For example
-    python3.8 train/train.py --input_dir=<path>/SMARTS/competition/offline_dataset/ --output_dir=<path>/SMARTS/competition/track2/submission/
+    $ python3.8 train/train.py --input_dir=<path_to_dataset> --output_dir=<path>/SMARTS/competition/track2/submission/
     ```
-    The default value for `input_dir` and `output_dir` are `/SMARTS/competition/offline_dataset/` and `/SMARTS/competition/track2/submission/`.
-1. Since we cannot load too many images in the training dataset at each time, we are training using data in one scenario at each time. The models will be saved in `<path>/SMARTS/competition/track2/train/d3rlpy_logs` at the end of each training iteration and the next trainig iteration will keep training on the latest trained model. And at the end of the training, the last model will be saved to the `output_dir` for submission and for local evaluation.
-1. Training specifications such as number of scenarios, number of vehicles in each scenario, training steps, etc., can be modified at `<path>/SMARTS/competition/track2/train/config.yaml`. 
+    The arguments `input_dir` and `output_dir` denote path to offline dataset and directory path to save the trained model, respectively. Note that upon completion of training, the trained model should be automatically saved into `track2/submission` directory.
+1. Since we cannot load too many images in the training dataset at each time, we are training using data in one scenario at each time. The models will be saved in `track2/train/d3rlpy_logs` at the end of each training iteration and the next trainig iteration will continue training on the latest trained model. At the end of the training, the last model will be saved to the `output_dir` for submission and for local evaluation.
+1. Training specifications such as number of scenarios, number of vehicles in each scenario, training steps, etc., can be modified at `track2/train/config.yaml`.
 
 ## Train in Docker
 1. To run this example using Docker, please folow these [instructions](../README.md#dockerfile-dockerhub-training-and-evaluation).
 
 ## Evaluate trained model
-1. Use following command to load a trained model and visualize the evaluation.
+1. Execute the followiong to evaluate a trained model.
 ```bash
     $ cd <path>/SMARTS/competition/track2
     $ python3.8 train/evaluate.py
