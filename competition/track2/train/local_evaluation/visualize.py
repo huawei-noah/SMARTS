@@ -1,9 +1,4 @@
-import argparse
 import logging
-import os
-import subprocess
-import sys
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__file__)
@@ -60,21 +55,6 @@ def evaluate(config):
             ),
             datastore,
             None,
-        )
-
-    bonus_eval_seeds = config.get("bubble_env_evaluation_seeds", [])
-    for seed in bonus_eval_seeds:
-        env = gym.make("bubble_env_contrib:bubble_env-v0", **shared_configs)
-        datastore = DataStore()
-        envs_eval[f"bubble_env_{seed}"] = (
-            wrap_env(
-                env,
-                agent_ids=list(env.agent_ids),
-                datastore=datastore,
-                wrappers=submitted_wrappers(),
-            ),
-            datastore,
-            seed,
         )
 
     # Instantiate submitted policy.

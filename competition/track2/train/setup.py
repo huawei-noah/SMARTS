@@ -8,7 +8,7 @@ with open(path.join(this_dir, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="offline_RL",
-    description="offline_RL training",
+    description="Offline RL",
     long_description=long_description,
     long_description_content_type="text/markdown",
     version="0.1.0",
