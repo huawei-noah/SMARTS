@@ -10,12 +10,10 @@ import torch
 _POLICY_CONFIG_KEYS = {
     "img_meters",
     "img_pixels",
-    "gpu",
 }
 _DEFAULT_POLICY_CONFIG = dict(
     img_meters=64,
     img_pixels=256,
-    gpu=False
 )
 
 
@@ -69,7 +67,6 @@ class Policy(BasePolicy):
             other=load_config(Path(__file__).absolute().parents[0]/'config.yaml'),
         )
         validate_config(config=policy_config, keys=_POLICY_CONFIG_KEYS)
-        self.gpu = policy_config['gpu']
 
     def act(self, obs: Dict[str, Any]):
         """Act function to be implemented by user.
@@ -95,9 +92,6 @@ class Policy(BasePolicy):
             final_obs.append(np.concatenate((bev_obs, goal_obs), axis=0))
             final_obs = np.array(final_obs)
             final_obs = torch.tensor(final_obs, dtype=torch.float32)
-
-            if self.gpu == True:
-                final_obs = final_obs.cuda()
 
             action = self.policy(final_obs)[0]
             target_pose = global_target_pose(action.cpu().numpy(), agent_obs)
