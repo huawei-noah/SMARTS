@@ -32,9 +32,12 @@
 ## Train inside Docker container
 1. To run this example using Docker, please folow these [instructions](../README.md#dockerfile-dockerhub-training-and-evaluation).
 
-## Evaluate trained model
+## Evaluate and visualize a trained model
+1. A trained model is assumed to be available in the `track2/submission` folder. 
+    + This would be true if the training steps above had been executed previously, as a model would be saved to the `track2/submission` folder at the end of the training. 
 1. Execute the following to evaluate a trained model.
-```bash
+    ```bash
     $ cd <path>/SMARTS/competition/track2
     $ python3.8 train/evaluate.py
     ```
+    A SUMO GUI will automatically pop up to visualize the evaluation.
