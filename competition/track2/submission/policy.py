@@ -1,20 +1,27 @@
-from typing import Any, Dict
 import numpy as np
-from utility import get_goal_layer, global_target_pose
+import os
+import sys
+import torch
 from pathlib import Path
+from typing import Any, Dict
 from smarts.env.wrappers.format_action import FormatAction
 from smarts.env.wrappers.format_obs import FormatObs
 from smarts.core.controllers import ActionSpaceType
-import os
+
+# To import utility folder
+sys.path.insert(0, str(Path(__file__).parents[0]))
+
+from utility import (
+    get_goal_layer,
+    global_target_pose,
+)
 
 
 class BasePolicy:
     def act(self, obs: Dict[str, Any]):
         """Act function to be implemented by user.
-
         Args:
             obs (Dict[str, Any]): A dictionary of observation for each ego agent step.
-
         Returns:
             Dict[str, Any]: A dictionary of actions for each ego agent.
         """
@@ -25,7 +32,6 @@ def submitted_wrappers():
     """Return environment wrappers for wrapping the evaluation environment.
     Each wrapper is of the form: Callable[[env], env]. Use of wrappers is
     optional. If wrappers are not used, return empty list [].
-
     Returns:
         List[wrappers]: List of wrappers. Default is empty list [].
     """
@@ -51,22 +57,17 @@ class Policy(BasePolicy):
         # Load saved model and instantiate any needed objects.
         from d3rlpy.algos import CQL
 
-        self.model = CQL.from_json(
-            Path(__file__).absolute().parents[0] / "model/params.json"
-        )
-        model_name = None
-        for file_name in os.listdir(Path(__file__).absolute().parents[0] / "model"):
-            if file_name.endswith(".pt"):
-                model_name = file_name
-        model_name = "model/" + model_name
-        self.model.load_model(Path(__file__).absolute().parents[0] / model_name)
+        policy_name = [
+            policy_name
+            for policy_name in os.listdir(Path(__file__).absolute().parents[0])
+            if policy_name.endswith("pt")
+        ][0]
+        self.policy = torch.jit.load(Path(__file__).absolute().parents[0] / policy_name)
 
     def act(self, obs: Dict[str, Any]):
         """Act function to be implemented by user.
-
         Args:
             obs (Dict[str, Any]): A dictionary of observation for each ego agent step.
-
         Returns:
             Dict[str, Any]: A dictionary of actions for each ego agent.
         """
@@ -85,10 +86,11 @@ class Policy(BasePolicy):
             )
             final_obs = list()
             final_obs.append(np.concatenate((bev_obs, goal_obs), axis=0))
-            final_obs = np.array(final_obs, dtype=np.uint8)
+            final_obs = np.array(final_obs)
+            final_obs = torch.tensor(final_obs, dtype=torch.float32)
 
-            action = self.model.predict(final_obs)[0]
-            target_pose = global_target_pose(action, agent_obs)
+            action = self.policy(final_obs)[0]
+            target_pose = global_target_pose(action.cpu().numpy(), agent_obs)
             wrapped_act.update({agent_id: target_pose})
 
         return wrapped_act
