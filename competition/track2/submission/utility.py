@@ -3,6 +3,7 @@ import numpy as np
 from pathlib import Path
 from typing import Any, Dict, Optional, Set
 
+
 def goal_region_reward(threshold, goal_x, goal_y, cur_x, cur_y):
     eucl_distance = math.sqrt((goal_x - cur_x) ** 2 + (goal_y - cur_y) ** 2)
 
@@ -245,6 +246,7 @@ def global_target_pose(action, agent_obs):
     )
 
     return target_pose
+
 
 def load_config(path: Path) -> Optional[Dict[str, Any]]:
     import yaml

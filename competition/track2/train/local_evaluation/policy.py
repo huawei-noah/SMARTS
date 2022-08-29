@@ -1,21 +1,26 @@
 from typing import Any, Dict
 import numpy as np
-from utility import get_goal_layer, global_target_pose, load_config, merge_config, validate_config
+from utility import (
+    get_goal_layer,
+    global_target_pose,
+    load_config,
+    merge_config,
+    validate_config,
+)
 from pathlib import Path
 from smarts.env.wrappers.format_action import FormatAction
 from smarts.env.wrappers.format_obs import FormatObs
 from smarts.core.controllers import ActionSpaceType
 import os
 import torch
+
 _POLICY_CONFIG_KEYS = {
     "img_meters",
     "img_pixels",
-    "gpu",
 }
 _DEFAULT_POLICY_CONFIG = dict(
     img_meters=64,
     img_pixels=256,
-    gpu=False
 )
 
 
@@ -59,17 +64,19 @@ class Policy(BasePolicy):
         # Load saved model and instantiate any needed objects.
         from d3rlpy.algos import CQL
 
-        policy_name = [policy_name for policy_name in os.listdir(Path(__file__).absolute().parents[0])\
-                if policy_name.endswith('pt')][0]
-        self.policy = torch.jit.load(Path(__file__).absolute().parents[0]/policy_name)
+        policy_name = [
+            policy_name
+            for policy_name in os.listdir(Path(__file__).absolute().parents[0])
+            if policy_name.endswith("pt")
+        ][0]
+        self.policy = torch.jit.load(Path(__file__).absolute().parents[0] / policy_name)
 
         # Get config parameters.
         policy_config = merge_config(
             self=_DEFAULT_POLICY_CONFIG,
-            other=load_config(Path(__file__).absolute().parents[0]/'config.yaml'),
+            other=load_config(Path(__file__).absolute().parents[0] / "config.yaml"),
         )
         validate_config(config=policy_config, keys=_POLICY_CONFIG_KEYS)
-        self.gpu = policy_config['gpu']
 
     def act(self, obs: Dict[str, Any]):
         """Act function to be implemented by user.
@@ -95,9 +102,6 @@ class Policy(BasePolicy):
             final_obs.append(np.concatenate((bev_obs, goal_obs), axis=0))
             final_obs = np.array(final_obs)
             final_obs = torch.tensor(final_obs, dtype=torch.float32)
-
-            if self.gpu == True:
-                final_obs = final_obs.cuda()
 
             action = self.policy(final_obs)[0]
             target_pose = global_target_pose(action.cpu().numpy(), agent_obs)

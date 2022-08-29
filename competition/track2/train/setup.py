@@ -24,6 +24,6 @@ setup(
         "tensorboard==2.2.0",
         "d3rlpy==1.1.1",
         "Pillow==9.2.0",
-        "torch==1.11.0"
+        "torch==1.11.0",
     ],
 )

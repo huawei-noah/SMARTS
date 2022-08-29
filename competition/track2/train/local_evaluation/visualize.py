@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__file__)
 
+
 def wrap_env(
     env,
     agent_ids: List[str],
@@ -71,11 +72,10 @@ def evaluate(config):
             config=config,
             seed=seed,
         )
-       
+
     # Close all environments
     for env, _, _ in envs_eval.values():
         env.close()
-
 
 
 def run(
@@ -94,23 +94,30 @@ def run(
         while not dones["__all__"]:
             actions = policy.act(observations)
             observations, rewards, dones, infos = env.step(actions)
-    
+
 
 if __name__ == "__main__":
 
     import gym
     from local_copy_data import CopyData, DataStore
     from policy import Policy, submitted_wrappers
-    config = {'phase': 'track1', 'eval_episodes': 50, 'seed': 42, 
-              'scenarios': [
-                            # "1_to_2lane_left_turn_c",
-                            # "1_to_2lane_left_turn_t",
-                            # "3lane_merge_multi_agent",
-                            # "3lane_merge_single_agent",
-                            # "3lane_cruise_multi_agent",
-                            # "3lane_cruise_single_agent",
-                            # "3lane_cut_in",
-                            "3lane_overtake",], 
-              'bubble_env_evaluation_seeds': [], 'img_meters': 64, 'img_pixels': 256}
+
+    config = {
+        "phase": "track1",
+        "eval_episodes": 50,
+        "seed": 42,
+        "scenarios": [
+            # "1_to_2lane_left_turn_c",
+            # "1_to_2lane_left_turn_t",
+            # "3lane_merge_multi_agent",
+            # "3lane_merge_single_agent",
+            # "3lane_cruise_multi_agent",
+            # "3lane_cruise_single_agent",
+            # "3lane_cut_in",
+            "3lane_overtake",
+        ],
+        "img_meters": 64,
+        "img_pixels": 256,
+    }
 
     evaluate(config)

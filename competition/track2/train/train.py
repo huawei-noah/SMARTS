@@ -13,16 +13,19 @@ _TRAIN_CONFIG_KEYS = {
     "gpu",
 }
 _DEFAULT_TRAIN_CONFIG = dict(
-    n_steps=1,
-    n_steps_per_epoch=1,
-    n_scenarios=2,
-    n_vehicles=2,
-    gpu=False
+    n_steps=1, n_steps_per_epoch=1, n_scenarios=2, n_vehicles=2, gpu=False
 )
 
 
 def train(input_path, output_path):
-    from utility import goal_region_reward, get_goal_layer, get_trans_coor, load_config, merge_config, validate_config
+    from utility import (
+        goal_region_reward,
+        get_goal_layer,
+        get_trans_coor,
+        load_config,
+        merge_config,
+        validate_config,
+    )
     import pickle
     import numpy as np
     import d3rlpy
@@ -39,10 +42,14 @@ def train(input_path, output_path):
     # Get config parameters.
     train_config = merge_config(
         self=_DEFAULT_TRAIN_CONFIG,
-        other=load_config(Path(__file__).absolute().parents[0]/'config.yaml'),
+        other=load_config(Path(__file__).absolute().parents[0] / "config.yaml"),
     )
     validate_config(config=train_config, keys=_TRAIN_CONFIG_KEYS)
-    n_steps, n_steps_per_epoch, n_scenarios, n_vehicles, gpu = train_config['n_steps'], train_config['n_steps_per_epoch'], train_config['n_scenarios'], train_config['n_vehicles'], train_config['gpu']
+    n_steps = train_config["n_steps"]
+    n_steps_per_epoch = train_config["n_steps_per_epoch"]
+    n_scenarios = train_config["n_scenarios"]
+    n_vehicles = train_config["n_vehicles"]
+    gpu = train_config["gpu"]
 
     scenarios = list()
     for scenario_name in os.listdir(input_path):
@@ -54,23 +61,19 @@ def train(input_path, output_path):
     else:
         index = len(os.listdir("d3rlpy_logs/"))
 
-    if n_scenarios == 'max':
+    if n_scenarios == "max" or n_scenarios > len(scenarios):
         n_scenarios = len(scenarios)
-    elif n_scenarios > len(scenarios):
-        n_scenarios = len(scenarios)
-    else:
-        pass
 
     for scenario in scenarios[index:n_scenarios]:
-
         obs = list()
         actions = list()
         rewards = list()
         terminals = list()
-        print("processing scenario " + scenario)
+        print(f"Processing scenario {scenario}.")
         vehicle_ids = list()
 
-        for filename in os.listdir(input_path + scenario):
+        scenario_path = Path(input_path) / scenario
+        for filename in os.listdir(scenario_path):
             if filename.endswith(".pkl"):
                 match = re.search("vehicle-(.*).pkl", filename)
                 assert match is not None
@@ -81,25 +84,25 @@ def train(input_path, output_path):
         if len(vehicle_ids) < 2:
             continue
         else:
-            if n_vehicles == 'max':
+            if n_vehicles == "max":
                 n_vehicles = len(vehicle_ids)
             elif n_vehicles > len(vehicle_ids):
                 n_vehicles = len(vehicle_ids)
             else:
                 pass
-            
+
             for id in vehicle_ids[0:n_vehicles]:
-                print("adding data for vehicle id " + id + " in scenario " + scenario)
+                print(f"Adding data for vehicle id {id} in scenario {scenario}.")
 
                 with open(
-                    input_path + scenario + "/Agent-history-vehicle-" + id + ".pkl",
+                    scenario_path / (f"Agent-history-vehicle-{id}.pkl"),
                     "rb",
                 ) as f:
                     vehicle_data = pickle.load(f)
                 image_names = list()
 
-                for filename in os.listdir(input_path + scenario):
-                    if filename.endswith("-" + id + ".png"):
+                for filename in os.listdir(scenario_path):
+                    if filename.endswith(f"-{id}.png"):
                         image_names.append(filename)
 
                 image_names = sorted(image_names)
@@ -113,9 +116,7 @@ def train(input_path, output_path):
                 threshold = 3
 
                 for i in range(len(image_names) - 1):
-                    with Image.open(
-                        input_path + scenario + "/" + image_names[i], "r"
-                    ) as image:
+                    with Image.open(scenario_path / image_names[i], "r") as image:
                         image.seek(0)
                         sim_time = image_names[i].split("_Agent")[0]
                         sim_time_next = image_names[i + 1].split("_Agent")[0]
@@ -170,42 +171,49 @@ def train(input_path, output_path):
                         terminals.append(terminal)
 
                 print(str(len(obs)) + " pieces of data are added into dataset.")
-                n_vehicles = train_config['n_vehicles']  # return to deafault value for next scenario processing
+                n_vehicles = train_config[
+                    "n_vehicles"
+                ]  # return to deafault value for next scenario processing
 
             obs = np.array(obs, dtype=np.uint8)
             actions = np.array(actions)
             rewards = np.array(rewards)
             terminals = np.array(terminals)
             dataset = MDPDataset(obs, actions, rewards, terminals)
-            save_directory = Path(__file__).absolute().parents[0]/"d3rlpy_logs"
+            save_directory = Path(__file__).absolute().parents[0] / "d3rlpy_logs"
             if index == 0:
                 minimum = [-0.1, 0, -0.1]
                 maximum = [0.1, 2, 0.1]
                 action_scaler = MinMaxActionScaler(minimum=minimum, maximum=maximum)
-                model = d3rlpy.algos.CQL(use_gpu=gpu, batch_size=1, action_scaler=action_scaler)
+                model = d3rlpy.algos.CQL(
+                    use_gpu=gpu, batch_size=1, action_scaler=action_scaler
+                )
             else:
                 saved_models = glob.glob(str(save_directory) + "/*")
                 latest_model = max(saved_models, key=os.path.getctime)
-                model = CQL.from_json(str(save_directory) + "/1/params.json", use_gpu=gpu)
-                model_name = [model_name for model_name in os.listdir(save_directory/latest_model)\
-                     if model_name.endswith('pt')][0]
+                model = CQL.from_json(
+                    str(save_directory) + "/1/params.json", use_gpu=gpu
+                )
+                model_name = [
+                    model_name
+                    for model_name in os.listdir(save_directory / latest_model)
+                    if model_name.endswith("pt")
+                ][0]
                 model.load_model(save_directory / latest_model / model_name)
             model.fit(
                 dataset,
                 eval_episodes=dataset,
                 n_steps_per_epoch=n_steps_per_epoch,
                 n_steps=n_steps,
-                logdir=save_directory
+                logdir=save_directory,
             )
             saved_models = glob.glob(str(save_directory) + "/*")
             latest_model = max(saved_models, key=os.path.getctime)
-            os.rename(latest_model, str(save_directory) + '/' + str(index + 1))
+            os.rename(latest_model, str(save_directory) + "/" + str(index + 1))
             index += 1
-    
+
     shutil.rmtree(save_directory)
     model.save_policy(os.path.join(output_path, "model.pt"))
-    model.save_policy('local_evaluation/model.pt')
-
 
 
 def main(args: argparse.Namespace):
