@@ -48,7 +48,7 @@ def resolve_codalab_dirs(
     logger.info(f"scores_dir={scores_dir}")
 
     if not os.path.isdir(submission_dir):
-        logger.warning(f"submission_dir={submission_dir} does not exist.")
+        logger.error(f"submission_dir={submission_dir} does not exist.")
 
     return submission_dir, evaluation_dir, scores_dir
 

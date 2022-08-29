@@ -72,32 +72,32 @@ Track-2 participants are required to submit their training code for us to train 
     ```
 1. Provide the link to the DockerHub image in `track2/submission/explanation.md` file.
 1. After uploading your Docker image, proceed to zip the entire `track2` folder and submit to Codalab Track-2.
-1. In the server, the docker image will be pulled and executed as follows to train a new model. 
+1. In the server, during evaluation, the docker image will be pulled and executed as follows to train a new model. 
     ```bash
     $ docker run --rm -it \
         --volume=<path>/offline_dataset:/SMARTS/competition/offline_dataset
         --volume=<path>/output:/SMARTS/competition/output
         <username/imagename:version>
     ```
-1. New offline dataset is made available to the container via a mapped volume at `/SMARTS/competition/offline_dataset` directory. The directory has the following structure.
+    New offline dataset is made available to the container for training via a mapped volume at `/SMARTS/competition/offline_dataset` directory. The directory has the following structure. The state space of each vehicle follows the SMARTS observation format, except for the RGB images which are saved individually as `<time>_<vehicle_id>.png`.
     ```text
     offline_dataset                
-        ├── <scenario_id>                                          # each scene in tfrecord
-        |   ├── <time>_<vehicle_id>.png                            # ego-centric bird-eye view image
-        |   ├── <time>_<vehicle_id>.png                            # ego-centric bird-eye view image        
+        ├── <scenario_id>                      # One scene of variable time length
+        |   ├── <time>_<vehicle_id>.png        # bird-eye view image of <vehicle_id> at <time>
+        |   ├── <time>_<vehicle_id>.png        # bird-eye view image of <vehicle_id> at <time>         
         |   |  .
         |   |  .
-        |   └── <scenario_name>_<traffic_name>_<vehicle_id>.pkl    # state space of the vehicle
-        ├── <scenario_id>                                          # each scene in tfrecord
-        |   ├── <time>_<vehicle_id>.png                            # ego-centric bird-eye view image
-        |   ├── <time>_<vehicle_id>.png                            # ego-centric bird-eye view image        
+        |   └── <vehicle_id>.pkl               # state space of <vehicle_id> over all time        
+        ├── <scenario_id>                      # One scene of variable time length
+        |   ├── <time>_<vehicle_id>.png        # bird-eye view image of <vehicle_id> at <time>
+        |   ├── <time>_<vehicle_id>.png        # bird-eye view image of <vehicle_id> at <time>        
         |   |  .
         |   |  .
-        |   └── <scenario_name>_<traffic_name>_<vehicle_id>.pkl    # state space of the vehicle
+        |   ├── <vehicle_id>.pkl               # state space of <vehicle_id> over all time
+        |   └── <vehicle_id>.pkl               # state space of <vehicle_id> over all time
         |   .
         |   .
     ```
-1. The `/SMARTS/competition/offline_dataset` directory contains equivalent SMARTS observations, converted from selected Waymo and NGSIM datasets.
 1. Inside the container, on completion of training, the trained model should be saved in `/SMARTS/competition/track2/submission` folder such that calling `/SMARTS/competition/track2/submission/policy.py::Policy.act(obs)` with a multi-agent SMARTS observation as input returns a multi-agent `TargetPose` action as output.
 1. The `/SMARTS/competition/track2/submission` folder will be zipped, mapped out from the container, and evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
 1. During development, it is strongly suggested to submit your zipped `track2/submission` folder to the Validation stage in Codalab, to verify that the evaluation works without errors.

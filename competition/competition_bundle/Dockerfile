@@ -1,12 +1,3 @@
-# Steps to build and push minimal SMARTS docker image
-# ```bash
-# $ cd </path/to/SMARTS>
-# $ export VERSION=<version> # e.g. VERSION=v0.6.1
-# $ docker build --no-cache -f ./utils/docker/Dockerfile.minimal -t huaweinoah/smarts:$VERSION-minimal .
-# $ docker login
-# $ docker push huaweinoah/smarts:$VERSION-minimal
-# ```
-
 FROM ubuntu:bionic
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -34,6 +25,6 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
 ENV VIRTUAL_ENV=/opt/.venv
 RUN python3.8 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-RUN pip install --upgrade pip wheel
+RUN pip install --upgrade pip setuptools wheel
 
 SHELL ["/bin/bash", "-c", "-l"]

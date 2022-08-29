@@ -9,7 +9,9 @@ logger = logging.getLogger(__file__)
 
 
 def install_evaluation_deps(requirements_dir: Path, reset_wheelhouse_cache: bool):
-    wheelhouse = Path(tempfile.gettempdir()) / "wheelhouse/driving_smarts_competition"
+    wheelhouse = (
+        Path(tempfile.gettempdir()) / "wheelhouse" / "driving_smarts_competition"
+    )
     try:
         subprocess.check_call(["git", "lfs", "--version"])
     except:

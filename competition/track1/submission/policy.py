@@ -26,7 +26,6 @@ def submitted_wrappers():
 
     from action import Action as DiscreteAction
     from observation import Concatenate, FilterObs, SaveObs
-    from reward import Reward
 
     from smarts.core.controllers import ActionSpaceType
     from smarts.env.wrappers.format_action import FormatAction
@@ -37,7 +36,6 @@ def submitted_wrappers():
     wrappers = [
         FormatObs,
         lambda env: FormatAction(env=env, space=ActionSpaceType["TargetPose"]),
-        Reward,
         SaveObs,
         DiscreteAction,
         FilterObs,

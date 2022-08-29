@@ -1,18 +1,18 @@
 <h1>Overview</h1>
 
-<h2><a href="https://smarts-project.github.io/#the-competition">The Competition</a></h2>
+<h2>The Competition</h2>
 <p>
     Autonomous driving (AD) is the next frontier of artificial intelligence and machine learning. 
     Intending to further research in AD, we invite you to participate in an autonomous driving 
     competition organised by Huawei Technologies Ltd. and academic collaborators.
 </p>
 
-<h2><a href="https://smarts-project.github.io/#tasks-and-evaluation">Tasks and Evaluation</a></h2>
+<h2>Tasks and Evaluation</h2>
 <p>
     This competition seeks to advance autonomous driving by developing agents that can drive as 
     quickly and safely as possible from the start to destination amid background traffic. Data 
     for the competition are mined from large-scale naturalistic driving data, manipulated, and 
-    replayed in <a href="https://github.com/huawei-noah/SMARTS">SMARTS</a> simulation environment. 
+    replayed in <a href="https://github.com/huawei-noah/SMARTS/tree/comp-1">SMARTS</a> simulation environment. 
     The following typical driving scenarios are tested: cruising, overtaking, merging, left turns 
     at unsignalized intersections and being cut off by another vehicle. For some scenarios, 
     interactive background vehicles are added in SMARTS.
@@ -23,13 +23,41 @@
     and distance to surrounding vehicles, etc), and safety (e.g., traffic rule violations).
 </p>
 
-<h2><a href="https://smarts-project.github.io/#competition-tracks">Competition Tracks</a></h2>
-<p>There are two tracks in the competition.</p>
+<h2>Competition Tracks</h2>
+<p><strong>Validation Stage</strong>: This stage is to validate that your submission will work without errors during Track1 and Track2 evaluation.</p> 
+<p>There are two competition tracks.</p>
 <p><strong>Track 1</strong>: The participants may use&nbsp;<em>any</em>&nbsp;method to develop their solutions.</p>
 <p><strong>Track 2</strong>: The participants are only allowed to train their models on&nbsp;<em>offline datasets</em>.</p>
-<p>Winners in each track will receive cash prizes and will get a chance to present their innovative solutions during the virtual ceremony.</p>
 
-<h2><a href="https://smarts-project.github.io/#prizes">Prizes</a></h2>
+<h2>Competition Timeline</h2>
+<table class="tg" style="height: 225px; width: 797px;">
+    <thead>
+    <tr style="background-color: #ffcc00;">
+    <td style="padding:10px; border-color: #000000; border-style: solid; border-width: 1px;">Timeline</td>
+    <td style="padding:10px; border-color: #000000; border-style: solid; border-width: 1px;">Remarks</td>
+    </tr>
+    </thead>
+    <tbody>
+    <tr style="background-color: #33ccff;">
+    <td class="tg-f8tv" style="padding:10px; border-color: #000000; border-style: solid; border-width: 1px;" valign="top">1 August 2022</td>
+    <td class="tg-0pky" style="padding:10px; border-color: #000000; border-style: solid; border-width: 1px;">+ Start developing solutions for Track1 and Track2.<br />+ Validation Stage opens.<br />+ Submit your submission.zip folder, containing the inference code, to Validation Stage to validate whether all interface requirements are met. This ensures that future submissions to Track1 and Track2 evaluation will run without any errors.</td>
+    </tr>
+    <tr style="background-color: #33cc00;">
+    <td class="tg-f8tv" style="padding:10px; border-color: #000000; border-style: solid; border-width: 1px;" valign="top">1 September 2022</td>
+    <td class="tg-0pky" style="padding:10px; border-color: #000000; border-style: solid; border-width: 1px;">+ Track1 Stage starts accepting submissions.<br />+ Submit your Track1 solution to Track1 Stage.<br />+ Submitted Track1 solutions will be scored and ranked.<br />+ Number of submission attempts for Track1 Stage is limited.</td>
+    </tr>
+    <tr style="background-color: #ffccff;">
+    <td class="tg-f8tv" style="padding:10px; border-color: #000000; border-style: solid; border-width: 1px;" valign="top">1 November 2022</td>
+    <td class="tg-0pky" style="padding:10px; border-color: #000000; border-style: solid; border-width: 1px;">+ Track1 Stage closes and stops accepting submissions.<br />+ Track2 Stage starts accepting submissions.<br />+ Submit your Track2 solution to Track2 Stage.<br />+ Submitted Track2 solutions will scored and ranked.<br />+ Number of submission attempts for Track2 Stage is limited.</td>
+    </tr>
+    <tr style="background-color: #ccff00;">
+    <td class="tg-f8tv" style="padding:10px; border-color: #000000; border-style: solid; border-width: 1px;" valign="top">5 November 2022</td>
+    <td class="tg-0pky" style="padding:10px; border-color: #000000; border-style: solid; border-width: 1px;">+ Validation Stage closes and stops accepting submissions.<br />+ Track2 Stage closes and stops accepting submissions.</td>
+    </tr>
+    </tbody>
+</table>
+
+<h2>Prizes</h2>
 Top participants in <strong>each track</strong> will receive the following prizes:<br>
 <ul>
     <li><strong>Gold</strong>&nbsp;US$6000</li>
@@ -41,11 +69,12 @@ Additional prizes:<br>
     <li>US$1000 for the&nbsp;<strong>most innovative</strong>&nbsp;approach out of top-6 entries in both tracks.</li>
     <li>US$1000 given to one of the valid submissions not in top-3 positions in either track.</li>
 </ul>
+<p>Winners in each track will receive cash prizes and will get a chance to present their innovative solutions during a virtual ceremony.</p>
 
 <h2>Registration</h2>
-In order to participate, either fill out the following form:
-<h4><a href="https://docs.google.com/forms/d/1bIXTQL420q-cB65j1df2vhbh-79NMlm0M2G0uQtwvds">Registration form</a></h4>
-Or send a response to smarts4ad@gmail.com including the following information:
+In order to be elligible for any rewards, either<br> 
+(a) Fill out the following form: <a href="https://docs.google.com/forms/d/1bIXTQL420q-cB65j1df2vhbh-79NMlm0M2G0uQtwvds">Registration Form</a><br>
+(b) Or, send a response to smarts4ad@gmail.com including the following information:<br>
     <blockquote>
     <strong>Registration Form</strong><br /> 
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Public group name <strong>[required]</strong><br> 
@@ -66,19 +95,6 @@ $ git checkout comp-1
 $ cd &lt;path&gt;/SMARTS/competition    
 </code></pre>
 
-<h2>Extended Environment "bubble_env"</h2>
-(a) An additional evaluation environment is available and it is used as part of the evaluation.<br>
-(b) It can be acquired in a few ways. The easiest way is to install it through <code>pip</code>.<br>
-<pre><code>$ pip install "bubble_env @ git+https://malban@bitbucket.org/malban/bubble_env.git"</code></pre>
-(c) To directly obtain the additional environment and resources you may instead do the following:<br>
-<pre><code>$ cd &lt;path&gt;
-$ git clone https://malban@bitbucket.org/malban/bubble_env.git
-$ cd bubble_env
-$ git lfs pull # or follow instructions in ./README.md
-$ pip install -e .
-$ cd &lt;path&gt;/SMARTS/competition 
-</code></pre>
-
 <h2>Validation</h2>
 (a) Since Track-1 and Track-2 has limited number of submissions, a Validation stage is made available.<br>
 (b) Participants may submit their zipped Track-1 and Track-2 code to Validation stage, to check whether their code executes without errors.<br>
@@ -90,12 +106,20 @@ $ cd &lt;path&gt;/SMARTS/competition
 (b) Any method such as reinforcement learning, offline reinforcement learning,
     behaviour cloning, generative models, predictive models, etc, may be used
     to develop the policy.<br>
-(b) For more instructions and explanations, see the accompanying <code>README.md</code> file of each stage.<br>       
+(c) For more instructions and explanations, see the accompanying <code>README.md</code> file of each stage.<br>       
     <ul>
         <li>Training: <code>/SMARTS/competition/track1/train/README.md</code></li>
         <li>Submission: <code>/SMARTS/competition/track1/submission/README.md</code></li>
         <li>Evaluation: <code>/SMARTS/competition/evaluation/README.md</code></li>
     </ul>
+(d) [Optional] Environment "bubble_env".<br>
+    <ul>
+        <li> An additional environment, named <code>bubble_env</code>, is used during evaluation.</li>
+        <li> Participants may optionally choose to train their Track1 solution using this additional <code>bubble_env</code>.</li>
+        <li> Install <code>bubble_env</code> as follows.</li>
+    </ul>
+<pre><code># First, install Git LFS from https://git-lfs.github.com/
+$ pip install "bubble_env @ git+https://malban@bitbucket.org/malban/bubble_env.git" </code></pre>
 
 <h2>Track-2: Offline Learning</h2>
 (a) Objective is to train a single policy capable of controlling single-agent 
