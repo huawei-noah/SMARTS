@@ -2,8 +2,33 @@
 # On completion of training, automatically save the trained model to `track2/submission` directory.
 
 import os
+import sys
 import argparse
 from pathlib import Path
+import pickle
+import numpy as np
+from PIL import Image
+import re
+import glob
+import shutil
+
+import d3rlpy
+from d3rlpy.dataset import MDPDataset
+from d3rlpy.preprocessing import MinMaxActionScaler
+from d3rlpy.algos import CQL
+
+# To import submission folder
+sys.path.insert(0, str(Path(__file__).parents[1]))
+
+from submission.utility import (
+    goal_region_reward,
+    get_goal_layer,
+    get_trans_coor,
+    load_config,
+    merge_config,
+    validate_config,
+)
+
 
 _TRAIN_CONFIG_KEYS = {
     "n_steps",
@@ -22,25 +47,6 @@ _DEFAULT_TRAIN_CONFIG = dict(
 
 
 def train(input_path, output_path):
-    from utility import (
-        goal_region_reward,
-        get_goal_layer,
-        get_trans_coor,
-        load_config,
-        merge_config,
-        validate_config,
-    )
-    import pickle
-    import numpy as np
-    import d3rlpy
-    from d3rlpy.dataset import MDPDataset
-    from d3rlpy.preprocessing import MinMaxActionScaler
-    from d3rlpy.algos import CQL
-    from PIL import Image
-    import re
-    import glob
-    import shutil
-
     d3rlpy.seed(313)
 
     # Get config parameters.
@@ -187,7 +193,9 @@ def train(input_path, output_path):
         else:
             saved_models = glob.glob(str(save_directory / "*"))
             latest_model = max(saved_models, key=os.path.getctime)
-            model = CQL.from_json(str(save_directory/"1"/"params.json"), use_gpu=gpu)
+            model = CQL.from_json(
+                str(save_directory / "1" / "params.json"), use_gpu=gpu
+            )
             model_name = [
                 model_name
                 for model_name in os.listdir(save_directory / latest_model)

@@ -1,9 +1,9 @@
-from typing import Any, Dict
 import gym
 import sys
 from pathlib import Path
+from typing import Any, Dict
 
-# Necessary to import submission folder
+# To import submission folder
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
 from submission.policy import Policy, submitted_wrappers
