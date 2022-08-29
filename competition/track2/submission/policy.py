@@ -14,18 +14,6 @@ sys.path.insert(0, str(Path(__file__).parents[0]))
 from utility import (
     get_goal_layer,
     global_target_pose,
-    load_config,
-    merge_config,
-    validate_config,
-)
-
-_POLICY_CONFIG_KEYS = {
-    "img_meters",
-    "img_pixels",
-}
-_DEFAULT_POLICY_CONFIG = dict(
-    img_meters=64,
-    img_pixels=256,
 )
 
 
@@ -75,13 +63,6 @@ class Policy(BasePolicy):
             if policy_name.endswith("pt")
         ][0]
         self.policy = torch.jit.load(Path(__file__).absolute().parents[0] / policy_name)
-
-        # Get config parameters.
-        policy_config = merge_config(
-            self=_DEFAULT_POLICY_CONFIG,
-            other=load_config(Path(__file__).absolute().parents[0] / "config.yaml"),
-        )
-        validate_config(config=policy_config, keys=_POLICY_CONFIG_KEYS)
 
     def act(self, obs: Dict[str, Any]):
         """Act function to be implemented by user.

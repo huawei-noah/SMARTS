@@ -1,16 +1,18 @@
 # Add offline training code for Track-2 here.
 # On completion of training, automatically save the trained model to `track2/submission` directory.
 
-import os
-import sys
 import argparse
-from pathlib import Path
-import pickle
-import numpy as np
-from PIL import Image
-import re
 import glob
+import re
+import numpy as np
+import os
+import pickle
+import sys
 import shutil
+import yaml
+from pathlib import Path
+from PIL import Image
+from typing import Any, Dict, Optional
 
 import d3rlpy
 from d3rlpy.dataset import MDPDataset
@@ -24,37 +26,21 @@ from submission.utility import (
     goal_region_reward,
     get_goal_layer,
     get_trans_coor,
-    load_config,
-    merge_config,
-    validate_config,
 )
 
 
-_TRAIN_CONFIG_KEYS = {
-    "n_steps",
-    "n_steps_per_epoch",
-    "n_scenarios",
-    "n_vehicles",
-    "gpu",
-}
-_DEFAULT_TRAIN_CONFIG = dict(
-    n_steps=1,
-    n_steps_per_epoch=1,
-    n_scenarios=2,
-    n_vehicles=2,
-    gpu=False,
-)
+def load_config(path: Path) -> Optional[Dict[str, Any]]:
+    with open(path, "r") as file:
+        config = yaml.safe_load(file)
+    return config
 
 
 def train(input_path, output_path):
     d3rlpy.seed(313)
 
     # Get config parameters.
-    train_config = merge_config(
-        self=_DEFAULT_TRAIN_CONFIG,
-        other=load_config(Path(__file__).absolute().parents[0] / "config.yaml"),
-    )
-    validate_config(config=train_config, keys=_TRAIN_CONFIG_KEYS)
+    train_config = load_config(Path(__file__).absolute().parents[0] / "config.yaml")
+
     n_steps = train_config["n_steps"]
     n_steps_per_epoch = train_config["n_steps_per_epoch"]
     n_scenarios = train_config["n_scenarios"]
