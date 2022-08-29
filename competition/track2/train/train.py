@@ -13,7 +13,11 @@ _TRAIN_CONFIG_KEYS = {
     "gpu",
 }
 _DEFAULT_TRAIN_CONFIG = dict(
-    n_steps=1, n_steps_per_epoch=1, n_scenarios=2, n_vehicles=2, gpu=False
+    n_steps=1, 
+    n_steps_per_epoch=1, 
+    n_scenarios=2, 
+    n_vehicles=2, 
+    gpu=False,
 )
 
 
@@ -83,134 +87,130 @@ def train(input_path, output_path):
 
         if len(vehicle_ids) < 2:
             continue
-        else:
-            if n_vehicles == "max":
-                n_vehicles = len(vehicle_ids)
-            elif n_vehicles > len(vehicle_ids):
-                n_vehicles = len(vehicle_ids)
-            else:
-                pass
 
-            for id in vehicle_ids[0:n_vehicles]:
-                print(f"Adding data for vehicle id {id} in scenario {scenario}.")
+        if n_vehicles == "max" or n_vehicles > len(vehicle_ids):
+            n_vehicles = len(vehicle_ids)
 
-                with open(
-                    scenario_path / (f"Agent-history-vehicle-{id}.pkl"),
-                    "rb",
-                ) as f:
-                    vehicle_data = pickle.load(f)
-                image_names = list()
+        for id in vehicle_ids[0:n_vehicles]:
+            print(f"Adding data for vehicle id {id} in scenario {scenario}.")
 
-                for filename in os.listdir(scenario_path):
-                    if filename.endswith(f"-{id}.png"):
-                        image_names.append(filename)
+            with open(
+                scenario_path / (f"Agent-history-vehicle-{id}.pkl"),
+                "rb",
+            ) as f:
+                vehicle_data = pickle.load(f)
+            image_names = list()
 
-                image_names = sorted(image_names)
+            for filename in os.listdir(scenario_path):
+                if filename.endswith(f"-{id}.png"):
+                    image_names.append(filename)
 
-                goal_pos_x = vehicle_data[float(image_names[-1].split("_Agent")[0])][
-                    "ego"
-                ]["pos"][0]
-                goal_pos_y = vehicle_data[float(image_names[-1].split("_Agent")[0])][
-                    "ego"
-                ]["pos"][1]
-                threshold = 3
+            image_names = sorted(image_names)
 
-                for i in range(len(image_names) - 1):
-                    with Image.open(scenario_path / image_names[i], "r") as image:
-                        image.seek(0)
-                        sim_time = image_names[i].split("_Agent")[0]
-                        sim_time_next = image_names[i + 1].split("_Agent")[0]
-                        current_position = vehicle_data[float(sim_time)]["ego"]["pos"]
-                        current_heading = vehicle_data[float(sim_time)]["ego"][
-                            "heading"
-                        ]
-                        next_position = vehicle_data[float(sim_time_next)]["ego"]["pos"]
-                        next_heading = vehicle_data[float(sim_time_next)]["ego"][
-                            "heading"
-                        ]
-                        trans_coor = get_trans_coor(
-                            next_position[0],
-                            next_position[1],
-                            current_position[0],
-                            current_position[1],
-                            current_heading,
-                        )
-                        trans_cur = trans_coor[0]
-                        trans_next = trans_coor[1]
-                        dx = trans_next[0, 0] - trans_cur[0, 0]
-                        dy = trans_next[1, 0] - trans_cur[1, 0]
-                        dheading = next_heading - current_heading
-                        events = vehicle_data[float(sim_time)]["events"]
-                        if all(value == 0 for value in events.values()):
-                            terminal = 0
-                        else:
-                            terminal = 1
+            goal_pos_x = vehicle_data[float(image_names[-1].split("_Agent")[0])][
+                "ego"
+            ]["pos"][0]
+            goal_pos_y = vehicle_data[float(image_names[-1].split("_Agent")[0])][
+                "ego"
+            ]["pos"][1]
+            threshold = 3
 
-                        bev = np.moveaxis(np.asarray(image), -1, 0)
-                        goal_obs = get_goal_layer(
-                            goal_pos_x,
-                            goal_pos_y,
-                            current_position[0],
-                            current_position[1],
-                            current_heading,
-                        )
-                        extended_ob = np.concatenate((bev, goal_obs), axis=0)
-                        obs.append(extended_ob)
-                        actions.append([dx, dy, dheading])
-                        dist_reward = vehicle_data[float(sim_time)]["dist"]
-                        goal_reward = goal_region_reward(
-                            threshold,
-                            goal_pos_x,
-                            goal_pos_y,
-                            current_position[0],
-                            current_position[1],
-                        )
-                        rewards.append(dist_reward + goal_reward)
-                        rewards.append(dist_reward)
+            for i in range(len(image_names) - 1):
+                with Image.open(scenario_path / image_names[i], "r") as image:
+                    image.seek(0)
+                    sim_time = image_names[i].split("_Agent")[0]
+                    sim_time_next = image_names[i + 1].split("_Agent")[0]
+                    current_position = vehicle_data[float(sim_time)]["ego"]["pos"]
+                    current_heading = vehicle_data[float(sim_time)]["ego"][
+                        "heading"
+                    ]
+                    next_position = vehicle_data[float(sim_time_next)]["ego"]["pos"]
+                    next_heading = vehicle_data[float(sim_time_next)]["ego"][
+                        "heading"
+                    ]
+                    trans_coor = get_trans_coor(
+                        next_position[0],
+                        next_position[1],
+                        current_position[0],
+                        current_position[1],
+                        current_heading,
+                    )
+                    trans_cur = trans_coor[0]
+                    trans_next = trans_coor[1]
+                    dx = trans_next[0, 0] - trans_cur[0, 0]
+                    dy = trans_next[1, 0] - trans_cur[1, 0]
+                    dheading = next_heading - current_heading
+                    events = vehicle_data[float(sim_time)]["events"]
+                    if all(value == 0 for value in events.values()):
+                        terminal = 0
+                    else:
+                        terminal = 1
 
-                        terminals.append(terminal)
+                    bev = np.moveaxis(np.asarray(image), -1, 0)
+                    goal_obs = get_goal_layer(
+                        goal_pos_x,
+                        goal_pos_y,
+                        current_position[0],
+                        current_position[1],
+                        current_heading,
+                    )
+                    extended_ob = np.concatenate((bev, goal_obs), axis=0)
+                    obs.append(extended_ob)
+                    actions.append([dx, dy, dheading])
+                    dist_reward = vehicle_data[float(sim_time)]["dist"]
+                    goal_reward = goal_region_reward(
+                        threshold,
+                        goal_pos_x,
+                        goal_pos_y,
+                        current_position[0],
+                        current_position[1],
+                    )
+                    rewards.append(dist_reward + goal_reward)
+                    rewards.append(dist_reward)
 
-                print(str(len(obs)) + " pieces of data are added into dataset.")
-                n_vehicles = train_config[
-                    "n_vehicles"
-                ]  # return to deafault value for next scenario processing
+                    terminals.append(terminal)
 
-            obs = np.array(obs, dtype=np.uint8)
-            actions = np.array(actions)
-            rewards = np.array(rewards)
-            terminals = np.array(terminals)
-            dataset = MDPDataset(obs, actions, rewards, terminals)
-            save_directory = Path(__file__).absolute().parents[0] / "d3rlpy_logs"
-            if index == 0:
-                minimum = [-0.1, 0, -0.1]
-                maximum = [0.1, 2, 0.1]
-                action_scaler = MinMaxActionScaler(minimum=minimum, maximum=maximum)
-                model = d3rlpy.algos.CQL(
-                    use_gpu=gpu, batch_size=1, action_scaler=action_scaler
-                )
-            else:
-                saved_models = glob.glob(str(save_directory) + "/*")
-                latest_model = max(saved_models, key=os.path.getctime)
-                model = CQL.from_json(
-                    str(save_directory) + "/1/params.json", use_gpu=gpu
-                )
-                model_name = [
-                    model_name
-                    for model_name in os.listdir(save_directory / latest_model)
-                    if model_name.endswith("pt")
-                ][0]
-                model.load_model(save_directory / latest_model / model_name)
-            model.fit(
-                dataset,
-                eval_episodes=dataset,
-                n_steps_per_epoch=n_steps_per_epoch,
-                n_steps=n_steps,
-                logdir=save_directory,
+            print(str(len(obs)) + " pieces of data are added into dataset.")
+            n_vehicles = train_config[
+                "n_vehicles"
+            ]  # Return to default value for next scenario processing
+
+        obs = np.array(obs, dtype=np.uint8)
+        actions = np.array(actions)
+        rewards = np.array(rewards)
+        terminals = np.array(terminals)
+        dataset = MDPDataset(obs, actions, rewards, terminals)
+        save_directory = Path(__file__).absolute().parents[0] / "d3rlpy_logs"
+        if index == 0:
+            minimum = [-0.1, 0, -0.1]
+            maximum = [0.1, 2, 0.1]
+            action_scaler = MinMaxActionScaler(minimum=minimum, maximum=maximum)
+            model = d3rlpy.algos.CQL(
+                use_gpu=gpu, batch_size=1, action_scaler=action_scaler
             )
-            saved_models = glob.glob(str(save_directory) + "/*")
+        else:
+            saved_models = glob.glob(str(save_directory / "*"))
             latest_model = max(saved_models, key=os.path.getctime)
-            os.rename(latest_model, str(save_directory) + "/" + str(index + 1))
-            index += 1
+            model = CQL.from_json(
+                str(save_directory) + "/1/params.json", use_gpu=gpu
+            )
+            model_name = [
+                model_name
+                for model_name in os.listdir(save_directory / latest_model)
+                if model_name.endswith("pt")
+            ][0]
+            model.load_model(save_directory / latest_model / model_name)
+        model.fit(
+            dataset,
+            eval_episodes=dataset,
+            n_steps_per_epoch=n_steps_per_epoch,
+            n_steps=n_steps,
+            logdir=save_directory,
+        )
+        saved_models = glob.glob(str(save_directory / "*"))
+        latest_model = max(saved_models, key=os.path.getctime)
+        os.rename(latest_model, str(save_directory / f"{index + 1}"))
+        index += 1
 
     shutil.rmtree(save_directory)
     model.save_policy(os.path.join(output_path, "model.pt"))
