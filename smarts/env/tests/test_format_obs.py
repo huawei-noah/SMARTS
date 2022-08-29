@@ -24,7 +24,12 @@ import gym
 import pytest
 
 from smarts.core.agent import Agent
-from smarts.core.agent_interface import AgentInterface, NeighborhoodVehicles, Waypoints
+from smarts.core.agent_interface import (
+    AgentInterface,
+    NeighborhoodVehicles,
+    Signals,
+    Waypoints,
+)
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.wrappers.format_obs import FormatObs, intrfc_to_stdobs
 from smarts.zoo.agent_spec import AgentSpec
@@ -41,6 +46,7 @@ def _intrfcs_init():
         [{"rgb": True}] * 2,
         [{"waypoints": Waypoints(lookahead=1)}] * 2,
         [{"neighborhood_vehicles": True, "waypoints": Waypoints(lookahead=1)}] * 2,
+        [{"signals": Signals(lookahead=100.0)}] * 2,
     ]
 
 
@@ -53,6 +59,7 @@ def _intrfcs_obs():
         "ogm": True,
         "rgb": True,
         "waypoints": Waypoints(lookahead=1),
+        "signals": Signals(lookahead=100),
     }
 
     return [
@@ -61,6 +68,7 @@ def _intrfcs_obs():
         * 2,
         [dict(base_intrfc, **{"accelerometer": False})] * 2,
         [dict(base_intrfc, **{"waypoints": Waypoints(lookahead=50)})] * 2,
+        [dict(base_intrfc, **{"signals": Signals(lookahead=50)})] * 2,
     ]
 
 
@@ -74,6 +82,7 @@ def _make_agent_specs(intrfcs):
         ogm=False,
         rgb=False,
         waypoints=False,
+        signals=False,
     )
 
     return {
@@ -121,15 +130,13 @@ def test_init(make_env):
     rcv_space = env.observation_space
     rcv_space_keys = set([key for key in rcv_space[agent_id]])
 
-    des_space_keys = set(["dist", "ego", "events"])
+    des_space_keys = set(["dist", "ego", "events", "mission"])
     opt_space_keys = [
         intrfc_to_stdobs(intrfc)
         for intrfc, val in cur_intrfcs[0].items()
         if val and intrfc_to_stdobs(intrfc)
     ]
     des_space_keys.update(opt_space_keys)
-    if "waypoints" in opt_space_keys and "neighbors" in opt_space_keys:
-        des_space_keys.update(["ttc"])
 
     assert rcv_space_keys == des_space_keys
 

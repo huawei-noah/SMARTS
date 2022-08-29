@@ -19,12 +19,10 @@
 # THE SOFTWARE.
 import multiprocessing
 import os
-import subprocess
-import sys
 from multiprocessing import Process, Semaphore, synchronize
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 
 import click
 
@@ -50,88 +48,37 @@ def scenario_cli():
     default=False,
     help="Allows road network to be offset from the origin. If not specified, creates a new network file if necessary.",
 )
+@click.option(
+    "--seed",
+    type=int,
+    default=42,
+    help="Set the base seed of the scenario.",
+)
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def build_scenario(clean: bool, allow_offset_map: bool, scenario: str):
-    _build_single_scenario(clean, allow_offset_map, scenario)
-
-
-def _build_single_scenario(clean: bool, allow_offset_map: bool, scenario: str):
+def build_scenario(clean: bool, allow_offset_map: bool, scenario: str, seed: int):
     click.echo(f"build-scenario {scenario}")
-    if clean:
-        _clean(scenario)
 
-    scenario_root = Path(scenario)
-    scenario_root_str = str(scenario_root)
+    from smarts.sstudio.build_scenario import build_single_scenario
 
-    scenario_py = scenario_root / "scenario.py"
-    if scenario_py.exists():
-        _install_requirements(scenario_root)
-        subprocess.check_call([sys.executable, "scenario.py"], cwd=scenario_root)
+    assert seed == None or isinstance(seed, (int))
 
-    from smarts.core.scenario import Scenario
-
-    traffic_histories = Scenario.discover_traffic_histories(scenario_root_str)
-    # don't shift maps for scenarios with traffic histories since history data must line up with map
-    shift_to_origin = not allow_offset_map and not bool(traffic_histories)
-
-    map_spec = Scenario.discover_map(scenario_root_str, shift_to_origin=shift_to_origin)
-    road_map, _ = map_spec.builder_fn(map_spec)
-    if not road_map:
-        click.echo(
-            "No reference to a RoadNetwork file was found in {}, or one could not be created. "
-            "Please make sure the path passed is a valid Scenario with RoadNetwork file required "
-            "(or a way to create one) for scenario building.".format(scenario_root_str)
-        )
-        return
-
-    road_map.to_glb(os.path.join(scenario_root, "map.glb"))
+    build_single_scenario(clean, allow_offset_map, scenario, seed, click.echo)
 
 
 def _build_single_scenario_proc(
-    clean: bool, allow_offset_map: bool, scenario: str, semaphore: synchronize.Semaphore
+    clean: bool,
+    allow_offset_map: bool,
+    scenario: str,
+    semaphore: synchronize.Semaphore,
+    seed: int,
 ):
+    from smarts.sstudio.build_scenario import build_single_scenario
+
     semaphore.acquire()
     try:
-        _build_single_scenario(clean, allow_offset_map, scenario)
+        build_single_scenario(clean, allow_offset_map, scenario, seed, click.echo)
     finally:
         semaphore.release()
-
-
-def _install_requirements(scenario_root):
-    import importlib.resources as pkg_resources
-
-    requirements_txt = scenario_root / "requirements.txt"
-    if requirements_txt.exists():
-        import zoo.policies
-
-        with pkg_resources.path(zoo.policies, "") as path:
-            # Serve policies through the static file server, then kill after
-            # we've installed scenario requirements
-            pip_index_proc = subprocess.Popen(
-                ["twistd", "-n", "web", "--path", path],
-                # Hide output to keep display simple
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-
-            pip_install_cmd = [
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                "-r",
-                str(requirements_txt),
-            ]
-
-            click.echo(
-                f"Installing scenario dependencies via '{' '.join(pip_install_cmd)}'"
-            )
-
-            try:
-                subprocess.check_call(pip_install_cmd, stdout=subprocess.DEVNULL)
-            finally:
-                pip_index_proc.terminate()
-                pip_index_proc.wait()
 
 
 def _is_scenario_folder_to_build(path: str) -> bool:
@@ -163,8 +110,25 @@ def _is_scenario_folder_to_build(path: str) -> bool:
     default=False,
     help="Allows road networks (maps) to be offset from the origin. If not specified, a new network file is created if necessary.  Defaults to False except when there's Traffic History data associated with the scenario.",
 )
+@click.option(
+    "--seed",
+    type=int,
+    default=42,
+    help="Set the base seed of the scenarios.",
+)
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
+def build_all_scenarios(
+    clean: bool, allow_offset_maps: bool, scenarios: List[str], seed: int
+):
+    _build_all_scenarios(clean, allow_offset_maps, scenarios, seed)
+
+
+def _build_all_scenarios(
+    clean: bool,
+    allow_offset_maps: bool,
+    scenarios: List[str],
+    seed: Optional[int] = None,
+):
     if not scenarios:
         # nargs=-1 in combination with a default value is not supported
         # if scenarios is not given, set /scenarios as default
@@ -180,7 +144,7 @@ def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
                 scenario = f"{scenarios_path}/{p.relative_to(scenarios_path)}"
                 proc = Process(
                     target=_build_single_scenario_proc,
-                    args=(clean, allow_offset_maps, scenario, sema),
+                    args=(clean, allow_offset_maps, scenario, sema, seed),
                 )
                 all_processes.append((scenario, proc))
                 proc.start()
@@ -195,30 +159,9 @@ def build_all_scenarios(clean: bool, allow_offset_maps: bool, scenarios: str):
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
 def clean_scenario(scenario: str):
-    _clean(scenario)
+    from smarts.sstudio.build_scenario import clean_scenario
 
-
-def _clean(scenario: str):
-    to_be_removed = [
-        "map.glb",
-        "bubbles.pkl",
-        "missions.pkl",
-        "flamegraph-perf.log",
-        "flamegraph.svg",
-        "flamegraph.html",
-        "*.rou.xml",
-        "*.rou.alt.xml",
-        "social_agents/*",
-        "traffic/*.rou.xml",
-        "history_mission.pkl",
-        "*.shf",
-        "*-AUTOGEN.net.xml",
-    ]
-    p = Path(scenario)
-    for file_name in to_be_removed:
-        for f in p.glob(file_name):
-            # Remove file
-            f.unlink()
+    clean_scenario(scenario)
 
 
 @scenario_cli.command(name="replay", help="Play saved Envision data files in Envision.")
@@ -242,58 +185,7 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
             )
 
 
-@scenario_cli.command(
-    name="browse-waymo",
-    help="Browse Waymo TFRecord datasets using smarts/waymo/waymo_browser.py, a text-based browser utility",
-)
-@click.argument(
-    "tfrecords",
-    type=click.Path(exists=True),
-    metavar="<script>",
-    nargs=-1,
-    required=True,
-)
-@click.option(
-    "-t",
-    "--target-base-path",
-    type=click.Path(exists=True),
-    default=None,
-    help="Default target base path to export scenarios to",
-)
-@click.option(
-    "-i",
-    "--import-tags",
-    type=click.Path(exists=True),
-    default=None,
-    help=".json file to import tags for tfRecord scenarios from",
-)
-def browse_waymo_dataset(
-    tfrecords: Sequence[str],
-    target_base_path: Optional[str],
-    import_tags: Optional[str],
-):
-    if not tfrecords:
-        # nargs=-1 in combination with a default value is not supported
-        # if tfrecords is not given, set the known tfrecord directory as default
-        tfrecords = [os.path.join("smarts", "waymo", "waymo_data")]
-
-    utility_path = os.path.join("smarts", "waymo", "waymo_browser.py")
-    subprocess_command = [
-        sys.executable,
-        utility_path,
-    ]
-
-    if target_base_path is not None:
-        subprocess_command.append(f"--target-base-path={target_base_path}")
-    if import_tags is not None:
-        subprocess_command.append(f"--import-tags={import_tags}")
-
-    click.echo(f"Executing {utility_path} with arguments {tfrecords}")
-    subprocess.check_call(subprocess_command + list(tfrecords))
-
-
 scenario_cli.add_command(build_scenario)
 scenario_cli.add_command(build_all_scenarios)
 scenario_cli.add_command(clean_scenario)
 scenario_cli.add_command(replay)
-scenario_cli.add_command(browse_waymo_dataset)

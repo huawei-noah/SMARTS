@@ -135,7 +135,7 @@ class TrajectoryTrackingController:
                         - vehicle.chassis.front_rear_stiffness[1]
                     )
                     / vehicle_mass,
-                    (half_vehicle_len ** 2)
+                    (half_vehicle_len**2)
                     * (
                         vehicle.chassis.front_rear_stiffness[0]
                         - vehicle.chassis.front_rear_stiffness[1]
@@ -491,9 +491,9 @@ class TrajectoryTrackingController:
                 [0],
                 [
                     (
-                        (half_vehicle_len ** 2)
+                        (half_vehicle_len**2)
                         * vehicle.chassis.front_rear_stiffness[0]
-                        - (half_vehicle_len ** 2)
+                        - (half_vehicle_len**2)
                         * vehicle.chassis.front_rear_stiffness[1]
                     )
                     / vehicle_inertia_z

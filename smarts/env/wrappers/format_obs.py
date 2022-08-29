@@ -29,16 +29,16 @@ from smarts.core.road_map import Waypoint
 from smarts.core.sensors import (
     DrivableAreaGridMap,
     EgoVehicleObservation,
-    Observation,
     OccupancyGridMap,
+    SignalObservation,
     TopDownRGB,
     VehicleObservation,
 )
-from smarts.env.custom_observations import lane_ttc
 
 _LIDAR_SHP = 300
 _NEIGHBOR_SHP = 10
 _WAYPOINT_SHP = (4, 20)
+_SIGNALS_SHP = (3,)
 
 """
 Observations in numpy array format, suitable for vectorized processing.
@@ -124,6 +124,13 @@ StdObs = dict({
             Ray vectors. shape=(300,3). dtype=np.float64.
     })
     
+    Mission details for the ego agent.
+    "mission": dict({
+        "goal_pos":
+            Achieve goal by reaching the end position. Defaults to np.array([0,0,0])
+            for no mission. shape=(3,). dtype=np.float64. 
+    })
+
     Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
     vehicles are insufficient, default feature values are padded.
     "neighbors": dict({
@@ -153,25 +160,6 @@ StdObs = dict({
     shape=(height, width, 3). dtype=np.uint8.
     "rgb": np.ndarray
 
-    Time and distance to collision. Enabled only if both `waypoints` and
-    `neighborhood_vehicles` attributes are enabled in AgentInterface.
-    "ttc": dict({  
-        "angle_error":
-            Angular error in radians [-pi, pi]. dtype=np.float32.
-        "distance_from_center":
-            Distance of vehicle from lane center in meters. dtype=np.float32.
-        "dtc":
-            Distance to collision on the right lane (`dtc[0]`), current lane
-            (`dtc[1]`), and left lane (`dtc[2]`). If no lane is available, to the
-            right or to the left, default value of 0 is padded. shape=(3,).
-            dtype=np.float32.
-        "ttc":
-            Time to collision on the right lane (`ttc[0]`), current lane
-            (`ttc[1]`), and left lane (`ttc[2]`). If no lane is available,
-            to the right or to the left, default value of 0 is padded. shape=(3,).
-            dtype=np.float32.
-    })
-
     Feature array of 20 waypoints ahead or in the mission route, from the 
     nearest 4 lanes. If lanes or waypoints ahead are insufficient, default 
     values are padded.
@@ -191,6 +179,22 @@ StdObs = dict({
         "speed_limit":
             Lane speed limit at a waypoint in m/s. shape=(4,20). dtype=np.float32.
     }) 
+
+    Feature array of 3 upcoming signals.  If there aren't this many signals ahead,
+    default values are padded.
+    "signals": dict({
+        "state":
+            The state of the traffic signal.
+            See smarts.core.signal_provider.SignalLightState for interpretation.
+            Defaults to np.array([0]) per signal.  shape=(3,), dtype=np.int8.
+        "stop_point":
+            The stopping point for traffic controlled by the signal, i.e., the
+            point where actors should stop when the signal is in a stop state.
+            Defaults to np.array([0, 0]) per signal.  shape=(3,2), dtype=np.float64.
+        "last_changed":
+            If known, the simulation time this signal last changed its state.
+            Defaults to np.array([0]) per signal.  shape=(3,), dtype=np.float32.
+    })
 })
 """
 
@@ -227,6 +231,7 @@ class FormatObs(gym.ObservationWrapper):
             "ogm",
             "rgb",
             "waypoints",
+            "signals",
         }:
             val = getattr(self.agent_specs[agent_id].interface, intrfc)
             if val:
@@ -247,11 +252,12 @@ class FormatObs(gym.ObservationWrapper):
             "ego": "ego_vehicle_state",
             "events": "events",
             "lidar": "lidar_point_cloud",
+            "mission": "ego_vehicle_state",
             "neighbors": "neighborhood_vehicle_states",
             "ogm": "occupancy_grid_map",
             "rgb": "top_down_rgb",
-            "ttc": "ttc",
             "waypoints": "waypoint_paths",
+            "signals": "signals",
         }
         self._accelerometer = "accelerometer" in intrfcs.keys()
 
@@ -273,9 +279,7 @@ class FormatObs(gym.ObservationWrapper):
             wrapped_ob = {}
             for stdob in self._space.keys():
                 func = globals()[f"_std_{stdob}"]
-                if stdob == "ttc":
-                    val = func(agent_obs)
-                elif stdob == "ego":
+                if stdob == "ego":
                     val = func(
                         getattr(agent_obs, self._stdob_to_ob[stdob]),
                         self._accelerometer,
@@ -306,6 +310,7 @@ def intrfc_to_stdobs(intrfc: str) -> Optional[str]:
         "ogm": "ogm",
         "rgb": "rgb",
         "waypoints": "waypoints",
+        "signals": "signals",
     }.get(intrfc, None)
 
 
@@ -318,11 +323,11 @@ def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
     """
     # fmt: off
     ego_basic = {
-        "angular_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+        "angular_velocity": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
         "box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
         "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
         "lane_index": gym.spaces.Box(low=0, high=127, shape=(), dtype=np.int8),
-        "linear_velocity": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+        "linear_velocity": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
         "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
         "speed": gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
         "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
@@ -338,15 +343,15 @@ def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
         "dist": lambda _: gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
         "ego": lambda val: gym.spaces.Dict(dict(ego_basic, **ego_opt)) if val else gym.spaces.Dict(ego_basic),
         "events": lambda _: gym.spaces.Dict({
-            "agents_alive_done": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "collisions": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "not_moving": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "off_road": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "off_route": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "on_shoulder": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "reached_goal": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "reached_max_episode_steps": gym.spaces.MultiDiscrete(1, dtype=np.int8),
-            "wrong_way": gym.spaces.MultiDiscrete(1, dtype=np.int8),
+            "agents_alive_done": gym.spaces.Discrete(n=2),
+            "collisions": gym.spaces.Discrete(n=2),
+            "not_moving": gym.spaces.Discrete(n=2),
+            "off_road": gym.spaces.Discrete(n=2),
+            "off_route": gym.spaces.Discrete(n=2),
+            "on_shoulder": gym.spaces.Discrete(n=2),
+            "reached_goal": gym.spaces.Discrete(n=2),
+            "reached_max_episode_steps": gym.spaces.Discrete(n=2),
+            "wrong_way": gym.spaces.Discrete(n=2),
         }),
         "dagm": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
         "lidar": lambda _: gym.spaces.Dict({
@@ -354,6 +359,9 @@ def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
             "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
             "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
             "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
+        }),
+        "mission": lambda _: gym.spaces.Dict({
+            "goal_pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
         }),
         "neighbors": lambda _: gym.spaces.Dict({
             "box": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),
@@ -364,19 +372,18 @@ def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
         }),
         "ogm": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
         "rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
-        "ttc": lambda _: gym.spaces.Dict({
-            "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(), dtype=np.float32),
-            "distance_from_center": gym.spaces.Box(low=-1e10, high=1e10, shape=(), dtype=np.float32),
-            "dtc": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "ttc": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-        }),
         "waypoints": lambda _: gym.spaces.Dict({
             "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=_WAYPOINT_SHP, dtype=np.float32),
             "lane_index": gym.spaces.Box(low=0, high=127, shape=_WAYPOINT_SHP, dtype=np.int8),
             "lane_width": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
             "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=_WAYPOINT_SHP + (3,), dtype=np.float64),
             "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
-        })
+        }),
+        "signals": lambda _: gym.spaces.Dict({
+            "state": gym.spaces.Box(low=0, high=32, shape=_SIGNALS_SHP, dtype=np.int8),
+            "stop_point": gym.spaces.Box(low=-1e10, high=1e10, shape=_SIGNALS_SHP + (2,), dtype=np.float64),
+            "last_changed": gym.spaces.Box(low=0, high=1e10, shape=_SIGNALS_SHP, dtype=np.float32),
+        }),
     }
     # fmt: on
 
@@ -392,6 +399,7 @@ def _make_space(intrfcs: Dict[str, Any]) -> Dict[str, gym.Space]:
             "dist": spaces["dist"](None),
             "ego": spaces["ego"]("accelerometer" in intrfcs.keys()),
             "events": spaces["events"](None),
+            "mission": spaces["mission"](None),
         }
     )
 
@@ -399,9 +407,6 @@ def _make_space(intrfcs: Dict[str, Any]) -> Dict[str, gym.Space]:
         opt_ob = intrfc_to_stdobs(intrfc)
         if opt_ob:
             space.update({opt_ob: spaces[opt_ob](val)})
-
-    if "waypoints" in intrfcs.keys() and "neighborhood_vehicles" in intrfcs.keys():
-        space.update({"ttc": spaces["ttc"](None)})
 
     return space
 
@@ -429,7 +434,7 @@ def _std_ego(
         "pos": val.position.astype(np.float64),
         "speed": np.float32(val.speed),
         "steering": np.float32(val.steering),
-        "yaw_rate": np.float32(val.yaw_rate),
+        "yaw_rate": np.float32(val.yaw_rate) if val.yaw_rate else np.float32(0),
     }
 
     if accelerometer:
@@ -447,15 +452,15 @@ def _std_ego(
 
 def _std_events(val: Events) -> Dict[str, int]:
     return {
-        "agents_alive_done": np.int8(val.agents_alive_done),
-        "collisions": np.int8(len(val.collisions) > 0),
-        "not_moving": np.int8(val.not_moving),
-        "off_road": np.int8(val.off_road),
-        "off_route": np.int8(val.off_route),
-        "on_shoulder": np.int8(val.on_shoulder),
-        "reached_goal": np.int8(val.reached_goal),
-        "reached_max_episode_steps": np.int8(val.reached_max_episode_steps),
-        "wrong_way": np.int8(val.wrong_way),
+        "agents_alive_done": np.int64(val.agents_alive_done),
+        "collisions": np.int64(len(val.collisions) > 0),
+        "not_moving": np.int64(val.not_moving),
+        "off_road": np.int64(val.off_road),
+        "off_route": np.int64(val.off_route),
+        "on_shoulder": np.int64(val.on_shoulder),
+        "reached_goal": np.int64(val.reached_goal),
+        "reached_max_episode_steps": np.int64(val.reached_max_episode_steps),
+        "wrong_way": np.int64(val.wrong_way),
     }
 
 
@@ -491,6 +496,16 @@ def _std_lidar(
         "ray_origin": ray_origin,
         "ray_vector": ray_vector,
     }
+
+
+def _std_mission(val: EgoVehicleObservation) -> Dict[str, np.ndarray]:
+
+    if hasattr(val.mission.goal, "position"):
+        goal_pos = np.array(val.mission.goal.position, dtype=np.float64)
+    else:
+        goal_pos = np.zeros((3,), dtype=np.float64)
+
+    return {"goal_pos": goal_pos}
 
 
 def _std_neighbors(
@@ -553,23 +568,16 @@ def _std_rgb(val: TopDownRGB) -> np.ndarray:
     return val.data.astype(np.uint8)
 
 
-def _std_ttc(obs: Observation) -> Dict[str, Union[np.float32, np.ndarray]]:
-
-    val = lane_ttc(obs)
-    return {
-        "angle_error": np.float32(val["angle_error"][0]),
-        "distance_from_center": np.float32(val["distance_from_center"][0]),
-        "dtc": np.array(val["ego_lane_dist"], dtype=np.float32),
-        "ttc": np.array(val["ego_ttc"], dtype=np.float32),
-    }
-
-
 def _std_waypoints(
-    paths: List[List[Waypoint]],
+    rcv_paths: List[List[Waypoint]],
 ) -> Dict[str, np.ndarray]:
 
+    # Truncate all paths to be of the same length
+    min_len = min(map(len, rcv_paths))
+    trunc_paths = list(map(lambda x: x[:min_len], rcv_paths))
+
     des_shp = _WAYPOINT_SHP
-    rcv_shp = (len(paths), len(paths[0]))
+    rcv_shp = (len(trunc_paths), len(trunc_paths[0]))
     pad_shp = [0 if des - rcv < 0 else des - rcv for des, rcv in zip(des_shp, rcv_shp)]
 
     def extract_elem(waypoint):
@@ -581,7 +589,9 @@ def _std_waypoints(
             waypoint.speed_limit,
         )
 
-    paths = [map(extract_elem, path[: des_shp[1]]) for path in paths[: des_shp[0]]]
+    paths = [
+        map(extract_elem, path[: des_shp[1]]) for path in trunc_paths[: des_shp[0]]
+    ]
     heading, lane_index, lane_width, pos, speed_limit = zip(
         *[zip(*path) for path in paths]
     )
@@ -606,4 +616,38 @@ def _std_waypoints(
         "lane_width": lane_width,
         "pos": pos,
         "speed_limit": speed_limit,
+    }
+
+
+def _std_signals(
+    signals: List[SignalObservation],
+) -> Dict[str, np.ndarray]:
+
+    des_shp = _SIGNALS_SHP
+    rcv_shp = len(signals)
+    pad_shp = max(0, des_shp[0] - rcv_shp)
+
+    if rcv_shp == 0:
+        return {
+            "state": np.zeros(des_shp, dtype=np.int8),
+            "stop_point": np.zeros(des_shp + (2,), dtype=np.float64),
+            "last_changed": np.zeros(des_shp, dtype=np.float32),
+        }
+
+    signals = [
+        (signal.state, signal.stop_point, signal.last_changed)
+        for signal in signals[: des_shp[0]]
+    ]
+    state, stop_point, last_changed = zip(*signals)
+
+    # fmt: off
+    state = np.pad(state, ((0, pad_shp)), mode='constant', constant_values=0)
+    stop_point = np.pad(state, ((0, pad_shp), (0, 0)), mode='constant', constant_values=0)
+    last_changed = np.pad(last_changed, ((0, pad_shp)), mode='constant', constant_values=0)
+    # fmt: on
+
+    return {
+        "state": state,
+        "stop_point": stop_point,
+        "last_changed": last_changed,
     }

@@ -27,42 +27,40 @@ import pytest
 import smarts.sstudio.types as t
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.chassis import BoxChassis
+from smarts.core.controllers.trajectory_interpolation_controller import (
+    TrajectoryField,
+    TrajectoryInterpolationController,
+)
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.provider import ProviderState
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.tests.helpers.scenario import temp_scenario
-from smarts.core.trajectory_interpolation_provider import (
-    TrajectoryInterpolationProvider,
-    TrajectoryWithTime,
-)
+from smarts.core.utils import pybullet
+from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle
 from smarts.sstudio import gen_scenario
 from smarts.zoo.agent_spec import AgentSpec
 
 AGENT_ID = "Agent-007"
 
-# Tests are parameterized based on different with-time-trajectory
+# Tests are parameterized based on different trajectories
 @pytest.fixture(
-    # Each parameter item is (target pose, with-time-trajectory)
     params=[
-        # Test illegal input
+        # Illegal inputs...
         {
-            "ego_error": np.array([]),
-        },
-        {
-            "ego_error": np.array(
+            "error": np.array(
                 [
-                    [0.0],
-                    [100.0],
-                    [2.0],
-                    [3.0],
-                    [4.0],
-                ]  # TIME  # X  # Y  # THETA  # VEL
+                    [0.0],  # TIME
+                    [100.0],  # X
+                    [2.0],  # Y
+                    [3.0],  # THETA
+                    [4.0],  # VEL
+                ]
             )
         },
         {
-            "ego_error": np.array(
+            "error": np.array(
                 [
                     [0.0, 0.2],  # TIME
                     [12.0, 100.0],  # X
@@ -73,7 +71,7 @@ AGENT_ID = "Agent-007"
             )
         },
         {
-            "ego_error": np.array(
+            "error": np.array(
                 [
                     [1.0, 2.0, 3.0],  # TIME. Can not locate motion state.
                     [1.0, 2.0, 3.0],  # X
@@ -83,59 +81,44 @@ AGENT_ID = "Agent-007"
                 ]
             )
         },
+        # Trajectories with different time intervals...
         {
-            "ego1": np.array(
+            "arb_interval": np.array(
                 [
-                    [0.0, 0.05, 0.2],  # TIME. Arbitary time interval.
+                    [0.0, 0.05, 0.2],  # TIME
                     [1.0, 2.0, 100.0],  # X
                     [0.0, 0.0, 0.0],  # Y
-                    [0.0, 0.0, 0.0],  # THETA
+                    [0.0, 0.1, 3.0],  # THETA
                     [1.0, 1.0, 1.0],  # VEL
                 ]
             ),
-            "ego_error": np.array(
-                [
-                    np.array([]),
-                ]
-            ),
         },
-        # Test trajectory with different time resolution.
         {
-            "ego1": np.array(
+            "skipped_step": np.array(
                 [
-                    [
-                        0.0,
-                        0.2,
-                        0.3,
-                    ],  # TIME. Resolution is greater than SMARTS timestep.
+                    [0.0, 0.2, 0.3],  # TIME
                     [1.0, 20.0, 30.0],  # X
                     [0.0, 0.0, 0.0],  # Y
                     [0.0, 1.0, 2.0],  # THETA
                     [4.0, 5.0, 4.0],  # VEL
                 ]
             ),
-            "ego2": np.array(
+        },
+        {
+            "fine_grained_time": np.array(
                 [
-                    [
-                        0.0,
-                        0.05,
-                        0.1,
-                        0.15,
-                        0.2,
-                    ],  # TIME. Resolution is smaller than SMARTS timestep.
+                    [0.0, 0.05, 0.1, 0.15, 0.2],  # TIME
                     [1.0, 2.0, 10.0, 200.0, 300.0],  # X
                     [0.0, 0.0, 0.0, 0.0, 0.0],  # Y
                     [0.0, 2.0, 3.0, 4.0, 5.0],  # THETA
                     [4.0, 4.0, 5.0, 5.0, 4.0],  # VEL
                 ]
             ),
-            "ego_budda": np.array(
+        },
+        {
+            "budda": np.array(
                 [
-                    [
-                        0.0,
-                        0.15,
-                        0.2,
-                    ],  # TIME. Resolution is smaller than SMARTS timestep.
+                    [0.0, 0.15, 0.2],  # TIME
                     [1.0, 1.0, 10.0],  # X
                     [0.0, 0.0, 1.0],  # Y
                     [0.0, 0.0, 1.0],  # THETA
@@ -145,7 +128,7 @@ AGENT_ID = "Agent-007"
         },
     ]
 )
-def provider_action(request):
+def controller_actions(request):
     return request.param
 
 
@@ -168,59 +151,44 @@ def scenario():
 
 
 @pytest.fixture
-def trajectory_interpolation_provider():
-    return TrajectoryInterpolationProvider()
+def bullet_client():
+    client = bc.BulletClient(pybullet.DIRECT)
+    yield client
+    client.disconnect()
 
 
-def test_trajectory_interpolation_provider(
-    trajectory_interpolation_provider, scenario, provider_action
-):
-    provider = trajectory_interpolation_provider
-
-    # we sync with the empty provider state since we don't have any other active providers
-    provider.setup(scenario)
-
-    # we sync with the empty provider state since we don't have any other active providers
-    provider.sync(ProviderState())
-
+def test_trajectory_interpolation_controller(controller_actions, bullet_client):
     dt = 0.1
-    elapsed_sim_time = 0
-    has_error = False
-    provider_state = ProviderState()
-    try:
-        provider_state = provider.step(
-            provider_actions=provider_action, dt=dt, elapsed_sim_time=elapsed_sim_time
+    i, j = np.ix_([TrajectoryField.X_INDEX, TrajectoryField.Y_INDEX], [0])
+
+    for vehicle_id, trajectory in controller_actions.items():
+        original_position = trajectory[i, j].reshape(2)
+        original_heading = Heading(trajectory[TrajectoryField.THETA_INDEX][0])
+        initial_speed = trajectory[TrajectoryField.VEL_INDEX][0]
+        chassis = BoxChassis(
+            pose=Pose.from_center(original_position, original_heading),
+            speed=initial_speed,
+            dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
+            bullet_client=bullet_client,
         )
-    except Exception:
-        has_error = True
+        vehicle = Vehicle(vehicle_id, chassis)
 
-    elapsed_sim_time += dt
+        has_error = False
+        try:
+            TrajectoryInterpolationController.perform_action(dt, vehicle, trajectory)
+        except Exception:
+            has_error = True
 
-    # assertion
-    if "ego_error" in provider_action.keys():
-        assert has_error
-    else:
-        assert len(provider_state.vehicles) == len(provider_action)
-        for vehicle_state in provider_state.vehicles:
-            curr_position, curr_heading = (
-                vehicle_state.pose.position,
-                vehicle_state.pose.heading,
-            )
+        new_pos = vehicle.pose.position[:2]
 
-            i, j = np.ix_([TrajectoryWithTime.X_INDEX, TrajectoryWithTime.Y_INDEX], [0])
-            original_position = provider_action[vehicle_state.vehicle_id][i, j].reshape(
-                2,
-            )
-            original_heading = provider_action[vehicle_state.vehicle_id][
-                TrajectoryWithTime.THETA_INDEX
-            ][0]
-
-            if vehicle_state.vehicle_id == "ego_budda":
-                assert np.linalg.norm(curr_position[:2] - original_position) < 1e-16
-                assert np.isclose(curr_heading, original_heading)
-            else:
-                assert not np.linalg.norm(curr_position[:2] - original_position) < 1e-16
-                assert not np.isclose(curr_heading, original_heading)
+        if "error" in vehicle_id:
+            assert has_error
+        elif vehicle_id == "budda":
+            assert np.linalg.norm(new_pos - original_position) < 1e-16
+            assert np.isclose(vehicle.heading, original_heading)
+        else:
+            assert not np.linalg.norm(new_pos - original_position) < 1e-16
+            assert not np.isclose(vehicle.heading, original_heading)
 
 
 class WithTimeTrajectoryAgent(Agent):
@@ -258,11 +226,8 @@ class WithTimeTrajectoryAgent(Agent):
 @pytest.fixture
 def agent_spec():
     return AgentSpec(
-        interface=AgentInterface.from_type(
-            AgentType.TrajectoryInterpolator, neighborhood_vehicles=True
-        ),
+        interface=AgentInterface.from_type(AgentType.TrajectoryInterpolator),
         agent_builder=WithTimeTrajectoryAgent,
-        agent_params=None,
     )
 
 
@@ -270,15 +235,14 @@ def agent_spec():
 def smarts(agent_spec):
     smarts = SMARTS(
         agent_interfaces={AGENT_ID: agent_spec.interface},
-        traffic_sim=SumoTrafficSimulation(),
         fixed_timestep_sec=0.1,
     )
     yield smarts
     smarts.destroy()
 
 
-def test_trajectory_interpolation_provider_in_smarts(smarts, agent_spec, scenario):
-    """Test trajectory interpolation controller
+def test_trajectory_interpolation_provider(smarts, agent_spec, scenario):
+    """Test trajectory interpolation provider and controller.
 
     With different planning algorithm of WithTimeTrajectoryAgent,
     vehicle is going to accomplish its mission or not.

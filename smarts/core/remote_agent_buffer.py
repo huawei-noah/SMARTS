@@ -30,12 +30,14 @@ from typing import Optional, Tuple
 
 import grpc
 
+from smarts.core.agent_buffer import AgentBuffer
+from smarts.core.buffer_agent import BufferAgent
 from smarts.core.remote_agent import RemoteAgent, RemoteAgentException
 from smarts.core.utils.networking import find_free_port
 from smarts.zoo import manager_pb2, manager_pb2_grpc
 
 
-class RemoteAgentBuffer:
+class RemoteAgentBuffer(AgentBuffer):
     """A buffer that manages social agents."""
 
     def __init__(
@@ -190,9 +192,9 @@ class RemoteAgentBuffer:
         remote_agent = future.result(timeout=timeout)
         return remote_agent
 
-    def acquire_remote_agent(
+    def acquire_agent(
         self, retries: int = 3, timeout: Optional[float] = None
-    ) -> RemoteAgent:
+    ) -> BufferAgent:
         """Creates RemoteAgent objects.
 
         Args:

@@ -18,7 +18,7 @@ except ModuleNotFoundError as e:
         f"Ensure that the open-agent has been installed with `pip install open-agent"
     )
 
-from examples.argument_parser import default_argument_parser
+from argument_parser import default_argument_parser
 
 logging.basicConfig(level=logging.INFO)
 

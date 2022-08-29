@@ -456,8 +456,8 @@ class ModelFileHandler(FileHandler):
                 "coach.glb": "coach.glb",
                 "truck.glb": "truck.glb",
                 "trailer.glb": "trailer.glb",
-                "pedestrian.glb": "pedestrian.glb",
                 "motorcycle.glb": "motorcycle.glb",
+                "pedestrian.glb": "pedestrian.glb",
             }
         )
 
@@ -483,6 +483,7 @@ class MainHandler(tornado.web.RequestHandler):
 
 def make_app(scenario_dirs: Sequence, max_capacity_mb: float, debug: bool):
     """Create the envision web server application through composition of services."""
+
     with pkg_resources.path(web_dist, ".") as dist_path:
         return tornado.web.Application(
             [

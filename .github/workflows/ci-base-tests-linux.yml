@@ -23,6 +23,7 @@ jobs:
     strategy:
       matrix:
         tests:
+          - ./cli
           - ./envision
           - ./smarts/contrib
           - ./smarts/core --nb-exec-timeout 65536
@@ -39,12 +40,12 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
-          pip install -e .[camera-obs,opendrive,rllib,test,torch,train]
+          pip install -e .[camera-obs,opendrive,rllib,test,test-notebook,torch,train]
       - name: Run smoke tests
         run: |
           . ${{env.venv_dir}}/bin/activate
           make build-all-scenarios
-          PYTHONHASHSEED=42 pytest -v \
+          PYTHONPATH=$PWD PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
             --forked \
             --dist=no \

@@ -17,27 +17,36 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Sequence, Set
+from typing import Optional, Sequence, Set
 
+from smarts.core.actor import ActorRole, ActorState
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.provider import Provider, ProviderState
+from smarts.core.provider import (
+    Provider,
+    ProviderManager,
+    ProviderRecoveryFlags,
+    ProviderState,
+)
+from smarts.core.road_map import RoadMap
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class MockProvider(Provider):
     def __init__(self):
         self._next_provider_state = None
+        self._recovery_flags = super().recovery_flags
 
     def override_next_provider_state(self, vehicles: Sequence):
         self._next_provider_state = ProviderState(
-            vehicles=[
+            actors=[
                 VehicleState(
-                    vehicle_id=vehicle_id,
+                    actor_id=vehicle_id,
                     vehicle_config_type="passenger",
                     pose=pose,
                     dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
                     speed=speed,
-                    source="MOCK",
+                    source=self.source_str,
+                    role=ActorRole.Social,
                 )
                 for vehicle_id, pose, speed in vehicles
             ],
@@ -50,6 +59,17 @@ class MockProvider(Provider):
         return ProviderState()
 
     @property
+    def recovery_flags(self) -> ProviderRecoveryFlags:
+        return self._recovery_flags
+
+    @recovery_flags.setter
+    def recovery_flags(self, flags: ProviderRecoveryFlags):
+        self._recovery_flags = flags
+
+    def set_manager(self, manager: ProviderManager):
+        pass
+
+    @property
     def action_spaces(self) -> Set[ActionSpaceType]:
         return {ActionSpaceType.TargetPose}
 
@@ -58,11 +78,16 @@ class MockProvider(Provider):
 
     def step(self, provider_actions, dt, elapsed_sim_time) -> ProviderState:
         if self._next_provider_state is None:
-            return ProviderState(vehicles=[])
+            return ProviderState(actors=[])
 
         return self._next_provider_state
 
-    def create_vehicle(self, provider_vehicle: VehicleState):
+    def can_accept_actor(self, state: ActorState) -> bool:
+        return True
+
+    def add_actor(
+        self, provider_actor: ActorState, from_provider: Optional[Provider] = None
+    ):
         pass
 
     def reset(self):
@@ -70,3 +95,12 @@ class MockProvider(Provider):
 
     def teardown(self):
         self._next_provider_state = None
+
+    def manages_actor(self, actor_id: str) -> bool:
+        return True
+
+    def stop_managing(self, actor_id: str):
+        pass
+
+    def can_accept_vehicle(self, state: VehicleState) -> bool:
+        return False

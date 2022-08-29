@@ -41,7 +41,7 @@ AGENT3 = "agent3"
 def scenario():
     scenario = Scenario(
         scenario_root="scenarios/sumo/loop",
-        route="basic.rou.xml",
+        traffic_specs=["scenarios/sumo/loop/traffic/basic.rou.xml"],
     )
     return scenario
 
@@ -80,7 +80,7 @@ def sim(request):
     }
     smarts = SMARTS(
         agents,
-        traffic_sim=SumoTrafficSimulation(headless=True),
+        traffic_sims=[SumoTrafficSimulation(headless=True)],
         envision=None,
     )
 

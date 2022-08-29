@@ -91,7 +91,7 @@ def agent_spec(agent_and_agent_type):
 def smarts(agent_spec):
     smarts = SMARTS(
         agent_interfaces={AGENT_ID: agent_spec.interface},
-        traffic_sim=SumoTrafficSimulation(),
+        traffic_sims=[SumoTrafficSimulation()],
     )
     yield smarts
     smarts.destroy()

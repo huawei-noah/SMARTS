@@ -17,37 +17,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from concurrent.futures import ProcessPoolExecutor
+from typing import Optional
 
-# Template for Waymo scenario.py
+import psutil
 
-import os
-from pathlib import Path
+from smarts.core.agent_buffer import AgentBuffer
+from smarts.core.buffer_agent import BufferAgent
+from smarts.core.local_agent import LocalAgent
 
-import yaml
 
-from smarts.sstudio import types as t
-from smarts.sstudio.genscenario import gen_scenario
+class LocalAgentBuffer(AgentBuffer):
+    """A buffer that manages social agents."""
 
-yaml_file = os.path.join(Path(__file__).parent, "waymo.yaml")
-with open(yaml_file, "r") as yf:
-    dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
+    def __init__(self):
+        pass
 
-dataset_path = dataset_spec["input_path"]
-scenario_id = dataset_spec["scenario_id"]
-traffic_history = t.TrafficHistoryDataset(
-    name=f"waymo_{scenario_id}",
-    source_type="Waymo",
-    input_path=dataset_path,
-    scenario_id=scenario_id,
-)
+    def destroy(self):
+        pass
 
-gen_scenario(
-    t.Scenario(
-        map_spec=t.MapSpec(
-            source=f"{dataset_path}#{scenario_id}", lanepoint_spacing=1.0
-        ),
-        traffic_histories=[traffic_history],
-    ),
-    output_dir=str(Path(__file__).parent),
-    overwrite=True,
-)
+    def acquire_agent(
+        self, retries: int = 3, timeout: Optional[float] = None
+    ) -> BufferAgent:
+        localAgent = LocalAgent()
+        return localAgent

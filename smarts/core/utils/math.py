@@ -48,7 +48,7 @@ class CubicPolynomial:
         )
 
     def eval(self, ds: float) -> float:
-        """ Evaluate a value along the polynomial."""
+        """Evaluate a value along the polynomial."""
         return self.a + self.b * ds + self.c * ds * ds + self.d * ds * ds * ds
 
 
@@ -134,7 +134,7 @@ def rotate_quat(quat, vect):
 
 
 def clip(val, min_val, max_val):
-    """Constrain a value between a min and max by clamping exterior values to the extremes. """
+    """Constrain a value between a min and max by clamping exterior values to the extremes."""
     assert (
         min_val <= max_val
     ), f"min_val({min_val}) must be less than max_val({max_val})"
@@ -300,8 +300,8 @@ def is_close(a: float, b: float, rel_tol: float = 1e-09, abs_tol: float = 0.0) -
     return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 
-def rotate_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
-    """Rotate a point around a given origin."""
+def rotate_cw_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
+    """Rotate a point clockwise around a given origin."""
     x, y = point
     ox, oy = origin
 
@@ -335,16 +335,58 @@ def line_intersect(a, b, c, d) -> Union[np.ndarray, None]:
     return None
 
 
+def line_intersect_vectorized(
+    a: np.ndarray,
+    b: np.ndarray,
+    C: np.ndarray,
+    D: np.ndarray,
+    ignore_start_pt: bool = False,
+) -> bool:
+    """Vectorized version of `line_intersect(...)`, where C and D represent
+    the segment points for an entire line, and a and b are points of a single
+    line segment to be tested against.
+    If ignore_start_pt is True, then two diverging lines that *only* intersect at
+    their starting points will cause this to return False.
+    """
+    r = b - a
+    S = D - C
+    rs1 = np.multiply(r[0], S[:, 1])
+    rs2 = np.multiply(r[1], S[:, 0])
+    d = rs1 - rs2
+
+    if not np.any(d):
+        return False
+
+    u_numerator = np.multiply(C[:, 0] - a[0], r[1]) - np.multiply(C[:, 1] - a[1], r[0])
+    t_numerator = np.multiply(C[:, 0] - a[0], S[:, 1]) - np.multiply(
+        C[:, 1] - a[1], S[:, 0]
+    )
+
+    # Use where=d!=0 to avoid divisions by zero. The out parameter is an
+    # array of [-1, ..., -1], to make sure we're defaulting to something
+    # outside of our expected range for our return result.
+    u = np.divide(u_numerator, d, out=np.zeros_like(u_numerator) - 1, where=d != 0)
+    t = np.divide(t_numerator, d, out=np.zeros_like(t_numerator) - 1, where=d != 0)
+
+    u_in_range = (0 <= u) & (u <= 1)
+    t_in_range = (0 <= t) & (t <= 1)
+    combined = u_in_range & t_in_range
+
+    return np.any(combined) and (not ignore_start_pt or any(combined[1:]) or t[0] > 0.0)
+
+
 def ray_boundary_intersect(
     ray_start, ray_end, boundary_pts, early_return=True
 ) -> Union[np.ndarray, None]:
     """Iterate over the boundary segments, returning the nearest intersection point if a ray intersection is found.
     If early_return is True, this will return the first intersection point that is found."""
+    vl = len(ray_start)
+    assert vl == len(ray_end)
     nearest_pt = None
     min_dist = math.inf
     for j in range(len(boundary_pts) - 1):
-        b0 = boundary_pts[j]
-        b1 = boundary_pts[j + 1]
+        b0 = boundary_pts[j][:vl]
+        b1 = boundary_pts[j + 1][:vl]
         pt = line_intersect(b0, b1, ray_start, ray_end)
         if pt is not None:
             if early_return:
@@ -429,7 +471,7 @@ def get_bezier_curve(points):
     """
     n = len(points) - 1
     return lambda t: sum(
-        comb(n, i) * t ** i * (1 - t) ** (n - i) * points[i] for i in range(n + 1)
+        comb(n, i) * t**i * (1 - t) ** (n - i) * points[i] for i in range(n + 1)
     )
 
 

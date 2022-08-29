@@ -27,23 +27,12 @@ import os
 import sqlite3
 import sys
 from collections import deque
-from typing import (
-    Any,
-    Callable,
-    Deque,
-    Dict,
-    Generator,
-    Iterable,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Callable, Deque, Dict, Generator, Iterable, Optional
 
-import ijson
 import numpy as np
-import yaml
 
 from smarts.core.coordinates import BoundingBox, Point
+from smarts.core.signal_provider import SignalLightState
 from smarts.core.utils.file import read_tfrecord_file
 from smarts.core.utils.math import (
     circular_mean,
@@ -53,9 +42,12 @@ from smarts.core.utils.math import (
 from smarts.sstudio import types
 
 try:
-    from waymo_open_dataset.protos import scenario_pb2  # pytype: disable=import-error
+    # pytype: disable=import-error
+    from waymo_open_dataset.protos import scenario_pb2
+    from waymo_open_dataset.protos.map_pb2 import TrafficSignalLaneState
+
+    # pytype: enable=import-error
 except ImportError:
-    print(sys.exc_info())
     print(
         "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
     )
@@ -152,6 +144,11 @@ class _TrajectoryDataset:
         return self._scale
 
     @property
+    def traffic_light_rows(self) -> Iterable:
+        """Iterable dataset rows representing traffic light states (if present)."""
+        raise NotImplementedError
+
+    @property
     def rows(self) -> Iterable:
         """The iterable rows of the dataset."""
         raise NotImplementedError
@@ -166,9 +163,9 @@ class _TrajectoryDataset:
         """Validate the form of the dataset specification."""
         errmsg = None
         if "input_path" not in dataset_spec:
-            errmsg = "'input_path' field is required in dataset yaml."
+            errmsg = "'input_path' field is required in dataset_spec."
         elif dataset_spec.get("flip_y"):
-            if not dataset_spec["source_type"].startswith("NGSIM"):
+            if dataset_spec["source_type"] != "NGSIM":
                 errmsg = "'flip_y' option only supported for NGSIM datasets."
             elif not dataset_spec.get("_map_bbox"):
                 errmsg = "'_map_bbox' is required if 'flip_y' option used; need to pass in a map_spec."
@@ -216,6 +213,15 @@ class _TrajectoryDataset:
                    FOREIGN KEY (vehicle_id) REFERENCES Vehicle(id)
                ) WITHOUT ROWID"""
         )
+        ccur.execute(
+            """CREATE TABLE TrafficLightState (
+                   sim_time REAL NOT NULL,
+                   state INTEGER NOT NULL,
+                   stop_point_x REAL NOT NULL,
+                   stop_point_y REAL NOT NULL,
+                   lane INTEGER NOT NULL
+               )"""
+        )
         dbconxn.commit()
         ccur.close()
 
@@ -242,6 +248,9 @@ class _TrajectoryDataset:
         # TAI:  can use executemany() and batch insert rows together if this turns out to be too slow...
         insert_vehicle_sql = "INSERT INTO Vehicle VALUES (?, ?, ?, ?, ?, ?)"
         insert_traj_sql = "INSERT INTO Trajectory VALUES (?, ?, ?, ?, ?, ?, ?)"
+        insert_traffic_light_sql = (
+            "INSERT INTO TrafficLightState VALUES (?, ?, ?, ?, ?)"
+        )
         vehicle_ids = set()
         itcur = dbconxn.cursor()
 
@@ -286,6 +295,26 @@ class _TrajectoryDataset:
             # Ignore datapoints with NaNs
             if not any(a is not None and np.isnan(a) for a in traj_args):
                 itcur.execute(insert_traj_sql, traj_args)
+
+        # Insert traffic light states if available
+        try:
+            for row in self.traffic_light_rows:
+                tls_args = (
+                    round(
+                        float(self.column_val_in_row(row, "sim_time")) / 1000,
+                        time_precision,
+                    ),
+                    int(self.column_val_in_row(row, "state")),
+                    float(self.column_val_in_row(row, "stop_point_x") + x_offset)
+                    * self.scale,
+                    float(self.column_val_in_row(row, "stop_point_y") + y_offset)
+                    * self.scale,
+                    float(self.column_val_in_row(row, "lane")),
+                )
+                itcur.execute(insert_traffic_light_sql, tls_args)
+        except NotImplementedError:
+            pass
+
         itcur.close()
         dbconxn.commit()
 
@@ -303,6 +332,9 @@ class _TrajectoryDataset:
         icur.execute("CREATE INDEX Trajectory_Time ON Trajectory (sim_time)")
         icur.execute("CREATE INDEX Trajectory_Vehicle ON Trajectory (vehicle_id)")
         icur.execute("CREATE INDEX Vehicle_Type ON Vehicle (type)")
+        icur.execute(
+            "CREATE INDEX TrafficLightState_SimTime ON TrafficLightState (sim_time)"
+        )
         dbconxn.commit()
         icur.close()
 
@@ -759,72 +791,29 @@ class NGSIM(_TrajectoryDataset):
         return row.get(col_name)
 
 
-class OldJSON(_TrajectoryDataset):
-    """This exists because SMARTS used to use JSON files for traffic histories.
-    We provide this to help people convert these previously-created .json
-    history files to the new .shf format."""
-
-    def __init__(self, dataset_spec: Dict[str, Any], output: str):
-        from warnings import warn
-
-        warn(
-            f"The {self.__class__.__name__} class has been deprecated.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(dataset_spec, output)
-
-    @property
-    def rows(self) -> Generator[Tuple, None, None]:
-        with open(self._dataset_spec["input_path"], "rb") as inf:
-            for t, states in ijson.kvitems(inf, "", use_float=True):
-                for state in states.values():
-                    yield (t, state)
-
-    def _lookup_agent_type(self, agent_type: Union[int, str]) -> int:
-        if isinstance(agent_type, int):
-            return agent_type
-        # Try to match the NGSIM types...
-        if agent_type == "motorcycle":
-            return 1
-        elif agent_type == "car":
-            return 2
-        elif agent_type == "truck":
-            return 3
-        elif agent_type == "pedestrian/bicycle":
-            return 4
-        self._log.warning(f"unknown agent_type:  {agent_type}.")
-        return 0
-
-    def column_val_in_row(self, row: Tuple, col_name: str) -> Any:
-        assert len(row) == 2
-        if col_name == "sim_time":
-            return float(row[0]) * 1000
-        state = row[1]
-        if col_name in state:
-            return state[col_name]
-        if col_name == "id":
-            return state["vehicle_id"]
-        if col_name == "type":
-            return self._lookup_agent_type(state["vehicle_type"])
-        if col_name == "length":
-            return state.get("vehicle_length", 0.0)
-        if col_name == "width":
-            return state.get("vehicle_width", 0.0)
-        if col_name.startswith("position_x"):
-            return state["position"][0]
-        if col_name.startswith("position_y"):
-            return state["position"][1]
-        if col_name == "heading_rad":
-            return state.get("heading", -math.pi / 2)
-        return None
-
-
 class Waymo(_TrajectoryDataset):
     """A tool for conversion of a Waymo dataset for use within SMARTS."""
 
     def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
+
+    def _get_scenario(self):
+        if "scenario_id" not in self._dataset_spec:
+            errmsg = "Dataset spec requires scenario_id to be set"
+            self._log.error(errmsg)
+            raise ValueError(errmsg)
+        scenario_id = self._dataset_spec["scenario_id"]
+        # Loop over the scenarios in the TFRecord and check its ID for a match
+        scenario = None
+        dataset = read_tfrecord_file(self._dataset_spec["input_path"])
+        for record in dataset:
+            parsed_scenario = scenario_pb2.Scenario()
+            parsed_scenario.ParseFromString(bytearray(record))
+            if parsed_scenario.scenario_id == scenario_id:
+                return parsed_scenario
+        raise ValueError(
+            f"Dataset file does not contain scenario with id: {scenario_id}"
+        )
 
     @property
     def rows(self) -> Generator[Dict, None, None]:
@@ -838,26 +827,7 @@ class Waymo(_TrajectoryDataset):
                 angle -= 2 * math.pi
             return angle
 
-        if "scenario_id" not in self._dataset_spec:
-            errmsg = "Dataset spec requires scenario_id to be set"
-            self._log.error(errmsg)
-            raise ValueError(errmsg)
-        scenario_id = self._dataset_spec["scenario_id"]
-
-        # Loop over the scenarios in the TFRecord and check its ID for a match
-        scenario = None
-        dataset = read_tfrecord_file(self._dataset_spec["input_path"])
-        for record in dataset:
-            parsed_scenario = scenario_pb2.Scenario()
-            parsed_scenario.ParseFromString(bytearray(record))
-            if parsed_scenario.scenario_id == scenario_id:
-                scenario = parsed_scenario
-                break
-
-        if not scenario:
-            errmsg = f"Dataset file does not contain scenario with id: {scenario_id}"
-            self._log.error(errmsg)
-            raise ValueError(errmsg)
+        scenario = self._get_scenario()
 
         for i in range(len(scenario.tracks)):
             vehicle_id = scenario.tracks[i].id
@@ -962,6 +932,42 @@ class Waymo(_TrajectoryDataset):
                 rows[j]["heading_rad"] = constrain_angle(rows[j]["heading_rad"])
                 yield rows[j]
 
+    def _encode_tl_state(self, waymo_state) -> SignalLightState:
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_STOP:
+            return SignalLightState.STOP
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_CAUTION:
+            return SignalLightState.CAUTION
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_GO:
+            return SignalLightState.GO
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_ARROW_STOP:
+            return SignalLightState.STOP | SignalLightState.ARROW
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_ARROW_CAUTION:
+            return SignalLightState.CAUTION | SignalLightState.ARROW
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_ARROW_GO:
+            return SignalLightState.GO | SignalLightState.ARROW
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_FLASHING_STOP:
+            return SignalLightState.STOP | SignalLightState.FLASHING
+        if waymo_state == TrafficSignalLaneState.LANE_STATE_FLASHING_CAUTION:
+            return SignalLightState.CAUTION | SignalLightState.FLASHING
+        return SignalLightState.UNKNOWN
+
+    @property
+    def traffic_light_rows(self) -> Generator[Dict, None, None]:
+        scenario = self._get_scenario()
+        num_steps = len(scenario.timestamps_seconds)
+        for i in range(num_steps):
+            dynamic_states = scenario.dynamic_map_states[i]
+            sim_time = scenario.timestamps_seconds[i] * 1000
+            for lane_state in dynamic_states.lane_states:
+                row = {
+                    "sim_time": sim_time,
+                    "state": self._encode_tl_state(lane_state.state).value,
+                    "stop_point_x": lane_state.stop_point.x,
+                    "stop_point_y": lane_state.stop_point.y,
+                    "lane": lane_state.lane,
+                }
+                yield row
+
     @staticmethod
     def _lookup_agent_type(agent_type: int) -> int:
         if agent_type == 1:
@@ -1011,24 +1017,6 @@ def import_dataset(
     dataset.create_output()
 
 
-def _migrate_deprecated_dataset(dataset_spec: Dict[str, Any]):
-    def remap(old_d: Dict[str, Any], old_key: str, new_d: Dict[str, Any], new_key: str):
-        if new_key not in new_d and old_key in old_d:
-            new_d[new_key] = old_d[old_key]
-
-    remap(dataset_spec, "source", dataset_spec, "source_type")
-    if "map_net" in dataset_spec:
-        map_spec = dataset_spec["map_net"]
-        remap(map_spec, "lane_width", dataset_spec, "map_lane_width")
-        if "max_y" in map_spec or "width" in map_spec or "height" in map_spec:
-            assert "_map_bbox" not in dataset_spec
-            max_x = map_spec.get("width")
-            max_y = map_spec.get("max_y", map_spec.get("height"))
-            dataset_spec["_map_bbox"] = BoundingBox(
-                min_pt=Point(0, 0), max_pt=Point(max_x, max_y)
-            )
-
-
 def _check_args(args) -> bool:
     if not args.force and os.path.exists(args.output):
         print("output file already exists\n")
@@ -1047,16 +1035,9 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument(
-        "--old",
-        "--json",
-        help="Input is an old SMARTS traffic history in JSON format as opposed to a YAML dataset spec.",
-        action="store_true",
-    )
-    parser.add_argument(
         "dataset",
         type=str,
-        help="""Path to YAML file describing original trajectories dataset. See SMARTS Issue #732 for YAML file options.
-                Note: if --old is used, this path is expected to point to an old JSON traffic history to be converted.""",
+        help="""Path to YAML file describing trajectories dataset. YAML file should correspond with types.TrafficHistoryDataset fields.""",
     )
     parser.add_argument(
         "output", type=str, help="SMARTS traffic history file to create"
@@ -1070,17 +1051,20 @@ if __name__ == "__main__":
     if args.force and os.path.exists(args.output):
         os.remove(args.output)
 
-    if args.old:
-        dataset_spec = {"source_type": "OldJSON", "input_path": args.dataset}
-    else:
-        with open(args.dataset, "r") as yf:
-            dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
+    import yaml
+
+    with open(args.dataset, "r") as yf:
+        dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
 
     if not dataset_spec.get("input_path"):
         print(f"skipping placeholder dataset spec at {args.dataset}.")
         sys.exit(0)
 
-    _migrate_deprecated_dataset(dataset_spec)
+    if dataset_spec.get("filter_off_map", False) or dataset_spec.get("flip_y", False):
+        print(
+            f"cannot use 'filter_off_map' or 'flip_y' as specified in {args.dataset} in command-line usage"
+        )
+        sys.exit(-1)
 
     if args.x_offset:
         dataset_spec["x_offset"] = args.x_offset
@@ -1089,12 +1073,10 @@ if __name__ == "__main__":
         dataset_spec["y_offset"] = args.y_offset
 
     source = dataset_spec.get("source_type", "NGSIM")
-    if source.startswith("NGSIM"):
+    if source == "NGSIM":
         dataset = NGSIM(dataset_spec, args.output)
     elif source == "Waymo":
         dataset = Waymo(dataset_spec, args.output)
-    elif source == "OldJSON":
-        dataset = OldJSON(dataset_spec, args.output)
     else:
         dataset = Interaction(dataset_spec, args.output)
 

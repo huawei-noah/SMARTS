@@ -1,39 +1,28 @@
 # Text-Based Browser For Waymo Dataset
-This is a text-based utility to browse and explore Waymo TFRecord datasets and export them to SMARTS scenarios.
-Users are able to tag scenarios based on their interactive behavior and export and import their tags to a JSON file.
+This is a text-based utility to browse, explore, and export  Waymo TFRecord datasets to SMARTS scenarios. Users are able to tag scenarios and export/import the tags to/from a JSON file.
 
 ## Setup
+1. Install the extra dependencies.
+    ```bash
+    $ pip install waymo-open-dataset-tf-2-4-0 tabulate==0.8.9 pathos==0.2.8
+    ```
 
-The utility is independent of SMARTS and only has two dependencies.  You can install the `[waymo]` dependencies of SMARTS to install the `waymo-dataset` and `tabulate` packages using the following command:
+2. Download the [Waymo Motion Dataset](https://waymo.com/open/download/) files to the folder `scenarios/waymo/waymo_data` or to your folder of choice. It is recommended to download `waymo_open_dataset_motion_v_1_1_0/uncompressed/scenario/training_20s` dataset as they have the full traffic capture for each scenario.
 
+## Running the Utility
+Execute the following command to run the script.
 ```bash
-pip install -e .[waymo]
+$ cd <path>/SMARTS
+$ python smarts/waymo/waymo_browser.py <path/to/waymo_dataset> --target-base-path=<default/path/to/export/scenarios> --import-tags=<path/to/tag/containing/json/file/>
 ```
-
-Next, download the dataset files from [Waymo Motion Dataset](https://waymo.com/open/download/#) to the folder `smarts/waymo/waymo_data` or your folder of choice. It is recommended to download the dataset files from the `uncompressed/scenario/training_20s` folder as they have the full traffic capture for each scenario.
-
-## Running the Utility:
-It is recommended to run this script from the root or source level directory of the repo. The script can be run using the following command:
+An example would be:
 ```bash
-python smarts/waymo/waymo_browser.py <path/to/waymo_dataset_directories> --target-base-path=<default/path/to/export/scenarios> --import-tags=<path/to/tag/containing/json/file/>
+$ python smarts/waymo/waymo_browser.py scenarios/waymo/waymo_data
 ```
-Ex:
-```bash
-python smarts/waymo/waymo_browser.py scenarios/waymo_motion/waymo_data
-```
-
-Or you can also use the scl command line at the source directory to launch the browser:
-```bash
-scl scenario browse-waymo <path/to/waymo_dataset_directories> -t=<default/path/to/export/scenarios> -i=<path/to/tag/containing/json/file/>
-```
-Ex:
-```bash
-scl scenario browse-waymo scenarios/waymo_motion/waymo_data
-```
-Some things to keep in mind:
-* You can pass in multiple paths to datasets which can be either TFRecord files or directories. The paths need to be separated by space.
-* `--target-base-path=<default/path/to/export/scenarios>` is an optional argument that can be passed to have a default target path to export scenarios, map images, and trajectory animations of all scenarios of a TFRecord file. The path passed must be a valid directory path that exists.
-* `--import-tags=<path/to/tag/containing/json/file/>` is an optional argument that can be passed to pre-import tags for scenarios of a TFRecord file. The path should be a .json file which contains a dictionary of structure `Dict["TFRecord Basename", Dict["Scenario ID", List["Tags"]]]`. Make sure the basename of the TFRecord files has not been modified.
+Note:
++ Multiple paths to either TFRecord files or directories, which are separated by spaces, can be passed in.
++ Optional argument `--target-base-path=<default/path/to/export/scenarios>` to set default target path to export scenarios, map images, and trajectory animations of all scenarios from a TFRecord file. Target-path directory must exist.
++ Optional argument `--import-tags=<path/to/tag/containing/json/file/>` to set pre-import tags for scenarios from a TFRecord file. The path should be a `.json` file containing a dictionary of structure `Dict["TFRecord Basename", Dict["Scenario ID", List["Tags"]]]`. Ensure the basename of the TFRecord files have not been modified.
 
 ## TFRecord Browser
 After running the program the first browser you will see is the `TFRecord Browser` which shows all the TFRecords you loaded in and the commands you can use to browse them further:
@@ -67,27 +56,27 @@ Commands you can execute at this level:
 3. `explore <index>` &rarr; Explore the TFRecord file at this index of the table. This opens up another browser, `TFRecord Explorer`. The index passed should be an integer between 1 and the number of TFRecord files loaded in. You can see the total in the table printed above.
 4. `import tags` &rarr; Import the tags of TFRecords from a previously saved .json file. Only tags of TFRecords which are displayed above will be imported. Ensure the names of the TFRecords match with the ones displayed above. If the filenames of the TFRecords don't match the ones loaded in, they won't be displayed.
 5. `export tags all/<indexes>` &rarr; Export the tags of the TFRecords at these indexes to a .json file. Optionally you can use all instead to export tags of all TFRecords. You will be asked to pass in the path to the .json file in a subsequent prompt where the path passed should be valid. An example of how the tags will be imported:
-```json
-{
-  "uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000": {
-    "c84cde79e51b087c": [
-      "2d"
-    ],
-    "6cec26a9347e8574": [
-      "2d"
-    ],
-    "fe6141aeb4061824": [
-      "2d"
-    ],
-    "cc6e41f0505f273": [
-      "2d"
-    ],
-    "d9a14485bb4f49e8": [
-      "2d"
-    ]
-  }
-}
-```
+    ```json
+    {
+      "uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000": {
+        "c84cde79e51b087c": [
+          "2d"
+        ],
+        "6cec26a9347e8574": [
+          "2d"
+        ],
+        "fe6141aeb4061824": [
+          "2d"
+        ],
+        "cc6e41f0505f273": [
+          "2d"
+        ],
+        "d9a14485bb4f49e8": [
+          "2d"
+        ]
+      }
+    }
+    ```
 6. `exit` &rarr; To exit the program. You can also exit the program at any time by pressing `Ctrl + D`.
 
 ## TFRecord Explorer
@@ -162,47 +151,47 @@ Commands you can execute at this level:
 1. `display` &rarr; This displays the scenarios in this TFRecord filtered based on the tags chosen in a subsequent prompt.
 2. `explore <index>` &rarr; Select and explore further the scenario at this index of the table. This opens up the third browser, `Scenario Explorer`. The index should be an integer between 1 and the total number of scenarios displayed above.
 3. `export all/<indexes>` &rarr; This command lets you export the scenarios at these indexes (or all the scenarios if used with `all`) to a target path. If you have run the script with `--target-base-path` option, the subsequent prompt will ask if you want to use a custom path or use the default path passed. The indexes should be an integer between 1 and the total number of scenarios displayed above, separated by space. The exports can also be filtered based on the tags chosen in a subsequent prompt. This will create a `<SCENARIO_ID>` directory at the path passed for every scenario and will consist of two files, `<SCENARIO_ID>/scenario.py` for scenario creation in `SMARTS`:
-```python
-from pathlib import Path
-import yaml
-import os
+    ```python
+    from pathlib import Path
+    import yaml
+    import os
 
-from smarts.sstudio.genscenario import gen_scenario
-from smarts.sstudio import types as t
+    from smarts.sstudio.genscenario import gen_scenario
+    from smarts.sstudio import types as t
 
 
-yaml_file = os.path.join(Path(__file__).parent, "waymo.yaml")
-with open(yaml_file, "r") as yf:
-    dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
+    yaml_file = os.path.join(Path(__file__).parent, "waymo.yaml")
+    with open(yaml_file, "r") as yf:
+        dataset_spec = yaml.safe_load(yf)["trajectory_dataset"]
 
-dataset_path = dataset_spec["input_path"]
-scenario_id = dataset_spec["scenario_id"]
-traffic_history = t.TrafficHistoryDataset(
-    name=f"waymo_{scenario_id}",
-    source_type="Waymo",
-    input_path=dataset_path,
-    scenario_id=scenario_id,
-)
+    dataset_path = dataset_spec["input_path"]
+    scenario_id = dataset_spec["scenario_id"]
+    traffic_history = t.TrafficHistoryDataset(
+        name=f"waymo_{scenario_id}",
+        source_type="Waymo",
+        input_path=dataset_path,
+        scenario_id=scenario_id,
+    )
 
-gen_scenario(
-    t.Scenario(
-        map_spec=t.MapSpec(
-            source=f"{dataset_path}#{scenario_id}", lanepoint_spacing=1.0
+    gen_scenario(
+        t.Scenario(
+            map_spec=t.MapSpec(
+                source=f"{dataset_path}#{scenario_id}", lanepoint_spacing=1.0
+            ),
+            traffic_histories=[traffic_history],
         ),
-        traffic_histories=[traffic_history],
-    ),
-    output_dir=str(Path(__file__).parent),
-    overwrite=True,
-)
-```
-   And `<SCENARIO_ID>/waymo.yaml` for generating history dataset and imitation learning aspects of `SMARTS`:
-```yaml
-trajectory_dataset:
-  source: Waymo
-  input_path: ./waymo_dataset/uncompressed_scenario_training_20s_training_20s.tfrecord-00001-of-01000
-  scenario_id: <SCENARIO_ID>
-```
-Where the `input_path` and `scenario_id` will be modified accordingly.
+        output_dir=str(Path(__file__).parent),
+        overwrite=True,
+    )
+    ```
+    And `<SCENARIO_ID>/waymo.yaml` for generating history dataset and imitation learning aspects of `SMARTS`:
+    ```yaml
+    trajectory_dataset:
+      source: Waymo
+      input_path: ./waymo_dataset/uncompressed_scenario_training_20s_training_20s.tfrecord-00001-of-01000
+      scenario_id: <SCENARIO_ID>
+    ```
+    Where the `input_path` and `scenario_id` will be modified accordingly.
 
 4. `preview all` &rarr; Plot and dump the images of the map of all scenarios in this TFRecord to a target path which you will be asked in a subsequent prompt. If you have run the script with `--target-base-path` option, the subsequent prompt will ask if you want to use a custom path or use the default path passed.
 5. `preview` or `preview <indexes>` &rarr; Plot and display the maps of these scenarios at these index of the table (or all the scenarios if just `preview`). Each map will be displayed in a separate GUI window of `matplotlib` and you can only use other commands after closing all the plots. The indexes should be an integer between 1 and the total number of scenarios displayed above and should be separated by space.
@@ -289,13 +278,11 @@ Commands you can execute at this level:
 7. `back` &rarr; Go back to the TFRecord browser.
 8. `exit` &rarr; Exit the program. You can also exit the program at any time by pressing `Ctrl + D`.
 
-## Additional Notes:
-* All commands are case-sensitive but have specific rules to be matched with the user's input. 
-* Space between words or parameters for commands can be variable but may lead to invalid command.
-* When downloading the dataset, make sure not to change the name of the TFRecord files as they are used for matching TFRecord names when importing tags.
-* .json file having the tags for TFRecords scenarios need to have the specific dictionary structure mentioned above.
-* `animate all` uses `ffmpeg` writer to save the animations which don't exist by default in linux and MacOS machines. 
+## Additional Notes
++ All commands are case-sensitive but have specific rules to be matched with the user's input. 
++ Space between words or parameters for commands can be variable but may lead to invalid command.
++ When downloading the dataset, make sure not to change the name of the TFRecord files as they are used for matching TFRecord names when importing tags.
++ .json file having the tags for TFRecords scenarios need to have the specific dictionary structure mentioned above.
++ `animate all` uses `ffmpeg` writer to save the animations which don't exist by default in linux and MacOS machines. 
    So you can install it using `sudo apt install ffmpeg` in linux or `brew install ffmpeg` in MacOS. You can read more about this issue [here](https://github.com/kkroening/ffmpeg-python/issues/251).
-* `animate <indexes>` command is relatively slow, so it is recommended to animate only a small number of scenarios together.
-* Do not modify files in `smarts/waymo/templates` contains the template for `scenario.py` that is exported during the `export` command.
-```
++ `animate <indexes>` command is relatively slow, so it is recommended to animate only a small number of scenarios together.

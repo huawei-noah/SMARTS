@@ -167,7 +167,7 @@ intersection_crash_flag = False
 class CalObs:
     @staticmethod
     def cal_goal_relative_pos(env_obs: Observation, _):
-        """ Return normalized relative position (2-dimensional). """
+        """Return normalized relative position (2-dimensional)."""
 
         ego_state = env_obs.ego_vehicle_state
         goal = ego_state.mission.goal
@@ -183,7 +183,7 @@ class CalObs:
 
     @staticmethod
     def cal_distance_to_center(env_obs: Observation, _):
-        """ Calculate the signed distance to the center of the current lane. """
+        """Calculate the signed distance to the center of the current lane."""
 
         ego = env_obs.ego_vehicle_state
         waypoint_paths = env_obs.waypoint_paths

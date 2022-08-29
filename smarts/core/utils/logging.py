@@ -26,11 +26,11 @@ from time import time
 
 
 @contextmanager
-def timeit(name: str, logger):
+def timeit(name: str, log):
     """Context manger that stopwatches the amount of time between context block start and end.
     ```python
     import logging
-    with timeit(n,logging):
+    with timeit(n,logging.log):
         a = a * b
     ```
     """
@@ -38,7 +38,7 @@ def timeit(name: str, logger):
     yield
     elapsed_time = (time() - start) * 1000
 
-    logger.info(f'"{name}" took: {elapsed_time:4f}ms')
+    log(f'"{name}" took: {elapsed_time:4f}ms')
 
 
 def isnotebook():

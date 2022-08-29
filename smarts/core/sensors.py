@@ -20,6 +20,7 @@
 import logging
 import sys
 import time
+import weakref
 from collections import deque, namedtuple
 from dataclasses import dataclass
 from functools import lru_cache
@@ -29,7 +30,8 @@ import numpy as np
 
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
 from smarts.core.plan import Plan
-from smarts.core.road_map import Waypoint
+from smarts.core.road_map import RoadMap, Waypoint
+from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.utils.math import squared_dist, vec_2d, yaw_from_quaternion
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
@@ -40,6 +42,10 @@ from .masks import RenderMasks
 from .plan import Mission, Via
 
 logger = logging.getLogger(__name__)
+
+LANE_ID_CONSTANT = "off_lane"
+ROAD_ID_CONSTANT = "off_road"
+LANE_INDEX_CONSTANT = -1
 
 
 class VehicleObservation(NamedTuple):
@@ -61,6 +67,9 @@ class VehicleObservation(NamedTuple):
     """The identifier for the lane nearest to this vehicle."""
     lane_index: int
     """The index of the nearest lane on the road nearest to this vehicle."""
+    lane_position: Optional[RefLinePoint] = None
+    """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
+    See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
 
 
 class EgoVehicleObservation(NamedTuple):
@@ -100,6 +109,9 @@ class EgoVehicleObservation(NamedTuple):
     """Linear jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     angular_jerk: Optional[np.ndarray]
     """Angular jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    lane_position: Optional[RefLinePoint] = None
+    """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
+    See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
 
 
 class RoadWaypoints(NamedTuple):
@@ -176,6 +188,22 @@ class Vias:
     """List of points that were hit in the previous step"""
 
 
+@dataclass(frozen=True)
+class SignalObservation:
+    """Describes an observation of a traffic signal (light) on this timestep."""
+
+    state: SignalLightState
+    """The state of the traffic signal."""
+    stop_point: Point
+    """The stopping point for traffic controlled by the signal, i.e., the
+    point where actors should stop when the signal is in a stop state."""
+    controlled_lanes: List[str]
+    """If known, the lane_ids of all lanes controlled-by this signal.
+    May be empty if this is not easy to determine."""
+    last_changed: Optional[float]
+    """If known, the simulation time this signal last changed its state."""
+
+
 @dataclass
 class Observation:
     """The simulation observation."""
@@ -184,11 +212,15 @@ class Observation:
     """Amount of simulation time the last step took."""
     step_count: int
     """Number of steps taken by SMARTS thus far."""
+    steps_completed: int
+    """The number of steps this agent has taken within SMARTS."""
     elapsed_sim_time: float
     """Amout of simulation time elapsed. Average step_time can be computed as 
     elapsed_sim_time/step_count."""
     events: Events
     ego_vehicle_state: EgoVehicleObservation
+    under_this_agent_control: bool
+    """If this agent currently has control of the vehicle."""
     neighborhood_vehicle_states: Optional[List[VehicleObservation]]
     waypoint_paths: Optional[List[List[Waypoint]]]
     distance_travelled: float
@@ -202,6 +234,7 @@ class Observation:
     top_down_rgb: Optional[TopDownRGB]
     road_waypoints: Optional[RoadWaypoints]
     via_data: Vias
+    signals: Optional[List[SignalObservation]] = None
 
 
 @dataclass
@@ -210,6 +243,30 @@ class Collision:
 
     # XXX: This might not work for boid agents
     collidee_id: str
+
+
+def _make_vehicle_observation(road_map, neighborhood_vehicle):
+    nv_lane = road_map.nearest_lane(neighborhood_vehicle.pose.point, radius=3)
+    if nv_lane:
+        nv_road_id = nv_lane.road.road_id
+        nv_lane_id = nv_lane.lane_id
+        nv_lane_index = nv_lane.index
+    else:
+        nv_road_id = ROAD_ID_CONSTANT
+        nv_lane_id = LANE_ID_CONSTANT
+        nv_lane_index = LANE_INDEX_CONSTANT
+
+    return VehicleObservation(
+        id=neighborhood_vehicle.actor_id,
+        position=neighborhood_vehicle.pose.position,
+        bounding_box=neighborhood_vehicle.dimensions,
+        heading=neighborhood_vehicle.pose.heading,
+        speed=neighborhood_vehicle.speed,
+        road_id=nv_road_id,
+        lane_id=nv_lane_id,
+        lane_index=nv_lane_index,
+        lane_position=None,
+    )
 
 
 class Sensors:
@@ -242,28 +299,17 @@ class Sensors:
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:
             neighborhood_vehicles = []
             for nv in vehicle.neighborhood_vehicles_sensor():
-                nv_lane = sim.road_map.nearest_lane(
-                    nv.pose.point, radius=vehicle.length
-                )
-                if nv_lane:
-                    nv_road_id = nv_lane.road.road_id
-                    nv_lane_id = nv_lane.lane_id
-                    nv_lane_index = nv_lane.index
-                else:
-                    nv_road_id = None
-                    nv_lane_id = None
-                    nv_lane_index = None
-                neighborhood_vehicles.append(
-                    VehicleObservation(
-                        id=nv.vehicle_id,
-                        position=nv.pose.position,
-                        bounding_box=nv.dimensions,
-                        heading=nv.pose.heading,
-                        speed=nv.speed,
-                        road_id=nv_road_id,
-                        lane_id=nv_lane_id,
-                        lane_index=nv_lane_index,
+                veh_obs = _make_vehicle_observation(sim.road_map, nv)
+                nv_lane_pos = None
+                if (
+                    veh_obs.lane_id is not LANE_ID_CONSTANT
+                    and vehicle.subscribed_to_lane_position_sensor
+                ):
+                    nv_lane_pos = vehicle.lane_position_sensor(
+                        sim.road_map.lane_by_id(veh_obs.lane_id), nv
                     )
+                neighborhood_vehicles.append(
+                    veh_obs._replace(lane_position=nv_lane_pos)
                 )
 
         if vehicle.subscribed_to_waypoints_sensor:
@@ -276,14 +322,17 @@ class Sensors:
             )
 
         closest_lane = sim.road_map.nearest_lane(vehicle.pose.point)
+        ego_lane_pos = None
         if closest_lane:
             ego_lane_id = closest_lane.lane_id
             ego_lane_index = closest_lane.index
             ego_road_id = closest_lane.road.road_id
+            if vehicle.subscribed_to_lane_position_sensor:
+                ego_lane_pos = vehicle.lane_position_sensor(closest_lane, vehicle)
         else:
-            ego_lane_id = None
-            ego_lane_index = None
-            ego_road_id = None
+            ego_lane_id = LANE_ID_CONSTANT
+            ego_lane_index = LANE_INDEX_CONSTANT
+            ego_road_id = ROAD_ID_CONSTANT
         ego_vehicle_state = vehicle.state
 
         acceleration_params = {
@@ -313,8 +362,8 @@ class Sensors:
             )
 
         ego_vehicle = EgoVehicleObservation(
-            id=ego_vehicle_state.vehicle_id,
-            position=np.array(ego_vehicle_state.pose.position),
+            id=ego_vehicle_state.actor_id,
+            position=ego_vehicle_state.pose.point.as_np_array,
             bounding_box=ego_vehicle_state.dimensions,
             heading=Heading(ego_vehicle_state.pose.heading),
             speed=ego_vehicle_state.speed,
@@ -326,6 +375,7 @@ class Sensors:
             mission=sensor_state.plan.mission,
             linear_velocity=ego_vehicle_state.linear_velocity,
             angular_velocity=ego_vehicle_state.angular_velocity,
+            lane_position=ego_lane_pos,
             **acceleration_params,
         )
 
@@ -348,7 +398,7 @@ class Sensors:
         )
 
         if waypoint_paths:
-            vehicle.trip_meter_sensor.append_waypoint_if_new(waypoint_paths[0][0])
+            vehicle.trip_meter_sensor.update_distance_wps_record(waypoint_paths)
         distance_travelled = vehicle.trip_meter_sensor(sim)
 
         vehicle.driven_path_sensor.track_latest_driven_path(sim)
@@ -369,20 +419,38 @@ class Sensors:
             sim, agent_id, vehicle, sensor_state
         )
 
-        if (
-            done
-            and sensor_state.steps_completed == 1
-            and agent_id in sim.agent_manager.ego_agent_ids
-        ):
-            logger.warning(f"Agent Id: {agent_id} is done on the first step")
+        if done and sensor_state.steps_completed == 1:
+            agent_type = "Social agent"
+            if agent_id in sim.agent_manager.ego_agent_ids:
+                agent_type = "Ego agent"
+            logger.warning(
+                f"{agent_type} with Agent ID: {agent_id} is done on the first step"
+            )
+
+        signals = None
+        if vehicle.subscribed_to_signals_sensor:
+            provider_state = sim._last_provider_state
+            signals = vehicle.signals_sensor(
+                closest_lane,
+                ego_lane_pos,
+                ego_vehicle_state,
+                sensor_state.plan,
+                provider_state,
+            )
+
+        agent_controls = agent_id == sim.vehicle_index.actor_id_from_vehicle_id(
+            ego_vehicle_state.actor_id
+        )
 
         return (
             Observation(
                 dt=sim.last_dt,
                 step_count=sim.step_count,
+                steps_completed=sensor_state.steps_completed,
                 elapsed_sim_time=sim.elapsed_sim_time,
                 events=events,
                 ego_vehicle_state=ego_vehicle,
+                under_this_agent_control=agent_controls,
                 neighborhood_vehicle_states=neighborhood_vehicles,
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
@@ -392,6 +460,7 @@ class Sensors:
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
                 via_data=via_data,
+                signals=signals,
             ),
             done,
         )
@@ -498,7 +567,7 @@ class Sensors:
 
     @classmethod
     def _vehicle_is_off_road(cls, sim, vehicle):
-        return not sim.scenario.road_map.road_with_point(Point(*vehicle.position))
+        return not sim.scenario.road_map.road_with_point(vehicle.pose.point)
 
     @classmethod
     def _vehicle_is_on_shoulder(cls, sim, vehicle):
@@ -544,7 +613,7 @@ class Sensors:
         sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
         route_roads = sensor_state.plan.route.roads
 
-        vehicle_pos = Point(*vehicle.position)
+        vehicle_pos = vehicle.pose.point
         vehicle_minimum_radius_bounds = (
             np.linalg.norm(vehicle.chassis.dimensions.as_lwh[:2]) * 0.5
         )
@@ -593,7 +662,7 @@ class Sensors:
 
     @staticmethod
     def _vehicle_is_wrong_way(vehicle, closest_lane):
-        target_pose = closest_lane.center_pose_at_point(Point(*vehicle.pose.position))
+        target_pose = closest_lane.center_pose_at_point(vehicle.pose.point)
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
             np.fabs(vehicle.pose.heading.relative_to(target_pose.heading)) > 0.5 * np.pi
@@ -623,7 +692,7 @@ class Sensor:
 class SensorState:
     """Sensor state information"""
 
-    def __init__(self, max_episode_steps, plan):
+    def __init__(self, max_episode_steps: int, plan):
         self._max_episode_steps = max_episode_steps
         self._plan = plan
         self._step = 0
@@ -633,7 +702,7 @@ class SensorState:
         self._step += 1
 
     @property
-    def reached_max_episode_steps(self):
+    def reached_max_episode_steps(self) -> bool:
         """Inbuilt sensor information that describes if episode step limit has been reached."""
         if self._max_episode_steps is None:
             return False
@@ -646,7 +715,7 @@ class SensorState:
         return self._plan
 
     @property
-    def steps_completed(self):
+    def steps_completed(self) -> int:
         """Get the number of steps where this sensor has been updated."""
         return self._step
 
@@ -892,37 +961,31 @@ class DrivenPathSensor(Sensor):
 
 
 class TripMeterSensor(Sensor):
-    """Tracks distance travelled along the route (in KM). Kilometeres driven while
+    """Tracks distance travelled along the route (in meters). Meters driven while
     off-route are not counted as part of the total.
     """
 
-    def __init__(self, vehicle, sim, plan):
+    def __init__(self, vehicle, road_map, plan):
         self._vehicle = vehicle
-        self._sim = sim
+        self._road_map: RoadMap = road_map
         self._plan = plan
-        self._wps_for_distance = []
+        self._wps_for_distance: List[Waypoint] = []
         self._dist_travelled = 0.0
         self._last_dist_travelled = 0.0
-        waypoint_paths = sim.road_map.waypoint_paths(
-            vehicle.pose,
-            lookahead=1,
-            within_radius=vehicle.length,
-        )
-        if waypoint_paths:
-            self._wps_for_distance.append(waypoint_paths[0][0])
 
-    def append_waypoint_if_new(self, new_wp):
+    def update_distance_wps_record(self, waypoint_paths):
         """Append a waypoint to the history if it is not already counted."""
         # Distance calculation. Intention is the shortest trip travelled at the lane
         # level the agent has travelled. This is to prevent lateral movement from
         # increasing the total distance travelled.
         self._last_dist_travelled = self._dist_travelled
 
-        wp_road = self._sim.road_map.lane_by_id(new_wp.lane_id).road.road_id
+        new_wp = waypoint_paths[0][0]
+        wp_road = self._road_map.lane_by_id(new_wp.lane_id).road.road_id
 
         should_count_wp = (
             # if we do not have a fixed route, we count all waypoints we accumulate
-            not self._plan.mission.has_fixed_route
+            not self._plan.mission.requires_route
             # if we have a route to follow, only count wps on route
             or wp_road in [road.road_id for road in self._plan.route.roads]
         )
@@ -938,17 +1001,19 @@ class TripMeterSensor(Sensor):
             np.linalg.norm(new_wp.pos - most_recent_wp.pos) > threshold_for_counting_wp
             and should_count_wp
         ):
-            self._dist_travelled += TripMeterSensor._compute_additional_dist_travelled(
-                most_recent_wp, new_wp
-            )
             self._wps_for_distance.append(new_wp)
+        self._dist_travelled += TripMeterSensor._compute_additional_dist_travelled(
+            most_recent_wp, new_wp, self._vehicle.pose
+        )
 
     @staticmethod
-    def _compute_additional_dist_travelled(recent_wp, waypoint):
-        heading_vec = recent_wp.heading.direction_vector()
-        disp_vec = waypoint.pos - recent_wp.pos
-        direction = np.sign(np.dot(heading_vec, disp_vec))
-        distance = np.linalg.norm(disp_vec)
+    def _compute_additional_dist_travelled(
+        recent_wp: Waypoint, new_waypoint: Waypoint, vehicle_pose: Pose
+    ):
+        wp_disp_vec = new_waypoint.pos - recent_wp.pos
+        pose_disp_vec = vehicle_pose.position[:2] - recent_wp.pos[:2]
+        direction = np.sign(np.dot(pose_disp_vec, wp_disp_vec))
+        distance = np.linalg.norm(wp_disp_vec)
         return direction * distance
 
     def __call__(self, increment=False):
@@ -966,7 +1031,7 @@ class NeighborhoodVehiclesSensor(Sensor):
 
     def __init__(self, vehicle, sim, radius=None):
         self._vehicle = vehicle
-        self._sim = sim
+        self._sim = weakref.ref(sim)
         self._radius = radius
 
     @property
@@ -975,7 +1040,9 @@ class NeighborhoodVehiclesSensor(Sensor):
         return self._radius
 
     def __call__(self):
-        return self._sim.neighborhood_vehicles_around_vehicle(
+        sim = self._sim()
+        assert sim
+        return sim.neighborhood_vehicles_around_vehicle(
             self._vehicle, radius=self._radius
         )
 
@@ -1030,12 +1097,12 @@ class RoadWaypointsSensor(Sensor):
         """Gets waypoint paths along the given lane."""
         # XXX: the following assumes waypoint spacing is 1m
         if overflow_offset is None:
-            offset = lane.offset_along_lane(Point(*self._vehicle.position))
+            offset = lane.offset_along_lane(self._vehicle.pose.point)
             start_offset = offset - self._horizon
         else:
             start_offset = lane.length + overflow_offset
 
-        incoming_lanes = lane.incoming_lanes  # XXX: was "getIncoming(onlyDirect=True)"
+        incoming_lanes = lane.incoming_lanes
         if start_offset < 0 and len(incoming_lanes) > 0:
             paths = []
             for lane in incoming_lanes:
@@ -1101,6 +1168,19 @@ class AccelerometerSensor(Sensor):
         pass
 
 
+class LanePositionSensor(Sensor):
+    """Tracks lane-relative RefLine (Frenet) coordinates."""
+
+    def __init__(self, vehicle):
+        pass
+
+    def __call__(self, lane: RoadMap.Lane, vehicle):
+        return lane.to_lane_coord(vehicle.pose.point)
+
+    def teardown(self):
+        pass
+
+
 class ViaSensor(Sensor):
     """Tracks collection of ViaPoint collectables"""
 
@@ -1132,7 +1212,7 @@ class ViaSensor(Sensor):
             closest_position_on_lane = closest_position_on_lane[:2]
 
             dist_from_lane_sq = squared_dist(vehicle_position, closest_position_on_lane)
-            if dist_from_lane_sq > self._acquisition_range ** 2:
+            if dist_from_lane_sq > self._acquisition_range**2:
                 continue
 
             point = ViaPoint(
@@ -1145,7 +1225,7 @@ class ViaSensor(Sensor):
             near_points.append(point)
             dist_from_point_sq = squared_dist(vehicle_position, via.position)
             if (
-                dist_from_point_sq <= via.hit_distance ** 2
+                dist_from_point_sq <= via.hit_distance**2
                 and via not in self._consumed_via_points
                 and np.isclose(
                     self._vehicle.speed, via.required_speed, atol=self._speed_accuracy
@@ -1161,6 +1241,94 @@ class ViaSensor(Sensor):
             ),
             hit_points,
         )
+
+    def teardown(self):
+        pass
+
+
+class SignalsSensor(Sensor):
+    """Reports state of traffic signals (lights) in the lanes ahead of vehicle."""
+
+    def __init__(self, vehicle, road_map: RoadMap, lookahead: float):
+        self._logger = logging.getLogger(self.__class__.__name__)
+        self._vehicle = vehicle
+        self._road_map = road_map
+        self._lookahead = lookahead
+
+    @staticmethod
+    def _is_signal_type(feature: RoadMap.Feature) -> bool:
+        # XXX:  eventually if we add other types of dynamic features, we'll need to update this.
+        return (
+            feature.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL or feature.is_dynamic
+        )
+
+    def __call__(
+        self,
+        lane: Optional[RoadMap.Lane],
+        lane_pos: RefLinePoint,
+        state,  # VehicleState
+        plan: Plan,
+        provider_state,  # ProviderState
+    ) -> List[SignalObservation]:
+        result = []
+        if not lane:
+            return result
+        upcoming_signals = []
+        for feat in lane.features:
+            if not self._is_signal_type(feat):
+                continue
+            for pt in feat.geometry:
+                # TAI: we might want to use the position of our back bumper
+                # instead of centroid to allow agents to have some (even more)
+                # imprecision in their handling of stopping at signals.
+                if lane.offset_along_lane(pt) >= lane_pos.s:
+                    upcoming_signals.append(feat)
+                    break
+        lookahead = self._lookahead - lane.length + lane_pos.s
+        self._find_signals_ahead(lane, lookahead, plan.route, upcoming_signals)
+
+        for signal in upcoming_signals:
+            for actor_state in provider_state.actors:
+                if actor_state.actor_id == signal.feature_id:
+                    signal_state = actor_state
+                    break
+            else:
+                self._logger.warning(
+                    "could not find signal state corresponding with feature_id={signal.feature_id}"
+                )
+                continue
+            assert isinstance(signal_state, SignalState)
+            controlled_lanes = None
+            if signal_state.controlled_lanes:
+                controlled_lanes = [cl.lane_id for cl in signal_state.controlled_lanes]
+            result.append(
+                SignalObservation(
+                    state=signal_state.state,
+                    stop_point=signal_state.stopping_pos,
+                    controlled_lanes=controlled_lanes,
+                    last_changed=signal_state.last_changed,
+                )
+            )
+
+        return result
+
+    def _find_signals_ahead(
+        self,
+        lane: RoadMap.Lane,
+        lookahead: float,
+        route: Optional[RoadMap.Route],
+        upcoming_signals: List[RoadMap.Feature],
+    ):
+        if lookahead <= 0:
+            return
+        for ogl in lane.outgoing_lanes:
+            if route and ogl.road not in route.roads:
+                continue
+            upcoming_signals += [
+                feat for feat in ogl.features if self._is_signal_type(feat)
+            ]
+            lookahead -= lane.length
+            self._find_signals_ahead(ogl, lookahead, route, upcoming_signals)
 
     def teardown(self):
         pass
