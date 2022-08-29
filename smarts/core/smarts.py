@@ -644,7 +644,10 @@ class SMARTS(ProviderManager):
         if self._vehicle_index.vehicle_is_hijacked(vehicle_id):
             agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
             self._log.debug(
-                f"agent={agent_id} relinquishing vehicle={vehicle_id} (shadow_agent={shadow_agent_id})"
+                "agent=%s relinquishing vehicle=%s (shadow_agent=%s)",
+                agent_id,
+                vehicle_id,
+                shadow_agent_id,
             )
             state, route = self._vehicle_index.relinquish_agent_control(
                 self, vehicle_id
@@ -658,7 +661,9 @@ class SMARTS(ProviderManager):
                 new_prov.update_route_for_vehicle(vehicle_id, route)
         if shadow_agent_id:
             self._log.debug(
-                f"shadow_agent={shadow_agent_id} will stop shadowing vehicle={vehicle_id}"
+                "shadow_agent=%s will stop shadowing vehicle=%s",
+                shadow_agent_id,
+                vehicle_id,
             )
             if teardown_agent:
                 self.teardown_social_agents([shadow_agent_id])
@@ -666,10 +671,14 @@ class SMARTS(ProviderManager):
             self._agent_manager.detach_sensors_from_vehicle(vehicle_id)
 
         if teardown_agent:
-            assert (
-                shadow_agent_id not in self._agent_manager.active_agents
-            ), f"Agent ids {shadow_agent_id}, {self._agent_manager.active_agents}"
-            assert agent_id not in self._agent_manager.active_agents
+            if self._log.isEnabledFor(logging.ERROR):
+                active_agents = self._agent_manager.active_agents
+                assert (
+                    shadow_agent_id not in active_agents
+                ), f"Agent ids {shadow_agent_id}, {active_agents}"
+                assert (
+                    agent_id not in active_agents
+                ), f"Agent id `{agent_id}` not in {active_agents}`"
 
     def _agent_relinquishing_actor(
         self,
@@ -682,7 +691,7 @@ class SMARTS(ProviderManager):
         provider = self._provider_for_actor(state.actor_id)
         new_prov = self.provider_relinquishing_actor(provider, state)
         if teardown_agent:
-            self.teardown_social_agents_without_actors([agent_id])
+            self.teardown_social_agents([agent_id])
         return new_prov
 
     def provider_relinquishing_actor(
