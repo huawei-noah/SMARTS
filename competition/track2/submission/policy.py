@@ -8,10 +8,10 @@ from smarts.env.wrappers.format_action import FormatAction
 from smarts.env.wrappers.format_obs import FormatObs
 from smarts.core.controllers import ActionSpaceType
 
-# To import submission folder
-sys.path.insert(0, str(Path(__file__).parents[1]))
+# To import utility folder
+sys.path.insert(0, str(Path(__file__).parents[0]))
 
-from submission.utility import (
+from utility import (
     get_goal_layer,
     global_target_pose,
     load_config,
