@@ -1270,8 +1270,8 @@ class _TrafficActor:
                 prev_range = rvi.dist
                 prev_bearing = rvi.bearing
                 prev_heading = rvi.heading
-            range_del /= len(window) - 1 or 1
-            bearing_del /= len(window) - 1 or 1
+            range_del /= len(window) - 1
+            bearing_del /= len(window) - 1
             final_range = window[-1].dist
 
             # the exponent here was determined by trial and error
