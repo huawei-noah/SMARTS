@@ -153,7 +153,8 @@ def run(
 
     # Ensure deterministic seeding
     env.seed((seed or 0) + config["seed"])
-    for _ in range(config["eval_episodes"]):
+    eval_episodes = 1 if "naturalistic" in env_name else config["eval_episodes"]
+    for _ in range(eval_episodes):
         observations = env.reset()
         dones = {"__all__": False}
         while not dones["__all__"]:
