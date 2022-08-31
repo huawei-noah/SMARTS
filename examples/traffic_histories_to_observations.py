@@ -26,8 +26,6 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
-logging.basicConfig(level=logging.INFO)
-
 
 class ObservationRecorder:
     def __init__(
@@ -36,6 +34,8 @@ class ObservationRecorder:
         output_dir: Optional[str],
         seed: int = 42,
         agent_interface: Optional[AgentInterface] = None,
+        start_time: Optional[float] = None,
+        end_time: Optional[float] = None,
     ):
         """Generate Observations from the perspective of one or more
         social/history vehicles within a SMARTS scenario.
@@ -53,15 +53,22 @@ class ObservationRecorder:
             agent_interface (AgentInterface, optional):
                 Agent interface to be used for recorded vehicles. If not provided,
                 will use a default interface with all sensors enabled.
+            start_time (float, Optional):
+                The start time (in seconds) of the window within which observations should be recorded."
+            end_time (float, Optional):
+                The end time (in seconds) of the window within which observations should be recorded."
         """
         assert scenario, "--scenario must be used to specify a scenario"
         scenario_iter = Scenario.variations_for_all_scenario_roots([scenario], [])
         self._scenario = next(scenario_iter)
+        self._start_time = start_time if start_time is not None else 0.0
+        self._end_time = end_time
         assert self._scenario
         # TAI:  also record from social vehicles?
         assert self._scenario.traffic_history is not None
 
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._logger.setLevel(logging.INFO)
 
         smarts_seed(seed)
 
@@ -198,7 +205,7 @@ class ObservationRecorder:
             self._logger.error("No valid vehicles specified.  Aborting.")
             return
 
-        _ = self._smarts.reset(self._scenario)
+        _ = self._smarts.reset(self._scenario, self._start_time)
         current_vehicles = self._smarts.vehicle_index.social_vehicle_ids(
             vehicle_types=vehicle_types
         )
@@ -247,6 +254,10 @@ class ObservationRecorder:
         off_road_vehicles,
         selected_vehicles,
     ):
+        end_time = self._end_time if self._end_time is not None else self._max_sim_time
+        if not (self._start_time <= self._smarts.elapsed_sim_time <= end_time):
+            return
+
         # Attach sensors to each vehicle
         valid_vehicles = (current_vehicles - off_road_vehicles) & selected_vehicles
         for veh_id in valid_vehicles:
@@ -260,6 +271,9 @@ class ObservationRecorder:
         obs = dict()
         obs, _, _, _ = self._smarts.observe_from(list(valid_vehicles))
         resolutions = {}
+        self._logger.info(
+            f"t={self._smarts.elapsed_sim_time}, active_vehicles={len(valid_vehicles)}"
+        )
         for id_ in list(obs):
             if obs[id_].top_down_rgb:
                 resolutions[id_] = obs[id_].top_down_rgb.metadata.resolution
@@ -323,17 +337,37 @@ if __name__ == "__main__":
         type=str,
         default=None,
     )
+    parser.add_argument(
+        "--start_time",
+        help="The start time (in seconds) of the window within which observations should be recorded.",
+        type=float,
+        default=None,
+    )
+    parser.add_argument(
+        "--end_time",
+        help="The end time (in seconds) of the window within which observations should be recorded.",
+        type=float,
+        default=None,
+    )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
         "--headless", help="Run the simulation in headless mode.", action="store_true"
     )
+    parser.add_argument(
+        "--no_build",
+        help="Do not automatically build the scenario each time the script is run.",
+        action="store_true",
+    )
     args = parser.parse_args()
 
-    sstudio.build_scenario([args.scenario])
+    if not args.no_build:
+        sstudio.build_scenario([args.scenario])
 
     recorder = ObservationRecorder(
         scenario=args.scenario,
         output_dir=args.output_dir,
         seed=args.seed,
+        start_time=args.start_time,
+        end_time=args.end_time,
     )
     recorder.collect(args.vehicles_with_sensors, headless=args.headless)
