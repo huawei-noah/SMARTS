@@ -64,6 +64,7 @@ class ObservationRecorder:
         self._scenario = next(scenario_iter)
         self._start_time = start_time if start_time is not None else 0.0
         self._end_time = end_time
+        self._max_sim_time = None
         assert self._scenario
         # TAI:  also record from social vehicles?
         assert self._scenario.traffic_history is not None

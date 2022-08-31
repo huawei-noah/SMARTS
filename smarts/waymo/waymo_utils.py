@@ -96,6 +96,49 @@ TRAJECTORY_HANDLES = [
 ]
 
 
+def _create_interactive_handle(object_type: int, v_id: str) -> Line2D:
+    if object_type == 1:
+        return Line2D(
+            [],
+            [],
+            color="green",
+            marker="^",
+            linestyle="None",
+            markersize=5,
+            label=f"Interactive Car {v_id}",
+        )
+    elif object_type == 2:
+        return Line2D(
+            [],
+            [],
+            color="green",
+            marker="d",
+            linestyle="None",
+            markersize=5,
+            label=f"Interactive Pedestrian {v_id}",
+        )
+    elif object_type == 3:
+        return Line2D(
+            [],
+            [],
+            color="green",
+            marker="*",
+            linestyle="None",
+            markersize=5,
+            label=f"Interactive Cyclist {v_id}",
+        )
+    else:
+        Line2D(
+            [],
+            [],
+            color="green",
+            marker="8",
+            linestyle="None",
+            markersize=5,
+            label=f"Interactive Other {v_id}",
+        )
+
+
 def _plot_map_features(map_features: Dict):
     for lane in map_features["lane"]:
         pts = np.array([[p.x, p.y] for p in lane[0].polyline])
@@ -164,9 +207,10 @@ def _get_trajectories(
 
 
 def _plot_trajectories(
-    trajectories: Dict[int, Dict[str, Any]]
-) -> Tuple[List[Line2D], List[Optional[Tuple[list, list]]]]:
-    points, data = [], []
+    trajectories: Dict[int, Dict[str, Any]],
+    interactive_ids: List[int],
+) -> Tuple[List[Line2D], List[Optional[Tuple[list, list]]], List[Line2D]]:
+    points, data, handles = [], [], []
 
     # Need to plot something initially to get handles to the point objects,
     # so just use a valid point from the first trajectory
@@ -182,19 +226,39 @@ def _plot_trajectories(
     for v_id, props in trajectories.items():
         xs = [p[0] for p in props["positions"]]
         ys = [p[1] for p in props["positions"]]
+
         if props["is_ego"]:
             (point,) = plt.plot(x0, y0, "c^")
-        elif props["object_type"] == 1:
-            (point,) = plt.plot(x0, y0, "k^")
-        elif props["object_type"] == 2:
-            (point,) = plt.plot(x0, y0, "md")
-        elif props["object_type"] == 3:
-            (point,) = plt.plot(x0, y0, "y*")
+            continue
+
+        is_interactive = int(v_id) in interactive_ids
+        object_type = props["object_type"]
+        if is_interactive:
+            handles.append(_create_interactive_handle(object_type, v_id))
+
+        if object_type == 1:
+            if is_interactive:
+                (point,) = plt.plot(x0, y0, "g^")
+            else:
+                (point,) = plt.plot(x0, y0, "k^")
+        elif object_type == 2:
+            if is_interactive:
+                (point,) = plt.plot(x0, y0, "gd")
+            else:
+                (point,) = plt.plot(x0, y0, "md")
+        elif object_type == 3:
+            if is_interactive:
+                (point,) = plt.plot(x0, y0, "g*")
+            else:
+                (point,) = plt.plot(x0, y0, "y*")
         else:
-            (point,) = plt.plot(x0, y0, "k8")
+            if is_interactive:
+                (point,) = plt.plot(x0, y0, "g8")
+            else:
+                (point,) = plt.plot(x0, y0, "k8")
         data.append((xs, ys))
         points.append(point)
-    return points, data
+    return points, data, handles
 
 
 def get_tfrecord_info(tfrecord_file: str) -> Dict[str, Dict[str, Any]]:
@@ -249,9 +313,12 @@ def plot_scenario(
                 bbox_props = dict(boxstyle="square,pad=0.1", fc="white", ec=None)
                 plt.text(x + 1, y + 1, f"{v_id}", bbox=bbox_props)
     elif animate:
-        handles.extend(TRAJECTORY_HANDLES)
         trajectories = _get_trajectories(scenario)
-        points, data = _plot_trajectories(trajectories)
+        interactive_ids = [i for i in scenario.objects_of_interest]
+        points, data, interactive_handles = _plot_trajectories(
+            trajectories, interactive_ids
+        )
+        handles.extend(TRAJECTORY_HANDLES + interactive_handles)
 
         def update(i):
             drawn_pts = []
