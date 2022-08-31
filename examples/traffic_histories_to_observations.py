@@ -25,6 +25,7 @@ from smarts.core.plan import PositionalGoal
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.core.vehicle import VEHICLE_CONFIGS
 
 
 class ObservationRecorder:
@@ -75,6 +76,10 @@ class ObservationRecorder:
         self._output_dir = output_dir
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
+        if not output_dir:
+            self._logger.warning(
+                "No output dir provided. Observations will not be saved."
+            )
         self._smarts = None
         self._create_missions()
 
@@ -195,6 +200,18 @@ class ObservationRecorder:
             if v_id not in all_vehicles:
                 self._logger.warning(f"Vehicle {v_id} not in scenario")
                 continue
+            config_type = self._scenario.traffic_history.vehicle_config_type(v_id)
+            veh_type = (
+                VEHICLE_CONFIGS[config_type].vehicle_type
+                if config_type in VEHICLE_CONFIGS
+                else None
+            )
+            if veh_type not in vehicle_types:
+                self._logger.warning(
+                    f"Vehicle type for vehicle {v_id} ({veh_type}) not in selected vehicle types ({vehicle_types})"
+                )
+                continue
+
             # TODO: get prefixed vehicle_id from TrafficHistoryProvider
             selected_vehicles.add(f"history-vehicle-{v_id}")
             exit_time = self._scenario.traffic_history.vehicle_final_exit_time(v_id)
