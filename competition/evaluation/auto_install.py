@@ -24,6 +24,7 @@ def install_evaluation_deps(requirements_dir: Path, reset_wheelhouse_cache: bool
                 "-m",
                 "pip",
                 "wheel",
+                "--extra-index-url=https://mirrors.huaweicloud.com/repository/pypi/simple",
                 f"--wheel-dir={str(wheelhouse)}",
                 "-r",
                 str(requirements_dir / "requirements.txt"),
