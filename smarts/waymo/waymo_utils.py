@@ -96,7 +96,7 @@ TRAJECTORY_HANDLES = [
 ]
 
 
-def _create_interactive_handle(object_type: int, v_id: str) -> Line2D:
+def _create_interactive_handle(object_type: int, v_id: int) -> Line2D:
     if object_type == 1:
         return Line2D(
             [],
