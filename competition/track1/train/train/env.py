@@ -65,7 +65,9 @@ def make(
         scenario=scenario,
         img_meters=config["img_meters"],
         img_pixels=config["img_pixels"],
-        sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
+        # If False, enables sumo-gui display.
+        sumo_headless=not config["sumo_gui"],
+        visdom=True
     )
 
     # Wrap the environment

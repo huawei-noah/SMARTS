@@ -1,21 +1,21 @@
+import network
+from train import env as multi_scenario_env
+from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
+from ruamel.yaml import YAML
+import torch as th
+import stable_baselines3 as sb3lib
+import gym
+from typing import Any, Dict
+from pathlib import Path
+from itertools import cycle
+from datetime import datetime
+import warnings
+import argparse
 import os
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-import argparse
-import warnings
-from datetime import datetime
-from itertools import cycle
-from pathlib import Path
-from typing import Any, Dict
 
-import gym
-import stable_baselines3 as sb3lib
-import torch as th
-from ruamel.yaml import YAML
-from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
-from stable_baselines3.common.evaluation import evaluate_policy
-from train import env as multi_scenario_env
-import network
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -48,11 +48,14 @@ def main(args: argparse.Namespace):
         # Begin evaluation.
         config["model"] = args.model
         print("\nModel:", config["model"], "\n")
-    elif config["mode"] == "train" and not args.model:
+    elif config["mode"] == "train":
         # Begin training.
-        pass
+        config["model"] = args.model
+        if config["model"] is not None:
+            print("\nModel:", config["model"], "\n")
     else:
-        raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
+        raise KeyError(
+            f'Expected \'train\' or \'evaluate\', but got {config["mode"]}.')
 
     # Make training and evaluation environments.
     envs_train = {}
@@ -85,12 +88,17 @@ def run(
     if config["mode"] == "train":
         print("\nStart training.\n")
         scenarios_iter = cycle(config["scenarios"])
-        model = getattr(sb3lib, config["alg"])(
-            env=envs_train[next(scenarios_iter)],
-            verbose=1,
-            tensorboard_log=config["logdir"] / "tensorboard",
-            **network.combined_extractor(config),
-        )
+        if config["model"] is not None:
+            model = getattr(sb3lib, config["alg"]).load(
+                config["model"], print_system_info=True
+            )
+        else:
+            model = getattr(sb3lib, config["alg"])(
+                env=envs_train[next(scenarios_iter)],
+                verbose=1,
+                tensorboard_log=config["logdir"] / "tensorboard",
+                **network.combined_extractor(config),
+            )
         for index in range(config["epochs"]):
             scen = next(scenarios_iter)
             env_train = envs_train[scen]
@@ -145,7 +153,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--model",
-        help="Directory path to saved RL model. Required if `--mode=evaluate`.",
+        help="Directory path to saved RL model.",
         type=str,
         default=None,
     )
@@ -153,6 +161,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.mode == "evaluate" and args.model is None:
-        raise Exception("When --mode=evaluate, --model option must be specified.")
+        raise Exception(
+            "When --mode=evaluate, --model option must be specified.")
 
     main(args)

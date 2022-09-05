@@ -5,11 +5,12 @@ smarts:
   img_pixels: 112 # Observation image size in pixels.
   num_stack: 3 # Number of frames to stack as input to policy network.
   scenarios: 
-    - "1_to_2lane_left_turn_c"
-    - "1_to_2lane_left_turn_t"
-    - "3lane_merge_single_agent"
-    - "3lane_cruise_single_agent"
-    - "3lane_overtake"
+    # - "1_to_2lane_left_turn_c"
+    # - "1_to_2lane_left_turn_t"
+    # - "3lane_merge_single_agent"
+    # - "3lane_cruise_single_agent"
+    # - "3lane_overtake"
+    - "roundabout"
 
   # Training
   epochs: 5_000 # Number of training loops.
