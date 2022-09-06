@@ -18,8 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import os
+import logging
 import numpy as np
+import os
 import pathlib
 from typing import Any, Dict, Optional, Tuple
 
@@ -38,6 +39,9 @@ from smarts.core.agent_interface import (
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.hiway_env import HiWayEnv
 from smarts.zoo.agent_spec import AgentSpec
+
+logger = logging.getLogger(__file__)
+logger.setLevel(logging.WARNING)
 
 
 def multi_scenario_v0_env(
@@ -283,6 +287,7 @@ def resolve_agent_interface(
         waypoints=Waypoints(lookahead=waypoints_lookahead),
     )
 
+
 class _LimitTargetPose(gym.Wrapper):
     """Uses previous observation to limit the next TargetPose action range."""
 
@@ -295,13 +300,15 @@ class _LimitTargetPose(gym.Wrapper):
         self._prev_obs: Dict[str, Dict[str, Any]]
 
     def step(self, action: Dict[str, np.ndarray]):
-        # Limit TargetPose
-        for agent_id, agent_action in action.items():
-            self._prev_obs[agent_id]      
-            action[agent_id][3]=0.1
+        limited_actions: Dict[str, np.ndarray] = {}
+        for agent_name, agent_action in action.items():
+            limited_actions[agent_name] = self._limit(
+                name=agent_name,
+                action=agent_action,
+                prev_coord=self._prev_obs[agent_name].ego_vehicle_state.position[:2],
+            )
 
-
-        out = self.env.step(action)
+        out = self.env.step(limited_actions)
         self._prev_obs = out[0]
         return out
 
@@ -310,8 +317,37 @@ class _LimitTargetPose(gym.Wrapper):
         self._prev_obs = obs
         return obs
 
-    def _limit():
-        return None
+    def _limit(name, action, prev_coord):
+        """Limit Euclidean distance travelled in TargetPose action space."""
+
+        time_delta = 0.1
+        limited_action = np.array(
+            [action[0], action[1], action[2], time_delta], dtype=np.float32
+        )
+        speed_max = 28  # 28m/s = 100.8 km/h. Maximum speed should be >0.
+        dist_max = speed_max * time_delta
+
+        # Set time-delta
+        if action[3] != time_delta:
+            logger.warning(
+                f"{name}: Expected time-delta={time_delta}, but got time-delta={action[3]}."
+                f"Action time-delta automatically changed to {time_delta}."
+            )
+
+        # Limit Euclidean distance travelled
+        next_coord = action[:2]
+        vector = next_coord - prev_coord
+        dist = np.linalg.norm(vector)
+        if dist > dist_max:
+            unit_vector = vector / dist
+            limited_action[0], limited_action[1] = prev_coord + dist_max * unit_vector
+            logger.warning(
+                f"{name}: Allowed max speed={speed_max}, but got speed={dist/time_delta}."
+                f"Action x-coordinate and y-coordinate automatically changed from {next_coord} "
+                f"to {limited_action}."
+            )
+
+        return limited_action
 
 
 class TimeLimit(gym.Wrapper):
