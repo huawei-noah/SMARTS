@@ -64,7 +64,6 @@ class ObservationRecorder:
         self._scenario = next(scenario_iter)
         self._start_time = start_time if start_time is not None else 0.0
         self._end_time = end_time
-        self._max_sim_time = None
         assert self._scenario
         # TAI:  also record from social vehicles?
         assert self._scenario.traffic_history is not None
@@ -195,7 +194,7 @@ class ObservationRecorder:
                     f"No vehicle IDs specifed. Defaulting to all vehicles"
                 )
 
-        self._max_sim_time = 0
+        max_sim_time = 0
         all_vehicles = set(self._scenario.traffic_history.all_vehicle_ids())
         for v_id in vehicles_with_sensors:
             if v_id not in all_vehicles:
@@ -216,8 +215,8 @@ class ObservationRecorder:
             # TODO: get prefixed vehicle_id from TrafficHistoryProvider
             selected_vehicles.add(f"history-vehicle-{v_id}")
             exit_time = self._scenario.traffic_history.vehicle_final_exit_time(v_id)
-            if exit_time > self._max_sim_time:
-                self._max_sim_time = exit_time
+            if exit_time > max_sim_time:
+                max_sim_time = exit_time
 
         if not selected_vehicles:
             self._logger.error("No valid vehicles specified.  Aborting.")
@@ -232,10 +231,11 @@ class ObservationRecorder:
             current_vehicles,
             off_road_vehicles,
             selected_vehicles,
+            max_sim_time,
         )
 
         while True:
-            if self._smarts.elapsed_sim_time > self._max_sim_time:
+            if self._smarts.elapsed_sim_time > max_sim_time:
                 self._logger.info("All observed vehicles are finished. Exiting...")
                 break
             self._smarts.step({})
@@ -251,6 +251,7 @@ class ObservationRecorder:
                 current_vehicles,
                 off_road_vehicles,
                 selected_vehicles,
+                max_sim_time,
             )
 
         if self._output_dir:
@@ -271,8 +272,9 @@ class ObservationRecorder:
         current_vehicles,
         off_road_vehicles,
         selected_vehicles,
+        max_sim_time,
     ):
-        end_time = self._end_time if self._end_time is not None else self._max_sim_time
+        end_time = self._end_time if self._end_time is not None else max_sim_time
         if not (self._start_time <= self._smarts.elapsed_sim_time <= end_time):
             return
 
