@@ -743,6 +743,7 @@ class CameraSensor(Sensor):
             height,
             resolution,
         )
+        self._follow_vehicle()  # ensure we have a correct initial camera position
 
     def teardown(self):
         self._camera.teardown()
