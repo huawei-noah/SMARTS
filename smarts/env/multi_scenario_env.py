@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import os
+import numpy as np
 import pathlib
 from typing import Any, Dict, Optional, Tuple
 
@@ -283,7 +284,7 @@ def resolve_agent_interface(
     )
 
 class _LimitTargetPose(gym.Wrapper):
-    """Saves observation and uses it to limit the next TargetPose action range."""
+    """Uses previous observation to limit the next TargetPose action range."""
 
     def __init__(self, env: gym.Env):
         """
@@ -291,22 +292,22 @@ class _LimitTargetPose(gym.Wrapper):
             env (gym.Env): Environment to be wrapped.
         """
         super().__init__(env)
-        self._saved_obs: Dict[str, Dict[str, Any]]
+        self._prev_obs: Dict[str, Dict[str, Any]]
 
-    def step(self, action: Dict[str, ]):
+    def step(self, action: Dict[str, np.ndarray]):
         # Limit TargetPose
-        for agent_id, agent_obs in action.items():
-            self._saved_obs[agent_id]      
+        for agent_id, agent_action in action.items():
+            self._prev_obs[agent_id]      
+            action[agent_id][3]=0.1
 
 
-
-        obs, reward, done, info = self.env.step(action)
-        self._saved_obs = obs
-        return obs, reward, done, info
+        out = self.env.step(action)
+        self._prev_obs = out[0]
+        return out
 
     def reset(self, **kwargs):
         obs = self.env.reset(**kwargs)
-        self._saved_obs = obs
+        self._prev_obs = obs
         return obs
 
     def _limit():
