@@ -23,8 +23,13 @@ from multiprocessing import Process, Semaphore, synchronize
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from typing import List, Optional, Sequence
-
+import subprocess
 import click
+import webbrowser
+import time
+import sys
+import signal
+from contextlib import contextmanager
 
 
 @click.group(
@@ -185,7 +190,60 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
             )
 
 
+@scenario_cli.command(
+    name="preview", help="Build and run the scenario for viewing in Envision."
+)
+@click.option(
+    "--envision",
+    is_flag=True,
+    default=True,
+    help="Start up Envision server at the specified port when running an experiment",
+)
+@click.option(
+    "-p",
+    "--envision_port",
+    help="Port on which Envision will run.",
+    default=None,
+)
+@click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
+def preview_scenarios(envision, envision_port, scenario):
+    from cli.run import kill_process_group_afterwards
+    from smarts.env.run_env import main
+    from smarts.sstudio.build_scenario import clean_scenario
+    if os.path.exists(os.path.join(scenario, "scenario.py")):
+        subprocess.call(["scl", "scenario", "build", "--clean", f"{scenario}"])
+    with kill_process_group_afterwards():
+        if envision:
+            if envision_port is None:
+                envision_port = 8081
+            subprocess.Popen(
+                [
+                    "scl",
+                    "envision",
+                    "start",
+                    "-s",
+                    "./scenarios",
+                    "-p",
+                    str(envision_port),
+                ],
+            )
+            # Just in case: give Envision a bit of time to warm up
+            time.sleep(2)
+            url = "http://localhost:" + str(envision_port)
+            webbrowser.open_new_tab(url)
+
+        if (not envision) and envision_port:
+            click.echo(
+                "Port passed without starting up the envision server. Use the --envision option to start the server along with the --envision port option."
+            )
+        script = subprocess.Popen(
+            [sys.executable, "./smarts/env/run_env.py", scenario],
+        )
+        script.communicate()
+
+
 scenario_cli.add_command(build_scenario)
 scenario_cli.add_command(build_all_scenarios)
 scenario_cli.add_command(clean_scenario)
 scenario_cli.add_command(replay)
+scenario_cli.add_command(preview_scenarios)
