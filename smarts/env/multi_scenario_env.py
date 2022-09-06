@@ -299,7 +299,24 @@ class _LimitTargetPose(gym.Wrapper):
         super().__init__(env)
         self._prev_obs: Dict[str, Dict[str, Any]]
 
-    def step(self, action: Dict[str, np.ndarray]):
+    def step(
+        self, action: Dict[str, np.ndarray]
+    ) -> Tuple[
+        Dict[str, Any],
+        Dict[str, float],
+        Dict[str, bool],
+        Dict[str, Dict[str, Any]],
+    ]:
+        """Steps the environment.
+
+        Args:
+            action (Dict[str, Any]): Action for each agent.
+
+        Returns:
+            Tuple[ Dict[str, Any], Dict[str, float], Dict[str, bool], Dict[str, Dict[str, Any]] ]:
+                Observation, reward, done, and info, for each agent is returned.
+        """
+
         limited_actions: Dict[str, np.ndarray] = {}
         for agent_name, agent_action in action.items():
             limited_actions[agent_name] = self._limit(
@@ -312,13 +329,29 @@ class _LimitTargetPose(gym.Wrapper):
         self._prev_obs = out[0]
         return out
 
-    def reset(self, **kwargs):
+    def reset(self, **kwargs) -> Dict[str, Any]:
+        """Resets the environment.
+
+        Returns:
+            Dict[str, Any]: A dictionary of observation for each agent.
+        """
         obs = self.env.reset(**kwargs)
         self._prev_obs = obs
         return obs
 
-    def _limit(self, name, action, prev_coord):
-        """Set time delta and limit Euclidean distance travelled in TargetPose action space."""
+    def _limit(
+        self, name: str, action: np.ndarray, prev_coord: np.ndarray
+    ) -> np.ndarray:
+        """Set time delta and limit Euclidean distance travelled in TargetPose action space.
+
+        Args:
+            name (str): Agent's name.
+            action (np.ndarray): Agent's action.
+            prev_coord (np.ndarray): Agent's previous xy coordinate on the map.
+
+        Returns:
+            np.ndarray: Agent's TargetPose action which has fixed time-delta and constrained next xy coordinate.
+        """
 
         time_delta = 0.1
         limited_action = np.array(
@@ -343,37 +376,11 @@ class _LimitTargetPose(gym.Wrapper):
             limited_action[0], limited_action[1] = prev_coord + dist_max * unit_vector
             logger.warning(
                 f"{name}: Allowed max speed={speed_max}, but got speed={dist/time_delta}. "
-                f"Action x-coordinate and y-coordinate automatically changed from {next_coord} "
+                f"Next x-coordinate and y-coordinate automatically changed from {next_coord} "
                 f"to {limited_action[:2]}."
             )
 
         return limited_action
-
-
-class TimeLimit(gym.Wrapper):
-    def __init__(self, env, max_episode_steps=None):
-        super(TimeLimit, self).__init__(env)
-        if max_episode_steps is None and self.env.spec is not None:
-            max_episode_steps = env.spec.max_episode_steps
-        if self.env.spec is not None:
-            self.env.spec.max_episode_steps = max_episode_steps
-        self._max_episode_steps = max_episode_steps
-        self._elapsed_steps = None
-
-    def step(self, action):
-        assert (
-            self._elapsed_steps is not None
-        ), "Cannot call env.step() before calling reset()"
-        observation, reward, done, info = self.env.step(action)
-        self._elapsed_steps += 1
-        if self._elapsed_steps >= self._max_episode_steps:
-            info["TimeLimit.truncated"] = not done
-            done = True
-        return observation, reward, done, info
-
-    def reset(self, **kwargs):
-        self._elapsed_steps = 0
-        return self.env.reset(**kwargs)
 
 
 class _InfoScore(gym.Wrapper):
