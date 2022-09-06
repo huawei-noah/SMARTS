@@ -123,6 +123,7 @@ def multi_scenario_v0_env(
         sumo_headless=sumo_headless,
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
+    env = _LimitTargetPose(env=env)
     env = _InfoScore(env=env)
 
     return env
@@ -280,6 +281,62 @@ def resolve_agent_interface(
         road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
         waypoints=Waypoints(lookahead=waypoints_lookahead),
     )
+
+class _LimitTargetPose(gym.Wrapper):
+    """Saves observation and uses it to limit the next TargetPose action range."""
+
+    def __init__(self, env: gym.Env):
+        """
+        Args:
+            env (gym.Env): Environment to be wrapped.
+        """
+        super().__init__(env)
+        self._saved_obs: Dict[str, Dict[str, Any]]
+
+    def step(self, action: Dict[str, ]):
+        # Limit TargetPose
+        for agent_id, agent_obs in action.items():
+            self._saved_obs[agent_id]      
+
+
+
+        obs, reward, done, info = self.env.step(action)
+        self._saved_obs = obs
+        return obs, reward, done, info
+
+    def reset(self, **kwargs):
+        obs = self.env.reset(**kwargs)
+        self._saved_obs = obs
+        return obs
+
+    def _limit():
+        return None
+
+
+class TimeLimit(gym.Wrapper):
+    def __init__(self, env, max_episode_steps=None):
+        super(TimeLimit, self).__init__(env)
+        if max_episode_steps is None and self.env.spec is not None:
+            max_episode_steps = env.spec.max_episode_steps
+        if self.env.spec is not None:
+            self.env.spec.max_episode_steps = max_episode_steps
+        self._max_episode_steps = max_episode_steps
+        self._elapsed_steps = None
+
+    def step(self, action):
+        assert (
+            self._elapsed_steps is not None
+        ), "Cannot call env.step() before calling reset()"
+        observation, reward, done, info = self.env.step(action)
+        self._elapsed_steps += 1
+        if self._elapsed_steps >= self._max_episode_steps:
+            info["TimeLimit.truncated"] = not done
+            done = True
+        return observation, reward, done, info
+
+    def reset(self, **kwargs):
+        self._elapsed_steps = 0
+        return self.env.reset(**kwargs)
 
 
 class _InfoScore(gym.Wrapper):
