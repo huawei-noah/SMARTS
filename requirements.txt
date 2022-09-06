@@ -10,7 +10,7 @@ atari-py==0.2.6
 attrs==22.1.0
 Automat==20.2.0
 beautifulsoup4==4.11.1
-blessings==1.7
+blessed==1.19.1
 cached-property==1.5.2
 cachetools==5.2.0
 certifi==2022.6.15
@@ -38,8 +38,8 @@ google-auth==2.11.0
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 googleapis-common-protos==1.56.4
-gpustat==0.6.0
-grpcio==1.47.0
+gpustat==1.0.0
+grpcio==1.48.1
 gym==0.19.0
 h5py==3.7.0
 hyperlink==21.0.0
@@ -51,7 +51,7 @@ incremental==21.3.0
 iniconfig==1.1.1
 jsonpatch==1.32
 jsonpointer==2.3
-jsonschema==4.14.0
+jsonschema==4.15.0
 keras==2.9.0
 Keras-Preprocessing==1.1.2
 kiwisolver==1.4.4
@@ -63,7 +63,7 @@ matplotlib==3.5.3
 msgpack==1.0.4
 multidict==6.0.2
 numpy==1.21.6
-nvidia-ml-py3==7.352.0
+nvidia-ml-py==11.495.46
 oauthlib==3.2.0
 opencensus==0.11.0
 opencensus-context==0.1.3
@@ -80,17 +80,17 @@ pkgutil_resolve_name==1.3.10
 pluggy==1.0.0
 prometheus-client==0.14.1
 protobuf==3.19.4
-psutil==5.9.1
+psutil==5.9.2
 py==1.11.0
 py-cpuinfo==8.0.0
-py-spy==0.3.12
+py-spy==0.3.13
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pybullet==3.0.6
 Pygments==2.13.0
 pyparsing==3.0.9
 pyrsistent==0.18.1
-pytest==7.1.2
+pytest==7.1.3
 pytest-benchmark==3.4.1
 pytest-cov==3.0.0
 pytest-forked==1.4.0
@@ -117,7 +117,7 @@ tensorboard==2.9.1
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
 tensorboardX==2.5.1
-tensorflow==2.9.1
+tensorflow==2.9.2
 tensorflow-estimator==2.9.0
 tensorflow-io-gcs-filesystem==0.26.0
 termcolor==1.1.0
@@ -132,7 +132,7 @@ typing_extensions==4.3.0
 urllib3==1.26.12
 visdom==0.1.8.9
 wcwidth==0.2.5
-websocket-client==1.4.0
+websocket-client==1.4.1
 Werkzeug==2.2.2
 wrapt==1.14.1
 yarl==1.8.1
