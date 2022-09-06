@@ -318,7 +318,7 @@ class _LimitTargetPose(gym.Wrapper):
         return obs
 
     def _limit(self, name, action, prev_coord):
-        """Limit Euclidean distance travelled in TargetPose action space."""
+        """Set time delta and limit Euclidean distance travelled in TargetPose action space."""
 
         time_delta = 0.1
         limited_action = np.array(
