@@ -317,7 +317,7 @@ class _LimitTargetPose(gym.Wrapper):
         self._prev_obs = obs
         return obs
 
-    def _limit(name, action, prev_coord):
+    def _limit(self, name, action, prev_coord):
         """Limit Euclidean distance travelled in TargetPose action space."""
 
         time_delta = 0.1
@@ -330,7 +330,7 @@ class _LimitTargetPose(gym.Wrapper):
         # Set time-delta
         if action[3] != time_delta:
             logger.warning(
-                f"{name}: Expected time-delta={time_delta}, but got time-delta={action[3]}."
+                f"{name}: Expected time-delta={time_delta}, but got time-delta={action[3]}. "
                 f"Action time-delta automatically changed to {time_delta}."
             )
 
@@ -342,9 +342,9 @@ class _LimitTargetPose(gym.Wrapper):
             unit_vector = vector / dist
             limited_action[0], limited_action[1] = prev_coord + dist_max * unit_vector
             logger.warning(
-                f"{name}: Allowed max speed={speed_max}, but got speed={dist/time_delta}."
+                f"{name}: Allowed max speed={speed_max}, but got speed={dist/time_delta}. "
                 f"Action x-coordinate and y-coordinate automatically changed from {next_coord} "
-                f"to {limited_action}."
+                f"to {limited_action[:2]}."
             )
 
         return limited_action
