@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import logging
+import math
 import numpy as np
 import os
 import pathlib
@@ -62,6 +63,7 @@ def multi_scenario_v0_env(
     Action space for each agent:
         A `smarts.core.controllers.ActionSpaceType.TargetPose`, which is a
         sequence of [x-coordinate, y-coordinate, heading, and time-delta].
+        Use time-delta = 0.1 .
 
         Type: gym.spaces.Box(
                 low=np.array([-1e10, -1e10, -π, 0]),
@@ -361,7 +363,7 @@ class _LimitTargetPose(gym.Wrapper):
         dist_max = speed_max * time_delta
 
         # Set time-delta
-        if action[3] != time_delta:
+        if not math.isclose(action[3], time_delta, abs_tol=1e-3):
             logger.warning(
                 f"{name}: Expected time-delta={time_delta}, but got time-delta={action[3]}. "
                 f"Action time-delta automatically changed to {time_delta}."
