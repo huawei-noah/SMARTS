@@ -381,9 +381,14 @@ class _LimitTargetPose(gym.Wrapper):
             unit_vector = vector / dist
             limited_action[0], limited_action[1] = prev_coord + dist_max * unit_vector
             logger.warning(
-                f"{name}: Allowed max speed={speed_max}, but got speed={dist/time_delta}. "
-                f"Next x-coordinate and y-coordinate automatically changed from {next_coord} "
-                f"to {limited_action[:2]}."
+                "%s: Allowed max speed=%s, but got speed=%s. "
+                "Next x-coordinate and y-coordinate automatically changed from %s "
+                "to %s.",
+                name,
+                speed_max,
+                dist/time_delta,
+                next_coord,
+                limited_action[:2]
             )
 
         return limited_action
