@@ -88,7 +88,7 @@ def train(input_path, output_path):
             print(f"Adding data for vehicle id {id} in scenario {scenario}.")
 
             with open(
-                scenario_path / (f"Agent-history-vehicle-{id}.pkl"),
+                scenario_path / (f"sumo_sumo_1_Agent-history-vehicle-{id}.pkl"),
                 "rb",
             ) as f:
                 vehicle_data = pickle.load(f)
@@ -99,13 +99,9 @@ def train(input_path, output_path):
                     image_names.append(filename)
 
             image_names = sorted(image_names)
-
-            goal_pos_x = vehicle_data[float(image_names[-1].split("_Agent")[0])]["ego"][
-                "pos"
-            ][0]
-            goal_pos_y = vehicle_data[float(image_names[-1].split("_Agent")[0])]["ego"][
-                "pos"
-            ][1]
+            
+            goal_pos_x = vehicle_data[float(image_names[-1].split("_Agent")[0])].ego_vehicle_state.mission.goal.position.x
+            goal_pos_y = vehicle_data[float(image_names[-1].split("_Agent")[0])].ego_vehicle_state.mission.goal.position.y
             threshold = 3
 
             for i in range(len(image_names) - 1):
@@ -113,10 +109,10 @@ def train(input_path, output_path):
                     image.seek(0)
                     sim_time = image_names[i].split("_Agent")[0]
                     sim_time_next = image_names[i + 1].split("_Agent")[0]
-                    current_position = vehicle_data[float(sim_time)]["ego"]["pos"]
-                    current_heading = vehicle_data[float(sim_time)]["ego"]["heading"]
-                    next_position = vehicle_data[float(sim_time_next)]["ego"]["pos"]
-                    next_heading = vehicle_data[float(sim_time_next)]["ego"]["heading"]
+                    current_position = vehicle_data[float(sim_time)].ego_vehicle_state.position
+                    current_heading = vehicle_data[float(sim_time)].ego_vehicle_state.heading
+                    next_position = vehicle_data[float(sim_time_next)].ego_vehicle_state.position
+                    next_heading = vehicle_data[float(sim_time_next)].ego_vehicle_state.heading
                     trans_coor = get_trans_coor(
                         next_position[0],
                         next_position[1],
@@ -129,8 +125,12 @@ def train(input_path, output_path):
                     dx = trans_next[0, 0] - trans_cur[0, 0]
                     dy = trans_next[1, 0] - trans_cur[1, 0]
                     dheading = next_heading - current_heading
-                    events = vehicle_data[float(sim_time)]["events"]
-                    if all(value == 0 for value in events.values()):
+                    events = vehicle_data[float(sim_time)].events
+                    attributes = [a for a in dir(events) if not a.startswith('__')]
+                    events_values = []
+                    for a in attributes:
+                        events_values.append(getattr(events, a))
+                    if all(value == 0 for value in events_values):
                         terminal = 0
                     else:
                         terminal = 1
@@ -146,7 +146,7 @@ def train(input_path, output_path):
                     extended_ob = np.concatenate((bev, goal_obs), axis=0)
                     obs.append(extended_ob)
                     actions.append([dx, dy, dheading])
-                    dist_reward = vehicle_data[float(sim_time)]["dist"]
+                    dist_reward = vehicle_data[float(sim_time)].distance_travelled
                     goal_reward = goal_region_reward(
                         threshold,
                         goal_pos_x,
