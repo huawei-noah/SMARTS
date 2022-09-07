@@ -210,6 +210,7 @@ def preview_scenarios(envision, envision_port, scenario):
     from cli.run import kill_process_group_afterwards
     from smarts.env.run_env import main
     from smarts.sstudio.build_scenario import clean_scenario
+
     if os.path.exists(os.path.join(scenario, "scenario.py")):
         subprocess.call(["scl", "scenario", "build", "--clean", f"{scenario}"])
     with kill_process_group_afterwards():
@@ -232,10 +233,6 @@ def preview_scenarios(envision, envision_port, scenario):
             url = "http://localhost:" + str(envision_port)
             webbrowser.open_new_tab(url)
 
-        if (not envision) and envision_port:
-            click.echo(
-                "Port passed without starting up the envision server. Use the --envision option to start the server along with the --envision port option."
-            )
         script = subprocess.Popen(
             [sys.executable, "./smarts/env/run_env.py", scenario],
         )
