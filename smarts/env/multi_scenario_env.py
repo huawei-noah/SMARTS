@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import copy
 import logging
 import math
 import numpy as np
@@ -324,11 +325,11 @@ class _LimitTargetPose(gym.Wrapper):
             limited_actions[agent_name] = self._limit(
                 name=agent_name,
                 action=agent_action,
-                prev_coord=self._prev_obs[agent_name].ego_vehicle_state.position[:2],
+                prev_coord=self._prev_obs[agent_name]["pos"],
             )
 
         out = self.env.step(limited_actions)
-        self._prev_obs = out[0]
+        self._prev_obs = self._store(obs=out[0])
         return out
 
     def reset(self, **kwargs) -> Dict[str, Any]:
@@ -338,8 +339,14 @@ class _LimitTargetPose(gym.Wrapper):
             Dict[str, Any]: A dictionary of observation for each agent.
         """
         obs = self.env.reset(**kwargs)
-        self._prev_obs = obs
+        self._prev_obs = self._store(obs=obs)
         return obs
+
+    def _store(obs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+        filtered_obs: Dict[str, Dict[str, Any]] = {}
+        for agent_name, agent_obs in obs.items():
+            filtered_obs[agent_name] = {"pos":copy.deepcopy(agent_obs.ego_vehicle_state.position[:2])}
+        return filtered_obs
 
     def _limit(
         self, name: str, action: np.ndarray, prev_coord: np.ndarray
