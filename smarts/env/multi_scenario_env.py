@@ -342,10 +342,12 @@ class _LimitTargetPose(gym.Wrapper):
         self._prev_obs = self._store(obs=obs)
         return obs
 
-    def _store(obs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    def _store(self, obs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         filtered_obs: Dict[str, Dict[str, Any]] = {}
         for agent_name, agent_obs in obs.items():
-            filtered_obs[agent_name] = {"pos":copy.deepcopy(agent_obs.ego_vehicle_state.position[:2])}
+            filtered_obs[agent_name] = {
+                "pos": copy.deepcopy(agent_obs.ego_vehicle_state.position[:2])
+            }
         return filtered_obs
 
     def _limit(
@@ -377,7 +379,7 @@ class _LimitTargetPose(gym.Wrapper):
                 name,
                 time_delta,
                 action[3],
-                time_delta 
+                time_delta,
             )
 
         # Limit Euclidean distance travelled
@@ -388,14 +390,13 @@ class _LimitTargetPose(gym.Wrapper):
             unit_vector = vector / dist
             limited_action[0], limited_action[1] = prev_coord + dist_max * unit_vector
             logger.warning(
-                "%s: Allowed max speed=%s, but got speed=%s. "
-                "Next x-coordinate and y-coordinate automatically changed from %s "
-                "to %s.",
+                "%s: Allowed max speed=%s, but got speed=%s. Next x-coordinate "
+                "and y-coordinate automatically changed from %s to %s.",
                 name,
                 speed_max,
-                dist/time_delta,
+                dist / time_delta,
                 next_coord,
-                limited_action[:2]
+                limited_action[:2],
             )
 
         return limited_action
