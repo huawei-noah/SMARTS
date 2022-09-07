@@ -274,7 +274,6 @@ class VehicleIndex:
     @property
     def vehicles(self):
         """A list of all existing vehicles."""
-        # XXX: Order is not ensured
         return list(self._vehicles.values())
 
     def vehicleitems(self) -> Iterator[Tuple[str, Vehicle]]:

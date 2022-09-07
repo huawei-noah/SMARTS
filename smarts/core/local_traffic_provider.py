@@ -28,7 +28,7 @@ from bisect import bisect_left, bisect_right, insort
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Deque, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Any, Deque, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 from cached_property import cached_property
@@ -40,7 +40,7 @@ from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
-from .road_map import RoadMap, Waypoint
+from .road_map import RoadMap
 from .route_cache import RouteWithCache
 from .scenario import Scenario
 from .signals import SignalLightState, SignalState
@@ -53,6 +53,14 @@ from .utils.kinematics import (
 )
 from .utils.math import min_angles_difference_signed, radians_to_vec, vec_to_radians
 from .vehicle import VEHICLE_CONFIGS, VehicleState
+
+
+def _safe_division(n: float, d: float, default=math.inf):
+    """This method uses a short circuit form where `and` converts right side to true|false (as 1|0) in which cases are:
+    True and # == #
+    False and NaN == False
+    """
+    return d and n / d or default
 
 
 class LocalTrafficProvider(TrafficProvider):
@@ -121,8 +129,12 @@ class LocalTrafficProvider(TrafficProvider):
                 flow["end"] = float(flow["end"])
                 if "vehsPerHour" in flow:
                     freq = float(flow["vehsPerHour"])
-                    assert freq > 0.0
-                    flow["emit_period"] = 3600.0 / freq
+                    if freq <= 0:
+                        logging.warning(
+                            f"vehPerHour value is {freq}<=0 vehicles may not be emitted!!!"
+                        )
+                        freq = 0
+                    flow["emit_period"] = _safe_division(3600.0, freq)
                 elif "period" in flow:
                     period = float(flow["period"])
                     assert period > 0.0
@@ -789,20 +801,36 @@ class _TrafficActor:
             # we need to correct for not going straight across.
             # other things being equal, we target ~30 degrees (sin(30)=.5) on average.
             if abs(self.radius) > 1e5 or self.radius == 0:
-                return 1.0 / math.sin(theta)
+                return _safe_division(1.0, math.sin(theta), 1e6)
             # here we correct for the local road curvature (which affects how far we must travel)...
-            T = self.radius / self.width
+            T = _safe_division(self.radius, self.width, 1e6)
             assert (
                 abs(T) > 1.0
             ), f"abnormally high curvature?  radius={self.radius}, width={self.width} at offset {self.lane_coord.s} of lane {self.lane.lane_id}"
             if to_index > self.lane.index:
                 se = T * (T - 1)
                 return math.sqrt(
-                    2 * (se + 0.5 - se * math.cos(1 / (math.tan(theta) * (T - 1))))
+                    2
+                    * (
+                        se
+                        + 0.5
+                        - se
+                        * math.cos(
+                            _safe_division(1, (math.tan(theta) * (T - 1)), default=0)
+                        )
+                    )
                 )
             se = T * (T + 1)
             return math.sqrt(
-                2 * (se + 0.5 - se * math.cos(1 / (math.tan(theta) * (T + 1))))
+                2
+                * (
+                    se
+                    + 0.5
+                    - se
+                    * math.cos(
+                        _safe_division(1, (math.tan(theta) * (T + 1)), default=0)
+                    )
+                )
             )
 
         def crossing_time_at_speed(
@@ -944,7 +972,7 @@ class _TrafficActor:
         rt_ln = RoadMap.Route.RouteLane(lane, self._route_ind)
         path_len = self._route.distance_from(rt_ln) or lane.length
         path_len -= my_offset
-        lane_time_left = path_len / self.speed if self.speed else math.inf
+        lane_time_left = _safe_division(path_len, self.speed, default=0)
 
         half_len = 0.5 * self._state.dimensions.length
         front_bumper = my_offset + half_len
@@ -996,7 +1024,9 @@ class _TrafficActor:
         if my_idx == target_idx:
             return 0.0, True
         accel = self.acceleration
-        max_speed = self._lane_windows[target_idx].lane.speed_limit * self._speed_factor
+        max_speed = (
+            self._lane_windows[target_idx].lane.speed_limit * self._speed_factor
+        ) or 1e-13
         if self.speed < max_speed:
             # using my current acceleration is too conservative b/c I could
             # accelerate to a new speed as I change lanes (for example,
@@ -1030,7 +1060,9 @@ class _TrafficActor:
             self.speed, self._max_decel
         ):
             return False
-        min_gap = self._target_cutin_gap / self._aggressiveness
+        min_gap = _safe_division(
+            self._target_cutin_gap, self._aggressiveness, default=1e5
+        )
         max_gap = self._target_cutin_gap + 2
         if min_gap < lw.agent_gap < max_gap and self._crossing_time_into(target_ind)[1]:
             return random.random() < self._cutin_prob
@@ -1139,7 +1171,7 @@ class _TrafficActor:
             if l != self._lane and abs(my_radius) < 1e5:
                 l_radius = _get_radius(l)
                 if abs(l_radius) < 1e5:
-                    ratio = l_radius / my_radius
+                    ratio = _safe_division(l_radius, my_radius, default=0)
                     if ratio < 0:
                         ratio = 1.0
             self._lane_speed[l.index] = (ratio * self.speed, ratio * self.acceleration)
@@ -1243,8 +1275,10 @@ class _TrafficActor:
             final_range = window[-1].dist
 
             # the exponent here was determined by trial and error
-            if range_del < 0 and abs(bearing_del) < math.pi / final_range**1.4:
-                return -final_range / range_del
+            if range_del < 0 and abs(bearing_del) < _safe_division(
+                math.pi, final_range**1.4
+            ):
+                return _safe_division(-final_range, range_del)
             return math.inf
 
         def purge_unseen(self, seen: Set[str]):
@@ -1367,6 +1401,7 @@ class _TrafficActor:
                 self._backtrack_until_long_enough(result, il, cur_length, min_length)
 
     def _handle_junctions(self, dt: float, window: int = 5, max_range: float = 100.0):
+        assert max_range > 0, "Max range is used as denominator"
         rl = RoadMap.Route.RouteLane(self._target_lane_win.lane, self._route_ind)
         owner = self._owner()
         assert owner
@@ -1633,7 +1668,7 @@ class _TrafficActor:
     def _compute_acceleration(self, dt: float) -> float:
         emergency_decl = float(self._vtype.get("emergencyDecel", 4.5))
         assert emergency_decl >= 0.0
-        speed_denom = self.speed if self.speed else 0.1
+        speed_denom = self.speed
         # usually target_lane == lane, in which case the later terms here are redundant.
         # when they are different, we still care about lane because we are exiting it.
         # Rather than recompute the exit time from our current t-coord, we just
@@ -1641,13 +1676,13 @@ class _TrafficActor:
         time_cush = max(
             min(
                 self._target_lane_win.ttc,
-                self._target_lane_win.gap / speed_denom,
+                _safe_division(self._target_lane_win.gap, speed_denom),
                 self._target_lane_win.time_left,
                 self._lane_win.ttc,
-                self._lane_win.gap / speed_denom,
+                _safe_division(self._lane_win.gap, speed_denom),
                 2 * self._lane_win.time_left,
             ),
-            0,
+            1e-13,
         )
         min_time_cush = float(self._vtype.get("tau", 1.0))
         if (
@@ -1655,15 +1690,17 @@ class _TrafficActor:
             and time_cush < min_time_cush
         ):
             if self.speed > 0:
-                severity = 4 * (min_time_cush - time_cush) / min_time_cush
+                severity = 4 * _safe_division(
+                    (min_time_cush - time_cush), min_time_cush
+                )
                 return -emergency_decl * np.clip(severity, 0, 1.0)
             return 0
 
-        space_cush = max(min(self._target_lane_win.gap, self._lane_win.gap), 0)
+        space_cush = max(min(self._target_lane_win.gap, self._lane_win.gap), 1e-13)
         if space_cush < self._min_space_cush:
             if self.speed > 0:
-                severity = (
-                    4 * (self._min_space_cush - space_cush) / self._min_space_cush
+                severity = 4 * _safe_division(
+                    (self._min_space_cush - space_cush), self._min_space_cush
                 )
                 return -emergency_decl * np.clip(severity, 0, 1.0)
             return 0

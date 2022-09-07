@@ -2088,6 +2088,10 @@ def explore_scenario(
 if __name__ == "__main__":
     import warnings
 
+    warnings.warn(
+        "waymo_browser.py has been deprecated in favour of the scl waymo command line tools.",
+        category=DeprecationWarning,
+    )
     readline.set_completer_delims(" \t\n;")
     readline.parse_and_bind("tab: complete")
     warnings.filterwarnings("ignore", category=DeprecationWarning)

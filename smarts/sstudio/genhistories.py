@@ -860,10 +860,13 @@ class Waymo(_TrajectoryDataset):
             interp_rows = [None] * num_steps
             for j in range(num_steps):
                 row = rows[j]
-                timestep = self._dt_sec
                 time_current = row["sim_time"]
-                time_expected = round(j * timestep, 3)
+                time_expected = round(j * self._dt_sec, 3)
                 time_error = time_current - time_expected
+
+                assert (
+                    abs(time_error) < self._dt_sec
+                ), "Waymo data deviates by more than the size of 1 timestep. This likely indicates a gap in the dataset."
 
                 if not row["valid"] or time_error == 0:
                     continue
