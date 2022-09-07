@@ -365,8 +365,12 @@ class _LimitTargetPose(gym.Wrapper):
         # Set time-delta
         if not math.isclose(action[3], time_delta, abs_tol=1e-3):
             logger.warning(
-                f"{name}: Expected time-delta={time_delta}, but got time-delta={action[3]}. "
-                f"Action time-delta automatically changed to {time_delta}."
+                "%s: Expected time-delta=%s, but got time-delta=%s. "
+                "Action time-delta automatically changed to %s.",
+                name,
+                time_delta,
+                action[3],
+                time_delta 
             )
 
         # Limit Euclidean distance travelled
