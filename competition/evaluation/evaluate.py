@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__file__)
+logger.setLevel(logging.DEBUG)
 
 _SCORES_FILENAME = "scores.txt"
 _PHASES = ["validation", "track1", "track2"]
@@ -19,7 +20,7 @@ _EVALUATION_CONFIG_KEYS = {
 }
 _DEFAULT_EVALUATION_CONFIG = dict(
     phase="track1",
-    eval_episodes=50,
+    eval_episodes=2,
     seed=42,
     scenarios=[
         "1_to_2lane_left_turn_c",
@@ -113,21 +114,43 @@ def evaluate(config):
         )
 
     # Instantiate submitted policy.
-    policy = Policy()
+    # policy = Policy()
 
-    # Evaluate model for each scenario
+    import multiprocessing as mp
+    import copy
     score = Score()
-    for index, (env_name, (env, datastore, seed)) in enumerate(envs_eval.items()):
-        logger.info(f"\n{index}. Evaluating env {env_name}.\n")
-        counts, costs = run(
-            env=env,
-            datastore=datastore,
-            env_name=env_name,
-            policy=policy,
-            config=config,
-            seed=seed,
-        )
-        score.add(counts, costs)
+    mp_ctx = mp.get_context("spawn")
+    with mp_ctx.Pool(processes=3, maxtasksperchild=1) as p:
+        multiple_results = [
+            p.apply_async(
+                func=run, 
+                kwds=dict(
+                    env=env,
+                    datastore=datastore,
+                    env_name=env_name,
+                    policy=Policy(),
+                    config=copy.deepcopy(config),
+                    seed=seed,
+                )
+            ) 
+            for env_name, (env, datastore, seed) in envs_eval.items()
+        ]
+        for res in multiple_results:
+            result = res.get()
+            score.add(result[0], result[1])
+
+
+    # for index, (env_name, (env, datastore, seed)) in enumerate(envs_eval.items()):
+    #     logger.info(f"\n{index}. Evaluating env {env_name}.\n")
+    #     counts, costs = run(
+    #         env=env,
+    #         datastore=datastore,
+    #         env_name=env_name,
+    #         policy=policy,
+    #         config=config,
+    #         seed=seed,
+    #     )
+    #     score.add(counts, costs)
 
     rank = score.compute()
     logger.info("\nOverall Rank:\n", rank)
