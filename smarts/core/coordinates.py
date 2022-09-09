@@ -239,7 +239,7 @@ class Heading(float):
     @classmethod
     def from_sumo(cls, sumo_heading):
         """Sumo's space uses degrees, 0 faces north, and turns clockwise."""
-        heading = Heading._flip_clockwise(math.radians(sumo_heading))
+        heading = Heading.flip_clockwise(math.radians(sumo_heading))
         h = Heading(heading)
         h.source = "sumo"
         return h
@@ -257,7 +257,7 @@ class Heading(float):
     @property
     def as_sumo(self):
         """Convert to SUMO facing format"""
-        return math.degrees(Heading._flip_clockwise(self))
+        return math.degrees(Heading.flip_clockwise(self))
 
     def relative_to(self, other: "Heading"):
         """
@@ -278,7 +278,7 @@ class Heading(float):
         return radians_to_vec(self)
 
     @staticmethod
-    def _flip_clockwise(x):
+    def flip_clockwise(x):
         """Converts clockwise to counter-clockwise, and vice-versa."""
         return (2 * math.pi - x) % (2 * math.pi)
 

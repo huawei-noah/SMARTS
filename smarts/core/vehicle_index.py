@@ -274,7 +274,6 @@ class VehicleIndex:
     @property
     def vehicles(self):
         """A list of all existing vehicles."""
-        # XXX: Order is not ensured
         return list(self._vehicles.values())
 
     def vehicleitems(self) -> Iterator[Tuple[str, Vehicle]]:
@@ -298,8 +297,9 @@ class VehicleIndex:
             return
 
         for vehicle_id in vehicle_ids:
-            self._vehicles[vehicle_id].teardown()
-            del self._vehicles[vehicle_id]
+            vehicle = self._vehicles.pop(vehicle_id, None)
+            if vehicle is not None:
+                vehicle.teardown()
 
             # popping since sensor_states/controller_states may not include the
             # vehicle if it's not being controlled by an agent

@@ -104,6 +104,7 @@ We can run this agent with "scenarios/sumo/loop", one of the scenarios packaged 
 .. code-block:: python
 
    import gym
+   import numpy as np
    from smarts.core.agent import Agent
    from smarts.core.agent_interface import AgentInterface, AgentType
    from smarts.core.bezier_motion_planner import BezierMotionPlanner
@@ -139,7 +140,7 @@ We can run this agent with "scenarios/sumo/loop", one of the scenarios packaged 
 
    AGENT_ID = "Agent-007"
    agent_spec = AgentSpec(
-       interface=AgentInterface.from_type(AgentType.Tracker)
+       interface=AgentInterface.from_type(AgentType.Tracker),
        agent_params={"target_speed": 5},
        agent_builder=ExampleAgent
    )

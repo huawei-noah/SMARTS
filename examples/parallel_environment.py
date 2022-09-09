@@ -2,13 +2,15 @@ import pathlib
 
 import gym
 
+from smarts import sstudio
+
 gym.logger.set_level(40)
 
 from functools import partial
 from typing import Dict, Sequence, Tuple
 
+from argument_parser import default_argument_parser
 from smarts import sstudio
-from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType

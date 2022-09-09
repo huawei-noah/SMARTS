@@ -2,8 +2,8 @@ import logging
 import pathlib
 
 import gym
+from argument_parser import default_argument_parser
 
-from examples.argument_parser import default_argument_parser
 from smarts import sstudio
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
