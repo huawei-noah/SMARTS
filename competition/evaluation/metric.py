@@ -1,9 +1,10 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from typing import Any, Callable, Dict, Union
 from enum import Enum
 import operator
 
 from costs import COST_FUNCS, Costs
+from counts import Counts
 from smarts.core.sensors import Observation
 
 
@@ -116,27 +117,3 @@ def _reason(obs) -> _Completion:
         return _Completion.Crashed
     else:
         raise Exception(f"Unsupported agent done reason. Events: {obs.events}.")
-
-
-@dataclass
-class Counts:
-    crashes: float = 0
-    """ Total number of crashed episodes. An episode is considered crashed if
-    an agent becomes done due to collisions, driving off road, or reaching 
-    max episode steps. Fractional values occur when only some agents crashes
-    the episode in a multi-agent case.
-    """
-    episodes: int = 0
-    """ Total number of episodes.
-    """
-    episode_agents: int = 0
-    """ Total number of equivalent episodes. For an n-agent scenario, 
-    n-episodes are added to the total.
-    """
-    steps: int = 0
-    """ Total number of `act` steps taken.
-    """
-    steps_adjusted: int = 0
-    """ Total number of `act` steps taken. Any crashed episode is assumed to
-    have taken `_MAX_STEPS`.
-    """

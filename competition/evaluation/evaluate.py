@@ -1,10 +1,9 @@
 import argparse
-import copy
 import logging
-import multiprocessing as mp
 import os
 import subprocess
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
@@ -128,22 +127,18 @@ def evaluate(config):
     score = Score()
 
     # Multiprocessed evaluation.
-    mp_ctx = mp.get_context("spawn")
-    with mp_ctx.Pool(processes=3, maxtasksperchild=1) as p:
-        multiple_results = [
-            p.apply_async(
-                func=run,
-                kwds=dict(
-                    env_name=cloudpickle.dumps(env_name),
-                    env_ctor=cloudpickle.dumps(env_ctor),
-                    policy_ctor=cloudpickle.dumps(Policy),
-                    config=cloudpickle.dumps(copy.deepcopy(config)),
-                ),
+    with ProcessPoolExecutor(max_workers=3) as pool:
+        # Submit all tasks and get future objects
+        futures = [
+            pool.submit(
+                _worker, cloudpickle.dumps([env_name, env_ctor, Policy, config])
             )
             for env_name, env_ctor in env_ctors.items()
         ]
-        for result in multiple_results:
-            counts, costs = result.get()
+        # Process results from tasks in order of task completion
+        for future in as_completed(futures):
+            # Get the result
+            counts, costs = future.result()
             score.add(counts, costs)
 
     # for index, (env_name, env_ctor) in enumerate(env_ctors.items()):
@@ -163,17 +158,22 @@ def evaluate(config):
     return rank
 
 
-def run(
-    env_name: bytes, # str
-    env_ctor: bytes, # Callable[[], "gym.Env"]
-    policy_ctor: bytes, # Callable[[], "Policy"]
-    config: bytes, # Dict[str, Any]
-):
-    env_name = cloudpickle.loads(env_name)
+def _worker(input: bytes) -> Tuple[Counts, Costs]:
+    """Compute metrics of a given env.
+
+    Args:
+        input (bytes): cloudpickle of [env_name: str, env_ctor: Callable[[], gym.Env],
+            policy_ctor: Callable[[], Policy], config: Dict[str, Any]]
+
+    Returns:
+        Tuple[Counts, Costs]: Count and cost metrics.
+    """
+
+    env_name, env_ctor, policy_ctor, config = cloudpickle.loads(input)
+    env: gym.Env
     datastore: DataStore
-    env, datastore = cloudpickle.loads(env_ctor)()
-    policy = cloudpickle.loads(policy_ctor)()
-    config = cloudpickle.loads(config)
+    env, datastore = env_ctor()
+    policy = policy_ctor()
 
     # Instantiate metric for score calculation.
     metric = Metric(env_name=env_name, agent_names=datastore.agent_names)
@@ -261,8 +261,8 @@ if __name__ == "__main__":
         import bubble_env_contrib
     except:
         raise ImportError(
-            "Missing evaluation dependencies. Please refer to the Setup section of README.md"
-            " on how to install the dependencies or use the `--auto_install_pip_deps` flag."
+            "Dependencies are missing. Run this evaluation script with "
+            "`--auto_install_pip_deps` flag to install dependencies."
         )
 
     req_file = os.path.join(submit_dir, "requirements.txt")
@@ -272,6 +272,8 @@ if __name__ == "__main__":
     import gym
     import cloudpickle
     from copy_data import CopyData, DataStore
+    from costs import Costs
+    from counts import Counts
     from metric import Metric
     from score import Score
     from utils import load_config, merge_config, validate_config, write_output
