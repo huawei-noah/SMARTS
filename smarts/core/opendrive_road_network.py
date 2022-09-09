@@ -1614,8 +1614,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         starting_road: Optional[RoadMap.Road] = None,
         only_drivable: bool = True,
     ) -> RoadMap.Route:
-        """
-        """
+        """ """
         assert not starting_road or not only_drivable or starting_road.is_drivable
         route = OpenDriveRoadNetwork.Route(self)
         next_roads = [starting_road] if starting_road else list(self._roads.values())

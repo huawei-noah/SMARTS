@@ -65,7 +65,7 @@ import numpy as np
 
 def batches(list_, n):
     """Split an indexable container into `n` batches.
-    
+
     :param list_: The iterable to split into parts
     :param n: The number of batches
     """
@@ -161,7 +161,7 @@ def squared_dist(a, b) -> float:
 def signed_dist_to_line(point, line_point, line_dir_vec) -> float:
     """Computes the signed distance to a directed line
     The signed of the distance is:
-    
+
       - negative if point is on the right of the line
       - positive if point is on the left of the line
 

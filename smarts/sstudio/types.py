@@ -176,7 +176,7 @@ class SmartsLaneChangingModel(LaneChangingModel):
 
 class SmartsJunctionModel(JunctionModel):
     """Implements the simple junction model built-into SMARTS.
-    
+
     :param yield_to_agents:
 
         There are 3 possible values for this:
@@ -194,8 +194,8 @@ class SmartsJunctionModel(JunctionModel):
                 - Vehicles on roads with more lanes have the right-of-way
                     relative to vehicles on intersecting roads with less lanes;
                 - All other things being equal, the vehicle to the right
-                    (in the counter-clockwise direction) has the right-of-way.  
-                         
+                    (in the counter-clockwise direction) has the right-of-way.
+
     :param wait_to_restart:
         The amount of time in seconds after stopping at a signal or stop sign
         before this vehicle will start to go again.  Default:  0.0

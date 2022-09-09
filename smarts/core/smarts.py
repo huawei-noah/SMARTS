@@ -209,7 +209,7 @@ class SMARTS(ProviderManager):
         """Progress the simulation by a fixed or specified time.
 
         :param agent_actions: Actions that the agents want to perform on their actors.
-        :param time_delta_since_last_step: Overrides the simulation step length. 
+        :param time_delta_since_last_step: Overrides the simulation step length.
             Progress simulation time by the given amount.
             Note the time_delta_since_last_step param is in (nominal) seconds.
         :return: observations, rewards, dones, infos
@@ -380,7 +380,7 @@ class SMARTS(ProviderManager):
         """Reset the simulation, reinitialize with the specified scenario. Then progress the
          simulation up to the first time an agent returns an observation, or ``start_time`` if there
          are no agents in the simulation.
-         
+
         :param scenario: The scenario to reset the simulation with.
         :type scenario: class: Scenario
         :param start_time:
@@ -975,9 +975,9 @@ class SMARTS(ProviderManager):
 
     def teardown_social_agents(self, agent_ids: Iterable[str]):
         """
-        Teardown agents in the given sequence
-        Params:
-            agent_ids: Sequence of agent ids
+        Teardown agents in the given sequence.
+
+        :param agent_ids: Sequence of agent ids
         """
         agents_to_teardown = {
             id_
@@ -989,9 +989,9 @@ class SMARTS(ProviderManager):
     def teardown_social_agents_without_actors(self, agent_ids: Iterable[str]):
         """
         Teardown agents in the given list that have no actors registered as
-        controlled-by or shadowed-by (for each given agent.)
-        Params:
-            agent_ids: Sequence of agent ids
+        controlled-by or shadowed-by
+
+        :param agent_ids: Sequence of agent ids
         """
         self._check_valid()
         original_agents = set(agent_ids)

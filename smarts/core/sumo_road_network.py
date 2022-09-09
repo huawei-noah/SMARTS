@@ -926,8 +926,7 @@ class SumoRoadNetwork(RoadMap):
         starting_road: Optional[RoadMap.Road] = None,
         only_drivable: bool = True,
     ) -> RoadMap.Route:
-        """
-        """
+        """Generate a random route."""
         assert not starting_road or not only_drivable or starting_road.is_drivable
         route = SumoRoadNetwork.Route(self)
         next_edges = (

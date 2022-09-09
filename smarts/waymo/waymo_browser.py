@@ -46,8 +46,8 @@ try:
     from waymo_open_dataset.protos import scenario_pb2
 except (ModuleNotFoundError, ImportError):
     import sys
-    from typing import Any
     from collections import namedtuple
+    from typing import Any
 
     scenario_pb2 = namedtuple("scenario_pb2", "Scenario")(Any)
     print(sys.exc_info())
@@ -2101,7 +2101,10 @@ if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
     from types import ModuleType
-    assert isinstance(scenario_pb2, ModuleType), "Module not installed please see warnings."
+
+    assert isinstance(
+        scenario_pb2, ModuleType
+    ), "Module not installed please see warnings."
 
     parser = argparse.ArgumentParser(
         prog="waymo_browser.py",

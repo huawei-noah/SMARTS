@@ -30,7 +30,7 @@ class FormatAction(gym.ActionWrapper):
     """Sets gym-compliant action space for SMARTS environment.
 
     Note:
-    
+
         (a) Only ``ActionSpaceType.Continuous``, ``ActionSpaceType.Lane``, and
             ``ActionSpaceType.TargetPose`` are supported by this wrapper now.
 

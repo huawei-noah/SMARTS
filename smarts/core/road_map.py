@@ -165,7 +165,7 @@ class RoadMap:
         only_drivable: bool = True,
     ) -> RoadMap.Route:
         """Generate a random route contained in this road map.
-        
+
         :param max_route_len: The total number of roads in the route.
         :param starting_road: If specified, the route will start with this road.
         :param only_drivable: If True, will restrict the route to only driveable roads;

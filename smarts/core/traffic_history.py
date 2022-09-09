@@ -152,7 +152,7 @@ class TrafficHistory:
     def decode_vehicle_type(self, vehicle_type: int) -> str:
         """Convert from the dataset type id to their config type.
         Options from NGSIM and INTERACTION currently include:
-        
+
         1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
         This actually returns a ``vehicle_config_type``.
         """

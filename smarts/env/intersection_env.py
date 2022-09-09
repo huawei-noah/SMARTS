@@ -77,8 +77,8 @@ def intersection_v0_env(
         + Steps per episode exceed 3000.
         + Agent collides, drives off road, drives off route, drives on shoulder, or drives on wrong way.
 
-    Solved requirement: If agent successfully navigates the intersection then ``info["score"]`` 
-        will equal 1, else it is 0. Considered solved when ``info["score"] == 1`` 
+    Solved requirement: If agent successfully navigates the intersection then ``info["score"]``
+        will equal 1, else it is 0. Considered solved when ``info["score"] == 1``
         is achieved over 800 consecutive episodes.
 
     :param headless: If True, disables visualization in Envision. Defaults to False.

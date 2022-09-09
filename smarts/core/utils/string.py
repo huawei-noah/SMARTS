@@ -24,7 +24,7 @@ import math
 
 def truncate(str_, length, separator="..."):
     """Truncates a string to the given length by removing internal characters.
-    
+
     :param str_: The string to truncate.
     :param length: The length to truncate the string to.
     :param separator: The intermediary characters that replaces removed characters.
