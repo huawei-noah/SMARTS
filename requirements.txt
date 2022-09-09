@@ -139,4 +139,3 @@ yarl==1.8.1
 yattag==1.14.0
 zipp==3.8.1
 zope.interface==5.4.0
-sphinxcontrib-apidoc==0.3.0
