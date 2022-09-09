@@ -645,21 +645,19 @@ class Scenario:
         ] = None,
     ) -> Sequence[Mission]:
         """Discovers vehicle missions for the given window of time.
-        Args:
-            exists_at_or_after(float):
-                The starting time of any vehicles to query for.
-            ends_before(float):
-                The last point in time a vehicle should be in the simulation. Vehicles ending after
-                that time are not considered.
-            minimum_vehicle_window(float):
-                The minimum time that a vehicle must be in the simulation to be considered for a
-                mission.
-            filter(func(Sequence[TrafficHistoryVehicleWindow]) -> Sequence[TrafficHistoryVehicleWindow]):
-                A filter which passes in traffic vehicle information and then should be used purely
-                to filter the sequence down.
-        Returns:
-            (List[Mission]): A set of missions derived from the traffic history.
 
+        :param exists_at_or_after: The starting time of any vehicles to query for.
+        :type exists_at_or_after: float
+        :param ends_before: The last point in time a vehicle should be in the simulation.
+            Vehicles ending after that time are not considered.
+        :type ends_before: float
+        :param minimum_vehicle_window: The minimum time that a vehicle must be in the simulation
+            to be considered for a mission.
+        :type minimum_vehicle_window: float
+        :param filter: A filter in the form of ``(func(Sequence[TrafficHistoryVehicleWindow]) -> Sequence[TrafficHistoryVehicleWindow])``,
+            which passes in traffic vehicle information and then should be used purely to filter the sequence down.
+        :return: A set of missions derived from the traffic history.
+        :rtype: List[smarts.core.plan.Mission]
         """
         vehicle_windows = self._traffic_history.vehicle_windows_in_range(
             exists_at_or_after, ends_before, minimum_vehicle_window

@@ -143,7 +143,7 @@ class Point(NamedTuple):
 class RefLinePoint(NamedTuple):
     """A reference line coordinate.
     See the Reference Line coordinate system in OpenDRIVE here:
-       https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems
+    `https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems`
     Also known as the Frenet coordinate system.
     """
 

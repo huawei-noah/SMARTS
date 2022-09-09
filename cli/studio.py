@@ -58,7 +58,7 @@ def scenario_cli():
 def build_scenario(clean: bool, allow_offset_map: bool, scenario: str, seed: int):
     click.echo(f"build-scenario {scenario}")
 
-    from smarts.sstudio.build_scenario import build_single_scenario
+    from smarts.sstudio.scenario_construction import build_single_scenario
 
     assert seed == None or isinstance(seed, (int))
 
@@ -72,7 +72,7 @@ def _build_single_scenario_proc(
     semaphore: synchronize.Semaphore,
     seed: int,
 ):
-    from smarts.sstudio.build_scenario import build_single_scenario
+    from smarts.sstudio.scenario_construction import build_single_scenario
 
     semaphore.acquire()
     try:
@@ -159,7 +159,7 @@ def _build_all_scenarios(
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
 def clean_scenario(scenario: str):
-    from smarts.sstudio.build_scenario import clean_scenario
+    from smarts.sstudio.scenario_construction import clean_scenario
 
     clean_scenario(scenario)
 

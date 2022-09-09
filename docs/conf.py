@@ -45,7 +45,7 @@ extensions = [
 # configuring automated generation of api documentation
 # See: https://github.com/sphinx-contrib/apidoc
 apidoc_module_dir = ".."
-apidoc_excluded_paths = ["scenarios", "setup.py"]
+apidoc_excluded_paths = ["scenarios", "setup.py", "smarts/ros"]
 apidoc_module_first = True
 apidoc_extra_args = [
     "--force",

@@ -138,7 +138,7 @@ define a `MapSpec` object in your `scenario.py`.
 
 
 Convert an existing map to SUMO
-----------------------------
+-------------------------------
 If you have a suitable file in another format, you can turn it into a SUMO road network using the `sumo2mesh.py` conversion utility:
 
 .. code-block:: bash
@@ -171,7 +171,7 @@ going to "Processing" -> "Options", choosing the "Junctions" section, and then m
 
 
 Edit an existing SUMO map
-----------------------
+-------------------------
 
 "file" -> "Open Network..." to open an existing map.
 

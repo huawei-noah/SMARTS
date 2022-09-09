@@ -52,56 +52,78 @@ def multi_scenario_v0_env(
     """An environment with a mission to be completed by a single or multiple ego agents.
 
     Observation space for each agent:
-        A `smarts.core.sensors.Observation` is returned as observation.
+
+        A ``smarts.core.sensors.Observation`` is returned as observation.
 
     Action space for each agent:
-        A `smarts.core.controllers.ActionSpaceType.TargetPose`, which is a
-        sequence of [x-coordinate, y-coordinate, heading, and time-delta].
+    .. note::
 
-        Type: gym.spaces.Box(
-                low=np.array([-1e10, -1e10, -π, 0]),
-                high=np.array([1e10, 1e10, π, 1e10]),
-                dtype=np.float32
-            )
+        A ``smarts.core.controllers.ActionSpaceType.TargetPose``, which is a
+        sequence of ``[x-coordinate, y-coordinate, heading, and time-delta]``.
 
-        Action                                              Value range
-        Ego's next x-coordinate on the map                  [-1e10,1e10]
-        Ego's next y-coordinate on the map                  [-1e10,1e10]
-        Ego's next heading with respect to the map's axes   [-π,π]
-        Time delta to reach the given pose                  [-1e10,1e10]
+        Type:
+
+        .. code-block:: python
+
+            gym.spaces.Box(
+                    low=np.array([-1e10, -1e10, -π, 0]),
+                    high=np.array([1e10, 1e10, π, 1e10]),
+                    dtype=np.float32
+                    )
+
+        .. list-table:: Table
+            :widths: 25 25
+            :header-rows: 1
+
+            * - Action
+              - Value range
+            * - Ego's next x-coordinate on the map
+              - [-1e10,1e10]
+            * - Ego's next y-coordinate on the map
+              - [-1e10,1e10]
+            * - Ego's next heading with respect to the map's axes
+              - [-π,π]
+            * - Time delta to reach the given pose
+              - [-1e10,1e10]
 
     Reward:
-        Reward is distance travelled (in meters) in each step, including the
-        termination step.
+
+        Reward is distance travelled (in meters) in each step, including the termination step.
 
     Episode termination:
+
+    .. note::
+
         Episode is terminated if any of the following occurs.
-        + Steps per episode exceed 800.
-        + Agent collides, drives off road, drives off route, or drives on wrong way.
+
+            1. Steps per episode exceed 800.
+
+            2. Agent collides, drives off road, drives off route, or drives on wrong way.
 
     Solved requirement:
-        If agent successfully completes the mission then `info["score"]` will
-        equal 1, else it is 0. Considered solved when `info["score"] == 1` is
+
+    .. note::
+
+        If agent successfully completes the mission then ``info["score"]`` will
+        equal 1, else it is 0. Considered solved when ``info["score"] == 1`` is
         achieved over 500 consecutive episodes.
 
-    Args:
-        scenario (str): Scenario name or path to scenario folder.
-        img_meters (int): Ground square size covered by image observations.
-            Defaults to 64 x 64 meter (height x width) square.
-        img_pixels (int): Pixels representing the square image observations.
-            Defaults to 256 x 256 pixels (height x width) square.
-        action_space: Action space used. Defaults to "Continuous".
-        headless (bool, optional): If True, disables visualization in
-            Envision. Defaults to False.
-        visdom (bool, optional): If True, enables visualization of observed
-            RGB images in Visdom. Defaults to False.
-        sumo_headless (bool, optional): If True, disables visualization in
-            SUMO GUI. Defaults to True.
-        envision_record_data_replay_path (Optional[str], optional):
-            Envision's data replay output directory. Defaults to None.
-
-    Returns:
-        An environment described by the input argument `scenario`.
+    :param scenario: Scenario name or path to scenario folder.
+    :type scenario: str
+    :param img_meters: Ground square size covered by image observations. Defaults to 64 x 64 meter (height x width) square.
+    :type img_meters: int
+    :param img_pixels: Pixels representing the square image observations. Defaults to 256 x 256 pixels (height x width) square.
+    :type img_pixels: int
+    :param action_space: Action space used. Defaults to ``Continuous``.
+    :param headless: If True, disables visualization in Envision. Defaults to False.
+    :type headless: bool, optional
+    :param visdom: If True, enables visualization of observed RGB images in Visdom. Defaults to False.
+    :type visdom: bool, optional
+    :param sumo_headless: If True, disables visualization in SUMO GUI. Defaults to True.
+    :type sumo_headless: bool, optional
+    :param envision_record_data_replay_path: Envision's data replay output directory. Defaults to None.
+    :type envision_record_data_replay_path: Optional[str], optional
+    :return: An environment described by the input argument ``scenario``.
     """
 
     env_specs = _get_env_specs(scenario)
