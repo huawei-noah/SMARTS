@@ -1,5 +1,4 @@
 import argparse
-import cloudpickle
 import copy
 import logging
 import multiprocessing as mp
@@ -168,7 +167,7 @@ def run(
     env_name: bytes, # str
     env_ctor: bytes, # Callable[[], "gym.Env"]
     policy_ctor: bytes, # Callable[[], "Policy"]
-    config: bytes, #Dict[str, Any]
+    config: bytes, # Dict[str, Any]
 ):
     env_name = cloudpickle.loads(env_name)
     datastore: DataStore
@@ -271,7 +270,7 @@ if __name__ == "__main__":
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
 
     import gym
-
+    import cloudpickle
     from copy_data import CopyData, DataStore
     from metric import Metric
     from score import Score
