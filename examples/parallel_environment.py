@@ -7,6 +7,7 @@ gym.logger.set_level(40)
 from functools import partial
 from typing import Dict, Sequence, Tuple
 
+from smarts import sstudio
 from examples.argument_parser import default_argument_parser
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface
@@ -15,7 +16,6 @@ from smarts.core.sensors import Observation
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.parallel_env import ParallelEnv
-from smarts.sstudio import scenario_construction
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -226,7 +226,7 @@ if __name__ == "__main__":
             )
         ]
 
-    build_scenario(args.scenarios)
+    sstudio.build_scenario(args.scenarios)
 
     print("\nParallel environments with asynchronous episodes.")
     main(
