@@ -1,10 +1,14 @@
 import argparse
+import cloudpickle
+import copy
 import logging
+import multiprocessing as mp
 import os
 import subprocess
 import sys
+from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.DEBUG)
@@ -20,7 +24,7 @@ _EVALUATION_CONFIG_KEYS = {
 }
 _DEFAULT_EVALUATION_CONFIG = dict(
     phase="track1",
-    eval_episodes=2,
+    eval_episodes=1,
     seed=42,
     scenarios=[
         "1_to_2lane_left_turn_c",
@@ -32,7 +36,7 @@ _DEFAULT_EVALUATION_CONFIG = dict(
         "3lane_cut_in",
         "3lane_overtake",
     ],
-    bubble_env_evaluation_seeds=[],
+    bubble_env_evaluation_seeds=[6],
 )
 _SUBMISSION_CONFIG_KEYS = {
     "img_meters",
@@ -44,138 +48,137 @@ _DEFAULT_SUBMISSION_CONFIG = dict(
 )
 
 
-def wrap_env(
-    env,
-    agent_ids: List[str],
-    datastore: "DataStore",
-    wrappers=[],
-):
-    """Make environment.
+def _make_env(
+    env_type: str,
+    scenario: Optional[str],
+    shared_configs: Dict[str, Any],
+    seed: Optional[int],
+    wrapper_ctors: Callable[[], Sequence["gym.Wrapper"]],
+) -> Tuple["gym.Env", "DataStore"]:
+    """Build env.
 
     Args:
-        env (gym.Env): The environment to wrap.
-        wrappers (List[gym.Wrapper], optional): Sequence of gym environment wrappers.
-            Defaults to empty list [].
+        env_type (str): Env type.
+        scenario (Optional[str]): Scenario name or path to scenario folder.
+        shared_configs (Dict[str, Any]): Env configs.
+        seed (Optional[int]): Env seed.
+        wrapper_ctors (Callable[[],Sequence[gym.Wrapper]]): Sequence of gym environment wrappers.
+
+    Raises:
+        ValueError: If unknown env type is supplied.
 
     Returns:
-        gym.Env: Environment wrapped for evaluation.
+        Tuple[gym.Env, "DataStore"]: Wrapped environment and the datastore storing the observations.
     """
+
+    # Make env.
+    if env_type == "smarts.env:multi-scenario-v0":
+        env = gym.make(env_type, scenario=scenario, **shared_configs)
+    elif env_type == "bubble_env_contrib:bubble_env-v0":
+        env = gym.make(env_type, **shared_configs)
+    else:
+        raise ValueError("Unknown env type.")
+
+    # Make datastore.
+    datastore = DataStore()
     # Make a copy of original info.
-    env = CopyData(env, agent_ids, datastore)
+    env = CopyData(env, list(env.agent_specs.keys()), datastore)
     # Disallow modification of attributes starting with "_" by external users.
     env = gym.Wrapper(env)
 
-    # Wrap the environment
+    # Wrap the environment.
+    wrappers = wrapper_ctors()
     for wrapper in wrappers:
         env = wrapper(env)
 
-    return env
+    # Set seed.
+    env.seed(seed)
+
+    return env, datastore
 
 
 def evaluate(config):
-    base_scenarios = config["scenarios"]
     shared_configs = dict(
         action_space="TargetPose",
         img_meters=int(config["img_meters"]),
         img_pixels=int(config["img_pixels"]),
         sumo_headless=True,
     )
-    # Make evaluation environments.
-    envs_eval = {}
-    for scenario in base_scenarios:
-        env = gym.make(
-            "smarts.env:multi-scenario-v0", scenario=scenario, **shared_configs
+    # Make environment constructors.
+    env_ctors = {}
+    for scenario in config["scenarios"]:
+        env_ctors[f"{scenario}"] = partial(
+            _make_env,
+            env_type="smarts.env:multi-scenario-v0",
+            scenario=scenario,
+            shared_configs=shared_configs,
+            seed=config["seed"],
+            wrapper_ctors=submitted_wrappers,
         )
-        datastore = DataStore()
-        envs_eval[f"{scenario}"] = (
-            wrap_env(
-                env,
-                agent_ids=list(env.agent_specs.keys()),
-                datastore=datastore,
-                wrappers=submitted_wrappers(),
-            ),
-            datastore,
-            None,
-        )
-
-    bonus_eval_seeds = config.get("bubble_env_evaluation_seeds", [])
-    for seed in bonus_eval_seeds:
-        env = gym.make("bubble_env_contrib:bubble_env-v0", **shared_configs)
-        datastore = DataStore()
-        envs_eval[f"bubble_env_{seed}"] = (
-            wrap_env(
-                env,
-                agent_ids=list(env.agent_ids),
-                datastore=datastore,
-                wrappers=submitted_wrappers(),
-            ),
-            datastore,
-            seed,
+    for seed in config["bubble_env_evaluation_seeds"]:
+        env_ctors[f"bubble_env_{seed}"] = partial(
+            _make_env,
+            env_type="bubble_env_contrib:bubble_env-v0",
+            scenario=None,
+            shared_configs=shared_configs,
+            seed=seed + config["seed"],
+            wrapper_ctors=submitted_wrappers,
         )
 
     # Instantiate submitted policy.
-    # policy = Policy()
-
-    import multiprocessing as mp
-    import copy
     score = Score()
+
+    # Multiprocessed evaluation.
     mp_ctx = mp.get_context("spawn")
     with mp_ctx.Pool(processes=3, maxtasksperchild=1) as p:
         multiple_results = [
             p.apply_async(
-                func=run, 
+                func=run,
                 kwds=dict(
-                    env=env,
-                    datastore=datastore,
-                    env_name=env_name,
-                    policy=Policy(),
-                    config=copy.deepcopy(config),
-                    seed=seed,
-                )
-            ) 
-            for env_name, (env, datastore, seed) in envs_eval.items()
+                    env_name=cloudpickle.dumps(env_name),
+                    env_ctor=cloudpickle.dumps(env_ctor),
+                    policy_ctor=cloudpickle.dumps(Policy),
+                    config=cloudpickle.dumps(copy.deepcopy(config)),
+                ),
+            )
+            for env_name, env_ctor in env_ctors.items()
         ]
-        for res in multiple_results:
-            result = res.get()
-            score.add(result[0], result[1])
+        for result in multiple_results:
+            counts, costs = result.get()
+            score.add(counts, costs)
 
-
-    # for index, (env_name, (env, datastore, seed)) in enumerate(envs_eval.items()):
+    # for index, (env_name, env_ctor) in enumerate(env_ctors.items()):
     #     logger.info(f"\n{index}. Evaluating env {env_name}.\n")
     #     counts, costs = run(
-    #         env=env,
-    #         datastore=datastore,
     #         env_name=env_name,
-    #         policy=policy,
+    #         env_ctor=env_ctor,
+    #         policy_ctor=Policy,
     #         config=config,
-    #         seed=seed,
     #     )
     #     score.add(counts, costs)
 
     rank = score.compute()
-    logger.info("\nOverall Rank:\n", rank)
+    logger.info(f"\nOverall Rank: {rank}\n")
     logger.info("\nFinished evaluating.\n")
-
-    # Close all environments
-    for env, _, _ in envs_eval.values():
-        env.close()
 
     return rank
 
 
 def run(
-    env,
-    datastore: "DataStore",
-    env_name: str,
-    policy: "Policy",
-    config: Dict[str, Any],
-    seed: Optional[int],
+    env_name: bytes, # str
+    env_ctor: bytes, # Callable[[], "gym.Env"]
+    policy_ctor: bytes, # Callable[[], "Policy"]
+    config: bytes, #Dict[str, Any]
 ):
+    env_name = cloudpickle.loads(env_name)
+    datastore: DataStore
+    env, datastore = cloudpickle.loads(env_ctor)()
+    policy = cloudpickle.loads(policy_ctor)()
+    config = cloudpickle.loads(config)
+
     # Instantiate metric for score calculation.
     metric = Metric(env_name=env_name, agent_names=datastore.agent_names)
 
-    # Ensure deterministic seeding
-    env.seed((seed or 0) + config["seed"])
     eval_episodes = 1 if "naturalistic" in env_name else config["eval_episodes"]
     for _ in range(eval_episodes):
         observations = env.reset()
@@ -184,6 +187,8 @@ def run(
             actions = policy.act(observations)
             observations, rewards, dones, infos = env.step(actions)
             metric.store(infos=datastore.data["infos"], dones=datastore.data["dones"])
+
+    env.close()
 
     return metric.results()
 
