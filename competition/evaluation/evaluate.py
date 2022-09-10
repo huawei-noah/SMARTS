@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 logger = logging.getLogger(__file__)
-logger.setLevel(logging.DEBUG)
 
 _SCORES_FILENAME = "scores.txt"
 _PHASES = ["validation", "track1", "track2"]
@@ -23,7 +22,7 @@ _EVALUATION_CONFIG_KEYS = {
 }
 _DEFAULT_EVALUATION_CONFIG = dict(
     phase="track1",
-    eval_episodes=1,
+    eval_episodes=50,
     seed=42,
     scenarios=[
         "1_to_2lane_left_turn_c",
