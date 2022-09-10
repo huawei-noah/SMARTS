@@ -3,9 +3,9 @@
 Setting up SMARTS
 =================
 
-==========
+===========
 First Steps
-==========
+===========
 
 To setup the simulator, which is called SMARTS, run the following commands,
 
