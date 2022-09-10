@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class Counts:
     crashes: float = 0

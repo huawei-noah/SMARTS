@@ -3,6 +3,7 @@ import logging
 import os
 import subprocess
 import sys
+import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
 from pathlib import Path
@@ -50,23 +51,23 @@ def _make_env(
     env_type: str,
     scenario: Optional[str],
     shared_configs: Dict[str, Any],
-    seed: Optional[int],
-    wrapper_ctors: Callable[[], Sequence["gym.Wrapper"]],
-) -> Tuple["gym.Env", "DataStore"]:
+    seed: int,
+    wrapper_ctors,
+):
     """Build env.
 
     Args:
         env_type (str): Env type.
         scenario (Optional[str]): Scenario name or path to scenario folder.
         shared_configs (Dict[str, Any]): Env configs.
-        seed (Optional[int]): Env seed.
+        seed (int): Env seed.
         wrapper_ctors (Callable[[],Sequence[gym.Wrapper]]): Sequence of gym environment wrappers.
 
     Raises:
         ValueError: If unknown env type is supplied.
 
     Returns:
-        Tuple[gym.Env, "DataStore"]: Wrapped environment and the datastore storing the observations.
+        Tuple[gym.Env, DataStore]: Wrapped environment and the datastore storing the observations.
     """
 
     # Make env.
@@ -102,7 +103,6 @@ def evaluate(config):
         img_pixels=int(config["img_pixels"]),
         sumo_headless=True,
     )
-    # Make environment constructors.
     env_ctors = {}
     for scenario in config["scenarios"]:
         env_ctors[f"{scenario}"] = partial(
@@ -123,42 +123,29 @@ def evaluate(config):
             wrapper_ctors=submitted_wrappers,
         )
 
-    # Instantiate submitted policy.
     score = Score()
-
-    # Multiprocessed evaluation.
-    with ProcessPoolExecutor(max_workers=3) as pool:
-        # Submit all tasks and get future objects
+    forkserver_available = "forkserver" in mp.get_all_start_methods()
+    start_method = "forkserver" if forkserver_available else "spawn"
+    mp_context = mp.get_context(start_method)
+    with ProcessPoolExecutor(max_workers=3, mp_context=mp_context) as pool:
         futures = [
             pool.submit(
                 _worker, cloudpickle.dumps([env_name, env_ctor, Policy, config])
             )
             for env_name, env_ctor in env_ctors.items()
         ]
-        # Process results from tasks in order of task completion
         for future in as_completed(futures):
-            # Get the result
             counts, costs = future.result()
             score.add(counts, costs)
 
-    # for index, (env_name, env_ctor) in enumerate(env_ctors.items()):
-    #     logger.info(f"\n{index}. Evaluating env {env_name}.\n")
-    #     counts, costs = run(
-    #         env_name=env_name,
-    #         env_ctor=env_ctor,
-    #         policy_ctor=Policy,
-    #         config=config,
-    #     )
-    #     score.add(counts, costs)
-
     rank = score.compute()
-    logger.info(f"\nOverall Rank: {rank}\n")
+    logger.info("\nOverall Rank: %s\n", rank)
     logger.info("\nFinished evaluating.\n")
 
     return rank
 
 
-def _worker(input: bytes) -> Tuple[Counts, Costs]:
+def _worker(input: bytes) -> Tuple["Counts", "Costs"]:
     """Compute metrics of a given env.
 
     Args:
@@ -169,9 +156,19 @@ def _worker(input: bytes) -> Tuple[Counts, Costs]:
         Tuple[Counts, Costs]: Count and cost metrics.
     """
 
-    env_name, env_ctor, policy_ctor, config = cloudpickle.loads(input)
-    env: gym.Env
+    import cloudpickle
+    from metric import Metric
+
+    config: Dict[str, Any]
     datastore: DataStore
+    env: gym.Env
+    env_ctor: Callable[[], gym.Env]
+    env_name: str
+    policy_ctor: Callable[[], Policy]
+
+    logger.info("\nStarted evaluating env %s.\n", env_name)
+
+    env_name, env_ctor, policy_ctor, config = cloudpickle.loads(input)
     env, datastore = env_ctor()
     policy = policy_ctor()
 
@@ -188,6 +185,7 @@ def _worker(input: bytes) -> Tuple[Counts, Costs]:
             metric.store(infos=datastore.data["infos"], dones=datastore.data["dones"])
 
     env.close()
+    logger.info("\nFinished evaluating env %s.\n", env_name)
 
     return metric.results()
 
@@ -274,7 +272,6 @@ if __name__ == "__main__":
     from copy_data import CopyData, DataStore
     from costs import Costs
     from counts import Counts
-    from metric import Metric
     from score import Score
     from utils import load_config, merge_config, validate_config, write_output
     from policy import Policy, submitted_wrappers
