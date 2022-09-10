@@ -1,13 +1,13 @@
 import argparse
 import logging
+import multiprocessing as mp
 import os
 import subprocess
 import sys
-import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 logger = logging.getLogger(__file__)
 
