@@ -165,9 +165,8 @@ def _worker(input: bytes) -> Tuple["Counts", "Costs"]:
     env_name: str
     policy_ctor: Callable[[], Policy]
 
-    logger.info("\nStarted evaluating env %s.\n", env_name)
-
     env_name, env_ctor, policy_ctor, config = cloudpickle.loads(input)
+    logger.info("\nStarted evaluating env %s.\n", env_name)
     env, datastore = env_ctor()
     policy = policy_ctor()
 
