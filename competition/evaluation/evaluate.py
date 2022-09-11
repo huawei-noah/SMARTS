@@ -1,10 +1,13 @@
 import argparse
 import logging
+import multiprocessing as mp
 import os
 import subprocess
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional, Tuple
 
 logger = logging.getLogger(__file__)
 
@@ -31,7 +34,7 @@ _DEFAULT_EVALUATION_CONFIG = dict(
         "3lane_cut_in",
         "3lane_overtake",
     ],
-    bubble_env_evaluation_seeds=[],
+    bubble_env_evaluation_seeds=[6],
 )
 _SUBMISSION_CONFIG_KEYS = {
     "img_meters",
@@ -43,116 +46,133 @@ _DEFAULT_SUBMISSION_CONFIG = dict(
 )
 
 
-def wrap_env(
-    env,
-    agent_ids: List[str],
-    datastore: "DataStore",
-    wrappers=[],
+def _make_env(
+    env_type: str,
+    scenario: Optional[str],
+    shared_configs: Dict[str, Any],
+    seed: int,
+    wrapper_ctors,
 ):
-    """Make environment.
+    """Build env.
 
     Args:
-        env (gym.Env): The environment to wrap.
-        wrappers (List[gym.Wrapper], optional): Sequence of gym environment wrappers.
-            Defaults to empty list [].
+        env_type (str): Env type.
+        scenario (Optional[str]): Scenario name or path to scenario folder.
+        shared_configs (Dict[str, Any]): Env configs.
+        seed (int): Env seed.
+        wrapper_ctors (Callable[[],Sequence[gym.Wrapper]]): Sequence of gym environment wrappers.
+
+    Raises:
+        ValueError: If unknown env type is supplied.
 
     Returns:
-        gym.Env: Environment wrapped for evaluation.
+        Tuple[gym.Env, DataStore]: Wrapped environment and the datastore storing the observations.
     """
+
+    # Make env.
+    if env_type == "smarts.env:multi-scenario-v0":
+        env = gym.make(env_type, scenario=scenario, **shared_configs)
+    elif env_type == "bubble_env_contrib:bubble_env-v0":
+        env = gym.make(env_type, **shared_configs)
+    else:
+        raise ValueError("Unknown env type.")
+
+    # Make datastore.
+    datastore = DataStore()
     # Make a copy of original info.
-    env = CopyData(env, agent_ids, datastore)
+    env = CopyData(env, list(env.agent_specs.keys()), datastore)
     # Disallow modification of attributes starting with "_" by external users.
     env = gym.Wrapper(env)
 
-    # Wrap the environment
+    # Wrap the environment.
+    wrappers = wrapper_ctors()
     for wrapper in wrappers:
         env = wrapper(env)
 
-    return env
+    # Set seed.
+    env.seed(seed)
+
+    return env, datastore
 
 
 def evaluate(config):
-    base_scenarios = config["scenarios"]
     shared_configs = dict(
         action_space="TargetPose",
         img_meters=int(config["img_meters"]),
         img_pixels=int(config["img_pixels"]),
         sumo_headless=True,
     )
-    # Make evaluation environments.
-    envs_eval = {}
-    for scenario in base_scenarios:
-        env = gym.make(
-            "smarts.env:multi-scenario-v0", scenario=scenario, **shared_configs
+    env_ctors = {}
+    for scenario in config["scenarios"]:
+        env_ctors[f"{scenario}"] = partial(
+            _make_env,
+            env_type="smarts.env:multi-scenario-v0",
+            scenario=scenario,
+            shared_configs=shared_configs,
+            seed=config["seed"],
+            wrapper_ctors=submitted_wrappers,
         )
-        datastore = DataStore()
-        envs_eval[f"{scenario}"] = (
-            wrap_env(
-                env,
-                agent_ids=list(env.agent_specs.keys()),
-                datastore=datastore,
-                wrappers=submitted_wrappers(),
-            ),
-            datastore,
-            None,
-        )
-
-    bonus_eval_seeds = config.get("bubble_env_evaluation_seeds", [])
-    for seed in bonus_eval_seeds:
-        env = gym.make("bubble_env_contrib:bubble_env-v0", **shared_configs)
-        datastore = DataStore()
-        envs_eval[f"bubble_env_{seed}"] = (
-            wrap_env(
-                env,
-                agent_ids=list(env.agent_ids),
-                datastore=datastore,
-                wrappers=submitted_wrappers(),
-            ),
-            datastore,
-            seed,
+    for seed in config["bubble_env_evaluation_seeds"]:
+        env_ctors[f"bubble_env_{seed}"] = partial(
+            _make_env,
+            env_type="bubble_env_contrib:bubble_env-v0",
+            scenario=None,
+            shared_configs=shared_configs,
+            seed=seed + config["seed"],
+            wrapper_ctors=submitted_wrappers,
         )
 
-    # Instantiate submitted policy.
-    policy = Policy()
-
-    # Evaluate model for each scenario
     score = Score()
-    for index, (env_name, (env, datastore, seed)) in enumerate(envs_eval.items()):
-        logger.info(f"\n{index}. Evaluating env {env_name}.\n")
-        counts, costs = run(
-            env=env,
-            datastore=datastore,
-            env_name=env_name,
-            policy=policy,
-            config=config,
-            seed=seed,
-        )
-        score.add(counts, costs)
+    forkserver_available = "forkserver" in mp.get_all_start_methods()
+    start_method = "forkserver" if forkserver_available else "spawn"
+    mp_context = mp.get_context(start_method)
+    with ProcessPoolExecutor(max_workers=3, mp_context=mp_context) as pool:
+        futures = [
+            pool.submit(
+                _worker, cloudpickle.dumps([env_name, env_ctor, Policy, config])
+            )
+            for env_name, env_ctor in env_ctors.items()
+        ]
+        for future in as_completed(futures):
+            counts, costs = future.result()
+            score.add(counts, costs)
 
     rank = score.compute()
-    logger.info("\nOverall Rank:\n", rank)
+    logger.info("\nOverall Rank: %s\n", rank)
     logger.info("\nFinished evaluating.\n")
-
-    # Close all environments
-    for env, _, _ in envs_eval.values():
-        env.close()
 
     return rank
 
 
-def run(
-    env,
-    datastore: "DataStore",
-    env_name: str,
-    policy: "Policy",
-    config: Dict[str, Any],
-    seed: Optional[int],
-):
+def _worker(input: bytes) -> Tuple["Counts", "Costs"]:
+    """Compute metrics of a given env.
+
+    Args:
+        input (bytes): cloudpickle of [env_name: str, env_ctor: Callable[[], gym.Env],
+            policy_ctor: Callable[[], Policy], config: Dict[str, Any]]
+
+    Returns:
+        Tuple[Counts, Costs]: Count and cost metrics.
+    """
+
+    import cloudpickle
+    from metric import Metric
+
+    config: Dict[str, Any]
+    datastore: DataStore
+    env: gym.Env
+    env_ctor: Callable[[], gym.Env]
+    env_name: str
+    policy_ctor: Callable[[], Policy]
+
+    env_name, env_ctor, policy_ctor, config = cloudpickle.loads(input)
+    logger.info("\nStarted evaluating env %s.\n", env_name)
+    env, datastore = env_ctor()
+    policy = policy_ctor()
+
     # Instantiate metric for score calculation.
     metric = Metric(env_name=env_name, agent_names=datastore.agent_names)
 
-    # Ensure deterministic seeding
-    env.seed((seed or 0) + config["seed"])
     eval_episodes = 1 if "naturalistic" in env_name else config["eval_episodes"]
     for _ in range(eval_episodes):
         observations = env.reset()
@@ -161,6 +181,9 @@ def run(
             actions = policy.act(observations)
             observations, rewards, dones, infos = env.step(actions)
             metric.store(infos=datastore.data["infos"], dones=datastore.data["dones"])
+
+    env.close()
+    logger.info("\nFinished evaluating env %s.\n", env_name)
 
     return metric.results()
 
@@ -234,8 +257,8 @@ if __name__ == "__main__":
         import bubble_env_contrib
     except:
         raise ImportError(
-            "Missing evaluation dependencies. Please refer to the Setup section of README.md"
-            " on how to install the dependencies or use the `--auto_install_pip_deps` flag."
+            "Dependencies are missing. Run this evaluation script with "
+            "`--auto_install_pip_deps` flag to install dependencies."
         )
 
     req_file = os.path.join(submit_dir, "requirements.txt")
@@ -243,9 +266,10 @@ if __name__ == "__main__":
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_file])
 
     import gym
-
+    import cloudpickle
     from copy_data import CopyData, DataStore
-    from metric import Metric
+    from costs import Costs
+    from counts import Counts
     from score import Score
     from utils import load_config, merge_config, validate_config, write_output
     from policy import Policy, submitted_wrappers

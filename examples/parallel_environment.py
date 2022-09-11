@@ -235,7 +235,7 @@ if __name__ == "__main__":
     main(
         scenarios=args.scenarios,
         sim_name=f"{args.sim_name}_async",
-        headless=args.headless,
+        headless=True,
         seed=args.seed,
         num_agents=args.num_agents,
         num_stack=args.num_stack,
@@ -249,7 +249,7 @@ if __name__ == "__main__":
     main(
         scenarios=args.scenarios,
         sim_name=f"{args.sim_name}_sync",
-        headless=args.headless,
+        headless=True,
         seed=args.seed,
         num_agents=args.num_agents,
         num_stack=args.num_stack,

@@ -26,7 +26,7 @@ track1_evaluation.zip:
 	cp -r competition_bundle/track1_evaluation/* temp_track1_evaluation/
 	cp -r eval_scenarios temp_track1_evaluation
 	cd temp_track1_evaluation && \
-	zip -r $(COMPETITION_DIR)/track1_evaluation.zip . && \
+	zip -r $(COMPETITION_DIR)/track1_evaluation.zip . -x '*map.glb' '*missions.pkl' '*.rou.xml' '*.smarts.xml' '*shifted_map-AUTOGEN.net.xml' '*map_spec.pkl' && \
 	cd -
 	rm -r temp_track1_evaluation
 
@@ -40,7 +40,7 @@ scoring_program.zip:
 	cp -r competition_bundle/scoring_program/* temp_scoring_program/
 	cp -r evaluation/* temp_scoring_program/
 	cd temp_scoring_program && \
-	zip -r $(COMPETITION_DIR)/scoring_program.zip . && \
+	zip -r $(COMPETITION_DIR)/scoring_program.zip . -x '*__pycache__*' && \
 	cd -
 	rm -r temp_scoring_program
 
