@@ -205,15 +205,38 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
     help="Port on which Envision will run.",
     default=None,
 )
+@click.option(
+    "--clean",
+    is_flag=False,
+    default=True,
+    help="Clean previously generated artifacts first",
+)
+@click.option(
+    "--allow-offset-map",
+    is_flag=False,
+    default=False,
+    help="Allows road network to be offset from the origin. If not specified, creates a new network file if necessary.",
+)
+@click.option(
+    "--seed",
+    type=int,
+    default=42,
+    help="Set the base seed of the scenario.",
+)
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def preview_scenarios(envision, envision_port, scenario):
+def preview_scenarios(envision, envision_port, clean, allow_offset_map, seed, scenario):
     from cli.run import kill_process_group_afterwards
     from smarts.env.run_env import main
-    from smarts.sstudio.build_scenario import clean_scenario
-
-    if os.path.exists(os.path.join(scenario, "scenario.py")):
-        subprocess.call(["scl", "scenario", "build", "--clean", f"{scenario}"])
     with kill_process_group_afterwards():
+        if os.path.exists(os.path.join(scenario, "scenario.py")):
+            click.echo(f"build-scenario {scenario}")
+
+            from smarts.sstudio.build_scenario import build_single_scenario
+
+            assert seed == None or isinstance(seed, (int))
+
+            build_single_scenario(clean, allow_offset_map, scenario, seed, click.echo)
+
         if envision:
             if envision_port is None:
                 envision_port = 8081

@@ -29,27 +29,26 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     env.close()
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "scenarios",
+    help="A list of scenarios. Each element can be either the scenario to"
+    "run or a directory of scenarios to sample from. See `scenarios/`"
+    "folder for some samples you can use.",
+    type=str,
+    nargs="*",
+)
+parser.add_argument(
+    "--episodes",
+    help="The number of episodes to run the simulation for.",
+    type=int,
+    default=10,
+)
+parser.add_argument(
+    "--headless", help="Run the simulation in headless mode.", action="store_true"
+)
+args = parser.parse_args()
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "scenarios",
-        help="A list of scenarios. Each element can be either the scenario to"
-        "run or a directory of scenarios to sample from. See `scenarios/`"
-        "folder for some samples you can use.",
-        type=str,
-        nargs="*",
-    )
-    parser.add_argument(
-        "--episodes",
-        help="The number of episodes to run the simulation for.",
-        type=int,
-        default=10,
-    )
-    parser.add_argument(
-        "--headless", help="Run the simulation in headless mode.", action="store_true"
-    )
-    args = parser.parse_args()
 
     main(
         scenarios=args.scenarios,
