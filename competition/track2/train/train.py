@@ -72,12 +72,11 @@ def train(input_path, output_path):
         scenario_path = Path(input_path) / scenario
         for filename in os.listdir(scenario_path):
             if filename.endswith(".pkl"):
-                match = re.search("vehicle-(.*).pkl", filename)
+                match = re.search("(.*).pkl", filename)
                 assert match is not None
                 vehicle_id = match.group(1)
                 if vehicle_id not in vehicle_ids:
                     vehicle_ids.append(vehicle_id)
-
         if len(vehicle_ids) < 2:
             continue
 
@@ -88,12 +87,12 @@ def train(input_path, output_path):
             print(f"Adding data for vehicle id {id} in scenario {scenario}.")
 
             for pkl_file in os.listdir(scenario_path):
-                if pkl_file.endswith(f"-{id}.pkl"):
+                if pkl_file.endswith(f"{id}.pkl"):
                     with open(scenario_path / pkl_file, "rb") as f:
                         vehicle_data = pickle.load(f)
             image_names = list()
             for filename in os.listdir(scenario_path):
-                if filename.endswith(f"-{id}.png"):
+                if filename.endswith(f"{id}.png"):
                     image_names.append(filename)
 
             image_names = sorted(image_names)
