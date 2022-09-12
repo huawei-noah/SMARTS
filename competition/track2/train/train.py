@@ -87,7 +87,7 @@ def train(input_path, output_path):
             print(f"Adding data for vehicle id {id} in scenario {scenario}.")
 
             for pkl_file in os.listdir(scenario_path):
-                if pkl_file.endswith(f"{id}.pkl"):
+                if pkl_file == (id + '.pkl'):
                     with open(scenario_path / pkl_file, "rb") as f:
                         vehicle_data = pickle.load(f)
             image_names = list()
