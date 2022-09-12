@@ -98,15 +98,15 @@ def train(input_path, output_path):
 
             image_names = sorted(image_names)
             
-            goal_pos_x = vehicle_data[float(image_names[-1].split("_Agent")[0])].ego_vehicle_state.mission.goal.position.x
-            goal_pos_y = vehicle_data[float(image_names[-1].split("_Agent")[0])].ego_vehicle_state.mission.goal.position.y
+            goal_pos_x = vehicle_data[float(image_names[0].split("_")[0])].ego_vehicle_state.mission.goal.position.x
+            goal_pos_y = vehicle_data[float(image_names[0].split("_")[0])].ego_vehicle_state.mission.goal.position.y
             threshold = 3
 
             for i in range(len(image_names) - 1):
                 with Image.open(scenario_path / image_names[i], "r") as image:
                     image.seek(0)
-                    sim_time = image_names[i].split("_Agent")[0]
-                    sim_time_next = image_names[i + 1].split("_Agent")[0]
+                    sim_time = image_names[i].split("_")[0]
+                    sim_time_next = image_names[i + 1].split("_")[0]
                     current_position = vehicle_data[float(sim_time)].ego_vehicle_state.position
                     current_heading = vehicle_data[float(sim_time)].ego_vehicle_state.heading
                     next_position = vehicle_data[float(sim_time_next)].ego_vehicle_state.position
