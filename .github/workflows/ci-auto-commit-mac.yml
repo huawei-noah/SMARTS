@@ -21,16 +21,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
-      - name: Setup Python
-        run: |
-          brew update
-          brew install python@3.8
-          brew unlink python@3.10
-          brew link --force --overwrite python@3.7
       - name: Update requirements
         run: |
           cd $GITHUB_WORKSPACE
-          python3.7 -m venv ${{env.venv_dir}}
+          python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
           pip install .[camera-obs,rllib,test,torch,train]
