@@ -68,7 +68,6 @@ class LocalTrafficProvider(TrafficProvider):
 
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._logger.setLevel(logging.DEBUG)
         self._sim = None
         self._scenario = None
         self.road_map: RoadMap = None
@@ -457,7 +456,6 @@ class _TrafficActor:
 
     def __init__(self, flow: Dict[str, Any], owner: LocalTrafficProvider):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._logger.setLevel(logging.DEBUG)
         self._owner = weakref.ref(owner)
 
         self._state = None
