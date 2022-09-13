@@ -68,6 +68,7 @@ class LocalTrafficProvider(TrafficProvider):
 
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._logger.setLevel(logging.DEBUG)
         self._sim = None
         self._scenario = None
         self.road_map: RoadMap = None
@@ -79,7 +80,7 @@ class LocalTrafficProvider(TrafficProvider):
         self._reserved_areas: Dict[str, Polygon] = dict()
         self._actors_created: int = 0
         self._lane_bumpers_cache: Dict[
-            RoadMap.Lane, List[Tuple[float, VehicleState]]
+            RoadMap.Lane, List[Tuple[float, VehicleState, int]]
         ] = dict()
         self._offsets_cache: Dict[str, Dict[str, float]] = dict()
         # start with the default recovery flags...
@@ -255,6 +256,9 @@ class LocalTrafficProvider(TrafficProvider):
         sim = self._sim()
         assert sim
         sim.provider_relinquishing_actor(self, actor_state)
+        self._logger.debug(
+            f"{actor_state} is no longer managed by local traffic provider"
+        )
         if actor_state.actor_id in self._my_actors:
             del self._my_actors[actor_state.actor_id]
 
@@ -275,23 +279,26 @@ class LocalTrafficProvider(TrafficProvider):
         for actor in self._my_actors.values():
             actor.compute_next_state(dt)
 
-        dones = []
-        losts = []
+        dones = set()
+        losts = set()
+        removed = set()
         remap_ids: Dict[str, str] = dict()
         for actor_id, actor in self._my_actors.items():
             actor.step(dt)
             if actor.finished_route:
-                dones.append(actor.actor_id)
+                dones.add(actor.actor_id)
             elif actor.off_route:
-                losts.append(actor)
+                losts.add(actor)
             elif actor.teleporting:
                 # pybullet doesn't like it when a vehicle jumps from one side of the map to another,
                 # so we need to give teleporting vehicles a new id and thus a new chassis.
                 actor.bump_id()
                 remap_ids[actor_id] = actor.actor_id
-        for actor in losts:
+        for actor in losts - removed:
+            removed.add(actor.actor_id)
             self._relinquish_actor(actor.state)
-        for actor_id in dones:
+        for actor_id in dones - removed:
+            actor = self._my_actors.get(actor_id)
             sim.provider_removing_actor(self, actor.state)
             # The following is not really necessary due to the above calling teardown(),
             # but it doesn't hurt...
@@ -349,6 +356,7 @@ class LocalTrafficProvider(TrafficProvider):
 
     def stop_managing(self, actor_id: str):
         # called when agent hijacks this vehicle
+        self._logger.debug(f"{actor_id} is removed from local traffic management")
         assert (
             actor_id in self._my_actors
         ), f"stop_managing() called for non-tracked vehicle id '{actor_id}'"
@@ -373,7 +381,7 @@ class LocalTrafficProvider(TrafficProvider):
         # Probably the most realistic thing we can do is leave the vehicle sitting in the road, blocking traffic!
         # (... and then add a "rubber-neck mode" for all nearby vehicles?! ;)
         # Let's do that for now, but we should also consider just removing the vehicle.
-        traffic_actor.stay_put()
+        # traffic_actor.stay_put()
 
     def update_route_for_vehicle(self, vehicle_id: str, new_route: RoadMap.Route):
         traffic_actor = self._my_actors.get(vehicle_id)
@@ -449,9 +457,8 @@ class _TrafficActor:
 
     def __init__(self, flow: Dict[str, Any], owner: LocalTrafficProvider):
         self._logger = logging.getLogger(self.__class__.__name__)
-
+        self._logger.setLevel(logging.DEBUG)
         self._owner = weakref.ref(owner)
-        self._lane_bumpers_cache = owner._lane_bumpers_cache
 
         self._state = None
         self._flow: Dict[str, Any] = flow
@@ -492,6 +499,8 @@ class _TrafficActor:
         self._cutting_in = False
         self._in_front_after_cutin_secs = 0
         self._cutin_hold_secs = float(self._vtype.get("lcHoldPeriod", 3.0))
+        self._forward_after_added = 0
+        self._after_added_hold_secs = self._cutin_hold_secs
         self._target_cutin_gap = 2.5 * self._min_space_cush
         self._aggressiveness = float(self._vtype.get("lcAssertive", 1.0))
         if self._aggressiveness <= 0:
@@ -766,6 +775,7 @@ class _TrafficActor:
             gap: float,
             lane_coord: RefLinePoint,
             agent_gap: Optional[float],
+            ahead_id: Optional[str],
         ):
             self.lane = lane
             self.time_left = time_left
@@ -775,6 +785,7 @@ class _TrafficActor:
             self.gap = gap  # just the gap ahead (in meters)
             self.lane_coord = lane_coord
             self.agent_gap = agent_gap
+            self.ahead_id = ahead_id
 
         @property
         def drive_time(self) -> float:
@@ -854,6 +865,8 @@ class _TrafficActor:
     def _find_vehicle_ahead_on_route(
         self, lane: RoadMap.Lane, dte: float, rind: int
     ) -> Tuple[float, Optional[VehicleState]]:
+        owner = self._owner()
+        assert owner
         nv_ahead_dist = math.inf
         nv_ahead_vs = None
         rind += 1
@@ -862,7 +875,7 @@ class _TrafficActor:
             len_to_end = self._route.distance_from(rt_oln)
             if len_to_end is None:
                 continue
-            lbc = self._lane_bumpers_cache.get(ogl)
+            lbc = owner.lane_bumpers_cache.get(ogl)
             if lbc:
                 fi = 0
                 while fi < len(lbc):
@@ -886,7 +899,9 @@ class _TrafficActor:
     def _find_vehicle_ahead(
         self, lane: RoadMap.Lane, my_offset: float, search_start: float
     ) -> Tuple[float, Optional[VehicleState]]:
-        lbc = self._lane_bumpers_cache.get(lane)
+        owner = self._owner()
+        assert owner
+        lbc = owner._lane_bumpers_cache.get(lane)
         if lbc:
             lane_spot = bisect_right(lbc, (search_start, self._state, 3))
             # if we're at an angle to the lane, it's possible for the
@@ -908,7 +923,9 @@ class _TrafficActor:
     def _find_vehicle_behind(
         self, lane: RoadMap.Lane, my_offset: float, search_start: float
     ) -> Tuple[float, Optional[VehicleState]]:
-        lbc = self._lane_bumpers_cache.get(lane)
+        owner = self._owner()
+        assert owner
+        lbc = owner._lane_bumpers_cache.get(lane)
         if lbc:
             lane_spot = bisect_left(lbc, (search_start, self._state, -1))
             # if we're at an angle to the lane, it's possible for the
@@ -924,7 +941,9 @@ class _TrafficActor:
                 return 0, bv_vs
 
         def find_last(ll: RoadMap.Lane) -> Tuple[float, Optional[VehicleState]]:
-            plbc = self._lane_bumpers_cache.get(ll)
+            owner = self._owner()
+            assert owner
+            plbc = owner._lane_bumpers_cache.get(ll)
             if not plbc:
                 return math.inf, None
             for bv_offset, bv_vs, _ in reversed(plbc):
@@ -972,7 +991,7 @@ class _TrafficActor:
         rt_ln = RoadMap.Route.RouteLane(lane, self._route_ind)
         path_len = self._route.distance_from(rt_ln) or lane.length
         path_len -= my_offset
-        lane_time_left = _safe_division(path_len, self.speed, default=0)
+        lane_time_left = _safe_division(path_len, self.speed)
 
         half_len = 0.5 * self._state.dimensions.length
         front_bumper = my_offset + half_len
@@ -1010,6 +1029,7 @@ class _TrafficActor:
             ahead_dist,
             lane_coord,
             behind_dist if bv_vs and bv_vs.role == ActorRole.EgoAgent else None,
+            nv_vs.actor_id if nv_vs else None,
         )
 
     def _compute_lane_windows(self):
@@ -1075,18 +1095,52 @@ class _TrafficActor:
         self._lane_win = self._lane_windows[my_idx]
         # Try to find the best among available lanes...
         best_lw = self._lane_windows[my_idx]
-        for l in range(len(self._lane_windows)):
-            idx = (my_idx + l) % len(self._lane_windows)
+
+        # Check self, then right, then left.
+        lanes_to_right = list(range(0, my_idx))[::-1]
+        lanes_to_left = list(
+            range(min(my_idx, len(self._lane_windows)), len(self._lane_windows))
+        )
+        cut_in_is_real_lane = self._cutting_into and self._cutting_into.index < len(
+            self._lane_windows
+        )
+        checks = lanes_to_right + lanes_to_left
+
+        # hold lane for some time if added recently
+        if self._forward_after_added < self._after_added_hold_secs:
+            self._forward_after_added += dt
+            # skip checks
+            checks = []
+
+        ## TODO: Determine how blocked lane changes should be addressed
+        ## Idea is to keep lane if blocked on right, slow down if blocked on left
+        # if cut_in_is_real_lane and self._target_lane_win.gap < self._min_space_cush:
+        #     # blocked on the right so pick a closer lane until cutin lane is available
+        #     if self._cutting_into.index < my_idx:
+        #         best_lw = self._lane_windows[min(my_idx, self._cutting_into.index + 1)]
+        #         self._cutting_into = best_lw.lane
+        #         # skip lane checks
+        #         checks = []
+        #     # if blocked on the left, do nothing for now and wait
+        #     elif self._cutting_into.index > my_idx:
+        #         pass
+
+        for idx in checks:
             lw = self._lane_windows[idx]
             # skip lanes I can't drive in (e.g., bike lanes on waymo maps)
             if not lw.lane.is_drivable:
                 continue
             # if I can't safely reach the lane, don't consider it
             change_time = 0
-            if l > 0:
+            if idx > 0:
                 change_time, can_cross = self._crossing_time_into(idx)
                 if not can_cross:
                     continue
+            min_time_cush = float(self._vtype.get("tau", 1.0))
+            neighbour_lane_bias = (
+                0.1 * change_time * (1 if abs(self._lane.index - idx) == 1 else 0)
+            )
+            will_rearend = lw.ttc + neighbour_lane_bias < min_time_cush
             # if my route destination is available, prefer that
             if (
                 lw.lane == self._dest_lane
@@ -1094,13 +1148,16 @@ class _TrafficActor:
             ):
                 # TAI: speed up or slow down as appropriate if _crossing_time_into() was False
                 best_lw = lw
-                if not self._dogmatic:
+                if not will_rearend and not self._dogmatic:
                     break
+            cut_in_is_real_lane = self._cutting_into and self._cutting_into.index < len(
+                self._lane_windows
+            )
             # if I'm in the process of changing lanes, continue (unless it's no longer safe)
             if (
-                self._cutting_into
-                and self._cutting_into.index < len(self._lane_windows)
+                cut_in_is_real_lane
                 and self._crossing_time_into(self._cutting_into.index)[1]
+                and not will_rearend
             ):
                 best_lw = self._lane_windows[self._cutting_into.index]
                 if self._cutting_into != self._lane:
@@ -1133,18 +1190,30 @@ class _TrafficActor:
                 self._cutting_into = lw.lane
                 self._cutting_in = True
                 continue
+            longer_drive_time = lw.drive_time > best_lw.drive_time
+            equal_drive_time = lw.drive_time == best_lw.drive_time
+            is_destination_lane = lw.lane == self._dest_lane
+            highest_ttre = lw.ttre >= best_lw.ttre
+            right_of_best_lw = idx < best_lw.lane.index
             # otherwise, keep track of the remaining options and eventually
             # pick the lane with the longest available driving time on my route
             # or, in the case of ties, the right-most lane (assuming I'm not
             # cutting anyone off to get there).
-            if lw.drive_time > best_lw.drive_time or (
-                lw.drive_time == best_lw.drive_time
-                and (
-                    (lw.lane == self._dest_lane and self._offset < self._dest_offset)
-                    or (lw.ttre >= best_lw.ttre and idx < best_lw.lane.index)
+            if (
+                longer_drive_time
+                or (
+                    equal_drive_time
+                    and (
+                        (is_destination_lane and self._offset < self._dest_offset)
+                        or (highest_ttre and right_of_best_lw)
+                    )
+                    and not will_rearend
                 )
+                or will_rearend
+                and lw.ttc > best_lw.ttc
             ):
                 best_lw = lw
+
         # keep track of the fact I'm changing lanes for next step
         # so I don't swerve back and forth indecesively
         if best_lw.lane != self._lane and not self._cutting_into:
@@ -1320,6 +1389,8 @@ class _TrafficActor:
         bearing: float,
         foe: RoadMap.Lane,
     ) -> bool:
+        owner = self._owner()
+        assert owner
         # take into account TLS (don't yield to TL-stopped vehicles)
         # XXX: we currently only determine this for actors we're controlling
         owner = self._owner()
@@ -1343,7 +1414,7 @@ class _TrafficActor:
         if dist_to_junction <= 0 and self._lane == junction:
 
             def _in_lane(lane):
-                for _, vs, _ in self._lane_bumpers_cache.get(lane, []):
+                for _, vs, _ in owner._lane_bumpers_cache.get(lane, []):
                     if vs.actor_id == self.actor_id:
                         return True
                 return False
@@ -1425,7 +1496,7 @@ class _TrafficActor:
                 if check_lane == self._lane:
                     continue
                 handled = set()
-                lbc = self._lane_bumpers_cache.get(check_lane, [])
+                lbc = owner._lane_bumpers_cache.get(check_lane, [])
                 for offset, fv, bumper in lbc:
                     if fv.actor_id == self.actor_id:
                         continue
