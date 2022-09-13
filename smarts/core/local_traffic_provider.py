@@ -875,7 +875,7 @@ class _TrafficActor:
             len_to_end = self._route.distance_from(rt_oln)
             if len_to_end is None:
                 continue
-            lbc = owner.lane_bumpers_cache.get(ogl)
+            lbc = owner._lane_bumpers_cache.get(ogl)
             if lbc:
                 fi = 0
                 while fi < len(lbc):
