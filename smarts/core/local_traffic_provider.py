@@ -1130,7 +1130,7 @@ class _TrafficActor:
                 continue
             # if I can't safely reach the lane, don't consider it
             change_time = 0
-            if idx > 0:
+            if abs(idx - my_idx) > 1:
                 change_time, can_cross = self._crossing_time_into(idx)
                 if not can_cross:
                     continue
