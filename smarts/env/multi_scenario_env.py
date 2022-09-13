@@ -21,12 +21,12 @@
 import copy
 import logging
 import math
-import numpy as np
 import os
 import pathlib
 from typing import Any, Dict, Optional, Tuple
 
 import gym
+import numpy as np
 
 from smarts import sstudio
 from smarts.core.agent_interface import (
