@@ -1095,16 +1095,12 @@ class _TrafficActor:
         # Try to find the best among available lanes...
         best_lw = self._lane_windows[my_idx]
 
-        # Check self, then right, then left.
+        # Default current lane then check right lanes then left lanes.
         lanes_to_right = list(range(0, my_idx))[::-1]
         lanes_to_left = list(
             range(min(my_idx + 1, len(self._lane_windows)), len(self._lane_windows))
         )
-        cut_in_is_real_lane = self._cutting_into and self._cutting_into.index < len(
-            self._lane_windows
-        )
         checks = lanes_to_right + lanes_to_left
-
         # hold lane for some time if added recently
         if self._forward_after_added < self._after_added_hold_secs:
             self._forward_after_added += dt
@@ -1112,6 +1108,9 @@ class _TrafficActor:
             checks = []
 
         ## TODO: Determine how blocked lane changes should be addressed
+        # cut_in_is_real_lane = self._cutting_into and self._cutting_into.index < len(
+        #     self._lane_windows
+        # )
         ## Idea is to keep lane if blocked on right, slow down if blocked on left
         # if cut_in_is_real_lane and self._target_lane_win.gap < self._min_space_cush:
         #     # blocked on the right so pick a closer lane until cutin lane is available
@@ -1198,19 +1197,17 @@ class _TrafficActor:
             # pick the lane with the longest available driving time on my route
             # or, in the case of ties, the right-most lane (assuming I'm not
             # cutting anyone off to get there).
-            if (
-                longer_drive_time
-                or (
-                    equal_drive_time
-                    and (
-                        (is_destination_lane and self._offset < self._dest_offset)
-                        or (highest_ttre and right_of_current_lw)
-                    )
-                    and not will_rearend
-                )
-                or will_rearend
-                and lw.ttc > best_lw.ttc
-            ):
+
+            if equal_drive_time and not will_rearend:
+                if is_destination_lane and self._offset < self._dest_offset:
+                    best_lw = lw
+                if highest_ttre and right_of_current_lw:
+                    best_lw = lw
+
+            if longer_drive_time:
+                best_lw = lw
+
+            if will_rearend and lw.ttc > best_lw.ttc:
                 best_lw = lw
 
         # keep track of the fact I'm changing lanes for next step
