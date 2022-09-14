@@ -42,10 +42,7 @@ normal = TrafficActor(
     speed=Distribution(sigma=0.1, mean=1.5),
     min_gap=Distribution(sigma=0, mean=1),
     lane_changing_model=SmartsLaneChangingModel(
-        cutin_prob=1,
-        assertive=10,
-        dogmatic=True,
-        slow_down_after=0.5
+        cutin_prob=1, assertive=10, dogmatic=True, slow_down_after=0.5
     ),
 )
 
@@ -77,7 +74,7 @@ for name, routes in enumerate(route_comb):
                     end=("gneE3", end_lane, "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=60* random.uniform(6, 14),
+                rate=60 * random.uniform(6, 14),
                 # Random flow start time, between x and y seconds.
                 begin=random.uniform(0, 5),
                 # For an episode with maximum_episode_steps=3000 and step
