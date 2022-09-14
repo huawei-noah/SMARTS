@@ -13,7 +13,7 @@ beautifulsoup4==4.11.1
 blessed==1.19.1
 cached-property==1.5.2
 cachetools==5.2.0
-certifi==2022.6.15.1
+certifi==2022.6.15.2
 charset-normalizer==2.1.1
 click==8.1.3
 cloudpickle==1.3.0
@@ -43,7 +43,7 @@ grpcio==1.48.1
 gym==0.19.0
 h5py==3.7.0
 hyperlink==21.0.0
-idna==3.3
+idna==3.4
 ijson==3.1.4
 importlib-metadata==4.12.0
 importlib-resources==5.9.0
@@ -64,7 +64,7 @@ msgpack==1.0.4
 multidict==6.0.2
 numpy==1.21.6
 nvidia-ml-py==11.495.46
-oauthlib==3.2.0
+oauthlib==3.2.1
 opencensus==0.11.0
 opencensus-context==0.1.3
 opencv-python==4.1.2.30
@@ -79,7 +79,7 @@ Pillow==9.2.0
 pkgutil_resolve_name==1.3.10
 pluggy==1.0.0
 prometheus-client==0.14.1
-protobuf==3.19.4
+protobuf==3.19.5
 psutil==5.9.2
 py==1.11.0
 py-cpuinfo==8.0.0
@@ -120,7 +120,7 @@ tensorboardX==2.5.1
 tensorflow==2.10.0
 tensorflow-estimator==2.10.0
 tensorflow-io-gcs-filesystem==0.27.0
-termcolor==1.1.0
+termcolor==2.0.1
 tomli==2.0.1
 torch==1.4.0
 torchfile==0.1.0
