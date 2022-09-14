@@ -298,7 +298,8 @@ class LocalTrafficProvider(TrafficProvider):
             self._relinquish_actor(actor.state)
         for actor_id in dones - removed:
             actor = self._my_actors.get(actor_id)
-            sim.provider_removing_actor(self, actor.state)
+            if actor:
+                sim.provider_removing_actor(self, actor.state)
             # The following is not really necessary due to the above calling teardown(),
             # but it doesn't hurt...
             if actor_id in self._my_actors:
