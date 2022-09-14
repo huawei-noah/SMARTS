@@ -14,9 +14,9 @@ Track-2 participants are required to submit their training code for us to train 
 1. In order to browse and replay Waymo Dataset, use the `scl waymo overview` and `scl waymo preview` [commands](https://github.com/huawei-noah/SMARTS/blob/comp-1/cli/waymo.py).
 1. In order to convert a Waymo dataset into an equivalent SMARTS scenario, use the `scl waymo export` [command](https://github.com/huawei-noah/SMARTS/blob/comp-1/cli/waymo.py).
 1. In order to convert a Waymo dataset into an equivalent SMARTS dataset, do the following. 
-   + First, convert the Waymo dataset into an equivalent SMARTS scenario and build the scenario.
-   + Then, use the [traffic_histories_to_observations.py script](https://github.com/huawei-noah/SMARTS/blob/comp-1/examples/traffic_histories_to_observations.py) to generate equivalent SMARTS observations.
-1. A subset of Waymo and NGSIM datasets which have useful and interesting trajectories are provided [here](https://github.com/smarts-project/smarts-project.offline-datasets). This subset may be used to focus the training. The provided data conversion tool can be used to convert these datasets into an equivalent offline SMARTS observation dataset.
+   + First, convert the Waymo dataset into an equivalent SMARTS scenario.
+   + Then, use the [traffic_histories_to_observations.py script](https://github.com/huawei-noah/SMARTS/blob/comp-1/examples/traffic_histories_to_observations.py) to generate equivalent SMARTS dataset.
+1. A subset of Waymo and NGSIM datasets which have useful and interesting trajectories are provided [here](https://github.com/smarts-project/smarts-project.offline-datasets). This subset may be used to focus the training. The provided data conversion tool can be used to convert these datasets into an equivalent SMARTS dataset.
 1. The trained model should accept multi-agent observation of the format `Dict[agent_name: agent_observation]`. Observation space for each agent is `smarts.core.sensors.Observation`. For more details on the contents of `Observation` class, see [here](https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186).
 1. Each agent's mission goal is given in the observation returned at each time step. The mission goal could be accessed as `observation.ego_vehicle_state.mission.goal.position` which gives an `(x, y, z)` map coordinate of the goal location.
 1. Trained model should output multi-agent action of the format `Dict[agent_name: agent_action]`. Action space for each agent is `smarts.core.controllers.ActionSpaceType.TargetPose` which is a sequence of `[x-coordinate, y-coordinate, heading, and time-delta]`. Use `time-delta=0.1`.
@@ -79,25 +79,28 @@ Track-2 participants are required to submit their training code for us to train 
         --volume=<path>/output:/SMARTS/competition/output
         <username/imagename:version>
     ```
-    New offline dataset is made available to the container for training via a mapped volume at `/SMARTS/competition/offline_dataset` directory. The directory has the following structure. The state space of each vehicle follows the SMARTS observation format, except for the RGB images which are saved individually as `<time>_<vehicle_id>.png`.
+    New offline dataset is made available to the container for training via a mapped volume at `/SMARTS/competition/offline_dataset` directory. The directory has the following structure.
     ```text
     offline_dataset                
-        ├── <scenario_id>                      # One scene of variable time length
-        |   ├── <time>_<vehicle_id>.png        # bird-eye view image of <vehicle_id> at <time>
-        |   ├── <time>_<vehicle_id>.png        # bird-eye view image of <vehicle_id> at <time>         
-        |   |  .
-        |   |  .
-        |   └── <vehicle_id>.pkl               # state space of <vehicle_id> over all time        
-        ├── <scenario_id>                      # One scene of variable time length
-        |   ├── <time>_<vehicle_id>.png        # bird-eye view image of <vehicle_id> at <time>
-        |   ├── <time>_<vehicle_id>.png        # bird-eye view image of <vehicle_id> at <time>        
-        |   |  .
-        |   |  .
-        |   ├── <vehicle_id>.pkl               # state space of <vehicle_id> over all time
-        |   └── <vehicle_id>.pkl               # state space of <vehicle_id> over all time
+        ├── <scenario_id>                 # one scene of variable time length, with one or more agents
+        |   ├── <vehicle_id>.pkl          # observations for <vehicle_id> over all time        
+        |   ├── <time>_<vehicle_id>.png   # top-down-RGB image of <vehicle_id> at <time>
+        |   ├── <time>_<vehicle_id>.png   # top-down-RGB image of <vehicle_id> at <time>         
+        |   |   .
+        |   |   .
+        |   └── .        
+        ├── <scenario_id>                 # one scene of variable time length, with one or more agents
+        |   ├── <vehicle_id>.pkl          # observations for <vehicle_id> over all time
+        |   ├── <vehicle_id>.pkl          # observations for <vehicle_id> over all time
+        |   ├── <time>_<vehicle_id>.png   # top-down-RGB image of <vehicle_id> at <time>
+        |   ├── <time>_<vehicle_id>.png   # top-down-RGB image of <vehicle_id> at <time>        
+        |   |   .
+        |   |   .
+        |   └── .
         |   .
         |   .
     ```
+    The file `<vehicle_id>.pkl` contains the `vehicle_id`'s observation at each time point. The observation follows the SMARTS [observation](https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L208) format. Additionally, for easy visualization, the top-down-RGB images from each vehicle's observations are also saved as `<time>_<vehicle_id>.png` at each time point. An example `offline_dataset` is provided [here](https://github.com/smarts-project/smarts-project.rl/blob/master/neurips2022/offline_dataset.rar) for reference.
 1. Inside the container, on completion of training, the trained model should be saved in `/SMARTS/competition/track2/submission` folder such that calling `/SMARTS/competition/track2/submission/policy.py::Policy.act(obs)` with a multi-agent SMARTS observation as input returns a multi-agent `TargetPose` action as output.
 1. The `/SMARTS/competition/track2/submission` folder will be zipped, mapped out from the container, and evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
 1. During development, it is strongly suggested to submit your zipped `track2/submission` folder to the Validation stage in Codalab, to verify that the evaluation works without errors.

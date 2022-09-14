@@ -17,7 +17,7 @@
 ## Notes on the used Observation, Action, and Reward
 + Observations: A 3-channel RGB birds eye-view image plus an extended channel containing the location of the goal, is used as the input for to the model. Hence, the model input is of the form (4, 256, 256).
 + Actions: The policy outputs dx, dy, and dh, which are the delta values per step in x, y direction and heading for the ego vehicle in its birds eye-view image coordinate system. Since dx and dy can not be directly obtained from SMARTS observation, we have to get displacement change in global coordinate first and use a rotation matrix with respect to the heading to get dx and dy.
-+ Rewards: The reward uses the default reward in SMARTS which is the distance travelled per step plus an extra reward for reaching the goal. Since there is no "goal" concept in the training set, we use the last point of each trajectory as the goal position during training. 
++ Rewards: The reward uses the default reward in SMARTS which is the distance travelled per step plus an extra reward for reaching the goal.
 
 ## Train locally
 1. Train

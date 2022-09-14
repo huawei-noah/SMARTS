@@ -73,7 +73,7 @@ The setup, train, evaluate, and docker, instructions are meant for getting start
     + ego's next heading with respect to the map's axes: [-π,π]
     + time delta to reach the given pose: [0,1e10]
 + Observation space for each agent: `smarts.core.sensors.Observation`
-    + For more details on the contents of `Observation` class, see [here](https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L186).
+    + For more details on the contents of `Observation` class, see [here](https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L208).
 + In each environment, each agent's mission goal is given in the observation returned at each time step. The mission goal could be accessed as `observation.ego_vehicle_state.mission.goal.position` which gives an `(x, y, z)` map coordinate of the goal location.
 
 ## Visualize
