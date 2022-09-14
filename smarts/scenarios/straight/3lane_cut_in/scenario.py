@@ -38,13 +38,14 @@ from smarts.sstudio.types import (
 
 normal = TrafficActor(
     name="car",
-    # sigma=1,
-    speed=Distribution(sigma=0.3, mean=1),
-    # min_gap=Distribution(sigma=0, mean=1),
+    sigma=1,
+    speed=Distribution(sigma=0.1, mean=1.5),
+    min_gap=Distribution(sigma=0, mean=1),
     lane_changing_model=SmartsLaneChangingModel(
         cutin_prob=1,
-        assertive=5,
+        assertive=10,
         dogmatic=True,
+        slow_down_after=0.5
     ),
 )
 
@@ -76,7 +77,7 @@ for name, routes in enumerate(route_comb):
                     end=("gneE3", end_lane, "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=30 * random.uniform(10, 20),
+                rate=40* random.uniform(10, 20),
                 # Random flow start time, between x and y seconds.
                 begin=random.uniform(0, 5),
                 # For an episode with maximum_episode_steps=3000 and step
@@ -92,11 +93,11 @@ for name, routes in enumerate(route_comb):
     )
 
 
-route = Route(begin=("gneE3", 0, 10), end=("gneE3", 0, "max"))
+route = Route(begin=("gneE3", 1, 10), end=("gneE3", 1, "max"))
 ego_missions = [
     Mission(
         route=route,
-        start_time=15,  # Delayed start, to ensure road has prior traffic.
+        start_time=20,  # Delayed start, to ensure road has prior traffic.
     )
 ]
 
