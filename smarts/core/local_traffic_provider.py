@@ -497,7 +497,7 @@ class _TrafficActor:
         self._cutting_into = None
         self._cutting_in = False
         self._in_front_after_cutin_secs = 0
-        self._cutin_hold_secs = float(self._vtype.get("lcHoldPeriod", 3.0))
+        self._cutin_hold_secs = float(self._vtype.get("lcHoldPeriod", 10.0))
         self._forward_after_added = 0
         self._after_added_hold_secs = self._cutin_hold_secs
         self._target_cutin_gap = 2.5 * self._min_space_cush
@@ -1193,7 +1193,7 @@ class _TrafficActor:
             equal_drive_time = lw.drive_time == best_lw.drive_time
             is_destination_lane = lw.lane == self._dest_lane
             highest_ttre = lw.ttre >= best_lw.ttre
-            right_of_best_lw = idx < best_lw.lane.index
+            right_of_current_lw = idx < self._lane_win.lane.index
             # otherwise, keep track of the remaining options and eventually
             # pick the lane with the longest available driving time on my route
             # or, in the case of ties, the right-most lane (assuming I'm not
@@ -1204,7 +1204,7 @@ class _TrafficActor:
                     equal_drive_time
                     and (
                         (is_destination_lane and self._offset < self._dest_offset)
-                        or (highest_ttre and right_of_best_lw)
+                        or (highest_ttre and right_of_current_lw)
                     )
                     and not will_rearend
                 )
