@@ -1098,7 +1098,7 @@ class _TrafficActor:
         # Check self, then right, then left.
         lanes_to_right = list(range(0, my_idx))[::-1]
         lanes_to_left = list(
-            range(min(my_idx, len(self._lane_windows)), len(self._lane_windows))
+            range(min(my_idx + 1, len(self._lane_windows)), len(self._lane_windows))
         )
         cut_in_is_real_lane = self._cutting_into and self._cutting_into.index < len(
             self._lane_windows
