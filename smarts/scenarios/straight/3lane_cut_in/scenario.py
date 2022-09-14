@@ -77,7 +77,7 @@ for name, routes in enumerate(route_comb):
                     end=("gneE3", end_lane, "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=40* random.uniform(10, 20),
+                rate=60* random.uniform(6, 14),
                 # Random flow start time, between x and y seconds.
                 begin=random.uniform(0, 5),
                 # For an episode with maximum_episode_steps=3000 and step
