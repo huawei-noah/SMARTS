@@ -95,8 +95,7 @@ def train(input_path, output_path):
 
             image_names = sorted(image_names)
             
-            goal_pos_x = vehicle_data[float(image_names[0].split("_")[0])].ego_vehicle_state.mission.goal.position.x
-            goal_pos_y = vehicle_data[float(image_names[0].split("_")[0])].ego_vehicle_state.mission.goal.position.y
+            goal_pos_x, goal_pos_y = vehicle_data[float(image_names[0].split("_")[0])].ego_vehicle_state.mission.goal.position.as_np_array[0:2]
             threshold = 3
 
             for i in range(len(image_names) - 1):
