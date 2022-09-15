@@ -24,9 +24,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.lines import Line2D
+from smarts.core.utils.file import read_tfrecord_file
+
+# pytype: disable=import-error
 from waymo_open_dataset.protos import scenario_pb2
 
-from smarts.core.utils.file import read_tfrecord_file
+# pytype: enable=import-error
 
 
 class WaymoDatasetError(Exception):
