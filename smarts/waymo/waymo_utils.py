@@ -264,9 +264,9 @@ def _plot_trajectories(
 
 
 def get_tfrecord_info(tfrecord_file: str) -> Dict[str, Dict[str, Any]]:
+    """Extract info about each scenario in the TFRecord file."""
     from waymo_open_dataset.protos import scenario_pb2
 
-    """Extract info about each scenario in the TFRecord file."""
     scenarios = dict()
     records = read_tfrecord_file(tfrecord_file)
     for record in records:
