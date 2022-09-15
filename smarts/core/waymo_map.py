@@ -46,6 +46,7 @@ from waymo_open_dataset.protos.map_pb2 import (
 )
 
 from smarts.sstudio.types import MapSpec
+from smarts.waymo.waymo_utils import WaymoDatasetError
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
@@ -89,12 +90,6 @@ class _GLBData:
         """Generate a geometry file."""
         with open(output_path, "wb") as f:
             f.write(self._bytes)
-
-
-class WaymoDatasetError(Exception):
-    """Represents an error related to the data in a Waymo dataset scenario."""
-
-    pass
 
 
 class WaymoMap(RoadMapWithCaches):

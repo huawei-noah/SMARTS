@@ -27,7 +27,13 @@ from matplotlib.lines import Line2D
 from waymo_open_dataset.protos import scenario_pb2
 
 from smarts.core.utils.file import read_tfrecord_file
-from smarts.core.waymo_map import WaymoMap
+
+
+class WaymoDatasetError(Exception):
+    """Represents an error related to the data in a Waymo dataset scenario."""
+
+    pass
+
 
 MAP_HANDLES = [
     Line2D([0], [0], linestyle=":", color="gray", label="Lane Polyline"),
@@ -293,6 +299,8 @@ def plot_scenario(
 ):
     """Plot the map features of a Waymo scenario,
     and optionally plot/animate the vehicle trajectories."""
+    from smarts.core.waymo_map import WaymoMap
+
     source = f"{tfrecord_file}#{scenario_id}"
     scenario = WaymoMap.parse_source_to_scenario(source)
 

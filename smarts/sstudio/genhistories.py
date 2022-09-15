@@ -39,7 +39,7 @@ from smarts.core.utils.math import (
     min_angles_difference_signed,
     vec_to_radians,
 )
-from smarts.core.waymo_map import WaymoDatasetError
+from smarts.waymo.waymo_utils import WaymoDatasetError
 from smarts.sstudio import types
 
 try:
