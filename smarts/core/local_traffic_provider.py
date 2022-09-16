@@ -1108,20 +1108,13 @@ class _TrafficActor:
             checks = []
 
         ## TODO: Determine how blocked lane changes should be addressed
-        # cut_in_is_real_lane = self._cutting_into and self._cutting_into.index < len(
-        #     self._lane_windows
-        # )
         ## Idea is to keep lane if blocked on right, slow down if blocked on left
-        # if cut_in_is_real_lane and self._target_lane_win.gap < self._min_space_cush:
+        # if doing_cut_in and blocked_from_cut_in:
         #     # blocked on the right so pick a closer lane until cutin lane is available
-        #     if self._cutting_into.index < my_idx:
-        #         best_lw = self._lane_windows[min(my_idx, self._cutting_into.index + 1)]
-        #         self._cutting_into = best_lw.lane
-        #         # skip lane checks
-        #         checks = []
-        #     # if blocked on the left, do nothing for now and wait
-        #     elif self._cutting_into.index > my_idx:
-        #         pass
+        #     if blocked_on_right:
+        #         # exclude blocked lane from lane checks
+        #     # if blocked_on_left:
+        #         # do nothing for now and wait
 
         for idx in checks:
             lw = self._lane_windows[idx]
