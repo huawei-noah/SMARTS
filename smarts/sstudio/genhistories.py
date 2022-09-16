@@ -39,6 +39,7 @@ from smarts.core.utils.math import (
     min_angles_difference_signed,
     vec_to_radians,
 )
+from smarts.waymo.waymo_utils import WaymoDatasetError
 from smarts.sstudio import types
 
 try:
@@ -864,9 +865,10 @@ class Waymo(_TrajectoryDataset):
                 time_expected = round(j * self._dt_sec, 3)
                 time_error = time_current - time_expected
 
-                assert (
-                    abs(time_error) < self._dt_sec
-                ), "Waymo data deviates by more than the size of 1 timestep. This likely indicates a gap in the dataset."
+                if round(abs(time_error), 1) >= self._dt_sec:
+                    raise WaymoDatasetError(
+                        f"[{scenario.scenario_id}] Waymo data deviates by more than the size of 1 timestep. This likely indicates a gap in the dataset."
+                    )
 
                 if not row["valid"] or time_error == 0:
                     continue
