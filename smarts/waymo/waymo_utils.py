@@ -24,6 +24,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.lines import Line2D
+
 from smarts.core.utils.file import read_tfrecord_file
 
 
