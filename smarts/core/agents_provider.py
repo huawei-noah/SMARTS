@@ -90,7 +90,7 @@ class AgentsProvider(Provider):
     def reset(self):
         self.teardown()
 
-    def _remove_missing_actors(self, agent_actions: Dict[str, Any]):
+    def _remove_actors_without_actions(self, agent_actions: Dict[str, Any]):
         missing_agents = self._my_agent_actors.keys() - agent_actions.keys()
         for agent_id in missing_agents:
             self._log.info(
@@ -122,11 +122,19 @@ class AgentsProvider(Provider):
         Args:
             agent_actions: a dictionary from each agent_id to its actions for this step.
         """
-        self._remove_missing_actors(agent_actions)
-        actions_without_agents = agent_actions.keys() - self._my_agent_actors.keys()
-        assert (
-            not actions_without_agents
-        ), f"actions specified for non-tracked agents:  {actions_without_agents}"
+        self._remove_actors_without_actions(agent_actions)
+        agents_without_actors = agent_actions.keys() - self._my_agent_actors.keys()
+        if agents_without_actors:
+            if self._log.level >= logging.ERROR:
+                self._log.error(
+                    "actions specified for an agent without an actor: %s. Cleaning up social agents.",
+                    agents_without_actors,
+                )
+            orphaned_social_agents = (
+                self._agent_manager.social_agent_ids & agents_without_actors
+            )
+            self._agent_manager.teardown_social_agents(orphaned_social_agents)
+
         agent_manager = self._agent_manager
         vehicle_index = self._vehicle_index
         sim = self._sim()
@@ -134,7 +142,9 @@ class AgentsProvider(Provider):
         for agent_id, vehicle_states in self._my_agent_actors.items():
             action = agent_actions.get(agent_id)
             if action is None or len(action) == 0:
-                self._log.info(f"no actions for agent_id={agent_id}")
+                self._log.info("no actions for agent_id=%s", agent_id)
+                continue
+            if agent_id in agents_without_actors:
                 continue
             agent_interface = agent_manager.agent_interface_for_agent_id(agent_id)
             is_boid_agent = agent_manager.is_boid_agent(agent_id)
