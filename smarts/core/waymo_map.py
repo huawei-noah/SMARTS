@@ -43,10 +43,10 @@ from waymo_open_dataset.protos.map_pb2 import (
     RoadLine,
     SpeedBump,
     StopSign,
-    TrafficSignalLaneState,
 )
 
 from smarts.sstudio.types import MapSpec
+from smarts.waymo.waymo_utils import WaymoDatasetError
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
@@ -822,6 +822,11 @@ class WaymoMap(RoadMapWithCaches):
             self._polyline_cache[feat_id] = WaymoMap._polyline_dists(map_feats.polyline)
             self._feat_dicts[feat_id] = self._waymo_pb_to_dict(map_feats)
 
+            if len(self._polyline_cache[feat_id][0]) < 2:
+                raise WaymoDatasetError(
+                    f"[{self._waymo_scenario_id}] Feature {feat_id} only has a single point in its polyline, which is not currently supported by SMARTS."
+                )
+
         # use original lane polylines for geometry
         for feat_id, lane_dict in self._feat_dicts.items():
             lane_dict["_normals"] = self._calculate_normals(feat_id)
@@ -1030,8 +1035,7 @@ class WaymoMap(RoadMapWithCaches):
                     left_border_vertices_len = int((len(lane._lane_polygon) - 1) / 2)
                     left_side = lane._lane_polygon[:left_border_vertices_len]
                     lane_to_left, _ = lane.lane_to_left
-                    if lane.index != len(road.lanes) - 1:
-                        assert lane_to_left
+                    if lane.index != len(road.lanes) - 1 and lane_to_left is not None:
                         if lane.is_drivable and lane_to_left.is_drivable:
                             lane_dividers.append(left_side)
 
