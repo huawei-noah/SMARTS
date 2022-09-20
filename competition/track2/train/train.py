@@ -86,10 +86,8 @@ def train(input_path, output_path):
         for id in vehicle_ids[0:n_vehicles]:
             print(f"Adding data for vehicle id {id} in scenario {scenario}.")
 
-            for pkl_file in os.listdir(scenario_path):
-                if pkl_file == (id + '.pkl'):
-                    with open(scenario_path / pkl_file, "rb") as f:
-                        vehicle_data = pickle.load(f)
+            with open(scenario_path / f"{id}.pkl", "rb") as f:
+                vehicle_data = pickle.load(f)
             image_names = list()
             for filename in os.listdir(scenario_path):
                 if filename.endswith(f"{id}.png"):
@@ -97,8 +95,7 @@ def train(input_path, output_path):
 
             image_names = sorted(image_names)
             
-            goal_pos_x = vehicle_data[float(image_names[0].split("_")[0])].ego_vehicle_state.mission.goal.position.x
-            goal_pos_y = vehicle_data[float(image_names[0].split("_")[0])].ego_vehicle_state.mission.goal.position.y
+            goal_pos_x, goal_pos_y = vehicle_data[float(image_names[0].split("_")[0])].ego_vehicle_state.mission.goal.position.as_np_array[0:2]
             threshold = 3
 
             for i in range(len(image_names) - 1):
@@ -152,7 +149,6 @@ def train(input_path, output_path):
                         current_position[1],
                     )
                     rewards.append(dist_reward + goal_reward)
-                    rewards.append(dist_reward)
 
                     terminals.append(terminal)
 
