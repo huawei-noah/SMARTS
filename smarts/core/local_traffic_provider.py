@@ -497,7 +497,7 @@ class _TrafficActor:
         self._cutting_into = None
         self._cutting_in = False
         self._in_front_after_cutin_secs = 0
-        self._cutin_hold_secs = float(self._vtype.get("lcHoldPeriod", 3.0))
+        self._cutin_hold_secs = float(self._vtype.get("lcHoldPeriod", 10.0))
         self._forward_after_added = 0
         self._after_added_hold_secs = self._cutin_hold_secs
         self._target_cutin_gap = 2.5 * self._min_space_cush
@@ -1095,16 +1095,12 @@ class _TrafficActor:
         # Try to find the best among available lanes...
         best_lw = self._lane_windows[my_idx]
 
-        # Check self, then right, then left.
+        # Default current lane then check right lanes then left lanes.
         lanes_to_right = list(range(0, my_idx))[::-1]
         lanes_to_left = list(
-            range(min(my_idx, len(self._lane_windows)), len(self._lane_windows))
-        )
-        cut_in_is_real_lane = self._cutting_into and self._cutting_into.index < len(
-            self._lane_windows
+            range(min(my_idx + 1, len(self._lane_windows)), len(self._lane_windows))
         )
         checks = lanes_to_right + lanes_to_left
-
         # hold lane for some time if added recently
         if self._forward_after_added < self._after_added_hold_secs:
             self._forward_after_added += dt
@@ -1113,16 +1109,12 @@ class _TrafficActor:
 
         ## TODO: Determine how blocked lane changes should be addressed
         ## Idea is to keep lane if blocked on right, slow down if blocked on left
-        # if cut_in_is_real_lane and self._target_lane_win.gap < self._min_space_cush:
+        # if doing_cut_in and blocked_from_cut_in:
         #     # blocked on the right so pick a closer lane until cutin lane is available
-        #     if self._cutting_into.index < my_idx:
-        #         best_lw = self._lane_windows[min(my_idx, self._cutting_into.index + 1)]
-        #         self._cutting_into = best_lw.lane
-        #         # skip lane checks
-        #         checks = []
-        #     # if blocked on the left, do nothing for now and wait
-        #     elif self._cutting_into.index > my_idx:
-        #         pass
+        #     if blocked_on_right:
+        #         # exclude blocked lane from lane checks
+        #     # if blocked_on_left:
+        #         # do nothing for now and wait
 
         for idx in checks:
             lw = self._lane_windows[idx]
@@ -1193,24 +1185,22 @@ class _TrafficActor:
             equal_drive_time = lw.drive_time == best_lw.drive_time
             is_destination_lane = lw.lane == self._dest_lane
             highest_ttre = lw.ttre >= best_lw.ttre
-            right_of_best_lw = idx < best_lw.lane.index
+            right_of_current_lw = idx < self._lane_win.lane.index
             # otherwise, keep track of the remaining options and eventually
             # pick the lane with the longest available driving time on my route
             # or, in the case of ties, the right-most lane (assuming I'm not
             # cutting anyone off to get there).
-            if (
-                longer_drive_time
-                or (
-                    equal_drive_time
-                    and (
-                        (is_destination_lane and self._offset < self._dest_offset)
-                        or (highest_ttre and right_of_best_lw)
-                    )
-                    and not will_rearend
-                )
-                or will_rearend
-                and lw.ttc > best_lw.ttc
-            ):
+
+            if equal_drive_time and not will_rearend:
+                if is_destination_lane and self._offset < self._dest_offset:
+                    best_lw = lw
+                if highest_ttre and right_of_current_lw:
+                    best_lw = lw
+
+            if longer_drive_time:
+                best_lw = lw
+
+            if will_rearend and lw.ttc > best_lw.ttc:
                 best_lw = lw
 
         # keep track of the fact I'm changing lanes for next step
