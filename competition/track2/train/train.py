@@ -119,15 +119,14 @@ def train(input_path, output_path):
                     dx = trans_next[0, 0] - trans_cur[0, 0]
                     dy = trans_next[1, 0] - trans_cur[1, 0]
                     dheading = next_heading - current_heading
+
                     events = vehicle_data[float(sim_time)].events
-                    attributes = [a for a in dir(events) if not a.startswith('__')]
-                    events_values = []
-                    for a in attributes:
-                        events_values.append(getattr(events, a))
-                    if all(value == 0 for value in events_values):
-                        terminal = 0
-                    else:
-                        terminal = 1
+                    terminal = 0
+                    for name, value in events._asdict().items():
+                        if (name == 'collision') or (name == 'off_road') or (name == 'reached_goal') or (name == 'reached_max_episode_steps'):
+                            if bool(value):
+                                terminal = 1
+                                break
 
                     bev = np.moveaxis(np.asarray(image), -1, 0)
                     goal_obs = get_goal_layer(
