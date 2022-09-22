@@ -160,7 +160,9 @@ def train(input_path, output_path):
         actions = np.array(actions)
         rewards = np.array(rewards)
         terminals = np.array(terminals)
-        dataset = MDPDataset(obs, actions, rewards, terminals)
+        episode_terminals = terminals.copy()
+        episode_terminals[-1] = 1
+        dataset = MDPDataset(obs, actions, rewards, terminals, episode_terminals=episode_terminals)
 
         if index == 0:
             minimum = [-0.1, 0, -0.1]
