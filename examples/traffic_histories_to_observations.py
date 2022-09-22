@@ -20,6 +20,7 @@ from smarts.core.agent_interface import (
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
+from smarts.core.coordinates import Point
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.plan import PositionalGoal
 from smarts.core.scenario import Scenario
@@ -81,23 +82,11 @@ class ObservationRecorder:
                 "No output dir provided. Observations will not be saved."
             )
         self._smarts = None
-        self._create_missions()
 
         if agent_interface is not None:
             self.agent_interface = agent_interface
         else:
             self.agent_interface = self._create_default_interface()
-
-    def _create_missions(self):
-        self._missions = dict()
-        orig_missions = self._scenario.discover_missions_of_traffic_histories()
-        for v_id, mission in orig_missions.items():
-            veh_goal = self._scenario._get_vehicle_goal(v_id)
-            # TODO: get prefixed vehicle_id from TrafficHistoryProvider
-            veh_id = f"history-vehicle-{v_id}"
-            self._missions[veh_id] = replace(
-                mission, goal=PositionalGoal(veh_goal, radius=3)
-            )
 
     def _create_default_interface(
         self, img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose"
@@ -255,8 +244,28 @@ class ObservationRecorder:
             )
 
         if self._output_dir:
+            # Get original missions for all vehicles
+            missions = dict()
+            orig_missions = self._scenario.discover_missions_of_traffic_histories()
+            for v_id, mission in orig_missions.items():
+                # TODO: get prefixed vehicle_id from TrafficHistoryProvider
+                veh_id = f"history-vehicle-{v_id}"
+                missions[veh_id] = mission
+
             # Save recorded observations as pickle files
             for car, data in collected_data.items():
+                # Fill in mission with proper goal position for all observations
+                last_t = max(data.keys())
+                last_state = data[last_t].ego_vehicle_state
+                goal_pos = Point(last_state.position[0], last_state.position[1])
+                new_mission = replace(
+                    missions[last_state.id], goal=PositionalGoal(goal_pos, radius=3)
+                )
+                for t in data.keys():
+                    ego_state = data[t].ego_vehicle_state
+                    new_ego_state = ego_state._replace(mission=new_mission)
+                    data[t] = replace(data[t], ego_vehicle_state=new_ego_state)
+
                 outfile = os.path.join(
                     self._output_dir,
                     f"{self._scenario.name}_{self._scenario.traffic_history.name}_{car}.pkl",
@@ -291,7 +300,7 @@ class ObservationRecorder:
         obs = dict()
         obs, _, _, _ = self._smarts.observe_from(list(valid_vehicles))
         resolutions = {}
-        self._logger.info(
+        self._logger.debug(
             f"t={self._smarts.elapsed_sim_time}, active_vehicles={len(valid_vehicles)}"
         )
         for id_ in list(obs):
@@ -300,12 +309,7 @@ class ObservationRecorder:
             ego_state = obs[id_].ego_vehicle_state
             if ego_state.lane_index is None:
                 del obs[id_]
-            else:
-                mission = self._missions[ego_state.id]
-                if mission:
-                    # doh! ego_state is immutable!
-                    new_ego_state = ego_state._replace(mission=mission)
-                    obs[id_] = replace(obs[id_], ego_vehicle_state=new_ego_state)
+
         # TODO: handle case where neighboring vehicle has lane_index of None too
         t = self._smarts.elapsed_sim_time
         for car, car_obs in obs.items():
