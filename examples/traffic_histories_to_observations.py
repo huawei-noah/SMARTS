@@ -313,7 +313,7 @@ class ObservationRecorder:
         # TODO: handle case where neighboring vehicle has lane_index of None too
         t = self._smarts.elapsed_sim_time
         for car, car_obs in obs.items():
-            collected_data.setdefault(car, {}).setdefault(t, {})
+            collected_data.setdefault(car, {})
             collected_data[car][t] = car_obs
 
         if not self._output_dir:
