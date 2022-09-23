@@ -266,6 +266,11 @@ class ObservationRecorder:
                     new_ego_state = ego_state._replace(mission=new_mission)
                     data[t] = replace(data[t], ego_vehicle_state=new_ego_state)
 
+                # Create terminal state for last timestep, when the vehicle reaches the goal
+                events = data[last_t].events
+                new_events = events._replace(reached_goal=True)
+                data[last_t] = replace(data[last_t], events=new_events)
+
                 outfile = os.path.join(
                     self._output_dir,
                     f"{self._scenario.name}_{self._scenario.traffic_history.name}_{car}.pkl",
