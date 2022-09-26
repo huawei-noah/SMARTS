@@ -123,7 +123,7 @@ def train(input_path, output_path):
                     events = vehicle_data[float(sim_time)].events
                     terminal = 0
                     for name, value in events._asdict().items():
-                        if (name == 'collision') or (name == 'off_road') or (name == 'reached_goal') or (name == 'reached_max_episode_steps'):
+                        if (name == 'collisions') or (name == 'off_road') or (name == 'reached_goal') or (name == 'reached_max_episode_steps'):
                             if bool(value):
                                 terminal = 1
                                 break
