@@ -72,7 +72,7 @@ def train(input_path, output_path):
         scenario_path = Path(input_path) / scenario
         for filename in os.listdir(scenario_path):
             if filename.endswith(".pkl"):
-                match = re.search("vehicle-(.*).pkl", filename)
+                match = re.search("(.*).pkl", filename)
                 assert match is not None
                 vehicle_id = match.group(1)
                 if vehicle_id not in vehicle_ids:
@@ -87,36 +87,27 @@ def train(input_path, output_path):
         for id in vehicle_ids[0:n_vehicles]:
             print(f"Adding data for vehicle id {id} in scenario {scenario}.")
 
-            with open(
-                scenario_path / (f"Agent-history-vehicle-{id}.pkl"),
-                "rb",
-            ) as f:
+            with open(scenario_path / f"{id}.pkl", "rb") as f:
                 vehicle_data = pickle.load(f)
+
             image_names = list()
-
             for filename in os.listdir(scenario_path):
-                if filename.endswith(f"-{id}.png"):
+                if filename.endswith(f"{id}.png"):
                     image_names.append(filename)
-
             image_names = sorted(image_names)
 
-            goal_pos_x = vehicle_data[float(image_names[-1].split("_Agent")[0])]["ego"][
-                "pos"
-            ][0]
-            goal_pos_y = vehicle_data[float(image_names[-1].split("_Agent")[0])]["ego"][
-                "pos"
-            ][1]
+            goal_pos_x, goal_pos_y = vehicle_data[float(image_names[0].split("_")[0])].ego_vehicle_state.mission.goal.position.as_np_array[0:2]
             threshold = 3
 
             for i in range(len(image_names) - 1):
                 with Image.open(scenario_path / image_names[i], "r") as image:
                     image.seek(0)
-                    sim_time = image_names[i].split("_Agent")[0]
-                    sim_time_next = image_names[i + 1].split("_Agent")[0]
-                    current_position = vehicle_data[float(sim_time)]["ego"]["pos"]
-                    current_heading = vehicle_data[float(sim_time)]["ego"]["heading"]
-                    next_position = vehicle_data[float(sim_time_next)]["ego"]["pos"]
-                    next_heading = vehicle_data[float(sim_time_next)]["ego"]["heading"]
+                    sim_time = image_names[i].split("_")[0]
+                    sim_time_next = image_names[i + 1].split("_")[0]
+                    current_position = vehicle_data[float(sim_time)].ego_vehicle_state.position
+                    current_heading = vehicle_data[float(sim_time)].ego_vehicle_state.heading
+                    next_position = vehicle_data[float(sim_time_next)].ego_vehicle_state.position
+                    next_heading = vehicle_data[float(sim_time_next)].ego_vehicle_state.heading
                     trans_coor = get_trans_coor(
                         next_position[0],
                         next_position[1],
@@ -129,11 +120,16 @@ def train(input_path, output_path):
                     dx = trans_next[0, 0] - trans_cur[0, 0]
                     dy = trans_next[1, 0] - trans_cur[1, 0]
                     dheading = next_heading - current_heading
-                    events = vehicle_data[float(sim_time)]["events"]
-                    if all(value == 0 for value in events.values()):
-                        terminal = 0
-                    else:
-                        terminal = 1
+                    events = vehicle_data[float(sim_time)].events
+                    terminal = 0
+                    for name, value in events._asdict().items():
+                        if ((name == "collisions") or 
+                            (name == "off_road") or 
+                            (name == "reached_goal") or 
+                            (name == "reached_max_episode_steps")
+                           ) and bool(value):
+                            terminal = 1
+                            break
 
                     bev = np.moveaxis(np.asarray(image), -1, 0)
                     goal_obs = get_goal_layer(
@@ -146,7 +142,7 @@ def train(input_path, output_path):
                     extended_ob = np.concatenate((bev, goal_obs), axis=0)
                     obs.append(extended_ob)
                     actions.append([dx, dy, dheading])
-                    dist_reward = vehicle_data[float(sim_time)]["dist"]
+                    dist_reward = vehicle_data[float(sim_time)].distance_travelled
                     goal_reward = goal_region_reward(
                         threshold,
                         goal_pos_x,
@@ -155,7 +151,6 @@ def train(input_path, output_path):
                         current_position[1],
                     )
                     rewards.append(dist_reward + goal_reward)
-                    rewards.append(dist_reward)
 
                     terminals.append(terminal)
 
@@ -168,7 +163,9 @@ def train(input_path, output_path):
         actions = np.array(actions)
         rewards = np.array(rewards)
         terminals = np.array(terminals)
-        dataset = MDPDataset(obs, actions, rewards, terminals)
+        episode_terminals = terminals.copy()
+        episode_terminals[-1] = 1
+        dataset = MDPDataset(obs, actions, rewards, terminals, episode_terminals=episode_terminals)
 
         if index == 0:
             minimum = [-0.1, 0, -0.1]
