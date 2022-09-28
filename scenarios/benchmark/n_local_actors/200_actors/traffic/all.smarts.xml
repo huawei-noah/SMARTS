@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.sf.net/xsd/routes_file.xsd">
+    <vType id="actor-car--4238973458400510012" accel="2.6" decel="4.5" vClass="passenger" speedFactor="1.0" speedDev="0.1" sigma="0.5" minGap="2.5" maxSpeed="55.5" />
+    <route id="route-gneE01_0_0-gneE01.132_0_max-903155479211274752-" edges="gneE01 :cluster_J2_J8_6 gneE01.132" />
+    <route id="route-gneE01_2_0-gneE01.132_2_max-7128727096428875943-" edges="gneE01 :cluster_J2_J8_6 gneE01.132" />
+    <route id="route-gneE01_4_0-gneE01.132_4_max-2020903413326507722-" edges="gneE01 :cluster_J2_J8_6 gneE01.132" />
+    <route id="route-gneE01_1_0-gneE01.132_1_max--3068313208848618287-" edges="gneE01 :cluster_J2_J8_6 gneE01.132" />
+    <route id="route-gneE01_3_0-gneE01.132_3_max-6879917726840058297-" edges="gneE01 :cluster_J2_J8_6 gneE01.132" />
+    <flow id="car-flow-route-gneE01_0_0-gneE01.132_0_max--1885063027911082338--7266489842092764092--0-0" type="actor-car--4238973458400510012" route="route-gneE01_0_0-gneE01.132_0_max-903155479211274752-" departLane="0" departPos="0" departSpeed="max" arrivalLane="0" arrivalPos="max" begin="0" end="40" vehsPerHour="3600.0" />
+    <flow id="car-flow-route-gneE01_1_0-gneE01.132_1_max-134165753117633617--7266489842092764092--1-0" type="actor-car--4238973458400510012" route="route-gneE01_1_0-gneE01.132_1_max--3068313208848618287-" departLane="1" departPos="0" departSpeed="max" arrivalLane="1" arrivalPos="max" begin="0" end="40" vehsPerHour="3600.0" />
+    <flow id="car-flow-route-gneE01_2_0-gneE01.132_2_max--8023793674785677247--7266489842092764092--2-0" type="actor-car--4238973458400510012" route="route-gneE01_2_0-gneE01.132_2_max-7128727096428875943-" departLane="2" departPos="0" departSpeed="max" arrivalLane="2" arrivalPos="max" begin="0" end="40" vehsPerHour="3600.0" />
+    <flow id="car-flow-route-gneE01_3_0-gneE01.132_3_max-5460593869588748517--7266489842092764092--3-0" type="actor-car--4238973458400510012" route="route-gneE01_3_0-gneE01.132_3_max-6879917726840058297-" departLane="3" departPos="0" departSpeed="max" arrivalLane="3" arrivalPos="max" begin="0" end="40" vehsPerHour="3600.0" />
+    <flow id="car-flow-route-gneE01_4_0-gneE01.132_4_max-2028575978095585729--7266489842092764092--4-0" type="actor-car--4238973458400510012" route="route-gneE01_4_0-gneE01.132_4_max-2020903413326507722-" departLane="4" departPos="0" departSpeed="max" arrivalLane="4" arrivalPos="max" begin="0" end="40" vehsPerHour="3600.0" />
+</routes>
