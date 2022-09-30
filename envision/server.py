@@ -212,6 +212,8 @@ class WebClientRunLoop:
 
         async def run_loop():
             frame_ptr = None
+            frames_to_send = []
+
             # wait until we have a start_frame...
             self._log.debug("Waiting for first frame.")
             while frame_ptr is None:
@@ -221,8 +223,9 @@ class WebClientRunLoop:
             self._log.debug("First frame ready.")
 
             while True:
-                # Handle seek
+                # Attempt to get new frames
                 if self._seek is not None and self._frames.start_time is not None:
+                    # Handle seek
                     frame_ptr = self._frames(self._frames.start_time + self._seek)
                     if not frame_ptr:
                         self._log.warning(
@@ -231,14 +234,24 @@ class WebClientRunLoop:
                         frame_ptr = self._frames.start_frame
                     frames_to_send = [frame_ptr]
                     self._seek = None
+                else:
+                    # If not seeking, try to get next frames normally
+                    delay = self._calculate_frame_delay(frame_ptr)
+                    time.sleep(delay)
+                    frames_to_send = []
+                    while (
+                        frame_ptr.next_
+                        and len(frames_to_send) <= self._message_frame_volume
+                    ):
+                        frame_ptr = frame_ptr.next_
+                        frames_to_send.append(frame_ptr)
 
-                assert len(frames_to_send) > 0
-                closed = self._push_frames_to_web_client(frames_to_send)
-                if closed:
-                    self._log.debug("Socket closed, exiting")
-                    return
-
-                frame_ptr, frames_to_send = self._wait_for_next_frame(frame_ptr)
+                # If we have new frames, send them to the web client
+                if len(frames_to_send) > 0:
+                    closed = self._push_frames_to_web_client(frames_to_send)
+                    if closed:
+                        self._log.debug("Socket closed, exiting")
+                        return
 
         def sync_run_forever():
             loop = asyncio.new_event_loop()
@@ -269,17 +282,6 @@ class WebClientRunLoop:
     def _calculate_frame_delay(self, frame_ptr):
         # we may want to be more clever here in the future...
         return self._message_wait_time
-
-    def _wait_for_next_frame(self, frame_ptr):
-        while True:
-            delay = self._calculate_frame_delay(frame_ptr)
-            time.sleep(delay)
-            frames_to_send = []
-            while frame_ptr.next_ and len(frames_to_send) <= self._message_frame_volume:
-                frame_ptr = frame_ptr.next_
-                frames_to_send.append(frame_ptr)
-            if len(frames_to_send) > 0:
-                return frame_ptr, frames_to_send
 
 
 class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
@@ -318,6 +320,7 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
             if not prefix or event != "number":
                 continue
             frame_time = float(value)
+            break
         assert isinstance(frame_time, float)
         self._frames.append(Frame(timestamp=frame_time, data=message))
 
