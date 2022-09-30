@@ -1,11 +1,13 @@
 import argparse
 import logging
+import math
 import os
 import pickle
 from dataclasses import replace
 from typing import Optional, Sequence
 
-from PIL import Image, ImageDraw
+import numpy as np
+from PIL import Image
 
 from envision.client import Client as Envision
 from smarts import sstudio
@@ -19,6 +21,7 @@ from smarts.core.agent_interface import (
     RoadWaypoints,
     Waypoints,
 )
+from smarts.core.colors import Colors
 from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
 from smarts.core.coordinates import Point
 from smarts.core.local_traffic_provider import LocalTrafficProvider
@@ -273,7 +276,7 @@ class ObservationRecorder:
 
                 outfile = os.path.join(
                     self._output_dir,
-                    f"{self._scenario.name}_{self._scenario.traffic_history.name}_{car}.pkl",
+                    f"{car}.pkl",
                 )
                 with open(outfile, "wb") as of:
                     pickle.dump(data, of)
@@ -288,11 +291,13 @@ class ObservationRecorder:
         selected_vehicles,
         max_sim_time,
     ):
+        # Record only within specified time window.
+        t = self._smarts.elapsed_sim_time
         end_time = self._end_time if self._end_time is not None else max_sim_time
-        if not (self._start_time <= self._smarts.elapsed_sim_time <= end_time):
+        if not (self._start_time <= t <= end_time):
             return
 
-        # Attach sensors to each vehicle
+        # Attach sensors to each vehicle.
         valid_vehicles = (current_vehicles - off_road_vehicles) & selected_vehicles
         for veh_id in valid_vehicles:
             try:
@@ -301,48 +306,44 @@ class ObservationRecorder:
                 self._logger.warning(f"{veh_id} out of lane, skipped attaching sensors")
                 off_road_vehicles.add(veh_id)
 
-        # Get observations from each vehicle and record them
+        # Get observations from each vehicle and record them.
         obs = dict()
         obs, _, _, _ = self._smarts.observe_from(list(valid_vehicles))
-        resolutions = {}
-        self._logger.debug(
-            f"t={self._smarts.elapsed_sim_time}, active_vehicles={len(valid_vehicles)}"
-        )
+        self._logger.debug(f"t={t}, active_vehicles={len(valid_vehicles)}")
         for id_ in list(obs):
-            if obs[id_].top_down_rgb:
-                resolutions[id_] = obs[id_].top_down_rgb.metadata.resolution
             ego_state = obs[id_].ego_vehicle_state
             if ego_state.lane_index is None:
                 del obs[id_]
+                continue
+
+            top_down_rgb = obs[id_].top_down_rgb
+            if top_down_rgb:
+                res = top_down_rgb.metadata.resolution
+                rgb = top_down_rgb.data.copy()
+                h, w, _ = rgb.shape
+                shape = (
+                    (
+                        math.floor(w / 2 - 3.68 / 2 / res),
+                        math.ceil(w / 2 + 3.68 / 2 / res),
+                    ),
+                    (
+                        math.floor(h / 2 - 1.47 / 2 / res),
+                        math.ceil(h / 2 + 1.47 / 2 / res),
+                    ),
+                )
+                color = np.array(Colors.Red.value[0:3], ndmin=3) * 255
+                rgb[shape[0][0] : shape[0][1], shape[1][0] : shape[1][1], :] = color
+                top_down_rgb_edited = top_down_rgb._replace(data=rgb)
+                obs[id_] = replace(obs[id_], top_down_rgb=top_down_rgb_edited)
+
+                if self._output_dir:
+                    img = Image.fromarray(rgb, "RGB")
+                    img.save(os.path.join(self._output_dir, f"{t}_{id_}.png"))
 
         # TODO: handle case where neighboring vehicle has lane_index of None too
-        t = self._smarts.elapsed_sim_time
         for car, car_obs in obs.items():
             collected_data.setdefault(car, {})
             collected_data[car][t] = car_obs
-
-        if not self._output_dir:
-            return
-
-        # Write top-down RGB image to a file for each vehicle if we have one
-        for agent_id, agent_obs in obs.items():
-            if agent_obs.top_down_rgb is not None:
-                rgb_data = agent_obs.top_down_rgb.data
-                h, w, _ = rgb_data.shape
-                shape = (
-                    (
-                        h / 2 - 1.47 / 2 / resolutions[agent_id],
-                        w / 2 - 3.68 / 2 / resolutions[agent_id],
-                    ),
-                    (
-                        h / 2 + 1.47 / 2 / resolutions[agent_id],
-                        w / 2 + 3.68 / 2 / resolutions[agent_id],
-                    ),
-                )
-                img = Image.fromarray(rgb_data, "RGB")
-                rect_image = ImageDraw.Draw(img)
-                rect_image.rectangle(shape, fill="red")
-                img.save(os.path.join(self._output_dir, f"{t}_{agent_id}.png"))
 
 
 if __name__ == "__main__":
