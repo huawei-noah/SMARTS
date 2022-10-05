@@ -999,6 +999,7 @@ class TripMeterSensor(Sensor):
             return  # sensor does not have enough history
         most_recent_wp = self._wps_for_distance[-1]
 
+        # TODO: Instead of storing a waypoint every 0.5m just find the next one immediately
         threshold_for_counting_wp = 0.5  # meters from last tracked waypoint
         if (
             np.linalg.norm(new_wp.pos - most_recent_wp.pos) > threshold_for_counting_wp
