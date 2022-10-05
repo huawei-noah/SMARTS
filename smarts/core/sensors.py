@@ -1323,13 +1323,14 @@ class SignalsSensor(Sensor):
         if lookahead <= 0:
             return
         for ogl in lane.outgoing_lanes:
-            if route and ogl.road not in route.roads:
+            if route and route.road_length > 0 and ogl.road not in route.roads:
                 continue
             upcoming_signals += [
                 feat for feat in ogl.features if self._is_signal_type(feat)
             ]
-            lookahead -= lane.length
-            self._find_signals_ahead(ogl, lookahead, route, upcoming_signals)
+            self._find_signals_ahead(
+                ogl, lookahead - lane.length, route, upcoming_signals
+            )
 
     def teardown(self):
         pass
