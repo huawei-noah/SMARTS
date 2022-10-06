@@ -1025,7 +1025,7 @@ class TripMeterSensor(Sensor):
         # old waypoint minus current ahead waypoint
         wp_disp_vec = new_waypoint.pos - recent_wp.pos
         # make unit vector
-        wp_unit_vec = wp_disp_vec / np.linalg.norm(wp_disp_vec)
+        wp_unit_vec = wp_disp_vec / (np.linalg.norm(wp_disp_vec) or 1)
         # vehicle position minus last vehicle position
         position_disp_vec = vehicle_position[:2] - last_vehicle_pos[:2]
         # distance of vehicle between last and current wp
