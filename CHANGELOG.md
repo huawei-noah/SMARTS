@@ -45,6 +45,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed a bug where bubble agents would stick around and to try to get observations even after being disassociated from a vehicle.
 - Fixed a bug with the `TripMeterSensor` that was not using a unit direction vector to calculate trip distance against current route.
 - Fixed issues with Envision. The playback bar and realtime mode now work as expected.
+- Fixed a bug where traffic history vehicles would not get traffic signal observations
 
 ## [0.6.1]
 ### Added
