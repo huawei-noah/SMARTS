@@ -44,6 +44,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed a bug where `Vehicle.bounding_box` was mirrored over Y causing on shoulder events to fire inappropriately.
 - Fixed an issue where the ego and neighbour vehicle observation was returning `None` for the nearby `lane_id`, `lane_index`, and `road_id`. These now default to constants `off_lane`, `-1`, and `off_road` respectively.
 - Fixed a bug where bubble agents would stick around and to try to get observations even after being disassociated from a vehicle.
+- Fixed a bug with the `TripMeterSensor` that was not using a unit direction vector to calculate trip distance against current route.
 - Fixed issues with Envision. The playback bar and realtime mode now work as expected.
 
 ## [0.6.1]
