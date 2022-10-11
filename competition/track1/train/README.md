@@ -27,11 +27,31 @@ The scenario names and their missions, given for training, are as follows.
 ## Example
 The setup, train, evaluate, and docker, instructions are meant for getting started. These steps are illustrated by way of an example.
 
-+ The example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3) reinforcement learning library.
+**This example is only meant to demonstrate one potential method of developing a policy for the `multi-scenario-v0` environment. Here, any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models, predictive models, etc, may be used to develop the policy.**
 
-+ **The policy here has not yet been trained to fully solve the task environments.** 
+This example uses PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3) reinforcement learning library. A single trained RL model navigating the various scenarios in the `multi-scenario-v0` environment is shown below.
 
-+ **This example is only meant to demonstrate one potential method of developing a policy for the `multi-scenario-v0` environment. Here, any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models, predictive models, etc, may be used to develop the policy.**
++ 1_to_2lane_left_turn_c
+
+    ![](./docs/_static/intersection-c.gif)
++ 1_to_2lane_left_turn_t 
+
+    ![](./docs/_static/intersection-t.gif)
++ 3lane_merge_multi_agent
+
+    ![](./docs/_static/merge-multi.gif)
++ 3lane_merge_single_agent
+
+    ![](./docs/_static/merge-single.gif)
++ 3lane_cruise_multi_agent
+
+    ![](./docs/_static/cruise-multi.gif)
++ 3lane_cruise_single_agent
+
+    ![](./docs/_static/cruise-single.gif)
++ 3lane_cut_in
+
+    ![](./docs/_static/cut-in.gif)
 
 ## Setup
 + Use `python3.8` to develop your model.

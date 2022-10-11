@@ -13,7 +13,7 @@ class CombinedExtractor(BaseFeaturesExtractor):
         This corresponds to the number of unit for the last layer.
     """
 
-    def __init__(self, observation_space: gym.spaces.Dict, cnn_output_dim: int = 256):
+    def __init__(self, observation_space: gym.spaces.Dict, cnn_output_dim: int):
         super(CombinedExtractor, self).__init__(observation_space, features_dim=1)
         # We assume CxHxW images (channels first)
 

@@ -15,10 +15,10 @@ smarts:
   epochs: 5_000 # Number of training loops.
 
   # Training per scenario
-  train_steps: 100_000
-  checkpoint_freq: 50_000 # Save a model every checkpoint_freq calls to env.step().
-  eval_eps: 100 # Number of evaluation epsiodes.
-  eval_freq: 50_000 # Evaluate the trained model every eval_freq steps and save the best model.
+  train_steps: 5_000
+  checkpoint_freq: 2_500 # Save a model every checkpoint_freq calls to env.step().
+  eval_eps: 10 # Number of evaluation epsiodes.
+  eval_freq: 2_500 # Evaluate the trained model every eval_freq steps and save the best model.
 
   # Policy
   alg: PPO  # Stable Baselines3 algorithm.
