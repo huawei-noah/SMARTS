@@ -8,10 +8,7 @@ from smarts.sstudio import types as t
 traffic = t.Traffic(
     flows=[
         t.Flow(
-            route=t.Route(
-                begin=("gneE01", 0, 0),
-                end=("gneE01.132", 0, "max"),
-            ),
+            route=t.RandomRoute(),
             rate=1,
             actors={t.TrafficActor("car"): 1},
         )
