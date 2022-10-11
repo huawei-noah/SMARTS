@@ -973,6 +973,7 @@ class TripMeterSensor(Sensor):
         self._wps_for_distance: List[Waypoint] = []
         self._dist_travelled = 0.0
         self._last_dist_travelled = 0.0
+        self._last_actor_position = None
 
     def update_distance_wps_record(self, waypoint_paths):
         """Append a waypoint to the history if it is not already counted."""
@@ -992,30 +993,44 @@ class TripMeterSensor(Sensor):
         )
 
         if not self._wps_for_distance:
+            self._last_actor_position = self._vehicle.pose.position
             if should_count_wp:
                 self._wps_for_distance.append(new_wp)
-            return
+            return  # sensor does not have enough history
         most_recent_wp = self._wps_for_distance[-1]
 
+        # TODO: Instead of storing a waypoint every 0.5m just find the next one immediately
         threshold_for_counting_wp = 0.5  # meters from last tracked waypoint
         if (
             np.linalg.norm(new_wp.pos - most_recent_wp.pos) > threshold_for_counting_wp
             and should_count_wp
         ):
             self._wps_for_distance.append(new_wp)
-        self._dist_travelled += TripMeterSensor._compute_additional_dist_travelled(
-            most_recent_wp, new_wp, self._vehicle.pose
+        additional_distance = TripMeterSensor._compute_additional_dist_travelled(
+            most_recent_wp,
+            new_wp,
+            self._vehicle.pose.position,
+            self._last_actor_position,
         )
+        self._dist_travelled += additional_distance
+        self._last_actor_position = self._vehicle.pose.position
 
     @staticmethod
     def _compute_additional_dist_travelled(
-        recent_wp: Waypoint, new_waypoint: Waypoint, vehicle_pose: Pose
+        recent_wp: Waypoint,
+        new_waypoint: Waypoint,
+        vehicle_position: np.ndarray,
+        last_vehicle_pos: np.ndarray,
     ):
+        # old waypoint minus current ahead waypoint
         wp_disp_vec = new_waypoint.pos - recent_wp.pos
-        pose_disp_vec = vehicle_pose.position[:2] - recent_wp.pos[:2]
-        direction = np.sign(np.dot(pose_disp_vec, wp_disp_vec))
-        distance = np.linalg.norm(wp_disp_vec)
-        return direction * distance
+        # make unit vector
+        wp_unit_vec = wp_disp_vec / (np.linalg.norm(wp_disp_vec) or 1)
+        # vehicle position minus last vehicle position
+        position_disp_vec = vehicle_position[:2] - last_vehicle_pos[:2]
+        # distance of vehicle between last and current wp
+        distance = np.dot(position_disp_vec, wp_unit_vec)
+        return distance
 
     def __call__(self, increment=False):
         if increment:
@@ -1323,13 +1338,14 @@ class SignalsSensor(Sensor):
         if lookahead <= 0:
             return
         for ogl in lane.outgoing_lanes:
-            if route and ogl.road not in route.roads:
+            if route and route.road_length > 0 and ogl.road not in route.roads:
                 continue
             upcoming_signals += [
                 feat for feat in ogl.features if self._is_signal_type(feat)
             ]
-            lookahead -= lane.length
-            self._find_signals_ahead(ogl, lookahead, route, upcoming_signals)
+            self._find_signals_ahead(
+                ogl, lookahead - lane.length, route, upcoming_signals
+            )
 
     def teardown(self):
         pass
