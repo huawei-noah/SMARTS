@@ -21,7 +21,7 @@ agent_spec = AgentSpec(
 def entry_point(*args, **kwargs):
     from smarts.env.hiway_env import HiWayEnv
 
-    scenario = str((Path(__file__).parent / "../../scenarios/figure_eight").resolve())
+    scenario = str((Path(__file__).parent / "../../scenarios/sumo/figure_eight").resolve())
     ## Note: can build the scenario here
     from smarts.sstudio.scenario_construction import build_scenario
 
