@@ -33,14 +33,12 @@ class Action(gym.ActionWrapper):
         return wrapped_act
 
 
-def _discrete() -> Tuple[
-    Callable[[Dict[str, int], Dict[str, Any]], Dict[str, np.ndarray]], gym.Space
-]:
+def _discrete() -> Tuple[Callable[[Dict[str, int], Dict[str, Any]], Dict[str, np.ndarray]], gym.Space]:
     space = gym.spaces.Discrete(n=4)
 
     time_delta = 0.1  # Time, in seconds, between steps.
-    angle = 30 / 180 * np.pi  # Turning angle in radians
-    speed = 40  # Speed in km/h
+    angle = 5 / 180 * np.pi  # Turning angle in radians
+    speed = 30  # Speed in km/h
     dist = (
         speed * 1000 / 3600 * time_delta
     )  # Distance, in meter, travelled in time_delta seconds

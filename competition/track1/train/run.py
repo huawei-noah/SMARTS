@@ -3,6 +3,7 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import argparse
 import warnings
+import sys
 from datetime import datetime
 from itertools import cycle
 from pathlib import Path
@@ -12,9 +13,12 @@ import gym
 import stable_baselines3 as sb3lib
 import torch as th
 from ruamel.yaml import YAML
-from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
+from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from train import env as multi_scenario_env
+
+# To import submission folder
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "submission"))
 import network
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
@@ -26,17 +30,18 @@ yaml = YAML(typ="safe")
 def main(args: argparse.Namespace):
     # Load config file.
     config_file = yaml.load(
-        (Path(__file__).absolute().parent / "config.yaml").read_text()
+        (Path(__file__).resolve().parent / "config.yaml").read_text()
     )
 
     # Load env config.
     config = config_file["smarts"]
     config["mode"] = args.mode
+    config["head"] = args.head
 
     # Setup logdir.
     if not args.logdir:
         time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        logdir = Path(__file__).absolute().parents[0] / "logs" / time
+        logdir = Path(__file__).resolve().parents[0] / "logs" / time
     else:
         logdir = Path(args.logdir)
     logdir.mkdir(parents=True, exist_ok=True)
@@ -148,6 +153,9 @@ if __name__ == "__main__":
         help="Directory path to saved RL model. Required if `--mode=evaluate`.",
         type=str,
         default=None,
+    )
+    parser.add_argument(
+        "--head", help="Display the simulation in Envision.", action="store_true"
     )
 
     args = parser.parse_args()

@@ -1,6 +1,9 @@
+import sys
 from pathlib import Path
 from typing import Any, Dict
 
+# To import submission folder
+sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
 
 class BasePolicy:
     def act(self, obs: Dict[str, Any]):
@@ -59,7 +62,7 @@ class Policy(BasePolicy):
         import stable_baselines3 as sb3lib
         import network
 
-        model_path = Path(__file__).absolute().parents[0] / "best_model.zip"
+        model_path = Path(__file__).resolve().parents[0] / "saved_model.zip"
         self.model = sb3lib.PPO.load(model_path)
 
     def act(self, obs: Dict[str, Any]):
