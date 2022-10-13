@@ -38,7 +38,7 @@ def benchmark_cli():
 )
 
 
-def n_agents_build():
+def n_agents():
     subprocess.run(
         [
             "scl",
@@ -56,98 +56,28 @@ def n_agents_build():
             "scenarios/benchmark/n_agents/1_agents"
         ]
     )
-benchmark_cli.add_command(n_agents_build)
-# n_agents_run = subprocess.run(
-#     [
-#         "scl",
-#         "run",
-#         "examples/egoless.py",
-#         "scenarios/benchmark/n_agents"
-#     ]
-# )
-
-# @waymo_cli.command(
-#     name="overview", help="Display summary info for each scenario in the TFRecord file."
-# )
-# @click.argument(
-#     "tfrecord_file", type=click.Path(exists=True), metavar="<tfrecord_file>"
-# )
-# def overview(tfrecord_file: str):
-#     from smarts.waymo import waymo_utils
-
-#     scenarios = waymo_utils.get_tfrecord_info(tfrecord_file)
-#     rows = [
-#         [k, v["timestamps"], v["vehicles"], v["pedestrians"]]
-#         for k, v in scenarios.items()
-#     ]
-#     print(
-#         tabulate(
-#             rows,
-#             headers=[
-#                 "Scenario ID",
-#                 "Timestamps",
-#                 "Vehicles",
-#                 "Pedestrians",
-#             ],
-#         )
-#     )
-
-
-# @waymo_cli.command(
-#     name="preview", help="Plot the map and trajectories of the scenario."
-# )
-# @click.argument(
-#     "tfrecord_file", type=click.Path(exists=True), metavar="<tfrecord_file>"
-# )
-# @click.argument("scenario_id", type=str, metavar="<scenario_id>")
-# @click.option(
-#     "--animate",
-#     is_flag=True,
-#     default=False,
-#     help="Animate the vehicle trajectories.",
-# )
-# @click.option(
-#     "--label_vehicles",
-#     is_flag=True,
-#     default=False,
-#     help="Plot the initial positions of all vehicles with their IDs.",
-# )
-# def preview(
-#     tfrecord_file: str,
-#     scenario_id: str,
-#     animate: bool,
-#     label_vehicles: bool,
-# ):
-#     from smarts.waymo import waymo_utils
-
-#     waymo_utils.plot_scenario(tfrecord_file, scenario_id, animate, label_vehicles)
-
-
-# @waymo_cli.command(
-#     name="export", help="Export the Waymo scenario to a SMARTS scenario."
-# )
-# @click.argument(
-#     "tfrecord_file", type=click.Path(exists=True), metavar="<tfrecord_file>"
-# )
-# @click.argument("scenario_id", type=str, metavar="<scenario_id>")
-# @click.argument(
-#     "export_folder", type=click.Path(exists=False), metavar="<export_folder>"
-# )
-# def export(
-#     tfrecord_file: str,
-#     scenario_id: str,
-#     export_folder: str,
-# ):
-#     from smarts.waymo import waymo_utils
-
-#     scenario_folder = os.path.join(export_folder)
-#     if not os.path.exists(scenario_folder):
-#         os.makedirs(scenario_folder)
-#     scenario_file = os.path.join(scenario_folder, "scenario.py")
-#     with open(scenario_file, "w") as f:
-#         f.write(waymo_utils.gen_smarts_scenario_code(tfrecord_file, scenario_id))
-
-
-# waymo_cli.add_command(overview)
-# waymo_cli.add_command(preview)
-# waymo_cli.add_command(export)
+    subprocess.run(
+        [
+            "scl",
+            "run",
+            "examples/egoless.py",
+            "scenarios/benchmark/n_agents/10_agents"
+        ]
+    )
+    subprocess.run(
+        [
+            "scl",
+            "run",
+            "examples/egoless.py",
+            "scenarios/benchmark/n_agents/20_agents"
+        ]
+    )
+    subprocess.run(
+        [
+            "scl",
+            "run",
+            "examples/egoless.py",
+            "scenarios/benchmark/n_agents/50_agents"
+        ]
+    )
+benchmark_cli.add_command(n_agents)
