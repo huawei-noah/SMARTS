@@ -48,14 +48,22 @@ scl.add_command(benchmark_cli)
 
 try:
     from cli.waymo import waymo_cli
-
-    scl.add_command(waymo_cli)
 except (ModuleNotFoundError, ImportError):
-    print(
-        "The `scl waymo` command is unavailable. To enable, pip install the missing dependencies.\n"
-        "pip install pathos==0.2.8 tabulate>=0.8.10 waymo-open-dataset-tf-2-4-0"
+
+    @click.group(
+        name="waymo",
+        invoke_without_command=True,
+        help="The `scl waymo` command requires `[waymo]`.",
     )
-    pass
+    @click.pass_context
+    def waymo_cli(ctx):
+        click.echo(
+            "The `scl waymo` command is unavailable. To enable, pip install the missing dependencies.\n"
+            "pip install pathos==0.2.8 tabulate>=0.8.10 waymo-open-dataset-tf-2-4-0"
+        )
+
+
+scl.add_command(waymo_cli)
 
 
 if __name__ == "__main__":
