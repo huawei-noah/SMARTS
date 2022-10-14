@@ -20,13 +20,15 @@
 import {
   Vector3,
   Color3,
+  Color4,
   SceneLoader,
   StandardMaterial,
   Quaternion,
   MeshBuilder,
   Mesh,
-  Color4,
   BoundingInfo,
+  ActionManager,
+  ExecuteCodeAction,
 } from "@babylonjs/core";
 
 import { useRef, useEffect } from "react";
@@ -164,6 +166,7 @@ export default function Vehicles({
     // Create new meshes
     for (const meshId of vehicleMeshIdsToAdd) {
       let state = worldState.traffic[meshId];
+
       // Vehicle mesh
       let filename = vehicleMeshFilename(state.actor_type, state.vehicle_type);
       if (!vehicleMeshTemplates[filename]) {
@@ -187,31 +190,40 @@ export default function Vehicles({
         rootMesh.addChild(instancedSubMesh);
       }
 
-      // Render bounding box for social vehicle
-      if (state.actor_type == ActorTypes.SOCIAL_VEHICLE) {
-        let boundingInfo = vehicleMeshTemplates[filename].getBoundingInfo();
-        let boxSize = boundingInfo.boundingBox.extendSize.scale(2);
-        let box = MeshBuilder.CreateBox(
-          `boundingbox-${meshId}`,
-          {
-            height: boxSize.y + 0.1,
-            width: boxSize.x + 0.1,
-            depth: boxSize.z + 0.1,
-          },
-          scene
-        );
-        box.position = boundingInfo.boundingBox.center;
+      let boundingInfo = vehicleMeshTemplates[filename].getBoundingInfo();
+      let boxSize = boundingInfo.boundingBox.extendSize.scale(2);
+      let box = MeshBuilder.CreateBox(
+        `boundingbox-${meshId}`,
+        {
+          height: boxSize.y + 0.1,
+          width: boxSize.x + 0.1,
+          depth: boxSize.z + 0.1,
+        },
+        scene
+      );
 
-        let boxMaterial = new StandardMaterial(
-          `boundingbox-${meshId}-material`,
-          scene
-        );
-        boxMaterial.diffuseColor = new Color4(...color);
-        boxMaterial.specularColor = new Color3(0, 0, 0);
-        boxMaterial.alpha = 0.75;
-        box.material = boxMaterial;
-        rootMesh.addChild(box);
-      }
+      let boxMaterial = new StandardMaterial(
+        `boundingbox-${meshId}-material`,
+        scene
+      );
+      boxMaterial.diffuseColor = Color3.Yellow();
+      boxMaterial.specularColor = new Color3(0, 0, 0);
+      boxMaterial.alpha = 0.0;
+
+      box.material = boxMaterial;
+      box.position = boundingInfo.boundingBox.center;
+      box.actionManager = new ActionManager(scene);
+      box.actionManager.registerAction(
+        new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, 
+          function (evt) {
+            boxMaterial.alpha = 0.3;
+      }));
+      box.actionManager.registerAction(
+        new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, 
+          function (evt) {
+            boxMaterial.alpha = 0.0;
+      }));
+      rootMesh.addChild(box);
 
       rootMesh.metadata = {};
       rootMesh.metadata.actorType = state.actor_type;

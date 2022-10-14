@@ -51,6 +51,7 @@ export const SceneColors = Object.freeze({
   SocialAgent: Silver,
   SocialVehicle: Silver,
   Road: DarkGrey,
+  SelectedRoad: LightBlue,
   EgoWaypoint: CyanTransparent,
   EgoDrivenPath: CyanTransparent,
   BubbleLine: LightGreyTransparent,

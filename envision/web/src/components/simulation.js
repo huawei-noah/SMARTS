@@ -29,8 +29,11 @@ import {
   HemisphericLight,
   MeshBuilder,
   Color4,
+  ActionManager,
+  ExecuteCodeAction,
 } from "@babylonjs/core";
 
+import "@babylonjs/loaders/glTF/2.0/Extensions/ExtrasAsMetadata.js";
 import { GLTFLoader } from "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import SceneComponent from "babylonjs-hook";
 
@@ -226,12 +229,26 @@ export default function Simulation({
 
       // Update material for all child meshes
       // Currently only use flat shading, replace imported pbr material with standard material
+      let roadColor = new Color4(...SceneColors.Road);
+      let roadColorSelected = new Color4(...SceneColors.SelectedRoad);
       for (const child of meshes[0].getChildMeshes()) {
         let material = new StandardMaterial("material-map", scene);
         material.backFaceCulling = false;
-        material.diffuseColor = new Color4(...SceneColors.Road);
+        material.diffuseColor = roadColor;
         material.specularColor = new Color3(0, 0, 0);
         child.material = material;
+
+        child.actionManager = new ActionManager(scene);
+        child.actionManager.registerAction(
+          new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, 
+            function (evt) {
+              material.diffuseColor = roadColorSelected;
+        }));
+        child.actionManager.registerAction(
+          new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, 
+            function (evt) {
+              material.diffuseColor = roadColor;
+        }));
       }
 
       mapMeshesRef.current = meshes;
