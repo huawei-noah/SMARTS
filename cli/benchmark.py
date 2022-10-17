@@ -36,9 +36,27 @@ def benchmark_cli():
 @benchmark_cli.command(
     name="start", help="Start benchmarking."
 )
+@click.argument("num_social_agents")
+def build_scenario_and_run(num_social_agents):
+    subprocess.run(
+        [
+            "scl",
+            "scenario",
+            "build",
+            "--clean",
+            f"scenarios/benchmark/n_agents/{num_social_agents}"
+        ]
+    )
+    subprocess.run(
+        [
+            "scl",
+            "run",
+            "examples/egoless.py",
+            f"scenarios/benchmark/n_agents/{num_social_agents}"
+        ]
+    )
 
-
-def n_agents():
+def all_agents(all):
     subprocess.run(
         [
             "scl",
@@ -80,4 +98,5 @@ def n_agents():
             "scenarios/benchmark/n_agents/50_agents"
         ]
     )
-benchmark_cli.add_command(n_agents)
+
+benchmark_cli.add_command(build_scenario_and_run)
