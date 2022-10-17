@@ -20,7 +20,7 @@
 import os
 import subprocess
 import click
-
+from glob import glob
 
 
 @click.group(
@@ -34,17 +34,18 @@ def benchmark_cli():
 
 
 @benchmark_cli.command(
-    name="start", help="Start benchmarking."
+    name="start", help="Start selected benchmarking."
 )
-@click.argument("num_social_agents")
-def build_scenario_and_run(num_social_agents):
+@click.option("--all", help="run all benchmarks.")
+@click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
+def build_scenario_and_run(scenario):
     subprocess.run(
         [
             "scl",
             "scenario",
             "build",
             "--clean",
-            f"scenarios/benchmark/n_agents/{num_social_agents}"
+            f"{scenario}"
         ]
     )
     subprocess.run(
@@ -52,51 +53,33 @@ def build_scenario_and_run(num_social_agents):
             "scl",
             "run",
             "examples/egoless.py",
-            f"scenarios/benchmark/n_agents/{num_social_agents}"
+            f"{scenario}"
         ]
     )
 
-def all_agents(all):
+def build_all_scenarios_and_run(scenario):
     subprocess.run(
         [
             "scl",
             "scenario",
             "build-all",
             "--clean",
-            "scenarios/benchmark/n_agents"
-        ]
-    )
-    subprocess.run(
-        [
-            "scl",
-            "run",
-            "examples/egoless.py",
-            "scenarios/benchmark/n_agents/1_agents"
-        ]
-    )
-    subprocess.run(
-        [
-            "scl",
-            "run",
-            "examples/egoless.py",
-            "scenarios/benchmark/n_agents/10_agents"
-        ]
-    )
-    subprocess.run(
-        [
-            "scl",
-            "run",
-            "examples/egoless.py",
-            "scenarios/benchmark/n_agents/20_agents"
-        ]
-    )
-    subprocess.run(
-        [
-            "scl",
-            "run",
-            "examples/egoless.py",
-            "scenarios/benchmark/n_agents/50_agents"
+            "scenarios/benchmark/"
         ]
     )
 
+    all_scenarios = glob('./scenarios/benchmark/*/*/', recursive=True)
+    for scenario in all_scenarios:
+        subprocess.run(
+            [
+            "scl",
+            "run",
+            "examples/egoless.py",
+            f"{scenario}",
+            ]
+        ) 
 benchmark_cli.add_command(build_scenario_and_run)
+
+
+# `scl benchmark --all <path/to/scenarios>`` # Run all benchmarks in <path/to/scenarios> folder.
+# `scl benchmark <path/to/scenario>` # Run the selected one benchmark in the <path/to/scenario> folder.
