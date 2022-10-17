@@ -11,8 +11,8 @@ import figure_eight_env
 
 env = gym.make("figure_eight-v0")
 env: gym.Env = RecordVideo(
-            env, video_folder="videos", video_length=40, step_trigger=lambda s: s % 100 == 0
-            )
+    env, video_folder="videos", video_length=40, step_trigger=lambda s: s % 100 == 0
+)
 env: gym.Env = EpisodeLogger(env)
 
 import zoo.policies.keep_lane_agent
