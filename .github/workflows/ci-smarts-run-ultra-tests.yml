@@ -12,7 +12,7 @@ on:
 # Should be the same as ci-ultra-tests
 jobs:
   test-base:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     container: huaweinoah/smarts:v0.4.13-minimal
     steps:
       - name: Checkout
@@ -45,7 +45,7 @@ jobs:
           pytest -v ./tests/
   
   test-package-via-setup:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     container: huaweinoah/smarts:v0.4.13-minimal
     steps:
       - name: Checkout
@@ -75,7 +75,7 @@ jobs:
           pytest -v ./tests/test_ultra_package.py
   
   test-package-via-wheel:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     container: huaweinoah/smarts:v0.4.13-minimal
     steps:
       - name: Checkout
