@@ -21,7 +21,7 @@ import os
 import subprocess
 import click
 from glob import glob
-
+import smarts
 
 @click.group(
     name="benchmark",
@@ -32,30 +32,20 @@ from glob import glob
 def benchmark_cli():
     pass
 
-
-@benchmark_cli.command(
-    name="start", help="Start selected benchmarking."
-)
-@click.option("--all", help="run all benchmarks.")
-@click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
+@click.command("start", help="Start benchmarking.")
+@click.argument("scenario", metavar="<scenario>")
 def build_scenario_and_run(scenario):
-    subprocess.run(
-        [
-            "scl",
-            "scenario",
-            "build",
-            "--clean",
-            f"{scenario}"
-        ]
-    )
-    subprocess.run(
-        [
-            "scl",
-            "run",
-            "examples/egoless.py",
-            f"{scenario}"
-        ]
-    )
+
+    # Build the scenario
+    click.echo(f"build-scenario {scenario}")
+
+    from smarts.sstudio.scenario_construction import build_single_scenario
+
+    build_single_scenario(False, True, f"{smarts.__path__[0]}/benchmark/{scenario}", 42, click.echo)
+
+    # Run the scenario
+    from smarts.benchmark import benchmark
+    benchmark.main(scenarios=[f"{smarts.__path__[0]}/benchmark/{scenario}"], headless=True, num_episodes=10, max_episode_steps=None)
 
 def build_all_scenarios_and_run(scenario):
     subprocess.run(
@@ -64,7 +54,7 @@ def build_all_scenarios_and_run(scenario):
             "scenario",
             "build-all",
             "--clean",
-            "scenarios/benchmark/"
+            "smarts/benchmark/"
         ]
     )
 
@@ -82,4 +72,9 @@ benchmark_cli.add_command(build_scenario_and_run)
 
 
 # `scl benchmark --all <path/to/scenarios>`` # Run all benchmarks in <path/to/scenarios> folder.
+# scl benchmark -all smarts/benchmark -> build & run all benchmarks under this /benchmark folder
 # `scl benchmark <path/to/scenario>` # Run the selected one benchmark in the <path/to/scenario> folder.
+# options: 
+# 1) scl benchmark
+# 2) scl benchmark 10_replay_actors
+# directory: smarts.__path__/benchma
