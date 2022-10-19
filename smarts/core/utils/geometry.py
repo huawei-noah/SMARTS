@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 import math
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import trimesh
@@ -56,7 +56,7 @@ def triangulate_polygon(polygon: Polygon):
 
 
 def generate_meshes_from_polygons(
-    polygons: List[Tuple[Polygon, str, str, int]]
+    polygons: List[Tuple[Polygon, Dict[str, Any]]]
 ) -> List[trimesh.Trimesh]:
     """Creates a mesh out of a list of polygons."""
     meshes = []
@@ -65,7 +65,7 @@ def generate_meshes_from_polygons(
     # face contains three indexes into the vertices list. Ideally, the vertices
     # are all unique and the faces list references the same indexes as needed.
     # TODO: Batch the polygon processing.
-    for poly, road_id, lane_id, lane_index in polygons:
+    for poly, metadata in polygons:
         vertices, faces = [], []
         point_dict = dict()
         current_point_index = 0
@@ -86,7 +86,6 @@ def generate_meshes_from_polygons(
             if -1 not in face:
                 faces.append(face)
 
-        metadata = {"road_id": road_id, "lane_id": lane_id, "lane_index": lane_index}
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces, metadata=metadata)
 
         # Trimesh doesn't support a coordinate-system="z-up" configuration, so we

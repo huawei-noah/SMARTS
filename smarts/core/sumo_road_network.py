@@ -22,7 +22,7 @@ import os
 import random
 from functools import lru_cache
 from subprocess import check_output
-from typing import Any, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import trimesh
@@ -1105,7 +1105,7 @@ class SumoRoadNetwork(RoadMap):
                 for road in self.roads
             ]
 
-    def _compute_road_polygons(self) -> List[Tuple[Polygon, str, str, int]]:
+    def _compute_road_polygons(self) -> List[Tuple[Polygon, Dict[str, Any]]]:
         lane_to_poly = {}
         for edge in self._graph.getEdges():
             for lane in edge.getLanes():
@@ -1117,12 +1117,12 @@ class SumoRoadNetwork(RoadMap):
                     )
                     continue
 
-                lane_to_poly[lane.getID()] = (
-                    shape,
-                    edge.getID(),
-                    lane.getID(),
-                    lane.getIndex(),
-                )
+                metadata = {
+                    "road_id": edge.getID(),
+                    "lane_id": lane.getID(),
+                    "lane_index": lane.getIndex(),
+                }
+                lane_to_poly[lane.getID()] = (shape, metadata)
 
         # Remove holes created at tight junctions due to crude map geometry
         self._snap_internal_holes(lane_to_poly)
@@ -1141,7 +1141,8 @@ class SumoRoadNetwork(RoadMap):
                 )
                 continue
 
-            polys.append((Polygon(line), node.getID(), None, None))
+            metadata = {"road_id": node.getID()}
+            polys.append((Polygon(line), metadata))
 
         return polys
 
@@ -1156,19 +1157,14 @@ class SumoRoadNetwork(RoadMap):
             if not lane.getEdge().isSpecial():
                 continue
 
-            lane_shape, road_id, _, lane_index = lane_to_poly[lane_id]
+            lane_shape, metadata = lane_to_poly[lane_id]
             incoming = self._graph.getLane(lane_id).getIncoming()[0]
             incoming_shape = lane_to_poly.get(incoming.getID())
             if incoming_shape:
                 lane_shape = Polygon(
                     snap(lane_shape, incoming_shape[0], snap_threshold)
                 )
-                lane_to_poly[lane_id] = (
-                    Polygon(lane_shape),
-                    road_id,
-                    lane_id,
-                    lane_index,
-                )
+                lane_to_poly[lane_id] = (Polygon(lane_shape), metadata)
 
             outgoing = self._graph.getLane(lane_id).getOutgoing()[0].getToLane()
             outgoing_shape = lane_to_poly.get(outgoing.getID())
@@ -1176,12 +1172,7 @@ class SumoRoadNetwork(RoadMap):
                 lane_shape = Polygon(
                     snap(lane_shape, outgoing_shape[0], snap_threshold)
                 )
-                lane_to_poly[lane_id] = (
-                    Polygon(lane_shape),
-                    road_id,
-                    lane_id,
-                    lane_index,
-                )
+                lane_to_poly[lane_id] = (Polygon(lane_shape), metadata)
 
     def _snap_internal_holes(self, lane_to_poly, snap_threshold=2):
         for lane_id in lane_to_poly:
@@ -1190,7 +1181,7 @@ class SumoRoadNetwork(RoadMap):
             # Only do snapping for internal edge lane holes
             if not lane.getEdge().isSpecial():
                 continue
-            lane_shape, road_id, _, lane_index = lane_to_poly[lane_id]
+            lane_shape, metadata = lane_to_poly[lane_id]
             new_coords = []
             last_added = None
             for x, y in lane_shape.exterior.coords:
@@ -1221,12 +1212,7 @@ class SumoRoadNetwork(RoadMap):
                     new_coords.append(p)
                     last_added = p
             if new_coords:
-                lane_to_poly[lane_id] = (
-                    Polygon(new_coords),
-                    road_id,
-                    lane_id,
-                    lane_index,
-                )
+                lane_to_poly[lane_id] = (Polygon(new_coords), metadata)
 
     def _snap_external_holes(self, lane_to_poly, snap_threshold=2):
         for lane_id in lane_to_poly:
@@ -1246,7 +1232,7 @@ class SumoRoadNetwork(RoadMap):
                 if outgoing_lane.getEdge().isSpecial():
                     continue
 
-            lane_shape, road_id, _, lane_index = lane_to_poly[lane_id]
+            lane_shape, metadata = lane_to_poly[lane_id]
             new_coords = []
             last_added = None
             for x, y in lane_shape.exterior.coords:
@@ -1282,12 +1268,7 @@ class SumoRoadNetwork(RoadMap):
                     new_coords.append(p)
                     last_added = p
             if new_coords:
-                lane_to_poly[lane_id] = (
-                    Polygon(new_coords),
-                    road_id,
-                    lane_id,
-                    lane_index,
-                )
+                lane_to_poly[lane_id] = (Polygon(new_coords), metadata)
 
     def _make_glb_from_polys(self, polygons):
         scene = trimesh.Scene()
@@ -1308,8 +1289,9 @@ class SumoRoadNetwork(RoadMap):
             mesh.visual = trimesh.visual.TextureVisuals(
                 material=trimesh.visual.material.PBRMaterial()
             )
+
             road_id = mesh.metadata["road_id"]
-            lane_id = mesh.metadata["lane_id"]
+            lane_id = mesh.metadata.get("lane_id")
             name = f"{road_id}"
             if lane_id is not None:
                 name += f"-{lane_id}"
