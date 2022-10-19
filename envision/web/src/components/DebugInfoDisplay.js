@@ -1,4 +1,4 @@
-// Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+// Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,22 +19,27 @@
 // THE SOFTWARE.
 import React from "react";
 
-export default function ScenarioNameDisplay({
+export default function DebugInfoDisplay({
   data,
   attrName,
-  data_formattter,
 }) {
   return (
     <table style={{ margin: "15px", tableLayout: "auto" }}>
       <thead>
-        <tr key="data-head">
+        <tr key={`data-body-${attrName}`}>
           <th style={{ paddingRight: "15px" }}>{attrName}</th>
         </tr>
       </thead>
       <tbody>
-        <tr key="data-body">
-          <td style={{ paddingRight: "15px" }}>{data_formattter(data)}</td>
-        </tr>
+        {Object.entries(data).map(([key, val]) => {
+          return (
+            <tr key={`data-body-${key}`}>
+              <td style={{ paddingRight: "15px" }}>
+                {`${key}: ${val}`}
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );

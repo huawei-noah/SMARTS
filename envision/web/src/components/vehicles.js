@@ -41,6 +41,15 @@ import {
   buildLabel,
 } from "../render_helpers.js";
 
+const DEBUG_PROPS = [
+  "actor_id",
+  "position",
+  "speed",
+  "heading",
+  "actor_type",
+  "vehicle_type",
+];
+
 let meshesLoaded = (vehicleMeshTemplates) => {
   for (const [_, mesh] of Object.entries(vehicleMeshTemplates)) {
     if (mesh == null) {
@@ -56,6 +65,8 @@ export default function Vehicles({
   worldState,
   vehicleRootUrl,
   egoView,
+  setVehicleSelected,
+  setDebugInfo,
 }) {
   if (scene == null) {
     return null;
@@ -217,11 +228,19 @@ export default function Vehicles({
         new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, 
           function (evt) {
             boxMaterial.alpha = 0.3;
+            setVehicleSelected(true);
+            let debugInfo = {};
+            for (const prop of DEBUG_PROPS) {
+              debugInfo[prop] = state[prop];
+            }
+            setDebugInfo(debugInfo);
       }));
       box.actionManager.registerAction(
         new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, 
           function (evt) {
             boxMaterial.alpha = 0.0;
+            setVehicleSelected(false);
+            setDebugInfo({});
       }));
       rootMesh.addChild(box);
 

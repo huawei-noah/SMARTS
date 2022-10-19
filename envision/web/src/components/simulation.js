@@ -49,6 +49,7 @@ import { attrs, agentModes } from "./control_panel";
 
 import InfoDisplay from "./InfoDisplay";
 import ScenarioNameDisplay from "./ScenarioNameDisplay";
+import DebugInfoDisplay from "./DebugInfoDisplay.js";
 import earcut from "earcut";
 import { SceneColors } from "../helpers/scene_colors.js";
 import unpack_worldstate from "../helpers/state_unpacker.js";
@@ -90,6 +91,11 @@ export default function Simulation({
     heading: [],
     lane_ids: [],
   });
+
+  // Mouse selection and debug info
+  const [vehicleSelected, setVehicleSelected] = useState(false);
+  const [mapElementSelected, setMapElementSelected] = useState(false);
+  const [debugInfo, setDebugInfo] = useState({});
 
   const mapMeshesRef = useRef([]);
 
@@ -243,11 +249,18 @@ export default function Simulation({
           new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, 
             function (evt) {
               material.diffuseColor = roadColorSelected;
+              setMapElementSelected(true);
+              setDebugInfo({
+                road_id: child.metadata.gltf.extras.road_id,
+                lane_id: child.metadata.gltf.extras.lane_id,
+              });
         }));
         child.actionManager.registerAction(
           new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, 
             function (evt) {
               material.diffuseColor = roadColor;
+              setMapElementSelected(false);
+              setDebugInfo({});
         }));
       }
 
@@ -287,6 +300,8 @@ export default function Simulation({
         worldState={worldState}
         vehicleRootUrl={`${client.endpoint.origin}/assets/models/`}
         egoView={egoView}
+        setVehicleSelected={setVehicleSelected}
+        setDebugInfo={setDebugInfo}
       />
       <Bubbles scene={scene} worldState={worldState} />
       <DrivenPaths
@@ -369,6 +384,18 @@ export default function Simulation({
             data_formattter={(lane_id) => lane_id}
             ego_agent_ids={worldState.ego_agent_ids}
             ego_only={!controlModes[agentModes.socialObs]}
+          />
+        ) : null}
+        {vehicleSelected ? (
+          <DebugInfoDisplay
+            data={debugInfo}
+            attrName="Selected Vehicle"
+          />
+        ) : null}
+        {mapElementSelected ? (
+          <DebugInfoDisplay
+            data={debugInfo}
+            attrName="Selected Map Element"
           />
         ) : null}
       </div>
