@@ -253,6 +253,7 @@ export default function Simulation({
               setDebugInfo({
                 road_id: child.metadata.gltf.extras.road_id,
                 lane_id: child.metadata.gltf.extras.lane_id,
+                lane_index: child.metadata.gltf.extras.lane_index,
               });
         }));
         child.actionManager.registerAction(
