@@ -851,7 +851,7 @@ class Waymo(_TrajectoryDataset):
                 row["sim_time"] = scenario.timestamps_seconds[j]
                 row["position_x"] = obj_state.center_x
                 row["position_y"] = obj_state.center_y
-                row["heading_rad"] = obj_state.heading - math.pi / 2
+                row["heading_rad"] = (obj_state.heading - math.pi / 2) % (2 * math.pi)
                 row["speed"] = np.linalg.norm(vel)
                 row["lane_id"] = 0
                 row["is_ego_vehicle"] = 1 if i == scenario.sdc_track_index else 0
@@ -918,9 +918,16 @@ class Waymo(_TrajectoryDataset):
                     interp_row["position_y"] = lerp(
                         row["position_y"], next_row["position_y"], t
                     )
-                    interp_row["heading_rad"] = lerp(
-                        row["heading_rad"], next_row["heading_rad"], t
-                    )
+
+                    h1 = row["heading_rad"]
+                    h2 = next_row["heading_rad"]
+
+                    if h2 - h1 > math.pi:
+                        h1 += 2 * math.pi
+                    elif h1 - h2 > math.pi:
+                        h2 += 2 * math.pi
+
+                    interp_row["heading_rad"] = lerp(h1, h2, t) % (2 * math.pi)
                     interp_rows[j] = interp_row
 
             # Third pass -- filter invalid states, replace interpolated values, convert to ms, constrain angles
