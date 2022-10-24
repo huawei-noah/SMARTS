@@ -36,9 +36,9 @@ from smarts.core.signal_provider import SignalLightState
 from smarts.core.utils.file import read_tfrecord_file
 from smarts.core.utils.math import (
     circular_mean,
+    constrain_angle,
     min_angles_difference_signed,
     vec_to_radians,
-    constrain_angle,
 )
 from smarts.sstudio import types
 from smarts.waymo.waymo_utils import WaymoDatasetError
