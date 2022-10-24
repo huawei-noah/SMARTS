@@ -38,6 +38,7 @@ from smarts.core.utils.math import (
     circular_mean,
     min_angles_difference_signed,
     vec_to_radians,
+    constrain_angle,
 )
 from smarts.sstudio import types
 from smarts.waymo.waymo_utils import WaymoDatasetError
@@ -820,13 +821,6 @@ class Waymo(_TrajectoryDataset):
     def rows(self) -> Generator[Dict, None, None]:
         def lerp(a: float, b: float, t: float) -> float:
             return t * (b - a) + a
-
-        def constrain_angle(angle: float) -> float:
-            """Constrain to [-pi, pi]"""
-            angle %= 2 * math.pi
-            if angle > math.pi:
-                angle -= 2 * math.pi
-            return angle
 
         scenario = self._get_scenario()
 
