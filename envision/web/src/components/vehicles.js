@@ -34,6 +34,7 @@ import {
 import { useRef, useEffect } from "react";
 
 import { ActorTypes } from "../enums.js";
+import { SceneColors } from "../helpers/scene_colors.js";
 import { intersection, difference } from "../math.js";
 import {
   vehicleMeshFilename,
@@ -217,7 +218,7 @@ export default function Vehicles({
         `boundingbox-${meshId}-material`,
         scene
       );
-      boxMaterial.diffuseColor = Color3.Yellow();
+      boxMaterial.diffuseColor = new Color4(...SceneColors.Selection);
       boxMaterial.specularColor = new Color3(0, 0, 0);
       boxMaterial.alpha = 0.0;
 
@@ -227,7 +228,7 @@ export default function Vehicles({
       box.actionManager.registerAction(
         new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, 
           function (evt) {
-            boxMaterial.alpha = 0.3;
+            boxMaterial.alpha = 0.5;
             setVehicleSelected(true);
             let debugInfo = {};
             for (const prop of DEBUG_PROPS) {

@@ -236,7 +236,7 @@ export default function Simulation({
       // Update material for all child meshes
       // Currently only use flat shading, replace imported pbr material with standard material
       let roadColor = new Color4(...SceneColors.Road);
-      let roadColorSelected = new Color4(...SceneColors.SelectedRoad);
+      let roadColorSelected = new Color4(...SceneColors.Selection);
       for (const child of meshes[0].getChildMeshes()) {
         let material = new StandardMaterial("material-map", scene);
         material.backFaceCulling = false;
