@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,26 +19,48 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import shutil
-import tempfile
-from contextlib import contextmanager
-from pathlib import Path
+from typing import List
+import pytest
+import logging
+from helpers.scenario import maps_dir
 
-from smarts.sstudio.sumo2mesh import generate_glb_from_sumo_file
+from smarts.sstudio.types import MapSpec
+from smarts.core.road_map import RoadMap
 
 
-@contextmanager
-def temp_scenario(name: str, map: str):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        scenario = Path(temp_dir) / name
-        scenario.mkdir()
+def waymo_map() -> RoadMap:
+    pass
 
-        test_maps_dir = Path(__file__).parent.parent
-        shutil.copyfile(test_maps_dir / map, scenario / "map.net.xml")
-        generate_glb_from_sumo_file(str(scenario / "map.net.xml"), str(scenario))
 
-        yield scenario
+def sumo_map() -> RoadMap:
+    from smarts.core.sumo_road_network import SumoRoadNetwork
 
-def maps_dir():
-    """Add a maps directory."""
-    return Path(__file__).parent.parent / "maps"
+    map_spec = MapSpec(str(maps_dir()))
+    road_network = SumoRoadNetwork.from_spec(map_spec)
+    return road_network
+
+
+def opendrive_map() -> RoadMap:
+    pass
+
+
+@pytest.fixture
+def road_maps() -> List[RoadMap]:
+    map_funcs = [
+        # waymo_map,
+        sumo_map,
+        # opendrive_map,
+    ]
+    yield (m() for m in map_funcs)
+
+
+def test_map_serializations(road_maps: List[RoadMap]):
+    for m in road_maps:
+        m: RoadMap = m
+        logging.getLogger().info("Map source: `%s`", m.source)
+
+        # Test serialization of the map
+        srm = RoadMap.serialize(m)
+        mrm = RoadMap.deserialize(srm)
+
+        assert m.is_same_map(mrm)

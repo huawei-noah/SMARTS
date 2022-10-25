@@ -23,7 +23,7 @@ import random
 from functools import lru_cache
 from pathlib import Path
 from subprocess import check_output
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 from cached_property import cached_property
@@ -203,7 +203,13 @@ class SumoRoadNetwork(RoadMap):
             return os.path.join(map_spec.source, "map.net.xml")
         return map_spec.source
 
-    def is_same_map(self, map_spec: MapSpec) -> bool:
+    def is_same_map(self, map_or_spec: Union[MapSpec, RoadMap]) -> bool:
+        if isinstance(map_or_spec, SumoRoadNetwork):
+            map_spec = map_or_spec._map_spec
+        elif isinstance(map_or_spec, MapSpec):
+            map_spec = map_or_spec
+        else:
+            return False
         return (
             (
                 map_spec.source == self._map_spec.source

@@ -209,7 +209,7 @@ class TrafficHistoryProvider(TrafficProvider):
                     )
                 )
         except:
-            pass
+            raise
 
         return ProviderState(actors=vehicles + signals)
 

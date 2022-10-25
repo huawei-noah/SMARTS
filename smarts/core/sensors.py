@@ -17,6 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from asyncio import as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import dataclasses
 import logging
 import re
 import sys
@@ -24,6 +27,7 @@ import time
 import weakref
 from collections import deque, namedtuple
 from dataclasses import dataclass
+import multiprocessing as mp
 from functools import lru_cache
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
@@ -61,6 +65,9 @@ LANE_ID_CONSTANT = "off_lane"
 ROAD_ID_CONSTANT = "off_road"
 LANE_INDEX_CONSTANT = -1
 
+import os
+
+SEV_THREADS = os.environ.get("SEV_THREADS", 1)
 
 def _make_vehicle_observation(road_map, neighborhood_vehicle):
     nv_lane = road_map.nearest_lane(neighborhood_vehicle.pose.point, radius=3)
@@ -90,10 +97,95 @@ class Sensors:
     """Sensor utility"""
 
     _log = logging.getLogger("Sensors")
+    _instance = None
+
+    @classmethod
+    def instance(cls):
+        if not cls._instance:
+            cls._instance = cls()
+        return cls._instance 
+
+    @classmethod
+    def observe_group(cls, vehicle_ids, sim_frame, sensor_states, agent_group):
+        return (None, None)
+
+    @classmethod
+    def _observe_group_unpack(cls, *args, **kwargs):
+        args = [cls.deserialize_for_observation(a) if a is not None else a for a in args]
+        kwargs = {k: cls.deserialize_for_observation(a) if a is not None else a for k, a in kwargs.items()}
+        return cls.observe_group(*args, **kwargs)
+
+    @staticmethod
+    def serialize_for_observation(v):
+        import cloudpickle
+        if hasattr(v, "serialize"):
+            return v.serialize(v)
+        return cloudpickle.dumps(v)
+
+    @staticmethod
+    def deserialize_for_observation(v):
+        import cloudpickle
+        if hasattr(v, "deserialize"):
+            return v.deserialize(v)
+        return cloudpickle.loads(v)
+
+    @classmethod
+    def observe_parallel(cls, vehicle_ids, sim_frame, sensor_states, agent_ids):
+        import cloudpickle
+        observations, dones = {}, {}
+        futures = []
+
+        # TODO: only do mp_context once
+        forkserver_available = "forkserver" in mp.get_all_start_methods()
+        start_method = "forkserver" if forkserver_available else "spawn"
+        mp_context = mp.get_context(start_method)
+        # TODO: only use executor if threads is more than 1
+        with ProcessPoolExecutor(max_workers=SEV_THREADS, mp_context=mp_context) as pool:
+            if SEV_THREADS == 1:
+                for agent_id in agent_ids:
+                    observations[agent_id], dones[agent_id] = cls.observe(sim_frame, agent_id, sensor_states, sim_frame.vehicles)
+            elif SEV_THREADS > 1:
+                gap = len(agent_ids)/SEV_THREADS
+                cp_vehicles = cls.serialize_for_observation(vehicle_ids)
+                cp_sim_frame = cls.serialize_for_observation(sim_frame)
+                cp_sensor_states = cls.serialize_for_observation(sensor_states)
+                for agent_group in [agent_ids[i*gap:i*gap+gap] for i in range(SEV_THREADS)]:
+                    cp_agent_group = cls.serialize_for_observation(agent_group)
+                    futures.append(
+                        pool.submit(
+                            cls._observe_group_unpack,
+                            road_map = None,
+                            renderer_type = None,
+                            vehicle_ids = cp_vehicles,
+                            sim_frame = cp_sim_frame,
+                            sensor_states = cp_sensor_states,
+                            agent_group = cp_agent_group
+                        )
+                    )
+
+            # While observation processes are operating do rendering
+            rendering = {}
+            for agent_id in agent_ids:
+                controls = sim_frame.agent_vehicle_controls[agent_id]
+                for vehicle_id in controls:
+                    rendering[vehicle_id] = cls.observe_cameras(sim_frame, agent_id, sensor_states[vehicle_id], sim_frame.vehicles[vehicle_id])
+            
+            # Collect futures
+            for future in as_completed(futures):
+                obs, ds = future.result()
+                observations.update(obs)
+                dones.update(ds)
+            
+            # Merge sensor information
+            for vehicle_id, r_obs in rendering.items():
+                observations[vehicle_id] = dataclasses.replace(observations[vehicle_id], r_obs)
+
+        return observations, dones
+        
 
     @staticmethod
     def observe_batch(
-        sim, agent_id, sensor_states, vehicles
+        sim_frame, agent_id, sensor_states, vehicles
     ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
         """Operates all sensors on a batch of vehicles for a single agent."""
         # TODO: Replace this with a more efficient implementation that _actually_
@@ -104,13 +196,25 @@ class Sensors:
         for vehicle_id, vehicle in vehicles.items():
             sensor_state = sensor_states[vehicle_id]
             observations[vehicle_id], dones[vehicle_id] = Sensors.observe(
-                sim, agent_id, sensor_state, vehicle
+                sim_frame, agent_id, sensor_state, vehicle
             )
 
         return observations, dones
 
     @staticmethod
-    def observe(sim, agent_id, sensor_state, vehicle) -> Tuple[Observation, bool]:
+    def observe_cameras(sim_frame, agent_id, sensor_state, vehicle):
+        return dict(
+            drivable_area_grid_map = (
+                vehicle.drivable_area_grid_map_sensor()
+                if vehicle.subscribed_to_drivable_area_grid_map_sensor
+                else None
+            ),
+            occupancy_grid_map = vehicle.ogm_sensor() if vehicle.subscribed_to_ogm_sensor else None,
+            top_down_rgb = vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None,
+        )
+
+    @staticmethod
+    def observe_base(sim_frame, agent_id, sensor_state, vehicle):
         """Generate observations for the given agent around the given vehicle."""
         neighborhood_vehicle_states = None
         if vehicle.subscribed_to_neighborhood_vehicle_states_sensor:
@@ -123,7 +227,7 @@ class Sensors:
                     and vehicle.subscribed_to_lane_position_sensor
                 ):
                     nv_lane_pos = vehicle.lane_position_sensor(
-                        sim.road_map.lane_by_id(veh_obs.lane_id), nv
+                        sim_frame.road_map.lane_by_id(veh_obs.lane_id), nv
                     )
                 neighborhood_vehicle_states.append(
                     veh_obs._replace(lane_position=nv_lane_pos)
@@ -132,13 +236,13 @@ class Sensors:
         if vehicle.subscribed_to_waypoints_sensor:
             waypoint_paths = vehicle.waypoints_sensor()
         else:
-            waypoint_paths = sim.road_map.waypoint_paths(
+            waypoint_paths = sim_frame.road_map.waypoint_paths(
                 vehicle.pose,
                 lookahead=1,
                 within_radius=vehicle.length,
             )
 
-        closest_lane = sim.road_map.nearest_lane(vehicle.pose.point)
+        closest_lane = sim_frame.road_map.nearest_lane(vehicle.pose.point)
         ego_lane_pos = None
         if closest_lane:
             ego_lane_id = closest_lane.lane_id
@@ -162,7 +266,7 @@ class Sensors:
             acceleration_values = vehicle.accelerometer_sensor(
                 ego_vehicle_state.linear_velocity,
                 ego_vehicle_state.angular_velocity,
-                sim.last_dt,
+                sim_frame.last_dt,
             )
             acceleration_params.update(
                 dict(
@@ -216,43 +320,32 @@ class Sensors:
 
         if waypoint_paths:
             vehicle.trip_meter_sensor.update_distance_wps_record(waypoint_paths)
-        distance_travelled = vehicle.trip_meter_sensor(sim)
+        distance_travelled = vehicle.trip_meter_sensor(increment=True)
 
-        vehicle.driven_path_sensor.track_latest_driven_path(sim)
+        vehicle.driven_path_sensor.track_latest_driven_path(sim_frame.elapsed_sim_time)
 
         if not vehicle.subscribed_to_waypoints_sensor:
             waypoint_paths = None
 
-        drivable_area_grid_map = (
-            vehicle.drivable_area_grid_map_sensor()
-            if vehicle.subscribed_to_drivable_area_grid_map_sensor
-            else None
-        )
-        occupancy_grid_map = (
-            vehicle.ogm_sensor() if vehicle.subscribed_to_ogm_sensor else None
-        )
-        top_down_rgb = (
-            vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None
-        )
         lidar_point_cloud = (
             vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
         )
 
         done, events = Sensors._is_done_with_events(
-            sim, agent_id, vehicle, sensor_state
+            sim_frame, agent_id, vehicle, sensor_state
         )
 
         if done and sensor_state.steps_completed == 1:
             agent_type = "Social agent"
-            if agent_id in sim.agent_manager.ego_agent_ids:
+            if agent_id in sim_frame.ego_ids:
                 agent_type = "Ego agent"
             logger.warning(
-                f"{agent_type} with Agent ID: {agent_id} is done on the first step"
+                "%s with Agent ID: %s is done on the first step", agent_type, agent_id
             )
 
         signals = None
         if vehicle.subscribed_to_signals_sensor:
-            provider_state = sim._last_provider_state
+            provider_state = sim_frame.last_provider_state
             signals = vehicle.signals_sensor(
                 closest_lane,
                 ego_lane_pos,
@@ -261,31 +354,37 @@ class Sensors:
                 provider_state,
             )
 
-        agent_controls = agent_id == sim.vehicle_index.actor_id_from_vehicle_id(
+        agent_controls = agent_id == sim_frame.agent_vehicle_controls.get(
             ego_vehicle_state.actor_id
         )
 
         return (
             Observation(
-                dt=sim.last_dt,
-                step_count=sim.step_count,
+                dt=sim_frame.last_dt,
+                step_count=sim_frame.step_count,
                 steps_completed=sensor_state.steps_completed,
-                elapsed_sim_time=sim.elapsed_sim_time,
+                elapsed_sim_time=sim_frame.elapsed_sim_time,
                 events=events,
                 ego_vehicle_state=ego_vehicle,
                 under_this_agent_control=agent_controls,
                 neighborhood_vehicle_states=neighborhood_vehicle_states,
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
-                top_down_rgb=top_down_rgb,
-                occupancy_grid_map=occupancy_grid_map,
-                drivable_area_grid_map=drivable_area_grid_map,
                 lidar_point_cloud=lidar_point_cloud,
                 road_waypoints=road_waypoints,
                 via_data=via_data,
                 signals=signals,
             ),
             done,
+        )
+
+    @classmethod
+    def observe(cls, sim_frame, agent_id, sensor_state, vehicle) -> Tuple[Observation, bool]:
+        """Generate observations for the given agent around the given vehicle."""
+        args = [sim_frame, agent_id, sensor_state, vehicle]
+        return dataclasses.replace(
+            cls.observe_base(*args),
+            cls.observe_cameras(*args)
         )
 
     @staticmethod
@@ -295,19 +394,19 @@ class Sensors:
 
     @classmethod
     def _agents_alive_done_check(
-        cls, agent_manager, agents_alive: Optional[AgentsAliveDoneCriteria]
+        cls, ego_agent_ids, agent_ids, agents_alive: Optional[AgentsAliveDoneCriteria]
     ):
         if agents_alive is None:
             return False
 
         if (
             agents_alive.minimum_ego_agents_alive
-            and len(agent_manager.ego_agent_ids) < agents_alive.minimum_ego_agents_alive
+            and len(ego_agent_ids) < agents_alive.minimum_ego_agents_alive
         ):
             return True
         if (
             agents_alive.minimum_total_agents_alive
-            and len(agent_manager.agent_ids) < agents_alive.minimum_total_agents_alive
+            and len(agent_ids) < agents_alive.minimum_total_agents_alive
         ):
             return True
         if agents_alive.agent_lists_alive:
@@ -322,7 +421,7 @@ class Sensors:
                     agents_list_alive.minimum_agents_alive_in_list >= 0
                 ), "minimum_agents_alive_in_list should not be negative"
                 agents_alive_check = [
-                    1 if id in agent_manager.agent_ids else 0
+                    1 if id in agent_ids else 0
                     for id in agents_list_alive.agents_list
                 ]
                 if (
@@ -368,24 +467,24 @@ class Sensors:
 
     @classmethod
     def _is_done_with_events(cls, sim, agent_id, vehicle, sensor_state):
-        interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
+        interface = sim.agent_interfaces.get(agent_id)
         done_criteria = interface.done_criteria
         event_config = interface.event_configuration
 
         # TODO:  the following calls nearest_lanes (expensive) 6 times
-        reached_goal = cls._agent_reached_goal(sim, vehicle)
+        reached_goal = cls._agent_reached_goal(sensor_state, vehicle)
         collided = sim.vehicle_did_collide(vehicle.id)
-        is_off_road = cls._vehicle_is_off_road(sim, vehicle)
-        is_on_shoulder = cls._vehicle_is_on_shoulder(sim, vehicle)
+        is_off_road = cls._vehicle_is_off_road(sim.road_map, vehicle)
+        is_on_shoulder = cls._vehicle_is_on_shoulder(sim.road_map, vehicle)
         is_not_moving = cls._vehicle_is_not_moving(
             sim, vehicle, event_config.not_moving_time, event_config.not_moving_distance
         )
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
-            sim, vehicle
+            sim, vehicle, sensor_state
         )
         agents_alive_done = cls._agents_alive_done_check(
-            sim.agent_manager, done_criteria.agents_alive
+            sim.ego_ids, sim.agent_ids, done_criteria.agents_alive
         )
         actors_alive_done = cls._actors_alive_done_check(
             sim.vehicle_index, sensor_state, done_criteria.actors_alive
@@ -405,7 +504,7 @@ class Sensors:
         )
 
         events = Events(
-            collisions=sim.vehicle_collisions(vehicle.id),
+            collisions=sim.filtered_vehicle_collisions(vehicle.id),
             off_road=is_off_road,
             reached_goal=reached_goal,
             reached_max_episode_steps=reached_max_episode_steps,
@@ -420,22 +519,21 @@ class Sensors:
         return done, events
 
     @classmethod
-    def _agent_reached_goal(cls, sim, vehicle):
-        sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+    def _agent_reached_goal(cls, sensor_state, vehicle):
         distance_travelled = vehicle.trip_meter_sensor()
         mission = sensor_state.plan.mission
         return mission.is_complete(vehicle, distance_travelled)
 
     @classmethod
-    def _vehicle_is_off_road(cls, sim, vehicle):
-        return not sim.scenario.road_map.road_with_point(vehicle.pose.point)
+    def _vehicle_is_off_road(cls, road_map, vehicle):
+        return not road_map.road_with_point(vehicle.pose.point)
 
     @classmethod
-    def _vehicle_is_on_shoulder(cls, sim, vehicle):
+    def _vehicle_is_on_shoulder(cls, road_map, vehicle):
         # XXX: this isn't technically right as this would also return True
         #      for vehicles that are completely off road.
         for corner_coordinate in vehicle.bounding_box:
-            if not sim.scenario.road_map.road_with_point(Point(*corner_coordinate)):
+            if not road_map.road_with_point(Point(*corner_coordinate)):
                 return True
         return False
 
@@ -448,7 +546,7 @@ class Sensors:
             return False
 
         distance = vehicle.driven_path_sensor.distance_travelled(
-            sim, last_n_seconds=last_n_seconds_considered
+            sim.elapsed_sim_time, last_n_seconds=last_n_seconds_considered
         )
 
         # Due to controller instabilities there may be some movement even when a
@@ -456,7 +554,7 @@ class Sensors:
         return distance < min_distance_moved
 
     @classmethod
-    def _vehicle_is_off_route_and_wrong_way(cls, sim, vehicle):
+    def _vehicle_is_off_route_and_wrong_way(cls, sim, vehicle, sensor_state):
         """Determines if the agent is on route and on the correct side of the road.
 
         Args:
@@ -471,7 +569,6 @@ class Sensors:
                 Actor's vehicle is going against the lane travel direction.
         """
 
-        sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
         route_roads = sensor_state.plan.route.roads
 
         vehicle_pos = vehicle.pose.point
@@ -480,7 +577,7 @@ class Sensors:
         )
         # Check that center of vehicle is still close to route
         radius = vehicle_minimum_radius_bounds + 5
-        nearest_lane = sim.scenario.road_map.nearest_lane(vehicle_pos, radius=radius)
+        nearest_lane = sim.road_map.nearest_lane(vehicle_pos, radius=radius)
 
         # No road nearby, so we're not on route!
         if not nearest_lane:
@@ -553,7 +650,7 @@ class Sensor:
 class SensorState:
     """Sensor state information"""
 
-    def __init__(self, max_episode_steps: int, plan):
+    def __init__(self, max_episode_steps: int, plan: Plan):
         self._max_episode_steps = max_episode_steps
         self._plan = plan
         self._step = 0
@@ -591,6 +688,18 @@ class SensorState:
         return self._step
 
 
+class SensorWorker():
+    def __init__(self, road_map) -> None:
+        self._road_map = road_map
+
+    def process(self, sim_frame, agent_id, sensor_states, vehicle_ids):
+        raise NotImplementedError()
+
+    @staticmethod
+    def local(sim_frame, agent_id, sensor_states, vehicles):
+        raise NotImplementedError()
+
+
 class CameraSensor(Sensor):
     """The base for a sensor that renders images."""
 
@@ -625,6 +734,9 @@ class CameraSensor(Sensor):
     def _follow_vehicle(self):
         largest_dim = max(self._vehicle._chassis.dimensions.as_lwh)
         self._camera.update(self._vehicle.pose, 20 * largest_dim)
+
+    def render(self, renderer):
+        raise NotImplementedError
 
 
 class DrivableAreaGridMapSensor(CameraSensor):
@@ -800,11 +912,11 @@ class DrivenPathSensor(Sensor):
         self._vehicle = vehicle
         self._driven_path = deque(maxlen=max_path_length)
 
-    def track_latest_driven_path(self, sim):
+    def track_latest_driven_path(self, elapsed_sim_time):
         """Records the current location of the tracked vehicle."""
         pos = self._vehicle.position[:2]
         self._driven_path.append(
-            DrivenPathSensor.Entry(timestamp=sim.elapsed_sim_time, position=pos)
+            DrivenPathSensor.Entry(timestamp=elapsed_sim_time, position=pos)
         )
 
     def __call__(self, count=sys.maxsize):
@@ -815,7 +927,7 @@ class DrivenPathSensor(Sensor):
 
     def distance_travelled(
         self,
-        sim,
+        elapsed_sim_time,
         last_n_seconds: Optional[float] = None,
         last_n_steps: Optional[int] = None,
     ):
@@ -827,7 +939,7 @@ class DrivenPathSensor(Sensor):
             n = last_n_steps + 1  # to factor in the current step we're on
             filtered_pos = [x.position for x in self._driven_path][-n:]
         else:  # last_n_seconds
-            threshold = sim.elapsed_sim_time - last_n_seconds
+            threshold = elapsed_sim_time - last_n_seconds
             filtered_pos = [
                 x.position for x in self._driven_path if x.timestamp >= threshold
             ]

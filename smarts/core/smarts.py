@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from dataclasses import dataclass
 import importlib.resources as pkg_resources
 import logging
 import os
@@ -213,12 +214,14 @@ class SMARTS(ProviderManager):
         Dict[str, Dict[str, float]],
     ]:
         """Progress the simulation by a fixed or specified time.
-
-        :param agent_actions: Actions that the agents want to perform on their actors.
-        :param time_delta_since_last_step: Overrides the simulation step length.
-            Progress simulation time by the given amount.
-            Note the time_delta_since_last_step param is in (nominal) seconds.
-        :return: observations, rewards, dones, infos
+        Args:
+            agent_actions:
+                Actions that the agents want to perform on their actors.
+            time_delta_since_last_step:
+                Overrides the simulation step length. Progress simulation time by the given amount.
+                Note the time_delta_since_last_step param is in (nominal) seconds.
+        Returns:
+            observations, rewards, dones, infos
         """
         if not self._is_setup:
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
@@ -384,20 +387,20 @@ class SMARTS(ProviderManager):
         self, scenario: Scenario, start_time: float = 0.0
     ) -> Dict[str, Observation]:
         """Reset the simulation, reinitialize with the specified scenario. Then progress the
-         simulation up to the first time an agent returns an observation, or ``start_time`` if there
+         simulation up to the first time an agent returns an observation, or `start_time` if there
          are no agents in the simulation.
-
-        :param scenario: The scenario to reset the simulation with.
-        :type scenario: class: Scenario
-        :param start_time:
+        Args:
+            scenario(Scenario):
+                The scenario to reset the simulation with.
+            start_time(float):
                 The initial amount of simulation time to skip. This has implications on all time
                 dependent systems. NOTE: SMARTS simulates a step and then updates vehicle control.
-                If you want a vehicle to enter at exactly ``0.3`` with a step of ``0.1`` it means the
-                simulation should start at ``start_time==0.2``.
-        :type start_time: float
-        :return: Agent observations. This observation is as follows:
-            - If no agents: the initial simulation observation at ``start_time``
-            - If agents: the first step of the simulation with an agent observation
+                If you want a vehicle to enter at exactly `0.3` with a step of `0.1` it means the
+                simulation should start at `start_time==0.2`.
+        Returns:
+            Agent observations. This observation is as follows:
+                - If no agents: the initial simulation observation at `start_time`
+                - If agents: the first step of the simulation with an agent observation
         """
         tries = 2
         first_exception = None
@@ -1023,9 +1026,9 @@ class SMARTS(ProviderManager):
 
     def teardown_social_agents(self, agent_ids: Iterable[str]):
         """
-        Teardown agents in the given sequence.
-
-        :param agent_ids: Sequence of agent ids
+        Teardown agents in the given sequence
+        Params:
+            agent_ids: Sequence of agent ids
         """
         agents_to_teardown = {
             id_
@@ -1037,9 +1040,9 @@ class SMARTS(ProviderManager):
     def teardown_social_agents_without_actors(self, agent_ids: Iterable[str]):
         """
         Teardown agents in the given list that have no actors registered as
-        controlled-by or shadowed-by
-
-        :param agent_ids: Sequence of agent ids
+        controlled-by or shadowed-by (for each given agent.)
+        Params:
+            agent_ids: Sequence of agent ids
         """
         self._check_valid()
         original_agents = set(agent_ids)
@@ -1126,7 +1129,7 @@ class SMARTS(ProviderManager):
             vehicle.step(self._elapsed_sim_time)
 
     @property
-    def vehicle_index(self):
+    def vehicle_index(self) -> VehicleIndex:
         """The vehicle index for direct vehicle manipulation."""
         return self._vehicle_index
 
@@ -1359,25 +1362,6 @@ class SMARTS(ProviderManager):
 
         indices = np.argwhere(distances <= radius).flatten()
         return [other_states[i] for i in indices]
-
-    def vehicle_did_collide(self, vehicle_id) -> bool:
-        """Test if the given vehicle had any collisions in the last physics update."""
-        self._check_valid()
-        vehicle_collisions = self._vehicle_collisions.get(vehicle_id, [])
-        for c in vehicle_collisions:
-            if c.collidee_id != self._ground_bullet_id:
-                return True
-        return False
-
-    def vehicle_collisions(self, vehicle_id) -> List[Collision]:
-        """Get a list of all collisions the given vehicle was involved in during the last
-        physics update.
-        """
-        self._check_valid()
-        vehicle_collisions = self._vehicle_collisions.get(vehicle_id, [])
-        return [
-            c for c in vehicle_collisions if c.collidee_id != self._ground_bullet_id
-        ]
 
     def _clear_collisions(self, vehicle_ids):
         for vehicle_id in vehicle_ids:
@@ -1624,3 +1608,78 @@ class SMARTS(ProviderManager):
         if not self._visdom:
             return
         self._visdom.send(obs)
+
+    def frame(self):
+        self._check_valid()
+        actor_ids = self.vehicle_index.agent_vehicle_ids()
+        actor_states = self._last_provider_state
+        return SimulationFrame(
+            actor_states = getattr(actor_states, "actors", {}),
+            agent_interfaces = self.agent_manager.agent_interfaces.copy(),
+            agent_vehicle_controls = {a_id: self.vehicle_index.actor_id_from_vehicle_id(a_id) for a_id in actor_ids},
+            ego_ids = self.agent_manager.ego_agent_ids,
+            elapsed_sim_time = self.elapsed_sim_time,
+            fixed_timestep = self.fixed_timestep_sec,
+            resetting = self.resetting,
+            # road_map = self.road_map,
+            map_spec = self.scenario.map_spec,
+            last_dt = self.last_dt,
+            last_provider_state = self._last_provider_state,
+            step_count = self.step_count,
+            vehicle_collisions = self._vehicle_collisions,
+            _ground_bullet_id = self._ground_bullet_id,
+            renderer_type = self._renderer.__class__ if self._renderer is not None else None,
+            vehicles = dict(self.vehicle_index.vehicleitems())
+        )
+
+
+@dataclass(frozen=True)
+class SimulationFrame():
+    actor_states: Dict[str, ActorState]
+    agent_vehicle_controls: Dict[str, str]
+    agent_interfaces: Dict[str, AgentInterface]
+    ego_ids: str
+    elapsed_sim_time: float
+    fixed_timestep: float
+    resetting: bool
+    # road_map: RoadMap
+    map_spec: Any
+    last_dt: float
+    last_provider_state: ProviderState
+    step_count: int
+    vehicle_collisions: Dict[str, List[Collision]]
+    vehicles: List[Vehicle]
+
+    renderer_type: Any = None
+    _ground_bullet_id: Optional[str] = None
+
+    @property
+    def agent_ids(self):
+        return self.agent_interfaces.keys()
+
+    def vehicle_did_collide(self, vehicle_id) -> bool:
+        """Test if the given vehicle had any collisions in the last physics update."""
+        vehicle_collisions = self.vehicle_collisions.get(vehicle_id, [])
+        for c in vehicle_collisions:
+            if c.collidee_id != self._ground_bullet_id:
+                return True
+        return False
+
+    def filtered_vehicle_collisions(self, vehicle_id) -> List[Collision]:
+        """Get a list of all collisions the given vehicle was involved in during the last
+        physics update.
+        """
+        vehicle_collisions = self.vehicle_collisions.get(vehicle_id, [])
+        return [
+            c for c in vehicle_collisions if c.collidee_id != self._ground_bullet_id
+        ]
+
+    @staticmethod
+    def serialize(simulation_frame: "SimulationFrame") -> Any:
+        import cloudpickle
+        return cloudpickle.dumps(simulation_frame)
+
+    @staticmethod
+    def deserialize(serialized_simulation_frame) -> "SimulationFrame":
+        import cloudpickle
+        return cloudpickle.loads(serialized_simulation_frame)

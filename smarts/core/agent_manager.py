@@ -151,6 +151,8 @@ class AgentManager:
         rewards = {}
         dones = {}
         scores = {}
+
+        sim_frame = sim.frame()
         for v_id in vehicle_ids:
             vehicle = self._vehicle_index.vehicle_by_id(v_id, None)
             if not vehicle:
@@ -168,7 +170,7 @@ class AgentManager:
             sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
 
             observations[agent_id], dones[agent_id] = Sensors.observe(
-                sim, agent_id, sensor_state, vehicle
+                sim_frame, agent_id, sensor_state, vehicle
             )
             rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
             scores[agent_id] = vehicle.trip_meter_sensor()
@@ -201,6 +203,7 @@ class AgentManager:
             if agent_id not in self._vehicle_index.agent_vehicle_ids()
         }
 
+        sim_frame = sim.frame()
         for agent_id in self.active_agents:
             # An agent may be pointing to its own vehicle or observing a social vehicle
             vehicle_ids = self._vehicle_index.vehicle_ids_by_actor_id(
@@ -220,7 +223,7 @@ class AgentManager:
                     for vehicle in vehicles
                 }
                 observations[agent_id], dones[agent_id] = Sensors.observe_batch(
-                    sim, agent_id, sensor_states, {v.id: v for v in vehicles}
+                    sim_frame, agent_id, sensor_states, {v.id: v for v in vehicles}
                 )
                 rewards[agent_id] = {
                     vehicle_id: self._vehicle_reward(vehicle_id)
@@ -240,7 +243,7 @@ class AgentManager:
                     vehicle.id
                 )
                 obs, dones[agent_id] = Sensors.observe(
-                    sim, agent_id, sensor_state, vehicle
+                    sim_frame, agent_id, sensor_state, vehicle
                 )
                 observations[agent_id] = obs
 

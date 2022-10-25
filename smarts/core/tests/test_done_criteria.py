@@ -29,7 +29,7 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Sensors
-from smarts.core.smarts import SMARTS
+from smarts.core.smarts import SMARTS, SimulationFrame
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
 AGENT1 = "agent1"
@@ -92,25 +92,30 @@ def test_agents_alive_done_check(sim, scenario):
     sim.setup(scenario)
     interface = sim.agent_manager.agent_interface_for_agent_id(AGENT1)
     done_criteria = interface.done_criteria
+
+    sim_frame: SimulationFrame = sim.frame()
     # 3 agents available, done requires 2 to be alive
     assert not Sensors._agents_alive_done_check(
-        sim.agent_manager, done_criteria.agents_alive
+        sim_frame.ego_ids, sim_frame.agent_ids, done_criteria.agents_alive
     )
 
     sim.agent_manager.teardown_ego_agents({AGENT2})
+    sim_frame: SimulationFrame = sim.frame()
     # 2 agents available, done requires 2 to be alive
     assert not Sensors._agents_alive_done_check(
-        sim.agent_manager, done_criteria.agents_alive
+        sim_frame.ego_ids, sim_frame.agent_ids, done_criteria.agents_alive
     )
 
     sim.agent_manager.teardown_ego_agents({AGENT3})
+    sim_frame: SimulationFrame = sim.frame()
     # 1 agents available, done requires 2 to be alive
     assert Sensors._agents_alive_done_check(
-        sim.agent_manager, done_criteria.agents_alive
+        sim_frame.ego_ids, sim_frame.agent_ids, done_criteria.agents_alive
     )
 
     sim.agent_manager.teardown_ego_agents({AGENT1})
+    sim_frame: SimulationFrame = sim.frame()
     # 1 agents available, done requires 2 to be alive
     assert Sensors._agents_alive_done_check(
-        sim.agent_manager, done_criteria.agents_alive
+        sim_frame.ego_ids, sim_frame.agent_ids, done_criteria.agents_alive
     )

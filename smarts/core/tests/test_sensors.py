@@ -48,11 +48,11 @@ def test_driven_path_sensor():
     for idx, (position, sim_time) in enumerate(zip(positions, sim_times)):
         sim.elapsed_sim_time = sim_time
         vehicle.position = position
-        sensor.track_latest_driven_path(sim)
+        sensor.track_latest_driven_path(sim.elapsed_sim_time)
 
         if idx >= 3:
-            assert sensor.distance_travelled(sim, last_n_steps=3) == 30
-            assert sensor.distance_travelled(sim, last_n_seconds=10) == 20
+            assert sensor.distance_travelled(sim.elapsed_sim_time, last_n_steps=3) == 30
+            assert sensor.distance_travelled(sim.elapsed_sim_time, last_n_seconds=10) == 20
 
         assert len(sensor()) <= max_path_length
 

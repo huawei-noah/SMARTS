@@ -74,6 +74,9 @@ class VehicleState(ActorState):
     def __post_init__(self):
         assert self.pose is not None and self.dimensions is not None
 
+    def __eq__(self, __o: object):
+        return super().__eq__(__o)
+
     @property
     def bbox(self) -> Polygon:
         """Returns a bounding box around the vehicle."""
@@ -185,6 +188,13 @@ class Vehicle:
 
     def _assert_initialized(self):
         assert self._initialized, f"Vehicle({self.id}) is not initialized"
+
+    def __eq__(self, __o: object) -> bool:
+        if self is __o:
+            return True
+        if isinstance(__o, self.__class__) and self.state == __o.state:
+            return True
+        return False
 
     def __repr__(self):
         return f"""Vehicle({self.id},
