@@ -94,7 +94,7 @@ def _make_vehicle_observation(road_map, neighborhood_vehicle):
 
 
 class Sensors:
-    """Sensor utility"""
+    """Sensor related utilities"""
 
     _log = logging.getLogger("Sensors")
     _instance = None

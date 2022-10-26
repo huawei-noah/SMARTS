@@ -311,7 +311,7 @@ class SMARTS(ProviderManager):
 
         # Agents
         with timeit("Stepping through sensors", self._log.debug):
-            self._agent_manager.step_sensors()
+            self._vehicle_index.step_sensors()
 
         if self._renderer:
             # runs through the render pipeline (for camera-based sensors)

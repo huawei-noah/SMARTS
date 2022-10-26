@@ -233,6 +233,7 @@ class AgentManager:
                 observations[agent_id], dones[agent_id] = Sensors.observe_batch(
                     sim_frame, agent_id, sensor_states, {v.id: v for v in vehicles}
                 )
+                # TODO: Observations and rewards should not be generated here.
                 rewards[agent_id] = {
                     vehicle_id: self._vehicle_reward(vehicle_id)
                     for vehicle_id in sensor_states.keys()
@@ -299,16 +300,6 @@ class AgentManager:
 
     def _vehicle_score(self, vehicle_id: str) -> float:
         return self._vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
-
-    def step_sensors(self):
-        """Update all known vehicle sensors."""
-        # TODO: Move to vehicle index
-        for vehicle_id, sensor_state in self._vehicle_index.sensor_states_items():
-            Sensors.step(self, sensor_state)
-
-            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            for sensor in vehicle.sensors.values():
-                sensor.step()
 
     def _filter_for_active_ego(self, dict_):
         return {

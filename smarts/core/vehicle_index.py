@@ -43,7 +43,7 @@ from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
 from .road_map import RoadMap
-from .sensors import SensorState
+from .sensors import SensorState, Sensors
 from .vehicle import Vehicle, VehicleState
 
 VEHICLE_INDEX_ID_LENGTH = 128
@@ -793,6 +793,15 @@ class VehicleIndex:
         """Retrieve the sensor state of the given vehicle."""
         vehicle_id = _2id(vehicle_id)
         return self._sensor_states[vehicle_id]
+
+    def step_sensors(self):
+        """Update all known vehicle sensors."""
+        for vehicle_id, sensor_state in self._vehicle_index.sensor_states_items():
+            Sensors.step(self, sensor_state)
+
+            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
+            for sensor in vehicle.sensors.values():
+                sensor.step()
 
     @cache
     def controller_state_for_vehicle_id(self, vehicle_id: str) -> ControllerState:
