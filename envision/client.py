@@ -38,6 +38,7 @@ from envision import types
 from envision.client_config import EnvisionStateFilter
 from envision.data_formatter import EnvisionDataFormatter, EnvisionDataFormatterArgs
 from smarts.core.utils.file import unpack
+from smarts.core.utils.logging import suppress_websocket
 
 
 @dataclass
@@ -272,10 +273,7 @@ class Client:
                     endpoint, on_error=on_error, on_close=on_close, on_open=on_open
                 )
 
-                with warnings.catch_warnings():
-                    # XXX: websocket-client library seems to have leaks on connection
-                    #      retry that cause annoying warnings within Python 3.8+
-                    warnings.filterwarnings("ignore", category=ResourceWarning)
+                with suppress_websocket():
                     ws.run_forever()
 
                 if not connection_established:

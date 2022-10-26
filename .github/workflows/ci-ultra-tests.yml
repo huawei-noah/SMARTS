@@ -14,7 +14,7 @@ on:
 
 jobs:
   test-heavy-base-tests:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.13-minimal
     steps:
@@ -56,7 +56,7 @@ jobs:
           ./tests/test_evaluate.py
 
   test-light-base-tests:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.13-minimal
     steps:
@@ -97,7 +97,7 @@ jobs:
           ./tests/test_tune.py
 
   test-package-via-setup:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.13-minimal
     steps:
@@ -130,7 +130,7 @@ jobs:
           ./tests/test_ultra_package.py \
 
   test-package-via-wheel:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.13-minimal
     steps:
@@ -168,7 +168,7 @@ jobs:
           ./tests/test_ultra_package.py \
 
   test-package-via-pypi:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.13-minimal
     steps:
