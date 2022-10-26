@@ -19,18 +19,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Any, Dict, List, Set
-import pytest
 import logging
-from helpers.scenario import maps_dir
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.scenario import Scenario
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from typing import Any, Dict, List, Set
 
-from smarts.sstudio.types import MapSpec
+import pytest
+from helpers.scenario import maps_dir
+
+from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.road_map import RoadMap
+from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation, Sensors, SensorState, SensorWorker
 from smarts.core.smarts import SMARTS, SimulationFrame
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.sstudio.types import MapSpec
 
 SimulationState = SimulationFrame
 SensorState = Any

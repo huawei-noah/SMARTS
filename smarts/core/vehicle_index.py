@@ -43,7 +43,7 @@ from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
 from .road_map import RoadMap
-from .sensors import SensorState, Sensors
+from .sensors import Sensors, SensorState
 from .vehicle import Vehicle, VehicleState
 
 VEHICLE_INDEX_ID_LENGTH = 128

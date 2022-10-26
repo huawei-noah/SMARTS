@@ -17,17 +17,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from asyncio import as_completed
-from concurrent.futures import ProcessPoolExecutor, as_completed
 import dataclasses
 import logging
 import re
+import multiprocessing as mp
 import sys
 import time
 import weakref
+from asyncio import as_completed
 from collections import deque, namedtuple
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
-import multiprocessing as mp
 from functools import lru_cache
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 

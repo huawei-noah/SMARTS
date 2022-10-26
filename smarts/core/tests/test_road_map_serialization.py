@@ -19,13 +19,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import List
-import pytest
 import logging
+from typing import List
+
+import pytest
 from helpers.scenario import maps_dir
 
-from smarts.sstudio.types import MapSpec
 from smarts.core.road_map import RoadMap
+from smarts.sstudio.types import MapSpec
 
 
 def waymo_map() -> RoadMap:

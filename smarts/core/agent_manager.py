@@ -18,9 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from collections import defaultdict
 import logging
 import weakref
+from collections import defaultdict
 from concurrent import futures
 from typing import Any, Callable, Dict, Optional, Set, Tuple, Union
 

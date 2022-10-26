@@ -20,13 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from typing import List
+
 import pytest
 
 from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 from smarts.core.scenario import Scenario
+from smarts.core.sensors import Sensors
 from smarts.core.smarts import SMARTS, SimulationFrame
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.sensors import Sensors
 
 AGENT_ID = "agent-007"
 
