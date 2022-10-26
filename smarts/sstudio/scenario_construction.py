@@ -129,9 +129,7 @@ def _install_requirements(scenario_root, log: Optional[Callable[[Any], None]] = 
         ]
 
         if log is not None:
-            log(
-                f"Installing scenario dependencies via '{' '.join(pip_install_cmd)}'"
-            )
+            log(f"Installing scenario dependencies via '{' '.join(pip_install_cmd)}'")
 
         try:
             subprocess.check_call(pip_install_cmd, stdout=subprocess.DEVNULL)
