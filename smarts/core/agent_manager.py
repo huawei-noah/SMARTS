@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from collections import defaultdict
 import logging
 import weakref
 from concurrent import futures
@@ -138,6 +139,12 @@ class AgentManager:
         assert agent_ids.issubset(self.agent_ids)
         self._pending_agent_ids -= agent_ids
 
+    def agent_for_vehicle(self, vehicle_id):
+        return self._vehicle_with_sensors.get(vehicle_id)
+
+    def vehicles_for_agent(self, agent_id):
+        return [k for k, v in self._vehicle_with_sensors if v is agent_id]
+
     def observe_from(
         self, vehicle_ids: Set[str], done_this_step: Optional[Set[str]] = None
     ) -> Tuple[
@@ -164,6 +171,7 @@ class AgentManager:
             if not agent_id:
                 continue
 
+            assert agent_id, f"Vehicle `{v_id}` does not have an agent registered to it to get observations for."
             if not self._vehicle_index.check_vehicle_id_has_sensor_state(vehicle.id):
                 continue
 

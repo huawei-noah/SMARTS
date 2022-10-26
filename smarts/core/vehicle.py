@@ -181,8 +181,6 @@ class Vehicle:
             config = VEHICLE_CONFIGS[vehicle_config_type]
             self._color = config.color
 
-        self._renderer = None
-
         self._initialized = True
         self._has_stepped = False
 
@@ -249,12 +247,6 @@ class Vehicle:
         """The sensors attached to this vehicle."""
         self._assert_initialized()
         return self._sensors
-
-    @property
-    def renderer(self):  # type: ignore
-        """The renderer this vehicle is rendered to."""
-        # Returns: Optional[Renderer]
-        return self._renderer
 
     # # TODO: See issue #898 This is a currently a no-op
     # @speed.setter
@@ -619,17 +611,14 @@ class Vehicle:
 
     def create_renderer_node(self, renderer):
         """Create the vehicle's rendering node in the renderer."""
-        assert not self._renderer
-        self._renderer = renderer
         config = VEHICLE_CONFIGS[self._vehicle_config_type]
-        self._renderer.create_vehicle_node(
+        return renderer.create_vehicle_node(
             config.glb_model, self._id, self.vehicle_color, self.pose
         )
 
-    def sync_to_renderer(self):
+    def sync_to_renderer(self, renderer):
         """Update the vehicle's rendering node."""
-        assert self._renderer
-        self._renderer.update_vehicle_node(self._id, self.pose)
+        renderer.update_vehicle_node(self._id, self.pose)
 
     @lru_cache(maxsize=1)
     def _warn_AckermannChassis_set_pose(self):
@@ -656,7 +645,7 @@ class Vehicle:
         self._chassis.teardown()
         self._chassis = chassis
 
-    def teardown(self, exclude_chassis=False):
+    def teardown(self, renderer, exclude_chassis=False):
         """Clean up internal resources"""
         for sensor in [
             sensor
@@ -673,8 +662,8 @@ class Vehicle:
 
         if not exclude_chassis:
             self._chassis.teardown()
-        if self._renderer:
-            self._renderer.remove_vehicle_node(self._id)
+        if renderer:
+            renderer.remove_vehicle_node(self._id)
         self._initialized = False
 
     def _meta_create_sensor_functions(self):

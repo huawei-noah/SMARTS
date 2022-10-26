@@ -67,7 +67,7 @@ LANE_INDEX_CONSTANT = -1
 
 import os
 
-SEV_THREADS = os.environ.get("SEV_THREADS", 1)
+SEV_THREADS = int(os.environ.get("SEV_THREADS", 1))
 
 def _make_vehicle_observation(road_map, neighborhood_vehicle):
     nv_lane = road_map.nearest_lane(neighborhood_vehicle.pose.point, radius=3)
@@ -106,7 +106,7 @@ class Sensors:
         return cls._instance 
 
     @classmethod
-    def observe_group(cls, vehicle_ids, sim_frame, sensor_states, agent_group):
+    def observe_group(cls, vehicle_ids, sim_frame, agent_group):
         return (None, None)
 
     @classmethod
@@ -130,8 +130,9 @@ class Sensors:
         return cloudpickle.loads(v)
 
     @classmethod
-    def observe_parallel(cls, vehicle_ids, sim_frame, sensor_states, agent_ids):
-        import cloudpickle
+    def observe_parallel(cls, sim_frame, agent_ids):
+        from smarts.core.smarts import SimulationFrame
+        sim_frame: SimulationFrame = sim_frame
         observations, dones = {}, {}
         futures = []
 
@@ -142,33 +143,37 @@ class Sensors:
         # TODO: only use executor if threads is more than 1
         with ProcessPoolExecutor(max_workers=SEV_THREADS, mp_context=mp_context) as pool:
             if SEV_THREADS == 1:
-                for agent_id in agent_ids:
-                    observations[agent_id], dones[agent_id] = cls.observe(sim_frame, agent_id, sensor_states, sim_frame.vehicles)
+                for agent_id, vehicle_ids in sim_frame.vehicles_for_agents.items():
+                    for vehicle_id in vehicle_ids:
+                        observations[agent_id], dones[agent_id] = cls.observe(sim_frame, agent_id, sim_frame.sensor_states[vehicle_id], sim_frame.vehicles[vehicle_id])
             elif SEV_THREADS > 1:
                 gap = len(agent_ids)/SEV_THREADS
-                cp_vehicles = cls.serialize_for_observation(vehicle_ids)
+                for f in sim_frame.__dataclass_fields__:
+                    print("\n", f)
+                    if f == "vehicles":
+                        vehicles = sim_frame.__getattribute__(f)
+                        for vid in vehicles:
+                            print(vid)
+                            cls.serialize_for_observation(vehicles[vid])
+                    cls.serialize_for_observation(sim_frame.__getattribute__(f))
+                cp_vehicle_ids = cls.serialize_for_observation(sim_frame.vehicle_ids)
                 cp_sim_frame = cls.serialize_for_observation(sim_frame)
-                cp_sensor_states = cls.serialize_for_observation(sensor_states)
                 for agent_group in [agent_ids[i*gap:i*gap+gap] for i in range(SEV_THREADS)]:
                     cp_agent_group = cls.serialize_for_observation(agent_group)
                     futures.append(
                         pool.submit(
                             cls._observe_group_unpack,
-                            road_map = None,
-                            renderer_type = None,
-                            vehicle_ids = cp_vehicles,
+                            vehicle_ids = cp_vehicle_ids,
                             sim_frame = cp_sim_frame,
-                            sensor_states = cp_sensor_states,
                             agent_group = cp_agent_group
                         )
                     )
 
             # While observation processes are operating do rendering
             rendering = {}
-            for agent_id in agent_ids:
-                controls = sim_frame.agent_vehicle_controls[agent_id]
-                for vehicle_id in controls:
-                    rendering[vehicle_id] = cls.observe_cameras(sim_frame, agent_id, sensor_states[vehicle_id], sim_frame.vehicles[vehicle_id])
+            for agent_id, vehicle_ids in sim_frame.vehicles_for_agents.items():
+                for vehicle_id in vehicle_ids:
+                    rendering[agent_id] = cls.observe_cameras(sim_frame, agent_id, sim_frame.sensor_states[vehicle_id], sim_frame.vehicles[vehicle_id])
             
             # Collect futures
             for future in as_completed(futures):
@@ -178,7 +183,7 @@ class Sensors:
             
             # Merge sensor information
             for vehicle_id, r_obs in rendering.items():
-                observations[vehicle_id] = dataclasses.replace(observations[vehicle_id], r_obs)
+                observations[vehicle_id] = dataclasses.replace(observations[vehicle_id], **r_obs)
 
         return observations, dones
         
@@ -382,9 +387,14 @@ class Sensors:
     def observe(cls, sim_frame, agent_id, sensor_state, vehicle) -> Tuple[Observation, bool]:
         """Generate observations for the given agent around the given vehicle."""
         args = [sim_frame, agent_id, sensor_state, vehicle]
-        return dataclasses.replace(
-            cls.observe_base(*args),
-            cls.observe_cameras(*args)
+        base_obs, dones = cls.observe_base(*args)
+        complete_obs = dataclasses.replace(
+            base_obs,
+            **cls.observe_cameras(*args)
+        )
+        return (
+            complete_obs,
+            dones
         )
 
     @staticmethod
@@ -734,9 +744,6 @@ class CameraSensor(Sensor):
     def _follow_vehicle(self):
         largest_dim = max(self._vehicle._chassis.dimensions.as_lwh)
         self._camera.update(self._vehicle.pose, 20 * largest_dim)
-
-    def render(self, renderer):
-        raise NotImplementedError
 
 
 class DrivableAreaGridMapSensor(CameraSensor):

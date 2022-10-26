@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass
+from functools import cached_property
 import importlib.resources as pkg_resources
 import logging
 import os
@@ -840,7 +841,7 @@ class SMARTS(ProviderManager):
         if self._agent_manager is not None:
             self._agent_manager.teardown()
         if self._vehicle_index is not None:
-            self._vehicle_index.teardown()
+            self._vehicle_index.teardown(self._renderer)
 
         if self._bullet_client is not None:
             self._bullet_client.resetSimulation()
@@ -910,7 +911,7 @@ class SMARTS(ProviderManager):
             raise exception
 
     def _teardown_vehicles(self, vehicle_ids):
-        self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
+        self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids, self._renderer)
         self._clear_collisions(vehicle_ids)
         for v_id in vehicle_ids:
             self._remove_vehicle_from_providers(v_id)
@@ -1080,7 +1081,7 @@ class SMARTS(ProviderManager):
             if shadow_agent_id:
                 shadow_and_controlling_agents.add(shadow_agent_id)
 
-        self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
+        self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids, self._renderer)
         self.teardown_social_agents_without_actors(shadow_and_controlling_agents)
         # XXX: don't remove vehicle from its (traffic) Provider here, as it may be being teleported
         # (and needs to remain registered in Traci during this step).
@@ -1370,7 +1371,7 @@ class SMARTS(ProviderManager):
     def _sync_vehicles_to_renderer(self):
         assert self._renderer
         for vehicle in self._vehicle_index.vehicles:
-            vehicle.sync_to_renderer()
+            vehicle.sync_to_renderer(self._renderer)
 
     def _get_pybullet_collisions(self, vehicle_id: str) -> Set[str]:
         vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
@@ -1627,9 +1628,16 @@ class SMARTS(ProviderManager):
             last_provider_state = self._last_provider_state,
             step_count = self.step_count,
             vehicle_collisions = self._vehicle_collisions,
+            vehicles_for_agents = {
+                agent_id: self.vehicle_index.vehicle_ids_by_actor_id(
+                    agent_id, include_shadowers=True
+                ) for agent_id in self.agent_manager.active_agents
+            },
+            vehicles = dict(self.vehicle_index.vehicleitems()),
+
+            sensor_states = dict(self.vehicle_index.sensor_states_items()),
             _ground_bullet_id = self._ground_bullet_id,
             renderer_type = self._renderer.__class__ if self._renderer is not None else None,
-            vehicles = dict(self.vehicle_index.vehicleitems())
         )
 
 
@@ -1648,14 +1656,20 @@ class SimulationFrame():
     last_provider_state: ProviderState
     step_count: int
     vehicle_collisions: Dict[str, List[Collision]]
-    vehicles: List[Vehicle]
+    vehicles_for_agents: Dict[str, List[str]]
+    vehicles: Dict[str, Vehicle]
 
+    sensor_states: Any
     renderer_type: Any = None
     _ground_bullet_id: Optional[str] = None
 
-    @property
+    @cached_property
     def agent_ids(self):
-        return self.agent_interfaces.keys()
+        return set(self.agent_interfaces.keys())
+
+    @cached_property
+    def vehicle_ids(self):
+        return set(self.vehicles)
 
     def vehicle_did_collide(self, vehicle_id) -> bool:
         """Test if the given vehicle had any collisions in the last physics update."""
@@ -1673,6 +1687,13 @@ class SimulationFrame():
         return [
             c for c in vehicle_collisions if c.collidee_id != self._ground_bullet_id
         ]
+
+    @cached_property
+    def road_map(self):
+        from smarts.sstudio.types import MapSpec
+        map_spec: MapSpec = self.map_spec
+        road_map, road_map_hash = map_spec.builder_fn(map_spec)
+        return road_map
 
     @staticmethod
     def serialize(simulation_frame: "SimulationFrame") -> Any:

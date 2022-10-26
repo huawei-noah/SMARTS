@@ -361,6 +361,8 @@ class Renderer:
         self, glb_model: str, vid: str, color: Union[Colors, SceneColors], pose: Pose
     ):
         """Create a vehicle node."""
+        if vid in self._vehicle_nodes:
+            return False
         with pkg_resources.path(models, glb_model) as path:
             node_path = self._showbase_instance.loader.loadModel(str(path.absolute()))
         node_path.setName("vehicle-%s" % vid)
@@ -376,6 +378,7 @@ class Renderer:
         node_path.setPosHpr(*pos, heading, 0, 0)
         node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
         self._vehicle_nodes[vid] = node_path
+        return True
 
     def begin_rendering_vehicle(self, vid: str, is_agent: bool):
         """Add the vehicle node to the scene graph"""

@@ -315,7 +315,7 @@ class VehicleIndex:
         return self._vehicles.get(vehicle_id, default)
 
     @clear_cache
-    def teardown_vehicles_by_vehicle_ids(self, vehicle_ids):
+    def teardown_vehicles_by_vehicle_ids(self, vehicle_ids, renderer: Optional[object]):
         """Terminate and remove a vehicle from the index using its id."""
         self._log.debug(f"Tearing down vehicle ids: {vehicle_ids}")
 
@@ -326,7 +326,7 @@ class VehicleIndex:
         for vehicle_id in vehicle_ids:
             vehicle = self._vehicles.pop(vehicle_id, None)
             if vehicle is not None:
-                vehicle.teardown()
+                vehicle.teardown(renderer)
 
             # popping since sensor_states/controller_states may not include the
             # vehicle if it's not being controlled by an agent
@@ -342,7 +342,7 @@ class VehicleIndex:
 
         self._controlled_by = self._controlled_by[~remove_vehicle_indices]
 
-    def teardown_vehicles_by_actor_ids(self, actor_ids, include_shadowing=True):
+    def teardown_vehicles_by_actor_ids(self, actor_ids, renderer, include_shadowing=True):
         """Terminate and remove all vehicles associated with an actor."""
         vehicle_ids = []
         for actor_id in actor_ids:
@@ -350,7 +350,7 @@ class VehicleIndex:
                 [v.id for v in self.vehicles_by_actor_id(actor_id, include_shadowing)]
             )
 
-        self.teardown_vehicles_by_vehicle_ids(vehicle_ids)
+        self.teardown_vehicles_by_vehicle_ids(vehicle_ids, renderer)
 
         return vehicle_ids
 
@@ -365,12 +365,12 @@ class VehicleIndex:
             )
 
     @clear_cache
-    def teardown(self):
+    def teardown(self, renderer):
         """Clean up resources, resetting the index."""
         self._controlled_by = VehicleIndex._build_empty_controlled_by()
 
         for vehicle in self._vehicles.values():
-            vehicle.teardown(exclude_chassis=True)
+            vehicle.teardown(renderer=renderer, exclude_chassis=True)
 
         self._vehicles = {}
         self._controller_states = {}
@@ -617,7 +617,7 @@ class VehicleIndex:
                 )
 
         # Remove the old vehicle
-        self.teardown_vehicles_by_vehicle_ids([vehicle.id])
+        self.teardown_vehicles_by_vehicle_ids([vehicle.id], sim.renderer)
         # HACK: Directly remove the vehicle from the traffic provider (should do this via the sim instead)
         for traffic_sim in sim.traffic_sims:
             if traffic_sim.manages_actor(vehicle.id):
@@ -774,11 +774,10 @@ class VehicleIndex:
 
     def begin_rendering_vehicles(self, renderer):
         """Render vehicles using the specified renderer."""
-        agent_ids = self.agent_vehicle_ids()
+        agent_vehicle_ids = self.agent_vehicle_ids()
         for vehicle in self._vehicles.values():
-            if not vehicle.renderer:
-                vehicle.create_renderer_node(renderer)
-                is_agent = vehicle.id in agent_ids
+            if vehicle.create_renderer_node(renderer):
+                is_agent = vehicle.id in agent_vehicle_ids
                 renderer.begin_rendering_vehicle(vehicle.id, is_agent)
 
     def sensor_states_items(self):

@@ -23,15 +23,23 @@ from typing import Any, Dict, List, Set
 import pytest
 import logging
 from helpers.scenario import maps_dir
+from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.scenario import Scenario
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
 from smarts.sstudio.types import MapSpec
 from smarts.core.road_map import RoadMap
 from smarts.core.sensors import Observation, Sensors, SensorState, SensorWorker
-from smarts.core.smarts import SimulationFrame
+from smarts.core.smarts import SMARTS, SimulationFrame
 
 SimulationState = SimulationFrame
 SensorState = Any
 
+AGENT_ID = "agent-007"
+
+@pytest.fixture
+def agents_to_be_briefed():
+    return [AGENT_ID]
 
 def sumo_map():
     from smarts.core.sumo_road_network import SumoRoadNetwork
@@ -40,15 +48,45 @@ def sumo_map():
     road_network = SumoRoadNetwork.from_spec(map_spec)
     return road_network
 
+@pytest.fixture
+def scenario(agents_to_be_briefed: List[str]) -> Scenario:
+    return Scenario(
+        scenario_root="scenarios/sumo/loop",
+        traffic_specs=["scenarios/sumo/loop/traffic/basic.rou.xml"],
+        missions= dict(
+            zip(
+                agents_to_be_briefed,
+                Scenario.discover_agent_missions(
+                    scenario_root="scenarios/sumo/loop",
+                    agents_to_be_briefed=agents_to_be_briefed
+                )
+            )
+        )
+    )
+
+@pytest.fixture()
+def sim(scenario):
+    agents = {AGENT_ID: AgentInterface.from_type(AgentType.Laner)}
+    smarts = SMARTS(
+        agents,
+        traffic_sims=[SumoTrafficSimulation(headless=True)],
+        envision=None,
+    )
+    smarts.reset(scenario)
+    smarts.step({AGENT_ID: [0,0,0]})
+    yield smarts
+    smarts.destroy()
+
 
 @pytest.fixture
 def road_map():
     yield sumo_map()
 
 
-@pytest.fixture
-def simulation_frame() -> SimulationState:
-    yield 
+@pytest.fixture()
+def simulation_frame(sim) -> SimulationState:
+    frame = sim.frame()
+    yield frame
 
 
 @pytest.fixture
@@ -61,15 +99,10 @@ def renderer_type():
     yield None
 
 
-@pytest.fixture
-def sensor_states():
-    yield None
-
 
 def test_sensor_parallelization(
     vehicle_ids: Set[str],
     simulation_frame: SimulationState,
-    sensor_states: List[SensorState],
 ):
 
     import time
@@ -78,16 +111,17 @@ def test_sensor_parallelization(
     agent_ids = {"agent-007"}
     non_parallel_start = time.monotonic()
     Sensors.observe_group(
-        vehicle_ids, simulation_frame, sensor_states, agent_ids
+        vehicle_ids, simulation_frame, agent_ids
     )
     non_parallel_total = time.monotonic() - non_parallel_start
 
     parallel_start = time.monotonic()
-    Sensors.observe_parallel(
-        vehicle_ids, simulation_frame, sensor_states, agent_ids
+    obs, dones = Sensors.observe_parallel(
+        simulation_frame, agent_ids
     )
     parallel_total = time.monotonic() - parallel_start
 
+    assert len(obs) > 0
     assert non_parallel_total < parallel_total
 
 
@@ -95,7 +129,6 @@ def test_sensor_worker(
     road_map: RoadMap,
     vehicle_ids: Set[str],
     simulation_frame: SimulationState,
-    sensor_states: List[SensorState],
 ):
     return
     agent_ids = {"agent-007"}
