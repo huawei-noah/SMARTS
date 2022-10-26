@@ -103,38 +103,38 @@ def clean_scenario(scenario: str):
 
 
 def _install_requirements(scenario_root, log: Optional[Callable[[Any], None]] = None):
-    import importlib.resources as pkg_resources
+    import os
 
     requirements_txt = scenario_root / "requirements.txt"
     if requirements_txt.exists():
         import zoo.policies
 
-        with pkg_resources.path(zoo.policies, "") as path:
-            # Serve policies through the static file server, then kill after
-            # we've installed scenario requirements
-            pip_index_proc = subprocess.Popen(
-                ["twistd", "-n", "web", "--path", path],
-                # Hide output to keep display simple
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
+        path = Path(os.path.dirname(zoo.policies.__file__)).parent
+        # Serve policies through the static file server, then kill after
+        # we've installed scenario requirements
+        pip_index_proc = subprocess.Popen(
+            ["twistd", "-n", "web", "--path", path],
+            # Hide output to keep display simple
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+        )
+
+        pip_install_cmd = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "-r",
+            str(requirements_txt),
+        ]
+
+        if log is not None:
+            log(
+                f"Installing scenario dependencies via '{' '.join(pip_install_cmd)}'"
             )
 
-            pip_install_cmd = [
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                "-r",
-                str(requirements_txt),
-            ]
-
-            if log is not None:
-                log(
-                    f"Installing scenario dependencies via '{' '.join(pip_install_cmd)}'"
-                )
-
-            try:
-                subprocess.check_call(pip_install_cmd, stdout=subprocess.DEVNULL)
-            finally:
-                pip_index_proc.terminate()
-                pip_index_proc.wait()
+        try:
+            subprocess.check_call(pip_install_cmd, stdout=subprocess.DEVNULL)
+        finally:
+            pip_index_proc.terminate()
+            pip_index_proc.wait()

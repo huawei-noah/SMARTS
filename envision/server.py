@@ -24,6 +24,7 @@ import importlib.resources as pkg_resources
 import json
 import logging
 import math
+import os
 import random
 import signal
 import sys
@@ -489,27 +490,28 @@ class MainHandler(tornado.web.RequestHandler):
 def make_app(scenario_dirs: Sequence, max_capacity_mb: float, debug: bool):
     """Create the envision web server application through composition of services."""
 
-    with pkg_resources.path(web_dist, ".") as dist_path:
-        return tornado.web.Application(
-            [
-                (r"/", MainHandler),
-                (r"/simulations", SimulationListHandler),
-                (r"/simulations/(?P<simulation_id>\w+)/state", StateWebSocket),
-                (
-                    r"/simulations/(?P<simulation_id>\w+)/broadcast",
-                    BroadcastWebSocket,
-                    dict(max_capacity_mb=max_capacity_mb),
-                ),
-                (
-                    r"/assets/maps/(.*)",
-                    MapFileHandler,
-                    dict(scenario_dirs=scenario_dirs),
-                ),
-                (r"/assets/models/(.*)", ModelFileHandler),
-                (r"/(.*)", tornado.web.StaticFileHandler, dict(path=str(dist_path))),
-            ],
-            debug=debug,
-        )
+    dist_path = Path(os.path.dirname(web_dist.__file__)).parent
+    logging.debug("Creating app with resources at: `%s`", dist_path)
+    return tornado.web.Application(
+        [
+            (r"/", MainHandler),
+            (r"/simulations", SimulationListHandler),
+            (r"/simulations/(?P<simulation_id>\w+)/state", StateWebSocket),
+            (
+                r"/simulations/(?P<simulation_id>\w+)/broadcast",
+                BroadcastWebSocket,
+                dict(max_capacity_mb=max_capacity_mb),
+            ),
+            (
+                r"/assets/maps/(.*)",
+                MapFileHandler,
+                dict(scenario_dirs=scenario_dirs),
+            ),
+            (r"/assets/models/(.*)", ModelFileHandler),
+            (r"/(.*)", tornado.web.StaticFileHandler, dict(path=str(dist_path))),
+        ],
+        debug=debug,
+    )
 
 
 def on_shutdown():
@@ -527,7 +529,7 @@ def run(
     """Create and run an envision web server."""
     app = make_app(scenario_dirs, max_capacity_mb, debug=debug)
     app.listen(port)
-    logging.debug(f"Envision listening on port={port}")
+    logging.debug("Envision listening on port=%s", port)
 
     ioloop = tornado.ioloop.IOLoop.current()
     signal.signal(
