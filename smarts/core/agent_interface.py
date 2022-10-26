@@ -367,10 +367,13 @@ class AgentInterface:
             interface = AgentInterface(
                 neighborhood_vehicle_states=True,
                 waypoint_paths=True,
+                road_waypoints=True,
                 drivable_area_grid_map=True,
                 occupancy_grid_map=True,
                 top_down_rgb=True,
                 lidar_point_cloud=True,
+                accelerometer=True,
+                lane_positions=True,
                 signals=True,
                 action=ActionSpaceType.Continuous,
             )
