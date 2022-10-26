@@ -79,11 +79,13 @@ class RoadMap:
     @staticmethod
     def serialize(road_map: "RoadMap") -> Any:
         import cloudpickle
+
         return cloudpickle.dumps(road_map)
 
     @staticmethod
     def deserialize(serialized_road_map) -> RoadMap:
         import cloudpickle
+
         return cloudpickle.loads(serialized_road_map)
 
     def is_same_map(self, map_spec) -> bool:

@@ -52,7 +52,9 @@ def test_driven_path_sensor():
 
         if idx >= 3:
             assert sensor.distance_travelled(sim.elapsed_sim_time, last_n_steps=3) == 30
-            assert sensor.distance_travelled(sim.elapsed_sim_time, last_n_seconds=10) == 20
+            assert (
+                sensor.distance_travelled(sim.elapsed_sim_time, last_n_seconds=10) == 20
+            )
 
         assert len(sensor()) <= max_path_length
 

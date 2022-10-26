@@ -342,7 +342,9 @@ class VehicleIndex:
 
         self._controlled_by = self._controlled_by[~remove_vehicle_indices]
 
-    def teardown_vehicles_by_actor_ids(self, actor_ids, renderer, include_shadowing=True):
+    def teardown_vehicles_by_actor_ids(
+        self, actor_ids, renderer, include_shadowing=True
+    ):
         """Terminate and remove all vehicles associated with an actor."""
         vehicle_ids = []
         for actor_id in actor_ids:

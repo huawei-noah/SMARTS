@@ -37,9 +37,11 @@ SensorState = Any
 
 AGENT_ID = "agent-007"
 
+
 @pytest.fixture
 def agents_to_be_briefed():
     return [AGENT_ID]
+
 
 def sumo_map():
     from smarts.core.sumo_road_network import SumoRoadNetwork
@@ -48,21 +50,23 @@ def sumo_map():
     road_network = SumoRoadNetwork.from_spec(map_spec)
     return road_network
 
+
 @pytest.fixture
 def scenario(agents_to_be_briefed: List[str]) -> Scenario:
     return Scenario(
         scenario_root="scenarios/sumo/loop",
         traffic_specs=["scenarios/sumo/loop/traffic/basic.rou.xml"],
-        missions= dict(
+        missions=dict(
             zip(
                 agents_to_be_briefed,
                 Scenario.discover_agent_missions(
                     scenario_root="scenarios/sumo/loop",
-                    agents_to_be_briefed=agents_to_be_briefed
-                )
+                    agents_to_be_briefed=agents_to_be_briefed,
+                ),
             )
-        )
+        ),
     )
+
 
 @pytest.fixture()
 def sim(scenario):
@@ -73,7 +77,7 @@ def sim(scenario):
         envision=None,
     )
     smarts.reset(scenario)
-    smarts.step({AGENT_ID: [0,0,0]})
+    smarts.step({AGENT_ID: [0, 0, 0]})
     yield smarts
     smarts.destroy()
 
@@ -99,7 +103,6 @@ def renderer_type():
     yield None
 
 
-
 def test_sensor_parallelization(
     vehicle_ids: Set[str],
     simulation_frame: SimulationState,
@@ -110,15 +113,11 @@ def test_sensor_parallelization(
     # Sensors.init(road_map, renderer_type)  # not required
     agent_ids = {"agent-007"}
     non_parallel_start = time.monotonic()
-    Sensors.observe_group(
-        vehicle_ids, simulation_frame, agent_ids
-    )
+    Sensors.observe_group(vehicle_ids, simulation_frame, agent_ids)
     non_parallel_total = time.monotonic() - non_parallel_start
 
     parallel_start = time.monotonic()
-    obs, dones = Sensors.observe_parallel(
-        simulation_frame, agent_ids
-    )
+    obs, dones = Sensors.observe_parallel(simulation_frame, agent_ids)
     parallel_total = time.monotonic() - parallel_start
 
     assert len(obs) > 0

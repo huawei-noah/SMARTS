@@ -103,7 +103,7 @@ class Sensors:
     def instance(cls):
         if not cls._instance:
             cls._instance = cls()
-        return cls._instance 
+        return cls._instance
 
     @classmethod
     def observe_group(cls, vehicle_ids, sim_frame, agent_group):
@@ -111,13 +111,19 @@ class Sensors:
 
     @classmethod
     def _observe_group_unpack(cls, *args, **kwargs):
-        args = [cls.deserialize_for_observation(a) if a is not None else a for a in args]
-        kwargs = {k: cls.deserialize_for_observation(a) if a is not None else a for k, a in kwargs.items()}
+        args = [
+            cls.deserialize_for_observation(a) if a is not None else a for a in args
+        ]
+        kwargs = {
+            k: cls.deserialize_for_observation(a) if a is not None else a
+            for k, a in kwargs.items()
+        }
         return cls.observe_group(*args, **kwargs)
 
     @staticmethod
     def serialize_for_observation(v):
         import cloudpickle
+
         if hasattr(v, "serialize"):
             return v.serialize(v)
         return cloudpickle.dumps(v)
@@ -125,6 +131,7 @@ class Sensors:
     @staticmethod
     def deserialize_for_observation(v):
         import cloudpickle
+
         if hasattr(v, "deserialize"):
             return v.deserialize(v)
         return cloudpickle.loads(v)
@@ -132,6 +139,7 @@ class Sensors:
     @classmethod
     def observe_parallel(cls, sim_frame, agent_ids):
         from smarts.core.smarts import SimulationFrame
+
         sim_frame: SimulationFrame = sim_frame
         observations, dones = {}, {}
         futures = []
@@ -141,13 +149,20 @@ class Sensors:
         start_method = "forkserver" if forkserver_available else "spawn"
         mp_context = mp.get_context(start_method)
         # TODO MTA: only use executor if threads is more than 1
-        with ProcessPoolExecutor(max_workers=SEV_THREADS, mp_context=mp_context) as pool:
+        with ProcessPoolExecutor(
+            max_workers=SEV_THREADS, mp_context=mp_context
+        ) as pool:
             if SEV_THREADS == 1:
                 for agent_id, vehicle_ids in sim_frame.vehicles_for_agents.items():
                     for vehicle_id in vehicle_ids:
-                        observations[agent_id], dones[agent_id] = cls.observe(sim_frame, agent_id, sim_frame.sensor_states[vehicle_id], sim_frame.vehicles[vehicle_id])
+                        observations[agent_id], dones[agent_id] = cls.observe(
+                            sim_frame,
+                            agent_id,
+                            sim_frame.sensor_states[vehicle_id],
+                            sim_frame.vehicles[vehicle_id],
+                        )
             elif SEV_THREADS > 1:
-                gap = len(agent_ids)/SEV_THREADS
+                gap = len(agent_ids) / SEV_THREADS
                 # TODO MTA: Remove this debugging code
                 for f in sim_frame.__dataclass_fields__:
                     print("\n", f)
@@ -159,14 +174,16 @@ class Sensors:
                     cls.serialize_for_observation(sim_frame.__getattribute__(f))
                 cp_vehicle_ids = cls.serialize_for_observation(sim_frame.vehicle_ids)
                 cp_sim_frame = cls.serialize_for_observation(sim_frame)
-                for agent_group in [agent_ids[i*gap:i*gap+gap] for i in range(SEV_THREADS)]:
+                for agent_group in [
+                    agent_ids[i * gap : i * gap + gap] for i in range(SEV_THREADS)
+                ]:
                     cp_agent_group = cls.serialize_for_observation(agent_group)
                     futures.append(
                         pool.submit(
                             cls._observe_group_unpack,
-                            vehicle_ids = cp_vehicle_ids,
-                            sim_frame = cp_sim_frame,
-                            agent_group = cp_agent_group
+                            vehicle_ids=cp_vehicle_ids,
+                            sim_frame=cp_sim_frame,
+                            agent_group=cp_agent_group,
                         )
                     )
 
@@ -174,20 +191,26 @@ class Sensors:
             rendering = {}
             for agent_id, vehicle_ids in sim_frame.vehicles_for_agents.items():
                 for vehicle_id in vehicle_ids:
-                    rendering[agent_id] = cls.observe_cameras(sim_frame, agent_id, sim_frame.sensor_states[vehicle_id], sim_frame.vehicles[vehicle_id])
-            
+                    rendering[agent_id] = cls.observe_cameras(
+                        sim_frame,
+                        agent_id,
+                        sim_frame.sensor_states[vehicle_id],
+                        sim_frame.vehicles[vehicle_id],
+                    )
+
             # Collect futures
             for future in as_completed(futures):
                 obs, ds = future.result()
                 observations.update(obs)
                 dones.update(ds)
-            
+
             # Merge sensor information
             for vehicle_id, r_obs in rendering.items():
-                observations[vehicle_id] = dataclasses.replace(observations[vehicle_id], **r_obs)
+                observations[vehicle_id] = dataclasses.replace(
+                    observations[vehicle_id], **r_obs
+                )
 
         return observations, dones
-        
 
     @staticmethod
     def observe_batch(
@@ -210,13 +233,17 @@ class Sensors:
     @staticmethod
     def observe_cameras(sim_frame, agent_id, sensor_state, vehicle):
         return dict(
-            drivable_area_grid_map = (
+            drivable_area_grid_map=(
                 vehicle.drivable_area_grid_map_sensor()
                 if vehicle.subscribed_to_drivable_area_grid_map_sensor
                 else None
             ),
-            occupancy_grid_map = vehicle.ogm_sensor() if vehicle.subscribed_to_ogm_sensor else None,
-            top_down_rgb = vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None,
+            occupancy_grid_map=vehicle.ogm_sensor()
+            if vehicle.subscribed_to_ogm_sensor
+            else None,
+            top_down_rgb=vehicle.rgb_sensor()
+            if vehicle.subscribed_to_rgb_sensor
+            else None,
         )
 
     @staticmethod
@@ -385,18 +412,14 @@ class Sensors:
         )
 
     @classmethod
-    def observe(cls, sim_frame, agent_id, sensor_state, vehicle) -> Tuple[Observation, bool]:
+    def observe(
+        cls, sim_frame, agent_id, sensor_state, vehicle
+    ) -> Tuple[Observation, bool]:
         """Generate observations for the given agent around the given vehicle."""
         args = [sim_frame, agent_id, sensor_state, vehicle]
         base_obs, dones = cls.observe_base(*args)
-        complete_obs = dataclasses.replace(
-            base_obs,
-            **cls.observe_cameras(*args)
-        )
-        return (
-            complete_obs,
-            dones
-        )
+        complete_obs = dataclasses.replace(base_obs, **cls.observe_cameras(*args))
+        return (complete_obs, dones)
 
     @staticmethod
     def step(sim, sensor_state):
@@ -432,8 +455,7 @@ class Sensors:
                     agents_list_alive.minimum_agents_alive_in_list >= 0
                 ), "minimum_agents_alive_in_list should not be negative"
                 agents_alive_check = [
-                    1 if id in agent_ids else 0
-                    for id in agents_list_alive.agents_list
+                    1 if id in agent_ids else 0 for id in agents_list_alive.agents_list
                 ]
                 if (
                     agents_alive_check.count(1)
@@ -699,7 +721,7 @@ class SensorState:
         return self._step
 
 
-class SensorWorker():
+class SensorWorker:
     def __init__(self, road_map) -> None:
         self._road_map = road_map
 

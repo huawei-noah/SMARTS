@@ -911,7 +911,9 @@ class SMARTS(ProviderManager):
             raise exception
 
     def _teardown_vehicles(self, vehicle_ids):
-        self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids, self._renderer)
+        self._vehicle_index.teardown_vehicles_by_vehicle_ids(
+            vehicle_ids, self._renderer
+        )
         self._clear_collisions(vehicle_ids)
         for v_id in vehicle_ids:
             self._remove_vehicle_from_providers(v_id)
@@ -1081,7 +1083,9 @@ class SMARTS(ProviderManager):
             if shadow_agent_id:
                 shadow_and_controlling_agents.add(shadow_agent_id)
 
-        self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids, self._renderer)
+        self._vehicle_index.teardown_vehicles_by_vehicle_ids(
+            vehicle_ids, self._renderer
+        )
         self.teardown_social_agents_without_actors(shadow_and_controlling_agents)
         # XXX: don't remove vehicle from its (traffic) Provider here, as it may be being teleported
         # (and needs to remain registered in Traci during this step).
@@ -1615,34 +1619,39 @@ class SMARTS(ProviderManager):
         actor_ids = self.vehicle_index.agent_vehicle_ids()
         actor_states = self._last_provider_state
         return SimulationFrame(
-            actor_states = getattr(actor_states, "actors", {}),
-            agent_interfaces = self.agent_manager.agent_interfaces.copy(),
-            agent_vehicle_controls = {a_id: self.vehicle_index.actor_id_from_vehicle_id(a_id) for a_id in actor_ids},
-            ego_ids = self.agent_manager.ego_agent_ids,
-            elapsed_sim_time = self.elapsed_sim_time,
-            fixed_timestep = self.fixed_timestep_sec,
-            resetting = self.resetting,
+            actor_states=getattr(actor_states, "actors", {}),
+            agent_interfaces=self.agent_manager.agent_interfaces.copy(),
+            agent_vehicle_controls={
+                a_id: self.vehicle_index.actor_id_from_vehicle_id(a_id)
+                for a_id in actor_ids
+            },
+            ego_ids=self.agent_manager.ego_agent_ids,
+            elapsed_sim_time=self.elapsed_sim_time,
+            fixed_timestep=self.fixed_timestep_sec,
+            resetting=self.resetting,
             # road_map = self.road_map,
-            map_spec = self.scenario.map_spec,
-            last_dt = self.last_dt,
-            last_provider_state = self._last_provider_state,
-            step_count = self.step_count,
-            vehicle_collisions = self._vehicle_collisions,
-            vehicles_for_agents = {
+            map_spec=self.scenario.map_spec,
+            last_dt=self.last_dt,
+            last_provider_state=self._last_provider_state,
+            step_count=self.step_count,
+            vehicle_collisions=self._vehicle_collisions,
+            vehicles_for_agents={
                 agent_id: self.vehicle_index.vehicle_ids_by_actor_id(
                     agent_id, include_shadowers=True
-                ) for agent_id in self.agent_manager.active_agents
+                )
+                for agent_id in self.agent_manager.active_agents
             },
-            vehicles = dict(self.vehicle_index.vehicleitems()),
-
-            sensor_states = dict(self.vehicle_index.sensor_states_items()),
-            _ground_bullet_id = self._ground_bullet_id,
-            renderer_type = self._renderer.__class__ if self._renderer is not None else None,
+            vehicles=dict(self.vehicle_index.vehicleitems()),
+            sensor_states=dict(self.vehicle_index.sensor_states_items()),
+            _ground_bullet_id=self._ground_bullet_id,
+            renderer_type=self._renderer.__class__
+            if self._renderer is not None
+            else None,
         )
 
 
 @dataclass(frozen=True)
-class SimulationFrame():
+class SimulationFrame:
     actor_states: Dict[str, ActorState]
     agent_vehicle_controls: Dict[str, str]
     agent_interfaces: Dict[str, AgentInterface]
@@ -1691,6 +1700,7 @@ class SimulationFrame():
     @cached_property
     def road_map(self):
         from smarts.sstudio.types import MapSpec
+
         map_spec: MapSpec = self.map_spec
         road_map, road_map_hash = map_spec.builder_fn(map_spec)
         return road_map
@@ -1698,9 +1708,11 @@ class SimulationFrame():
     @staticmethod
     def serialize(simulation_frame: "SimulationFrame") -> Any:
         import cloudpickle
+
         return cloudpickle.dumps(simulation_frame)
 
     @staticmethod
     def deserialize(serialized_simulation_frame) -> "SimulationFrame":
         import cloudpickle
+
         return cloudpickle.loads(serialized_simulation_frame)

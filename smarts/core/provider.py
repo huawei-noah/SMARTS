@@ -59,14 +59,12 @@ class ProviderState:
             logging.warning(
                 "multiple providers control the same actors: %s. "
                 "Later added providers will take priority. ",
-                overlap
+                overlap,
             )
             logging.info(
-                "Conflicting actor states: \n"
-                "Previous: %s\n"
-                "Later: %s\n",
+                "Conflicting actor states: \n" "Previous: %s\n" "Later: %s\n",
                 [(a.actor_id, a.source) for a in self.actors if a.actor_id in overlap],
-                [(a.actor_id, a.source) for a in other.actors if a.actor_id in overlap]
+                [(a.actor_id, a.source) for a in other.actors if a.actor_id in overlap],
             )
 
         ## TODO: Properly harmonize these actor ids so that there is a priority and per actor source

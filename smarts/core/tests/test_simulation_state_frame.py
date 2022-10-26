@@ -30,9 +30,11 @@ from smarts.core.sensors import Sensors
 
 AGENT_ID = "agent-007"
 
+
 @pytest.fixture
 def agents_to_be_briefed():
     return [AGENT_ID]
+
 
 @pytest.fixture()
 def sim():
@@ -46,21 +48,23 @@ def sim():
     yield smarts
     smarts.destroy()
 
+
 @pytest.fixture
 def scenario(agents_to_be_briefed: List[str]) -> Scenario:
     return Scenario(
         scenario_root="scenarios/sumo/loop",
         traffic_specs=["scenarios/sumo/loop/traffic/basic.rou.xml"],
-        missions= dict(
+        missions=dict(
             zip(
                 agents_to_be_briefed,
                 Scenario.discover_agent_missions(
                     scenario_root="scenarios/sumo/loop",
-                    agents_to_be_briefed=agents_to_be_briefed
-                )
+                    agents_to_be_briefed=agents_to_be_briefed,
+                ),
             )
-        )
+        ),
     )
+
 
 def test_state(sim: SMARTS, scenario):
     sim.setup(scenario)
@@ -82,6 +86,7 @@ def test_state(sim: SMARTS, scenario):
     assert hasattr(frame, "last_provider_state")
     assert hasattr(frame, "step_count")
     assert hasattr(frame, "vehicle_collisions")
+
 
 def test_state_serialization(sim: SMARTS, scenario: Scenario):
     sim.setup(scenario)

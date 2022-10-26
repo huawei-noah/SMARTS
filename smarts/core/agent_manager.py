@@ -171,7 +171,9 @@ class AgentManager:
             if not agent_id:
                 continue
 
-            assert agent_id, f"Vehicle `{v_id}` does not have an agent registered to it to get observations for."
+            assert (
+                agent_id
+            ), f"Vehicle `{v_id}` does not have an agent registered to it to get observations for."
             if not self._vehicle_index.check_vehicle_id_has_sensor_state(vehicle.id):
                 continue
 

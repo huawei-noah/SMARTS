@@ -63,4 +63,6 @@ class ActorState:
         return hash(self.actor_id)
 
     def __eq__(self, other) -> bool:
-        return self.__class__ == other.__class__ and hash(self.actor_id) == hash(other.actor_id)
+        return self.__class__ == other.__class__ and hash(self.actor_id) == hash(
+            other.actor_id
+        )

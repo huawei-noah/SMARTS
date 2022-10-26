@@ -39,6 +39,7 @@ def temp_scenario(name: str, map: str):
 
         yield scenario
 
+
 def maps_dir():
     """Add a maps directory."""
     return Path(__file__).parent.parent / "maps"
