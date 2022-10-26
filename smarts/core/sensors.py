@@ -136,11 +136,11 @@ class Sensors:
         observations, dones = {}, {}
         futures = []
 
-        # TODO: only do mp_context once
+        # TODO MTA: only do mp_context once
         forkserver_available = "forkserver" in mp.get_all_start_methods()
         start_method = "forkserver" if forkserver_available else "spawn"
         mp_context = mp.get_context(start_method)
-        # TODO: only use executor if threads is more than 1
+        # TODO MTA: only use executor if threads is more than 1
         with ProcessPoolExecutor(max_workers=SEV_THREADS, mp_context=mp_context) as pool:
             if SEV_THREADS == 1:
                 for agent_id, vehicle_ids in sim_frame.vehicles_for_agents.items():
@@ -148,6 +148,7 @@ class Sensors:
                         observations[agent_id], dones[agent_id] = cls.observe(sim_frame, agent_id, sim_frame.sensor_states[vehicle_id], sim_frame.vehicles[vehicle_id])
             elif SEV_THREADS > 1:
                 gap = len(agent_ids)/SEV_THREADS
+                # TODO MTA: Remove this debugging code
                 for f in sim_frame.__dataclass_fields__:
                     print("\n", f)
                     if f == "vehicles":
