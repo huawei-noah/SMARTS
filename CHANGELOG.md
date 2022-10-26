@@ -47,6 +47,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed a bug with the `TripMeterSensor` that was not using a unit direction vector to calculate trip distance against current route.
 - Fixed issues with Envision. The playback bar and realtime mode now work as expected.
 - Fixed a bug where traffic history vehicles would not get traffic signal observations
+- Fixed a bug where envision would not work in some versions of python due to nuances of `importlib.resource.path()`.
 
 ## [0.6.1]
 ### Added

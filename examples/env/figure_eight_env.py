@@ -23,7 +23,7 @@ def entry_point(*args, **kwargs):
 
     scenario = str((Path(__file__).parent / "../../scenarios/figure_eight").resolve())
     ## Note: can build the scenario here
-    from smarts.sstudio.build_scenario import build_single_scenario
+    from smarts.sstudio.scenario_construction import build_single_scenario
 
     build_single_scenario(clean=True, allow_offset_map=True, scenario=scenario)
     hiwayenv = HiWayEnv(
