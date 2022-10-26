@@ -491,7 +491,7 @@ def make_app(scenario_dirs: Sequence, max_capacity_mb: float, debug: bool):
     """Create the envision web server application through composition of services."""
 
     dist_path = Path(os.path.dirname(web_dist.__file__)).parent
-    logging.info("Creating app with resources at: `%s`", dist_path)
+    logging.debug("Creating app with resources at: `%s`", dist_path)
     return tornado.web.Application(
         [
             (r"/", MainHandler),
