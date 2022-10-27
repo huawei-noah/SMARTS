@@ -11,6 +11,7 @@ RUN apt-get update --fix-missing && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y \
+        git \
         libspatialindex-dev \
         python3.8 \
         python3.8-venv \
@@ -32,8 +33,9 @@ RUN pip install --upgrade pip wheel
 COPY ./submission/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Copy only Track-2 files.
+# Copy only Track-2 files and install.
 COPY . /SMARTS/competition/track2
+RUN pip install -e /SMARTS/competition/track2/train
 
 # [Do Not Modify]
 # Run entrypoint script.

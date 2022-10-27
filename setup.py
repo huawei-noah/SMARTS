@@ -82,6 +82,7 @@ setup(
             "pytest-benchmark>=3.4.1",
             "pytest-cov>=3.0.0",
             "pytest-xdist>=2.4.0",
+            "pytest-forked>=1.4.0",
         ],
         "test-notebook": [
             "ipykernel>=4.10.1",
