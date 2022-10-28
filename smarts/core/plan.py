@@ -283,6 +283,14 @@ class LapMission(Mission):
         )
 
 
+@dataclass
+class PlanFrame:
+    """Describes a plan that is serializable."""
+
+    road_ids: List[str]
+    mission: Optional[Mission]
+
+
 class Plan:
     """Describes a navigation plan (route) to fulfill a mission."""
 

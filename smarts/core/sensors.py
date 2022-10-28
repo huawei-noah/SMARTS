@@ -38,7 +38,8 @@ from smarts.core.agent_interface import ActorsAliveDoneCriteria, AgentsAliveDone
 from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalState
-from smarts.core.utils.math import squared_dist
+from smarts.core.utils.logging import timeit
+from smarts.core.utils.math import squared_dist 
 
 from .coordinates import Heading, Point, Pose, RefLinePoint
 from .events import Events
@@ -59,7 +60,6 @@ from .observations import (
     Vias,
 )
 from .plan import Mission, PlanFrame, Via
-from smarts.core.utils.logging import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +162,9 @@ class Sensors:
         observations, dones = {}, {}
         futures = []
 
-        used_processes= SEV_THREADS if process_count_override == None else process_count_override
+        used_processes = (
+            SEV_THREADS if process_count_override == None else process_count_override
+        )
 
         # TODO MTA: only do mp_context once
         forkserver_available = "forkserver" in mp.get_all_start_methods()
@@ -183,11 +185,12 @@ class Sensors:
                     elif used_processes > 1:
                         agent_ids_for_grouping = list(agent_ids)
                         agent_groups = [
-                            agent_ids_for_grouping[i::used_processes] for i in range(used_processes)
+                            agent_ids_for_grouping[i::used_processes]
+                            for i in range(used_processes)
                         ]
                         with timeit("serializing frame", print):
                             cp_sim_frame = cls.serialize_for_observation(sim_frame)
-                        
+
                         for agent_group in agent_groups:
                             if not agent_group:
                                 break
@@ -212,7 +215,6 @@ class Sensors:
                                 sim_frame.sensor_states[vehicle_id],
                                 sim_frame.vehicles[vehicle_id],
                             )
-                    
 
                 # Collect futures
                 with timeit("waiting for observations", print):
@@ -272,7 +274,9 @@ class Sensors:
         vehicle.ensure_sensor_functions()
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:
             neighborhood_vehicle_states = []
-            for nv in vehicle.neighborhood_vehicles_sensor(vehicle.state, sim_frame.vehicle_states.values()):
+            for nv in vehicle.neighborhood_vehicles_sensor(
+                vehicle.state, sim_frame.vehicle_states.values()
+            ):
                 veh_obs = _make_vehicle_observation(sim_frame.road_map, nv)
                 nv_lane_pos = None
                 if (
@@ -287,7 +291,9 @@ class Sensors:
                 )
 
         if vehicle.subscribed_to_waypoints_sensor:
-            waypoint_paths = vehicle.waypoints_sensor(vehicle_state, plan, sim_frame.road_map)
+            waypoint_paths = vehicle.waypoints_sensor(
+                vehicle_state, plan, sim_frame.road_map
+            )
         else:
             waypoint_paths = sim_frame.road_map.waypoint_paths(
                 vehicle.pose,
@@ -373,11 +379,15 @@ class Sensors:
         distance_travelled = 0
         if vehicle.subscribed_to_trip_meter_sensor:
             if waypoint_paths:
-                vehicle.trip_meter_sensor.update_distance_wps_record(waypoint_paths, vehicle, plan, sim_frame.road_map)
+                vehicle.trip_meter_sensor.update_distance_wps_record(
+                    waypoint_paths, vehicle, plan, sim_frame.road_map
+                )
             distance_travelled = vehicle.trip_meter_sensor(increment=True)
 
         if vehicle.subscribed_to_driven_path_sensor:
-            vehicle.driven_path_sensor.track_latest_driven_path(sim_frame.elapsed_sim_time, vehicle_state)
+            vehicle.driven_path_sensor.track_latest_driven_path(
+                sim_frame.elapsed_sim_time, vehicle_state
+            )
 
         if not vehicle.subscribed_to_waypoints_sensor:
             waypoint_paths = None
@@ -450,8 +460,12 @@ class Sensors:
         return sensor_state.step()
 
     @staticmethod
-    def neighborhood_vehicles_around_vehicle(vehicle_state, vehicle_states, radius: Optional[float] = None):
-        other_states = [v for v in vehicle_states if v.actor_id != vehicle_state.actor_id]
+    def neighborhood_vehicles_around_vehicle(
+        vehicle_state, vehicle_states, radius: Optional[float] = None
+    ):
+        other_states = [
+            v for v in vehicle_states if v.actor_id != vehicle_state.actor_id
+        ]
         if radius is None:
             return other_states
 
@@ -1031,7 +1045,9 @@ class TripMeterSensor(Sensor):
         self._last_dist_travelled = 0.0
         self._last_actor_position = None
 
-    def update_distance_wps_record(self, waypoint_paths, vehicle, plan: Plan, road_map: RoadMap):
+    def update_distance_wps_record(
+        self, waypoint_paths, vehicle, plan: Plan, road_map: RoadMap
+    ):
         """Append a waypoint to the history if it is not already counted."""
         # Distance calculation. Intention is the shortest trip travelled at the lane
         # level the agent has travelled. This is to prevent lateral movement from
@@ -1152,7 +1168,9 @@ class RoadWaypointsSensor(Sensor):
             [road] + road.parallel_roads + road.oncoming_roads_at_point(veh_pt)
         ):
             for lane in croad.lanes:
-                lane_paths[lane.lane_id] = self._paths_for_lane(lane, vehicle_state, plan)
+                lane_paths[lane.lane_id] = self._paths_for_lane(
+                    lane, vehicle_state, plan
+                )
 
         return RoadWaypoints(lanes=lane_paths)
 
@@ -1349,7 +1367,8 @@ class SignalsSensor(Sensor):
                     break
             else:
                 self._logger.warning(
-                    "could not find signal state corresponding with feature_id=%s}", signal.feature_id
+                    "could not find signal state corresponding with feature_id=%s}",
+                    signal.feature_id,
                 )
                 continue
             assert isinstance(signal_state, SignalState)

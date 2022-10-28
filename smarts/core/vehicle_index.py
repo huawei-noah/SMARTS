@@ -669,10 +669,7 @@ class VehicleIndex:
             initial_speed=initial_speed,
         )
 
-        sensor_state = SensorState(
-            agent_interface.max_episode_steps,
-            plan.frame()
-        )
+        sensor_state = SensorState(agent_interface.max_episode_steps, plan.frame())
 
         controller_state = ControllerState.from_action_space(
             agent_interface.action, vehicle.pose, sim
@@ -706,9 +703,7 @@ class VehicleIndex:
         # XXX: agent_id must be the original agent_id (not the fixed _2id(...))
         original_agent_id = agent_id
 
-        Vehicle.attach_sensors_to_vehicle(
-            sim, vehicle, agent_interface
-        )
+        Vehicle.attach_sensors_to_vehicle(sim, vehicle, agent_interface)
         if sim.is_rendering:
             vehicle.create_renderer_node(sim.renderer)
             sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=True)

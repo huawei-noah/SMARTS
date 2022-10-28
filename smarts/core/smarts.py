@@ -1353,6 +1353,7 @@ class SMARTS(ProviderManager):
         """Find vehicles in the vicinity of the target vehicle."""
         self._check_valid()
         from smarts.core.sensors import Sensors
+
         vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
         return Sensors.neighborhood_vehicles_around_vehicle(
             vehicle.state, self._vehicle_states, radius
@@ -1608,7 +1609,7 @@ class SMARTS(ProviderManager):
         self._check_valid()
         actor_ids = self.vehicle_index.agent_vehicle_ids()
         actor_states = self._last_provider_state
-        vehicles=dict(self.vehicle_index.vehicleitems())
+        vehicles = dict(self.vehicle_index.vehicleitems())
         return SimulationFrame(
             actor_states=getattr(actor_states, "actors", {}),
             agent_interfaces=self.agent_manager.agent_interfaces.copy(),

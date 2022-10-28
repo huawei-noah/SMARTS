@@ -467,9 +467,7 @@ class Vehicle:
         # The distance travelled sensor is not optional b/c it is used for the score
         # and reward calculation
         vehicle_state = vehicle.state
-        vehicle.attach_trip_meter_sensor(
-            TripMeterSensor()
-        )
+        vehicle.attach_trip_meter_sensor(TripMeterSensor())
 
         # The distance travelled sensor is not optional b/c it is used for visualization
         # done criteria
@@ -557,11 +555,7 @@ class Vehicle:
 
         if agent_interface.signals:
             lookahead = agent_interface.signals.lookahead
-            vehicle.attach_signals_sensor(
-                SignalsSensor(
-                    lookahead=lookahead
-                )
-            )
+            vehicle.attach_signals_sensor(SignalsSensor(lookahead=lookahead))
 
     def step(self, current_simulation_time):
         """Update internal state."""
@@ -658,7 +652,6 @@ class Vehicle:
     def ensure_sensor_functions(self):
         if not hasattr(self, f"lane_position_sensor"):
             self._meta_create_sensor_functions()
-
 
     def _meta_create_sensor_functions(self):
         # Bit of metaprogramming to make sensor creation more DRY

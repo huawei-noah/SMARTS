@@ -40,6 +40,7 @@ SensorState = Any
 
 AGENT_IDS = [f"agent-00{i}" for i in range(30)]
 
+
 @pytest.fixture
 def agents_to_be_briefed():
     return AGENT_IDS
@@ -60,14 +61,25 @@ def scenario(agents_to_be_briefed: List[str]) -> Scenario:
             )
         ),
     )
-    missions = [Mission.random_endless_mission(s.road_map,) for a in agents_to_be_briefed]
+    missions = [
+        Mission.random_endless_mission(
+            s.road_map,
+        )
+        for a in agents_to_be_briefed
+    ]
     s.set_ego_missions(dict(zip(agents_to_be_briefed, missions)))
     return s
+
 
 @pytest.fixture()
 def sim(scenario):
     # agents = {aid: AgentInterface.from_type(AgentType.Full) for aid in AGENT_IDS},
-    agents = {aid: AgentInterface.from_type(AgentType.Buddha, action=ActionSpaceType.Continuous) for aid in AGENT_IDS}
+    agents = {
+        aid: AgentInterface.from_type(
+            AgentType.Buddha, action=ActionSpaceType.Continuous
+        )
+        for aid in AGENT_IDS
+    }
     smarts = SMARTS(
         agents,
         traffic_sims=[SumoTrafficSimulation(headless=True)],
@@ -105,19 +117,27 @@ def test_sensor_parallelization(
     # Sensors.init(road_map, renderer_type)  # not required
     agent_ids = set(AGENT_IDS)
     non_parallel_start = time.monotonic()
-    obs, dones = Sensors.observe_parallel(simulation_frame, agent_ids, process_count_override=1)
+    obs, dones = Sensors.observe_parallel(
+        simulation_frame, agent_ids, process_count_override=1
+    )
     non_parallel_total = time.monotonic() - non_parallel_start
 
     parallel_2_start = time.monotonic()
-    obs, dones = Sensors.observe_parallel(simulation_frame, agent_ids, process_count_override=2)
+    obs, dones = Sensors.observe_parallel(
+        simulation_frame, agent_ids, process_count_override=2
+    )
     parallel_2_total = time.monotonic() - parallel_2_start
 
     parallel_4_start = time.monotonic()
-    obs, dones = Sensors.observe_parallel(simulation_frame, agent_ids, process_count_override=4)
+    obs, dones = Sensors.observe_parallel(
+        simulation_frame, agent_ids, process_count_override=4
+    )
     parallel_4_total = time.monotonic() - parallel_4_start
 
     assert len(obs) > 0
-    assert non_parallel_total > parallel_2_total and parallel_2_total > parallel_4_total, f"{non_parallel_total=}, {parallel_2_total=}, {parallel_4_total=}"
+    assert (
+        non_parallel_total > parallel_2_total and parallel_2_total > parallel_4_total
+    ), f"{non_parallel_total=}, {parallel_2_total=}, {parallel_4_total=}"
 
 
 def test_sensor_worker(
