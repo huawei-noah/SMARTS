@@ -167,7 +167,6 @@ class Sensors:
             else max(0, process_count_override)
         )
 
-        # TODO MTA: only use executor if threads is more than 1
         instance = cls.instance()
         workers = instance.get_workers(used_processes)
         used_workers: List[SensorsWorker] = []

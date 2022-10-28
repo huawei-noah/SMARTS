@@ -33,7 +33,6 @@ from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation, Sensors, SensorState, SensorsWorker
 from smarts.core.smarts import SMARTS, SimulationFrame
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.sstudio.types import MapSpec
 from smarts.core.utils.file import unpack
 
 SimulationState = SimulationFrame
