@@ -26,6 +26,8 @@ import pytest
 from helpers.scenario import maps_dir
 
 from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.controllers import ActionSpaceType
+from smarts.core.plan import Mission
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation, Sensors, SensorState, SensorWorker
@@ -36,25 +38,16 @@ from smarts.sstudio.types import MapSpec
 SimulationState = SimulationFrame
 SensorState = Any
 
-AGENT_ID = "agent-007"
-
+AGENT_IDS = [f"agent-00{i}" for i in range(30)]
 
 @pytest.fixture
 def agents_to_be_briefed():
-    return [AGENT_ID]
-
-
-def sumo_map():
-    from smarts.core.sumo_road_network import SumoRoadNetwork
-
-    map_spec = MapSpec(str(maps_dir()))
-    road_network = SumoRoadNetwork.from_spec(map_spec)
-    return road_network
+    return AGENT_IDS
 
 
 @pytest.fixture
 def scenario(agents_to_be_briefed: List[str]) -> Scenario:
-    return Scenario(
+    s = Scenario(
         scenario_root="scenarios/sumo/loop",
         traffic_specs=["scenarios/sumo/loop/traffic/basic.rou.xml"],
         missions=dict(
@@ -67,25 +60,23 @@ def scenario(agents_to_be_briefed: List[str]) -> Scenario:
             )
         ),
     )
-
+    missions = [Mission.random_endless_mission(s.road_map,) for a in agents_to_be_briefed]
+    s.set_ego_missions(dict(zip(agents_to_be_briefed, missions)))
+    return s
 
 @pytest.fixture()
 def sim(scenario):
-    agents = {AGENT_ID: AgentInterface.from_type(AgentType.Laner)}
+    # agents = {aid: AgentInterface.from_type(AgentType.Full) for aid in AGENT_IDS},
+    agents = {aid: AgentInterface.from_type(AgentType.Buddha, action=ActionSpaceType.Continuous) for aid in AGENT_IDS}
     smarts = SMARTS(
         agents,
         traffic_sims=[SumoTrafficSimulation(headless=True)],
         envision=None,
     )
     smarts.reset(scenario)
-    smarts.step({AGENT_ID: [0, 0, 0]})
+    smarts.step({aid: [0, 0, 0] for aid in AGENT_IDS})
     yield smarts
     smarts.destroy()
-
-
-@pytest.fixture
-def road_map():
-    yield sumo_map()
 
 
 @pytest.fixture()
@@ -112,27 +103,30 @@ def test_sensor_parallelization(
     import time
 
     # Sensors.init(road_map, renderer_type)  # not required
-    agent_ids = {"agent-007"}
+    agent_ids = set(AGENT_IDS)
     non_parallel_start = time.monotonic()
-    Sensors.observe_group(vehicle_ids, simulation_frame, agent_ids)
+    obs, dones = Sensors.observe_parallel(simulation_frame, agent_ids, process_count_override=1)
     non_parallel_total = time.monotonic() - non_parallel_start
 
-    parallel_start = time.monotonic()
-    obs, dones = Sensors.observe_parallel(simulation_frame, agent_ids)
-    parallel_total = time.monotonic() - parallel_start
+    parallel_2_start = time.monotonic()
+    obs, dones = Sensors.observe_parallel(simulation_frame, agent_ids, process_count_override=2)
+    parallel_2_total = time.monotonic() - parallel_2_start
+
+    parallel_4_start = time.monotonic()
+    obs, dones = Sensors.observe_parallel(simulation_frame, agent_ids, process_count_override=4)
+    parallel_4_total = time.monotonic() - parallel_4_start
 
     assert len(obs) > 0
-    assert non_parallel_total < parallel_total
+    assert non_parallel_total > parallel_2_total and parallel_2_total > parallel_4_total, f"{non_parallel_total=}, {parallel_2_total=}, {parallel_4_total=}"
 
 
 def test_sensor_worker(
-    road_map: RoadMap,
     vehicle_ids: Set[str],
     simulation_frame: SimulationState,
 ):
     return
     agent_ids = {"agent-007"}
-    worker = SensorWorker(road_map=road_map)
+    worker = SensorWorker(road_map_spec=simulation_frame.road_map())
     observations_future, sensor_states_future = worker.process(
         simulation_frame, agent_ids, sensor_states, vehicle_ids
     )

@@ -32,6 +32,7 @@ from functools import lru_cache
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as np
+from scipy.spatial.distance import cdist
 
 from smarts.core.agent_interface import ActorsAliveDoneCriteria, AgentsAliveDoneCriteria
 from smarts.core.plan import Plan
@@ -57,7 +58,8 @@ from .observations import (
     ViaPoint,
     Vias,
 )
-from .plan import Via
+from .plan import Mission, PlanFrame, Via
+from smarts.core.utils.logging import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -106,8 +108,23 @@ class Sensors:
         return cls._instance
 
     @classmethod
-    def observe_group(cls, vehicle_ids, sim_frame, agent_group):
-        return (None, None)
+    def observe_parallizable(cls, sim_frame, agent_ids_for_group):
+        from smarts.core.smarts import SimulationFrame
+
+        sim_frame: SimulationFrame = sim_frame
+        observations, dones = {}, {}
+        for agent_id in agent_ids_for_group:
+            vehicle_ids = sim_frame.vehicles_for_agents.get(agent_id)
+            if not vehicle_ids:
+                continue
+            for vehicle_id in vehicle_ids:
+                observations[agent_id], dones[agent_id] = cls.observe_base(
+                    sim_frame,
+                    agent_id,
+                    sim_frame.sensor_states[vehicle_id],
+                    sim_frame.vehicles[vehicle_id],
+                )
+        return observations, dones
 
     @classmethod
     def _observe_group_unpack(cls, *args, **kwargs):
@@ -118,7 +135,7 @@ class Sensors:
             k: cls.deserialize_for_observation(a) if a is not None else a
             for k, a in kwargs.items()
         }
-        return cls.observe_group(*args, **kwargs)
+        return cls.observe_parallizable(*args, **kwargs)
 
     @staticmethod
     def serialize_for_observation(v):
@@ -137,78 +154,79 @@ class Sensors:
         return cloudpickle.loads(v)
 
     @classmethod
-    def observe_parallel(cls, sim_frame, agent_ids):
+    def observe_parallel(cls, sim_frame, agent_ids, process_count_override=None):
         from smarts.core.smarts import SimulationFrame
+        from smarts.core.vehicle import Vehicle
 
         sim_frame: SimulationFrame = sim_frame
         observations, dones = {}, {}
         futures = []
+
+        used_processes= SEV_THREADS if process_count_override == None else process_count_override
 
         # TODO MTA: only do mp_context once
         forkserver_available = "forkserver" in mp.get_all_start_methods()
         start_method = "forkserver" if forkserver_available else "spawn"
         mp_context = mp.get_context(start_method)
         # TODO MTA: only use executor if threads is more than 1
-        with ProcessPoolExecutor(
-            max_workers=SEV_THREADS, mp_context=mp_context
-        ) as pool:
-            if SEV_THREADS == 1:
-                for agent_id, vehicle_ids in sim_frame.vehicles_for_agents.items():
-                    for vehicle_id in vehicle_ids:
-                        observations[agent_id], dones[agent_id] = cls.observe(
+        with timeit("observations total", print):
+            with ProcessPoolExecutor(
+                max_workers=used_processes, mp_context=mp_context
+            ) as pool:
+                with timeit("parallizable observations", print):
+                    if used_processes <= 1:
+                        agent_ids = sim_frame.agent_ids
+                        observations, dones = cls.observe_parallizable(
                             sim_frame,
-                            agent_id,
-                            sim_frame.sensor_states[vehicle_id],
-                            sim_frame.vehicles[vehicle_id],
+                            agent_ids,
                         )
-            elif SEV_THREADS > 1:
-                gap = len(agent_ids) / SEV_THREADS
-                # TODO MTA: Remove this debugging code
-                for f in sim_frame.__dataclass_fields__:
-                    print("\n", f)
-                    if f == "vehicles":
-                        vehicles = sim_frame.__getattribute__(f)
-                        for vid in vehicles:
-                            print(vid)
-                            cls.serialize_for_observation(vehicles[vid])
-                    cls.serialize_for_observation(sim_frame.__getattribute__(f))
-                cp_vehicle_ids = cls.serialize_for_observation(sim_frame.vehicle_ids)
-                cp_sim_frame = cls.serialize_for_observation(sim_frame)
-                for agent_group in [
-                    agent_ids[i * gap : i * gap + gap] for i in range(SEV_THREADS)
-                ]:
-                    cp_agent_group = cls.serialize_for_observation(agent_group)
-                    futures.append(
-                        pool.submit(
-                            cls._observe_group_unpack,
-                            vehicle_ids=cp_vehicle_ids,
-                            sim_frame=cp_sim_frame,
-                            agent_group=cp_agent_group,
+                    elif used_processes > 1:
+                        agent_ids_for_grouping = list(agent_ids)
+                        agent_groups = [
+                            agent_ids_for_grouping[i::used_processes] for i in range(used_processes)
+                        ]
+                        with timeit("serializing frame", print):
+                            cp_sim_frame = cls.serialize_for_observation(sim_frame)
+                        
+                        for agent_group in agent_groups:
+                            if not agent_group:
+                                break
+                            cp_agent_group = cls.serialize_for_observation(agent_group)
+                            with timeit(f"submitting {len(agent_group)} agents", print):
+                                futures.append(
+                                    pool.submit(
+                                        cls._observe_group_unpack,
+                                        sim_frame=cp_sim_frame,
+                                        agent_ids_for_group=cp_agent_group,
+                                    )
+                                )
+
+                # While observation processes are operating do rendering
+                with timeit("rendering", print):
+                    rendering = {}
+                    for agent_id, vehicle_ids in sim_frame.vehicles_for_agents.items():
+                        for vehicle_id in vehicle_ids:
+                            rendering[agent_id] = cls.observe_cameras(
+                                sim_frame,
+                                agent_id,
+                                sim_frame.sensor_states[vehicle_id],
+                                sim_frame.vehicles[vehicle_id],
+                            )
+                    
+
+                # Collect futures
+                with timeit("waiting for observations", print):
+                    for future in as_completed(futures):
+                        obs, ds = future.result()
+                        observations.update(obs)
+                        dones.update(ds)
+
+                with timeit("merging observations", print):
+                    # Merge sensor information
+                    for agent_id, r_obs in rendering.items():
+                        observations[agent_id] = dataclasses.replace(
+                            observations[agent_id], **r_obs
                         )
-                    )
-
-            # While observation processes are operating do rendering
-            rendering = {}
-            for agent_id, vehicle_ids in sim_frame.vehicles_for_agents.items():
-                for vehicle_id in vehicle_ids:
-                    rendering[agent_id] = cls.observe_cameras(
-                        sim_frame,
-                        agent_id,
-                        sim_frame.sensor_states[vehicle_id],
-                        sim_frame.vehicles[vehicle_id],
-                    )
-
-            # Collect futures
-            for future in as_completed(futures):
-                obs, ds = future.result()
-                observations.update(obs)
-                dones.update(ds)
-
-            # Merge sensor information
-            for vehicle_id, r_obs in rendering.items():
-                observations[vehicle_id] = dataclasses.replace(
-                    observations[vehicle_id], **r_obs
-                )
 
         return observations, dones
 
@@ -248,12 +266,14 @@ class Sensors:
 
     @staticmethod
     def observe_base(sim_frame, agent_id, sensor_state, vehicle):
-        """Generate observations for the given agent around the given vehicle."""
+        vehicle_state = sim_frame.vehicle_states[vehicle.id]
+        plan = sensor_state.get_plan(sim_frame.road_map)
         neighborhood_vehicle_states = None
-        if vehicle.subscribed_to_neighborhood_vehicle_states_sensor:
+        vehicle.ensure_sensor_functions()
+        if vehicle.subscribed_to_neighborhood_vehicles_sensor:
             neighborhood_vehicle_states = []
-            for nv in vehicle.neighborhood_vehicle_states_sensor():
-                veh_obs = _make_vehicle_observation(sim.road_map, nv)
+            for nv in vehicle.neighborhood_vehicles_sensor(vehicle.state, sim_frame.vehicle_states.values()):
+                veh_obs = _make_vehicle_observation(sim_frame.road_map, nv)
                 nv_lane_pos = None
                 if (
                     veh_obs.lane_id is not LANE_ID_CONSTANT
@@ -267,7 +287,7 @@ class Sensors:
                 )
 
         if vehicle.subscribed_to_waypoints_sensor:
-            waypoint_paths = vehicle.waypoints_sensor()
+            waypoint_paths = vehicle.waypoints_sensor(vehicle_state, plan, sim_frame.road_map)
         else:
             waypoint_paths = sim_frame.road_map.waypoint_paths(
                 vehicle.pose,
@@ -287,7 +307,6 @@ class Sensors:
             ego_lane_id = LANE_ID_CONSTANT
             ego_lane_index = LANE_INDEX_CONSTANT
             ego_road_id = ROAD_ID_CONSTANT
-        ego_vehicle_state = vehicle.state
 
         acceleration_params = {
             "linear_acceleration": None,
@@ -297,8 +316,8 @@ class Sensors:
         }
         if vehicle.subscribed_to_accelerometer_sensor:
             acceleration_values = vehicle.accelerometer_sensor(
-                ego_vehicle_state.linear_velocity,
-                ego_vehicle_state.angular_velocity,
+                vehicle_state.linear_velocity,
+                vehicle_state.angular_velocity,
                 sim_frame.last_dt,
             )
             acceleration_params.update(
@@ -316,25 +335,25 @@ class Sensors:
             )
 
         ego_vehicle = EgoVehicleObservation(
-            id=ego_vehicle_state.actor_id,
-            position=ego_vehicle_state.pose.point.as_np_array,
-            bounding_box=ego_vehicle_state.dimensions,
-            heading=Heading(ego_vehicle_state.pose.heading),
-            speed=ego_vehicle_state.speed,
-            steering=ego_vehicle_state.steering,
-            yaw_rate=ego_vehicle_state.yaw_rate,
+            id=vehicle_state.actor_id,
+            position=vehicle_state.pose.point.as_np_array,
+            bounding_box=vehicle_state.dimensions,
+            heading=Heading(vehicle_state.pose.heading),
+            speed=vehicle_state.speed,
+            steering=vehicle_state.steering,
+            yaw_rate=vehicle_state.yaw_rate,
             road_id=ego_road_id,
             lane_id=ego_lane_id,
             lane_index=ego_lane_index,
-            mission=sensor_state.plan.mission,
-            linear_velocity=ego_vehicle_state.linear_velocity,
-            angular_velocity=ego_vehicle_state.angular_velocity,
+            mission=plan.mission,
+            linear_velocity=vehicle_state.linear_velocity,
+            angular_velocity=vehicle_state.angular_velocity,
             lane_position=ego_lane_pos,
             **acceleration_params,
         )
 
         road_waypoints = (
-            vehicle.road_waypoints_sensor()
+            vehicle.road_waypoints_sensor(vehicle_state, plan, sim_frame.road_map)
             if vehicle.subscribed_to_road_waypoints_sensor
             else None
         )
@@ -345,27 +364,31 @@ class Sensors:
             (
                 near_via_points,
                 hit_via_points,
-            ) = vehicle.via_sensor()
+            ) = vehicle.via_sensor(vehicle_state, plan)
         via_data = Vias(
             near_via_points=near_via_points,
             hit_via_points=hit_via_points,
         )
 
-        if waypoint_paths:
-            vehicle.trip_meter_sensor.update_distance_wps_record(waypoint_paths)
-        distance_travelled = vehicle.trip_meter_sensor(increment=True)
+        distance_travelled = 0
+        if vehicle.subscribed_to_trip_meter_sensor:
+            if waypoint_paths:
+                vehicle.trip_meter_sensor.update_distance_wps_record(waypoint_paths, vehicle, plan, sim_frame.road_map)
+            distance_travelled = vehicle.trip_meter_sensor(increment=True)
 
-        vehicle.driven_path_sensor.track_latest_driven_path(sim_frame.elapsed_sim_time)
+        if vehicle.subscribed_to_driven_path_sensor:
+            vehicle.driven_path_sensor.track_latest_driven_path(sim_frame.elapsed_sim_time, vehicle_state)
 
         if not vehicle.subscribed_to_waypoints_sensor:
             waypoint_paths = None
 
-        lidar_point_cloud = (
-            vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
-        )
+        lidar_point_cloud = None
+        if vehicle.subscribed_to_lidar_sensor:
+            vehicle.lidar_sensor.follow_vehicle(vehicle_state)
+            lidar_point_cloud = vehicle.lidar_sensor()
 
         done, events = Sensors._is_done_with_events(
-            sim_frame, agent_id, vehicle, sensor_state
+            sim_frame, agent_id, vehicle, sensor_state, plan
         )
 
         if done and sensor_state.steps_completed == 1:
@@ -382,13 +405,13 @@ class Sensors:
             signals = vehicle.signals_sensor(
                 closest_lane,
                 ego_lane_pos,
-                ego_vehicle_state,
-                sensor_state.plan,
+                vehicle_state,
+                plan,
                 provider_state,
             )
 
         agent_controls = agent_id == sim_frame.agent_vehicle_controls.get(
-            ego_vehicle_state.actor_id
+            vehicle_state.actor_id
         )
 
         return (
@@ -425,6 +448,24 @@ class Sensors:
     def step(sim, sensor_state):
         """Step the sensor state."""
         return sensor_state.step()
+
+    @staticmethod
+    def neighborhood_vehicles_around_vehicle(vehicle_state, vehicle_states, radius: Optional[float] = None):
+        other_states = [v for v in vehicle_states if v.actor_id != vehicle_state.actor_id]
+        if radius is None:
+            return other_states
+
+        other_positions = [state.pose.position for state in other_states]
+        if not other_positions:
+            return []
+
+        # calculate euclidean distances
+        distances = cdist(
+            other_positions, [vehicle_state.pose.position], metric="euclidean"
+        ).reshape(-1)
+
+        indices = np.argwhere(distances <= radius).flatten()
+        return [other_states[i] for i in indices]
 
     @classmethod
     def _agents_alive_done_check(
@@ -499,13 +540,13 @@ class Sensors:
         return False
 
     @classmethod
-    def _is_done_with_events(cls, sim, agent_id, vehicle, sensor_state):
+    def _is_done_with_events(cls, sim, agent_id, vehicle, sensor_state, plan):
         interface = sim.agent_interfaces.get(agent_id)
         done_criteria = interface.done_criteria
         event_config = interface.event_configuration
 
         # TODO:  the following calls nearest_lanes (expensive) 6 times
-        reached_goal = cls._agent_reached_goal(sensor_state, vehicle)
+        reached_goal = cls._agent_reached_goal(sensor_state, plan, vehicle)
         collided = sim.vehicle_did_collide(vehicle.id)
         is_off_road = cls._vehicle_is_off_road(sim.road_map, vehicle)
         is_on_shoulder = cls._vehicle_is_on_shoulder(sim.road_map, vehicle)
@@ -514,7 +555,7 @@ class Sensors:
         )
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
-            sim, vehicle, sensor_state
+            sim, vehicle, plan
         )
         agents_alive_done = cls._agents_alive_done_check(
             sim.ego_ids, sim.agent_ids, done_criteria.agents_alive
@@ -552,9 +593,11 @@ class Sensors:
         return done, events
 
     @classmethod
-    def _agent_reached_goal(cls, sensor_state, vehicle):
+    def _agent_reached_goal(cls, sensor_state, plan, vehicle):
+        if not vehicle.subscribed_to_trip_meter_sensor:
+            return False
         distance_travelled = vehicle.trip_meter_sensor()
-        mission = sensor_state.plan.mission
+        mission = plan.mission
         return mission.is_complete(vehicle, distance_travelled)
 
     @classmethod
@@ -587,7 +630,7 @@ class Sensors:
         return distance < min_distance_moved
 
     @classmethod
-    def _vehicle_is_off_route_and_wrong_way(cls, sim, vehicle, sensor_state):
+    def _vehicle_is_off_route_and_wrong_way(cls, sim, vehicle, plan):
         """Determines if the agent is on route and on the correct side of the road.
 
         Args:
@@ -602,7 +645,7 @@ class Sensors:
                 Actor's vehicle is going against the lane travel direction.
         """
 
-        route_roads = sensor_state.plan.route.roads
+        route_roads = plan.route.roads
 
         vehicle_pos = vehicle.pose.point
         vehicle_minimum_radius_bounds = (
@@ -683,9 +726,9 @@ class Sensor:
 class SensorState:
     """Sensor state information"""
 
-    def __init__(self, max_episode_steps: int, plan: Plan):
+    def __init__(self, max_episode_steps: int, plan_frame: PlanFrame):
         self._max_episode_steps = max_episode_steps
-        self._plan = plan
+        self._plan_frame = plan_frame
         self._step = 0
         self._seen_interest_actors = False
 
@@ -710,10 +753,9 @@ class SensorState:
 
         return self._step >= self._max_episode_steps
 
-    @property
-    def plan(self):
+    def get_plan(self, road_map: RoadMap):
         """Get the current plan for the actor."""
-        return self._plan
+        return Plan.from_frame(self._plan_frame, road_map)
 
     @property
     def steps_completed(self) -> int:
@@ -722,8 +764,8 @@ class SensorState:
 
 
 class SensorWorker:
-    def __init__(self, road_map) -> None:
-        self._road_map = road_map
+    def __init__(self, road_map_spec) -> None:
+        self._road_map_spec = road_map_spec
 
     def process(self, sim_frame, agent_id, sensor_states, vehicle_ids):
         raise NotImplementedError()
@@ -902,26 +944,25 @@ class LidarSensor(Sensor):
 
     def __init__(
         self,
-        vehicle,
         bullet_client,
+        vehicle_state,
         sensor_params: Optional[SensorParams] = None,
         lidar_offset=(0, 0, 1),
     ):
-        self._vehicle = vehicle
         self._bullet_client = bullet_client
         self._lidar_offset = np.array(lidar_offset)
 
         self._lidar = Lidar(
-            self._vehicle.position + self._lidar_offset,
+            vehicle_state.pose.position + self._lidar_offset,
             sensor_params,
             self._bullet_client,
         )
 
     def step(self):
-        self._follow_vehicle()
+        pass
 
-    def _follow_vehicle(self):
-        self._lidar.origin = self._vehicle.position + self._lidar_offset
+    def follow_vehicle(self, vehicle_state):
+        self._lidar.origin = vehicle_state.pose.position + self._lidar_offset
 
     def __call__(self):
         return self._lidar.compute_point_cloud()
@@ -938,13 +979,12 @@ class DrivenPathSensor(Sensor):
 
     Entry = namedtuple("TimeAndPos", ["timestamp", "position"])
 
-    def __init__(self, vehicle, max_path_length: int = 500):
-        self._vehicle = vehicle
+    def __init__(self, max_path_length: int = 500):
         self._driven_path = deque(maxlen=max_path_length)
 
-    def track_latest_driven_path(self, elapsed_sim_time):
+    def track_latest_driven_path(self, elapsed_sim_time, vehicle_state):
         """Records the current location of the tracked vehicle."""
-        pos = self._vehicle.position[:2]
+        pos = vehicle_state.pose.position[:2]
         self._driven_path.append(
             DrivenPathSensor.Entry(timestamp=elapsed_sim_time, position=pos)
         )
@@ -985,16 +1025,13 @@ class TripMeterSensor(Sensor):
     off-route are not counted as part of the total.
     """
 
-    def __init__(self, vehicle, road_map, plan):
-        self._vehicle = vehicle
-        self._road_map: RoadMap = road_map
-        self._plan = plan
+    def __init__(self):
         self._wps_for_distance: List[Waypoint] = []
         self._dist_travelled = 0.0
         self._last_dist_travelled = 0.0
         self._last_actor_position = None
 
-    def update_distance_wps_record(self, waypoint_paths):
+    def update_distance_wps_record(self, waypoint_paths, vehicle, plan: Plan, road_map: RoadMap):
         """Append a waypoint to the history if it is not already counted."""
         # Distance calculation. Intention is the shortest trip travelled at the lane
         # level the agent has travelled. This is to prevent lateral movement from
@@ -1002,17 +1039,17 @@ class TripMeterSensor(Sensor):
         self._last_dist_travelled = self._dist_travelled
 
         new_wp = waypoint_paths[0][0]
-        wp_road = self._road_map.lane_by_id(new_wp.lane_id).road.road_id
+        wp_road = road_map.lane_by_id(new_wp.lane_id).road.road_id
 
         should_count_wp = (
             # if we do not have a fixed route, we count all waypoints we accumulate
-            not self._plan.mission.requires_route
+            not plan.mission.requires_route
             # if we have a route to follow, only count wps on route
-            or wp_road in [road.road_id for road in self._plan.route.roads]
+            or wp_road in [road.road_id for road in plan.route.roads]
         )
 
         if not self._wps_for_distance:
-            self._last_actor_position = self._vehicle.pose.position
+            self._last_actor_position = vehicle.pose.position
             if should_count_wp:
                 self._wps_for_distance.append(new_wp)
             return  # sensor does not have enough history
@@ -1028,11 +1065,11 @@ class TripMeterSensor(Sensor):
         additional_distance = TripMeterSensor._compute_additional_dist_travelled(
             most_recent_wp,
             new_wp,
-            self._vehicle.pose.position,
+            vehicle.pose.position,
             self._last_actor_position,
         )
         self._dist_travelled += additional_distance
-        self._last_actor_position = self._vehicle.pose.position
+        self._last_actor_position = vehicle.pose.position
 
     @staticmethod
     def _compute_additional_dist_travelled(
@@ -1064,9 +1101,7 @@ class TripMeterSensor(Sensor):
 class NeighborhoodVehiclesSensor(Sensor):
     """Detects other vehicles around the sensor equipped vehicle."""
 
-    def __init__(self, vehicle, sim, radius=None):
-        self._vehicle = vehicle
-        self._sim = weakref.ref(sim)
+    def __init__(self, radius=None):
         self._radius = radius
 
     @property
@@ -1074,11 +1109,9 @@ class NeighborhoodVehiclesSensor(Sensor):
         """Radius to check for nearby vehicles."""
         return self._radius
 
-    def __call__(self):
-        sim = self._sim()
-        assert sim
-        return sim.neighborhood_vehicles_around_vehicle(
-            self._vehicle, radius=self._radius
+    def __call__(self, vehicle_state, vehicle_states):
+        return Sensors.neighborhood_vehicles_around_vehicle(
+            vehicle_state, vehicle_states, radius=self._radius
         )
 
     def teardown(self):
@@ -1088,16 +1121,14 @@ class NeighborhoodVehiclesSensor(Sensor):
 class WaypointsSensor(Sensor):
     """Detects waypoints leading forward along the vehicle plan."""
 
-    def __init__(self, vehicle, plan: Plan, lookahead=32):
-        self._vehicle = vehicle
-        self._plan = plan
+    def __init__(self, lookahead=32):
         self._lookahead = lookahead
 
-    def __call__(self):
-        return self._plan.road_map.waypoint_paths(
-            self._vehicle.pose,
+    def __call__(self, vehicle_state, plan: Plan, road_map):
+        return road_map.waypoint_paths(
+            pose=vehicle_state.pose,
             lookahead=self._lookahead,
-            route=self._plan.route,
+            route=plan.route,
         )
 
     def teardown(self):
@@ -1107,15 +1138,12 @@ class WaypointsSensor(Sensor):
 class RoadWaypointsSensor(Sensor):
     """Detects waypoints from all paths nearby the vehicle."""
 
-    def __init__(self, vehicle, sim, plan, horizon=32):
-        self._vehicle = vehicle
-        self._road_map = sim.road_map
-        self._plan = plan
+    def __init__(self, horizon=32):
         self._horizon = horizon
 
-    def __call__(self) -> RoadWaypoints:
-        veh_pt = self._vehicle.pose.point
-        lane = self._road_map.nearest_lane(veh_pt)
+    def __call__(self, vehicle_state, plan, road_map) -> RoadWaypoints:
+        veh_pt = vehicle_state.pose.point
+        lane = road_map.nearest_lane(veh_pt)
         if not lane:
             return RoadWaypoints(lanes={})
         road = lane.road
@@ -1124,15 +1152,15 @@ class RoadWaypointsSensor(Sensor):
             [road] + road.parallel_roads + road.oncoming_roads_at_point(veh_pt)
         ):
             for lane in croad.lanes:
-                lane_paths[lane.lane_id] = self.paths_for_lane(lane)
+                lane_paths[lane.lane_id] = self._paths_for_lane(lane, vehicle_state, plan)
 
         return RoadWaypoints(lanes=lane_paths)
 
-    def paths_for_lane(self, lane, overflow_offset=None):
+    def _paths_for_lane(self, lane, vehicle_state, plan, overflow_offset=None):
         """Gets waypoint paths along the given lane."""
         # XXX: the following assumes waypoint spacing is 1m
         if overflow_offset is None:
-            offset = lane.offset_along_lane(self._vehicle.pose.point)
+            offset = lane.offset_along_lane(vehicle_state.pose.point)
             start_offset = offset - self._horizon
         else:
             start_offset = lane.length + overflow_offset
@@ -1141,17 +1169,17 @@ class RoadWaypointsSensor(Sensor):
         if start_offset < 0 and len(incoming_lanes) > 0:
             paths = []
             for lane in incoming_lanes:
-                paths += self.paths_for_lane(lane, start_offset)
+                paths += self._paths_for_lane(lane, start_offset)
             return paths
         else:
             start_offset = max(0, start_offset)
             wp_start = lane.from_lane_coord(RefLinePoint(start_offset))
-            adj_pose = Pose.from_center(wp_start, self._vehicle.heading)
+            adj_pose = Pose.from_center(wp_start, vehicle_state.pose.heading)
             wps_to_lookahead = self._horizon * 2
             paths = lane.waypoint_paths_for_pose(
                 pose=adj_pose,
                 lookahead=wps_to_lookahead,
-                route=self._plan.route,
+                route=plan.route,
             )
             return paths
 
@@ -1162,7 +1190,7 @@ class RoadWaypointsSensor(Sensor):
 class AccelerometerSensor(Sensor):
     """Tracks motion changes within the vehicle equipped with this sensor."""
 
-    def __init__(self, vehicle):
+    def __init__(self):
         self.linear_velocities = deque(maxlen=3)
         self.angular_velocities = deque(maxlen=3)
 
@@ -1206,11 +1234,11 @@ class AccelerometerSensor(Sensor):
 class LanePositionSensor(Sensor):
     """Tracks lane-relative RefLine (Frenet) coordinates."""
 
-    def __init__(self, vehicle):
+    def __init__(self):
         pass
 
-    def __call__(self, lane: RoadMap.Lane, vehicle):
-        return lane.to_lane_coord(vehicle.pose.point)
+    def __call__(self, lane: RoadMap.Lane, vehicle_state):
+        return lane.to_lane_coord(vehicle_state.pose.point)
 
     def teardown(self):
         pass
@@ -1219,28 +1247,22 @@ class LanePositionSensor(Sensor):
 class ViaSensor(Sensor):
     """Tracks collection of ViaPoint collectables"""
 
-    def __init__(self, vehicle, plan, lane_acquisition_range, speed_accuracy):
+    def __init__(self, lane_acquisition_range, speed_accuracy):
         self._consumed_via_points = set()
-        self._plan: Plan = plan
         self._acquisition_range = lane_acquisition_range
-        self._vehicle = vehicle
         self._speed_accuracy = speed_accuracy
 
-    @property
-    def _vias(self) -> Iterable[Via]:
-        return self._plan.mission.via
-
-    def __call__(self):
+    def __call__(self, vehicle_state, plan):
         near_points: List[ViaPoint] = list()
         hit_points: List[ViaPoint] = list()
-        vehicle_position = self._vehicle.position[:2]
+        vehicle_position = vehicle_state.pose.position[:2]
 
         @lru_cache()
-        def closest_point_on_lane(position, lane_id):
-            lane = self._plan.road_map.lane_by_id(lane_id)
+        def closest_point_on_lane(position, lane_id, road_map):
+            lane = road_map.lane_by_id(lane_id)
             return lane.center_at_point(position)
 
-        for via in self._vias:
+        for via in plan.mission.via:
             closest_position_on_lane = closest_point_on_lane(
                 tuple(vehicle_position), via.lane_id
             )
@@ -1263,7 +1285,7 @@ class ViaSensor(Sensor):
                 dist_from_point_sq <= via.hit_distance**2
                 and via not in self._consumed_via_points
                 and np.isclose(
-                    self._vehicle.speed, via.required_speed, atol=self._speed_accuracy
+                    vehicle_state.speed, via.required_speed, atol=self._speed_accuracy
                 )
             ):
                 self._consumed_via_points.add(via)
@@ -1284,10 +1306,8 @@ class ViaSensor(Sensor):
 class SignalsSensor(Sensor):
     """Reports state of traffic signals (lights) in the lanes ahead of vehicle."""
 
-    def __init__(self, vehicle, road_map: RoadMap, lookahead: float):
+    def __init__(self, lookahead: float):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._vehicle = vehicle
-        self._road_map = road_map
         self._lookahead = lookahead
 
     @staticmethod
@@ -1329,7 +1349,7 @@ class SignalsSensor(Sensor):
                     break
             else:
                 self._logger.warning(
-                    "could not find signal state corresponding with feature_id={signal.feature_id}"
+                    "could not find signal state corresponding with feature_id=%s}", signal.feature_id
                 )
                 continue
             assert isinstance(signal_state, SignalState)

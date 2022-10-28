@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 import random
 from dataclasses import dataclass, field
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -377,4 +377,13 @@ class Plan:
                 "after a junction.".format(start_road_ids, end_lane.road.road_id)
             )
 
-        return
+        return self._mission
+
+    def frame(self) -> PlanFrame:
+        return PlanFrame(road_ids=self._route.road_ids, mission=self._mission)
+
+    @classmethod
+    def from_frame(cls, frame: PlanFrame, road_map: RoadMap) -> "Plan":
+        new_plan = cls(road_map=road_map, mission=frame.mission, find_route=False)
+        new_plan.route = road_map.route_from_road_ids(frame.road_ids)
+        return new_plan

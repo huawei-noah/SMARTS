@@ -47,6 +47,7 @@ from .sensors import (
     OGMSensor,
     RGBSensor,
     RoadWaypointsSensor,
+    Sensor,
     SignalsSensor,
     TripMeterSensor,
     ViaSensor,
@@ -243,7 +244,7 @@ class Vehicle:
         return self._chassis.speed
 
     @property
-    def sensors(self) -> dict:
+    def sensors(self) -> Dict[str, Sensor]:
         """The sensors attached to this vehicle."""
         self._assert_initialized()
         return self._sensors
@@ -461,42 +462,35 @@ class Vehicle:
         )
 
     @staticmethod
-    def attach_sensors_to_vehicle(sim, vehicle, agent_interface, plan):
+    def attach_sensors_to_vehicle(sim, vehicle: "Vehicle", agent_interface):
         """Attach sensors as required to satisfy the agent interface's requirements"""
         # The distance travelled sensor is not optional b/c it is used for the score
         # and reward calculation
+        vehicle_state = vehicle.state
         vehicle.attach_trip_meter_sensor(
-            TripMeterSensor(
-                vehicle=vehicle,
-                road_map=sim.road_map,
-                plan=plan,
-            )
+            TripMeterSensor()
         )
 
         # The distance travelled sensor is not optional b/c it is used for visualization
         # done criteria
-        vehicle.attach_driven_path_sensor(DrivenPathSensor(vehicle=vehicle))
+        vehicle.attach_driven_path_sensor(DrivenPathSensor())
 
         if agent_interface.neighborhood_vehicle_states:
             vehicle.attach_neighborhood_vehicle_states_sensor(
                 NeighborhoodVehiclesSensor(
-                    vehicle=vehicle,
-                    sim=sim,
                     radius=agent_interface.neighborhood_vehicle_states.radius,
                 )
             )
 
         if agent_interface.accelerometer:
-            vehicle.attach_accelerometer_sensor(AccelerometerSensor(vehicle=vehicle))
+            vehicle.attach_accelerometer_sensor(AccelerometerSensor())
 
         if agent_interface.lane_positions:
-            vehicle.attach_lane_position_sensor(LanePositionSensor(vehicle=vehicle))
+            vehicle.attach_lane_position_sensor(LanePositionSensor())
 
         if agent_interface.waypoint_paths:
             vehicle.attach_waypoints_sensor(
                 WaypointsSensor(
-                    vehicle=vehicle,
-                    plan=plan,
                     lookahead=agent_interface.waypoint_paths.lookahead,
                 )
             )
@@ -504,9 +498,6 @@ class Vehicle:
         if agent_interface.road_waypoints:
             vehicle.attach_road_waypoints_sensor(
                 RoadWaypointsSensor(
-                    vehicle=vehicle,
-                    sim=sim,
-                    plan=plan,
                     horizon=agent_interface.road_waypoints.horizon,
                 )
             )
@@ -550,7 +541,7 @@ class Vehicle:
         if agent_interface.lidar_point_cloud:
             vehicle.attach_lidar_sensor(
                 LidarSensor(
-                    vehicle=vehicle,
+                    vehicle_state=vehicle_state,
                     bullet_client=sim.bc,
                     sensor_params=agent_interface.lidar_point_cloud.sensor_params,
                 )
@@ -558,8 +549,6 @@ class Vehicle:
 
         vehicle.attach_via_sensor(
             ViaSensor(
-                vehicle=vehicle,
-                plan=plan,
                 # At lane change time of 6s and speed of 13.89m/s, acquistion range = 6s x 13.89m/s = 83.34m.
                 lane_acquisition_range=80,
                 speed_accuracy=1.5,
@@ -570,7 +559,7 @@ class Vehicle:
             lookahead = agent_interface.signals.lookahead
             vehicle.attach_signals_sensor(
                 SignalsSensor(
-                    vehicle=vehicle, road_map=sim.road_map, lookahead=lookahead
+                    lookahead=lookahead
                 )
             )
 
@@ -620,7 +609,7 @@ class Vehicle:
         """Update the vehicle's rendering node."""
         renderer.update_vehicle_node(self._id, self.pose)
 
-    @lru_cache(maxsize=1)
+    # @lru_cache(maxsize=1)
     def _warn_AckermannChassis_set_pose(self):
         if self._has_stepped and isinstance(self._chassis, AckermannChassis):
             logging.warning(
@@ -665,6 +654,11 @@ class Vehicle:
         if renderer:
             renderer.remove_vehicle_node(self._id)
         self._initialized = False
+
+    def ensure_sensor_functions(self):
+        if not hasattr(self, f"lane_position_sensor"):
+            self._meta_create_sensor_functions()
+
 
     def _meta_create_sensor_functions(self):
         # Bit of metaprogramming to make sensor creation more DRY

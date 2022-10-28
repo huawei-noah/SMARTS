@@ -267,8 +267,8 @@ class AgentManager:
                         f"Agent `{agent_id}` has raised done with {obs.events}",
                     )
 
-                rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
-                scores[agent_id] = vehicle.trip_meter_sensor()
+                rewards[agent_id] = vehicle.trip_meter_sensor(increment=True) if vehicle.subscribed_to_trip_meter_sensor else 0
+                scores[agent_id] = vehicle.trip_meter_sensor() if vehicle.subscribed_to_trip_meter_sensor else 0
 
         if sim.should_reset:
             dones = {agent_id: True for agent_id in self.agent_ids}

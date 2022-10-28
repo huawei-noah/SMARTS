@@ -405,6 +405,7 @@ class Renderer:
             self._log.warning(f"Renderer ignoring invalid vehicle id: {vid}")
             return
         vehicle_path.removeNode()
+        del self._vehicle_nodes[vid]
 
     class OffscreenCamera(NamedTuple):
         """A camera used for rendering images to a graphics buffer."""

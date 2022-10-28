@@ -1348,25 +1348,15 @@ class SMARTS(ProviderManager):
         return self._last_dt
 
     def neighborhood_vehicles_around_vehicle(
-        self, vehicle: Vehicle, radius: Optional[float] = None
+        self, vehicle_id: str, radius: Optional[float] = None
     ) -> List[VehicleState]:
         """Find vehicles in the vicinity of the target vehicle."""
         self._check_valid()
-        other_states = [v for v in self._vehicle_states if v.actor_id != vehicle.id]
-        if radius is None:
-            return other_states
-
-        other_positions = [state.pose.position for state in other_states]
-        if not other_positions:
-            return []
-
-        # calculate euclidean distances
-        distances = cdist(
-            other_positions, [vehicle.position], metric="euclidean"
-        ).reshape(-1)
-
-        indices = np.argwhere(distances <= radius).flatten()
-        return [other_states[i] for i in indices]
+        from smarts.core.sensors import Sensors
+        vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
+        return Sensors.neighborhood_vehicles_around_vehicle(
+            vehicle.state, self._vehicle_states, radius
+        )
 
     def _clear_collisions(self, vehicle_ids):
         for vehicle_id in vehicle_ids:
@@ -1618,6 +1608,7 @@ class SMARTS(ProviderManager):
         self._check_valid()
         actor_ids = self.vehicle_index.agent_vehicle_ids()
         actor_states = self._last_provider_state
+        vehicles=dict(self.vehicle_index.vehicleitems())
         return SimulationFrame(
             actor_states=getattr(actor_states, "actors", {}),
             agent_interfaces=self.agent_manager.agent_interfaces.copy(),
@@ -1635,18 +1626,23 @@ class SMARTS(ProviderManager):
             last_provider_state=self._last_provider_state,
             step_count=self.step_count,
             vehicle_collisions=self._vehicle_collisions,
+            vehicle_states={
+                vehicle_id: vehicle.state for vehicle_id, vehicle in vehicles.items()
+            },
             vehicles_for_agents={
                 agent_id: self.vehicle_index.vehicle_ids_by_actor_id(
                     agent_id, include_shadowers=True
                 )
                 for agent_id in self.agent_manager.active_agents
             },
-            vehicles=dict(self.vehicle_index.vehicleitems()),
+            vehicle_ids=[vid for vid in vehicles],
+            vehicles=vehicles,
+            vehicle_sensors={vid: v.sensors for vid, v in vehicles.items()},
             sensor_states=dict(self.vehicle_index.sensor_states_items()),
             _ground_bullet_id=self._ground_bullet_id,
-            renderer_type=self._renderer.__class__
-            if self._renderer is not None
-            else None,
+            # renderer_type=self._renderer.__class__
+            # if self._renderer is not None
+            # else None,
         )
 
 
@@ -1666,19 +1662,19 @@ class SimulationFrame:
     step_count: int
     vehicle_collisions: Dict[str, List[Collision]]
     vehicles_for_agents: Dict[str, List[str]]
+    vehicle_ids: Set[str]
+    vehicle_states: Dict[str, VehicleState]
+    vehicle_sensors: Dict[str, List[Any]]
     vehicles: Dict[str, Vehicle]
 
     sensor_states: Any
-    renderer_type: Any = None
+    # renderer_type: Any = None
     _ground_bullet_id: Optional[str] = None
 
-    @cached_property
+    # @cached_property
+    @property
     def agent_ids(self):
         return set(self.agent_interfaces.keys())
-
-    @cached_property
-    def vehicle_ids(self):
-        return set(self.vehicles)
 
     def vehicle_did_collide(self, vehicle_id) -> bool:
         """Test if the given vehicle had any collisions in the last physics update."""
@@ -1697,7 +1693,8 @@ class SimulationFrame:
             c for c in vehicle_collisions if c.collidee_id != self._ground_bullet_id
         ]
 
-    @cached_property
+    # @cached_property
+    @property
     def road_map(self):
         from smarts.sstudio.types import MapSpec
 

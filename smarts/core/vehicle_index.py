@@ -388,13 +388,13 @@ class VehicleIndex:
         vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
 
         vehicle = self._vehicles[vehicle_id]
-        Vehicle.attach_sensors_to_vehicle(sim, vehicle, agent_interface, plan)
+        Vehicle.attach_sensors_to_vehicle(sim, vehicle, agent_interface)
 
         self._2id_to_id[agent_id] = original_agent_id
 
         self._sensor_states[vehicle_id] = SensorState(
             agent_interface.max_episode_steps,
-            plan=plan,
+            plan_frame=plan.frame(),
         )
 
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
@@ -594,7 +594,7 @@ class VehicleIndex:
         vehicle = self._vehicles[vehicle_id]
         sensor_state = self._sensor_states[vehicle_id]
         controller_state = self._controller_states[vehicle_id]
-        plan = sensor_state.plan
+        plan = sensor_state.get_plan(sim.road_map)
 
         # Create a new vehicle to replace the old one
         new_vehicle = Vehicle.build_agent_vehicle(
@@ -671,7 +671,7 @@ class VehicleIndex:
 
         sensor_state = SensorState(
             agent_interface.max_episode_steps,
-            plan=plan,
+            plan.frame()
         )
 
         controller_state = ControllerState.from_action_space(
@@ -707,7 +707,7 @@ class VehicleIndex:
         original_agent_id = agent_id
 
         Vehicle.attach_sensors_to_vehicle(
-            sim, vehicle, agent_interface, sensor_state.plan
+            sim, vehicle, agent_interface
         )
         if sim.is_rendering:
             vehicle.create_renderer_node(sim.renderer)
@@ -798,10 +798,10 @@ class VehicleIndex:
 
     def step_sensors(self):
         """Update all known vehicle sensors."""
-        for vehicle_id, sensor_state in self._vehicle_index.sensor_states_items():
+        for vehicle_id, sensor_state in self.sensor_states_items():
             Sensors.step(self, sensor_state)
 
-            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
+            vehicle = self.vehicle_by_id(vehicle_id)
             for sensor in vehicle.sensors.values():
                 sensor.step()
 
