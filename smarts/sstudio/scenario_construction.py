@@ -109,7 +109,7 @@ def _install_requirements(scenario_root, log: Optional[Callable[[Any], None]] = 
     if requirements_txt.exists():
         import zoo.policies
 
-        path = Path(os.path.dirname(zoo.policies.__file__)).parent
+        path = Path(os.path.dirname(zoo.policies.__file__)).absolute()
         # Serve policies through the static file server, then kill after
         # we've installed scenario requirements
         pip_index_proc = subprocess.Popen(
