@@ -101,11 +101,22 @@ class Sensors:
     _log = logging.getLogger("Sensors")
     _instance = None
 
+    def __init__(self):
+        self._workers: List[SensorsWorker] = []
+
     @classmethod
     def instance(cls):
         if not cls._instance:
             cls._instance = cls()
         return cls._instance
+
+    def get_workers(self, count):
+        while len(self._workers) < count:
+            new_worker = SensorsWorker()
+            self._workers.append(new_worker)
+            new_worker.run()
+
+        return self._workers[:count]
 
     @classmethod
     def observe_parallizable(cls, sim_frame, agent_ids_for_group):
@@ -125,17 +136,6 @@ class Sensors:
                     sim_frame.vehicles[vehicle_id],
                 )
         return observations, dones
-
-    @classmethod
-    def _observe_group_unpack(cls, *args, **kwargs):
-        args = [
-            cls.deserialize_for_observation(a) if a is not None else a for a in args
-        ]
-        kwargs = {
-            k: cls.deserialize_for_observation(a) if a is not None else a
-            for k, a in kwargs.items()
-        }
-        return cls.observe_parallizable(*args, **kwargs)
 
     @staticmethod
     def serialize_for_observation(v):
@@ -160,75 +160,65 @@ class Sensors:
 
         sim_frame: SimulationFrame = sim_frame
         observations, dones = {}, {}
-        futures = []
 
         used_processes = (
-            SEV_THREADS if process_count_override == None else process_count_override
+            SEV_THREADS
+            if process_count_override == None
+            else max(0, process_count_override)
         )
 
-        # TODO MTA: only do mp_context once
-        forkserver_available = "forkserver" in mp.get_all_start_methods()
-        start_method = "forkserver" if forkserver_available else "spawn"
-        mp_context = mp.get_context(start_method)
         # TODO MTA: only use executor if threads is more than 1
-        with timeit("observations total", print):
-            with ProcessPoolExecutor(
-                max_workers=used_processes, mp_context=mp_context
-            ) as pool:
-                with timeit("parallizable observations", print):
-                    if used_processes <= 1:
-                        agent_ids = sim_frame.agent_ids
-                        observations, dones = cls.observe_parallizable(
+        instance = cls.instance()
+        workers = instance.get_workers(used_processes)
+        used_workers: List[SensorsWorker] = []
+        with timeit(f"parallizable observations with {len(workers)=}", print):
+            if len(workers) >= 1:
+                agent_ids_for_grouping = list(agent_ids)
+                agent_groups = [
+                    agent_ids_for_grouping[i::used_processes]
+                    for i in range(used_processes)
+                ]
+                worker_args = WorkerArgs(sim_frame=sim_frame)
+                for i, agent_group in enumerate(agent_groups):
+                    if not agent_group:
+                        break
+                    with timeit(f"submitting {len(agent_group)} agents", print):
+                        workers[i].send_to_process(
+                            worker_args=worker_args, agent_ids=agent_group
+                        )
+                        used_workers.append(workers[i])
+            else:
+                agent_ids = sim_frame.agent_ids
+                observations, dones = cls.observe_parallizable(
+                    sim_frame,
+                    agent_ids,
+                )
+
+            # While observation processes are operating do rendering
+            with timeit("rendering", print):
+                rendering = {}
+                for agent_id, vehicle_ids in sim_frame.vehicles_for_agents.items():
+                    for vehicle_id in vehicle_ids:
+                        rendering[agent_id] = cls.observe_cameras(
                             sim_frame,
-                            agent_ids,
+                            agent_id,
+                            sim_frame.sensor_states[vehicle_id],
+                            sim_frame.vehicles[vehicle_id],
                         )
-                    elif used_processes > 1:
-                        agent_ids_for_grouping = list(agent_ids)
-                        agent_groups = [
-                            agent_ids_for_grouping[i::used_processes]
-                            for i in range(used_processes)
-                        ]
-                        with timeit("serializing frame", print):
-                            cp_sim_frame = cls.serialize_for_observation(sim_frame)
 
-                        for agent_group in agent_groups:
-                            if not agent_group:
-                                break
-                            cp_agent_group = cls.serialize_for_observation(agent_group)
-                            with timeit(f"submitting {len(agent_group)} agents", print):
-                                futures.append(
-                                    pool.submit(
-                                        cls._observe_group_unpack,
-                                        sim_frame=cp_sim_frame,
-                                        agent_ids_for_group=cp_agent_group,
-                                    )
-                                )
+            # Collect futures
+            with timeit("waiting for observations", print):
+                for worker in used_workers:
+                    obs, ds = worker.result(block=True, timeout=5)
+                    observations.update(obs)
+                    dones.update(ds)
 
-                # While observation processes are operating do rendering
-                with timeit("rendering", print):
-                    rendering = {}
-                    for agent_id, vehicle_ids in sim_frame.vehicles_for_agents.items():
-                        for vehicle_id in vehicle_ids:
-                            rendering[agent_id] = cls.observe_cameras(
-                                sim_frame,
-                                agent_id,
-                                sim_frame.sensor_states[vehicle_id],
-                                sim_frame.vehicles[vehicle_id],
-                            )
-
-                # Collect futures
-                with timeit("waiting for observations", print):
-                    for future in as_completed(futures):
-                        obs, ds = future.result()
-                        observations.update(obs)
-                        dones.update(ds)
-
-                with timeit("merging observations", print):
-                    # Merge sensor information
-                    for agent_id, r_obs in rendering.items():
-                        observations[agent_id] = dataclasses.replace(
-                            observations[agent_id], **r_obs
-                        )
+            with timeit(f"merging observations", print):
+                # Merge sensor information
+                for agent_id, r_obs in rendering.items():
+                    observations[agent_id] = dataclasses.replace(
+                        observations[agent_id], **r_obs
+                    )
 
         return observations, dones
 
@@ -777,16 +767,78 @@ class SensorState:
         return self._step
 
 
-class SensorWorker:
-    def __init__(self, road_map_spec) -> None:
-        self._road_map_spec = road_map_spec
+class WorkerArgs:
+    """Used to serialize arguments for a worker upfront."""
 
-    def process(self, sim_frame, agent_id, sensor_states, vehicle_ids):
-        raise NotImplementedError()
+    def __init__(self, **kwargs) -> None:
+        self.kwargs = {
+            k: Sensors.serialize_for_observation(a) if a is not None else a
+            for k, a in kwargs.items()
+        }
+
+
+class ProcessWorker:
+    def __init__(self) -> None:
+        manager = mp.Manager()
+        self._next_args = manager.Queue(maxsize=1)
+        self._next_results = manager.Queue(maxsize=1)
+
+    @classmethod
+    def _do_work(cls, *args, **kwargs):
+        raise NotImplementedError
+
+    @classmethod
+    def _run(cls, args_proxy: mp.Queue, result_proxy: mp.Queue):
+        while True:
+            args, kwargs = args_proxy.get()
+            args = [
+                Sensors.deserialize_for_observation(a) if a is not None else a
+                for a in args
+            ]
+            kwargs = {
+                k: Sensors.deserialize_for_observation(a) if a is not None else a
+                for k, a in kwargs.items()
+            }
+            result = cls._do_work(*args, **kwargs)
+            result_proxy.put(Sensors.serialize_for_observation(result))
+
+    def run(self):
+        junction_check_proc = mp.Process(
+            target=self._run, args=(self._next_args, self._next_results), daemon=True
+        )
+        junction_check_proc.start()
+
+    def send_to_process(
+        self, *args, worker_args: Optional[WorkerArgs] = None, **kwargs
+    ):
+        args = [
+            Sensors.serialize_for_observation(a) if a is not None else a for a in args
+        ]
+        kwargs = {
+            k: Sensors.serialize_for_observation(a) if a is not None else a
+            for k, a in kwargs.items()
+        }
+        if worker_args:
+            kwargs.update(worker_args.kwargs)
+        self._next_args.put((args, kwargs))
+
+    def result(self, block=False, timeout=None):
+        return Sensors.deserialize_for_observation(
+            self._next_results.get(block=block, timeout=timeout)
+        )
+
+
+class SensorsWorker(ProcessWorker):
+    def __init__(self) -> None:
+        super().__init__()
+
+    @classmethod
+    def _do_work(cls, *args, **kwargs):
+        return cls.local(*args, **kwargs)
 
     @staticmethod
-    def local(sim_frame, agent_id, sensor_states, vehicles):
-        raise NotImplementedError()
+    def local(sim_frame, agent_ids):
+        return Sensors.observe_parallizable(sim_frame, agent_ids)
 
 
 class CameraSensor(Sensor):

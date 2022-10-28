@@ -30,7 +30,7 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.core.plan import Mission
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation, Sensors, SensorState, SensorWorker
+from smarts.core.sensors import Observation, Sensors, SensorState, SensorsWorker
 from smarts.core.smarts import SMARTS, SimulationFrame
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.sstudio.types import MapSpec
@@ -108,7 +108,6 @@ def renderer_type():
 
 
 def test_sensor_parallelization(
-    vehicle_ids: Set[str],
     simulation_frame: SimulationState,
 ):
 
@@ -118,9 +117,15 @@ def test_sensor_parallelization(
     agent_ids = set(AGENT_IDS)
     non_parallel_start = time.monotonic()
     obs, dones = Sensors.observe_parallel(
-        simulation_frame, agent_ids, process_count_override=1
+        simulation_frame, agent_ids, process_count_override=0
     )
     non_parallel_total = time.monotonic() - non_parallel_start
+
+    parallel_1_start = time.monotonic()
+    obs, dones = Sensors.observe_parallel(
+        simulation_frame, agent_ids, process_count_override=1
+    )
+    parallel_1_total = time.monotonic() - parallel_1_start
 
     parallel_2_start = time.monotonic()
     obs, dones = Sensors.observe_parallel(
@@ -136,25 +141,31 @@ def test_sensor_parallelization(
 
     assert len(obs) > 0
     assert (
-        non_parallel_total > parallel_2_total and parallel_2_total > parallel_4_total
-    ), f"{non_parallel_total=}, {parallel_2_total=}, {parallel_4_total=}"
+        non_parallel_total > parallel_1_total
+        and parallel_1_total > parallel_2_total
+        and parallel_2_total > parallel_4_total
+    ), f"{non_parallel_total=}, {parallel_1_total=}, {parallel_2_total=}, {parallel_4_total=}"
 
 
 def test_sensor_worker(
-    vehicle_ids: Set[str],
     simulation_frame: SimulationState,
 ):
-    return
-    agent_ids = {"agent-007"}
-    worker = SensorWorker(road_map_spec=simulation_frame.road_map())
-    observations_future, sensor_states_future = worker.process(
-        simulation_frame, agent_ids, sensor_states, vehicle_ids
-    )
-    observations, sensor_states = SensorWorker.local(
-        simulation_frame, agent_ids, sensor_states, vehicle_ids
-    )
+    agent_ids = set(AGENT_IDS)
+    worker = SensorsWorker()
+    worker.run()
+    worker.send_to_process(simulation_frame, agent_ids)
+    observations, dones = SensorsWorker.local(simulation_frame, agent_ids)
+    other_observations, other_dones = worker.result(block=True)
 
-    assert isinstance(observations, Dict[str, Observation])
-    assert isinstance(sensor_states, Dict[str, SensorState])
-    assert isinstance(observations_future.result(), Dict[str, Observation])
-    assert isinstance(sensor_states_future.result(), Dict[str, SensorState])
+    assert isinstance(observations, dict)
+    assert all(
+        [isinstance(obs, Observation) for obs in observations.values()]
+    ), f"{observations=}"
+    assert isinstance(dones, dict)
+    assert all([isinstance(obs, bool) for obs in dones.values()])
+    assert isinstance(other_observations, dict)
+    assert all([isinstance(obs, Observation) for obs in other_observations.values()])
+    assert isinstance(other_dones, dict)
+    assert all([isinstance(obs, bool) for obs in other_dones.values()])
+    # TODO MTA: this should be possible but is not currently
+    # assert observations == other_observations
