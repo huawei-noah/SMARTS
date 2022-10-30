@@ -75,8 +75,8 @@ Track-2 participants are required to submit their training code for us to train 
 1. In the server, during evaluation, the docker image will be pulled and executed as follows to train a new model. 
     ```bash
     $ docker run --rm -it \
-        --volume=<path>/offline_dataset:/SMARTS/competition/offline_dataset
-        --volume=<path>/output:/SMARTS/competition/output
+        --volume=<path>/offline_dataset:/SMARTS/competition/offline_dataset:ro \
+        --volume=<path>/output:/SMARTS/competition/output \
         <username/imagename:version>
     ```
     New offline dataset is made available to the container for training via a mapped volume at `/SMARTS/competition/offline_dataset` directory. The directory has the following structure.
@@ -103,7 +103,7 @@ Track-2 participants are required to submit their training code for us to train 
     The file `<vehicle_id>.pkl` contains the `vehicle_id`'s observation at each time point. The observation follows the SMARTS [observation](https://github.com/huawei-noah/SMARTS/blob/comp-1/smarts/core/sensors.py#L208) format. Additionally, for easy visualization, the top-down-RGB images from each vehicle's observations are also saved as `<time>_<vehicle_id>.png` at each time point. An example `offline_dataset` is provided [here](https://github.com/smarts-project/smarts-project.offline-datasets/blob/master/offline_dataset.rar) for reference.
 1. Inside the container, on completion of training, the trained model should be saved in `/SMARTS/competition/track2/submission` folder such that calling `/SMARTS/competition/track2/submission/policy.py::Policy.act(obs)` with a multi-agent SMARTS observation as input returns a multi-agent `TargetPose` action as output.
 1. The `/SMARTS/competition/track2/submission` folder will be zipped, mapped out from the container, and evaluated by the same evaluation script as that of Track-1. See evaluation [README.md](../evaluation/README.md).
-1. During development, it is strongly suggested to submit your zipped `track2/submission` folder to the Validation stage in Codalab, to verify that the evaluation works without errors.
+1. During development, it is strongly suggested to submit your zipped `track2/submission` folder to the Validation stage and Track-1 stage in Codalab, to verify that the evaluation works without errors.
 1. Finally, the offline training code in `track2/train` directory will be manually scrutinised. 
 
 ### Submit to Codalab
