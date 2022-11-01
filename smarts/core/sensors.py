@@ -120,7 +120,7 @@ class Sensors:
 
     @classmethod
     def observe_parallizable(cls, sim_frame, agent_ids_for_group):
-        from smarts.core.smarts import SimulationFrame
+        from smarts.core.simulation_frame import SimulationFrame
 
         sim_frame: SimulationFrame = sim_frame
         observations, dones = {}, {}
@@ -155,8 +155,7 @@ class Sensors:
 
     @classmethod
     def observe_parallel(cls, sim_frame, agent_ids, process_count_override=None):
-        from smarts.core.smarts import SimulationFrame
-        from smarts.core.vehicle import Vehicle
+        from smarts.core.simulation_frame import SimulationFrame
 
         sim_frame: SimulationFrame = sim_frame
         observations, dones = {}, {}

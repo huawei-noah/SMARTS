@@ -21,11 +21,9 @@ import importlib.resources as pkg_resources
 import logging
 import os
 import warnings
-from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
-from cached_property import cached_property
 
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
@@ -36,6 +34,7 @@ from smarts.core.plan import Plan
 from smarts.core.utils.logging import timeit
 
 from . import config, models
+from .simulation_frame import SimulationFrame
 from .actor import ActorRole, ActorState
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
@@ -1643,122 +1642,3 @@ class SMARTS(ProviderManager):
             # if self._renderer is not None
             # else None,
         )
-
-
-# TODO MTA: Move this class to a new separate file for typehint purposes
-# TODO MTA: Start to use this
-@dataclass(frozen=True)
-class SimulationGlobalConstants:
-    """This is state that should not ever change."""
-
-    OBSERVATION_WORKERS: int
-
-    _SMARTS_ENVIRONMENT_PREFIX: str = "SEV_"
-
-    @classmethod
-    def from_environment(cls, environ):
-        """This is intended to be used in the following way:
-        >>> sgc = SimulationGlobalConstants.from_environment(os.environ)
-        """
-        SEV = cls._SMARTS_ENVIRONMENT_PREFIX
-
-        def environ_get(NAME, data_type, default):
-            nonlocal SEV
-            assert isinstance(default, data_type)
-            return data_type(environ.get(f"{SEV}{NAME}", default))
-
-        # TODO MTA: consider a different option where defaults are in the object:
-        # and the typehints are used to determine the type
-        # cls(
-        #   **environ_get_all(cls._SMARTS_ENVIRONMENT_PREFIX)
-        # )
-        return cls(
-            OBSERVATION_WORKERS=environ_get("OBSERVATION_WORKERS", int, 0),
-        )
-
-
-# TODO MTA: Move this class to a new separate file for typehint purposes
-# TODO MTA: Construct this at rest and pass this to sensors
-@dataclass(frozen=True)
-class SimulationLocalConstants:
-    """This is state that should only change every reset."""
-
-    road_map: Any
-    traffic_lights: Any
-    vehicle_models: Any
-
-
-# TODO MTA: Move this class to a new separate file for typehint purposes
-@dataclass(frozen=True)
-class SimulationFrame:
-    """This is state that should change per step of the simulation."""
-
-    actor_states: Dict[str, ActorState]
-    agent_vehicle_controls: Dict[str, str]
-    agent_interfaces: Dict[str, AgentInterface]
-    ego_ids: str
-    elapsed_sim_time: float
-    fixed_timestep: float
-    resetting: bool
-    # road_map: RoadMap
-    map_spec: Any
-    last_dt: float
-    last_provider_state: ProviderState
-    step_count: int
-    vehicle_collisions: Dict[str, List[Collision]]
-    # TODO MTA: this association should be between agents and sensors
-    vehicles_for_agents: Dict[str, List[str]]
-    vehicle_ids: Set[str]
-    vehicle_states: Dict[str, VehicleState]
-    # TODO MTA: Some sensors still cause issues with serialization
-    vehicle_sensors: Dict[str, List[Any]]
-    # TODO MTA: Vehicles are not needed if vehicle state is already here
-    vehicles: Dict[str, Vehicle]
-
-    sensor_states: Any
-    # TODO MTA: this can be allowed here as long as it is only type information
-    # renderer_type: Any = None
-    _ground_bullet_id: Optional[str] = None
-
-    @cached_property
-    def agent_ids(self):
-        return set(self.agent_interfaces.keys())
-
-    def vehicle_did_collide(self, vehicle_id) -> bool:
-        """Test if the given vehicle had any collisions in the last physics update."""
-        vehicle_collisions = self.vehicle_collisions.get(vehicle_id, [])
-        for c in vehicle_collisions:
-            if c.collidee_id != self._ground_bullet_id:
-                return True
-        return False
-
-    def filtered_vehicle_collisions(self, vehicle_id) -> List[Collision]:
-        """Get a list of all collisions the given vehicle was involved in during the last
-        physics update.
-        """
-        vehicle_collisions = self.vehicle_collisions.get(vehicle_id, [])
-        return [
-            c for c in vehicle_collisions if c.collidee_id != self._ground_bullet_id
-        ]
-
-    @property
-    def road_map(self):
-        # TODO MTA: Remove this property from the frame since it should be constant until `reset()`.
-        # Reconstruction of the map at runtime is very slow.
-        from smarts.sstudio.types import MapSpec
-
-        map_spec: MapSpec = self.map_spec
-        road_map, road_map_hash = map_spec.builder_fn(map_spec)
-        return road_map
-
-    @staticmethod
-    def serialize(simulation_frame: "SimulationFrame") -> Any:
-        import cloudpickle
-
-        return cloudpickle.dumps(simulation_frame)
-
-    @staticmethod
-    def deserialize(serialized_simulation_frame) -> "SimulationFrame":
-        import cloudpickle
-
-        return cloudpickle.loads(serialized_simulation_frame)

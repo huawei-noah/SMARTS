@@ -31,7 +31,8 @@ from smarts.core.plan import Mission
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation, Sensors, SensorState, SensorsWorker
-from smarts.core.smarts import SMARTS, SimulationFrame
+from smarts.core.smarts import SMARTS
+from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.file import unpack
 
@@ -113,38 +114,30 @@ def test_sensor_parallelization(
 
     import time
 
-    # Sensors.init(road_map, renderer_type)  # not required
     agent_ids = set(AGENT_IDS)
-    non_parallel_start = time.monotonic()
-    obs, dones = Sensors.observe_parallel(
-        simulation_frame, agent_ids, process_count_override=0
-    )
-    non_parallel_total = time.monotonic() - non_parallel_start
 
-    parallel_1_start = time.monotonic()
-    obs, dones = Sensors.observe_parallel(
-        simulation_frame, agent_ids, process_count_override=1
-    )
-    parallel_1_total = time.monotonic() - parallel_1_start
+    def observe_with_processes(processes):
+        start_time = time.monotonic()
+        obs, dones = Sensors.observe_parallel(
+            simulation_frame, agent_ids, process_count_override=processes
+        )
+        assert len(obs) > 0
+        return time.monotonic() - start_time
 
-    parallel_2_start = time.monotonic()
-    obs, dones = Sensors.observe_parallel(
-        simulation_frame, agent_ids, process_count_override=2
-    )
-    parallel_2_total = time.monotonic() - parallel_2_start
+    # Sensors.init(road_map, renderer_type)  # not required
 
-    parallel_4_start = time.monotonic()
-    obs, dones = Sensors.observe_parallel(
-        simulation_frame, agent_ids, process_count_override=4
-    )
-    parallel_4_total = time.monotonic() - parallel_4_start
+    non_parallel_total = observe_with_processes(0)
+    parallel_1_total = observe_with_processes(1)
+    parallel_2_total = observe_with_processes(2)
+    parallel_3_total = observe_with_processes(3)
+    parallel_4_total = observe_with_processes(4)
 
-    assert len(obs) > 0
     assert (
         non_parallel_total > parallel_1_total
-        and parallel_1_total > parallel_2_total
-        and parallel_2_total > parallel_4_total
-    ), f"{non_parallel_total=}, {parallel_1_total=}, {parallel_2_total=}, {parallel_4_total=}"
+        or non_parallel_total > parallel_2_total
+        or non_parallel_total > parallel_3_total
+        or non_parallel_total > parallel_4_total
+    ), f"{non_parallel_total=}, {parallel_1_total=}, {parallel_2_total=}, {parallel_3_total=} {parallel_4_total=}"
 
 
 def test_sensor_worker(
