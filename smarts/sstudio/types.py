@@ -27,7 +27,7 @@ from ctypes import c_int64
 from dataclasses import dataclass, field
 from enum import IntEnum
 from sys import maxsize
-from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union, List
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -813,6 +813,36 @@ class PositionalZone(Zone):
             poly = shapely_rotate(poly, self.rotation, use_radians=True)
         return shapely_translate(poly, xoff=x, yoff=y)
 
+@dataclass(frozen=True)
+class ConfigurableZone(Zone):
+    """A descripter that defines a specific configurableZone defined by user"""
+
+    ext_coordinates: List[Tuple[float, float]]
+    """external coordinates of the polygon"""
+    rotation: Optional[float] = None
+    """The heading direction of the bubble(radians, clock-wise rotation)"""
+
+    def to_geometry(self, road_map: Optional[RoadMap] = None) -> Polygon:
+        """Generate a polygon according to given coordinates"""
+        poly = None
+        if (
+            len(self.ext_coordinates) == 2
+        ):  # if user only specified two points, create a box
+            x_min = min(self.ext_coordinates[0][0], self.ext_coordinates[1][0])
+            x_max = max(self.ext_coordinates[0][0], self.ext_coordinates[1][0])
+            y_min = min(self.ext_coordinates[1][0], self.ext_coordinates[1][1])
+            y_max = max(self.ext_coordinates[1][0], self.ext_coordinates[1][1])
+            poly = Polygon(
+                [(x_min, y_min), (x_max, y_min), (x_max, y_max), (x_min, y_max)],
+            )
+
+        else:  # else create a polygon according to the coordinates
+            poly = Polygon(self.ext_coordinates)
+
+        if self.rotation is not None:
+            poly = shapely_rotate(poly, self.rotation, use_radians=True)
+        return poly
+
 
 @dataclass(frozen=True)
 class BubbleLimits:
@@ -889,6 +919,12 @@ class Bubble:
             raise ValueError(
                 "Only boids can have keep_alive enabled (for persistent boids)"
             )
+
+        poly = None
+        if not isinstance(self.zone, MapZone):
+            poly = self.zone.to_geometry(road_map=None)
+        if poly is not None and (poly.is_valid == False):
+            raise ValueError("The Zone Polygon is not a valid closed loop")
 
     @staticmethod
     def to_actor_id(actor, mission_group):
