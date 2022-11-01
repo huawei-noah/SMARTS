@@ -653,7 +653,7 @@ class GroupedLapMission:
 class Zone:
     """The base for a descriptor that defines a capture area."""
 
-    def to_geometry(self, road_map: RoadMap) -> Polygon:
+    def to_geometry(self, road_map: Optional[RoadMap] = None) -> Polygon:
         """Generates the geometry from this zone."""
         raise NotImplementedError
 
