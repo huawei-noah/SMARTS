@@ -24,6 +24,7 @@ import importlib.resources as pkg_resources
 import json
 import logging
 import math
+import os
 import random
 import signal
 import sys
@@ -212,6 +213,8 @@ class WebClientRunLoop:
 
         async def run_loop():
             frame_ptr = None
+            frames_to_send = []
+
             # wait until we have a start_frame...
             self._log.debug("Waiting for first frame.")
             while frame_ptr is None:
@@ -229,16 +232,30 @@ class WebClientRunLoop:
                             "Seek frame missing, reverting to start frame"
                         )
                         frame_ptr = self._frames.start_frame
-                    frames_to_send = [frame_ptr]
+                    frames_to_send.append(frame_ptr)
                     self._seek = None
 
-                assert len(frames_to_send) > 0
-                closed = self._push_frames_to_web_client(frames_to_send)
-                if closed:
-                    self._log.debug("Socket closed, exiting")
-                    return
+                # Try to get next frames
+                while (
+                    frame_ptr.next_
+                    and len(frames_to_send) <= self._message_frame_volume
+                ):
+                    frame_ptr = frame_ptr.next_
+                    frames_to_send.append(frame_ptr)
 
-                frame_ptr, frames_to_send = self._wait_for_next_frame(frame_ptr)
+                # If we have new frames, send them to the web client
+                if len(frames_to_send) > 0:
+                    closed = self._push_frames_to_web_client(frames_to_send)
+                    if closed:
+                        self._log.debug("Socket closed, exiting")
+                        return
+                # Otherwise, sleep until next polling loop
+                else:
+                    delay = self._calculate_frame_delay(frame_ptr)
+                    time.sleep(delay)
+
+                # Reset frame list
+                frames_to_send = []
 
         def sync_run_forever():
             loop = asyncio.new_event_loop()
@@ -269,17 +286,6 @@ class WebClientRunLoop:
     def _calculate_frame_delay(self, frame_ptr):
         # we may want to be more clever here in the future...
         return self._message_wait_time
-
-    def _wait_for_next_frame(self, frame_ptr):
-        while True:
-            delay = self._calculate_frame_delay(frame_ptr)
-            time.sleep(delay)
-            frames_to_send = []
-            while frame_ptr.next_ and len(frames_to_send) <= self._message_frame_volume:
-                frame_ptr = frame_ptr.next_
-                frames_to_send.append(frame_ptr)
-            if len(frames_to_send) > 0:
-                return frame_ptr, frames_to_send
 
 
 class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
@@ -315,9 +321,9 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
         frame_time = None
         # Find the first number value, which will be the frame time.
         for prefix, event, value in it:
-            if not prefix or event != "number":
-                continue
-            frame_time = float(value)
+            if prefix and event == "number":
+                frame_time = float(value)
+                break
         assert isinstance(frame_time, float)
         self._frames.append(Frame(timestamp=frame_time, data=message))
 
@@ -456,8 +462,8 @@ class ModelFileHandler(FileHandler):
                 "coach.glb": "coach.glb",
                 "truck.glb": "truck.glb",
                 "trailer.glb": "trailer.glb",
-                "pedestrian.glb": "pedestrian.glb",
                 "motorcycle.glb": "motorcycle.glb",
+                "pedestrian.glb": "pedestrian.glb",
             }
         )
 
@@ -483,27 +489,29 @@ class MainHandler(tornado.web.RequestHandler):
 
 def make_app(scenario_dirs: Sequence, max_capacity_mb: float, debug: bool):
     """Create the envision web server application through composition of services."""
-    with pkg_resources.path(web_dist, ".") as dist_path:
-        return tornado.web.Application(
-            [
-                (r"/", MainHandler),
-                (r"/simulations", SimulationListHandler),
-                (r"/simulations/(?P<simulation_id>\w+)/state", StateWebSocket),
-                (
-                    r"/simulations/(?P<simulation_id>\w+)/broadcast",
-                    BroadcastWebSocket,
-                    dict(max_capacity_mb=max_capacity_mb),
-                ),
-                (
-                    r"/assets/maps/(.*)",
-                    MapFileHandler,
-                    dict(scenario_dirs=scenario_dirs),
-                ),
-                (r"/assets/models/(.*)", ModelFileHandler),
-                (r"/(.*)", tornado.web.StaticFileHandler, dict(path=str(dist_path))),
-            ],
-            debug=debug,
-        )
+
+    dist_path = Path(os.path.dirname(web_dist.__file__)).absolute()
+    logging.debug("Creating app with resources at: `%s`", dist_path)
+    return tornado.web.Application(
+        [
+            (r"/", MainHandler),
+            (r"/simulations", SimulationListHandler),
+            (r"/simulations/(?P<simulation_id>\w+)/state", StateWebSocket),
+            (
+                r"/simulations/(?P<simulation_id>\w+)/broadcast",
+                BroadcastWebSocket,
+                dict(max_capacity_mb=max_capacity_mb),
+            ),
+            (
+                r"/assets/maps/(.*)",
+                MapFileHandler,
+                dict(scenario_dirs=scenario_dirs),
+            ),
+            (r"/assets/models/(.*)", ModelFileHandler),
+            (r"/(.*)", tornado.web.StaticFileHandler, dict(path=str(dist_path))),
+        ],
+        debug=debug,
+    )
 
 
 def on_shutdown():
@@ -521,7 +529,7 @@ def run(
     """Create and run an envision web server."""
     app = make_app(scenario_dirs, max_capacity_mb, debug=debug)
     app.listen(port)
-    logging.debug(f"Envision listening on port={port}")
+    logging.debug("Envision listening on port=%s", port)
 
     ioloop = tornado.ioloop.IOLoop.current()
     signal.signal(

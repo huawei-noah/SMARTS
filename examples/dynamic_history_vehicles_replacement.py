@@ -2,8 +2,9 @@ import logging
 import random
 from typing import Any, Callable, Dict, Sequence
 
+from argument_parser import default_argument_parser
+
 from envision.client import Client as Envision
-from examples.argument_parser import default_argument_parser
 from smarts.core import seed as random_seed
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface
@@ -61,7 +62,6 @@ def main(
 
     smarts = SMARTS(
         agent_interfaces={},
-        traffic_sim=None,
         envision=envision_client,
     )
     random_seed(seed)
@@ -122,6 +122,7 @@ def main(
 
         # Create a table of vehicle trajectory lengths, filtering out non-moving vehicles
         vehicle_candidates = []
+        assert scenario.traffic_history
         for v_id in (str(id) for id in scenario.traffic_history.all_vehicle_ids()):
             traj = list(scenario.traffic_history.vehicle_trajectory(v_id))
             # Find moving vehicles with more than the minimum number of timesteps

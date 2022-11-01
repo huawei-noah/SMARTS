@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 
@@ -30,6 +31,7 @@ from shapely.geometry import Point
 
 import smarts.sstudio.types as t
 from smarts.core import seed
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -49,23 +51,30 @@ def bubble():
     )
 
 
+@pytest.fixture(params=["SUMO", "SMARTS"])
+def traffic_sim(request):
+    return getattr(request, "param", "SUMO")
+
+
 @pytest.fixture
-def scenarios(bubble):
+def scenarios(bubble, traffic_sim):
     with temp_scenario(name="straight", map="maps/straight.net.xml") as scenario_root:
         traffic = t.Traffic(
+            engine=traffic_sim,
             flows=[
                 t.Flow(
                     route=t.Route(
                         begin=("west", lane_idx, 0),
                         end=("east", lane_idx, "max"),
                     ),
+                    repeat_route=True,
                     rate=50,
                     actors={
                         t.TrafficActor("car"): 1,
                     },
                 )
                 for lane_idx in range(3)
-            ]
+            ],
         )
 
         gen_scenario(
@@ -77,8 +86,13 @@ def scenarios(bubble):
 
 
 @pytest.fixture
-def smarts():
-    smarts = SMARTS({}, traffic_sim=SumoTrafficSimulation())
+def smarts(traffic_sim):
+    traffic_sims = (
+        [LocalTrafficProvider()]
+        if traffic_sim == "SMARTS"
+        else [SumoTrafficSimulation()]
+    )
+    smarts = SMARTS({}, traffic_sims=traffic_sims)
     yield smarts
     smarts.destroy()
 
@@ -92,6 +106,7 @@ class ZoneSteps:
 
 
 # TODO: Consider a higher-level DSL syntax to fulfill these tests
+@pytest.mark.parametrize("traffic_sim", ["SUMO", "SMARTS"], indirect=True)
 def test_boids(smarts, scenarios, bubble):
     # TODO: this is a hack to specify a seed to make this test pass
     seed(int(os.getenv("PYTHONHASHSEED", 42)))
@@ -122,7 +137,12 @@ def test_boids(smarts, scenarios, bubble):
             is_shadowing = index.shadow_actor_id_from_vehicle_id(vehicle.id) is not None
             is_agent_controlled = vehicle.id in index.agent_vehicle_ids()
 
-            zone_steps = steps_driven_in_zones[vehicle.id]
+            vehicle_id = (
+                vehicle.id
+                if traffic_sim == "SUMO"
+                else re.sub(r"_\d+$", "", vehicle.id)
+            )
+            zone_steps = steps_driven_in_zones[vehicle_id]
             if position.within(geometry.bubble):
                 zone_steps.in_bubble += 1
                 hijacked_actor_ids.append(index.actor_id_from_vehicle_id(vehicle.id))

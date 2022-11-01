@@ -9,6 +9,7 @@ traffic = t.Traffic(
             route=t.Route(
                 begin=("edge-west-WE", 0, 10), end=("edge-east-WE", 0, "max")
             ),
+            repeat_route=True,
             rate=400,
             actors={t.TrafficActor("car"): 1},
         ),
@@ -16,6 +17,7 @@ traffic = t.Traffic(
             route=t.Route(
                 begin=("edge-east-EW", 0, 10), end=("edge-west-EW", 0, "max")
             ),
+            repeat_route=True,
             rate=400,
             actors={t.TrafficActor("car"): 1},
         ),

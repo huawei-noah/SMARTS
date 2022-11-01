@@ -25,11 +25,15 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from shapely.affinity import rotate as shapely_rotate
+from shapely.geometry import Polygon
+from shapely.geometry import box as shapely_box
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
 
 from . import models
+from .actor import ActorRole, ActorState
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import Colors, SceneColors
 from .coordinates import Dimensions, Heading, Pose
@@ -37,47 +41,52 @@ from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
     DrivenPathSensor,
+    LanePositionSensor,
     LidarSensor,
     NeighborhoodVehiclesSensor,
     OGMSensor,
     RGBSensor,
     RoadWaypointsSensor,
+    SignalsSensor,
     TripMeterSensor,
     ViaSensor,
     WaypointsSensor,
 )
 from .utils.custom_exceptions import RendererException
-from .utils.math import rotate_around_point
+from .utils.math import rotate_cw_around_point
 
 
 @dataclass
-class VehicleState:
+class VehicleState(ActorState):
     """Vehicle state information."""
 
-    vehicle_id: str
-    pose: Pose
-    dimensions: Dimensions
-    vehicle_type: Optional[str] = None
     vehicle_config_type: Optional[str] = None  # key into VEHICLE_CONFIGS
-    updated: bool = False
+    pose: Optional[Pose] = None
+    dimensions: Optional[Dimensions] = None
     speed: float = 0.0
     steering: Optional[float] = None
     yaw_rate: Optional[float] = None
-    source: Optional[str] = None  # the source of truth for this vehicle state
     linear_velocity: Optional[np.ndarray] = None
     angular_velocity: Optional[np.ndarray] = None
     linear_acceleration: Optional[np.ndarray] = None
     angular_acceleration: Optional[np.ndarray] = None
-    _privileged: bool = False
 
-    def set_privileged(self):
-        """For deferring to external co-simulators only. Use with caution!"""
-        self._privileged = True
+    def __post_init__(self):
+        assert self.pose is not None and self.dimensions is not None
 
     @property
-    def privileged(self) -> bool:
-        """If the vehicle state is privilaged over the internal simulation state."""
-        return self._privileged
+    def bbox(self) -> Polygon:
+        """Returns a bounding box around the vehicle."""
+        pos = self.pose.point
+        half_len = 0.5 * self.dimensions.length
+        half_width = 0.5 * self.dimensions.width
+        poly = shapely_box(
+            pos.x - half_width,
+            pos.y - half_len,
+            pos.x + half_width,
+            pos.y + half_len,
+        )
+        return shapely_rotate(poly, self.pose.heading, use_radians=True)
 
 
 @dataclass(frozen=True)
@@ -161,7 +170,6 @@ class Vehicle:
         self._chassis: Chassis = chassis
         self._vehicle_config_type = vehicle_config_type
         self._action_space = action_space
-        self._speed = None
 
         self._meta_create_sensor_functions()
         self._sensors = {}
@@ -226,14 +234,7 @@ class Vehicle:
     def speed(self) -> float:
         """The current speed of this vehicle."""
         self._assert_initialized()
-        if self._speed is not None:
-            return self._speed
-        else:
-            return self._chassis.speed
-
-    def set_speed(self, speed):
-        """Set the current speed of this vehicle."""
-        self._speed = speed
+        return self._chassis.speed
 
     @property
     def sensors(self) -> dict:
@@ -263,9 +264,10 @@ class Vehicle:
         """The current state of this vehicle."""
         self._assert_initialized()
         return VehicleState(
-            vehicle_id=self.id,
-            vehicle_type=self.vehicle_type,
-            vehicle_config_type=None,  # it's hard to invert
+            actor_id=self.id,
+            actor_type=self.vehicle_type,
+            source="SMARTS",  # this is the "ground truth" state
+            vehicle_config_type=self._vehicle_config_type,
             pose=self.pose,
             dimensions=self._chassis.dimensions,
             speed=self.speed,
@@ -273,7 +275,6 @@ class Vehicle:
             steering=self._chassis.steering,
             # pytype: enable=attribute-error
             yaw_rate=self._chassis.yaw_rate,
-            source="SMARTS",
             linear_velocity=self._chassis.velocity_vectors[0],
             angular_velocity=self._chassis.velocity_vectors[1],
         )
@@ -306,15 +307,15 @@ class Vehicle:
         return self._chassis.pose.heading
 
     @property
-    def position(self) -> Sequence:
+    def position(self) -> np.ndarray:
         """The position of this vehicle."""
         self._assert_initialized()
-        pos, _ = self._chassis.pose.as_panda3d()
-        return pos
+        return self._chassis.pose.position
 
     @property
     def bounding_box(self) -> List[np.ndarray]:
         """The minimum fitting heading aligned bounding box. Four 2D points representing the minimum fitting box."""
+        # XXX: this doesn't return a smarts.core.coordinates.BoundingBox!
         self._assert_initialized()
         # Assuming the position is the centre,
         # calculate the corner coordinates of the bounding_box
@@ -323,9 +324,9 @@ class Vehicle:
         corners = np.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
         heading = self.heading
         return [
-            rotate_around_point(
+            rotate_cw_around_point(
                 point=origin + corner * dimensions,
-                radians=heading,
+                radians=Heading.flip_clockwise(heading),
                 origin=origin,
             )
             for corner in corners
@@ -335,6 +336,11 @@ class Vehicle:
     def vehicle_type(self) -> str:
         """Get the vehicle type identifier."""
         return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
+
+    @property
+    def valid(self) -> bool:
+        """Check if the vehicle still `exists` and is still operable."""
+        return self._initialized
 
     @staticmethod
     def agent_vehicle_dims(mission: Mission) -> Dimensions:
@@ -406,7 +412,6 @@ class Vehicle:
         )
 
         chassis = None
-        # change this to dynamic_action_spaces later when pr merged
         if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
             if mission.vehicle_spec:
                 logger = logging.getLogger(cls.__name__)
@@ -464,7 +469,7 @@ class Vehicle:
         vehicle.attach_trip_meter_sensor(
             TripMeterSensor(
                 vehicle=vehicle,
-                sim=sim,
+                road_map=sim.road_map,
                 plan=plan,
             )
         )
@@ -484,6 +489,9 @@ class Vehicle:
 
         if agent_interface.accelerometer:
             vehicle.attach_accelerometer_sensor(AccelerometerSensor(vehicle=vehicle))
+
+        if agent_interface.lane_positions:
+            vehicle.attach_lane_position_sensor(LanePositionSensor(vehicle=vehicle))
 
         if agent_interface.waypoints:
             vehicle.attach_waypoints_sensor(
@@ -558,6 +566,14 @@ class Vehicle:
             )
         )
 
+        if agent_interface.signals:
+            lookahead = agent_interface.signals.lookahead
+            vehicle.attach_signals_sensor(
+                SignalsSensor(
+                    vehicle=vehicle, road_map=sim.road_map, lookahead=lookahead
+                )
+            )
+
     def step(self, current_simulation_time):
         """Update internal state."""
         self._has_stepped = True
@@ -573,11 +589,11 @@ class Vehicle:
     def update_state(self, state: VehicleState, dt: float):
         """Update the vehicle's state"""
         state.updated = True
-        if not state.privileged:
+        if state.role != ActorRole.External:
             assert isinstance(self._chassis, BoxChassis)
             self.control(pose=state.pose, speed=state.speed, dt=dt)
             return
-        # "Privileged" means we can work directly (bypass force application).
+        # External actors are "privileged", which means they work directly (bypass force application).
         # Conceptually, this is playing 'god' with physics and should only be used
         # to defer to a co-simulator's states.
         linear_velocity, angular_velocity = None, None
@@ -666,14 +682,25 @@ class Vehicle:
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",
+            "lane_position_sensor",
             "via_sensor",
+            "signals_sensor",
         ]
         for sensor_name in sensor_names:
 
             def attach_sensor(self, sensor, sensor_name=sensor_name):
-                assert (
-                    getattr(self, f"_{sensor_name}", None) is None
-                ), f"{sensor_name} already added to {self.id}"
+                # replace previously-attached sensor with this one
+                # (to allow updating its parameters).
+                # Sensors might have been attached to a non-agent vehicle
+                # (for example, for observation collection from history vehicles),
+                # but if that vehicle gets hijacked, we want to use the sensors
+                # specified by the hijacking agent's interface.
+                detach = getattr(self, f"detach_{sensor_name}")
+                if detach:
+                    detach(sensor_name)
+                    self._log.info(
+                        f"replacing existing {sensor_name} on vehicle {self.id}"
+                    )
                 setattr(self, f"_{sensor_name}", sensor)
                 self._sensors[sensor_name] = sensor
 
@@ -690,7 +717,7 @@ class Vehicle:
 
             def sensor_property(self, sensor_name=sensor_name):
                 sensor = getattr(self, f"_{sensor_name}", None)
-                assert sensor is not None, f"{sensor_name} is not attached"
+                assert sensor is not None, f"{sensor_name} is not attached to {self.id}"
                 return sensor
 
             setattr(Vehicle, f"_{sensor_name}", None)

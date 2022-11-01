@@ -26,18 +26,17 @@ import copy
 import json
 import os
 import re
-import shutil
 import struct
-import sys
 from itertools import product
 from multiprocessing import cpu_count
 from pathlib import Path
 from typing import Dict, Generator, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
-import yaml
 from matplotlib.animation import FFMpegWriter, FuncAnimation
 from matplotlib.lines import Line2D
+
+from smarts.waymo import waymo_utils
 
 try:
     import readline
@@ -46,79 +45,18 @@ try:
     from tabulate import tabulate
     from waymo_open_dataset.protos import scenario_pb2
 except (ModuleNotFoundError, ImportError):
+    import sys
+    from collections import namedtuple
+    from typing import Any
+
+    scenario_pb2 = namedtuple("scenario_pb2", "Scenario")(Any)
     print(sys.exc_info())
     print(
-        "You may not have installed the [waymo] dependencies required to run this Waymo Utility. \n"
-        "Install them first using the following command at the source directory:\n"
-        "pip install waymo-open-dataset-tf-2-4-0 tabulate==0.8.9 pathos==0.2.8 readline"
+        "Unable to run Waymo utility. To enable, pip install the missing dependencies.\n"
+        "pip install pathos==0.2.8 tabulate>=0.8.10 waymo-open-dataset-tf-2-4-0"
     )
-    exit()
-
-TRAJECTORY_HANDLES = [
-    Line2D(
-        [],
-        [],
-        color="cyan",
-        marker="^",
-        linestyle="None",
-        markersize=5,
-        label="Ego Vehicle",
-    ),
-    Line2D(
-        [],
-        [],
-        color="black",
-        marker="^",
-        linestyle="None",
-        markersize=5,
-        label="Car",
-    ),
-    Line2D(
-        [],
-        [],
-        color="magenta",
-        marker="d",
-        linestyle="None",
-        markersize=5,
-        label="Pedestrian",
-    ),
-    Line2D(
-        [],
-        [],
-        color="yellow",
-        marker="*",
-        linestyle="None",
-        markersize=5,
-        label="Cyclist",
-    ),
-    Line2D(
-        [],
-        [],
-        color="black",
-        marker="8",
-        linestyle="None",
-        markersize=5,
-        label="Other",
-    ),
-]
-
-MAP_HANDLES = [
-    Line2D([0], [0], linestyle=":", color="gray", label="Lane Polyline"),
-    Line2D([0], [0], linestyle="-", color="yellow", label="Single Road Line"),
-    Line2D([0], [0], linestyle="--", color="yellow", label="Double Road Line"),
-    Line2D([0], [0], linestyle="-", color="black", label="Road Edge"),
-    Line2D([0], [0], linestyle="--", color="black", label="Crosswalk"),
-    Line2D([0], [0], linestyle=":", color="black", label="Speed Bump"),
-    Line2D(
-        [],
-        [],
-        color="red",
-        marker="o",
-        linestyle="None",
-        markersize=5,
-        label="Stop Sign",
-    ),
-]
+    if __name__ == "__main__":
+        exit()
 
 
 def read_tfrecord_file(path: str) -> Generator[bytes, None, None]:
@@ -211,10 +149,11 @@ def get_trajectory_data(waymo_scenario: scenario_pb2.Scenario) -> Dict:
             # First pass -- extract data and yield trajectory at every timestep
             for j in range(num_steps):
                 obj_state = scenario.tracks[i].states[j]
-                if not obj_state.valid:
-                    continue
                 row = dict()
                 row["vehicle_id"] = vehicle_id
+                if not obj_state.valid:
+                    row["position_x"] = None
+                    row["position_y"] = None
                 row["type"] = scenario.tracks[i].object_type
                 row["is_ego_vehicle"] = 1 if i == scenario.sdc_track_index else 0
                 row["position_x"] = obj_state.center_x
@@ -367,6 +306,13 @@ def plot_trajectories(
     handles = []
     max_len = 0
     data, points = [], []
+
+    # Need to plot something initially to get handles to the point objects,
+    # so just use a valid point from the first trajectory
+    first_traj = list(trajectories.values())[0]
+    ind = min(range(len(first_traj[1])), key=first_traj[1].__getitem__)
+    x0 = first_traj[0][ind]
+    y0 = first_traj[1][ind]
     for k, v in trajectories.items():
         xs, ys = v[0], v[1]
         is_ego = v[2]
@@ -374,10 +320,10 @@ def plot_trajectories(
         if len(xs) > max_len:
             max_len = len(xs)
         if is_ego:
-            (point,) = plt.plot(xs[0], ys[0], "c^")
+            (point,) = plt.plot(x0, y0, "c^")
         elif object_type == 1:
             if str(k) in track_ids:
-                (point,) = plt.plot(xs[0], ys[0], "r^")
+                (point,) = plt.plot(x0, y0, "r^")
                 handles.append(
                     Line2D(
                         [],
@@ -390,7 +336,7 @@ def plot_trajectories(
                     )
                 )
             elif int(k) in objects_of_interest:
-                (point,) = plt.plot(xs[0], ys[0], "g^")
+                (point,) = plt.plot(x0, y0, "g^")
                 handles.append(
                     Line2D(
                         [],
@@ -403,10 +349,10 @@ def plot_trajectories(
                     )
                 )
             else:
-                (point,) = plt.plot(xs[0], ys[0], "k^")
+                (point,) = plt.plot(x0, y0, "k^")
         elif object_type == 2:
             if str(k) in track_ids:
-                (point,) = plt.plot(xs[0], ys[0], "rd")
+                (point,) = plt.plot(x0, y0, "rd")
                 handles.append(
                     Line2D(
                         [],
@@ -419,7 +365,7 @@ def plot_trajectories(
                     )
                 )
             elif int(k) in objects_of_interest:
-                (point,) = plt.plot(xs[0], ys[0], "gd")
+                (point,) = plt.plot(x0, y0, "gd")
                 handles.append(
                     Line2D(
                         [],
@@ -432,10 +378,10 @@ def plot_trajectories(
                     )
                 )
             else:
-                (point,) = plt.plot(xs[0], ys[0], "md")
+                (point,) = plt.plot(x0, y0, "md")
         elif object_type == 3:
             if str(k) in track_ids:
-                (point,) = plt.plot(xs[0], ys[0], "r*")
+                (point,) = plt.plot(x0, y0, "r*")
                 handles.append(
                     Line2D(
                         [],
@@ -448,7 +394,7 @@ def plot_trajectories(
                     )
                 )
             elif int(k) in objects_of_interest:
-                (point,) = plt.plot(xs[0], ys[0], "g*")
+                (point,) = plt.plot(x0, y0, "g*")
                 handles.append(
                     Line2D(
                         [],
@@ -461,10 +407,10 @@ def plot_trajectories(
                     )
                 )
             else:
-                (point,) = plt.plot(xs[0], ys[0], "y*")
+                (point,) = plt.plot(x0, y0, "y*")
         else:
             if str(k) in track_ids:
-                (point,) = plt.plot(xs[0], ys[0], "r8")
+                (point,) = plt.plot(x0, y0, "r8")
                 handles.append(
                     Line2D(
                         [],
@@ -477,7 +423,7 @@ def plot_trajectories(
                     )
                 )
             elif int(k) in objects_of_interest:
-                (point,) = plt.plot(xs[0], ys[0], "g8")
+                (point,) = plt.plot(x0, y0, "g8")
                 handles.append(
                     Line2D(
                         [],
@@ -490,7 +436,7 @@ def plot_trajectories(
                     )
                 )
             else:
-                (point,) = plt.plot(xs[0], ys[0], "k8")
+                (point,) = plt.plot(x0, y0, "k8")
         data.append((xs, ys))
         points.append(point)
 
@@ -517,7 +463,7 @@ def plot_scenario(
 
     # Set Legend Handles
     all_handles = []
-    all_handles.extend(MAP_HANDLES + highlighted_handles)
+    all_handles.extend(waymo_utils.MAP_HANDLES + highlighted_handles)
 
     if animate_trajectories:
         # Plot Trajectories
@@ -526,7 +472,7 @@ def plot_scenario(
             scenario_info[0].objects_of_interest,
             f_ids if f_ids else [],
         )
-        all_handles.extend(TRAJECTORY_HANDLES + t_handles)
+        all_handles.extend(waymo_utils.TRAJECTORY_HANDLES + t_handles)
 
         def update(i):
             drawn_pts = []
@@ -574,7 +520,7 @@ def save_plot(
         scenario_dict[scenario_id][1] = get_map_features_for_scenario(scenario)
     plot_map_features(scenario_dict[scenario_id][1], [])
     all_handles = []
-    all_handles.extend(MAP_HANDLES)
+    all_handles.extend(waymo_utils.MAP_HANDLES)
 
     if animate:
         # Plot Trajectories
@@ -585,13 +531,13 @@ def save_plot(
             scenario_dict[scenario_id][0].objects_of_interest,
             [],
         )
-        all_handles.extend(TRAJECTORY_HANDLES)
+        all_handles.extend(waymo_utils.TRAJECTORY_HANDLES)
         plt.legend(handles=all_handles)
 
         def update(i):
             drawn_pts = []
             for (xs, ys), point in zip(data, points):
-                if i < len(xs):
+                if i < len(xs) and xs[i] is not None and ys[i] is not None:
                     point.set_data(xs[i], ys[i])
                     drawn_pts.append(point)
             return drawn_pts
@@ -1196,25 +1142,11 @@ def export_scenario(
     if os.path.exists(scenario_py):
         print(f"scenario.py already exists in {subfolder_path}.")
     else:
-        scenario_template = os.path.join(
-            Path(__file__).parent, "templates", "scenario_template.py"
-        )
-        shutil.copy2(scenario_template, scenario_py)
+        with open(scenario_py, "w") as f:
+            f.write(
+                waymo_utils.gen_smarts_scenario_code(tfrecord_file_path, scenario_id)
+            )
         print(f"Scenario.py created in {subfolder_path}.")
-
-    # The dataspec is written in a yaml file and scenario_template.py will read this file and fill in the dataspec for Waymo Scenario.
-    # We don't directly write to the scenario_template.py file to avoid writing at wrong lines if users edit that file.
-    yaml_dataspec = {
-        "trajectory_dataset": {
-            "source": "Waymo",
-            "input_path": tfrecord_file_path,
-            "scenario_id": scenario_id,
-        }
-    }
-    with open(os.path.join(subfolder_path, "waymo.yaml"), "w") as yaml_file:
-        yaml.dump(yaml_dataspec, yaml_file, default_flow_style=False)
-        print(f"waymo.yaml created in {subfolder_path}")
-    print("\n")
     return True
 
 
@@ -2160,9 +2092,19 @@ def explore_scenario(
 if __name__ == "__main__":
     import warnings
 
+    warnings.warn(
+        "waymo_browser.py has been deprecated in favour of the scl waymo command line tools.",
+        category=DeprecationWarning,
+    )
     readline.set_completer_delims(" \t\n;")
     readline.parse_and_bind("tab: complete")
     warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+    from types import ModuleType
+
+    assert isinstance(
+        scenario_pb2, ModuleType
+    ), "Module not installed please see warnings."
 
     parser = argparse.ArgumentParser(
         prog="waymo_browser.py",

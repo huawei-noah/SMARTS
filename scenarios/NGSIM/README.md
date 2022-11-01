@@ -28,5 +28,5 @@ their level of exactness may not be enough for some model-training situations,
 so you may want or need to refine them with SUMO's [netedit tool](https://sumo.dlr.de/docs/Netedit/index.html).
 
 An example of how traffic history might be replayed in SMARTS can be found in the 
-[examples/observation_collection_for_imitation_learning.py](../../examples/observation_collection_for_imitation_learning.py)
+[examples/traffic_histories_to_observations.py](../../examples/traffic_histories_to_observations.py)
 script.

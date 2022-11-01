@@ -4,6 +4,7 @@ from typing import Dict
 
 import numpy as np
 
+from smarts.core.actor_role import ActorRole
 from smarts.core.chassis import BoxChassis
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
@@ -31,6 +32,9 @@ def look_at(client, position=(0, 0, 0), top_down=True):
             cameraYaw=15,
             cameraPitch=0,
         )
+
+
+# pytype: disable=name-error
 
 
 def social_spin_on_bumper_cw(step, front_bumper_position, length):
@@ -97,6 +101,7 @@ def run(
                 dimensions=passenger_dimen,
                 speed=0,
                 source="TESTS",
+                role=ActorRole.EgoAgent,
             )
             current_provider_state.vehicles.append(converted_to_provider)
         traffic_sim.sync(current_provider_state)
@@ -133,6 +138,9 @@ def run(
         previous_vehicle_ids = current_vehicle_ids
 
     traffic_sim.teardown()
+
+
+# pytype: enable=name-error
 
 
 if __name__ == "__main__":

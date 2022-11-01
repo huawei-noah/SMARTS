@@ -19,14 +19,16 @@
 # THE SOFTWARE.
 
 import logging
-from typing import Any, Dict, Optional, Set, Tuple, Union
-
-import cloudpickle
+import weakref
+from concurrent import futures
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Union
 
 from envision.types import format_actor_id
+from smarts.core.actor import ActorRole
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
+from smarts.core.heterogenous_agent_buffer import HeterogenousAgentBuffer
 from smarts.core.plan import Plan
 from smarts.core.sensors import Observation, Sensors
 from smarts.core.utils.id import SocialAgentId
@@ -42,9 +44,11 @@ class AgentManager:
          time.
     """
 
-    def __init__(self, interfaces, zoo_addrs=None):
+    def __init__(self, sim, interfaces, zoo_addrs=None):
         self._log = logging.getLogger(self.__class__.__name__)
-        self._remote_agent_buffer = None
+        self._sim = weakref.ref(sim)
+        self._vehicle_index = sim.vehicle_index
+        self._agent_buffer = None
         self._zoo_addrs = zoo_addrs
         self._ego_agent_ids = set()
         self._social_agent_ids = set()
@@ -67,6 +71,8 @@ class AgentManager:
         # We send observations and receive actions for all values in this dictionary
         self._remote_social_agents = {}
         self._remote_social_agents_action = {}
+        self._social_agent_observation_callbacks = {}
+        self._reserved_social_agent_actions = {}
 
     def teardown(self):
         """Clean up resources."""
@@ -78,9 +84,9 @@ class AgentManager:
 
     def destroy(self):
         """Clean up remaining resources for deletion."""
-        if self._remote_agent_buffer:
-            self._remote_agent_buffer.destroy()
-            self._remote_agent_buffer = None
+        if self._agent_buffer:
+            self._agent_buffer.destroy()
+            self._agent_buffer = None
 
     @property
     def agent_ids(self) -> Set[str]:
@@ -126,23 +132,26 @@ class AgentManager:
         self._pending_agent_ids -= agent_ids
 
     def observe_from(
-        self, sim, vehicle_ids: Set[str], done_this_step: Set[str] = set()
+        self, vehicle_ids: Set[str], done_this_step: Optional[Set[str]] = None
     ) -> Tuple[
         Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]
     ]:
         """Attempt to generate observations from the given vehicles."""
+        done_this_step = done_this_step or set()
+        sim = self._sim()
+        assert sim
         observations = {}
         rewards = {}
         dones = {}
         scores = {}
         for v_id in vehicle_ids:
-            vehicle = sim.vehicle_index.vehicle_by_id(v_id)
+            vehicle = self._vehicle_index.vehicle_by_id(v_id)
             agent_id = self._vehicle_with_sensors[v_id]
 
-            if not sim.vehicle_index.check_vehicle_id_has_sensor_state(vehicle.id):
+            if not self._vehicle_index.check_vehicle_id_has_sensor_state(vehicle.id):
                 continue
 
-            sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+            sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
 
             observations[agent_id], dones[agent_id] = Sensors.observe(
                 sim, agent_id, sensor_state, vehicle
@@ -159,7 +168,7 @@ class AgentManager:
         return observations, rewards, scores, dones
 
     def observe(
-        self, sim
+        self,
     ) -> Tuple[
         Dict[str, Union[Dict[str, Observation], Observation]],
         Dict[str, Union[Dict[str, float], float]],
@@ -167,29 +176,31 @@ class AgentManager:
         Dict[str, Union[Dict[str, bool], bool]],
     ]:
         """Generate observations from all vehicles associated with an active agent."""
+        sim = self._sim()
+        assert sim
         observations = {}
         rewards = {}
         scores = {}
         dones = {
             agent_id: agent_id not in self.pending_agent_ids
             for agent_id in self.agent_ids
-            if agent_id not in sim.vehicle_index.agent_vehicle_ids()
+            if agent_id not in self._vehicle_index.agent_vehicle_ids()
         }
 
         for agent_id in self.active_agents:
             # An agent may be pointing to its own vehicle or observing a social vehicle
-            vehicle_ids = sim.vehicle_index.vehicle_ids_by_actor_id(
+            vehicle_ids = self._vehicle_index.vehicle_ids_by_actor_id(
                 agent_id, include_shadowers=True
             )
 
             if self.is_boid_agent(agent_id):
                 vehicles = [
-                    sim.vehicle_index.vehicle_by_id(vehicle_id)
+                    self._vehicle_index.vehicle_by_id(vehicle_id)
                     for vehicle_id in vehicle_ids
                 ]
                 # returns format of {<agent_id>: {<vehicle_id>: {...}}}
                 sensor_states = {
-                    vehicle.id: sim.vehicle_index.sensor_state_for_vehicle_id(
+                    vehicle.id: self._vehicle_index.sensor_state_for_vehicle_id(
                         vehicle.id
                     )
                     for vehicle in vehicles
@@ -198,30 +209,28 @@ class AgentManager:
                     sim, agent_id, sensor_states, {v.id: v for v in vehicles}
                 )
                 rewards[agent_id] = {
-                    vehicle_id: self._vehicle_reward(vehicle_id, sim)
+                    vehicle_id: self._vehicle_reward(vehicle_id)
                     for vehicle_id in sensor_states.keys()
                 }
                 scores[agent_id] = {
                     format_actor_id(
                         agent_id, vehicle_id, is_multi=True
-                    ): self._vehicle_score(vehicle_id, sim)
+                    ): self._vehicle_score(vehicle_id)
                     for vehicle_id in sensor_states.keys()
                 }
             else:
-                assert len(vehicle_ids) == 1, (
-                    "Unless this vehicle is part of a boid then we should only have a "
-                    f"single vehicle under agent_id={agent_id}\n "
-                    f"(vehicle_ids={vehicle_ids})"
-                )
+                self._diagnose_mismatched_observation_vehicles(vehicle_ids, agent_id)
 
-                vehicle = sim.vehicle_index.vehicle_by_id(vehicle_ids[0])
-                sensor_state = sim.vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+                vehicle = self._vehicle_index.vehicle_by_id(vehicle_ids[0])
+                sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(
+                    vehicle.id
+                )
                 obs, dones[agent_id] = Sensors.observe(
                     sim, agent_id, sensor_state, vehicle
                 )
                 observations[agent_id] = obs
 
-                if sim.vehicle_index.vehicle_is_shadowed(vehicle.id):
+                if self._vehicle_index.vehicle_is_shadowed(vehicle.id):
                     # It is not a shadowing agent's fault if it is done
                     dones[agent_id] = False
                 else:
@@ -239,21 +248,40 @@ class AgentManager:
 
         return observations, rewards, scores, dones
 
-    def _vehicle_reward(self, vehicle_id, sim) -> float:
-        return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor(
+    def _diagnose_mismatched_observation_vehicles(self, vehicle_ids, agent_id: str):
+        try:
+            assert len(vehicle_ids) == 1, (
+                "Unless this vehicle is part of a boid then we should only have a "
+                f"single vehicle under agent_id={agent_id}\n "
+                f"(vehicle_ids={vehicle_ids})"
+            )
+        except AssertionError as error:
+            if agent_id.startswith("BUBBLE-AGENT"):
+                related_vehicle_ids = [
+                    v_id
+                    for v_id, _ in self._vehicle_index.vehicleitems()
+                    if v_id.endswith(agent_id[-5:])
+                ]
+                logging.error(
+                    "Vehicles of interest for `%s`: `%s`", agent_id, related_vehicle_ids
+                )
+            raise error
+
+    def _vehicle_reward(self, vehicle_id: str) -> float:
+        return self._vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor(
             increment=True
         )
 
-    def _vehicle_score(self, vehicle_id, sim) -> float:
-        return sim.vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
+    def _vehicle_score(self, vehicle_id: str) -> float:
+        return self._vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
 
-    def step_sensors(self, sim):
+    def step_sensors(self):
         """Update all known vehicle sensors."""
         # TODO: Move to vehicle index
-        for vehicle_id, sensor_state in sim.vehicle_index.sensor_states_items():
+        for vehicle_id, sensor_state in self._vehicle_index.sensor_states_items():
             Sensors.step(self, sensor_state)
 
-            vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
+            vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
             for sensor in vehicle.sensors.values():
                 sensor.step()
 
@@ -275,16 +303,12 @@ class AgentManager:
         """Filter all (observations, rewards, dones, infos) down to those related to ego agents."""
         return tuple(map(self._filter_for_active_ego, response_tuple))
 
-    def fetch_agent_actions(
-        self, sim, ego_agent_actions: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def fetch_agent_actions(self, ego_agent_actions: Dict[str, Any]) -> Dict[str, Any]:
         """Retrieve available social agent actions."""
         try:
             social_agent_actions = {
                 agent_id: (
-                    cloudpickle.loads(
-                        self._remote_social_agents_action[agent_id].result().action
-                    )
+                    self._remote_social_agents_action[agent_id].result()
                     if self._remote_social_agents_action.get(agent_id, None)
                     else None
                 )
@@ -308,24 +332,24 @@ class AgentManager:
 
         social_agent_actions = (
             self._filter_social_agent_actions_for_controlled_vehicles(
-                sim, social_agent_actions
+                social_agent_actions
             )
         )
 
         return {**ego_agent_actions, **social_agent_actions}
 
     def _filter_social_agent_actions_for_controlled_vehicles(
-        self, sim, social_agent_actions
+        self, social_agent_actions
     ):
         """Some agents may not be controlling a vehicle, such as when a vehicle is in
         the airlock, where the agent is observing and running its policy, but the
         returned action should not be executed on the vehicle until it is hijacked
         by the agent.
         """
-        vehicle_ids_controlled_by_agents = sim.vehicle_index.agent_vehicle_ids()
+        vehicle_ids_controlled_by_agents = self._vehicle_index.agent_vehicle_ids()
         controlling_agent_ids = set(
             [
-                sim.vehicle_index.actor_id_from_vehicle_id(v_id)
+                self._vehicle_index.actor_id_from_vehicle_id(v_id)
                 for v_id in vehicle_ids_controlled_by_agents
             ]
         )
@@ -339,7 +363,7 @@ class AgentManager:
         # Handle boids where some vehicles are hijacked and some have not yet been
         for agent_id, actions in social_agent_actions.items():
             if self.is_boid_agent(agent_id):
-                controlled_vehicle_ids = sim.vehicle_index.vehicle_ids_by_actor_id(
+                controlled_vehicle_ids = self._vehicle_index.vehicle_ids_by_actor_id(
                     agent_id, include_shadowers=False
                 )
                 social_agent_actions[agent_id] = {
@@ -350,24 +374,57 @@ class AgentManager:
 
         return social_agent_actions
 
-    def send_observations_to_social_agents(self, observations):
+    def add_social_agent_observations_callback(
+        self, callback: Callable[[Any], None], callback_id: str
+    ):
+        """Suscribe to observe social agents."""
+        self._social_agent_observation_callbacks[callback_id] = callback
+
+    def remove_social_agent_observations_callback(self, callback_id: str):
+        """Remove a subscription to social agents."""
+        del self._social_agent_observation_callbacks[callback_id]
+
+    def reserve_social_agent_action(self, agent_id: str, action: Any):
+        """Override a current social agent action."""
+        self._reserved_social_agent_actions[agent_id] = action
+
+    def _send_observations_to_social_agents(self, observations: Dict[str, Observation]):
+        self._remote_social_agents_action = {}
+        for agent_id, action in self._reserved_social_agent_actions.items():
+            future_action = futures.Future()
+            future_action.set_result(action)
+            self._remote_social_agents_action[agent_id] = future_action
+        self._reserved_social_agent_actions.clear()
+        for callback in self._social_agent_observation_callbacks.values():
+            callback(
+                dict(
+                    filter(
+                        lambda k: k[0] in self._remote_social_agents,
+                        observations.items(),
+                    )
+                )
+            )
+        for agent_id, remote_agent in self._remote_social_agents.items():
+            if self._remote_social_agents_action.get(agent_id) is not None:
+                continue
+            obs = observations[agent_id]
+            self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
+
+    def send_observations_to_social_agents(self, observations: Dict[str, Observation]):
         """Forwards observations to managed social agents."""
         # TODO: Don't send observations (or receive actions) from agents that have done
         #       vehicles.
-        self._remote_social_agents_action = {}
-        for agent_id, remote_agent in self._remote_social_agents.items():
-            obs = observations[agent_id]
-            self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
+        self._send_observations_to_social_agents(observations)
 
     def switch_initial_agents(self, agent_interfaces: Dict[str, AgentInterface]):
         """Replaces the initial agent interfaces with a new group. This comes into effect on next reset."""
         self._initial_interfaces = agent_interfaces
 
-    def setup_agents(self, sim):
+    def setup_agents(self):
         """Initializes all agents."""
-        self.init_ego_agents(sim)
-        self.setup_social_agents(sim)
-        self.start_keep_alive_boid_agents(sim)
+        self.init_ego_agents()
+        self._setup_social_agents()
+        self._start_keep_alive_boid_agents()
 
     def add_ego_agent(
         self, agent_id: str, agent_interface: AgentInterface, for_trap: bool = True
@@ -379,27 +436,29 @@ class AgentManager:
         self.agent_interfaces[agent_id] = agent_interface
         # agent will now be given vehicle by trap manager when appropriate
 
-    def init_ego_agents(self, sim):
+    def init_ego_agents(self):
         """Initialize all ego agents."""
         for agent_id, agent_interface in self._initial_interfaces.items():
             self.add_ego_agent(agent_id, agent_interface)
 
-    def setup_social_agents(self, sim):
+    def _setup_agent_buffer(self):
+        if not self._agent_buffer:
+            self._agent_buffer = HeterogenousAgentBuffer(
+                zoo_manager_addrs=self._zoo_addrs
+            )
+
+    def _setup_social_agents(self):
         """Initialize all social agents."""
+        sim = self._sim()
+        assert sim
         social_agents = sim.scenario.social_agents
         if social_agents:
-            if not self._remote_agent_buffer:
-                from smarts.core.remote_agent_buffer import RemoteAgentBuffer
-
-                self._remote_agent_buffer = RemoteAgentBuffer(
-                    zoo_manager_addrs=self._zoo_addrs
-                )
+            self._setup_agent_buffer()
         else:
             return
 
         self._remote_social_agents = {
-            agent_id: self._remote_agent_buffer.acquire_remote_agent()
-            for agent_id in social_agents
+            agent_id: self._agent_buffer.acquire_agent() for agent_id in social_agents
         }
 
         for agent_id, (social_agent, social_agent_model) in social_agents.items():
@@ -407,7 +466,6 @@ class AgentManager:
                 agent_id,
                 social_agent.interface,
                 social_agent_model,
-                sim,
                 trainable=False,
                 # XXX: Currently boids can only be run from bubbles
                 boid=False,
@@ -417,8 +475,10 @@ class AgentManager:
         for social_agent_id, remote_social_agent in self._remote_social_agents.items():
             remote_social_agent.start(social_agents[social_agent_id][0])
 
-    def start_keep_alive_boid_agents(self, sim):
+    def _start_keep_alive_boid_agents(self):
         """Configures and adds boid agents to the sim."""
+        sim = self._sim()
+        assert sim
         for bubble in filter(
             lambda b: b.is_boid and b.keep_alive, sim.scenario.bubbles
         ):
@@ -443,7 +503,7 @@ class AgentManager:
             self.start_social_agent(agent_id, social_agent, social_agent_data_model)
 
     def _add_agent(
-        self, agent_id, agent_interface, agent_model, sim, boid=False, trainable=True
+        self, agent_id, agent_interface, agent_model, boid=False, trainable=True
     ):
         # TODO: Disentangle what is entangled below into:
         # 1. AgentState initialization,
@@ -463,13 +523,15 @@ class AgentManager:
         #    about new vehicles entering their territory through the VehicleState
         #    message. But that does not need to happen at Agent instantiation.
 
+        sim = self._sim()
+        assert sim
         assert isinstance(agent_id, str)  # SUMO expects strings identifiers
 
         scenario = sim.scenario
         mission = scenario.mission(agent_id)
         plan = Plan(sim.road_map, mission)
 
-        vehicle = sim.vehicle_index.build_agent_vehicle(
+        vehicle = self._vehicle_index.build_agent_vehicle(
             sim,
             agent_id,
             agent_interface,
@@ -481,40 +543,39 @@ class AgentManager:
             agent_model.initial_speed,
             boid=boid,
         )
-
-        matching_providers = [
-            provider
-            for provider in sim.providers
-            if agent_interface.action_space in provider.action_spaces
-        ]
-        if matching_providers:
-            assert (
-                len(matching_providers) == 1
-            ), f"Found {matching_providers} for action space {agent_interface.action_space}"
-            provider = matching_providers[0]
-            provider.create_vehicle(
-                VehicleState(
-                    vehicle_id=vehicle.id,
-                    vehicle_type=vehicle.vehicle_type,
-                    vehicle_config_type="passenger",  # XXX: vehicles in history missions will have a type
-                    pose=vehicle.pose,
-                    dimensions=vehicle.chassis.dimensions,
-                    source="NEW-AGENT",
-                )
+        role = ActorRole.EgoAgent if trainable else ActorRole.SocialAgent
+        for provider in sim.providers:
+            if agent_interface.action_space not in provider.action_spaces:
+                continue
+            state = VehicleState(
+                actor_id=vehicle.id,
+                actor_type=vehicle.vehicle_type,
+                source=provider.source_str,
+                role=role,
+                vehicle_config_type="passenger",  # XXX: vehicles in history missions will have a type
+                pose=vehicle.pose,
+                dimensions=vehicle.chassis.dimensions,
             )
+            if provider.can_accept_actor(state):
+                # Note: this just takes the first one that we come across,
+                # so the order in the sim.providers list matters.
+                provider.add_actor(state)
+                break
+        else:
+            # We should never get here because there will always be an AgentsProvider in SMARTS
+            # willing to accept SocialAgents.
+            provider = None
+            assert (
+                False
+            ), f"could not find suitable provider supporting role={role} for action space {agent_interface.action_space}"
 
         self._agent_interfaces[agent_id] = agent_interface
         self._social_agent_data_models[agent_id] = agent_model
 
     def start_social_agent(self, agent_id, social_agent, agent_model):
         """Starts a managed social agent."""
-        if not self._remote_agent_buffer:
-            from smarts.core.remote_agent_buffer import RemoteAgentBuffer
-
-            self._remote_agent_buffer = RemoteAgentBuffer(
-                zoo_manager_addrs=self._zoo_addrs
-            )
-        remote_agent = self._remote_agent_buffer.acquire_remote_agent()
+        self._setup_agent_buffer()
+        remote_agent = self._agent_buffer.acquire_agent()
         remote_agent.start(social_agent)
         self._remote_social_agents[agent_id] = remote_agent
         self._agent_interfaces[agent_id] = social_agent.interface
@@ -561,37 +622,36 @@ class AgentManager:
 
     def reset_agents(self, observations: Dict[str, Observation]):
         """Reset agents, feeding in an initial observation."""
-        self._remote_social_agents_action = {}
-        for agent_id, remote_agent in self._remote_social_agents.items():
-            obs = observations[agent_id]
-            self._remote_social_agents_action[agent_id] = remote_agent.act(obs)
+        self._send_observations_to_social_agents(observations)
 
         # Observations contain those for social agents; filter them out
         return self._filter_for_active_ego(observations)
 
-    def agent_name(self, agent_id: str):
+    def agent_name(self, agent_id: str) -> str:
         """Get the resolved agent name."""
         if agent_id not in self._social_agent_data_models:
             return ""
 
         return self._social_agent_data_models[agent_id].name
 
-    def is_boid_agent(self, agent_id: str):
+    def is_boid_agent(self, agent_id: str) -> bool:
         """Check if an agent is a boid agent"""
         if agent_id not in self._social_agent_data_models:
             return False
 
         return self._social_agent_data_models[agent_id].is_boid
 
-    def is_boid_keep_alive_agent(self, agent_id: str):
+    def is_boid_keep_alive_agent(self, agent_id: str) -> bool:
         """Check if this is a persistent boid agent"""
         if agent_id not in self._social_agent_data_models:
             return False
 
         return self._social_agent_data_models[agent_id].is_boid_keep_alive
 
-    def attach_sensors_to_vehicles(self, sim, agent_interface, vehicle_ids):
+    def attach_sensors_to_vehicles(self, agent_interface, vehicle_ids):
         """Attach the interface required sensors to the given vehicles"""
+        sim = self._sim()
+        assert sim
         for sv_id in vehicle_ids:
             if sv_id in self._vehicle_with_sensors:
                 continue
@@ -602,6 +662,12 @@ class AgentManager:
             self._vehicle_with_sensors[sv_id] = agent_id
             self._agent_interfaces[agent_id] = agent_interface
 
-            sim.vehicle_index.attach_sensors_to_vehicle(
+            self._vehicle_index.attach_sensors_to_vehicle(
                 sim, sv_id, agent_interface, plan
             )
+
+    def detach_sensors_from_vehicle(self, vehicle_id: str):
+        """Called when agent observation is finished and sensors should be removed from a vehicle"""
+        self._vehicle_index.stop_agent_observation(vehicle_id)
+        if vehicle_id in self._vehicle_with_sensors:
+            del self._vehicle_with_sensors[vehicle_id]

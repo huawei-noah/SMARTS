@@ -9,14 +9,12 @@ The SMARTS repository contains tools to assist with using the Waymo Motion Datas
 - `gen_sumo_map.py`: a command-line program that converts the map from a Waymo scenario to a SUMO map
 
 ## Setup
-
-Follow the instructions for the setup of SMARTS in the main [README](https://github.com/huawei-noah/SMARTS/). Then install the `[waymo]` dependencies to install the `waymo-dataset` package:
-
+Follow the SMARTS setup instructions in the main [README](https://github.com/huawei-noah/SMARTS/). Then install the `[waymo]` dependencies.
 ```bash
-pip install -e .[waymo]
+$ pip install -e .[waymo]
 ```
 
-Next, download the dataset files from the [Waymo Motion Dataset website](https://waymo.com/open/download/#). It is recommended to download the dataset files from the `uncompressed/scenario/training_20s` folder as they have the full traffic capture for each scenario. Note: Waymo provides 2 different formats for the dataset files. SMARTS expects the `Scenario protos` format (not the `tf.Example protos` format). It is also recommended to use version 1.1 of the dataset, which includes enhanced map information.
+Download the dataset files from the [Waymo Motion Dataset](https://waymo.com/open/download/). It is recommended to download the dataset files from the `uncompressed/scenario/training_20s` folder as they have the full traffic capture for each scenario. Note: Waymo provides 2 different formats for the dataset files. SMARTS expects the `Scenario protos` format (not the `tf.Example protos` format). It is also recommended to use version 1.1 of the dataset, which includes enhanced map information.
 
 Edit `scenario.py` so that `input_path` points to the TFRecord file containing the scenario you want to use, and use `scenario_id` to select the specific scenario in the file.
 
@@ -39,7 +37,7 @@ This example will create `.pkl` files storing the observations of each vehicle i
 Run with:
 
 ```bash
-python examples/observation_collection_for_imitation_learning.py scenarios/waymo
+python examples/traffic_histories_to_observations.py scenarios/waymo
 ```
 
 ### Example: history vehicle replacement
@@ -49,5 +47,5 @@ This example queries the SQLite database for trajectory data to control the soci
 Run with:
 
 ```bash
-python examples/history_vehicles_replacement_for_imitation_learning.py --episodes=1 scenarios/waymo
+python examples/traffic_histories_vehicle_replacement.py --episodes=1 scenarios/waymo
 ```

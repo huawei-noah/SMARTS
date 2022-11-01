@@ -56,7 +56,7 @@ class SceneColors(Enum):
     """Simulation feature colors as RGBA values"""
 
     Agent = Colors.Red.value
-    SocialAgent = Colors.Silver.value
+    SocialAgent = Colors.Blue.value
     SocialVehicle = Colors.Silver.value
 
     Road = Colors.DarkGrey.value

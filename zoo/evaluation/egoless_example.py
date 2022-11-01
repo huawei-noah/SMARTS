@@ -31,7 +31,6 @@ if __name__ == "__main__":
         headless=args.headless,
         visdom=False,
         fixed_timestep_sec=0.1,
-        endless_traffic=False,
         envision_record_data_replay_path=data_replay_path,
     )
 

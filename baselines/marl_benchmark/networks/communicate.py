@@ -45,7 +45,7 @@ def name_ref(name):
 
 
 class NetworkedMixin:
-    """ Mixin class will be initialized after base class """
+    """Mixin class will be initialized after base class"""
 
     def __init__(self: TFPolicy):
         grads_and_vars = self.init_grads_and_vars()

@@ -29,6 +29,14 @@ export const VehicleTypes = Object.freeze({
   TRUCK: "truck",
   TRAILER: "trailer",
   CAR: "car",
-  PEDESTRIAN: "pedestrian",
   MOTORCYCLE: "motorcycle",
+  PEDESTRIAN: "pedestrian",
+});
+
+export const SignalStates = Object.freeze({
+  UNKNOWN: "unknown",
+  OFF: "off",
+  STOP: "stop",
+  CAUTION: "caution",
+  GO: "go",
 });

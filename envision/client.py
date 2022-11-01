@@ -26,9 +26,10 @@ import multiprocessing
 import re
 import time
 import warnings
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import websocket
@@ -37,16 +38,28 @@ from envision import types
 from envision.client_config import EnvisionStateFilter
 from envision.data_formatter import EnvisionDataFormatter, EnvisionDataFormatterArgs
 from smarts.core.utils.file import unpack
+from smarts.core.utils.logging import suppress_websocket
 
 
-class JSONEncoder(json.JSONEncoder):
+@dataclass
+class JSONEncodingState:
+    """This class is necessary to ensure that the custom json encoder tries to deserialize the data.
+    This is vital to ensure that non-standard json literals like `Infinity`, `-Infinity`, `NaN` are not added to the output json.
+    """
+
+    data: Any
+
+
+class CustomJSONEncoder(json.JSONEncoder):
     """This custom encoder is to support serializing more complex data from SMARTS
     including numpy arrays, NaNs, and Infinity which don't have standarized handling
     according to the JSON spec.
     """
 
     def default(self, obj):
-        if isinstance(obj, float):
+        if isinstance(obj, JSONEncodingState):
+            return self.default(unpack(obj.data))
+        elif isinstance(obj, (int, float)):
             if np.isposinf(obj):
                 obj = "Infinity"
             elif np.isneginf(obj):
@@ -54,12 +67,16 @@ class JSONEncoder(json.JSONEncoder):
             elif np.isnan(obj):
                 obj = "NaN"
             return obj
-        elif isinstance(obj, list):
+        elif obj is None or isinstance(obj, (str, bool)):
+            return obj
+        elif isinstance(obj, (list, tuple)):
             return [self.default(x) for x in obj]
+        elif isinstance(obj, dict):
+            return {k: self.default(v) for k, v in obj.items()}
         elif isinstance(obj, np.bool_):
-            return super().encode(bool(obj))
+            return bool(obj)
         elif isinstance(obj, np.ndarray):
-            return self.default(obj.tolist())
+            return [self.default(x) for x in obj]
 
         return super().default(obj)
 
@@ -162,8 +179,7 @@ class Client:
                         data_formatter.reset()
                         data_formatter.add(state)
                         state = data_formatter.resolve()
-                    state = unpack(state)
-                    state = json.dumps(state, cls=JSONEncoder, allow_nan=False)
+                    state = json.dumps(JSONEncodingState(state), cls=CustomJSONEncoder)
 
                 f.write(f"{state}\n")
 
@@ -175,6 +191,7 @@ class Client:
         wait_between_retries: float = 0.5,
     ):
         """Send a pre-recorded envision simulation to the envision server."""
+
         client = Client(
             endpoint=endpoint,
             wait_between_retries=wait_between_retries,
@@ -208,8 +225,7 @@ class Client:
                     data_formatter.reset()
                     data_formatter.add(state)
                     state = data_formatter.resolve()
-                state = unpack(state)
-                state = json.dumps(state, cls=JSONEncoder, allow_nan=False)
+                state = json.dumps(JSONEncodingState(state), cls=CustomJSONEncoder)
 
             ws.send(state)
 
@@ -257,10 +273,7 @@ class Client:
                     endpoint, on_error=on_error, on_close=on_close, on_open=on_open
                 )
 
-                with warnings.catch_warnings():
-                    # XXX: websocket-client library seems to have leaks on connection
-                    #      retry that cause annoying warnings within Python 3.8+
-                    warnings.filterwarnings("ignore", category=ResourceWarning)
+                with suppress_websocket():
                     ws.run_forever()
 
                 if not connection_established:

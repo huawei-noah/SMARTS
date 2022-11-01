@@ -2,7 +2,7 @@
 test: build-all-scenarios
 	# sstudio uses hash(...) as part of some of its type IDs. To make the tests
 	# repeatable we fix the seed.
-	PYTHONHASHSEED=42 pytest -v \
+	PYTHONPATH=$(PWD) PYTHONHASHSEED=42 pytest -v \
 		--cov=smarts \
 		--doctest-modules \
 		--forked \
@@ -21,7 +21,7 @@ test: build-all-scenarios
 .PHONY: sanity-test
 sanity-test: build-sanity-scenarios
 	./tests/test_setup.py
-	PYTHONHASHSEED=42 pytest -v \
+	PYTHONPATH=$(PWD) PYTHONHASHSEED=42 pytest -v \
 		--doctest-modules \
 		--forked \
 		--dist=loadscope \
@@ -75,7 +75,7 @@ build-all-scenarios:
 
 .PHONY: build-sumo-scenarios
 build-sumo-scenarios:
-	scl scenario build scenarios/sumo
+	scl scenario build-all scenarios/sumo
 
 .PHONY: build-sanity-scenarios
 build-sanity-scenarios:
@@ -132,6 +132,7 @@ clean:
 	rm -f ./$(scenario)/flamegraph.html
 	rm -f ./$(scenario)/*.rou.xml
 	rm -f ./$(scenario)/*.rou.alt.xml
+	rm -f ./$(scenario)/*.smarts.xml
 	rm -rf ./$(scenario)/traffic
 	rm -rf ./$(scenario)/social_agents
 	rm -f .coverage.*

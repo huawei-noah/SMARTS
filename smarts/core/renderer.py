@@ -65,7 +65,7 @@ class DEBUG_MODE(IntEnum):
 
 
 class _ShowBaseInstance(ShowBase):
-    """ Wraps a singleton instance of ShowBase from Panda3D. """
+    """Wraps a singleton instance of ShowBase from Panda3D."""
 
     _debug_mode: DEBUG_MODE = DEBUG_MODE.WARNING
     _rendering_backend: str = "p3headlessgl"
@@ -85,6 +85,7 @@ class _ShowBaseInstance(ShowBase):
             loadPrcFileData("", "aux-display pandagles")
             loadPrcFileData("", "aux-display pandagles2")
             loadPrcFileData("", "aux-display p3tinydisplay")
+
             # disable vsync otherwise we are limited to refresh-rate of screen
             loadPrcFileData("", "sync-video false")
             loadPrcFileData("", "model-path %s" % os.getcwd())
@@ -232,7 +233,7 @@ class Renderer:
         self._showbase_instance.render_node(self._root_np)
 
     def step(self):
-        """ provided for non-SMARTS uses; normally not used by SMARTS. """
+        """provided for non-SMARTS uses; normally not used by SMARTS."""
         self._showbase_instance.taskMgr.step()
 
     def teardown(self):
@@ -265,7 +266,7 @@ class Renderer:
         self._vehicle_nodes[vid] = node_path
 
     def begin_rendering_vehicle(self, vid: str, is_agent: bool):
-        """Add the vehicle node to the scene graph """
+        """Add the vehicle node to the scene graph"""
         vehicle_path = self._vehicle_nodes.get(vid, None)
         if not vehicle_path:
             self._log.warning(f"Renderer ignoring invalid vehicle id: {vid}")

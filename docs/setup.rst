@@ -3,9 +3,9 @@
 Setting up SMARTS
 =================
 
-==========
+===========
 First Steps
-==========
+===========
 
 To setup the simulator, which is called SMARTS, run the following commands,
 
@@ -32,6 +32,9 @@ To setup the simulator, which is called SMARTS, run the following commands,
     # OPTIONAL: install [camera-obs] version of python package with the panda3D dependencies if you want to render camera sensor observations in your simulations
     pip install -e .[camera-obs]
 
+    # OPTIONAL: install [opendrive] version of python package with the OpenDRIVE related dependencies if you are using the any OpenDRIVE related scenarios
+    pip install -e .[opendrive]
+
     # make sure you can run sanity-test (and verify they are passing)
     # if tests fail, check './sanity_test_result.xml' for test report.
     pip install -e .[test]
@@ -46,6 +49,7 @@ Running
 We use the `scl` command line to run SMARTS together with it's supporting processes. To run the default example simply build a scenario and run the following command:
 
 .. code-block:: bash
+
     # build scenarios/sumo/loop
     scl scenario build --clean scenarios/sumo/loop
 
@@ -61,6 +65,7 @@ After executing the above command, visit http://localhost:8081/ in your browser 
 Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
 
 .. code-block:: bash
+    
     scl run --envision <examples/script_path> <scenarios/path>
 
 
@@ -71,6 +76,7 @@ Examples
 ================
 
 .. code-block:: bash
+    
     # Start envision, serve scenario assets out of ./scenarios
     scl envision start --scenarios ./scenarios
 

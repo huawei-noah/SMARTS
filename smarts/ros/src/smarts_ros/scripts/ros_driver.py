@@ -177,7 +177,7 @@ class ROSDriver:
 
         self._smarts = SMARTS(
             agent_interfaces={},
-            traffic_sim=traffic_sim,
+            traffic_sims=[traffic_sim],
             fixed_timestep_sec=None,
             envision=None if headless else Envision(),
             external_provider=True,
@@ -367,8 +367,7 @@ class ROSDriver:
         veh_type = ROSDriver._decode_entity_type(entity.entity_type)
         veh_dims = Dimensions(entity.length, entity.width, entity.height)
         vs = VehicleState(
-            source="EXTERNAL",
-            vehicle_id=veh_id,
+            actor_id=veh_id,
             vehicle_config_type=veh_type,
             pose=Pose(
                 ROSDriver._xyz_to_vect(entity.pose.position),
@@ -380,7 +379,6 @@ class ROSDriver:
             linear_acceleration=ROSDriver._xyz_to_vect(entity.acceleration.linear),
             angular_acceleration=ROSDriver._xyz_to_vect(entity.acceleration.angular),
         )
-        vs.set_privileged()
         vs.speed = np.linalg.norm(vs.linear_velocity)
         return vs
 
@@ -468,7 +466,7 @@ class ROSDriver:
         heading_delta_vec = staleness * (
             vs.angular_velocity
             + 0.5 * vs.angular_acceleration * staleness
-            + ang_acc_slope * staleness ** 2 / 6.0
+            + ang_acc_slope * staleness**2 / 6.0
         )
         heading += vec_to_radians(heading_delta_vec[:2]) + (0.5 * math.pi)
         heading %= 2 * math.pi
@@ -481,7 +479,7 @@ class ROSDriver:
         vs.pose.position += staleness * (
             vs.linear_velocity
             + 0.5 * vs.linear_acceleration * staleness
-            + lin_acc_slope * staleness ** 2 / 6.0
+            + lin_acc_slope * staleness**2 / 6.0
         )
 
         vs.linear_velocity += staleness * (
@@ -556,8 +554,8 @@ class ROSDriver:
         entities.header.stamp = rospy.Time.now()
         for vehicle in smarts_state:
             entity = EntityState()
-            entity.entity_id = vehicle.vehicle_id
-            entity.entity_type = ROSDriver._encode_entity_type(vehicle.vehicle_type)
+            entity.entity_id = vehicle.actor_id
+            entity.entity_type = ROSDriver._encode_entity_type(vehicle.actor_type)
             entity.length = vehicle.dimensions.length
             entity.width = vehicle.dimensions.width
             entity.height = vehicle.dimensions.height
@@ -637,9 +635,11 @@ class ROSDriver:
                 self._most_recent_state_sent = None
                 self._warned_about_freq = False
                 map_spec = self._get_map_spec()
-                routes = Scenario.discover_routes(self._scenario_path) or [None]
+                traffic = Scenario.discover_traffic(self._scenario_path) or [[]]
                 return self._smarts.reset(
-                    Scenario(self._scenario_path, map_spec=map_spec, route=routes[0])
+                    Scenario(
+                        self._scenario_path, map_spec=map_spec, traffic_specs=traffic[0]
+                    )
                 )
         return None
 

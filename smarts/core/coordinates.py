@@ -35,7 +35,7 @@ from smarts.core.utils.math import (
 
 @dataclass(frozen=True)
 class Dimensions:
-    """A 3 dimension data structure representing a box."""
+    """Representation of the size of a 3-dimensional form."""
 
     length: float
     width: float
@@ -75,6 +75,7 @@ class Dimensions:
         )
 
 
+_numpy_points = {}
 _shapely_points = {}
 
 
@@ -84,6 +85,35 @@ class Point(NamedTuple):
     x: float
     y: float
     z: Optional[float] = 0
+
+    @classmethod
+    def from_np_array(cls, np_array: np.ndarray):
+        """Factory for constructing a Point object from a numpy array."""
+        assert 2 <= len(np_array) <= 3
+        z = np_array[2] if len(np_array) > 2 else 0.0
+        return cls(np_array[0], np_array[1], z)
+
+    @property
+    def as_np_array(self) -> np.ndarray:
+        """Convert this Point to a read-only numpy array and cache the result."""
+        # Since this happens frequently and numpy array construction
+        # involves memory allocation, we include this convenience method
+        # with a cache of the result.
+        # Note that before python3.8, @cached_property was not thread safe,
+        # nor can it be used in a NamedTuple (which doesn't have a __dict__).
+        # (Points can be used by multi-threaded client code, even when
+        # SMARTS is still single-threaded, so we want to be safe here.)
+        # So we use the private global _numpy_points as a cache instead.
+        # Here we are relying on CPython's implementation of dict
+        # to be thread-safe.
+        cached = _numpy_points.get(self)
+        if cached is not None:
+            return cached
+        npt = np.array((self.x, self.y, self.z))
+        # the array shouln't be changed independently of this Point object now...
+        npt.setflags(write=False)
+        _numpy_points[self] = npt
+        return npt
 
     @property
     def as_shapely(self) -> SPoint:
@@ -106,12 +136,15 @@ class Point(NamedTuple):
     def __del__(self):
         if _shapely_points and self in _shapely_points:
             del _shapely_points[self]
+        if _numpy_points and self in _numpy_points:
+            del _numpy_points[self]
 
 
 class RefLinePoint(NamedTuple):
     """A reference line coordinate.
     See the Reference Line coordinate system in OpenDRIVE here:
-       https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems
+    `https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems`
+    Also known as the Frenet coordinate system.
     """
 
     s: float  # offset along lane from start of lane
@@ -121,7 +154,7 @@ class RefLinePoint(NamedTuple):
 
 @dataclass(frozen=True)
 class BoundingBox:
-    """A fitted box generally used to encapsulate geometry."""
+    """A 2-dimensional axis aligned box located in a [x, y] coordinate system."""
 
     min_pt: Point
     max_pt: Point
@@ -206,7 +239,7 @@ class Heading(float):
     @classmethod
     def from_sumo(cls, sumo_heading):
         """Sumo's space uses degrees, 0 faces north, and turns clockwise."""
-        heading = Heading._flip_clockwise(math.radians(sumo_heading))
+        heading = Heading.flip_clockwise(math.radians(sumo_heading))
         h = Heading(heading)
         h.source = "sumo"
         return h
@@ -224,7 +257,7 @@ class Heading(float):
     @property
     def as_sumo(self):
         """Convert to SUMO facing format"""
-        return math.degrees(Heading._flip_clockwise(self))
+        return math.degrees(Heading.flip_clockwise(self))
 
     def relative_to(self, other: "Heading"):
         """
@@ -245,7 +278,7 @@ class Heading(float):
         return radians_to_vec(self)
 
     @staticmethod
-    def _flip_clockwise(x):
+    def flip_clockwise(x):
         """Converts clockwise to counter-clockwise, and vice-versa."""
         return (2 * math.pi - x) % (2 * math.pi)
 
@@ -323,7 +356,7 @@ class Pose:
         )
 
     @classmethod
-    def from_center(cls, base_position, heading):
+    def from_center(cls, base_position, heading: Heading):
         """Convert from centred location
 
         Args:
@@ -343,7 +376,11 @@ class Pose:
 
     @classmethod
     def from_explicit_offset(
-        cls, offset_from_centre, base_position, heading, local_heading
+        cls,
+        offset_from_centre,
+        base_position: np.ndarray,
+        heading: Heading,
+        local_heading: Heading,
     ):
         """Convert from an explicit offset
 
@@ -409,5 +446,10 @@ class Pose:
         return self.position[:2]
 
     def as_panda3d(self):
-        """ Convert to panda3D (object bounds centre position, heading)"""
+        """Convert to panda3D (object bounds centre position, heading)"""
         return (self.position, self.heading.as_panda3d)
+
+    @classmethod
+    def origin(cls):
+        """Pose at the origin coordinate of smarts."""
+        return cls(np.repeat([0], 3), np.array([0, 0, 0, 1]))

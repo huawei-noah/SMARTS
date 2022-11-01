@@ -39,6 +39,8 @@ class VehicleType(str, Enum):
     Truck = "truck"
     Trailer = "trailer"
     Car = "car"
+    Motorcycle = "motorcycle"
+    Pedestrian = "pedestrian"
 
 
 class TrafficActorState(NamedTuple):
@@ -59,10 +61,29 @@ class TrafficActorState(NamedTuple):
     lane_id: Optional[str] = None
 
 
+class SignalLightState(str, Enum):
+    """Possible states for an individual traffic signal light."""
+
+    # TODO: add flashing and arrow states too...
+    Unknown = "unknown"
+    Off = "off"
+    Stop = "stop"
+    Caution = "caution"
+    Go = "go"
+
+
+class SignalState(NamedTuple):
+    """State for an individual traffic signal and meta information."""
+
+    signal_id: str
+    signal_light_state: SignalLightState
+
+
 class State(NamedTuple):
     """A full representation of a single frame of an envision simulation step."""
 
     traffic: Dict[str, TrafficActorState]
+    signals: Dict[str, SignalState]
     scenario_id: str
     scenario_name: str
     # sequence of x, y coordinates

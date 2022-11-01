@@ -397,7 +397,7 @@ class LaneFollowingController:
                     [
                         0,
                         0,
-                        -(2 * road_stiffness * (half_vehicle_len ** 2))
+                        -(2 * road_stiffness * (half_vehicle_len**2))
                         / (target_speed * vehicle_inertia_z),
                         0,
                     ],

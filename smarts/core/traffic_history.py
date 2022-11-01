@@ -103,7 +103,7 @@ class TrafficHistory:
     @cached_property
     def dataset_source(self) -> str:
         """The known source of the history data"""
-        query = "SELECT value FROM Spec where key='source'"
+        query = "SELECT value FROM Spec where key='source_type'"
         return self._query_val(str, query)
 
     @cached_property
@@ -136,12 +136,25 @@ class TrafficHistory:
         query = "SELECT MAX(sim_time) FROM Trajectory WHERE vehicle_id = ?"
         return self._query_val(float, query, params=(vehicle_id,))
 
+    @lru_cache(maxsize=32)
+    def vehicle_final_position(self, vehicle_id: str) -> Tuple[float, float]:
+        """Returns the final (x,y) position for the specified vehicle in the history data."""
+        query = "SELECT position_x, position_y FROM Trajectory WHERE vehicle_id=? AND sim_time=(SELECT MAX(sim_time) FROM Trajectory WHERE vehicle_id=?)"
+        return self._query_val(
+            tuple,
+            query,
+            params=(
+                vehicle_id,
+                vehicle_id,
+            ),
+        )
+
     def decode_vehicle_type(self, vehicle_type: int) -> str:
         """Convert from the dataset type id to their config type.
-
         Options from NGSIM and INTERACTION currently include:
-         1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
-        This actually returns a "vehicle_config_type".
+
+        1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
+        This actually returns a ``vehicle_config_type``.
         """
         if vehicle_type == 1:
             return "motorcycle"
@@ -296,6 +309,26 @@ class TrafficHistory:
                    ORDER BY T.sim_time DESC"""
         rows = self._query_list(query, (start_time, end_time))
         return (TrafficHistory.VehicleRow(*row) for row in rows)
+
+    class TrafficLightRow(NamedTuple):
+        """Fields in a row from the TrafficLightState table."""
+
+        sim_time: float
+        state: int
+        stop_point_x: float
+        stop_point_y: float
+        lane_id: int
+
+    def traffic_light_states_between(
+        self, start_time: float, end_time: float
+    ) -> Generator[TrafficHistory.TrafficLightRow, None, None]:
+        """Find all traffic light states between the given history times."""
+        query = """SELECT sim_time, state, stop_point_x, stop_point_y, lane
+                   FROM TrafficLightState
+                   WHERE sim_time > ? AND sim_time <= ?
+                   ORDER BY sim_time ASC"""
+        rows = self._query_list(query, (start_time, end_time))
+        return (TrafficHistory.TrafficLightRow(*row) for row in rows)
 
     @staticmethod
     def _greatest_n_per_group_format(

@@ -2,12 +2,16 @@ import pathlib
 
 import gym
 
+from smarts import sstudio
+
 gym.logger.set_level(40)
 
 from functools import partial
 from typing import Dict, Sequence, Tuple
 
-from examples.argument_parser import default_argument_parser
+from argument_parser import default_argument_parser
+
+from smarts import sstudio
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
@@ -15,7 +19,6 @@ from smarts.core.sensors import Observation
 from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.parallel_env import ParallelEnv
-from smarts.sstudio import build_scenario
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -222,11 +225,12 @@ if __name__ == "__main__":
             str(
                 pathlib.Path(__file__).absolute().parents[1]
                 / "scenarios"
+                / "sumo"
                 / "figure_eight"
             )
         ]
 
-    build_scenario(args.scenarios)
+    sstudio.build_scenario(args.scenarios)
 
     print("\nParallel environments with asynchronous episodes.")
     main(

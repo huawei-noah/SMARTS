@@ -22,10 +22,16 @@
 from __future__ import annotations
 
 import math
+from bisect import bisect
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Set, Tuple
+from enum import IntEnum
+from functools import lru_cache
+from typing import Any, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
+from cached_property import cached_property
+from shapely.geometry import LineString
+from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
@@ -36,9 +42,7 @@ from .utils.math import (
     vec_to_radians,
 )
 
-# TODO:
-# - also consider Esri, QGIS and Google Maps formats
-# -https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09
+# TODO:  also consider OSM, Esri, QGIS and Google Maps formats
 
 
 class RoadMap:
@@ -57,10 +61,20 @@ class RoadMap:
         raise NotImplementedError()
 
     @property
+    def has_overpasses(self) -> bool:
+        """Whether the map has lanes with overlapping z-coordinates."""
+        return False
+
+    @property
     def scale_factor(self) -> float:
         """The ratio between 1 unit on the map and 1 meter."""
         # map units per meter
         return 1.0
+
+    @property
+    def dynamic_features(self) -> List[RoadMap.Feature]:
+        """All dynamic features associated with this road map."""
+        return []
 
     def is_same_map(self, map_spec) -> bool:
         """Check if the MapSpec Object source points to the same RoadMap instance as the current"""
@@ -82,6 +96,21 @@ class RoadMap:
         """Find a road in this road map that has the given identifier."""
         raise NotImplementedError()
 
+    def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
+        """Find a feature in this road map that has the given identifier."""
+        raise NotImplementedError()
+
+    def dynamic_features_near(
+        self, point: Point, radius: float
+    ) -> List[Tuple[RoadMap.Feature, float]]:
+        """Find features within radius meters of the given point."""
+        result = []
+        for feat in self.dynamic_features:
+            dist = feat.min_dist_from(point)
+            if dist <= radius:
+                result.append((feat, dist))
+        return result
+
     def nearest_surfaces(
         self, point: Point, radius: Optional[float] = None
     ) -> List[Tuple[RoadMap.Surface, float]]:
@@ -91,7 +120,8 @@ class RoadMap:
     def nearest_lanes(
         self, point: Point, radius: Optional[float] = None, include_junctions=True
     ) -> List[Tuple[RoadMap.Lane, float]]:
-        """Find lanes on this road map that are near the given point."""
+        """Find lanes on this road map that are near the given point.
+        Returns a list of tuples of lane and distance, sorted by distance."""
         raise NotImplementedError()
 
     def nearest_lane(
@@ -128,18 +158,28 @@ class RoadMap:
         """
         raise NotImplementedError()
 
-    def random_route(self, max_route_len: int = 10) -> RoadMap.Route:
+    def random_route(
+        self,
+        max_route_len: int = 10,
+        starting_road: Optional[RoadMap.Road] = None,
+        only_drivable: bool = True,
+    ) -> RoadMap.Route:
         """Generate a random route contained in this road map.
-        Args:
-            max_route_len:
-                The total number of roads in the route.
-        Returns:
-            A randomly generated route.
+
+        :param max_route_len: The total number of roads in the route.
+        :param starting_road: If specified, the route will start with this road.
+        :param only_drivable: If True, will restrict the route to only driveable roads;
+            otherwise can incl. non-drivable roads (such as bikelanes) too.
+        :return: A randomly generated route.
         """
         raise NotImplementedError()
 
     def empty_route(self) -> RoadMap.Route:
         """Generate an empty route."""
+        raise NotImplementedError()
+
+    def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
+        """Generate a route containing the specified roads."""
         raise NotImplementedError()
 
     def waypoint_paths(
@@ -181,7 +221,7 @@ class RoadMap:
         @property
         def features(self) -> List[RoadMap.Feature]:
             """The features that this surface contains."""
-            raise NotImplementedError()
+            return []
 
         def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
             """The features on this surface near the given pose."""
@@ -205,6 +245,15 @@ class RoadMap:
     class Lane(Surface):
         """Describes a lane surface."""
 
+        def __hash__(self) -> int:
+            """Derived classes must implement a suitable hash function
+            so that Lane objects may be used deterministically in sets."""
+            raise NotImplementedError()
+
+        def __eq__(self, other) -> bool:
+            """Required for set usage; derived classes may override this."""
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
+
         @property
         def lane_id(self) -> str:
             """Unique identifier for this Lane."""
@@ -218,8 +267,8 @@ class RoadMap:
         @property
         def composite_lane(self) -> RoadMap.Lane:
             """Return an abstract Lane composed of one or more RoadMap.Lane segments
-            that has been inferred to correspond to one continuous real-world lane.
-            May return same object as self."""
+            (including this one) that has been inferred to correspond to one
+            continuous real-world lane.  May return same object as self."""
             return self
 
         @property
@@ -229,8 +278,8 @@ class RoadMap:
             return False
 
         @property
-        def speed_limit(self) -> float:
-            """The speed limit on this lane."""
+        def speed_limit(self) -> Optional[float]:
+            """The speed limit on this lane.  May be None if not defined."""
             raise NotImplementedError()
 
         @property
@@ -362,7 +411,7 @@ class RoadMap:
             vector = self.vector_at_offset(s)
             normal = np.array([-vector[1], vector[0], 0])
             center_at_s = self.from_lane_coord(RefLinePoint(s=s))
-            offcenter_vector = np.array(world_point) - np.array(center_at_s)
+            offcenter_vector = world_point.as_np_array - center_at_s.as_np_array
             t_sign = np.sign(np.dot(offcenter_vector, normal))
             t = np.linalg.norm(offcenter_vector) * t_sign
             return RefLinePoint(s=s, t=t)
@@ -373,7 +422,7 @@ class RoadMap:
             return self.from_lane_coord(RefLinePoint(s=offset))
 
         def vector_at_offset(self, start_offset: float) -> np.ndarray:
-            """The lane direction vector at the given offset."""
+            """The lane direction vector at the given offset (not normalized)."""
             if start_offset >= self.length:
                 s_offset = self.length - 1
                 end_offset = self.length
@@ -383,7 +432,7 @@ class RoadMap:
             s_offset = max(s_offset, 0)
             p1 = self.from_lane_coord(RefLinePoint(s=s_offset))
             p2 = self.from_lane_coord(RefLinePoint(s=end_offset))
-            return np.array(p2) - np.array(p1)
+            return p2.as_np_array - p1.as_np_array
 
         def center_pose_at_point(self, point: Point) -> Pose:
             """The pose at the center of the lane closest to the given point."""
@@ -399,26 +448,40 @@ class RoadMap:
             """lookahead (in meters) is the size of the window to use
             to compute the curvature, which must be at least 1 to make sense.
             This may return math.inf if the lane is straight."""
-            assert lookahead > 1
-            if offset + lookahead > self.length:
-                return math.inf
+            assert lookahead > 0
             prev_heading_rad = None
             heading_deltas = 0.0
+            lane = self
             for i in range(lookahead + 1):
-                vec = self.vector_at_offset(offset + i)[:2]
+                if offset + i > lane.length:
+                    if len(lane.outgoing_lanes) != 1:
+                        break
+                    lane = lane.outgoing_lanes[0]
+                    offset = -i
+                vec = lane.vector_at_offset(offset + i)[:2]
                 heading_rad = vec_to_radians(vec[:2])
                 if prev_heading_rad is not None:
+                    # XXX: things like S curves can cancel out here
                     heading_deltas += min_angles_difference_signed(
                         heading_rad, prev_heading_rad
                     )
                 prev_heading_rad = heading_rad
-            return lookahead / heading_deltas if heading_deltas else math.inf
+            return i / heading_deltas if heading_deltas else math.inf
 
         ## ======== \Reference Methods =========
 
     class Road(Surface):
         """This is akin to a 'road segment' in real life.
         Many of these might correspond to a single named road in reality."""
+
+        def __hash__(self) -> int:
+            """Derived classes must implement a suitable hash function
+            so that Road objects may be used deterministically in sets."""
+            raise NotImplementedError()
+
+        def __eq__(self, other) -> bool:
+            """Required for set usage; derived classes may override this."""
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
 
         @property
         def road_id(self) -> str:
@@ -438,8 +501,8 @@ class RoadMap:
         @property
         def composite_road(self) -> RoadMap.Road:
             """Return an abstract Road composed of one or more RoadMap.Road segments
-            that has been inferred to correspond to one continuous real-world road.
-            May return same object as self."""
+            (including this one) that has been inferred to correspond to one continuous
+            real-world road.  May return same object as self."""
             return self
 
         @property
@@ -488,8 +551,30 @@ class RoadMap:
             """Gets the lane with the given index."""
             raise NotImplementedError()
 
+    class FeatureType(IntEnum):
+        """Built-in feature types usable across all map implementations."""
+
+        UNKNOWN = 0
+        CROSSWALK = 1
+        SPEED_BUMP = 2
+        STOP_SIGN = 3
+        ROAD_SIGN = 4  # except for stop signs
+
+        # Note that some signals can move around.  For example, flashing
+        # arrows on the back of trucks to funnel vehicles into
+        # one lane in construction zones (and towable signs that do
+        # the same thing), flashing lights on other caution signs,
+        # signals on closed sections of roads, etc.
+        # Such signals are not *map* features.
+        # (For these, we can use a specialized SignalProvider.)
+        FIXED_LOC_SIGNAL = 5
+
+        CUSTOM = 6
+
     class Feature:
         """Describes a map feature."""
+
+        # TAI: consider support for repeating Features
 
         @property
         def feature_id(self) -> str:
@@ -497,13 +582,14 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
-        def type(self) -> int:
+        def type(self) -> RoadMap.FeatureType:
             """The type of this feature."""
             raise NotImplementedError()
 
         @property
         def type_as_str(self) -> str:
-            """The type of this feature."""
+            """The type of this feature as a string.
+            This is useful for resolving CUSTOM feature types."""
             raise NotImplementedError()
 
         @property
@@ -511,12 +597,42 @@ class RoadMap:
             """The geometry that represents this feature."""
             raise NotImplementedError()
 
+        @property
+        def is_dynamic(self) -> bool:
+            """True iff this feature has dynamic state (such as a traffic light); False otherwise."""
+            # this may be overridden in the case of custom feature types
+            return self.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL
+
+        @property
+        def type_specific_info(self) -> Optional[Any]:
+            """Can be anything specific to the feature type; defaults to None."""
+            return None
+
+        def min_dist_from(self, point: Point) -> float:
+            """Returns the euclidian (as-the-crow-flies) distance
+            between point and the nearest part of this feature."""
+            raise NotImplementedError()
+
     class Route:
         """Describes a route between two roads."""
+
+        def __hash__(self) -> int:
+            """Derived classes must implement a suitable hash function
+            so that Route objects may be used deterministically in sets."""
+            raise NotImplementedError()
+
+        def __eq__(self, other) -> bool:
+            """Required for set usage; derived classes may override this."""
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
 
         @property
         def roads(self) -> List[RoadMap.Road]:
             """A possibly-unordered list of roads that this route covers"""
+            return []
+
+        @property
+        def road_ids(self) -> List[str]:
+            """A possibly-unordered list of road-ids that this route covers"""
             return []
 
         @property
@@ -529,16 +645,56 @@ class RoadMap:
             """A sequence of polygon vertices describing the shape of each road on the route"""
             return []
 
-        def distance_between(self, start: Point, end: Point) -> float:
+        @dataclass(frozen=True)
+        class RoutePoint:
+            """A Point within a Route."""
+
+            pt: Point
+            # Because Routes may contain sub-cycles, we may need to specify the
+            # index into the roads sequence where we currently expect to be
+            road_index: Optional[int] = None
+
+        @dataclass(frozen=True)
+        class RouteLane:
+            """A Lane within a Route."""
+
+            lane: RoadMap.Lane
+            # Because Routes may contain sub-cycles, we may need to specify the
+            # index into the roads sequence where we currently expect to be
+            road_index: Optional[int] = None
+
+            def __hash__(self) -> int:
+                return hash(self.lane) + hash(self.road_index)
+
+            def __eq__(self, other) -> bool:
+                return self.__class__ == other.__class__ and hash(self) == hash(other)
+
+        def distance_between(self, start: RoutePoint, end: RoutePoint) -> float:
             """Distance along route between two points."""
             raise NotImplementedError()
 
         def project_along(
-            self, start: Point, distance: float
+            self, start: RoutePoint, distance: float
         ) -> Set[Tuple[RoadMap.Lane, float]]:
             """Starting at point on the route, returns a set of possible
             locations (lane and offset pairs) further along the route that
             are distance away, not including lane changes."""
+            raise NotImplementedError()
+
+        def distance_from(
+            self, cur_lane: RouteLane, route_road: Optional[RoadMap.Road] = None
+        ) -> Optional[float]:
+            """Returns the distance along the route from the beginning of the current lane
+            to the beginning of the next occurrence of route_road, or if route_road is None,
+            then to the end of the route."""
+            raise NotImplementedError()
+
+        def next_junction(
+            self, cur_lane: RouteLane, offset: float
+        ) -> Optional[Tuple[RoadMap.Lane, float]]:
+            """Returns a lane within the next junction along the route from beginning
+            of the current lane to the returned lane it connects with in the junction,
+            and the distance to it from this offset, or (None, inf) if there aren't any."""
             raise NotImplementedError()
 
 
@@ -556,6 +712,7 @@ class Waypoint:
     lane_width: float  # Width of lane at this point (meters)
     speed_limit: float  # Lane speed in m/s
     lane_index: int  # Index of the lane this waypoint is over. 0 is the outer(right) most lane
+    lane_offset: float  # longitudinal distance along lane centerline of this waypoint
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Waypoint):
@@ -567,6 +724,7 @@ class Waypoint:
             and self.speed_limit == other.speed_limit
             and self.lane_id == other.lane_id
             and self.lane_index == other.lane_index
+            and self.lane_offset == other.lane_offset
         )
 
     def __hash__(self):
@@ -578,6 +736,7 @@ class Waypoint:
                 self.speed_limit,
                 self.lane_id,
                 self.lane_index,
+                self.lane_offset,
             )
         )
 
@@ -605,3 +764,166 @@ class Waypoint:
     def dist_to(self, p) -> float:
         """Calculates straight line distance to the given 2D point"""
         return np.linalg.norm(self.pos - p[: len(self.pos)])
+
+
+class RoadMapWithCaches(RoadMap):
+    """Base class for map implementations that wish to include
+    a built-in SegmentCache and other LRU caches."""
+
+    def __init__(self):
+        super().__init__()
+        self._seg_cache = RoadMapWithCaches._SegmentCache()
+
+    class Lane(RoadMap.Lane):
+        """Describes a RoadMapWithCaches lane surface."""
+
+        def __init__(self, lane_id: str, road_map):
+            # The following is needed b/c derived classes are using
+            # multiple-inheritance.  This will call the next class's init
+            # in the MRO (which is probably a descendent of Surface).
+            # pytype: disable=wrong-arg-count
+            super().__init__(lane_id, road_map)
+            # pytype: enable=wrong-arg-count
+            self._lane_id = lane_id
+            self._map = road_map
+
+        @property
+        def center_polyline(self) -> List[Point]:
+            """Should return a list of the points along the centerline
+            of the lane, in the order they will be encountered in the
+            direction of travel.
+
+            Note: not all instantiations will be able to implement this method,
+            so use with care.  This was added to support those that wish
+            to make use of the SegmentCache class below."""
+            raise NotImplementedError()
+
+        @lru_cache(maxsize=1024)
+        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
+            seg = self._map._seg_cache.segment_for_offset(self, lane_point.s)
+            return seg.from_lane_coord(lane_point)
+
+        @lru_cache(maxsize=1024)
+        def _normal_at_offset(self, offset: float) -> np.ndarray:
+            seg = self._map._seg_cache.segment_for_offset(self, offset)
+            return np.array((-seg.dy, seg.dx, 0.0))
+
+        @lru_cache(maxsize=1024)
+        def to_lane_coord(self, world_point: Point) -> RefLinePoint:
+            lc = RefLinePoint(s=self.offset_along_lane(world_point))
+            offcenter_vector = (
+                world_point.as_np_array - self.from_lane_coord(lc).as_np_array
+            )
+            t_sign = np.sign(np.dot(offcenter_vector, self._normal_at_offset(lc.s)))
+            return lc._replace(t=np.linalg.norm(offcenter_vector) * t_sign)
+
+        @lru_cache(maxsize=1024)
+        def vector_at_offset(self, offset: float) -> np.ndarray:
+            seg = self._map._seg_cache.segment_for_offset(self, offset)
+            return np.array((seg.dx, seg.dy, 0.0))
+
+        @cached_property
+        def _lane_line(self) -> LineString:
+            points = self.center_polyline
+            assert len(points) >= 2
+            # If we switch to using pygeos instead of Shapely (which is faster), this would become:
+            # return pygeos.creation.linestring(tuple(p) for p in points)
+            return LineString(SPoint(tuple(p)) for p in points)
+
+        @lru_cache(maxsize=1024)
+        def offset_along_lane(self, world_point: Point) -> float:
+            # If we switch to using pygeos instead of Shapely (which is faster), this would become:
+            # return pygeos.linear.line_locate_point(self._lane_line, pygeos.creation.points([world_point][0]))
+            return self._lane_line.project(SPoint(*world_point))
+
+    class _SegmentCache:
+        @dataclass(frozen=True)
+        class Segment:
+            """Stored info about a segment of a lane's center polyline."""
+
+            x: float
+            y: float
+            dx: float
+            dy: float
+            offset: float
+
+            @cached_property
+            def dist_to_next(self) -> float:
+                """returns the distance to the next point in the polyline."""
+                return np.linalg.norm((self.dx, self.dy))
+
+            @lru_cache(maxsize=1024)
+            def from_lane_coord(self, lane_pt: RefLinePoint) -> Point:
+                """For a reference-line point in/along this segment, converts it to a world point."""
+                offset = lane_pt.s - self.offset
+                return Point(
+                    self.x
+                    + (offset * self.dx - lane_pt.t * self.dy) / self.dist_to_next,
+                    self.y
+                    + (offset * self.dy + lane_pt.t * self.dx) / self.dist_to_next,
+                )
+
+        class _OffsetWrapper:
+            def __init__(self, seq: List[RoadMapWithCaches._SegmentCache.Segment]):
+                self._seq = seq
+
+            def __getitem__(self, i: int) -> float:
+                return self._seq[i].offset
+
+            def __len__(self) -> int:
+                return len(self._seq)
+
+        def __init__(self):
+            self.clear()
+
+        # TAI: can be more clever and clear based on size or LRU...
+        def clear(self):
+            """Reset this SegmentCache."""
+            self._lane_cache = dict()
+
+        @lru_cache(maxsize=1024)
+        def segment_for_offset(
+            self, lane: RoadMapWithCaches.Lane, offset: float
+        ) -> RoadMapWithCaches._SegmentCache.Segment:
+            """Given an offset along a Lane, returns the nearest Segment to it."""
+            # Note: we could use Shapely's "interpolate()" for a LineString here,
+            # but profiling and testing showed that (unlike Shapely's "project()")
+            # this was significantly slower than doing our own version here...
+            # TODO: consider using pygeos' line_interpolate_point() here.
+            segs = self._cache_lane_info(lane)
+            assert segs
+            segi = bisect(self.__class__._OffsetWrapper(segs), offset)
+            if segi > 0:
+                segi -= 1
+            return segs[segi]
+
+        def _cache_lane_info(
+            self, lane: RoadMapWithCaches.Lane
+        ) -> List[RoadMapWithCaches._SegmentCache.Segment]:
+            segs = self._lane_cache.get(lane.lane_id)
+            if segs is not None:
+                return segs
+
+            class _AccumulateSegs:
+                def __init__(self):
+                    self.offset = 0
+
+                def seg(self, pt1: Point, pt2: Point) -> float:
+                    """Create a Segment for a successive pair of polyline points."""
+                    # TAI: include lane width sometimes?
+                    rval = RoadMapWithCaches._SegmentCache.Segment(
+                        x=pt1.x,
+                        y=pt1.y,
+                        dx=pt2.x - pt1.x,
+                        dy=pt2.y - pt1.y,
+                        offset=self.offset,
+                    )
+                    self.offset += rval.dist_to_next
+                    return rval
+
+            points = lane.center_polyline
+            assert len(points) >= 2
+            accum = _AccumulateSegs()
+            segs = [accum.seg(pt1, pt2) for pt1, pt2 in zip(points[:-1], points[1:])]
+            self._lane_cache[lane.lane_id] = segs
+            return segs

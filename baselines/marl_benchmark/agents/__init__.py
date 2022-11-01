@@ -39,7 +39,7 @@ from smarts.core.controllers import ActionSpaceType
 
 
 def _get_trainer(path, name):
-    """ Load trainer with given file path and trainer name """
+    """Load trainer with given file path and trainer name"""
 
     module = importlib.import_module(path)
     trainer = module.__getattribute__(name)

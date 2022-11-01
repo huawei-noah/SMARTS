@@ -126,21 +126,23 @@ class PyMARLHiWayEnv:
 
         self._smarts = SMARTS(
             agent_interfaces=agent_interfaces,
-            traffic_sim=SumoTrafficSimulation(time_resolution=self._fixed_timestep_sec),
+            traffic_sims=[
+                SumoTrafficSimulation(time_resolution=self._fixed_timestep_sec)
+            ],
             envision=envision,
             fixed_timestep_sec=self._fixed_timestep_sec,
         )
 
     def get_obs(self):
-        """ Returns all agent observations in a list. """
+        """Returns all agent observations in a list."""
         return self._observations
 
     def get_obs_agent(self, agent_id):
-        """ Returns the observation for the given agent. """
+        """Returns the observation for the given agent."""
         return self._observations[agent_id]
 
     def get_obs_size(self):
-        """ Returns the total size of all agent observation data. """
+        """Returns the total size of all agent observation data."""
         obs_size = 0
         for obs in self.observation_space.spaces.values():
             if type(obs) is Box:
@@ -150,31 +152,31 @@ class PyMARLHiWayEnv:
         return obs_size
 
     def get_state(self):
-        """ Returns the concatenated observations. """
+        """Returns the concatenated observations."""
         return np.concatenate(self._observations)
 
     def get_state_size(self):
-        """ Returns the shape of the state. """
+        """Returns the shape of the state."""
         return self.get_obs_size() * self.n_agents
 
     def get_avail_actions(self):
-        """ Returns the available actions for each agent."""
+        """Returns the available actions for each agent."""
         return [np.ones((N_ACTIONS,)) for _ in range(self.n_agents)]
 
     def get_avail_agent_actions(self, agent_id):
-        """ Returns the available actions for the specified agent_id. """
+        """Returns the available actions for the specified agent_id."""
         return np.ones((N_ACTIONS,))
 
     def get_total_actions(self):
-        """ Returns the total number of actions an agent could ever take. """
+        """Returns the total number of actions an agent could ever take."""
         return N_ACTIONS
 
     def render(self):
-        """ Calls to render the environment. """
+        """Calls to render the environment."""
         pass
 
     def save_replay(self):
-        """ Calls to save the replay of the environment. """
+        """Calls to save the replay of the environment."""
         pass
 
     def step(self, agent_actions):
@@ -218,7 +220,7 @@ class PyMARLHiWayEnv:
         return np.mean(rewards), dones, infos
 
     def reset(self):
-        """ Returns initial observations and states. """
+        """Returns initial observations and states."""
         self._steps = 0
         self._dones_registered = 0
         scenario = next(self._scenarios_iterator)
@@ -232,12 +234,12 @@ class PyMARLHiWayEnv:
         return self._observations
 
     def close(self):
-        """ Calls to clean up remaining environment resources before deletion. """
+        """Calls to clean up remaining environment resources before deletion."""
         if self._smarts is not None:
             self._smarts.destroy()
 
     def get_env_info(self):
-        """ Provides specification information about the environment. """
+        """Provides specification information about the environment."""
         return {
             "state_shape": self.get_state_size(),
             "obs_shape": self.get_obs_size(),

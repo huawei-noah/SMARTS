@@ -23,6 +23,9 @@ from typing import List, Optional, Union
 from smarts.core.coordinates import Point
 from smarts.core.utils.math import is_close
 
+## Note:  the methods in this file are not efficient / optimized,
+## so they shouldn't be used on the critical path(s).
+
 
 def euclidean_distance(p1: Point, p2: Point) -> float:
     """The distance taking measuring a direct line between p1 and p2."""
