@@ -52,7 +52,7 @@ incremental==22.10.0
 iniconfig==1.1.1
 jsonpatch==1.32
 jsonpointer==2.3
-jsonschema==4.16.0
+jsonschema==4.17.0
 keras==2.10.0
 Keras-Preprocessing==1.1.2
 kiwisolver==1.4.4
