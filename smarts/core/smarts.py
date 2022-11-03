@@ -309,10 +309,6 @@ class SMARTS(ProviderManager):
         # need to expose better support for batched computations
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
 
-        # with timeit("Reconstructing frame", self._log.debug):
-        #     del self.frame
-        #     self.frame
-
         # Agents
         with timeit("Stepping through sensors", self._log.debug):
             self._vehicle_index.step_sensors()
@@ -323,6 +319,9 @@ class SMARTS(ProviderManager):
             # so that all updates are ready before rendering happens per
             with timeit("Running through the render pipeline", self._log.debug):
                 self._renderer.render()
+
+        # Reset frame state
+        del self.frame
 
         with timeit("Calculating observations and rewards", self._log.debug):
             observations, rewards, scores, dones = self._agent_manager.observe()
@@ -1631,7 +1630,7 @@ class SMARTS(ProviderManager):
             vehicle_models=None,
         )
 
-    @property
+    @cached_property
     def frame(self):
         self._check_valid()
         actor_ids = self.vehicle_index.agent_vehicle_ids()

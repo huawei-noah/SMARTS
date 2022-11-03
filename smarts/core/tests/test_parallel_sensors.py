@@ -117,6 +117,7 @@ def renderer_type():
 def test_sensor_parallelization(
     sim: SMARTS,
 ):
+    del sim.frame
     simulation_frame: SimulationFrame = sim.frame
     simulation_local_constants: SimulationLocalConstants = sim.local_constants
     import time
@@ -137,7 +138,9 @@ def test_sensor_parallelization(
     # Sensors.init(road_map, renderer_type)  # not required
 
     sensors_instance = Sensors.instance()
-    sensors_instance.get_workers(4)
+    sensors_instance.get_workers(4, sim_local_constants=sim.local_constants)
+
+    time.sleep(0.5)
 
     serial_total = observe_with_processes(0)
     parallel_1_total = observe_with_processes(1)

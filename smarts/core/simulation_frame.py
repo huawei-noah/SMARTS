@@ -81,16 +81,6 @@ class SimulationFrame:
             c for c in vehicle_collisions if c.collidee_id != self._ground_bullet_id
         ]
 
-    @property
-    def road_map(self):
-        # TODO MTA: Remove this property from the frame since it should be constant until `reset()`.
-        # Reconstruction of the map at runtime is very slow.
-        from smarts.sstudio.types import MapSpec
-
-        map_spec: MapSpec = self.map_spec
-        road_map, road_map_hash = map_spec.builder_fn(map_spec)
-        return road_map
-
     @staticmethod
     def serialize(simulation_frame: "SimulationFrame") -> Any:
         import cloudpickle

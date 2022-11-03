@@ -180,7 +180,7 @@ class AgentManager:
             sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
 
             observations[agent_id], dones[agent_id] = Sensors.observe(
-                sim_frame, agent_id, sensor_state, vehicle
+                sim_frame, sim.local_constants, agent_id, sensor_state, vehicle
             )
             rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
             scores[agent_id] = vehicle.trip_meter_sensor()
@@ -233,7 +233,11 @@ class AgentManager:
                     for vehicle in vehicles
                 }
                 observations[agent_id], dones[agent_id] = Sensors.observe_batch(
-                    sim_frame, agent_id, sensor_states, {v.id: v for v in vehicles}
+                    sim_frame,
+                    sim.local_constants,
+                    agent_id,
+                    sensor_states,
+                    {v.id: v for v in vehicles},
                 )
                 # TODO: Observations and rewards should not be generated here.
                 rewards[agent_id] = {
@@ -254,7 +258,7 @@ class AgentManager:
                     vehicle.id
                 )
                 obs, dones[agent_id] = Sensors.observe(
-                    sim_frame, agent_id, sensor_state, vehicle
+                    sim_frame, sim.local_constants, agent_id, sensor_state, vehicle
                 )
                 observations[agent_id] = obs
 
