@@ -73,13 +73,22 @@ function App({ client }) {
   const routeMatch = useRouteMatch("/:simulation");
   const matchedSimulationId = routeMatch ? routeMatch.params.simulation : null;
 
+  const wait = (ms) => {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  };
+
   useEffect(() => {
     (async () => {
-      let ids = await client.fetchSimulationIds();
-      if (ids.length > 0) {
-        if (!matchedSimulationId || !ids.includes(matchedSimulationId)) {
-          history.push(`/${ids[ids.length - 1]}`);
+      let ids = []
+      while (true) {
+        ids = await client.fetchSimulationIds();
+        if (ids.length > 0) {
+          if (!matchedSimulationId || !ids.includes(matchedSimulationId)) {
+            history.push(`/${ids[ids.length - 1]}`);
+          }
+          break;
         }
+        await wait(1000);
       }
       setSimulationIds(ids);
     })();
