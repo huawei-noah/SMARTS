@@ -79,7 +79,7 @@ function App({ client }) {
 
   useEffect(() => {
     (async () => {
-      let ids = []
+      let ids = [];
       while (true) {
         ids = await client.fetchSimulationIds();
         if (ids.length > 0) {
