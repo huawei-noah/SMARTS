@@ -199,7 +199,7 @@ def _speed_limit() -> Callable[[Observation], Dict[str, float]]:
 
         # Excess speed beyond speed limit.
         overspeed = ego.speed - speed_limit if ego.speed > speed_limit else 0
-        j_v = overspeed**2
+        j_v = min(overspeed/(0.5 * speed_limit), 1)
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_v)
         return {"speed_limit": ave}
