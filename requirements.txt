@@ -91,7 +91,7 @@ pyasn1-modules==0.2.8
 pybullet==3.0.6
 Pygments==2.13.0
 pyparsing==3.0.9
-pyrsistent==0.19.1
+pyrsistent==0.19.2
 pytest==7.2.0
 pytest-benchmark==4.0.0
 pytest-cov==4.0.0
@@ -138,4 +138,4 @@ wrapt==1.14.1
 yarl==1.8.1
 yattag==1.14.0
 zipp==3.10.0
-zope.interface==5.5.0
+zope.interface==5.5.1
