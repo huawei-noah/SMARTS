@@ -559,15 +559,23 @@ class BubbleManager:
             )
 
             for bubble in active_bubbles:
-                cursor = Cursor.from_pos(
-                    pos=point.as_shapely,
-                    vehicle_id=vehicle.id,
-                    bubble=bubble,
-                    index=persisted_vehicle_index,
-                    vehicle_ids_per_bubble=vehicle_ids_per_bubble,
-                    running_cursors=cursors,
-                )
-                cursors.add(cursor)
+                was_in_this_bubble = vehicle_ids_per_bubble[bubble]
+                sq_distance = (point.x - bubble.centroid[0]) * (
+                    point.x - bubble.centroid[0]
+                ) + (point.y - bubble.centroid[1]) * (point.y - bubble.centroid[1])
+
+                if vehicle.id in was_in_this_bubble or sq_distance <= pow(
+                    v_radius + bubble.radius + bubble._bubble.margin, 2
+                ):
+                    cursor = Cursor.from_pos(
+                        pos=point.as_shapely,
+                        vehicle_id=vehicle.id,
+                        bubble=bubble,
+                        index=persisted_vehicle_index,
+                        vehicle_ids_per_bubble=vehicle_ids_per_bubble,
+                        running_cursors=cursors,
+                    )
+                    cursors.add(cursor)
 
         return cursors
 
