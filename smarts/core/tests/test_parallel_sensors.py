@@ -31,6 +31,7 @@ from smarts.core.plan import Mission
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation, Sensors, SensorState, SensorsWorker
+from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.smarts import SMARTS
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -73,11 +74,16 @@ def scenario(agents_to_be_briefed: List[str]) -> Scenario:
 
 
 @pytest.fixture()
-def sim(scenario):
+def sim(scenario) -> SMARTS:
     # agents = {aid: AgentInterface.from_type(AgentType.Full) for aid in AGENT_IDS},
     agents = {
         aid: AgentInterface.from_type(
-            AgentType.Buddha, action=ActionSpaceType.Continuous
+            AgentType.Full,
+            drivable_area_grid_map=False,
+            ogm=False,
+            rgb=False,
+            lidar=False,
+            action=ActionSpaceType.Continuous,
         )
         for aid in AGENT_IDS
     }
@@ -94,7 +100,7 @@ def sim(scenario):
 
 @pytest.fixture()
 def simulation_frame(sim) -> SimulationState:
-    frame = sim.frame()
+    frame = sim.frame
     yield frame
 
 
@@ -109,9 +115,10 @@ def renderer_type():
 
 
 def test_sensor_parallelization(
-    simulation_frame: SimulationState,
+    sim: SMARTS,
 ):
-
+    simulation_frame: SimulationFrame = sim.frame
+    simulation_local_constants: SimulationLocalConstants = sim.local_constants
     import time
 
     agent_ids = set(AGENT_IDS)
@@ -119,30 +126,36 @@ def test_sensor_parallelization(
     def observe_with_processes(processes):
         start_time = time.monotonic()
         obs, dones = Sensors.observe_parallel(
-            simulation_frame, agent_ids, process_count_override=processes
+            sim_frame=simulation_frame,
+            sim_local_constants=simulation_local_constants,
+            agent_ids=agent_ids,
+            process_count_override=processes,
         )
         assert len(obs) > 0
         return time.monotonic() - start_time
 
     # Sensors.init(road_map, renderer_type)  # not required
 
-    non_parallel_total = observe_with_processes(0)
+    sensors_instance = Sensors.instance()
+    sensors_instance.get_workers(4)
+
+    serial_total = observe_with_processes(0)
     parallel_1_total = observe_with_processes(1)
     parallel_2_total = observe_with_processes(2)
     parallel_3_total = observe_with_processes(3)
     parallel_4_total = observe_with_processes(4)
 
     assert (
-        non_parallel_total > parallel_1_total
-        or non_parallel_total > parallel_2_total
-        or non_parallel_total > parallel_3_total
-        or non_parallel_total > parallel_4_total
-    ), f"{non_parallel_total=}, {parallel_1_total=}, {parallel_2_total=}, {parallel_3_total=} {parallel_4_total=}"
+        serial_total > parallel_1_total
+        or serial_total > parallel_2_total
+        or serial_total > parallel_3_total
+    ), f"{serial_total=}, {parallel_1_total=}, {parallel_2_total=}, {parallel_3_total=} {parallel_4_total=}"
 
 
 def test_sensor_worker(
     simulation_frame: SimulationState,
 ):
+    return
     agent_ids = set(AGENT_IDS)
     worker = SensorsWorker()
     worker.run()

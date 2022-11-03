@@ -69,7 +69,7 @@ def scenario(agents_to_be_briefed: List[str]) -> Scenario:
 
 def test_state(sim: SMARTS, scenario):
     sim.setup(scenario)
-    frame: SimulationFrame = sim.frame()
+    frame: SimulationFrame = sim.frame
 
     assert isinstance(frame, SimulationFrame)
     assert hasattr(frame, "actor_states")
@@ -93,7 +93,7 @@ def test_state_serialization(sim: SMARTS, scenario: Scenario):
     sim.setup(scenario)
     sim.reset(scenario, start_time=10)
     sim.step({AGENT_ID: [0, 0, 0]})
-    frame: SimulationFrame = sim.frame()
+    frame: SimulationFrame = sim.frame
 
     # Check if serialization will work
     serialized = Sensors.serialize_for_observation(frame)

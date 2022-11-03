@@ -29,5 +29,5 @@ class SimulationLocalConstants:
     """This is state that should only change every reset."""
 
     road_map: Any
-    traffic_lights: Any
+    road_map_hash: int
     vehicle_models: Any

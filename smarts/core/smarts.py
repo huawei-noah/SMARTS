@@ -24,6 +24,7 @@ import warnings
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
+from cached_property import cached_property
 
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
@@ -31,6 +32,8 @@ from smarts import VERSION
 from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
+from smarts.core.simulation_global_constants import SimulationGlobalConstants
+from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
 
 from . import config, models
@@ -306,6 +309,10 @@ class SMARTS(ProviderManager):
         # need to expose better support for batched computations
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
 
+        # with timeit("Reconstructing frame", self._log.debug):
+        #     del self.frame
+        #     self.frame
+
         # Agents
         with timeit("Stepping through sensors", self._log.debug):
             self._vehicle_index.step_sensors()
@@ -443,6 +450,10 @@ class SMARTS(ProviderManager):
             self.teardown()
             self._reset_providers()
             self.setup(scenario)
+
+        if not self.local_constants.road_map.is_same_map(scenario.map_spec):
+            del self.local_constants
+        self.local_constants
 
         # Tell history provide to ignore vehicles if we have assigned mission to them
         self._traffic_history_provider.set_replaced_ids(
@@ -1602,6 +1613,25 @@ class SMARTS(ProviderManager):
             return
         self._visdom.send(obs)
 
+    @cached_property
+    def global_constants(self):
+        import os
+
+        return SimulationGlobalConstants.from_environment(os.environ)
+
+    @cached_property
+    def local_constants(self):
+        self._check_valid()
+        road_map, road_map_hash = self.scenario.map_spec.builder_fn(
+            self.scenario.map_spec
+        )
+        return SimulationLocalConstants(
+            road_map=road_map,
+            road_map_hash=road_map_hash,
+            vehicle_models=None,
+        )
+
+    @property
     def frame(self):
         self._check_valid()
         actor_ids = self.vehicle_index.agent_vehicle_ids()

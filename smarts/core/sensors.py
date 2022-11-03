@@ -61,6 +61,7 @@ from .observations import (
 )
 from .plan import Mission, PlanFrame, Via
 
+
 logger = logging.getLogger(__name__)
 
 LANE_ID_CONSTANT = "off_lane"
@@ -110,11 +111,23 @@ class Sensors:
             cls._instance = cls()
         return cls._instance
 
-    def get_workers(self, count):
+    def configure(self, local_constants, global_constants):
+        # TODO MTA: configure the workers here and regenerate workers
+        raise NotImplementedError()
+
+    def _valid_configure(self, local_constants, global_constants):
+        # TODO MTA: compare if the constants have changed
+        raise NotImplementedError()
+
+    def generate_workers(self, count):
+        # TODO MTA: regerate workers
+        raise NotImplementedError()
+
+    def get_workers(self, count, **worker_kwargs):
         while len(self._workers) < count:
             new_worker = SensorsWorker()
             self._workers.append(new_worker)
-            new_worker.run()
+            new_worker.run(**worker_kwargs)
 
         return self._workers[:count]
 
@@ -154,7 +167,9 @@ class Sensors:
         return cloudpickle.loads(v)
 
     @classmethod
-    def observe_parallel(cls, sim_frame, agent_ids, process_count_override=None):
+    def observe_parallel(
+        cls, sim_frame, sim_local_constants, agent_ids, process_count_override=None
+    ):
         from smarts.core.simulation_frame import SimulationFrame
 
         sim_frame: SimulationFrame = sim_frame
@@ -167,16 +182,21 @@ class Sensors:
         )
 
         instance = cls.instance()
-        workers = instance.get_workers(used_processes)
+        workers = instance.get_workers(
+            used_processes, sim_local_constants=sim_local_constants
+        )
         used_workers: List[SensorsWorker] = []
-        with timeit(f"parallizable observations with {len(workers)=}", print):
+        with timeit(
+            f"parallizable observations with {len(agent_ids)=} and {len(workers)=}",
+            print,
+        ):
             if len(workers) >= 1:
                 agent_ids_for_grouping = list(agent_ids)
                 agent_groups = [
                     agent_ids_for_grouping[i::used_processes]
                     for i in range(used_processes)
                 ]
-                worker_args = WorkerArgs(sim_frame=sim_frame)
+                worker_args = WorkerKwargs(sim_frame=sim_frame)
                 for i, agent_group in enumerate(agent_groups):
                     if not agent_group:
                         break
@@ -186,11 +206,12 @@ class Sensors:
                         )
                         used_workers.append(workers[i])
             else:
-                agent_ids = sim_frame.agent_ids
-                observations, dones = cls.observe_parallizable(
-                    sim_frame,
-                    agent_ids,
-                )
+                with timeit("serial run", print):
+                    agent_ids = sim_frame.agent_ids
+                    observations, dones = cls.observe_parallizable(
+                        sim_frame,
+                        agent_ids,
+                    )
 
             # While observation processes are operating do rendering
             with timeit("rendering", print):
@@ -263,7 +284,7 @@ class Sensors:
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:
             neighborhood_vehicle_states = []
             for nv in vehicle.neighborhood_vehicles_sensor(
-                vehicle.state, sim_frame.vehicle_states.values()
+                vehicle_state, sim_frame.vehicle_states.values()
             ):
                 veh_obs = _make_vehicle_observation(sim_frame.road_map, nv)
                 nv_lane_pos = None
@@ -765,7 +786,7 @@ class SensorState:
         return self._step
 
 
-class WorkerArgs:
+class WorkerKwargs:
     """Used to serialize arguments for a worker upfront."""
 
     def __init__(self, **kwargs) -> None:
@@ -776,38 +797,60 @@ class WorkerArgs:
 
 
 class ProcessWorker:
-    def __init__(self) -> None:
-        manager = mp.Manager()
-        self._next_args = manager.Queue(maxsize=1)
-        self._next_results = manager.Queue(maxsize=1)
+    class WorkerDone:
+        pass
+
+    def __init__(self, serialize_results=False) -> None:
+        self._next_args = mp.Queue(maxsize=5)
+        self._next_results = mp.Queue(maxsize=5)
+        self._serialize_results = serialize_results
 
     @classmethod
     def _do_work(cls, *args, **kwargs):
         raise NotImplementedError
 
     @classmethod
-    def _run(cls, args_proxy: mp.Queue, result_proxy: mp.Queue):
+    def _run(
+        cls: "ProcessWorker",
+        args_proxy: mp.Queue,
+        result_proxy: mp.Queue,
+        serialize_results,
+        **worker_kwargs,
+    ):
         while True:
-            args, kwargs = args_proxy.get()
-            args = [
-                Sensors.deserialize_for_observation(a) if a is not None else a
-                for a in args
-            ]
-            kwargs = {
-                k: Sensors.deserialize_for_observation(a) if a is not None else a
-                for k, a in kwargs.items()
-            }
-            result = cls._do_work(*args, **kwargs)
-            result_proxy.put(Sensors.serialize_for_observation(result))
+            work = args_proxy.get()
+            if isinstance(work, cls.WorkerDone):
+                break
+            args, kwargs = work
+            with timeit("deserializing for worker", print):
+                args = [
+                    Sensors.deserialize_for_observation(a) if a is not None else a
+                    for a in args
+                ]
+                kwargs = {
+                    k: Sensors.deserialize_for_observation(a) if a is not None else a
+                    for k, a in kwargs.items()
+                }
+            result = cls._do_work(*args, **{**worker_kwargs, **kwargs})
+            with timeit("reserialize", print):
+                if serialize_results:
+                    result = Sensors.serialize_for_observation(result)
+            with timeit("put back to main thread", print):
+                result_proxy.put(result)
 
-    def run(self):
+    def run(self, **worker_kwargs):
+        kwargs = dict(serialize_results=self._serialize_results)
+        kwargs.update(worker_kwargs)
         junction_check_proc = mp.Process(
-            target=self._run, args=(self._next_args, self._next_results), daemon=True
+            target=self._run,
+            args=(self._next_args, self._next_results),
+            kwargs=kwargs,
+            daemon=True,
         )
         junction_check_proc.start()
 
     def send_to_process(
-        self, *args, worker_args: Optional[WorkerArgs] = None, **kwargs
+        self, *args, worker_args: Optional[WorkerKwargs] = None, **kwargs
     ):
         args = [
             Sensors.serialize_for_observation(a) if a is not None else a for a in args
@@ -818,12 +861,16 @@ class ProcessWorker:
         }
         if worker_args:
             kwargs.update(worker_args.kwargs)
-        self._next_args.put((args, kwargs))
+        with timeit("put to worker", print):
+            self._next_args.put((args, kwargs))
 
     def result(self, block=False, timeout=None):
-        return Sensors.deserialize_for_observation(
-            self._next_results.get(block=block, timeout=timeout)
-        )
+        with timeit("main thread blocked", print):
+            results = self._next_results.get(block=block, timeout=timeout)
+        with timeit("deserialize for main thread", print):
+            if self._serialize_results:
+                results = Sensors.deserialize_for_observation(results)
+            return results
 
 
 class SensorsWorker(ProcessWorker):

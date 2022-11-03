@@ -159,7 +159,7 @@ class AgentManager:
         dones = {}
         scores = {}
 
-        sim_frame = sim.frame()
+        sim_frame = sim.frame
         for v_id in vehicle_ids:
             vehicle = self._vehicle_index.vehicle_by_id(v_id, None)
             if not vehicle:
@@ -213,7 +213,7 @@ class AgentManager:
             if agent_id not in self._vehicle_index.agent_vehicle_ids()
         }
 
-        sim_frame = sim.frame()
+        sim_frame = sim.frame
         for agent_id in self.active_agents:
             # An agent may be pointing to its own vehicle or observing a social vehicle
             vehicle_ids = self._vehicle_index.vehicle_ids_by_actor_id(
