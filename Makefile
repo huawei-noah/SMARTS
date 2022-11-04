@@ -143,7 +143,7 @@ clean:
 	rm -f .coverage*
 
 .PHONY: format
-format:
+format: gen-header
 	echo "isort, version `isort --version-number`"
 	isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./zoo
 	black --version
