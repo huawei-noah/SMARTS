@@ -25,15 +25,12 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from shapely.affinity import rotate as shapely_rotate
-from shapely.geometry import Polygon
-from shapely.geometry import box as shapely_box
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
 
 from . import models
-from .actor import ActorRole, ActorState
+from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import Dimensions, Heading, Pose
@@ -55,102 +52,7 @@ from .sensors import (
 )
 from .utils.custom_exceptions import RendererException
 from .utils.math import rotate_cw_around_point
-
-
-@dataclass
-class VehicleState(ActorState):
-    """Vehicle state information."""
-
-    vehicle_config_type: Optional[str] = None  # key into VEHICLE_CONFIGS
-    pose: Optional[Pose] = None
-    dimensions: Optional[Dimensions] = None
-    speed: float = 0.0
-    steering: Optional[float] = None
-    yaw_rate: Optional[float] = None
-    linear_velocity: Optional[np.ndarray] = None
-    angular_velocity: Optional[np.ndarray] = None
-    linear_acceleration: Optional[np.ndarray] = None
-    angular_acceleration: Optional[np.ndarray] = None
-
-    def __post_init__(self):
-        assert self.pose is not None and self.dimensions is not None
-
-    def __eq__(self, __o: object):
-        return super().__eq__(__o)
-
-    @property
-    def bbox(self) -> Polygon:
-        """Returns a bounding box around the vehicle."""
-        pos = self.pose.point
-        half_len = 0.5 * self.dimensions.length
-        half_width = 0.5 * self.dimensions.width
-        poly = shapely_box(
-            pos.x - half_width,
-            pos.y - half_len,
-            pos.x + half_width,
-            pos.y + half_len,
-        )
-        return shapely_rotate(poly, self.pose.heading, use_radians=True)
-
-
-@dataclass(frozen=True)
-class VehicleConfig:
-    """Vehicle configuration"""
-
-    vehicle_type: str
-    color: SceneColors
-    dimensions: Dimensions
-    glb_model: str
-
-
-# A mapping between SUMO's vehicle types and our internal vehicle config.
-# TODO: Don't leak SUMO's types here.
-# XXX: The GLB's dimensions must match the specified dimensions here.
-# TODO: for traffic histories, vehicle (and road) dimensions are set by the dataset
-VEHICLE_CONFIGS = {
-    "passenger": VehicleConfig(
-        vehicle_type="car",
-        color=SceneColors.SocialVehicle,
-        dimensions=Dimensions(length=3.68, width=1.47, height=1.4),
-        glb_model="simple_car.glb",
-    ),
-    "bus": VehicleConfig(
-        vehicle_type="bus",
-        color=SceneColors.SocialVehicle,
-        dimensions=Dimensions(length=7, width=2.25, height=3),
-        glb_model="bus.glb",
-    ),
-    "coach": VehicleConfig(
-        vehicle_type="coach",
-        color=SceneColors.SocialVehicle,
-        dimensions=Dimensions(length=8, width=2.4, height=3.5),
-        glb_model="coach.glb",
-    ),
-    "truck": VehicleConfig(
-        vehicle_type="truck",
-        color=SceneColors.SocialVehicle,
-        dimensions=Dimensions(length=5, width=1.91, height=1.89),
-        glb_model="truck.glb",
-    ),
-    "trailer": VehicleConfig(
-        vehicle_type="trailer",
-        color=SceneColors.SocialVehicle,
-        dimensions=Dimensions(length=10, width=2.5, height=4),
-        glb_model="trailer.glb",
-    ),
-    "pedestrian": VehicleConfig(
-        vehicle_type="pedestrian",
-        color=SceneColors.SocialVehicle,
-        dimensions=Dimensions(length=0.5, width=0.5, height=1.6),
-        glb_model="pedestrian.glb",
-    ),
-    "motorcycle": VehicleConfig(
-        vehicle_type="motorcycle",
-        color=SceneColors.SocialVehicle,
-        dimensions=Dimensions(length=2.5, width=1, height=1.4),
-        glb_model="motorcycle.glb",
-    ),
-}
+from .vehicle_state import VEHICLE_CONFIGS, VehicleConfig, VehicleState
 
 
 class Vehicle:

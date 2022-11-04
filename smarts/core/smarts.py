@@ -37,7 +37,6 @@ from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
 
 from . import config, models
-from .simulation_frame import SimulationFrame
 from .actor import ActorRole, ActorState
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
@@ -52,12 +51,14 @@ from .bubble_manager import BubbleManager
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
-from .observations import Collision, Observation
+from .observations import Observation
+from .plan import Plan
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
 from .signal_provider import SignalProvider
 from .signals import SignalLightState, SignalState
+from .simulation_frame import SimulationFrame
 from .traffic_history_provider import TrafficHistoryProvider
 from .traffic_provider import TrafficProvider
 from .trap_manager import TrapManager
@@ -66,8 +67,9 @@ from .utils.id import Id
 from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
-from .vehicle import Vehicle, VehicleState
+from .vehicle import Vehicle
 from .vehicle_index import VehicleIndex
+from .vehicle_state import Collision, VehicleState
 
 logging.basicConfig(
     format="%(asctime)s.%(msecs)03d %(levelname)s: {%(module)s} %(message)s",
@@ -321,7 +323,10 @@ class SMARTS(ProviderManager):
                 self._renderer.render()
 
         # Reset frame state
-        del self.frame
+        try:
+            del self.cached_frame
+        except AttributeError:
+            pass
 
         with timeit("Calculating observations and rewards", self._log.debug):
             observations, rewards, scores, dones = self._agent_manager.observe()
@@ -463,6 +468,10 @@ class SMARTS(ProviderManager):
         self._reset_required = False
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
+        try:
+            del self.cached_frame
+        except AttributeError:
+            pass
         observations, _, _, _ = self._agent_manager.observe()
         observations_for_ego = self._agent_manager.reset_agents(observations)
 
@@ -701,7 +710,7 @@ class SMARTS(ProviderManager):
                 shadow_agent_id,
             )
             state, route = self._vehicle_index.relinquish_agent_control(
-                self, vehicle_id
+                self, vehicle_id, self.road_map
             )
             new_prov = self._agent_relinquishing_actor(agent_id, state, teardown_agent)
             if (
@@ -1631,7 +1640,7 @@ class SMARTS(ProviderManager):
         )
 
     @cached_property
-    def frame(self):
+    def cached_frame(self):
         self._check_valid()
         actor_ids = self.vehicle_index.agent_vehicle_ids()
         actor_states = self._last_provider_state
@@ -1663,7 +1672,6 @@ class SMARTS(ProviderManager):
                 for agent_id in self.agent_manager.active_agents
             },
             vehicle_ids=[vid for vid in vehicles],
-            vehicles=vehicles,
             vehicle_sensors={vid: v.sensors for vid, v in vehicles.items()},
             sensor_states=dict(self.vehicle_index.sensor_states_items()),
             _ground_bullet_id=self._ground_bullet_id,

@@ -28,7 +28,7 @@ from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType, Controllers
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
-from .vehicle import VehicleState
+from .vehicle_state import VehicleState
 
 
 class AgentsProvider(Provider):

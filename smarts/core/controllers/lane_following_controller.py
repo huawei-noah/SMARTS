@@ -94,7 +94,7 @@ class LaneFollowingController:
         # This lookahead value is coupled with a few calculations below, changing it
         # may affect stability of the controller.
         wp_paths = sim.road_map.waypoint_paths(
-            vehicle.pose, lookahead=16, route=sensor_state.plan.route
+            vehicle.pose, lookahead=16, route=sensor_state.get_plan(sim.road_map).route
         )
         assert wp_paths, "no waypoints found.  not near lane?"
         current_lane = LaneFollowingController.find_current_lane(
@@ -361,7 +361,11 @@ class LaneFollowingController:
         )
 
         LaneFollowingController._update_target_lane_if_reached_end_of_lane(
-            agent_id, vehicle, controller_state, sensor_state
+            agent_id,
+            vehicle,
+            controller_state,
+            sensor_state.get_plan(sim.road_map),
+            sim.road_map,
         )
 
     @staticmethod
@@ -438,13 +442,12 @@ class LaneFollowingController:
 
     @staticmethod
     def _update_target_lane_if_reached_end_of_lane(
-        agent_id, vehicle, controller_state, sensor_state
+        agent_id, vehicle, controller_state, plan, road_map
     ):
         # When we reach the end of our target lane, we need to update it
         # to the next best lane along the path
         state = controller_state
-        plan = sensor_state.plan
-        lane = plan.road_map.lane_by_id(state.target_lane_id)
+        lane = road_map.lane_by_id(state.target_lane_id)
         paths = lane.waypoint_paths_for_pose(
             vehicle.pose, lookahead=2, route=plan.route
         )

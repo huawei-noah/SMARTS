@@ -23,6 +23,7 @@ from io import StringIO
 from typing import (
     FrozenSet,
     Iterator,
+    List,
     NamedTuple,
     Optional,
     Sequence,
@@ -523,15 +524,15 @@ class VehicleIndex:
 
     @clear_cache
     def relinquish_agent_control(
-        self, sim, vehicle_id: str
-    ) -> Tuple[VehicleState, RoadMap.Route]:
+        self, sim, vehicle_id: str, road_map
+    ) -> Tuple[VehicleState, List[str]]:
         """Give control of the vehicle back to its original controller."""
         self._log.debug(f"Relinquishing agent control v_id={vehicle_id}")
 
         v_id = _2id(vehicle_id)
 
         ss = self._sensor_states[v_id]
-        route = ss.plan.route
+        route = ss.get_plan(road_map).route
         self.stop_agent_observation(vehicle_id)
 
         vehicle = self._vehicles[v_id]

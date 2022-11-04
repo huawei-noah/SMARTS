@@ -28,7 +28,7 @@ from .provider import Provider, ProviderManager, ProviderRecoveryFlags, Provider
 from .road_map import RoadMap
 from .scenario import Scenario
 from .utils.file import replace
-from .vehicle import VehicleState
+from .vehicle_state import VehicleState
 
 
 class ExternalProvider(Provider):

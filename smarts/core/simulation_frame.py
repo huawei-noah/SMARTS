@@ -19,14 +19,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Any, Dict, List, Optional, Set
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set
+
 from cached_property import cached_property
+
 from smarts.core.actor import ActorState
 from smarts.core.agent_interface import AgentInterface
-from smarts.core.provider import ProviderState
-from smarts.core.sensors import Collision
-from smarts.core.vehicle import Vehicle, VehicleState
+from smarts.core.vehicle_state import Collision, VehicleState
+
 
 # TODO MTA: Move this class to a new separate file for typehint purposes
 @dataclass(frozen=True)
@@ -43,7 +44,7 @@ class SimulationFrame:
     # road_map: RoadMap
     map_spec: Any
     last_dt: float
-    last_provider_state: ProviderState
+    last_provider_state: Any
     step_count: int
     vehicle_collisions: Dict[str, List[Collision]]
     # TODO MTA: this association should be between agents and sensors
@@ -51,9 +52,7 @@ class SimulationFrame:
     vehicle_ids: Set[str]
     vehicle_states: Dict[str, VehicleState]
     # TODO MTA: Some sensors still cause issues with serialization
-    vehicle_sensors: Dict[str, List[Any]]
-    # TODO MTA: Vehicles are not needed if vehicle state is already here
-    vehicles: Dict[str, Vehicle]
+    vehicle_sensors: Dict[str, Dict[str, Any]]
 
     sensor_states: Any
     # TODO MTA: this can be allowed here as long as it is only type information

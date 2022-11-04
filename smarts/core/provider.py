@@ -24,7 +24,6 @@ from typing import Iterable, List, Optional, Set, Tuple
 
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
-from .road_map import RoadMap
 from .scenario import Scenario
 
 

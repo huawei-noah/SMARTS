@@ -31,9 +31,9 @@ from smarts.core.plan import Mission
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation, Sensors, SensorState, SensorsWorker
+from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.smarts import SMARTS
-from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.file import unpack
 
@@ -100,7 +100,7 @@ def sim(scenario) -> SMARTS:
 
 @pytest.fixture()
 def simulation_frame(sim) -> SimulationState:
-    frame = sim.frame
+    frame = sim.cached_frame
     yield frame
 
 
@@ -117,8 +117,8 @@ def renderer_type():
 def test_sensor_parallelization(
     sim: SMARTS,
 ):
-    del sim.frame
-    simulation_frame: SimulationFrame = sim.frame
+    del sim.cached_frame
+    simulation_frame: SimulationFrame = sim.cached_frame
     simulation_local_constants: SimulationLocalConstants = sim.local_constants
     import time
 

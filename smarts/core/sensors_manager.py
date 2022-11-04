@@ -19,35 +19,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from dataclasses import dataclass
+class SensorsManager:
+    def __init__(self) -> None:
+        pass
 
+    def step(self):
+        pass
 
-# TODO MTA: Start to use this
-@dataclass(frozen=True)
-class SimulationGlobalConstants:
-    """This is state that should not ever change."""
+    def sync(self):
+        pass
 
-    OBSERVATION_WORKERS: int
+    def run_sensors(
+        self,
+        simulation_state,
+    ):
+        pass
 
-    _SMARTS_ENVIRONMENT_PREFIX: str = "SEV_"
-
-    @classmethod
-    def from_environment(cls, environ):
-        """This is intended to be used in the following way:
-        >>> sgc = SimulationGlobalConstants.from_environment(os.environ)
-        """
-        SEV = cls._SMARTS_ENVIRONMENT_PREFIX
-
-        def environ_get(NAME, data_type, default):
-            nonlocal SEV
-            assert isinstance(default, data_type)
-            return data_type(environ.get(f"{SEV}{NAME}", default))
-
-        # TODO MTA: consider a different option where defaults are in the object:
-        # and the typehints are used to determine the type
-        # cls(
-        #   **environ_get_all(cls._SMARTS_ENVIRONMENT_PREFIX)
-        # )
-        return cls(
-            OBSERVATION_WORKERS=environ_get("OBSERVATION_WORKERS", int, 0),
-        )
+    def observe(self, agent_ids):
+        pass

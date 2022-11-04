@@ -22,7 +22,7 @@ from dataclasses import dataclass, field, replace
 from enum import IntEnum
 from typing import List, Optional, Tuple, Union
 
-from smarts.core.controllers import ActionSpaceType
+from smarts.core.controllers.action_space_type import ActionSpaceType
 from smarts.core.lidar_sensor_params import BasicLidar
 from smarts.core.lidar_sensor_params import SensorParams as LidarSensorParams
 

@@ -34,7 +34,7 @@ from smarts.core.observations import Observation
 from smarts.core.plan import Mission, Plan, PositionalGoal
 from smarts.core.sensors import Sensors
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.vehicle import VehicleState
+from smarts.core.vehicle_state import VehicleState
 from smarts.zoo.registry import make as make_social_agent
 
 
@@ -159,7 +159,7 @@ class AgentManager:
         dones = {}
         scores = {}
 
-        sim_frame = sim.frame
+        sim_frame = sim.cached_frame
         for v_id in vehicle_ids:
             vehicle = self._vehicle_index.vehicle_by_id(v_id, None)
             if not vehicle:
@@ -213,7 +213,8 @@ class AgentManager:
             if agent_id not in self._vehicle_index.agent_vehicle_ids()
         }
 
-        sim_frame = sim.frame
+        sim_frame = sim.cached_frame
+        print(f"{self.active_agents=}-{sim_frame.agent_ids=}")
         for agent_id in self.active_agents:
             # An agent may be pointing to its own vehicle or observing a social vehicle
             vehicle_ids = self._vehicle_index.vehicle_ids_by_actor_id(

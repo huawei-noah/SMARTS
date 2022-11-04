@@ -11,7 +11,8 @@ from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
-from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
+from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle
+from smarts.core.vehicle_state import VehicleState
 
 TIMESTEP_SEC = 1 / 240
 INITIAL_KINEMATICS_VEHICLES = 50

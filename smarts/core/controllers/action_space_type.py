@@ -19,35 +19,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from dataclasses import dataclass
+from enum import Enum
 
 
-# TODO MTA: Start to use this
-@dataclass(frozen=True)
-class SimulationGlobalConstants:
-    """This is state that should not ever change."""
+class ActionSpaceType(Enum):
+    """Available vehicle action spaces."""
 
-    OBSERVATION_WORKERS: int
-
-    _SMARTS_ENVIRONMENT_PREFIX: str = "SEV_"
-
-    @classmethod
-    def from_environment(cls, environ):
-        """This is intended to be used in the following way:
-        >>> sgc = SimulationGlobalConstants.from_environment(os.environ)
-        """
-        SEV = cls._SMARTS_ENVIRONMENT_PREFIX
-
-        def environ_get(NAME, data_type, default):
-            nonlocal SEV
-            assert isinstance(default, data_type)
-            return data_type(environ.get(f"{SEV}{NAME}", default))
-
-        # TODO MTA: consider a different option where defaults are in the object:
-        # and the typehints are used to determine the type
-        # cls(
-        #   **environ_get_all(cls._SMARTS_ENVIRONMENT_PREFIX)
-        # )
-        return cls(
-            OBSERVATION_WORKERS=environ_get("OBSERVATION_WORKERS", int, 0),
-        )
+    Continuous = 0
+    Lane = 1
+    ActuatorDynamic = 2
+    LaneWithContinuousSpeed = 3
+    TargetPose = 4
+    Trajectory = 5
+    MultiTargetPose = 6  # for boid control
+    MPC = 7
+    TrajectoryWithTime = 8  # for pure interpolation provider
+    Direct = 9

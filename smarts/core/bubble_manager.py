@@ -695,7 +695,7 @@ class BubbleManager:
     def _prepare_sensors_for_agent_control(
         self, sim, vehicle_id, agent_id, agent_interface, bubble
     ):
-        plan = Plan(sim.road_map, None, find_route=False)
+        plan = Plan(sim.road_map, None)
         vehicle = sim.vehicle_index.start_agent_observation(
             sim,
             vehicle_id,

@@ -123,9 +123,8 @@ def test_trip_meter_sensor(scenarios):
 
 def test_waypoints_sensor(scenarios):
     scenario = next(scenarios)
-    sim = mock.Mock()
-    vehicle = mock.Mock()
-    vehicle.pose = Pose(
+    vehicle_state = mock.Mock()
+    vehicle_state.pose = Pose(
         position=np.array([33, -65, 0]),
         orientation=np.array([0, 0, 0, 0]),
         heading_=Heading(0),
@@ -134,8 +133,8 @@ def test_waypoints_sensor(scenarios):
     mission = scenario.missions[AGENT_ID]
     plan = Plan(scenario.road_map, mission)
 
-    sensor = WaypointsSensor(vehicle, plan)
-    waypoints = sensor()
+    sensor = WaypointsSensor()
+    waypoints = sensor(vehicle_state, plan, scenario.road_map)
 
     assert len(waypoints) == 3
 
