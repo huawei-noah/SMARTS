@@ -1549,7 +1549,7 @@ class SMARTS(ProviderManager):
                         mission_route_geometry = (
                             self._vehicle_index.sensor_state_for_vehicle_id(
                                 v.actor_id
-                            ).plan.route.geometry
+                            ).get_plan(self.road_map).route.geometry
                         )
                 else:
                     actor_type = envision_types.TrafficActorType.SocialAgent
