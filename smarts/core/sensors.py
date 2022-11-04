@@ -189,7 +189,7 @@ class Sensors:
         )
         used_workers: List[SensorsWorker] = []
         with timeit(
-            f"parallizable observations with {len(agent_ids)=} and {len(workers)=}",
+            f"parallizable observations with {len(agent_ids)} and {len(workers)}",
             print,
         ):
             if len(workers) >= 1:

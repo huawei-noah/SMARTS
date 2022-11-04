@@ -30,7 +30,7 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.core.plan import Mission
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation, Sensors, SensorState, SensorsWorker
+from smarts.core.sensors import Observation, Sensors, SensorState, SensorsWorker, WorkerKwargs
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.smarts import SMARTS
@@ -152,24 +152,26 @@ def test_sensor_parallelization(
         serial_total > parallel_1_total
         or serial_total > parallel_2_total
         or serial_total > parallel_3_total
-    ), f"{serial_total=}, {parallel_1_total=}, {parallel_2_total=}, {parallel_3_total=} {parallel_4_total=}"
+    ), f"{serial_total}, {parallel_1_total}, {parallel_2_total}, {parallel_3_total} {parallel_4_total}"
 
 
 def test_sensor_worker(
-    simulation_frame: SimulationState,
+    sim: SMARTS,
 ):
-    return
+    del sim.cached_frame
+    simulation_frame: SimulationFrame = sim.cached_frame
     agent_ids = set(AGENT_IDS)
     worker = SensorsWorker()
-    worker.run()
-    worker.send_to_process(simulation_frame, agent_ids)
-    observations, dones = SensorsWorker.local(simulation_frame, agent_ids)
-    other_observations, other_dones = worker.result(block=True)
+    worker.run(sim_local_constants=sim.local_constants)
+    worker_args = WorkerKwargs(sim_frame=simulation_frame)
+    worker.send_to_process(worker_args=worker_args, agent_ids=agent_ids)
+    observations, dones = SensorsWorker.local(simulation_frame, sim.local_constants, agent_ids)
+    other_observations, other_dones = worker.result(block=True, timeout=5)
 
     assert isinstance(observations, dict)
     assert all(
         [isinstance(obs, Observation) for obs in observations.values()]
-    ), f"{observations=}"
+    ), f"{observations}"
     assert isinstance(dones, dict)
     assert all([isinstance(obs, bool) for obs in dones.values()])
     assert isinstance(other_observations, dict)

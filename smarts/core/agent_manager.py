@@ -214,7 +214,6 @@ class AgentManager:
         }
 
         sim_frame = sim.cached_frame
-        print(f"{self.active_agents=}-{sim_frame.agent_ids=}")
         for agent_id in self.active_agents:
             # An agent may be pointing to its own vehicle or observing a social vehicle
             vehicle_ids = self._vehicle_index.vehicle_ids_by_actor_id(
