@@ -38,6 +38,7 @@ from shapely.geometry import (
     MultiPolygon,
     Point,
     Polygon,
+    box,
 )
 from shapely.ops import split, unary_union
 
@@ -813,14 +814,31 @@ class PositionalZone(Zone):
             poly = shapely_rotate(poly, self.rotation, use_radians=True)
         return shapely_translate(poly, xoff=x, yoff=y)
 
+
 @dataclass(frozen=True)
 class ConfigurableZone(Zone):
     """A descripter that defines a specific configurableZone defined by user"""
 
     ext_coordinates: List[Tuple[float, float]]
-    """external coordinates of the polygon"""
+    """external coordinates of the polygon
+    < 2 points provided: error
+    = 2 points provided: generates a box using these two points as diagonal
+    > 2 points provided: generates a polygons according to the coordinates"""
     rotation: Optional[float] = None
     """The heading direction of the bubble(radians, clock-wise rotation)"""
+
+    def __post_init__(self):
+        if not self.ext_coordinates or not isinstance(self.ext_coordinates[0], tuple):
+            raise ValueError(
+                "Two points or more are needed to create a polygon. (less than two points are provided)"
+            )
+
+        x_set = set(point[0] for point in self.ext_coordinates)
+        y_set = set(point[1] for point in self.ext_coordinates)
+        if len(x_set) == 1 or len(y_set) == 1:
+            raise ValueError(
+                "Parallel line cannot form a polygon. (points provided form a parallel line)"
+            )
 
     def to_geometry(self, road_map: Optional[RoadMap] = None) -> Polygon:
         """Generate a polygon according to given coordinates"""
@@ -830,18 +848,16 @@ class ConfigurableZone(Zone):
         ):  # if user only specified two points, create a box
             x_min = min(self.ext_coordinates[0][0], self.ext_coordinates[1][0])
             x_max = max(self.ext_coordinates[0][0], self.ext_coordinates[1][0])
-            y_min = min(self.ext_coordinates[1][0], self.ext_coordinates[1][1])
-            y_max = max(self.ext_coordinates[1][0], self.ext_coordinates[1][1])
-            poly = Polygon(
-                [(x_min, y_min), (x_max, y_min), (x_max, y_max), (x_min, y_max)],
-            )
+            y_min = min(self.ext_coordinates[0][1], self.ext_coordinates[1][1])
+            y_max = max(self.ext_coordinates[0][1], self.ext_coordinates[1][1])
+            poly = box(x_min, y_min, x_max, y_max)
 
         else:  # else create a polygon according to the coordinates
             poly = Polygon(self.ext_coordinates)
 
         if self.rotation is not None:
             poly = shapely_rotate(poly, self.rotation, use_radians=True)
-        return poly
+        return
 
 
 @dataclass(frozen=True)
