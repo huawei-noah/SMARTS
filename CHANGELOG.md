@@ -56,6 +56,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed issues with Envision. The playback bar and realtime mode now work as expected.
 - Fixed a bug where traffic history vehicles would not get traffic signal observations
 - Fixed a bug where envision would not work in some versions of python due to nuances of `importlib.resource.path()`.
+- Fixed an issue with incorrect vehicle sizes in Envision.
 
 ## [0.6.1]
 ### Added
