@@ -94,6 +94,7 @@ def clean_scenario(scenario: str):
         "history_mission.pkl",
         "*.shf",
         "*-AUTOGEN.net.xml",
+        "build.db",
     ]
     p = Path(scenario)
     for file_name in to_be_removed:

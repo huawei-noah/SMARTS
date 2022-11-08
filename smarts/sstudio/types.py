@@ -18,16 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import collections.abc as collections_abc
-import hashlib
 import logging
 import math
-import pickle
 import random
-from ctypes import c_int64
 from dataclasses import dataclass, field
 from enum import IntEnum
 from sys import maxsize
-from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -45,6 +42,7 @@ from smarts.core import gen_id
 from smarts.core.coordinates import RefLinePoint
 from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
+from smarts.core.utils.file import pickle_hash_int
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_cw_around_point
 
@@ -52,14 +50,6 @@ from smarts.core.utils.math import rotate_cw_around_point
 class _SUMO_PARAMS_MODE(IntEnum):
     TITLE_CASE = 0
     KEEP_SNAKE_CASE = 1
-
-
-def _pickle_hash(obj) -> int:
-    pickle_bytes = pickle.dumps(obj, protocol=4)
-    hasher = hashlib.md5()
-    hasher.update(pickle_bytes)
-    val = int(hasher.hexdigest(), 16)
-    return c_int64(val).value
 
 
 class _SumoParams(collections_abc.Mapping):
@@ -304,7 +294,7 @@ class TrafficActor(Actor):
     junction_model: JunctionModel = field(default_factory=JunctionModel, hash=False)
 
     def __hash__(self) -> int:
-        return _pickle_hash(self)
+        return pickle_hash_int(self)
 
     @property
     def id(self) -> str:
@@ -426,7 +416,7 @@ class Route:
         return "route-{}-{}-{}-".format(
             "_".join(map(str, self.begin)),
             "_".join(map(str, self.end)),
-            _pickle_hash(self),
+            pickle_hash_int(self),
         )
 
     @property
@@ -435,7 +425,7 @@ class Route:
         return (self.begin[0],) + self.via + (self.end[0],)
 
     def __hash__(self):
-        return _pickle_hash(self)
+        return pickle_hash_int(self)
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
@@ -490,13 +480,13 @@ class Flow:
         """The unique id of this flow."""
         return "flow-{}-{}-".format(
             self.route.id,
-            str(_pickle_hash(sorted(self.actors.items(), key=lambda a: a[0].name))),
+            str(pickle_hash_int(sorted(self.actors.items(), key=lambda a: a[0].name))),
         )
 
     def __hash__(self):
         # Custom hash since self.actors is not hashable, here we first convert to a
         # frozenset.
-        return _pickle_hash((self.route, self.rate, frozenset(self.actors.items())))
+        return pickle_hash_int((self.route, self.rate, frozenset(self.actors.items())))
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)

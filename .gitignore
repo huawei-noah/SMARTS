@@ -108,6 +108,7 @@ shifted_map-AUTOGEN.net.xml
 *.pkl
 *.shf
 *.tfrecord*
+build.db
 
 # Manually generated sumo route files
 !zoo/evaluation/scenarios/**/traffic/*.rou.xml

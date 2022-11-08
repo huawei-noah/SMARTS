@@ -26,19 +26,91 @@ import itertools
 import logging
 import os
 import pickle
-import subprocess
-import sys
+import sqlite3
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle
+
+from smarts.core.utils.file import pickle_hash
+from smarts.core.utils.logging import timeit
 
 from . import types
 from .generators import TrafficGenerator
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__file__)
+
+
+def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
+    graph = collections.defaultdict(list)
+
+    if scenario.map_spec:
+        graph["map_spec"] = [os.path.join(base_dir, "map_spec.pkl")]
+
+    if scenario.traffic:
+        for name, traffic in scenario.traffic.items():
+            ext = "smarts" if traffic.engine == "SMARTS" else "rou"
+            artifact_path = os.path.join(base_dir, "traffic", f"{name}.{ext}.xml")
+            graph["traffic"].append(artifact_path)
+
+    if scenario.ego_missions:
+        graph["ego_missions"] = [os.path.join(base_dir, "missions.pkl")]
+
+    if scenario.social_agent_missions:
+        for name in scenario.social_agent_missions.keys():
+            artifact_path = os.path.join(base_dir, "social_agents", name)
+            graph["social_agent_missions"].append(artifact_path)
+
+    if scenario.bubbles:
+        graph["bubbles"] = [os.path.join(base_dir, "bubbles.pkl")]
+
+    if scenario.friction_maps:
+        graph["friction_maps"] = [os.path.join(base_dir, "friction_map.pkl")]
+
+    if scenario.traffic_histories:
+        for dataset in scenario.traffic_histories:
+            artifact_path = os.path.join(base_dir, f"{dataset.name}.shf")
+            graph["traffic_histories"].append(artifact_path)
+
+    return graph
+
+
+def _needs_build(
+    db_conn: sqlite3.Connection, scenario_obj: Any, artifact_paths: List[str]
+) -> bool:
+    if scenario_obj is None:
+        return False  # There's no object in the DSL, so nothing to build
+    if not all([os.path.exists(f) for f in artifact_paths]):
+        return True  # Some of the expected output files don't exist
+
+    expected_hash = pickle_hash(scenario_obj)
+
+    for f in artifact_paths:
+        cur = db_conn.cursor()
+        cur.execute(
+            """SELECT scenario_obj_hash FROM Artifacts WHERE artifact_path=?;""", (f,)
+        )
+        row = cur.fetchone()
+        cur.close()
+
+        if row is None:
+            return True  # Artifact is not in the db
+
+        artifact_hash = row[0]
+        if artifact_hash != expected_hash:
+            return True  # Hash does not match, out of date
+    return False
+
+
+def _update_artifact(db_conn: sqlite3.Connection, artifact_path: str, hash_val: str):
+    query = """REPLACE INTO Artifacts (artifact_path, scenario_obj_hash)
+               VALUES(?, ?);"""
+    cur = db_conn.cursor()
+    cur.execute(query, (artifact_path, hash_val))
+    db_conn.commit()
+    cur.close()
 
 
 def gen_scenario(
@@ -55,82 +127,140 @@ def gen_scenario(
     #      us to simplify our serialization between SStudio and SMARTS.
 
     output_dir = str(output_dir)
+    build_graph = _build_graph(scenario, output_dir)
 
-    if scenario.map_spec:
-        gen_map(output_dir, scenario.map_spec)
-        map_spec = scenario.map_spec
-    else:
-        map_spec = types.MapSpec(source=output_dir)
+    # Create DB for build caching
+    db_path = os.path.join(output_dir, "build.db")
+    db_conn = sqlite3.connect(db_path)
 
-    if scenario.traffic:
-        for name, traffic in scenario.traffic.items():
-            gen_traffic(
-                scenario=output_dir,
-                traffic=traffic,
-                name=name,
-                seed=seed,
-                overwrite=overwrite,
-                map_spec=map_spec,
+    cur = db_conn.cursor()
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS Artifacts (
+                artifact_path     TEXT PRIMARY KEY,
+                scenario_obj_hash TEXT
+        ) WITHOUT ROWID"""
+    )
+    db_conn.commit()
+    cur.close()
+
+    with timeit("gen_map", logger.info):
+        if _needs_build(db_conn, scenario.map_spec, build_graph["map_spec"]):
+            gen_map(output_dir, scenario.map_spec)
+            _update_artifact(
+                db_conn, build_graph["map_spec"][0], pickle_hash(scenario.map_spec)
             )
+            map_spec = scenario.map_spec
+        else:
+            map_spec = types.MapSpec(source=output_dir)
 
-    if scenario.ego_missions:
-        missions = []
-        for mission in scenario.ego_missions:
-            if isinstance(mission, types.GroupedLapMission):
-                gen_group_laps(
+    with timeit("gen_traffic", logger.info):
+        if _needs_build(db_conn, scenario.traffic, build_graph["traffic"]):
+            for name, traffic in scenario.traffic.items():
+                gen_traffic(
                     scenario=output_dir,
-                    begin=mission.route.begin,
-                    end=mission.route.end,
-                    grid_offset=mission.offset,
-                    used_lanes=mission.lanes,
-                    vehicle_count=mission.actor_count,
-                    num_laps=mission.num_laps,
+                    traffic=traffic,
+                    name=name,
                     seed=seed,
                     overwrite=overwrite,
                     map_spec=map_spec,
                 )
-            else:
-                missions.append(mission)
+            hash = pickle_hash(scenario.traffic)
+            for artifact in build_graph["traffic"]:
+                _update_artifact(db_conn, artifact, hash)
 
-        if missions:
-            gen_missions(
+    with timeit("ego_missions", logger.info):
+        if _needs_build(db_conn, scenario.ego_missions, build_graph["ego_missions"]):
+            missions = []
+            for mission in scenario.ego_missions:
+                if isinstance(mission, types.GroupedLapMission):
+                    gen_group_laps(
+                        scenario=output_dir,
+                        begin=mission.route.begin,
+                        end=mission.route.end,
+                        grid_offset=mission.offset,
+                        used_lanes=mission.lanes,
+                        vehicle_count=mission.actor_count,
+                        num_laps=mission.num_laps,
+                        seed=seed,
+                        overwrite=overwrite,
+                        map_spec=map_spec,
+                    )
+                else:
+                    missions.append(mission)
+
+            if missions:
+                gen_missions(
+                    scenario=output_dir,
+                    missions=missions,
+                    seed=seed,
+                    overwrite=overwrite,
+                    map_spec=map_spec,
+                )
+
+            _update_artifact(
+                db_conn,
+                build_graph["ego_missions"][0],
+                pickle_hash(scenario.ego_missions),
+            )
+
+    with timeit("social_agent_missions", logger.info):
+        if _needs_build(
+            db_conn,
+            scenario.social_agent_missions,
+            build_graph["social_agent_missions"],
+        ):
+            for name, (actors, missions) in scenario.social_agent_missions.items():
+                if not (
+                    isinstance(actors, collections.abc.Sequence)
+                    and isinstance(missions, collections.abc.Sequence)
+                ):
+                    raise ValueError("Actors and missions must be sequences")
+
+                gen_social_agent_missions(
+                    name=name,
+                    scenario=output_dir,
+                    social_agent_actor=actors,
+                    missions=missions,
+                    seed=seed,
+                    map_spec=map_spec,
+                )
+
+            hash = pickle_hash(scenario.social_agent_missions)
+            for artifact in build_graph["social_agent_missions"]:
+                _update_artifact(db_conn, artifact, hash)
+
+    with timeit("bubbles", logger.info):
+        if _needs_build(db_conn, scenario.bubbles, build_graph["bubbles"]):
+            gen_bubbles(scenario=output_dir, bubbles=scenario.bubbles)
+            _update_artifact(
+                db_conn, build_graph["bubbles"][0], pickle_hash(scenario.bubbles)
+            )
+
+    with timeit("friction_maps", logger.info):
+        if _needs_build(db_conn, scenario.friction_maps, build_graph["friction_maps"]):
+            gen_friction_map(
+                scenario=output_dir, surface_patches=scenario.friction_maps
+            )
+            _update_artifact(
+                db_conn,
+                build_graph["friction_maps"][0],
+                pickle_hash(scenario.friction_maps),
+            )
+
+    with timeit("traffic_histories", logger.info):
+        if _needs_build(
+            db_conn, scenario.traffic_histories, build_graph["traffic_histories"]
+        ):
+            gen_traffic_histories(
                 scenario=output_dir,
-                missions=missions,
-                seed=seed,
+                histories_datasets=scenario.traffic_histories,
                 overwrite=overwrite,
                 map_spec=map_spec,
             )
 
-    if scenario.social_agent_missions:
-        for name, (actors, missions) in scenario.social_agent_missions.items():
-            if not (
-                isinstance(actors, collections.abc.Sequence)
-                and isinstance(missions, collections.abc.Sequence)
-            ):
-                raise ValueError("Actors and missions must be sequences")
-
-            gen_social_agent_missions(
-                name=name,
-                scenario=output_dir,
-                social_agent_actor=actors,
-                missions=missions,
-                seed=seed,
-                map_spec=map_spec,
-            )
-
-    if scenario.bubbles:
-        gen_bubbles(scenario=output_dir, bubbles=scenario.bubbles)
-
-    if scenario.friction_maps:
-        gen_friction_map(scenario=output_dir, surface_patches=scenario.friction_maps)
-
-    if scenario.traffic_histories:
-        gen_traffic_histories(
-            scenario=output_dir,
-            histories_datasets=scenario.traffic_histories,
-            overwrite=overwrite,
-            map_spec=map_spec,
-        )
+            hash = pickle_hash(scenario.traffic_histories)
+            for artifact in build_graph["traffic_histories"]:
+                _update_artifact(db_conn, artifact, hash)
 
 
 def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None):
@@ -457,6 +587,10 @@ def gen_traffic_histories(
     road_map = None  # shared across all history_datasets in scenario
     for hdsr in histories_datasets:
         assert isinstance(hdsr, types.TrafficHistoryDataset)
+        if not hdsr.input_path:
+            print(f"skipping placeholder dataset spec '{hdsr.name}'.")
+            continue
+
         from smarts.sstudio import genhistories
 
         map_bbox = None

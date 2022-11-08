@@ -17,9 +17,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from ctypes import c_int64
 import dataclasses
 import hashlib
 import os
+import pickle
 import shutil
 import struct
 from contextlib import contextmanager
@@ -107,6 +109,21 @@ def file_md5_hash(file_path: str) -> str:
         hasher.update(f.read().encode())
 
     return str(hasher.hexdigest())
+
+
+def pickle_hash(obj) -> str:
+    """Converts a Python object to a hash value. NOTE: NOT stable across different Python versions."""
+    pickle_bytes = pickle.dumps(obj, protocol=4)
+    hasher = hashlib.md5()
+    hasher.update(pickle_bytes)
+    return hasher.hexdigest()
+
+
+def pickle_hash_int(obj) -> int:
+    """Converts a Python object to a hash value. NOTE: NOT stable across different Python versions."""
+    hash_str = pickle_hash(obj)
+    val = int(hash_str, 16)
+    return c_int64(val).value
 
 
 def smarts_log_dir() -> str:
