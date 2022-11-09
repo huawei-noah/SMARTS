@@ -555,7 +555,6 @@ class BubbleManager:
                 math.sqrt(
                     vehicle.width * vehicle.width + vehicle.length * vehicle.length
                 )
-                / 2
             )
 
             for bubble in active_bubbles:
