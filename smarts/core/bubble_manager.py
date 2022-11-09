@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import logging
 import math
+import time
 from builtins import classmethod
 from collections import defaultdict
 from copy import deepcopy
@@ -546,6 +547,7 @@ class BubbleManager:
         if not active_bubbles:
             return cursors
 
+        begin = time.time()
         for _, vehicle in persisted_vehicle_index.vehicleitems():
             # XXX: Turns out Shapely Point(...) creation is very expensive (~0.02ms) which
             #      when inside of a loop x large number of vehicles makes a big
@@ -577,6 +579,9 @@ class BubbleManager:
                     )
                     cursors.add(cursor)
 
+        end = time.time()
+        with open("../new.txt", "a") as output:
+            output.write(str(end-begin) + "\n")
         return cursors
 
     def _handle_transitions(self, sim, cursors: Set[Cursor]):
