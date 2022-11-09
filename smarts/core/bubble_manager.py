@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 import logging
 import math
-import time
 from builtins import classmethod
 from collections import defaultdict
 from copy import deepcopy
@@ -547,42 +546,37 @@ class BubbleManager:
         if not active_bubbles:
             return cursors
 
-        begin = time.time()
-        for i in range (0,100):
-            for _, vehicle in persisted_vehicle_index.vehicleitems():
-                # XXX: Turns out Shapely Point(...) creation is very expensive (~0.02ms) which
-                #      when inside of a loop x large number of vehicles makes a big
-                #      performance hit.
-                point = vehicle.pose.point
-                v_radius = (
-                    math.sqrt(
-                        vehicle.width * vehicle.width + vehicle.length * vehicle.length
-                    )
-                    / 2
+        for _, vehicle in persisted_vehicle_index.vehicleitems():
+            # XXX: Turns out Shapely Point(...) creation is very expensive (~0.02ms) which
+            #      when inside of a loop x large number of vehicles makes a big
+            #      performance hit.
+            point = vehicle.pose.point
+            v_radius = (
+                math.sqrt(
+                    vehicle.width * vehicle.width + vehicle.length * vehicle.length
                 )
+                / 2
+            )
 
-                for bubble in active_bubbles:
-                    was_in_this_bubble = vehicle_ids_per_bubble[bubble]
-                    sq_distance = (point.x - bubble.centroid[0]) * (
-                        point.x - bubble.centroid[0]
-                    ) + (point.y - bubble.centroid[1]) * (point.y - bubble.centroid[1])
+            for bubble in active_bubbles:
+                was_in_this_bubble = vehicle_ids_per_bubble[bubble]
+                sq_distance = (point.x - bubble.centroid[0]) * (
+                    point.x - bubble.centroid[0]
+                ) + (point.y - bubble.centroid[1]) * (point.y - bubble.centroid[1])
 
-                    if vehicle.id in was_in_this_bubble or sq_distance <= pow(
-                        v_radius + bubble.radius + bubble._bubble.margin, 2
-                    ):
-                        cursor = Cursor.from_pos(
-                            pos=point.as_shapely,
-                            vehicle_id=vehicle.id,
-                            bubble=bubble,
-                            index=persisted_vehicle_index,
-                            vehicle_ids_per_bubble=vehicle_ids_per_bubble,
-                            running_cursors=cursors,
-                        )
-                        cursors.add(cursor)
+                if vehicle.id in was_in_this_bubble or sq_distance <= pow(
+                    v_radius + bubble.radius + bubble._bubble.margin, 2
+                ):
+                    cursor = Cursor.from_pos(
+                        pos=point.as_shapely,
+                        vehicle_id=vehicle.id,
+                        bubble=bubble,
+                        index=persisted_vehicle_index,
+                        vehicle_ids_per_bubble=vehicle_ids_per_bubble,
+                        running_cursors=cursors,
+                    )
+                    cursors.add(cursor)
 
-        end = time.time()
-        with open("../new.txt", "a") as output:
-            output.write(str(end-begin) + "\n")
         return cursors
 
     def _handle_transitions(self, sim, cursors: Set[Cursor]):
