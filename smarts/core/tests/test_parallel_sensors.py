@@ -30,7 +30,13 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.core.plan import Mission
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation, Sensors, SensorState, SensorsWorker, WorkerKwargs
+from smarts.core.sensors import (
+    Observation,
+    Sensors,
+    SensorState,
+    SensorsWorker,
+    WorkerKwargs,
+)
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.smarts import SMARTS
@@ -118,6 +124,7 @@ def test_sensor_parallelization(
     sim: SMARTS,
 ):
     import time
+
     del sim.cached_frame
     simulation_frame: SimulationFrame = sim.cached_frame
     simulation_local_constants: SimulationLocalConstants = sim.local_constants
@@ -161,7 +168,9 @@ def test_sensor_worker(
     worker.run(sim_local_constants=sim.local_constants)
     worker_args = WorkerKwargs(sim_frame=simulation_frame)
     worker.send_to_process(worker_args=worker_args, agent_ids=agent_ids)
-    observations, dones = SensorsWorker.local(simulation_frame, sim.local_constants, agent_ids)
+    observations, dones = SensorsWorker.local(
+        simulation_frame, sim.local_constants, agent_ids
+    )
     other_observations, other_dones = worker.result(block=True, timeout=5)
 
     assert isinstance(observations, dict)

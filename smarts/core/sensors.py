@@ -232,11 +232,12 @@ class Sensors:
             with timeit("waiting for observations", print):
                 if used_workers:
                     while agent_ids != set(observations):
-                        for result in mp.connection.wait([worker.connection for worker in used_workers], timeout=5):
+                        for result in mp.connection.wait(
+                            [worker.connection for worker in used_workers], timeout=5
+                        ):
                             obs, ds = result.recv()
                             observations.update(obs)
                             dones.update(ds)
-                            print(f"Updated worker with {set(observations)}")
 
             with timeit(f"merging observations", print):
                 # breakpoint()
