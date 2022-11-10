@@ -28,7 +28,7 @@ from time import time
 
 
 @contextmanager
-def timeit(name: str, log):
+def timeit(name: str, log, funcs=None):
     """Context manger that stopwatches the amount of time between context block start and end.
 
     .. code-block:: python
@@ -38,12 +38,17 @@ def timeit(name: str, log):
             a = a * b
     """
     start = time()
-    yield
+    yield 0
     elapsed_time = (time() - start) * 1000
 
-    log(f'"{name}" took: {elapsed_time:4f}ms')
+    if funcs:
+        for func in funcs:
+            func(elapsed_time)
+        # log(f"{name} took: {elapsed_time:4f}ms. Average elapsed time thus far: {ave}")
+    else:
+        log(f"{name} took: {elapsed_time:4f}ms")
 
-
+        
 def isnotebook():
     """Determines if executing in ipython (Jupyter Notebook)"""
     try:
