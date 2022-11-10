@@ -32,10 +32,10 @@ RUN pip install --upgrade pip wheel
 # Install requirements.txt .
 COPY ./submission/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
+RUN pip install "smarts[camera-obs] @ git+https://github.com/huawei-noah/SMARTS.git@comp-1"
 
 # Copy only Track-2 files and install.
 COPY . /SMARTS/competition/track2
-RUN pip install -e /SMARTS/competition/track2/train
 
 # [Do Not Modify]
 # Run entrypoint script.
