@@ -4,3 +4,4 @@ include smarts/core/models/controller_parameters.yaml
 include envision/web/dist/*
 recursive-include smarts/ros/src *.launch *.msg *.srv package.xml CMakeLists.txt *.py
 recursive-include smarts/scenarios *.xml *.py
+recursive-include smarts/benchmark *.xml *.py
