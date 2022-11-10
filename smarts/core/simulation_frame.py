@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set
 
@@ -27,6 +28,8 @@ from cached_property import cached_property
 from smarts.core.actor import ActorState
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.vehicle_state import Collision, VehicleState
+
+logger = logging.getLogger(__name__)
 
 
 # TODO MTA: Move this class to a new separate file for typehint purposes
@@ -60,8 +63,12 @@ class SimulationFrame:
     _ground_bullet_id: Optional[str] = None
 
     @cached_property
-    def agent_ids(self):
+    def all_agent_ids(self):
         return set(self.agent_interfaces.keys())
+
+    @cached_property
+    def agent_ids(self) -> Set[str]:
+        return set(self.vehicles_for_agents.keys())
 
     def vehicle_did_collide(self, vehicle_id) -> bool:
         """Test if the given vehicle had any collisions in the last physics update."""
@@ -79,6 +86,13 @@ class SimulationFrame:
         return [
             c for c in vehicle_collisions if c.collidee_id != self._ground_bullet_id
         ]
+
+    def __post_init__(self):
+        if logger.isEnabledFor(logging.DEBUG):
+            assert self.vehicle_ids.__contains__
+            assert self.agent_ids.union(self.vehicles_for_agents) == self.agent_ids
+            assert len(self.agent_ids - set(self.agent_interfaces)) == 0
+            assert len(self.vehicle_ids.symmetric_difference(self.vehicle_states))
 
     @staticmethod
     def serialize(simulation_frame: "SimulationFrame") -> Any:

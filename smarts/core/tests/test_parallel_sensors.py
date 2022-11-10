@@ -117,25 +117,21 @@ def renderer_type():
 def test_sensor_parallelization(
     sim: SMARTS,
 ):
+    import time
     del sim.cached_frame
     simulation_frame: SimulationFrame = sim.cached_frame
     simulation_local_constants: SimulationLocalConstants = sim.local_constants
-    import time
-
-    agent_ids = set(AGENT_IDS)
 
     def observe_with_processes(processes):
         start_time = time.monotonic()
         obs, dones = Sensors.observe_parallel(
             sim_frame=simulation_frame,
             sim_local_constants=simulation_local_constants,
-            agent_ids=agent_ids,
+            agent_ids=simulation_frame.agent_ids,
             process_count_override=processes,
         )
         assert len(obs) > 0
         return time.monotonic() - start_time
-
-    # Sensors.init(road_map, renderer_type)  # not required
 
     sensors_instance = Sensors.instance()
     sensors_instance.get_workers(4, sim_local_constants=sim.local_constants)

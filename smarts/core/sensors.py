@@ -209,7 +209,6 @@ class Sensors:
                         used_workers.append(workers[i])
             else:
                 with timeit("serial run", print):
-                    agent_ids = sim_frame.agent_ids
                     observations, dones = cls.observe_parallizable(
                         sim_frame,
                         sim_local_constants,
@@ -219,8 +218,8 @@ class Sensors:
             # While observation processes are operating do rendering
             with timeit("rendering", print):
                 rendering = {}
-                for agent_id, vehicle_ids in sim_frame.vehicles_for_agents.items():
-                    for vehicle_id in vehicle_ids:
+                for agent_id in agent_ids:
+                    for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
                         rendering[agent_id] = cls.observe_cameras(
                             sim_frame,
                             sim_local_constants,
@@ -231,12 +230,16 @@ class Sensors:
 
             # Collect futures
             with timeit("waiting for observations", print):
-                for worker in used_workers:
-                    obs, ds = worker.result(block=True, timeout=5)
-                    observations.update(obs)
-                    dones.update(ds)
+                if used_workers:
+                    while agent_ids != set(observations):
+                        for result in mp.connection.wait([worker.connection for worker in used_workers], timeout=5):
+                            obs, ds = result.recv()
+                            observations.update(obs)
+                            dones.update(ds)
+                            print(f"Updated worker with {set(observations)}")
 
             with timeit(f"merging observations", print):
+                # breakpoint()
                 # Merge sensor information
                 for agent_id, r_obs in rendering.items():
                     observations[agent_id] = dataclasses.replace(
@@ -867,8 +870,9 @@ class ProcessWorker:
         pass
 
     def __init__(self, serialize_results=False) -> None:
-        self._next_args = mp.Queue(maxsize=5)
-        self._next_results = mp.Queue(maxsize=5)
+        parent_connection, child_connection = mp.Pipe()
+        self._pc_next_args: mp.connection.Connection = parent_connection
+        self._cc_next_args: mp.connection.Connection = child_connection
         self._serialize_results = serialize_results
 
     @classmethod
@@ -878,13 +882,12 @@ class ProcessWorker:
     @classmethod
     def _run(
         cls: "ProcessWorker",
-        args_proxy: mp.Queue,
-        result_proxy: mp.Queue,
+        connection: mp.connection.Connection,
         serialize_results,
         **worker_kwargs,
     ):
         while True:
-            work = args_proxy.get()
+            work = connection.recv()
             if isinstance(work, cls.WorkerDone):
                 break
             with timeit("do work", print):
@@ -905,14 +908,14 @@ class ProcessWorker:
                     if serialize_results:
                         result = Sensors.serialize_for_observation(result)
                 with timeit("put back to main thread", print):
-                    result_proxy.put(result)
+                    connection.send(result)
 
     def run(self, **worker_kwargs):
         kwargs = dict(serialize_results=self._serialize_results)
         kwargs.update(worker_kwargs)
         junction_check_proc = mp.Process(
             target=self._run,
-            args=(self._next_args, self._next_results),
+            args=(self._cc_next_args,),
             kwargs=kwargs,
             daemon=True,
         )
@@ -931,15 +934,19 @@ class ProcessWorker:
         if worker_args:
             kwargs.update(worker_args.kwargs)
         with timeit("put to worker", print):
-            self._next_args.put((args, kwargs))
+            self._pc_next_args.send((args, kwargs))
 
     def result(self, block=False, timeout=None):
         with timeit("main thread blocked", print):
-            results = self._next_results.get(block=block, timeout=timeout)
+            results = self._pc_next_args.recv()
         with timeit("deserialize for main thread", print):
             if self._serialize_results:
                 results = Sensors.deserialize_for_observation(results)
         return results
+
+    @property
+    def connection(self):
+        return self._pc_next_args
 
 
 class SensorsWorker(ProcessWorker):
