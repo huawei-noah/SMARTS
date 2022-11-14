@@ -7,9 +7,6 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
 
 .. image:: _static/smarts_envision.gif
 
-.. .. literalinclude:: minimal.py
-..    :language: python
-
 .. include:: quickstart.rst
 
 .. toctree::
