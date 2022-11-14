@@ -37,7 +37,7 @@ def test_examples(example):
 
 
 def test_rllib_example():
-    from examples.rllib import rllib
+    from examples.rl.rllib import rllib
 
     main = rllib.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
