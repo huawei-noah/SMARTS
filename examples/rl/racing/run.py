@@ -15,10 +15,9 @@ from typing import Callable, Generator
 
 import gym
 import numpy as np
-import rich.traceback
 import tensorflow as tf
-from driving_in_traffic import seed
-from driving_in_traffic.env import single_agent
+from racing import seed
+from racing.env import single_agent
 from ruamel.yaml import YAML
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -30,7 +29,6 @@ import dreamerv2.common as common  # isort:skip
 
 logging.getLogger().setLevel("ERROR")
 warnings.filterwarnings("ignore", ".*box bound precision lowered.*")
-rich.traceback.install()
 yaml = YAML(typ="safe")
 seed(42)
 
@@ -248,7 +246,7 @@ def run(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("driving_in_traffic")
+    parser = argparse.ArgumentParser("racing")
     parser.add_argument(
         "--mode",
         help="`train` or `evauate`. Default is `train`.",
