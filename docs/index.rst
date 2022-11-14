@@ -1,5 +1,5 @@
-Welcome to SMARTS!
-==================================
+Welcome to SMARTS
+=================
 
 Scalable Multi-Agent RL Training School (**SMARTS**) is an autonomous driving platform for reinforcement learning reasearch.
 
@@ -7,8 +7,8 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
 
 .. image:: _static/smarts_envision.gif
 
-.. literalinclude:: minimal.py
-   :language: python
+.. .. literalinclude:: minimal.py
+..    :language: python
 
 .. include:: quickstart.rst
 

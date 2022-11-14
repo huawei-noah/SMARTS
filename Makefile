@@ -150,7 +150,7 @@ format:
 
 .PHONY: docs
 docs:
-	(cd docs; make clean html)
+	cd docs && make clean html
 
 .PHONY: wheel
 wheel: docs
