@@ -31,16 +31,16 @@ RUN pip install eclipse-sumo==1.10.0
 ENV SUMO_HOME $VIRTUAL_ENV/lib64/python3.7/site-packages/sumo
 
 # Install requirements.txt .
-COPY ./examples/driving_in_traffic/requirements.txt /tmp/requirements.txt
+COPY ./examples/rl/racing/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy source files and install.
 COPY . /src
 WORKDIR /src
-RUN pip install --no-cache-dir -e ./examples/driving_in_traffic
+RUN pip install --no-cache-dir -e ./examples/rl/racing
 
 # Build scenarios and maps.
-RUN scl scenario build-all --clean ./examples/driving_in_traffic/scenarios
+RUN scl scenario build-all --clean ./examples/rl/racing/scenarios
 
 # For Envision.
 EXPOSE 8081
