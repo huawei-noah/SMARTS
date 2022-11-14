@@ -17,3 +17,6 @@ python:
       path: .
       extra_requirements:
         - doc
+
+sphinx:
+  fail_on_warning: true
