@@ -817,13 +817,13 @@ class PositionalZone(Zone):
 
 @dataclass(frozen=True)
 class ConfigurableZone(Zone):
-    """A descripter that defines a specific configurableZone defined by user"""
+    """A descriptor for a zone with user-defined geometry."""
 
     ext_coordinates: List[Tuple[float, float]]
     """external coordinates of the polygon
     < 2 points provided: error
     = 2 points provided: generates a box using these two points as diagonal
-    > 2 points provided: generates a polygons according to the coordinates"""
+    > 2 points provided: generates a polygon according to the coordinates"""
     rotation: Optional[float] = None
     """The heading direction of the bubble(radians, clock-wise rotation)"""
 
@@ -857,7 +857,7 @@ class ConfigurableZone(Zone):
 
         if self.rotation is not None:
             poly = shapely_rotate(poly, self.rotation, use_radians=True)
-        return
+        return poly
 
 
 @dataclass(frozen=True)
@@ -936,11 +936,10 @@ class Bubble:
                 "Only boids can have keep_alive enabled (for persistent boids)"
             )
 
-        poly = None
         if not isinstance(self.zone, MapZone):
             poly = self.zone.to_geometry(road_map=None)
-        if poly is not None and (poly.is_valid == False):
-            raise ValueError("The Zone Polygon is not a valid closed loop")
+            if poly.is_valid:
+                raise ValueError("The Zone Polygon is not a valid closed loop")
 
     @staticmethod
     def to_actor_id(actor, mission_group):
