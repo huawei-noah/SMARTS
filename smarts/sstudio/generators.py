@@ -283,7 +283,7 @@ class TrafficGenerator:
                     )
         # write trip into xml format
         if traffic.trips is not None:
-            self.write_trip_xml(traffic, doc)
+            self.write_trip_xml(traffic, doc, fill_in_route_gaps)
 
         with open(route_path, "w") as f:
             f.write(
@@ -292,7 +292,7 @@ class TrafficGenerator:
                 )
             )
 
-    def write_trip_xml(self, traffic, doc):
+    def write_trip_xml(self, traffic, doc, fill_in_gaps):
         """Wrtes a traffic spec into a route file. Typically this would be the source
         data to Sumo's DUAROUTER.
         """
@@ -300,7 +300,7 @@ class TrafficGenerator:
         # `Route`) so that we can write them all to file.
         resolved_routes = {}
         for route in {trip.route for trip in traffic.trips}:
-            resolved_routes[route] = self.resolve_route(route)
+            resolved_routes[route] = self.resolve_route(route, fill_in_gaps)
 
         for route in set(resolved_routes.values()):
             doc.stag("route", id=route.id + "trip", edges=" ".join(route.roads))
