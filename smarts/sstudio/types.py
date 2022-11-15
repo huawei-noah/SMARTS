@@ -828,7 +828,11 @@ class ConfigurableZone(Zone):
     """The heading direction of the bubble(radians, clock-wise rotation)"""
 
     def __post_init__(self):
-        if not self.ext_coordinates or not isinstance(self.ext_coordinates[0], tuple):
+        if (
+            not self.ext_coordinates
+            or not isinstance(self.ext_coordinates[0], tuple)
+            or len(self.ext_coordinates) < 2
+        ):
             raise ValueError(
                 "Two points or more are needed to create a polygon. (less than two points are provided)"
             )
