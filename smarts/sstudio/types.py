@@ -938,7 +938,7 @@ class Bubble:
 
         if not isinstance(self.zone, MapZone):
             poly = self.zone.to_geometry(road_map=None)
-            if poly.is_valid:
+            if not poly.is_valid:
                 raise ValueError("The Zone Polygon is not a valid closed loop")
 
     @staticmethod
