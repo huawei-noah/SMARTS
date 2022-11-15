@@ -2,7 +2,7 @@ from functools import partial
 from typing import Any, Callable, Dict, Generator
 
 import gym
-from driving_in_traffic.env import action, reward
+from racing.env import action, reward
 
 from smarts.core import agent as smarts_agent
 from smarts.core import agent_interface as smarts_agent_interface
