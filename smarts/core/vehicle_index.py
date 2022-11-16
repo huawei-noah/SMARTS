@@ -93,9 +93,6 @@ class VehicleIndex:
         # {vehicle_id (fixed-length): <ControllerState>}
         self._controller_states = {}
 
-        # {vehicle_id (fixed-length): <SensorState>}
-        self._sensor_states = {}
-
         # Loaded from yaml file on scenario reset
         self._controller_params = {}
 
@@ -139,11 +136,6 @@ class VehicleIndex:
             for id_ in vehicle_ids
             if id_ in self._controller_states
         }
-        index._sensor_states = {
-            id_: self._sensor_states[id_]
-            for id_ in vehicle_ids
-            if id_ in self._sensor_states
-        }
         return index
 
     def __deepcopy__(self, memo):
@@ -151,7 +143,7 @@ class VehicleIndex:
         memo[id(self)] = result
 
         dict_ = copy(self.__dict__)
-        shallow = ["_2id_to_id", "_vehicles", "_sensor_states", "_controller_states"]
+        shallow = ["_2id_to_id", "_vehicles", "_controller_states"]
         for k in shallow:
             v = dict_.pop(k)
             setattr(result, k, copy(v))
@@ -327,11 +319,10 @@ class VehicleIndex:
         for vehicle_id in vehicle_ids:
             vehicle = self._vehicles.pop(vehicle_id, None)
             if vehicle is not None:
-                vehicle.teardown(renderer)
+                vehicle.teardown(renderer=renderer)
 
             # popping since sensor_states/controller_states may not include the
             # vehicle if it's not being controlled by an agent
-            self._sensor_states.pop(vehicle_id, None)
             self._controller_states.pop(vehicle_id, None)
 
             # TODO: This stores actors/agents as well; those aren't being cleaned-up
@@ -377,7 +368,6 @@ class VehicleIndex:
 
         self._vehicles = {}
         self._controller_states = {}
-        self._sensor_states = {}
         self._2id_to_id = {}
 
     @clear_cache
@@ -389,13 +379,18 @@ class VehicleIndex:
         vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
 
         vehicle = self._vehicles[vehicle_id]
-        Vehicle.attach_sensors_to_vehicle(sim, vehicle, agent_interface)
+        Vehicle.attach_sensors_to_vehicle(
+            sim.sensor_manager, sim._renderer, sim.bc, vehicle, agent_interface
+        )
 
         self._2id_to_id[agent_id] = original_agent_id
 
-        self._sensor_states[vehicle_id] = SensorState(
-            agent_interface.max_episode_steps,
-            plan_frame=plan.frame(),
+        sim.sensor_manager.add_sensor_state(
+            vehicle.id,
+            SensorState(
+                agent_interface.max_episode_steps,
+                plan_frame=plan.frame(),
+            ),
         )
 
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
@@ -465,7 +460,6 @@ class VehicleIndex:
                 dimensions=vehicle.state.dimensions,
                 bullet_client=sim.bc,
             )
-
         vehicle.swap_chassis(chassis)
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
@@ -510,11 +504,11 @@ class VehicleIndex:
         vehicle_id = _2id(vehicle_id)
 
         vehicle = self._vehicles[vehicle_id]
+        # TODO MTA: Clean up sensors that are removed here.
         # pytype: disable=attribute-error
         Vehicle.detach_all_sensors_from_vehicle(vehicle)
         # pytype: enable=attribute-error
 
-        # TAI: del self._sensor_states[vehicle_id]
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = self._controlled_by[v_index][0]
         entity = _ControlEntity(*entity)
@@ -531,7 +525,7 @@ class VehicleIndex:
 
         v_id = _2id(vehicle_id)
 
-        ss = self._sensor_states[v_id]
+        ss = sim.sensor_manager.sensor_state_for_actor_id(vehicle_id)
         route = ss.get_plan(road_map).route
         self.stop_agent_observation(vehicle_id)
 
@@ -565,10 +559,21 @@ class VehicleIndex:
         vehicle_id = _2id(vehicle_id)
 
         vehicle = self._vehicles[vehicle_id]
-        Vehicle.attach_sensors_to_vehicle(sim, vehicle, agent_interface, plan)
-        self._sensor_states[vehicle_id] = SensorState(
-            agent_interface.max_episode_steps,
-            plan=plan,
+        # TODO MTA: Reconsider how renderer is accessed.
+        Vehicle.attach_sensors_to_vehicle(
+            sim.sensor_manager,
+            sim._renderer,
+            sim.bc,
+            vehicle,
+            agent_interface,
+            sim.sensor_manager,
+        )
+        sim.sensor_manager.add_sensor_state(
+            vehicle.id,
+            SensorState(
+                agent_interface.max_episode_steps,
+                plan=plan,
+            ),
         )
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
             agent_interface.action, vehicle.pose, sim
@@ -593,7 +598,7 @@ class VehicleIndex:
             agent_interface is not None
         ), f"Missing agent_interface for agent_id={agent_id}"
         vehicle = self._vehicles[vehicle_id]
-        sensor_state = self._sensor_states[vehicle_id]
+        sensor_state = sim.sensor_manager.sensor_state_for_actor_id(vehicle.id)
         controller_state = self._controller_states[vehicle_id]
         plan = sensor_state.get_plan(sim.road_map)
 
@@ -704,7 +709,9 @@ class VehicleIndex:
         # XXX: agent_id must be the original agent_id (not the fixed _2id(...))
         original_agent_id = agent_id
 
-        Vehicle.attach_sensors_to_vehicle(sim, vehicle, agent_interface)
+        Vehicle.attach_sensors_to_vehicle(
+            sim.sensor_manager, sim._renderer, sim.bc, vehicle, agent_interface
+        )
         if sim.is_rendering:
             vehicle.create_renderer_node(sim.renderer)
             sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=True)
@@ -712,7 +719,7 @@ class VehicleIndex:
         vehicle_id = _2id(vehicle.id)
         agent_id = _2id(original_agent_id)
 
-        self._sensor_states[vehicle_id] = sensor_state
+        sim.sensor_manager.add_sensor_state(vehicle.id, sensor_state)
         self._controller_states[vehicle_id] = controller_state
         self._vehicles[vehicle_id] = vehicle
         self._2id_to_id[vehicle_id] = vehicle.id
@@ -777,29 +784,6 @@ class VehicleIndex:
             if vehicle.create_renderer_node(renderer):
                 is_agent = vehicle.id in agent_vehicle_ids
                 renderer.begin_rendering_vehicle(vehicle.id, is_agent)
-
-    def sensor_states_items(self):
-        """Get the sensor states of all listed vehicles."""
-        return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._sensor_states.items())
-
-    def check_vehicle_id_has_sensor_state(self, vehicle_id: str) -> bool:
-        """Determine if a vehicle contains sensors."""
-        v_id = _2id(vehicle_id)
-        return v_id in self._sensor_states
-
-    def sensor_state_for_vehicle_id(self, vehicle_id: str) -> SensorState:
-        """Retrieve the sensor state of the given vehicle."""
-        vehicle_id = _2id(vehicle_id)
-        return self._sensor_states[vehicle_id]
-
-    def step_sensors(self):
-        """Update all known vehicle sensors."""
-        for vehicle_id, sensor_state in self.sensor_states_items():
-            Sensors.step(self, sensor_state)
-
-            vehicle = self.vehicle_by_id(vehicle_id)
-            for sensor in vehicle.sensors.values():
-                sensor.step()
 
     @cache
     def controller_state_for_vehicle_id(self, vehicle_id: str) -> ControllerState:

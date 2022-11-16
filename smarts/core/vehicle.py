@@ -364,100 +364,117 @@ class Vehicle:
         )
 
     @staticmethod
-    def attach_sensors_to_vehicle(sim, vehicle: "Vehicle", agent_interface):
+    def attach_sensors_to_vehicle(
+        sensor_manager,
+        renderer: Optional[Any],
+        bullet_client,
+        vehicle: "Vehicle",
+        agent_interface,
+    ):
         """Attach sensors as required to satisfy the agent interface's requirements"""
+        # TODO MTA: finish extracting sensors from vehicle
         # The distance travelled sensor is not optional b/c it is used for the score
         # and reward calculation
         vehicle_state = vehicle.state
-        vehicle.attach_trip_meter_sensor(TripMeterSensor())
+        sensor = TripMeterSensor()
+        vehicle.attach_trip_meter_sensor(sensor)
+        sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
 
         # The distance travelled sensor is not optional b/c it is used for visualization
         # done criteria
-        vehicle.attach_driven_path_sensor(DrivenPathSensor())
+        sensor = DrivenPathSensor()
+        vehicle.attach_driven_path_sensor(sensor)
+        sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
 
         if agent_interface.neighborhood_vehicle_states:
-            vehicle.attach_neighborhood_vehicle_states_sensor(
-                NeighborhoodVehiclesSensor(
-                    radius=agent_interface.neighborhood_vehicle_states.radius,
-                )
+            sensor = NeighborhoodVehiclesSensor(
+                radius=agent_interface.neighborhood_vehicle_states.radius,
             )
+            vehicle.attach_neighborhood_vehicles_sensor(sensor)
+            sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
 
         if agent_interface.accelerometer:
-            vehicle.attach_accelerometer_sensor(AccelerometerSensor())
+            sensor = AccelerometerSensor()
+            vehicle.attach_accelerometer_sensor(sensor)
+            sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
 
         if agent_interface.lane_positions:
-            vehicle.attach_lane_position_sensor(LanePositionSensor())
+            sensor = LanePositionSensor()
+            vehicle.attach_lane_position_sensor(sensor)
+            sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
 
         if agent_interface.waypoint_paths:
-            vehicle.attach_waypoints_sensor(
-                WaypointsSensor(
-                    lookahead=agent_interface.waypoint_paths.lookahead,
-                )
+            sensor = WaypointsSensor(
+                lookahead=agent_interface.waypoint_paths.lookahead,
             )
+            vehicle.attach_waypoints_sensor(sensor)
+            sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
 
         if agent_interface.road_waypoints:
-            vehicle.attach_road_waypoints_sensor(
-                RoadWaypointsSensor(
-                    horizon=agent_interface.road_waypoints.horizon,
-                )
+            sensor = RoadWaypointsSensor(
+                horizon=agent_interface.road_waypoints.horizon,
             )
+            vehicle.attach_road_waypoints_sensor(sensor)
+            sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
 
         if agent_interface.drivable_area_grid_map:
-            if not sim.renderer:
+            if not renderer:
                 raise RendererException.required_to("add a drivable_area_grid_map")
-            vehicle.attach_drivable_area_grid_map_sensor(
-                DrivableAreaGridMapSensor(
-                    vehicle=vehicle,
-                    width=agent_interface.drivable_area_grid_map.width,
-                    height=agent_interface.drivable_area_grid_map.height,
-                    resolution=agent_interface.drivable_area_grid_map.resolution,
-                    renderer=sim.renderer,
-                )
+            sensor = DrivableAreaGridMapSensor(
+                vehicle_state=vehicle_state,
+                width=agent_interface.drivable_area_grid_map.width,
+                height=agent_interface.drivable_area_grid_map.height,
+                resolution=agent_interface.drivable_area_grid_map.resolution,
+                renderer=renderer,
             )
+            vehicle.attach_drivable_area_grid_map_sensor(sensor)
+            sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
         if agent_interface.occupancy_grid_map:
-            if not sim.renderer:
+            if not renderer:
                 raise RendererException.required_to("add an OGM")
-            vehicle.attach_ogm_sensor(
-                OGMSensor(
-                    vehicle=vehicle,
-                    width=agent_interface.occupancy_grid_map.width,
-                    height=agent_interface.occupancy_grid_map.height,
-                    resolution=agent_interface.occupancy_grid_map.resolution,
-                    renderer=sim.renderer,
-                )
+            sensor = OGMSensor(
+                vehicle_state=vehicle_state,
+                width=agent_interface.occupancy_grid_map.width,
+                height=agent_interface.occupancy_grid_map.height,
+                resolution=agent_interface.occupancy_grid_map.resolution,
+                renderer=renderer,
             )
+            vehicle.attach_ogm_sensor(sensor)
+            sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
         if agent_interface.top_down_rgb:
-            if not sim.renderer:
+            if not renderer:
                 raise RendererException.required_to("add an RGB camera")
-            vehicle.attach_rgb_sensor(
-                RGBSensor(
-                    vehicle=vehicle,
-                    width=agent_interface.top_down_rgb.width,
-                    height=agent_interface.top_down_rgb.height,
-                    resolution=agent_interface.top_down_rgb.resolution,
-                    renderer=sim.renderer,
-                )
+            sensor = RGBSensor(
+                vehicle_state=vehicle_state,
+                width=agent_interface.top_down_rgb.width,
+                height=agent_interface.top_down_rgb.height,
+                resolution=agent_interface.top_down_rgb.resolution,
+                renderer=renderer,
             )
+            vehicle.attach_rgb_sensor(sensor)
+            sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
         if agent_interface.lidar_point_cloud:
-            vehicle.attach_lidar_sensor(
-                LidarSensor(
-                    vehicle_state=vehicle_state,
-                    bullet_client=sim.bc,
-                    sensor_params=agent_interface.lidar_point_cloud.sensor_params,
-                )
+            sensor = LidarSensor(
+                vehicle_state=vehicle_state,
+                bullet_client=bullet_client,
+                sensor_params=agent_interface.lidar_point_cloud.sensor_params,
             )
+            vehicle.attach_lidar_sensor(sensor)
+            sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
 
-        vehicle.attach_via_sensor(
-            ViaSensor(
-                # At lane change time of 6s and speed of 13.89m/s, acquistion range = 6s x 13.89m/s = 83.34m.
-                lane_acquisition_range=80,
-                speed_accuracy=1.5,
-            )
+        sensor = ViaSensor(
+            # At lane change time of 6s and speed of 13.89m/s, acquistion range = 6s x 13.89m/s = 83.34m.
+            lane_acquisition_range=80,
+            speed_accuracy=1.5,
         )
+        vehicle.attach_via_sensor(sensor)
+        sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
 
         if agent_interface.signals:
             lookahead = agent_interface.signals.lookahead
-            vehicle.attach_signals_sensor(SignalsSensor(lookahead=lookahead))
+            sensor = SignalsSensor(lookahead=lookahead)
+            vehicle.attach_signals_sensor(sensor)
+            sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
 
     def step(self, current_simulation_time):
         """Update internal state."""
@@ -501,10 +518,6 @@ class Vehicle:
             config.glb_model, self._id, self.vehicle_color, self.pose
         )
 
-    def sync_to_renderer(self, renderer):
-        """Update the vehicle's rendering node."""
-        renderer.update_vehicle_node(self._id, self.pose)
-
     # @lru_cache(maxsize=1)
     def _warn_AckermannChassis_set_pose(self):
         if self._has_stepped and isinstance(self._chassis, AckermannChassis):
@@ -532,19 +545,6 @@ class Vehicle:
 
     def teardown(self, renderer, exclude_chassis=False):
         """Clean up internal resources"""
-        for sensor in [
-            sensor
-            for sensor in [
-                self._drivable_area_grid_map_sensor,
-                self._ogm_sensor,
-                self._rgb_sensor,
-                self._lidar_sensor,
-                self._driven_path_sensor,
-            ]
-            if sensor is not None
-        ]:
-            sensor.teardown()
-
         if not exclude_chassis:
             self._chassis.teardown()
         if renderer:
@@ -593,9 +593,9 @@ class Vehicle:
             def detach_sensor(self, sensor_name=sensor_name):
                 sensor = getattr(self, f"_{sensor_name}", None)
                 if sensor is not None:
-                    sensor.teardown()
                     setattr(self, f"_{sensor_name}", None)
                     del self._sensors[sensor_name]
+                return sensor
 
             def subscribed_to(self, sensor_name=sensor_name):
                 sensor = getattr(self, f"_{sensor_name}", None)
@@ -613,9 +613,11 @@ class Vehicle:
             setattr(Vehicle, f"{sensor_name}", property(sensor_property))
 
         def detach_all_sensors_from_vehicle(vehicle):
+            sensors = []
             for sensor_name in sensor_names:
                 detach_sensor_func = getattr(vehicle, f"detach_{sensor_name}")
-                detach_sensor_func()
+                sensors.append(detach_sensor_func())
+            return sensors
 
         setattr(
             Vehicle,

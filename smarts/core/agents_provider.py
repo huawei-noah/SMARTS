@@ -150,7 +150,7 @@ class AgentsProvider(Provider):
                 controller_state = vehicle_index.controller_state_for_vehicle_id(
                     vehicle.id
                 )
-                sensor_state = vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+                sensor_state = sim.sensor_manager.sensor_state_for_actor_id(vehicle.id)
                 Controllers.perform_action(
                     sim,
                     agent_id,

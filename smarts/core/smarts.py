@@ -56,6 +56,7 @@ from .plan import Plan
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
+from .sensor_manager import SensorManager
 from .signal_provider import SignalProvider
 from .signals import SignalLightState, SignalState
 from .simulation_frame import SimulationFrame
@@ -189,6 +190,7 @@ class SMARTS(ProviderManager):
         )
 
         # Set up indices
+        self._sensor_manager = SensorManager()
         self._vehicle_index = VehicleIndex()
         self._agent_manager = AgentManager(self, agent_interfaces, zoo_addrs)
 
@@ -236,18 +238,22 @@ class SMARTS(ProviderManager):
         try:
             with timeit("Last SMARTS Simulation Step", self._log.info):
                 return self._step(agent_actions, time_delta_since_last_step)
-        except (KeyboardInterrupt, SystemExit):
-            # ensure we clean-up if the user exits the simulation
-            self._log.info("Simulation was interrupted by the user.")
-            self.destroy()
-            raise  # re-raise the KeyboardInterrupt
-        except Exception as e:
-            self._log.error(
-                "Simulation crashed with exception. Attempting to cleanly shutdown."
-            )
-            self._log.exception(e)
-            self.destroy()
-            raise  # re-raise
+        # except (KeyboardInterrupt, SystemExit):
+        #     # ensure we clean-up if the user exits the simulation
+        #     self._log.info("Simulation was interrupted by the user.")
+        #     self.destroy()
+        #     raise  # re-raise the KeyboardInterrupt
+        # except Exception as e:
+        #     self._log.error(
+        #         "Simulation crashed with exception. Attempting to cleanly shutdown."
+        #     )
+        #     self._log.exception(e)
+        #     self.destroy()
+        #     raise  # re-raise
+        finally:
+            # TODO MTA: Make above not destroy debugging information when debugging
+            # TAI MTA: Use engine configuration here to enable debugging?
+            pass
 
     def _check_if_acting_on_active_agents(self, agent_actions):
         for agent_id in agent_actions.keys():
@@ -310,23 +316,29 @@ class SMARTS(ProviderManager):
         # This is a hack to give us some short term perf wins. Longer term we
         # need to expose better support for batched computations
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
-
-        # Agents
-        with timeit("Stepping through sensors", self._log.debug):
-            self._vehicle_index.step_sensors()
-
-        if self._renderer:
-            # runs through the render pipeline (for camera-based sensors)
-            # MUST perform this after step_sensors() above, and before observe() below,
-            # so that all updates are ready before rendering happens per
-            with timeit("Running through the render pipeline", self._log.debug):
-                self._renderer.render()
+        self._sensor_manager.clean_up_sensors_for_actors(
+            set(v.actor_id for v in self._vehicle_states), renderer=self._renderer
+        )
 
         # Reset frame state
         try:
             del self.cached_frame
         except AttributeError:
             pass
+        self.cached_frame
+
+        # Agents
+        with timeit("Stepping through sensors", self._log.debug):
+            self._sensor_manager.step(self.cached_frame, self._renderer)
+
+        if self._renderer:
+            # runs through the render pipeline (for camera-based sensors)
+            # MUST perform this after _sensor_manager.step() above, and before observe() below,
+            # so that all updates are ready before rendering happens per
+            with timeit("Syncing the renderer", self._log.debug):
+                self._renderer.sync(self.cached_frame)
+            with timeit("Running through the render pipeline", self._log.debug):
+                self._renderer.render()
 
         with timeit("Calculating observations and rewards", self._log.debug):
             observations, rewards, scores, dones = self._agent_manager.observe()
@@ -411,7 +423,9 @@ class SMARTS(ProviderManager):
                 - If no agents: the initial simulation observation at `start_time`
                 - If agents: the first step of the simulation with an agent observation
         """
-        tries = 2
+        tries = 1
+        # TODO MTA: Make above not destroy debugging information when debugging
+        # TAI MTA: Use engine configuration here to change number of reset attempts?
         first_exception = None
         for _ in range(tries):
             try:
@@ -449,7 +463,7 @@ class SMARTS(ProviderManager):
                 actor_capture_manager.reset(scenario, self)
             self._agent_manager.init_ego_agents()
             if self._renderer:
-                self._sync_vehicles_to_renderer()
+                self._renderer.reset()
         else:
             self.teardown()
             self._reset_providers()
@@ -858,6 +872,8 @@ class SMARTS(ProviderManager):
             self._agent_manager.teardown()
         if self._vehicle_index is not None:
             self._vehicle_index.teardown(self._renderer)
+        if self._sensor_manager is not None:
+            self._sensor_manager.teardown(self._renderer)
 
         if self._bullet_client is not None:
             self._bullet_client.resetSimulation()
@@ -1160,6 +1176,11 @@ class SMARTS(ProviderManager):
         return self._agent_manager
 
     @property
+    def sensor_manager(self) -> SensorManager:
+        """The sensor manager for direct manipulation."""
+        return self._sensor_manager
+
+    @property
     def providers(self) -> List[Provider]:
         """The current providers controlling actors within the simulation."""
         return self._providers
@@ -1194,8 +1215,6 @@ class SMARTS(ProviderManager):
             except Exception as provider_error:
                 self._handle_provider(provider, provider_error)
         self._pybullet_provider_sync(provider_state)
-        if self._renderer:
-            self._sync_vehicles_to_renderer()
 
     def _reset_providers(self):
         for provider in self.providers:
@@ -1379,11 +1398,6 @@ class SMARTS(ProviderManager):
         for vehicle_id in vehicle_ids:
             self._vehicle_collisions.pop(vehicle_id, None)
 
-    def _sync_vehicles_to_renderer(self):
-        assert self._renderer
-        for vehicle in self._vehicle_index.vehicles:
-            vehicle.sync_to_renderer(self._renderer)
-
     def _get_pybullet_collisions(self, vehicle_id: str) -> Set[str]:
         vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
         # We are only concerned with vehicle-vehicle collisions
@@ -1547,7 +1561,7 @@ class SMARTS(ProviderManager):
                     actor_type = envision_types.TrafficActorType.Agent
                     if filter.actor_data_filter["mission_route_geometry"].enabled:
                         mission_route_geometry = (
-                            self._vehicle_index.sensor_state_for_vehicle_id(v.actor_id)
+                            self._sensor_manager.sensor_state_for_actor_id(v.actor_id)
                             .get_plan(self.road_map)
                             .route.geometry
                         )
@@ -1671,9 +1685,9 @@ class SMARTS(ProviderManager):
                 )
                 for agent_id in self.agent_manager.active_agents
             },
-            vehicle_ids=[vid for vid in vehicles],
+            vehicle_ids=set(vid for vid in vehicles),
             vehicle_sensors={vid: v.sensors for vid, v in vehicles.items()},
-            sensor_states=dict(self.vehicle_index.sensor_states_items()),
+            sensor_states=dict(self.sensor_manager.sensor_states_items()),
             _ground_bullet_id=self._ground_bullet_id,
             # renderer_type=self._renderer.__class__
             # if self._renderer is not None

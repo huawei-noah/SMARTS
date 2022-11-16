@@ -20,7 +20,6 @@
 
 import logging
 import weakref
-from collections import defaultdict
 from concurrent import futures
 from typing import Any, Callable, Dict, Optional, Set, Tuple, Union
 
@@ -32,6 +31,7 @@ from smarts.core.data_model import SocialAgent
 from smarts.core.heterogenous_agent_buffer import HeterogenousAgentBuffer
 from smarts.core.observations import Observation
 from smarts.core.plan import Mission, Plan, PositionalGoal
+from smarts.core.sensor_manager import SensorManager
 from smarts.core.sensors import Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle_state import VehicleState
@@ -50,6 +50,7 @@ class AgentManager:
         self._log = logging.getLogger(self.__class__.__name__)
         self._sim = weakref.ref(sim)
         self._vehicle_index = sim.vehicle_index
+        self._sensor_manager: SensorManager = sim.sensor_manager
         self._agent_buffer = None
         self._zoo_addrs = zoo_addrs
         self._ego_agent_ids = set()
@@ -174,13 +175,18 @@ class AgentManager:
             assert (
                 agent_id
             ), f"Vehicle `{v_id}` does not have an agent registered to it to get observations for."
-            if not self._vehicle_index.check_vehicle_id_has_sensor_state(vehicle.id):
+            if not self._sensor_manager.sensor_state_exists(vehicle.id):
                 continue
 
-            sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+            sensor_state = self._sensor_manager.sensor_state_by_actor_id(vehicle.id)
 
             observations[agent_id], dones[agent_id] = Sensors.observe(
-                sim_frame, sim.local_constants, agent_id, sensor_state, vehicle
+                sim_frame,
+                sim.local_constants,
+                agent_id,
+                sensor_state,
+                vehicle,
+                sim._renderer,
             )
             rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
             scores[agent_id] = vehicle.trip_meter_sensor()
@@ -227,7 +233,7 @@ class AgentManager:
                 ]
                 # returns format of {<agent_id>: {<vehicle_id>: {...}}}
                 sensor_states = {
-                    vehicle.id: self._vehicle_index.sensor_state_for_vehicle_id(
+                    vehicle.id: self._sensor_manager.sensor_state_for_actor_id(
                         vehicle.id
                     )
                     for vehicle in vehicles
@@ -238,6 +244,7 @@ class AgentManager:
                     agent_id,
                     sensor_states,
                     {v.id: v for v in vehicles},
+                    sim.renderer,
                 )
                 # TODO: Observations and rewards should not be generated here.
                 rewards[agent_id] = {
@@ -254,11 +261,16 @@ class AgentManager:
                 self._diagnose_mismatched_observation_vehicles(vehicle_ids, agent_id)
 
                 vehicle = self._vehicle_index.vehicle_by_id(vehicle_ids[0])
-                sensor_state = self._vehicle_index.sensor_state_for_vehicle_id(
+                sensor_state = self._sensor_manager.sensor_state_for_actor_id(
                     vehicle.id
                 )
                 obs, dones[agent_id] = Sensors.observe(
-                    sim_frame, sim.local_constants, agent_id, sensor_state, vehicle
+                    sim_frame,
+                    sim.local_constants,
+                    agent_id,
+                    sensor_state,
+                    vehicle,
+                    sim._renderer,
                 )
                 observations[agent_id] = obs
 

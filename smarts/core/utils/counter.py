@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,18 +19,36 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import importlib.util
-import sys
-from pathlib import Path
+from typing import Any, Dict
 
 
-def import_module_from_file(module_name: str, path: Path):
-    """Attempt to load a module dynamically from a path as `module_name`."""
-    path = str(path)  # Get one directory up
-    if path not in sys.path:
-        sys.path.append(path)
+class ReferenceCounter:
+    def __init__(self, on_remove_last=lambda v: None) -> None:
+        self._entries: Dict[Any, int] = {}
+        self._on_remove_last = on_remove_last
 
-    spec = importlib.util.spec_from_file_location(module_name, f"{path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)  # pytype: disable=attribute-error
+    def increment(self, value: Any) -> int:
+        if not hasattr(value, "__hash__"):
+            assert ValueError(f"Value {value} is not hashable")
+        count = self._entries.get(value, 0) + 1
+        self._entries[value] = count
+
+        return count
+
+    def decrement(self, value: Any) -> int:
+        if not hasattr(value, "__hash__"):
+            assert ValueError(f"Value {value} is not hashable")
+        count = self._entries.get(value, 0) - 1
+        if count < 1:
+            self._on_remove_last(value)
+            del self._entries[value]
+        else:
+            self._entries[value] = count
+
+        return count
+
+    def count(self, value: Any):
+        return self._entries.get(value, 0)
+
+    def clear(self):
+        self._entries.clear()

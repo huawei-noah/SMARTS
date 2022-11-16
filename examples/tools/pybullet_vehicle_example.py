@@ -50,7 +50,6 @@ def run(client, vehicle, plane_body_id, sliders, n_steps=1e6):
         )
 
         client.stepSimulation()
-        vehicle.sync_to_renderer()
 
         frictions_ = frictions(sliders)
 

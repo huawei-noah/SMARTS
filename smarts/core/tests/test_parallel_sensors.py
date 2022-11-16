@@ -135,6 +135,7 @@ def test_sensor_parallelization(
             sim_frame=simulation_frame,
             sim_local_constants=simulation_local_constants,
             agent_ids=simulation_frame.agent_ids,
+            renderer=sim.renderer,
             process_count_override=processes,
         )
         assert len(obs) > 0

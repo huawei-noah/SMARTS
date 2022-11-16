@@ -62,6 +62,7 @@ from .observations import (
     Vias,
 )
 from .plan import Mission, PlanFrame, Via
+from .vehicle_state import VehicleState
 
 logger = logging.getLogger(__name__)
 
@@ -173,6 +174,7 @@ class Sensors:
         sim_frame: SimulationFrame,
         sim_local_constants,
         agent_ids,
+        renderer,
         process_count_override=None,
     ):
         observations, dones = {}, {}
@@ -226,6 +228,7 @@ class Sensors:
                             agent_id,
                             sim_frame.sensor_states[vehicle_id],
                             vehicle_id,
+                            renderer,
                         )
 
             # Collect futures
@@ -240,7 +243,6 @@ class Sensors:
                             dones.update(ds)
 
             with timeit(f"merging observations", print):
-                # breakpoint()
                 # Merge sensor information
                 for agent_id, r_obs in rendering.items():
                     observations[agent_id] = dataclasses.replace(
@@ -256,6 +258,7 @@ class Sensors:
         agent_id,
         sensor_states,
         vehicles,
+        renderer,
     ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
         """Operates all sensors on a batch of vehicles for a single agent."""
         # TODO: Replace this with a more efficient implementation that _actually_
@@ -266,7 +269,12 @@ class Sensors:
         for vehicle_id, vehicle in vehicles.items():
             sensor_state = sensor_states[vehicle_id]
             observations[vehicle_id], dones[vehicle_id] = Sensors.observe(
-                sim_frame, sim_local_constants, agent_id, sensor_state, vehicle
+                sim_frame,
+                sim_local_constants,
+                agent_id,
+                sensor_state,
+                vehicle,
+                renderer,
             )
 
         return observations, dones
@@ -278,20 +286,27 @@ class Sensors:
         agent_id,
         sensor_state,
         vehicle_id,
+        renderer,
     ):
         vehicle_sensors: Dict[str, Any] = sim_frame.vehicle_sensors[vehicle_id]
-        return dict(
-            drivable_area_grid_map=(
-                vehicle_sensors["drivable_area_grid_map_sensor"]()
-                if vehicle_sensors.get("drivable_area_grid_map_sensor")
+
+        def get_camera_sensor_result(sensors, sensor_name, renderer):
+            return (
+                sensors[sensor_name](renderer=renderer)
+                if sensors.get(sensor_name)
                 else None
+            )
+
+        return dict(
+            drivable_area_grid_map=get_camera_sensor_result(
+                vehicle_sensors, "drivable_area_grid_map_sensor", renderer
             ),
-            occupancy_grid_map=vehicle_sensors["ogm_sensor"]()
-            if vehicle_sensors.get("ogm_sensor")
-            else None,
-            top_down_rgb=vehicle_sensors["rgb_sensor"]()
-            if vehicle_sensors.get("rgb_sensor")
-            else None,
+            occupancy_grid_map=get_camera_sensor_result(
+                vehicle_sensors, "ogm_sensor", renderer
+            ),
+            top_down_rgb=get_camera_sensor_result(
+                vehicle_sensors, "rgb_sensor", renderer
+            ),
         )
 
     @staticmethod
@@ -472,6 +487,7 @@ class Sensors:
             vehicle_state.actor_id
         )
 
+        # TODO MTA: Return updated sensors or make sensors stateless
         return (
             Observation(
                 dt=sim_frame.last_dt,
@@ -500,15 +516,18 @@ class Sensors:
         agent_id,
         sensor_state,
         vehicle,
+        renderer,
     ) -> Tuple[Observation, bool]:
         """Generate observations for the given agent around the given vehicle."""
         args = [sim_frame, sim_local_constants, agent_id, sensor_state, vehicle.id]
         base_obs, dones = cls.observe_base(*args)
-        complete_obs = dataclasses.replace(base_obs, **cls.observe_cameras(*args))
+        complete_obs = dataclasses.replace(
+            base_obs, **cls.observe_cameras(*args, renderer)
+        )
         return (complete_obs, dones)
 
     @staticmethod
-    def step(sim, sensor_state):
+    def step(sim_frame, sensor_state):
         """Step the sensor state."""
         return sensor_state.step()
 
@@ -807,11 +826,11 @@ class Sensors:
 class Sensor:
     """The sensor base class."""
 
-    def step(self):
+    def step(self, sim_frame, **kwargs):
         """Update sensor state."""
         pass
 
-    def teardown(self):
+    def teardown(self, **kwargs):
         """Clean up internal resources"""
         raise NotImplementedError
 
@@ -968,7 +987,7 @@ class CameraSensor(Sensor):
 
     def __init__(
         self,
-        vehicle,
+        vehicle_state,
         renderer,  # type Renderer or None
         name: str,
         mask: int,
@@ -978,25 +997,31 @@ class CameraSensor(Sensor):
     ):
         assert renderer
         self._log = logging.getLogger(self.__class__.__name__)
-        self._vehicle = vehicle
-        self._camera = renderer.build_offscreen_camera(
-            name,
+        self._camera_name = renderer.build_offscreen_camera(
+            f"{name}_{vehicle_state.actor_id}",
             mask,
             width,
             height,
             resolution,
         )
-        self._follow_vehicle()  # ensure we have a correct initial camera position
+        self._target_actor = vehicle_state.actor_id
+        self._follow_actor(
+            vehicle_state, renderer
+        )  # ensure we have a correct initial camera position
 
-    def teardown(self):
-        self._camera.teardown()
+    def teardown(self, **kwargs):
+        renderer = kwargs.get("renderer")
+        camera = renderer.camera_for_id(self._camera_name)
+        camera.teardown()
 
-    def step(self):
-        self._follow_vehicle()
+    def step(self, sim_frame, **kwargs):
+        self._follow_actor(
+            sim_frame.actor_states[self._target_actor], kwargs.get("renderer")
+        )
 
-    def _follow_vehicle(self):
-        largest_dim = max(self._vehicle._chassis.dimensions.as_lwh)
-        self._camera.update(self._vehicle.pose, 20 * largest_dim)
+    def _follow_actor(self, vehicle_state, renderer):
+        camera = renderer.camera_for_id(self._camera_name)
+        camera.update(vehicle_state.pose, vehicle_state.dimensions.height + 10)
 
 
 class DrivableAreaGridMapSensor(CameraSensor):
@@ -1004,14 +1029,14 @@ class DrivableAreaGridMapSensor(CameraSensor):
 
     def __init__(
         self,
-        vehicle,
+        vehicle_state,
         width: int,
         height: int,
         resolution: float,
         renderer,  # type Renderer or None
     ):
         super().__init__(
-            vehicle,
+            vehicle_state,
             renderer,
             "drivable_area_grid_map",
             RenderMasks.DRIVABLE_AREA_HIDE,
@@ -1021,15 +1046,14 @@ class DrivableAreaGridMapSensor(CameraSensor):
         )
         self._resolution = resolution
 
-    def __call__(self) -> DrivableAreaGridMap:
-        assert (
-            self._camera is not None
-        ), "Drivable area grid map has not been initialized"
+    def __call__(self, renderer) -> DrivableAreaGridMap:
+        camera = renderer.camera_for_id(self._camera_name)
+        assert camera is not None, "Drivable area grid map has not been initialized"
 
-        ram_image = self._camera.wait_for_ram_image(img_format="A")
+        ram_image = camera.wait_for_ram_image(img_format="A")
         mem_view = memoryview(ram_image)
         image = np.frombuffer(mem_view, np.uint8)
-        image.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 1)
+        image.shape = (camera.tex.getYSize(), camera.tex.getXSize(), 1)
         image = np.flipud(image)
 
         metadata = GridMapMetadata(
@@ -1037,8 +1061,8 @@ class DrivableAreaGridMapSensor(CameraSensor):
             resolution=self._resolution,
             height=image.shape[0],
             width=image.shape[1],
-            camera_position=self._camera.camera_np.getPos(),
-            camera_heading_in_degrees=self._camera.camera_np.getH(),
+            camera_position=camera.camera_np.getPos(),
+            camera_heading_in_degrees=camera.camera_np.getH(),
         )
         return DrivableAreaGridMap(data=image, metadata=metadata)
 
@@ -1048,14 +1072,14 @@ class OGMSensor(CameraSensor):
 
     def __init__(
         self,
-        vehicle,
+        vehicle_state,
         width: int,
         height: int,
         resolution: float,
         renderer,  # type Renderer or None
     ):
         super().__init__(
-            vehicle,
+            vehicle_state,
             renderer,
             "ogm",
             RenderMasks.OCCUPANCY_HIDE,
@@ -1065,13 +1089,14 @@ class OGMSensor(CameraSensor):
         )
         self._resolution = resolution
 
-    def __call__(self) -> OccupancyGridMap:
-        assert self._camera is not None, "OGM has not been initialized"
+    def __call__(self, renderer) -> OccupancyGridMap:
+        camera = renderer.camera_for_id(self._camera_name)
+        assert camera is not None, "OGM has not been initialized"
 
-        ram_image = self._camera.wait_for_ram_image(img_format="A")
+        ram_image = camera.wait_for_ram_image(img_format="A")
         mem_view = memoryview(ram_image)
         grid = np.frombuffer(mem_view, np.uint8)
-        grid.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 1)
+        grid.shape = (camera.tex.getYSize(), camera.tex.getXSize(), 1)
         grid = np.flipud(grid)
 
         metadata = GridMapMetadata(
@@ -1079,8 +1104,8 @@ class OGMSensor(CameraSensor):
             resolution=self._resolution,
             height=grid.shape[0],
             width=grid.shape[1],
-            camera_position=self._camera.camera_np.getPos(),
-            camera_heading_in_degrees=self._camera.camera_np.getH(),
+            camera_position=camera.camera_np.getPos(),
+            camera_heading_in_degrees=camera.camera_np.getH(),
         )
         return OccupancyGridMap(data=grid, metadata=metadata)
 
@@ -1090,14 +1115,14 @@ class RGBSensor(CameraSensor):
 
     def __init__(
         self,
-        vehicle,
+        vehicle_state,
         width: int,
         height: int,
         resolution: float,
         renderer,  # type Renderer or None
     ):
         super().__init__(
-            vehicle,
+            vehicle_state,
             renderer,
             "top_down_rgb",
             RenderMasks.RGB_HIDE,
@@ -1107,13 +1132,14 @@ class RGBSensor(CameraSensor):
         )
         self._resolution = resolution
 
-    def __call__(self) -> TopDownRGB:
-        assert self._camera is not None, "RGB has not been initialized"
+    def __call__(self, renderer) -> TopDownRGB:
+        camera = renderer.camera_for_id(self._camera_name)
+        assert camera is not None, "RGB has not been initialized"
 
-        ram_image = self._camera.wait_for_ram_image(img_format="RGB")
+        ram_image = camera.wait_for_ram_image(img_format="RGB")
         mem_view = memoryview(ram_image)
         image = np.frombuffer(mem_view, np.uint8)
-        image.shape = (self._camera.tex.getYSize(), self._camera.tex.getXSize(), 3)
+        image.shape = (camera.tex.getYSize(), camera.tex.getXSize(), 3)
         image = np.flipud(image)
 
         metadata = GridMapMetadata(
@@ -1121,8 +1147,8 @@ class RGBSensor(CameraSensor):
             resolution=self._resolution,
             height=image.shape[0],
             width=image.shape[1],
-            camera_position=self._camera.camera_np.getPos(),
-            camera_heading_in_degrees=self._camera.camera_np.getH(),
+            camera_position=camera.camera_np.getPos(),
+            camera_heading_in_degrees=camera.camera_np.getH(),
         )
         return TopDownRGB(data=image, metadata=metadata)
 
@@ -1146,16 +1172,13 @@ class LidarSensor(Sensor):
             self._bullet_client,
         )
 
-    def step(self):
-        pass
-
     def follow_vehicle(self, vehicle_state):
         self._lidar.origin = vehicle_state.pose.position + self._lidar_offset
 
     def __call__(self):
         return self._lidar.compute_point_cloud()
 
-    def teardown(self):
+    def teardown(self, **kwargs):
         pass
 
 
@@ -1180,7 +1203,7 @@ class DrivenPathSensor(Sensor):
     def __call__(self, count=sys.maxsize):
         return [x.position for x in self._driven_path][-count:]
 
-    def teardown(self):
+    def teardown(self, **kwargs):
         pass
 
     def distance_travelled(
@@ -1284,7 +1307,7 @@ class TripMeterSensor(Sensor):
 
         return self._dist_travelled
 
-    def teardown(self):
+    def teardown(self, **kwargs):
         pass
 
 
@@ -1304,7 +1327,7 @@ class NeighborhoodVehiclesSensor(Sensor):
             vehicle_state, vehicle_states, radius=self._radius
         )
 
-    def teardown(self):
+    def teardown(self, **kwargs):
         pass
 
 
@@ -1321,7 +1344,7 @@ class WaypointsSensor(Sensor):
             route=plan.route,
         )
 
-    def teardown(self):
+    def teardown(self, **kwargs):
         pass
 
 
@@ -1377,7 +1400,7 @@ class RoadWaypointsSensor(Sensor):
             )
             return paths
 
-    def teardown(self):
+    def teardown(self, **kwargs):
         pass
 
 
@@ -1421,7 +1444,7 @@ class AccelerometerSensor(Sensor):
 
         return (linear_acc, angular_acc, linear_jerk, angular_jerk)
 
-    def teardown(self):
+    def teardown(self, **kwargs):
         pass
 
 
@@ -1434,7 +1457,7 @@ class LanePositionSensor(Sensor):
     def __call__(self, lane: RoadMap.Lane, vehicle_state):
         return lane.to_lane_coord(vehicle_state.pose.point)
 
-    def teardown(self):
+    def teardown(self, **kwargs):
         pass
 
 
@@ -1493,7 +1516,7 @@ class ViaSensor(Sensor):
             hit_points,
         )
 
-    def teardown(self):
+    def teardown(self, **kwargs):
         pass
 
 
@@ -1581,5 +1604,5 @@ class SignalsSensor(Sensor):
                 ogl, lookahead - lane.length, route, upcoming_signals
             )
 
-    def teardown(self):
+    def teardown(self, **kwargs):
         pass
