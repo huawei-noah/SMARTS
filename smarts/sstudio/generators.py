@@ -216,9 +216,13 @@ class TrafficGenerator:
         ):
             # Actors and routes may be declared once then reused. To prevent creating
             # duplicates we unique them here.
-            for actor in {
+            actors_for_vtypes = {
                 actor for flow in traffic.flows for actor in flow.actors.keys()
-            }:
+            }
+            if traffic.trips:
+                actors_for_vtypes |= {trip.actor for trip in traffic.trips}
+            
+            for actor in actors_for_vtypes:
                 sigma = min(1, max(0, actor.imperfection.sample()))  # range [0,1]
                 min_gap = max(0, actor.min_gap.sample())  # range >= 0
                 doc.stag(
@@ -235,21 +239,6 @@ class TrafficGenerator:
                     **actor.lane_changing_model,
                     **actor.junction_model,
                 )
-
-            if traffic.trips is not None:
-                for actor in {trip.actor for trip in traffic.trips}:
-                    doc.stag(
-                        "vType",
-                        id=actor.id,
-                        accel=actor.accel,
-                        decel=actor.decel,
-                        vClass=actor.vehicle_type,
-                        speedFactor=actor.speed.mean,
-                        speedDev=actor.speed.sigma,
-                        maxSpeed=actor.max_speed,
-                        **actor.lane_changing_model,
-                        **actor.junction_model,
-                    )
 
             # Make sure all routes are "resolved" (e.g. `RandomRoute` are converted to
             # `Route`) so that we can write them all to file.
@@ -297,7 +286,7 @@ class TrafficGenerator:
                         **rate_option,
                     )
             # write trip into xml format
-            if traffic.trips is not None:
+            if traffic.trips:
                 self.write_trip_xml(traffic, doc, fill_in_route_gaps)
 
         with open(route_path, "w") as f:
