@@ -501,24 +501,28 @@ class Flow:
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
 
+
 @dataclass(frozen=True)
 class Trip:
     """A route with a single actor type with name and unique id."""
-    def __init__(
-        self,
-        vehicle_name: str,
-        actor: TrafficActor,
-        route: Union[RandomRoute, Route],
-        depart: float = 0,
-    ):
-        self.vehicle_name = vehicle_name
-        self.actor = TrafficActor(self.vehicle_name)
-        self.route = route
-        """The route for the actor to attempt to follow."""
-        self.depart = depart
-        """Start time in seconds."""
-        # XXX: Defaults to 1 hour of traffic. We may want to change this to be "continual
-        #      traffic", effectively an infinite end.
+
+    vehicle_name: str
+    """The name of the vehicle. It must be unique. """
+    route: Union[RandomRoute, Route]
+    """The route for the actor to attempt to follow."""
+    vehicle_type: str = "passenger"
+    """The type of the vehicle"""
+    depart: float = 0
+    """Start time in seconds."""
+    actor: TrafficActor = field(init=False)
+    """The traffic actor for the vehicle"""
+
+    def __post_init__(self):
+        object.__setattr__(
+            self,
+            "actor",
+            TrafficActor(name=self.vehicle_name, vehicle_type=self.vehicle_type),
+        )
 
     @property
     def id(self) -> str:
@@ -532,6 +536,7 @@ class Trip:
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
+
 
 @dataclass(frozen=True)
 class JunctionEdgeIDResolver:

@@ -236,6 +236,21 @@ class TrafficGenerator:
                     **actor.junction_model,
                 )
 
+            if traffic.trips is not None:
+                for actor in {trip.actor for trip in traffic.trips}:
+                    doc.stag(
+                        "vType",
+                        id=actor.id,
+                        accel=actor.accel,
+                        decel=actor.decel,
+                        vClass=actor.vehicle_type,
+                        speedFactor=actor.speed.mean,
+                        speedDev=actor.speed.sigma,
+                        maxSpeed=actor.max_speed,
+                        **actor.lane_changing_model,
+                        **actor.junction_model,
+                    )
+
             # Make sure all routes are "resolved" (e.g. `RandomRoute` are converted to
             # `Route`) so that we can write them all to file.
             resolved_routes = {}
@@ -281,9 +296,9 @@ class TrafficGenerator:
                         end=flow.end,
                         **rate_option,
                     )
-        # write trip into xml format
-        if traffic.trips is not None:
-            self.write_trip_xml(traffic, doc, fill_in_route_gaps)
+            # write trip into xml format
+            if traffic.trips is not None:
+                self.write_trip_xml(traffic, doc, fill_in_route_gaps)
 
         with open(route_path, "w") as f:
             f.write(
