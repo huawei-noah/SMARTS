@@ -221,7 +221,7 @@ class TrafficGenerator:
             }
             if traffic.trips:
                 actors_for_vtypes |= {trip.actor for trip in traffic.trips}
-            
+
             for actor in actors_for_vtypes:
                 sigma = min(1, max(0, actor.imperfection.sample()))  # range [0,1]
                 min_gap = max(0, actor.min_gap.sample())  # range >= 0
