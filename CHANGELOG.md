@@ -10,6 +10,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Added single vehicle `Trip` into type. 
 ### Deprecated
 ### Changed
 ### Removed
