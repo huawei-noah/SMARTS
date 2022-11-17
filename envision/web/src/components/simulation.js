@@ -246,23 +246,27 @@ export default function Simulation({
 
         child.actionManager = new ActionManager(scene);
         child.actionManager.registerAction(
-          new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, 
-            function (evt) {
-              material.diffuseColor = roadColorSelected;
-              setMapElementSelected(true);
-              setDebugInfo({
-                road_id: child.metadata.gltf.extras.road_id,
-                lane_id: child.metadata.gltf.extras.lane_id,
-                lane_index: child.metadata.gltf.extras.lane_index,
-              });
-        }));
+          new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, function (
+            evt
+          ) {
+            material.diffuseColor = roadColorSelected;
+            setMapElementSelected(true);
+            setDebugInfo({
+              road_id: child.metadata.gltf.extras.road_id,
+              lane_id: child.metadata.gltf.extras.lane_id,
+              lane_index: child.metadata.gltf.extras.lane_index,
+            });
+          })
+        );
         child.actionManager.registerAction(
-          new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, 
-            function (evt) {
-              material.diffuseColor = roadColor;
-              setMapElementSelected(false);
-              setDebugInfo({});
-        }));
+          new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, function (
+            evt
+          ) {
+            material.diffuseColor = roadColor;
+            setMapElementSelected(false);
+            setDebugInfo({});
+          })
+        );
       }
 
       mapMeshesRef.current = meshes;
@@ -388,16 +392,10 @@ export default function Simulation({
           />
         ) : null}
         {vehicleSelected ? (
-          <DebugInfoDisplay
-            data={debugInfo}
-            attrName="Selected Vehicle"
-          />
+          <DebugInfoDisplay data={debugInfo} attrName="Selected Vehicle" />
         ) : null}
         {mapElementSelected ? (
-          <DebugInfoDisplay
-            data={debugInfo}
-            attrName="Selected Map Element"
-          />
+          <DebugInfoDisplay data={debugInfo} attrName="Selected Map Element" />
         ) : null}
       </div>
     </div>

@@ -226,23 +226,27 @@ export default function Vehicles({
       box.position = boundingInfo.boundingBox.center;
       box.actionManager = new ActionManager(scene);
       box.actionManager.registerAction(
-        new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, 
-          function (evt) {
-            boxMaterial.alpha = 0.5;
-            setVehicleSelected(true);
-            let debugInfo = {};
-            for (const prop of DEBUG_PROPS) {
-              debugInfo[prop] = state[prop];
-            }
-            setDebugInfo(debugInfo);
-      }));
+        new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, function (
+          evt
+        ) {
+          boxMaterial.alpha = 0.5;
+          setVehicleSelected(true);
+          let debugInfo = {};
+          for (const prop of DEBUG_PROPS) {
+            debugInfo[prop] = state[prop];
+          }
+          setDebugInfo(debugInfo);
+        })
+      );
       box.actionManager.registerAction(
-        new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, 
-          function (evt) {
-            boxMaterial.alpha = 0.0;
-            setVehicleSelected(false);
-            setDebugInfo({});
-      }));
+        new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, function (
+          evt
+        ) {
+          boxMaterial.alpha = 0.0;
+          setVehicleSelected(false);
+          setDebugInfo({});
+        })
+      );
       rootMesh.addChild(box);
 
       rootMesh.metadata = {};

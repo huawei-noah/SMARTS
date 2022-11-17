@@ -19,10 +19,7 @@
 // THE SOFTWARE.
 import React from "react";
 
-export default function DebugInfoDisplay({
-  data,
-  attrName,
-}) {
+export default function DebugInfoDisplay({ data, attrName }) {
   return (
     <table style={{ margin: "15px", tableLayout: "auto" }}>
       <thead>
@@ -34,9 +31,7 @@ export default function DebugInfoDisplay({
         {Object.entries(data).map(([key, val]) => {
           return (
             <tr key={`data-body-${key}`}>
-              <td style={{ paddingRight: "15px" }}>
-                {`${key}: ${val}`}
-              </td>
+              <td style={{ paddingRight: "15px" }}>{`${key}: ${val}`}</td>
             </tr>
           );
         })}
