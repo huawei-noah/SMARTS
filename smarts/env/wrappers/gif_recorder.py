@@ -21,6 +21,9 @@
 # THE SOFTWARE.
 import os
 import sys
+import typing
+import gym
+import numpy as np
 
 try:
     from moviepy.editor import ImageClip, ImageSequenceClip
@@ -39,38 +42,41 @@ class GifRecorder:
     Use images(rgb_array) to create a gif file.
     """
 
-    def __init__(self, dir, env):
+    def __init__(self, video_name_folder: str, env: gym.Env):
         timestamp_str = time.strftime("%Y%m%d-%H%M%S")
-        self.dir = dir + "_" + timestamp_str
+        self.frame_folder = (
+            video_name_folder + "_" + timestamp_str
+        )  # folder that uses to contain temporary frame images, will be deleted after the gif is created.
         self.env = env
 
-        try:
-            os.mkdir(self.dir)
-        except:
-            pass
+        Path.mkdir(
+            Path(self.frame_folder), exist_ok=True
+        )  # create temporary frame images folder if not exists.
 
-        self._dir_name = str(Path(dir).name)
+        self._video_root_path = str(
+            Path(video_name_folder).parent
+        )  # path of the video file
+        self._video_name = str(Path(video_name_folder).name)  # name of the video
 
-    def capture_frame(self, step_num, image):
+    def capture_frame(self, step_num: int, image: np.ndarray):
         """
         Create image according to the rgb_array and store it with step number in the destinated folder
         """
         with ImageClip(image) as image_clip:
-            image_clip.save_frame(f"{self.dir}/{self._dir_name}_{step_num}.jpeg")
+            image_clip.save_frame(
+                f"{self.frame_folder}/{self._video_name}_{step_num}.jpeg"
+            )
 
     def generate_gif(self):
         """
         Use the images in the same folder to create a gif file.
         """
-        with ImageSequenceClip(self.dir, fps=10) as clip:
-            clip.write_gif(f"videos/{self._dir_name}.gif")
+        with ImageSequenceClip(self.frame_folder, fps=10) as clip:
+            clip.write_gif(f"{self._video_root_path}/{self._video_name}.gif")
         clip.close()
 
     def close_recorder(self):
         """
         close the recorder by deleting the image folder.
         """
-        try:
-            shutil.rmtree(self.dir)
-        except:
-            pass
+        shutil.rmtree(self.frame_folder, ignore_errors=True)
