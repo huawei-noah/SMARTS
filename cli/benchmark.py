@@ -17,15 +17,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import sys
-import os
-import subprocess
+
 import click
-from glob import glob
-import smarts
-from multiprocessing import Process, Semaphore, synchronize
-from typing import List, Optional, Sequence
-from smarts.benchmark import benchmark
+
+from smarts.benchmark import run as _run
 
 
 @click.group(
@@ -35,17 +30,11 @@ from smarts.benchmark import benchmark
 def benchmark_cli():
     pass
 
-@click.command("run", help="Start all benchmarking.")
-@click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def build_all_scenarios_and_run(scenarios):
-    # Build scenarios
-    scenario_build_command = " ".join(
-        ["scl scenario build-all"] + [f"{smarts.__path__[0]}/benchmark/{scenarios[0]}"]
-    )
-    subprocess.call(scenario_build_command, shell=True)
-    # Run scenarios
-    benchmark.main(
-        scenarios=[f"{smarts.__path__[0]}/benchmark/{scenarios[0]}"],
-    )
 
-benchmark_cli.add_command(build_all_scenarios_and_run)
+@click.command("run", help="Run all benchmarks.")
+@click.argument("scenarios", nargs=-1, metavar="<scenarios>")
+def run(scenarios):
+    _run.main(scenarios)
+
+
+benchmark_cli.add_command(run)
