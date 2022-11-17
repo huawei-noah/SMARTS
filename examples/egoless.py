@@ -5,7 +5,7 @@ from argument_parser import default_argument_parser
 
 from smarts.core.utils.episodes import episodes
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
