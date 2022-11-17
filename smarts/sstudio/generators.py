@@ -221,6 +221,10 @@ class TrafficGenerator:
             }
             if traffic.trips:
                 actors_for_vtypes |= {trip.actor for trip in traffic.trips}
+                vehicle_id_set = {trip.vehicle_name for trip in traffic.trips}
+                vehilce_ids_list = [trip.vehicle_name for trip in traffic.trips]
+                if len(vehicle_id_set) != len(vehilce_ids_list):
+                    raise ValueError("Repeated single vehicle names is not allowed.")
 
             for actor in actors_for_vtypes:
                 sigma = min(1, max(0, actor.imperfection.sample()))  # range [0,1]
@@ -297,8 +301,8 @@ class TrafficGenerator:
             )
 
     def write_trip_xml(self, traffic, doc, fill_in_gaps):
-        """Wrtes a traffic spec into a route file. Typically this would be the source
-        data to Sumo's DUAROUTER.
+        """Writes a trip spec into a route file. Typically this would be the source
+        data to SUMO's DUAROUTER.
         """
         # Make sure all routes are "resolved" (e.g. `RandomRoute` are converted to
         # `Route`) so that we can write them all to file.
