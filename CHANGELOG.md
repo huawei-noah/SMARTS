@@ -26,6 +26,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added ego's mission details into the `FormatObs` wrapper.
 - Added `SmartsLaneChangingModel` and `SmartsJunctionModel` to types available for use with the new smarts traffic engine within Scenario Studio.
 - Added option to `AgentInterface` to include traffic signals (lights) in `EgoVehicleObservation` objects.
+- Added the ability to hover over vehicles and roadmap elements in Envision to see debug info.
 
 ### Deprecated
 - Deprecated a few things related to traffic in the `Scenario` class, including the `route` argument to the `Scenario` initializer, the `route`, `route_filepath` and `route_files_enabled` properties, and the `discover_routes()` static method.  In general, the notion of "route" (singular) here is being replaced with "`traffic_specs`" (plural) that allow for specifying traffic controlled by the SMARTS engine as well as Sumo.
@@ -58,6 +59,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed issues with Envision. The playback bar and realtime mode now work as expected.
 - Fixed a bug where traffic history vehicles would not get traffic signal observations
 - Fixed a bug where envision would not work in some versions of python due to nuances of `importlib.resource.path()`.
+- Fixed an issue with incorrect vehicle sizes in Envision.
 
 ## [0.6.1]
 ### Added

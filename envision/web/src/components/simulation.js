@@ -29,8 +29,11 @@ import {
   HemisphericLight,
   MeshBuilder,
   Color4,
+  ActionManager,
+  ExecuteCodeAction,
 } from "@babylonjs/core";
 
+import "@babylonjs/loaders/glTF/2.0/Extensions/ExtrasAsMetadata.js";
 import { GLTFLoader } from "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import SceneComponent from "babylonjs-hook";
 
@@ -46,6 +49,7 @@ import { attrs, agentModes } from "./control_panel";
 
 import InfoDisplay from "./InfoDisplay";
 import ScenarioNameDisplay from "./ScenarioNameDisplay";
+import DebugInfoDisplay from "./DebugInfoDisplay.js";
 import earcut from "earcut";
 import { SceneColors } from "../helpers/scene_colors.js";
 import unpack_worldstate from "../helpers/state_unpacker.js";
@@ -87,6 +91,11 @@ export default function Simulation({
     heading: [],
     lane_ids: [],
   });
+
+  // Mouse selection and debug info
+  const [vehicleSelected, setVehicleSelected] = useState(false);
+  const [mapElementSelected, setMapElementSelected] = useState(false);
+  const [debugInfo, setDebugInfo] = useState({});
 
   const mapMeshesRef = useRef([]);
 
@@ -226,12 +235,34 @@ export default function Simulation({
 
       // Update material for all child meshes
       // Currently only use flat shading, replace imported pbr material with standard material
+      let roadColor = new Color4(...SceneColors.Road);
+      let roadColorSelected = new Color4(...SceneColors.Selection);
       for (const child of meshes[0].getChildMeshes()) {
         let material = new StandardMaterial("material-map", scene);
         material.backFaceCulling = false;
-        material.diffuseColor = new Color4(...SceneColors.Road);
+        material.diffuseColor = roadColor;
         material.specularColor = new Color3(0, 0, 0);
         child.material = material;
+
+        child.actionManager = new ActionManager(scene);
+        child.actionManager.registerAction(
+          new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, 
+            function (evt) {
+              material.diffuseColor = roadColorSelected;
+              setMapElementSelected(true);
+              setDebugInfo({
+                road_id: child.metadata.gltf.extras.road_id,
+                lane_id: child.metadata.gltf.extras.lane_id,
+                lane_index: child.metadata.gltf.extras.lane_index,
+              });
+        }));
+        child.actionManager.registerAction(
+          new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, 
+            function (evt) {
+              material.diffuseColor = roadColor;
+              setMapElementSelected(false);
+              setDebugInfo({});
+        }));
       }
 
       mapMeshesRef.current = meshes;
@@ -270,6 +301,8 @@ export default function Simulation({
         worldState={worldState}
         vehicleRootUrl={`${client.endpoint.origin}/assets/models/`}
         egoView={egoView}
+        setVehicleSelected={setVehicleSelected}
+        setDebugInfo={setDebugInfo}
       />
       <Bubbles scene={scene} worldState={worldState} />
       <DrivenPaths
@@ -352,6 +385,18 @@ export default function Simulation({
             data_formattter={(lane_id) => lane_id}
             ego_agent_ids={worldState.ego_agent_ids}
             ego_only={!controlModes[agentModes.socialObs]}
+          />
+        ) : null}
+        {vehicleSelected ? (
+          <DebugInfoDisplay
+            data={debugInfo}
+            attrName="Selected Vehicle"
+          />
+        ) : null}
+        {mapElementSelected ? (
+          <DebugInfoDisplay
+            data={debugInfo}
+            attrName="Selected Map Element"
           />
         ) : null}
       </div>
