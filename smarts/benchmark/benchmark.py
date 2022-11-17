@@ -113,7 +113,7 @@ class BenchmarkOutput(NamedTuple):
     num_episodes: int
     std: float
 
-
+os.makedirs(f"{smarts.__path__[0]}/benchmark/benchmark_results", exist_ok=True)
 # Write report in .md format
 def write_report(results):
     now = datetime.now()
@@ -172,7 +172,12 @@ def write_report(results):
     print(df)
     graph = df.plot(kind="line", use_index=True, y="means",legend=False,marker='.')
     graph.get_figure().savefig(f"{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}")
-    mdFile.write(f"\n<img src='{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}.png' alt='line chart' style='width:500px;'/>")
+    mdFile.new_paragraph(
+        "<figure>"
+        f"\n<img src='{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}.png' alt='line chart' style='width:500px;'/>"
+        "\n<figcaption align = 'center'> Figure 1 </figcaption>"
+        "\n</figure>"
+        )
     mdFile.create_md_file()
     return report_file_name
 
@@ -181,7 +186,6 @@ def main(scenarios):
     results = compute_benchmark(scenarios)
     report_file_name = write_report(results)
     # Move report to report directory
-    os.makedirs(f"{smarts.__path__[0]}/benchmark/benchmark_results", exist_ok=True)
     subprocess.run(
         [
             "mv",
