@@ -38,13 +38,12 @@ def timeit(name: str, log, funcs=None):
             a = a * b
     """
     start = time()
-    yield 0
+    yield
     elapsed_time = (time() - start) * 1000
 
     if funcs:
         for func in funcs:
             func(elapsed_time)
-        # log(f"{name} took: {elapsed_time:4f}ms. Average elapsed time thus far: {ave}")
     else:
         log(f"{name} took: {elapsed_time:4f}ms")
 
