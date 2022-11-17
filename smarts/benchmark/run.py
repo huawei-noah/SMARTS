@@ -10,11 +10,13 @@ from smarts.core.scenario import Scenario
 from smarts.core.utils.logging import timeit
 
 _SEED = 42
+_MAX_REPLAY_EPISODE_STEPS = 100
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__file__)
+logger.setLevel(logging.INFO)
 
 
-def compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
+def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
     build_scenarios(
         allow_offset_maps=False,
         clean=False,
@@ -33,7 +35,15 @@ def compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
     )
     scenarios = Scenario.get_scenario_list(scenario_dir)
     num_episodes = ep_per_scenario * len(scenarios)
-    results = {str(scenario): get_funcs() for scenario in scenarios}
+    num_episode_steps = {
+        str(scenario): (
+            _MAX_REPLAY_EPISODE_STEPS
+            if Scenario.discover_traffic_histories(scenario)
+            else max_episode_steps
+        )
+        for scenario in scenarios
+    }
+    results = {str(scenario): _get_funcs() for scenario in scenarios}
 
     for _ in range(num_episodes):
         env.reset()
@@ -41,72 +51,18 @@ def compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
         avg_compute = results[scenario_name].avg_compute
         std_store = results[scenario_name].std_store
         with timeit("Benchmark", print, funcs=[avg_compute, std_store]):
-            for _ in range(max_episode_steps):
+            for _ in range(num_episode_steps[scenario_name]):
                 env.step({})
 
     env.close()
 
     records = {}
     for k, v in results.items():
-        records[k] = _readable_results(
-            func=v, num_episodes=num_episodes, num_steps=max_episode_steps
+        records[k] = _readable(
+            func=v, num_episodes=num_episodes, num_steps=num_episode_steps[k]
         )
 
     return records
-
-
-def _readable_results(func, num_episodes, num_steps):
-    avg = func.avg_get()
-    std = func.std_get()
-    steps_per_sec = num_steps / (avg / 1000)  # Units: Steps per Second
-
-    return _Result(
-        num_episodes=num_episodes,
-        num_steps=num_steps,
-        avg=avg,
-        std=std,
-        steps_per_sec=steps_per_sec,
-    )
-
-
-def avg() -> Tuple[Callable[[float], float], Callable[[], float]]:
-    ave = 0
-    step = 0
-
-    def compute(val):
-        nonlocal ave, step
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=val)
-        print(f"Average: {ave},")
-        return ave
-
-    def get():
-        nonlocal ave
-        return ave
-
-    return compute, get
-
-
-def _running_ave(prev_ave: float, prev_step: int, new_val: float) -> Tuple[float, int]:
-    new_step = prev_step + 1
-    new_ave = prev_ave + (new_val - prev_ave) / new_step
-    return new_ave, new_step
-
-
-def std() -> Tuple[Callable[[float], None], Callable[[], float]]:
-    values = []
-
-    def store(val):
-        nonlocal values
-        values.append(val)
-        return
-
-    def get():
-        nonlocal values
-        import statistics
-
-        return statistics.stdev(values)
-
-    return store, get
 
 
 @dataclass
@@ -126,9 +82,48 @@ class _Result:
     steps_per_sec: float
 
 
-def get_funcs():
-    avg_compute, avg_get = avg()
-    std_store, std_get = std()
+def _avg() -> Tuple[Callable[[float], float], Callable[[], float]]:
+    ave = 0
+    step = 0
+
+    def compute(val):
+        nonlocal ave, step
+        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=val)
+        return ave
+
+    def get():
+        nonlocal ave
+        return ave
+
+    return compute, get
+
+
+def _running_ave(prev_ave: float, prev_step: int, new_val: float) -> Tuple[float, int]:
+    new_step = prev_step + 1
+    new_ave = prev_ave + (new_val - prev_ave) / new_step
+    return new_ave, new_step
+
+
+def _std() -> Tuple[Callable[[float], None], Callable[[], float]]:
+    values = []
+
+    def store(val):
+        nonlocal values
+        values.append(val)
+        return
+
+    def get():
+        nonlocal values
+        import statistics
+
+        return statistics.stdev(values)
+
+    return store, get
+
+
+def _get_funcs() -> _Funcs:
+    avg_compute, avg_get = _avg()
+    std_store, std_get = _std()
     return _Funcs(
         avg_compute=avg_compute,
         avg_get=avg_get,
@@ -137,11 +132,26 @@ def get_funcs():
     )
 
 
+def _readable(func: _Funcs, num_episodes: int, num_steps: int):
+    avg = func.avg_get()
+    std = func.std_get()
+    steps_per_sec = num_steps / (avg / 1000)  # Units: Steps per Second
+
+    return _Result(
+        num_episodes=num_episodes,
+        num_steps=num_steps,
+        avg=avg,
+        std=std,
+        steps_per_sec=steps_per_sec,
+    )
+
+
 def main(scenarios):
     results = {}
     for scenario in scenarios:
         path = Path(__file__).resolve().parent / scenario
-        results.update(compute(scenario_dir=[path]))
+        logger.info("Benchmarking: %s", path)
+        results.update(_compute(scenario_dir=[path]))
 
     print("----------------------------------------------")
     # scenarios = list(map(lambda s:s.split("benchmark/")[1], scenarios))
