@@ -36,10 +36,12 @@ from smarts.core.signal_provider import SignalLightState
 from smarts.core.utils.file import read_tfrecord_file
 from smarts.core.utils.math import (
     circular_mean,
+    constrain_angle,
     min_angles_difference_signed,
     vec_to_radians,
 )
 from smarts.sstudio import types
+from smarts.waymo.waymo_utils import WaymoDatasetError
 
 try:
     # pytype: disable=import-error
@@ -820,13 +822,6 @@ class Waymo(_TrajectoryDataset):
         def lerp(a: float, b: float, t: float) -> float:
             return t * (b - a) + a
 
-        def constrain_angle(angle: float) -> float:
-            """Constrain to [-pi, pi]"""
-            angle %= 2 * math.pi
-            if angle > math.pi:
-                angle -= 2 * math.pi
-            return angle
-
         scenario = self._get_scenario()
 
         for i in range(len(scenario.tracks)):
@@ -850,7 +845,7 @@ class Waymo(_TrajectoryDataset):
                 row["sim_time"] = scenario.timestamps_seconds[j]
                 row["position_x"] = obj_state.center_x
                 row["position_y"] = obj_state.center_y
-                row["heading_rad"] = obj_state.heading - math.pi / 2
+                row["heading_rad"] = (obj_state.heading - math.pi / 2) % (2 * math.pi)
                 row["speed"] = np.linalg.norm(vel)
                 row["lane_id"] = 0
                 row["is_ego_vehicle"] = 1 if i == scenario.sdc_track_index else 0
@@ -864,9 +859,10 @@ class Waymo(_TrajectoryDataset):
                 time_expected = round(j * self._dt_sec, 3)
                 time_error = time_current - time_expected
 
-                assert (
-                    abs(time_error) < self._dt_sec
-                ), "Waymo data deviates by more than the size of 1 timestep. This likely indicates a gap in the dataset."
+                if round(abs(time_error), 1) >= self._dt_sec:
+                    raise WaymoDatasetError(
+                        f"[{scenario.scenario_id}] Waymo data deviates by more than the size of 1 timestep. This likely indicates a gap in the dataset."
+                    )
 
                 if not row["valid"] or time_error == 0:
                     continue
@@ -916,9 +912,16 @@ class Waymo(_TrajectoryDataset):
                     interp_row["position_y"] = lerp(
                         row["position_y"], next_row["position_y"], t
                     )
-                    interp_row["heading_rad"] = lerp(
-                        row["heading_rad"], next_row["heading_rad"], t
-                    )
+
+                    h1 = row["heading_rad"]
+                    h2 = next_row["heading_rad"]
+
+                    if h2 - h1 > math.pi:
+                        h1 += 2 * math.pi
+                    elif h1 - h2 > math.pi:
+                        h2 += 2 * math.pi
+
+                    interp_row["heading_rad"] = lerp(h1, h2, t) % (2 * math.pi)
                     interp_rows[j] = interp_row
 
             # Third pass -- filter invalid states, replace interpolated values, convert to ms, constrain angles

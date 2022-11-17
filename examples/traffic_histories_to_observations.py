@@ -1,11 +1,13 @@
 import argparse
 import logging
+import math
 import os
 import pickle
 from dataclasses import replace
 from typing import Optional, Sequence
 
-from PIL import Image, ImageDraw
+import numpy as np
+from PIL import Image
 
 from envision.client import Client as Envision
 from smarts import sstudio
@@ -19,7 +21,9 @@ from smarts.core.agent_interface import (
     RoadWaypoints,
     Waypoints,
 )
+from smarts.core.colors import Colors
 from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
+from smarts.core.coordinates import Point
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.plan import PositionalGoal
 from smarts.core.scenario import Scenario
@@ -81,23 +85,11 @@ class ObservationRecorder:
                 "No output dir provided. Observations will not be saved."
             )
         self._smarts = None
-        self._create_missions()
 
         if agent_interface is not None:
             self.agent_interface = agent_interface
         else:
             self.agent_interface = self._create_default_interface()
-
-    def _create_missions(self):
-        self._missions = dict()
-        orig_missions = self._scenario.discover_missions_of_traffic_histories()
-        for v_id, mission in orig_missions.items():
-            veh_goal = self._scenario._get_vehicle_goal(v_id)
-            # TODO: get prefixed vehicle_id from TrafficHistoryProvider
-            veh_id = f"history-vehicle-{v_id}"
-            self._missions[veh_id] = replace(
-                mission, goal=PositionalGoal(veh_goal, radius=3)
-            )
 
     def _create_default_interface(
         self, img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose"
@@ -255,11 +247,36 @@ class ObservationRecorder:
             )
 
         if self._output_dir:
+            # Get original missions for all vehicles
+            missions = dict()
+            orig_missions = self._scenario.discover_missions_of_traffic_histories()
+            for v_id, mission in orig_missions.items():
+                # TODO: get prefixed vehicle_id from TrafficHistoryProvider
+                veh_id = f"history-vehicle-{v_id}"
+                missions[veh_id] = mission
+
             # Save recorded observations as pickle files
             for car, data in collected_data.items():
+                # Fill in mission with proper goal position for all observations
+                last_t = max(data.keys())
+                last_state = data[last_t].ego_vehicle_state
+                goal_pos = Point(last_state.position[0], last_state.position[1])
+                new_mission = replace(
+                    missions[last_state.id], goal=PositionalGoal(goal_pos, radius=3)
+                )
+                for t in data.keys():
+                    ego_state = data[t].ego_vehicle_state
+                    new_ego_state = ego_state._replace(mission=new_mission)
+                    data[t] = replace(data[t], ego_vehicle_state=new_ego_state)
+
+                # Create terminal state for last timestep, when the vehicle reaches the goal
+                events = data[last_t].events
+                new_events = events._replace(reached_goal=True)
+                data[last_t] = replace(data[last_t], events=new_events)
+
                 outfile = os.path.join(
                     self._output_dir,
-                    f"{self._scenario.name}_{self._scenario.traffic_history.name}_{car}.pkl",
+                    f"{car}.pkl",
                 )
                 with open(outfile, "wb") as of:
                     pickle.dump(data, of)
@@ -274,11 +291,13 @@ class ObservationRecorder:
         selected_vehicles,
         max_sim_time,
     ):
+        # Record only within specified time window.
+        t = self._smarts.elapsed_sim_time
         end_time = self._end_time if self._end_time is not None else max_sim_time
-        if not (self._start_time <= self._smarts.elapsed_sim_time <= end_time):
+        if not (self._start_time <= t <= end_time):
             return
 
-        # Attach sensors to each vehicle
+        # Attach sensors to each vehicle.
         valid_vehicles = (current_vehicles - off_road_vehicles) & selected_vehicles
         for veh_id in valid_vehicles:
             try:
@@ -287,53 +306,44 @@ class ObservationRecorder:
                 self._logger.warning(f"{veh_id} out of lane, skipped attaching sensors")
                 off_road_vehicles.add(veh_id)
 
-        # Get observations from each vehicle and record them
+        # Get observations from each vehicle and record them.
         obs = dict()
         obs, _, _, _ = self._smarts.observe_from(list(valid_vehicles))
-        resolutions = {}
-        self._logger.info(
-            f"t={self._smarts.elapsed_sim_time}, active_vehicles={len(valid_vehicles)}"
-        )
+        self._logger.debug(f"t={t}, active_vehicles={len(valid_vehicles)}")
         for id_ in list(obs):
-            if obs[id_].top_down_rgb:
-                resolutions[id_] = obs[id_].top_down_rgb.metadata.resolution
             ego_state = obs[id_].ego_vehicle_state
             if ego_state.lane_index is None:
                 del obs[id_]
-            else:
-                mission = self._missions[ego_state.id]
-                if mission:
-                    # doh! ego_state is immutable!
-                    new_ego_state = ego_state._replace(mission=mission)
-                    obs[id_] = replace(obs[id_], ego_vehicle_state=new_ego_state)
-        # TODO: handle case where neighboring vehicle has lane_index of None too
-        t = self._smarts.elapsed_sim_time
-        for car, car_obs in obs.items():
-            collected_data.setdefault(car, {}).setdefault(t, {})
-            collected_data[car][t] = car_obs
+                continue
 
-        if not self._output_dir:
-            return
-
-        # Write top-down RGB image to a file for each vehicle if we have one
-        for agent_id, agent_obs in obs.items():
-            if agent_obs.top_down_rgb is not None:
-                rgb_data = agent_obs.top_down_rgb.data
-                h, w, _ = rgb_data.shape
+            top_down_rgb = obs[id_].top_down_rgb
+            if top_down_rgb:
+                res = top_down_rgb.metadata.resolution
+                rgb = top_down_rgb.data.copy()
+                h, w, _ = rgb.shape
                 shape = (
                     (
-                        h / 2 - 1.47 / 2 / resolutions[agent_id],
-                        w / 2 - 3.68 / 2 / resolutions[agent_id],
+                        math.floor(w / 2 - 3.68 / 2 / res),
+                        math.ceil(w / 2 + 3.68 / 2 / res),
                     ),
                     (
-                        h / 2 + 1.47 / 2 / resolutions[agent_id],
-                        w / 2 + 3.68 / 2 / resolutions[agent_id],
+                        math.floor(h / 2 - 1.47 / 2 / res),
+                        math.ceil(h / 2 + 1.47 / 2 / res),
                     ),
                 )
-                img = Image.fromarray(rgb_data, "RGB")
-                rect_image = ImageDraw.Draw(img)
-                rect_image.rectangle(shape, fill="red")
-                img.save(os.path.join(self._output_dir, f"{t}_{agent_id}.png"))
+                color = np.array(Colors.Red.value[0:3], ndmin=3) * 255
+                rgb[shape[0][0] : shape[0][1], shape[1][0] : shape[1][1], :] = color
+                top_down_rgb_edited = top_down_rgb._replace(data=rgb)
+                obs[id_] = replace(obs[id_], top_down_rgb=top_down_rgb_edited)
+
+                if self._output_dir:
+                    img = Image.fromarray(rgb, "RGB")
+                    img.save(os.path.join(self._output_dir, f"{t}_{id_}.png"))
+
+        # TODO: handle case where neighboring vehicle has lane_index of None too
+        for car, car_obs in obs.items():
+            collected_data.setdefault(car, {})
+            collected_data[car][t] = car_obs
 
 
 if __name__ == "__main__":

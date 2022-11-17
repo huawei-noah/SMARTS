@@ -17,7 +17,7 @@ env:
 
 jobs:
   base-tests-linux:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.18-minimal
     strategy:
@@ -25,7 +25,6 @@ jobs:
         tests:
           - ./cli
           - ./envision
-          - ./smarts/contrib
           - ./smarts/core --nb-exec-timeout 65536
           - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
           - ./smarts/env/tests/test_rllib_hiway_env.py

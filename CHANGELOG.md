@@ -10,6 +10,17 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+### Deprecated
+### Changed
+### Removed
+- Removed all of PyMarl contents, including related interface adapter, environments, and tests.
+- Removed ray usage example.
+
+### Fixed
+### Security
+
+## [0.7.0rc0]
+### Added
 - Added a basic background traffic ("social vehicle") provider as an alternative to the SUMO traffic simulator.  This can be selected using the new `"engine"` argument to `Traffic` in Scenario Studio.
 - Added a `multi-scenario-v0` environment which can build any of the following scenario, namely, `1_to_2lane_left_turn_c`, `1_to_2lane_left_turn_t`, `3lane_merge_multi_agent`, `3lane_merge_single_agent`, `3lane_cruise_multi_agent`, `3lane_cruise_single_agent`, `3lane_cut_in`, and `3lane_overtake`. Additional scenarios can also be built by supplying the paths to the scenario directories.
 - Added ego's mission details into the `FormatObs` wrapper.
@@ -44,6 +55,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed a bug where `Vehicle.bounding_box` was mirrored over Y causing on shoulder events to fire inappropriately.
 - Fixed an issue where the ego and neighbour vehicle observation was returning `None` for the nearby `lane_id`, `lane_index`, and `road_id`. These now default to constants `off_lane`, `-1`, and `off_road` respectively.
 - Fixed a bug where bubble agents would stick around and to try to get observations even after being disassociated from a vehicle.
+- Fixed a bug with the `TripMeterSensor` that was not using a unit direction vector to calculate trip distance against current route.
+- Fixed issues with Envision. The playback bar and realtime mode now work as expected.
+- Fixed a bug where traffic history vehicles would not get traffic signal observations
+- Fixed a bug where envision would not work in some versions of python due to nuances of `importlib.resource.path()`.
 
 ## [0.6.1]
 ### Added

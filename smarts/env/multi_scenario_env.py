@@ -18,11 +18,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import copy
+import logging
+import math
 import os
 import pathlib
 from typing import Any, Dict, Optional, Tuple
 
 import gym
+import numpy as np
 
 from smarts import sstudio
 from smarts.core.agent_interface import (
@@ -37,6 +41,9 @@ from smarts.core.agent_interface import (
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.hiway_env import HiWayEnv
 from smarts.zoo.agent_spec import AgentSpec
+
+logger = logging.getLogger(__file__)
+logger.setLevel(logging.WARNING)
 
 
 def multi_scenario_v0_env(
@@ -145,6 +152,7 @@ def multi_scenario_v0_env(
         sumo_headless=sumo_headless,
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
+    env = _LimitTargetPose(env=env)
     env = _InfoScore(env=env)
 
     return env
@@ -248,7 +256,7 @@ def _get_env_specs(scenario: str):
         matches_agent = regexp_agent.search(scenario)
         if not matches_agent:
             raise Exception(
-                f"Scenario path should match regexp of 'agent_\d+', but got {scenario}"
+                f"Scenario path should match regexp of 'agents_\d+', but got {scenario}"
             )
         num_agent = regexp_num.search(matches_agent.group(0))
 
@@ -302,6 +310,117 @@ def resolve_agent_interface(
         road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
         waypoints=Waypoints(lookahead=waypoints_lookahead),
     )
+
+
+class _LimitTargetPose(gym.Wrapper):
+    """Uses previous observation to limit the next TargetPose action range."""
+
+    def __init__(self, env: gym.Env):
+        """
+        Args:
+            env (gym.Env): Environment to be wrapped.
+        """
+        super().__init__(env)
+        self._prev_obs: Dict[str, Dict[str, Any]]
+
+    def step(
+        self, action: Dict[str, np.ndarray]
+    ) -> Tuple[
+        Dict[str, Any],
+        Dict[str, float],
+        Dict[str, bool],
+        Dict[str, Dict[str, Any]],
+    ]:
+        """Steps the environment.
+
+        Args:
+            action (Dict[str, Any]): Action for each agent.
+
+        Returns:
+            Tuple[ Dict[str, Any], Dict[str, float], Dict[str, bool], Dict[str, Dict[str, Any]] ]:
+                Observation, reward, done, and info, for each agent is returned.
+        """
+
+        limited_actions: Dict[str, np.ndarray] = {}
+        for agent_name, agent_action in action.items():
+            limited_actions[agent_name] = self._limit(
+                name=agent_name,
+                action=agent_action,
+                prev_coord=self._prev_obs[agent_name]["pos"],
+            )
+
+        out = self.env.step(limited_actions)
+        self._prev_obs = self._store(obs=out[0])
+        return out
+
+    def reset(self, **kwargs) -> Dict[str, Any]:
+        """Resets the environment.
+
+        Returns:
+            Dict[str, Any]: A dictionary of observation for each agent.
+        """
+        obs = self.env.reset(**kwargs)
+        self._prev_obs = self._store(obs=obs)
+        return obs
+
+    def _store(self, obs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+        filtered_obs: Dict[str, Dict[str, Any]] = {}
+        for agent_name, agent_obs in obs.items():
+            filtered_obs[agent_name] = {
+                "pos": copy.deepcopy(agent_obs.ego_vehicle_state.position[:2])
+            }
+        return filtered_obs
+
+    def _limit(
+        self, name: str, action: np.ndarray, prev_coord: np.ndarray
+    ) -> np.ndarray:
+        """Set time delta and limit Euclidean distance travelled in TargetPose action space.
+
+        Args:
+            name (str): Agent's name.
+            action (np.ndarray): Agent's action.
+            prev_coord (np.ndarray): Agent's previous xy coordinate on the map.
+
+        Returns:
+            np.ndarray: Agent's TargetPose action which has fixed time-delta and constrained next xy coordinate.
+        """
+
+        time_delta = 0.1
+        limited_action = np.array(
+            [action[0], action[1], action[2], time_delta], dtype=np.float32
+        )
+        speed_max = 28  # 28m/s = 100.8 km/h. Maximum speed should be >0.
+        dist_max = speed_max * time_delta
+
+        # Set time-delta
+        if not math.isclose(action[3], time_delta, abs_tol=1e-3):
+            logger.warning(
+                "%s: Expected time-delta=%s, but got time-delta=%s. "
+                "Action time-delta automatically changed to %s.",
+                name,
+                time_delta,
+                action[3],
+                time_delta,
+            )
+
+        # Limit Euclidean distance travelled
+        next_coord = action[:2]
+        vector = next_coord - prev_coord
+        dist = np.linalg.norm(vector)
+        if dist > dist_max:
+            unit_vector = vector / dist
+            limited_action[0], limited_action[1] = prev_coord + dist_max * unit_vector
+            logger.warning(
+                "%s: Allowed max speed=%s, but got speed=%s. Next x-coordinate "
+                "and y-coordinate automatically changed from %s to %s.",
+                name,
+                speed_max,
+                dist / time_delta,
+                next_coord,
+                limited_action[:2],
+            )
+
+        return limited_action
 
 
 class _InfoScore(gym.Wrapper):

@@ -63,7 +63,6 @@ for _ in range(1000):
     + [CLI Usage](#CLI-Usage)
     + [CLI Examples](#CLI-Examples)
 1. [Visualizing Observations](#Visualizing-Observations)
-1. [PyMARL and MALib](#PyMARL-and-MALib)
 1. [Containers](#Containers)
     + [Docker](#Docker)
     + [Singularity](#Singularity)
@@ -209,39 +208,6 @@ Below is a sample visualization of an agent's camera sensor observations.
 <img src="docs/_static/visdom.gif" ><br/>
 (Left) Drivable area grid map. (Center) Occupancy grid map. (Right) Top-down RGB image.
 </p>
-
-# PyMARL and MALib
-Run SMARTS with [PyMARL](https://github.com/oxwhirl/pymarl).
-```bash
-git clone git@github.com:ying-wen/pymarl.git
-
-ln -s your-project/scenarios ./pymarl/scenarios
-
-cd pymarl
-
-# Setup virtual environment.
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-python src/main.py --config=qmix --env-config=smarts
-```
-
-Run SMARTS with [MALib](https://github.com/ying-wen/malib). 
-```bash
-git clone git@github.com:ying-wen/malib.git
-
-ln -s your-project/scenarios ./malib/scenarios
-
-cd malib
-
-# Setup virtual environment.
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-python examples/run_smarts.py --algo SAC --scenario ./scenarios/sumo/loop --n_agents 5
-```
 
 # Containers
 ### Docker

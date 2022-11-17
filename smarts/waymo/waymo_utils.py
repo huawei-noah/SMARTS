@@ -24,10 +24,15 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.lines import Line2D
-from waymo_open_dataset.protos import scenario_pb2
 
 from smarts.core.utils.file import read_tfrecord_file
-from smarts.core.waymo_map import WaymoMap
+
+
+class WaymoDatasetError(Exception):
+    """Represents an error related to the data in a Waymo dataset scenario."""
+
+    pass
+
 
 MAP_HANDLES = [
     Line2D([0], [0], linestyle=":", color="gray", label="Lane Polyline"),
@@ -178,7 +183,7 @@ def _plot_map_features(map_features: Dict):
         )
 
 
-def _get_map_features(scenario: scenario_pb2.Scenario) -> Dict[str, List]:
+def _get_map_features(scenario) -> Dict[str, List]:
     map_features = defaultdict(lambda: [])
     for i in range(len(scenario.map_features)):
         map_feature = scenario.map_features[i]
@@ -188,9 +193,7 @@ def _get_map_features(scenario: scenario_pb2.Scenario) -> Dict[str, List]:
     return map_features
 
 
-def _get_trajectories(
-    scenario: scenario_pb2.Scenario,
-) -> Dict[int, Dict[str, Any]]:
+def _get_trajectories(scenario) -> Dict[int, Dict[str, Any]]:
     num_steps = len(scenario.timestamps_seconds)
     trajectories = defaultdict(lambda: {"positions": [None] * num_steps})
     for i in range(len(scenario.tracks)):
@@ -263,6 +266,8 @@ def _plot_trajectories(
 
 def get_tfrecord_info(tfrecord_file: str) -> Dict[str, Dict[str, Any]]:
     """Extract info about each scenario in the TFRecord file."""
+    from waymo_open_dataset.protos import scenario_pb2
+
     scenarios = dict()
     records = read_tfrecord_file(tfrecord_file)
     for record in records:
@@ -293,6 +298,8 @@ def plot_scenario(
 ):
     """Plot the map features of a Waymo scenario,
     and optionally plot/animate the vehicle trajectories."""
+    from smarts.core.waymo_map import WaymoMap
+
     source = f"{tfrecord_file}#{scenario_id}"
     scenario = WaymoMap.parse_source_to_scenario(source)
 
