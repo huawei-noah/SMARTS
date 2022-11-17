@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+import cpuinfo
 import matplotlib.pyplot as plt
 from mdutils.mdutils import MdUtils
 import subprocess
@@ -16,6 +17,7 @@ from typing import Tuple, NamedTuple
 from pathlib import Path
 from smarts.core.utils.episodes import EpisodeLog
 from datetime import datetime
+import platform, psutil
 
 logging.basicConfig(level=logging.INFO)
 
@@ -113,6 +115,7 @@ class BenchmarkOutput(NamedTuple):
     num_episodes: int
     std: float
 
+
 os.makedirs(f"{smarts.__path__[0]}/benchmark/benchmark_results", exist_ok=True)
 # Write report in .md format
 def write_report(results):
@@ -124,6 +127,10 @@ def write_report(results):
     mdFile.write(f"Date & Time: {now.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
     mdFile.write(f"Branch: {Repository('.').head.shorthand}\n\n")
     mdFile.write(f"Commit: {get_git_revision_short_hash()}\n\n")
+    mdFile.write(f"OS Version: {platform.platform()}\n\n")
+    mdFile.write(
+        f"Processor & RAM: {cpuinfo.get_cpu_info()['brand_raw']} x {cpuinfo.get_cpu_info()['count']} & {str(round(psutil.virtual_memory().total / (1024.0 **3)))+' GB'}"
+    )
     mdFile.new_header(level=2, title="Intention", add_table_of_contents="n")
     mdFile.write("- Track the performance of SMARTS simulation for each version\n")
     mdFile.write("- Test the effects of performance improvements/optimizations\n")
@@ -137,10 +144,10 @@ def write_report(results):
         "    - 10 agent to n roads: 1, 10, 20, 50\n"
     )
     mdFile.new_header(level=2, title="Result", add_table_of_contents="n")
-    scenario_list = ', '.join(str(s) for s in list(results.keys()))
+    scenario_list = ", ".join(str(s) for s in list(results.keys()))
     mdFile.new_paragraph(
         "The setup of this report is the following:\n"
-        f"- Scenario(s): {scenario_list}\n" 
+        f"- Scenario(s): {scenario_list}\n"
         f"- Total time steps: {list(results.values())[0].max_episode_steps}\n"
         f"- Number of episodes: {list(results.values())[0].num_episodes}"
     )
@@ -149,35 +156,31 @@ def write_report(results):
     # Write a table
     content = ["Scenario(s)", "Mean", "Std"]
     # Write rows
-    for scenario_path,data in results.items():
+    for scenario_path, data in results.items():
         scenarios_list.append(scenario_path)
         means_list.append(data.ave_time)
-        content.extend(
-            [
-                f"{scenario_path}",
-                f"{data.ave_time}",  
-                f"{data.std}"
-                ]
-        )
+        content.extend([f"{scenario_path}", f"{data.ave_time}", f"{data.std}"])
     mdFile.new_line()
-    mdFile.new_table(columns=3, rows=len(list(results.keys()))+1, text=content)
+    mdFile.new_table(columns=3, rows=len(list(results.keys())) + 1, text=content)
     # Draw a graph
     print(scenarios_list)
     df = pd.DataFrame(
         {
             "means": means_list,
         },
-        index=scenarios_list
+        index=scenarios_list,
     )
     print(df)
-    graph = df.plot(kind="line", use_index=True, y="means",legend=False,marker='.')
-    graph.get_figure().savefig(f"{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}")
+    graph = df.plot(kind="line", use_index=True, y="means", legend=False, marker=".")
+    graph.get_figure().savefig(
+        f"{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}"
+    )
     mdFile.new_paragraph(
         "<figure>"
         f"\n<img src='{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}.png' alt='line chart' style='width:500px;'/>"
         "\n<figcaption align = 'center'> Figure 1 </figcaption>"
         "\n</figure>"
-        )
+    )
     mdFile.create_md_file()
     return report_file_name
 
