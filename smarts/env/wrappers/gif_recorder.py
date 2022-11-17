@@ -19,19 +19,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
 import sys
-import typing
+import logging
 import gym
 import numpy as np
 
 try:
     from moviepy.editor import ImageClip, ImageSequenceClip
 except (ImportError, ModuleNotFoundError):
-    print(sys.exc_info())
-    print(
-        "You may not have installed the [gym] dependencies required to capture the video. Install them first using the command `pip install -e .[gym]` at the source directory."
+    logging.warning(sys.exc_info())
+    logging.warning(
+        "You may not have installed the [gym] dependencies required to capture the video. Install them first with the `smarts[gym]` extras."
     )
+
+    raise
+
 import shutil
 import time
 from pathlib import Path
