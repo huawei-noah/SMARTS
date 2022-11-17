@@ -1,4 +1,6 @@
 import logging
+import pandas as pd
+import matplotlib.pyplot as plt
 from mdutils.mdutils import MdUtils
 import subprocess
 import os
@@ -142,22 +144,35 @@ def write_report(results):
         f"- Total time steps: {list(results.values())[0].max_episode_steps}\n"
         f"- Number of episodes: {list(results.values())[0].num_episodes}"
     )
+    scenarios_list = []
+    means_list = []
     # Write a table
-    # content = ["Scenario(s)", "Mean", "Std"]
+    content = ["Scenario(s)", "Mean", "Std"]
     # Write rows
-    # for i in range(len(results.keys())):
-    # # print(list(results.keys()))
-    #     content.extend(
-    #         [
-    #             "1",
-    #             # f"{list(results.keys())[i]}",
-    #             f"{round(list(results.values())[0].ave_time,1)}", 
-    #             f"{round(list(results.values())[0].std,2)}"
-    #             ]
-    #     )
-    # mdFile.new_line()
-    # mdFile.new_table(columns=3, rows=range(len(results.keys())), text=content)
-    # print(list(results.keys())[0].split("/", 1)[0])
+    for scenario_path,data in results.items():
+        scenarios_list.append(scenario_path)
+        means_list.append(data.ave_time)
+        content.extend(
+            [
+                f"{scenario_path}",
+                f"{data.ave_time}",  
+                f"{data.std}"
+                ]
+        )
+    mdFile.new_line()
+    mdFile.new_table(columns=3, rows=len(list(results.keys()))+1, text=content)
+    # Draw a graph
+    print(scenarios_list)
+    df = pd.DataFrame(
+        {
+            "means": means_list,
+        },
+        index=scenarios_list
+    )
+    print(df)
+    graph = df.plot(kind="line", use_index=True, y="means",legend=False,marker='.')
+    graph.get_figure().savefig(f"{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}")
+    mdFile.write(f"\n<img src='{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}.png' alt='line chart' style='width:500px;'/>")
     mdFile.create_md_file()
     return report_file_name
 
