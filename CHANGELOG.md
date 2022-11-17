@@ -10,6 +10,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Exposed `.glb` file metadata through the scenario `Scenario.map_glb_metadata` attribute.
 ### Deprecated
 ### Changed
 ### Removed
