@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import time
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Optional, Union
@@ -54,7 +55,7 @@ class EpisodeLogs:
             f"{e.sim2wall_ratio:.2f}",
             e.steps,
             f"{e.steps_per_second:.2f}",
-            e.scenario_map[: self._col_width],
+            os.path.basename(e.scenario_map)[: self._col_width],
             e.scenario_traffic[: self._col_width],
             e.mission_hash[: self._col_width],
         )
