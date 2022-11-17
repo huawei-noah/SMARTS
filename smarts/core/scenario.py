@@ -854,7 +854,7 @@ class Scenario:
     @property
     def name(self) -> str:
         """The name of the scenario."""
-        return os.path.basename(os.path.normpath(self._root))
+        return os.path.normpath(self._root)
 
     @property
     def root_filepath(self) -> str:
