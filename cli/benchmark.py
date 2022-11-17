@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import click
+
 from smarts.benchmark import run as _run
 
 
@@ -29,9 +30,11 @@ from smarts.benchmark import run as _run
 def benchmark_cli():
     pass
 
+
 @click.command("run", help="Run all benchmarks.")
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
 def run(scenarios):
     _run.main(scenarios)
+
 
 benchmark_cli.add_command(run)

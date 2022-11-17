@@ -117,9 +117,7 @@ def _is_scenario_folder_to_build(path: str) -> bool:
     help="Set the base seed of the scenarios.",
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def build_all(
-    clean: bool, allow_offset_maps: bool, scenarios: List[str], seed: int
-):
+def build_all(clean: bool, allow_offset_maps: bool, scenarios: List[str], seed: int):
     build_scenarios(clean, allow_offset_maps, scenarios, seed)
 
 

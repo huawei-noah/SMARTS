@@ -18,8 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import time
 import os
+import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Optional, Union

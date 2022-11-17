@@ -47,7 +47,7 @@ def timeit(name: str, log, funcs=None):
     else:
         log(f"{name} took: {elapsed_time:4f}ms")
 
-        
+
 def isnotebook():
     """Determines if executing in ipython (Jupyter Notebook)"""
     try:
