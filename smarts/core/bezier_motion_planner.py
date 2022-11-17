@@ -19,15 +19,14 @@
 # THE SOFTWARE.
 import numpy as np
 
-from .utils.math import vec_to_radians
-
 
 class BezierMotionPlanner:
     """A bezier trajectory builder."""
 
-    def __init__(self, extend=0.9, extend_bias=0.5):
+    def __init__(self, extend=0.9, extend_bias=0.5, speed_calculation_resolution=5):
         self._extend = extend
         self._extend_bias = extend_bias
+        self._speed_calculation_resolution = speed_calculation_resolution
 
     def trajectory(self, current_pose, target_pose_at_t, n, dt):
         """Generate a bezier trajectory to a target pose."""
@@ -67,6 +66,9 @@ class BezierMotionPlanner:
             * self._extend
         )
 
+        # FIXME: speed control still needed for values of t != dt !!!
+        #  Reason being that the tangents (therefore speed) along a bezier curve will vary.
+        real_times = target_poses_at_t[:, 3:4].repeat(n, axis=0).clip(dt, None)
         p0s = current_poses[:, :2].repeat(n, axis=0)
         p1s = (
             current_poses[:, :2] + current_dir_vecs * extension * self._extend_bias
@@ -78,7 +80,7 @@ class BezierMotionPlanner:
         p3s = target_poses_at_t[:, :2].repeat(n, axis=0)
         dts = (np.array(range(1, n + 1)) * dt).reshape(-1, 1).repeat(
             len(current_poses), axis=1
-        ).T.reshape(-1, 1) / target_poses_at_t[:, 3:4].repeat(n, axis=0).clip(dt, None)
+        ).T.reshape(-1, 1) / real_times
 
         def linear_bezier(t, p0, p1):
             return (1 - t) * p0 + t * p1
@@ -91,16 +93,37 @@ class BezierMotionPlanner:
                 t, quadratic_bezier(t, p0, p1, p2), quadratic_bezier(t, p1, p2, p3)
             )
 
-        def cubic_bezier_derivative(t, p0, p1, p2, p3):
-            return (
-                3 * (1 - t) ** 2 * (p1 - p0)
-                + 6 * (1 - t) * t * (p2 - p1)
-                + 3 * t**2 * (p3 - p2)
-            )
+        def curve_lengths(subsections, t, p0, p1, p2, p3):
+            # TAI: subsections could be scaled by time, magnitude between p0 and p3,
+            # and directional difference between p1 and p2
+            lengths = []
+            inverse_subsection = 1 / subsections
+            for (ti, p0i, p1i, p2i, p3i) in zip(t, p0, p1, p2, p3):
+                # get s subsection points in [p(0):p(t)]
+                tss = [ts * inverse_subsection * ti for ts in range(subsections + 1)]
+                points = [cubic_bezier(ts, p0i, p1i, p2i, p3i) for ts in tss]
+                subsection_length_total = 0
+                # accumulate position deltas [s[t+1] - s[t]]
+                for (ps, ps1) in zip(points[:-1], points[1:]):
+                    # convert deltas to magnitudes
+                    delta_dist = ps1 - ps
+                    # add magnitudes
+                    subsection_length = np.linalg.norm(delta_dist)
+                    # add to lengths
+                    subsection_length_total += subsection_length
+                lengths.append(subsection_length_total)
+            return np.array(lengths)
+
+        def length_to_speed(t, length):
+            speeds = [l / t if t > 0 else -1 for (t, l) in zip(t, length)]
+            return np.array(speeds)
 
         positions = cubic_bezier(dts, p0s, p1s, p2s, p3s)
-        tangents = cubic_bezier_derivative(dts, p0s, p1s, p2s, p3s)
-        speeds = np.linalg.norm(tangents, axis=1)
+        # TODO: this could be optimized to use the positions already generated
+        lengths = curve_lengths(
+            self._speed_calculation_resolution, dts, p0s, p1s, p2s, p3s
+        )
+        speeds = length_to_speed(real_times.reshape(n), lengths)
 
         # angle interp. equations come from:
         # https://stackoverflow.com/questions/2708476/rotation-interpolation#14498790

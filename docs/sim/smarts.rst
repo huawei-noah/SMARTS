@@ -1,7 +1,7 @@
 .. _smarts:
 
 SMARTS Simulator
-===============
+================
 
 The SMARTS class can be instantiated in the following way:
 

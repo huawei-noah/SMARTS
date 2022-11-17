@@ -23,7 +23,7 @@ import logging
 import math
 import random
 import time
-from collections import deque
+from collections import defaultdict, deque
 from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -37,13 +37,21 @@ from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 from trimesh.exchange import gltf
 from waymo_open_dataset.protos import scenario_pb2
-from waymo_open_dataset.protos.map_pb2 import LaneCenter, RoadLine
+from waymo_open_dataset.protos.map_pb2 import (
+    Crosswalk,
+    LaneCenter,
+    RoadLine,
+    SpeedBump,
+    StopSign,
+)
 
 from smarts.sstudio.types import MapSpec
+from smarts.waymo.waymo_utils import WaymoDatasetError
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, RoadMapWithCaches, Waypoint
+from .route_cache import RouteWithCache
 from .utils.file import read_tfrecord_file
 from .utils.geometry import buffered_shape, generate_mesh_from_polygons
 from .utils.math import (
@@ -107,6 +115,7 @@ class WaymoMap(RoadMapWithCaches):
         self._surfaces: Dict[str, WaymoMap.Surface] = dict()
         self._lanes: Dict[str, WaymoMap.Lane] = dict()
         self._roads: Dict[str, WaymoMap.Road] = dict()
+        self._features: Dict[str, WaymoMap.Feature] = dict()
         self._waymo_features: Dict[int, Any] = dict()
         self._default_lane_width = WaymoMap.DEFAULT_LANE_WIDTH
         self._lane_rtree = None
@@ -240,101 +249,115 @@ class WaymoMap(RoadMapWithCaches):
 
         return left_widths, right_widths
 
-    def _compute_lane_intersections(self) -> Dict[int, Set[int]]:
-        all_lane_ids = [feat_id for feat_id in self._feat_dicts.keys()]
-        intersections: Dict[int, Set[int]] = dict()
+    def _compute_lane_intersections(self, composites: bool):
+        intersections: Dict[str, Set[str]] = dict()
 
-        # Set up the intersections dict
-        for feat_id in all_lane_ids:
-            intersections[feat_id] = set()
+        lane_ids_todo = [
+            lane_id
+            for lane_id, lane in self._lanes.items()
+            if lane.is_composite == composites
+        ]
 
         # Build rtree
         lane_rtree = rtree.index.Index()
         lane_rtree.interleaved = True
         bboxes = dict()
-        for idx, feat_id in enumerate(all_lane_ids):
-            lane_pts = self._polyline_cache[feat_id][0]
+        for idx, lane_id in enumerate(lane_ids_todo):
+            lane_pts = self._lanes[lane_id]._lane_pts
             bbox = (
                 np.amin(lane_pts[:, 0]),
                 np.amin(lane_pts[:, 1]),
                 np.amax(lane_pts[:, 0]),
                 np.amax(lane_pts[:, 1]),
             )
-            bboxes[feat_id] = bbox
+            bboxes[lane_id] = bbox
             lane_rtree.add(idx, bbox)
 
-        # Loop over every lane in the map
-        for feat_id in all_lane_ids:
+        for lane_id in lane_ids_todo:
+            lane = self._lanes[lane_id]
+            lane_intersections = intersections.setdefault(lane_id, set())
+
             # Filter out any lanes that don't intersect this lane's bbox
-            bbox = bboxes[feat_id]
-            indicies = lane_rtree.intersection(bbox)
+            indicies = lane_rtree.intersection(bboxes[lane_id])
 
             # Filter out any other lanes we don't want to check against
             lanes_to_test = []
             for idx in indicies:
-                cand_id = all_lane_ids[idx]
-
+                cand_id = lane_ids_todo[idx]
+                if cand_id == lane_id:
+                    continue
                 # Skip intersections we've already computed
-                if cand_id in intersections[feat_id]:
+                if cand_id in lane_intersections:
                     continue
-
-                # Don't check intersection with incoming/outgoing lanes or itself
-                features = self._feat_dicts[feat_id]
-                in_ids = [l for l in features["entry_lanes"]]
-                out_ids = [l for l in features["exit_lanes"]]
-                if cand_id in in_ids + out_ids + [feat_id]:
+                # ... and sub-lanes of the same original lane
+                cand_lane = self._lanes[cand_id]
+                if lane._feature_id == cand_lane._feature_id:
                     continue
-
+                # Don't check intersection with incoming/outgoing lanes
+                if cand_id in lane.incoming_lanes or cand_id in lane.outgoing_lanes:
+                    continue
+                # ... or lanes in same road (TAI?)
+                if lane.road == cand_lane.road:
+                    continue
                 lanes_to_test.append(cand_id)
+            if not lanes_to_test:
+                continue
 
             # Main loop -- check each segment of the lane polyline against the
-            # polyline of each candidate lane
-            line1 = self._polyline_cache[feat_id][0]
+            # polyline of each candidate lane (--> algorithm is O(l^2)
+            line1 = lane._lane_pts
             for cand_id in lanes_to_test:
-                line2 = self._polyline_cache[cand_id][0]
+                line2 = np.array(self._lanes[cand_id]._lane_pts)
                 C = np.roll(line2, 0, axis=0)[:-1]
                 D = np.roll(line2, -1, axis=0)[:-1]
                 for i in range(len(line1) - 1):
                     a = line1[i]
                     b = line1[i + 1]
                     if line_intersect_vectorized(a, b, C, D):
-                        intersections[feat_id].add(cand_id)
-                        intersections[cand_id].add(feat_id)
+                        lane_intersections.add(cand_id)
+                        intersections.setdefault(cand_id, set()).add(lane_id)
                         break
 
         # Remove lanes that aren't true intersections
         mappings_to_remove = []
-        for feat_id, intersect_ids in intersections.items():
-            lane_pts = self._polyline_cache[feat_id][0]
+        for lane_id, intersect_ids in intersections.items():
+            lane_pts = self._lanes[lane_id]._lane_pts
             z_avg = np.average(lane_pts[:, 2])
             for intersect_id in intersect_ids:
-                intersect_lane_pts = self._polyline_cache[intersect_id][0]
+                intersect_lane_pts = self._lanes[intersect_id]._lane_pts
                 intlane_z_avg = np.average(intersect_lane_pts[:, 2])
 
                 # Remove "overpasses" that have large z-coordinate differences
                 if abs(z_avg - intlane_z_avg) > WaymoMap.OVERPASS_THRESHOLD:
                     self._has_overpasses = True
-                    mappings_to_remove.append((feat_id, intersect_id))
+                    mappings_to_remove.append((lane_id, intersect_id))
                     continue  # already removing this pair, so skip next check
 
                 # Remove "fake" incoming/outgoing lanes that intersect by their end points
                 if np.all(np.equal(lane_pts[0], intersect_lane_pts[-1])) or np.all(
                     np.equal(lane_pts[-1], intersect_lane_pts[0])
                 ):
-                    mappings_to_remove.append((feat_id, intersect_id))
+                    mappings_to_remove.append((lane_id, intersect_id))
 
         # Can't do this while iterating over the sets, so do as separate step
         for id1, id2 in mappings_to_remove:
             intersections[id1].discard(id2)
             intersections[id2].discard(id1)
 
-        return intersections
+        for lane_id, intersect_ids in intersections.items():
+            self._lanes[lane_id]._intersections = intersect_ids
 
     @dataclass
     class _Split:
         feat_id: int
         index: int
         structural: bool
+
+        def __hash__(self) -> int:
+            return hash(self.feat_id) ^ hash(self.index) ^ hash(self.structural)
+
+        def __eq__(self, other) -> bool:
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
 
     @dataclass
     class _LinkedSplit:
@@ -344,6 +367,12 @@ class WaymoMap(RoadMapWithCaches):
         next_split: Optional["WaymoMap._LinkedSplit"] = None
         prev_split: Optional["WaymoMap._LinkedSplit"] = None
         used: bool = False
+
+        def __hash__(self) -> int:
+            return hash(self.split)
+
+        def __eq__(self, other) -> bool:
+            return self.__class__ == other.__class__ and hash(self) == hash(other)
 
     class _SDict(Dict[int, _LinkedSplit]):
         @cached_property
@@ -498,8 +527,12 @@ class WaymoMap(RoadMapWithCaches):
                 prev_linked_split = linked_split
 
     @staticmethod
+    def _map_pt_to_point(map_point) -> Point:
+        return Point(map_point.x, map_point.y, map_point.z)
+
+    @staticmethod
     def _polyline_dists(polyline) -> Tuple[np.ndarray, np.ndarray]:
-        lane_pts = np.array([[p.x, p.y, p.z] for p in polyline])
+        lane_pts = np.array([WaymoMap._map_pt_to_point(p) for p in polyline])
 
         class _Accum:
             def __init__(self):
@@ -547,11 +580,22 @@ class WaymoMap(RoadMapWithCaches):
                 WaymoMap._lane_id(feat_id, linked_split.prev_split.split.index)
             ]
         else:
-            # XXX: there ought to be a better way than this!
-            lane_dict["incoming_lane_ids"] = [
-                WaymoMap._lane_id(el, feat_splits[el].sorted_keys[-2])
-                for el in feat_dict["entry_lanes"]
-            ]
+            # XXX: there ought to be a better way than this!!
+            incoming = []
+            for el in feat_dict["entry_lanes"]:
+                entry_max = len(self._polyline_cache[el][0]) - 1
+                for i in reversed(feat_splits[el].sorted_keys):
+                    if i < entry_max:
+                        break
+                else:
+                    if entry_max == 0:
+                        self._log.warning(
+                            f"ignoring 'entry_lane' feature={el} for feature={feat_id} as it only has a single point in its polyline."
+                        )
+                        continue
+                    i = 0
+                incoming.append(WaymoMap._lane_id(el, i))
+            lane_dict["incoming_lane_ids"] = incoming
         if next_split_pt < len(orig_polyline) - 1:
             lane_dict["outgoing_lane_ids"] = [WaymoMap._lane_id(feat_id, next_split_pt)]
         else:
@@ -560,6 +604,7 @@ class WaymoMap(RoadMapWithCaches):
             ]
         lane_dict["lane_to_left_info"] = linked_split.left_splits
         lane_dict["lane_to_right_info"] = linked_split.right_splits
+
         lane_id = WaymoMap._lane_id(feat_id, linked_split.split.index)
         lane = WaymoMap.Lane(self, lane_id, lane_dict)
         self._lanes[lane_id] = lane
@@ -572,9 +617,11 @@ class WaymoMap(RoadMapWithCaches):
         linked_split: _LinkedSplit,
         lanes: List["WaymoMap.Lane"],
         feat_splits: _FeatureSplits,
+        seen: Set[_LinkedSplit],
     ) -> Tuple[bool, bool]:
         structural_split = linked_split.split.structural
         # if there's more than one lane adjacent to this at the same point, it's in a junction
+        seen.add(linked_split)
         in_junction = (
             len(linked_split.right_splits) > 1 or len(linked_split.left_splits) > 1
         )
@@ -585,10 +632,11 @@ class WaymoMap(RoadMapWithCaches):
                 not rt_lsplit.next_split
                 or rt_lsplit.split.index >= rfeat.sorted_keys[-1] - 1
                 or rt_lsplit.used
+                or rt_lsplit in seen
             ):
                 continue
             rt_structural, rt_in_junction = self._add_right_lanes(
-                rt_lsplit, lanes, feat_splits
+                rt_lsplit, lanes, feat_splits, seen
             )
             in_junction = in_junction or rt_in_junction
             structural_split = structural_split or rt_structural
@@ -709,12 +757,16 @@ class WaymoMap(RoadMapWithCaches):
                     and linked_split.split.index < linked_split.next_split.split.index
                 )
                 if linked_split.split.index >= last_valid:
+                    # XXX:  disallows 1-point polyline lanes, which do exist in about 15% of scenarios.
+                    # To allow these requires changes that will cascade though.
+                    # Practically this means that incoming_lanes ids will sometimes not be found.
                     continue
                 if linked_split.used:
                     continue
                 road_lanes = []
+                seen = set()
                 rt_structural, rt_junction = self._add_right_lanes(
-                    linked_split, road_lanes, feat_splits
+                    linked_split, road_lanes, feat_splits, seen
                 )
                 lft_structural, lft_junction = self._add_left_lanes(
                     linked_split, road_lanes, feat_splits
@@ -770,6 +822,11 @@ class WaymoMap(RoadMapWithCaches):
             self._polyline_cache[feat_id] = WaymoMap._polyline_dists(map_feats.polyline)
             self._feat_dicts[feat_id] = self._waymo_pb_to_dict(map_feats)
 
+            if len(self._polyline_cache[feat_id][0]) < 2:
+                raise WaymoDatasetError(
+                    f"[{self._waymo_scenario_id}] Feature {feat_id} only has a single point in its polyline, which is not currently supported by SMARTS."
+                )
+
         # use original lane polylines for geometry
         for feat_id, lane_dict in self._feat_dicts.items():
             lane_dict["_normals"] = self._calculate_normals(feat_id)
@@ -782,18 +839,62 @@ class WaymoMap(RoadMapWithCaches):
             max_width = min(max_width, WaymoMap.DEFAULT_LANE_WIDTH / 2)
             lane_dict["lane_width"] = max_width * 2
 
-        # find intersecting lanes
-        self._intersections = self._compute_lane_intersections()
-
         feat_splits = self._find_splits()
         self._link_splits(feat_splits)
         self._create_roads_and_lanes(feat_splits)
 
-        # possible heuristic:  for each feat_id, if first and last lane are in junction, then all lanes in b/w are
-
         # don't need these anymore
         self._polyline_cache = None
         self._feat_dicts = None
+
+        # find intersecting lanes
+        self._compute_lane_intersections(composites=False)
+        self._compute_lane_intersections(composites=True)
+
+        # associate map features with surfaces
+        for feat_id, map_feat_pb in self._waymo_features.items():
+            if not isinstance(map_feat_pb, (StopSign, Crosswalk, SpeedBump)):
+                continue
+            feature_id = f"feature_{feat_id}"
+            feature = WaymoMap.Feature(self, feature_id, map_feat_pb)
+            self._features[feature_id] = feature
+            if feature.type == RoadMap.FeatureType.STOP_SIGN:
+                pos = self._map_pt_to_point(map_feat_pb.position)
+                for lane, _ in self.nearest_lanes(pos):
+                    if lane._feature_id in map_feat_pb.lane:
+                        lane._features[feature_id] = feature
+            else:
+                # TODO:  use self.nearest_surface() (NYI) to find nearest
+                # surfaces (lanes, roads, etc.) and add crosswalks and speed bumps
+                # to their features.
+                pass
+        # also associate *fixed-location* traffic signals with lanes here
+        # but handle the dynamic signals and states themselves elsewhere...
+        lane_signals = {
+            (ls.lane, self._map_pt_to_point(ls.stop_point))
+            for ds in waymo_scenario.dynamic_map_states
+            for ls in ds.lane_states
+        }
+        # remove non-fixed-location signals...
+        static_lane_signals = dict()
+        non_fixed = set()
+        for lane_signal, stop_point in lane_signals:
+            sp = static_lane_signals.setdefault(lane_signal, stop_point)
+            if sp.x != stop_point.x and sp.y != stop_point.y:
+                non_fixed.add(lane_signal)
+        static_lane_signals = dict(
+            filter(lambda item: item[0] not in non_fixed, static_lane_signals.items())
+        )
+        lane_sig_count = defaultdict(int)
+        for lane_signal, stop_point in static_lane_signals.items():
+            sp = self._map_pt_to_point(stop_point)
+            for lane, _ in self.nearest_lanes(sp):
+                if lane._feature_id == lane_signal:
+                    lane_sig_count[lane_signal] += 1
+                    feature_id = f"signal_{lane_signal}_{lane_sig_count[lane_signal]}"
+                    feature = WaymoMap.Feature(self, feature_id, (stop_point, lane))
+                    self._features[feature_id] = feature
+                    lane._features[feature_id] = feature
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
@@ -843,6 +944,10 @@ class WaymoMap(RoadMapWithCaches):
     @property
     def has_overpasses(self) -> bool:
         return self._has_overpasses
+
+    @property
+    def dynamic_features(self) -> List[RoadMap.Feature]:
+        return [f for f in self._features.values() if f.is_dynamic]
 
     @staticmethod
     def _spec_lane_width(map_spec: MapSpec) -> float:
@@ -930,8 +1035,7 @@ class WaymoMap(RoadMapWithCaches):
                     left_border_vertices_len = int((len(lane._lane_polygon) - 1) / 2)
                     left_side = lane._lane_polygon[:left_border_vertices_len]
                     lane_to_left, _ = lane.lane_to_left
-                    if lane.index != len(road.lanes) - 1:
-                        assert lane_to_left
+                    if lane.index != len(road.lanes) - 1 and lane_to_left is not None:
                         if lane.is_drivable and lane_to_left.is_drivable:
                             lane_dividers.append(left_side)
 
@@ -943,6 +1047,7 @@ class WaymoMap(RoadMapWithCaches):
         def __init__(self, surface_id: str, road_map):
             self._surface_id = surface_id
             self._map = road_map
+            self._features: Dict[str, RoadMapWithCaches.Feature] = dict()
 
         @property
         def surface_id(self) -> str:
@@ -952,6 +1057,18 @@ class WaymoMap(RoadMapWithCaches):
         def is_drivable(self) -> bool:
             # XXX: this may be over-riden below
             return True
+
+        @property
+        def features(self) -> List[RoadMap.Feature]:
+            return list(self._features.values())
+
+        def features_near(self, pose: Pose, radius: float) -> List[RoadMap.Feature]:
+            pt = pose.point
+            return [
+                feat
+                for feat in self._features.values()
+                if radius >= feat.min_dist_from(pt)
+            ]
 
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
         return self._surfaces.get(surface_id)
@@ -965,7 +1082,7 @@ class WaymoMap(RoadMapWithCaches):
             self._road = None  # set when lane is added to a Road
             self._index = None  # set when lane is added to a Road
             self._lane_dict = lane_dict
-            self._lane_pts = lane_dict["polyline"]
+            self._lane_pts = np.array(lane_dict["polyline"])
             self._centerline_pts = [Point(*p) for p in lane_dict["polyline"]]
             self._n_pts = len(self._lane_pts)
             self._lane_width = lane_dict["lane_width"]
@@ -990,6 +1107,9 @@ class WaymoMap(RoadMapWithCaches):
                 min_pt=Point(x=min(x_coordinates), y=min(y_coordinates)),
                 max_pt=Point(x=max(x_coordinates), y=max(y_coordinates)),
             )
+
+        def __hash__(self) -> int:
+            return hash(self.lane_id) + hash(self._map)
 
         def _create_polygon(self, lane_dict: Dict[str, Any]):
             new_left_pts = [None] * self._n_pts
@@ -1069,6 +1189,17 @@ class WaymoMap(RoadMapWithCaches):
             return [
                 self._map.lane_by_id(ol) for ol in self._lane_dict["outgoing_lane_ids"]
             ]
+
+        @cached_property
+        def foes(self) -> List[RoadMapWithCaches.Lane]:
+            result = {self._map.lane_by_id(ix) for ix in self._intersections}
+            result |= {
+                incoming
+                for outgoing in self.outgoing_lanes
+                for incoming in outgoing.incoming_lanes
+                if incoming != self
+            }
+            return list(result)
 
         @property
         def entry_surfaces(self) -> List[RoadMap.Surface]:
@@ -1248,7 +1379,7 @@ class WaymoMap(RoadMapWithCaches):
             self._is_junction = is_junction
             self._road_id = "waymo_road"
 
-            self._drivaable = False
+            self._drivable = False
             self._road_type = -1
             self._length = 0
             x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
@@ -1281,6 +1412,9 @@ class WaymoMap(RoadMapWithCaches):
             self._compute_edge_shapes()
 
             super().__init__(self._road_id, road_map)
+
+        def __hash__(self) -> int:
+            return hash(self.road_id) ^ hash(self._map)
 
         @property
         def road_id(self) -> str:
@@ -1315,10 +1449,16 @@ class WaymoMap(RoadMapWithCaches):
         def is_composite(self) -> bool:
             return self._is_composite
 
-        @property
+        @cached_property
         def is_junction(self) -> bool:
             # XXX: Waymo does not indicate whether a road is in junction or not, but we can *sometimes* tell.
-            return self._is_junction
+            if self._is_junction:
+                return True
+            for lane in self._lanes:
+                if lane.foes or len(lane.incoming_lanes) > 1:
+                    self._is_junction = True
+                    return True
+            return False
 
         @property
         def length(self) -> float:
@@ -1413,16 +1553,22 @@ class WaymoMap(RoadMapWithCaches):
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         road = self._roads.get(road_id)
-        if not road:
-            self._log.warning(f"WaymoMap got request for unknown road_id '{road_id}'")
+        # XXX: If this asserts, it's probably because this map contains single-point polyline lanes, which we don't yet handle.
+        assert road, f"WaymoMap got request for unknown road_id: '{road_id}'"
         return road
 
     def lane_by_id(self, lane_id: str) -> RoadMapWithCaches.Lane:
         # note: all lanes were cached already by _load()
         lane = self._lanes.get(lane_id)
-        if not lane:
-            self._log.warning(f"WaymoMap got request for unknown lane_id '{lane_id}'")
+        # XXX: If this asserts, it's probably because this map contains single-point polyline lanes, which we don't yet handle.
+        assert lane, f"WaymoMap got request for unknown lane_id: '{lane_id}'"
         return lane
+
+    @lru_cache(maxsize=4)
+    def dynamic_features_near(
+        self, point: Point, radius: float
+    ) -> List[Tuple[RoadMap.Feature, float]]:
+        return super().dynamic_features_near(point, radius)
 
     @cached_property
     def _simple_lanes(self) -> List[RoadMapWithCaches.Lane]:
@@ -1496,13 +1642,73 @@ class WaymoMap(RoadMapWithCaches):
                 return nl.road
         return None
 
-    class Route(RoadMapWithCaches.Route):
+    class Feature(RoadMap.Feature):
+        """Feature representation for Waymo maps"""
+
+        def __init__(self, road_map, feature_id: str, feat_proto):
+            self._map = road_map
+            self._feature_id = feature_id
+            self._feat_proto = feat_proto
+            self._type = self._proto_type_to_type(feat_proto)
+
+        @staticmethod
+        def _proto_type_to_type(feat_proto) -> int:
+            if isinstance(feat_proto, Crosswalk):
+                return RoadMap.FeatureType.CROSSWALK
+            if isinstance(feat_proto, SpeedBump):
+                return RoadMap.FeatureType.SPEED_BUMP
+            if isinstance(feat_proto, StopSign):
+                return RoadMap.FeatureType.STOP_SIGN
+            if isinstance(feat_proto, tuple):
+                return RoadMap.FeatureType.FIXED_LOC_SIGNAL
+            return RoadMap.FeatureType.UNKNOWN
+
+        @property
+        def feature_id(self) -> str:
+            return self._feature_id
+
+        @property
+        def type(self) -> RoadMap.FeatureType:
+            return self._type
+
+        @property
+        def type_as_str(self) -> str:
+            return self._type.name
+
+        @property
+        def geometry(self) -> List[Point]:
+            if isinstance(self._feat_proto, tuple):
+                return [self._feat_proto[0]]
+            point = getattr(self._feat_proto, "position", None)
+            if point:
+                return [self._map._map_pt_to_point(point)]
+            polygon = getattr(self._feat_proto, "polygon", None)
+            if polygon:
+                return [self._map._map_pt_to_point(pt) for pt in polygon]
+            return []
+
+        @cached_property
+        def type_specific_info(self) -> Optional[Any]:
+            if self._type == RoadMap.FeatureType.FIXED_LOC_SIGNAL:
+                return self._feat_proto[1]
+            return None
+
+        def min_dist_from(self, point: Point) -> float:
+            pt = point.as_np_array
+            return min(
+                np.linalg.norm(geo_pt.as_np_array - pt) for geo_pt in self.geometry
+            )
+
+    def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
+        return self._features.get(feature_id)
+
+    class Route(RouteWithCache):
         """Describes a route between Waymo roads."""
 
         def __init__(self, road_map):
+            super().__init__(road_map)
             self._roads = []
             self._length = 0
-            self._map = road_map
 
         @property
         def roads(self) -> List[RoadMap.Road]:
@@ -1519,84 +1725,6 @@ class WaymoMap(RoadMapWithCaches):
         @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
             return [list(road.shape().exterior.coords) for road in self.roads]
-
-        @lru_cache(maxsize=8)
-        def distance_between(self, start: Point, end: Point) -> Optional[float]:
-            radius = 30
-            for cand_start_lane, _ in self._map.nearest_lanes(
-                start, radius, include_junctions=False
-            ):
-                try:
-                    sind = self._roads.index(cand_start_lane.road)
-                    break
-                except ValueError:
-                    pass
-            else:
-                logging.warning("unable to find road on route near start point")
-                return None
-            start_road = cand_start_lane.road
-            for cand_end_lane, _ in self._map.nearest_lanes(
-                end, radius, include_junctions=False
-            ):
-                try:
-                    eind = self._roads.index(cand_end_lane.road)
-                    break
-                except ValueError:
-                    pass
-            else:
-                logging.warning("unable to find road on route near end point")
-                return None
-            end_road = cand_end_lane.road
-            d = 0
-            start_offset = cand_start_lane.offset_along_lane(start)
-            end_offset = cand_end_lane.offset_along_lane(end)
-            if start_road == end_road:
-                return end_offset - start_offset
-            negate = False
-            if sind > eind:
-                cand_start_lane = cand_end_lane
-                start_road, end_road = end_road, start_road
-                start_offset, end_offset = end_offset, start_offset
-                negate = True
-            for road in self._roads:
-                if d == 0 and road == start_road:
-                    d += cand_start_lane.length - start_offset
-                elif road == end_road:
-                    d += end_offset
-                    break
-                elif d > 0:
-                    d += road.length
-            return -d if negate else d
-
-        @lru_cache(maxsize=8)
-        def project_along(
-            self, start: Point, distance: float
-        ) -> Optional[Set[Tuple[RoadMapWithCaches.Lane, float]]]:
-            radius = 30.0
-            route_roads = set(self._roads)
-            for cand_start_lane, _ in self._map.nearest_lanes(
-                start, radius, include_junctions=False
-            ):
-                if cand_start_lane.road in route_roads:
-                    break
-            else:
-                logging.warning("unable to find road on route near start point")
-                return None
-            started = False
-            for road in self._roads:
-                if not started:
-                    if road != cand_start_lane.road:
-                        continue
-                    started = True
-                    lane_pt = cand_start_lane.to_lane_coord(start)
-                    start_offset = lane_pt.s
-                else:
-                    start_offset = 0
-                if distance > road.length - start_offset:
-                    distance -= road.length - start_offset
-                    continue
-                return {(lane, distance) for lane in road.lanes}
-            return set()
 
     @staticmethod
     def _shortest_route(start: RoadMap.Road, end: RoadMap.Road) -> List[RoadMap.Road]:
@@ -1671,10 +1799,16 @@ class WaymoMap(RoadMapWithCaches):
         return result
 
     def random_route(
-        self, max_route_len: int = 10, starting_road: Optional[RoadMap.Road] = None
+        self,
+        max_route_len: int = 10,
+        starting_road: Optional[RoadMap.Road] = None,
+        only_drivable: bool = True,
     ) -> RoadMap.Route:
+        assert not starting_road or not only_drivable or starting_road.is_drivable
         route = WaymoMap.Route(self)
         next_roads = [starting_road] if starting_road else list(self._roads.values())
+        if only_drivable:
+            next_roads = [r for r in next_roads if r.is_drivable]
         while next_roads and len(route.roads) < max_route_len:
             cur_road = random.choice(next_roads)
             route._add_road(cur_road)
@@ -1683,6 +1817,9 @@ class WaymoMap(RoadMapWithCaches):
 
     def empty_route(self) -> RoadMap.Route:
         return WaymoMap.Route(self)
+
+    def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
+        return WaymoMap.Route.from_road_ids(self, road_ids)
 
     class _WaypointsCache:
         def __init__(self):

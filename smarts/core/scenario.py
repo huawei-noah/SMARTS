@@ -569,11 +569,8 @@ class Scenario:
             vehicle_id, final_exit_time
         )
         assert final_pose
-        final_pos_x, final_pos_y, final_heading, _ = final_pose
-        # missions start from front bumper, but pos is center of vehicle
-        veh_dims = self._traffic_history.vehicle_dims(vehicle_id)
-        final_hhx, final_hhy = radians_to_vec(final_heading) * (0.5 * veh_dims.length)
-        return Point(final_pos_x + final_hhx, final_pos_y + final_hhy)
+        final_pos_x, final_pos_y, _, _ = final_pose
+        return Point(final_pos_x, final_pos_y)
 
     def discover_missions_of_traffic_histories(self) -> Dict[str, Mission]:
         """Retrieves the missions of traffic history vehicles."""
@@ -642,24 +639,22 @@ class Scenario:
                 [Iterable[VehicleWindow]],
                 Iterable[VehicleWindow],
             ]
-        ],
+        ] = None,
     ) -> Sequence[Mission]:
         """Discovers vehicle missions for the given window of time.
-        Args:
-            exists_at_or_after(float):
-                The starting time of any vehicles to query for.
-            ends_before(float):
-                The last point in time a vehicle should be in the simulation. Vehicles ending after
-                that time are not considered.
-            minimum_vehicle_window(float):
-                The minimum time that a vehicle must be in the simulation to be considered for a
-                mission.
-            filter(func(Sequence[TrafficHistoryVehicleWindow]) -> Sequence[TrafficHistoryVehicleWindow]):
-                A filter which passes in traffic vehicle information and then should be used purely
-                to filter the sequence down.
-        Returns:
-            (List[Mission]): A set of missions derived from the traffic history.
 
+        :param exists_at_or_after: The starting time of any vehicles to query for.
+        :type exists_at_or_after: float
+        :param ends_before: The last point in time a vehicle should be in the simulation.
+            Vehicles ending after that time are not considered.
+        :type ends_before: float
+        :param minimum_vehicle_window: The minimum time that a vehicle must be in the simulation
+            to be considered for a mission.
+        :type minimum_vehicle_window: float
+        :param filter: A filter in the form of ``(func(Sequence[TrafficHistoryVehicleWindow]) -> Sequence[TrafficHistoryVehicleWindow])``,
+            which passes in traffic vehicle information and then should be used purely to filter the sequence down.
+        :return: A set of missions derived from the traffic history.
+        :rtype: List[smarts.core.plan.Mission]
         """
         vehicle_windows = self._traffic_history.vehicle_windows_in_range(
             exists_at_or_after, ends_before, minimum_vehicle_window
@@ -758,8 +753,8 @@ class Scenario:
 
             return tuple(s_vias)
 
-        # For now we discard the route and just take the start and end to form our
-        # missions.
+        # XXX: For now we discard the route and just take the start and end to form our missions.
+        # In the future, we could create a Plan object here too when there's a route specified.
         if isinstance(mission, sstudio_types.Mission):
             position, heading = to_position_and_heading(
                 *mission.route.begin,
@@ -821,11 +816,11 @@ class Scenario:
                 start=Start(start_position, start_heading),
                 goal=PositionalGoal(end_position, radius=2),
                 route_vias=mission.route.via,
-                num_laps=mission.num_laps,
-                route_length=route.road_length,
                 start_time=mission.start_time,
                 entry_tactic=mission.entry_tactic,
-                via_points=to_scenario_via(mission.via, road_map),
+                via=to_scenario_via(mission.via, road_map),
+                num_laps=mission.num_laps,
+                route_length=route.road_length,
             )
 
         raise RuntimeError(

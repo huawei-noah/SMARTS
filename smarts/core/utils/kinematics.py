@@ -60,3 +60,25 @@ def distance_covered(time: float, speed: float, acc: float = 0.0) -> float:
     if distance is in meters, speed is in m/s).
     """
     return time * (speed + 0.5 * acc * time)
+
+
+def stopping_time(start_speed: float, deceleration: float) -> float:
+    """
+    Returns the time it would take to stop from initial speed start_speed
+    by decelerating at a constant rate of deceleration.
+    Note that deceleration should be a non-negative value (not a negative acceleration).
+    """
+    assert deceleration >= 0.0
+    if deceleration == 0.0:
+        return math.inf
+    return start_speed / deceleration
+
+
+def stopping_distance(start_speed: float, deceleration: float) -> float:
+    """
+    Returns the distance it would take to stop from initial speed start_speed
+    by decelerating at a constant rate of deceleration.
+    Note that deceleration should be a non-negative value (not a negative acceleration).
+    """
+    assert deceleration >= 0.0
+    return 0.5 * start_speed * stopping_time(start_speed, deceleration)

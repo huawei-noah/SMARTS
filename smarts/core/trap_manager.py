@@ -30,7 +30,7 @@ from smarts.core.coordinates import Point as MapPoint
 from smarts.core.plan import Mission, Plan, Start, default_entry_tactic
 from smarts.core.utils.math import clip, squared_dist
 from smarts.core.vehicle import Vehicle
-from smarts.sstudio.types import MapZone, TrapEntryTactic
+from smarts.sstudio.types import MapZone, PositionalZone, TrapEntryTactic
 
 
 @dataclass
@@ -100,18 +100,18 @@ class TrapManager:
         reject_expired: bool = False,
     ) -> bool:
         """Add a new trap to capture an actor for the given agent.
-        Args:
-            agent_id(str):
-                The agent to associate to this trap.
-            mission(Mission):
-                The mission to assign to the agent and vehicle.
-            road_map(RoadMap):
-                The road map to provide information to about the map.
-            sim_time(float):
-                The current simulator time.
-            reject_expired(bool):
-                If traps should be ignored if their patience would already be
-                expired on creation.
+
+        :param agent_id: The agent to associate to this trap.
+        :type agent_id: str
+        :param mission: The mission to assign to the agent and vehicle.
+        :type mission: class: Mission
+        :param road_map: The road map to provide information to about the map.
+        :type road_map: class: RoadMap
+        :param sim_time: The current simulator time.
+        :type sim_time: float
+        :param reject_expired: If traps should be ignored if their patience would already be
+            expired on creation
+        :type reject_expired: bool
         """
         if mission is None:
             mission = Mission.random_endless_mission(road_map)
@@ -325,35 +325,38 @@ class TrapManager:
 
         if default_entry_speed is None:
             n_lane = road_map.nearest_lane(mission.start.point)
-            assert n_lane, "mission must start in a lane"
-            default_entry_speed = n_lane.speed_limit
+            default_entry_speed = n_lane.speed_limit if n_lane is not None else 0
 
         if zone is None:
             n_lane = n_lane or road_map.nearest_lane(mission.start.point)
-            assert n_lane, "mission must start in a lane"
-            lane_speed = n_lane.speed_limit
-            start_road_id = n_lane.road.road_id
-            start_lane = n_lane.index
-            lane_length = n_lane.length
-            start_pos = mission.start.position
-            vehicle_offset_into_lane = n_lane.offset_along_lane(
-                MapPoint(x=start_pos[0], y=start_pos[1])
-            )
-            vehicle_offset_into_lane = clip(
-                vehicle_offset_into_lane, 1e-6, lane_length - 1e-6
-            )
+            if n_lane is None:
+                zone = PositionalZone(mission.start.position[:2], size=(3, 3))
+            else:
+                lane_speed = n_lane.speed_limit
+                start_road_id = n_lane.road.road_id
+                start_lane = n_lane.index
+                lane_length = n_lane.length
+                start_pos = mission.start.position
+                vehicle_offset_into_lane = n_lane.offset_along_lane(
+                    MapPoint(x=start_pos[0], y=start_pos[1])
+                )
+                vehicle_offset_into_lane = clip(
+                    vehicle_offset_into_lane, 1e-6, lane_length - 1e-6
+                )
 
-            drive_distance = lane_speed * default_zone_dist
+                drive_distance = lane_speed * default_zone_dist
 
-            start_offset_in_lane = vehicle_offset_into_lane - drive_distance
-            start_offset_in_lane = clip(start_offset_in_lane, 1e-6, lane_length - 1e-6)
-            length = max(1e-6, vehicle_offset_into_lane - start_offset_in_lane)
+                start_offset_in_lane = vehicle_offset_into_lane - drive_distance
+                start_offset_in_lane = clip(
+                    start_offset_in_lane, 1e-6, lane_length - 1e-6
+                )
+                length = max(1e-6, vehicle_offset_into_lane - start_offset_in_lane)
 
-            zone = MapZone(
-                start=(start_road_id, start_lane, start_offset_in_lane),
-                length=length,
-                n_lanes=1,
-            )
+                zone = MapZone(
+                    start=(start_road_id, start_lane, start_offset_in_lane),
+                    length=length,
+                    n_lanes=1,
+                )
 
         trap = Trap(
             geometry=zone.to_geometry(road_map),

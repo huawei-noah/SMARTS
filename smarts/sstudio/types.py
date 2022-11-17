@@ -30,6 +30,8 @@ from sys import maxsize
 from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from shapely.affinity import rotate as shapely_rotate
+from shapely.affinity import translate as shapely_translate
 from shapely.geometry import (
     GeometryCollection,
     LineString,
@@ -44,7 +46,7 @@ from smarts.core.coordinates import RefLinePoint
 from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.utils.math import rotate_around_point
+from smarts.core.utils.math import rotate_cw_around_point
 
 
 class _SUMO_PARAMS_MODE(IntEnum):
@@ -124,33 +126,33 @@ class JunctionModel(_SumoParams):
 
 class SmartsLaneChangingModel(LaneChangingModel):
     """Implements the simple lane-changing model built-into SMARTS.
-    Args:
-        cutin_prob:
-            Float value between 0 and 1 that determines the probabilty this vehicle will
-            "arbitrarily" cut in front of an adjacent (Agent) vehicle when it has a chance,
-            even if there would otherwise be no reason to change lanes at that point.  Higher
-            values risk a situation where this vehicle ends up in a lane where it cannot
-            maintain its planned route.  If that happens, this vehicle will perform whatever
-            its default behavior is when it completes its route.  default: 0.0.
-        assertive:
-            Willingness to accept lower front and rear gaps in the target lane.
-            The required gap is divided by this value. default: 1.0, range: positive floats.
-            Attempts to match the semantics of the attribute in SUMO's default lane-changing model,
-            see: https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models
-        dogmatic:
-            If True, will cutin when a suitable opportunity presents itself based on the above parameters,
-            even if it means the risk of not not completing the assigned route; otherwise, will forego
-            the chance.
-        hold_period:
-            The minimum amount of time (in seconds) to remain in the agent's lane after cutting into it
-            (including the time it takes within the lane to complete the maneuver). Must be non-negative.
-            default: 3.0.
-        slow_down_after:
-            Target speed during the hold_period will be scaled by this value.
-            Must be non-negative.  default: 1.0.
-        multi_lane_cutin:
-            If True, this vehicle will consider changing across multiple lanes at once in order
-            to cutin upon an agent vehicle when there's an opportunity.  default: False.
+
+    :param cutin_prob:
+        Float value between 0 and 1 that determines the probabilty this vehicle will
+        "arbitrarily" cut in front of an adjacent (Agent) vehicle when it has a chance,
+        even if there would otherwise be no reason to change lanes at that point.  Higher
+        values risk a situation where this vehicle ends up in a lane where it cannot
+        maintain its planned route.  If that happens, this vehicle will perform whatever
+        its default behavior is when it completes its route.  default: 0.0.
+    :param assertive:
+        Willingness to accept lower front and rear gaps in the target lane.
+        The required gap is divided by this value. default: 1.0, range: positive floats.
+        Attempts to match the semantics of the attribute in SUMO's default lane-changing model,
+        see: ``https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models``
+    :param dogmatic:
+        If True, will cutin when a suitable opportunity presents itself based on the above parameters,
+        even if it means the risk of not not completing the assigned route; otherwise, will forego
+        the chance.
+    :param hold_period:
+        The minimum amount of time (in seconds) to remain in the agent's lane after cutting into it
+        (including the time it takes within the lane to complete the maneuver). Must be non-negative.
+        default: 3.0.
+    :param slow_down_after:
+        Target speed during the hold_period will be scaled by this value.
+        Must be non-negative.  default: 1.0.
+    :param multi_lane_cutin:
+        If True, this vehicle will consider changing across multiple lanes at once in order
+        to cutin upon an agent vehicle when there's an opportunity.  default: False.
     """
 
     def __init__(
@@ -169,6 +171,39 @@ class SmartsLaneChangingModel(LaneChangingModel):
             hold_period=hold_period,
             slow_down_after=slow_down_after,
             multi_lane_cutin=multi_lane_cutin,
+        )
+
+
+class SmartsJunctionModel(JunctionModel):
+    """Implements the simple junction model built-into SMARTS.
+
+    :param yield_to_agents:
+
+        There are 3 possible values for this:
+
+            - "always" - traffic actors will yield to Ego and Social
+                agents within junctions;
+            - "never" - traffic actors will never yield to Ego or Social
+                agents within junctions;
+            - "normal" - traffic actors will attempt to honor normal
+                right-of-way conventions, only yielding when an agent
+                has the right-of-way.  Examples of such conventions include:
+
+                - Vehicles going straight have the right-of-way over
+                    turning vehicles;
+                - Vehicles on roads with more lanes have the right-of-way
+                    relative to vehicles on intersecting roads with less lanes;
+                - All other things being equal, the vehicle to the right
+                    (in the counter-clockwise direction) has the right-of-way.
+
+    :param wait_to_restart:
+        The amount of time in seconds after stopping at a signal or stop sign
+        before this vehicle will start to go again.  Default:  0.0
+    """
+
+    def __init__(self, yield_to_agents: str = "normal", wait_to_restart: float = 0.0):
+        super().__init__(
+            yield_to_agents=yield_to_agents, wait_to_restart=wait_to_restart
         )
 
 
@@ -441,15 +476,14 @@ class Flow:
     """End time in seconds."""
     actors: Dict[TrafficActor, float] = field(default_factory=dict)
     """An actor to weight mapping associated as\\: { actor: weight }
-    actor:
-        The traffic actors that are provided.
-    weight:
-        The chance of this actor appearing as a ratio over total weight.
+
+    :param actor: The traffic actors that are provided.
+    :param weight: The chance of this actor appearing as a ratio over total weight.
     """
     randomly_spaced: bool = False
-    """This determines if the flow should have randomly spaced traffic. Default `False`."""
+    """Determines if the flow should have randomly spaced traffic. Defaults to `False`."""
     repeat_route: bool = False
-    """If True, vehicles that finish their route will be restarted at the beginning. Default `False`."""
+    """If True, vehicles that finish their route will be restarted at the beginning. Defaults to `False`."""
 
     @property
     def id(self) -> str:
@@ -687,13 +721,13 @@ class MapZone(Zone):
             point = np.array(lane.from_lane_coord(RefLinePoint(offset)))[:2]
             lane_vec = lane.vector_at_offset(offset)[:2]
 
-            perp_vec_right = rotate_around_point(lane_vec, np.pi / 2, origin=(0, 0))
+            perp_vec_right = rotate_cw_around_point(lane_vec, np.pi / 2, origin=(0, 0))
             perp_vec_right = (
                 perp_vec_right / max(np.linalg.norm(perp_vec_right), 1e-3) * width_2
                 + point
             )
 
-            perp_vec_left = rotate_around_point(lane_vec, -np.pi / 2, origin=(0, 0))
+            perp_vec_left = rotate_cw_around_point(lane_vec, -np.pi / 2, origin=(0, 0))
             perp_vec_left = (
                 perp_vec_left / max(np.linalg.norm(perp_vec_left), 1e-3) * width_2
                 + point
@@ -765,13 +799,19 @@ class PositionalZone(Zone):
     """A (x,y) position of the zone in the scenario."""
     size: Tuple[float, float]
     """The (length, width) dimensions of the zone."""
+    rotation: Optional[float] = None
+    """The heading direction of the bubble. (radians, clock-wise rotation)"""
 
     def to_geometry(self, road_map: Optional[RoadMap] = None) -> Polygon:
         """Generates a box zone at the given position."""
         w, h = self.size
-        p0 = (self.pos[0] - w / 2, self.pos[1] - h / 2)  # min
-        p1 = (self.pos[0] + w / 2, self.pos[1] + h / 2)  # max
-        return Polygon([p0, (p0[0], p1[1]), p1, (p1[0], p0[1])])
+        x, y = self.pos[:2]
+        p0 = (-w / 2, -h / 2)  # min
+        p1 = (w / 2, h / 2)  # max
+        poly = Polygon([p0, (p0[0], p1[1]), p1, (p1[0], p0[1])])
+        if self.rotation is not None:
+            poly = shapely_rotate(poly, self.rotation, use_radians=True)
+        return shapely_translate(poly, xoff=x, yoff=y)
 
 
 @dataclass(frozen=True)
@@ -822,12 +862,24 @@ class Bubble:
     and be reused for every subsequent vehicle entering the bubble until the episode
     is over.
     """
+    follow_vehicle_id: Optional[str] = None
+    """Vehicle ID of a vehicle we want to pin to. Doing so makes this a "travelling bubble"
+    which means it moves to follow the `follow_vehicle_id`'s vehicle. Offset is from the
+    vehicle's center position to the bubble's center position.
+    """
 
     def __post_init__(self):
-        if self.margin <= 0:
+        if self.margin < 0:
             raise ValueError("Airlocking margin must be greater than 0")
 
-        if self.follow_actor_id is not None and self.follow_offset is None:
+        if self.follow_actor_id is not None and self.follow_vehicle_id is not None:
+            raise ValueError(
+                "Only one option of follow actor id and follow vehicle id can be used at any time."
+            )
+
+        if (
+            self.follow_actor_id is not None or self.follow_vehicle_id is not None
+        ) and self.follow_offset is None:
             raise ValueError(
                 "A follow offset must be set if this is a travelling bubble"
             )

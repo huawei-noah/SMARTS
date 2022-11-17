@@ -113,6 +113,14 @@ class LanePositions:
     pass
 
 
+@dataclass
+class Signals:
+    """Reporting of traffic signals (lights) state in the lanes ahead."""
+
+    lookahead: float = 100.0
+    """The distance in meters to look ahead of the vehicle's current position."""
+
+
 class AgentType(IntEnum):
     """Used to select preconfigured agent interfaces."""
 
@@ -167,14 +175,19 @@ class AgentsAliveDoneCriteria:
     agent_lists_alive: Optional[List[AgentsListAlive]] = None
     """A termination criteria based on the ids of agents. If set, triggers the agent to be done if any list of agents fails 
     to meet its specified minimum number of alive agents.
-    Example: [
+    Example: 
+    
+    .. code-block:: python
+
+        [
         AgentsListAlive(
             agents_list=['agent1','agent2'], minimum_agents_alive_in_list=1
         ),
         AgentsListAlive(
             agents_list=['agent3'], minimum_agents_alive_in_list=1
         ),
-    ]
+        ]
+        
     This agent's done event would be triggered if both 'agent1' and 'agent2' is done *or* 'agent3' is done.
     """
 
@@ -288,6 +301,11 @@ class AgentInterface:
     Enable lane-relative position reporting.
     """
 
+    signals: Union[Signals, bool] = False
+    """
+    Enable the signals sensor.
+    """
+
     def __post_init__(self):
         self.neighborhood_vehicles = AgentInterface._resolve_config(
             self.neighborhood_vehicles, NeighborhoodVehicles
@@ -308,6 +326,7 @@ class AgentInterface:
         self.lane_positions = AgentInterface._resolve_config(
             self.lane_positions, LanePositions
         )
+        self.signals = AgentInterface._resolve_config(self.signals, Signals)
         assert self.vehicle_type in {"sedan", "bus"}
 
     @staticmethod
@@ -330,6 +349,7 @@ class AgentInterface:
                 ogm=True,
                 rgb=True,
                 lidar=True,
+                signals=True,
                 action=ActionSpaceType.Continuous,
             )
         # Uses low dimensional observations
@@ -399,6 +419,7 @@ class AgentInterface:
         elif requested_type == AgentType.Direct:
             interface = AgentInterface(
                 neighborhood_vehicles=True,
+                signals=True,
                 action=ActionSpaceType.Direct,
             )
         else:

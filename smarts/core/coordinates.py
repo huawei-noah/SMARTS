@@ -143,7 +143,7 @@ class Point(NamedTuple):
 class RefLinePoint(NamedTuple):
     """A reference line coordinate.
     See the Reference Line coordinate system in OpenDRIVE here:
-       https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems
+    `https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems`
     Also known as the Frenet coordinate system.
     """
 
@@ -239,7 +239,7 @@ class Heading(float):
     @classmethod
     def from_sumo(cls, sumo_heading):
         """Sumo's space uses degrees, 0 faces north, and turns clockwise."""
-        heading = Heading._flip_clockwise(math.radians(sumo_heading))
+        heading = Heading.flip_clockwise(math.radians(sumo_heading))
         h = Heading(heading)
         h.source = "sumo"
         return h
@@ -257,7 +257,7 @@ class Heading(float):
     @property
     def as_sumo(self):
         """Convert to SUMO facing format"""
-        return math.degrees(Heading._flip_clockwise(self))
+        return math.degrees(Heading.flip_clockwise(self))
 
     def relative_to(self, other: "Heading"):
         """
@@ -278,7 +278,7 @@ class Heading(float):
         return radians_to_vec(self)
 
     @staticmethod
-    def _flip_clockwise(x):
+    def flip_clockwise(x):
         """Converts clockwise to counter-clockwise, and vice-versa."""
         return (2 * math.pi - x) % (2 * math.pi)
 
@@ -356,7 +356,7 @@ class Pose:
         )
 
     @classmethod
-    def from_center(cls, base_position, heading):
+    def from_center(cls, base_position, heading: Heading):
         """Convert from centred location
 
         Args:
@@ -376,7 +376,11 @@ class Pose:
 
     @classmethod
     def from_explicit_offset(
-        cls, offset_from_centre, base_position, heading, local_heading
+        cls,
+        offset_from_centre,
+        base_position: np.ndarray,
+        heading: Heading,
+        local_heading: Heading,
     ):
         """Convert from an explicit offset
 
@@ -444,3 +448,8 @@ class Pose:
     def as_panda3d(self):
         """Convert to panda3D (object bounds centre position, heading)"""
         return (self.position, self.heading.as_panda3d)
+
+    @classmethod
+    def origin(cls):
+        """Pose at the origin coordinate of smarts."""
+        return cls(np.repeat([0], 3), np.array([0, 0, 0, 1]))

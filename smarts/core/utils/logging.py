@@ -18,27 +18,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import ctypes
+import logging
 import os
 import sys
+import warnings
 from contextlib import contextmanager
 from io import UnsupportedOperation
 from time import time
 
 
 @contextmanager
-def timeit(name: str, logger):
+def timeit(name: str, log):
     """Context manger that stopwatches the amount of time between context block start and end.
-    ```python
-    import logging
-    with timeit(n,logging):
-        a = a * b
-    ```
+
+    .. code-block:: python
+
+        import logging
+        with timeit(n,logging.log):
+            a = a * b
     """
     start = time()
     yield
     elapsed_time = (time() - start) * 1000
 
-    logger.info(f'"{name}" took: {elapsed_time:4f}ms')
+    log(f'"{name}" took: {elapsed_time:4f}ms')
 
 
 def isnotebook():
@@ -105,7 +108,7 @@ def _suppress_fileout(stdname):
         old_std = getattr(sys, stdname)
         setattr(sys, stdname, file)
 
-        def cleanup(_):
+        def cleanup_notebook(_):
             nonlocal old_std, stdname
             new_std = getattr(sys, stdname)
             new_std.flush()
@@ -118,14 +121,14 @@ def _suppress_fileout(stdname):
             setattr(sys, stdname, old_std)
 
         ## This case is notebook
-        return cleanup
+        return cleanup_notebook
 
     dup_std_fno = os.dup(original_std_fno)
     devnull_fno = os.open(os.devnull, os.O_WRONLY)
     os.dup2(devnull_fno, original_std_fno)
     setattr(sys, stdname, os.fdopen(devnull_fno, "w"))
 
-    def cleanup(c_stdobj):
+    def cleanup_local(c_stdobj):
         getattr(sys, stdname).flush()
         libc.fflush(c_stdobj)
         try_fsync(devnull_fno)
@@ -141,4 +144,20 @@ def _suppress_fileout(stdname):
         finally:
             setattr(sys, stdname, original)
 
-    return cleanup
+    return cleanup_local
+
+
+@contextmanager
+def suppress_websocket():
+    """Attempts to filter out irritating `websocket` library messages."""
+
+    websocket_filter = lambda record: "goodbye" not in record.msg
+    with warnings.catch_warnings():
+        # XXX: websocket-client library seems to have leaks on connection
+        #      retry that cause annoying warnings within Python 3.8+
+        warnings.filterwarnings("ignore", category=ResourceWarning)
+        # Filter out the websocket "goodbye" messages.
+        _logger = logging.getLogger("websocket")
+        _logger.addFilter(websocket_filter)
+        yield
+        _logger.removeFilter(websocket_filter)

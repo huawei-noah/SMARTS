@@ -123,9 +123,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
             isinstance(key, str) for key in agent_actions.keys()
         ), "Expected Dict[str, any]"
 
-        observations, rewards, dones, extras = None, None, None, None
-        with timeit("SMARTS simulation/scenario step", self._log):
-            observations, rewards, dones, extras = self._smarts.step(agent_actions)
+        observations, rewards, dones, extras = self._smarts.step(agent_actions)
 
         # Agent termination: RLlib expects that we return a "last observation"
         # on the step that an agent transitions to "done". All subsequent calls

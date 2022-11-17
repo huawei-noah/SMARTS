@@ -11,6 +11,7 @@ SMARTS includes a visualizer called *Envision* that runs on a process separate f
 To run the default example simply build a scenario and run the following command,
 
 .. code-block:: bash
+    
     # build scenarios/sumo/loop
     scl scenario build --clean scenarios/sumo/loop
 

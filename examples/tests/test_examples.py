@@ -1,3 +1,4 @@
+import sys
 import tempfile
 from pathlib import Path
 
@@ -5,6 +6,9 @@ import psutil
 import pytest
 
 from smarts.core.utils import import_utils
+
+# necessary to import default_argument_parser properly in the examples
+sys.path.insert(0, str(Path(__file__).parents[1]))
 
 import_utils.import_module_from_file(
     "examples", Path(__file__).parents[1] / "__init__.py"
@@ -32,24 +36,8 @@ def test_examples(example):
     )
 
 
-def test_ray_multi_instance_example():
-    from examples import ray_multi_instance
-
-    main = ray_multi_instance.main
-    num_cpus = max(2, min(10, (psutil.cpu_count(logical=False) - 1)))
-    main(
-        training_scenarios=["scenarios/sumo/loop"],
-        evaluation_scenarios=["scenarios/sumo/loop"],
-        sim_name=None,
-        headless=True,
-        num_episodes=1,
-        seed=42,
-        num_cpus=num_cpus,
-    )
-
-
 def test_rllib_example():
-    from examples.rllib import rllib
+    from examples.rl.rllib import rllib
 
     main = rllib.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:

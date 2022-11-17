@@ -24,15 +24,12 @@ import math
 import numpy as np
 import pytest
 
-from smarts.core.actor_role import ActorRole
+from smarts.core.actor import ActorRole
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface, DoneCriteria
-from smarts.core.agents_provider import MotionPlannerProvider
-from smarts.core.coordinates import Heading, Pose
+from smarts.core.coordinates import Heading
 from smarts.core.plan import EndlessGoal, Mission, Start
-from smarts.core.provider import ProviderState
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 AGENT_ID = "Agent-007"
 

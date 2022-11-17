@@ -18,7 +18,6 @@ jobs:
         tests:
           - ./cli
           - ./envision
-          - ./smarts/contrib
           - ./examples/tests --ignore=./examples/tests/test_learning.py
           - ./smarts/sstudio
           - ./smarts/env/tests/test_rllib_hiway_env.py
@@ -55,7 +54,7 @@ jobs:
           export SUMO_HOME="/usr/local/opt/sumo/share/sumo"
           open -g -a XQuartz.app
           make build-all-scenarios
-          PYTHONHASHSEED=42 pytest -v \
+          PYTHONPATH=$PWD PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
             -n auto \
             --ignore-glob="**/waymo_map.py" \

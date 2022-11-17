@@ -30,11 +30,12 @@ from smarts.core.utils import resources
 from smarts.core.utils.cache import cache, clear_cache
 from smarts.core.utils.string import truncate
 
-from .actor_role import ActorRole
+from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
+from .road_map import RoadMap
 from .sensors import SensorState
-from .vehicle import Vehicle
+from .vehicle import Vehicle, VehicleState
 
 VEHICLE_INDEX_ID_LENGTH = 128
 
@@ -273,17 +274,18 @@ class VehicleIndex:
     @property
     def vehicles(self):
         """A list of all existing vehicles."""
-        # XXX: Order is not ensured
         return list(self._vehicles.values())
 
     def vehicleitems(self) -> Iterator[Tuple[str, Vehicle]]:
         """A list of all vehicle IDs paired with their vehicle."""
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._vehicles.items())
 
-    def vehicle_by_id(self, vehicle_id: str):
+    def vehicle_by_id(self, vehicle_id, default=...):
         """Get a vehicle by its id."""
         vehicle_id = _2id(vehicle_id)
-        return self._vehicles[vehicle_id]
+        if default is ...:
+            return self._vehicles[vehicle_id]
+        return self._vehicles.get(vehicle_id, default)
 
     @clear_cache
     def teardown_vehicles_by_vehicle_ids(self, vehicle_ids):
@@ -295,8 +297,9 @@ class VehicleIndex:
             return
 
         for vehicle_id in vehicle_ids:
-            self._vehicles[vehicle_id].teardown()
-            del self._vehicles[vehicle_id]
+            vehicle = self._vehicles.pop(vehicle_id, None)
+            if vehicle is not None:
+                vehicle.teardown()
 
             # popping since sensor_states/controller_states may not include the
             # vehicle if it's not being controlled by an agent
@@ -469,15 +472,19 @@ class VehicleIndex:
         return vehicle
 
     @clear_cache
-    def relinquish_agent_control(self, sim, vehicle_id, social_vehicle_id):
+    def relinquish_agent_control(
+        self, sim, vehicle_id: str
+    ) -> Tuple[VehicleState, RoadMap.Route]:
         """Give control of the vehicle back to its original controller."""
-        self._log.debug(
-            f"Relinquishing agent control v_id={vehicle_id} sv_id={social_vehicle_id}"
-        )
+        self._log.debug(f"Relinquishing agent control v_id={vehicle_id}")
 
-        vehicle_id, social_vehicle_id = _2id(vehicle_id), _2id(social_vehicle_id)
+        v_id = _2id(vehicle_id)
 
-        vehicle = self._vehicles[vehicle_id]
+        ss = self._sensor_states[v_id]
+        route = ss.plan.route
+        self.stop_agent_observation(vehicle_id)
+
+        vehicle = self._vehicles[v_id]
         box_chassis = BoxChassis(
             pose=vehicle.chassis.pose,
             speed=vehicle.chassis.speed,
@@ -486,7 +493,7 @@ class VehicleIndex:
         )
         vehicle.swap_chassis(box_chassis)
 
-        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        v_index = self._controlled_by["vehicle_id"] == v_id
         entity = self._controlled_by[v_index][0]
         entity = _ControlEntity(*entity)
         self._controlled_by[v_index] = tuple(
@@ -499,7 +506,7 @@ class VehicleIndex:
             )
         )
 
-        return vehicle
+        return vehicle.state, route
 
     @clear_cache
     def attach_sensors_to_vehicle(self, sim, vehicle_id, agent_interface, plan):
@@ -556,7 +563,7 @@ class VehicleIndex:
 
         # Reserve space inside the traffic sim
         for traffic_sim in sim.traffic_sims:
-            if traffic_sim.manages_vehicle(vehicle.id):
+            if traffic_sim.manages_actor(vehicle.id):
                 traffic_sim.reserve_traffic_location_for_vehicle(
                     vehicle.id, vehicle.chassis.to_polygon
                 )
@@ -565,7 +572,7 @@ class VehicleIndex:
         self.teardown_vehicles_by_vehicle_ids([vehicle.id])
         # HACK: Directly remove the vehicle from the traffic provider (should do this via the sim instead)
         for traffic_sim in sim.traffic_sims:
-            if traffic_sim.manages_vehicle(vehicle.id):
+            if traffic_sim.manages_actor(vehicle.id):
                 # TAI:  we probably should call "remove_vehicle(vehicle.id)" here instead,
                 # and then call "add_vehicle(new_vehicle.state)", but since
                 # the old and new vehicle-id and state are supposed to be the same

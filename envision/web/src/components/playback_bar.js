@@ -62,7 +62,7 @@ export default function PlaybackBar({
         value={currentTime}
         max={totalTime}
         step={0.0001}
-        onAfterChange={(seconds) => {
+        onChange={(seconds) => {
           setCurrentTime(seconds);
           onSeek(seconds);
         }}

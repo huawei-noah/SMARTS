@@ -33,7 +33,7 @@ from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
 
 from . import models
-from .actor_role import ActorRole
+from .actor import ActorRole, ActorState
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import Colors, SceneColors
 from .coordinates import Dimensions, Heading, Pose
@@ -47,33 +47,32 @@ from .sensors import (
     OGMSensor,
     RGBSensor,
     RoadWaypointsSensor,
+    SignalsSensor,
     TripMeterSensor,
     ViaSensor,
     WaypointsSensor,
 )
 from .utils.custom_exceptions import RendererException
-from .utils.math import rotate_around_point
+from .utils.math import rotate_cw_around_point
 
 
 @dataclass
-class VehicleState:
+class VehicleState(ActorState):
     """Vehicle state information."""
 
-    vehicle_id: str
-    pose: Pose
-    dimensions: Dimensions
-    vehicle_type: Optional[str] = None
     vehicle_config_type: Optional[str] = None  # key into VEHICLE_CONFIGS
-    updated: bool = False
+    pose: Optional[Pose] = None
+    dimensions: Optional[Dimensions] = None
     speed: float = 0.0
     steering: Optional[float] = None
     yaw_rate: Optional[float] = None
-    source: Optional[str] = None  # the source of truth for this vehicle state
     linear_velocity: Optional[np.ndarray] = None
     angular_velocity: Optional[np.ndarray] = None
     linear_acceleration: Optional[np.ndarray] = None
     angular_acceleration: Optional[np.ndarray] = None
-    role: ActorRole = ActorRole.Unknown
+
+    def __post_init__(self):
+        assert self.pose is not None and self.dimensions is not None
 
     @property
     def bbox(self) -> Polygon:
@@ -88,13 +87,6 @@ class VehicleState:
             pos.y + half_len,
         )
         return shapely_rotate(poly, self.pose.heading, use_radians=True)
-
-    def __lt__(self, other):
-        """Allows ordering VehicleStates for use in sorted data-structures."""
-        assert isinstance(other, VehicleState)
-        return self.vehicle_id < other.vehicle_id or (
-            self.vehicle_id == other.vehicle_id and id(self) < id(other)
-        )
 
 
 @dataclass(frozen=True)
@@ -178,7 +170,6 @@ class Vehicle:
         self._chassis: Chassis = chassis
         self._vehicle_config_type = vehicle_config_type
         self._action_space = action_space
-        self._speed = None
 
         self._meta_create_sensor_functions()
         self._sensors = {}
@@ -243,14 +234,7 @@ class Vehicle:
     def speed(self) -> float:
         """The current speed of this vehicle."""
         self._assert_initialized()
-        if self._speed is not None:
-            return self._speed
-        else:
-            return self._chassis.speed
-
-    def set_speed(self, speed):
-        """Set the current speed of this vehicle."""
-        self._speed = speed
+        return self._chassis.speed
 
     @property
     def sensors(self) -> dict:
@@ -280,8 +264,9 @@ class Vehicle:
         """The current state of this vehicle."""
         self._assert_initialized()
         return VehicleState(
-            vehicle_id=self.id,
-            vehicle_type=self.vehicle_type,
+            actor_id=self.id,
+            actor_type=self.vehicle_type,
+            source="SMARTS",  # this is the "ground truth" state
             vehicle_config_type=self._vehicle_config_type,
             pose=self.pose,
             dimensions=self._chassis.dimensions,
@@ -290,7 +275,6 @@ class Vehicle:
             steering=self._chassis.steering,
             # pytype: enable=attribute-error
             yaw_rate=self._chassis.yaw_rate,
-            source="SMARTS",  # this is the "ground truth" state
             linear_velocity=self._chassis.velocity_vectors[0],
             angular_velocity=self._chassis.velocity_vectors[1],
         )
@@ -323,15 +307,15 @@ class Vehicle:
         return self._chassis.pose.heading
 
     @property
-    def position(self) -> Sequence:
+    def position(self) -> np.ndarray:
         """The position of this vehicle."""
         self._assert_initialized()
-        pos, _ = self._chassis.pose.as_panda3d()
-        return pos
+        return self._chassis.pose.position
 
     @property
     def bounding_box(self) -> List[np.ndarray]:
         """The minimum fitting heading aligned bounding box. Four 2D points representing the minimum fitting box."""
+        # XXX: this doesn't return a smarts.core.coordinates.BoundingBox!
         self._assert_initialized()
         # Assuming the position is the centre,
         # calculate the corner coordinates of the bounding_box
@@ -340,9 +324,9 @@ class Vehicle:
         corners = np.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
         heading = self.heading
         return [
-            rotate_around_point(
+            rotate_cw_around_point(
                 point=origin + corner * dimensions,
-                radians=heading,
+                radians=Heading.flip_clockwise(heading),
                 origin=origin,
             )
             for corner in corners
@@ -352,6 +336,11 @@ class Vehicle:
     def vehicle_type(self) -> str:
         """Get the vehicle type identifier."""
         return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
+
+    @property
+    def valid(self) -> bool:
+        """Check if the vehicle still `exists` and is still operable."""
+        return self._initialized
 
     @staticmethod
     def agent_vehicle_dims(mission: Mission) -> Dimensions:
@@ -577,6 +566,14 @@ class Vehicle:
             )
         )
 
+        if agent_interface.signals:
+            lookahead = agent_interface.signals.lookahead
+            vehicle.attach_signals_sensor(
+                SignalsSensor(
+                    vehicle=vehicle, road_map=sim.road_map, lookahead=lookahead
+                )
+            )
+
     def step(self, current_simulation_time):
         """Update internal state."""
         self._has_stepped = True
@@ -687,6 +684,7 @@ class Vehicle:
             "accelerometer_sensor",
             "lane_position_sensor",
             "via_sensor",
+            "signals_sensor",
         ]
         for sensor_name in sensor_names:
 
