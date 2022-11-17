@@ -13,6 +13,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Deprecated
 ### Changed
 ### Removed
+- Removed all of PyMarl contents, including related interface adapter, environments, and tests.
+- Removed ray usage example.
+
 ### Fixed
 ### Security
 

@@ -1237,6 +1237,7 @@ class _TrafficActor:
     def _slow_for_curves(self):
         # XXX:  this may be too expensive.  if so, we'll need to precompute curvy spots for routes
         lookahead = math.ceil(1 + math.log(self._target_speed))
+        lookahead = max(1, lookahead)
         # we round the offset in an attempt to reduce the unique hits on the LRU caches...
         rounded_offset = round(self._offset)
         radius = self._lane.curvature_radius_at_offset(rounded_offset, lookahead)
