@@ -16,6 +16,9 @@ from mdutils.mdutils import MdUtils
 from pygit2 import Repository
 from smarts.core.scenario import Scenario
 from smarts.core.utils.logging import timeit
+from smarts.core.agent_interface import DoneCriteria
+from smarts.core.agent_interface import AgentInterface
+from smarts.zoo.agent_spec import AgentSpec
 
 
 _SEED = 42
@@ -26,6 +29,7 @@ logger.setLevel(logging.INFO)
 
 
 def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
+    agent_specs = AgentSpec(interface=AgentInterface(done_criteria=DoneCriteria(collision=False)))
     build_scenarios(
         allow_offset_maps=False,
         clean=False,
@@ -37,7 +41,7 @@ def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
         scenarios=scenario_dir,
         shuffle_scenarios=False,
         sim_name="Benchmark",
-        agent_specs={},
+        agent_specs={"non-interactive-agent-50-v0":agent_specs},
         headless=True,
         sumo_headless=True,
         seed=_SEED,
@@ -145,7 +149,8 @@ def _get_funcs() -> _Funcs:
 def _readable(func: _Funcs, num_episodes: int, num_steps: int):
     avg = func.avg_get()
     std = func.std_get()
-    steps_per_sec = num_steps / (avg / 1000)  # Units: Steps per Second
+    steps_per_sec = num_steps / (avg / 1000) # Units: Steps per Second
+
 
     return _Result(
         num_episodes=num_episodes,
@@ -247,8 +252,6 @@ def main(scenarios):
         results.update(_compute(scenario_dir=[path]))
 
     print("----------------------------------------------")
-    # scenarios = list(map(lambda s:s.split("benchmark/")[1], scenarios))
+    print(results)
     write_report(results)
 
-if __name__ == "__main__":
-    results = main(scenarios=("n_sumo_actors"))
