@@ -2,12 +2,21 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Tuple
-
+import os
+import platform, psutil
+import pandas as pd
+import smarts
 import gym
+import subprocess
+import cpuinfo
 
 from cli.studio import build_scenarios
+from datetime import datetime
+from mdutils.mdutils import MdUtils
+from pygit2 import Repository
 from smarts.core.scenario import Scenario
 from smarts.core.utils.logging import timeit
+
 
 _SEED = 42
 _MAX_REPLAY_EPISODE_STEPS = 100
@@ -58,7 +67,8 @@ def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
 
     records = {}
     for k, v in results.items():
-        records[k] = _readable(
+        parsed_name=k.split("benchmark/")[1]
+        records[parsed_name] = _readable(
             func=v, num_episodes=num_episodes, num_steps=num_episode_steps[k]
         )
 
@@ -146,6 +156,89 @@ def _readable(func: _Funcs, num_episodes: int, num_steps: int):
     )
 
 
+def get_git_revision_short_hash() -> str:
+    return (
+        subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+        .decode("ascii")
+        .strip()
+    )
+
+
+
+# Write report in .md format
+def write_report(results):
+    os.makedirs(f"{smarts.__path__[0]}/benchmark/benchmark_results", exist_ok=True)
+    now = datetime.now()
+    current_date_and_time = now.strftime("%d_%m_%Y_%H_%M_%S")
+    report_file_name = f"benchmark_result_{current_date_and_time}"
+    mdFile = MdUtils(file_name=report_file_name, title="Benchmark Report")
+    mdFile.write(f"SMARTS version: {smarts.VERSION}\n\n")
+    mdFile.write(f"Date & Time: {now.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
+    mdFile.write(f"Branch: {Repository('.').head.shorthand}\n\n")
+    mdFile.write(f"Commit: {get_git_revision_short_hash()}\n\n")
+    mdFile.write(f"OS Version: {platform.platform()}\n\n")
+    mdFile.write(
+        f"Processor & RAM: {cpuinfo.get_cpu_info()['brand_raw']} x {cpuinfo.get_cpu_info()['count']} & {str(round(psutil.virtual_memory().total / (1024.0 **3)))+' GB'}"
+    )
+    mdFile.new_header(level=2, title="Intention", add_table_of_contents="n")
+    mdFile.write("- Track the performance of SMARTS simulation for each version\n")
+    mdFile.write("- Test the effects of performance improvements/optimizations\n")
+    mdFile.new_header(level=2, title="Setup", add_table_of_contents="n")
+    mdFile.new_paragraph(
+        "- Dump different numbers of actors with different type respectively into 10 secs on a proper map without visualization.\n"
+        "    - n social agents: 1, 10, 20, 50\n"
+        "    - n data replay actors: 1, 10, 20, 50, 200\n"
+        "    - n sumo traffic actors: 1, 10, 20, 50, 200\n"
+        "    - 10 agents to n data replay actors: 1, 10, 20, 50\n"
+        "    - 10 agent to n roads: 1, 10, 20, 50\n"
+    )
+    mdFile.new_header(level=2, title="Result", add_table_of_contents="n")
+    scenario_list = ", ".join(str(s) for s in list(results.keys()))
+    mdFile.new_paragraph(
+        "The setup of this report is the following:\n"
+        f"- Scenario(s): {scenario_list}\n"
+        f"- Number of episodes: {list(results.values())[0].num_episodes}"
+    )
+    scenarios_list = []
+    means_list = []
+    # Write a table
+    content = ["Scenario(s)","Total Time Steps","Mean(time_step/sec)", "Std"]
+    # Write rows
+    for scenario_path, data in results.items():
+        scenarios_list.append(scenario_path)
+        means_list.append(data.steps_per_sec)
+        content.extend([f"{scenario_path}", f"{data.num_steps}", f"{data.steps_per_sec}", f"{data.std}"])
+    mdFile.new_line()
+    mdFile.new_table(columns=4, rows=len(list(results.keys())) + 1, text=content)
+    # Draw a graph
+    print(scenarios_list)
+    df = pd.DataFrame(
+        {
+            "means": means_list,
+        },
+        index=scenarios_list,
+    )
+    print(df)
+    graph = df.plot(kind="line", use_index=True, y="means", legend=False, marker=".")
+    graph.get_figure().savefig(
+        f"{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}"
+    )
+    mdFile.new_paragraph(
+        "<figure>"
+        f"\n<img src='{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}.png' alt='line chart' style='width:500px;'/>"
+        "\n<figcaption align = 'center'> Figure 1 </figcaption>"
+        "\n</figure>"
+    )
+    mdFile.create_md_file()
+
+    subprocess.run(
+        [
+            "mv",
+            f"{os.getcwd()}/{report_file_name}.md",
+            f"{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}.md",
+        ]
+    )
+
 def main(scenarios):
     results = {}
     for scenario in scenarios:
@@ -155,8 +248,7 @@ def main(scenarios):
 
     print("----------------------------------------------")
     # scenarios = list(map(lambda s:s.split("benchmark/")[1], scenarios))
-    print(results)
-
+    write_report(results)
 
 if __name__ == "__main__":
     results = main(scenarios=("n_sumo_actors"))
