@@ -41,6 +41,7 @@ from .generators import TrafficGenerator
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__file__)
+logger.setLevel(logging.INFO)
 
 
 def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
@@ -78,20 +79,20 @@ def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
 
 
 def _needs_build(
-    db_conn: sqlite3.Connection, scenario_obj: Any, artifact_paths: List[str]
+    db_conn: sqlite3.Connection,
+    scenario_obj: Any,
+    artifact_paths: List[str],
+    obj_hash: str,
 ) -> bool:
     if scenario_obj is None:
         return False  # There's no object in the DSL, so nothing to build
     if not all([os.path.exists(f) for f in artifact_paths]):
         return True  # Some of the expected output files don't exist
 
-    expected_hash = pickle_hash(scenario_obj)
-
-    for f in artifact_paths:
+    query = """SELECT scenario_obj_hash FROM Artifacts WHERE artifact_path=?;"""
+    for artifact_path in artifact_paths:
         cur = db_conn.cursor()
-        cur.execute(
-            """SELECT scenario_obj_hash FROM Artifacts WHERE artifact_path=?;""", (f,)
-        )
+        cur.execute(query, (artifact_path,))
         row = cur.fetchone()
         cur.close()
 
@@ -99,16 +100,19 @@ def _needs_build(
             return True  # Artifact is not in the db
 
         artifact_hash = row[0]
-        if artifact_hash != expected_hash:
+        if artifact_hash != obj_hash:
             return True  # Hash does not match, out of date
     return False
 
 
-def _update_artifact(db_conn: sqlite3.Connection, artifact_path: str, hash_val: str):
+def _update_artifacts(
+    db_conn: sqlite3.Connection, artifact_paths: List[str], hash_val: str
+):
     query = """REPLACE INTO Artifacts (artifact_path, scenario_obj_hash)
                VALUES(?, ?);"""
     cur = db_conn.cursor()
-    cur.execute(query, (artifact_path, hash_val))
+    for artifact_path in artifact_paths:
+        cur.execute(query, (artifact_path, hash_val))
     db_conn.commit()
     cur.close()
 
@@ -126,7 +130,7 @@ def gen_scenario(
     # XXX: For now this simply coalesces the sub-calls but in the future this allows
     #      us to simplify our serialization between SStudio and SMARTS.
 
-    output_dir = str(output_dir)
+    output_dir = os.path.abspath(str(output_dir))
     build_graph = _build_graph(scenario, output_dir)
 
     # Create DB for build caching
@@ -144,17 +148,19 @@ def gen_scenario(
     cur.close()
 
     with timeit("gen_map", logger.info):
-        if _needs_build(db_conn, scenario.map_spec, build_graph["map_spec"]):
+        artifact_paths = build_graph["map_spec"]
+        obj_hash = pickle_hash(scenario.map_spec, True)
+        if _needs_build(db_conn, scenario.map_spec, artifact_paths, obj_hash):
             gen_map(output_dir, scenario.map_spec)
-            _update_artifact(
-                db_conn, build_graph["map_spec"][0], pickle_hash(scenario.map_spec)
-            )
+            _update_artifacts(db_conn, artifact_paths, obj_hash)
             map_spec = scenario.map_spec
         else:
             map_spec = types.MapSpec(source=output_dir)
 
-    with timeit("gen_traffic", logger.info):
-        if _needs_build(db_conn, scenario.traffic, build_graph["traffic"]):
+    with timeit("traffic", logger.info):
+        artifact_paths = build_graph["traffic"]
+        obj_hash = pickle_hash(scenario.traffic, True)
+        if _needs_build(db_conn, scenario.traffic, artifact_paths, obj_hash):
             for name, traffic in scenario.traffic.items():
                 gen_traffic(
                     scenario=output_dir,
@@ -164,12 +170,12 @@ def gen_scenario(
                     overwrite=overwrite,
                     map_spec=map_spec,
                 )
-            hash = pickle_hash(scenario.traffic)
-            for artifact in build_graph["traffic"]:
-                _update_artifact(db_conn, artifact, hash)
+            _update_artifacts(db_conn, artifact_paths, obj_hash)
 
     with timeit("ego_missions", logger.info):
-        if _needs_build(db_conn, scenario.ego_missions, build_graph["ego_missions"]):
+        artifact_paths = build_graph["ego_missions"]
+        obj_hash = pickle_hash(scenario.ego_missions, True)
+        if _needs_build(db_conn, scenario.ego_missions, artifact_paths, obj_hash):
             missions = []
             for mission in scenario.ego_missions:
                 if isinstance(mission, types.GroupedLapMission):
@@ -197,17 +203,13 @@ def gen_scenario(
                     map_spec=map_spec,
                 )
 
-            _update_artifact(
-                db_conn,
-                build_graph["ego_missions"][0],
-                pickle_hash(scenario.ego_missions),
-            )
+            _update_artifacts(db_conn, artifact_paths, obj_hash)
 
     with timeit("social_agent_missions", logger.info):
+        artifact_paths = build_graph["social_agent_missions"]
+        obj_hash = pickle_hash(scenario.social_agent_missions, True)
         if _needs_build(
-            db_conn,
-            scenario.social_agent_missions,
-            build_graph["social_agent_missions"],
+            db_conn, scenario.social_agent_missions, artifact_paths, obj_hash
         ):
             for name, (actors, missions) in scenario.social_agent_missions.items():
                 if not (
@@ -225,42 +227,35 @@ def gen_scenario(
                     map_spec=map_spec,
                 )
 
-            hash = pickle_hash(scenario.social_agent_missions)
-            for artifact in build_graph["social_agent_missions"]:
-                _update_artifact(db_conn, artifact, hash)
+            _update_artifacts(db_conn, artifact_paths, obj_hash)
 
     with timeit("bubbles", logger.info):
-        if _needs_build(db_conn, scenario.bubbles, build_graph["bubbles"]):
+        artifact_paths = build_graph["bubbles"]
+        obj_hash = pickle_hash(scenario.bubbles, True)
+        if _needs_build(db_conn, scenario.bubbles, artifact_paths, obj_hash):
             gen_bubbles(scenario=output_dir, bubbles=scenario.bubbles)
-            _update_artifact(
-                db_conn, build_graph["bubbles"][0], pickle_hash(scenario.bubbles)
-            )
+            _update_artifacts(db_conn, artifact_paths, obj_hash)
 
     with timeit("friction_maps", logger.info):
-        if _needs_build(db_conn, scenario.friction_maps, build_graph["friction_maps"]):
+        artifact_paths = build_graph["friction_maps"]
+        obj_hash = pickle_hash(scenario.friction_maps, True)
+        if _needs_build(db_conn, scenario.friction_maps, artifact_paths, obj_hash):
             gen_friction_map(
                 scenario=output_dir, surface_patches=scenario.friction_maps
             )
-            _update_artifact(
-                db_conn,
-                build_graph["friction_maps"][0],
-                pickle_hash(scenario.friction_maps),
-            )
+            _update_artifacts(db_conn, artifact_paths, obj_hash)
 
     with timeit("traffic_histories", logger.info):
-        if _needs_build(
-            db_conn, scenario.traffic_histories, build_graph["traffic_histories"]
-        ):
+        artifact_paths = build_graph["traffic_histories"]
+        obj_hash = pickle_hash(scenario.traffic_histories, True)
+        if _needs_build(db_conn, scenario.traffic_histories, artifact_paths, obj_hash):
             gen_traffic_histories(
                 scenario=output_dir,
                 histories_datasets=scenario.traffic_histories,
                 overwrite=overwrite,
                 map_spec=map_spec,
             )
-
-            hash = pickle_hash(scenario.traffic_histories)
-            for artifact in build_graph["traffic_histories"]:
-                _update_artifact(db_conn, artifact, hash)
+            _update_artifacts(db_conn, artifact_paths, obj_hash)
 
 
 def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None):
