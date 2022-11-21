@@ -25,7 +25,7 @@ coverage==6.5.0
 cycler==0.11.0
 dm-tree==0.1.7
 eclipse-sumo==1.10.0
-exceptiongroup==1.0.3
+exceptiongroup==1.0.4
 execnet==1.9.0
 filelock==3.8.0
 flatbuffers==22.10.26
@@ -38,7 +38,7 @@ google-api-core==2.10.2
 google-auth==2.14.1
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
-googleapis-common-protos==1.56.4
+googleapis-common-protos==1.57.0
 gpustat==1.0.0
 grpcio==1.50.0
 gym==0.19.0
@@ -118,7 +118,7 @@ tensorboard==2.10.1
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
 tensorboardX==2.5.1
-tensorflow==2.10.0
+tensorflow==2.10.1
 tensorflow-estimator==2.10.0
 tensorflow-io-gcs-filesystem==0.27.0
 termcolor==2.1.0
@@ -138,4 +138,4 @@ wrapt==1.14.1
 yarl==1.8.1
 yattag==1.14.0
 zipp==3.10.0
-zope.interface==5.5.1
+zope.interface==5.5.2

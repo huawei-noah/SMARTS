@@ -1,25 +1,45 @@
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 import logging
+import os
+import platform
+import subprocess
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Callable, Tuple
-import os
-import platform, psutil
-import pandas as pd
-import smarts
-import gym
-import subprocess
-import cpuinfo
 
-from cli.studio import build_scenarios
-from datetime import datetime
+import cpuinfo
+import gym
+import pandas as pd
+import psutil
 from mdutils.mdutils import MdUtils
 from pygit2 import Repository
+
+import smarts
+from cli.studio import build_scenarios
+from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from smarts.core.scenario import Scenario
 from smarts.core.utils.logging import timeit
-from smarts.core.agent_interface import DoneCriteria
-from smarts.core.agent_interface import AgentInterface
 from smarts.zoo.agent_spec import AgentSpec
-
 
 _SEED = 42
 _MAX_REPLAY_EPISODE_STEPS = 100
