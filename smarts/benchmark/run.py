@@ -29,7 +29,6 @@ logger.setLevel(logging.INFO)
 
 
 def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
-    agent_specs = AgentSpec(interface=AgentInterface(done_criteria=DoneCriteria(collision=False)))
     build_scenarios(
         allow_offset_maps=False,
         clean=False,
@@ -41,7 +40,7 @@ def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
         scenarios=scenario_dir,
         shuffle_scenarios=False,
         sim_name="Benchmark",
-        agent_specs={"non-interactive-agent-50-v0":agent_specs},
+        agent_specs={},
         headless=True,
         sumo_headless=True,
         seed=_SEED,
@@ -212,18 +211,16 @@ def write_report(results):
     for scenario_path, data in results.items():
         scenarios_list.append(scenario_path)
         means_list.append(data.steps_per_sec)
-        content.extend([f"{scenario_path}", f"{data.num_steps}", f"{data.steps_per_sec}", f"{data.std}"])
+        content.extend([f"{scenario_path}", f"{data.num_steps}", f"{data.steps_per_sec:.2f}", f"{data.std:.2f}"])
     mdFile.new_line()
     mdFile.new_table(columns=4, rows=len(list(results.keys())) + 1, text=content)
     # Draw a graph
-    print(scenarios_list)
     df = pd.DataFrame(
         {
             "means": means_list,
         },
         index=scenarios_list,
     )
-    print(df)
     graph = df.plot(kind="line", use_index=True, y="means", legend=False, marker=".")
     graph.get_figure().savefig(
         f"{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}"
@@ -250,7 +247,7 @@ def main(scenarios):
         path = Path(__file__).resolve().parent / scenario
         logger.info("Benchmarking: %s", path)
         results.update(_compute(scenario_dir=[path]))
-
+        
     print("----------------------------------------------")
     print(results)
     write_report(results)
