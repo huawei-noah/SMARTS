@@ -26,8 +26,6 @@ from pathlib import Path
 import gym
 import gym.envs
 
-from smarts.env.wrappers.gif_recorder import GifRecorder
-
 
 class RecorderWrapper(gym.Wrapper):
     """
@@ -66,6 +64,8 @@ class RecorderWrapper(gym.Wrapper):
         """
         Start the gif recorder and capture the first frame.
         """
+        from smarts.env.wrappers.gif_recorder import GifRecorder
+
         if self.gif_recorder is None:
             self.gif_recorder = GifRecorder(self.video_name_folder, self.env)
         image = super().render(mode="rgb_array")
