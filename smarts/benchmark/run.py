@@ -19,36 +19,33 @@
 # THE SOFTWARE.
 
 import logging
-import os
+import matplotlib.pyplot as plt
 import platform
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Any, Callable, Dict, Tuple
 
 import cpuinfo
 import gym
-import pandas as pd
 import psutil
 from mdutils.mdutils import MdUtils
-from pygit2 import Repository
 
 import smarts
 from cli.studio import build_scenarios
-from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from smarts.core.scenario import Scenario
 from smarts.core.utils.logging import timeit
-from smarts.zoo.agent_spec import AgentSpec
 
 _SEED = 42
 _MAX_REPLAY_EPISODE_STEPS = 100
+_MAX_EPISODE_STEPS = 1000
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
 
 
-def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
+def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=_MAX_EPISODE_STEPS):
     build_scenarios(
         allow_offset_maps=False,
         clean=False,
@@ -80,10 +77,9 @@ def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
     for _ in range(num_episodes):
         env.reset()
         scenario_name = (env.scenario_log)["scenario_map"]
-        avg_compute = results[scenario_name].avg_compute
-        std_store = results[scenario_name].std_store
-        with timeit("Benchmark", print, funcs=[avg_compute, std_store]):
-            for _ in range(num_episode_steps[scenario_name]):
+        update = results[scenario_name].update
+        for _ in range(num_episode_steps[scenario_name]):
+            with timeit("Benchmark", print, funcs=[update]):
                 env.step({})
 
     env.close()
@@ -91,95 +87,83 @@ def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
     records = {}
     for k, v in results.items():
         parsed_name = k.split("benchmark/")[1]
-        records[parsed_name] = _readable(
-            func=v, num_episodes=num_episodes, num_steps=num_episode_steps[k]
-        )
+        records[parsed_name] = _readable(func=v)
 
     return records
 
 
 @dataclass
 class _Funcs:
-    avg_compute: Callable[[float], float]
-    avg_get: Callable[[], float]
-    std_store: Callable[[float], None]
-    std_get: Callable[[], float]
+    update: Callable[[float], None]
+    mean: Callable[[], float]
+    std: Callable[[], float]
+    steps: int
 
 
 @dataclass
 class _Result:
-    num_episodes: int
-    num_steps: int
-    avg: float
+    steps: int
+    mean: float
     std: float
-    steps_per_sec: float
 
 
-def _avg() -> Tuple[Callable[[float], float], Callable[[], float]]:
-    ave = 0
-    step = 0
+def welford() -> Tuple[
+    Callable[[float], None], Callable[[], float], Callable[[], float]
+]:
+    # Welford's online mean and std computation
+    # Reference: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
+    # Reference: https://www.adamsmith.haus/python/answers/how-to-find-a-running-standard-deviation-in-python
 
-    def compute(val):
-        nonlocal ave, step
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=val)
-        return ave
+    import math
 
-    def get():
-        nonlocal ave
-        return ave
+    n = 0  # steps
+    M = 0
+    S = 0
 
-    return compute, get
+    def update(val: float):
+        nonlocal n, M, S
+        n = n + 1
+        newM = M + (val - M) / n
+        newS = S + (val - M) * (val - newM)
+        M = newM
+        S = newS
 
+    def mean() -> float:
+        return M
 
-def _running_ave(prev_ave: float, prev_step: int, new_val: float) -> Tuple[float, int]:
-    new_step = prev_step + 1
-    new_ave = prev_ave + (new_val - prev_ave) / new_step
-    return new_ave, new_step
+    def std() -> float:
+        nonlocal n, M, S
+        if n == 1:
+            return 0
 
+        std = math.sqrt(S / (n - 1))
+        return std
 
-def _std() -> Tuple[Callable[[float], None], Callable[[], float]]:
-    values = []
+    def steps() -> int:
+        return n
 
-    def store(val):
-        nonlocal values
-        values.append(val)
-        return
-
-    def get():
-        nonlocal values
-        import statistics
-
-        return statistics.stdev(values)
-
-    return store, get
+    return update, mean, std, steps
 
 
 def _get_funcs() -> _Funcs:
-    avg_compute, avg_get = _avg()
-    std_store, std_get = _std()
+    update, mean, std, steps = welford()
     return _Funcs(
-        avg_compute=avg_compute,
-        avg_get=avg_get,
-        std_store=std_store,
-        std_get=std_get,
-    )
-
-
-def _readable(func: _Funcs, num_episodes: int, num_steps: int):
-    avg = func.avg_get()
-    std = func.std_get()
-    steps_per_sec = num_steps / (avg / 1000)  # Units: Steps per Second
-
-    return _Result(
-        num_episodes=num_episodes,
-        num_steps=num_steps,
-        avg=avg,
+        update=lambda x: update(1000 / x),  # Steps per sec. Units: step/s
+        mean=mean,
         std=std,
-        steps_per_sec=steps_per_sec,
+        steps=steps,
     )
 
 
-def get_git_revision_short_hash() -> str:
+def _readable(func: _Funcs) -> _Result:
+    return _Result(
+        steps=func.steps(),
+        mean=func.mean(),
+        std=func.std(),
+    )
+
+
+def git_revision_short_hash() -> str:
     return (
         subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
         .decode("ascii")
@@ -187,84 +171,64 @@ def get_git_revision_short_hash() -> str:
     )
 
 
-# Write report in .md format
-def write_report(results):
-    os.makedirs(f"{smarts.__path__[0]}/benchmark/benchmark_results", exist_ok=True)
-    now = datetime.now()
-    current_date_and_time = now.strftime("%d_%m_%Y_%H_%M_%S")
-    report_file_name = f"benchmark_result_{current_date_and_time}"
-    mdFile = MdUtils(file_name=report_file_name, title="Benchmark Report")
+def git_branch() -> str:
+    return (
+        subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        .decode("ascii")
+        .strip()
+    )
+
+
+def _write_report(results: Dict[str, Any]):
+    datetime_now = datetime.now()
+    folder = datetime_now.strftime("%Y_%m_%d_%H_%M_%S")
+    dir = Path(__file__).resolve().parent / f"reports" / folder
+    dir.mkdir(parents=True, exist_ok=True)
+
+    mdFile = MdUtils(file_name=str(dir / "Report"), title="Benchmark Report")
     mdFile.write(f"SMARTS version: {smarts.VERSION}\n\n")
-    mdFile.write(f"Date & Time: {now.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
-    mdFile.write(f"Branch: {Repository('.').head.shorthand}\n\n")
-    mdFile.write(f"Commit: {get_git_revision_short_hash()}\n\n")
+    mdFile.write(f"Date & Time: {datetime_now.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
+    mdFile.write(f"Branch: {git_branch()}\n\n")
+    mdFile.write(f"Commit: {git_revision_short_hash()}\n\n")
     mdFile.write(f"OS Version: {platform.platform()}\n\n")
     mdFile.write(
-        f"Processor & RAM: {cpuinfo.get_cpu_info()['brand_raw']} x {cpuinfo.get_cpu_info()['count']} & {str(round(psutil.virtual_memory().total / (1024.0 **3)))+' GB'}"
+        f"Processor: {cpuinfo.get_cpu_info()['brand_raw']} x {cpuinfo.get_cpu_info()['count']}\n\n"
     )
-    mdFile.new_header(level=2, title="Intention", add_table_of_contents="n")
-    mdFile.write("- Track the performance of SMARTS simulation for each version\n")
-    mdFile.write("- Test the effects of performance improvements/optimizations\n")
-    mdFile.new_header(level=2, title="Setup", add_table_of_contents="n")
-    mdFile.new_paragraph(
-        "- Dump different numbers of actors with different type respectively into 10 secs on a proper map without visualization.\n"
-        "    - n social agents: 1, 10, 20, 50\n"
-        "    - n data replay actors: 1, 10, 20, 50, 200\n"
-        "    - n sumo traffic actors: 1, 10, 20, 50, 200\n"
-        "    - 10 agents to n data replay actors: 1, 10, 20, 50\n"
-        "    - 10 agent to n roads: 1, 10, 20, 50\n"
+    mdFile.write(
+        f"RAM: {str(round(psutil.virtual_memory().total / (1024.0 **3)))+' GB'}\n\n"
     )
-    mdFile.new_header(level=2, title="Result", add_table_of_contents="n")
-    scenario_list = ", ".join(str(s) for s in list(results.keys()))
-    mdFile.new_paragraph(
-        "The setup of this report is the following:\n"
-        f"- Scenario(s): {scenario_list}\n"
-        f"- Number of episodes: {list(results.values())[0].num_episodes}"
-    )
-    scenarios_list = []
-    means_list = []
-    # Write a table
-    content = ["Scenario(s)", "Total Time Steps", "Mean(time_step/sec)", "Std"]
-    # Write rows
-    for scenario_path, data in results.items():
-        scenarios_list.append(scenario_path)
-        means_list.append(data.steps_per_sec)
+
+    means = []
+    stds=[]
+    scenarios=[]
+    content = ["Scenario(s)", "Total Time Steps", "Mean (steps/sec)", "Std (steps/sec)"]
+    for scenario, data in results.items():
+        scenarios.append(scenario)
+        means.append(data.mean)
+        stds.append(data.std)
         content.extend(
             [
-                f"{scenario_path}",
-                f"{data.num_steps}",
-                f"{data.steps_per_sec:.2f}",
+                f"{scenario}",
+                f"{data.steps}",
+                f"{data.mean:.2f}",
                 f"{data.std:.2f}",
             ]
         )
-    mdFile.new_line()
+
+    mdFile.new_header(level=2, title="Result", add_table_of_contents="n")
     mdFile.new_table(columns=4, rows=len(list(results.keys())) + 1, text=content)
-    # Draw a graph
-    df = pd.DataFrame(
-        {
-            "means": means_list,
-        },
-        index=scenarios_list,
-    )
-    graph = df.plot(kind="line", use_index=True, y="means", legend=False, marker=".")
-    graph.get_figure().savefig(
-        f"{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}"
-    )
+    plt.plot(scenarios, means)
+    plt.errorbar(scenarios, means, stds, marker="o", capsize=3)
+    plt.xlabel("Scenario")
+    plt.ylabel("Steps / Sec")
+    plt.savefig(dir / "Fig1.png")
     mdFile.new_paragraph(
         "<figure>"
-        f"\n<img src='{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}.png' alt='line chart' style='width:500px;'/>"
-        "\n<figcaption align = 'center'> Figure 1 </figcaption>"
+        f"\n<img src={dir/'Fig1.png'} alt='line chart' style='width:500px;'/>"
         "\n</figure>"
     )
-    mdFile.create_md_file()
 
-    subprocess.run(
-        [
-            "mv",
-            f"{os.getcwd()}/{report_file_name}.md",
-            f"{smarts.__path__[0]}/benchmark/benchmark_results/{report_file_name}.md",
-        ]
-    )
+    mdFile.create_md_file()
 
 
 def main(scenarios):
@@ -274,6 +238,4 @@ def main(scenarios):
         logger.info("Benchmarking: %s", path)
         results.update(_compute(scenario_dir=[path]))
 
-    print("----------------------------------------------")
-    print(results)
-    write_report(results)
+    _write_report(results)
