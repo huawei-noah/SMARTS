@@ -80,9 +80,9 @@ def unpack(obj):
     elif isinstance(obj, list):
         return [unpack(value) for value in obj]
     elif isnamedtupleinstance(obj):
-        return unpack(obj._asdict())
+        return {key: unpack(value) for key, value in obj._asdict().items()}
     elif isdataclass(obj):
-        return unpack(dataclasses.asdict(obj))
+        return {key: unpack(value) for key, value in dataclasses.asdict(obj).items()}
     elif isinstance(obj, tuple):
         return tuple(unpack(value) for value in obj)
     else:
