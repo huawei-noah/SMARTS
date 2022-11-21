@@ -39,7 +39,7 @@ def timeit(name: str, log, funcs=None):
     """
     start = time()
     yield
-    elapsed_time = (time() - start) * 1000 # Units: milli seconds
+    elapsed_time = (time() - start) * 1000  # Units: milli seconds
 
     if funcs:
         for func in funcs:

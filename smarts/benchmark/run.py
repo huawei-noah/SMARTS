@@ -100,33 +100,36 @@ class _Result:
     std: float
 
 
-def welford()->Tuple[Callable[[float],None],Callable[[],float],Callable[[],float]]:
+def welford() -> Tuple[
+    Callable[[float], None], Callable[[], float], Callable[[], float]
+]:
     # Welford's online mean and std computation
     # Reference: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
-    # Reference: https://www.adamsmith.haus/python/answers/how-to-find-a-running-standard-deviation-in-python 
+    # Reference: https://www.adamsmith.haus/python/answers/how-to-find-a-running-standard-deviation-in-python
 
     import math
-    n = 0 # steps
-    M = 0 
+
+    n = 0  # steps
+    M = 0
     S = 0
 
-    def update(val:float):
+    def update(val: float):
         nonlocal n, M, S
         n = n + 1
-        newM = M + (val - M)/n
-        newS = S + (val - M)*(val - newM)
+        newM = M + (val - M) / n
+        newS = S + (val - M) * (val - newM)
         M = newM
         S = newS
 
-    def mean()->float:
+    def mean() -> float:
         return M
 
-    def std()->float:      
+    def std() -> float:
         nonlocal n, M, S
         if n == 1:
             return 0
 
-        std = math.sqrt(S/(n-1))
+        std = math.sqrt(S / (n - 1))
         return std
 
     return update, mean, std
@@ -135,13 +138,13 @@ def welford()->Tuple[Callable[[float],None],Callable[[],float],Callable[[],float
 def _get_funcs() -> _Funcs:
     update, mean, std = welford()
     return _Funcs(
-        update=lambda x:update(1000/x), # Steps per sec. Units: step/s
+        update=lambda x: update(1000 / x),  # Steps per sec. Units: step/s
         mean=mean,
         std=std,
     )
 
 
-def _readable(func: _Funcs, num_episodes: int, num_steps: int)->_Result:
+def _readable(func: _Funcs, num_episodes: int, num_steps: int) -> _Result:
     return _Result(
         num_episodes=num_episodes,
         num_steps=num_steps,
