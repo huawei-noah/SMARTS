@@ -19,12 +19,19 @@
 # THE SOFTWARE.
 
 import logging
+import platform
+import subprocess
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Any, Callable, Dict, Tuple
 
+import cpuinfo
 import gym
+import psutil
+from mdutils.mdutils import MdUtils
 
+import smarts
 from cli.studio import build_scenarios
 from smarts.core.scenario import Scenario
 from smarts.core.utils.logging import timeit
@@ -78,7 +85,8 @@ def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=_MAX_EPISODE_STE
 
     records = {}
     for k, v in results.items():
-        records[k] = _readable(
+        parsed_name = k.split("benchmark/")[1]
+        records[parsed_name] = _readable(
             func=v, num_episodes=num_episodes, num_steps=num_episode_steps[k]
         )
 
@@ -153,6 +161,44 @@ def _readable(func: _Funcs, num_episodes: int, num_steps: int) -> _Result:
     )
 
 
+def git_revision_short_hash() -> str:
+    return (
+        subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+        .decode("ascii")
+        .strip()
+    )
+
+
+def git_branch() -> str:
+    return (
+        subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        .decode("ascii")
+        .strip()
+    )
+
+
+def _write_report(results: Dict[str, Any]):
+    dir = Path(__file__).resolve().parent / "reports"
+    dir.mkdir(exist_ok=True)
+    datetime_now = datetime.now()
+    filename = datetime_now.strftime("%d_%m_%Y_%H_%M_%S")
+
+    mdFile = MdUtils(file_name=str(dir / filename), title="Benchmark Report")
+    mdFile.write(f"SMARTS version: {smarts.VERSION}\n\n")
+    mdFile.write(f"Date & Time: {datetime_now.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
+    mdFile.write(f"Branch: {git_branch()}\n\n")
+    mdFile.write(f"Commit: {git_revision_short_hash()}\n\n")
+    mdFile.write(f"OS Version: {platform.platform()}\n\n")
+    mdFile.write(
+        f"Processor: {cpuinfo.get_cpu_info()['brand_raw']} x {cpuinfo.get_cpu_info()['count']}\n\n"
+    )
+    mdFile.write(
+        f"RAM: {str(round(psutil.virtual_memory().total / (1024.0 **3)))+' GB'}\n\n"
+    )
+
+    mdFile.create_md_file()
+
+
 def main(scenarios):
     results = {}
     for scenario in scenarios:
@@ -160,10 +206,4 @@ def main(scenarios):
         logger.info("Benchmarking: %s", path)
         results.update(_compute(scenario_dir=[path]))
 
-    print("----------------------------------------------")
-    # scenarios = list(map(lambda s:s.split("benchmark/")[1], scenarios))
-    print(results)
-
-
-if __name__ == "__main__":
-    results = main(scenarios=("n_sumo_actors"))
+    _write_report(results)
