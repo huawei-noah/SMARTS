@@ -202,7 +202,7 @@ def add_stops_to_traffic(
             A list of vehicle IDs that is appended to. Each stopped vehicle's ID is
             appended to this list as stopped vehicles should not be hijacked.
     """
-    route_file_path = f"{scenario}/traffic/all.rou.xml"
+    route_file_path = f"{scenario}/build/traffic/all.rou.xml"
     map_file = sumolib.net.readNet(f"{scenario}/map.net.xml")
     vehicle_types = list(sumolib.output.parse(route_file_path, "vType"))
     vehicles = list()
@@ -355,7 +355,7 @@ def generate_left_turn_missions(
     scenario = save_dir + f"-flow-{seed}"
 
     # Remove old traffic route if it exists(otherwise, won't update to new flows)
-    if os.path.exists(f"{scenario}/traffic/all.rou.xml"):
+    if os.path.exists(f"{scenario}/build/traffic/all.rou.xml"):
         shutil.rmtree(scenario)
 
     for route_key, route_info in route_distributions["routes"].items():
@@ -431,7 +431,7 @@ def generate_left_turn_missions(
 
     # Patch: Remove route files from traffic folder to make intersection empty.
     if traffic_density == "no-traffic":
-        os.remove(f"{scenario}/traffic/all.rou.xml")
+        os.remove(f"{scenario}/build/traffic/all.rou.xml")
 
     if stopwatcher_behavior or "ego_hijacking_params" not in route_distributions:
         mission_objects = [Mission(ego_route) for ego_route in ego_routes]

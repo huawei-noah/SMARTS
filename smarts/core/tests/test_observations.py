@@ -257,7 +257,7 @@ def scenario():
     )
     return Scenario(
         scenario_root="scenarios/sumo/intersections/2lane",
-        traffic_specs=["scenarios/sumo/intersections/2lane/traffic/vertical.rou.xml"],
+        traffic_specs=["scenarios/sumo/intersections/2lane/build/traffic/vertical.rou.xml"],
         missions={AGENT_ID: mission},
     )
 

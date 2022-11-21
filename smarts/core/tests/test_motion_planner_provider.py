@@ -55,7 +55,7 @@ def loop_scenario():
     )
     scenario = Scenario(
         scenario_root="scenarios/sumo/loop",
-        traffic_specs=["scenarios/sumo/loop/traffic/basic.rou.xml"],
+        traffic_specs=["scenarios/sumo/loop/build/traffic/basic.rou.xml"],
         missions={AGENT_ID: mission},
     )
     return scenario

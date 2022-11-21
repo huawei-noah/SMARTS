@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -97,6 +98,11 @@ def clean_scenario(scenario: str):
         "build.db",
     ]
     p = Path(scenario)
+
+    shutil.rmtree(p / "build", ignore_errors=True)
+    shutil.rmtree(p / "traffic", ignore_errors=True)
+    shutil.rmtree(p / "social_agents", ignore_errors=True)
+    
     for file_name in to_be_removed:
         for f in p.glob(file_name):
             # Remove file

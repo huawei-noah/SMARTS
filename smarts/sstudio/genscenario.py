@@ -41,7 +41,7 @@ from .generators import TrafficGenerator
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__file__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 
 def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
@@ -130,11 +130,13 @@ def gen_scenario(
     # XXX: For now this simply coalesces the sub-calls but in the future this allows
     #      us to simplify our serialization between SStudio and SMARTS.
 
-    output_dir = os.path.abspath(str(output_dir))
-    build_graph = _build_graph(scenario, output_dir)
+    scenario_dir = os.path.abspath(str(output_dir))
+    build_dir = os.path.join(scenario_dir, "build")
+    build_graph = _build_graph(scenario, build_dir)
+    os.makedirs(build_dir, exist_ok=True)
 
     # Create DB for build caching
-    db_path = os.path.join(output_dir, "build.db")
+    db_path = os.path.join(build_dir, "build.db")
     db_conn = sqlite3.connect(db_path)
 
     cur = db_conn.cursor()
@@ -151,11 +153,11 @@ def gen_scenario(
         artifact_paths = build_graph["map_spec"]
         obj_hash = pickle_hash(scenario.map_spec, True)
         if _needs_build(db_conn, scenario.map_spec, artifact_paths, obj_hash):
-            gen_map(output_dir, scenario.map_spec)
+            gen_map(scenario_dir, scenario.map_spec)
             _update_artifacts(db_conn, artifact_paths, obj_hash)
             map_spec = scenario.map_spec
         else:
-            map_spec = types.MapSpec(source=output_dir)
+            map_spec = types.MapSpec(source=scenario_dir)
 
     with timeit("traffic", logger.info):
         artifact_paths = build_graph["traffic"]
@@ -163,7 +165,7 @@ def gen_scenario(
         if _needs_build(db_conn, scenario.traffic, artifact_paths, obj_hash):
             for name, traffic in scenario.traffic.items():
                 gen_traffic(
-                    scenario=output_dir,
+                    scenario=scenario_dir,
                     traffic=traffic,
                     name=name,
                     seed=seed,
@@ -260,7 +262,11 @@ def gen_scenario(
 
 def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None):
     """Saves a map spec to file."""
-    output_path = os.path.join(output_dir or scenario, "map_spec.pkl")
+    build_dir = os.path.join(scenario, "build")
+    output_dir = os.path.join(output_dir or build_dir, "map")
+    os.makedirs(output_dir, exist_ok=True)
+
+    output_path = os.path.join(output_dir, "map_spec.pkl")
     with open(output_path, "wb") as f:
         # we use cloudpickle here instead of pickle because the
         # map_spec object may contain a reference to a map_builder callable
@@ -280,7 +286,8 @@ def gen_traffic(
     not provided, the scenario directory is used."""
     assert name != "missions", "The name 'missions' is reserved for missions!"
 
-    output_dir = os.path.join(output_dir or scenario, "traffic")
+    build_dir = os.path.join(scenario, "build")
+    output_dir = os.path.join(output_dir or build_dir, "traffic")
     os.makedirs(output_dir, exist_ok=True)
 
     generator = TrafficGenerator(scenario, map_spec, overwrite=overwrite)
@@ -335,7 +342,7 @@ def gen_social_agent_missions(
     if len(actor_names) != len(set(actor_names)):
         raise ValueError(f"Actor names={actor_names} must not contain duplicates")
 
-    output_dir = os.path.join(scenario, "social_agents")
+    output_dir = os.path.join(scenario, "build", "social_agents")
     saved = _gen_missions(
         scenario=scenario,
         missions=missions,
@@ -374,12 +381,13 @@ def gen_missions(
             An optional map specification that takes precedence over scenario directory information.
     """
 
+    output_dir = os.path.join(scenario, "build")
     saved = _gen_missions(
         scenario=scenario,
         missions=missions,
         actors=[types.TrafficActor(name="car")],
         name="missions",
-        output_dir=scenario,
+        output_dir=output_dir,
         seed=seed,
         overwrite=overwrite,
         map_spec=map_spec,
@@ -462,7 +470,7 @@ def gen_bubbles(scenario: str, bubbles: Sequence[types.Bubble]):
         bubbles:
             The bubbles to add to the scenario.
     """
-    output_path = os.path.join(scenario, "bubbles.pkl")
+    output_path = os.path.join(scenario, "build", "bubbles.pkl")
     with open(output_path, "wb") as f:
         pickle.dump(bubbles, f)
 
@@ -471,7 +479,7 @@ def gen_friction_map(scenario: str, surface_patches: Sequence[types.RoadSurfaceP
     """Generates friction map file according to the surface patches defined in
     scenario file.
     """
-    output_path = os.path.join(scenario, "friction_map.pkl")
+    output_path = os.path.join(scenario, "build", "friction_map.pkl")
     with open(output_path, "wb") as f:
         pickle.dump(surface_patches, f)
 
@@ -599,4 +607,5 @@ def gen_traffic_histories(
                 logger.warn(
                     f"no map_spec supplied, so unable to filter off-map coordinates and/or flip_y for {hdsr.name}"
                 )
-        genhistories.import_dataset(hdsr, scenario, overwrite, map_bbox)
+        output_dir = os.path.join(scenario, "build")
+        genhistories.import_dataset(hdsr, output_dir, overwrite, map_bbox)

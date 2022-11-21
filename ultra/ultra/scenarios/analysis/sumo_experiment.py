@@ -575,7 +575,7 @@ def sumo_traci_runner(
                 "-n",
                 current_scenario_dir + "/map.net.xml",
                 "-r",
-                current_scenario_dir + "/traffic/all.rou.xml",
+                current_scenario_dir + "/build/traffic/all.rou.xml",
                 "--seed",
                 str(np.random.randint(0, run_per_scenario)),
             ]
@@ -615,7 +615,7 @@ def sumo_traci_runner(
 
 
 # Default sumo instruction for 4 lane_t
-# sumo -n research/edmonton/intersections/scenarios/task1/hard_4lane_t_80kmh_heavy_traffic_stress_test_t_intersection-mission-0-flow-0/map.net.xml -r research/edmonton/intersections/scenarios/task1/hard_4lane_t_80kmh_heavy_traffic_stress_test_t_intersection-mission-0-flow-0/traffic/all.rou.xml --remote-port=8813
+# sumo -n research/edmonton/intersections/scenarios/task1/hard_4lane_t_80kmh_heavy_traffic_stress_test_t_intersection-mission-0-flow-0/map.net.xml -r research/edmonton/intersections/scenarios/task1/hard_4lane_t_80kmh_heavy_traffic_stress_test_t_intersection-mission-0-flow-0/build/traffic/all.rou.xml --remote-port=8813
 # Run command example
 # python research/edmonton/intersections/scenarios/sumo_experiment.py --level="hard" --task="1" --scenario_dir="research/edmonton/intersections/scenarios/task1/hard_4lane_t_80kmh_heavy_traffic_stress_test_t_intersection-mission-0" --figure_dir="research/edmonton/intersections/scenarios/task1/figures" --setting_id="hard_t_intersection_4_vehicle_prob_0_05" --num_scenario=100
 if __name__ == "__main__":
