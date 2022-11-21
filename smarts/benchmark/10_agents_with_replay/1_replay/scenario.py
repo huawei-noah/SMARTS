@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import Mission, Route, Scenario, SocialAgentActor,RandomRoute
+from smarts.sstudio.types import Mission, RandomRoute, Route, Scenario, SocialAgentActor
 
 actors = [
     SocialAgentActor(
@@ -12,11 +12,15 @@ actors = [
     )
 ]
 
+
 def to_missions(agent_num):
     missions = {}
-    for i in range(0,agent_num):
-        missions[f'group-{i}']=tuple((actors, [Mission(route=RandomRoute())]),)
+    for i in range(0, agent_num):
+        missions[f"group-{i}"] = tuple(
+            (actors, [Mission(route=RandomRoute())]),
+        )
     return missions
+
 
 gen_scenario(
     Scenario(

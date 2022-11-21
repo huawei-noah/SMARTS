@@ -1,25 +1,25 @@
 import logging
+import os
+import platform
+import subprocess
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Callable, Tuple
-import os
-import platform, psutil
-import pandas as pd
-import smarts
-import gym
-import subprocess
-import cpuinfo
 
-from cli.studio import build_scenarios
-from datetime import datetime
+import cpuinfo
+import gym
+import pandas as pd
+import psutil
 from mdutils.mdutils import MdUtils
 from pygit2 import Repository
+
+import smarts
+from cli.studio import build_scenarios
+from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from smarts.core.scenario import Scenario
 from smarts.core.utils.logging import timeit
-from smarts.core.agent_interface import DoneCriteria
-from smarts.core.agent_interface import AgentInterface
 from smarts.zoo.agent_spec import AgentSpec
-
 
 _SEED = 42
 _MAX_REPLAY_EPISODE_STEPS = 100
@@ -70,7 +70,7 @@ def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
 
     records = {}
     for k, v in results.items():
-        parsed_name=k.split("benchmark/")[1]
+        parsed_name = k.split("benchmark/")[1]
         records[parsed_name] = _readable(
             func=v, num_episodes=num_episodes, num_steps=num_episode_steps[k]
         )
@@ -148,8 +148,7 @@ def _get_funcs() -> _Funcs:
 def _readable(func: _Funcs, num_episodes: int, num_steps: int):
     avg = func.avg_get()
     std = func.std_get()
-    steps_per_sec = num_steps / (avg / 1000) # Units: Steps per Second
-
+    steps_per_sec = num_steps / (avg / 1000)  # Units: Steps per Second
 
     return _Result(
         num_episodes=num_episodes,
@@ -166,7 +165,6 @@ def get_git_revision_short_hash() -> str:
         .decode("ascii")
         .strip()
     )
-
 
 
 # Write report in .md format
@@ -206,12 +204,19 @@ def write_report(results):
     scenarios_list = []
     means_list = []
     # Write a table
-    content = ["Scenario(s)","Total Time Steps","Mean(time_step/sec)", "Std"]
+    content = ["Scenario(s)", "Total Time Steps", "Mean(time_step/sec)", "Std"]
     # Write rows
     for scenario_path, data in results.items():
         scenarios_list.append(scenario_path)
         means_list.append(data.steps_per_sec)
-        content.extend([f"{scenario_path}", f"{data.num_steps}", f"{data.steps_per_sec:.2f}", f"{data.std:.2f}"])
+        content.extend(
+            [
+                f"{scenario_path}",
+                f"{data.num_steps}",
+                f"{data.steps_per_sec:.2f}",
+                f"{data.std:.2f}",
+            ]
+        )
     mdFile.new_line()
     mdFile.new_table(columns=4, rows=len(list(results.keys())) + 1, text=content)
     # Draw a graph
@@ -241,14 +246,14 @@ def write_report(results):
         ]
     )
 
+
 def main(scenarios):
     results = {}
     for scenario in scenarios:
         path = Path(__file__).resolve().parent / scenario
         logger.info("Benchmarking: %s", path)
         results.update(_compute(scenario_dir=[path]))
-        
+
     print("----------------------------------------------")
     print(results)
     write_report(results)
-

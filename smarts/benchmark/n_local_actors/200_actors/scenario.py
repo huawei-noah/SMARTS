@@ -1,9 +1,7 @@
-
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-
 
 traffic = t.Traffic(
     engine="SMARTS",
@@ -15,7 +13,7 @@ traffic = t.Traffic(
             actors={t.TrafficActor("car"): 1},
         )
         for lane_idx in range(5)
-    ]
+    ],
 )
 
 scenario = t.Scenario(

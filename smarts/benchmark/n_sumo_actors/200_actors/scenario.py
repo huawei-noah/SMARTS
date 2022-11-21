@@ -1,9 +1,7 @@
-
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-
 
 traffic = t.Traffic(
     flows=[
