@@ -172,7 +172,7 @@ def test_sensor_worker(
     observations, dones = SensorsWorker.local(
         simulation_frame, sim.local_constants, agent_ids
     )
-    other_observations, other_dones = worker.result(block=True, timeout=5)
+    other_observations, other_dones = worker.result(timeout=5)
 
     assert isinstance(observations, dict)
     assert all(

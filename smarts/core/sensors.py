@@ -886,8 +886,8 @@ class ProcessWorker:
 
     def __init__(self, serialize_results=False) -> None:
         parent_connection, child_connection = mp.Pipe()
-        self._pc_next_args: mp.connection.Connection = parent_connection
-        self._cc_next_args: mp.connection.Connection = child_connection
+        self._pc_next_args = parent_connection
+        self._cc_next_args = child_connection
         self._serialize_results = serialize_results
 
     @classmethod
@@ -951,13 +951,14 @@ class ProcessWorker:
         with timeit("put to worker", print):
             self._pc_next_args.send((args, kwargs))
 
-    def result(self, block=False, timeout=None):
+    def result(self, timeout=None):
         with timeit("main thread blocked", print):
-            results = self._pc_next_args.recv()
+            conn = mp.connection.wait([self._pc_next_args], timeout=timeout).pop()
+            result = conn.recv()
         with timeit("deserialize for main thread", print):
             if self._serialize_results:
-                results = Sensors.deserialize_for_observation(results)
-        return results
+                result = Sensors.deserialize_for_observation(result)
+        return result
 
     @property
     def connection(self):
