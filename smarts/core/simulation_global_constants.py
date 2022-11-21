@@ -19,7 +19,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import os
 from dataclasses import dataclass
+from functools import lru_cache
 
 
 # TODO MTA: Start to use this
@@ -27,27 +29,43 @@ from dataclasses import dataclass
 class SimulationGlobalConstants:
     """This is state that should not ever change."""
 
+    DEBUG: bool
     OBSERVATION_WORKERS: int
 
+    _FEATURES = {
+        ("DEBUG", bool, False),
+        ("OBSERVATION_WORKERS", int, 0),
+    }
+
     _SMARTS_ENVIRONMENT_PREFIX: str = "SEV_"
+
+    @classmethod
+    @lru_cache(1)
+    def _FEATURE_KEYS(cls):
+        return {k for k, _, _ in cls._FEATURES}
+
+    @classmethod
+    def env_name(cls, name):
+        assert name in cls._FEATURE_KEYS(), f"{name} not in {cls._FEATURE_KEYS()}"
+        return f"{cls._SMARTS_ENVIRONMENT_PREFIX}{name}"
 
     @classmethod
     def from_environment(cls, environ):
         """This is intended to be used in the following way:
         >>> sgc = SimulationGlobalConstants.from_environment(os.environ)
         """
-        SEV = cls._SMARTS_ENVIRONMENT_PREFIX
 
         def environ_get(NAME, data_type, default):
-            nonlocal SEV
             assert isinstance(default, data_type)
-            return data_type(environ.get(f"{SEV}{NAME}", default))
+            return data_type(environ.get(cls.env_name(NAME), default))
 
-        # TODO MTA: consider a different option where defaults are in the object:
-        # and the typehints are used to determine the type
-        # cls(
-        #   **environ_get_all(cls._SMARTS_ENVIRONMENT_PREFIX)
-        # )
-        return cls(
-            OBSERVATION_WORKERS=environ_get("OBSERVATION_WORKERS", int, 0),
-        )
+        def environ_get_features(features):
+            return {
+                name: environ_get(name, type, default)
+                for name, type, default in features
+            }
+
+        return cls(**environ_get_features(cls._FEATURES))
+
+
+environ = SimulationGlobalConstants.from_environment(os.environ)

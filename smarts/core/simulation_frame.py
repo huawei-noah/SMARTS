@@ -32,7 +32,6 @@ from smarts.core.vehicle_state import Collision, VehicleState
 logger = logging.getLogger(__name__)
 
 
-# TODO MTA: Move this class to a new separate file for typehint purposes
 @dataclass(frozen=True)
 class SimulationFrame:
     """This is state that should change per step of the simulation."""

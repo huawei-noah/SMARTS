@@ -23,13 +23,10 @@ import re
 import multiprocessing as mp
 import sys
 import time
-import weakref
-from asyncio import as_completed
 from collections import deque, namedtuple
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Set, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -39,8 +36,9 @@ from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.simulation_frame import SimulationFrame
+import smarts.core.simulation_global_constants as sgc
 from smarts.core.utils.logging import timeit
-from smarts.core.utils.math import squared_dist, vec_2d, yaw_from_quaternion
+from smarts.core.utils.math import squared_dist
 from smarts.core.vehicle_state import VehicleState
 
 from .coordinates import Heading, Point, Pose, RefLinePoint
@@ -70,9 +68,6 @@ LANE_ID_CONSTANT = "off_lane"
 ROAD_ID_CONSTANT = "off_road"
 LANE_INDEX_CONSTANT = -1
 
-import os
-
-SEV_THREADS = int(os.environ.get("SEV_THREADS", 1))
 
 def _make_vehicle_observation(road_map, neighborhood_vehicle):
     nv_lane = road_map.nearest_lane(neighborhood_vehicle.pose.point, radius=3)
@@ -180,7 +175,7 @@ class Sensors:
         observations, dones = {}, {}
 
         used_processes = (
-            SEV_THREADS
+            sgc.environ.OBSERVATION_WORKERS
             if process_count_override == None
             else max(0, process_count_override)
         )
