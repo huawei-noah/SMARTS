@@ -21,11 +21,11 @@
 # THE SOFTWARE.
 import os
 import typing
+from pathlib import Path
 
 import gym
 import gym.envs
 
-from pathlib import Path
 from smarts.env.wrappers.gif_recorder import GifRecorder
 
 
