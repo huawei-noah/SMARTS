@@ -108,7 +108,7 @@ class _Result:
 
 
 def welford() -> Tuple[
-    Callable[[float], None], Callable[[], float], Callable[[], float]
+    Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int]
 ]:
     # Welford's online mean and std computation
     # Reference: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
