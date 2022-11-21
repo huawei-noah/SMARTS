@@ -198,10 +198,6 @@ def _write_report(results: Dict[str, Any]):
         f"RAM: {str(round(psutil.virtual_memory().total / (1024.0 **3)))+' GB'}\n\n"
     )
 
-    mdFile.new_header(level=2, title="Function", add_table_of_contents="n")
-    mdFile.write("- Track performance of SMARTS in each version.\n")
-    mdFile.write("- Test effects of improvements or optimizations.\n")
-
     means = []
     stds=[]
     scenarios=[]
