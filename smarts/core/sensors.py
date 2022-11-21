@@ -31,12 +31,12 @@ from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 import numpy as np
 from scipy.spatial.distance import cdist
 
+import smarts.core.simulation_global_constants as sgc
 from smarts.core.agent_interface import ActorsAliveDoneCriteria, AgentsAliveDoneCriteria
 from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.simulation_frame import SimulationFrame
-import smarts.core.simulation_global_constants as sgc
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.math import squared_dist
 from smarts.core.vehicle_state import VehicleState
