@@ -31,12 +31,13 @@ from smarts.core.utils.logging import timeit
 
 _SEED = 42
 _MAX_REPLAY_EPISODE_STEPS = 100
+_MAX_EPISODE_STEPS = 1000
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
 
 
-def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
+def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=_MAX_EPISODE_STEPS):
     build_scenarios(
         allow_offset_maps=False,
         clean=False,
@@ -68,10 +69,9 @@ def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
     for _ in range(num_episodes):
         env.reset()
         scenario_name = (env.scenario_log)["scenario_map"]
-        avg_compute = results[scenario_name].avg_compute
-        std_store = results[scenario_name].std_store
-        with timeit("Benchmark", print, funcs=[avg_compute, std_store]):
-            for _ in range(num_episode_steps[scenario_name]):
+        update = results[scenario_name].update
+        for _ in range(num_episode_steps[scenario_name]):
+            with timeit("Benchmark", print, funcs=[update]):
                 env.step({})
 
     env.close()
@@ -87,82 +87,66 @@ def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=1000):
 
 @dataclass
 class _Funcs:
-    avg_compute: Callable[[float], float]
-    avg_get: Callable[[], float]
-    std_store: Callable[[float], None]
-    std_get: Callable[[], float]
+    update: Callable[[float], None]
+    mean: Callable[[], float]
+    std: Callable[[], float]
 
 
 @dataclass
 class _Result:
     num_episodes: int
     num_steps: int
-    avg: float
+    mean: float
     std: float
-    steps_per_sec: float
 
 
-def _avg() -> Tuple[Callable[[float], float], Callable[[], float]]:
-    ave = 0
-    step = 0
+def welford()->Tuple[Callable[[float],None],Callable[[],float],Callable[[],float]]:
+    # Welford's online mean and std computation
+    # Reference: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
+    # Reference: https://www.adamsmith.haus/python/answers/how-to-find-a-running-standard-deviation-in-python 
 
-    def compute(val):
-        nonlocal ave, step
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=val)
-        return ave
+    import math
+    n = 0 # steps
+    M = 0 
+    S = 0
 
-    def get():
-        nonlocal ave
-        return ave
+    def update(val:float):
+        nonlocal n, M, S
+        n = n + 1
+        newM = M + (val - M)/n
+        newS = S + (val - M)*(val - newM)
+        M = newM
+        S = newS
 
-    return compute, get
+    def mean()->float:
+        return M
 
+    def std()->float:      
+        nonlocal n, M, S
+        if n == 1:
+            return 0
 
-def _running_ave(prev_ave: float, prev_step: int, new_val: float) -> Tuple[float, int]:
-    new_step = prev_step + 1
-    new_ave = prev_ave + (new_val - prev_ave) / new_step
-    return new_ave, new_step
+        std = math.sqrt(S/(n-1))
+        return std
 
-
-def _std() -> Tuple[Callable[[float], None], Callable[[], float]]:
-    values = []
-
-    def store(val):
-        nonlocal values
-        values.append(val)
-        return
-
-    def get():
-        nonlocal values
-        import statistics
-
-        return statistics.stdev(values)
-
-    return store, get
+    return update, mean, std
 
 
 def _get_funcs() -> _Funcs:
-    avg_compute, avg_get = _avg()
-    std_store, std_get = _std()
+    update, mean, std = welford()
     return _Funcs(
-        avg_compute=avg_compute,
-        avg_get=avg_get,
-        std_store=std_store,
-        std_get=std_get,
+        update=lambda x:update(1000/x), # Steps per sec. Units: step/s
+        mean=mean,
+        std=std,
     )
 
 
-def _readable(func: _Funcs, num_episodes: int, num_steps: int):
-    avg = func.avg_get()
-    std = func.std_get()
-    steps_per_sec = num_steps / (avg / 1000)  # Units: Steps per Second
-
+def _readable(func: _Funcs, num_episodes: int, num_steps: int)->_Result:
     return _Result(
         num_episodes=num_episodes,
         num_steps=num_steps,
-        avg=avg,
-        std=std,
-        steps_per_sec=steps_per_sec,
+        mean=func.mean(),
+        std=func.std(),
     )
 
 
