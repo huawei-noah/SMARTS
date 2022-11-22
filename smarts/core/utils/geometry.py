@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 import math
-from typing import List
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import trimesh
@@ -55,17 +55,21 @@ def triangulate_polygon(polygon: Polygon):
     ]
 
 
-def generate_mesh_from_polygons(polygons: List[Polygon]) -> trimesh.Trimesh:
+def generate_meshes_from_polygons(
+    polygons: List[Tuple[Polygon, Dict[str, Any]]]
+) -> List[trimesh.Trimesh]:
     """Creates a mesh out of a list of polygons."""
-    vertices, faces = [], []
-    point_dict = dict()
-    current_point_index = 0
+    meshes = []
 
     # Trimesh's API require a list of vertices and a list of faces, where each
     # face contains three indexes into the vertices list. Ideally, the vertices
     # are all unique and the faces list references the same indexes as needed.
     # TODO: Batch the polygon processing.
-    for poly in polygons:
+    for poly, metadata in polygons:
+        vertices, faces = [], []
+        point_dict = dict()
+        current_point_index = 0
+
         # Collect all the points on the shape to reduce checks by 3 times
         for x, y in poly.exterior.coords:
             p = (x, y, 0)
@@ -82,11 +86,12 @@ def generate_mesh_from_polygons(polygons: List[Polygon]) -> trimesh.Trimesh:
             if -1 not in face:
                 faces.append(face)
 
-    mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, metadata=metadata)
 
-    # Trimesh doesn't support a coordinate-system="z-up" configuration, so we
-    # have to apply the transformation manually.
-    mesh.apply_transform(
-        trimesh.transformations.rotation_matrix(math.pi / 2, [-1, 0, 0])
-    )
-    return mesh
+        # Trimesh doesn't support a coordinate-system="z-up" configuration, so we
+        # have to apply the transformation manually.
+        mesh.apply_transform(
+            trimesh.transformations.rotation_matrix(math.pi / 2, [-1, 0, 0])
+        )
+        meshes.append(mesh)
+    return meshes

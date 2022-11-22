@@ -9,7 +9,7 @@ test: build-all-scenarios
 		--dist=loadscope \
 		-n `expr \( \`nproc\` \/ 2 \& \`nproc\` \> 3 \) \| 2` \
 		--nb-exec-timeout 65536 \
-		./examples/tests ./smarts/env ./envision ./smarts/contrib ./smarts/core ./smarts/sstudio ./tests \
+		./examples/tests ./smarts/env ./envision ./smarts/core ./smarts/sstudio ./tests \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
 		--ignore=./smarts/core/tests/test_env_frame_rate.py \
 		--ignore=./smarts/env/tests/test_benchmark.py \
