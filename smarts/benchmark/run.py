@@ -25,7 +25,7 @@ import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Callable, Dict, Sequence, Tuple
 
 import cpuinfo
 import gym
@@ -36,6 +36,7 @@ import smarts
 from cli.studio import build_scenarios
 from smarts.core.scenario import Scenario
 from smarts.core.utils.logging import timeit
+from smarts.core.utils.math import welford
 
 _SEED = 42
 _MAX_REPLAY_EPISODE_STEPS = 100
@@ -107,44 +108,6 @@ class _Result:
     std: float
 
 
-def welford() -> Tuple[
-    Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int]
-]:
-    # Welford's online mean and std computation
-    # Reference: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
-    # Reference: https://www.adamsmith.haus/python/answers/how-to-find-a-running-standard-deviation-in-python
-
-    import math
-
-    n = 0  # steps
-    M = 0
-    S = 0
-
-    def update(val: float):
-        nonlocal n, M, S
-        n = n + 1
-        newM = M + (val - M) / n
-        newS = S + (val - M) * (val - newM)
-        M = newM
-        S = newS
-
-    def mean() -> float:
-        return M
-
-    def std() -> float:
-        nonlocal n, M, S
-        if n == 1:
-            return 0
-
-        std = math.sqrt(S / (n - 1))
-        return std
-
-    def steps() -> int:
-        return n
-
-    return update, mean, std, steps
-
-
 def _get_funcs() -> _Funcs:
     update, mean, std, steps = welford()
     return _Funcs(
@@ -164,6 +127,11 @@ def _readable(func: _Funcs) -> _Result:
 
 
 def git_revision_short_hash() -> str:
+    """Returns Git commit short hash.
+
+    :return: Commit hash.
+    :rtype: str
+    """
     return (
         subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
         .decode("ascii")
@@ -172,6 +140,11 @@ def git_revision_short_hash() -> str:
 
 
 def git_branch() -> str:
+    """Returns Git branch.
+
+    :return: Branch name.
+    :rtype: str
+    """
     return (
         subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
         .decode("ascii")
@@ -231,7 +204,13 @@ def _write_report(results: Dict[str, Any]):
     mdFile.create_md_file()
 
 
-def main(scenarios):
+def main(scenarios:Sequence[str]):
+    """Run benchmark.
+
+    :param scenarios: Scenarios to be timed.
+    :type scenarios: Sequence[str]
+    """
+
     results = {}
     for scenario in scenarios:
         path = str(Path(__file__).resolve().parent / scenario)

@@ -520,3 +520,45 @@ def rounder_for_dt(dt: float) -> Callable[[float], float]:
     """return a rounding function appropriate for timestepping."""
     rp = round_param_for_dt(dt)
     return lambda f: round(f, rp)
+
+
+def welford() -> Tuple[
+    Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int]
+]:
+    """Welford's online mean and std computation
+    Reference: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
+    Reference: https://www.adamsmith.haus/python/answers/how-to-find-a-running-standard-deviation-in-python
+
+    :return: Callable functions to update, get mean, get std, get steps
+    :rtype: Tuple[ Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int] ]
+    """
+
+    import math
+
+    n = 0  # steps
+    M = 0
+    S = 0
+
+    def update(val: float):
+        nonlocal n, M, S
+        n = n + 1
+        newM = M + (val - M) / n
+        newS = S + (val - M) * (val - newM)
+        M = newM
+        S = newS
+
+    def mean() -> float:
+        return M
+
+    def std() -> float:
+        nonlocal n, M, S
+        if n == 1:
+            return 0
+
+        std = math.sqrt(S / (n - 1))
+        return std
+
+    def steps() -> int:
+        return n
+
+    return update, mean, std, steps
