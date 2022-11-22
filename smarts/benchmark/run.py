@@ -46,7 +46,7 @@ logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
 
 
-def _compute(scenario_dir, ep_per_scenario=5, max_episode_steps=_MAX_EPISODE_STEPS):
+def _compute(scenario_dir, ep_per_scenario=10, max_episode_steps=_MAX_EPISODE_STEPS):
     build_scenarios(
         allow_offset_maps=False,
         clean=False,
