@@ -49,7 +49,7 @@ def scenario_cli():
     help="Set the base seed of the scenario.",
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def build_scenario(clean: bool, allow_offset_map: bool, scenario: str, seed: int):
+def build_scenario(clean: bool, scenario: str, seed: int):
     click.echo(f"build-scenario {scenario}")
 
     from smarts.sstudio.scenario_construction import build_single_scenario

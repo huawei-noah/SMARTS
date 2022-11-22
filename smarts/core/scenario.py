@@ -939,7 +939,7 @@ class Scenario:
     @property
     def map_glb_filepath(self):
         """The map geometry filepath."""
-        return os.path.join(self._root, "map", "map.glb")
+        return os.path.join(self._root, "build", "map", "map.glb")
 
     def unique_sumo_log_file(self):
         """A unique logging file for SUMO logging."""
