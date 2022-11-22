@@ -39,7 +39,7 @@ phases:
         description: Track-1
         label: "Track 1"
         start_date: 2022-09-01
-        max_submissions: 2
+        max_submissions: 6
         is_scoring_only: False
         scoring_program: scoring_program.zip
         reference_data: track1_evaluation.zip
@@ -52,7 +52,7 @@ phases:
         description: Track-2
         label: "Track 2"
         start_date: 2022-11-01
-        max_submissions: 2
+        max_submissions: 6
         is_scoring_only: False
         scoring_program: scoring_program.zip
         reference_data: track2_evaluation.zip
