@@ -44,7 +44,7 @@ scl.add_command(scenario_cli)
 scl.add_command(ultra_cli)
 scl.add_command(zoo_cli)
 scl.add_command(run_experiment)
-scl.add_command(benchmark_cli)
+
 try:
     from cli.waymo import waymo_cli
 except (ModuleNotFoundError, ImportError):
@@ -61,9 +61,8 @@ except (ModuleNotFoundError, ImportError):
             "pip install pathos==0.2.8 tabulate>=0.8.10 waymo-open-dataset-tf-2-4-0"
         )
 
-
 scl.add_command(waymo_cli)
-
+scl.add_command(benchmark_cli)
 
 if __name__ == "__main__":
     scl()

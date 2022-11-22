@@ -17,24 +17,3 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
-import click
-
-
-@click.group(
-    name="benchmark",
-    help="Utilities for benchmarking the simulation performance. See `scl benchmark COMMAND --help` for further options.",
-)
-def benchmark_cli():
-    pass
-
-
-@click.command("run", help="Run all benchmarks.")
-@click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def run(scenarios):
-    from smarts.benchmark import run as _run
-
-    _run.main(scenarios)
-
-
-benchmark_cli.add_command(run)
