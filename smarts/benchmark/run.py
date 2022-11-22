@@ -97,7 +97,7 @@ class _Funcs:
     update: Callable[[float], None]
     mean: Callable[[], float]
     std: Callable[[], float]
-    steps: int
+    steps: Callable[[], int]
 
 
 @dataclass
@@ -234,7 +234,7 @@ def _write_report(results: Dict[str, Any]):
 def main(scenarios):
     results = {}
     for scenario in scenarios:
-        path = Path(__file__).resolve().parent / scenario
+        path = str(Path(__file__).resolve().parent / scenario)
         logger.info("Benchmarking: %s", path)
         results.update(_compute(scenario_dir=[path]))
 

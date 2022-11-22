@@ -51,7 +51,6 @@ jobs:
             -n auto \
             --ignore-glob="**/ros.py" \
             --ignore-glob="**/waymo_map.py" \
-            --ignore-glob="**/smarts/benchmark/*" \
             ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/core/tests/test_env_frame_rate.py \
