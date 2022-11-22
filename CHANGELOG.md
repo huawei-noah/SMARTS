@@ -12,6 +12,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added single vehicle `Trip` into type. 
 - Added new video record ultility using moviepy.
+- Added distance check between bubble and vehicle to avoid generating unnecessary cursors.
 ### Deprecated
 ### Changed
 ### Removed
