@@ -72,6 +72,7 @@ def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
 
     if scenario.traffic_histories:
         for dataset in scenario.traffic_histories:
+            assert isinstance(dataset, types.TrafficHistoryDataset)
             artifact_path = os.path.join(base_dir, f"{dataset.name}.shf")
             graph["traffic_histories"].append(artifact_path)
 
