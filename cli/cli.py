@@ -60,21 +60,6 @@ except (ModuleNotFoundError, ImportError):
             "The `scl waymo` command is unavailable. To enable, pip install the missing dependencies.\n"
             "pip install pathos==0.2.8 tabulate>=0.8.10 waymo-open-dataset-tf-2-4-0"
         )
-try:
-    from cli.benchmark import benchmark_cli
-except (ModuleNotFoundError, ImportError):
-
-    @click.group(
-        name="benchmark",
-        invoke_without_command=True,
-        help="The `scl benchmark` command requires `[benchmark]`.",
-    )
-    @click.pass_context
-    def benchmark_cli(ctx):
-        click.echo(
-            "The `scl benchmark` command is unavailable. To enable, pip install the missing dependencies.\n"
-            "pip install -e .[benchmark]"
-        )
 
 scl.add_command(waymo_cli)
 scl.add_command(benchmark_cli)
