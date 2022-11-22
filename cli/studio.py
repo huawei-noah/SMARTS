@@ -43,12 +43,6 @@ def scenario_cli():
     help="Clean previously generated artifacts first",
 )
 @click.option(
-    "--allow-offset-map",
-    is_flag=True,
-    default=False,
-    help="Allows road network to be offset from the origin. If not specified, creates a new network file if necessary.",
-)
-@click.option(
     "--seed",
     type=int,
     default=42,
@@ -62,12 +56,11 @@ def build_scenario(clean: bool, allow_offset_map: bool, scenario: str, seed: int
 
     assert seed == None or isinstance(seed, (int))
 
-    build_single_scenario(clean, allow_offset_map, scenario, seed, click.echo)
+    build_single_scenario(clean, scenario, seed, click.echo)
 
 
 def _build_single_scenario_proc(
     clean: bool,
-    allow_offset_map: bool,
     scenario: str,
     semaphore: synchronize.Semaphore,
     seed: int,
@@ -76,7 +69,7 @@ def _build_single_scenario_proc(
 
     semaphore.acquire()
     try:
-        build_single_scenario(clean, allow_offset_map, scenario, seed, click.echo)
+        build_single_scenario(clean, scenario, seed, click.echo)
     finally:
         semaphore.release()
 
@@ -144,7 +137,7 @@ def _build_all_scenarios(
                 scenario = f"{scenarios_path}/{p.relative_to(scenarios_path)}"
                 proc = Process(
                     target=_build_single_scenario_proc,
-                    args=(clean, allow_offset_maps, scenario, sema, seed),
+                    args=(clean, scenario, sema, seed),
                 )
                 all_processes.append((scenario, proc))
                 proc.start()

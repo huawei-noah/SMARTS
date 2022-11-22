@@ -32,8 +32,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle
+from smarts.core.default_map_builder import find_mapfile_in_dir
 
-from smarts.core.utils.file import pickle_hash
+from smarts.core.utils.file import file_md5_hash, path2hash, pickle_hash
 from smarts.core.utils.logging import timeit
 
 from . import types
@@ -47,8 +48,10 @@ logger.setLevel(logging.WARNING)
 def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
     graph = collections.defaultdict(list)
 
+    graph["map"] = [os.path.join(base_dir, "map", "map.glb")]
+
     if scenario.map_spec:
-        graph["map_spec"] = [os.path.join(base_dir, "map_spec.pkl")]
+        graph["map_spec"] = [os.path.join(base_dir, "map", "map_spec.pkl")]
 
     if scenario.traffic:
         for name, traffic in scenario.traffic.items():
@@ -61,7 +64,7 @@ def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
 
     if scenario.social_agent_missions:
         for name in scenario.social_agent_missions.keys():
-            artifact_path = os.path.join(base_dir, "social_agents", name)
+            artifact_path = os.path.join(base_dir, "social_agents", f"{name}.pkl")
             graph["social_agent_missions"].append(artifact_path)
 
     if scenario.bubbles:
@@ -84,9 +87,12 @@ def _needs_build(
     scenario_obj: Any,
     artifact_paths: List[str],
     obj_hash: str,
+    map_needs_build: Optional[bool] = None,
 ) -> bool:
     if scenario_obj is None:
         return False  # There's no object in the DSL, so nothing to build
+    if map_needs_build:
+        return True  # Passed as an override for artifacts that depend on the map
     if not all([os.path.exists(f) for f in artifact_paths]):
         return True  # Some of the expected output files don't exist
 
@@ -150,20 +156,61 @@ def gen_scenario(
     db_conn.commit()
     cur.close()
 
-    with timeit("gen_map", logger.info):
-        artifact_paths = build_graph["map_spec"]
-        obj_hash = pickle_hash(scenario.map_spec, True)
-        if _needs_build(db_conn, scenario.map_spec, artifact_paths, obj_hash):
+    # Map spec
+    artifact_paths = build_graph["map_spec"]
+    obj_hash = pickle_hash(scenario.map_spec, True)
+    if _needs_build(db_conn, scenario.map_spec, artifact_paths, obj_hash):
+        with timeit("map_spec", logger.info):
             gen_map(scenario_dir, scenario.map_spec)
             _update_artifacts(db_conn, artifact_paths, obj_hash)
-            map_spec = scenario.map_spec
-        else:
-            map_spec = types.MapSpec(source=scenario_dir)
+        map_spec = scenario.map_spec
+    else:
+        map_spec = types.MapSpec(source=scenario_dir)
 
-    with timeit("traffic", logger.info):
-        artifact_paths = build_graph["traffic"]
-        obj_hash = pickle_hash(scenario.traffic, True)
-        if _needs_build(db_conn, scenario.traffic, artifact_paths, obj_hash):
+    if map_spec.shift_to_origin and scenario.traffic_histories:
+        logger.warning(
+            "Attempting to shift map with traffic histories."
+            "The data may no longer line up with the map."
+        )
+
+    # Track changes to map file itself, if we can find it
+    if os.path.isdir(map_spec.source):
+        _, map_source = find_mapfile_in_dir(map_spec.source)
+    else:
+        map_source = map_spec.source
+    if os.path.isfile(map_source):
+        map_hash = file_md5_hash(map_source)
+    else:
+        map_hash = path2hash(map_source)
+
+    # Map glb file
+    artifact_paths = build_graph["map"]
+    map_needs_rebuild = _needs_build(db_conn, map_spec, artifact_paths, map_hash)
+    if map_needs_rebuild:
+        with timeit("map_glb", logger.info):
+            road_map, _ = map_spec.builder_fn(map_spec)
+            if not road_map:
+                logger.warning(
+                    "No reference to a RoadNetwork file was found in {}, or one could not be created. "
+                    "Please make sure the path passed is a valid Scenario with RoadNetwork file required "
+                    "(or a way to create one) for scenario building.".format(
+                        scenario_dir
+                    )
+                )
+                return
+
+            map_dir = os.path.join(build_dir, "map")
+            os.makedirs(map_dir, exist_ok=True)
+            road_map.to_glb(os.path.join(map_dir, "map.glb"))
+            _update_artifacts(db_conn, artifact_paths, map_hash)
+
+    # Traffic
+    artifact_paths = build_graph["traffic"]
+    obj_hash = pickle_hash(scenario.traffic, True)
+    if _needs_build(
+        db_conn, scenario.traffic, artifact_paths, obj_hash, map_needs_rebuild
+    ):
+        with timeit("traffic", logger.info):
             for name, traffic in scenario.traffic.items():
                 gen_traffic(
                     scenario=scenario_dir,
@@ -175,10 +222,13 @@ def gen_scenario(
                 )
             _update_artifacts(db_conn, artifact_paths, obj_hash)
 
-    with timeit("ego_missions", logger.info):
-        artifact_paths = build_graph["ego_missions"]
-        obj_hash = pickle_hash(scenario.ego_missions, True)
-        if _needs_build(db_conn, scenario.ego_missions, artifact_paths, obj_hash):
+    # Ego missions
+    artifact_paths = build_graph["ego_missions"]
+    obj_hash = pickle_hash(scenario.ego_missions, True)
+    if _needs_build(
+        db_conn, scenario.ego_missions, artifact_paths, obj_hash, map_needs_rebuild
+    ):
+        with timeit("ego_missions", logger.info):
             missions = []
             for mission in scenario.ego_missions:
                 if isinstance(mission, types.GroupedLapMission):
@@ -208,12 +258,17 @@ def gen_scenario(
 
             _update_artifacts(db_conn, artifact_paths, obj_hash)
 
-    with timeit("social_agent_missions", logger.info):
-        artifact_paths = build_graph["social_agent_missions"]
-        obj_hash = pickle_hash(scenario.social_agent_missions, True)
-        if _needs_build(
-            db_conn, scenario.social_agent_missions, artifact_paths, obj_hash
-        ):
+    # Social agent missions
+    artifact_paths = build_graph["social_agent_missions"]
+    obj_hash = pickle_hash(scenario.social_agent_missions, True)
+    if _needs_build(
+        db_conn,
+        scenario.social_agent_missions,
+        artifact_paths,
+        obj_hash,
+        map_needs_rebuild,
+    ):
+        with timeit("social_agent_missions", logger.info):
             for name, (actors, missions) in scenario.social_agent_missions.items():
                 if not (
                     isinstance(actors, collections.abc.Sequence)
@@ -232,26 +287,31 @@ def gen_scenario(
 
             _update_artifacts(db_conn, artifact_paths, obj_hash)
 
-    with timeit("bubbles", logger.info):
-        artifact_paths = build_graph["bubbles"]
-        obj_hash = pickle_hash(scenario.bubbles, True)
-        if _needs_build(db_conn, scenario.bubbles, artifact_paths, obj_hash):
+    # Bubbles
+    artifact_paths = build_graph["bubbles"]
+    obj_hash = pickle_hash(scenario.bubbles, True)
+    if _needs_build(db_conn, scenario.bubbles, artifact_paths, obj_hash):
+        with timeit("bubbles", logger.info):
             gen_bubbles(scenario=output_dir, bubbles=scenario.bubbles)
             _update_artifacts(db_conn, artifact_paths, obj_hash)
 
-    with timeit("friction_maps", logger.info):
-        artifact_paths = build_graph["friction_maps"]
-        obj_hash = pickle_hash(scenario.friction_maps, True)
-        if _needs_build(db_conn, scenario.friction_maps, artifact_paths, obj_hash):
+    # Friction maps
+    artifact_paths = build_graph["friction_maps"]
+    obj_hash = pickle_hash(scenario.friction_maps, True)
+    if _needs_build(db_conn, scenario.friction_maps, artifact_paths, obj_hash):
+        with timeit("friction_maps", logger.info):
             gen_friction_map(
                 scenario=output_dir, surface_patches=scenario.friction_maps
             )
             _update_artifacts(db_conn, artifact_paths, obj_hash)
 
-    with timeit("traffic_histories", logger.info):
-        artifact_paths = build_graph["traffic_histories"]
-        obj_hash = pickle_hash(scenario.traffic_histories, True)
-        if _needs_build(db_conn, scenario.traffic_histories, artifact_paths, obj_hash):
+    # Traffic histories
+    artifact_paths = build_graph["traffic_histories"]
+    obj_hash = pickle_hash(scenario.traffic_histories, True)
+    if _needs_build(
+        db_conn, scenario.traffic_histories, artifact_paths, obj_hash, map_needs_rebuild
+    ):
+        with timeit("traffic_histories", logger.info):
             gen_traffic_histories(
                 scenario=output_dir,
                 histories_datasets=scenario.traffic_histories,

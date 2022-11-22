@@ -25,7 +25,7 @@ def entry_point(*args, **kwargs):
     ## Note: can build the scenario here
     from smarts.sstudio.scenario_construction import build_single_scenario
 
-    build_single_scenario(clean=True, allow_offset_map=True, scenario=scenario)
+    build_single_scenario(clean=True, scenario=scenario)
     hiwayenv = HiWayEnv(
         agent_specs={"agent-007": agent_spec},
         scenarios=[scenario],

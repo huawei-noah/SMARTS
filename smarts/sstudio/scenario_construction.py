@@ -17,7 +17,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
 import shutil
 import subprocess
 import sys
@@ -28,7 +27,6 @@ from typing import Any, Callable, Optional
 
 def build_single_scenario(
     clean: bool,
-    allow_offset_map: bool,
     scenario: str,
     seed: Optional[int] = None,
     log: Optional[Callable[[Any], None]] = None,
@@ -39,7 +37,6 @@ def build_single_scenario(
         clean_scenario(scenario)
 
     scenario_root = Path(scenario)
-    scenario_root_str = str(scenario_root)
 
     scenario_py = scenario_root / "scenario.py"
     if scenario_py.exists():
@@ -56,24 +53,6 @@ def build_single_scenario(
                 )
         else:
             subprocess.check_call([sys.executable, "scenario.py"], cwd=scenario_root)
-
-    from smarts.core.scenario import Scenario
-
-    traffic_histories = Scenario.discover_traffic_histories(scenario_root_str)
-    # don't shift maps for scenarios with traffic histories since history data must line up with map
-    shift_to_origin = not allow_offset_map and not bool(traffic_histories)
-
-    map_spec = Scenario.discover_map(scenario_root_str, shift_to_origin=shift_to_origin)
-    road_map, _ = map_spec.builder_fn(map_spec)
-    if not road_map:
-        log(
-            "No reference to a RoadNetwork file was found in {}, or one could not be created. "
-            "Please make sure the path passed is a valid Scenario with RoadNetwork file required "
-            "(or a way to create one) for scenario building.".format(scenario_root_str)
-        )
-        return
-
-    road_map.to_glb(os.path.join(scenario_root, "map.glb"))
 
 
 def clean_scenario(scenario: str):
@@ -102,7 +81,7 @@ def clean_scenario(scenario: str):
     shutil.rmtree(p / "build", ignore_errors=True)
     shutil.rmtree(p / "traffic", ignore_errors=True)
     shutil.rmtree(p / "social_agents", ignore_errors=True)
-    
+
     for file_name in to_be_removed:
         for f in p.glob(file_name):
             # Remove file

@@ -57,7 +57,8 @@ _OPENDRIVE_MAP = 2
 _WAYMO_MAP = 3
 
 
-def _find_mapfile_in_dir(map_dir: str) -> Tuple[int, str]:
+def find_mapfile_in_dir(map_dir: str) -> Tuple[int, str]:
+    """Looks in a given directory for a supported map file."""
     map_filename_type = {
         "map.net.xml": _SUMO_MAP,
         "shifted_map-AUTOGEN.net.xml": _SUMO_MAP,
@@ -100,7 +101,7 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
     assert map_spec.source, "A road map source must be specified"
 
     if os.path.isdir(map_spec.source):
-        map_type, map_source = _find_mapfile_in_dir(map_spec.source)
+        map_type, map_source = find_mapfile_in_dir(map_spec.source)
     else:
         map_type = _UNKNOWN_MAP
         map_source = map_spec.source

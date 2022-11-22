@@ -508,7 +508,9 @@ class Scenario:
         return sorted(
             [
                 os.path.basename(r)
-                for r in glob.glob(os.path.join(scenario_root, "build", "traffic", "*.rou.xml"))
+                for r in glob.glob(
+                    os.path.join(scenario_root, "build", "traffic", "*.rou.xml")
+                )
             ]
         )
 
@@ -937,7 +939,7 @@ class Scenario:
     @property
     def map_glb_filepath(self):
         """The map geometry filepath."""
-        return os.path.join(self._root, "map.glb")
+        return os.path.join(self._root, "map", "map.glb")
 
     def unique_sumo_log_file(self):
         """A unique logging file for SUMO logging."""
