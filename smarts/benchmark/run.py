@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, Sequence
-
+from time import time
 import cpuinfo
 import gym
 import psutil
@@ -80,8 +80,10 @@ def _compute(scenario_dir, ep_per_scenario=10, max_episode_steps=_MAX_EPISODE_ST
         scenario_name = (env.scenario_log)["scenario_map"]
         update = results[scenario_name].update
         for _ in range(num_episode_steps[scenario_name]):
-            with timeit("Benchmark", update, format_func=lambda **kwargs:kwargs['elapsed_time']):
-                env.step({})
+            # with timeit("Benchmark", update, format_func=lambda **kwargs:kwargs['elapsed_time']):
+            start = time()
+            env.step({})
+            update((time() - start) * 1000)
     env.close()
 
     records = {}
@@ -171,8 +173,8 @@ def _write_report(results: Dict[str, Any]):
     )
 
     means = []
-    stds=[]
-    scenarios=[]
+    stds = []
+    scenarios = []
     content = ["Scenario(s)", "Total Time Steps", "Mean (steps/sec)", "Std (steps/sec)"]
     for scenario, data in results.items():
         scenarios.append(scenario)
@@ -203,7 +205,7 @@ def _write_report(results: Dict[str, Any]):
     mdFile.create_md_file()
 
 
-def main(scenarios:Sequence[str]):
+def main(scenarios: Sequence[str]):
     """Run benchmark.
 
     :param scenarios: Scenarios to be timed.

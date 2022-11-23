@@ -28,24 +28,19 @@ from time import time
 
 
 @contextmanager
-def timeit(name: str, log, format_func=lambda **kwargs: f"{kwargs['name']} took: {kwargs['elapsed_time']:4f}ms"):
+def timeit(name: str, log):
     """Context manger that stopwatches the amount of time between context block start and end.
-
     .. code-block:: python
-
         import logging
         with timeit(n,logging.log):
             a = a * b
     """
     start = time()
     yield
-    elapsed_time = (time() - start) * 1000  # Units: milli seconds
-    log(
-        format_func(
-            name=name,
-            elapsed_time=elapsed_time,
-        )
-    )
+    elapsed_time = (time() - start) * 1000
+
+    log(f'"{name}" took: {elapsed_time:4f}ms')
+
 
 def isnotebook():
     """Determines if executing in ipython (Jupyter Notebook)"""
