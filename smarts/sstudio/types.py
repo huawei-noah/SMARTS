@@ -868,8 +868,8 @@ class ConfigurableZone(Zone):
     def __post_init__(self):
         if (
             not self.ext_coordinates
-            or not isinstance(self.ext_coordinates[0], tuple)
             or len(self.ext_coordinates) < 2
+            or not isinstance(self.ext_coordinates[0], tuple)
         ):
             raise ValueError(
                 "Two points or more are needed to create a polygon. (less than two points are provided)"
@@ -981,7 +981,16 @@ class Bubble:
         if not isinstance(self.zone, MapZone):
             poly = self.zone.to_geometry(road_map=None)
             if not poly.is_valid:
-                raise ValueError("The Zone Polygon is not a valid closed loop")
+                follow_id = (
+                    self.follow_actor_id
+                    if self.follow_actor_id
+                    else self.follow_vehicle_id
+                )
+                raise ValueError(
+                    f"The zone polygon of {type(self.zone).__name__} of moving {self.id} which following {follow_id} is not a valid closed loop"
+                    if follow_id
+                    else f"The zone polygon of {type(self.zone).__name__} of fixed position {self.id} is not a valid closed loop"
+                )
 
     @staticmethod
     def to_actor_id(actor, mission_group):
