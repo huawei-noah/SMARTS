@@ -120,6 +120,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Issue where a 0 length lane caused `envision` to crash.
 - Fixed an issue where `Feature.type_specific_info` was calling a non-existant method.
 ### Removed
+- Removed camera observation `created_at` attribute to make observation completely reproducible.
 ### Security
 
 ## [1.0.4] # 2023-02-10
