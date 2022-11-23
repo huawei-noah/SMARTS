@@ -216,9 +216,17 @@ class TrafficGenerator:
         ):
             # Actors and routes may be declared once then reused. To prevent creating
             # duplicates we unique them here.
-            for actor in {
+            actors_for_vtypes = {
                 actor for flow in traffic.flows for actor in flow.actors.keys()
-            }:
+            }
+            if traffic.trips:
+                actors_for_vtypes |= {trip.actor for trip in traffic.trips}
+                vehicle_id_set = {trip.vehicle_name for trip in traffic.trips}
+                vehilce_ids_list = [trip.vehicle_name for trip in traffic.trips]
+                if len(vehicle_id_set) != len(vehilce_ids_list):
+                    raise ValueError("Repeated single vehicle names is not allowed.")
+
+            for actor in actors_for_vtypes:
                 sigma = min(1, max(0, actor.imperfection.sample()))  # range [0,1]
                 min_gap = max(0, actor.min_gap.sample())  # range >= 0
                 doc.stag(
@@ -281,12 +289,47 @@ class TrafficGenerator:
                         end=flow.end,
                         **rate_option,
                     )
+            # write trip into xml format
+            if traffic.trips:
+                self.write_trip_xml(traffic, doc, fill_in_route_gaps)
 
         with open(route_path, "w") as f:
             f.write(
                 indent(
                     doc.getvalue(), indentation="    ", newline="\r\n", indent_text=True
                 )
+            )
+
+    def write_trip_xml(self, traffic, doc, fill_in_gaps):
+        """Writes a trip spec into a route file. Typically this would be the source
+        data to SUMO's DUAROUTER.
+        """
+        # Make sure all routes are "resolved" (e.g. `RandomRoute` are converted to
+        # `Route`) so that we can write them all to file.
+        resolved_routes = {}
+        for route in {trip.route for trip in traffic.trips}:
+            resolved_routes[route] = self.resolve_route(route, fill_in_gaps)
+
+        for route in set(resolved_routes.values()):
+            doc.stag("route", id=route.id + "trip", edges=" ".join(route.roads))
+
+            # We don't de-dup flows since defining the same flow multiple times should
+            # create multiple traffic flows. Since IDs can't be reused, we also unique
+            # them here.
+        for trip_idx, trip in enumerate(traffic.trips):
+            route = resolved_routes[trip.route]
+            actor = trip.actor
+            doc.stag(
+                "vehicle",
+                id="{}".format(trip.vehicle_name),
+                type=actor.id,
+                route=route.id,
+                depart=trip.depart,
+                departLane=route.begin[1],
+                departPos=route.begin[2],
+                departSpeed=actor.depart_speed,
+                arrivalLane=route.end[1],
+                arrivalPos=route.end[2],
             )
 
     def _cache_road_network(self):
@@ -343,10 +386,9 @@ class TrafficGenerator:
     def resolve_route(self, route, fill_in_gaps: bool) -> types.Route:
         """Attempts to fill in the route between the begining and end specified in the initial
          route.
-        Args:
-            route: An incomplete route.
-        Returns:
-            A complete route listing all road segments it passes through.
+
+        :param route: An incomplete route.
+        :return: A complete route listing all road segments it passes through.
         """
         if not isinstance(route, types.RandomRoute):
             return self._fill_in_gaps(route) if fill_in_gaps else route

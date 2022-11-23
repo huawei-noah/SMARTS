@@ -78,7 +78,7 @@ from trimesh.exchange import gltf
 
 from smarts.core.road_map import RoadMap, RoadMapWithCaches, Waypoint
 from smarts.core.route_cache import RouteWithCache
-from smarts.core.utils.geometry import generate_mesh_from_polygons
+from smarts.core.utils.geometry import generate_meshes_from_polygons
 from smarts.core.utils.key_wrapper import KeyWrapper
 from smarts.core.utils.math import (
     CubicPolynomial,
@@ -770,9 +770,14 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         polygons = []
         for lane_id in self._lanes:
             lane = self._lanes[lane_id]
-            polygons.append(lane.shape())
+            metadata = {
+                "road_id": lane.road.road_id,
+                "lane_id": lane_id,
+                "lane_index": lane.index,
+            }
+            polygons.append((lane.shape(), metadata))
 
-        mesh = generate_mesh_from_polygons(polygons)
+        meshes = generate_meshes_from_polygons(polygons)
 
         # Attach additional information for rendering as metadata in the map glb
         # <2D-BOUNDING_BOX>: four floats separated by ',' (<FLOAT>,<FLOAT>,<FLOAT>,<FLOAT>),
@@ -791,11 +796,17 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         metadata["lane_dividers"] = lane_dividers
         metadata["edge_dividers"] = road_dividers
 
-        mesh.visual = trimesh.visual.TextureVisuals(
-            material=trimesh.visual.material.PBRMaterial()
-        )
+        for mesh in meshes:
+            mesh.visual = trimesh.visual.TextureVisuals(
+                material=trimesh.visual.material.PBRMaterial()
+            )
 
-        scene.add_geometry(mesh)
+            road_id = mesh.metadata["road_id"]
+            lane_id = mesh.metadata.get("lane_id")
+            name = f"{road_id}"
+            if lane_id is not None:
+                name += f"-{lane_id}"
+            scene.add_geometry(mesh, name, extras=mesh.metadata)
         return _GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
 
     def _compute_traffic_dividers(self):
@@ -1614,6 +1625,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         starting_road: Optional[RoadMap.Road] = None,
         only_drivable: bool = True,
     ) -> RoadMap.Route:
+        """ """
         assert not starting_road or not only_drivable or starting_road.is_drivable
         route = OpenDriveRoadNetwork.Route(self)
         next_roads = [starting_road] if starting_road else list(self._roads.values())

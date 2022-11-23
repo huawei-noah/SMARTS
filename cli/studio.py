@@ -159,7 +159,7 @@ def _build_all_scenarios(
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
 def clean_scenario(scenario: str):
-    from smarts.sstudio.build_scenario import clean_scenario
+    from smarts.sstudio.scenario_construction import clean_scenario
 
     clean_scenario(scenario)
 

@@ -49,6 +49,7 @@ Running
 We use the `scl` command line to run SMARTS together with it's supporting processes. To run the default example simply build a scenario and run the following command:
 
 .. code-block:: bash
+
     # build scenarios/sumo/loop
     scl scenario build --clean scenarios/sumo/loop
 
@@ -64,6 +65,7 @@ After executing the above command, visit http://localhost:8081/ in your browser 
 Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
 
 .. code-block:: bash
+    
     scl run --envision <examples/script_path> <scenarios/path>
 
 
@@ -74,6 +76,7 @@ Examples
 ================
 
 .. code-block:: bash
+    
     # Start envision, serve scenario assets out of ./scenarios
     scl envision start --scenarios ./scenarios
 

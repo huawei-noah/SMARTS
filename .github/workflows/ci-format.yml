@@ -7,7 +7,7 @@ env:
 
 jobs:
   test-header:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.18-minimal
     steps:
@@ -19,7 +19,7 @@ jobs:
           make header-test
 
   test-docstring:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     container: huaweinoah/smarts:v0.4.18-minimal
     steps:
@@ -39,7 +39,7 @@ jobs:
             ./smarts ./envision ./baselines
 
   test-types:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) && (github.ref != 'refs/heads/master')
     container: huaweinoah/smarts:v0.4.18-minimal
     steps:

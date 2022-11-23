@@ -100,18 +100,18 @@ class TrapManager:
         reject_expired: bool = False,
     ) -> bool:
         """Add a new trap to capture an actor for the given agent.
-        Args:
-            agent_id(str):
-                The agent to associate to this trap.
-            mission(Mission):
-                The mission to assign to the agent and vehicle.
-            road_map(RoadMap):
-                The road map to provide information to about the map.
-            sim_time(float):
-                The current simulator time.
-            reject_expired(bool):
-                If traps should be ignored if their patience would already be
-                expired on creation.
+
+        :param agent_id: The agent to associate to this trap.
+        :type agent_id: str
+        :param mission: The mission to assign to the agent and vehicle.
+        :type mission: class: Mission
+        :param road_map: The road map to provide information to about the map.
+        :type road_map: class: RoadMap
+        :param sim_time: The current simulator time.
+        :type sim_time: float
+        :param reject_expired: If traps should be ignored if their patience would already be
+            expired on creation
+        :type reject_expired: bool
         """
         if mission is None:
             mission = Mission.random_endless_mission(road_map)
