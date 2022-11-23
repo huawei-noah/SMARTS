@@ -380,7 +380,7 @@ class VehicleIndex:
 
         vehicle = self._vehicles[vehicle_id]
         Vehicle.attach_sensors_to_vehicle(
-            sim.sensor_manager, sim._renderer, sim.bc, vehicle, agent_interface
+            sim.sensor_manager, sim, sim.bc, vehicle, agent_interface
         )
 
         self._2id_to_id[agent_id] = original_agent_id
@@ -562,7 +562,7 @@ class VehicleIndex:
         # TODO MTA: Reconsider how renderer is accessed.
         Vehicle.attach_sensors_to_vehicle(
             sim.sensor_manager,
-            sim._renderer,
+            sim,
             sim.bc,
             vehicle,
             agent_interface,
@@ -710,7 +710,7 @@ class VehicleIndex:
         original_agent_id = agent_id
 
         Vehicle.attach_sensors_to_vehicle(
-            sim.sensor_manager, sim._renderer, sim.bc, vehicle, agent_interface
+            sim.sensor_manager, sim, sim.bc, vehicle, agent_interface
         )
         if sim.is_rendering:
             vehicle.create_renderer_node(sim.renderer)

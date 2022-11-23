@@ -366,7 +366,7 @@ class Vehicle:
     @staticmethod
     def attach_sensors_to_vehicle(
         sensor_manager,
-        renderer: Optional[Any],
+        sim,
         bullet_client,
         vehicle: "Vehicle",
         agent_interface,
@@ -418,38 +418,38 @@ class Vehicle:
             sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
 
         if agent_interface.drivable_area_grid_map:
-            if not renderer:
+            if not sim.renderer:
                 raise RendererException.required_to("add a drivable_area_grid_map")
             sensor = DrivableAreaGridMapSensor(
                 vehicle_state=vehicle_state,
                 width=agent_interface.drivable_area_grid_map.width,
                 height=agent_interface.drivable_area_grid_map.height,
                 resolution=agent_interface.drivable_area_grid_map.resolution,
-                renderer=renderer,
+                renderer=sim.renderer,
             )
             vehicle.attach_drivable_area_grid_map_sensor(sensor)
             sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
         if agent_interface.occupancy_grid_map:
-            if not renderer:
+            if not sim.renderer:
                 raise RendererException.required_to("add an OGM")
             sensor = OGMSensor(
                 vehicle_state=vehicle_state,
                 width=agent_interface.occupancy_grid_map.width,
                 height=agent_interface.occupancy_grid_map.height,
                 resolution=agent_interface.occupancy_grid_map.resolution,
-                renderer=renderer,
+                renderer=sim.renderer,
             )
             vehicle.attach_ogm_sensor(sensor)
             sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
         if agent_interface.top_down_rgb:
-            if not renderer:
+            if not sim.renderer:
                 raise RendererException.required_to("add an RGB camera")
             sensor = RGBSensor(
                 vehicle_state=vehicle_state,
                 width=agent_interface.top_down_rgb.width,
                 height=agent_interface.top_down_rgb.height,
                 resolution=agent_interface.top_down_rgb.resolution,
-                renderer=renderer,
+                renderer=sim.renderer,
             )
             vehicle.attach_rgb_sensor(sensor)
             sensor_manager.add_sensor_for_actor(vehicle.id, sensor)
