@@ -23,9 +23,12 @@ import os
 import pickle
 import shutil
 import struct
+from collections import defaultdict
 from contextlib import contextmanager
 from ctypes import c_int64
-from typing import Any, Generator
+from typing import Any, Generator, Sequence
+
+import numpy as np
 
 import smarts
 
@@ -77,7 +80,7 @@ def unpack(obj):
     """
     if isinstance(obj, dict):
         return {key: unpack(value) for key, value in obj.items()}
-    elif isinstance(obj, list):
+    elif isinstance(obj, (list, np.ndarray)):
         return [unpack(value) for value in obj]
     elif isnamedtupleinstance(obj):
         return {key: unpack(value) for key, value in obj._asdict().items()}
@@ -87,6 +90,44 @@ def unpack(obj):
         return tuple(unpack(value) for value in obj)
     else:
         return obj
+
+
+def match_unpackable(obj, other_obj):
+    obj_unpacked = unpack(obj)
+    other_obj_unpacked = unpack(other_obj)
+
+    def sort(orig_value):
+        value = orig_value
+        if isinstance(value, dict):
+            return dict(sorted(value.items(), key=lambda item: item[0]))
+        try:
+            s = sorted(value, key=lambda item: item[0])
+        except IndexError:
+            s = sorted(value)
+        except (KeyError, TypeError):
+            s = value
+        return s
+
+    def process(o, oo, o_oo):
+        nonlocal obj
+        if isinstance(o, (dict, defaultdict)):
+            t_o = sort(o)
+            t_oo = sort(oo)
+            comps.append((t_o.keys(), t_oo.keys()))
+            comps.append((t_o.values(), t_oo.values()))
+        elif isinstance(o, Sequence) and not isinstance(o, (str)):
+            comps.append((sort(o), sort(oo)))
+        else:
+            assert o == oo, f"{o}!={oo} in {o_oo}"
+
+    comps = []
+    process(obj_unpacked, other_obj_unpacked, None)
+    while len(comps) > 0:
+        o_oo = comps.pop()
+        for o, oo in zip(*o_oo):
+            process(o, oo, o_oo)
+
+    return True
 
 
 def copy_tree(from_path, to_path, overwrite=False):
