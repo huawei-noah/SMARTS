@@ -167,6 +167,7 @@ def test_sensor_worker(
     agent_ids = set(AGENT_IDS)
     worker = SensorsWorker()
     worker.run(sim_local_constants=sim.local_constants)
+    assert worker.running
     worker_args = WorkerKwargs(sim_frame=simulation_frame)
     worker.send_to_process(worker_args=worker_args, agent_ids=agent_ids)
     observations, dones = SensorsWorker.local(

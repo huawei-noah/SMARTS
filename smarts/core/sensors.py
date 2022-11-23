@@ -98,6 +98,7 @@ class Sensors:
 
     _log = logging.getLogger("Sensors")
     _instance = None
+    _sim_local_constants = None
 
     def __init__(self):
         self._workers: List[SensorsWorker] = []
@@ -108,24 +109,30 @@ class Sensors:
             cls._instance = cls()
         return cls._instance
 
-    def configure(self, local_constants, global_constants):
-        # TODO MTA: configure the workers here and regenerate workers
-        raise NotImplementedError()
+    def stop_all_workers(self):
+        for worker in self._workers:
+            worker.stop()
+        self._workers = []
 
-    def _valid_configure(self, local_constants, global_constants):
-        # TODO MTA: compare if the constants have changed
-        raise NotImplementedError()
+    def _validate_configuration(self, local_constants):
+        return local_constants == self._sim_local_constants
 
-    def generate_workers(self, count):
-        # TODO MTA: regerate workers
-        raise NotImplementedError()
-
-    def get_workers(self, count, **worker_kwargs):
-        while len(self._workers) < count:
+    def generate_workers(self, count, workers_list: List[Any], **worker_kwargs):
+        while len(workers_list) < count:
             new_worker = SensorsWorker()
-            self._workers.append(new_worker)
+            workers_list.append(new_worker)
             new_worker.run(**worker_kwargs)
 
+    def get_workers(self, count, sim_local_constants, **worker_kwargs):
+        if not self._validate_configuration(sim_local_constants):
+            self.stop_all_workers()
+            self._sim_local_constants = sim_local_constants
+        self.generate_workers(
+            count,
+            self._workers,
+            **worker_kwargs,
+            sim_local_constants=self._sim_local_constants,
+        )
         return self._workers[:count]
 
     @classmethod
@@ -181,7 +188,7 @@ class Sensors:
         )
 
         instance = cls.instance()
-        workers = instance.get_workers(
+        workers: List[SensorsWorker] = instance.get_workers(
             used_processes, sim_local_constants=sim_local_constants
         )
         used_workers: List[SensorsWorker] = []
@@ -230,6 +237,9 @@ class Sensors:
             with timeit("waiting for observations", print):
                 if used_workers:
                     while agent_ids != set(observations):
+                        assert all(
+                            w.running for w in used_workers
+                        ), "A process worker crashed."
                         for result in mp.connection.wait(
                             [worker.connection for worker in used_workers], timeout=5
                         ):
@@ -886,9 +896,10 @@ class ProcessWorker:
 
     def __init__(self, serialize_results=False) -> None:
         parent_connection, child_connection = mp.Pipe()
-        self._pc_next_args = parent_connection
-        self._cc_next_args = child_connection
+        self._parent_connection = parent_connection
+        self._child_connection = child_connection
         self._serialize_results = serialize_results
+        self._proc: Optional[mp.Process] = None
 
     @classmethod
     def _do_work(cls, *args, **kwargs):
@@ -928,13 +939,13 @@ class ProcessWorker:
     def run(self, **worker_kwargs):
         kwargs = dict(serialize_results=self._serialize_results)
         kwargs.update(worker_kwargs)
-        junction_check_proc = mp.Process(
+        self._proc = mp.Process(
             target=self._run,
-            args=(self._cc_next_args,),
+            args=(self._child_connection,),
             kwargs=kwargs,
             daemon=True,
         )
-        junction_check_proc.start()
+        self._proc.start()
 
     def send_to_process(
         self, *args, worker_args: Optional[WorkerKwargs] = None, **kwargs
@@ -949,20 +960,27 @@ class ProcessWorker:
         if worker_args:
             kwargs.update(worker_args.kwargs)
         with timeit("put to worker", print):
-            self._pc_next_args.send((args, kwargs))
+            self._parent_connection.send((args, kwargs))
 
     def result(self, timeout=None):
         with timeit("main thread blocked", print):
-            conn = mp.connection.wait([self._pc_next_args], timeout=timeout).pop()
+            conn = mp.connection.wait([self._parent_connection], timeout=timeout).pop()
             result = conn.recv()
         with timeit("deserialize for main thread", print):
             if self._serialize_results:
                 result = Sensors.deserialize_for_observation(result)
         return result
 
+    def stop(self):
+        self._parent_connection.send(self.WorkerDone)
+
+    @property
+    def running(self):
+        return self._proc is not None and self._proc.exitcode is None
+
     @property
     def connection(self):
-        return self._pc_next_args
+        return self._parent_connection
 
 
 class SensorsWorker(ProcessWorker):
@@ -1011,8 +1029,11 @@ class CameraSensor(Sensor):
         camera.teardown()
 
     def step(self, sim_frame, **kwargs):
+        # TODO MTA: Actor should always be in the states
+        if not self._target_actor in sim_frame.actor_states_by_id:
+            return
         self._follow_actor(
-            sim_frame.actor_states[self._target_actor], kwargs.get("renderer")
+            sim_frame.actor_states_by_id[self._target_actor], kwargs.get("renderer")
         )
 
     def _follow_actor(self, vehicle_state, renderer):

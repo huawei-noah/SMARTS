@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 class SimulationFrame:
     """This is state that should change per step of the simulation."""
 
-    actor_states: Dict[str, ActorState]
+    actor_states: List[ActorState]
     agent_vehicle_controls: Dict[str, str]
     agent_interfaces: Dict[str, AgentInterface]
     ego_ids: str
@@ -69,6 +69,10 @@ class SimulationFrame:
     def agent_ids(self) -> Set[str]:
         return set(self.vehicles_for_agents.keys())
 
+    @cached_property
+    def actor_states_by_id(self) -> Dict[str, ActorState]:
+        return {a_s.actor_id: a_s for a_s in self.actor_states}
+
     def vehicle_did_collide(self, vehicle_id) -> bool:
         """Test if the given vehicle had any collisions in the last physics update."""
         vehicle_collisions = self.vehicle_collisions.get(vehicle_id, [])
@@ -88,10 +92,10 @@ class SimulationFrame:
 
     def __post_init__(self):
         if logger.isEnabledFor(logging.DEBUG):
-            assert self.vehicle_ids.__contains__
+            assert isinstance(self.actor_states, list)
             assert self.agent_ids.union(self.vehicles_for_agents) == self.agent_ids
             assert len(self.agent_ids - set(self.agent_interfaces)) == 0
-            assert len(self.vehicle_ids.symmetric_difference(self.vehicle_states))
+            assert not len(self.vehicle_ids.symmetric_difference(self.vehicle_states))
 
     @staticmethod
     def serialize(simulation_frame: "SimulationFrame") -> Any:
