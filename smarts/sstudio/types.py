@@ -27,7 +27,7 @@ from ctypes import c_int64
 from dataclasses import dataclass, field
 from enum import IntEnum
 from sys import maxsize
-from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union, List
+from typing import Any, Callable, Dict, List, NewType, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
