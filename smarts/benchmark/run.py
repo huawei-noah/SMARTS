@@ -80,9 +80,8 @@ def _compute(scenario_dir, ep_per_scenario=10, max_episode_steps=_MAX_EPISODE_ST
         scenario_name = (env.scenario_log)["scenario_map"]
         update = results[scenario_name].update
         for _ in range(num_episode_steps[scenario_name]):
-            with timeit("Benchmark", print, funcs=[update]):
+            with timeit("Benchmark", update, format_func=lambda **kwargs:kwargs['elapsed_time']):
                 env.step({})
-
     env.close()
 
     records = {}
