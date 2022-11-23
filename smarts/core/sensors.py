@@ -1053,7 +1053,6 @@ class DrivableAreaGridMapSensor(CameraSensor):
         image = np.flipud(image)
 
         metadata = GridMapMetadata(
-            created_at=int(time.time()),
             resolution=self._resolution,
             height=image.shape[0],
             width=image.shape[1],
@@ -1096,7 +1095,6 @@ class OGMSensor(CameraSensor):
         grid = np.flipud(grid)
 
         metadata = GridMapMetadata(
-            created_at=int(time.time()),
             resolution=self._resolution,
             height=grid.shape[0],
             width=grid.shape[1],
@@ -1139,7 +1137,6 @@ class RGBSensor(CameraSensor):
         image = np.flipud(image)
 
         metadata = GridMapMetadata(
-            created_at=int(time.time()),
             resolution=self._resolution,
             height=image.shape[0],
             width=image.shape[1],
