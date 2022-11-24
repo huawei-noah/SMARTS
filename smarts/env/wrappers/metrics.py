@@ -18,8 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from dataclasses import dataclass
-from typing import Any, Callable, Dict, Set, Tuple, TypeVar
+from dataclasses import asdict, dataclass
+from typing import Any, Callable, Dict, Set, Tuple, TypeVar, Generic, Type
 
 from smarts.env.wrappers.metric import termination
 from smarts.env.wrappers.metric.costs import Costs, COST_FUNCS
@@ -28,7 +28,7 @@ from smarts.env.wrappers.metric.counts import Counts
 import gym
 
 _MAX_STEPS = 800
-T = TypeVar("T", Costs, Counts)
+
 
 @dataclass
 class Record:
@@ -157,14 +157,11 @@ def _time(counts: Counts, costs: Costs) -> float:
     return (counts.steps_adjusted + costs.dist_to_goal) / counts.episodes
 
 
+T = TypeVar("T", Costs, Counts)
 def _add_dataclass(first:T,second:T)->T:
-    first
-    
-    def add(self, counts: Counts, costs: Costs):
-        for count_name, count_val in asdict(counts).items():
-            new_val = getattr(self._counts, count_name) + count_val
-            setattr(self._counts, count_name, new_val)
+    output = first.__class__()
+    for key, val in asdict(first).items():
+        new_val = val + getattr(second, key)
+        setattr(output, key, new_val)
 
-        for cost_name, cost_val in asdict(costs).items():
-            new_val = getattr(self._costs, cost_name) + cost_val
-            setattr(self._costs, cost_name, new_val)
+    return output
