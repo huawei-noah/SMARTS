@@ -367,12 +367,10 @@ class Vehicle:
     def attach_sensors_to_vehicle(
         sensor_manager,
         sim,
-        bullet_client,
         vehicle: "Vehicle",
         agent_interface,
     ):
         """Attach sensors as required to satisfy the agent interface's requirements"""
-        # TODO MTA: finish extracting sensors from vehicle
         # The distance travelled sensor is not optional b/c it is used for the score
         # and reward calculation
         vehicle_state = vehicle.state

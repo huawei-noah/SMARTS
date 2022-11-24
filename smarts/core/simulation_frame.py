@@ -53,7 +53,6 @@ class SimulationFrame:
     vehicles_for_agents: Dict[str, List[str]]
     vehicle_ids: Set[str]
     vehicle_states: Dict[str, VehicleState]
-    # TODO MTA: Some sensors still cause issues with serialization
     vehicle_sensors: Dict[str, Dict[str, Any]]
 
     sensor_states: Any
