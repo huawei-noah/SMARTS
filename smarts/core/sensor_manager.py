@@ -19,10 +19,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from collections import Counter
 from typing import Dict, List, Set
 
 from .sensors import Sensor, Sensors, SensorState
-from .utils.counter import ReferenceCounter
 
 
 class SensorManager:
@@ -33,7 +33,7 @@ class SensorManager:
         self._sensor_states: Dict[str, SensorState] = {}
 
         self._sensors_by_actor_id: Dict[str, List[str]] = {}
-        self._sensor_references: ReferenceCounter = ReferenceCounter()
+        self._sensor_references = Counter()
         self._discarded_sensors: Set[str] = set()
 
     def step(self, sim_frame, renderer):
@@ -61,7 +61,8 @@ class SensorManager:
     def remove_sensors_by_actor_id(self, actor_id: str):
         del self._sensor_states[actor_id]
         for sensor_id in self._sensors_by_actor_id[actor_id]:
-            count = self._sensor_references.decrement(sensor_id)
+            self._sensor_references.subtract([sensor_id])
+            count = self._sensor_references[sensor_id]
             if count < 1:
                 self._discarded_sensors.add(sensor_id)
         del self._sensors_by_actor_id[actor_id]
@@ -89,7 +90,7 @@ class SensorManager:
         self._sensors[s_id] = sensor
         sensors = self._sensors_by_actor_id.setdefault(actor_id, [])
         sensors.append(s_id)
-        self._sensor_references.increment(s_id)
+        self._sensor_references.update([s_id])
 
         return s_id
 
@@ -104,6 +105,6 @@ class SensorManager:
             self.remove_sensors_by_actor_id(aid)
 
         for sensor_id in self._discarded_sensors:
-            if self._sensor_references.count(sensor_id) < 1:
+            if self._sensor_references.get(sensor_id) < 1:
                 self._sensors[sensor_id].teardown(renderer=renderer)
         self._discarded_sensors.clear()
