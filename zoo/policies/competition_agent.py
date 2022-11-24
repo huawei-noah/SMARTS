@@ -24,7 +24,8 @@ class CompetitionAgent(Agent):
         )
         policy_module = importlib.util.module_from_spec(policy_spec)
         sys.modules["competition_policy"] = policy_module
-        policy_spec.loader.exec_module(policy_module)
+        if policy_spec:
+            policy_spec.loader.exec_module(policy_module)
 
         self._policy = policy_module.Policy()
 

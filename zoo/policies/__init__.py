@@ -134,7 +134,8 @@ def competition_entry(**kwargs):
         )
         wrapper_module = importlib.util.module_from_spec(wrapper_spec)
         sys.modules["competition_wrapper"] = wrapper_module
-        wrapper_spec.loader.exec_module(wrapper_module)
+        if wrapper_spec:
+            wrapper_spec.loader.exec_module(wrapper_module)
 
         wrappers = wrapper_module.submitted_wrappers()
         env = gym.Wrapper(env)
