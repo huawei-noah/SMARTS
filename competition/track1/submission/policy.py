@@ -63,6 +63,7 @@ class Policy(BasePolicy):
         import network
 
         model_path = Path(__file__).resolve().parents[0] / "saved_model.zip"
+        print(model_path)
         self.model = sb3lib.PPO.load(model_path)
 
     def act(self, obs: Dict[str, Any]):

@@ -74,6 +74,8 @@ class AgentSpec:
     """An adaptor that allows shaping of the reward (default lambda obs, reward: reward)"""
     info_adapter: Callable = lambda obs, reward, info: info
     """An adaptor that allows shaping of info (default lambda obs, reward, info: info)"""
+    adapt_env: Optional[Callable]= lambda env: env
+    """And adaptor that allows configurating the env (default lambda env:env)"""
 
     def __post_init__(self):
         # make sure we can pickle ourselves
