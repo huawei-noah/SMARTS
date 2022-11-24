@@ -37,6 +37,7 @@ from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.simulation_frame import SimulationFrame
+from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.math import squared_dist
 from smarts.core.vehicle_state import VehicleState
@@ -98,7 +99,7 @@ class Sensors:
 
     _log = logging.getLogger("Sensors")
     _instance = None
-    _sim_local_constants = None
+    _sim_local_constants: SimulationLocalConstants = None
 
     def __init__(self):
         self._workers: List[SensorsWorker] = []
@@ -114,7 +115,7 @@ class Sensors:
             worker.stop()
         self._workers = []
 
-    def _validate_configuration(self, local_constants):
+    def _validate_configuration(self, local_constants: SimulationLocalConstants):
         return local_constants == self._sim_local_constants
 
     def generate_workers(self, count, workers_list: List[Any], **worker_kwargs):
@@ -123,7 +124,9 @@ class Sensors:
             workers_list.append(new_worker)
             new_worker.run(**worker_kwargs)
 
-    def get_workers(self, count, sim_local_constants, **worker_kwargs):
+    def get_workers(
+        self, count, sim_local_constants: SimulationLocalConstants, **worker_kwargs
+    ):
         if not self._validate_configuration(sim_local_constants):
             self.stop_all_workers()
             self._sim_local_constants = sim_local_constants
@@ -137,7 +140,10 @@ class Sensors:
 
     @classmethod
     def observe_parallizable(
-        cls, sim_frame: SimulationFrame, sim_local_constants, agent_ids_for_group
+        cls,
+        sim_frame: SimulationFrame,
+        sim_local_constants: SimulationLocalConstants,
+        agent_ids_for_group,
     ):
         observations, dones = {}, {}
         for agent_id in agent_ids_for_group:
@@ -174,7 +180,7 @@ class Sensors:
     def observe_parallel(
         cls,
         sim_frame: SimulationFrame,
-        sim_local_constants,
+        sim_local_constants: SimulationLocalConstants,
         agent_ids,
         renderer,
         process_count_override=None,
@@ -259,7 +265,7 @@ class Sensors:
     @staticmethod
     def observe_batch(
         sim_frame: SimulationFrame,
-        sim_local_constants,
+        sim_local_constants: SimulationLocalConstants,
         agent_id,
         sensor_states,
         vehicles,
@@ -287,7 +293,7 @@ class Sensors:
     @staticmethod
     def observe_cameras(
         sim_frame: SimulationFrame,
-        sim_local_constants,
+        sim_local_constants: SimulationLocalConstants,
         agent_id,
         sensor_state,
         vehicle_id,
@@ -317,7 +323,7 @@ class Sensors:
     @staticmethod
     def observe_base(
         sim_frame: SimulationFrame,
-        sim_local_constants,
+        sim_local_constants: SimulationLocalConstants,
         agent_id,
         sensor_state,
         vehicle_id,

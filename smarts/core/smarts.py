@@ -1636,8 +1636,6 @@ class SMARTS(ProviderManager):
 
     @cached_property
     def global_constants(self):
-        import os
-
         return SimulationGlobalConstants.from_environment(os.environ)
 
     @cached_property
@@ -1649,7 +1647,6 @@ class SMARTS(ProviderManager):
         return SimulationLocalConstants(
             road_map=road_map,
             road_map_hash=road_map_hash,
-            vehicle_models=None,
         )
 
     @cached_property

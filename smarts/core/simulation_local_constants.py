@@ -30,4 +30,7 @@ class SimulationLocalConstants:
 
     road_map: Any
     road_map_hash: int
-    vehicle_models: Any
+
+    def __eq__(self, __o: object) -> bool:
+        assert isinstance(__o, SimulationLocalConstants)
+        return self.road_map_hash == __o.road_map_hash

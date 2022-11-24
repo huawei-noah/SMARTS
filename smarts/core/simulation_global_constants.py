@@ -24,7 +24,6 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 
-# TODO MTA: Start to use this
 @dataclass(frozen=True)
 class SimulationGlobalConstants:
     """This is state that should not ever change."""
