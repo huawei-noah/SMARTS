@@ -1,6 +1,5 @@
 import logging
 import pathlib
-import sys
 
 import gym
 from argument_parser import default_argument_parser
@@ -71,7 +70,6 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
 if __name__ == "__main__":
     parser = default_argument_parser("single-agent-example")
     args = parser.parse_args()
-    sys.path.append(".")
 
     if not args.scenarios:
         args.scenarios = [

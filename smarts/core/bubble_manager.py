@@ -551,10 +551,8 @@ class BubbleManager:
             #      when inside of a loop x large number of vehicles makes a big
             #      performance hit.
             point = vehicle.pose.point
-            v_radius = (
-                math.sqrt(
-                    vehicle.width * vehicle.width + vehicle.length * vehicle.length
-                )
+            v_radius = math.sqrt(
+                vehicle.width * vehicle.width + vehicle.length * vehicle.length
             )
 
             for bubble in active_bubbles:
