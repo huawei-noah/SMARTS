@@ -107,4 +107,5 @@ class SensorManager:
         for sensor_id in self._discarded_sensors:
             if self._sensor_references.get(sensor_id) < 1:
                 self._sensors[sensor_id].teardown(renderer=renderer)
+                del self._sensor_references[sensor_id]
         self._discarded_sensors.clear()
