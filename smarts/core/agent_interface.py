@@ -340,7 +340,7 @@ class AgentInterface:
                 The total number of steps this interface will observe before expiring
         """
         if requested_type == AgentType.Buddha:  # The enlightened one
-            interface = AgentInterface()
+            interface = AgentInterface(action=ActionSpaceType.Empty)
         elif requested_type == AgentType.Full:  # Uses everything
             interface = AgentInterface(
                 neighborhood_vehicles=True,
