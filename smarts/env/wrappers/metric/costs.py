@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, Tuple
+from typing import Any, Callable, Dict, Tuple
 
 import numpy as np
 
@@ -19,7 +19,7 @@ class Costs:
     wrong_way: int = 0
 
 
-COST_FUNCS = {
+COST_FUNCS: Dict[str, Callable[[],Callable[[Any],Dict[str,float]]]] = {
     "collisions": lambda: _collisions,
     "dist_to_goal": lambda: _dist_to_goal,
     "dist_to_obstacles": lambda: _dist_to_obstacles(),
@@ -32,8 +32,8 @@ COST_FUNCS = {
 }
 
 
-def _collisions(obs: Observation) -> Dict[str, int]:
-    return {"collisions": len(obs.events.collisions)}
+def _collisions(obs: Observation) -> Dict[str, float]:
+    return {"collisions": float(len(obs.events.collisions))}
 
 
 def _dist_to_goal(obs: Observation) -> Dict[str, float]:
@@ -177,8 +177,8 @@ def _lane_center_offset() -> Callable[[Observation], Dict[str, float]]:
     return func
 
 
-def _off_road(obs: Observation) -> Dict[str, int]:
-    return {"off_road": obs.events.off_road}
+def _off_road(obs: Observation) -> Dict[str, float]:
+    return {"off_road": float(obs.events.off_road)}
 
 
 def _speed_limit() -> Callable[[Observation], Dict[str, float]]:

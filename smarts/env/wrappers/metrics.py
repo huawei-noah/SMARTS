@@ -18,10 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from dataclasses import dataclass
-from typing import Any, Callable, Dict, Tuple
+from dataclasses import dataclass, fields
+from typing import Any, Callable, Dict, Iterable, Tuple
 
-from smarts.env.wrappers.metric.costs import Costs
+from smarts.env.wrappers.metric.costs import Costs, COST_FUNCS
 from smarts.env.wrappers.metric.counts import Counts
 from smarts.env.wrappers.metric.scores import Scores
 
@@ -36,12 +36,9 @@ class Metrics(gym.Wrapper):
         """Sets identical action space, denoted by ``space``, for all agents.
         """
         super().__init__(env)
-        self._cur_scen=None
-        self._cur_agents=None
+        self._cur_scen:str
+        self._cur_agents:Iterable[str]
         self._records={}
-        #     scen_name: {agent_name: metrics},
-        #     scen_name: {agent_name: metrics},
-        # }
 
     def action(self, action):
         """Adapts the action input to the wrapped environment.
@@ -104,9 +101,9 @@ class Metrics(gym.Wrapper):
     def _reinit(self):
         self._cost_funcs = {
             agent_name: {
-                cost_name: cost_func() for cost_name, cost_func in COST_FUNCS.items()
+                cost_name: COST_FUNCS[cost_name]() for cost_name in fields(Costs)
             }
-            for agent_name in self._agent_names
+            for agent_name in self._cur_agents
         }
         self._cost_per_episode = {
             agent_name: {key: 0 for key in asdict(Costs()).keys()}
@@ -122,13 +119,19 @@ class Metrics(gym.Wrapper):
         self._cur_scen=(super().scenario_log)["scenario_map"]
         self._cur_agents=super().agent_specs.keys()
         if self._cur_scen not in self._records:
+            for agent_name in self._cur_agents:
+
+            cost_funcs = {
+                cost_name: COST_FUNCS[cost_name]() for cost_name in fields(Costs)
+                }
+
             self._records[self._cur_scen] = {
-                agent : _Record(
+                agent_name : _Record(
                     counts=Counts(),
+                    cost_funcs=
                     costs=Costs(),
                     scores=Scores()
                 )
-                for agent in self._cur_agents
             }
         return obs
 
