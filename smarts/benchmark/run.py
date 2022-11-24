@@ -19,16 +19,17 @@
 # THE SOFTWARE.
 
 import logging
-import matplotlib.pyplot as plt
 import platform
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, Sequence
 from time import time
+from typing import Any, Callable, Dict, Sequence
+
 import cpuinfo
 import gym
+import matplotlib.pyplot as plt
 import psutil
 from mdutils.mdutils import MdUtils
 
