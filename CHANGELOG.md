@@ -12,6 +12,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added single vehicle `Trip` into type. 
 - Added new video record ultility using moviepy.
+- Added `ConfigurableZone` for `Zone` object to types which enable users to build bubble by providing coordinates of the polygon.
 ### Deprecated
 ### Changed
 ### Removed

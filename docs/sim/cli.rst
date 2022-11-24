@@ -16,12 +16,13 @@ Options:
   --help  Show this message and exit.
 
 Commands:
-  envision  Commands to utilize an Envision server.
-  run       Run an experiment on a scenario
-  scenario  Generate, replay or clean scenarios.
-  ultra     Utilities for working with the ULTRA benchmark.
-  waymo     Utilities for using the Waymo Motion Dataset with SMARTS.
-  zoo       Build, install, or instantiate workers.
+  benchmark  Utilities for benchmarking the simulation performance.
+  envision   Commands to utilize an Envision server.
+  run        Run an experiment on a scenario
+  scenario   Generate, replay or clean scenarios.
+  ultra      Utilities for working with the ULTRA benchmark.
+  waymo      Utilities for using the Waymo Motion Dataset with SMARTS.
+  zoo        Build, install, or instantiate workers.
 
 --------
 envision
@@ -256,6 +257,31 @@ Usage: scl waymo export [OPTIONS] <tfrecord_file> <scenario_id>
                         <export_folder>
 
   Export the Waymo scenario to a SMARTS scenario.
+
+Options:
+  --help  Show this message and exit.
+
+---------
+benchmark
+---------
+
+Usage: scl benchmark [OPTIONS] COMMAND [ARGS]...
+
+  Utilities for benchmarking the simulation performance. See `scl benchmark
+  COMMAND --help` for further options.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  run  Run all benchmarks.
+
+run
+^^^
+
+Usage: scl benchmark run [OPTIONS] <scenarios>
+
+  Run all benchmarks.
 
 Options:
   --help  Show this message and exit.

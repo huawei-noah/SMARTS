@@ -145,3 +145,6 @@ collected_observations/
 
 # Static type check
 .pytype
+
+# Benchmark
+**/benchmark/reports/*

@@ -33,9 +33,10 @@ const WorldState = Object.freeze({
   SCENARIO_ID: 1,
   SCENARIO_NAME: 2,
   TRAFFIC: 3,
-  BUBBLES: 4,
-  SCORES: 5,
-  EGO_AGENT_IDS: 6,
+  TRAFFIC_SIGNALS: 4,
+  BUBBLES: 5,
+  SCORES: 6,
+  EGO_AGENT_IDS: 7,
 });
 
 const Traffic = Object.freeze({
