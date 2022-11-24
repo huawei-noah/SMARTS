@@ -230,6 +230,7 @@ class AgentPhysicsProvider(AgentsProvider):
             ActionSpaceType.LaneWithContinuousSpeed,
             ActionSpaceType.Trajectory,
             ActionSpaceType.MPC,
+            ActionSpaceType.Empty,
         }
 
 
