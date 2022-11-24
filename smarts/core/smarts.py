@@ -33,6 +33,7 @@ from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
 from smarts.core.simulation_global_constants import SimulationGlobalConstants
+from smarts.core.simulation_global_constants import environ as sgc_environ
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
 
@@ -238,21 +239,21 @@ class SMARTS(ProviderManager):
         try:
             with timeit("Last SMARTS Simulation Step", self._log.info):
                 return self._step(agent_actions, time_delta_since_last_step)
-        # except (KeyboardInterrupt, SystemExit):
-        #     # ensure we clean-up if the user exits the simulation
-        #     self._log.info("Simulation was interrupted by the user.")
-        #     self.destroy()
-        #     raise  # re-raise the KeyboardInterrupt
-        # except Exception as e:
-        #     self._log.error(
-        #         "Simulation crashed with exception. Attempting to cleanly shutdown."
-        #     )
-        #     self._log.exception(e)
-        #     self.destroy()
-        #     raise  # re-raise
+        except (KeyboardInterrupt, SystemExit):
+            # ensure we clean-up if the user exits the simulation
+            self._log.info("Simulation was interrupted by the user.")
+            if not sgc_environ.DEBUG:
+                self.destroy()
+            raise  # re-raise the KeyboardInterrupt
+        except Exception as e:
+            self._log.error(
+                "Simulation crashed with exception. Attempting to cleanly shutdown."
+            )
+            self._log.exception(e)
+            if not sgc_environ.DEBUG:
+                self.destroy()
+            raise  # re-raise
         finally:
-            # TODO MTA: Make above not destroy debugging information when debugging
-            # TAI MTA: Use engine configuration here to enable debugging?
             pass
 
     def _check_if_acting_on_active_agents(self, agent_actions):
@@ -423,9 +424,7 @@ class SMARTS(ProviderManager):
                 - If no agents: the initial simulation observation at `start_time`
                 - If agents: the first step of the simulation with an agent observation
         """
-        tries = 1
-        # TODO MTA: Make above not destroy debugging information when debugging
-        # TAI MTA: Use engine configuration here to change number of reset attempts?
+        tries = sgc_environ.RESET_RETRIES + 1
         first_exception = None
         for _ in range(tries):
             try:

@@ -30,12 +30,15 @@ class SimulationGlobalConstants:
     """This is state that should not ever change."""
 
     DEBUG: bool
+    RESET_RETRIES: int
     OBSERVATION_WORKERS: int
 
     _FEATURES = {
-        ("DEBUG", bool, False),
-        ("OBSERVATION_WORKERS", int, 0),
+        ("DEBUG", bool, True),
+        ("RESET_RETRIES", int, 0),
+        ("OBSERVATION_WORKERS", int, 2),
     }
+    """{(constant_name, type, default), ...}"""
 
     _SMARTS_ENVIRONMENT_PREFIX: str = "SEV_"
 
