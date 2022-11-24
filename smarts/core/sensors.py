@@ -183,6 +183,7 @@ class Sensors:
         sim_local_constants: SimulationLocalConstants,
         agent_ids,
         renderer,
+        bullet_client,
         process_count_override=None,
     ):
         observations, dones = {}, {}
@@ -237,6 +238,7 @@ class Sensors:
                             sim_frame.sensor_states[vehicle_id],
                             vehicle_id,
                             renderer,
+                            bullet_client,
                         )
 
             # Collect futures
@@ -270,6 +272,7 @@ class Sensors:
         sensor_states,
         vehicles,
         renderer,
+        bullet_client,
     ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
         """Operates all sensors on a batch of vehicles for a single agent."""
         # TODO: Replace this with a more efficient implementation that _actually_
@@ -286,6 +289,7 @@ class Sensors:
                 sensor_state,
                 vehicle,
                 renderer,
+                bullet_client,
             )
 
         return observations, dones
@@ -298,8 +302,16 @@ class Sensors:
         sensor_state,
         vehicle_id,
         renderer,
+        bullet_client,
     ):
         vehicle_sensors: Dict[str, Any] = sim_frame.vehicle_sensors[vehicle_id]
+
+        vehicle_state = sim_frame.vehicle_states[vehicle_id]
+        lidar = None
+        lidar_sensor = vehicle_sensors.get("lidar_sensor")
+        if lidar_sensor:
+            lidar_sensor.follow_vehicle(vehicle_state)
+            lidar = lidar_sensor(bullet_client)
 
         def get_camera_sensor_result(sensors, sensor_name, renderer):
             return (
@@ -318,6 +330,7 @@ class Sensors:
             top_down_rgb=get_camera_sensor_result(
                 vehicle_sensors, "rgb_sensor", renderer
             ),
+            lidar_point_cloud=lidar,
         )
 
     @staticmethod
@@ -464,12 +477,6 @@ class Sensors:
         if not waypoints_sensor:
             waypoint_paths = None
 
-        lidar_point_cloud = None
-        lidar_sensor = vehicle_sensors.get("lidar_sensor")
-        if lidar_sensor:
-            lidar_sensor.follow_vehicle(vehicle_state)
-            lidar_point_cloud = lidar_sensor()
-
         done, events = Sensors._is_done_with_events(
             sim_frame, sim_local_constants, agent_id, vehicle_state, sensor_state, plan
         )
@@ -511,7 +518,6 @@ class Sensors:
                 neighborhood_vehicle_states=neighborhood_vehicle_states,
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
-                lidar_point_cloud=lidar_point_cloud,
                 road_waypoints=road_waypoints,
                 via_data=via_data,
                 signals=signals,
@@ -528,12 +534,13 @@ class Sensors:
         sensor_state,
         vehicle,
         renderer,
+        bullet_client,
     ) -> Tuple[Observation, bool]:
         """Generate observations for the given agent around the given vehicle."""
         args = [sim_frame, sim_local_constants, agent_id, sensor_state, vehicle.id]
         base_obs, dones = cls.observe_base(*args)
         complete_obs = dataclasses.replace(
-            base_obs, **cls.observe_cameras(*args, renderer)
+            base_obs, **cls.observe_cameras(*args, renderer, bullet_client)
         )
         return (complete_obs, dones)
 
@@ -1178,25 +1185,22 @@ class LidarSensor(Sensor):
 
     def __init__(
         self,
-        bullet_client,
         vehicle_state: VehicleState,
         sensor_params: Optional[SensorParams] = None,
         lidar_offset=(0, 0, 1),
     ):
-        self._bullet_client = bullet_client
         self._lidar_offset = np.array(lidar_offset)
 
         self._lidar = Lidar(
             vehicle_state.pose.position + self._lidar_offset,
             sensor_params,
-            self._bullet_client,
         )
 
     def follow_vehicle(self, vehicle_state):
         self._lidar.origin = vehicle_state.pose.position + self._lidar_offset
 
-    def __call__(self):
-        return self._lidar.compute_point_cloud()
+    def __call__(self, bullet_client):
+        return self._lidar.compute_point_cloud(bullet_client)
 
     def teardown(self, **kwargs):
         pass

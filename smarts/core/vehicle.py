@@ -456,8 +456,7 @@ class Vehicle:
         if agent_interface.lidar_point_cloud:
             sensor = LidarSensor(
                 vehicle_state=vehicle_state,
-                bullet_client=bullet_client,
-                sensor_params=agent_interface.lidar_point_cloud.sensor_params,
+                sensor_params=agent_interface.lidar.sensor_params,
             )
             vehicle.attach_lidar_sensor(sensor)
             sensor_manager.add_sensor_for_actor(vehicle.id, sensor)

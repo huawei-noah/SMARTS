@@ -85,10 +85,6 @@ def sim(scenario) -> SMARTS:
     agents = {
         aid: AgentInterface.from_type(
             AgentType.Full,
-            drivable_area_grid_map=False,
-            ogm=False,
-            rgb=False,
-            lidar=False,
             action=ActionSpaceType.Continuous,
         )
         for aid in AGENT_IDS
@@ -136,6 +132,7 @@ def test_sensor_parallelization(
             sim_local_constants=simulation_local_constants,
             agent_ids=simulation_frame.agent_ids,
             renderer=sim.renderer,
+            bullet_client=sim.bc,
             process_count_override=processes,
         )
         assert len(obs) > 0

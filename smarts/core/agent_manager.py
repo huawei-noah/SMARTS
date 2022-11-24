@@ -187,6 +187,7 @@ class AgentManager:
                 sensor_state,
                 vehicle,
                 sim._renderer,
+                sim.bc,
             )
             rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
             scores[agent_id] = vehicle.trip_meter_sensor()
@@ -244,7 +245,8 @@ class AgentManager:
                     agent_id,
                     sensor_states,
                     {v.id: v for v in vehicles},
-                    sim.renderer,
+                    sim._renderer,
+                    sim.bc,
                 )
                 # TODO: Observations and rewards should not be generated here.
                 rewards[agent_id] = {
@@ -264,6 +266,7 @@ class AgentManager:
                 sensor_state = self._sensor_manager.sensor_state_for_actor_id(
                     vehicle.id
                 )
+                ## TODO MTA: Find a way to pass in renderer uninstantiated
                 obs, dones[agent_id] = Sensors.observe(
                     sim_frame,
                     sim.local_constants,
@@ -271,6 +274,7 @@ class AgentManager:
                     sensor_state,
                     vehicle,
                     sim._renderer,
+                    sim.bc,
                 )
                 observations[agent_id] = obs
 
