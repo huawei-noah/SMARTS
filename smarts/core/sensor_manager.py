@@ -19,21 +19,26 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import logging
 from collections import Counter
 from typing import Dict, List, Set
 
 from .sensors import Sensor, Sensors, SensorState
+
+logger = logging.getLogger(__name__)
 
 
 class SensorManager:
     def __init__(self):
         self._sensors: Dict[str, Sensor] = {}
 
-        # {vehicle_id (fixed-length): <SensorState>}
+        # {actor_id: <SensorState>}
         self._sensor_states: Dict[str, SensorState] = {}
 
+        # {actor_id: [sensor_id, ...]}
         self._sensors_by_actor_id: Dict[str, List[str]] = {}
         self._sensor_references = Counter()
+        # {sensor_id, ...}
         self._discarded_sensors: Set[str] = set()
 
     def step(self, sim_frame, renderer):
@@ -67,10 +72,12 @@ class SensorManager:
                 self._discarded_sensors.add(sensor_id)
                 del self._sensor_references[sensor_id]
         del self._sensors_by_actor_id[actor_id]
+        return frozenset(self._discarded_sensors)
 
     def remove_sensor(self, sensor_id):
         sensor = self._sensors[sensor_id]
         del self._sensors[sensor_id]
+        return sensor
 
     def sensor_state_exists(self, actor_id: str) -> bool:
         return actor_id in self._sensor_states
@@ -88,6 +95,12 @@ class SensorManager:
 
     def add_sensor_for_actor(self, actor_id: str, sensor: Sensor):
         s_id = f"{type(sensor).__qualname__}-{id(actor_id)}"
+        # TAI: Allow mutliple sensors of the same type in the future
+        if s_id in self._sensors:
+            logger.warning(
+                "Duplicate sensor attempted to add to %s: %s", actor_id, s_id
+            )
+            return s_id
         self._sensors[s_id] = sensor
         sensors = self._sensors_by_actor_id.setdefault(actor_id, [])
         sensors.append(s_id)
@@ -97,8 +110,7 @@ class SensorManager:
 
     def clean_up_sensors_for_actors(self, current_actor_ids: Set[str], renderer):
         """Cleans up sensors that are attached to non-existing actors."""
-        # TODO MTA: Need to provide an explicit reference count of dependents on a sensor
-        # TODO MTA: This is not good enough since actors can keep alive sensors that are not in use
+        # This is not good enough by itself since actors can keep alive sensors that are not in use by an agent
         old_actor_ids = set(self._sensor_states)
         missing_actors = old_actor_ids - current_actor_ids
 
