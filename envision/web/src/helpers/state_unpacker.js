@@ -33,6 +33,7 @@ const WorldState = Object.freeze({
   SCENARIO_ID: 1,
   SCENARIO_NAME: 2,
   TRAFFIC: 3,
+  TRAFFIC_SIGNALS: 4,
   BUBBLES: 5,
   SCORES: 6,
   EGO_AGENT_IDS: 7,

@@ -13,6 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added single vehicle `Trip` into type. 
 - Added new video record ultility using moviepy.
 - Added distance check between bubble and vehicle to avoid generating unnecessary cursors.
+- Added `ConfigurableZone` for `Zone` object to types which enable users to build bubble by providing coordinates of the polygon.
 ### Deprecated
 ### Changed
 ### Removed
