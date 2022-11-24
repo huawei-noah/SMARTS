@@ -65,6 +65,7 @@ class SensorManager:
             count = self._sensor_references[sensor_id]
             if count < 1:
                 self._discarded_sensors.add(sensor_id)
+                del self._sensor_references[sensor_id]
         del self._sensors_by_actor_id[actor_id]
 
     def remove_sensor(self, sensor_id):
