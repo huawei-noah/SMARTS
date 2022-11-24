@@ -18,25 +18,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from dataclasses import dataclass
+from enum import Enum
 
+class Reason(Enum):
+    Goal = 0
+    """Agent achieved its goal."""
+    Crash = 1
+    """ Agent becomes done due to collision, driving off road, or reaching max
+    episode steps.
+    """
 
-@dataclass
-class Counts:
-    crashes: float = 0
-    """ Number of crashed episodes. An episode is considered crashed if
-    an agent becomes done due to collision, driving off road, or reaching 
-    max episode steps.
-    """
-    goals: int = 0
-    """ Number of episodes completed succesfully by achieving the goal.
-    """
-    episodes: int = 0
-    """ Number of episodes traversed.
-    """
-    steps: int = 0
-    """ Sum of steps taken over all episodes.
-    """
-    steps_adjusted: int = 0
-    """ Sum of steps taken over all episodes. The number of steps in an episode where the vehicle crashed, is replaced with a pre-defined _MAX_STEPS value.
-    """
+def reason(obs) -> Reason:
+    if obs.events.reached_goal:
+        return Reason.Goal
+    elif (
+        len(obs.events.collisions) > 0
+        or obs.events.off_road
+        or obs.events.reached_max_episode_steps
+    ):
+        return Reason.Crash
+    else:
+        raise Exception(f"Unsupported agent done reason. Events: {obs.events}.")

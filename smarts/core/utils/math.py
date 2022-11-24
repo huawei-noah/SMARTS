@@ -548,6 +548,7 @@ def welford() -> Tuple[
         S = newS
 
     def mean() -> float:
+        nonlocal M
         return M
 
     def std() -> float:
@@ -559,6 +560,7 @@ def welford() -> Tuple[
         return std
 
     def steps() -> int:
+        nonlocal n
         return n
 
     return update, mean, std, steps
