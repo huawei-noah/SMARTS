@@ -35,8 +35,9 @@ class SensorManager:
         # {actor_id: <SensorState>}
         self._sensor_states: Dict[str, SensorState] = {}
 
-        # {actor_id: [sensor_id, ...]}
-        self._sensors_by_actor_id: Dict[str, List[str]] = {}
+        # {actor_id: {sensor_id, ...}}
+        self._sensors_by_actor_id: Dict[str, Set[str]] = {}
+        self._actors_by_sensor_id: Dict[str, Set[str]] = {}
         self._sensor_references = Counter()
         # {sensor_id, ...}
         self._discarded_sensors: Set[str] = set()
@@ -65,18 +66,26 @@ class SensorManager:
 
     def remove_sensors_by_actor_id(self, actor_id: str):
         del self._sensor_states[actor_id]
-        for sensor_id in self._sensors_by_actor_id[actor_id]:
+        sensors_by_actor = self._sensors_by_actor_id[actor_id]
+        for sensor_id in sensors_by_actor:
             self._sensor_references.subtract([sensor_id])
             count = self._sensor_references[sensor_id]
+            self._actors_by_sensor_id[sensor_id].remove(actor_id)
             if count < 1:
                 self._discarded_sensors.add(sensor_id)
-                del self._sensor_references[sensor_id]
         del self._sensors_by_actor_id[actor_id]
         return frozenset(self._discarded_sensors)
 
     def remove_sensor(self, sensor_id):
         sensor = self._sensors[sensor_id]
         del self._sensors[sensor_id]
+        del self._sensor_references[sensor_id]
+
+        ## clean up any remaining references by actors
+        if sensor_id in self._actors_by_sensor_id:
+            for actor_id in self._actors_by_sensor_id[sensor_id]:
+                self._sensors_by_actor_id[actor_id].remove(sensor_id)
+            del self._actors_by_sensor_id[sensor_id]
         return sensor
 
     def sensor_state_exists(self, actor_id: str) -> bool:
@@ -87,26 +96,31 @@ class SensorManager:
 
     def sensors_for_actor_id(self, actor_id):
         return [
-            self._sensors[s_id] for s_id in self._sensors_by_actor_id.get(actor_id, [])
+            self._sensors[s_id]
+            for s_id in self._sensors_by_actor_id.get(actor_id, set())
         ]
 
     def sensor_state_for_actor_id(self, actor_id):
         return self._sensor_states.get(actor_id)
 
-    def add_sensor_for_actor(self, actor_id: str, sensor: Sensor):
-        s_id = f"{type(sensor).__qualname__}-{id(actor_id)}"
-        # TAI: Allow mutliple sensors of the same type in the future
-        if s_id in self._sensors:
+    def add_sensor_for_actor(self, actor_id: str, sensor: Sensor) -> str:
+        # TAI: Allow multiple sensors of the same type on the same actor
+        s_id = f"{type(sensor).__qualname__}-{actor_id}"
+        actor_sensors = self._sensors_by_actor_id.setdefault(actor_id, set())
+        if s_id in actor_sensors:
             logger.warning(
-                "Duplicate sensor attempted to add to %s: %s", actor_id, s_id
+                "Duplicate sensor attempted to add to actor `%s`: `%s`", actor_id, s_id
             )
             return s_id
-        self._sensors[s_id] = sensor
-        sensors = self._sensors_by_actor_id.setdefault(actor_id, [])
-        sensors.append(s_id)
-        self._sensor_references.update([s_id])
+        actor_sensors.add(s_id)
+        actors = self._actors_by_sensor_id.setdefault(s_id, set())
+        actors.add(actor_id)
+        return self.add_sensor(s_id, sensor)
 
-        return s_id
+    def add_sensor(self, sensor_id, sensor: Sensor) -> str:
+        self._sensors[sensor_id] = sensor
+        self._sensor_references.update([sensor_id])
+        return sensor_id
 
     def clean_up_sensors_for_actors(self, current_actor_ids: Set[str], renderer):
         """Cleans up sensors that are attached to non-existing actors."""
@@ -119,6 +133,7 @@ class SensorManager:
 
         for sensor_id in self._discarded_sensors:
             if self._sensor_references.get(sensor_id) < 1:
-                self._sensors[sensor_id].teardown(renderer=renderer)
-                del self._sensor_references[sensor_id]
+                sensor = self.remove_sensor(sensor_id)
+                sensor.teardown(renderer=renderer)
+
         self._discarded_sensors.clear()
