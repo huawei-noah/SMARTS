@@ -22,6 +22,7 @@
 
 import click
 
+from cli.benchmark import benchmark_cli
 from cli.envision import envision_cli
 from cli.run import run_experiment
 from cli.studio import scenario_cli
@@ -60,9 +61,8 @@ except (ModuleNotFoundError, ImportError):
             "pip install pathos==0.2.8 tabulate>=0.8.10 waymo-open-dataset-tf-2-4-0"
         )
 
-
 scl.add_command(waymo_cli)
-
+scl.add_command(benchmark_cli)
 
 if __name__ == "__main__":
     scl()
