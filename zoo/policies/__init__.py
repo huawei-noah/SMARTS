@@ -1,5 +1,6 @@
 import sys
 import os
+import importlib.util
 from pathlib import Path
 from typing import Any, Dict
 
@@ -126,15 +127,24 @@ def competition_entry(**kwargs):
     def env_wrapper(env):
         import gym
 
-        sys.path.insert(0, policy_path)
-        from policy import submitted_wrappers
+        # import policy.py module
+        wrapper_path = str(os.path.join(policy_path, "policy.py"))
+        wrapper_spec = importlib.util.spec_from_file_location(
+            "competition_wrapper", wrapper_path
+        )
+        wrapper_module = importlib.util.module_from_spec(wrapper_spec)
+        sys.modules["competition_wrapper"] = wrapper_module
+        wrapper_spec.loader.exec_module(wrapper_module)
 
-        wrappers = submitted_wrappers()
+        wrappers = wrapper_module.submitted_wrappers()
         env = gym.Wrapper(env)
         for wrapper in wrappers:
             env = wrapper(env)
 
-        sys.path.remove(policy_path)
+        # delete competition wrapper module
+        sys.modules.pop("competition_wrapper")
+        del wrapper_module
+
         return env
 
     config = load_config(Path(os.path.join(policy_path, "config.yaml")))
