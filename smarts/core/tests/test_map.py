@@ -132,7 +132,7 @@ def test_sumo_map(sumo_scenario):
     rpt = RoadMap.Route.RoutePoint(pt=point)
     rendpt = RoadMap.Route.RoutePoint(pt=Point(198, 65.20))
     db = route.distance_between(rpt, rendpt)
-    assert db == 134.01
+    assert math.isclose(db, 134.01)
 
     cands = route.project_along(rpt, 134.01)
     for r2lane in r2.lanes:

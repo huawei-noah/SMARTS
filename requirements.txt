@@ -24,7 +24,7 @@ constantly==15.1.0
 coverage==6.5.0
 cycler==0.11.0
 dm-tree==0.1.7
-eclipse-sumo==1.12.0
+eclipse-sumo==1.10.0
 exceptiongroup==1.0.4
 execnet==1.9.0
 filelock==3.8.0
