@@ -463,7 +463,7 @@ def gen_traffic_histories(
         if hdsr.filter_off_map or hdsr.flip_y:
             if map_spec:
                 if not road_map:
-                    road_map, _ = map_spec.builder_fn(map_spec)
+                    road_map, _ = map_spec.build()
                 assert road_map
                 map_bbox = road_map.bounding_box
             else:

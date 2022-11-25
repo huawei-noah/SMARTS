@@ -90,7 +90,7 @@ def _is_scenario_folder_to_build(path: str) -> bool:
     from smarts.sstudio.types import MapSpec
 
     map_spec = MapSpec(path)
-    road_map, _ = map_spec.builder_fn(map_spec)
+    road_map, _ = map_spec.build()
     return road_map is not None
 
 

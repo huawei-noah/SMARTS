@@ -382,6 +382,12 @@ class MapSpec:
     If not specified, this currently defaults to a function that creates
     SUMO road networks (get_road_map()) in smarts.core.default_map_builder."""
 
+    def build(self) -> Tuple[Optional[RoadMap], Optional[str]]:
+        """This should return an object derived from the RoadMap base class
+        and a hash that uniquely identifies it (changes to the hash should signify
+        that the map is different enough that map-related caches should be reloaded)."""
+        return self.builder_fn(self)
+
 
 @dataclass(frozen=True)
 class Route:

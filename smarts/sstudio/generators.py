@@ -364,7 +364,7 @@ class TrafficGenerator:
                 map_spec = types.MapSpec(
                     self._road_network_path, lanepoint_spacing=lp_spacing
                 )
-        road_map, _ = map_spec.builder_fn(map_spec)
+        road_map, _ = map_spec.build()
         return road_map
 
     def _fill_in_gaps(self, route: types.Route) -> types.Route:

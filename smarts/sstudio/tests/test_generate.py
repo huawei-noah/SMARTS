@@ -113,7 +113,7 @@ def _gen_map_from_spec(scenario_root: str, map_spec: MapSpec):
         gen_map(scenario_root, map_spec, output_dir=temp_dir)
         found_map_spec = Scenario.discover_map(temp_dir)
         assert found_map_spec
-        road_map = found_map_spec.builder_fn(found_map_spec)
+        road_map = found_map_spec.build()
         assert road_map
 
 

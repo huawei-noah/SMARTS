@@ -63,7 +63,7 @@ def build_scenario(
     shift_to_origin = not allow_offset_map and not bool(traffic_histories)
 
     map_spec = Scenario.discover_map(scenario_root_str, shift_to_origin=shift_to_origin)
-    road_map, _ = map_spec.builder_fn(map_spec)
+    road_map, _ = map_spec.build()
     if not road_map:
         log(
             "No reference to a RoadNetwork file was found in {}, or one could not be created. "
