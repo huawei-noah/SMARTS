@@ -136,5 +136,5 @@ Werkzeug==2.2.2
 wrapt==1.14.1
 yarl==1.8.1
 yattag==1.14.0
-zipp==3.10.0
+zipp==3.11.0
 zope.interface==5.5.2
