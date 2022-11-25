@@ -10,6 +10,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Exposed `.glb` file metadata through the scenario `Scenario.map_glb_metadata` attribute.
 - Added single vehicle `Trip` into type. 
 - Added new video record ultility using moviepy.
 - Added `ConfigurableZone` for `Zone` object to types which enable users to build bubble by providing coordinates of the polygon.
