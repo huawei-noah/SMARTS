@@ -479,8 +479,8 @@ class Scenario:
         Returns:
             A new map spec.
         """
-        path = os.path.join(scenario_root, "map_spec.pkl")
-        if not os.path.exists(path):
+        path = Path(scenario_root) / "map_spec.pkl"
+        if not path.exists():
             # Use our default map builder if none specified by scenario...
             return MapSpec(
                 scenario_root,
@@ -854,7 +854,7 @@ class Scenario:
     @property
     def name(self) -> str:
         """The name of the scenario."""
-        return os.path.basename(os.path.normpath(self._root))
+        return os.path.normpath(self._root)
 
     @property
     def root_filepath(self) -> str:

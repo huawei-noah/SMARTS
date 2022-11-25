@@ -59,6 +59,7 @@ class ActionSpaceType(Enum):
     MPC = 7
     TrajectoryWithTime = 8  # for pure interpolation provider
     Direct = 9
+    Empty = 10
 
 
 class Controllers:

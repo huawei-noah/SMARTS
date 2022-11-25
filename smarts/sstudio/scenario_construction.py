@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 
-def build_single_scenario(
+def build_scenario(
     clean: bool,
     allow_offset_map: bool,
     scenario: str,
