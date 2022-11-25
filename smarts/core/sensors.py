@@ -234,6 +234,7 @@ class Observation:
     top_down_rgb: Optional[TopDownRGB]
     road_waypoints: Optional[RoadWaypoints]
     via_data: Vias
+    map_source: str
     signals: Optional[List[SignalObservation]] = None
 
 
@@ -460,6 +461,7 @@ class Sensors:
                 lidar_point_cloud=lidar,
                 road_waypoints=road_waypoints,
                 via_data=via_data,
+                map_source=sim.road_map.source,
                 signals=signals,
             ),
             done,
