@@ -51,6 +51,8 @@ class Metrics(gym.Wrapper):
         self._records = {}
 
     def step(self, action: Dict[str, Any]):
+        """Steps the environment by one step.
+        """
         obs, rewards, dones, info = super().step(action)
 
         # Only count steps in which an ego agent is present.
@@ -91,6 +93,8 @@ class Metrics(gym.Wrapper):
         return obs, rewards, dones, info
 
     def reset(self, **kwargs):
+        """Resets the environment.
+        """
         obs = super().reset(**kwargs)
         self._cur_scen = (super().scenario_log)["scenario_map"]
         self._cur_agents = set(super().agent_specs.keys())
