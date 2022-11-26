@@ -12,7 +12,6 @@ class DataStore:
     def __call__(self, **kwargs):
         self._data = copy.deepcopy(dict(**kwargs))
 
-
     @property
     def data(self):
         return self._data

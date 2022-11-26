@@ -20,6 +20,7 @@
 
 from enum import Enum
 
+
 class Reason(Enum):
     Goal = 0
     """Agent achieved its goal."""
@@ -27,6 +28,7 @@ class Reason(Enum):
     """ Agent becomes done due to collision, driving off road, or reaching max
     episode steps.
     """
+
 
 def reason(obs) -> Reason:
     if obs.events.reached_goal:

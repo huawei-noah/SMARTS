@@ -18,14 +18,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import copy
+import functools
 from dataclasses import asdict, dataclass
-from typing import Any, Callable, Dict, Set, Tuple, TypeVar, Generic, Type
-
-from smarts.env.wrappers.metric import termination
-from smarts.env.wrappers.metric.costs import Costs, COST_FUNCS
-from smarts.env.wrappers.metric.counts import Counts
+from typing import Any, Callable, Dict, Set, TypeVar
 
 import gym
+
+from smarts.env.wrappers.metric import termination
+from smarts.env.wrappers.metric.costs import COST_FUNCS, Costs
+from smarts.env.wrappers.metric.counts import Counts
 
 _MAX_STEPS = 800
 
@@ -34,22 +36,21 @@ _MAX_STEPS = 800
 class Record:
     counts: Counts
     costs: Costs
-    cost_funcs: Dict[str, Callable[[Any],Dict[str,float]]]
+    cost_funcs: Dict[str, Callable[[Any], Dict[str, float]]]
+
 
 class Metrics(gym.Wrapper):
-    """Computes agents' performance metrics in a SMARTS environment.
-    """
+    """Computes agents' performance metrics in a SMARTS environment."""
 
     def __init__(self, env: gym.Env):
         super().__init__(env)
-        self._cur_scen:str
-        self._cur_agents:Set[str]
-        self._steps:Dict[str,int]
-        self._done_check:Set[str]
-        self._records={}
-        """Fine grained performance metric for each agent in each scenario."""
+        self._cur_scen: str
+        self._cur_agents: Set[str]
+        self._steps: Dict[str, int]
+        self._done_check: Set[str]
+        self._records = {}
 
-    def step(self, action:Dict[str,Any]):
+    def step(self, action: Dict[str, Any]):
         obs, rewards, dones, info = super().step(action)
 
         # Only count steps in which an ego agent is present.
@@ -60,6 +61,7 @@ class Metrics(gym.Wrapper):
             # Increment step count
             self._steps[agent_name] += 1
 
+            # fmt: off
             # Compute all cost functions.
             for cost_name, cost_func in self._records[self._cur_scen][agent_name].cost_funcs.items():
                 new_val = cost_func(agent_obs)
@@ -79,25 +81,29 @@ class Metrics(gym.Wrapper):
                     self._records[self._cur_scen][agent_name].counts.crashes += 1
                 else:
                     raise Exception(f"Unsupported agent done reason. Events: {agent_obs.events}.")
+            # fmt: on
 
         if dones["__all__"] == True:
-            assert self._done_check == self._cur_agents, f"done[\"__all__\"]==True but not all agents are done. Current agents = {self._cur_agents}. Agents done = {self._done_check}."  
+            assert (
+                self._done_check == self._cur_agents
+            ), f'done["__all__"]==True but not all agents are done. Current agents = {self._cur_agents}. Agents done = {self._done_check}.'
 
         return obs, rewards, dones, info
 
     def reset(self, **kwargs):
         obs = super().reset(**kwargs)
-        self._cur_scen=(super().scenario_log)["scenario_map"]
-        self._cur_agents=set(super().agent_specs.keys())
-        self._steps=dict.fromkeys(self._cur_agents, 0)
-        self._done_check=set()
+        self._cur_scen = (super().scenario_log)["scenario_map"]
+        self._cur_agents = set(super().agent_specs.keys())
+        self._steps = dict.fromkeys(self._cur_agents, 0)
+        self._done_check = set()
         if self._cur_scen not in self._records:
             for agent_name in self._cur_agents:
                 cost_funcs = {
-                    cost_name: cost_func() for cost_name, cost_func in COST_FUNCS.items()
-                    }
+                    cost_name: cost_func()
+                    for cost_name, cost_func in COST_FUNCS.items()
+                }
                 self._records[self._cur_scen] = {
-                    agent_name : Record(
+                    agent_name: Record(
                         counts=Counts(),
                         cost_funcs=cost_funcs,
                         costs=Costs(),
@@ -105,63 +111,80 @@ class Metrics(gym.Wrapper):
                 }
         return obs
 
-    def score(self)->Tuple[Dict[str,float], Record]:
+    @property
+    def records(self) -> Dict[str, Dict[str, Record]]:
         """
-        Overall performance score achieved on the wrapped environment. 
+        Fine grained performance metric for each agent in each scenario.
+
+        Example::
+
+            self._records = {
+                scen1: {
+                    agent1: Record(
+                        counts,
+                        costs,
+                        cost_funcs,
+                    ),
+                    agent2: Record(
+                        ...
+                    ),
+                },
+                scen2: {
+                    ...
+                },
+            }
         """
-        _score:Dict[str,float] = {
-            "completion": 0,
-            "humanness": 0,
-            "rules": 0,
-            "time": 0,
-        }
-        for scen, agents in self._records.items():
-            _counts = 0
-            _costs = 0            
+        # Prevent modification of self._records, which is a mutable dictionary.
+        return copy.deepcopy(self._records)
 
+    def score(self) -> Dict[str, float]:
+        """
+        An overall performance score achieved on the wrapped environment.
+        """
+        # fmt: off
+        agent_records = functools.reduce(lambda dict_a, dict_b: {**dict_a, **dict_b}, self.records.values())
+        counts_list, costs_list = zip([record.counts, record.costs] for record in agent_records.values())
+        counts_tot = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
+        costs_tot = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
+        # fmt: on
 
-        _score["completion"] = _completion(counts=_counts)
-        _score["humanness"] = _humanness(counts=_counts, costs=_costs)
-        _score["rules"] = _rules(counts=_counts, costs=_costs)
-        _score["time"] = _time(counts=_counts, costs=_costs)
+        _score: Dict[str, float] = {}
+        _score["completion"] = _completion(counts=counts_tot)
+        _score["humanness"] = _humanness(counts=counts_tot, costs=costs_tot)
+        _score["rules"] = _rules(counts=counts_tot, costs=costs_tot)
+        _score["time"] = _time(counts=counts_tot, costs=costs_tot)
 
         return _score
 
-    @property
-    def records(self)->Dict[str, Dict[str, Record]]:
-        """
-        Fine grained performance metric for each agent in each scenario. 
-        """
-        return self._records
-
-
-def _completion(counts: Counts) -> float:
-    return counts.crashes / counts.episodes
-
-
-def _humanness(counts: Counts, costs: Costs) -> float:
-
-    return (
-        costs.dist_to_obstacles
-        + costs.jerk_angular
-        + costs.jerk_linear
-        + costs.lane_center_offset
-    ) / counts.episode_agents
-
-
-def _rules(counts: Counts, costs: Costs) -> float:
-    return (costs.speed_limit + costs.wrong_way) / counts.episode_agents
-
-
-def _time(counts: Counts, costs: Costs) -> float:
-    return (counts.steps_adjusted + costs.dist_to_goal) / counts.episodes
-
 
 T = TypeVar("T", Costs, Counts)
-def _add_dataclass(first:T,second:T)->T:
+
+
+def _add_dataclass(first: T, second: T) -> T:
     output = first.__class__()
     for key, val in asdict(first).items():
         new_val = val + getattr(second, key)
         setattr(output, key, new_val)
 
     return output
+
+
+def _completion(counts: Counts) -> float:
+    return counts.goals / counts.episodes
+
+
+def _humanness(counts: Counts, costs: Costs) -> float:
+    return (
+        costs.dist_to_obstacles
+        + costs.jerk_angular
+        + costs.jerk_linear
+        + costs.lane_center_offset
+    ) / counts.episodes
+
+
+def _rules(counts: Counts, costs: Costs) -> float:
+    return (costs.speed_limit + costs.wrong_way) / counts.episodes
+
+
+def _time(counts: Counts, costs: Costs) -> float:
+    return (counts.steps_adjusted + costs.dist_to_goal) / counts.episodes

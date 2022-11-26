@@ -39,7 +39,6 @@ from smarts.core.utils.math import (
     constrain_angle,
     min_angles_difference_signed,
     vec_to_radians,
-    constrain_angle,
 )
 from smarts.sstudio import types
 from smarts.waymo.waymo_utils import WaymoDatasetError
