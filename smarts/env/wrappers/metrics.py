@@ -50,9 +50,27 @@ class Metrics(gym.Wrapper):
         self._done_check: Set[str]
         self._records = {}
 
-    def step(self, action: Dict[str, Any]):
-        """Steps the environment by one step.
+    def __getattribute__(self, item):
+        """For security, prevents access to items beginning with an underscore.
+
+        Args:
+            item (_type_): Requested item.
+
+        Raises:
+            AttributeError: Upon accessing item beginning with an underscore.
+
+        Returns:
+            _type_: Returns requested item.
         """
+
+        if item.startswith("_"):
+            raise AttributeError(
+                "Permission denied to access private attribute '{}'".format(item)
+            )
+        return super().__getattribute__(item)
+
+    def step(self, action: Dict[str, Any]):
+        """Steps the environment by one step."""
         obs, rewards, dones, info = super().step(action)
 
         # Only count steps in which an ego agent is present.
@@ -69,7 +87,6 @@ class Metrics(gym.Wrapper):
                 new_val = cost_func(agent_obs)
                 setattr(self._records[self._cur_scen][agent_name].costs, cost_name, new_val)
 
-            # If done, categorize agent's completion state.
             if dones[agent_name]:
                 self._done_check.add(agent_name)
                 self._records[self._cur_scen][agent_name].counts.episodes += 1
@@ -93,8 +110,7 @@ class Metrics(gym.Wrapper):
         return obs, rewards, dones, info
 
     def reset(self, **kwargs):
-        """Resets the environment.
-        """
+        """Resets the environment."""
         obs = super().reset(**kwargs)
         self._cur_scen = (super().scenario_log)["scenario_map"]
         self._cur_agents = set(super().agent_specs.keys())
