@@ -34,6 +34,8 @@ _MAX_STEPS = 800
 
 @dataclass
 class Record:
+    """A dataclass for an agent, storing its performance counts and costs.
+    """
     counts: Counts
     costs: Costs
     cost_funcs: Dict[str, Callable[[Any], Dict[str, float]]]
