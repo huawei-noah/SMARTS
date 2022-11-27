@@ -10,6 +10,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from submission.policy import Policy, submitted_wrappers
 from submission import network
 
+from smarts.env.wrappers.metrics import Metrics
+
 def evaluate(config):
     # Make evaluation environments.
     envs_eval = {}
@@ -23,6 +25,10 @@ def evaluate(config):
             sumo_headless=config["sumo_headless"],
             headless=config["headless"],
         )
+
+        # Metrics wrapper
+        env = Metrics(env)
+
         # Wrap the environment
         for wrapper in submitted_wrappers():
             env = wrapper(env)
@@ -54,6 +60,10 @@ def run(
             actions = policy.act(observations)
             observations, rewards, dones, infos = env.step(actions)
 
+        print("------------------Next episode")
+        print(env.score())
+        print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+
 
 if __name__ == "__main__":
     # Load config file.
@@ -61,13 +71,13 @@ if __name__ == "__main__":
         (Path(__file__).resolve().parents[0] / "config.yaml").read_text()
     )
     config = {
-        "eval_episodes": 5,
+        "eval_episodes": 2,
         "seed": 42,
         "scenarios": [
             # "1_to_2lane_left_turn_c",
             # "1_to_2lane_left_turn_t",
             "3lane_merge_multi_agent",
-            # "3lane_merge_single_agent",
+            "3lane_merge_single_agent",
             # "3lane_cruise_multi_agent",
             # "3lane_cruise_single_agent",
             # "3lane_cut_in",

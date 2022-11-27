@@ -159,6 +159,7 @@ class Metrics(gym.Wrapper):
         # Prevent modification of self._records, which is a mutable dictionary.
         return copy.deepcopy(self._records)
 
+    @property
     def score(self) -> Dict[str, float]:
         """
         An overall performance score achieved on the wrapped environment.

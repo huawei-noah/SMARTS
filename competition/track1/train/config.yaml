@@ -1,6 +1,6 @@
 smarts:
   # Environment
-  sumo_gui: False # If True, enables sumo-gui display.
+  sumo_gui: True # If True, enables sumo-gui display.
   img_meters: 50 # Observation image area size in meters.
   img_pixels: 112 # Observation image size in pixels.
   num_stack: 3 # Number of frames to stack as input to policy network.
