@@ -63,8 +63,9 @@ def multi_scenario_v0_env(
         A ``smarts.core.sensors.Observation`` is returned as observation.
 
     Action space for each agent:
+    .. note::
 
-        A `smarts.core.controllers.ActionSpaceType.TargetPose`, which is a
+        A ``smarts.core.controllers.ActionSpaceType.TargetPose``, which is a
         sequence of [x-coordinate, y-coordinate, heading, and time-delta].
         Use time-delta = 0.1 .
 

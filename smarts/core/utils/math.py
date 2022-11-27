@@ -529,8 +529,9 @@ def welford() -> Tuple[
     Reference: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
     Reference: https://www.adamsmith.haus/python/answers/how-to-find-a-running-standard-deviation-in-python
 
-    :return: Callable functions to update, get mean, get std, get steps
-    :rtype: Tuple[ Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int] ]
+    Returns:
+        Tuple[ Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int] ]: Callable 
+            functions to update, get mean, get std, get steps
     """
 
     import math
