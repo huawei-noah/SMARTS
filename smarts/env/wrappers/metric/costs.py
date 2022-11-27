@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Tuple
+from typing import Callable, Dict, Tuple
 
 import numpy as np
 
@@ -39,7 +39,7 @@ class Costs:
     wrong_way: int = 0
 
 
-COST_FUNCS: Dict[str, Callable[[], Callable[[Any], Dict[str, float]]]] = {
+COST_FUNCS: Dict[str, Callable[[], Callable[[Observation], Costs]]] = {
     "collisions": lambda: _collisions,
     "dist_to_goal": lambda: _dist_to_goal,
     "dist_to_obstacles": lambda: _dist_to_obstacles(),
@@ -52,11 +52,11 @@ COST_FUNCS: Dict[str, Callable[[], Callable[[Any], Dict[str, float]]]] = {
 }
 
 
-def _collisions(obs: Observation) -> Dict[str, float]:
-    return {"collisions": float(len(obs.events.collisions))}
+def _collisions(obs: Observation) -> Costs:
+    return Costs(collisions=float(len(obs.events.collisions)))
 
 
-def _dist_to_goal(obs: Observation) -> Dict[str, float]:
+def _dist_to_goal(obs: Observation) -> Costs:
     mission_goal = obs.ego_vehicle_state.mission.goal
     if hasattr(mission_goal, "position"):
         rel = obs.ego_vehicle_state.position[:2] - mission_goal.position[:2]
@@ -64,17 +64,17 @@ def _dist_to_goal(obs: Observation) -> Dict[str, float]:
     else:
         dist = 0
 
-    return {"dist_to_goal": dist}
+    return Costs(dist_to_goal=dist)
 
 
-def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
+def _dist_to_obstacles() -> Callable[[Observation], Costs]:
     ave = 0
     step = 0
     rel_angle_th = np.pi * 40 / 180
     rel_heading_th = np.pi * 179 / 180
     w_dist = 0.05
 
-    def func(obs: Observation) -> Dict[str, float]:
+    def func(obs: Observation) -> Costs:
         nonlocal ave, step, rel_angle_th, rel_heading_th, w_dist
 
         # Ego's position and heading with respect to the map's coordinate system.
@@ -137,44 +137,44 @@ def _dist_to_obstacles() -> Callable[[Observation], Dict[str, float]]:
         j_d = np.amax(np.exp(-w_dist * di))
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_d)
-        return {"dist_to_obstacles": ave}
+        return Costs(dist_to_obstacles=ave)
 
     return func
 
 
-def _jerk_angular() -> Callable[[Observation], Dict[str, float]]:
+def _jerk_angular() -> Callable[[Observation], Costs]:
     ave = 0
     step = 0
 
-    def func(obs: Observation) -> Dict[str, float]:
+    def func(obs: Observation) -> Costs:
         nonlocal ave, step
 
         ja_squared = np.sum(np.square(obs.ego_vehicle_state.angular_jerk))
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=ja_squared)
-        return {"jerk_angular": ave}
+        return Costs(jerk_angular=ave)
 
     return func
 
 
-def _jerk_linear() -> Callable[[Observation], Dict[str, float]]:
+def _jerk_linear() -> Callable[[Observation], Costs]:
     ave = 0
     step = 0
 
-    def func(obs: Observation) -> Dict[str, float]:
+    def func(obs: Observation) -> Costs:
         nonlocal ave, step
 
         jl_squared = np.sum(np.square(obs.ego_vehicle_state.linear_jerk))
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=jl_squared)
-        return {"jerk_linear": ave}
+        return Costs(jerk_linear=ave)
 
     return func
 
 
-def _lane_center_offset() -> Callable[[Observation], Dict[str, float]]:
+def _lane_center_offset() -> Callable[[Observation], Costs]:
     ave = 0
     step = 0
 
-    def func(obs: Observation) -> Dict[str, float]:
+    def func(obs: Observation) -> Costs:
         nonlocal ave, step
 
         # Nearest waypoints
@@ -192,20 +192,20 @@ def _lane_center_offset() -> Callable[[Observation], Dict[str, float]]:
         j_lc = norm_dist_from_center**2
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_lc)
-        return {"lane_center_offset": ave}
+        return Costs(lane_center_offset=ave)
 
     return func
 
 
-def _off_road(obs: Observation) -> Dict[str, float]:
-    return {"off_road": float(obs.events.off_road)}
+def _off_road(obs: Observation) -> Costs:
+    return Costs(off_road=float(obs.events.off_road))
 
 
-def _speed_limit() -> Callable[[Observation], Dict[str, float]]:
+def _speed_limit() -> Callable[[Observation], Costs]:
     ave = 0
     step = 0
 
-    def func(obs: Observation) -> Dict[str, float]:
+    def func(obs: Observation) -> Costs:
         nonlocal ave, step
 
         # Nearest waypoints.
@@ -222,23 +222,23 @@ def _speed_limit() -> Callable[[Observation], Dict[str, float]]:
         j_v = min(overspeed / (0.5 * speed_limit), 1)
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_v)
-        return {"speed_limit": ave}
+        return Costs(speed_limit=ave)
 
     return func
 
 
-def _wrong_way() -> Callable[[Observation], Dict[str, float]]:
+def _wrong_way() -> Callable[[Observation], Costs]:
     ave = 0
     step = 0
 
-    def func(obs: Observation) -> Dict[str, float]:
+    def func(obs: Observation) -> Costs:
         nonlocal ave, step
         wrong_way = 0
         if obs.events.wrong_way:
             wrong_way = 1
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=wrong_way)
-        return {"wrong_way": ave}
+        return Costs(wrong_way=ave)
 
     return func
 

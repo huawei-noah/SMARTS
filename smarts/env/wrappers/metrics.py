@@ -80,15 +80,21 @@ class Metrics(gym.Wrapper):
             return obs, rewards, dones, info
 
         for agent_name, agent_obs in obs.items():
-            # Increment step count
             self._steps[agent_name] += 1
 
             # fmt: off
             # Compute all cost functions.
-            for cost_name, cost_func in self._records[self._cur_scen][agent_name].cost_funcs.items():
-                new_val = cost_func(agent_obs)
-                setattr(self._records[self._cur_scen][agent_name].costs, cost_name, new_val)
+            costs = Costs()
+            for cost_func in self._records[self._cur_scen][agent_name].cost_funcs.values():
+                new_costs = cost_func(agent_obs)
+                costs = _add_dataclass(new_costs, costs)
 
+            # Add new costs and old costs.
+            self._records[self._cur_scen][agent_name].costs = _add_dataclass(
+                new_costs,
+                self._records[self._cur_scen][agent_name].costs
+            )
+                
             if dones[agent_name]:
                 self._done_check.add(agent_name)
                 self._records[self._cur_scen][agent_name].counts.episodes += 1
@@ -132,7 +138,6 @@ class Metrics(gym.Wrapper):
                 )
         return obs
 
-    @property
     def records(self) -> Dict[str, Dict[str, Record]]:
         """
         Fine grained performance metric for each agent in each scenario.
@@ -158,7 +163,6 @@ class Metrics(gym.Wrapper):
         # Prevent modification of self._records, which is a mutable dictionary.
         return copy.deepcopy(self._records)
 
-    @property
     def score(self) -> Dict[str, float]:
         """
         An overall performance score achieved on the wrapped environment.
