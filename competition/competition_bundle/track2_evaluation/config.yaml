@@ -1,5 +1,0 @@
-phase: track2
-eval_episodes: 50
-seed: 42
-scenarios: []
-bubble_env_evaluation_seeds: [6]

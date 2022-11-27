@@ -1,13 +1,14 @@
 import gym
 import sys
 from pathlib import Path
+from ruamel.yaml import YAML
 from typing import Any, Dict
+yaml = YAML(typ="safe")
 
 # To import submission folder
-sys.path.insert(0, str(Path(__file__).parents[1]))
-
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from submission.policy import Policy, submitted_wrappers
-
+from submission import network
 
 def evaluate(config):
     # Make evaluation environments.
@@ -19,7 +20,8 @@ def evaluate(config):
             action_space="TargetPose",
             img_meters=int(config["img_meters"]),
             img_pixels=int(config["img_pixels"]),
-            sumo_headless=False,
+            sumo_headless=config["sumo_headless"],
+            headless=config["headless"],
         )
         # Wrap the environment
         for wrapper in submitted_wrappers():
@@ -54,21 +56,27 @@ def run(
 
 
 if __name__ == "__main__":
+    # Load config file.
+    config_file = yaml.load(
+        (Path(__file__).resolve().parents[0] / "config.yaml").read_text()
+    )
     config = {
         "eval_episodes": 5,
         "seed": 42,
         "scenarios": [
             # "1_to_2lane_left_turn_c",
             # "1_to_2lane_left_turn_t",
-            # "3lane_merge_multi_agent",
+            "3lane_merge_multi_agent",
             # "3lane_merge_single_agent",
-            "3lane_cruise_multi_agent",
+            # "3lane_cruise_multi_agent",
             # "3lane_cruise_single_agent",
             # "3lane_cut_in",
             # "3lane_overtake",
         ],
-        "img_meters": 64,
-        "img_pixels": 256,
+        "img_meters": config_file["smarts"]["img_meters"],
+        "img_pixels": config_file["smarts"]["img_pixels"],
+        "sumo_headless": False,
+        "headless": True,
     }
 
     evaluate(config)
