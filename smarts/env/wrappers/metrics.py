@@ -52,24 +52,24 @@ class Metrics(gym.Wrapper):
         self._done_check: Set[str]
         self._records = {}
 
-    def __getattribute__(self, item):
-        """For security, prevents access to items beginning with an underscore.
+    # def __getattribute__(self, item):
+    #     """For security, prevents access to items beginning with an underscore.
 
-        Args:
-            item (_type_): Requested item.
+    #     Args:
+    #         item (_type_): Requested item.
 
-        Raises:
-            AttributeError: Upon accessing item beginning with an underscore.
+    #     Raises:
+    #         AttributeError: Upon accessing item beginning with an underscore.
 
-        Returns:
-            _type_: Returns requested item.
-        """
+    #     Returns:
+    #         _type_: Returns requested item.
+    #     """
 
-        if item.startswith("_"):
-            raise AttributeError(
-                "Permission denied to access private attribute '{}'".format(item)
-            )
-        return super().__getattribute__(item)
+    #     if item.startswith("_"):
+    #         raise AttributeError(
+    #             "Permission denied to access private attribute '{}'".format(item)
+    #         )
+    #     return super().__getattribute__(item)
 
     def step(self, action: Dict[str, Any]):
         """Steps the environment by one step."""
@@ -114,8 +114,8 @@ class Metrics(gym.Wrapper):
     def reset(self, **kwargs):
         """Resets the environment."""
         obs = super().reset(**kwargs)
-        self._cur_scen = (super().scenario_log)["scenario_map"]
-        self._cur_agents = set(super().agent_specs.keys())
+        self._cur_scen = super().env.scenario_log["scenario_map"]
+        self._cur_agents = set(super().env.agent_specs.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_check = set()
         if self._cur_scen not in self._records:
