@@ -114,23 +114,22 @@ class Metrics(gym.Wrapper):
     def reset(self, **kwargs):
         """Resets the environment."""
         obs = super().reset(**kwargs)
-        self._cur_scen = super().env.scenario_log["scenario_map"]
-        self._cur_agents = set(super().env.agent_specs.keys())
+        self._cur_scen = self.env.scenario_log["scenario_map"]
+        self._cur_agents = set(self.env.agent_specs.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_check = set()
         if self._cur_scen not in self._records:
+            self._records[self._cur_scen]={}
             for agent_name in self._cur_agents:
                 cost_funcs = {
                     cost_name: cost_func()
                     for cost_name, cost_func in COST_FUNCS.items()
                 }
-                self._records[self._cur_scen] = {
-                    agent_name: Record(
-                        counts=Counts(),
-                        cost_funcs=cost_funcs,
-                        costs=Costs(),
-                    )
-                }
+                self._records[self._cur_scen][agent_name] = Record(
+                    counts=Counts(),
+                    cost_funcs=cost_funcs,
+                    costs=Costs(),
+                )
         return obs
 
     @property
