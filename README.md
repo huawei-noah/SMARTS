@@ -1,8 +1,7 @@
 # SMARTS
-
-[![SMARTS CI Base Tests Linux](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-base-tests-linux.yml/badge.svg?branch=master)](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-base-tests-linux.yml?query=branch%3Amaster)
+[![SMARTS CI Base Tests Linux](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-base-tests-linux.yml/badge.svg?branch=master)](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-base-tests-linux.yml?query=branch%3Amaster) 
 [![SMARTS CI Format](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-format.yml/badge.svg?branch=master)](https://github.com/huawei-noah/SMARTS/actions/workflows/ci-format.yml?query=branch%3Amaster)
-![Code style](https://img.shields.io/badge/code%20style-black-000000.svg)
+![Code style](https://img.shields.io/badge/code%20style-black-000000.svg) 
 
 SMARTS (Scalable Multi-Agent RL Training School) is a simulation platform for reinforcement learning (RL) and multi-agent research on autonomous driving. Its focus is on realistic and diverse interactions. It is part of the [XingTian](https://github.com/huawei-noah/xingtian/) suite of RL platforms from Huawei Noah's Ark Lab.
 
@@ -10,8 +9,7 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 
 ![](docs/_static/smarts_envision.gif)
 
-# Multi-agent experiment as simple as
-
+# Multi-agent experiment as simple as ...
 ```python
 import gym
 
@@ -54,7 +52,6 @@ for _ in range(1000):
 ```
 
 # Contents
-
 1. [Documentation](#Documentation)
 1. [Setup](#Setup)
     + [Installation](#Installation)
@@ -77,13 +74,10 @@ for _ in range(1000):
 1. [Citing](#Citing)
 
 # Documentation
-
 Documentation is available at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest).
 
 # Setup
-
 ### Installation
-
 ```bash
 git clone https://github.com/huawei-noah/SMARTS.git
 cd <path/to/SMARTS>
@@ -113,24 +107,21 @@ make sanity-test
 ```
 
 ### Running
-
-Use the `scl` command to run SMARTS together with it's supporting processes.
+Use the `scl` command to run SMARTS together with it's supporting processes. 
 
 To run the default example, firstly build the scenario `scenarios/sumo/loop`.
-
 ```bash
 scl scenario build --clean scenarios/sumo/loop
 ```
 
 Then, run a single-agent SMARTS simulation with Envision display and `loop` scenario.
-
-```bash
+```bash 
 scl run --envision examples/single_agent.py scenarios/sumo/loop 
 ```
 
 The `--envision` flag runs the Envision server which displays the simulation visualization. See [./envision/README.md](./envision/README.md) for more information on Envision, SMARTS's front-end visualization tool.
 
-After executing the above command, visit <http://localhost:8081/> to view the experiment.
+After executing the above command, visit http://localhost:8081/ to view the experiment.
 
 Several example scripts are provided in [examples](./examples) folder, as well as a handful of scenarios in [scenarios](./scenarios) folder. You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
 
@@ -138,60 +129,48 @@ Several example scripts are provided in [examples](./examples) folder, as well a
 scl run --envision <examples/path> <scenarios/path> 
 ```
 
-# Examples
-
+# Examples 
 ### Usage
-
-Illustration of various ways to use SMARTS.
-
+Illustration of various ways to use SMARTS. 
 1. [Single agent](examples/single_agent.py) example.
 1. [Multi agent](examples/multi_agent.py) example.
 1. [Parallel environments](examples/parallel_environment.py) to run multiple SMARTS environments in parallel.
 
 ### Reinforcement Learning
-
 1. [MARL benchmark](baselines/marl_benchmark)
 1. [Driving in traffic](examples/driving_in_traffic) using world model based RL.
 
 # CLI Tool
-
 SMARTS provides a command-line tool to interact with scenario studio and Envision.
 
 ### CLI Usage
-
 ```bash
 scl COMMAND SUBCOMMAND [OPTIONS] [ARGS]...
 ```
 
 Commands:
-
-+ scenario
-+ envision
-+ zoo
-+ run
+* scenario
+* envision
+* zoo
+* run
 
 Subcommands of `scenario`:
-
-+ build: Generate a single scenario.
-+ build-all: Generate all scenarios under the given directories.
-+ clean: Clean generated artifacts.
+* build: Generate a single scenario.
+* build-all: Generate all scenarios under the given directories.
+* clean: Clean generated artifacts.
 
 Subcommands of `envision`:
-
-+ start: Start Envision server.
+* start: Start Envision server.
 
 Subcommands of `zoo`:
-
-+ build: Build a policy, to submit to the agent zoo.
-+ install: Attempt to install the specified agents from the given paths/url.
-+ manager: Start the manager process which instantiates workers.
+* build: Build a policy, to submit to the agent zoo.
+* install: Attempt to install the specified agents from the given paths/url.
+* manager: Start the manager process which instantiates workers.
 
 Subcommands of `run`:
-
-+ No subcommands. Use `run` directly to simulate as shown [above](#Running).
+* No subcommands. Use `run` directly to simulate as shown [above](#Running).
 
 ### CLI Examples
-
 ```bash
 # Start envision and serve scenario assets out of ./scenarios
 scl envision start --scenarios ./scenarios
@@ -207,18 +186,15 @@ scl scenario clean scenarios/sumo/loop
 ```
 
 # Visualizing Observations
-
-Use the [Visdom](https://github.com/facebookresearch/visdom) integration to easily visualize the observations.
+Use the [Visdom](https://github.com/facebookresearch/visdom) integration to easily visualize the observations. 
 
 Firstly, start the Visdom server in a terminal.
-
 ```bash
 visdom
 # Open the printed URL in a browser.
 ```
 
 Secondly, in a separate terminal, run SMARTS simulation. Enable Visdom in the environment by setting `visdom=True`. For example:
-
 ```python
 env = gym.make(
     "smarts.env:hiway-v0",
@@ -227,7 +203,6 @@ env = gym.make(
     visdom=True,
 )
 ```
-
 Below is a sample visualization of an agent's camera sensor observations.
 <p align="center">
 <img src="docs/_static/visdom.gif" ><br/>
@@ -235,9 +210,7 @@ Below is a sample visualization of an agent's camera sensor observations.
 </p>
 
 # Containers
-
 ### Docker
-
 SMARTS docker images are hosted at [dockerhub](https://hub.docker.com/orgs/huaweinoah).
 
 ```bash
@@ -260,7 +233,6 @@ $ python examples/single_agent.py scenarios/sumo/loop
 ```
 
 ### Singularity
-
 ```bash
 $ cd </path/to/SMARTS>
 
@@ -288,31 +260,24 @@ $ singularity instance start --containall --bind ../SMARTS:/src ./utils/singular
 ```
 
 # Troubleshooting
-
 ### General
-
 In most cases SMARTS debug logs are located at `~/.smarts`. These can be helpful to diagnose problems.
 
 ### SUMO
-
 SUMO might encounter problems during setup. Please look through the following for support for SUMO:
-
-+ If you are having issues see: [Setup](docs/setup.rst) and [SUMO TROUBLESHOOTING](docs/SUMO_TROUBLESHOOTING.md)
-+ If you wish to find binaries: [SUMO Download Page](https://sumo.dlr.de/docs/Downloads.php)
-+ If you wish to compile from source see: [SUMO Build Instructions](https://sumo.dlr.de/docs/Developer/Main.html#build_instructions).
-  + Please note that building SUMO may not install other vital dependencies that SUMO requires to run.
-  + If you build from the git repository we recommend to use [SUMO version 1.7.0](https://github.com/eclipse/sumo/commits/v1_7_0) or higher
+* If you are having issues see: [Setup](docs/setup.rst) and [SUMO TROUBLESHOOTING](docs/SUMO_TROUBLESHOOTING.md)
+* If you wish to find binaries: [SUMO Download Page](https://sumo.dlr.de/docs/Downloads.php)
+* If you wish to compile from source see: [SUMO Build Instructions](https://sumo.dlr.de/docs/Developer/Main.html#build_instructions). 
+    * Please note that building SUMO may not install other vital dependencies that SUMO requires to run.
+    * If you build from the git repository we recommend to use [SUMO version 1.7.0](https://github.com/eclipse/sumo/commits/v1_7_0) or higher
 
 # Bug Reports
-
 Please read [how to create a bug report](https://github.com/huawei-noah/SMARTS/wiki/How-To-Make-a-Bug-Report) and then open an issue [here](https://github.com/huawei-noah/SMARTS/issues).
 
 # Contributing
-
 Please read [contributing](CONTRIBUTING.md).
 
 # Citing
-
 If you use SMARTS in your research, please cite the [paper](https://arxiv.org/abs/2010.09776). In BibTeX format:
 
 ```bibtex
