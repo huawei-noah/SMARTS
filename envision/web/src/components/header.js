@@ -84,7 +84,7 @@ export default function Header_({
   let selectValue = "";
   if (matchedSimulationId) {
     if (matchedSimulationId == "all") {
-      selectValue = "all";
+      selectValue = "";
     } else {
       selectValue = `Simulation ${displaySimName(matchedSimulationId)}`;
     }
@@ -93,7 +93,15 @@ export default function Header_({
   return (
     <Header>
       <Space>
-        <Select
+        {selectValue}
+        <Button
+          type="primary"
+          ghost
+          onClick={(value) => onSelectSimulation(value = "all")}
+        >
+          All Simulations
+        </Button>
+        {/* <Select
           value={selectValue}
           style={{ width: 400 }}
           onChange={(value) => onSelectSimulation(value)}
@@ -104,7 +112,7 @@ export default function Header_({
               <Option key={id} value={id}>{`Sim ${displaySimName(id)}`}</Option>
             ))}
           </OptGroup>
-        </Select>
+        </Select> */}
 
         <Switch>
           <Route exact={true} path="/all"></Route>

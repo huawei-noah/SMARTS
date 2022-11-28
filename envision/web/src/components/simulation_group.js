@@ -30,7 +30,7 @@ const SimulationGroup = ({
   return (
     <div style={{ padding: "10px" }}>
       {simulationIds.map((simId) => (
-        <div
+        <button onClick={(value) => onSelectSimulation(value = "all")}
           key={simId}
           style={{
             float: "left",
@@ -46,7 +46,7 @@ const SimulationGroup = ({
             controlModes={controlModes}
             playingMode={playingMode}
           />
-        </div>
+        </button>
       ))}
     </div>
   );
