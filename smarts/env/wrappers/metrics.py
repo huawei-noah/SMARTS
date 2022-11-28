@@ -20,13 +20,13 @@
 
 import copy
 import functools
-from dataclasses import asdict, dataclass
-from typing import Any, Callable, Dict, Set, TypeVar
+from dataclasses import dataclass, fields
+from typing import Any, Dict, Set, TypeVar
 
 import gym
 
 from smarts.env.wrappers.metric import termination
-from smarts.env.wrappers.metric.costs import COST_FUNCS, Costs
+from smarts.env.wrappers.metric.costs import CostFuncs, Costs
 from smarts.env.wrappers.metric.counts import Counts
 
 _MAX_STEPS = 800
@@ -34,11 +34,18 @@ _MAX_STEPS = 800
 
 @dataclass
 class Record:
-    """A dataclass for an agent, storing its performance counts and costs.
+    """A dataclass for an agent, storing its performance count and cost values.
     """
     counts: Counts
     costs: Costs
-    cost_funcs: Dict[str, Callable[[Any], Dict[str, float]]]
+
+
+@dataclass
+class Data:
+    """A dataclass for an agent, storing its performance record and cost functions.
+    """
+    record: Record
+    cost_funcs: CostFuncs
 
 
 class Metrics(gym.Wrapper):
@@ -85,29 +92,41 @@ class Metrics(gym.Wrapper):
             # fmt: off
             # Compute all cost functions.
             costs = Costs()
-            for cost_func in self._records[self._cur_scen][agent_name].cost_funcs.values():
+            for field in fields(self._records[self._cur_scen][agent_name].cost_funcs):
+                cost_func = getattr(self._records[self._cur_scen][agent_name].cost_funcs, field.name) 
                 new_costs = cost_func(agent_obs)
                 costs = _add_dataclass(new_costs, costs)
 
-            # Add new costs and old costs.
-            self._records[self._cur_scen][agent_name].costs = _add_dataclass(
-                new_costs,
-                self._records[self._cur_scen][agent_name].costs
-            )
+            # Update stored costs.
+            self._records[self._cur_scen][agent_name].record.costs = costs
                 
             if dones[agent_name]:
                 self._done_check.add(agent_name)
-                self._records[self._cur_scen][agent_name].counts.episodes += 1
-                self._records[self._cur_scen][agent_name].counts.steps += self._steps[agent_name]
+                steps_adjusted=0
+                goals=0
+                crashes=0
                 reason = termination.reason(obs=agent_obs)
                 if reason == termination.Reason.Goal:
-                    self._records[self._cur_scen][agent_name].counts.steps_adjusted += self._steps[agent_name]
-                    self._records[self._cur_scen][agent_name].counts.goals += 1
+                    steps_adjusted = self._steps[agent_name]
+                    goals = 1
                 elif reason == termination.Reason.Crash:
-                    self._records[self._cur_scen][agent_name].counts.steps_adjusted += _MAX_STEPS
-                    self._records[self._cur_scen][agent_name].counts.crashes += 1
+                    steps_adjusted = _MAX_STEPS
+                    crashes = 1
                 else:
                     raise Exception(f"Unsupported agent done reason. Events: {agent_obs.events}.")
+
+                # Update stored counts.
+                counts = Counts(
+                    episodes=1, 
+                    steps=self._steps[agent_name], 
+                    steps_adjusted=steps_adjusted,
+                    goals=goals, 
+                    crashes=crashes,
+                )
+                self._records[self._cur_scen][agent_name].record.counts = _add_dataclass(
+                    counts,
+                    self._records[self._cur_scen][agent_name].record.counts
+                )
             # fmt: on
 
         if dones["__all__"] == True:
@@ -125,51 +144,60 @@ class Metrics(gym.Wrapper):
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_check = set()
         if self._cur_scen not in self._records:
-            self._records[self._cur_scen]={}
-            for agent_name in self._cur_agents:
-                cost_funcs = {
-                    cost_name: cost_func()
-                    for cost_name, cost_func in COST_FUNCS.items()
-                }
-                self._records[self._cur_scen][agent_name] = Record(
-                    counts=Counts(),
-                    cost_funcs=cost_funcs,
-                    costs=Costs(),
+            self._records[self._cur_scen]={
+                agent_name : Data(
+                    record=Record(
+                        counts=Counts(),
+                        costs=Costs(),
+                    ),
+                    cost_funcs=CostFuncs(),
                 )
+                for agent_name in self._cur_agents
+            }
+
+
         return obs
 
     def records(self) -> Dict[str, Dict[str, Record]]:
         """
         Fine grained performance metric for each agent in each scenario.
 
+        Returns:
+            Dict[str, Dict[str, Record]]: Performance record in a nested
+                dictionary for each agent in each scenario. 
+            
         Example::
 
-            self._records = {
+        >> records()
+        >> {
                 scen1: {
-                    agent1: Record(
-                        counts,
-                        costs,
-                        cost_funcs,
-                    ),
-                    agent2: Record(
-                        ...
-                    ),
+                    agent1: Record(counts, costs),
+                    agent2: Record(counts, costs),
                 },
                 scen2: {
-                    ...
+                    agent1: Record(counts, costs),
                 },
             }
         """
-        # Prevent modification of self._records, which is a mutable dictionary.
-        return copy.deepcopy(self._records)
+
+        records = {}
+        for scen, agents in self._records.items():
+            records[scen]={}
+            for agent, data in agents.items():
+                records[scen][agent]=copy.deepcopy(data.record)
+
+        return records
 
     def score(self) -> Dict[str, float]:
         """
         An overall performance score achieved on the wrapped environment.
         """
         # fmt: off
-        agent_records = functools.reduce(lambda dict_a, dict_b: {**dict_a, **dict_b}, self.records.values())
-        counts_list, costs_list = zip([record.counts, record.costs] for record in agent_records.values())
+        counts_list, costs_list = zip(*[
+            (data.record.counts, data.record.costs)
+            for agents in self._records.values()
+            for data in agents.values()
+        ])
         counts_tot = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
         costs_tot = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
         # fmt: on
@@ -187,11 +215,12 @@ T = TypeVar("T", Costs, Counts)
 
 
 def _add_dataclass(first: T, second: T) -> T:
-    output = first.__class__()
-    for key, val in asdict(first).items():
-        new_val = val + getattr(second, key)
-        setattr(output, key, new_val)
-
+    new = {}
+    for field in fields(first):
+        sum = getattr(first, field.name) + getattr(second, field.name)
+        new[field.name] = sum
+    output = first.__class__(**new)
+ 
     return output
 
 
