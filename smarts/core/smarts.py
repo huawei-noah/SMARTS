@@ -742,7 +742,7 @@ class SMARTS(ProviderManager):
             if teardown_agent:
                 self.teardown_social_agents([shadow_agent_id])
         if self._vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id) is None:
-            self._agent_manager.detach_sensors_from_vehicle(vehicle_id)
+            self._sensor_manager.remove_sensors_by_actor_id(vehicle_id)
 
         if teardown_agent:
             active_agents = self._agent_manager.active_agents
@@ -954,7 +954,9 @@ class SMARTS(ProviderManager):
         interface.
         """
         self._check_valid()
-        self._agent_manager.attach_sensors_to_vehicles(agent_interface, vehicle_ids)
+        for v_id in vehicle_ids:
+            v = self._vehicle_index.vehicle_by_id(v_id)
+            Vehicle.attach_sensors_to_vehicle(self._sensor_manager, self, v, agent_interface)
 
     def observe_from(
         self, vehicle_ids: Sequence[str]

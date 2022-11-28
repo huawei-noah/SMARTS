@@ -55,7 +55,6 @@ class AgentManager:
         self._zoo_addrs = zoo_addrs
         self._ego_agent_ids = set()
         self._social_agent_ids = set()
-        self._vehicle_with_sensors_to_agent = dict()
 
         # Initial interfaces are for agents that are spawned at the beginning of the
         # episode and that we'd re-spawn upon episode reset. This would include ego
@@ -83,7 +82,6 @@ class AgentManager:
         self._log.debug("Tearing down AgentManager")
         self.teardown_ego_agents()
         self.teardown_social_agents()
-        self._vehicle_with_sensors_to_agent = dict()
         self._pending_agent_ids = set()
 
     def destroy(self):
@@ -141,10 +139,16 @@ class AgentManager:
         self._pending_agent_ids -= agent_ids
 
     def agent_for_vehicle(self, vehicle_id):
-        return self._vehicle_with_sensors.get(vehicle_id)
+        return self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
 
     def vehicles_for_agent(self, agent_id):
-        return [k for k, v in self._vehicle_with_sensors if v is agent_id]
+        return self._vehicle_index.vehicle_ids_by_actor_id(agent_id, include_shadowers=True)
+
+    def _vehicle_has_agent(self, a_id, v_or_v_id):
+        assert (
+            a_id
+        ), f"Vehicle `{getattr(v_or_v_id, 'id', v_or_v_id)}` does not have an agent registered to it to get observations for."
+        return v_or_v_id is not None and a_id is not None
 
     def observe_from(
         self, vehicle_ids: Set[str], done_this_step: Optional[Set[str]] = None
@@ -161,40 +165,33 @@ class AgentManager:
         scores = {}
 
         sim_frame = sim.cached_frame
-        for v_id in vehicle_ids:
-            vehicle = self._vehicle_index.vehicle_by_id(v_id, None)
-            if not vehicle:
-                self._log.warning(
-                    "Attempted to observe non-existing vehicle `%s`", v_id
-                )
-
-            agent_id = self.vehicle_with_sensors_to_agent(v_id)
-            if not agent_id:
-                continue
-
-            assert (
-                agent_id
-            ), f"Vehicle `{v_id}` does not have an agent registered to it to get observations for."
-            if not self._sensor_manager.sensor_state_exists(vehicle.id):
-                continue
-
-            sensor_state = self._sensor_manager.sensor_state_by_actor_id(vehicle.id)
-
-            observations[agent_id], dones[agent_id] = Sensors.observe(
-                sim_frame,
-                sim.local_constants,
-                agent_id,
-                sensor_state,
-                vehicle,
-                sim._renderer,
-                sim.bc,
-            )
-            rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
-            scores[agent_id] = vehicle.trip_meter_sensor()
+        agent_vehicle_pairs = {
+            self.agent_for_vehicle(v_id): v_id for v_id in vehicle_ids
+        }
+        agent_ids = {
+            a_id
+            for a_id, v_id in agent_vehicle_pairs.items()
+            if self._vehicle_has_agent(a_id, v_id)
+            # and self._sensor_manager.sensor_state_exists(v_id)
+        }
+        # TODO MTA: find way to pass renderer
+        observations, dones = sim.sensor_manager.observe(
+            sim_frame,
+            sim.local_constants,
+            agent_ids,
+            sim.renderer_ref,
+            sim.bc,
+        )
+        for agent_id in agent_ids:
+            v_id = agent_vehicle_pairs[agent_id]
+            sensors = sim.sensor_manager.sensors_for_actor_ids([v_id])
+            trip_meter_sensor = sensors[v_id]["trip_meter_sensor"]
+            rewards[agent_id] = trip_meter_sensor(increment=True)
+            scores[agent_id] = trip_meter_sensor()
 
         # also add agents that were done in virtue of just dropping out
         for done_v_id in done_this_step:
-            agent_id = self._vehicle_with_sensors_to_agent.get(done_v_id, None)
+            agent_id = self._vehicle_index.owner_id_from_vehicle_id(done_v_id)
             if agent_id:
                 dones[agent_id] = True
 
@@ -707,64 +704,3 @@ class AgentManager:
             return False
 
         return self._social_agent_data_models[agent_id].is_boid_keep_alive
-
-    def vehicle_with_sensors_to_agent(self, vehicle_id: str) -> Optional[str]:
-        """Maps a vehicle to an agent if the vehicle has sensors.
-
-        Args:
-            vehicle_id (str): The vehicle to check for an agent.
-
-        Returns:
-            Optional[str]:
-                The agent id if the vehicle has a sensor. `None` if the vehicle does
-                not exist or is not mapped to an agent.
-        """
-        if not vehicle_id in self._vehicle_with_sensors_to_agent:
-            return None
-        if not self._vehicle_index.vehicle_by_id(vehicle_id, None):
-            del self._vehicle_with_sensors_to_agent[vehicle_id]
-            return None
-        return self._vehicle_with_sensors_to_agent[vehicle_id]
-
-    def attach_sensors_to_vehicles(self, agent_interface, vehicle_ids):
-        """Attach the interface required sensors to the given vehicles"""
-        sim = self._sim()
-        assert sim
-        for sv_id in vehicle_ids:
-            if not self._vehicle_index.vehicle_by_id(sv_id, None):
-                self._log.warning(
-                    "Attempted to add sensors to non-existing vehicle: %s.", sv_id
-                )
-                continue
-
-            if self.vehicle_with_sensors_to_agent(sv_id):
-                continue
-
-            # If this is a history vehicle, assign a mission based on its final position.
-            # This is necessary so that the observations have waypoints that lead to the goal.
-            mission = None
-            if sv_id in sim.traffic_history_provider.history_vehicle_ids:
-                v_id = sv_id.split("-")[-1]
-                start_time = sim.scenario.traffic_history.vehicle_initial_time(v_id)
-                start, _ = sim.scenario.get_vehicle_start_at_time(v_id, start_time)
-                veh_goal = sim.scenario.get_vehicle_goal(v_id)
-                mission = Mission(
-                    start=start,
-                    goal=PositionalGoal(veh_goal, radius=5),
-                )
-            plan = Plan(sim.road_map, mission)
-
-            agent_id = f"Agent-{sv_id}"
-            self._vehicle_with_sensors_to_agent[sv_id] = agent_id
-            self._agent_interfaces[agent_id] = agent_interface
-
-            self._vehicle_index.attach_sensors_to_vehicle(
-                sim, sv_id, agent_interface, plan
-            )
-
-    def detach_sensors_from_vehicle(self, vehicle_id: str):
-        """Called when agent observation is finished and sensors should be removed from a vehicle"""
-        if not self.vehicle_with_sensors_to_agent(vehicle_id):
-            return
-        self._vehicle_index.stop_agent_observation(vehicle_id)
-        del self._vehicle_with_sensors_to_agent[vehicle_id]

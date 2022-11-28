@@ -65,6 +65,13 @@ class SensorManager:
         return self._sensors
 
     def remove_sensors_by_actor_id(self, actor_id: str):
+        sensor_states = self._sensor_states.get(actor_id)
+        if not sensor_states:
+            logger.warning(
+                "Attempted to remove sensors from actor with no sensors: `%s`",
+                actor_id
+            )
+            return frozenset()
         del self._sensor_states[actor_id]
         sensors_by_actor = self._sensors_by_actor_id[actor_id]
         for sensor_id in sensors_by_actor:
@@ -77,7 +84,9 @@ class SensorManager:
         return frozenset(self._discarded_sensors)
 
     def remove_sensor(self, sensor_id):
-        sensor = self._sensors[sensor_id]
+        sensor = self._sensors.get(sensor_id)
+        if not sensor:
+            return None
         del self._sensors[sensor_id]
         del self._sensor_references[sensor_id]
 
