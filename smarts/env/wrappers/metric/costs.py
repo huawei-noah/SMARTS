@@ -19,14 +19,14 @@
 # THE SOFTWARE.
 
 from dataclasses import dataclass
-from typing import Callable, Dict, Tuple
+from typing import Callable, Tuple
 
 import numpy as np
 
 from smarts.core.sensors import Observation
 
 
-@dataclass
+@dataclass(frozen=True)
 class Costs:
     collisions: int = 0
     dist_to_goal: float = 0
@@ -37,19 +37,6 @@ class Costs:
     off_road: int = 0
     speed_limit: float = 0
     wrong_way: int = 0
-
-
-COST_FUNCS: Dict[str, Callable[[], Callable[[Observation], Costs]]] = {
-    "collisions": lambda: _collisions,
-    "dist_to_goal": lambda: _dist_to_goal,
-    "dist_to_obstacles": lambda: _dist_to_obstacles(),
-    "jerk_angular": lambda: _jerk_angular(),
-    "jerk_linear": lambda: _jerk_linear(),
-    "lane_center_offset": lambda: _lane_center_offset(),
-    "off_road": lambda: _off_road,
-    "speed_limit": lambda: _speed_limit(),
-    "wrong_way": lambda: _wrong_way(),
-}
 
 
 def _collisions(obs: Observation) -> Costs:
@@ -247,3 +234,16 @@ def _running_ave(prev_ave: float, prev_step: int, new_val: float) -> Tuple[float
     new_step = prev_step + 1
     new_ave = prev_ave + (new_val - prev_ave) / new_step
     return new_ave, new_step
+
+
+@dataclass(frozen=True)
+class CostFuncs:
+    collisions:Callable[[Observation],Costs] = _collisions
+    dist_to_goal:Callable[[Observation],Costs] = _dist_to_goal
+    dist_to_obstacles:Callable[[Observation],Costs] = _dist_to_obstacles()
+    jerk_angular:Callable[[Observation],Costs] = _jerk_angular()
+    jerk_linear:Callable[[Observation],Costs] = _jerk_linear()
+    lane_center_offset:Callable[[Observation],Costs] = _lane_center_offset()
+    off_road:Callable[[Observation],Costs] = _off_road
+    speed_limit:Callable[[Observation],Costs] = _speed_limit()
+    wrong_way:Callable[[Observation],Costs] = _wrong_way()

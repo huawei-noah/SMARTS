@@ -21,7 +21,7 @@
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True)
 class Counts:
     crashes: float = 0
     """ Number of crashed episodes. An episode is considered crashed if
