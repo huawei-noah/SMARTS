@@ -530,8 +530,8 @@ def welford() -> Tuple[
     Reference: https://www.adamsmith.haus/python/answers/how-to-find-a-running-standard-deviation-in-python
 
     Returns:
-        Tuple[ Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int] ]: Callable 
-            functions to update, get mean, get std, get steps
+        Tuple[ Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int] ]: Callable
+            functions to update, get mean, get std, and get steps.
     """
 
     import math

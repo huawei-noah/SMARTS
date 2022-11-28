@@ -34,16 +34,16 @@ _MAX_STEPS = 800
 
 @dataclass
 class Record:
-    """A dataclass for an agent, storing its performance count and cost values.
-    """
+    """A dataclass for an agent, storing its performance count and cost values."""
+
     counts: Counts
     costs: Costs
 
 
 @dataclass
 class Data:
-    """A dataclass for an agent, storing its performance record and cost functions.
-    """
+    """A dataclass for an agent, storing its performance record and cost functions."""
+
     record: Record
     cost_funcs: CostFuncs
 
@@ -89,22 +89,23 @@ class Metrics(gym.Wrapper):
         for agent_name, agent_obs in obs.items():
             self._steps[agent_name] += 1
 
-            # fmt: off
             # Compute all cost functions.
             costs = Costs()
             for field in fields(self._records[self._cur_scen][agent_name].cost_funcs):
-                cost_func = getattr(self._records[self._cur_scen][agent_name].cost_funcs, field.name) 
+                cost_func = getattr(
+                    self._records[self._cur_scen][agent_name].cost_funcs, field.name
+                )
                 new_costs = cost_func(agent_obs)
                 costs = _add_dataclass(new_costs, costs)
 
             # Update stored costs.
             self._records[self._cur_scen][agent_name].record.costs = costs
-                
+
             if dones[agent_name]:
                 self._done_check.add(agent_name)
-                steps_adjusted=0
-                goals=0
-                crashes=0
+                steps_adjusted = 0
+                goals = 0
+                crashes = 0
                 reason = termination.reason(obs=agent_obs)
                 if reason == termination.Reason.Goal:
                     steps_adjusted = self._steps[agent_name]
@@ -113,21 +114,23 @@ class Metrics(gym.Wrapper):
                     steps_adjusted = _MAX_STEPS
                     crashes = 1
                 else:
-                    raise Exception(f"Unsupported agent done reason. Events: {agent_obs.events}.")
+                    raise Exception(
+                        f"Unsupported agent done reason. Events: {agent_obs.events}."
+                    )
 
                 # Update stored counts.
                 counts = Counts(
-                    episodes=1, 
-                    steps=self._steps[agent_name], 
+                    episodes=1,
+                    steps=self._steps[agent_name],
                     steps_adjusted=steps_adjusted,
-                    goals=goals, 
+                    goals=goals,
                     crashes=crashes,
                 )
+                # fmt: off
                 self._records[self._cur_scen][agent_name].record.counts = _add_dataclass(
-                    counts,
-                    self._records[self._cur_scen][agent_name].record.counts
+                    counts, self._records[self._cur_scen][agent_name].record.counts
                 )
-            # fmt: on
+                # fmt: on
 
         if dones["__all__"] == True:
             assert (
@@ -144,8 +147,8 @@ class Metrics(gym.Wrapper):
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_check = set()
         if self._cur_scen not in self._records:
-            self._records[self._cur_scen]={
-                agent_name : Data(
+            self._records[self._cur_scen] = {
+                agent_name: Data(
                     record=Record(
                         counts=Counts(),
                         costs=Costs(),
@@ -155,7 +158,6 @@ class Metrics(gym.Wrapper):
                 for agent_name in self._cur_agents
             }
 
-
         return obs
 
     def records(self) -> Dict[str, Dict[str, Record]]:
@@ -164,8 +166,8 @@ class Metrics(gym.Wrapper):
 
         Returns:
             Dict[str, Dict[str, Record]]: Performance record in a nested
-                dictionary for each agent in each scenario. 
-            
+                dictionary for each agent in each scenario.
+
         Example::
 
         >> records()
@@ -182,9 +184,9 @@ class Metrics(gym.Wrapper):
 
         records = {}
         for scen, agents in self._records.items():
-            records[scen]={}
+            records[scen] = {}
             for agent, data in agents.items():
-                records[scen][agent]=copy.deepcopy(data.record)
+                records[scen][agent] = copy.deepcopy(data.record)
 
         return records
 
@@ -192,15 +194,15 @@ class Metrics(gym.Wrapper):
         """
         An overall performance score achieved on the wrapped environment.
         """
-        # fmt: off
-        counts_list, costs_list = zip(*[
-            (data.record.counts, data.record.costs)
-            for agents in self._records.values()
-            for data in agents.values()
-        ])
+        counts_list, costs_list = zip(
+            *[
+                (data.record.counts, data.record.costs)
+                for agents in self._records.values()
+                for data in agents.values()
+            ]
+        )
         counts_tot = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
         costs_tot = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
-        # fmt: on
 
         _score: Dict[str, float] = {}
         _score["completion"] = _completion(counts=counts_tot)
@@ -220,7 +222,7 @@ def _add_dataclass(first: T, second: T) -> T:
         sum = getattr(first, field.name) + getattr(second, field.name)
         new[field.name] = sum
     output = first.__class__(**new)
- 
+
     return output
 
 
