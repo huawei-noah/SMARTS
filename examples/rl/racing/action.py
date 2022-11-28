@@ -7,7 +7,10 @@ import numpy as np
 class Action(gym.ActionWrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
-        self._wrapper, self.action_space = continuous()
+        self._wrapper, action_space = continuous()
+        self.action_space = gym.spaces.Dict(
+            {agent_id: action_space for agent_id in env.agent_specs.keys()}
+        )
 
     def action(self, act):
         wrapped_act = {
@@ -16,7 +19,7 @@ class Action(gym.ActionWrapper):
         return wrapped_act
 
 
-def continuous() -> Tuple[Callable[[np.array], np.array], gym.Space]:
+def continuous() -> Tuple[Callable[[np.ndarray], np.ndarray], gym.Space]:
     space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
 
     def wrapper(model_action):

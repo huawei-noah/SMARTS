@@ -19,8 +19,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Removed
 - Removed all of PyMarl contents, including related interface adapter, environments, and tests.
 - Removed ray usage example.
-
 ### Fixed
+- Updated the RL example `racing` to use `smarts[camera_obs]==0.7.0rc0` and continuous flowing traffic scenario. Simplified the `racing` RL example folder structure.
 ### Security
 
 ## [0.7.0rc0]
