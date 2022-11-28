@@ -364,7 +364,7 @@ class Sensors:
                     veh_obs._replace(lane_position=nv_lane_pos)
                 )
 
-        waypoints_sensor = vehicle_sensors.get("waypoints_sensors")
+        waypoints_sensor = vehicle_sensors.get("waypoints_sensor")
         if waypoints_sensor:
             waypoint_paths = waypoints_sensor(
                 vehicle_state, plan, sim_local_constants.road_map
