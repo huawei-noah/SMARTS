@@ -53,6 +53,7 @@ class Metrics(gym.Wrapper):
 
     def __init__(self, env: gym.Env):
         super().__init__(env)
+        _check_env(env)
         self._cur_scen: str
         self._cur_agents: Set[str]
         self._steps: Dict[str, int]
@@ -212,6 +213,26 @@ class Metrics(gym.Wrapper):
         _score["time"] = _time(counts=counts_tot, costs=costs_tot)
 
         return _score
+
+
+def _check_env(env):
+
+    def check_intrfc(agent_intrfc):
+        intrfc = {
+            "accelerometer":bool(agent_intrfc.accelerometer), 
+            "max_episode_steps":bool(agent_intrfc.max_episode_steps), 
+            "neighborhood_vehicles":bool(agent_intrfc.neighborhood_vehicles),
+            "road_waypoints":bool(agent_intrfc.road_waypoints),
+            "waypoints":bool(agent_intrfc.waypoints),
+        }
+        return intrfc
+
+    for agent_name, agent_spec in env.agent_specs.items():
+        intrfc = check_intrfc(agent_spec.interface)
+        if not all(intrfc.values()):
+            raise AttributeError("Enable {0}'s disabled interface "
+                "to compute its metrics. Current interface is "
+                "{1}.".format(agent_name, intrfc))
 
 
 T = TypeVar("T", Costs, Counts)
