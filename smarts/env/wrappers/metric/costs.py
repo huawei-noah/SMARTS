@@ -74,7 +74,7 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
         # Set obstacle distance threshold using 3-second rule
         obstacle_dist_th = ego.speed * 3
         if obstacle_dist_th == 0:
-            return {"dist_to_obstacles": 0}
+            return Costs(dist_to_obstacles=0)
 
         # Get neighbors.
         nghbs = obs.neighborhood_vehicle_states
@@ -89,7 +89,7 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
             if nghb_state[1] <= obstacle_dist_th
         ]
         if len(nghbs_state) == 0:
-            return {"dist_to_obstacles": 0}
+            return Costs(dist_to_obstacles=0)
 
         # Filter neighbors within ego's visual field.
         obstacles = []
@@ -107,7 +107,7 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
                 obstacles.append(nghb_state)
         nghbs_state = obstacles
         if len(nghbs_state) == 0:
-            return {"dist_to_obstacles": 0}
+            return Costs(dist_to_obstacles=0)
 
         # Filter neighbors by their relative heading to that of ego's heading.
         nghbs_state = [
@@ -116,7 +116,7 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
             if abs(nghb_state[0].heading.relative_to(ego.heading)) <= rel_heading_th
         ]
         if len(nghbs_state) == 0:
-            return {"dist_to_obstacles": 0}
+            return Costs(dist_to_obstacles=0)
 
         # J_D : Distance to obstacles cost
         di = [nghb_state[1] for nghb_state in nghbs_state]
