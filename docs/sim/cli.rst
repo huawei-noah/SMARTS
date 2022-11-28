@@ -20,7 +20,6 @@ Commands:
   envision   Commands to utilize an Envision server.
   run        Run an experiment on a scenario
   scenario   Generate, replay or clean scenarios.
-  ultra      Utilities for working with the ULTRA benchmark.
   waymo      Utilities for using the Waymo Motion Dataset with SMARTS.
   zoo        Build, install, or instantiate workers.
 
@@ -125,30 +124,6 @@ Options:
   -t, --timestep FLOAT  Timestep in seconds
   --endpoint TEXT
   --help                Show this message and exit.
-
------
-ultra
------
-
-Usage: scl ultra [OPTIONS] COMMAND [ARGS]...
-
-  Utilities for working with the ULTRA benchmark.
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  build  Build a policy
-
-build
-^^^^^
-
-Usage: scl ultra build [OPTIONS] <policy>
-
-  Build a policy
-
-Options:
-  --help  Show this message and exit.
 
 ---
 zoo
