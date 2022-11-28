@@ -90,13 +90,13 @@ class Metrics(gym.Wrapper):
             self._steps[agent_name] += 1
 
             # Compute all cost functions.
+            # fmt: off
             costs = Costs()
             for field in fields(self._records[self._cur_scen][agent_name].cost_funcs):
-                cost_func = getattr(
-                    self._records[self._cur_scen][agent_name].cost_funcs, field.name
-                )
+                cost_func = getattr(self._records[self._cur_scen][agent_name].cost_funcs, field.name)
                 new_costs = cost_func(agent_obs)
                 costs = _add_dataclass(new_costs, costs)
+            # fmt: on
 
             # Update stored costs.
             self._records[self._cur_scen][agent_name].record.costs = costs
@@ -128,7 +128,8 @@ class Metrics(gym.Wrapper):
                 )
                 # fmt: off
                 self._records[self._cur_scen][agent_name].record.counts = _add_dataclass(
-                    counts, self._records[self._cur_scen][agent_name].record.counts
+                    counts, 
+                    self._records[self._cur_scen][agent_name].record.counts
                 )
                 # fmt: on
 
