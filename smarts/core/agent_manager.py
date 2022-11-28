@@ -48,6 +48,7 @@ class AgentManager:
 
     def __init__(self, sim, interfaces, zoo_addrs=None):
         from smarts.core.vehicle_index import VehicleIndex
+
         self._log = logging.getLogger(self.__class__.__name__)
         self._sim = weakref.ref(sim)
         self._vehicle_index: VehicleIndex = sim.vehicle_index
@@ -143,7 +144,9 @@ class AgentManager:
         return self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
 
     def vehicles_for_agent(self, agent_id):
-        return self._vehicle_index.vehicle_ids_by_actor_id(agent_id, include_shadowers=True)
+        return self._vehicle_index.vehicle_ids_by_actor_id(
+            agent_id, include_shadowers=True
+        )
 
     def _vehicle_has_agent(self, a_id, v_or_v_id):
         assert (

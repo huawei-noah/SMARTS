@@ -956,7 +956,9 @@ class SMARTS(ProviderManager):
         self._check_valid()
         for v_id in vehicle_ids:
             v = self._vehicle_index.vehicle_by_id(v_id)
-            Vehicle.attach_sensors_to_vehicle(self._sensor_manager, self, v, agent_interface)
+            Vehicle.attach_sensors_to_vehicle(
+                self._sensor_manager, self, v, agent_interface
+            )
 
     def observe_from(
         self, vehicle_ids: Sequence[str]
