@@ -23,8 +23,8 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Counts:
-    """Performance count values.
-    """
+    """Performance count values."""
+
     crashes: float = 0
     """ Number of crashed episodes. An episode is considered crashed if
     an agent becomes done due to collision, driving off road, or reaching 

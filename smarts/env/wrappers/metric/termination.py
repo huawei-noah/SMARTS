@@ -22,8 +22,8 @@ from enum import Enum
 
 
 class Reason(Enum):
-    """Agent termination status.
-    """
+    """Agent termination status."""
+
     Goal = 0
     """Agent achieved its goal."""
     Crash = 1

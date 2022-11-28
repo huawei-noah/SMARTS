@@ -34,7 +34,7 @@ _MAX_STEPS = 800
 
 @dataclass
 class Record:
-    """A dataclass for an agent, storing its performance count and cost values."""
+    """Stores an agent's performance count and cost values."""
 
     counts: Counts
     costs: Costs
@@ -42,7 +42,7 @@ class Record:
 
 @dataclass
 class Data:
-    """A dataclass for an agent, storing its performance record and cost functions."""
+    """Stores an agent's performance record and cost functions."""
 
     record: Record
     cost_funcs: CostFuncs
@@ -60,24 +60,24 @@ class Metrics(gym.Wrapper):
         self._done_check: Set[str]
         self._records = {}
 
-    # def __getattribute__(self, item):
-    #     """For security, prevents access to items beginning with an underscore.
+    def __getattribute__(self, item):
+        """For security, prevents access to items beginning with an underscore.
 
-    #     Args:
-    #         item (_type_): Requested item.
+        Args:
+            item (_type_): Requested item.
 
-    #     Raises:
-    #         AttributeError: Upon accessing item beginning with an underscore.
+        Raises:
+            AttributeError: Upon accessing item beginning with an underscore.
 
-    #     Returns:
-    #         _type_: Returns requested item.
-    #     """
+        Returns:
+            _type_: Returns requested item.
+        """
 
-    #     if item.startswith("_"):
-    #         raise AttributeError(
-    #             "Permission denied to access private attribute '{}'".format(item)
-    #         )
-    #     return super().__getattribute__(item)
+        if item.startswith("_"):
+            raise Exception(
+                "Permission denied to access private attribute {0}".format(item)
+            )
+        return super().__getattribute__(item)
 
     def step(self, action: Dict[str, Any]):
         """Steps the environment by one step."""
@@ -216,23 +216,24 @@ class Metrics(gym.Wrapper):
 
 
 def _check_env(env):
-
     def check_intrfc(agent_intrfc):
         intrfc = {
-            "accelerometer":bool(agent_intrfc.accelerometer), 
-            "max_episode_steps":bool(agent_intrfc.max_episode_steps), 
-            "neighborhood_vehicles":bool(agent_intrfc.neighborhood_vehicles),
-            "road_waypoints":bool(agent_intrfc.road_waypoints),
-            "waypoints":bool(agent_intrfc.waypoints),
+            "accelerometer": bool(agent_intrfc.accelerometer),
+            "max_episode_steps": bool(agent_intrfc.max_episode_steps),
+            "neighborhood_vehicles": bool(agent_intrfc.neighborhood_vehicles),
+            "road_waypoints": bool(agent_intrfc.road_waypoints),
+            "waypoints": bool(agent_intrfc.waypoints),
         }
         return intrfc
 
     for agent_name, agent_spec in env.agent_specs.items():
         intrfc = check_intrfc(agent_spec.interface)
         if not all(intrfc.values()):
-            raise AttributeError("Enable {0}'s disabled interface "
-                "to compute its metrics. Current interface is "
-                "{1}.".format(agent_name, intrfc))
+            raise AttributeError(
+                "Enable {0}'s disabled interface to "
+                "compute its metrics. Current interface is "
+                "{1}.".format(agent_name, intrfc)
+            )
 
 
 T = TypeVar("T", Costs, Counts)
