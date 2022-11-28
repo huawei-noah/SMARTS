@@ -49,6 +49,28 @@ class Data:
 
 
 class Metrics(gym.Wrapper):
+    """Metrics class wraps an underlying _Metrics class. The underlying
+    _Metrics class computes agents' performance metrics in a SMARTS
+    environment. Whereas, this Metrics class is a basic gym.Wrapper class
+    which prevents external users from accessing or modifying attributes
+    beginning with an underscore, to ensure security of the metrics computed.
+
+    Args:
+        env (gym.Env): A gym.Env to be wrapped.
+
+    Raises:
+        AttributeError: Upon accessing an attribute beginning with an underscore.
+
+    Returns:
+        gym.Env: A wrapped gym.Env which computes agents' performance metrics.
+    """
+
+    def __init__(self, env: gym.Env):
+        env = _Metrics(env)
+        super().__init__(env)
+
+
+class _Metrics(gym.Wrapper):
     """Computes agents' performance metrics in a SMARTS environment."""
 
     def __init__(self, env: gym.Env):
@@ -59,25 +81,6 @@ class Metrics(gym.Wrapper):
         self._steps: Dict[str, int]
         self._done_check: Set[str]
         self._records = {}
-
-    def __getattribute__(self, item):
-        """For security, prevents access to items beginning with an underscore.
-
-        Args:
-            item (_type_): Requested item.
-
-        Raises:
-            AttributeError: Upon accessing item beginning with an underscore.
-
-        Returns:
-            _type_: Returns requested item.
-        """
-
-        if item.startswith("_"):
-            raise Exception(
-                "Permission denied to access private attribute {0}".format(item)
-            )
-        return super().__getattribute__(item)
 
     def step(self, action: Dict[str, Any]):
         """Steps the environment by one step."""
