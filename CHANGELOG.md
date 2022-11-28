@@ -21,6 +21,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Removed ray usage example.
 - Moved ULTRA from `huawei-noah/SMARTS` to `smarts-project/smarts-project.rl` repository.
 ### Fixed
+- Updated the RL example `racing` to use `smarts[camera_obs]==0.7.0rc0` and continuous flowing traffic scenario. Simplified the `racing` RL example folder structure.
 ### Security
 
 ## [0.7.0rc0]

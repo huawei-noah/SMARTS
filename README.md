@@ -96,10 +96,10 @@ source .venv/bin/activate
 pip install --upgrade pip
 
 # Install smarts with extras as needed. Extras include the following: 
-# `camera-obs` - needed for rendering camera sensor observations, and for testing.
+# `camera_obs` - needed for rendering camera sensor observations, and for testing.
 # `test` - needed for testing.
 # `train` - needed for RL training and testing.
-pip install -e '.[camera-obs,test,train]'
+pip install -e '.[camera_obs,test,train]'
 
 # Run sanity-test and verify they are passing.
 # If tests fail, check './sanity_test_result.xml' for test report. 

@@ -15,10 +15,12 @@ from typing import Callable, Generator
 
 import gym
 import numpy as np
+import smarts_env
 import tensorflow as tf
-from racing import seed
-from racing.env import single_agent
 from ruamel.yaml import YAML
+
+import utils
+from cli.studio import _build_all_scenarios
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=PendingDeprecationWarning)
@@ -30,13 +32,14 @@ import dreamerv2.common as common  # isort:skip
 logging.getLogger().setLevel("ERROR")
 warnings.filterwarnings("ignore", ".*box bound precision lowered.*")
 yaml = YAML(typ="safe")
-seed(42)
+_SEED = 42
+utils.seed(_SEED)
 
 
 def main(args: argparse.Namespace):
     # Load config file.
     config_file = yaml.load(
-        (pathlib.Path(__file__).absolute().parent / "config.yaml").read_text()
+        (pathlib.Path(__file__).resolve().parent / "config.yaml").read_text()
     )
 
     # Load SMARTS env config.
@@ -44,9 +47,16 @@ def main(args: argparse.Namespace):
     config_env["mode"] = args.mode
     config_env["headless"] = not args.head
     config_env["scenarios_dir"] = (
-        pathlib.Path(__file__).absolute().parents[0] / "scenarios"
+        pathlib.Path(__file__).resolve().parents[0] / "scenarios"
     )
-    _build_scenario()
+
+    # Build the scenarios.
+    _build_all_scenarios(
+        clean=True,
+        allow_offset_maps=False,
+        scenarios=[config_env["scenarios_dir"]],
+        seed=_SEED,
+    )
 
     # Load dreamerv2 config.
     config_dv2 = dv2.api.defaults
@@ -62,7 +72,7 @@ def main(args: argparse.Namespace):
     if config_env["mode"] == "train" and not args.logdir:
         # Train from scratch.
         time = datetime.now().strftime("%Y_%m_%d_%H_%M")
-        logdir = pathlib.Path(__file__).absolute().parents[0] / "logs" / time
+        logdir = pathlib.Path(__file__).resolve().parents[0] / "logs" / time
     elif config_env["mode"] == "train" and args.logdir:
         # Begin training from a pretrained model.
         logdir = args.logdir
@@ -76,16 +86,10 @@ def main(args: argparse.Namespace):
     config_dv2 = config_dv2.update({"logdir": logdir})
 
     # Create SMARTS env.
-    gen_env = single_agent.gen_env(config_env, config_env["seed"])
+    gen_env = smarts_env.generate(config_env, config_env["seed"])
 
     # Run training or evaluation.
     run(config_dv2, gen_env, config_env["mode"])
-
-
-def _build_scenario():
-    scenario = str(pathlib.Path(__file__).absolute().parent / "scenarios")
-    build_scenario = f"scl scenario build-all --clean {scenario}"
-    os.system(build_scenario)
 
 
 def _setup_gpu():
@@ -174,13 +178,13 @@ def run(
     print("Create envs.")
     train_envs = []
     if mode == "train":
-        train_envs = [_wrap_env(next(gen_env)(env_name="train"), config)]
+        train_envs = [_wrap_env(next(gen_env)("train"), config)]
         train_driver = dv2.common.Driver(train_envs)
         train_driver.on_episode(lambda ep: per_episode(ep, mode="train"))
         train_driver.on_step(lambda tran, worker: step.increment())
         train_driver.on_step(train_replay.add_step)
         train_driver.on_reset(train_replay.add_step)
-    eval_envs = [_wrap_env(next(gen_env)(env_name="eval"), config)]
+    eval_envs = [_wrap_env(next(gen_env)("eval"), config)]
     act_space = eval_envs[0].act_space
     obs_space = eval_envs[0].obs_space
     eval_driver = dv2.common.Driver(eval_envs)
