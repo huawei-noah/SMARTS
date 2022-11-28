@@ -77,12 +77,12 @@ class Bubble:
     def __init__(self, bubble: SSBubble, road_map: RoadMap):
         geometry = bubble.zone.to_geometry(road_map)
 
+        self.centroid = [geometry.centroid.x, geometry.centroid.y]
         bounding = geometry.bounds
         self.radius = math.sqrt(
-            (bounding[2] - bounding[0]) * (bounding[2] - bounding[0])
-            + (bounding[3] - bounding[1]) * (bounding[3] - bounding[1])
+            pow(bounding[2] - self.centroid[0], 2)
+            + pow(bounding[1] - self.centroid[1], 2)
         )
-        self.centroid = [geometry.centroid.x, geometry.centroid.y]
 
         bubble_limit = (
             bubble.limit or BubbleLimits()
