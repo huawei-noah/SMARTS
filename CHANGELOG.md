@@ -14,12 +14,12 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added single vehicle `Trip` into type. 
 - Added new video record ultility using moviepy.
 - Added `ConfigurableZone` for `Zone` object to types which enable users to build bubble by providing coordinates of the polygon.
+- An env wrapper `Metrics` is introduced to compute agents' performance metrics.
 ### Deprecated
 ### Changed
 ### Removed
 - Removed all of PyMarl contents, including related interface adapter, environments, and tests.
 - Removed ray usage example.
-
 ### Fixed
 ### Security
 
