@@ -136,9 +136,13 @@ Illustration of various ways to use SMARTS.
 1. [Multi agent](examples/multi_agent.py) example.
 1. [Parallel environments](examples/parallel_environment.py) to run multiple SMARTS environments in parallel.
 
-### Reinforcement Learning
+### RL Model
 1. [MARL benchmark](baselines/marl_benchmark)
-1. [Driving in traffic](examples/driving_in_traffic) using world model based RL.
+1. [Racing](examples/rl/racing) using world model based RL.
+1. [Intersection](examples/rl/intersection) using PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3).
+
+### RL Environment
+1. [ULTRA](https://github.com/smarts-project/smarts-project.rl/blob/master/ultra) provides a gym-based environment built upon SMARTS to tackle intersection navigation, specifically the unprotected left turn.
 
 # CLI Tool
 SMARTS provides a command-line tool to interact with scenario studio and Envision.
