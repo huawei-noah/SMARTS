@@ -47,9 +47,10 @@ class AgentManager:
     """
 
     def __init__(self, sim, interfaces, zoo_addrs=None):
+        from smarts.core.vehicle_index import VehicleIndex
         self._log = logging.getLogger(self.__class__.__name__)
         self._sim = weakref.ref(sim)
-        self._vehicle_index = sim.vehicle_index
+        self._vehicle_index: VehicleIndex = sim.vehicle_index
         self._sensor_manager: SensorManager = sim.sensor_manager
         self._agent_buffer = None
         self._zoo_addrs = zoo_addrs
@@ -218,83 +219,76 @@ class AgentManager:
         }
 
         sim_frame = sim.cached_frame
+
+        active_standard_agents = set()
+        active_boid_agents = set()
         for agent_id in self.active_agents:
+            if self.is_boid_agent(agent_id):
+                active_boid_agents.add(agent_id)
+            else:
+                active_standard_agents.add(agent_id)
+
+        agent_vehicle_pairs = {
+            a_id: (self.vehicles_for_agent(a_id) + [None])[0]
+            for a_id in active_standard_agents
+        }
+        agent_ids = {
+            a_id
+            for a_id, v in agent_vehicle_pairs.items()
+            if self._vehicle_has_agent(a_id, v)
+            # and self._sensor_manager.sensor_state_exists(v.id)
+        }
+        # TODO MTA: find way to pass renderer
+        observations, new_dones = Sensors.observe_parallel(
+            sim_frame,
+            sim.local_constants,
+            agent_ids,
+            sim._renderer,
+            sim.bc,
+        )
+        dones.update(new_dones)
+        for agent_id in agent_ids:
+            v_id = agent_vehicle_pairs[agent_id]
+            vehicle = self._vehicle_index.vehicle_by_id(v_id)
+            rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
+            scores[agent_id] = vehicle.trip_meter_sensor()
+
+        ## TODO MTA, support boid agents with parallel observations
+        for agent_id in active_boid_agents:
             # An agent may be pointing to its own vehicle or observing a social vehicle
             vehicle_ids = self._vehicle_index.vehicle_ids_by_actor_id(
                 agent_id, include_shadowers=True
             )
 
-            if self.is_boid_agent(agent_id):
-                vehicles = [
-                    self._vehicle_index.vehicle_by_id(vehicle_id)
-                    for vehicle_id in vehicle_ids
-                ]
-                # returns format of {<agent_id>: {<vehicle_id>: {...}}}
-                sensor_states = {
-                    vehicle.id: self._sensor_manager.sensor_state_for_actor_id(
-                        vehicle.id
-                    )
-                    for vehicle in vehicles
-                }
-                observations[agent_id], dones[agent_id] = Sensors.observe_batch(
-                    sim_frame,
-                    sim.local_constants,
-                    agent_id,
-                    sensor_states,
-                    {v.id: v for v in vehicles},
-                    sim._renderer,
-                    sim.bc,
-                )
-                # TODO: Observations and rewards should not be generated here.
-                rewards[agent_id] = {
-                    vehicle_id: self._vehicle_reward(vehicle_id)
-                    for vehicle_id in sensor_states.keys()
-                }
-                scores[agent_id] = {
-                    format_actor_id(
-                        agent_id, vehicle_id, is_multi=True
-                    ): self._vehicle_score(vehicle_id)
-                    for vehicle_id in sensor_states.keys()
-                }
-            else:
-                self._diagnose_mismatched_observation_vehicles(vehicle_ids, agent_id)
-
-                vehicle = self._vehicle_index.vehicle_by_id(vehicle_ids[0])
-                sensor_state = self._sensor_manager.sensor_state_for_actor_id(
-                    vehicle.id
-                )
-                ## TODO MTA: Find a way to pass in renderer uninstantiated
-                obs, dones[agent_id] = Sensors.observe(
-                    sim_frame,
-                    sim.local_constants,
-                    agent_id,
-                    sensor_state,
-                    vehicle,
-                    sim._renderer,
-                    sim.bc,
-                )
-                observations[agent_id] = obs
-
-                if self._vehicle_index.vehicle_is_shadowed(vehicle.id):
-                    # It is not a shadowing agent's fault if it is done
-                    dones[agent_id] = False
-                else:
-                    logging.log(
-                        logging.DEBUG,
-                        f"Agent `{agent_id}` has raised done with {obs.events}",
-                    )
-
-                rewards[agent_id] = (
-                    vehicle.trip_meter_sensor(increment=True)
-                    if vehicle.subscribed_to_trip_meter_sensor
-                    else 0
-                )
-                scores[agent_id] = (
-                    vehicle.trip_meter_sensor()
-                    if vehicle.subscribed_to_trip_meter_sensor
-                    else 0
-                )
-
+            vehicles = [
+                self._vehicle_index.vehicle_by_id(vehicle_id)
+                for vehicle_id in vehicle_ids
+            ]
+            # returns format of {<agent_id>: {<vehicle_id>: {...}}}
+            sensor_states = {
+                vehicle.id: self._sensor_manager.sensor_state_for_actor_id(vehicle.id)
+                for vehicle in vehicles
+            }
+            observations[agent_id], dones[agent_id] = Sensors.observe_batch(
+                sim_frame,
+                sim.local_constants,
+                agent_id,
+                sensor_states,
+                {v.id: v for v in vehicles},
+                sim._renderer,
+                sim.bc,
+            )
+            # TODO: Observations and rewards should not be generated here.
+            rewards[agent_id] = {
+                vehicle_id: self._vehicle_reward(vehicle_id)
+                for vehicle_id in sensor_states.keys()
+            }
+            scores[agent_id] = {
+                format_actor_id(
+                    agent_id, vehicle_id, is_multi=True
+                ): self._vehicle_score(vehicle_id)
+                for vehicle_id in sensor_states.keys()
+            }
         if sim.should_reset:
             dones = {agent_id: True for agent_id in self.agent_ids}
             dones["__sim__"] = True
