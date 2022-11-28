@@ -28,6 +28,8 @@ from smarts.core.sensors import Observation
 
 @dataclass(frozen=True)
 class Costs:
+    """Performance cost values.
+    """
     collisions: int = 0
     dist_to_goal: float = 0
     dist_to_obstacles: float = 0
@@ -40,7 +42,7 @@ class Costs:
 
 
 def _collisions(obs: Observation) -> Costs:
-    return Costs(collisions=float(len(obs.events.collisions)))
+    return Costs(collisions=len(obs.events.collisions))
 
 
 def _dist_to_goal(obs: Observation) -> Costs:
@@ -185,7 +187,7 @@ def _lane_center_offset() -> Callable[[Observation], Costs]:
 
 
 def _off_road(obs: Observation) -> Costs:
-    return Costs(off_road=float(obs.events.off_road))
+    return Costs(off_road=obs.events.off_road)
 
 
 def _speed_limit() -> Callable[[Observation], Costs]:
@@ -238,6 +240,8 @@ def _running_ave(prev_ave: float, prev_step: int, new_val: float) -> Tuple[float
 
 @dataclass(frozen=True)
 class CostFuncs:
+    """Functions to compute performance costs.
+    """
     collisions: Callable[[Observation], Costs] = _collisions
     dist_to_goal: Callable[[Observation], Costs] = _dist_to_goal
     dist_to_obstacles: Callable[[Observation], Costs] = _dist_to_obstacles()

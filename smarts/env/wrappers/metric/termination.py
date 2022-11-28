@@ -22,6 +22,8 @@ from enum import Enum
 
 
 class Reason(Enum):
+    """Agent termination status.
+    """
     Goal = 0
     """Agent achieved its goal."""
     Crash = 1
@@ -31,6 +33,17 @@ class Reason(Enum):
 
 
 def reason(obs) -> Reason:
+    """Returns the agent's termination status.
+
+    Args:
+        obs (_type_): Agent's observation.
+
+    Raises:
+        Exception: Reason for agent termination unknown.
+
+    Returns:
+        Reason: Reason for agent termination.
+    """
     if obs.events.reached_goal:
         return Reason.Goal
     elif (
