@@ -146,7 +146,7 @@ def test_sumo_map(sumo_scenario):
     for r2lane in r2.lanes:
         if r2lane.index == 1:
             assert any(
-                r2lane == cand[0] and math.isclose(cand[1], 53.6059606)
+                r2lane == cand[0] and math.isclose(cand[1], 53.6059606, rel_tol=1e-03)
                 for cand in cands
             ), cands
 
