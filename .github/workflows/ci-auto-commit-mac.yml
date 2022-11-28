@@ -27,7 +27,7 @@ jobs:
           python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
-          pip install .[camera-obs,rllib,test,torch,train]
+          pip install .[camera_obs,rllib,test,torch,train]
           pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > utils/setup/mac_requirements.txt
       - name: Commit changes
         uses: EndBug/add-and-commit@v7

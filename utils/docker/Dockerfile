@@ -44,7 +44,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 # Copy source files and install.
 COPY . /src
 WORKDIR /src
-RUN pip install --no-cache-dir -e .[camera-obs,dev,rllib,test,torch,train] && \
+RUN pip install --no-cache-dir -e .[camera_obs,dev,rllib,test,torch,train] && \
     cp -r /src/smarts.egg-info /media/smarts.egg-info
 
 # For Envision.
