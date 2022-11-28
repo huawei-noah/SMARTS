@@ -38,5 +38,6 @@ class Counts:
     """ Sum of steps taken over all episodes.
     """
     steps_adjusted: int = 0
-    """ Sum of steps taken over all episodes. The number of steps in an episode where the vehicle crashed, is replaced with a pre-defined _MAX_STEPS value.
+    """ Sum of steps taken over all episodes. The number of steps, in an episode
+    where the vehicle crashed, is replaced with a pre-defined _MAX_STEPS value.
     """

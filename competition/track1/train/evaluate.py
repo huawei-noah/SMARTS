@@ -62,6 +62,7 @@ def run(
 
         print("------------------Next episode")
         print(env.score())
+        print(env.records())
         print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
 
@@ -71,13 +72,13 @@ if __name__ == "__main__":
         (Path(__file__).resolve().parents[0] / "config.yaml").read_text()
     )
     config = {
-        "eval_episodes": 2,
+        "eval_episodes": 1,
         "seed": 42,
         "scenarios": [
             # "1_to_2lane_left_turn_c",
             # "1_to_2lane_left_turn_t",
             "3lane_merge_multi_agent",
-            "3lane_merge_single_agent",
+            # "3lane_merge_single_agent",
             # "3lane_cruise_multi_agent",
             # "3lane_cruise_single_agent",
             # "3lane_cut_in",
