@@ -38,7 +38,7 @@ class Costs:
     lane_center_offset: float = 0
     off_road: int = 0
     speed_limit: float = 0
-    wrong_way: int = 0
+    wrong_way: float = 0
 
 
 def _collisions(obs: Observation) -> Costs:
