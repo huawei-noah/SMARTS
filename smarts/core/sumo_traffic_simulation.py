@@ -741,7 +741,6 @@ class SumoTrafficSimulation(TrafficProvider):
         return signal_states
 
     def _compute_provider_state(self) -> ProviderState:
-        self._traffic_light_states()
         return ProviderState(
             actors=self._compute_traffic_vehicles() + self._traffic_light_states()
         )

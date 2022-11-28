@@ -22,6 +22,7 @@
 
 import click
 
+from cli.benchmark import benchmark_cli
 from cli.envision import envision_cli
 from cli.run import run_experiment
 from cli.studio import scenario_cli
@@ -62,7 +63,7 @@ except (ModuleNotFoundError, ImportError):
 
 
 scl.add_command(waymo_cli)
-
+scl.add_command(benchmark_cli)
 
 if __name__ == "__main__":
     scl()

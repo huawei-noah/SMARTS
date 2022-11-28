@@ -49,27 +49,27 @@ def scenario_cli():
     help="Set the base seed of the scenario.",
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def build_scenario(clean: bool, scenario: str, seed: int):
+def build(clean: bool, scenario: str, seed: int):
     click.echo(f"build-scenario {scenario}")
 
-    from smarts.sstudio.scenario_construction import build_single_scenario
+    from smarts.sstudio.scenario_construction import build_scenario
 
     assert seed == None or isinstance(seed, (int))
 
-    build_single_scenario(clean, scenario, seed, click.echo)
+    build_scenario(clean, scenario, seed, click.echo)
 
 
-def _build_single_scenario_proc(
+def _build_scenario_proc(
     clean: bool,
     scenario: str,
     semaphore: synchronize.Semaphore,
     seed: int,
 ):
-    from smarts.sstudio.scenario_construction import build_single_scenario
+    from smarts.sstudio.scenario_construction import build_scenario
 
     semaphore.acquire()
     try:
-        build_single_scenario(clean, scenario, seed, click.echo)
+        build_scenario(clean, scenario, seed, click.echo)
     finally:
         semaphore.release()
 
@@ -110,13 +110,11 @@ def _is_scenario_folder_to_build(path: str) -> bool:
     help="Set the base seed of the scenarios.",
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def build_all_scenarios(
-    clean: bool, allow_offset_maps: bool, scenarios: List[str], seed: int
-):
-    _build_all_scenarios(clean, allow_offset_maps, scenarios, seed)
+def build_all(clean: bool, allow_offset_maps: bool, scenarios: List[str], seed: int):
+    build_scenarios(clean, allow_offset_maps, scenarios, seed)
 
 
-def _build_all_scenarios(
+def build_scenarios(
     clean: bool,
     allow_offset_maps: bool,
     scenarios: List[str],
@@ -136,7 +134,7 @@ def _build_all_scenarios(
                 p = Path(subdir)
                 scenario = f"{scenarios_path}/{p.relative_to(scenarios_path)}"
                 proc = Process(
-                    target=_build_single_scenario_proc,
+                    target=_build_scenario_proc,
                     args=(clean, scenario, sema, seed),
                 )
                 all_processes.append((scenario, proc))
@@ -178,7 +176,7 @@ def replay(directory: Sequence[str], timestep: float, endpoint: str):
             )
 
 
-scenario_cli.add_command(build_scenario)
-scenario_cli.add_command(build_all_scenarios)
+scenario_cli.add_command(build)
+scenario_cli.add_command(build_all)
 scenario_cli.add_command(clean_scenario)
 scenario_cli.add_command(replay)

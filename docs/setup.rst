@@ -29,8 +29,8 @@ To setup the simulator, which is called SMARTS, run the following commands,
     # install [train] version of python package with the rllib dependencies
     pip install -e .[train]
 
-    # OPTIONAL: install [camera-obs] version of python package with the panda3D dependencies if you want to render camera sensor observations in your simulations
-    pip install -e .[camera-obs]
+    # OPTIONAL: install [camera_obs] version of python package with the panda3D dependencies if you want to render camera sensor observations in your simulations
+    pip install -e .[camera_obs]
 
     # OPTIONAL: install [opendrive] version of python package with the OpenDRIVE related dependencies if you are using the any OpenDRIVE related scenarios
     pip install -e .[opendrive]

@@ -856,7 +856,7 @@ class Scenario:
     @property
     def name(self) -> str:
         """The name of the scenario."""
-        return os.path.basename(os.path.normpath(self._root))
+        return os.path.normpath(self._root)
 
     @property
     def root_filepath(self) -> str:
@@ -940,6 +940,21 @@ class Scenario:
     def map_glb_filepath(self):
         """The map geometry filepath."""
         return os.path.join(self._root, "build", "map", "map.glb")
+
+    @property
+    def map_glb_metadata(self):
+        """The metadata for the current map glb file."""
+        metadata = self.map_glb_meta_for_file(self.map_glb_filepath)
+        return metadata
+
+    @staticmethod
+    @lru_cache(1)
+    def map_glb_meta_for_file(filepath):
+        """The map metadata given a file."""
+        import trimesh
+
+        scene = trimesh.load(filepath)
+        return scene.metadata
 
     def unique_sumo_log_file(self):
         """A unique logging file for SUMO logging."""
