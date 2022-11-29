@@ -15,10 +15,10 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=True,
-    python_requires=">=3.7",
+    python_requires="~=3.7",
     install_requires=[
         "setuptools>=41.0.0,!=50.0",
-        "smarts[camera-obs]~=0.6.0",
+        "smarts[camera_obs]==0.7.0rc0",
         "dreamerv2==2.2.0",
         "tensorflow==2.4.0",
         "tensorflow-probability==0.12.2",

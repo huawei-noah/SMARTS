@@ -1,16 +1,6 @@
 name: SMARTS CI Base Tests Linux
 
-on:
-  push:
-    branches-ignore:
-      - ultra-**
-      - ultra_**
-      - ultra/**
-  pull_request:
-    branches-ignore:
-      - ultra-**
-      - ultra_**
-      - ultra/**
+on: [push, pull_request]
 
 env:
   venv_dir: .venv
