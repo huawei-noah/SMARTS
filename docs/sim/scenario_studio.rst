@@ -46,8 +46,6 @@ Generate traffic
       ]
   )
 
-  gen_traffic(scenario_path, traffic, name="all", output_dir=scenario_path, seed=seed_, overwrite=True)
-
 Note that the `engine` argument to `Traffic` can either be `"SUMO"` or `"SMARTS"`, with `"SUMO"` being the default.
 As `"SUMO"` can only be used on Sumo-format "road networks", if you need
 to run SMARTS with another map type you may need to change to the `"SMARTS"` engine.
@@ -58,7 +56,7 @@ See more config for `TrafficActor` in :class:`smarts.sstudio.types`.
 
 Flow can be used to generate repeated vehicle runs on the same route, you can config vehicle route and depart rate here.
 
-After the `gen_traffic` function is run, a dir named "traffic" containing vehicle config xmls will be created under output_dir.
+After the `gen_scenario` function is run, a dir named "traffic" containing vehicle config xmls will be created under output_dir.
 
 
 This a short file example of how it works:
@@ -81,33 +79,30 @@ Generate missions
 =================
 
 The Scenario Studio of SMARTS also allows generation of *missions* for ego agents and social agents. These missions are similar
-to routes for social vehicles. When we run `gen_missions`, "missions.rou.xml" file will be created under the output dir:
+to routes for social vehicles. When we run `gen_scenario`, "missions.rou.xml" file will be created under the output dir:
 
 .. code-block:: python
 
-  # agent missions
-  gen_missions(
-      scenario,
-      missions=[Mission(Route(begin=("edge0", 0, "random"), end=("edge1", 0, "max"),)),],
-      seed=seed_,
-  )
+  missions = [
+    Mission(Route(begin=("edge0", 0, "random"), end=("edge1", 0, "max"))),
+  ]
 
 =====================
 Generate friction map
 =====================
 
-The Scenario Studio of SMARTS also allows generation of *friction map* which consists of a list of *surface patches* for ego agents and social agents. These surface patches are using PositionalZone as in the case of bubbles. When we run `gen_friction_map`, "friction_map.pkl" file will be created under the output dir:
+The Scenario Studio of SMARTS also allows generation of *friction map* which consists of a list of *surface patches* for ego agents and social agents. These surface patches are using PositionalZone as in the case of bubbles. When we run `gen_scenario`, "friction_map.pkl" file will be created under the output dir:
 
 .. code-block:: python
 
-  # friction map
-  gen_friction_map(
-      scenario,
-      surface_patches=[RoadSurfacePatch(PositionalZone(pos=(153, -100), size=(2000, 6000)),
-      begin_time=0,
-      end_time=20,
-      friction_coefficient=0.5)]
-  )
+  friction_maps = [
+    RoadSurfacePatch(
+        PositionalZone(pos=(153, -100), size=(2000, 6000)),
+        begin_time=0,
+        end_time=20,
+        friction_coefficient=0.5,
+    ),
+  ]
 
 =================
 Generate road map
@@ -133,8 +128,6 @@ define a `MapSpec` object in your `scenario.py`.
      return map_object, map_hash
 
   map_spec = MapSpec(source="path_or_uri", builder_fn=custom_map_builder)
-
-  gen_map(map_spec)
 
 
 Convert an existing map to SUMO

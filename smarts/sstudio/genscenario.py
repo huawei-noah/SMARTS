@@ -47,9 +47,9 @@ logger.setLevel(logging.WARNING)
 
 
 def _check_if_called_externally():
-    frm = inspect.stack()[2]
-    mod = inspect.getmodule(frm[0])
-    if mod.__name__ != "smarts.sstudio.genscenario":
+    frame_info = inspect.stack()[2]
+    module = inspect.getmodule(frame_info[0])
+    if module.__name__ != "smarts.sstudio.genscenario":
         logger.warning(
             "",
             exc_info=DeprecationWarning(
