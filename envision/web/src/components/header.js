@@ -84,7 +84,7 @@ export default function Header_({
   let selectValue = "";
   if (matchedSimulationId) {
     if (matchedSimulationId == "all") {
-      selectValue = "";
+      selectValue = "all";
     } else {
       selectValue = `Simulation ${displaySimName(matchedSimulationId)}`;
     }
@@ -93,26 +93,26 @@ export default function Header_({
   return (
     <Header>
       <Space>
-        {selectValue}
-        <Button
-          type="primary"
-          ghost
-          onClick={(value) => onSelectSimulation(value = "all")}
-        >
-          All Simulations
-        </Button>
-        {/* <Select
+        <Select
           value={selectValue}
-          style={{ width: 400 }}
+          style={{ width: 300 }}
           onChange={(value) => onSelectSimulation(value)}
         >
-          <Option value="all">All Simulations</Option>
+          <Option value="all">All Simulations (click to maximize)</Option>
           <OptGroup label="Simulations">
             {simulationIds.map((id) => (
               <Option key={id} value={id}>{`Sim ${displaySimName(id)}`}</Option>
             ))}
           </OptGroup>
-        </Select> */}
+        </Select>
+
+        <Button
+          type="primary"
+          ghost
+          onClick={(value) => onSelectSimulation((value = "all"))}
+        >
+          All Simulations
+        </Button>
 
         <Switch>
           <Route exact={true} path="/all"></Route>
