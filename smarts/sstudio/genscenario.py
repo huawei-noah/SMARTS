@@ -22,6 +22,7 @@ route files (sumo \\*.rou.xml), missions, and bubbles.
 """
 
 import collections
+import inspect
 import itertools
 import logging
 import os
@@ -43,6 +44,18 @@ from .generators import TrafficGenerator
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
+
+
+def _check_if_called_externally():
+    frm = inspect.stack()[2]
+    mod = inspect.getmodule(frm[0])
+    if mod.__name__ != "smarts.sstudio.genscenario":
+        logger.warning(
+            "",
+            exc_info=DeprecationWarning(
+                "Calling gen_* methods directly is now deprecated. All scenarios must call gen_scenario()."
+            ),
+        )
 
 
 def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
@@ -323,6 +336,7 @@ def gen_scenario(
 
 def _gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None):
     """Saves a map spec to file."""
+    _check_if_called_externally()
     build_dir = os.path.join(scenario, "build")
     output_dir = os.path.join(output_dir or build_dir, "map")
     os.makedirs(output_dir, exist_ok=True)
@@ -345,6 +359,7 @@ def _gen_traffic(
 ):
     """Generates the traffic routes for the given scenario. If the output directory is
     not provided, the scenario directory is used."""
+    _check_if_called_externally()
     assert name != "missions", "The name 'missions' is reserved for missions!"
 
     build_dir = os.path.join(scenario, "build")
@@ -386,6 +401,7 @@ def _gen_social_agent_missions(
         map_spec:
             An optional map specification that takes precedence over scenario directory information.
     """
+    _check_if_called_externally()
 
     # For backwards compatibility we support both a single value and a sequence
     actors = social_agent_actor
@@ -441,6 +457,7 @@ def _gen_agent_missions(
         map_spec:
             An optional map specification that takes precedence over scenario directory information.
     """
+    _check_if_called_externally()
 
     output_dir = os.path.join(scenario, "build")
     saved = _gen_missions(
@@ -489,6 +506,7 @@ def _gen_group_laps(
         num_laps:
             The amount of laps before finishing
     """
+    _check_if_called_externally()
 
     start_road_id, start_lane, start_offset = begin
     end_road_id, end_lane, end_offset = end
@@ -531,6 +549,7 @@ def _gen_bubbles(scenario: str, bubbles: Sequence[types.Bubble]):
         bubbles:
             The bubbles to add to the scenario.
     """
+    _check_if_called_externally()
     output_path = os.path.join(scenario, "build", "bubbles.pkl")
     with open(output_path, "wb") as f:
         pickle.dump(bubbles, f)
@@ -540,6 +559,7 @@ def _gen_friction_map(scenario: str, surface_patches: Sequence[types.RoadSurface
     """Generates friction map file according to the surface patches defined in
     scenario file.
     """
+    _check_if_called_externally()
     output_path = os.path.join(scenario, "build", "friction_map.pkl")
     with open(output_path, "wb") as f:
         pickle.dump(surface_patches, f)
@@ -558,6 +578,7 @@ def _gen_missions(
     """Generates a route file to represent missions (a route per mission). Will
     create the output_dir if it doesn't exist already.
     """
+    _check_if_called_externally()
 
     generator = TrafficGenerator(scenario, map_spec)
 
@@ -648,6 +669,7 @@ def _gen_traffic_histories(
         map_spec:
              An optional map specification that takes precedence over scenario directory information.
     """
+    _check_if_called_externally()
     road_map = None  # shared across all history_datasets in scenario
     for hdsr in histories_datasets:
         assert isinstance(hdsr, types.TrafficHistoryDataset)
