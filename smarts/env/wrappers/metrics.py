@@ -109,9 +109,7 @@ class _Metrics(gym.Wrapper):
 
             if dones[agent_name]:
                 self._done_check.add(agent_name)
-                steps_adjusted = 0
-                goals = 0
-                crashes = 0
+                steps_adjusted, goals, crashes = 0, 0, 0
                 reason = termination.reason(obs=agent_obs)
                 if reason == termination.Reason.Goal:
                     steps_adjusted = self._steps[agent_name]
@@ -242,12 +240,11 @@ def _check_env(env):
             )
 
 
-def _check_scen(obs:Observation):
+def _check_scen(obs: Observation):
     goal_type = type(obs.ego_vehicle_state.mission.goal)
-    if goal_type != PositionalGoal: 
+    if goal_type != PositionalGoal:
         raise AttributeError(
-            "Expected agent to have PositionalGoal, but got "
-            "{0}".format(goal_type)
+            "Expected agent to have PositionalGoal, but got {0}".format(goal_type)
         )
 
 
