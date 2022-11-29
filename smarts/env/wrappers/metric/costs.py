@@ -102,7 +102,7 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
             rel_pos = np.array(nghb_state[0].position) - ego_pos
             obstacle_angle = np.angle(rel_pos[0] + 1j * rel_pos[1]) - np.pi / 2
             obstacle_angle = (obstacle_angle + np.pi) % (2 * np.pi) - np.pi
-            # Relative angle is the angle correction required by ego agent to face the obstacle.
+            # Relative angle is the angle rotation required by ego agent to face the obstacle.
             rel_angle = obstacle_angle - ego_heading
             rel_angle = (rel_angle + np.pi) % (2 * np.pi) - np.pi
             if abs(rel_angle) <= rel_angle_th:
@@ -121,8 +121,7 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
             return Costs(dist_to_obstacles=0)
 
         # J_D : Distance to obstacles cost
-        di = [nghb_state[1] for nghb_state in nghbs_state]
-        di = np.array(di)
+        di = np.array([nghb_state[1] for nghb_state in nghbs_state])
         j_d = np.amax(np.exp(-w_dist * di))
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_d)
