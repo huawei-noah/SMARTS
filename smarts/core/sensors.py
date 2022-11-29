@@ -33,7 +33,6 @@ from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.utils.math import squared_dist
-from smarts.core.vehicle_index import SensorState
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .events import Events
@@ -277,7 +276,7 @@ class Sensors:
 
     @staticmethod
     def observe_batch(
-        sim, agent_id, sensor_states: Dict[str, SensorState], vehicles
+        sim, agent_id, sensor_states, vehicles
     ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
         """Operates all sensors on a batch of vehicles for a single agent."""
         # TODO: Replace this with a more efficient implementation that _actually_
@@ -294,9 +293,7 @@ class Sensors:
         return observations, dones
 
     @staticmethod
-    def observe(
-        sim, agent_id, sensor_state: SensorState, vehicle
-    ) -> Tuple[Observation, bool]:
+    def observe(sim, agent_id, sensor_state, vehicle) -> Tuple[Observation, bool]:
         """Generate observations for the given agent around the given vehicle."""
         neighborhood_vehicles = None
         if vehicle.subscribed_to_neighborhood_vehicles_sensor:
