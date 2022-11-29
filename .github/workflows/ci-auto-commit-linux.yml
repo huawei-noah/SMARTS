@@ -32,7 +32,7 @@ jobs:
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
-          pip install .[camera-obs,rllib,test,torch,train]
+          pip install .[camera_obs,rllib,test,torch,train]
       - name: Update requirements
         run: |
           . ${{env.venv_dir}}/bin/activate
@@ -48,7 +48,7 @@ jobs:
         run: |
           . ${{env.venv_dir}}/bin/activate
           pip install .[dev]
-          isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines/marl_benchmark/ ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./ultra ./zoo
+          isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines/marl_benchmark/ ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./zoo
           black .
           npx prettier --write ./envision/web/src
       - name: Commit format changes

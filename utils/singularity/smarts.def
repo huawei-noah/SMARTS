@@ -47,7 +47,7 @@ From: ubuntu:bionic
 
     # Copy source files and install SMARTS
     cd /src
-    pip install --no-cache-dir -e .[train,test,dev,camera-obs]
+    pip install --no-cache-dir -e .[train,test,dev,camera_obs]
     cp -r /src/smarts.egg-info /media/smarts.egg-info
 
 %environment

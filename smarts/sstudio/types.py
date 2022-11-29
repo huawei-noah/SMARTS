@@ -326,7 +326,7 @@ class SocialAgentActor(Actor):
     # prefab of a social agent.
     agent_locator: str
     """The locator reference to the zoo registration call. Expects a string in the format
-    of ‘path.to.file:locator-name’ where the path to the registration call is in the form
+    of 'path.to.file:locator-name' where the path to the registration call is in the form
     {PYTHONPATH}[n]/path/to/file.py
     """
     policy_kwargs: Dict[str, Any] = field(default_factory=dict)

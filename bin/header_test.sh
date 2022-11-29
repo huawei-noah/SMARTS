@@ -1,7 +1,7 @@
 # !/usr/bin/env bash
 
 # Collate all files excluding auto generated files of *_pb2.py and *_pb2_grpc.py
-python_files="$(find ./baselines/marl_benchmark ./cli ./envision ./smarts ./ultra -name '*.py' ! -name '*_pb2.py' ! -name '*_pb2_grpc.py')"
+python_files="$(find ./baselines/marl_benchmark ./cli ./envision ./smarts -name '*.py' ! -name '*_pb2.py' ! -name '*_pb2_grpc.py')"
 js_files="$(find ./envision/web/src -name '*.js')"
 files="$python_files $js_files"  
 
