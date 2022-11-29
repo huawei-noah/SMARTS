@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import math
 from builtins import classmethod
 from collections import defaultdict
 from copy import deepcopy
@@ -75,6 +76,13 @@ class Bubble:
 
     def __init__(self, bubble: SSBubble, road_map: RoadMap):
         geometry = bubble.zone.to_geometry(road_map)
+
+        self.centroid = [geometry.centroid.x, geometry.centroid.y]
+        bounding = geometry.bounds
+        self.radius = math.sqrt(
+            pow(bounding[2] - self.centroid[0], 2)
+            + pow(bounding[1] - self.centroid[1], 2)
+        )
 
         bubble_limit = (
             bubble.limit or BubbleLimits()
@@ -265,6 +273,10 @@ class Bubble:
 
         self._cached_inner_geometry = _transform(self._cached_inner_geometry)
         self._cached_airlock_geometry = _transform(self._cached_airlock_geometry)
+        self.centroid = [
+            self._cached_inner_geometry.centroid.x,
+            self._cached_inner_geometry.centroid.y,
+        ]
 
         self._bubble_heading = vehicle.heading
 
@@ -538,17 +550,29 @@ class BubbleManager:
             # XXX: Turns out Shapely Point(...) creation is very expensive (~0.02ms) which
             #      when inside of a loop x large number of vehicles makes a big
             #      performance hit.
-            point = vehicle.pose.point.as_shapely
+            point = vehicle.pose.point
+            v_radius = math.sqrt(
+                vehicle.width * vehicle.width + vehicle.length * vehicle.length
+            )
+
             for bubble in active_bubbles:
-                cursor = Cursor.from_pos(
-                    pos=point,
-                    vehicle_id=vehicle.id,
-                    bubble=bubble,
-                    index=persisted_vehicle_index,
-                    vehicle_ids_per_bubble=vehicle_ids_per_bubble,
-                    running_cursors=cursors,
-                )
-                cursors.add(cursor)
+                was_in_this_bubble = vehicle_ids_per_bubble[bubble]
+                sq_distance = (point.x - bubble.centroid[0]) * (
+                    point.x - bubble.centroid[0]
+                ) + (point.y - bubble.centroid[1]) * (point.y - bubble.centroid[1])
+
+                if vehicle.id in was_in_this_bubble or sq_distance <= pow(
+                    v_radius + bubble.radius + bubble._bubble.margin, 2
+                ):
+                    cursor = Cursor.from_pos(
+                        pos=point.as_shapely,
+                        vehicle_id=vehicle.id,
+                        bubble=bubble,
+                        index=persisted_vehicle_index,
+                        vehicle_ids_per_bubble=vehicle_ids_per_bubble,
+                        running_cursors=cursors,
+                    )
+                    cursors.add(cursor)
 
         return cursors
 

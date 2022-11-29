@@ -7,7 +7,8 @@ traffic = t.Traffic(
     flows=[
         t.Flow(
             route=t.RandomRoute(),
-            rate=60 * 60,
+            rate=1,
+            end=10,  # `rate=1` adds 1 additional vehicle per hour. So set `end` < 1*60*60 secs to avoid addition of more vehicles after the initial flow. This prevents traffic congestion.
             actors={t.TrafficActor(name="car", vehicle_type=vehicle_type): 1},
         )
         for vehicle_type in [
@@ -22,6 +23,7 @@ traffic = t.Traffic(
             "truck",
             "trailer",
         ]
+        * 2
     ]
 )
 
