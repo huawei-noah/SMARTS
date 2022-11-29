@@ -27,7 +27,7 @@ from xml.etree.ElementTree import ElementTree
 import pytest
 
 from smarts.core.scenario import Scenario
-from smarts.sstudio import gen_map, gen_traffic
+from smarts.sstudio.genscenario import _gen_map, _gen_traffic
 from smarts.sstudio.types import (
     Distribution,
     Flow,
@@ -81,7 +81,7 @@ def missions() -> Sequence[Mission]:
 
 def test_generate_traffic(traffic: Traffic):
     with tempfile.TemporaryDirectory() as temp_dir:
-        gen_traffic(
+        _gen_traffic(
             "scenarios/sumo/intersections/4lane_t",
             traffic,
             output_dir=temp_dir,
@@ -110,7 +110,7 @@ def _compare_files(file1, file2):
 
 def _gen_map_from_spec(scenario_root: str, map_spec: MapSpec):
     with tempfile.TemporaryDirectory() as temp_dir:
-        gen_map(scenario_root, map_spec, output_dir=temp_dir)
+        _gen_map(scenario_root, map_spec, output_dir=temp_dir)
         found_map_spec = Scenario.discover_map(temp_dir)
         assert found_map_spec
         road_map = found_map_spec.builder_fn(found_map_spec)

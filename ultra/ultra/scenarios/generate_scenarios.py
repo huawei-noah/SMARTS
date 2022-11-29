@@ -40,7 +40,7 @@ import psutil
 import yaml
 
 from smarts.core.utils.sumo import sumolib
-from smarts.sstudio import gen_bubbles, gen_missions, gen_traffic
+from smarts.sstudio.genscenario import _gen_bubbles, _gen_missions, _gen_traffic
 from smarts.sstudio.types import (
     Bubble,
     Distribution,
@@ -423,7 +423,7 @@ def generate_left_turn_missions(
     vehicles_to_not_hijack = []
     traffic = Traffic(flows=all_flows)
     try:
-        gen_traffic(scenario, traffic, name=f"all", seed=sumo_seed)
+        _gen_traffic(scenario, traffic, name=f"all", seed=sumo_seed)
         if stops:
             add_stops_to_traffic(scenario, stops, vehicles_to_not_hijack)
     except Exception as exception:
@@ -471,7 +471,7 @@ def generate_left_turn_missions(
     # Shuffle the missions so agents don't do the same route all the time.
     if shuffle_missions:
         random.shuffle(mission_objects)
-    gen_missions(scenario, mission_objects)
+    _gen_missions(scenario, mission_objects)
 
     if bubbles:
         bubble_objects = [
@@ -480,7 +480,7 @@ def generate_left_turn_missions(
             )
             for bubble_config in bubbles
         ]
-        gen_bubbles(scenario, bubble_objects)
+        _gen_bubbles(scenario, bubble_objects)
 
     if stopwatcher_behavior:
         metadata["stopwatcher"] = {

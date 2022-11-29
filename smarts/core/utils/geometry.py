@@ -86,6 +86,9 @@ def generate_meshes_from_polygons(
             if -1 not in face:
                 faces.append(face)
 
+        if not vertices or not faces:
+            continue
+
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces, metadata=metadata)
 
         # Trimesh doesn't support a coordinate-system="z-up" configuration, so we

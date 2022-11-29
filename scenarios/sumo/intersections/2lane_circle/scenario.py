@@ -1,6 +1,6 @@
 import os
 
-from smarts.sstudio import gen_social_agent_missions
+from smarts.sstudio.genscenario import _gen_social_agent_missions
 from smarts.sstudio.types import Mission, Route, SocialAgentActor
 
 scenario = os.path.dirname(os.path.realpath(__file__))
@@ -36,14 +36,14 @@ buddha_agent = SocialAgentActor(
 #     },
 # )
 
-gen_social_agent_missions(
+_gen_social_agent_missions(
     scenario,
     social_agent_actor=laner_agent,
     name=f"s-agent-{laner_agent.name}",
     missions=[Mission(Route(begin=("edge-east-EW", 0, 5), end=("edge-west-EW", 0, 5)))],
 )
 
-gen_social_agent_missions(
+_gen_social_agent_missions(
     scenario,
     social_agent_actor=buddha_agent,
     name=f"s-agent-{buddha_agent.name}",

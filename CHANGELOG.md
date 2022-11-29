@@ -45,6 +45,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Renamed `examples/history_vehicles_replacement_for_imitation_learning.py` to `examples/traffic_histories_vehicle_replacement.py`.
 - `SumoTrafficSimulation` will now try to hand-off the vehicles it controls to the new SMARTS background traffic provider by default if the Sumo provider crashes.
 - SMARTS now gives an error about a suspected lack of junction edges in sumo maps on loading of them.
+- Substantial changes to scenario builds to make scenario iteration faster. Scenario build artifacts are now cached and built incrementally, meaning that subsequent builds (without the `clean` option) will only build the artifacts that depend on the changed DSL objects. All build artifacts are now in a local `build/` directory in each scenario's directory. NOTE: the `allow_offset_map` option has been removed. This must now be set in a `MapSpec` object in the scenario.py if this option is needed. Another requirement is that all scenarios must have a `scenario.py`, and must call `gen_scenario()`, rather than the individual `gen_` functions, which are now private.
 
 ### Removed
 - Removed support for deprecated json-based and YAML formats for traffic histories.
