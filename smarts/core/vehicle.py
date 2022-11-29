@@ -32,12 +32,12 @@ from shapely.geometry import box as shapely_box
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
 
-from smarts.core import models
-from smarts.core.actor import ActorRole, ActorState
-from smarts.core.chassis import AckermannChassis, BoxChassis, Chassis
-from smarts.core.colors import SceneColors
-from smarts.core.coordinates import Dimensions, Heading, Pose
-from smarts.core.sensors import (
+from . import models
+from .actor import ActorRole, ActorState
+from .chassis import AckermannChassis, BoxChassis, Chassis
+from .colors import Colors, SceneColors
+from .coordinates import Dimensions, Heading, Pose
+from .sensors import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
     DrivenPathSensor,

@@ -33,7 +33,6 @@ from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.utils.math import squared_dist
-from smarts.core.vehicle import Vehicle, VehicleState
 from smarts.core.vehicle_index import SensorState
 
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
@@ -296,7 +295,7 @@ class Sensors:
 
     @staticmethod
     def observe(
-        sim, agent_id, sensor_state: SensorState, vehicle: Vehicle
+        sim, agent_id, sensor_state: SensorState, vehicle
     ) -> Tuple[Observation, bool]:
         """Generate observations for the given agent around the given vehicle."""
         neighborhood_vehicles = None
@@ -337,7 +336,7 @@ class Sensors:
             ego_lane_id = LANE_ID_CONSTANT
             ego_lane_index = LANE_INDEX_CONSTANT
             ego_road_id = ROAD_ID_CONSTANT
-        ego_vehicle_state: VehicleState = vehicle.state
+        ego_vehicle_state = vehicle.state
 
         acceleration_params = {
             "linear_acceleration": None,
