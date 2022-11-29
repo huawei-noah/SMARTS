@@ -98,17 +98,17 @@ class EgoVehicleObservation(NamedTuple):
     mission: Mission
     """A field describing the vehicle plotted route"""
     linear_velocity: np.ndarray
-    """Vehicle velocity along body coordinate axes. A numpy array of shape=(3,) and dtype=np.float64."""
+    """Vehicle velocity along body coordinate axes. Units: m/s. A numpy array of shape=(3,) and dtype=np.float64."""
     angular_velocity: np.ndarray
-    """Angular velocity vector. A numpy array of shape=(3,) and dtype=np.float64."""
+    """Angular velocity vector. Units: rad/s. A numpy array of shape=(3,) and dtype=np.float64."""
     linear_acceleration: Optional[np.ndarray]
-    """Linear acceleration vector. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
+    """Linear acceleration vector. Units: m/s^2. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
     angular_acceleration: Optional[np.ndarray]
-    """Angular acceleration vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    """Angular acceleration vector. Units: rad/s^2. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     linear_jerk: Optional[np.ndarray]
-    """Linear jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    """Linear jerk vector. Units: m/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     angular_jerk: Optional[np.ndarray]
-    """Angular jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    """Angular jerk vector. Units: rad/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     lane_position: Optional[RefLinePoint] = None
     """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
     See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
