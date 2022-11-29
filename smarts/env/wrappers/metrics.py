@@ -244,7 +244,7 @@ def _check_scen(obs: Observation):
     goal_type = type(obs.ego_vehicle_state.mission.goal)
     if goal_type != PositionalGoal:
         raise AttributeError(
-            "Expected agent to have PositionalGoal, but got {0}".format(goal_type)
+            "Expected agent to have PositionalGoal, but got goal type {0}".format(goal_type)
         )
 
 
