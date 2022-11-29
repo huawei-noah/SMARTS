@@ -204,7 +204,7 @@ class SignalObservation:
     """If known, the simulation time this signal last changed its state."""
 
 
-@dataclass
+@dataclass(frozen=True)
 class Observation:
     """The simulation observation."""
 
