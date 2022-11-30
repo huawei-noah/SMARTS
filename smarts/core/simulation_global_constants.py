@@ -33,7 +33,7 @@ class SimulationGlobalConstants:
     OBSERVATION_WORKERS: int
 
     _FEATURES = {
-        ("DEBUG", bool, True),
+        ("DEBUG", bool, False),
         ("RESET_RETRIES", int, 0),
         ("OBSERVATION_WORKERS", int, 2),
     }
