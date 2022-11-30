@@ -10,5 +10,4 @@ gen_scenario(
         ego_missions=ego_missions,
     ),
     output_dir=str(Path(__file__).parent),
-    overwrite=True,
 )

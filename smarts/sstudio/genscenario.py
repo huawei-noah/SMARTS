@@ -141,7 +141,6 @@ def gen_scenario(
     scenario: types.Scenario,
     output_dir: Union[str, Path],
     seed: int = 42,
-    overwrite: bool = False,
 ):
     """This is now the preferred way to generate a scenario. Instead of calling the
     gen_* methods directly, we provide this higher-level abstraction that takes care
@@ -230,7 +229,7 @@ def gen_scenario(
                     traffic=traffic,
                     name=name,
                     seed=seed,
-                    overwrite=overwrite,
+                    overwrite=True,
                     map_spec=map_spec,
                 )
             _update_artifacts(db_conn, artifact_paths, obj_hash)
@@ -254,7 +253,7 @@ def gen_scenario(
                         vehicle_count=mission.actor_count,
                         num_laps=mission.num_laps,
                         seed=seed,
-                        overwrite=overwrite,
+                        overwrite=True,
                         map_spec=map_spec,
                     )
                 else:
@@ -265,7 +264,7 @@ def gen_scenario(
                     scenario=output_dir,
                     missions=missions,
                     seed=seed,
-                    overwrite=overwrite,
+                    overwrite=True,
                     map_spec=map_spec,
                 )
 
@@ -328,7 +327,7 @@ def gen_scenario(
             _gen_traffic_histories(
                 scenario=output_dir,
                 histories_datasets=scenario.traffic_histories,
-                overwrite=overwrite,
+                overwrite=True,
                 map_spec=map_spec,
             )
             _update_artifacts(db_conn, artifact_paths, obj_hash)

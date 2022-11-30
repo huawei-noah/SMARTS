@@ -181,7 +181,6 @@ Commands you can execute at this level:
             traffic_histories=[traffic_history],
         ),
         output_dir=str(Path(__file__).parent),
-        overwrite=True,
     )
     ```
     And `<SCENARIO_ID>/waymo.yaml` for generating history dataset and imitation learning aspects of `SMARTS`:
