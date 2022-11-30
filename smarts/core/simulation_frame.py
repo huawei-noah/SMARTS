@@ -40,6 +40,7 @@ class SimulationFrame:
     agent_vehicle_controls: Dict[str, str]
     agent_interfaces: Dict[str, AgentInterface]
     ego_ids: str
+    pending_agent_ids: List[str]
     elapsed_sim_time: float
     fixed_timestep: float
     resetting: bool
@@ -67,6 +68,11 @@ class SimulationFrame:
     @cached_property
     def agent_ids(self) -> Set[str]:
         return set(self.vehicles_for_agents.keys())
+
+    @cached_property
+    def potential_agent_ids(self) -> Set[str]:
+        """This includes current agent ids and future pending ego agent ids."""
+        return set(self.vehicles_for_agents.keys()) | set(self.pending_agent_ids)
 
     @cached_property
     def actor_states_by_id(self) -> Dict[str, ActorState]:

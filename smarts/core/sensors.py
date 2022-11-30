@@ -677,7 +677,7 @@ class Sensors:
             sim_frame, sim_local_constants, vehicle_state, plan
         )
         agents_alive_done = cls._agents_alive_done_check(
-            sim_frame.ego_ids, sim_frame.agent_ids, done_criteria.agents_alive
+            sim_frame.ego_ids, sim_frame.potential_agent_ids, done_criteria.agents_alive
         )
         actors_alive_done = cls._actors_alive_done_check(
             sim_frame.vehicle_ids, sensor_state, done_criteria.actors_alive
