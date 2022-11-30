@@ -49,11 +49,11 @@ def _dist_to_goal(obs: Observation) -> Costs:
     mission_goal = obs.ego_vehicle_state.mission.goal
     if hasattr(mission_goal, "position"):
         rel = obs.ego_vehicle_state.position[:2] - mission_goal.position[:2]
-        dist = sum(abs(rel))
+        j_goal = sum(abs(rel))
     else:
-        dist = 0
+        j_goal = 0
 
-    return Costs(dist_to_goal=dist)
+    return Costs(dist_to_goal=j_goal)
 
 
 def _dist_to_obstacles() -> Callable[[Observation], Costs]:
@@ -137,8 +137,8 @@ def _jerk_angular() -> Callable[[Observation], Costs]:
     def func(obs: Observation) -> Costs:
         nonlocal ave, step
 
-        ja_squared = np.sum(np.square(obs.ego_vehicle_state.angular_jerk))
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=ja_squared)
+        j_a = np.linalg.norm(obs.ego_vehicle_state.angular_jerk)
+        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_a)
         return Costs(jerk_angular=ave)
 
     return func
@@ -147,7 +147,7 @@ def _jerk_angular() -> Callable[[Observation], Costs]:
 def _jerk_linear() -> Callable[[Observation], Costs]:
     ave = 0
     step = 0
-    jl_max = 0.9 # Units: m/s^3
+    jerk_linear_max = 0.9 # Units: m/s^3
     """
     Maximum comfortable linear jerk as presented in:
 
@@ -158,11 +158,11 @@ def _jerk_linear() -> Callable[[Observation], Costs]:
     """
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step, jl_max
+        nonlocal ave, step, jerk_linear_max
 
-        jl = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
-        jl_norm = min( jl / jl_max, 1)
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=jl_norm)
+        jerk_linear = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
+        j_l = min( jerk_linear / jerk_linear_max, 1)
+        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_l)
         return Costs(jerk_linear=ave)
 
     return func
@@ -217,7 +217,8 @@ def _speed_limit() -> Callable[[Observation], Costs]:
 
         # Excess speed beyond speed limit.
         overspeed = ego.speed - speed_limit if ego.speed > speed_limit else 0
-        j_v = min(overspeed / (0.5 * speed_limit), 1)
+        overspeed_norm = min(overspeed / (0.5 * speed_limit), 1)
+        j_v = overspeed_norm**2
 
         ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_v)
         return Costs(speed_limit=ave)
@@ -231,11 +232,11 @@ def _wrong_way() -> Callable[[Observation], Costs]:
 
     def func(obs: Observation) -> Costs:
         nonlocal ave, step
-        wrong_way = 0
+        j_wrong_way = 0
         if obs.events.wrong_way:
-            wrong_way = 1
+            j_wrong_way = 1
 
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=wrong_way)
+        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_wrong_way)
         return Costs(wrong_way=ave)
 
     return func
