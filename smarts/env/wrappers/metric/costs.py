@@ -147,12 +147,22 @@ def _jerk_angular() -> Callable[[Observation], Costs]:
 def _jerk_linear() -> Callable[[Observation], Costs]:
     ave = 0
     step = 0
+    jl_max = 0.9 # Units: m/s^3
+    """
+    Maximum comfortable linear jerk as presented in:
+
+    Bae, Il and et. al., "Self-Driving like a Human driver instead of a
+    Robocar: Personalized comfortable driving experience for autonomous vehicles", 
+    Machine Learning for Autonomous Driving Workshop at the 33rd Conference on 
+    Neural Information Processing Systems, NeurIPS 2019, Vancouver, Canada.
+    """
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step
+        nonlocal ave, step, jl_max
 
-        jl_squared = np.sum(np.square(obs.ego_vehicle_state.linear_jerk))
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=jl_squared)
+        jl = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
+        jl_norm = min( jl / jl_max, 1)
+        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=jl_norm)
         return Costs(jerk_linear=ave)
 
     return func
