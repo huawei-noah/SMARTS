@@ -88,7 +88,7 @@ class EgoVehicleObservation(NamedTuple):
     steering: float
     """Angle of front wheels in radians between [-pi, pi]."""
     yaw_rate: float
-    """Rotational speed in radians per second"""
+    """Rotational speed about the z-axis. Scalar representation of angular_velocity. Units: rad/s."""
     road_id: str
     """The identifier for the road nearest to this vehicle."""
     lane_id: str
@@ -100,7 +100,7 @@ class EgoVehicleObservation(NamedTuple):
     linear_velocity: np.ndarray
     """Vehicle velocity along body coordinate axes. Units: m/s. A numpy array of shape=(3,) and dtype=np.float64."""
     angular_velocity: np.ndarray
-    """Angular velocity vector. Units: rad/s. A numpy array of shape=(3,) and dtype=np.float64."""
+    """Angular velocity vector. Vector representation of yaw_rate. Units: rad/s. A numpy array of shape=(3,) and dtype=np.float64."""
     linear_acceleration: Optional[np.ndarray]
     """Linear acceleration vector. Units: m/s^2. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
     angular_acceleration: Optional[np.ndarray]
