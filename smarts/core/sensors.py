@@ -88,7 +88,7 @@ class EgoVehicleObservation(NamedTuple):
     steering: float
     """Angle of front wheels in radians between [-pi, pi]."""
     yaw_rate: float
-    """Rotational speed about the z-axis. Scalar representation of angular_velocity. Units: rad/s."""
+    """Speed of vehicle-heading rotation about the body's z-axis. Equivalent scalar representation of angular_velocity. Units: rad/s."""
     road_id: str
     """The identifier for the road nearest to this vehicle."""
     lane_id: str
@@ -98,17 +98,17 @@ class EgoVehicleObservation(NamedTuple):
     mission: Mission
     """A field describing the vehicle plotted route"""
     linear_velocity: np.ndarray
-    """Vehicle velocity along body coordinate axes. Units: m/s. A numpy array of shape=(3,) and dtype=np.float64."""
+    """Velocity of vehicle along the body's coordinate axes. Units: m/s. A numpy array of shape=(3,) and dtype=np.float64."""
     angular_velocity: np.ndarray
-    """Angular velocity vector. Vector representation of yaw_rate. Units: rad/s. A numpy array of shape=(3,) and dtype=np.float64."""
+    """Velocity of vehicle-heading rotation about the body's z-axis. Equivalent vector representation of yaw_rate. Units: rad/s. A numpy array of shape=(3,) and dtype=np.float64."""
     linear_acceleration: Optional[np.ndarray]
-    """Linear acceleration vector. Units: m/s^2. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
+    """Acceleration of vehicle along the body's coordinate axes. Units: m/s^2. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
     angular_acceleration: Optional[np.ndarray]
-    """Angular acceleration vector. Units: rad/s^2. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    """Acceleration of vehicle-heading rotation about the body's z-axis. Units: rad/s^2. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     linear_jerk: Optional[np.ndarray]
-    """Linear jerk vector. Units: m/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    """Jerk of vehicle along the body's coordinate axes. Units: m/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     angular_jerk: Optional[np.ndarray]
-    """Angular jerk vector. Units: rad/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    """Jerk of vehicle-heading rotation about the body's z-axis. Units: rad/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     lane_position: Optional[RefLinePoint] = None
     """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
     See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
