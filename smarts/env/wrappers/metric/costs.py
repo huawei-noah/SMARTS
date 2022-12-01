@@ -148,7 +148,7 @@ def _jerk_angular() -> Callable[[Observation], Costs]:
 def _jerk_linear() -> Callable[[Observation], Costs]:
     ave = 0
     step = 0
-    jerk_linear_max = math.sqrt(0.9**2 + 0.9**2 + 0**2) # Units: m/s^3
+    jerk_linear_max = np.linalg.norm(np.array([0.9, 0.9, 0])) # Units: m/s^3
     """
     Maximum comfortable linear jerk as presented in:
 
