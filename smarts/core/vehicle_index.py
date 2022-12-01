@@ -713,7 +713,7 @@ class VehicleIndex:
             sim.sensor_manager, sim, vehicle, agent_interface
         )
         if sim.is_rendering:
-            vehicle.create_renderer_node(sim.renderer)
+            vehicle.create_renderer_node(sim.renderer_ref)
             sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=True)
 
         vehicle_id = _2id(vehicle.id)
@@ -753,7 +753,7 @@ class VehicleIndex:
 
         vehicle_id, actor_id = _2id(vehicle_id), _2id(actor_id)
         if sim.is_rendering:
-            vehicle.create_renderer_node(sim.renderer)
+            vehicle.create_renderer_node(sim.renderer_ref)
             sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=False)
 
         self._vehicles[vehicle_id] = vehicle

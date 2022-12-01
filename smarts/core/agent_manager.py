@@ -246,7 +246,7 @@ class AgentManager:
             sim_frame,
             sim.local_constants,
             agent_ids,
-            sim._renderer,
+            sim.renderer_ref,
             sim.bc,
         )
         dones.update(new_dones)
@@ -278,7 +278,7 @@ class AgentManager:
                 agent_id,
                 sensor_states,
                 {v.id: v for v in vehicles},
-                sim._renderer,
+                sim.renderer_ref,
                 sim.bc,
             )
             # TODO: Observations and rewards should not be generated here.

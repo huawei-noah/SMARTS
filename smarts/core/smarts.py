@@ -318,7 +318,7 @@ class SMARTS(ProviderManager):
         # need to expose better support for batched computations
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
         self._sensor_manager.clean_up_sensors_for_actors(
-            set(v.actor_id for v in self._vehicle_states), renderer=self._renderer
+            set(v.actor_id for v in self._vehicle_states), renderer=self.renderer_ref
         )
 
         # Reset frame state
@@ -330,16 +330,16 @@ class SMARTS(ProviderManager):
 
         # Agents
         with timeit("Stepping through sensors", self._log.debug):
-            self._sensor_manager.step(self.cached_frame, self._renderer)
+            self._sensor_manager.step(self.cached_frame, self.renderer_ref)
 
-        if self._renderer:
+        if self.renderer_ref:
             # runs through the render pipeline (for camera-based sensors)
             # MUST perform this after _sensor_manager.step() above, and before observe() below,
             # so that all updates are ready before rendering happens per
             with timeit("Syncing the renderer", self._log.debug):
-                self._renderer.sync(self.cached_frame)
+                self.renderer_ref.sync(self.cached_frame)
             with timeit("Running through the render pipeline", self._log.debug):
-                self._renderer.render()
+                self.renderer_ref.render()
 
         with timeit("Calculating observations and rewards", self._log.debug):
             observations, rewards, scores, dones = self._agent_manager.observe()
@@ -870,9 +870,9 @@ class SMARTS(ProviderManager):
         if self._agent_manager is not None:
             self._agent_manager.teardown()
         if self._vehicle_index is not None:
-            self._vehicle_index.teardown(self._renderer)
+            self._vehicle_index.teardown(self.renderer_ref)
         if self._sensor_manager is not None:
-            self._sensor_manager.teardown(self._renderer)
+            self._sensor_manager.teardown(self.renderer_ref)
 
         if self._bullet_client is not None:
             self._bullet_client.resetSimulation()
@@ -943,7 +943,7 @@ class SMARTS(ProviderManager):
 
     def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(
-            vehicle_ids, self._renderer
+            vehicle_ids, self.renderer_ref
         )
         self._clear_collisions(vehicle_ids)
         for v_id in vehicle_ids:
@@ -990,6 +990,10 @@ class SMARTS(ProviderManager):
                 if self._scenario:
                     self._renderer.setup(self._scenario)
                     self._vehicle_index.begin_rendering_vehicles(self._renderer)
+        return self._renderer
+
+    @property
+    def renderer_ref(self):
         return self._renderer
 
     @property
@@ -1119,7 +1123,7 @@ class SMARTS(ProviderManager):
                 shadow_and_controlling_agents.add(shadow_agent_id)
 
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(
-            vehicle_ids, self._renderer
+            vehicle_ids, self.renderer_ref
         )
         self.teardown_social_agents_without_actors(shadow_and_controlling_agents)
         # XXX: don't remove vehicle from its (traffic) Provider here, as it may be being teleported
@@ -1667,6 +1671,7 @@ class SMARTS(ProviderManager):
                 for a_id in actor_ids
             },
             ego_ids=self.agent_manager.ego_agent_ids,
+            pending_agent_ids=self.agent_manager.pending_agent_ids,
             elapsed_sim_time=self.elapsed_sim_time,
             fixed_timestep=self.fixed_timestep_sec,
             resetting=self.resetting,
