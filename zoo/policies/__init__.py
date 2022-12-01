@@ -127,6 +127,12 @@ def competition_entry(**kwargs):
     def env_wrapper(env):
         import gym
 
+        # insert policy path
+        if policy_path in sys.path:
+            sys.path.remove(policy_path)
+        
+        sys.path.insert(0, policy_path)
+
         # import policy.py module
         wrapper_path = str(os.path.join(policy_path, "policy.py"))
         wrapper_spec = importlib.util.spec_from_file_location(
@@ -138,13 +144,15 @@ def competition_entry(**kwargs):
             wrapper_spec.loader.exec_module(wrapper_module)
 
         wrappers = wrapper_module.submitted_wrappers()
+        
+        # delete competition wrapper module and remove path
+        sys.modules.pop("competition_wrapper")
+        del wrapper_module
+        sys.path.remove(policy_path)
+
         env = gym.Wrapper(env)
         for wrapper in wrappers:
             env = wrapper(env)
-
-        # delete competition wrapper module
-        sys.modules.pop("competition_wrapper")
-        del wrapper_module
 
         return env
 
@@ -171,5 +179,11 @@ root_path = str(Path(__file__).absolute().parents[2])
 register(
     "competition_agent-v0",
     entry_point=competition_entry,
-    policy_path=os.path.join(root_path, "competition/track1/submission"),
+    policy_path=os.path.join(root_path, "competition/track1/submission_1"),
+)
+
+register(
+    "competition_agent-v1",
+    entry_point=competition_entry,
+    policy_path=os.path.join(root_path, "competition/track1/submission_2"),
 )
