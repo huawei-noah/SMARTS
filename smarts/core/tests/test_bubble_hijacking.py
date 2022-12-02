@@ -80,7 +80,6 @@ def scenarios(bubbles, num_vehicles, traffic_sim):
                         begin=("edge-west-WE", lane, 0),
                         end=("edge-east-WE", lane, "max"),
                     ),
-                    repeat_route=True,
                     rate=10,
                     actors={t.TrafficActor(name="car"): 1},
                 )
