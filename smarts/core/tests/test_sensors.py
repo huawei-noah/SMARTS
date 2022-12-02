@@ -41,14 +41,14 @@ def test_driven_path_sensor():
     sim = mock.Mock()
 
     max_path_length = 5
-    sensor = DrivenPathSensor(vehicle, max_path_length=max_path_length)
+    sensor = DrivenPathSensor(max_path_length=max_path_length)
 
     positions = [(x, 0, 0) for x in range(0, 100, 10)]
     sim_times = list(range(0, 50, 5))
     for idx, (position, sim_time) in enumerate(zip(positions, sim_times)):
         sim.elapsed_sim_time = sim_time
-        vehicle.position = position
-        sensor.track_latest_driven_path(sim.elapsed_sim_time)
+        vehicle.pose.position = position
+        sensor.track_latest_driven_path(sim.elapsed_sim_time, vehicle)
 
         if idx >= 3:
             assert sensor.distance_travelled(sim.elapsed_sim_time, last_n_steps=3) == 30
@@ -86,32 +86,32 @@ def test_trip_meter_sensor(scenarios):
     scenario: Scenario = next(scenarios)
 
     sim = mock.Mock()
-    vehicle = mock.Mock()
-    vehicle.pose = Pose(
+    vehicle_state = mock.Mock()
+    vehicle_state.pose = Pose(
         position=np.array([33, -65, 0]),
         orientation=np.array([0, 0, 0, 0]),
         heading_=Heading(0),
     )
-    vehicle.length = 3.68
+    vehicle_state.length = 3.68
 
     mission = scenario.missions[AGENT_ID]
     plan = Plan(scenario.road_map, mission)
 
-    sensor = TripMeterSensor(vehicle, scenario.road_map, plan)
-    waypoints_sensor = WaypointsSensor(vehicle, plan)
+    sensor = TripMeterSensor()
+    waypoints_sensor = WaypointsSensor()
 
     positions = [(x, 0, 0) for x in range(0, 100, 10)]
     sim_times = list(range(0, 50, 5))
     for idx, (position, sim_time) in enumerate(zip(positions, sim_times)):
         sim.elapsed_sim_time = sim_time
-        vehicle.position = position
-        vehicle.pose = Pose(
-            position=vehicle.position,
+        vehicle_state.position = position
+        vehicle_state.pose = Pose(
+            position=vehicle_state.position,
             orientation=np.array([0, 0, 0, 0]),
             heading_=Heading(0),
         )
-        waypoint_paths = waypoints_sensor()
-        sensor.update_distance_wps_record(waypoint_paths=waypoint_paths)
+        waypoint_paths = waypoints_sensor(vehicle_state, plan, scenario.road_map)
+        sensor.update_distance_wps_record(waypoint_paths, vehicle_state, plan, sim.road_map)
 
     assert sensor() == sum(
         wpf.dist_to(wps.pos)
