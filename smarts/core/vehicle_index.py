@@ -617,7 +617,7 @@ class VehicleIndex:
                 )
 
         # Remove the old vehicle
-        self.teardown_vehicles_by_vehicle_ids([vehicle.id], sim.renderer)
+        self.teardown_vehicles_by_vehicle_ids([vehicle.id], sim.renderer_ref)
         # HACK: Directly remove the vehicle from the traffic provider (should do this via the sim instead)
         for traffic_sim in sim.traffic_sims:
             if traffic_sim.manages_actor(vehicle.id):

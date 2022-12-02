@@ -111,7 +111,9 @@ def test_trip_meter_sensor(scenarios):
             heading_=Heading(0),
         )
         waypoint_paths = waypoints_sensor(vehicle_state, plan, scenario.road_map)
-        sensor.update_distance_wps_record(waypoint_paths, vehicle_state, plan, sim.road_map)
+        sensor.update_distance_wps_record(
+            waypoint_paths, vehicle_state, plan, sim.road_map
+        )
 
     assert sensor() == sum(
         wpf.dist_to(wps.pos)

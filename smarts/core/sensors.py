@@ -1041,6 +1041,8 @@ class CameraSensor(Sensor):
 
     def teardown(self, **kwargs):
         renderer = kwargs.get("renderer")
+        if not renderer:
+            return
         camera = renderer.camera_for_id(self._camera_name)
         camera.teardown()
 
@@ -1053,6 +1055,8 @@ class CameraSensor(Sensor):
         )
 
     def _follow_actor(self, vehicle_state, renderer):
+        if not renderer:
+            return
         camera = renderer.camera_for_id(self._camera_name)
         camera.update(vehicle_state.pose, vehicle_state.dimensions.height + 10)
 
