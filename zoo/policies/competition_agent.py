@@ -39,7 +39,7 @@ class CompetitionAgent(Agent):
             )
             sys.path.append(self._sub_env_path)
         except:
-            print("Failed to install requirement for Competition Agent")
+            sys.exit("Failed to install requirement for Competition Agent")
 
         # insert submission path
         if policy_path in sys.path:
@@ -69,5 +69,7 @@ class CompetitionAgent(Agent):
 
     def close_env(self, remove_all_env=False):
         shutil.rmtree(str(self._sub_env_path), ignore_errors=True)
+        if self._sub_env_path in sys.path:
+            sys.path.remove(self._sub_env_path)
         if remove_all_env:
             shutil.rmtree(self._comp_env_path, ignore_errors=True)

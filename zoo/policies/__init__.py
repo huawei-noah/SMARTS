@@ -7,6 +7,7 @@ from typing import Any, Dict
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.agent_spec import AgentSpec
+from smarts.env.multi_scenario_env import resolve_agent_interface
 from smarts.zoo.registry import make, register
 
 from .keep_lane_agent import KeepLaneAgent
@@ -106,9 +107,6 @@ def human_keyboard_entrypoint(*arg, **kwargs):
 register(locator="human-in-the-loop-v0", entry_point=human_keyboard_entrypoint)
 
 
-from smarts.env.multi_scenario_env import resolve_agent_interface
-
-
 def load_config(path):
     import yaml
 
@@ -130,7 +128,7 @@ def competition_entry(**kwargs):
         # insert policy path
         if policy_path in sys.path:
             sys.path.remove(policy_path)
-        
+
         sys.path.insert(0, policy_path)
 
         # import policy.py module
@@ -144,7 +142,7 @@ def competition_entry(**kwargs):
             wrapper_spec.loader.exec_module(wrapper_module)
 
         wrappers = wrapper_module.submitted_wrappers()
-        
+
         # delete competition wrapper module and remove path
         sys.modules.pop("competition_wrapper")
         del wrapper_module
