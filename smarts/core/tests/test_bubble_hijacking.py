@@ -98,9 +98,9 @@ def scenarios(bubbles, num_vehicles, traffic_sim):
 @pytest.fixture
 def smarts(traffic_sim):
     traffic_sims = (
-        [LocalTrafficProvider(), SumoTrafficSimulation(headless=False)]
+        [LocalTrafficProvider()]
         if traffic_sim == "SMARTS"
-        else [SumoTrafficSimulation(headless=False)]
+        else [SumoTrafficSimulation()]
     )
     smarts = SMARTS({}, traffic_sims=traffic_sims)
     yield smarts

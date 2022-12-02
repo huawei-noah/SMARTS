@@ -30,6 +30,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 
 import numpy as np
+import psutil
 from scipy.spatial.distance import cdist
 
 import smarts.core.simulation_global_constants as sgc
@@ -191,10 +192,7 @@ class Sensors:
 
         num_spare_cpus = max(0, psutil.cpu_count(logical=False) - 1)
         used_processes = (
-            min(
-                sgc.environ.OBSERVATION_WORKERS,
-                num_spare_cpus
-            )
+            min(sgc.environ.OBSERVATION_WORKERS, num_spare_cpus)
             if process_count_override == None
             else max(0, process_count_override)
         )
