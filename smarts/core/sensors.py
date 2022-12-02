@@ -21,6 +21,7 @@ import dataclasses
 import logging
 import re
 import multiprocessing as mp
+import psutil
 import sys
 import time
 from collections import deque, namedtuple
