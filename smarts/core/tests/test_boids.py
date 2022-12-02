@@ -67,7 +67,6 @@ def scenarios(bubble, traffic_sim):
                         begin=("west", lane_idx, 0),
                         end=("east", lane_idx, "max"),
                     ),
-                    repeat_route=True,
                     rate=50,
                     actors={
                         t.TrafficActor("car"): 1,
