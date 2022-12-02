@@ -21,7 +21,6 @@ import dataclasses
 import logging
 import re
 import multiprocessing as mp
-import psutil
 import sys
 import time
 from collections import deque, namedtuple
@@ -111,6 +110,9 @@ class Sensors:
         if not cls._instance:
             cls._instance = cls()
         return cls._instance
+
+    def __del__(self):
+        self.stop_all_workers()
 
     def stop_all_workers(self):
         for worker in self._workers:
@@ -204,7 +206,7 @@ class Sensors:
         used_workers: List[SensorsWorker] = []
         with timeit(
             f"parallizable observations with {len(agent_ids)} and {len(workers)}",
-            print,
+            logger.info,
         ):
             if len(workers) >= 1:
                 agent_ids_for_grouping = list(agent_ids)
@@ -216,13 +218,13 @@ class Sensors:
                 for i, agent_group in enumerate(agent_groups):
                     if not agent_group:
                         break
-                    with timeit(f"submitting {len(agent_group)} agents", print):
+                    with timeit(f"submitting {len(agent_group)} agents", logger.info):
                         workers[i].send_to_process(
                             worker_args=worker_args, agent_ids=agent_group
                         )
                         used_workers.append(workers[i])
             else:
-                with timeit("serial run", print):
+                with timeit("serial run", logger.info):
                     observations, dones = cls.observe_parallizable(
                         sim_frame,
                         sim_local_constants,
@@ -230,7 +232,7 @@ class Sensors:
                     )
 
             # While observation processes are operating do rendering
-            with timeit("rendering", print):
+            with timeit("rendering", logger.info):
                 rendering = {}
                 for agent_id in agent_ids:
                     for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
@@ -245,7 +247,7 @@ class Sensors:
                         )
 
             # Collect futures
-            with timeit("waiting for observations", print):
+            with timeit("waiting for observations", logger.info):
                 if used_workers:
                     while agent_ids != set(observations):
                         assert all(
@@ -258,7 +260,7 @@ class Sensors:
                             observations.update(obs)
                             dones.update(ds)
 
-            with timeit(f"merging observations", print):
+            with timeit(f"merging observations", logger.info):
                 # Merge sensor information
                 for agent_id, r_obs in rendering.items():
                     observations[agent_id] = dataclasses.replace(
@@ -933,9 +935,9 @@ class ProcessWorker:
             work = connection.recv()
             if isinstance(work, cls.WorkerDone):
                 break
-            with timeit("do work", print):
+            with timeit("do work", logger.info):
                 args, kwargs = work
-                with timeit("deserializing for worker", print):
+                with timeit("deserializing for worker", logger.info):
                     args = [
                         Sensors.deserialize_for_observation(a) if a is not None else a
                         for a in args
@@ -947,10 +949,10 @@ class ProcessWorker:
                         for k, a in kwargs.items()
                     }
                 result = cls._do_work(*args, **worker_kwargs, **kwargs)
-                with timeit("reserialize", print):
+                with timeit("reserialize", logger.info):
                     if serialize_results:
                         result = Sensors.serialize_for_observation(result)
-                with timeit("put back to main thread", print):
+                with timeit("put back to main thread", logger.info):
                     connection.send(result)
 
     def run(self, **worker_kwargs):
@@ -976,14 +978,14 @@ class ProcessWorker:
         }
         if worker_args:
             kwargs.update(worker_args.kwargs)
-        with timeit("put to worker", print):
+        with timeit("put to worker", logger.info):
             self._parent_connection.send((args, kwargs))
 
     def result(self, timeout=None):
-        with timeit("main thread blocked", print):
+        with timeit("main thread blocked", logger.info):
             conn = mp.connection.wait([self._parent_connection], timeout=timeout).pop()
             result = conn.recv()
-        with timeit("deserialize for main thread", print):
+        with timeit("deserialize for main thread", logger.info):
             if self._serialize_results:
                 result = Sensors.deserialize_for_observation(result)
         return result
