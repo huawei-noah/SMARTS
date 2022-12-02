@@ -192,6 +192,7 @@ export default function Simulation({
         }
         prevElapsedTime = elapsed_times[0];
         let unpacked_wstate = unpack_worldstate(wstate);
+        if (stopPolling) return;
         setWorldState(unpacked_wstate);
         onElapsedTimesChanged(...elapsed_times);
         waitStartTime = Date.now();

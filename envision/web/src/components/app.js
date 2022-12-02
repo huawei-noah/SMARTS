@@ -150,6 +150,7 @@ function App({ client }) {
               controlModes={controlModes}
               playingMode={playingMode}
               egoView={egoView}
+              onSelectSimulation={onSelectSimulation}
             />
           </Route>
           <Route
