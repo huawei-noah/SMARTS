@@ -319,7 +319,7 @@ class Sensors:
         def get_camera_sensor_result(sensors, sensor_name, renderer):
             return (
                 sensors[sensor_name](renderer=renderer)
-                if sensors.get(sensor_name)
+                if renderer and sensors.get(sensor_name)
                 else None
             )
 
@@ -456,7 +456,7 @@ class Sensors:
             (
                 near_via_points,
                 hit_via_points,
-            ) = via_sensor(vehicle_state, plan)
+            ) = via_sensor(vehicle_state, plan, sim_local_constants.road_map)
         via_data = Vias(
             near_via_points=near_via_points,
             hit_via_points=hit_via_points,
@@ -481,7 +481,7 @@ class Sensors:
             waypoint_paths = None
 
         done, events = Sensors._is_done_with_events(
-            sim_frame, sim_local_constants, agent_id, vehicle_state, sensor_state, plan
+            sim_frame, sim_local_constants, agent_id, vehicle_state, sensor_state, plan, vehicle_sensors
         )
 
         if done and sensor_state.steps_completed == 1:
@@ -652,6 +652,7 @@ class Sensors:
         vehicle_state: VehicleState,
         sensor_state,
         plan,
+        vehicle_sensors,
     ):
         vehicle_sensors = sim_frame.vehicle_sensors[vehicle_state.actor_id]
         interface = sim_frame.agent_interfaces.get(agent_id)
@@ -671,9 +672,9 @@ class Sensors:
         )
         is_not_moving = cls._vehicle_is_not_moving(
             sim_frame,
-            vehicle_state,
             event_config.not_moving_time,
             event_config.not_moving_distance,
+            vehicle_sensors.get("driven_path_sensor")
         )
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
@@ -739,13 +740,13 @@ class Sensors:
 
     @classmethod
     def _vehicle_is_not_moving(
-        cls, sim, vehicle, last_n_seconds_considered, min_distance_moved
+        cls, sim, last_n_seconds_considered, min_distance_moved, driven_path_sensor
     ):
         # Flag if the vehicle has been immobile for the past 'last_n_seconds_considered' seconds
         if sim.elapsed_sim_time < last_n_seconds_considered:
             return False
 
-        distance = vehicle.driven_path_sensor.distance_travelled(
+        distance = driven_path_sensor.distance_travelled(
             sim.elapsed_sim_time, last_n_seconds=last_n_seconds_considered
         )
 
@@ -1417,7 +1418,7 @@ class RoadWaypointsSensor(Sensor):
         if start_offset < 0 and len(incoming_lanes) > 0:
             paths = []
             for lane in incoming_lanes:
-                paths += self._paths_for_lane(lane, start_offset)
+                paths += self._paths_for_lane(lane, vehicle_state, plan, start_offset)
             return paths
         else:
             start_offset = max(0, start_offset)
@@ -1500,7 +1501,7 @@ class ViaSensor(Sensor):
         self._acquisition_range = lane_acquisition_range
         self._speed_accuracy = speed_accuracy
 
-    def __call__(self, vehicle_state: VehicleState, plan):
+    def __call__(self, vehicle_state: VehicleState, plan, road_map):
         near_points: List[ViaPoint] = list()
         hit_points: List[ViaPoint] = list()
         vehicle_position = vehicle_state.pose.position[:2]
@@ -1512,7 +1513,7 @@ class ViaSensor(Sensor):
 
         for via in plan.mission.via:
             closest_position_on_lane = closest_point_on_lane(
-                tuple(vehicle_position), via.lane_id
+                tuple(vehicle_position), via.lane_id, road_map
             )
             closest_position_on_lane = closest_position_on_lane[:2]
 
