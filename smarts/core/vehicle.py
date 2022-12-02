@@ -35,7 +35,7 @@ from smarts.core.plan import Mission, Plan
 from . import models
 from .actor import ActorRole, ActorState
 from .chassis import AckermannChassis, BoxChassis, Chassis
-from .colors import Colors, SceneColors
+from .colors import SceneColors
 from .coordinates import Dimensions, Heading, Pose
 from .sensors import (
     AccelerometerSensor,
