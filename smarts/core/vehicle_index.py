@@ -240,20 +240,12 @@ class VehicleIndex:
         return None
 
     @cache
-    def shadower_ids_from_vehicle_id(self, vehicle_id) -> Sequence[str]:
-        """Find the first actor watching a vehicle."""
-        vehicle_id = _2id(vehicle_id)
-
-        shadow_actor_ids = self._controlled_by[
-            self._controlled_by["vehicle_id"] == vehicle_id
-        ]["shadow_actor_id"]
-
-        if shadow_actor_ids:
-            return [
-                self._2id_to_id[shadow_actor_id] for shadow_actor_id in shadow_actor_ids
-            ]
-
-        return []
+    def shadow_actor_ids(self) -> Set[str]:
+        return set(
+            self._2id_to_id[sa_id]
+            for sa_id in self._controlled_by["shadow_actor_id"]
+            if sa_id not in (b"", None)
+        )
 
     @cache
     def vehicle_position(self, vehicle_id):
@@ -726,6 +718,7 @@ class VehicleIndex:
         self._2id_to_id[agent_id] = original_agent_id
 
         actor_role = ActorRole.SocialAgent if hijacking else ActorRole.EgoAgent
+        assert vehicle_id != agent_id
         entity = _ControlEntity(
             vehicle_id=vehicle_id,
             actor_id=agent_id,
@@ -751,7 +744,7 @@ class VehicleIndex:
             vehicle_state,
         )
 
-        vehicle_id, actor_id = _2id(vehicle_id), _2id(actor_id)
+        vehicle_id, actor_id = _2id(vehicle_id), _2id(actor_id) if actor_id else b""
         if sim.is_rendering:
             vehicle.create_renderer_node(sim.renderer_ref)
             sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=False)
@@ -764,6 +757,7 @@ class VehicleIndex:
             ActorRole.EgoAgent,
             ActorRole.SocialAgent,
         ), f"role={actor_role} from {vehicle_state.source}"
+        assert actor_id != vehicle_id
         entity = _ControlEntity(
             vehicle_id=vehicle_id,
             actor_id=actor_id,

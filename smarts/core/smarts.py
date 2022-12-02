@@ -744,15 +744,6 @@ class SMARTS(ProviderManager):
         if self._vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id) is None:
             self._sensor_manager.remove_sensors_by_actor_id(vehicle_id)
 
-        if teardown_agent:
-            active_agents = self._agent_manager.active_agents
-            assert (
-                shadow_agent_id not in active_agents
-            ), f"Agent ids {shadow_agent_id}, {active_agents}"
-            assert (
-                agent_id not in active_agents
-            ), f"Agent id `{agent_id}` not in {active_agents}`"
-
     def _agent_relinquishing_actor(
         self,
         agent_id: str,
@@ -1075,7 +1066,8 @@ class SMARTS(ProviderManager):
         agents_to_teardown = {
             id_
             for id_ in agent_ids
-            if not self.agent_manager.is_boid_keep_alive_agent(id_)
+            if not self.agent_manager.is_boid_agent(id_)
+            or self.agent_manager.is_boid_done(id_)
         }
         self.agent_manager.teardown_social_agents(filter_ids=agents_to_teardown)
 
@@ -1154,7 +1146,7 @@ class SMARTS(ProviderManager):
                     social_vehicle = self._vehicle_index.build_social_vehicle(
                         sim=self,
                         vehicle_state=vehicle,
-                        actor_id=vehicle_id,
+                        actor_id="",
                         vehicle_id=vehicle_id,
                     )
 

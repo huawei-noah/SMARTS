@@ -131,6 +131,10 @@ class AgentManager:
         """A list of all active agents in the simulation (agents that have a vehicle.)"""
         return self.agent_ids - self.pending_agent_ids
 
+    @property
+    def shadowing_agent_ids(self) -> Set[str]:
+        return self._vehicle_index.shadow_actor_ids()
+
     def is_ego(self, agent_id) -> bool:
         """Test if the agent is an ego agent."""
         return agent_id in self.ego_agent_ids
@@ -142,6 +146,9 @@ class AgentManager:
 
     def agent_for_vehicle(self, vehicle_id):
         return self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
+
+    def agent_has_vehicle(self, agent_id):
+        return len(self.vehicles_for_agent(agent_id)) > 0
 
     def vehicles_for_agent(self, agent_id):
         return self._vehicle_index.vehicle_ids_by_actor_id(
@@ -216,9 +223,9 @@ class AgentManager:
         rewards = {}
         scores = {}
         dones = {
-            agent_id: agent_id not in self.pending_agent_ids
+            agent_id: agent_id not in self.pending_agent_ids | self.shadowing_agent_ids
             for agent_id in self.agent_ids
-            if agent_id not in self._vehicle_index.agent_vehicle_ids()
+            if not self.agent_has_vehicle(agent_id)
         }
 
         sim_frame = sim.cached_frame
@@ -293,7 +300,12 @@ class AgentManager:
                 for vehicle_id in sensor_states.keys()
             }
         if sim.should_reset:
-            dones = {agent_id: True for agent_id in self.agent_ids}
+            for agent_id in dones:
+                if self.is_boid_agent(agent_id):
+                    for v_id in dones[agent_id]:
+                        dones[agent_id][v_id] = True
+                else:
+                    dones[agent_id] = True
             dones["__sim__"] = True
 
         return observations, rewards, scores, dones
@@ -701,3 +713,13 @@ class AgentManager:
             return False
 
         return self._social_agent_data_models[agent_id].is_boid_keep_alive
+
+    def is_boid_done(self, agent_id: str) -> bool:
+        """Check if this boid agent should not disappear yet."""
+        if self.is_boid_keep_alive_agent(agent_id):
+            return False
+
+        if self.agent_has_vehicle(agent_id):
+            return False
+
+        return True
