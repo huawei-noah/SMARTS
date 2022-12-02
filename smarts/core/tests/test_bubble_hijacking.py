@@ -52,12 +52,12 @@ def bubbles():
 
     return [
         t.Bubble(
-            zone=t.PositionalZone(pos=(150, -60), size=(30, 30)),
+            zone=t.PositionalZone(pos=(110, -60), size=(15, 30)),
             margin=10,
             actor=actor,
         ),
         t.Bubble(
-            zone=t.PositionalZone(pos=(60, -60), size=(30, 30)),
+            zone=t.PositionalZone(pos=(50, -60), size=(20, 30)),
             margin=10,
             actor=actor,
         ),
@@ -98,9 +98,9 @@ def scenarios(bubbles, num_vehicles, traffic_sim):
 @pytest.fixture
 def smarts(traffic_sim):
     traffic_sims = (
-        [LocalTrafficProvider()]
+        [LocalTrafficProvider(), SumoTrafficSimulation(headless=False)]
         if traffic_sim == "SMARTS"
-        else [SumoTrafficSimulation()]
+        else [SumoTrafficSimulation(headless=False)]
     )
     smarts = SMARTS({}, traffic_sims=traffic_sims)
     yield smarts
@@ -167,8 +167,8 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim)
                         not in_bubble and not is_shadowing and not is_agent_controlled
                     )
 
-    # Just to have some padding, we want to be in each region at least 5 steps
-    min_steps = 5
+    # Just to have some padding, we want to be in each region at least 4 steps
+    min_steps = 2
     for bubble_id, zones in steps_driven_in_zones.items():
         vehicle_ids = vehicles_made_to_through_bubble[bubble_id]
         assert (
@@ -178,10 +178,10 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim)
             zone = zones[vehicle_id]
             assert all(
                 [
-                    zone.in_bubble > min_steps,
-                    zone.outside_bubble > min_steps,
-                    zone.airlock_entry > min_steps,
-                    zone.airlock_exit > min_steps,
+                    zone.in_bubble >= min_steps,
+                    zone.outside_bubble >= min_steps,
+                    zone.airlock_entry >= min_steps,
+                    zone.airlock_exit >= min_steps,
                 ]
             ), (
                 f"bubble={bubble_id}, vehicle_id={vehicle_id}, zone={zone} doesn't meet "
