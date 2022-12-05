@@ -164,6 +164,14 @@ class _Metrics(gym.Wrapper):
                 for agent_name in self._cur_agents
             }
 
+        # Retrieve the current scenario, agent names, and their respective plans.
+        from smarts.core.plan import Plan
+        scenario = self.env.scenario
+        for agent_name in self.env.agent_specs.keys():
+            agent_mission = scenario.mission(agent_name)
+            agent_plan = Plan(scenario.road_map, agent_mission)
+
+
         return obs
 
     def records(self) -> Dict[str, Dict[str, Record]]:
