@@ -21,7 +21,6 @@
 from dataclasses import dataclass
 from typing import Callable, Tuple
 
-import math
 import numpy as np
 
 from smarts.core.sensors import Observation
