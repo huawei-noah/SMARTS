@@ -25,8 +25,8 @@ from typing import Any, Dict, Set, TypeVar
 
 import gym
 
-from smarts.core.plan import PositionalGoal
-from smarts.core.sensors import Observation
+from smarts.core.plan import Plan, PositionalGoal
+from smarts.core.scenario import Scenario
 from smarts.env.wrappers.metric import termination
 from smarts.env.wrappers.metric.costs import CostFuncs, Costs
 from smarts.env.wrappers.metric.counts import Counts
@@ -147,7 +147,6 @@ class _Metrics(gym.Wrapper):
     def reset(self, **kwargs):
         """Resets the environment."""
         obs = super().reset(**kwargs)
-        # _check_scen(obs)
         self._cur_scen = self.env.scenario_log["scenario_map"]
         self._cur_agents = set(self.env.agent_specs.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
@@ -164,12 +163,22 @@ class _Metrics(gym.Wrapper):
                 for agent_name in self._cur_agents
             }
 
-        # Retrieve the current scenario, agent names, and their respective plans.
-        from smarts.core.plan import Plan
-        scenario = self.env.scenario
-        for agent_name in self.env.agent_specs.keys():
-            agent_mission = scenario.mission(agent_name)
-            agent_plan = Plan(scenario.road_map, agent_mission)
+        # Retrieve the current scenario, missions, plan, and routes.
+        scen = self.env.scenario
+        _check_scen(scen)
+        agent_plan = {}
+        for agent_name, agent_mission in scen.missions.items():
+            agent_plan[agent_name] = Plan(scen.road_map, agent_mission)
+
+            print(f"{agent_name} -- {agent_plan[agent_name].route.roads}")
+            print(f"{agent_name} Starting point -- {agent_mission.start.point}, {type(agent_mission.start.point)}")
+            print(f"{agent_name} Goal point -- {agent_mission.goal.position}, {type(agent_mission.goal.position)}")
+
+            for roads in agent_plan[agent_name].route.roads:
+                print(f"{roads.road_id}")
+            print(f"Route Length: {agent_plan[agent_name].route.road_length}")
+
+        print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
 
         return obs
@@ -228,6 +237,14 @@ class _Metrics(gym.Wrapper):
 
 
 def _check_env(env):
+    """Checks environment suitability to compute performance metrics.
+
+    Args:
+        env (_type_): A gym environment
+
+    Raises:
+        AttributeError: If any required agent interface is disabled.
+    """
     def check_intrfc(agent_intrfc):
         intrfc = {
             "accelerometer": bool(agent_intrfc.accelerometer),
@@ -249,6 +266,14 @@ def _check_env(env):
 
 
 def _check_scen(scen: Scenario):
+    """Checks scenario suitability to compute performance metrics.
+
+    Args:
+        scen (Scenario): A ``smarts.core.scenario.Scenario`` class.
+
+    Raises:
+        AttributeError: If any agent's mission is not of type PositionGoal. 
+    """
     goal_types = {
         agent_name : type(agent_mission.goal)
         for agent_name, agent_mission in scen.missions.items()
