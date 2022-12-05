@@ -72,8 +72,9 @@ def isdataclass(x):
     return dataclasses.is_dataclass(x)
 
 
+# TAI MTA: This is probably the wrong place for this utility: `logging.py`?
 def unpack(obj):
-    """A helper that can be used to print `nestedtuples`. For example,
+    """A helper that can be used to print nested data objects (`tuple`, `dataclass`, `namedtuple`, ...). For example,
     ```python
     pprint(unpack(obs), indent=1, width=80, compact=True)
     ```
@@ -93,6 +94,11 @@ def unpack(obj):
 
 
 def match_unpackable(obj, other_obj):
+    """Do an asserted comparision of an object that is able to be unpacked. This works with nested collections:
+        dictionaries, namedtuples, tuples, lists, numpy arrays, and dataclasses.
+    Raises:
+        AssertionError: if objects do not match.
+    """
     obj_unpacked = unpack(obj)
     other_obj_unpacked = unpack(other_obj)
 
@@ -126,8 +132,6 @@ def match_unpackable(obj, other_obj):
         o_oo = comps.pop()
         for o, oo in zip(*o_oo):
             process(o, oo, o_oo)
-
-    return True
 
 
 def copy_tree(from_path, to_path, overwrite=False):

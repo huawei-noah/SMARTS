@@ -106,7 +106,8 @@ class Sensors:
         self._workers: List[SensorsWorker] = []
 
     @classmethod
-    def instance(cls):
+    def instance(cls) -> "Sensors":
+        """Get the current sensors instance."""
         if not cls._instance:
             cls._instance = cls()
         return cls._instance
@@ -115,14 +116,17 @@ class Sensors:
         self.stop_all_workers()
 
     def stop_all_workers(self):
+        """Stop all current workers and clear reference to them."""
         for worker in self._workers:
             worker.stop()
         self._workers = []
 
     def _validate_configuration(self, local_constants: SimulationLocalConstants):
+        """Check that constants have not changed which might indicate that the workers need to be updated."""
         return local_constants == self._sim_local_constants
 
     def generate_workers(self, count, workers_list: List[Any], **worker_kwargs):
+        """Generate the given number of workers requested."""
         while len(workers_list) < count:
             new_worker = SensorsWorker()
             workers_list.append(new_worker)
@@ -130,7 +134,8 @@ class Sensors:
 
     def get_workers(
         self, count, sim_local_constants: SimulationLocalConstants, **worker_kwargs
-    ):
+    ) -> List["ProcessWorker"]:
+        """Get the give number of workers."""
         if not self._validate_configuration(sim_local_constants):
             self.stop_all_workers()
             self._sim_local_constants = sim_local_constants
@@ -143,19 +148,23 @@ class Sensors:
         return self._workers[:count]
 
     @classmethod
-    def observe_parallizable(
+    def observe_serializable_sensor_batch(
         cls,
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         agent_ids_for_group,
     ):
+        """Run the serializable sensors in a batch."""
         observations, dones = {}, {}
         for agent_id in agent_ids_for_group:
             vehicle_ids = sim_frame.vehicles_for_agents.get(agent_id)
             if not vehicle_ids:
                 continue
             for vehicle_id in vehicle_ids:
-                observations[agent_id], dones[agent_id] = cls.observe_base(
+                (
+                    observations[agent_id],
+                    dones[agent_id],
+                ) = cls.process_serialize_safe_sensors(
                     sim_frame,
                     sim_local_constants,
                     agent_id,
@@ -166,6 +175,7 @@ class Sensors:
 
     @staticmethod
     def serialize_for_observation(v):
+        """Serializes the values."""
         import cloudpickle
 
         if hasattr(v, "serialize"):
@@ -173,11 +183,12 @@ class Sensors:
         return cloudpickle.dumps(v)
 
     @staticmethod
-    def deserialize_for_observation(v):
+    def deserialize_for_observation(v, type_=None):
+        """Deserializes the values."""
         import cloudpickle
 
-        if hasattr(v, "deserialize"):
-            return v.deserialize(v)
+        if type_ and hasattr(type_, "deserialize"):
+            return type_.deserialize(v)
         return cloudpickle.loads(v)
 
     @classmethod
@@ -185,11 +196,26 @@ class Sensors:
         cls,
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
-        agent_ids,
+        agent_ids: Set[str],
         renderer,
         bullet_client,
-        process_count_override=None,
+        process_count_override: Optional[int] = None,
     ):
+        """Runs observations in parallel where possible.
+        Args:
+            sim_frame (SimulationFrame):
+                The current state from the simulation.
+            sim_local_constants (SimulationLocalConstants):
+                The values that should stay the same for a simulation over a reset.
+            agent_ids ({str, ...}):
+                The agent ids to process.
+            renderer (Optional[Renderer]):
+                The renderer (if any) that should be used.
+            bullet_client (bc.BulletClient):
+                The physics client.
+            process_count_override (Optional[int]):
+                Overrides the number of processes that should be used.
+        """
         observations, dones = {}, {}
 
         num_spare_cpus = max(0, psutil.cpu_count(logical=False) - 1)
@@ -225,7 +251,7 @@ class Sensors:
                         used_workers.append(workers[i])
             else:
                 with timeit("serial run", logger.info):
-                    observations, dones = cls.observe_parallizable(
+                    observations, dones = cls.observe_serializable_sensor_batch(
                         sim_frame,
                         sim_local_constants,
                         agent_ids,
@@ -236,7 +262,7 @@ class Sensors:
                 rendering = {}
                 for agent_id in agent_ids:
                     for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
-                        rendering[agent_id] = cls.observe_cameras(
+                        rendering[agent_id] = cls.process_serialize_unsafe_sensors(
                             sim_frame,
                             sim_local_constants,
                             agent_id,
@@ -300,7 +326,7 @@ class Sensors:
         return observations, dones
 
     @staticmethod
-    def observe_cameras(
+    def process_serialize_unsafe_sensors(
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         agent_id,
@@ -309,6 +335,7 @@ class Sensors:
         renderer,
         bullet_client,
     ):
+        """Run observations that can only be done on the main thread."""
         vehicle_sensors: Dict[str, Any] = sim_frame.vehicle_sensors[vehicle_id]
 
         vehicle_state = sim_frame.vehicle_states[vehicle_id]
@@ -339,13 +366,14 @@ class Sensors:
         )
 
     @staticmethod
-    def observe_base(
+    def process_serialize_safe_sensors(
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         agent_id,
         sensor_state,
         vehicle_id,
     ):
+        """Observations that can be done on any thread."""
         vehicle_sensors = sim_frame.vehicle_sensors[vehicle_id]
         vehicle_state = sim_frame.vehicle_states[vehicle_id]
         plan = sensor_state.get_plan(sim_local_constants.road_map)
@@ -483,7 +511,13 @@ class Sensors:
             waypoint_paths = None
 
         done, events = Sensors._is_done_with_events(
-            sim_frame, sim_local_constants, agent_id, vehicle_state, sensor_state, plan, vehicle_sensors
+            sim_frame,
+            sim_local_constants,
+            agent_id,
+            vehicle_state,
+            sensor_state,
+            plan,
+            vehicle_sensors,
         )
 
         if done and sensor_state.steps_completed == 1:
@@ -543,9 +577,10 @@ class Sensors:
     ) -> Tuple[Observation, bool]:
         """Generate observations for the given agent around the given vehicle."""
         args = [sim_frame, sim_local_constants, agent_id, sensor_state, vehicle.id]
-        base_obs, dones = cls.observe_base(*args)
+        base_obs, dones = cls.process_serialize_safe_sensors(*args)
         complete_obs = dataclasses.replace(
-            base_obs, **cls.observe_cameras(*args, renderer, bullet_client)
+            base_obs,
+            **cls.process_serialize_unsafe_sensors(*args, renderer, bullet_client),
         )
         return (complete_obs, dones)
 
@@ -558,6 +593,7 @@ class Sensors:
     def neighborhood_vehicles_around_vehicle(
         vehicle_state, vehicle_states, radius: Optional[float] = None
     ):
+        """Determines what vehicles are within the radius (if given)."""
         other_states = [
             v for v in vehicle_states if v.actor_id != vehicle_state.actor_id
         ]
@@ -676,7 +712,7 @@ class Sensors:
             sim_frame,
             event_config.not_moving_time,
             event_config.not_moving_distance,
-            vehicle_sensors.get("driven_path_sensor")
+            vehicle_sensors.get("driven_path_sensor"),
         )
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
@@ -910,7 +946,11 @@ class WorkerKwargs:
 
 
 class ProcessWorker:
+    """A utility class that defines a persistant worker which will continue to operate in the background."""
+
     class WorkerDone:
+        """The done signal for a worker."""
+
         pass
 
     def __init__(self, serialize_results=False) -> None:
@@ -956,6 +996,7 @@ class ProcessWorker:
                     connection.send(result)
 
     def run(self, **worker_kwargs):
+        """Start the worker seeded with the given data."""
         kwargs = dict(serialize_results=self._serialize_results)
         kwargs.update(worker_kwargs)
         self._proc = mp.Process(
@@ -965,10 +1006,12 @@ class ProcessWorker:
             daemon=True,
         )
         self._proc.start()
+        return self._parent_connection
 
     def send_to_process(
         self, *args, worker_args: Optional[WorkerKwargs] = None, **kwargs
     ):
+        """Sends data to the worker."""
         args = [
             Sensors.serialize_for_observation(a) if a is not None else a for a in args
         ]
@@ -982,6 +1025,7 @@ class ProcessWorker:
             self._parent_connection.send((args, kwargs))
 
     def result(self, timeout=None):
+        """The most recent result from the worker."""
         with timeit("main thread blocked", logger.info):
             conn = mp.connection.wait([self._parent_connection], timeout=timeout).pop()
             result = conn.recv()
@@ -991,18 +1035,23 @@ class ProcessWorker:
         return result
 
     def stop(self):
+        """Sends a stop signal to the worker."""
         self._parent_connection.send(self.WorkerDone)
 
     @property
-    def running(self):
+    def running(self) -> bool:
+        """If this current worker is still running."""
         return self._proc is not None and self._proc.exitcode is None
 
     @property
     def connection(self):
+        """The underlying connection to send data to the worker."""
         return self._parent_connection
 
 
 class SensorsWorker(ProcessWorker):
+    """A worker for sensors."""
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -1012,7 +1061,8 @@ class SensorsWorker(ProcessWorker):
 
     @staticmethod
     def local(sim_frame: SimulationFrame, sim_local_constants, agent_ids):
-        return Sensors.observe_parallizable(sim_frame, sim_local_constants, agent_ids)
+        """The work method on the local thread."""
+        return Sensors.observe_serializable_sensor_batch(sim_frame, sim_local_constants, agent_ids)
 
 
 class CameraSensor(Sensor):
@@ -1207,6 +1257,7 @@ class LidarSensor(Sensor):
         )
 
     def follow_vehicle(self, vehicle_state):
+        """Update the sensor to target the given vehicle."""
         self._lidar.origin = vehicle_state.pose.position + self._lidar_offset
 
     def __call__(self, bullet_client):

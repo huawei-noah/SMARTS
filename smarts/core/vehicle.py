@@ -548,10 +548,6 @@ class Vehicle:
             renderer.remove_vehicle_node(self._id)
         self._initialized = False
 
-    def ensure_sensor_functions(self):
-        if not hasattr(self, f"lane_position_sensor"):
-            self._meta_create_sensor_functions()
-
     def _meta_create_sensor_functions(self):
         # Bit of metaprogramming to make sensor creation more DRY
         sensor_names = [

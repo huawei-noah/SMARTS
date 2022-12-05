@@ -327,6 +327,7 @@ class Renderer:
         self._showbase_instance.render_node(self._root_np)
 
     def reset(self):
+        """Reset the render back to initialized state."""
         self._vehicles_np.removeNode()
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
         self._vehicle_nodes = {}
@@ -336,6 +337,7 @@ class Renderer:
         self._showbase_instance.taskMgr.step()
 
     def sync(self, sim_frame):
+        """Update the current state of the vehicles within the renderer."""
         for vehicle_id, vehicle_state in sim_frame.vehicle_states.items():
             self.update_vehicle_node(vehicle_id, vehicle_state.pose)
 
@@ -423,11 +425,12 @@ class Renderer:
         vehicle_path.removeNode()
         del self._vehicle_nodes[vid]
 
-    def camera_for_id(self, cid) -> "Renderer.OffscreenCamera":
-        camera = self._camera_nodes.get(cid)
+    def camera_for_id(self, camera_id) -> "Renderer.OffscreenCamera":
+        """Get a camera by its id."""
+        camera = self._camera_nodes.get(camera_id)
         assert (
             camera is not None
-        ), f"Camera {cid} does not exist, have you created this camera?"
+        ), f"Camera {camera_id} does not exist, have you created this camera?"
         return camera
 
     class OffscreenCamera(NamedTuple):

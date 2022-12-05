@@ -984,7 +984,8 @@ class SMARTS(ProviderManager):
         return self._renderer
 
     @property
-    def renderer_ref(self):
+    def renderer_ref(self) -> Optional[Any]:
+        """Get the reference of the renderer. This can be `None`."""
         return self._renderer
 
     @property
@@ -1636,10 +1637,12 @@ class SMARTS(ProviderManager):
 
     @cached_property
     def global_constants(self):
+        """Generate the constants that should remain for the lifespan of the program."""
         return SimulationGlobalConstants.from_environment(os.environ)
 
     @cached_property
     def local_constants(self):
+        """Generate the frozen state that should not change until next reset."""
         self._check_valid()
         road_map, road_map_hash = self.scenario.map_spec.builder_fn(
             self.scenario.map_spec
@@ -1651,6 +1654,7 @@ class SMARTS(ProviderManager):
 
     @cached_property
     def cached_frame(self):
+        """Generate a frozen frame state of the simulation."""
         self._check_valid()
         actor_ids = self.vehicle_index.agent_vehicle_ids()
         actor_states = self._last_provider_state

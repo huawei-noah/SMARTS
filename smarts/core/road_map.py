@@ -78,12 +78,14 @@ class RoadMap:
 
     @staticmethod
     def serialize(road_map: "RoadMap") -> Any:
+        """The default serialization for the road map."""
         import cloudpickle
 
         return cloudpickle.dumps(road_map)
 
     @staticmethod
     def deserialize(serialized_road_map) -> RoadMap:
+        """The default deserialization for the road map."""
         import cloudpickle
 
         return cloudpickle.loads(serialized_road_map)

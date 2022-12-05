@@ -133,6 +133,7 @@ class AgentManager:
 
     @property
     def shadowing_agent_ids(self) -> Set[str]:
+        """Get all agents that currently observe, but not control, a vehicle."""
         return self._vehicle_index.shadow_actor_ids()
 
     def is_ego(self, agent_id) -> bool:
@@ -144,13 +145,16 @@ class AgentManager:
         assert agent_ids.issubset(self.agent_ids)
         self._pending_agent_ids -= agent_ids
 
-    def agent_for_vehicle(self, vehicle_id):
+    def agent_for_vehicle(self, vehicle_id) -> str:
+        """Get the controlling agent for the given vehicle."""
         return self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
 
-    def agent_has_vehicle(self, agent_id):
+    def agent_has_vehicle(self, agent_id) -> bool:
+        """Test if an agent has an actor associated with it."""
         return len(self.vehicles_for_agent(agent_id)) > 0
 
     def vehicles_for_agent(self, agent_id):
+        """Get the vehicles associated with an agent."""
         return self._vehicle_index.vehicle_ids_by_actor_id(
             agent_id, include_shadowers=True
         )

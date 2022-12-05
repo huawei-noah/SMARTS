@@ -390,13 +390,15 @@ class Plan:
         return self._mission
 
     def frame(self) -> PlanFrame:
+        """Get the state of this plan."""
         assert self._mission
         return PlanFrame(
             road_ids=self._route.road_ids if self._route else [], mission=self._mission
         )
 
     @classmethod
-    def from_frame(cls, frame: PlanFrame, road_map: RoadMap) -> "Plan":
-        new_plan = cls(road_map=road_map, mission=frame.mission, find_route=False)
-        new_plan.route = road_map.route_from_road_ids(frame.road_ids)
+    def from_frame(cls, plan_frame: PlanFrame, road_map: RoadMap) -> "Plan":
+        """Generate the plan from a frame."""
+        new_plan = cls(road_map=road_map, mission=plan_frame.mission, find_route=False)
+        new_plan.route = road_map.route_from_road_ids(plan_frame.road_ids)
         return new_plan

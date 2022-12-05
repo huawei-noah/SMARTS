@@ -241,6 +241,7 @@ class VehicleIndex:
 
     @cache
     def shadow_actor_ids(self) -> Set[str]:
+        """Get all current shadow actors."""
         return set(
             self._2id_to_id[sa_id]
             for sa_id in self._controlled_by["shadow_actor_id"]

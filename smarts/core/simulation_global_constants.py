@@ -34,7 +34,7 @@ class SimulationGlobalConstants:
 
     _FEATURES = {
         ("DEBUG", bool, False),
-        ("RESET_RETRIES", int, 0),
+        ("RESET_RETRIES", int, 2),
         ("OBSERVATION_WORKERS", int, 4),
     }
     """{(constant_name, type, default), ...}"""
@@ -48,6 +48,7 @@ class SimulationGlobalConstants:
 
     @classmethod
     def env_name(cls, name):
+        """Convert the given name to its environment variable name."""
         assert name in cls._FEATURE_KEYS(), f"{name} not in {cls._FEATURE_KEYS()}"
         return f"{cls._SMARTS_ENVIRONMENT_PREFIX}{name}"
 
@@ -70,4 +71,5 @@ class SimulationGlobalConstants:
         return cls(**environ_get_features(cls._FEATURES))
 
 
+# The default constants built from the environment
 environ = SimulationGlobalConstants.from_environment(os.environ)

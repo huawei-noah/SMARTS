@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 
 class SensorManager:
+    """A sensor management system that associates actors with sensors."""
+
     def __init__(self):
         self._sensors: Dict[str, Sensor] = {}
 
@@ -43,6 +45,7 @@ class SensorManager:
         self._discarded_sensors: Set[str] = set()
 
     def step(self, sim_frame, renderer):
+        """Update sensor values based on the new simulation state."""
         for sensor_state in self._sensor_states.values():
             Sensors.step(sim_frame, sensor_state)
 
@@ -50,6 +53,7 @@ class SensorManager:
             sensor.step(sim_frame=sim_frame, renderer=renderer)
 
     def teardown(self, renderer):
+        """Tear down the current sensors and clean up any internal resources."""
         for sensor in self._sensors.values():
             sensor.teardown(renderer=renderer)
         self._sensors = {}
@@ -59,12 +63,12 @@ class SensorManager:
         self._discarded_sensors.clear()
 
     def add_sensor_state(self, actor_id: str, sensor_state: SensorState):
+        """Add a sensor state associated with a given actor."""
         self._sensor_states[actor_id] = sensor_state
 
-    def sensors(self):
-        return self._sensors
-
     def remove_sensors_by_actor_id(self, actor_id: str):
+        """Remove association of an actor to sensors. If the sensor is no longer associated the
+        sensor is scheduled to be removed."""
         sensor_states = self._sensor_states.get(actor_id)
         if not sensor_states:
             logger.warning(
@@ -83,7 +87,8 @@ class SensorManager:
         del self._sensors_by_actor_id[actor_id]
         return frozenset(self._discarded_sensors)
 
-    def remove_sensor(self, sensor_id):
+    def remove_sensor(self, sensor_id: str) -> Sensor:
+        """Remove a sensor by its id. Removes any associations it has with actors."""
         sensor = self._sensors.get(sensor_id)
         if not sensor:
             return None
@@ -98,21 +103,26 @@ class SensorManager:
         return sensor
 
     def sensor_state_exists(self, actor_id: str) -> bool:
+        """Determines if a actor has a sensor state associated with it."""
         return actor_id in self._sensor_states
 
     def sensor_states_items(self):
+        """Gets all actor to sensor state associations."""
         return self._sensor_states.items()
 
-    def sensors_for_actor_id(self, actor_id):
+    def sensors_for_actor_id(self, actor_id: str):
+        """Gets all sensors associated with the given actor."""
         return [
             self._sensors[s_id]
             for s_id in self._sensors_by_actor_id.get(actor_id, set())
         ]
 
-    def sensor_state_for_actor_id(self, actor_id):
+    def sensor_state_for_actor_id(self, actor_id: str):
+        """Gets the sensor state for the given actor."""
         return self._sensor_states.get(actor_id)
 
     def add_sensor_for_actor(self, actor_id: str, sensor: Sensor) -> str:
+        """Adds a sensor association for a specific actor."""
         # TAI: Allow multiple sensors of the same type on the same actor
         s_id = f"{type(sensor).__qualname__}-{actor_id}"
         actor_sensors = self._sensors_by_actor_id.setdefault(actor_id, set())
@@ -127,6 +137,8 @@ class SensorManager:
         return self.add_sensor(s_id, sensor)
 
     def add_sensor(self, sensor_id, sensor: Sensor) -> str:
+        """Adds a sensor to the sensor manager."""
+        assert sensor_id not in self._sensors
         self._sensors[sensor_id] = sensor
         self._sensor_references.update([sensor_id])
         return sensor_id

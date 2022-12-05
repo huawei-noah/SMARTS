@@ -62,11 +62,8 @@ class SimulationFrame:
     _ground_bullet_id: Optional[str] = None
 
     @cached_property
-    def all_agent_ids(self):
-        return set(self.agent_interfaces.keys())
-
-    @cached_property
     def agent_ids(self) -> Set[str]:
+        """Get the ids of all agents that currently have vehicles."""
         return set(self.vehicles_for_agents.keys())
 
     @cached_property
@@ -76,6 +73,7 @@ class SimulationFrame:
 
     @cached_property
     def actor_states_by_id(self) -> Dict[str, ActorState]:
+        """Get actor states paired by their ids."""
         return {a_s.actor_id: a_s for a_s in self.actor_states}
 
     def vehicle_did_collide(self, vehicle_id) -> bool:
@@ -104,12 +102,14 @@ class SimulationFrame:
 
     @staticmethod
     def serialize(simulation_frame: "SimulationFrame") -> Any:
+        """Default serialization for this class."""
         import cloudpickle
 
         return cloudpickle.dumps(simulation_frame)
 
     @staticmethod
     def deserialize(serialized_simulation_frame) -> "SimulationFrame":
+        """Default deserialization for this class."""
         import cloudpickle
 
         return cloudpickle.loads(serialized_simulation_frame)
