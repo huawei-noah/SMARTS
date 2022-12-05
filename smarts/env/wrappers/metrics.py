@@ -248,14 +248,16 @@ def _check_env(env):
             )
 
 
-# def _check_scen(obs: Dict[str, Observation]):
-#     for agent_name, agent_obs in obs.items():
-#         goal_type = type(agent_obs.ego_vehicle_state.mission.goal)
-#         if goal_type != PositionalGoal:
-#             raise AttributeError(
-#                 "Expected {0} to have PositionalGoal, but has goal type "
-#                 "{1}".format(agent_name, goal_type)
-#             )
+def _check_scen(scen: Scenario):
+    goal_types = {
+        agent_name : type(agent_mission.goal)
+        for agent_name, agent_mission in scen.missions.items()
+    }
+    if not all([goal_type==PositionalGoal for goal_type in goal_types.values()]):
+        raise AttributeError(
+            "Expected all agents to have PositionalGoal, but agents have goal type "
+            "{0}".format(goal_types)
+        )
 
 
 T = TypeVar("T", Costs, Counts)
