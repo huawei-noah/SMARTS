@@ -47,4 +47,5 @@ jobs:
             --ignore=./smarts/core/tests/test_env_frame_rate.py \
             --ignore=./smarts/env/tests/test_benchmark.py \
             --ignore=./examples/tests/test_learning.py \
+            --ignore=./smarts/core/tests/test_parallel_sensors.py::test_sensor_parallelization \
             -k 'not test_long_determinism'
