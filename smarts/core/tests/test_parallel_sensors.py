@@ -41,7 +41,7 @@ from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.file import match_unpackable
+from smarts.core.utils.logging import match_unpackable
 
 SimulationState = SimulationFrame
 SensorState = Any

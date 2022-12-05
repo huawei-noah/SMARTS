@@ -26,6 +26,8 @@ from contextlib import contextmanager
 from io import UnsupportedOperation
 from time import time
 
+from .file import unpack
+
 
 @contextmanager
 def timeit(name: str, log):
@@ -162,3 +164,44 @@ def suppress_websocket():
         _logger.addFilter(websocket_filter)
         yield
         _logger.removeFilter(websocket_filter)
+
+
+def match_unpackable(obj, other_obj):
+    """Do an asserted comparision of an object that is able to be unpacked. This works with nested collections:
+        dictionaries, namedtuples, tuples, lists, numpy arrays, and dataclasses.
+    Raises:
+        AssertionError: if objects do not match.
+    """
+    obj_unpacked = unpack(obj)
+    other_obj_unpacked = unpack(other_obj)
+
+    def sort(orig_value):
+        value = orig_value
+        if isinstance(value, dict):
+            return dict(sorted(value.items(), key=lambda item: item[0]))
+        try:
+            s = sorted(value, key=lambda item: item[0])
+        except IndexError:
+            s = sorted(value)
+        except (KeyError, TypeError):
+            s = value
+        return s
+
+    def process(o, oo, o_oo):
+        nonlocal obj
+        if isinstance(o, (dict, defaultdict)):
+            t_o = sort(o)
+            t_oo = sort(oo)
+            comps.append((t_o.keys(), t_oo.keys()))
+            comps.append((t_o.values(), t_oo.values()))
+        elif isinstance(o, Sequence) and not isinstance(o, (str)):
+            comps.append((sort(o), sort(oo)))
+        else:
+            assert o == oo, f"{o}!={oo} in {o_oo}"
+
+    comps = []
+    process(obj_unpacked, other_obj_unpacked, None)
+    while len(comps) > 0:
+        o_oo = comps.pop()
+        for o, oo in zip(*o_oo):
+            process(o, oo, o_oo)

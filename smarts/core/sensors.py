@@ -1062,7 +1062,9 @@ class SensorsWorker(ProcessWorker):
     @staticmethod
     def local(sim_frame: SimulationFrame, sim_local_constants, agent_ids):
         """The work method on the local thread."""
-        return Sensors.observe_serializable_sensor_batch(sim_frame, sim_local_constants, agent_ids)
+        return Sensors.observe_serializable_sensor_batch(
+            sim_frame, sim_local_constants, agent_ids
+        )
 
 
 class CameraSensor(Sensor):

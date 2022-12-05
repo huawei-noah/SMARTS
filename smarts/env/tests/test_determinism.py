@@ -33,7 +33,7 @@ from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.utils.episodes import episodes
-from smarts.core.utils.file import match_unpackable
+from smarts.core.utils.logging import match_unpackable
 from smarts.zoo.agent_spec import AgentSpec
 
 
