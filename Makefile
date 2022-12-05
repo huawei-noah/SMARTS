@@ -24,7 +24,6 @@ test: build-all-scenarios
 
 .PHONY: sanity-test
 sanity-test: build-sanity-scenarios
-	./tests/test_setup.py
 	PYTHONPATH=$(PWD) SEV_OBSERVATION_WORKERS=0 PYTHONHASHSEED=42 pytest -v \
 		--doctest-modules \
 		--forked \
