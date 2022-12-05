@@ -147,7 +147,7 @@ class _Metrics(gym.Wrapper):
     def reset(self, **kwargs):
         """Resets the environment."""
         obs = super().reset(**kwargs)
-        _check_scen(obs)
+        # _check_scen(obs)
         self._cur_scen = self.env.scenario_log["scenario_map"]
         self._cur_agents = set(self.env.agent_specs.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
@@ -248,12 +248,14 @@ def _check_env(env):
             )
 
 
-def _check_scen(obs: Observation):
-    goal_type = type(obs.ego_vehicle_state.mission.goal)
-    if goal_type != PositionalGoal:
-        raise AttributeError(
-            "Expected agent to have PositionalGoal, but got goal type {0}".format(goal_type)
-        )
+# def _check_scen(obs: Dict[str, Observation]):
+#     for agent_name, agent_obs in obs.items():
+#         goal_type = type(agent_obs.ego_vehicle_state.mission.goal)
+#         if goal_type != PositionalGoal:
+#             raise AttributeError(
+#                 "Expected {0} to have PositionalGoal, but has goal type "
+#                 "{1}".format(agent_name, goal_type)
+#             )
 
 
 T = TypeVar("T", Costs, Counts)
