@@ -117,8 +117,12 @@ def load_config(path):
     return config
 
 
+root_path = str(Path(__file__).absolute().parents[2])
+
+
 def competition_entry(**kwargs):
     policy_path = kwargs.get("policy_path", None)
+    env_path = os.path.join(root_path, f"competition_env/{Path(policy_path).name}")
 
     from .competition_agent import CompetitionAgent
 
@@ -144,9 +148,18 @@ def competition_entry(**kwargs):
         wrappers = wrapper_module.submitted_wrappers()
 
         # delete competition wrapper module and remove path
-        sys.modules.pop("competition_wrapper")
+        while policy_path in sys.path:
+            sys.path.remove(policy_path)  # prevent duplicate path remain in sys.path
+
+        # remove all modules related to policy_path
+        for key, module in list(sys.modules.items()):
+            if "__file__" in dir(module):
+                module_path = module.__file__
+                if module_path and (
+                    policy_path in module_path or env_path in module_path
+                ):
+                    sys.modules.pop(key)
         del wrapper_module
-        sys.path.remove(policy_path)
 
         env = gym.Wrapper(env)
         for wrapper in wrappers:
@@ -172,16 +185,8 @@ def competition_entry(**kwargs):
     return spec
 
 
-root_path = str(Path(__file__).absolute().parents[2])
-
 register(
     "competition_agent-v0",
     entry_point=competition_entry,
-    policy_path=os.path.join(root_path, "competition/track1/submission_1"),
-)
-
-register(
-    "competition_agent-v1",
-    entry_point=competition_entry,
-    policy_path=os.path.join(root_path, "competition/track1/submission_2"),
+    policy_path=os.path.join(root_path, "competition/track1/submission"),
 )
