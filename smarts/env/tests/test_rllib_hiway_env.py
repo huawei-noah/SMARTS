@@ -36,6 +36,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.zoo.agent_spec import AgentSpec
+from smarts import sstudio
 
 AGENT_ID = "Agent-007"
 INFO_EXTRA_KEY = "__test_extra__"
@@ -124,7 +125,9 @@ def test_rllib_hiway_env(rllib_agent):
     }
 
     # XXX: We should be able to simply provide "scenarios/sumo/loop"?
-    scenario_path = Path(__file__).parent / "../../../scenarios/sumo/loop"
+    import smarts
+    scenario_path = Path(smarts.__file__).parent.absolute()/"scenarios/intersection/1_to_1lane_left_turn_c"
+
     tune_confg = {
         "env": RLlibHiWayEnv,
         "env_config": {
