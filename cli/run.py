@@ -28,7 +28,6 @@ from cli.studio import build_scenarios
 
 import click
 
-_SEED = 42
 
 @contextmanager
 def kill_process_group_afterwards():
@@ -58,6 +57,12 @@ def kill_process_group_afterwards():
     help="Start up Envision server at the specified port when running an experiment",
 )
 @click.option(
+    "--seed",
+    type=int,
+    default=42,
+    help="Set the base seed of the scenario.",
+)
+@click.option(
     "-p",
     "--envision_port",
     help="Port on which Envision will run.",
@@ -67,13 +72,13 @@ def kill_process_group_afterwards():
     "example_path", type=click.Path(exists=True), metavar="<example>", required=True
 )
 @click.argument("scenario_path", nargs=-1, type=click.UNPROCESSED)
-def run_experiment(clean, envision, envision_port, example_path, scenario_path):
+def run_experiment(clean, envision, envision_port, example_path, scenario_path,seed):
     with kill_process_group_afterwards():
         build_scenarios(
         allow_offset_maps=False,
         clean=clean,
         scenarios=scenario_path,
-        seed=_SEED,
+        seed=seed,
         )
         if envision:
             if envision_port is None:
