@@ -24,9 +24,11 @@ import sys
 import time
 import webbrowser
 from contextlib import contextmanager
+from cli.studio import build_scenarios
 
 import click
 
+_SEED = 42
 
 @contextmanager
 def kill_process_group_afterwards():
@@ -44,6 +46,12 @@ def kill_process_group_afterwards():
     context_settings=dict(ignore_unknown_options=True),
 )
 @click.option(
+    "--clean",
+    is_flag=True,
+    default=False,
+    help="Clean previously generated artifacts first",
+)
+@click.option(
     "--envision",
     is_flag=True,
     default=False,
@@ -56,11 +64,17 @@ def kill_process_group_afterwards():
     default=None,
 )
 @click.argument(
-    "script_path", type=click.Path(exists=True), metavar="<script>", required=True
+    "example_path", type=click.Path(exists=True), metavar="<example>", required=True
 )
-@click.argument("script_args", nargs=-1, type=click.UNPROCESSED)
-def run_experiment(envision, envision_port, script_path, script_args):
+@click.argument("scenario_path", nargs=-1, type=click.UNPROCESSED)
+def run_experiment(clean, envision, envision_port, example_path, scenario_path):
     with kill_process_group_afterwards():
+        build_scenarios(
+        allow_offset_maps=False,
+        clean=clean,
+        scenarios=scenario_path,
+        seed=_SEED,
+        )
         if envision:
             if envision_port is None:
                 envision_port = 8081
@@ -86,6 +100,6 @@ def run_experiment(envision, envision_port, script_path, script_args):
             )
 
         script = subprocess.Popen(
-            [sys.executable, script_path, *script_args],
+            [sys.executable, example_path, *scenario_path],
         )
         script.communicate()
