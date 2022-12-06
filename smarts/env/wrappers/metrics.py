@@ -25,10 +25,11 @@ from typing import Any, Dict, Set, TypeVar
 
 import gym
 
+from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Plan, PositionalGoal
 from smarts.core.scenario import Scenario
 from smarts.env.wrappers.metric import termination
-from smarts.env.wrappers.metric.completion import Completion, CompletionFuncs
+from smarts.env.wrappers.metric.completion import Completion, CompletionFuncs, get_dist
 from smarts.env.wrappers.metric.costs import Costs, CostFuncs
 from smarts.env.wrappers.metric.counts import Counts
 
@@ -140,6 +141,14 @@ class _Metrics(gym.Wrapper):
                 )
                 # fmt: on
 
+                # Compute and update percentage of scenario tasks completed.
+                completion = Completion()
+                for field in fields(self._records[self._cur_scen][agent_name].completion_funcs):
+                    completion_func = getattr(self._records[self._cur_scen][agent_name].completion_funcs, field.name)
+                    new_completion = completion_func(self._scen, agent_obs)
+                    completion = _add_dataclass(new_completion, completion)
+                self._records[self._cur_scen][agent_name].record.completion = completion
+
         if dones["__all__"] == True:
             assert (
                 self._done_agents == self._cur_agents
@@ -161,7 +170,12 @@ class _Metrics(gym.Wrapper):
             self._records[self._cur_scen] = {
                 agent_name: Data(
                     record=Record(
-                        completion=Completion(),
+                        completion=Completion(
+                            dist_tot = get_dist(
+                                self._scen.road_map, 
+                                self._scen.missions[agent_name]
+                            )
+                        ),
                         costs=Costs(),
                         counts=Counts(),
                     ),
@@ -172,8 +186,6 @@ class _Metrics(gym.Wrapper):
             }
 
         # Retrieve the current scenario, missions, plan, and routes.
-        scen, sim = self.env.scenario
-        _check_scen(scen)
 
         # vi = sim.vehicle_index
         # print(f"Vehicle ids == {[vi.agent_vehicle_ids]}")
@@ -289,13 +301,15 @@ def _check_env(env):
     Raises:
         AttributeError: If any required agent interface is disabled.
     """
-    def check_intrfc(agent_intrfc):
+    def check_intrfc(agent_intrfc:AgentInterface):
         intrfc = {
             "accelerometer": bool(agent_intrfc.accelerometer),
             "max_episode_steps": bool(agent_intrfc.max_episode_steps),
             "neighborhood_vehicles": bool(agent_intrfc.neighborhood_vehicles),
             "road_waypoints": bool(agent_intrfc.road_waypoints),
             "waypoints": bool(agent_intrfc.waypoints),
+            "done_criteria.collision": agent_intrfc.done_criteria.collision,
+            "done_criteria.off_road": agent_intrfc.done_criteria.off_road,
         }
         return intrfc
 

@@ -46,14 +46,14 @@ def _collisions(obs: Observation) -> Costs:
 
 
 def _dist_to_obstacles() -> Callable[[Observation], Costs]:
-    ave = 0
+    mean = 0
     step = 0
     rel_angle_th = np.pi * 40 / 180
     rel_heading_th = np.pi * 179 / 180
     w_dist = 0.05
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step, rel_angle_th, rel_heading_th, w_dist
+        nonlocal mean, step, rel_angle_th, rel_heading_th, w_dist
 
         # Ego's position and heading with respect to the map's coordinate system.
         # Note: All angles returned by smarts is with respect to the map's coordinate system.
@@ -113,28 +113,28 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
         di = np.array([nghb_state[1] for nghb_state in nghbs_state])
         j_d = np.amax(np.exp(-w_dist * di))
 
-        ave, step = running_mean(prev_mean=ave, prev_step=step, new_val=j_d)
-        return Costs(dist_to_obstacles=ave)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_d)
+        return Costs(dist_to_obstacles=mean)
 
     return func
 
 
 def _jerk_angular() -> Callable[[Observation], Costs]:
-    ave = 0
+    mean = 0
     step = 0
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step
+        nonlocal mean, step
 
         j_a = np.linalg.norm(obs.ego_vehicle_state.angular_jerk)
-        ave, step = running_mean(prev_mean=ave, prev_step=step, new_val=j_a)
-        return Costs(jerk_angular=ave)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_a)
+        return Costs(jerk_angular=mean)
 
     return func
 
 
 def _jerk_linear() -> Callable[[Observation], Costs]:
-    ave = 0
+    mean = 0
     step = 0
     jerk_linear_max = np.linalg.norm(np.array([0.9, 0.9, 0])) # Units: m/s^3
     """
@@ -147,22 +147,22 @@ def _jerk_linear() -> Callable[[Observation], Costs]:
     """
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step, jerk_linear_max
+        nonlocal mean, step, jerk_linear_max
 
         jerk_linear = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
         j_l = min( jerk_linear / jerk_linear_max, 1)
-        ave, step = running_mean(prev_mean=ave, prev_step=step, new_val=j_l)
-        return Costs(jerk_linear=ave)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_l)
+        return Costs(jerk_linear=mean)
 
     return func
 
 
 def _lane_center_offset() -> Callable[[Observation], Costs]:
-    ave = 0
+    mean = 0
     step = 0
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step
+        nonlocal mean, step
 
         # Nearest waypoints
         ego = obs.ego_vehicle_state
@@ -178,8 +178,8 @@ def _lane_center_offset() -> Callable[[Observation], Costs]:
         # J_LC : Lane center offset
         j_lc = norm_dist_from_center**2
 
-        ave, step = running_mean(prev_mean=ave, prev_step=step, new_val=j_lc)
-        return Costs(lane_center_offset=ave)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_lc)
+        return Costs(lane_center_offset=mean)
 
     return func
 
@@ -189,11 +189,11 @@ def _off_road(obs: Observation) -> Costs:
 
 
 def _speed_limit() -> Callable[[Observation], Costs]:
-    ave = 0
+    mean = 0
     step = 0
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step
+        nonlocal mean, step
 
         # Nearest waypoints.
         ego = obs.ego_vehicle_state
@@ -209,24 +209,24 @@ def _speed_limit() -> Callable[[Observation], Costs]:
         overspeed_norm = min(overspeed / (0.5 * speed_limit), 1)
         j_v = overspeed_norm**2
 
-        ave, step = running_mean(prev_mean=ave, prev_step=step, new_val=j_v)
-        return Costs(speed_limit=ave)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_v)
+        return Costs(speed_limit=mean)
 
     return func
 
 
 def _wrong_way() -> Callable[[Observation], Costs]:
-    ave = 0
+    mean = 0
     step = 0
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step
+        nonlocal mean, step
         j_wrong_way = 0
         if obs.events.wrong_way:
             j_wrong_way = 1
 
-        ave, step = running_mean(prev_mean=ave, prev_step=step, new_val=j_wrong_way)
-        return Costs(wrong_way=ave)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_wrong_way)
+        return Costs(wrong_way=mean)
 
     return func
 
