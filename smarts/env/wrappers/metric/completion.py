@@ -70,6 +70,21 @@ def _dist_remainder():
     def func(road_map:RoadMap, completion:Completion, obs: Observation):
         nonlocal mean, step
 
+        cur_pos = obs.ego_vehicle_state.position
+
+        position, heading = to_position_and_heading(
+            *mission.route.begin,
+            road_map,
+        )
+        start = Start(position, heading)
+
+        position, _ = to_position_and_heading(
+            *mission.route.end,
+            road_map,
+        )
+        goal = PositionalGoal(position, radius=2)
+
+
         mission = Mission(
             start=obs.ego_vehicle_state.position,
             goal=PositionalGoal(

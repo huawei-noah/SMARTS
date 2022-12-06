@@ -147,7 +147,10 @@ class _Metrics(gym.Wrapper):
                     completion_func = getattr(self._records[self._cur_scen][agent_name].completion_funcs, field.name)
                     new_completion = completion_func(self._scen, agent_obs)
                     completion = _add_dataclass(new_completion, completion)
-                self._records[self._cur_scen][agent_name].record.completion = completion
+                self._records[self._cur_scen][agent_name].record.completion = _add_dataclass(
+                        Completion(dist_tot=self._records[self._cur_scen][agent_name].record.completion.dist_tot),
+                        completion
+                    )
 
         if dones["__all__"] == True:
             assert (
@@ -343,7 +346,7 @@ def _check_scen(scen: Scenario):
         )
 
 
-T = TypeVar("T", Costs, Counts)
+T = TypeVar("T", Completion, Costs, Counts)
 
 
 def _add_dataclass(first: T, second: T) -> T:
