@@ -19,11 +19,12 @@
 # THE SOFTWARE.
 
 from dataclasses import dataclass
-from typing import Callable, Tuple
+from typing import Callable
 
 import numpy as np
 
 from smarts.core.sensors import Observation
+from smarts.core.utils.math import running_mean
 
 
 @dataclass(frozen=True)
@@ -112,7 +113,7 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
         di = np.array([nghb_state[1] for nghb_state in nghbs_state])
         j_d = np.amax(np.exp(-w_dist * di))
 
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_d)
+        ave, step = running_mean(prev_mean=ave, prev_step=step, new_val=j_d)
         return Costs(dist_to_obstacles=ave)
 
     return func
@@ -126,7 +127,7 @@ def _jerk_angular() -> Callable[[Observation], Costs]:
         nonlocal ave, step
 
         j_a = np.linalg.norm(obs.ego_vehicle_state.angular_jerk)
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_a)
+        ave, step = running_mean(prev_mean=ave, prev_step=step, new_val=j_a)
         return Costs(jerk_angular=ave)
 
     return func
@@ -150,7 +151,7 @@ def _jerk_linear() -> Callable[[Observation], Costs]:
 
         jerk_linear = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
         j_l = min( jerk_linear / jerk_linear_max, 1)
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_l)
+        ave, step = running_mean(prev_mean=ave, prev_step=step, new_val=j_l)
         return Costs(jerk_linear=ave)
 
     return func
@@ -177,7 +178,7 @@ def _lane_center_offset() -> Callable[[Observation], Costs]:
         # J_LC : Lane center offset
         j_lc = norm_dist_from_center**2
 
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_lc)
+        ave, step = running_mean(prev_mean=ave, prev_step=step, new_val=j_lc)
         return Costs(lane_center_offset=ave)
 
     return func
@@ -208,7 +209,7 @@ def _speed_limit() -> Callable[[Observation], Costs]:
         overspeed_norm = min(overspeed / (0.5 * speed_limit), 1)
         j_v = overspeed_norm**2
 
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_v)
+        ave, step = running_mean(prev_mean=ave, prev_step=step, new_val=j_v)
         return Costs(speed_limit=ave)
 
     return func
@@ -224,16 +225,10 @@ def _wrong_way() -> Callable[[Observation], Costs]:
         if obs.events.wrong_way:
             j_wrong_way = 1
 
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_wrong_way)
+        ave, step = running_mean(prev_mean=ave, prev_step=step, new_val=j_wrong_way)
         return Costs(wrong_way=ave)
 
     return func
-
-
-def _running_ave(prev_ave: float, prev_step: int, new_val: float) -> Tuple[float, int]:
-    new_step = prev_step + 1
-    new_ave = prev_ave + (new_val - prev_ave) / new_step
-    return new_ave, new_step
 
 
 @dataclass(frozen=True)

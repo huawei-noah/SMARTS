@@ -20,7 +20,7 @@
 import math
 from dataclasses import dataclass
 from math import factorial
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Callable, List, Sequence, Tuple, Union
 
 
 @dataclass(frozen=True)
@@ -526,8 +526,9 @@ def welford() -> Tuple[
     Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int]
 ]:
     """Welford's online mean and std computation
-    Reference: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
-    Reference: https://www.adamsmith.haus/python/answers/how-to-find-a-running-standard-deviation-in-python
+    Reference: 
+        https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
+        https://www.adamsmith.haus/python/answers/how-to-find-a-running-standard-deviation-in-python
 
     Returns:
         Tuple[ Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int] ]: Callable
@@ -565,3 +566,20 @@ def welford() -> Tuple[
         return n
 
     return update, mean, std, steps
+
+def running_mean(prev_mean: float, prev_step: int, new_val: float) -> Tuple[float, int]:
+    """
+    Returns a new running mean value, when given previous mean, previous step
+    count, and new value, 
+
+    Args:
+        prev_mean (float): Previous mean value.
+        prev_step (int): Previous step count.
+        new_val (float): New value to be averaged.
+
+    Returns:
+        Tuple[float, int]: Updated mean and step count.
+    """
+    new_step = prev_step + 1
+    new_mean = prev_mean + (new_val - prev_mean) / new_step
+    return new_mean, new_step
