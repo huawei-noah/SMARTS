@@ -18,7 +18,7 @@ charset-normalizer==2.1.1
 click==8.1.3
 cloudpickle==1.6.0
 colorama==0.4.6
-colorful==0.5.4
+colorful==0.5.5
 commonmark==0.9.1
 constantly==15.1.0
 coverage==6.5.0
@@ -27,15 +27,15 @@ dm-tree==0.1.7
 eclipse-sumo==1.12.0
 exceptiongroup==1.0.4
 execnet==1.9.0
-filelock==3.8.0
+filelock==3.8.2
 flatbuffers==22.11.23
 fonttools==4.38.0
 frozenlist==1.3.3
 future==0.18.2
 gast==0.4.0
 google==3.0.0
-google-api-core==2.10.2
-google-auth==2.14.1
+google-api-core==2.11.0
+google-auth==2.15.0
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 googleapis-common-protos==1.57.0
@@ -47,7 +47,7 @@ hyperlink==21.0.0
 idna==3.4
 ijson==3.1.4
 importlib-metadata==5.1.0
-importlib-resources==5.10.0
+importlib-resources==5.10.1
 incremental==22.10.0
 iniconfig==1.1.1
 jsonpatch==1.32
@@ -61,7 +61,7 @@ Markdown==3.4.1
 MarkupSafe==2.1.1
 matplotlib==3.5.3
 msgpack==1.0.4
-multidict==6.0.2
+multidict==6.0.3
 networkx==2.6.3
 numpy==1.21.6
 nvidia-ml-py==11.495.46
@@ -95,7 +95,7 @@ pytest==7.2.0
 pytest-benchmark==4.0.0
 pytest-cov==4.0.0
 pytest-forked==1.4.0
-pytest-xdist==3.0.2
+pytest-xdist==3.1.0
 python-dateutil==2.8.2
 pytz==2022.6
 PyYAML==6.0
@@ -134,7 +134,7 @@ wcwidth==0.2.5
 websocket-client==1.4.2
 Werkzeug==2.2.2
 wrapt==1.14.1
-yarl==1.8.1
+yarl==1.8.2
 yattag==1.14.0
 zipp==3.11.0
 zope.interface==5.5.2
