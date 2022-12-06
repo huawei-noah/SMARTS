@@ -63,7 +63,7 @@ export default function Simulation({
   egoView,
   controlModes,
   canvasRef = null,
-  onElapsedTimesChanged = (current, total) => { },
+  onElapsedTimesChanged = (current, total) => {},
   style = {},
   playing = true,
   playingMode,
