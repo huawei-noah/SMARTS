@@ -71,16 +71,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.scenarios:
-        # args.scenarios = [
-        #     str(
-        #         pathlib.Path(__file__).absolute().parents[1]
-        #         / "scenarios"
-        #         / "sumo"
-        #         / "loop"
-        #     )
-        # ]
         args.scenarios = [
-            "/home/adai/workspace/SMARTS/smarts/scenarios/merge/3lane_multi_agent",
+            str(
+                pathlib.Path(__file__).absolute().parents[1]
+                / "smarts"
+                / "scenarios"
+                / "merge"
+                / "3lane_multi_agent"
+            )
         ]
 
     sstudio.build_scenario(scenario=args.scenarios)

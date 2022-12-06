@@ -31,7 +31,6 @@ class Costs:
     """Performance cost values."""
 
     collisions: int = 0
-    dist_to_goal: float = 0
     dist_to_obstacles: float = 0
     jerk_angular: float = 0
     jerk_linear: float = 0
@@ -43,17 +42,6 @@ class Costs:
 
 def _collisions(obs: Observation) -> Costs:
     return Costs(collisions=len(obs.events.collisions))
-
-
-def _dist_to_goal(obs: Observation) -> Costs:
-    mission_goal = obs.ego_vehicle_state.mission.goal
-    if hasattr(mission_goal, "position"):
-        rel = obs.ego_vehicle_state.position[:2] - mission_goal.position[:2]
-        j_goal = sum(abs(rel))
-    else:
-        j_goal = 0
-
-    return Costs(dist_to_goal=j_goal)
 
 
 def _dist_to_obstacles() -> Callable[[Observation], Costs]:
@@ -253,9 +241,8 @@ class CostFuncs:
     """Functions to compute performance costs."""
 
     collisions: Callable[[Observation], Costs] = _collisions
-    dist_to_goal: Callable[[Observation], Costs] = _dist_to_goal
     dist_to_obstacles: Callable[[Observation], Costs] = _dist_to_obstacles()
-    jerk_angular: Callable[[Observation], Costs] = _jerk_angular()
+    # jerk_angular: Callable[[Observation], Costs] = _jerk_angular()
     jerk_linear: Callable[[Observation], Costs] = _jerk_linear()
     lane_center_offset: Callable[[Observation], Costs] = _lane_center_offset()
     off_road: Callable[[Observation], Costs] = _off_road

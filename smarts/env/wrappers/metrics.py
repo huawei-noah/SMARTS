@@ -28,7 +28,8 @@ import gym
 from smarts.core.plan import Plan, PositionalGoal
 from smarts.core.scenario import Scenario
 from smarts.env.wrappers.metric import termination
-from smarts.env.wrappers.metric.costs import CostFuncs, Costs
+from smarts.env.wrappers.metric.completion import Completion, CompletionFuncs
+from smarts.env.wrappers.metric.costs import Costs, CostFuncs
 from smarts.env.wrappers.metric.counts import Counts
 
 _MAX_STEPS = 800
@@ -36,17 +37,19 @@ _MAX_STEPS = 800
 
 @dataclass
 class Record:
-    """Stores an agent's performance count and cost values."""
-
-    counts: Counts
+    """Stores an agent's scenario-completion, performance-count, and
+    performance-cost values."""
+    completion: Completion
     costs: Costs
-
+    counts: Counts
 
 @dataclass
 class Data:
-    """Stores an agent's performance record and cost functions."""
+    """Stores an agent's performance-record, completion-functions, and
+    cost-functions."""
 
     record: Record
+    completion_funcs: CompletionFuncs
     cost_funcs: CostFuncs
 
 
@@ -81,7 +84,7 @@ class _Metrics(gym.Wrapper):
         self._cur_scen: str
         self._cur_agents: Set[str]
         self._steps: Dict[str, int]
-        self._done_check: Set[str]
+        self._done_agents: Set[str]
         self._records = {}
 
     def step(self, action: Dict[str, Any]):
@@ -108,7 +111,7 @@ class _Metrics(gym.Wrapper):
             self._records[self._cur_scen][agent_name].record.costs = costs
 
             if dones[agent_name]:
-                self._done_check.add(agent_name)
+                self._done_agents.add(agent_name)
                 steps_adjusted, goals, crashes = 0, 0, 0
                 reason = termination.reason(obs=agent_obs)
                 if reason == termination.Reason.Goal:
@@ -139,8 +142,8 @@ class _Metrics(gym.Wrapper):
 
         if dones["__all__"] == True:
             assert (
-                self._done_check == self._cur_agents
-            ), f'done["__all__"]==True but not all agents are done. Current agents = {self._cur_agents}. Agents done = {self._done_check}.'
+                self._done_agents == self._cur_agents
+            ), f'done["__all__"]==True but not all agents are done. Current agents = {self._cur_agents}. Agents done = {self._done_agents}.'
 
         return obs, rewards, dones, info
 
@@ -150,15 +153,20 @@ class _Metrics(gym.Wrapper):
         self._cur_scen = self.env.scenario_log["scenario_map"]
         self._cur_agents = set(self.env.agent_specs.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
-        self._done_check = set()
+        self._done_agents = set()
+        self._scen, sim = self.env.scenario
+
         if self._cur_scen not in self._records:
+            _check_scen(self._scen)
             self._records[self._cur_scen] = {
                 agent_name: Data(
                     record=Record(
-                        counts=Counts(),
+                        completion=Completion(),
                         costs=Costs(),
+                        counts=Counts(),
                     ),
                     cost_funcs=CostFuncs(),
+                    completion_funcs=CompletionFuncs(),
                 )
                 for agent_name in self._cur_agents
             }
@@ -232,11 +240,11 @@ class _Metrics(gym.Wrapper):
         >> records()
         >> {
                 scen1: {
-                    agent1: Record(counts, costs),
-                    agent2: Record(counts, costs),
+                    agent1: Record(completion, costs, counts),
+                    agent2: Record(completion, costs, counts),
                 },
                 scen2: {
-                    agent1: Record(counts, costs),
+                    agent1: Record(completion, costs, counts),
                 },
             }
         """

@@ -30,9 +30,9 @@ import numpy as np
 
 from smarts.sstudio.types import EntryTactic, TrapEntryTactic
 
-from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
-from .road_map import RoadMap
-from .utils.math import min_angles_difference_signed, vec_to_radians
+from smarts.core.coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
+from smarts.core.road_map import RoadMap
+from smarts.core.utils.math import min_angles_difference_signed, vec_to_radians
 
 
 class PlanningError(Exception):
