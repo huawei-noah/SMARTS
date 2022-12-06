@@ -39,7 +39,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
         scenarios=scenarios,
         agent_specs=agent_specs,
         headless=True,
-        sumo_headless=True,
+        sumo_headless=False,
     )
 
     from smarts.env.wrappers.metrics import Metrics

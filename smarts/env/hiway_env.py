@@ -197,13 +197,13 @@ class HiWayEnv(gym.Env):
 
 
     @property
-    def scenario(self) -> Scenario:
+    def scenario(self):
         """Returns underlying scenario.
 
         Returns:
             Scenario: Current simulated scenario.
         """
-        return self._smarts.scenario
+        return self._smarts.scenario, self._smarts
 
 
     def seed(self, seed: int) -> int:
