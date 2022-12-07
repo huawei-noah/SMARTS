@@ -90,13 +90,13 @@ def get_dist(road_map:RoadMap, point_a: Point, point_b: Point) -> float:
     except PlanningError as e:
         if e.args[0].startswith("Unable to find a route"):
             dist_tot = _get_dist(point_b, point_a)
-            logger.info("completion.get dist(): Unable to find a route " 
-                "from {} to {}, hence found a route from {} to {}.", 
+            logger.info("completion.get dist(): Did not find a route from " 
+                "%s to %s, instead found a route from %s to %s.", 
                 point_a,
                 point_b,
                 point_b,
                 point_a,
-            )
+        )
 
     return dist_tot
 
@@ -107,7 +107,7 @@ def _dist_remainder():
     def func(road_map:RoadMap, obs: Observation):
         nonlocal mean, step
 
-        cur_pos = obs.ego_vehicle_state.position
+        cur_pos = Point(*obs.ego_vehicle_state.position)
         goal_pos = obs.ego_vehicle_state.mission.goal.position
         dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
         mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=dist)

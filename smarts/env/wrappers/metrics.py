@@ -141,7 +141,7 @@ class _Metrics(gym.Wrapper):
                 )
                 # fmt: on
 
-                # Compute and update percentage of scenario tasks completed.
+                # Update percentage of scenario tasks completed.
                 completion = Completion(dist_tot=self._records[self._cur_scen][agent_name].record.completion.dist_tot)
                 for field in fields(self._records[self._cur_scen][agent_name].completion_funcs):
                     completion_func = getattr(self._records[self._cur_scen][agent_name].completion_funcs, field.name)
