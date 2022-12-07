@@ -466,7 +466,8 @@ class SumoTrafficSimulation(TrafficProvider):
         # we tell SUMO to step through dt more seconds of the simulation
         self._cumulative_sim_seconds += dt
         try:
-            self._traci_conn.simulationStep(self._cumulative_sim_seconds)
+            with suppress_output(stderr=False):
+                self._traci_conn.simulationStep(self._cumulative_sim_seconds)
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
             return ProviderState()
