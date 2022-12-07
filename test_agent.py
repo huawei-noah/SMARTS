@@ -13,9 +13,9 @@ shared_configs = dict(
     sumo_headless=True,
 )
 
-test_env_path = "smarts.env:multi-scenario-v0" 
+test_env_path = "smarts.env:multi-scenario-v0"
 test_senario = "1_to_2lane_left_turn_c"
-test_env = gym.make(test_env_path,scenario = test_senario,**shared_configs)
+test_env = gym.make(test_env_path, scenario=test_senario, **shared_configs)
 test_env = test_agent_spec.adapt_env(test_env)
 
 for _ in range(10):
