@@ -34,8 +34,8 @@ from shapely.geometry import LineString
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 
-from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
-from .utils.math import (
+from smarts.core.coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
+from smarts.core.utils.math import (
     fast_quaternion_from_angle,
     min_angles_difference_signed,
     signed_dist_to_line,

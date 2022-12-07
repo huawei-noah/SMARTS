@@ -142,15 +142,12 @@ class _Metrics(gym.Wrapper):
                 # fmt: on
 
                 # Compute and update percentage of scenario tasks completed.
-                completion = Completion()
+                completion = Completion(dist_tot=self._records[self._cur_scen][agent_name].record.completion.dist_tot)
                 for field in fields(self._records[self._cur_scen][agent_name].completion_funcs):
                     completion_func = getattr(self._records[self._cur_scen][agent_name].completion_funcs, field.name)
-                    new_completion = completion_func(self._scen, agent_obs)
+                    new_completion = completion_func(self._scen.road_map, agent_obs)
                     completion = _add_dataclass(new_completion, completion)
-                self._records[self._cur_scen][agent_name].record.completion = _add_dataclass(
-                        Completion(dist_tot=self._records[self._cur_scen][agent_name].record.completion.dist_tot),
-                        completion
-                    )
+                self._records[self._cur_scen][agent_name].record.completion = completion
 
         if dones["__all__"] == True:
             assert (
@@ -175,8 +172,9 @@ class _Metrics(gym.Wrapper):
                     record=Record(
                         completion=Completion(
                             dist_tot = get_dist(
-                                self._scen.road_map, 
-                                self._scen.missions[agent_name]
+                                road_map=self._scen.road_map, 
+                                point_a=self._scen.missions[agent_name].start.position,
+                                point_b=self._scen.missions[agent_name].goal.position,
                             )
                         ),
                         costs=Costs(),
@@ -188,57 +186,10 @@ class _Metrics(gym.Wrapper):
                 for agent_name in self._cur_agents
             }
 
-        # Retrieve the current scenario, missions, plan, and routes.
-
-        # vi = sim.vehicle_index
-        # print(f"Vehicle ids == {[vi.agent_vehicle_ids]}")
-        # agent_name = "Agent_1"
-        # sensor_state = vi.sensor_state_for_vehicle_id(agent_name)
-        # print(f"{agent_name} Starting point -- {sensor_state.plan.mission.start.point}, {type(sensor_state.plan.mission.start.point)}")
-        # print(f"{agent_name} Goal point -- {sensor_state.plan.mission.goal.position}, {type(sensor_state.plan.mission.goal.position)}")
-        # for roads in sensor_state.plan.route.roads:
-        #     print(f"{roads.road_id}")
-        # print(f"Route Length: {sensor_state.plan.route.road_length}")
-        # print("111111111")
-
-        agent_plan = {}
-        for agent_name, agent_mission in scen.missions.items():
-            agent_plan[agent_name] = Plan(scen.road_map, agent_mission)
-
-            print(f"{agent_name} Starting point -- {agent_mission.start.point}, {type(agent_mission.start.point)}")
-            print(f"{agent_name} Goal point -- {agent_mission.goal.position}, {type(agent_mission.goal.position)}")
-            for roads in agent_plan[agent_name].route.roads:
-                print(f"{roads.road_id}")
-            print(f"Route Length: {agent_plan[agent_name].route.road_length}")
-            print("2222222222")
-
-        # class RefLinePoint(NamedTuple):
-        #     """A reference line coordinate.
-        #     See the Reference Line coordinate system in OpenDRIVE here:
-        #     `https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems`
-        #     Also known as the Frenet coordinate system.
-        #     """
-        #     s: float  # offset along lane from start of lane
-
-
-        # def _extract_mission(mission, road_map):
-
-
-        # def distance_between(
-        #     self, start: RoadMap.Route.RoutePoint, end: RoadMap.Route.RoutePoint
-        # ) -> Optional[float]:
-
-
         # def offset_along_lane(self, world_point: Point) -> float:
         # def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
         # def to_lane_coord(self, world_point: Point) -> RefLinePoint:
-
-
         # def road_with_point(self, point: Point) -> RoadMap.Road:
-
-
-        print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-
 
         return obs
 

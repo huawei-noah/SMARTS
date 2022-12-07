@@ -352,7 +352,7 @@ class Plan:
             )
         if start_lane is None:
             self._mission = Mission.endless_mission(Pose.origin())
-            raise PlanningError("Lane: Starting lane not found. Route must start in a lane.")
+            raise PlanningError("Starting lane not found. Route must start in a lane.")
         start_road = start_lane.road
 
         end_lane = self._road_map.nearest_lane(
@@ -371,7 +371,7 @@ class Plan:
         if len(self._route.roads) == 0:
             self._mission = Mission.endless_mission(Pose.origin())
             raise PlanningError(
-                "Route: Unable to find a route between start={} and end={}. If either of "
+                "Unable to find a route between start={} and end={}. If either of "
                 "these are junctions (not well supported today) please switch to "
                 "roads and ensure there is a > 0 offset into the road if it is "
                 "after a junction.".format(start_road.road_id, end_road.road_id)
