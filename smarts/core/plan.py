@@ -321,7 +321,7 @@ class Plan:
         """The road map this plan is relative to."""
         return self._road_map
 
-    def create_route(self, mission: Mission) -> Mission:
+    def create_route(self, mission: Mission):
         """Generates a route that conforms to a mission.
         Args:
             mission (Mission):
@@ -332,7 +332,7 @@ class Plan:
 
         if not self._mission.requires_route:
             self._route = self._road_map.empty_route()
-            return self._mission
+            return
 
         assert isinstance(self._mission.goal, PositionalGoal)
 
@@ -352,7 +352,7 @@ class Plan:
             )
         if start_lane is None:
             self._mission = Mission.endless_mission(Pose.origin())
-            raise PlanningError("Cannot find start lane. Route must start in a lane.")
+            raise PlanningError("Lane: Starting lane not found. Route must start in a lane.")
         start_road = start_lane.road
 
         end_lane = self._road_map.nearest_lane(
@@ -371,10 +371,10 @@ class Plan:
         if len(self._route.roads) == 0:
             self._mission = Mission.endless_mission(Pose.origin())
             raise PlanningError(
-                "Unable to find a route between start={} and end={}. If either of "
+                "Route: Unable to find a route between start={} and end={}. If either of "
                 "these are junctions (not well supported today) please switch to "
-                "roads and ensure there is a > 0 offset into the road if it's "
+                "roads and ensure there is a > 0 offset into the road if it is "
                 "after a junction.".format(start_road.road_id, end_road.road_id)
             )
 
-        return self._mission
+        return
