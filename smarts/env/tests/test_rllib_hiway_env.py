@@ -150,20 +150,23 @@ def test_rllib_hiway_env(rllib_agent):
     }
 
     # Test tune with the number of physical cpus with a minimum of 2 cpus
-    num_cpus = max(2, psutil.cpu_count(logical=False) - 1)
-    ray.init(num_cpus=num_cpus, num_gpus=0)
-    analysis = tune.run(
-        "PPO",
-        name="RLlibHiWayEnv test",
-        # terminate as soon as possible (this will run one training iteration)
-        stop={"training_iteration": 1},
-        max_failures=0,  # On failures, exit immediately
-        local_dir=make_dir_in_smarts_log_dir("smarts_rllib_smoke_test"),
-        config=tune_confg,
-    )
+    num_cpus = min(2, psutil.cpu_count(logical=False) - 1)
+    try:
+        ray.init(num_cpus=max(num_cpus, 1), num_gpus=0)
+        analysis = tune.run(
+            "PPO",
+            name="RLlibHiWayEnv test",
+            # terminate as soon as possible (this will run one training iteration)
+            stop={"training_iteration": 1},
+            max_failures=0,  # On failures, exit immediately
+            local_dir=make_dir_in_smarts_log_dir("smarts_rllib_smoke_test"),
+            config=tune_confg,
+        )
 
-    # trial status will be ERROR if there are any issues with the environment
-    assert (
-        analysis.get_best_trial("episode_reward_mean", mode="max").status
-        == "TERMINATED"
-    )
+        # trial status will be ERROR if there are any issues with the environment
+        assert (
+            analysis.get_best_trial("episode_reward_mean", mode="max").status
+            == "TERMINATED"
+        )
+    finally:
+        ray.shutdown()
