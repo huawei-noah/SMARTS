@@ -105,61 +105,28 @@ def rllib_agent():
 
 
 def test_rllib_hiway_env(rllib_agent):
-    def on_episode_end(info):
-        episode = info["episode"]
-        agent_info = episode.last_info_for(AGENT_ID)
-
-        assert INFO_EXTRA_KEY in agent_info, "Failed to apply info adapter."
-
-    rllib_model_name = "FullyConnectedNetwork"
-    ModelCatalog.register_custom_model(rllib_model_name, FullyConnectedNetwork)
-
-    rllib_policies = {
-        "policy": (
-            None,
-            rllib_agent["observation_space"],
-            rllib_agent["action_space"],
-            {"model": {"custom_model": rllib_model_name}},
-        )
-    }
-
     # XXX: We should be able to simply provide "scenarios/sumo/loop"?
-    import smarts
-
     scenario_path = Path(__file__).parent / "../../../scenarios/sumo/loop"
 
-    tune_config = {
-        "env": RLlibHiWayEnv,
-        "env_config": {
-            "scenarios": [str(scenario_path.absolute())],
-            "seed": 42,
-            "headless": True,
-            "agent_specs": {AGENT_ID: rllib_agent["agent_spec"]},
-        },
-        "callbacks": {"on_episode_end": on_episode_end},
-        "multiagent": {
-            "policies": rllib_policies,
-            "policy_mapping_fn": lambda _: "policy",
-        },
-        "log_level": "WARN",
-        "num_workers": 1,
+    env_config = {
+        "scenarios": [str(scenario_path.absolute())],
+        "seed": 42,
+        "headless": True,
+        "agent_specs": {AGENT_ID: rllib_agent["agent_spec"]},
     }
 
-    # Test tune with the number of physical cpus with a minimum of 2 cpus
-    num_cpus = 2
-    try:
-        ray.init(num_cpus=num_cpus, num_gpus=0)
-        analysis = tune.run(
-            Trainable,
-            name="RLlibHiWayEnv test",
-            # terminate as soon as possible (this will run one training iteration)
-            stop={"training_iteration": 5},
-            max_failures=0,  # On failures, exit immediately
-            local_dir=make_dir_in_smarts_log_dir("smarts_rllib_smoke_test"),
-            config=tune_config,
-        )
+    class atdict(dict):
+        __getattr__ = dict.__getitem__
+        __setattr__ = dict.__setitem__
+        __delattr__ = dict.__delitem__
 
-        # trial status will be ERROR if there are any issues with the environment
-        assert analysis.get_best_trial("score", mode="max").status == "TERMINATED"
-    finally:
-        ray.shutdown()
+    env = RLlibHiWayEnv(config=atdict(**env_config, worker_index=0, vector_index=1))
+    agent_ids = list(env_config["agent_specs"].keys())
+
+    dones = {"__all__": False}
+    env.reset()
+    while not dones["__all__"]:
+        _, _, dones, _ = env.step(
+            {aid: rllib_agent["action_space"].sample() for aid in agent_ids}
+        )
+    env.close()
