@@ -126,12 +126,9 @@ def test_rllib_hiway_env(rllib_agent):
     # XXX: We should be able to simply provide "scenarios/sumo/loop"?
     import smarts
 
-    scenario_path = (
-        Path(smarts.__file__).parent.absolute()
-        / "scenarios/intersection/1_to_1lane_left_turn_c"
-    )
+    scenario_path = Path(__file__).parent / "../../../scenarios/sumo/loop"
 
-    tune_confg = {
+    tune_config = {
         "env": RLlibHiWayEnv,
         "env_config": {
             "scenarios": [str(scenario_path.absolute())],
@@ -156,10 +153,10 @@ def test_rllib_hiway_env(rllib_agent):
             Trainable,
             name="RLlibHiWayEnv test",
             # terminate as soon as possible (this will run one training iteration)
-            stop={"training_iteration": 10},
+            stop={"training_iteration": 5},
             max_failures=0,  # On failures, exit immediately
             local_dir=make_dir_in_smarts_log_dir("smarts_rllib_smoke_test"),
-            config=tune_confg,
+            config=tune_config,
         )
 
         # trial status will be ERROR if there are any issues with the environment
