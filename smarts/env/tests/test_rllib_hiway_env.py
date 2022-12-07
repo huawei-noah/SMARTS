@@ -150,9 +150,9 @@ def test_rllib_hiway_env(rllib_agent):
     }
 
     # Test tune with the number of physical cpus with a minimum of 2 cpus
-    num_cpus = min(2, psutil.cpu_count(logical=False) - 1)
+    num_cpus = 2
     try:
-        ray.init(num_cpus=max(num_cpus, 1), num_gpus=0)
+        ray.init(num_cpus=num_cpus, num_gpus=0)
         analysis = tune.run(
             "PPO",
             name="RLlibHiWayEnv test",
