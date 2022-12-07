@@ -23,7 +23,6 @@ from pathlib import Path
 
 import gym
 import numpy as np
-import psutil
 import pytest
 
 # Make sure to install rllib dependencies using the command "pip install -e .[test]" before running the test
@@ -154,19 +153,16 @@ def test_rllib_hiway_env(rllib_agent):
     try:
         ray.init(num_cpus=num_cpus, num_gpus=0)
         analysis = tune.run(
-            "PPO",
+            Trainable,
             name="RLlibHiWayEnv test",
             # terminate as soon as possible (this will run one training iteration)
-            stop={"training_iteration": 1},
+            stop={"training_iteration": 10},
             max_failures=0,  # On failures, exit immediately
             local_dir=make_dir_in_smarts_log_dir("smarts_rllib_smoke_test"),
             config=tune_confg,
         )
 
         # trial status will be ERROR if there are any issues with the environment
-        assert (
-            analysis.get_best_trial("episode_reward_mean", mode="max").status
-            == "TERMINATED"
-        )
+        assert analysis.get_best_trial("score", mode="max").status == "TERMINATED"
     finally:
         ray.shutdown()
