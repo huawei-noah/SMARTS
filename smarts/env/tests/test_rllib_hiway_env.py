@@ -25,15 +25,7 @@ import gym
 import numpy as np
 import pytest
 
-# Make sure to install rllib dependencies using the command "pip install -e .[test]" before running the test
-import ray
-from ray import tune
-from ray.rllib.models import ModelCatalog
-from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
-
-from smarts import sstudio
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.zoo.agent_spec import AgentSpec
 
