@@ -1,6 +1,9 @@
 import sys
 import os
 import importlib.util
+import shutil
+import subprocess
+import logging
 from pathlib import Path
 from typing import Any, Dict
 
@@ -122,44 +125,63 @@ root_path = str(Path(__file__).absolute().parents[2])
 
 def competition_entry(**kwargs):
     policy_path = kwargs.get("policy_path", None)
-    env_path = os.path.join(root_path, f"competition_env/{Path(policy_path).name}")
+    comp_env_path = str(
+        os.path.join(policy_path, "competition_env")
+    )  # folder contains all competition environment
+    sub_env_path = os.path.join(
+        comp_env_path, f"{Path(policy_path).name}"
+    )  # folder contains single competition environment
+    req_file = os.path.join(
+        policy_path, "requirements.txt"
+    )  # path of the requiremnet file
+
+    if Path(sub_env_path).exists():
+        shutil.rmtree(sub_env_path)
+    Path.mkdir(Path(sub_env_path), parents=True, exist_ok=True)
+
+    try:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "-t",
+                sub_env_path,
+                "-r",
+                req_file,
+            ]
+        )
+        sys.path.append(sub_env_path)
+    except:
+        logging.error(
+            f"Failed to install requirement for Competition Agent in folder {Path(policy_path).name}"
+        )
+        raise
+
+    # insert submission path
+    while policy_path in sys.path:
+        sys.path.remove(policy_path)
+
+    sys.path.insert(0, policy_path)
+
+    # import policy module
+    policy_file_path = str(os.path.join(policy_path, "policy.py"))
+    policy_spec = importlib.util.spec_from_file_location(
+        "competition_policy", policy_file_path
+    )
+    policy_module = importlib.util.module_from_spec(policy_spec)
+    sys.modules["competition_policy"] = policy_module
+    if policy_spec:
+        policy_spec.loader.exec_module(policy_module)
+
+    policy = policy_module.Policy()
+    wrappers = policy_module.submitted_wrappers()
 
     from .competition_agent import CompetitionAgent
 
     def env_wrapper(env):
         import gym
-
-        # insert policy path
-        if policy_path in sys.path:
-            sys.path.remove(policy_path)
-
-        sys.path.insert(0, policy_path)
-
-        # import policy.py module
-        wrapper_path = str(os.path.join(policy_path, "policy.py"))
-        wrapper_spec = importlib.util.spec_from_file_location(
-            "competition_wrapper", wrapper_path
-        )
-        wrapper_module = importlib.util.module_from_spec(wrapper_spec)
-        sys.modules["competition_wrapper"] = wrapper_module
-        if wrapper_spec:
-            wrapper_spec.loader.exec_module(wrapper_module)
-
-        wrappers = wrapper_module.submitted_wrappers()
-
-        # delete competition wrapper module and remove path
-        while policy_path in sys.path:
-            sys.path.remove(policy_path)  # prevent duplicate path remain in sys.path
-
-        # remove all modules related to policy_path
-        for key, module in list(sys.modules.items()):
-            if "__file__" in dir(module):
-                module_path = module.__file__
-                if module_path and (
-                    policy_path in module_path or env_path in module_path
-                ):
-                    sys.modules.pop(key)
-        del wrapper_module
 
         env = gym.Wrapper(env)
         for wrapper in wrappers:
@@ -177,10 +199,29 @@ def competition_entry(**kwargs):
         ),
         agent_params={
             "policy_path": policy_path,
+            "policy": policy,
         },
         adapt_env=env_wrapper,
         agent_builder=CompetitionAgent,
     )
+
+    # delete competition policy module and remove related path
+    while policy_path in sys.path:
+        sys.path.remove(policy_path)  # prevent duplicate path remain in sys.path
+
+    while sub_env_path in sys.path:
+        sys.path.remove(sub_env_path)  # prevent duplicate path remain in sys.path
+
+    # remove all modules related to policy_path
+    for key, module in list(sys.modules.items()):
+        if "__file__" in dir(module):
+            module_path = module.__file__
+            if module_path and (
+                policy_path in module_path or sub_env_path in module_path
+            ):
+                sys.modules.pop(key)
+
+    del policy_module
 
     return spec
 
