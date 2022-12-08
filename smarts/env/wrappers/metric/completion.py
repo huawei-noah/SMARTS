@@ -122,10 +122,11 @@ def _dist_remainder():
         if obs.events.reached_goal:
             dist = 0
         else:
-            # assert PositionalGoal(obs.ego_vehicle_state.mission.goal)
             cur_pos = Point(*obs.ego_vehicle_state.position)
             print(f"Cur position === {cur_pos} ???????????????????")
+            # pytype: disable=attribute-error
             goal_pos = obs.ego_vehicle_state.mission.goal.position
+            # pytype: enable=attribute-error
             dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
             print(f"Dist total = {dist} -----------------------------------------")
 

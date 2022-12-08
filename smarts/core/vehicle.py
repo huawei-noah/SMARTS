@@ -151,10 +151,7 @@ VEHICLE_CONFIGS = {
 
 class Vehicle:
     """Represents a single vehicle."""
-
-    _HAS_DYNAMIC_ATTRIBUTES = True
-
-    _HAS_DYNAMIC_ATTRIBUTES = True  # pytype dynamic
+    _HAS_DYNAMIC_ATTRIBUTES = True  # pytype: dynamic attribute
 
     def __init__(
         self,

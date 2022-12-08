@@ -167,7 +167,7 @@ class _Metrics(gym.Wrapper):
         self._cur_agents = set(self.env.agent_specs.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_agents = set()
-        self._scen, sim = self.env.scenario
+        self._scen = self.env.scenario
 
         if self._cur_scen not in self._records:
             _check_scen(self._scen)
@@ -231,18 +231,19 @@ class _Metrics(gym.Wrapper):
         """
         An overall performance score achieved on the wrapped environment.
         """
-        counts_list, costs_list = zip(
+        counts_list, costs_list, completion_list = zip(
             *[
-                (data.record.counts, data.record.costs)
+                (data.record.counts, data.record.costs, data.record.completion)
                 for agents in self._records.values()
                 for data in agents.values()
             ]
         )
-        counts_tot = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
-        costs_tot = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
+        counts_tot: Counts = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
+        costs_tot: Costs = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
+        completion_tot: Completion = functools.reduce(lambda a, b: _add_dataclass(a, b), completion_list)
 
         _score: Dict[str, float] = {}
-        _score["completion"] = _completion(counts=counts_tot)
+        _score["completion"] = _completion(completion=completion_tot, scen_num=len(self._records))
         _score["humanness"] = _humanness(counts=counts_tot, costs=costs_tot)
         _score["rules"] = _rules(counts=counts_tot, costs=costs_tot)
         _score["time"] = _time(counts=counts_tot, costs=costs_tot)
@@ -314,8 +315,19 @@ def _add_dataclass(first: T, second: T) -> T:
     return output
 
 
-def _completion(counts: Counts) -> float:
-    return counts.goals / counts.episodes
+def _completion(completion: Completion, scen_num:int) -> float:
+    """
+    Percentage of scenarios tasks completed, averaged over all scenarios. 
+
+    Args:
+        completion (Completion): Proportion of scenario tasks completed, summed
+            over all scenarios.
+        scen_num (int): Number of scenarios.
+
+    Returns:
+        float: Average completion over all scenarios.
+    """
+    return completion.dist_tot / scen_num
 
 
 def _humanness(counts: Counts, costs: Costs) -> float:
