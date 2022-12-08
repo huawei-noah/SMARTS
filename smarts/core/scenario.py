@@ -559,7 +559,7 @@ class Scenario:
             Start(
                 np.array([pos_x + hhx, pos_y + hhy]),
                 Heading(heading),
-                from_front_bumper=False,
+                from_front_bumper=True,
             ),
             speed,
         )

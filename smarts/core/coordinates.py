@@ -291,6 +291,7 @@ class Pose:
     """A pair of position and orientation values."""
 
     position: np.ndarray  # [x, y, z]
+    """Center of vehicle."""
     orientation: np.ndarray  # [a, b, c, d] -> a + bi + cj + dk = 0
     heading_: Optional[Heading] = None  # cached heading to avoid recomputing
 
@@ -335,8 +336,8 @@ class Pose:
         return Point(*self.position)
 
     @classmethod
-    def from_front_bumper(cls, front_bumper_position, heading, length):
-        """Convert from front bumper location
+    def from_front_bumper(cls, front_bumper_position, heading, length) -> "Pose":
+        """Convert from front bumper location to a Pose with center of vehicle.
 
         Args:
             front_bumper_position: The (x, y) position of the centre front of the front bumper

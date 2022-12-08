@@ -176,7 +176,7 @@ class _Metrics(gym.Wrapper):
                         completion=Completion(
                             dist_tot = get_dist(
                                 road_map=self._scen.road_map, 
-                                point_a=self._scen.missions[agent_name].start.position,
+                                point_a=Point(*obs[agent_name].ego_vehicle_state.position),
                                 point_b=self._scen.missions[agent_name].goal.position,
                             )
                         ),

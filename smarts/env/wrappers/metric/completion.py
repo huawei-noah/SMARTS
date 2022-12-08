@@ -67,6 +67,7 @@ def get_dist(road_map:RoadMap, point_a: Point, point_b: Point) -> float:
             start=Start(
                 position=start.as_np_array,
                 heading=Heading(0),
+                from_front_bumper=False,
             ),
             goal=PositionalGoal(
                 position=end,
