@@ -198,7 +198,7 @@ class RouteWithCache(RoadMap.Route):
                 break
             if rind <= sind:
                 continue
-            print(f"d ={d} +++++  {road.length}")
+            print(f"d ={d} +++++  {road.length} , {road.road_id}")
             d += road.length
         print(f"Final d == {d}")
         return -d if negate else d

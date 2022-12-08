@@ -12,8 +12,6 @@ from smarts.core.utils.episodes import episodes
 from smarts.env.wrappers.single_agent import SingleAgent
 from smarts.zoo.agent_spec import AgentSpec
 
-logging.basicConfig(level=logging.INFO)
-
 
 class ChaseViaPointsAgent(Agent):
     def act(self, obs: Observation):
@@ -36,7 +34,12 @@ class ChaseViaPointsAgent(Agent):
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
-            AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
+            AgentType.LanerWithSpeed, 
+            max_episode_steps=800,
+            accelerometer=True,
+            neighborhood_vehicles=True,
+            road_waypoints=True,
+            waypoints=True,
         ),
         agent_builder=ChaseViaPointsAgent,
     )
@@ -45,15 +48,18 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
         "smarts.env:hiway-v0",
         scenarios=scenarios,
         agent_specs={"SingleAgent": agent_spec},
-        headless=headless,
-        sumo_headless=True,
+        headless=True,
+        sumo_headless=False,
     )
+
+    from smarts.env.wrappers.metrics import Metrics
+    env=Metrics(env=env)
 
     # Convert `env.step()` and `env.reset()` from multi-agent interface to
     # single-agent interface.
     env = SingleAgent(env=env)
 
-    for episode in episodes(n=num_episodes):
+    for episode in episodes(n=100):
         agent = agent_spec.build_agent()
         observation = env.reset()
         episode.record_scenario(env.scenario_log)
@@ -75,9 +81,10 @@ if __name__ == "__main__":
         args.scenarios = [
             str(
                 pathlib.Path(__file__).absolute().parents[1]
+                / "smarts"
                 / "scenarios"
-                / "sumo"
-                / "loop"
+                / "intersection"
+                / "1_to_1lane_left_turn_c"
             )
         ]
 

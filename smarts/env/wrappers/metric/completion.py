@@ -114,10 +114,16 @@ def _dist_remainder():
     def func(road_map:RoadMap, obs: Observation):
         nonlocal mean, step
 
-        # assert PositionalGoal(obs.ego_vehicle_state.mission.goal)
-        cur_pos = Point(*obs.ego_vehicle_state.position)
-        goal_pos = obs.ego_vehicle_state.mission.goal.position
-        dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
+        if obs.events.reached_goal:
+            dist = 0
+        else:
+            # assert PositionalGoal(obs.ego_vehicle_state.mission.goal)
+            cur_pos = Point(*obs.ego_vehicle_state.position)
+            print(f"Cur position === {cur_pos} ???????????????????")
+            goal_pos = obs.ego_vehicle_state.mission.goal.position
+            dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
+            print(f"Dist total = {dist} -----------------------------------------")
+
         mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=dist)
         return Completion(dist_remainder=mean)
 
