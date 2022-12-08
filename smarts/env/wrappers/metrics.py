@@ -26,7 +26,8 @@ from typing import Any, Dict, Set, TypeVar
 import gym
 
 from smarts.core.agent_interface import AgentInterface
-from smarts.core.plan import Plan, PositionalGoal
+from smarts.core.coordinates import Point
+from smarts.core.plan import PositionalGoal
 from smarts.core.scenario import Scenario
 from smarts.env.wrappers.metric import termination
 from smarts.env.wrappers.metric.completion import Completion, CompletionFuncs, get_dist
