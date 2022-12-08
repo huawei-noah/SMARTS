@@ -135,21 +135,6 @@ def _dist_remainder():
     return func
 
 
-def dist_remainder(road_map:RoadMap, obs: Observation)->Completion:
-    """
-    dist_remainder _summary_
-
-    Args:
-        road_map (RoadMap): _description_
-        obs (Observation): _description_
-
-    Returns:
-        Completion: _description_
-    """
-
-    return _dist_remainder()(road_map, obs)
-
-
 @dataclass(frozen=True)
 class CompletionFuncs:
     """Functions to compute scenario completion metrics. Each function computes
