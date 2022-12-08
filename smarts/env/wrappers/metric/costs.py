@@ -233,7 +233,8 @@ def _wrong_way() -> Callable[[Observation], Costs]:
 
 @dataclass(frozen=True)
 class CostFuncs:
-    """Functions to compute performance costs."""
+    """Functions to compute performance costs. Each cost function computes the
+    running mean cost over number of time steps, for a given scenario."""
 
     collisions: Callable[[Observation], Costs] = _collisions
     dist_to_obstacles: Callable[[Observation], Costs] = _dist_to_obstacles()

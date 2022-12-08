@@ -96,9 +96,14 @@ def get_dist(road_map:RoadMap, point_a: Point, point_b: Point) -> float:
     except PlanningError as e:
         if e.args[0].startswith("Unable to find a route"):
             print(f"Unable to find a route =====!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            # Vehicle might end (i) in a dead-end, (ii) in a one-way road, or 
+            # (iii) in a road without u-turn, causing the route planner to fail.
+            # When there is no legal route, the road distance in the reverse 
+            # direction is returned as the distance between point_a and point_b.
+            # Thus, proceed to find a route in the reverse direction.
             dist_tot = _get_dist(point_b, point_a)
             logger.info("completion.get dist(): Did not find a route from " 
-                "%s to %s, instead found a route from %s to %s.", 
+                "%s to %s, instead found a reversed route from %s to %s.", 
                 point_a,
                 point_b,
                 point_b,
@@ -132,6 +137,8 @@ def _dist_remainder():
 
 @dataclass(frozen=True)
 class CompletionFuncs:
-    """Functions to compute scenario completion metrics."""
+    """Functions to compute scenario completion metrics. Each function computes
+    the running mean completion value over number of episodes, for a given 
+    scenario."""
 
     dist_remainder: Callable[[RoadMap, Observation], Completion] = _dist_remainder()

@@ -203,7 +203,7 @@ class HiWayEnv(gym.Env):
         Returns:
             Scenario: Current simulated scenario.
         """
-        return self._smarts.scenario, self._smarts
+        return self._smarts.scenario
 
 
     def seed(self, seed: int) -> int:
