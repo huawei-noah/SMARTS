@@ -146,7 +146,7 @@ class _Metrics(gym.Wrapper):
                 completion = Completion(dist_tot=self._records[self._cur_scen][agent_name].record.completion.dist_tot)
                 for field in fields(self._records[self._cur_scen][agent_name].completion_funcs):
                     completion_func = getattr(self._records[self._cur_scen][agent_name].completion_funcs, field.name)
-                    new_completion = completion_func(self._scen.road_map, agent_obs)
+                    new_completion = completion_func(road_map=self._scen.road_map, obs=agent_obs)
                     completion = _add_dataclass(new_completion, completion)
                 self._records[self._cur_scen][agent_name].record.completion = completion
 
@@ -238,15 +238,16 @@ class _Metrics(gym.Wrapper):
                 for data in agents.values()
             ]
         )
+        agents_tot: int = len(counts_list) # Total number of agents over all scenarios
         counts_tot: Counts = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
         costs_tot: Costs = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
         completion_tot: Completion = functools.reduce(lambda a, b: _add_dataclass(a, b), completion_list)
 
         _score: Dict[str, float] = {}
-        _score["completion"] = _completion(completion=completion_tot, scen_num=len(self._records))
-        _score["humanness"] = _humanness(counts=counts_tot, costs=costs_tot)
-        _score["rules"] = _rules(counts=counts_tot, costs=costs_tot)
-        _score["time"] = _time(counts=counts_tot, costs=costs_tot)
+        _score["completion"] = _completion(completion=completion_tot, agents_tot=agents_tot)
+        _score["humanness"] = _humanness(costs=costs_tot, agents_tot=agents_tot)
+        _score["rules"] = _rules(costs=costs_tot, agents_tot=agents_tot)
+        _score["time"] = _time(counts=counts_tot)
 
         return _score
 
@@ -315,7 +316,7 @@ def _add_dataclass(first: T, second: T) -> T:
     return output
 
 
-def _completion(completion: Completion, scen_num:int) -> float:
+def _completion(completion: Completion, agents_tot: int) -> float:
     """
     Percentage of scenarios tasks completed, averaged over all scenarios. 
 
@@ -327,21 +328,20 @@ def _completion(completion: Completion, scen_num:int) -> float:
     Returns:
         float: Average completion over all scenarios.
     """
-    return completion.dist_tot / scen_num
+    return completion.dist_tot / agents_tot
 
 
-def _humanness(counts: Counts, costs: Costs) -> float:
+def _humanness(costs: Costs, agents_tot: int) -> float:
     return (
         costs.dist_to_obstacles
-        + costs.jerk_angular
         + costs.jerk_linear
         + costs.lane_center_offset
-    ) / counts.episodes
+    ) / agents_tot
 
 
-def _rules(counts: Counts, costs: Costs) -> float:
-    return (costs.speed_limit + costs.wrong_way) / counts.episodes
+def _rules(costs: Costs, agents_tot: int) -> float:
+    return (costs.speed_limit + costs.wrong_way) / agents_tot
 
 
-def _time(counts: Counts, costs: Costs) -> float:
-    return (counts.steps_adjusted + costs.dist_to_goal) / counts.episodes
+def _time(counts: Counts) -> float:
+    return (counts.steps_adjusted) / counts.episodes
