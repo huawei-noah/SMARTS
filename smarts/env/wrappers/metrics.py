@@ -149,6 +149,9 @@ class _Metrics(gym.Wrapper):
                     completion = _add_dataclass(new_completion, completion)
                 self._records[self._cur_scen][agent_name].record.completion = completion
 
+                print(f"{agent_name}: {completion}")
+                s = input("Press Enter to continue...")
+
         if dones["__all__"] == True:
             assert (
                 self._done_agents == self._cur_agents

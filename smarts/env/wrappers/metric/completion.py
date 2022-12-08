@@ -77,18 +77,24 @@ def get_dist(road_map:RoadMap, point_a: Point, point_b: Point) -> float:
         from_route_point = RoadMap.Route.RoutePoint(pt=start)
         to_route_point = RoadMap.Route.RoutePoint(pt=end)
 
+        print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
+        print(f"{from_route_point}  --> {to_route_point}")
         dist_tot = plan.route.distance_between(start=from_route_point, end=to_route_point)
         if dist_tot == None:
             raise CompletionError("Unable to find road on route near given points.")
         elif dist_tot < 0:
             raise CompletionError("Path from start point to end point flows in "
                 "the opposite direction of the generated route.")
+
+        print("*********************************")
+
         return dist_tot
 
     try:
         dist_tot = _get_dist(point_a, point_b)
     except PlanningError as e:
         if e.args[0].startswith("Unable to find a route"):
+            print(f"Unable to find a route =====!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             dist_tot = _get_dist(point_b, point_a)
             logger.info("completion.get dist(): Did not find a route from " 
                 "%s to %s, instead found a route from %s to %s.", 
@@ -107,6 +113,7 @@ def _dist_remainder():
     def func(road_map:RoadMap, obs: Observation):
         nonlocal mean, step
 
+        # assert PositionalGoal(obs.ego_vehicle_state.mission.goal)
         cur_pos = Point(*obs.ego_vehicle_state.position)
         goal_pos = obs.ego_vehicle_state.mission.goal.position
         dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)

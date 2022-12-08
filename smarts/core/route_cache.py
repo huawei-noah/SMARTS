@@ -192,12 +192,15 @@ class RouteWithCache(RoadMap.Route):
             start_offset, end_offset = end_offset, start_offset
             negate = True
         d = end_offset + start_lane.length - start_offset
+        print(f"d={d}  ..... end_offset={end_offset} .... start_length={start_lane.length} .... start_offset={start_offset} ")
         for rind, road in enumerate(self._roads):
             if rind >= eind:
                 break
             if rind <= sind:
                 continue
+            print(f"d ={d} +++++  {road.length}")
             d += road.length
+        print(f"Final d == {d}")
         return -d if negate else d
 
     @lru_cache(maxsize=8)
