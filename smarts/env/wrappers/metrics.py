@@ -26,11 +26,10 @@ from typing import Any, Dict, Set, TypeVar
 import gym
 
 from smarts.core.agent_interface import AgentInterface
-from smarts.core.coordinates import Point
 from smarts.core.plan import PositionalGoal
 from smarts.core.scenario import Scenario
 from smarts.env.wrappers.metric import termination
-from smarts.env.wrappers.metric.completion import Completion, CompletionFuncs, get_dist
+from smarts.env.wrappers.metric.completion import Completion, CompletionFuncs, dist_remainder
 from smarts.env.wrappers.metric.costs import Costs, CostFuncs
 from smarts.env.wrappers.metric.counts import Counts
 
@@ -175,10 +174,9 @@ class _Metrics(gym.Wrapper):
                 agent_name: Data(
                     record=Record(
                         completion=Completion(
-                            dist_tot = get_dist(
+                            dist_tot = dist_remainder(
                                 road_map=self._scen.road_map, 
-                                point_a=Point(*obs[agent_name].ego_vehicle_state.position),
-                                point_b=self._scen.missions[agent_name].goal.position,
+                                obs=obs[agent_name]
                             )
                         ),
                         costs=Costs(),

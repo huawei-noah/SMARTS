@@ -184,6 +184,7 @@ class RouteWithCache(RoadMap.Route):
         start_offset = start_lane.offset_along_lane(start.pt)
         end_offset = end_lane.offset_along_lane(end.pt)
         if start_road == end_road and sind == eind:
+            print(f"d = end_offset - start_offset = {end_offset - start_offset}")
             return end_offset - start_offset
         negate = False
         if sind > eind:
