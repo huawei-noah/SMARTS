@@ -118,11 +118,11 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
 
     return func
 
-
 def _jerk_angular() -> Callable[[Observation], Costs]:
     mean = 0
     step = 0
 
+    # TODO: The output of this cost function should be normalised and bounded to [0,1].
     def func(obs: Observation) -> Costs:
         nonlocal mean, step
 

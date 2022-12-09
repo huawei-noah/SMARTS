@@ -342,7 +342,7 @@ def _completion(completion: Completion, agents_tot: int) -> float:
     Returns:
         float: Average completion over all scenarios.
     """
-    return completion.dist_tot / agents_tot
+    return (completion.dist_tot - completion.dist_remainder)  / agents_tot
 
 
 def _humanness(costs: Costs, agents_tot: int) -> float:

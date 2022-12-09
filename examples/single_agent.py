@@ -71,6 +71,9 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
             observation, reward, done, info = env.step(agent_action)
             episode.record_step(observation, reward, done, info)
 
+        print(f"{episode.index} score == {env.score()}")
+        print(f"{episode.index} records == {env.records()}")
+
     env.close()
 
 
