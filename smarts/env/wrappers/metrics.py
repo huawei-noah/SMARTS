@@ -124,9 +124,9 @@ class _Metrics(gym.Wrapper):
                 if agent_obs.events.reached_goal: 
                     steps_adjusted = self._steps[agent_name]
                     goals = 1
-                elif (len(obs.events.collisions) > 0
-                    or obs.events.off_road
-                    or obs.events.reached_max_episode_steps
+                elif (len(agent_obs.events.collisions) > 0
+                    or agent_obs.events.off_road
+                    or agent_obs.events.reached_max_episode_steps
                 ):                
                     steps_adjusted = _MAX_STEPS
                     crashes = 1
