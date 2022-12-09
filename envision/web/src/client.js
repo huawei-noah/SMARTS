@@ -32,7 +32,7 @@ export default class Client {
     endpoint,
     delay = 2000,
     retries = Number.POSITIVE_INFINITY,
-    maxFrameBufferSize = 200,
+    maxFrameBufferSize = 10000,
     frameBufferMode = frameBufferModes.NO_BIAS,
   }) {
     this._endpoint = new URL(endpoint);
