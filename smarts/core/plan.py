@@ -28,11 +28,10 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from smarts.sstudio.types import EntryTactic, TrapEntryTactic
-
 from smarts.core.coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import min_angles_difference_signed, vec_to_radians
+from smarts.sstudio.types import EntryTactic, TrapEntryTactic
 
 
 class PlanningError(Exception):

@@ -313,7 +313,7 @@ class Sensors:
                 )
 
         if vehicle.subscribed_to_waypoints_sensor:
-            waypoint_paths = vehicle.waypoints_sensor()  
+            waypoint_paths = vehicle.waypoints_sensor()
             # Plan(sim.road_map).road_map.waypoints(self._vehicle.pose, lookahead=self._lookahead, route=self._plan.route)
         else:
             waypoint_paths = sim.road_map.waypoint_paths(

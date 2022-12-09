@@ -526,7 +526,7 @@ def welford() -> Tuple[
     Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int]
 ]:
     """Welford's online mean and std computation
-    Reference: 
+    Reference:
         https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
         https://www.adamsmith.haus/python/answers/how-to-find-a-running-standard-deviation-in-python
 
@@ -567,10 +567,11 @@ def welford() -> Tuple[
 
     return update, mean, std, steps
 
+
 def running_mean(prev_mean: float, prev_step: int, new_val: float) -> Tuple[float, int]:
     """
     Returns a new running mean value, when given previous mean, previous step
-    count, and new value, 
+    count, and new value,
 
     Args:
         prev_mean (float): Previous mean value.

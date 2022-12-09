@@ -34,7 +34,7 @@ class ChaseViaPointsAgent(Agent):
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(
-            AgentType.LanerWithSpeed, 
+            AgentType.LanerWithSpeed,
             max_episode_steps=800,
             accelerometer=True,
             neighborhood_vehicles=True,
@@ -53,7 +53,8 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     )
 
     from smarts.env.wrappers.metrics import Metrics
-    env=Metrics(env=env)
+
+    env = Metrics(env=env)
 
     # Convert `env.step()` and `env.reset()` from multi-agent interface to
     # single-agent interface.

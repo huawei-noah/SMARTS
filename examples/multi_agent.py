@@ -22,7 +22,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     agent_specs = {
         agent_id: AgentSpec(
             interface=AgentInterface.from_type(
-                AgentType.Laner, 
+                AgentType.Laner,
                 max_episode_steps=800,
                 accelerometer=True,
                 neighborhood_vehicles=True,
@@ -43,7 +43,8 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     )
 
     from smarts.env.wrappers.metrics import Metrics
-    env=Metrics(env)
+
+    env = Metrics(env)
 
     for episode in episodes(n=num_episodes):
         agents = {

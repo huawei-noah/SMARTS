@@ -31,7 +31,7 @@ from smarts.core.plan import PositionalGoal
 from smarts.core.scenario import Scenario
 from smarts.env.wrappers.metric import termination
 from smarts.env.wrappers.metric.completion import Completion, CompletionFuncs, get_dist
-from smarts.env.wrappers.metric.costs import Costs, CostFuncs
+from smarts.env.wrappers.metric.costs import CostFuncs, Costs
 from smarts.env.wrappers.metric.counts import Counts
 
 _MAX_STEPS = 800
@@ -41,9 +41,11 @@ _MAX_STEPS = 800
 class Record:
     """Stores an agent's scenario-completion, performance-count, and
     performance-cost values."""
+
     completion: Completion
     costs: Costs
     counts: Counts
+
 
 @dataclass
 class Data:
@@ -128,6 +130,7 @@ class _Metrics(gym.Wrapper):
                     )
 
                 # Update stored counts.
+                # fmt: off
                 counts = Counts(
                     episodes=1,
                     steps=self._steps[agent_name],
@@ -135,20 +138,26 @@ class _Metrics(gym.Wrapper):
                     goals=goals,
                     crashes=crashes,
                 )
-                # fmt: off
                 self._records[self._cur_scen][agent_name].record.counts = _add_dataclass(
                     counts, 
                     self._records[self._cur_scen][agent_name].record.counts
                 )
-                # fmt: on
 
                 # Update percentage of scenario tasks completed.
                 completion = Completion(dist_tot=self._records[self._cur_scen][agent_name].record.completion.dist_tot)
                 for field in fields(self._records[self._cur_scen][agent_name].completion_funcs):
-                    completion_func = getattr(self._records[self._cur_scen][agent_name].completion_funcs, field.name)
-                    new_completion = completion_func(road_map=self._scen.road_map, obs=agent_obs)
+                    completion_func = getattr(
+                        self._records[self._cur_scen][agent_name].completion_funcs,
+                        field.name,
+                    )
+                    new_completion = completion_func(
+                        road_map=self._scen.road_map,
+                        obs=agent_obs,
+                        initial_compl=completion,
+                    )
                     completion = _add_dataclass(new_completion, completion)
                 self._records[self._cur_scen][agent_name].record.completion = completion
+                # fmt: on
 
                 print(f"{agent_name}: {completion}")
                 s = input("Press Enter to continue...")
@@ -169,14 +178,15 @@ class _Metrics(gym.Wrapper):
         self._done_agents = set()
         self._scen = self.env.scenario
 
+        # fmt: off
         if self._cur_scen not in self._records:
             _check_scen(self._scen)
             self._records[self._cur_scen] = {
                 agent_name: Data(
                     record=Record(
                         completion=Completion(
-                            dist_tot = get_dist(
-                                road_map=self._scen.road_map, 
+                            dist_tot=get_dist(
+                                road_map=self._scen.road_map,
                                 point_a=Point(*obs[agent_name].ego_vehicle_state.position),
                                 point_b=obs[agent_name].ego_vehicle_state.mission.goal.position,
                             )
@@ -189,6 +199,7 @@ class _Metrics(gym.Wrapper):
                 )
                 for agent_name in self._cur_agents
             }
+        # fmt: on
 
         # def offset_along_lane(self, world_point: Point) -> float:
         # def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
@@ -231,6 +242,7 @@ class _Metrics(gym.Wrapper):
         """
         An overall performance score achieved on the wrapped environment.
         """
+        # fmt: off
         counts_list, costs_list, completion_list = zip(
             *[
                 (data.record.counts, data.record.costs, data.record.completion)
@@ -238,7 +250,7 @@ class _Metrics(gym.Wrapper):
                 for data in agents.values()
             ]
         )
-        agents_tot: int = len(counts_list) # Total number of agents over all scenarios
+        agents_tot: int = len(counts_list)  # Total number of agents over all scenarios
         counts_tot: Counts = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
         costs_tot: Costs = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
         completion_tot: Completion = functools.reduce(lambda a, b: _add_dataclass(a, b), completion_list)
@@ -248,6 +260,7 @@ class _Metrics(gym.Wrapper):
         _score["humanness"] = _humanness(costs=costs_tot, agents_tot=agents_tot)
         _score["rules"] = _rules(costs=costs_tot, agents_tot=agents_tot)
         _score["time"] = _time(counts=counts_tot)
+        # fmt: on
 
         return _score
 
@@ -261,7 +274,8 @@ def _check_env(env):
     Raises:
         AttributeError: If any required agent interface is disabled.
     """
-    def check_intrfc(agent_intrfc:AgentInterface):
+
+    def check_intrfc(agent_intrfc: AgentInterface):
         intrfc = {
             "accelerometer": bool(agent_intrfc.accelerometer),
             "max_episode_steps": bool(agent_intrfc.max_episode_steps),
@@ -290,13 +304,13 @@ def _check_scen(scen: Scenario):
         scen (Scenario): A ``smarts.core.scenario.Scenario`` class.
 
     Raises:
-        AttributeError: If any agent's mission is not of type PositionGoal. 
+        AttributeError: If any agent's mission is not of type PositionGoal.
     """
     goal_types = {
-        agent_name : type(agent_mission.goal)
+        agent_name: type(agent_mission.goal)
         for agent_name, agent_mission in scen.missions.items()
     }
-    if not all([goal_type==PositionalGoal for goal_type in goal_types.values()]):
+    if not all([goal_type == PositionalGoal for goal_type in goal_types.values()]):
         raise AttributeError(
             "Expected all agents to have PositionalGoal, but agents have goal type "
             "{0}".format(goal_types)
@@ -318,7 +332,7 @@ def _add_dataclass(first: T, second: T) -> T:
 
 def _completion(completion: Completion, agents_tot: int) -> float:
     """
-    Percentage of scenarios tasks completed, averaged over all scenarios. 
+    Percentage of scenarios tasks completed, averaged over all scenarios.
 
     Args:
         completion (Completion): Proportion of scenario tasks completed, summed
@@ -333,9 +347,7 @@ def _completion(completion: Completion, agents_tot: int) -> float:
 
 def _humanness(costs: Costs, agents_tot: int) -> float:
     return (
-        costs.dist_to_obstacles
-        + costs.jerk_linear
-        + costs.lane_center_offset
+        costs.dist_to_obstacles + costs.jerk_linear + costs.lane_center_offset
     ) / agents_tot
 
 

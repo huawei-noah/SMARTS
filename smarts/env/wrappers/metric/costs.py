@@ -136,7 +136,7 @@ def _jerk_angular() -> Callable[[Observation], Costs]:
 def _jerk_linear() -> Callable[[Observation], Costs]:
     mean = 0
     step = 0
-    jerk_linear_max = np.linalg.norm(np.array([0.9, 0.9, 0])) # Units: m/s^3
+    jerk_linear_max = np.linalg.norm(np.array([0.9, 0.9, 0]))  # Units: m/s^3
     """
     Maximum comfortable linear jerk as presented in:
 
@@ -150,7 +150,7 @@ def _jerk_linear() -> Callable[[Observation], Costs]:
         nonlocal mean, step, jerk_linear_max
 
         jerk_linear = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
-        j_l = min( jerk_linear / jerk_linear_max, 1)
+        j_l = min(jerk_linear / jerk_linear_max, 1)
         mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_l)
         return Costs(jerk_linear=mean)
 

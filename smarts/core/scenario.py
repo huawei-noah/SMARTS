@@ -37,7 +37,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    Union
+    Union,
 )
 
 import cloudpickle
@@ -706,7 +706,7 @@ class Scenario:
         the corresponding SMARTS mission types.
         """
 
-        def resolve_offset(offset:Union[str,float], lane_length:float):
+        def resolve_offset(offset: Union[str, float], lane_length: float):
             # epsilon to ensure we are within this edge and not the subsequent one
             epsilon = 1e-6
             lane_length -= epsilon
@@ -719,7 +719,9 @@ class Scenario:
             else:
                 return float(offset)
 
-        def to_position_and_heading(road_id:str, lane_index:int, offset:Union[str,float], road_map:RoadMap):
+        def to_position_and_heading(
+            road_id: str, lane_index: int, offset: Union[str, float], road_map: RoadMap
+        ):
             road = road_map.road_by_id(road_id)
             lane = road.lane_at_index(lane_index)
             offset = resolve_offset(offset, lane.length)

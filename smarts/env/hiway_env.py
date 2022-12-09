@@ -195,7 +195,6 @@ class HiWayEnv(gym.Env):
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 
-
     @property
     def scenario(self):
         """Returns underlying scenario.
@@ -204,7 +203,6 @@ class HiWayEnv(gym.Env):
             Scenario: Current simulated scenario.
         """
         return self._smarts.scenario
-
 
     def seed(self, seed: int) -> int:
         """Sets random number generator seed number.

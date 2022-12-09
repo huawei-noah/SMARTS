@@ -18,15 +18,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import logging
 from dataclasses import dataclass
 from typing import Callable
+
 from smarts.core.coordinates import Heading, Point
 from smarts.core.plan import Mission, Plan, PlanningError, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
 from smarts.core.sensors import Observation
 from smarts.core.utils.math import running_mean
 
-import logging
 logger = logging.getLogger(__file__)
 
 
@@ -41,12 +42,14 @@ class Completion:
     """Shortest route distance between start position and goal position.
     """
 
+
 class CompletionError(Exception):
     """Raised when computation of `Completion` metric fails."""
 
     pass
 
-def get_dist(road_map:RoadMap, point_a: Point, point_b: Point) -> float:
+
+def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
     """
     Computes the shortest route distance from point_a to point_b in the road
     map. If no routes are available from point_a to point_b, then distance of
@@ -80,12 +83,16 @@ def get_dist(road_map:RoadMap, point_a: Point, point_b: Point) -> float:
 
         print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
         print(f"{from_route_point}  --> {to_route_point}")
-        dist_tot = plan.route.distance_between(start=from_route_point, end=to_route_point)
+        dist_tot = plan.route.distance_between(
+            start=from_route_point, end=to_route_point
+        )
         if dist_tot == None:
             raise CompletionError("Unable to find road on route near given points.")
         elif dist_tot < 0:
-            raise CompletionError("Path from start point to end point flows in "
-                "the opposite direction of the generated route.")
+            raise CompletionError(
+                "Path from start point to end point flows in "
+                "the opposite direction of the generated route."
+            )
         print("*********************************")
 
         return dist_tot
@@ -95,27 +102,29 @@ def get_dist(road_map:RoadMap, point_a: Point, point_b: Point) -> float:
     except PlanningError as e:
         if e.args[0].startswith("Unable to find a route"):
             print(f"Unable to find a route =====!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            # Vehicle might end (i) in a dead-end, (ii) in a one-way road, or 
+            # Vehicle might end (i) in a dead-end, (ii) in a one-way road, or
             # (iii) in a road without u-turn, causing the route planner to fail.
-            # When there is no legal route, the road distance in the reverse 
+            # When there is no legal route, the road distance in the reverse
             # direction is returned as the distance between point_a and point_b.
             # Thus, proceed to find a route in the reverse direction.
             dist_tot = _get_dist(point_b, point_a)
-            logger.info("completion.get dist(): Did not find a route from " 
-                "%s to %s, instead found a reversed route from %s to %s.", 
+            logger.info(
+                "completion.get dist(): Did not find a route from "
+                "%s to %s, instead found a reversed route from %s to %s.",
                 point_a,
                 point_b,
                 point_b,
                 point_a,
-        )
+            )
 
     return dist_tot
 
-def _dist_remainder():
-    mean:float = 0
-    step:int = 0
 
-    def func(road_map:RoadMap, obs: Observation):
+def _dist_remainder():
+    mean: float = 0
+    step: int = 0
+
+    def func(road_map: RoadMap, obs: Observation, initial_compl: Completion):
         nonlocal mean, step
 
         if obs.events.reached_goal:
@@ -129,6 +138,9 @@ def _dist_remainder():
             dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
             print(f"Dist total = {dist} -----------------------------------------")
 
+        # Cap remainder distance
+        dist = min(dist, initial_compl.dist_tot)
+
         mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=dist)
         return Completion(dist_remainder=mean)
 
@@ -138,7 +150,9 @@ def _dist_remainder():
 @dataclass(frozen=True)
 class CompletionFuncs:
     """Functions to compute scenario completion metrics. Each function computes
-    the running mean completion value over number of episodes, for a given 
+    the running mean completion value over number of episodes, for a given
     scenario."""
 
-    dist_remainder: Callable[[RoadMap, Observation], Completion] = _dist_remainder()
+    # fmt: off
+    dist_remainder: Callable[[RoadMap, Observation, Completion], Completion] = _dist_remainder()
+    # fmt: on
