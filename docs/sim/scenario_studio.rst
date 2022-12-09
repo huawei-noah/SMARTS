@@ -56,7 +56,7 @@ See more config for `TrafficActor` in :class:`smarts.sstudio.types`.
 
 Flow can be used to generate repeated vehicle runs on the same route, you can config vehicle route and depart rate here.
 
-After the `gen_scenario` function is run, a dir named "traffic" containing vehicle config xmls will be created under output_dir.
+After `traffic` is provided to the `gen_scenario` function, a dir named "traffic" will be created under output_dir which contains background vehicle and route definitions.
 
 
 This a short file example of how it works:
@@ -91,7 +91,7 @@ to routes for social vehicles. When we run `gen_scenario`, "missions.rou.xml" fi
 Generate friction map
 =====================
 
-The Scenario Studio of SMARTS also allows generation of *friction map* which consists of a list of *surface patches* for ego agents and social agents. These surface patches are using PositionalZone as in the case of bubbles. When we run `gen_scenario`, "friction_map.pkl" file will be created under the output dir:
+The Scenario Studio of SMARTS also allows the generation of a *friction map* which consists of a list of *surface patches* for ego agents and social agents. These surface patches are using PositionalZone as in the case of bubbles. When we run `gen_scenario` passing in `friction_maps`, a "friction_map.pkl" file will be created under the output dir:
 
 .. code-block:: python
 
