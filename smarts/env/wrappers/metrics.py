@@ -56,6 +56,10 @@ class Data:
     completion_funcs: CompletionFuncs
     cost_funcs: CostFuncs
 
+class MetricsError(Exception):
+    """Raised when Metrics env wrapper fails."""
+
+    pass
 
 class Metrics(gym.Wrapper):
     """Metrics class wraps an underlying _Metrics class. The underlying
@@ -117,15 +121,17 @@ class _Metrics(gym.Wrapper):
             if dones[agent_name]:
                 self._done_agents.add(agent_name)
                 steps_adjusted, goals, crashes = 0, 0, 0
-                reason = termination.reason(obs=agent_obs)
-                if reason == termination.Reason.Goal:
+                if agent_obs.events.reached_goal: 
                     steps_adjusted = self._steps[agent_name]
                     goals = 1
-                elif reason == termination.Reason.Crash:
+                elif (len(obs.events.collisions) > 0
+                    or obs.events.off_road
+                    or obs.events.reached_max_episode_steps
+                ):                
                     steps_adjusted = _MAX_STEPS
                     crashes = 1
                 else:
-                    raise Exception(
+                    raise MetricsError(
                         f"Unsupported agent done reason. Events: {agent_obs.events}."
                     )
 
@@ -160,7 +166,7 @@ class _Metrics(gym.Wrapper):
                 # fmt: on
 
                 print(f"{agent_name}: {completion}")
-                s = input("Press Enter to continue...")
+                # s = input("Press Enter to continue...")
 
         if dones["__all__"] == True:
             assert (
