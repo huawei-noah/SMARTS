@@ -1,11 +1,7 @@
-import os
 import random
+from pathlib import Path
 
-from smarts.sstudio.genscenario import (
-    _gen_agent_missions,
-    _gen_social_agent_missions,
-    _gen_traffic,
-)
+from smarts.sstudio import gen_scenario
 from smarts.sstudio.types import (
     Distribution,
     EndlessMission,
@@ -14,12 +10,11 @@ from smarts.sstudio.types import (
     Mission,
     RandomRoute,
     Route,
+    Scenario,
     SocialAgentActor,
     Traffic,
     TrafficActor,
 )
-
-scenario = os.path.dirname(os.path.realpath(__file__))
 
 # Traffic Vehicles
 #
@@ -43,11 +38,12 @@ horizontal_routes = [("west-WE", "east-WE"), ("east-EW", "west-EW")]
 turn_left_routes = [("east-EW", "south-NS")]
 turn_right_routes = [("west-WE", "south-NS")]
 
+traffic = {}
 for name, routes in {
     "horizontal": horizontal_routes,
     "turns": turn_left_routes + turn_right_routes,
 }.items():
-    traffic = Traffic(
+    traffic[name] = Traffic(
         flows=[
             Flow(
                 route=Route(
@@ -60,14 +56,6 @@ for name, routes in {
             for r in routes
         ]
     )
-
-    for seed in [0, 5]:
-        _gen_traffic(
-            scenario,
-            traffic,
-            name=f"{name}-{seed}",
-            seed=seed,
-        )
 
 
 # Social Agents
@@ -87,28 +75,31 @@ social_agent2 = SocialAgentActor(
     initial_speed=20,
 )
 
-_gen_social_agent_missions(
-    scenario,
-    social_agent_actor=social_agent2,
-    name=f"s-agent-{social_agent2.name}",
-    missions=[Mission(RandomRoute())],
-)
 
-_gen_social_agent_missions(
-    scenario,
-    social_agent_actor=social_agent1,
-    name=f"s-agent-{social_agent1.name}",
-    missions=[
-        EndlessMission(begin=("edge-south-SN", 0, 30)),
-        Mission(Route(begin=("edge-west-WE", 0, 10), end=("edge-east-WE", 0, 10))),
-    ],
-)
-
-# Agent Missions
-_gen_agent_missions(
-    scenario=scenario,
-    missions=[
-        Mission(Route(begin=("edge-east-EW", 0, 10), end=("edge-south-NS", 0, 10))),
-        Mission(Route(begin=("edge-south-SN", 0, 10), end=("edge-east-WE", 0, 10))),
-    ],
+gen_scenario(
+    scenario=Scenario(
+        traffic=traffic,
+        ego_missions=[
+            Mission(Route(begin=("edge-east-EW", 0, 10), end=("edge-south-NS", 0, 10))),
+            Mission(Route(begin=("edge-south-SN", 0, 10), end=("edge-east-WE", 0, 10))),
+        ],
+        social_agent_missions={
+            f"s-agent-{social_agent2.name}": (
+                [social_agent2],
+                [Mission(RandomRoute())],
+            ),
+            f"s-agent-{social_agent1.name}": (
+                [social_agent1],
+                [
+                    EndlessMission(begin=("edge-south-SN", 0, 30)),
+                    Mission(
+                        Route(
+                            begin=("edge-west-WE", 0, 10), end=("edge-east-WE", 0, 10)
+                        )
+                    ),
+                ],
+            ),
+        },
+    ),
+    output_dir=Path(__file__).parent,
 )

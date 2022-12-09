@@ -1,15 +1,13 @@
-import os
+from pathlib import Path
 
-from smarts.sstudio.genscenario import _gen_social_agent_missions
-from smarts.sstudio.types import Mission, Route, SocialAgentActor
+import smarts.sstudio.types as t
+from smarts.sstudio import gen_scenario
 
-scenario = os.path.dirname(os.path.realpath(__file__))
-
-laner_agent = SocialAgentActor(
+laner_agent = t.SocialAgentActor(
     name="laner-agent",
     agent_locator="scenarios.sumo.intersections.2lane_circle.agent_prefabs:laner-agent-v0",
 )
-buddha_agent = SocialAgentActor(
+buddha_agent = t.SocialAgentActor(
     name="buddha-agent",
     agent_locator="scenarios.sumo.intersections.2lane_circle.agent_prefabs:buddha-agent-v0",
 )
@@ -36,16 +34,30 @@ buddha_agent = SocialAgentActor(
 #     },
 # )
 
-_gen_social_agent_missions(
-    scenario,
-    social_agent_actor=laner_agent,
-    name=f"s-agent-{laner_agent.name}",
-    missions=[Mission(Route(begin=("edge-east-EW", 0, 5), end=("edge-west-EW", 0, 5)))],
-)
-
-_gen_social_agent_missions(
-    scenario,
-    social_agent_actor=buddha_agent,
-    name=f"s-agent-{buddha_agent.name}",
-    missions=[Mission(Route(begin=("edge-west-WE", 0, 5), end=("edge-east-WE", 0, 5)))],
+gen_scenario(
+    scenario=t.Scenario(
+        social_agent_missions={
+            f"s-agent-{laner_agent.name}": (
+                [laner_agent],
+                [
+                    t.Mission(
+                        t.Route(
+                            begin=("edge-east-EW", 0, 5), end=("edge-west-EW", 0, 5)
+                        )
+                    )
+                ],
+            ),
+            f"s-agent-{buddha_agent.name}": (
+                [buddha_agent],
+                [
+                    t.Mission(
+                        t.Route(
+                            begin=("edge-west-WE", 0, 5), end=("edge-east-WE", 0, 5)
+                        )
+                    )
+                ],
+            ),
+        }
+    ),
+    output_dir=Path(__file__).parent,
 )
