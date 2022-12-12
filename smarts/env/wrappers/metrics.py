@@ -207,11 +207,6 @@ class _Metrics(gym.Wrapper):
         
         print("END OF RESET")
 
-        # def offset_along_lane(self, world_point: Point) -> float:
-        # def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
-        # def to_lane_coord(self, world_point: Point) -> RefLinePoint:
-        # def road_with_point(self, point: Point) -> RoadMap.Road:
-
         return obs
 
     def records(self) -> Dict[str, Dict[str, Record]]:
@@ -365,7 +360,7 @@ def _humanness(costs: Costs, agents_tot: int) -> float:
             minimised. The lower the value, the better it is.
     """
     humanness = np.array([costs.dist_to_obstacles, costs.jerk_linear, costs.lane_center_offset])
-    return np.mean(humanness) / agents_tot
+    return np.mean(humanness, dtype=float) / agents_tot
 
 
 def _rules(costs: Costs, agents_tot: int) -> float:
@@ -381,7 +376,7 @@ def _rules(costs: Costs, agents_tot: int) -> float:
             The lower the value, the better it is.
     """
     rules = np.array([costs.speed_limit, costs.wrong_way])
-    return np.mean(rules) / agents_tot
+    return np.mean(rules, dtype=float) / agents_tot
 
 
 def _time(counts: Counts) -> float:
@@ -396,8 +391,3 @@ def _time(counts: Counts) -> float:
             The lower the value, the better it is.
     """
     return counts.steps_adjusted / counts.max_steps
-
-
-# Issues
-# 1) route from a junction
-# 2) what happens when a traci error occurs

@@ -362,11 +362,12 @@ class Plan:
 
         if len(self._route.roads) == 0:
             self._mission = Mission.endless_mission(Pose.origin())
+            start_road_ids = [start_lane.road.road_id for start_lane in start_lanes]
             raise PlanningError(
                 "Unable to find a route between start={} and end={}. If either of "
                 "these are junctions (not well supported today) please switch to "
                 "roads and ensure there is a > 0 offset into the road if it is "
-                "after a junction.".format(start_road.road_id, end_road.road_id)
+                "after a junction.".format(start_road_ids, end_lane.road.road_id)
             )
 
         return
