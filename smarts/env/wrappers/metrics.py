@@ -56,10 +56,12 @@ class Data:
     completion_funcs: CompletionFuncs
     cost_funcs: CostFuncs
 
+
 class MetricsError(Exception):
     """Raised when Metrics env wrapper fails."""
 
     pass
+
 
 class Metrics(gym.Wrapper):
     """Metrics class wraps an underlying _Metrics class. The underlying
@@ -105,17 +107,16 @@ class _Metrics(gym.Wrapper):
         if len(obs) == 0:
             return obs, rewards, dones, info
 
+        # fmt: off
         for agent_name, agent_obs in obs.items():
             self._steps[agent_name] += 1
 
             # Compute all cost functions.
-            # fmt: off
             costs = Costs()
             for field in fields(self._records[self._cur_scen][agent_name].cost_funcs):
                 cost_func = getattr(self._records[self._cur_scen][agent_name].cost_funcs, field.name)
                 new_costs = cost_func(agent_obs)
                 costs = _add_dataclass(new_costs, costs)
-            # fmt: on
 
             # Update stored costs.
             self._records[self._cur_scen][agent_name].record.costs = costs
@@ -123,13 +124,14 @@ class _Metrics(gym.Wrapper):
             if dones[agent_name]:
                 self._done_agents.add(agent_name)
                 steps_adjusted, goals = 0, 0
-                if agent_obs.events.reached_goal: 
+                if agent_obs.events.reached_goal:
                     steps_adjusted = self._steps[agent_name]
                     goals = 1
-                elif (len(agent_obs.events.collisions) > 0
+                elif (
+                    len(agent_obs.events.collisions) > 0
                     or agent_obs.events.off_road
                     or agent_obs.events.reached_max_episode_steps
-                ):                
+                ):
                     steps_adjusted = self.env.agent_specs[agent_name].interface.max_episode_steps
                 else:
                     raise MetricsError(
@@ -137,7 +139,6 @@ class _Metrics(gym.Wrapper):
                     )
 
                 # Update stored counts.
-                # fmt: off
                 counts = Counts(
                     episodes=1,
                     steps=self._steps[agent_name],
@@ -164,8 +165,8 @@ class _Metrics(gym.Wrapper):
                     )
                     completion = _add_dataclass(new_completion, completion)
                 self._records[self._cur_scen][agent_name].record.completion = completion
-                # fmt: on
 
+        # fmt: on
         if dones["__all__"] == True:
             assert (
                 self._done_agents == self._cur_agents
@@ -274,11 +275,11 @@ class _Metrics(gym.Wrapper):
         return _score
 
 
-def _check_env(env):
+def _check_env(env: gym.Env):
     """Checks environment suitability to compute performance metrics.
 
     Args:
-        env (_type_): A gym environment
+        env (gym.Env): A gym environment
 
     Raises:
         AttributeError: If any required agent interface is disabled.
@@ -330,6 +331,7 @@ T = TypeVar("T", Completion, Costs, Counts)
 
 
 def _add_dataclass(first: T, second: T) -> T:
+    assert type(first) is type(second)
     new = {}
     for field in fields(first):
         sum = getattr(first, field.name) + getattr(second, field.name)
