@@ -68,15 +68,15 @@ def make(locator: str, **kwargs):
 
     from smarts.zoo.agent_spec import AgentSpec
 
-    #if locator in cached_agentspec.keys():
-        #return cached_agentspec[locator]
+    if locator in cached_agentspec.keys():
+        return cached_agentspec[locator]
 
     agent_spec = agent_registry.make(locator, **kwargs)
     assert isinstance(
         agent_spec, AgentSpec
     ), f"Expected make to produce an instance of AgentSpec, got: {agent_spec}"
 
-    #cached_agentspec[locator] = agent_spec
+    cached_agentspec[locator] = agent_spec
 
     return agent_spec
 
