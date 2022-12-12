@@ -337,8 +337,9 @@ class Plan:
 
         start_lane = self._road_map.nearest_lane(
             self._mission.start.point,
-            include_junctions=False,
+            include_junctions=True, # <------ changed from False to True
         )
+        print("Start lane road id:", start_lane.road.road_id)
 
         if not start_lane:
             # it's possible that the Mission's start point wasn't explicitly
@@ -366,6 +367,10 @@ class Plan:
         self._route = self._road_map.generate_routes(
             start_road, end_road, via_roads, 1
         )[0]
+
+        print(f"Start and end roads: {start_road.road_id} {end_road.road_id}")
+        rr = [r.road_id for r in self._route.roads]
+        print(f"Route road id {rr}")
 
         if len(self._route.roads) == 0:
             self._mission = Mission.endless_mission(Pose.origin())
