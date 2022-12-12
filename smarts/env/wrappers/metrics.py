@@ -252,6 +252,7 @@ T = TypeVar("T", Costs, Counts)
 
 
 def _add_dataclass(first: T, second: T) -> T:
+    assert type(first) is type(second)
     new = {}
     for field in fields(first):
         sum = getattr(first, field.name) + getattr(second, field.name)
