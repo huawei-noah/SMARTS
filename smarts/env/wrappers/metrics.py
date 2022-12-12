@@ -166,9 +166,6 @@ class _Metrics(gym.Wrapper):
                 self._records[self._cur_scen][agent_name].record.completion = completion
                 # fmt: on
 
-                print(f"{agent_name}: {completion}")
-                # s = input("Press Enter to continue...")
-
         if dones["__all__"] == True:
             assert (
                 self._done_agents == self._cur_agents
@@ -178,6 +175,7 @@ class _Metrics(gym.Wrapper):
 
     def reset(self, **kwargs):
         """Resets the environment."""
+        print("Next episode------------------------------------------------------------------------------------------------")
         obs = super().reset(**kwargs)
         self._cur_agents = set(self.env.agent_specs.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
@@ -185,7 +183,6 @@ class _Metrics(gym.Wrapper):
         self._scen = self.env.smarts.scenario
         self._cur_scen = self.env.smarts.scenario.name
         self._road_map = self.env.smarts.scenario.road_map
-
 
         # fmt: off
         if self._cur_scen not in self._records:
@@ -209,6 +206,8 @@ class _Metrics(gym.Wrapper):
                 for agent_name in self._cur_agents
             }
         # fmt: on
+        
+        print("END OF RESET")
 
         # def offset_along_lane(self, world_point: Point) -> float:
         # def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
@@ -367,3 +366,10 @@ def _rules(costs: Costs, agents_tot: int) -> float:
 
 def _time(counts: Counts) -> float:
     return counts.steps_adjusted / counts.max_steps
+
+
+# issues
+# 1) distance / route from a junction
+# 2) what happens whena traci error occurs
+# 3) check in waymo Scenario
+# 4) do we use vehicle_index in a better manner?

@@ -81,8 +81,7 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
         from_route_point = RoadMap.Route.RoutePoint(pt=start)
         to_route_point = RoadMap.Route.RoutePoint(pt=end)
 
-        print("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
-        print(f"{from_route_point}  --> {to_route_point}")
+        print("Computing distance ... ")
         dist_tot = plan.route.distance_between(
             start=from_route_point, end=to_route_point
         )
@@ -93,7 +92,6 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
                 "Path from start point to end point flows in "
                 "the opposite direction of the generated route."
             )
-        print("*********************************")
 
         return dist_tot
 
@@ -102,6 +100,7 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
     except PlanningError as e:
         if e.args[0].startswith("Unable to find a route"):
             print(f"Unable to find a route =====!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            input("Unable to find a route")
             # Vehicle might end (i) in a dead-end, (ii) in a one-way road, or
             # (iii) in a road without u-turn, causing the route planner to fail.
             # When there is no legal route, the road distance in the reverse
@@ -128,6 +127,7 @@ def _dist_remainder():
         nonlocal mean, step
 
         if obs.events.reached_goal:
+            print("Goal reached ...")
             dist = 0
         else:
             cur_pos = Point(*obs.ego_vehicle_state.position)
@@ -136,7 +136,9 @@ def _dist_remainder():
             goal_pos = obs.ego_vehicle_state.mission.goal.position
             # pytype: enable=attribute-error
             dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
-            print(f"Dist total = {dist} -----------------------------------------")
+
+
+        input("Finished computing dist remainder .... ")
 
         # Cap remainder distance
         dist = min(dist, initial_compl.dist_tot)
