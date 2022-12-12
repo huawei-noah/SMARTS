@@ -196,13 +196,14 @@ class HiWayEnv(gym.Env):
         }
 
     @property
-    def scenario(self):
-        """Returns underlying scenario.
+    def smarts(self)->SMARTS:
+        """Provides privileged access to underlying SMARTS simulator.
 
         Returns:
-            Scenario: Current simulated scenario.
+            SMARTS: SMARTS simulator.
         """
-        return self._smarts.scenario
+        return self._smarts
+
 
     def seed(self, seed: int) -> int:
         """Sets random number generator seed number.

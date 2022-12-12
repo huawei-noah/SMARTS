@@ -28,13 +28,12 @@ import gym
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.coordinates import Point
 from smarts.core.plan import PositionalGoal
+from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
-from smarts.env.wrappers.metric import termination
+from smarts.core.smarts import SMARTS
 from smarts.env.wrappers.metric.completion import Completion, CompletionFuncs, get_dist
 from smarts.env.wrappers.metric.costs import CostFuncs, Costs
 from smarts.env.wrappers.metric.counts import Counts
-
-_MAX_STEPS = 800
 
 
 @dataclass
@@ -89,7 +88,9 @@ class _Metrics(gym.Wrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
         _check_env(env)
+        self._scen: Scenario
         self._cur_scen: str
+        self._road_map: RoadMap 
         self._cur_agents: Set[str]
         self._steps: Dict[str, int]
         self._done_agents: Set[str]
@@ -120,7 +121,7 @@ class _Metrics(gym.Wrapper):
 
             if dones[agent_name]:
                 self._done_agents.add(agent_name)
-                steps_adjusted, goals, crashes = 0, 0, 0
+                steps_adjusted, goals = 0, 0
                 if agent_obs.events.reached_goal: 
                     steps_adjusted = self._steps[agent_name]
                     goals = 1
@@ -128,8 +129,7 @@ class _Metrics(gym.Wrapper):
                     or agent_obs.events.off_road
                     or agent_obs.events.reached_max_episode_steps
                 ):                
-                    steps_adjusted = _MAX_STEPS
-                    crashes = 1
+                    steps_adjusted = self.env.agent_specs[agent_name].interface.max_episode_steps
                 else:
                     raise MetricsError(
                         f"Unsupported agent done reason. Events: {agent_obs.events}."
@@ -142,7 +142,7 @@ class _Metrics(gym.Wrapper):
                     steps=self._steps[agent_name],
                     steps_adjusted=steps_adjusted,
                     goals=goals,
-                    crashes=crashes,
+                    max_steps=self.env.agent_specs[agent_name].interface.max_episode_steps
                 )
                 self._records[self._cur_scen][agent_name].record.counts = _add_dataclass(
                     counts, 
@@ -157,7 +157,7 @@ class _Metrics(gym.Wrapper):
                         field.name,
                     )
                     new_completion = completion_func(
-                        road_map=self._scen.road_map,
+                        road_map=self._road_map,
                         obs=agent_obs,
                         initial_compl=completion,
                     )
@@ -178,11 +178,13 @@ class _Metrics(gym.Wrapper):
     def reset(self, **kwargs):
         """Resets the environment."""
         obs = super().reset(**kwargs)
-        self._cur_scen = self.env.scenario_log["scenario_map"]
         self._cur_agents = set(self.env.agent_specs.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_agents = set()
-        self._scen = self.env.scenario
+        self._scen = self.env.smarts.scenario
+        self._cur_scen = self.env.smarts.scenario.name
+        self._road_map = self.env.smarts.scenario.road_map
+
 
         # fmt: off
         if self._cur_scen not in self._records:
@@ -192,9 +194,9 @@ class _Metrics(gym.Wrapper):
                     record=Record(
                         completion=Completion(
                             dist_tot=get_dist(
-                                road_map=self._scen.road_map,
-                                point_a=Point(*obs[agent_name].ego_vehicle_state.position),
-                                point_b=obs[agent_name].ego_vehicle_state.mission.goal.position,
+                                road_map=self._road_map,
+                                point_a=Point(*self._scen.missions[agent_name].start.position),
+                                point_b=self._scen.missions[agent_name].goal.position,    
                             )
                         ),
                         costs=Costs(),
@@ -362,4 +364,4 @@ def _rules(costs: Costs, agents_tot: int) -> float:
 
 
 def _time(counts: Counts) -> float:
-    return (counts.steps_adjusted) / counts.episodes
+    return counts.steps_adjusted / counts.max_steps

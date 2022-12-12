@@ -25,11 +25,6 @@ from dataclasses import dataclass
 class Counts:
     """Performance count values."""
 
-    crashes: float = 0
-    """ Number of crashed episodes. An episode is considered crashed if
-    an agent becomes done due to collision, driving off road, or reaching 
-    max episode steps.
-    """
     goals: int = 0
     """ Number of episodes completed succesfully by achieving the goal.
     """
@@ -41,5 +36,9 @@ class Counts:
     """
     steps_adjusted: int = 0
     """ Sum of steps taken over all episodes. The number of steps, in an episode
-    where the vehicle crashed, is replaced with a pre-defined _MAX_STEPS value.
+    where the agent did not achieve the goal, is replaced with the agent's  
+    max_episode_steps value.
+    """
+    max_steps: int = 0
+    """ Sum of maximum number of steps over all episodes.
     """
