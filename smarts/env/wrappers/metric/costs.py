@@ -130,6 +130,7 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
 
     return func
 
+
 def _jerk_angular() -> Callable[[Observation], Costs]:
     mean = 0
     step = 0
