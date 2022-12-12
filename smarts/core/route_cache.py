@@ -159,7 +159,7 @@ class RouteWithCache(RoadMap.Route):
                     return RoadMap.Route.RouteLane(cand_lane, rind)
             except ValueError:
                 pass
-        self._logger.warning(f"unable to find road on route near point {rpt}")
+        self._logger.warning(f"Unable to find road on route near point {rpt}")
         return None
 
     @lru_cache(maxsize=8)

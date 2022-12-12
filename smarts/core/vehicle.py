@@ -22,7 +22,7 @@ import logging
 import os
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -35,7 +35,7 @@ from smarts.core.plan import Mission, Plan
 from . import models
 from .actor import ActorRole, ActorState
 from .chassis import AckermannChassis, BoxChassis, Chassis
-from .colors import Colors, SceneColors
+from .colors import SceneColors
 from .coordinates import Dimensions, Heading, Pose
 from .sensors import (
     AccelerometerSensor,
@@ -152,9 +152,7 @@ VEHICLE_CONFIGS = {
 class Vehicle:
     """Represents a single vehicle."""
 
-    _HAS_DYNAMIC_ATTRIBUTES = True
-
-    _HAS_DYNAMIC_ATTRIBUTES = True  # pytype dynamic
+    _HAS_DYNAMIC_ATTRIBUTES = True  # pytype: dynamic attribute
 
     def __init__(
         self,

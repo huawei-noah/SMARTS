@@ -21,19 +21,17 @@
 # to allow for typing to refer to class being defined (Mission)...
 from __future__ import annotations
 
-import logging
 import math
 import random
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 import numpy as np
 
+from smarts.core.coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
+from smarts.core.road_map import RoadMap
+from smarts.core.utils.math import min_angles_difference_signed, vec_to_radians
 from smarts.sstudio.types import EntryTactic, TrapEntryTactic
-
-from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
-from .road_map import RoadMap
-from .utils.math import min_angles_difference_signed, vec_to_radians
 
 
 class PlanningError(Exception):
@@ -130,7 +128,7 @@ class TraverseGoal(Goal):
     successfully finishes traversing a non-closed (acyclic) map
     It's a way for the vehicle to exit the simulation successfully,
     for example, driving across from one side to the other on a
-    straight road and then continuing off the map.  This goal is
+    straight road and then continuing off the map. This goal is
     non-specific about *where* the map is exited, save for that
     the vehicle must be going the correct direction in its lane
     just prior to doing so."""
@@ -322,7 +320,7 @@ class Plan:
         """The road map this plan is relative to."""
         return self._road_map
 
-    def create_route(self, mission: Mission) -> Mission:
+    def create_route(self, mission: Mission):
         """Generates a route that conforms to a mission.
         Args:
             mission (Mission):
@@ -333,7 +331,7 @@ class Plan:
 
         if not self._mission.requires_route:
             self._route = self._road_map.empty_route()
-            return self._mission
+            return
 
         assert isinstance(self._mission.goal, PositionalGoal)
 
@@ -374,8 +372,8 @@ class Plan:
             raise PlanningError(
                 "Unable to find a route between start={} and end={}. If either of "
                 "these are junctions (not well supported today) please switch to "
-                "roads and ensure there is a > 0 offset into the road if it's "
+                "roads and ensure there is a > 0 offset into the road if it is "
                 "after a junction.".format(start_road.road_id, end_road.road_id)
             )
 
-        return self._mission
+        return

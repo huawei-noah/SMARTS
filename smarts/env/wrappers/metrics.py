@@ -25,11 +25,9 @@ from typing import Any, Dict, Set, TypeVar
 
 import gym
 
-from smarts.env.wrappers.metric import termination
+from smarts.core.agent_interface import AgentInterface
 from smarts.env.wrappers.metric.costs import CostFuncs, Costs
 from smarts.env.wrappers.metric.counts import Counts
-
-_MAX_STEPS = 800
 
 
 @dataclass
@@ -47,6 +45,10 @@ class Data:
     record: Record
     cost_funcs: CostFuncs
 
+class MetricsError(Exception):
+    """Raised when Metrics env wrapper fails."""
+
+    pass
 
 class Metrics(gym.Wrapper):
     """Metrics class wraps an underlying _Metrics class. The underlying
@@ -79,7 +81,7 @@ class _Metrics(gym.Wrapper):
         self._cur_scen: str
         self._cur_agents: Set[str]
         self._steps: Dict[str, int]
-        self._done_check: Set[str]
+        self._done_agents: Set[str]
         self._records = {}
 
     def step(self, action: Dict[str, Any]):
@@ -106,31 +108,29 @@ class _Metrics(gym.Wrapper):
             self._records[self._cur_scen][agent_name].record.costs = costs
 
             if dones[agent_name]:
-                self._done_check.add(agent_name)
-                steps_adjusted = 0
-                goals = 0
-                crashes = 0
-                reason = termination.reason(obs=agent_obs)
-                if reason == termination.Reason.Goal:
+                self._done_agents.add(agent_name)
+                steps_adjusted, goals = 0, 0
+                if agent_obs.events.reached_goal: 
                     steps_adjusted = self._steps[agent_name]
                     goals = 1
-                elif reason == termination.Reason.Crash:
-                    steps_adjusted = _MAX_STEPS
-                    crashes = 1
+                elif (len(agent_obs.events.collisions) > 0
+                    or agent_obs.events.off_road
+                    or agent_obs.events.reached_max_episode_steps
+                ):                
+                    steps_adjusted = self.env.agent_specs[agent_name].interface.max_episode_steps
                 else:
-                    raise Exception(
+                    raise MetricsError(
                         f"Unsupported agent done reason. Events: {agent_obs.events}."
                     )
 
                 # Update stored counts.
+                # fmt: off
                 counts = Counts(
                     episodes=1,
                     steps=self._steps[agent_name],
                     steps_adjusted=steps_adjusted,
                     goals=goals,
-                    crashes=crashes,
                 )
-                # fmt: off
                 self._records[self._cur_scen][agent_name].record.counts = _add_dataclass(
                     counts, 
                     self._records[self._cur_scen][agent_name].record.counts
@@ -139,8 +139,8 @@ class _Metrics(gym.Wrapper):
 
         if dones["__all__"] == True:
             assert (
-                self._done_check == self._cur_agents
-            ), f'done["__all__"]==True but not all agents are done. Current agents = {self._cur_agents}. Agents done = {self._done_check}.'
+                self._done_agents == self._cur_agents
+            ), f'done["__all__"]==True but not all agents are done. Current agents = {self._cur_agents}. Agents done = {self._done_agents}.'
 
         return obs, rewards, dones, info
 
@@ -150,7 +150,7 @@ class _Metrics(gym.Wrapper):
         self._cur_scen = self.env.scenario_log["scenario_map"]
         self._cur_agents = set(self.env.agent_specs.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
-        self._done_check = set()
+        self._done_agents = set()
         if self._cur_scen not in self._records:
             self._records[self._cur_scen] = {
                 agent_name: Data(
@@ -219,7 +219,16 @@ class _Metrics(gym.Wrapper):
 
 
 def _check_env(env):
-    def check_intrfc(agent_intrfc):
+    """Checks environment suitability to compute performance metrics.
+
+    Args:
+        env (_type_): A gym environment
+
+    Raises:
+        AttributeError: If any required agent interface is disabled.
+    """
+
+    def check_intrfc(agent_intrfc: AgentInterface):
         intrfc = {
             "accelerometer": bool(agent_intrfc.accelerometer),
             "max_episode_steps": bool(agent_intrfc.max_episode_steps),

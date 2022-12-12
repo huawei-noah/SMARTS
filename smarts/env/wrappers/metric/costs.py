@@ -19,11 +19,12 @@
 # THE SOFTWARE.
 
 from dataclasses import dataclass
-from typing import Callable, Tuple
+from typing import Callable
 
 import numpy as np
 
 from smarts.core.sensors import Observation
+from smarts.core.utils.math import running_mean
 
 
 @dataclass(frozen=True)
@@ -57,14 +58,14 @@ def _dist_to_goal(obs: Observation) -> Costs:
 
 
 def _dist_to_obstacles() -> Callable[[Observation], Costs]:
-    ave = 0
+    mean = 0
     step = 0
     rel_angle_th = np.pi * 40 / 180
     rel_heading_th = np.pi * 179 / 180
     w_dist = 0.05
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step, rel_angle_th, rel_heading_th, w_dist
+        nonlocal mean, step, rel_angle_th, rel_heading_th, w_dist
 
         # Ego's position and heading with respect to the map's coordinate system.
         # Note: All angles returned by smarts is with respect to the map's coordinate system.
@@ -102,7 +103,7 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
             rel_pos = np.array(nghb_state[0].position) - ego_pos
             obstacle_angle = np.angle(rel_pos[0] + 1j * rel_pos[1]) - np.pi / 2
             obstacle_angle = (obstacle_angle + np.pi) % (2 * np.pi) - np.pi
-            # Relative angle is the angle correction required by ego agent to face the obstacle.
+            # Relative angle is the angle rotation required by ego agent to face the obstacle.
             rel_angle = obstacle_angle - ego_heading
             rel_angle = (rel_angle + np.pi) % (2 * np.pi) - np.pi
             if abs(rel_angle) <= rel_angle_th:
@@ -121,50 +122,49 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
             return Costs(dist_to_obstacles=0)
 
         # J_D : Distance to obstacles cost
-        di = [nghb_state[1] for nghb_state in nghbs_state]
-        di = np.array(di)
+        di = np.array([nghb_state[1] for nghb_state in nghbs_state])
         j_d = np.amax(np.exp(-w_dist * di))
 
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_d)
-        return Costs(dist_to_obstacles=ave)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_d)
+        return Costs(dist_to_obstacles=mean)
 
     return func
 
-
 def _jerk_angular() -> Callable[[Observation], Costs]:
-    ave = 0
+    mean = 0
     step = 0
 
+    # TODO: The output of this cost function should be normalised and bounded to [0,1].
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step
+        nonlocal mean, step
 
-        ja_squared = np.sum(np.square(obs.ego_vehicle_state.angular_jerk))
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=ja_squared)
-        return Costs(jerk_angular=ave)
+        j_a = np.linalg.norm(obs.ego_vehicle_state.angular_jerk)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_a)
+        return Costs(jerk_angular=mean)
 
     return func
 
 
 def _jerk_linear() -> Callable[[Observation], Costs]:
-    ave = 0
+    mean = 0
     step = 0
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step
+        nonlocal mean, step
 
         jl_squared = np.sum(np.square(obs.ego_vehicle_state.linear_jerk))
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=jl_squared)
-        return Costs(jerk_linear=ave)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=jl_squared)
+        return Costs(jerk_linear=mean)
 
     return func
 
 
 def _lane_center_offset() -> Callable[[Observation], Costs]:
-    ave = 0
+    mean = 0
     step = 0
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step
+        nonlocal mean, step
 
         # Nearest waypoints
         ego = obs.ego_vehicle_state
@@ -180,8 +180,8 @@ def _lane_center_offset() -> Callable[[Observation], Costs]:
         # J_LC : Lane center offset
         j_lc = norm_dist_from_center**2
 
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_lc)
-        return Costs(lane_center_offset=ave)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_lc)
+        return Costs(lane_center_offset=mean)
 
     return func
 
@@ -191,11 +191,11 @@ def _off_road(obs: Observation) -> Costs:
 
 
 def _speed_limit() -> Callable[[Observation], Costs]:
-    ave = 0
+    mean = 0
     step = 0
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step
+        nonlocal mean, step
 
         # Nearest waypoints.
         ego = obs.ego_vehicle_state
@@ -210,37 +210,32 @@ def _speed_limit() -> Callable[[Observation], Costs]:
         overspeed = ego.speed - speed_limit if ego.speed > speed_limit else 0
         j_v = min(overspeed / (0.5 * speed_limit), 1)
 
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=j_v)
-        return Costs(speed_limit=ave)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_v)
+        return Costs(speed_limit=mean)
 
     return func
 
 
 def _wrong_way() -> Callable[[Observation], Costs]:
-    ave = 0
+    mean = 0
     step = 0
 
     def func(obs: Observation) -> Costs:
-        nonlocal ave, step
-        wrong_way = 0
+        nonlocal mean, step
+        j_wrong_way = 0
         if obs.events.wrong_way:
-            wrong_way = 1
+            j_wrong_way = 1
 
-        ave, step = _running_ave(prev_ave=ave, prev_step=step, new_val=wrong_way)
-        return Costs(wrong_way=ave)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_wrong_way)
+        return Costs(wrong_way=mean)
 
     return func
 
 
-def _running_ave(prev_ave: float, prev_step: int, new_val: float) -> Tuple[float, int]:
-    new_step = prev_step + 1
-    new_ave = prev_ave + (new_val - prev_ave) / new_step
-    return new_ave, new_step
-
-
 @dataclass(frozen=True)
 class CostFuncs:
-    """Functions to compute performance costs."""
+    """Functions to compute performance costs. Each cost function computes the
+    running mean cost over number of time steps, for a given scenario."""
 
     collisions: Callable[[Observation], Costs] = _collisions
     dist_to_goal: Callable[[Observation], Costs] = _dist_to_goal

@@ -1255,7 +1255,7 @@ class SMARTS(ProviderManager):
         return self._resetting
 
     @property
-    def scenario(self):
+    def scenario(self) -> Scenario:
         """The current simulation scenario."""
         return self._scenario
 
