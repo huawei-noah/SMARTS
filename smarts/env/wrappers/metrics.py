@@ -265,7 +265,7 @@ class _Metrics(gym.Wrapper):
         completion_tot: Completion = functools.reduce(lambda a, b: _add_dataclass(a, b), completion_list)
 
         _score: Dict[str, float] = {}
-        _score["completion"] = _completion(completion=completion_tot, agents_tot=agents_tot)
+        _score["completion"] = _completion(completion=completion_tot)
         _score["humanness"] = _humanness(costs=costs_tot, agents_tot=agents_tot)
         _score["rules"] = _rules(costs=costs_tot, agents_tot=agents_tot)
         _score["time"] = _time(counts=counts_tot)
@@ -341,37 +341,66 @@ def _add_dataclass(first: T, second: T) -> T:
     return output
 
 
-def _completion(completion: Completion, agents_tot: int) -> float:
+def _completion(completion: Completion) -> float:
     """
-    Percentage of scenarios tasks completed, averaged over all scenarios.
+    Proportion of scenarios tasks completed.
 
     Args:
-        completion (Completion): Proportion of scenario tasks completed, summed
-            over all scenarios.
-        scen_num (int): Number of scenarios.
+        completion (Completion): Scenario tasks completed.
 
     Returns:
-        float: Average completion over all scenarios.
+        float: Normalised completion value = [0, 1]. Completion value should be
+            maximised. The higher the value, the better it is.
     """
     return (completion.dist_tot - completion.dist_remainder)  / completion.dist_tot
 
 
 def _humanness(costs: Costs, agents_tot: int) -> float:
+    """
+    Humanness indicator.
+
+    Args:
+        costs (Costs): Performance cost values.
+        agents_tot (int): Number of agents simulated.
+
+    Returns:
+        float: Normalised humanness value = [0, 1]. Humanness value should be 
+            minimised. The lower the value, the better it is.
+    """
     humanness = np.array([costs.dist_to_obstacles, costs.jerk_linear, costs.lane_center_offset])
     return np.mean(humanness) / agents_tot
 
 
 def _rules(costs: Costs, agents_tot: int) -> float:
+    """
+    Traffic rules compliance.
+
+    Args:
+        costs (Costs): Performance cost values.
+        agents_tot (int): Number of agents simulated.
+
+    Returns:
+        float: Normalised rules value = [0, 1]. Rules value should be minimised.
+            The lower the value, the better it is.
+    """
     rules = np.array([costs.speed_limit, costs.wrong_way])
     return np.mean(rules) / agents_tot
 
 
 def _time(counts: Counts) -> float:
+    """
+    Time taken to complete scenario.
+
+    Args:
+        counts (Counts): Performance count values.
+
+    Returns:
+        float: Normalised time value = (0, 1]. Time value should be minimised.
+            The lower the value, the better it is.
+    """
     return counts.steps_adjusted / counts.max_steps
 
 
-# issues
-# 1) distance / route from a junction
-# 2) what happens whena traci error occurs
-# 3) check in waymo Scenario
-# 4) do we use vehicle_index in a better manner?
+# Issues
+# 1) route from a junction
+# 2) what happens when a traci error occurs

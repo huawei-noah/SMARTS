@@ -337,9 +337,8 @@ class Plan:
 
         start_lane = self._road_map.nearest_lane(
             self._mission.start.point,
-            include_junctions=True, # <------ changed from False to True
+            include_junctions=False,
         )
-        print("Start lane road id:", start_lane.road.road_id)
 
         if not start_lane:
             # it's possible that the Mission's start point wasn't explicitly
@@ -368,6 +367,7 @@ class Plan:
             start_road, end_road, via_roads, 1
         )[0]
 
+        print("Start lane road id:", start_lane.road.road_id)
         print(f"Start and end roads: {start_road.road_id} {end_road.road_id}")
         rr = [r.road_id for r in self._route.roads]
         print(f"Route road id {rr}")

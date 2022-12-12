@@ -49,7 +49,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
         scenarios=scenarios,
         agent_specs={"SingleAgent": agent_spec},
         headless=True,
-        sumo_headless=False,
+        sumo_headless=True,
     )
 
     from smarts.env.wrappers.metrics import Metrics
@@ -71,6 +71,8 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
             observation, reward, done, info = env.step(agent_action)
             episode.record_step(observation, reward, done, info)
 
+        print("Env score: ",env.score())
+
     env.close()
 
 
@@ -88,6 +90,7 @@ if __name__ == "__main__":
                 / "1_to_1lane_left_turn_c"
             )
         ]
+        # args.scenarios = ["/home/adai/workspace/competition_bundle/eval_scenarios/naturalistic/cr12-agents_1"]
 
     sstudio.build_scenario(scenario=args.scenarios)
 
