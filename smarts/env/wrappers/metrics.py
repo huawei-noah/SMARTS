@@ -24,6 +24,7 @@ from dataclasses import dataclass, fields
 from typing import Any, Dict, Set, TypeVar
 
 import gym
+import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.coordinates import Point
@@ -268,6 +269,7 @@ class _Metrics(gym.Wrapper):
         _score["humanness"] = _humanness(costs=costs_tot, agents_tot=agents_tot)
         _score["rules"] = _rules(costs=costs_tot, agents_tot=agents_tot)
         _score["time"] = _time(counts=counts_tot)
+        _score["overall"] = _score["completion"]*(1-_score["time"])*(1-_score["humanness"])*(1-_score["rules"])
         # fmt: on
 
         return _score
@@ -350,17 +352,17 @@ def _completion(completion: Completion, agents_tot: int) -> float:
     Returns:
         float: Average completion over all scenarios.
     """
-    return (completion.dist_tot - completion.dist_remainder)  / agents_tot
+    return (completion.dist_tot - completion.dist_remainder)  / completion.dist_tot
 
 
 def _humanness(costs: Costs, agents_tot: int) -> float:
-    return (
-        costs.dist_to_obstacles + costs.jerk_linear + costs.lane_center_offset
-    ) / agents_tot
+    humanness = np.array([costs.dist_to_obstacles, costs.jerk_linear, costs.lane_center_offset])
+    return np.mean(humanness) / agents_tot
 
 
 def _rules(costs: Costs, agents_tot: int) -> float:
-    return (costs.speed_limit + costs.wrong_way) / agents_tot
+    rules = np.array([costs.speed_limit, costs.wrong_way])
+    return np.mean(rules) / agents_tot
 
 
 def _time(counts: Counts) -> float:
