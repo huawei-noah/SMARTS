@@ -123,16 +123,12 @@ class _Metrics(gym.Wrapper):
 
             if dones[agent_name]:
                 self._done_agents.add(agent_name)
-                steps_adjusted, goals = 0, 0
-                if agent_obs.events.reached_goal:
-                    steps_adjusted = self._steps[agent_name]
-                    goals = 1
-                elif (
-                    len(agent_obs.events.collisions) > 0
+                if (agent_obs.events.reached_goal
+                    or len(agent_obs.events.collisions) > 0
                     or agent_obs.events.off_road
                     or agent_obs.events.reached_max_episode_steps
                 ):
-                    steps_adjusted = self.env.agent_specs[agent_name].interface.max_episode_steps
+                    pass
                 else:
                     raise MetricsError(
                         f"Unsupported agent done reason. Events: {agent_obs.events}."
@@ -142,8 +138,11 @@ class _Metrics(gym.Wrapper):
                 counts = Counts(
                     episodes=1,
                     steps=self._steps[agent_name],
-                    steps_adjusted=steps_adjusted,
-                    goals=goals,
+                    steps_adjusted=min(
+                        self._steps[agent_name],
+                        self.env.agent_specs[agent_name].interface.max_episode_steps
+                    ),
+                    goals=agent_obs.events.reached_goal,
                     max_steps=self.env.agent_specs[agent_name].interface.max_episode_steps
                 )
                 self._records[self._cur_scen][agent_name].record.counts = _add_dataclass(
