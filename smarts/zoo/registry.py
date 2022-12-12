@@ -52,7 +52,7 @@ def register(locator: str, entry_point, **kwargs):
     agent_registry.register(locator=locator, entry_point=entry_point, **kwargs)
 
 
-def make(locator: str, cached=False, **kwargs):
+def make(locator: str, **kwargs):
     """Create an AgentSpec from the given locator.
 
     In order to load a registered AgentSpec it needs to be reachable from a
@@ -68,21 +68,20 @@ def make(locator: str, cached=False, **kwargs):
 
     from smarts.zoo.agent_spec import AgentSpec
 
-    if locator in cached_agentspec.keys():
-        return cached_agentspec[locator]
+    #if locator in cached_agentspec.keys():
+        #return cached_agentspec[locator]
 
     agent_spec = agent_registry.make(locator, **kwargs)
     assert isinstance(
         agent_spec, AgentSpec
     ), f"Expected make to produce an instance of AgentSpec, got: {agent_spec}"
 
-    if cached:
-        cached_agentspec[locator] = agent_spec
+    #cached_agentspec[locator] = agent_spec
 
     return agent_spec
 
 
-def make_agent(locator: str, cached=False, **kwargs):
+def make_agent(locator: str, **kwargs):
     """Create an Agent from the given agent spec locator.
 
     In order to load a registered AgentSpec it needs to be reachable from a
@@ -96,6 +95,6 @@ def make_agent(locator: str, cached=False, **kwargs):
             Additional arguments to be passed to the constructed class.
     """
 
-    agent_spec = make(locator, cached, kwargs=kwargs)
+    agent_spec = make(locator, kwargs=kwargs)
 
     return agent_spec.build_agent()

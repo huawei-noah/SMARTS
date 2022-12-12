@@ -2,7 +2,7 @@ import gym
 from smarts.zoo import registry
 import sys
 
-test_agent = registry.make_agent("zoo.policies:competition_agent-v0", cached=True)
+test_agent = registry.make_agent("zoo.policies:competition_agent-v0")
 test_agent_spec = registry.make("zoo.policies:competition_agent-v0")
 
 shared_configs = dict(
