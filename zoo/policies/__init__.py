@@ -126,7 +126,7 @@ root_path = str(Path(__file__).absolute().parents[2])
 def competition_entry(**kwargs):
     policy_path = kwargs.get("policy_path", None)
     comp_env_path = str(
-        os.path.join(policy_path, "competition_env")
+        os.path.join(root_path, "competition_env")
     )  # folder contains all competition environment
     sub_env_path = os.path.join(
         comp_env_path, f"{Path(policy_path).name}"
@@ -159,7 +159,8 @@ def competition_entry(**kwargs):
         )
         raise
 
-    # insert submission path
+    # Remove all potentially exist duplicated policy_path in sys.path and insert policy_path in front
+    # This is to avoid other paths in sys.path that contains policy.py been searched before policy_path
     while policy_path in sys.path:
         sys.path.remove(policy_path)
 
@@ -189,6 +190,23 @@ def competition_entry(**kwargs):
 
         return env
 
+    # callback function used in CompetitionAgent to delete all related path, modules and dependencies
+    def at_exit(policy_dir, all_env_dir, sub_env_dir, remove_all_env=False):
+        shutil.rmtree(str(sub_env_dir))
+        while sub_env_dir in sys.path:
+            sys.path.remove(sub_env_dir)
+        while policy_dir in sys.path:
+            sys.path.remove(policy_dir)
+        for key, module in list(sys.modules.items()):
+            if "__file__" in dir(module):
+                module_path = module.__file__
+                if module_path and (
+                    policy_dir in module_path or sub_env_dir in module_path
+                ):
+                    sys.modules.pop(key)
+        if remove_all_env:
+            shutil.rmtree(str(all_env_dir), ignore_errors=True)
+
     config = load_config(Path(os.path.join(policy_path, "config.yaml")))
 
     spec = AgentSpec(
@@ -200,17 +218,20 @@ def competition_entry(**kwargs):
         agent_params={
             "policy_path": policy_path,
             "policy": policy,
+            "at_exit": at_exit,
         },
         adapt_env=env_wrapper,
         agent_builder=CompetitionAgent,
     )
 
     # delete competition policy module and remove related path
-    while policy_path in sys.path:
-        sys.path.remove(policy_path)  # prevent duplicate path remain in sys.path
+    while (
+        policy_path in sys.path
+    ):  # use while loop to prevent duplicated policy_path in sys.path inserted in policy.py by user
+        sys.path.remove(policy_path)
 
     while sub_env_path in sys.path:
-        sys.path.remove(sub_env_path)  # prevent duplicate path remain in sys.path
+        sys.path.remove(sub_env_path)
 
     # remove all modules related to policy_path
     for key, module in list(sys.modules.items()):

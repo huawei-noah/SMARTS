@@ -25,3 +25,4 @@ for _ in range(10):
     observations, rewards, dones, infos = test_env.step(actions)
 
 test_env.close()
+test_agent.close(remove_all_env=True)
