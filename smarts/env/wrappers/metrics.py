@@ -123,13 +123,12 @@ class _Metrics(gym.Wrapper):
 
             if dones[agent_name]:
                 self._done_agents.add(agent_name)
-                if (agent_obs.events.reached_goal
+                if not (
+                    agent_obs.events.reached_goal
                     or len(agent_obs.events.collisions) > 0
                     or agent_obs.events.off_road
                     or agent_obs.events.reached_max_episode_steps
                 ):
-                    pass
-                else:
                     raise MetricsError(
                         f"Unsupported agent done reason. Events: {agent_obs.events}."
                     )
