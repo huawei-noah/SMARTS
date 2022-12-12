@@ -99,7 +99,6 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
         dist_tot = _get_dist(point_a, point_b)
     except PlanningError as e:
         if e.args[0].startswith("Unable to find a route"):
-            print(f"Unable to find a route =====!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             input("Unable to find a route")
             # Vehicle might end (i) in a dead-end, (ii) in a one-way road, or
             # (iii) in a road without u-turn, causing the route planner to fail.
@@ -131,14 +130,14 @@ def _dist_remainder():
             dist = 0
         else:
             cur_pos = Point(*obs.ego_vehicle_state.position)
-            print(f"Cur position === {cur_pos} ???????????????????")
+            print(f"Cur position === {cur_pos}")
             # pytype: disable=attribute-error
             goal_pos = obs.ego_vehicle_state.mission.goal.position
             # pytype: enable=attribute-error
             dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
 
 
-        input("Finished computing dist remainder .... ")
+        print("Finished computing dist remainder .... ")
 
         # Cap remainder distance
         dist = min(dist, initial_compl.dist_tot)
