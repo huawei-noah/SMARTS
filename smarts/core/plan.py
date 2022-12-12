@@ -335,42 +335,30 @@ class Plan:
 
         assert isinstance(self._mission.goal, PositionalGoal)
 
-        start_lane = self._road_map.nearest_lane(
+        start_lanes = self._road_map.nearest_lanes(
             self._mission.start.point,
-            include_junctions=False,
+            include_junctions=True,
         )
-
-        if not start_lane:
-            # it's possible that the Mission's start point wasn't explicitly
-            # specified by a user, but rather determined during the scenario run
-            # from the current position of a vehicle, in which case it may be
-            # in a junction.  But we only allow this if the previous query fails.
-            start_lane = self._road_map.nearest_lane(
-                self._mission.start.point,
-                include_junctions=True,
-            )
-        if start_lane is None:
+        if not start_lanes:
             self._mission = Mission.endless_mission(Pose.origin())
             raise PlanningError("Starting lane not found. Route must start in a lane.")
-        start_road = start_lane.road
+
+        via_roads = [self._road_map.road_by_id(via) for via in self._mission.route_vias]
 
         end_lane = self._road_map.nearest_lane(
             self._mission.goal.position,
             include_junctions=False,
         )
         assert end_lane is not None, "route must end in a lane"
-        end_road = end_lane.road
 
-        via_roads = [self._road_map.road_by_id(via) for via in self._mission.route_vias]
-
-        self._route = self._road_map.generate_routes(
-            start_road, end_road, via_roads, 1
-        )[0]
-
-        print("Start lane road id:", start_lane.road.road_id)
-        print(f"Start and end roads: {start_road.road_id} {end_road.road_id}")
-        rr = [r.road_id for r in self._route.roads]
-        print(f"Route road id {rr}")
+        # When an agent is in an intersection, the `nearest_lanes` method might
+        # not return the correct road as the first choice. Hence, nearest 
+        # starting lanes are tried in sequence until a route is found or until
+        # all nearby starting lane options are exhausted.  
+        for start_lane, _ in start_lanes:
+            self._route = self._road_map.generate_routes(start_lane.road, end_lane.road, via_roads, 1)[0]
+            if self._route.road_length > 0:
+                break
 
         if len(self._route.roads) == 0:
             self._mission = Mission.endless_mission(Pose.origin())
