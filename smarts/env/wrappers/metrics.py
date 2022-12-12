@@ -31,7 +31,6 @@ from smarts.core.coordinates import Point
 from smarts.core.plan import PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
-from smarts.core.smarts import SMARTS
 from smarts.env.wrappers.metric.completion import Completion, CompletionFuncs, get_dist
 from smarts.env.wrappers.metric.costs import CostFuncs, Costs
 from smarts.env.wrappers.metric.counts import Counts
