@@ -9,7 +9,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
 from smarts.zoo.agent_spec import AgentSpec
 
-N_AGENTS = 2
+N_AGENTS = 4
 AGENT_IDS = ["Agent %i" % i for i in range(N_AGENTS)]
 
 
@@ -22,12 +22,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     agent_specs = {
         agent_id: AgentSpec(
             interface=AgentInterface.from_type(
-                AgentType.Laner,
-                max_episode_steps=800,
-                accelerometer=True,
-                neighborhood_vehicles=True,
-                road_waypoints=True,
-                waypoints=True,
+                AgentType.Laner, max_episode_steps=max_episode_steps
             ),
             agent_builder=KeepLaneAgent,
         )
@@ -38,13 +33,9 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
         "smarts.env:hiway-v0",
         scenarios=scenarios,
         agent_specs=agent_specs,
-        headless=True,
-        sumo_headless=False,
+        headless=headless,
+        sumo_headless=True,
     )
-
-    from smarts.env.wrappers.metrics import Metrics
-
-    env = Metrics(env)
 
     for episode in episodes(n=num_episodes):
         agents = {
@@ -75,10 +66,9 @@ if __name__ == "__main__":
         args.scenarios = [
             str(
                 pathlib.Path(__file__).absolute().parents[1]
-                / "smarts"
                 / "scenarios"
-                / "merge"
-                / "3lane_multi_agent"
+                / "sumo"
+                / "loop"
             )
         ]
 
