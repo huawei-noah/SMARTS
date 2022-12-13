@@ -91,8 +91,8 @@ class _Metrics(gym.Wrapper):
         super().__init__(env)
         _check_env(env)
         self._scen: Scenario
-        self._cur_scen: str
-        self._road_map: RoadMap 
+        self._scen_name: str
+        self._road_map: RoadMap
         self._cur_agents: Set[str]
         self._steps: Dict[str, int]
         self._done_agents: Set[str]
@@ -112,13 +112,13 @@ class _Metrics(gym.Wrapper):
 
             # Compute all cost functions.
             costs = Costs()
-            for field in fields(self._records[self._cur_scen][agent_name].cost_funcs):
-                cost_func = getattr(self._records[self._cur_scen][agent_name].cost_funcs, field.name)
+            for field in fields(self._records[self._scen_name][agent_name].cost_funcs):
+                cost_func = getattr(self._records[self._scen_name][agent_name].cost_funcs, field.name)
                 new_costs = cost_func(agent_obs)
                 costs = _add_dataclass(new_costs, costs)
 
             # Update stored costs.
-            self._records[self._cur_scen][agent_name].record.costs = costs
+            self._records[self._scen_name][agent_name].record.costs = costs
 
             if dones[agent_name]:
                 self._done_agents.add(agent_name)
@@ -143,16 +143,16 @@ class _Metrics(gym.Wrapper):
                     goals=agent_obs.events.reached_goal,
                     max_steps=self.env.agent_specs[agent_name].interface.max_episode_steps
                 )
-                self._records[self._cur_scen][agent_name].record.counts = _add_dataclass(
+                self._records[self._scen_name][agent_name].record.counts = _add_dataclass(
                     counts, 
-                    self._records[self._cur_scen][agent_name].record.counts
+                    self._records[self._scen_name][agent_name].record.counts
                 )
 
                 # Update percentage of scenario tasks completed.
-                completion = Completion(dist_tot=self._records[self._cur_scen][agent_name].record.completion.dist_tot)
-                for field in fields(self._records[self._cur_scen][agent_name].completion_funcs):
+                completion = Completion(dist_tot=self._records[self._scen_name][agent_name].record.completion.dist_tot)
+                for field in fields(self._records[self._scen_name][agent_name].completion_funcs):
                     completion_func = getattr(
-                        self._records[self._cur_scen][agent_name].completion_funcs,
+                        self._records[self._scen_name][agent_name].completion_funcs,
                         field.name,
                     )
                     new_completion = completion_func(
@@ -161,7 +161,7 @@ class _Metrics(gym.Wrapper):
                         initial_compl=completion,
                     )
                     completion = _add_dataclass(new_completion, completion)
-                self._records[self._cur_scen][agent_name].record.completion = completion
+                self._records[self._scen_name][agent_name].record.completion = completion
 
         # fmt: on
         if dones["__all__"] == True:
@@ -173,19 +173,18 @@ class _Metrics(gym.Wrapper):
 
     def reset(self, **kwargs):
         """Resets the environment."""
-        print("Next episode------------------------------------------------------------------------------------------------")
         obs = super().reset(**kwargs)
         self._cur_agents = set(self.env.agent_specs.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_agents = set()
-        self._scen = self.env.smarts.scenario
-        self._cur_scen = self.env.smarts.scenario.name
-        self._road_map = self.env.smarts.scenario.road_map
+        self._scen = self.env.scenario
+        self._scen_name = self.env.scenario.name
+        self._road_map = self.env.scenario.road_map
 
         # fmt: off
-        if self._cur_scen not in self._records:
+        if self._scen_name not in self._records:
             _check_scen(self._scen)
-            self._records[self._cur_scen] = {
+            self._records[self._scen_name] = {
                 agent_name: Data(
                     record=Record(
                         completion=Completion(
@@ -204,8 +203,7 @@ class _Metrics(gym.Wrapper):
                 for agent_name in self._cur_agents
             }
         # fmt: on
-        
-        print("END OF RESET")
+
 
         return obs
 
@@ -344,7 +342,7 @@ def _completion(completion: Completion) -> float:
         float: Normalised completion value = [0, 1]. Completion value should be
             maximised. The higher the value, the better it is.
     """
-    return (completion.dist_tot - completion.dist_remainder)  / completion.dist_tot
+    return (completion.dist_tot - completion.dist_remainder) / completion.dist_tot
 
 
 def _humanness(costs: Costs, agents_tot: int) -> float:
@@ -356,10 +354,12 @@ def _humanness(costs: Costs, agents_tot: int) -> float:
         agents_tot (int): Number of agents simulated.
 
     Returns:
-        float: Normalised humanness value = [0, 1]. Humanness value should be 
+        float: Normalised humanness value = [0, 1]. Humanness value should be
             minimised. The lower the value, the better it is.
     """
-    humanness = np.array([costs.dist_to_obstacles, costs.jerk_linear, costs.lane_center_offset])
+    humanness = np.array(
+        [costs.dist_to_obstacles, costs.jerk_linear, costs.lane_center_offset]
+    )
     return np.mean(humanness, dtype=float) / agents_tot
 
 

@@ -65,7 +65,7 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
         float: Shortest road distance between two points in the road map.
     """
 
-    def _get_dist(start: Point, end: Point):
+    def _get_dist(start: Point, end: Point) -> float:
         mission = Mission(
             start=Start(
                 position=start.as_np_array,
@@ -81,7 +81,6 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
         from_route_point = RoadMap.Route.RoutePoint(pt=start)
         to_route_point = RoadMap.Route.RoutePoint(pt=end)
 
-        print("Computing distance ... ")
         dist_tot = plan.route.distance_between(
             start=from_route_point, end=to_route_point
         )
@@ -122,27 +121,24 @@ def _dist_remainder():
     mean: float = 0
     step: int = 0
 
-    def func(road_map: RoadMap, obs: Observation, initial_compl: Completion):
+    def func(
+        road_map: RoadMap, obs: Observation, initial_compl: Completion
+    ) -> Completion:
         nonlocal mean, step
 
         if obs.events.reached_goal:
-            print("Goal reached ...")
             dist = 0
         else:
             cur_pos = Point(*obs.ego_vehicle_state.position)
-            print(f"Cur position === {cur_pos}")
             # pytype: disable=attribute-error
             goal_pos = obs.ego_vehicle_state.mission.goal.position
             # pytype: enable=attribute-error
             dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
 
-
-        print("Finished computing dist remainder .... ")
-
         # Cap remainder distance
-        dist = min(dist, initial_compl.dist_tot)
+        c_dist = min(dist, initial_compl.dist_tot)
 
-        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=dist)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=c_dist)
         return Completion(dist_remainder=mean)
 
     return func

@@ -352,17 +352,19 @@ class Plan:
         assert end_lane is not None, "route must end in a lane"
 
         # When an agent is in an intersection, the `nearest_lanes` method might
-        # not return the correct road as the first choice. Hence, nearest 
+        # not return the correct road as the first choice. Hence, nearest
         # starting lanes are tried in sequence until a route is found or until
-        # all nearby starting lane options are exhausted.  
+        # all nearby starting lane options are exhausted.
         for start_lane, _ in start_lanes:
-            self._route = self._road_map.generate_routes(start_lane.road, end_lane.road, via_roads, 1)[0]
+            self._route = self._road_map.generate_routes(
+                start_lane.road, end_lane.road, via_roads, 1
+            )[0]
             if self._route.road_length > 0:
                 break
 
         if len(self._route.roads) == 0:
             self._mission = Mission.endless_mission(Pose.origin())
-            start_road_ids = [start_lane.road.road_id for start_lane in start_lanes]
+            start_road_ids = [start_lane.road.road_id for start_lane, _ in start_lanes]
             raise PlanningError(
                 "Unable to find a route between start={} and end={}. If either of "
                 "these are junctions (not well supported today) please switch to "

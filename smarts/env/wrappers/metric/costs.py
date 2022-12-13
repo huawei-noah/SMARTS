@@ -118,6 +118,7 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
 
     return func
 
+
 def _jerk_angular() -> Callable[[Observation], Costs]:
     mean = 0
     step = 0
@@ -238,7 +239,7 @@ class CostFuncs:
 
     collisions: Callable[[Observation], Costs] = _collisions
     dist_to_obstacles: Callable[[Observation], Costs] = _dist_to_obstacles()
-    # jerk_angular: Callable[[Observation], Costs] = _jerk_angular()
+    # jerk_angular: Callable[[Observation], Costs] = _jerk_angular() # Currently not used.
     jerk_linear: Callable[[Observation], Costs] = _jerk_linear()
     lane_center_offset: Callable[[Observation], Costs] = _lane_center_offset()
     off_road: Callable[[Observation], Costs] = _off_road
