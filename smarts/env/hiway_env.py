@@ -200,7 +200,7 @@ class HiWayEnv(gym.Env):
         """Returns underlying scenario.
 
         Returns:
-            Senario: Current simulated scenario.
+            Scenario: Current simulated scenario.
         """
         return self._smarts.scenario
 
