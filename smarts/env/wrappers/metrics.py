@@ -204,7 +204,6 @@ class _Metrics(gym.Wrapper):
             }
         # fmt: on
 
-
         return obs
 
     def records(self) -> Dict[str, Dict[str, Record]]:
