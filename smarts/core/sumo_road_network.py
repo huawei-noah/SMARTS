@@ -1209,7 +1209,7 @@ class SumoRoadNetwork(RoadMap):
                                 snapped_to.add(nl)
                                 thresh *= 0.75
                 if p != last_added:
-                    new_coords.append(p)
+                    new_coords.append((p.x, p.y))
                     last_added = p
             if new_coords:
                 lane_to_poly[lane_id] = (Polygon(new_coords), metadata)
