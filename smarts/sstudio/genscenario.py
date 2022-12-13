@@ -229,7 +229,6 @@ def gen_scenario(
                     traffic=traffic,
                     name=name,
                     seed=seed,
-                    overwrite=True,
                     map_spec=map_spec,
                 )
             _update_artifacts(db_conn, artifact_paths, obj_hash)
@@ -253,7 +252,6 @@ def gen_scenario(
                         vehicle_count=mission.actor_count,
                         num_laps=mission.num_laps,
                         seed=seed,
-                        overwrite=True,
                         map_spec=map_spec,
                     )
                 else:
@@ -264,7 +262,6 @@ def gen_scenario(
                     scenario=output_dir,
                     missions=missions,
                     seed=seed,
-                    overwrite=True,
                     map_spec=map_spec,
                 )
 
@@ -293,7 +290,6 @@ def gen_scenario(
                     scenario=output_dir,
                     social_agent_actor=actors,
                     missions=missions,
-                    seed=seed,
                     map_spec=map_spec,
                 )
 
@@ -327,7 +323,6 @@ def gen_scenario(
             _gen_traffic_histories(
                 scenario=output_dir,
                 histories_datasets=scenario.traffic_histories,
-                overwrite=True,
                 map_spec=map_spec,
             )
             _update_artifacts(db_conn, artifact_paths, obj_hash)
@@ -353,7 +348,6 @@ def _gen_traffic(
     name: str,
     output_dir: Optional[str] = None,
     seed: int = 42,
-    overwrite: bool = False,
     map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates the traffic routes for the given scenario. If the output directory is
@@ -365,7 +359,7 @@ def _gen_traffic(
     output_dir = os.path.join(output_dir or build_dir, "traffic")
     os.makedirs(output_dir, exist_ok=True)
 
-    generator = TrafficGenerator(scenario, map_spec, overwrite=overwrite)
+    generator = TrafficGenerator(scenario, map_spec, overwrite=True)
     saved_path = generator.plan_and_save(traffic, name, output_dir, seed=seed)
 
     if saved_path:
@@ -377,8 +371,6 @@ def _gen_social_agent_missions(
     missions: Sequence[types.Mission],
     social_agent_actor: Union[types.SocialAgentActor, Sequence[types.SocialAgentActor]],
     name: str,
-    seed: int = 42,
-    overwrite: bool = False,
     map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates the social agent missions for the given scenario.
@@ -395,8 +387,6 @@ def _gen_social_agent_missions(
             of the social agent traffic file
         seed:
             The random seed to use when generating behavior
-        overwrite:
-            If to forcefully write over the previous existing output file
         map_spec:
             An optional map specification that takes precedence over scenario directory information.
     """
@@ -425,8 +415,6 @@ def _gen_social_agent_missions(
         actors=actors,
         name=name,
         output_dir=output_dir,
-        seed=seed,
-        overwrite=overwrite,
         map_spec=map_spec,
     )
 
@@ -438,7 +426,6 @@ def _gen_agent_missions(
     scenario: str,
     missions: Sequence,
     seed: int = 42,
-    overwrite: bool = False,
     map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates a route file to represent missions (a route per mission). Will create
@@ -451,8 +438,6 @@ def _gen_agent_missions(
             A sequence of missions for social agents to perform
         seed:
             The random seed to use when generating behavior
-        overwrite:
-            If to forcefully write over the previous existing output file
         map_spec:
             An optional map specification that takes precedence over scenario directory information.
     """
@@ -465,8 +450,6 @@ def _gen_agent_missions(
         actors=[types.TrafficActor(name="car")],
         name="missions",
         output_dir=output_dir,
-        seed=seed,
-        overwrite=overwrite,
         map_spec=map_spec,
     )
 
@@ -483,7 +466,6 @@ def _gen_group_laps(
     vehicle_count: int,
     num_laps: int = 3,
     seed: int = 42,
-    overwrite: bool = False,
     map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates missions that start with a grid offset at the startline and do a number
@@ -532,7 +514,6 @@ def _gen_group_laps(
         scenario=scenario,
         missions=missions,
         seed=seed,
-        overwrite=overwrite,
         map_spec=map_spec,
     )
 
@@ -570,8 +551,6 @@ def _gen_missions(
     actors: Sequence[types.Actor],
     name: str,
     output_dir: str,
-    seed: int = 42,
-    overwrite: bool = False,
     map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates a route file to represent missions (a route per mission). Will
@@ -597,9 +576,6 @@ def _gen_missions(
 
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, name + ".pkl")
-
-    if os.path.exists(output_path) and not overwrite:
-        return False
 
     _validate_missions(missions)
 
@@ -654,7 +630,6 @@ def _validate_entry_tactic(mission):
 def _gen_traffic_histories(
     scenario: str,
     histories_datasets: Sequence[Union[types.TrafficHistoryDataset, str]],
-    overwrite: bool,
     map_spec: Optional[types.MapSpec] = None,
 ):
     """Converts traffic history to a format that SMARTS can use.
@@ -663,8 +638,6 @@ def _gen_traffic_histories(
             The scenario directory
         histories_datasets:
             A sequence of traffic history descriptors.
-        overwrite:
-            If to forcefully write over the previous existing output file
         map_spec:
              An optional map specification that takes precedence over scenario directory information.
     """
@@ -690,4 +663,4 @@ def _gen_traffic_histories(
                     f"no map_spec supplied, so unable to filter off-map coordinates and/or flip_y for {hdsr.name}"
                 )
         output_dir = os.path.join(scenario, "build")
-        genhistories.import_dataset(hdsr, output_dir, overwrite, map_bbox)
+        genhistories.import_dataset(hdsr, output_dir, map_bbox)
