@@ -77,7 +77,7 @@ class TraciConn:
         self,
         sumo_port: Optional[int],
         base_params: List[str],
-        sumo_binary: str = "sumo", # Literal["sumo", "sumo-gui"]
+        sumo_binary: str = "sumo",  # Literal["sumo", "sumo-gui"]
     ):
         self._sumo_proc = None
         self._traci_conn = None
