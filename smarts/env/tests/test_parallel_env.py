@@ -44,9 +44,6 @@ def agent_specs():
                 max_episode_steps=3,
             ),
             agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
-            observation_adapter=lambda obs: obs.top_down_rgb.data,
-            reward_adapter=lambda obs, reward: reward,
-            info_adapter=lambda obs, reward, info: info["score"],
         )
         for agent_id in ["1", "2"]
     }
@@ -118,8 +115,7 @@ def _compare_observations(num_env, batched_observations, single_observations):
     for observations in batched_observations:
         assert observations.keys() == single_observations.keys()
         for agent_id, obs in observations.items():
-            assert obs.dtype == single_observations[agent_id].dtype
-            assert obs.shape == single_observations[agent_id].shape
+            assert type(obs) == type(single_observations[agent_id])
 
 
 @pytest.mark.parametrize("num_env", [2])
