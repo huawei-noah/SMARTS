@@ -180,28 +180,42 @@ class SumoTrafficSimulation(TrafficProvider):
         # the retries are to deal with port collisions
         #   since the way we start sumo here has a race condition on
         #   each spawned process claiming a port
-        for _ in range(num_retries):
+        current_retries = 0
+        connected = False
+        while current_retries < num_retries:
             if self._traci_conn is not None:
                 self._traci_conn.close_traci_and_pipes()
 
             sumo_port = self._sumo_port
             sumo_binary = "sumo" if self._headless else "sumo-gui"
             try:
-                self._traci_conn = TraciConn()
-                self._traci_conn.init(
+                self._traci_conn = TraciConn(
                     sumo_port=sumo_port,
-                    sumo_binary=sumo_binary,
                     base_params=self._base_sumo_load_params(),
-                    minimum_version=20,  # version 1.5.0
+                    sumo_binary=sumo_binary,
                 )
-            except traci.exceptions.FatalTraCIError:
-                continue
+                while self._traci_conn.sumo_alive and not connected:
+                    try:
+                        self._traci_conn.connect(
+                            timeout=5,
+                            minimum_version=20,  # version 1.5.0
+                        )
+                    except traci.exceptions.FatalTraCIError:
+                        # Could not connect in time just retry connect
+                        pass
+                    else:
+                        connected = True
+
             except traci.exceptions.TraCIException:
+                # SUMO process died...
+                current_retries += 1
                 continue
             except ConnectionRefusedError:
+                # Some other process owns the port
                 continue
             except KeyboardInterrupt:
                 self._log.debug("Keyboard interrupted TraCI connection.")
+                self._traci_conn.close_traci_and_pipes()
                 raise
             break
 
