@@ -28,7 +28,7 @@ import multiprocessing
 import os
 import subprocess
 import sys
-from typing import Any, List, Literal, Optional
+from typing import Any, List, Optional
 
 from smarts.core.utils import networking
 from smarts.core.utils.logging import suppress_output
@@ -77,7 +77,7 @@ class TraciConn:
         self,
         sumo_port: Optional[int],
         base_params: List[str],
-        sumo_binary: Literal["sumo", "sumo-gui"] = "sumo",
+        sumo_binary: str = "sumo", # Literal["sumo", "sumo-gui"]
     ):
         self._sumo_proc = None
         self._traci_conn = None
