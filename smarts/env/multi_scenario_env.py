@@ -66,7 +66,8 @@ def multi_scenario_v0_env(
     .. note::
 
         A ``smarts.core.controllers.ActionSpaceType.TargetPose``, which is a
-        sequence of ``[x-coordinate, y-coordinate, heading, and time-delta]``.
+        sequence of [x-coordinate, y-coordinate, heading, and time-delta].
+        Use time-delta = 0.1 .
 
         Type:
 
@@ -91,7 +92,7 @@ def multi_scenario_v0_env(
             * - Ego's next heading with respect to the map's axes
               - [-π,π]
             * - Time delta to reach the given pose
-              - [-1e10,1e10]
+              - [0,1e10]
 
     Reward:
 
