@@ -70,19 +70,19 @@ class DomainWrapper:
 
 
 class TraciConn:
-    def __init__(self) -> None:
-        self._sumo_proc = None
-        self._traci_conn = None
-
-    def init(
+    def __init__(
         self,
         sumo_port: Optional[int],
+        base_params: List[str],
         sumo_binary: Literal["sumo", "sumo-gui"] = "sumo",
-        base_params: List[str] = [],
-        minimum_version=20,
     ):
+        self._sumo_proc = None
+        self._traci_conn = None
+        self._sumo_port = None
+
         if sumo_port is None:
             sumo_port = networking.find_free_port()
+        self._sumo_port = sumo_port
         sumo_cmd = [
             os.path.join(SUMO_PATH, "bin", sumo_binary),
             "--remote-port=%s" % sumo_port,
@@ -98,14 +98,19 @@ class TraciConn:
             close_fds=True,
         )
 
-        time.sleep(0.05)  # give SUMO time to start
+    def connect(
+        self,
+        timeout: float = 5,
+        minimum_version=20,
+    ):
+        """Attempt a connection with the SUMO process."""
         with suppress_output(stdout=False):
             self._traci_conn = traci.connect(
-                sumo_port,
-                numRetries=100,
+                self._sumo_port,
+                numRetries=max(0, int(20 * timeout)),
                 proc=self._sumo_proc,
                 waitBetweenRetries=0.05,
-            )  # SUMO must be ready within 5 seconds
+            )  # SUMO must be ready within timeout seconds
 
         try:
             vers, vers_str = self._traci_conn.getVersion()
@@ -114,8 +119,8 @@ class TraciConn:
             logging.debug("TraCI could not connect in time.")
             self.close_traci_and_pipes()
             raise
-        except traci.exceptions.TraCIException as err:
-            logging.debug("Unknown connection issue has occurred: %s", err)
+        except traci.exceptions.TraCIException:
+            logging.error("SUMO process died.")
             self.close_traci_and_pipes()
             raise
         except ConnectionRefusedError:
@@ -132,6 +137,11 @@ class TraciConn:
         except AssertionError:
             self.close_traci_and_pipes()
             raise
+
+    @property
+    def sumo_alive(self):
+        """If the SUMO process is alive."""
+        return self._sumo_proc is not None and self._sumo_proc.poll() is None
 
     def __getattr__(self, name: str) -> Any:
         attribute = getattr(self._traci_conn, name)
