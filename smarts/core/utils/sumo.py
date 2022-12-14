@@ -21,8 +21,18 @@
 for convenience and to reduce code duplication as sumolib lives under SUMO_HOME.
 """
 
+import functools
+import inspect
+import logging
+import multiprocessing
 import os
+import subprocess
 import sys
+import time
+from typing import Any, List, Literal, Optional
+
+from smarts.core.utils import networking
+from smarts.core.utils.logging import suppress_output
 
 try:
     import sumo
@@ -41,3 +51,134 @@ if tools_path not in sys.path:
 
 import sumo.tools.sumolib as sumolib
 import sumo.tools.traci as traci
+
+
+class DomainWrapper:
+    def __init__(self, sumo_proc, domain: traci.domain.Domain) -> None:
+        self._domain = domain
+        self._sumo_proc = sumo_proc
+
+    def __getattr__(self, name: str) -> Any:
+        attribute = getattr(self._domain, name)
+
+        if inspect.isbuiltin(attribute) or inspect.ismethod(attribute):
+            attribute = functools.partial(
+                _wrap_traci_method, method=attribute, sumo_process=self._sumo_proc
+            )
+
+        return attribute
+
+
+class TraciConn:
+    def __init__(self) -> None:
+        self._sumo_proc = None
+        self._traci_conn = None
+
+    def init(
+        self,
+        sumo_port: Optional[int],
+        sumo_binary: Literal["sumo", "sumo-gui"] = "sumo",
+        base_params: List[str] = [],
+        minimum_version=20,
+    ):
+        if sumo_port is None:
+            sumo_port = networking.find_free_port()
+        sumo_cmd = [
+            os.path.join(SUMO_PATH, "bin", sumo_binary),
+            "--remote-port=%s" % sumo_port,
+            *base_params,
+        ]
+
+        logging.debug("Starting sumo process:\n\t %s", sumo_cmd)
+        self._sumo_proc = subprocess.Popen(
+            sumo_cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            close_fds=True,
+        )
+
+        time.sleep(0.05)  # give SUMO time to start
+        with suppress_output(stdout=False):
+            self._traci_conn = traci.connect(
+                sumo_port,
+                numRetries=100,
+                proc=self._sumo_proc,
+                waitBetweenRetries=0.05,
+            )  # SUMO must be ready within 5 seconds
+
+        try:
+            vers, vers_str = self._traci_conn.getVersion()
+        # We will retry since this is our first sumo command
+        except traci.exceptions.FatalTraCIError:
+            logging.debug("TraCI could not connect in time.")
+            self.close_traci_and_pipes()
+            raise
+        except traci.exceptions.TraCIException as err:
+            logging.debug("Unknown connection issue has occurred: %s", err)
+            self.close_traci_and_pipes()
+            raise
+        except ConnectionRefusedError:
+            logging.error(
+                "Connection refused. Tried to connect to unpaired TraCI client."
+            )
+            self.close_traci_and_pipes()
+            raise
+
+        try:
+            assert (
+                vers >= minimum_version
+            ), f"TraCI API version must be >= {minimum_version} ({vers_str})"
+        except AssertionError:
+            self.close_traci_and_pipes()
+            raise
+
+    def __getattr__(self, name: str) -> Any:
+        attribute = getattr(self._traci_conn, name)
+
+        if inspect.isbuiltin(attribute) or inspect.ismethod(attribute):
+            attribute = functools.partial(
+                _wrap_traci_method, method=attribute, sumo_process=self
+            )
+
+        if isinstance(attribute, traci.domain.Domain):
+            attribute = DomainWrapper(sumo_proc=self, domain=attribute)
+
+        return attribute
+
+    def close_traci_and_pipes(self):
+        """Safely closes all connections. We should expect this method to always work without throwing"""
+
+        def __safe_close(conn):
+            try:
+                conn.close()
+            except (subprocess.SubprocessError, multiprocessing.ProcessError):
+                pass
+
+        if self._sumo_proc:
+            __safe_close(self._sumo_proc.stdin)
+            __safe_close(self._sumo_proc.stdout)
+            __safe_close(self._sumo_proc.stderr)
+
+        if self._traci_conn:
+            __safe_close(self._traci_conn)
+
+        self._sumo_proc.kill()
+        self._sumo_proc = None
+        self._traci_conn = None
+
+    def teardown(self):
+        """Clean up all resources."""
+        self.close_traci_and_pipes()
+
+
+def _wrap_traci_method(*args, method, sumo_process: TraciConn, **kwargs):
+    """Argument order must be `*args` first so keyword arguments are required for `method` and `sumo_process`."""
+    try:
+        return method(*args, **kwargs)
+    except traci.exceptions.FatalTraCIError:
+        sumo_process.close_traci_and_pipes()
+        raise
+    except traci.exceptions.TraCIException:
+        sumo_process.close_traci_and_pipes()
+        raise
