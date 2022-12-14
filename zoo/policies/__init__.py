@@ -230,16 +230,11 @@ def competition_entry(**kwargs):
     ):  # use while loop to prevent duplicated policy_path in sys.path inserted in policy.py by user
         sys.path.remove(policy_path)
 
-    while sub_env_path in sys.path:
-        sys.path.remove(sub_env_path)
-
     # remove all modules related to policy_path
     for key, module in list(sys.modules.items()):
         if "__file__" in dir(module):
             module_path = module.__file__
-            if module_path and (
-                policy_path in module_path or sub_env_path in module_path
-            ):
+            if module_path and (policy_path in module_path):
                 sys.modules.pop(key)
 
     del policy_module
