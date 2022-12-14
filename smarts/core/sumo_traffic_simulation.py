@@ -154,7 +154,8 @@ class SumoTrafficSimulation(TrafficProvider):
 
     def destroy(self):
         """Clean up TraCI related connections."""
-        self._traci_conn.close_traci_and_pipes()
+        if self._traci_conn:
+            self._traci_conn.close_traci_and_pipes()
         if not self._is_setup:
             return
         self._sumo_proc.terminate()
