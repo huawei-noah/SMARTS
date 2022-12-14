@@ -28,7 +28,6 @@ import multiprocessing
 import os
 import subprocess
 import sys
-import time
 from typing import Any, List, Literal, Optional
 
 from smarts.core.utils import networking
@@ -54,6 +53,8 @@ import sumo.tools.traci as traci
 
 
 class DomainWrapper:
+    """Wraps `traci.Domain` type for the `TraciConn` utility"""
+
     def __init__(self, sumo_proc, domain: traci.domain.Domain) -> None:
         self._domain = domain
         self._sumo_proc = sumo_proc
@@ -70,6 +71,8 @@ class DomainWrapper:
 
 
 class TraciConn:
+    """A simplified utility for connecting to a SUMO process."""
+
     def __init__(
         self,
         sumo_port: Optional[int],
@@ -85,7 +88,7 @@ class TraciConn:
         self._sumo_port = sumo_port
         sumo_cmd = [
             os.path.join(SUMO_PATH, "bin", sumo_binary),
-            "--remote-port=%s" % sumo_port,
+            f"--remote-port={sumo_port}",
             *base_params,
         ]
 
@@ -183,7 +186,7 @@ class TraciConn:
 
 
 def _wrap_traci_method(*args, method, sumo_process: TraciConn, **kwargs):
-    """Argument order must be `*args` first so keyword arguments are required for `method` and `sumo_process`."""
+    # Argument order must be `*args` first so keyword arguments are required for `method` and `sumo_process`.
     try:
         return method(*args, **kwargs)
     except traci.exceptions.FatalTraCIError:
