@@ -60,9 +60,6 @@ class WorkerServicer(worker_pb2_grpc.WorkerServicer):
             context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
             return worker_pb2.Action()
 
-        adapted_obs = self._agent_spec.observation_adapter(
-            cloudpickle.loads(request.payload)
-        )
-        action = self._agent.act(adapted_obs)
-        adapted_action = self._agent_spec.action_adapter(action)
-        return worker_pb2.Action(action=cloudpickle.dumps(adapted_action))
+        obs = cloudpickle.loads(request.payload)
+        action = self._agent.act(obs)
+        return worker_pb2.Action(action=cloudpickle.dumps(action))

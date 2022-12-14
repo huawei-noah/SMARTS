@@ -34,11 +34,7 @@ class LocalAgent(BufferAgent):
         """Call the agent's act function asynchronously and return a Future."""
 
         def obtain_future_result(obs):
-            adapted_obs = self._agent_spec.observation_adapter(obs)
-            action = self._agent.act(adapted_obs)
-            adapted_action = self._agent_spec.action_adapter(action)
-
-            return adapted_action
+            return self._agent.act(obs)
 
         act_future = futures.Future()
         act_future.set_result(obtain_future_result(obs))

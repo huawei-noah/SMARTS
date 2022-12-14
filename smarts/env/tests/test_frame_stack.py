@@ -33,9 +33,6 @@ from smarts.zoo.agent_spec import AgentSpec
 
 @pytest.fixture
 def agent_specs():
-    def observation_adapter(env_observation):
-        return env_observation.top_down_rgb.data
-
     return {
         "AGENT_"
         + agent_id: AgentSpec(
@@ -44,7 +41,6 @@ def agent_specs():
                 action=ActionSpaceType.Lane,
             ),
             agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
-            observation_adapter=observation_adapter,
         )
         for agent_id in ["001", "002"]
     }
@@ -64,6 +60,8 @@ def env(agent_specs):
     yield env
     env.close()
 
+def adapt_obs(obs):
+    return obs.top_down_rgb.data
 
 @pytest.mark.parametrize("num_stack", [1, 2])
 def test_frame_stack(env, agent_specs, num_stack):
@@ -84,6 +82,7 @@ def test_frame_stack(env, agent_specs, num_stack):
     obs = env.reset()
     assert len(obs) == len(agents)
     for agent_id, agent_obs in obs.items():
+        agent_obs = adapt_obs(agent_obs)
         rgb = agent_specs[agent_id].interface.rgb
         agent_obs = np.asarray(agent_obs)
         assert agent_obs.shape == (num_stack, rgb.width, rgb.height, 3)
@@ -97,6 +96,7 @@ def test_frame_stack(env, agent_specs, num_stack):
     obs, _, _, _ = env.step(actions)
     assert len(obs) == len(agents)
     for agent_id, agent_obs in obs.items():
+        agent_obs = adapt_obs(agent_obs)
         rgb = agent_specs[agent_id].interface.rgb
         agent_obs = np.asarray(agent_obs)
         assert agent_obs.shape == (num_stack, rgb.width, rgb.height, 3)

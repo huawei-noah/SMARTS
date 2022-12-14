@@ -70,10 +70,6 @@ def observation_adapter(env_observation):
     return lane_ttc_observation_adapter.transform(env_observation)
 
 
-def reward_adapter(env_obs, env_reward):
-    return env_reward
-
-
 def action_adapter(model_action):
     throttle, brake, steering = model_action
     return np.array([throttle, brake, steering])
@@ -89,7 +85,6 @@ def run_experiment(log_path, experiment_name, training_iteration=100):
             OBSERVATION_SPACE,
         ),
         observation_adapter=observation_adapter,
-        reward_adapter=reward_adapter,
         action_adapter=action_adapter,
     )
 
