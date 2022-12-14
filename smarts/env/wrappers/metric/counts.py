@@ -26,7 +26,7 @@ class Counts:
     """Performance count values."""
 
     goals: int = 0
-    """ Number of episodes completed succesfully by achieving the goal.
+    """ Number of episodes completed successfully by achieving the goal.
     """
     episodes: int = 0
     """ Number of episodes traversed.

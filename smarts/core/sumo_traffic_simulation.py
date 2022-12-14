@@ -466,7 +466,11 @@ class SumoTrafficSimulation(TrafficProvider):
         # we tell SUMO to step through dt more seconds of the simulation
         self._cumulative_sim_seconds += dt
         try:
-            self._traci_conn.simulationStep(self._cumulative_sim_seconds)
+            # Suppress errors here, to avoid a known (and likely benign)
+            # error related to removing vehicles.
+            # See: https://github.com/huawei-noah/SMARTS/issues/1155
+            with suppress_output(stderr=False):
+                self._traci_conn.simulationStep(self._cumulative_sim_seconds)
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
             return ProviderState()
