@@ -46,11 +46,9 @@ from smarts.core.road_map import RoadMap
 from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_provider import TrafficProvider
-from smarts.core.utils import networking
-from smarts.core.utils.logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
-from smarts.core.utils.sumo import SUMO_PATH, traci  # isort:skip
+from smarts.core.utils.sumo import SUMO_PATH, traci, TraciConn  # isort:skip
 import traci.constants as tc  # isort:skip
 
 
@@ -109,7 +107,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self._is_setup = False
         self._last_trigger_time = -1000000
         self._num_dynamic_ids_used = 0
-        self._traci_conn = None
+        self._traci_conn: Optional[TraciConn] = None
         self._sumo_proc = None
         self._num_clients = 1 + num_external_sumo_clients
         self._sumo_port = sumo_port
@@ -155,7 +153,7 @@ class SumoTrafficSimulation(TrafficProvider):
 
     def destroy(self):
         """Clean up TraCI related connections."""
-        self._close_traci_and_pipes()
+        self._traci_conn.close_traci_and_pipes()
         if not self._is_setup:
             return
         self._sumo_proc.terminate()
@@ -183,61 +181,28 @@ class SumoTrafficSimulation(TrafficProvider):
         #   since the way we start sumo here has a race condition on
         #   each spawned process claiming a port
         for _ in range(num_retries):
-            self._close_traci_and_pipes()
+            if self._traci_conn is not None:
+                self._traci_conn.close_traci_and_pipes()
 
             sumo_port = self._sumo_port
-            if sumo_port is None:
-                sumo_port = networking.find_free_port()
-
             sumo_binary = "sumo" if self._headless else "sumo-gui"
-            sumo_cmd = [
-                os.path.join(SUMO_PATH, "bin", sumo_binary),
-                "--remote-port=%s" % sumo_port,
-                *self._base_sumo_load_params(),
-            ]
-
-            self._log.debug("Starting sumo process:\n\t %s", sumo_cmd)
-            self._sumo_proc = subprocess.Popen(
-                sumo_cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                close_fds=True,
-            )
-            time.sleep(0.05)  # give SUMO time to start
             try:
-                with suppress_output(stdout=False):
-                    self._traci_conn = traci.connect(
-                        sumo_port,
-                        numRetries=100,
-                        proc=self._sumo_proc,
-                        waitBetweenRetries=0.05,
-                    )  # SUMO must be ready within 5 seconds
-
-                try:
-                    assert (
-                        self._traci_conn.getVersion()[0] >= 20
-                    ), "TraCI API version must be >= 20 (SUMO 1.5.0)"
-                # We will retry since this is our first sumo command
-                except traci.exceptions.FatalTraCIError:
-                    logging.debug("Connection closed. Retrying...")
-                    self._close_traci_and_pipes()
-                    continue
-                except traci.exceptions.TraCIException as e:
-                    logging.debug(f"Unknown connection issue has occurred: {e}")
-                    self._close_traci_and_pipes()
-            except ConnectionRefusedError:
-                logging.debug(
-                    "Connection refused. Tried to connect to unpaired TraCI client."
+                self._traci_conn = TraciConn()
+                self._traci_conn.init(
+                    sumo_port=sumo_port,
+                    sumo_binary=sumo_binary,
+                    base_params=self._base_sumo_load_params(),
+                    minimum_version=20,  # version 1.5.0
                 )
-                self._close_traci_and_pipes()
+            except traci.exceptions.FatalTraCIError:
                 continue
-            except KeyboardInterrupt as e:
-                raise e
-            except:
-                logging.debug("Retrying TraCI connection...")
-                self._close_traci_and_pipes()
+            except traci.exceptions.TraCIException:
                 continue
+            except ConnectionRefusedError:
+                continue
+            except KeyboardInterrupt:
+                self._log.debug("Keyboard interrupted TraCI connection.")
+                raise
             break
 
         try:
@@ -350,26 +315,6 @@ class SumoTrafficSimulation(TrafficProvider):
         self._is_setup = True
 
         return self._compute_provider_state()
-
-    def _close_traci_and_pipes(self):
-        """We should expect this method to always work without throwing"""
-
-        def __safe_close(conn):
-            try:
-                conn.close()
-            except:
-                pass
-
-        if self._sumo_proc:
-            __safe_close(self._sumo_proc.stdin)
-            __safe_close(self._sumo_proc.stdout)
-            __safe_close(self._sumo_proc.stderr)
-
-        if self._traci_conn:
-            __safe_close(self._traci_conn)
-
-        self._sumo_proc = None
-        self._traci_conn = None
 
     def _handle_traci_disconnect(
         self,
