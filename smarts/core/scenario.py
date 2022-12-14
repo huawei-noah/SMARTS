@@ -66,6 +66,11 @@ from smarts.sstudio.types import Via as SSVia
 
 VehicleWindow = TrafficHistory.TrafficHistoryVehicleWindow
 
+# Suppress trimesh deprecation warning
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    import trimesh # only suppress the warnings caused by trimesh
 
 class Scenario:
     """The purpose of the Scenario is to provide an aggregate of all
