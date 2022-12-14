@@ -79,7 +79,7 @@ def test_frame_stack(env, agent_specs, num_stack):
     obs = env.reset()
     assert len(obs) == len(agents)
     for agent_id, agent_obs in obs.items():
-        agent_obs = adapt_obs(agent_obs)
+        agent_obs = _filter_obs(agent_obs)
         rgb = agent_specs[agent_id].interface.rgb
         agent_obs = np.asarray(agent_obs)
         assert agent_obs.shape == (num_stack, rgb.width, rgb.height, 3)
@@ -93,7 +93,7 @@ def test_frame_stack(env, agent_specs, num_stack):
     obs, _, _, _ = env.step(actions)
     assert len(obs) == len(agents)
     for agent_id, agent_obs in obs.items():
-        agent_obs = adapt_obs(agent_obs)
+        agent_obs = _filter_obs(agent_obs)
         rgb = agent_specs[agent_id].interface.rgb
         agent_obs = np.asarray(agent_obs)
         assert agent_obs.shape == (num_stack, rgb.width, rgb.height, 3)
@@ -104,5 +104,5 @@ def test_frame_stack(env, agent_specs, num_stack):
 
     env.close()
 
-def adapt_obs(obs):
+def _filter_obs(obs):
     return [o.top_down_rgb.data for o in obs]

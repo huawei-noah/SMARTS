@@ -67,13 +67,9 @@ class AgentSpec:
     """Parameters to be given to `AgentSpec.agent_builder` (default None)"""
 
     observation_adapter: Callable = lambda obs: obs
-    """An adaptor that allows shaping of the observations (default lambda obs: obs)"""
     action_adapter: Callable = lambda act: act
-    """An adaptor that allows shaping of the action (default lambda act: act)"""
     reward_adapter: Callable = lambda obs, reward: reward
-    """An adaptor that allows shaping of the reward (default lambda obs, reward: reward)"""
     info_adapter: Callable = lambda obs, reward, info: info
-    """An adaptor that allows shaping of info (default lambda obs, reward, info: info)"""
 
     def __post_init__(self):
         # make sure we can pickle ourselves
