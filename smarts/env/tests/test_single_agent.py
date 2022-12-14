@@ -43,7 +43,6 @@ def _make_agent_specs(num_agent):
             ),
             agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
             observation_adapter=lambda obs: obs.top_down_rgb.data,
-            reward_adapter=lambda obs, reward: reward,
             info_adapter=lambda obs, reward, info: info["score"],
         )
         for agent_id in range(num_agent)

@@ -60,9 +60,6 @@ def env(agent_specs):
     yield env
     env.close()
 
-def adapt_obs(obs):
-    return obs.top_down_rgb.data
-
 @pytest.mark.parametrize("num_stack", [1, 2])
 def test_frame_stack(env, agent_specs, num_stack):
     # Test invalid num_stack inputs
@@ -106,3 +103,6 @@ def test_frame_stack(env, agent_specs, num_stack):
             assert not np.allclose(agent_obs[-1], agent_obs[-2])
 
     env.close()
+
+def adapt_obs(obs):
+    return [o.top_down_rgb.data for o in obs]
