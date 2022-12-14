@@ -26,7 +26,7 @@ from datetime import datetime
 from pathlib import Path
 from time import time
 from typing import Any, Callable, Dict, Sequence
-
+from natsort import natsorted
 import cpuinfo
 import gym
 import matplotlib.pyplot as plt
@@ -176,7 +176,10 @@ def _write_report(results: Dict[str, Any]):
     stds = []
     scenarios = []
     content = ["Scenario(s)", "Total Time Steps", "Mean (steps/sec)", "Std (steps/sec)"]
-    for scenario, data in results.items():
+    sorted_results = dict(
+        natsorted(results.items())
+    )  # sort the result in ascending order
+    for scenario, data in sorted_results.items():
         scenarios.append(scenario)
         means.append(data.mean)
         stds.append(data.std)
