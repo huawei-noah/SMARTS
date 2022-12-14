@@ -18,6 +18,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added "SMARTS Performance Diagnostic" development tool for evaluating the simulation performance.
 - Added a "All Simulation" button on the header of Envision and made small-windowed simulation(s) in the "All Simulations" page clickable to maximize.
 - An env wrapper `Metrics` is introduced to compute agents' performance metrics.
+- Extracted `TraciConn` to the SMARTS utilities as a simplified utility to help with connecting to `TraCI`.
 ### Deprecated
 ### Changed
 ### Removed
@@ -31,6 +32,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Corrected an issue where traffic lights in SUMO traffic simulation could be empty and cause a termination of the simulation.
 - Fixed an issue where vehicles could cause SMARTS to terminate from being in multiple providers.
 - Fixed an issue where `sumo_traffic_simulation` would disconnect on a non-terminal exception.
+- SMARTS now aggressively attempts to connect to a SUMO process as long as the SUMO process remains alive.
 ### Security
 
 ## [0.7.0rc0]
