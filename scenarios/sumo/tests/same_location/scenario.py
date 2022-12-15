@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import smarts.sstudio.types as types
-from smarts.sstudio.genscenario import _gen_agent_missions, _gen_traffic
+from smarts.sstudio.genscenario import gen_agent_missions, gen_traffic
 
 scenario = str(Path(__file__).parent)
 
@@ -25,10 +25,10 @@ traffic = types.Traffic(
     ]
 )
 
-_gen_agent_missions(
+gen_agent_missions(
     scenario,
     missions=[
         types.Mission(shared_route),
     ],
 )
-_gen_traffic(scenario, traffic, "traffic")
+gen_traffic(scenario, traffic, "traffic")

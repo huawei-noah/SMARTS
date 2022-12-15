@@ -173,7 +173,7 @@ def gen_scenario(
     obj_hash = pickle_hash(scenario.map_spec, True)
     if _needs_build(db_conn, scenario.map_spec, artifact_paths, obj_hash):
         with timeit("map_spec", logger.info):
-            _gen_map(scenario_dir, scenario.map_spec)
+            gen_map(scenario_dir, scenario.map_spec)
             _update_artifacts(db_conn, artifact_paths, obj_hash)
         map_spec = scenario.map_spec
     else:
@@ -224,7 +224,7 @@ def gen_scenario(
     ):
         with timeit("traffic", logger.info):
             for name, traffic in scenario.traffic.items():
-                _gen_traffic(
+                gen_traffic(
                     scenario=scenario_dir,
                     traffic=traffic,
                     name=name,
@@ -243,7 +243,7 @@ def gen_scenario(
             missions = []
             for mission in scenario.ego_missions:
                 if isinstance(mission, types.GroupedLapMission):
-                    _gen_group_laps(
+                    gen_group_laps(
                         scenario=output_dir,
                         begin=mission.route.begin,
                         end=mission.route.end,
@@ -251,17 +251,15 @@ def gen_scenario(
                         used_lanes=mission.lanes,
                         vehicle_count=mission.actor_count,
                         num_laps=mission.num_laps,
-                        seed=seed,
                         map_spec=map_spec,
                     )
                 else:
                     missions.append(mission)
 
             if missions:
-                _gen_agent_missions(
+                gen_agent_missions(
                     scenario=output_dir,
                     missions=missions,
-                    seed=seed,
                     map_spec=map_spec,
                 )
 
@@ -285,7 +283,7 @@ def gen_scenario(
                 ):
                     raise ValueError("Actors and missions must be sequences")
 
-                _gen_social_agent_missions(
+                gen_social_agent_missions(
                     name=name,
                     scenario=output_dir,
                     social_agent_actor=actors,
@@ -300,7 +298,7 @@ def gen_scenario(
     obj_hash = pickle_hash(scenario.bubbles, True)
     if _needs_build(db_conn, scenario.bubbles, artifact_paths, obj_hash):
         with timeit("bubbles", logger.info):
-            _gen_bubbles(scenario=output_dir, bubbles=scenario.bubbles)
+            gen_bubbles(scenario=output_dir, bubbles=scenario.bubbles)
             _update_artifacts(db_conn, artifact_paths, obj_hash)
 
     # Friction maps
@@ -308,7 +306,7 @@ def gen_scenario(
     obj_hash = pickle_hash(scenario.friction_maps, True)
     if _needs_build(db_conn, scenario.friction_maps, artifact_paths, obj_hash):
         with timeit("friction_maps", logger.info):
-            _gen_friction_map(
+            gen_friction_map(
                 scenario=output_dir, surface_patches=scenario.friction_maps
             )
             _update_artifacts(db_conn, artifact_paths, obj_hash)
@@ -320,7 +318,7 @@ def gen_scenario(
         db_conn, scenario.traffic_histories, artifact_paths, obj_hash, map_needs_rebuild
     ):
         with timeit("traffic_histories", logger.info):
-            _gen_traffic_histories(
+            gen_traffic_histories(
                 scenario=output_dir,
                 histories_datasets=scenario.traffic_histories,
                 map_spec=map_spec,
@@ -328,7 +326,7 @@ def gen_scenario(
             _update_artifacts(db_conn, artifact_paths, obj_hash)
 
 
-def _gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None):
+def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None):
     """Saves a map spec to file."""
     _check_if_called_externally()
     build_dir = os.path.join(scenario, "build")
@@ -342,7 +340,7 @@ def _gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] =
         cloudpickle.dump(map_spec, f)
 
 
-def _gen_traffic(
+def gen_traffic(
     scenario: str,
     traffic: types.Traffic,
     name: str,
@@ -366,7 +364,7 @@ def _gen_traffic(
         logger.debug(f"Generated traffic for scenario={scenario}")
 
 
-def _gen_social_agent_missions(
+def gen_social_agent_missions(
     scenario: str,
     missions: Sequence[types.Mission],
     social_agent_actor: Union[types.SocialAgentActor, Sequence[types.SocialAgentActor]],
@@ -385,8 +383,6 @@ def _gen_social_agent_missions(
         name:
             A short name for this grouping of social agents. Is also used as the name
             of the social agent traffic file
-        seed:
-            The random seed to use when generating behavior
         map_spec:
             An optional map specification that takes precedence over scenario directory information.
     """
@@ -400,7 +396,7 @@ def _gen_social_agent_missions(
     # This doesn't support BoidAgentActor. Here we make that explicit
     if any(isinstance(actor, types.BoidAgentActor) for actor in actors):
         raise ValueError(
-            "_gen_social_agent_missions(...) can't be called with BoidAgentActor, got:"
+            "gen_social_agent_missions(...) can't be called with BoidAgentActor, got:"
             f"{actors}"
         )
 
@@ -409,7 +405,7 @@ def _gen_social_agent_missions(
         raise ValueError(f"Actor names={actor_names} must not contain duplicates")
 
     output_dir = os.path.join(scenario, "build", "social_agents")
-    saved = _gen_missions(
+    saved = gen_missions(
         scenario=scenario,
         missions=missions,
         actors=actors,
@@ -422,10 +418,9 @@ def _gen_social_agent_missions(
         logger.debug(f"Generated social agent missions for scenario={scenario}")
 
 
-def _gen_agent_missions(
+def gen_agent_missions(
     scenario: str,
     missions: Sequence,
-    seed: int = 42,
     map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates a route file to represent missions (a route per mission). Will create
@@ -436,15 +431,13 @@ def _gen_agent_missions(
             The scenario directory
         missions:
             A sequence of missions for social agents to perform
-        seed:
-            The random seed to use when generating behavior
         map_spec:
             An optional map specification that takes precedence over scenario directory information.
     """
     _check_if_called_externally()
 
     output_dir = os.path.join(scenario, "build")
-    saved = _gen_missions(
+    saved = gen_missions(
         scenario=scenario,
         missions=missions,
         actors=[types.TrafficActor(name="car")],
@@ -457,7 +450,7 @@ def _gen_agent_missions(
         logger.debug(f"Generated missions for scenario={scenario}")
 
 
-def _gen_group_laps(
+def gen_group_laps(
     scenario: str,
     begin: Tuple[str, int, Any],
     end: Tuple[str, int, Any],
@@ -465,7 +458,6 @@ def _gen_group_laps(
     used_lanes: int,
     vehicle_count: int,
     num_laps: int = 3,
-    seed: int = 42,
     map_spec: Optional[types.MapSpec] = None,
 ):
     """Generates missions that start with a grid offset at the startline and do a number
@@ -510,10 +502,9 @@ def _gen_group_laps(
             )
         )
 
-    saved = _gen_agent_missions(
+    saved = gen_agent_missions(
         scenario=scenario,
         missions=missions,
-        seed=seed,
         map_spec=map_spec,
     )
 
@@ -521,7 +512,7 @@ def _gen_group_laps(
         logger.debug(f"Generated grouped lap missions for scenario={scenario}")
 
 
-def _gen_bubbles(scenario: str, bubbles: Sequence[types.Bubble]):
+def gen_bubbles(scenario: str, bubbles: Sequence[types.Bubble]):
     """Generates 'bubbles' in the scenario that capture vehicles for actors.
     Args:
         scenario:
@@ -535,7 +526,7 @@ def _gen_bubbles(scenario: str, bubbles: Sequence[types.Bubble]):
         pickle.dump(bubbles, f)
 
 
-def _gen_friction_map(scenario: str, surface_patches: Sequence[types.RoadSurfacePatch]):
+def gen_friction_map(scenario: str, surface_patches: Sequence[types.RoadSurfacePatch]):
     """Generates friction map file according to the surface patches defined in
     scenario file.
     """
@@ -545,7 +536,7 @@ def _gen_friction_map(scenario: str, surface_patches: Sequence[types.RoadSurface
         pickle.dump(surface_patches, f)
 
 
-def _gen_missions(
+def gen_missions(
     scenario: str,
     missions: Sequence[types.Mission],
     actors: Sequence[types.Actor],
@@ -627,7 +618,7 @@ def _validate_entry_tactic(mission):
             ), f"Zone edge `{z_edge}` is not the same edge as `types.Mission` route begin edge `{edge}`"
 
 
-def _gen_traffic_histories(
+def gen_traffic_histories(
     scenario: str,
     histories_datasets: Sequence[Union[types.TrafficHistoryDataset, str]],
     map_spec: Optional[types.MapSpec] = None,
