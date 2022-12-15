@@ -113,13 +113,14 @@ class SumoTrafficSimulation(TrafficProvider):
         self._num_clients = 1 + num_external_sumo_clients
         self._sumo_port = sumo_port
         self._last_traci_state = None
-        self._auto_start = True
+        self._auto_start = auto_start
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
         self._allow_reload = allow_reload
         self._traffic_lights = dict()
         self._tls_cache = dict()
         self._last_provider_state = ProviderState()
+        self._sim = None
 
         # start with the default recovery flags...
         self._recovery_flags = super().recovery_flags
@@ -225,7 +226,7 @@ class SumoTrafficSimulation(TrafficProvider):
             # It is mandatory to set order when using multiple clients.
             self._traci_conn.setOrder(0)
             self._traci_conn.getVersion()
-        except Exception as e:
+        except Exception as err:
             logging.error(
                 f"""Failed to initialize SUMO
                 Your scenario might not be configured correctly or
@@ -234,8 +235,8 @@ class SumoTrafficSimulation(TrafficProvider):
                 numbers to all SUMO processes.
                 Check {self._log_file} for hints"""
             )
-            self._handle_traci_disconnect(e)
-            raise e
+            self._handle_traci_disconnect(err)
+            raise err
 
         self._log.debug("Finished starting sumo process")
 
@@ -281,7 +282,7 @@ class SumoTrafficSimulation(TrafficProvider):
 
         return load_params
 
-    def setup(self, next_scenario) -> ProviderState:
+    def setup(self, scenario) -> ProviderState:
         """Initialize the simulation with a new scenario."""
         self._log.debug("Setting up SumoTrafficSim %s" % self)
         assert not self._is_setup, (
@@ -292,16 +293,16 @@ class SumoTrafficSimulation(TrafficProvider):
         restart_sumo = (
             not self._scenario
             or not self.connected
-            or self._scenario.road_map_hash != next_scenario.road_map_hash
+            or self._scenario.road_map_hash != scenario.road_map_hash
             or self._current_reload_count >= self._reload_count
         )
         self._current_reload_count = self._current_reload_count % self._reload_count + 1
 
-        self._scenario = next_scenario
+        self._scenario = scenario
         assert isinstance(
-            next_scenario.road_map, SumoRoadNetwork
+            scenario.road_map, SumoRoadNetwork
         ), "SumoTrafficSimulation requires a SumoRoadNetwork"
-        self._log_file = next_scenario.unique_sumo_log_file()
+        self._log_file = scenario.unique_sumo_log_file()
 
         if restart_sumo:
             self._initialize_traci_conn()
