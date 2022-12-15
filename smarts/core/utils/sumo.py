@@ -28,6 +28,7 @@ import multiprocessing
 import os
 import subprocess
 import sys
+import time
 from typing import Any, List, Optional
 
 from smarts.core.utils import networking
@@ -107,6 +108,7 @@ class TraciConn:
         minimum_version=20,
     ):
         """Attempt a connection with the SUMO process."""
+        time.sleep(0.05)
         with suppress_output(stdout=False):
             self._traci_conn = traci.connect(
                 self._sumo_port,
@@ -168,15 +170,15 @@ class TraciConn:
             except (subprocess.SubprocessError, multiprocessing.ProcessError):
                 pass
 
+        if self._traci_conn:
+            __safe_close(self._traci_conn)
+
         if self._sumo_proc:
             __safe_close(self._sumo_proc.stdin)
             __safe_close(self._sumo_proc.stdout)
             __safe_close(self._sumo_proc.stderr)
+            self._sumo_proc.kill()
 
-        if self._traci_conn:
-            __safe_close(self._traci_conn)
-
-        self._sumo_proc.kill()
         self._sumo_proc = None
         self._traci_conn = None
 
