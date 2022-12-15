@@ -11,10 +11,6 @@ SMARTS provides users the ability to customize their agents. :class:`smarts.zoo.
         interface: AgentInterface
         agent_builder: Callable[..., Agent] = None
         agent_params: Optional[Any] = None
-        observation_adapter: Callable = default_obs_adapter
-        action_adapter: Callable = default_action_adapter
-        reward_adapter: Callable = default_reward_adapter
-        info_adapter: Callable = default_info_adapter
 
 An example of how to create an `Agent` instance is shown below.
 
@@ -23,10 +19,6 @@ An example of how to create an `Agent` instance is shown below.
     AgentSpec(
         interface=AgentInterface.from_type(AgentType.Standard, max_episode_steps=500),
         agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
-        observation_adapter=observation_adapter,
-        reward_adapter=reward_adapter,
-        action_adapter=action_adapter,
-        info_adapter=info_adapter,
     )
 
     agent = agent_spec.build_agent()
