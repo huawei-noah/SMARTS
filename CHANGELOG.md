@@ -17,6 +17,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `ConfigurableZone` for `Zone` object to types which enable users to build bubble by providing coordinates of the polygon.
 - Added "SMARTS Performance Benchmark" development tool for evaluating the simulation performance.
 - Added a "All Simulation" button on the header of Envision and made small-windowed simulation(s) in the "All Simulations" page clickable to maximize.
+- An env wrapper `Metrics` is introduced to compute agents' performance metrics.
 ### Deprecated
 ### Changed
 ### Removed
