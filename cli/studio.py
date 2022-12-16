@@ -98,25 +98,18 @@ def _is_scenario_folder_to_build(path: str) -> bool:
     help="Clean previously generated artifacts first",
 )
 @click.option(
-    "--allow-offset-maps",
-    is_flag=True,
-    default=False,
-    help="Allows road networks (maps) to be offset from the origin. If not specified, a new network file is created if necessary.  Defaults to False except when there's Traffic History data associated with the scenario.",
-)
-@click.option(
     "--seed",
     type=int,
     default=42,
     help="Set the base seed of the scenarios.",
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def build_all(clean: bool, allow_offset_maps: bool, scenarios: List[str], seed: int):
-    build_scenarios(clean, allow_offset_maps, scenarios, seed)
+def build_all(clean: bool, scenarios: List[str], seed: int):
+    build_scenarios(clean, scenarios, seed)
 
 
 def build_scenarios(
     clean: bool,
-    allow_offset_maps: bool,
     scenarios: List[str],
     seed: Optional[int] = None,
 ):
