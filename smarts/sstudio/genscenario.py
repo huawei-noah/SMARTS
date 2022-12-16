@@ -33,8 +33,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle
-from smarts.core.default_map_builder import find_mapfile_in_dir
 
+from smarts.core.default_map_builder import find_mapfile_in_dir
 from smarts.core.utils.file import file_md5_hash, path2hash, pickle_hash
 from smarts.core.utils.logging import timeit
 

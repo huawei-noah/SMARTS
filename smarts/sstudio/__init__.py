@@ -22,9 +22,7 @@ import os
 import subprocess
 from typing import List
 
-from .genscenario import (
-    gen_scenario,
-)
+from .genscenario import gen_scenario
 
 # PYTHONHASHSEED must be "random", unset (default `None`), or an integer in range [0; 4294967295]
 _hashseed = os.getenv("PYTHONHASHSEED")
