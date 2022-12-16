@@ -20,10 +20,14 @@
 import dataclasses
 import hashlib
 import os
+import pickle
 import shutil
 import struct
 from contextlib import contextmanager
+from ctypes import c_int64
 from typing import Generator
+
+import smarts
 
 
 def file_in_folder(filename: str, path: str) -> bool:
@@ -107,6 +111,25 @@ def file_md5_hash(file_path: str) -> str:
         hasher.update(f.read().encode())
 
     return str(hasher.hexdigest())
+
+
+def pickle_hash(obj, include_version=False) -> str:
+    """Converts a Python object to a hash value. NOTE: NOT stable across different Python versions."""
+    pickle_bytes = pickle.dumps(obj, protocol=4)
+    hasher = hashlib.md5()
+    hasher.update(pickle_bytes)
+
+    if include_version:
+        hasher.update(smarts.VERSION.encode())
+
+    return hasher.hexdigest()
+
+
+def pickle_hash_int(obj) -> int:
+    """Converts a Python object to a hash value. NOTE: NOT stable across different Python versions."""
+    hash_str = pickle_hash(obj)
+    val = int(hash_str, 16)
+    return c_int64(val).value
 
 
 def smarts_log_dir() -> str:
