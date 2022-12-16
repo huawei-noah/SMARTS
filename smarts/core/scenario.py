@@ -66,6 +66,16 @@ from smarts.sstudio.types import Via as SSVia
 
 VehicleWindow = TrafficHistory.TrafficHistoryVehicleWindow
 
+# Suppress trimesh deprecation warning
+
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        "ignore",
+        message="Please use `coo_matrix` from the `scipy.sparse` namespace, the `scipy.sparse.coo` namespace is deprecated.",
+        category=DeprecationWarning,
+    )
+    import trimesh  # only suppress the warnings caused by trimesh
+
 
 class Scenario:
     """The purpose of the Scenario is to provide an aggregate of all
@@ -949,7 +959,6 @@ class Scenario:
     @lru_cache(1)
     def map_glb_meta_for_file(filepath):
         """The map metadata given a file."""
-        import trimesh
 
         scene = trimesh.load(filepath)
         return scene.metadata
