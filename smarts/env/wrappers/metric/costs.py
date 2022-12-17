@@ -23,6 +23,7 @@ from typing import Callable
 
 import numpy as np
 
+from smarts.core.coordinates import Point
 from smarts.core.road_map import RoadMap
 from smarts.core.sensors import Observation
 from smarts.core.utils.math import running_mean
@@ -166,19 +167,26 @@ def _lane_center_offset() -> Callable[[RoadMap, Observation], Costs]:
     def func(road_map:RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step
 
-        # Nearest waypoints
-        ego = obs.ego_vehicle_state
-        waypoint_paths = obs.waypoint_paths
-        wps = [path[0] for path in waypoint_paths]
+        if obs.events.off_road:
+            # When vehicle is off road, the lane_center_offset cost 
+            # (i.e., j_lc) is set as zero.
+            j_lc = 0
+        else:
+            # Vehicle's offset along the lane
+            ego_pos = obs.ego_vehicle_state.position
+            ego_lane = road_map.lane_by_id(obs.ego_vehicle_state.lane_id)
+            reflinepoint = ego_lane.to_lane_coord(world_point=Point(*ego_pos))
 
-        # Distance of vehicle from center of lane
-        closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
-        signed_dist_from_center = closest_wp.signed_lateral_error(ego.position)
-        lane_hwidth = closest_wp.lane_width * 0.5
-        norm_dist_from_center = signed_dist_from_center / lane_hwidth
+            # Half width of lane
+            lane_width, _ = ego_lane.width_at_offset(reflinepoint.s) 
+            lane_hwidth = lane_width * 0.5
 
-        # J_LC : Lane center offset
-        j_lc = norm_dist_from_center**2
+            # Normalized vehicle's displacement from lane center  
+            # reflinepoint.t = signed distance from lane center     
+            norm_dist_from_center = reflinepoint.t / lane_hwidth
+
+            # J_LC : Lane center offset
+            j_lc = norm_dist_from_center**2
 
         mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_lc)
         return Costs(lane_center_offset=mean)
@@ -197,17 +205,22 @@ def _speed_limit() -> Callable[[RoadMap, Observation], Costs]:
     def func(road_map:RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step
 
-        # Nearest lane's speed limit.
-        ego_speed = obs.ego_vehicle_state.speed
-        ego_lane = road_map.lane_by_id(obs.ego_vehicle_state.lane_id)
-        speed_limit = ego_lane.speed_limit
-        assert speed_limit > 0, "Expected lane speed limit to be a positive " \
-            f"float, but got speed_limit: {speed_limit}."
+        if obs.events.off_road:
+            # When vehicle is off road, the speed_limit cost (i.e., j_v) is
+            # set as zero.
+            j_v = 0
+        else:
+            # Nearest lane's speed limit.
+            ego_speed = obs.ego_vehicle_state.speed
+            ego_lane = road_map.lane_by_id(obs.ego_vehicle_state.lane_id)
+            speed_limit = ego_lane.speed_limit
+            assert speed_limit > 0, "Expected lane speed limit to be a positive " \
+                f"float, but got speed_limit: {speed_limit}."
 
-        # Excess speed beyond speed limit.
-        overspeed = ego_speed - speed_limit if ego_speed > speed_limit else 0
-        overspeed_norm = min(overspeed / (0.5 * speed_limit), 1)
-        j_v = overspeed_norm**2
+            # Excess speed beyond speed limit.
+            overspeed = ego_speed - speed_limit if ego_speed > speed_limit else 0
+            overspeed_norm = min(overspeed / (0.5 * speed_limit), 1)
+            j_v = overspeed_norm**2
 
         mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_v)
         return Costs(speed_limit=mean)
