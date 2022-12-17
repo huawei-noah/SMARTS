@@ -114,7 +114,7 @@ class _Metrics(gym.Wrapper):
             costs = Costs()
             for field in fields(self._records[self._scen_name][agent_name].cost_funcs):
                 cost_func = getattr(self._records[self._scen_name][agent_name].cost_funcs, field.name)
-                new_costs = cost_func(agent_obs)
+                new_costs = cost_func(road_map=self._road_map, obs=agent_obs)
                 costs = _add_dataclass(new_costs, costs)
 
             # Update stored costs.

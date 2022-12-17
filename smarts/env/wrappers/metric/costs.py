@@ -23,6 +23,7 @@ from typing import Callable
 
 import numpy as np
 
+from smarts.core.road_map import RoadMap
 from smarts.core.sensors import Observation
 from smarts.core.utils.math import running_mean
 
@@ -41,18 +42,18 @@ class Costs:
     wrong_way: float = 0
 
 
-def _collisions(obs: Observation) -> Costs:
+def _collisions(road_map:RoadMap, obs: Observation) -> Costs:
     return Costs(collisions=len(obs.events.collisions))
 
 
-def _dist_to_obstacles() -> Callable[[Observation], Costs]:
+def _dist_to_obstacles() -> Callable[[RoadMap, Observation], Costs]:
     mean = 0
     step = 0
     rel_angle_th = np.pi * 40 / 180
     rel_heading_th = np.pi * 179 / 180
     w_dist = 0.05
 
-    def func(obs: Observation) -> Costs:
+    def func(road_map:RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step, rel_angle_th, rel_heading_th, w_dist
 
         # Ego's position and heading with respect to the map's coordinate system.
@@ -119,12 +120,12 @@ def _dist_to_obstacles() -> Callable[[Observation], Costs]:
     return func
 
 
-def _jerk_angular() -> Callable[[Observation], Costs]:
+def _jerk_angular() -> Callable[[RoadMap, Observation], Costs]:
     mean = 0
     step = 0
 
     # TODO: The output of this cost function should be normalised and bounded to [0,1].
-    def func(obs: Observation) -> Costs:
+    def func(road_map:RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step
 
         j_a = np.linalg.norm(obs.ego_vehicle_state.angular_jerk)
@@ -134,7 +135,7 @@ def _jerk_angular() -> Callable[[Observation], Costs]:
     return func
 
 
-def _jerk_linear() -> Callable[[Observation], Costs]:
+def _jerk_linear() -> Callable[[RoadMap, Observation], Costs]:
     mean = 0
     step = 0
     jerk_linear_max = np.linalg.norm(np.array([0.9, 0.9, 0]))  # Units: m/s^3
@@ -147,7 +148,7 @@ def _jerk_linear() -> Callable[[Observation], Costs]:
     Neural Information Processing Systems, NeurIPS 2019, Vancouver, Canada.
     """
 
-    def func(obs: Observation) -> Costs:
+    def func(road_map:RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step, jerk_linear_max
 
         jerk_linear = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
@@ -158,11 +159,11 @@ def _jerk_linear() -> Callable[[Observation], Costs]:
     return func
 
 
-def _lane_center_offset() -> Callable[[Observation], Costs]:
+def _lane_center_offset() -> Callable[[RoadMap, Observation], Costs]:
     mean = 0
     step = 0
 
-    def func(obs: Observation) -> Costs:
+    def func(road_map:RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step
 
         # Nearest waypoints
@@ -185,28 +186,26 @@ def _lane_center_offset() -> Callable[[Observation], Costs]:
     return func
 
 
-def _off_road(obs: Observation) -> Costs:
+def _off_road(road_map:RoadMap, obs: Observation) -> Costs:
     return Costs(off_road=obs.events.off_road)
 
 
-def _speed_limit() -> Callable[[Observation], Costs]:
+def _speed_limit() -> Callable[[RoadMap, Observation], Costs]:
     mean = 0
     step = 0
 
-    def func(obs: Observation) -> Costs:
+    def func(road_map:RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step
 
-        # Nearest waypoints.
-        ego = obs.ego_vehicle_state
-        waypoint_paths = obs.waypoint_paths
-        wps = [path[0] for path in waypoint_paths]
-
-        # Speed limit.
-        closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
-        speed_limit = closest_wp.speed_limit
+        # Nearest lane's speed limit.
+        ego_speed = obs.ego_vehicle_state.speed
+        ego_lane = road_map.lane_by_id(obs.ego_vehicle_state.lane_id)
+        speed_limit = ego_lane.speed_limit
+        assert speed_limit > 0, "Expected lane speed limit to be a positive " \
+            f"float, but got speed_limit: {speed_limit}."
 
         # Excess speed beyond speed limit.
-        overspeed = ego.speed - speed_limit if ego.speed > speed_limit else 0
+        overspeed = ego_speed - speed_limit if ego_speed > speed_limit else 0
         overspeed_norm = min(overspeed / (0.5 * speed_limit), 1)
         j_v = overspeed_norm**2
 
@@ -216,11 +215,11 @@ def _speed_limit() -> Callable[[Observation], Costs]:
     return func
 
 
-def _wrong_way() -> Callable[[Observation], Costs]:
+def _wrong_way() -> Callable[[RoadMap, Observation], Costs]:
     mean = 0
     step = 0
 
-    def func(obs: Observation) -> Costs:
+    def func(road_map:RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step
         j_wrong_way = 0
         if obs.events.wrong_way:
@@ -237,11 +236,11 @@ class CostFuncs:
     """Functions to compute performance costs. Each cost function computes the
     running mean cost over number of time steps, for a given scenario."""
 
-    collisions: Callable[[Observation], Costs] = _collisions
-    dist_to_obstacles: Callable[[Observation], Costs] = _dist_to_obstacles()
-    # jerk_angular: Callable[[Observation], Costs] = _jerk_angular() # Currently not used.
-    jerk_linear: Callable[[Observation], Costs] = _jerk_linear()
-    lane_center_offset: Callable[[Observation], Costs] = _lane_center_offset()
-    off_road: Callable[[Observation], Costs] = _off_road
-    speed_limit: Callable[[Observation], Costs] = _speed_limit()
-    wrong_way: Callable[[Observation], Costs] = _wrong_way()
+    collisions: Callable[[RoadMap, Observation], Costs] = _collisions
+    dist_to_obstacles: Callable[[RoadMap, Observation], Costs] = _dist_to_obstacles()
+    # jerk_angular: Callable[[RoadMap, Observation], Costs] = _jerk_angular() # Currently not used.
+    jerk_linear: Callable[[RoadMap, Observation], Costs] = _jerk_linear()
+    lane_center_offset: Callable[[RoadMap, Observation], Costs] = _lane_center_offset()
+    off_road: Callable[[RoadMap, Observation], Costs] = _off_road
+    speed_limit: Callable[[RoadMap, Observation], Costs] = _speed_limit()
+    wrong_way: Callable[[RoadMap, Observation], Costs] = _wrong_way()
