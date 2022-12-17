@@ -27,6 +27,7 @@ except Exception as e:
 import smarts
 from smarts.core.utils.file import copy_tree
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
+from smarts.sstudio.scenario_construction import build_scenario
 
 if __name__ == "__main__":
     from rllib_agent import TrainingModel, rllib_agent
@@ -92,7 +93,7 @@ def explore(config):
 
 def main(
     scenario,
-    headless,
+    head,
     time_total_s,
     rollout_fragment_length,
     train_batch_size,
@@ -146,7 +147,7 @@ def main(
         "env_config": {
             "seed": tune.sample_from(lambda spec: random.randint(0, 300)),
             "scenarios": [str(Path(scenario).expanduser().resolve().absolute())],
-            "headless": headless,
+            "headless": not head,
             "agent_specs": {
                 f"AGENT-{i}": rllib_agent["agent_spec"] for i in range(num_agents)
             },
@@ -193,15 +194,15 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("rllib-example")
     parser.add_argument(
-        "scenario",
-        help="Scenario to run (see scenarios/ for some samples you can use)",
+        "--scenario",
         type=str,
+        default=str(Path(__file__).resolve().parents[3] / "scenarios/sumo/loop"),
+        help="Scenario to run (see scenarios/ for some samples you can use)",
     )
     parser.add_argument(
-        "--headless",
+        "--head",
         action="store_true",
-        default=False,
-        help="Run simulation in headless mode",
+        help="Run simulation with display",
     )
     parser.add_argument(
         "--num_samples",
@@ -251,7 +252,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--result_dir",
         type=str,
-        default="~/ray_results",
+        default=str(Path(__file__).resolve().parent / "results"),
         help="Directory containing results",
     )
     parser.add_argument(
@@ -266,9 +267,11 @@ if __name__ == "__main__":
         help="Destination path of where to copy the model when training is over",
     )
     args = parser.parse_args()
+    build_scenario(clean=False, scenario=args.scenario, seed=42)
+
     main(
         scenario=args.scenario,
-        headless=args.headless,
+        head=args.head,
         time_total_s=args.time_total_s,
         rollout_fragment_length=args.rollout_fragment_length,
         train_batch_size=args.train_batch_size,
