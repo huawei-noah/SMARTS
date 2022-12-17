@@ -43,31 +43,24 @@ def scenario_cli():
     help="Clean previously generated artifacts first",
 )
 @click.option(
-    "--allow-offset-map",
-    is_flag=True,
-    default=False,
-    help="Allows road network to be offset from the origin. If not specified, creates a new network file if necessary.",
-)
-@click.option(
     "--seed",
     type=int,
     default=42,
     help="Set the base seed of the scenario.",
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
-def build(clean: bool, allow_offset_map: bool, scenario: str, seed: int):
+def build(clean: bool, scenario: str, seed: int):
     click.echo(f"build-scenario {scenario}")
 
     from smarts.sstudio.scenario_construction import build_scenario
 
     assert seed == None or isinstance(seed, (int))
 
-    build_scenario(clean, allow_offset_map, scenario, seed, click.echo)
+    build_scenario(clean, scenario, seed, click.echo)
 
 
 def _build_scenario_proc(
     clean: bool,
-    allow_offset_map: bool,
     scenario: str,
     semaphore: synchronize.Semaphore,
     seed: int,
@@ -76,7 +69,7 @@ def _build_scenario_proc(
 
     semaphore.acquire()
     try:
-        build_scenario(clean, allow_offset_map, scenario, seed, click.echo)
+        build_scenario(clean, scenario, seed, click.echo)
     finally:
         semaphore.release()
 
@@ -105,25 +98,18 @@ def _is_scenario_folder_to_build(path: str) -> bool:
     help="Clean previously generated artifacts first",
 )
 @click.option(
-    "--allow-offset-maps",
-    is_flag=True,
-    default=False,
-    help="Allows road networks (maps) to be offset from the origin. If not specified, a new network file is created if necessary.  Defaults to False except when there's Traffic History data associated with the scenario.",
-)
-@click.option(
     "--seed",
     type=int,
     default=42,
     help="Set the base seed of the scenarios.",
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def build_all(clean: bool, allow_offset_maps: bool, scenarios: List[str], seed: int):
-    build_scenarios(clean, allow_offset_maps, scenarios, seed)
+def build_all(clean: bool, scenarios: List[str], seed: int):
+    build_scenarios(clean, scenarios, seed)
 
 
 def build_scenarios(
     clean: bool,
-    allow_offset_maps: bool,
     scenarios: List[str],
     seed: Optional[int] = None,
 ):
@@ -142,7 +128,7 @@ def build_scenarios(
                 scenario = f"{scenarios_path}/{p.relative_to(scenarios_path)}"
                 proc = Process(
                     target=_build_scenario_proc,
-                    args=(clean, allow_offset_maps, scenario, sema, seed),
+                    args=(clean, scenario, sema, seed),
                 )
                 all_processes.append((scenario, proc))
                 proc.start()
