@@ -53,7 +53,6 @@ def main(args: argparse.Namespace):
     # Build the scenarios.
     _build_all_scenarios(
         clean=True,
-        allow_offset_maps=False,
         scenarios=[config_env["scenarios_dir"]],
         seed=_SEED,
     )

@@ -1,17 +1,17 @@
-import os
+from pathlib import Path
 
-from smarts.sstudio import gen_traffic
+from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
     Distribution,
     Flow,
     JunctionModel,
     LaneChangingModel,
+    MapSpec,
     Route,
+    Scenario,
     Traffic,
     TrafficActor,
 )
-
-scenario = os.path.dirname(os.path.realpath(__file__))
 
 impatient_car = TrafficActor(
     name="car",
@@ -53,6 +53,8 @@ turn_right_routes = [
     ("east-EW", "north-SN"),
 ]
 
+traffic = {}
+
 for name, routes in {
     "vertical": vertical_routes,
     "horizontal": horizontal_routes,
@@ -60,7 +62,7 @@ for name, routes in {
     "turns": turn_left_routes + turn_right_routes,
     "all": vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes,
 }.items():
-    traffic = Traffic(
+    traffic[name] = Traffic(
         flows=[
             Flow(
                 route=Route(
@@ -75,4 +77,13 @@ for name, routes in {
         ]
     )
 
-    gen_traffic(scenario, traffic, name=name)
+gen_scenario(
+    scenario=Scenario(
+        traffic=traffic,
+        map_spec=MapSpec(
+            source=Path(__file__).parent,
+            shift_to_origin=True,
+        ),
+    ),
+    output_dir=Path(__file__).parent,
+)

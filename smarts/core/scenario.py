@@ -66,6 +66,16 @@ from smarts.sstudio.types import Via as SSVia
 
 VehicleWindow = TrafficHistory.TrafficHistoryVehicleWindow
 
+# Suppress trimesh deprecation warning
+
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        "ignore",
+        message="Please use `coo_matrix` from the `scipy.sparse` namespace, the `scipy.sparse.coo` namespace is deprecated.",
+        category=DeprecationWarning,
+    )
+    import trimesh  # only suppress the warnings caused by trimesh
+
 
 class Scenario:
     """The purpose of the Scenario is to provide an aggregate of all
@@ -106,7 +116,7 @@ class Scenario:
                 "Scenario route property has been deprecated in favor of traffic_specs.  Please update your code.",
                 category=DeprecationWarning,
             )
-            traffic_path = os.path.join(scenario_root, "traffic")
+            traffic_path = os.path.join(scenario_root, "build", "traffic")
             self._traffic_specs = [os.path.join(traffic_path, route)]
         self._missions = missions or {}
         self._bubbles = Scenario._discover_bubbles(scenario_root)
@@ -276,7 +286,7 @@ class Scenario:
     @staticmethod
     def discover_agent_missions_count(scenario_root):
         """Retrieve the agent missions from the given scenario directory."""
-        missions_file = os.path.join(scenario_root, "missions.pkl")
+        missions_file = os.path.join(scenario_root, "build", "missions.pkl")
         if os.path.exists(missions_file):
             with open(missions_file, "rb") as f:
                 return len(pickle.load(f))
@@ -297,7 +307,7 @@ class Scenario:
         road_map, _ = Scenario.build_map(scenario_root)
 
         missions = []
-        missions_file = os.path.join(scenario_root, "missions.pkl")
+        missions_file = os.path.join(scenario_root, "build", "missions.pkl")
         if os.path.exists(missions_file):
             with open(missions_file, "rb") as f:
                 missions = pickle.load(f)
@@ -331,7 +341,7 @@ class Scenario:
         parameters of the specified surface patch.
         """
         surface_patches = []
-        friction_map_file = os.path.join(scenario_root, "friction_map.pkl")
+        friction_map_file = os.path.join(scenario_root, "build", "friction_map.pkl")
         if os.path.exists(friction_map_file):
             with open(friction_map_file, "rb") as f:
                 map_surface_patches = pickle.load(f)
@@ -362,7 +372,7 @@ class Scenario:
         )
         road_map, _ = Scenario.build_map(scenario_root)
 
-        social_agents_path = os.path.join(scenario_root, "social_agents")
+        social_agents_path = os.path.join(scenario_root, "build", "social_agents")
         if not os.path.exists(social_agents_path):
             return []
 
@@ -479,8 +489,8 @@ class Scenario:
         Returns:
             A new map spec.
         """
-        path = Path(scenario_root) / "map_spec.pkl"
-        if not path.exists():
+        path = os.path.join(scenario_root, "build", "map_spec.pkl")
+        if not os.path.exists(path):
             # Use our default map builder if none specified by scenario...
             return MapSpec(
                 scenario_root,
@@ -508,14 +518,16 @@ class Scenario:
         return sorted(
             [
                 os.path.basename(r)
-                for r in glob.glob(os.path.join(scenario_root, "traffic", "*.rou.xml"))
+                for r in glob.glob(
+                    os.path.join(scenario_root, "build", "traffic", "*.rou.xml")
+                )
             ]
         )
 
     @staticmethod
     def discover_traffic(scenario_root: str) -> List[Optional[List[str]]]:
         """Discover the traffic spec files in the given scenario."""
-        traffic_path = os.path.join(scenario_root, "traffic")
+        traffic_path = os.path.join(scenario_root, "build", "traffic")
         # combine any SMARTS and SUMO traffic together...
         sumo_traffic = glob.glob(os.path.join(traffic_path, "*.rou.xml"))
         smarts_traffic = glob.glob(os.path.join(traffic_path, "*.smarts.xml"))
@@ -527,7 +539,7 @@ class Scenario:
 
     @staticmethod
     def _discover_bubbles(scenario_root):
-        path = os.path.join(scenario_root, "bubbles.pkl")
+        path = os.path.join(scenario_root, "build", "bubbles.pkl")
         if not os.path.exists(path):
             return []
 
@@ -937,7 +949,7 @@ class Scenario:
     @property
     def map_glb_filepath(self):
         """The map geometry filepath."""
-        return os.path.join(self._root, "map.glb")
+        return os.path.join(self._root, "build", "map", "map.glb")
 
     @property
     def map_glb_metadata(self):
@@ -949,7 +961,6 @@ class Scenario:
     @lru_cache(1)
     def map_glb_meta_for_file(filepath):
         """The map metadata given a file."""
-        import trimesh
 
         scene = trimesh.load(filepath)
         return scene.metadata
