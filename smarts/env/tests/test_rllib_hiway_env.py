@@ -30,55 +30,10 @@ from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.zoo.agent_spec import AgentSpec
 
 AGENT_ID = "Agent-007"
-INFO_EXTRA_KEY = "__test_extra__"
 
 
 @pytest.fixture
 def rllib_agent():
-    def observation_adapter(env_observation):
-        ego = env_observation.ego_vehicle_state
-        waypoint_paths = env_observation.waypoint_paths
-        wps = [path[0] for path in waypoint_paths]
-
-        # distance of vehicle from center of lane
-        closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
-        signed_dist_from_center = closest_wp.signed_lateral_error(ego.position)
-        lane_hwidth = closest_wp.lane_width * 0.5
-        norm_dist_from_center = signed_dist_from_center / lane_hwidth
-
-        return {
-            "distance_from_center": np.array([norm_dist_from_center]),
-            "angle_error": np.array([closest_wp.relative_heading(ego.heading)]),
-            "speed": np.array([ego.speed]),
-            "steering": np.array([ego.steering]),
-        }
-
-    def reward_adapter(env_obs, env_reward):
-        return env_reward
-
-    def action_adapter(model_action):
-        throttle, brake, steering = model_action
-        return np.array([throttle, brake, steering])
-
-    def info_adapter(env_obs, env_reward, env_info):
-        env_info[INFO_EXTRA_KEY] = "blah"
-        return env_info
-
-    # This action space should match the input to the action_adapter(..) function below.
-    ACTION_SPACE = gym.spaces.Box(
-        low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32
-    )
-
-    # This observation space should match the output of observation_adapter(..) below
-    OBSERVATION_SPACE = gym.spaces.Dict(
-        {
-            "distance_from_center": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-            "angle_error": gym.spaces.Box(low=-np.pi, high=np.pi, shape=(1,)),
-            "speed": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-            "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
-        }
-    )
-
     return {
         "agent_spec": AgentSpec(
             interface=AgentInterface.from_type(
@@ -86,13 +41,10 @@ def rllib_agent():
                 # We use a low number of steps here since this is a test
                 max_episode_steps=10,
             ),
-            observation_adapter=observation_adapter,
-            reward_adapter=reward_adapter,
-            action_adapter=action_adapter,
-            info_adapter=info_adapter,
         ),
-        "observation_space": OBSERVATION_SPACE,
-        "action_space": ACTION_SPACE,
+        "action_space": gym.spaces.Box(
+            low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32
+        ),
     }
 
 

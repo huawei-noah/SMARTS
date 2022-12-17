@@ -29,7 +29,6 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.logging import timeit
 
 
 class RLlibHiWayEnv(MultiAgentEnv):
