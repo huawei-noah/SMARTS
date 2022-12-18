@@ -320,11 +320,15 @@ class Plan:
         """The road map this plan is relative to."""
         return self._road_map
 
-    def create_route(self, mission: Mission):
+    def create_route(self, mission: Mission, radius: Optional[float] = None):
         """Generates a route that conforms to a mission.
         Args:
             mission (Mission):
                 A mission the agent should follow. Defaults to endless if `None`.
+            radius (Optional[float]):
+                Radius (meter) to find the nearest starting lane for the given
+                mission. Defaults to `_default_lane_width` of the underlying
+                road_map.
         """
         assert not self._route, "already called create_route()"
         self._mission = mission or Mission.random_endless_mission(self._road_map)
@@ -338,6 +342,7 @@ class Plan:
         start_lanes = self._road_map.nearest_lanes(
             self._mission.start.point,
             include_junctions=True,
+            radius=radius,
         )
         if not start_lanes:
             self._mission = Mission.endless_mission(Pose.origin())

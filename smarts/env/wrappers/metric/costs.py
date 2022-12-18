@@ -43,7 +43,7 @@ class Costs:
     wrong_way: float = 0
 
 
-def _collisions(road_map:RoadMap, obs: Observation) -> Costs:
+def _collisions(road_map: RoadMap, obs: Observation) -> Costs:
     return Costs(collisions=len(obs.events.collisions))
 
 
@@ -54,7 +54,7 @@ def _dist_to_obstacles() -> Callable[[RoadMap, Observation], Costs]:
     rel_heading_th = np.pi * 179 / 180
     w_dist = 0.05
 
-    def func(road_map:RoadMap, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step, rel_angle_th, rel_heading_th, w_dist
 
         # Ego's position and heading with respect to the map's coordinate system.
@@ -126,7 +126,7 @@ def _jerk_angular() -> Callable[[RoadMap, Observation], Costs]:
     step = 0
 
     # TODO: The output of this cost function should be normalised and bounded to [0,1].
-    def func(road_map:RoadMap, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step
 
         j_a = np.linalg.norm(obs.ego_vehicle_state.angular_jerk)
@@ -149,7 +149,7 @@ def _jerk_linear() -> Callable[[RoadMap, Observation], Costs]:
     Neural Information Processing Systems, NeurIPS 2019, Vancouver, Canada.
     """
 
-    def func(road_map:RoadMap, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step, jerk_linear_max
 
         jerk_linear = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
@@ -164,11 +164,11 @@ def _lane_center_offset() -> Callable[[RoadMap, Observation], Costs]:
     mean = 0
     step = 0
 
-    def func(road_map:RoadMap, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step
 
         if obs.events.off_road:
-            # When vehicle is off road, the lane_center_offset cost 
+            # When vehicle is off road, the lane_center_offset cost
             # (i.e., j_lc) is set as zero.
             j_lc = 0
         else:
@@ -178,11 +178,11 @@ def _lane_center_offset() -> Callable[[RoadMap, Observation], Costs]:
             reflinepoint = ego_lane.to_lane_coord(world_point=Point(*ego_pos))
 
             # Half width of lane
-            lane_width, _ = ego_lane.width_at_offset(reflinepoint.s) 
+            lane_width, _ = ego_lane.width_at_offset(reflinepoint.s)
             lane_hwidth = lane_width * 0.5
 
-            # Normalized vehicle's displacement from lane center  
-            # reflinepoint.t = signed distance from lane center     
+            # Normalized vehicle's displacement from lane center
+            # reflinepoint.t = signed distance from lane center
             norm_dist_from_center = reflinepoint.t / lane_hwidth
 
             # J_LC : Lane center offset
@@ -194,7 +194,7 @@ def _lane_center_offset() -> Callable[[RoadMap, Observation], Costs]:
     return func
 
 
-def _off_road(road_map:RoadMap, obs: Observation) -> Costs:
+def _off_road(road_map: RoadMap, obs: Observation) -> Costs:
     return Costs(off_road=obs.events.off_road)
 
 
@@ -202,7 +202,7 @@ def _speed_limit() -> Callable[[RoadMap, Observation], Costs]:
     mean = 0
     step = 0
 
-    def func(road_map:RoadMap, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step
 
         if obs.events.off_road:
@@ -214,8 +214,10 @@ def _speed_limit() -> Callable[[RoadMap, Observation], Costs]:
             ego_speed = obs.ego_vehicle_state.speed
             ego_lane = road_map.lane_by_id(obs.ego_vehicle_state.lane_id)
             speed_limit = ego_lane.speed_limit
-            assert speed_limit > 0, "Expected lane speed limit to be a positive " \
+            assert speed_limit > 0, (
+                "Expected lane speed limit to be a positive "
                 f"float, but got speed_limit: {speed_limit}."
+            )
 
             # Excess speed beyond speed limit.
             overspeed = ego_speed - speed_limit if ego_speed > speed_limit else 0
@@ -232,7 +234,7 @@ def _wrong_way() -> Callable[[RoadMap, Observation], Costs]:
     mean = 0
     step = 0
 
-    def func(road_map:RoadMap, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, obs: Observation) -> Costs:
         nonlocal mean, step
         j_wrong_way = 0
         if obs.events.wrong_way:

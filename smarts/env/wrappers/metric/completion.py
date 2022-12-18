@@ -77,7 +77,8 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
                 radius=3,
             ),
         )
-        plan = Plan(road_map=road_map, mission=mission, find_route=True)
+        plan = Plan(road_map=road_map, mission=mission, find_route=False)
+        plan.create_route(mission=mission, radius=5)
         from_route_point = RoadMap.Route.RoutePoint(pt=start)
         to_route_point = RoadMap.Route.RoutePoint(pt=end)
 
@@ -103,7 +104,7 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
             # (iii) in a road without u-turn, causing the route planner to fail.
             # When there is no legal route, the road distance in the reverse
             # direction is returned as the distance between point_a and point_b.
-            # Thus, proceed to find a route in the reverse direction.
+            # Thus, proceed to find a walkable route in the reverse direction.
             dist_tot = _get_dist(point_b, point_a)
             logger.info(
                 "completion.get dist(): Did not find a route from "
