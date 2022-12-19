@@ -141,7 +141,7 @@ class TraciConn:
             ), f"TraCI API version must be >= {minimum_version} ({vers_str})"
         except traci.exceptions.FatalTraCIError as err:
             logging.debug("TraCI could not connect in time.")
-            # XXX: the error type is changed to TraCIException to make it consistent with the 
+            # XXX: the error type is changed to TraCIException to make it consistent with the
             # process died case of `traci.connect`.
             raise traci.exceptions.TraCIException(err)
         except AssertionError:
@@ -154,10 +154,10 @@ class TraciConn:
         return self._sumo_proc is not None and self._sumo_proc.poll() is None
 
     def __getattr__(self, name: str) -> Any:
-        attribute = getattr(self._traci_conn, name, None)
-        
-        if attribute is None:
-            return attribute
+        if self.sumo_alive:
+            return None
+
+        attribute = getattr(self._traci_conn, name)
 
         if inspect.isbuiltin(attribute) or inspect.ismethod(attribute):
             attribute = functools.partial(
