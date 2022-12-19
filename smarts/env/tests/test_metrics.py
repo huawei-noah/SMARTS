@@ -178,7 +178,7 @@ def test_reset(make_env):
 
 @pytest.mark.parametrize("get_agent_spec", [{}], indirect=True)
 @pytest.mark.parametrize("get_scenario", ["single_agent_intersection"], indirect=True)
-def test_step_off_road(make_env):
+def test_end_in_off_road(make_env):
 
     # Verify that env.score() can be computed when vehicle goes off road.
     env = Metrics(env=make_env)
@@ -214,7 +214,7 @@ def test_step_off_road(make_env):
 
 @pytest.mark.parametrize("get_agent_spec", [{"max_episode_steps": 1}], indirect=True)
 @pytest.mark.parametrize("get_scenario", ["single_agent_intersection"], indirect=True)
-def test_step_junction(make_env):
+def test_end_in_junction(make_env):
 
     # Verify that env.score() can be computed when vehicle ends in a junction.
     # Note:
