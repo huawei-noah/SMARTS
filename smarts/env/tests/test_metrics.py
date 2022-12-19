@@ -85,7 +85,7 @@ def get_scenario(request):
     from smarts.sstudio.scenario_construction import build_scenario
 
     if request.param == "single_agent_intersection":
-        scenario = (
+        scenario = str(
             Path(__file__).resolve().parents[2]
             / "scenarios"
             / "intersection"
@@ -93,7 +93,7 @@ def get_scenario(request):
         )
         num_agents = 1
     elif request.param == "multi_agent_merge":
-        scenario = (
+        scenario = str(
             Path(__file__).resolve().parents[2]
             / "scenarios"
             / "merge"
