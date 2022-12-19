@@ -78,9 +78,32 @@ def get_agent_spec(request):
     return AgentSpec(interface=dataclasses.replace(base_intrfc, **request.param))
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def get_scenario(request):
-    return request.param
+    from pathlib import Path
+
+    from smarts.sstudio.scenario_construction import build_scenario
+
+    if request.param == "single_agent_intersection":
+        scenario = (
+            Path(__file__).resolve().parents[2]
+            / "scenarios"
+            / "intersection"
+            / "1_to_1lane_left_turn_c"
+        )
+        num_agents = 1
+    elif request.param == "multi_agent_merge":
+        scenario = (
+            Path(__file__).resolve().parents[2]
+            / "scenarios"
+            / "merge"
+            / "3lane_multi_agent"
+        )
+        num_agents = 2
+
+    build_scenario(clean=False, scenario=scenario, seed=42)
+
+    return (scenario, num_agents)
 
 
 @pytest.fixture
@@ -108,13 +131,13 @@ def make_env(get_agent_spec, get_scenario):
 )
 @pytest.mark.parametrize(
     "get_scenario",
-    [("smarts/scenarios/intersection/1_to_1lane_left_turn_c", 1)],
+    ["single_agent_intersection"],
     indirect=True,
     ids=["intersection"],
 )
 def test_init(request, make_env):
 
-    # Verify proper agent interface enabled
+    # Verify proper agent interface enabled.
     param_id = request.node.callspec.id
     if param_id == "intersection-properIntrfc":
         env = Metrics(env=make_env)
@@ -123,7 +146,7 @@ def test_init(request, make_env):
             env = Metrics(env=make_env)
         return
 
-    # Verify blocked access to underlying private variables
+    # Verify blocked access to underlying private variables.
     for elem in ["_scen", "_road_map", "_records"]:
         with pytest.raises(AttributeError):
             getattr(env, elem)
@@ -144,12 +167,10 @@ def mock_mission(scenario_root, agents_to_be_briefed):
 
 
 @pytest.mark.parametrize("get_agent_spec", [{}], indirect=True)
-@pytest.mark.parametrize(
-    "get_scenario", [("smarts/scenarios/intersection/1_to_1lane_left_turn_c", 1)]
-)
+@pytest.mark.parametrize("get_scenario", ["single_agent_intersection"], indirect=True)
 def test_reset(make_env):
 
-    # Verify a scenario without PositionalGoal fails suitability check
+    # Verify a scenario without PositionalGoal fails suitability check.
     with mock.patch(
         "smarts.core.scenario.Scenario.discover_agent_missions",
         side_effect=mock_mission,
@@ -160,28 +181,35 @@ def test_reset(make_env):
         return
 
 
-# @pytest.mark.parametrize("make_env", {}, indirect=True)
-# def test_step(make_env):
-#     # verify whether count values changed: the step, episodes,max-Steps counts have increaded
-#     env = make_env
-
-#     env.reset
+@pytest.mark.parametrize("get_agent_spec", [{}], indirect=True)
+@pytest.mark.parametrize("get_scenario", ["single_agent_intersection"], indirect=True)
+def test_step(make_env):
+    # Verify whether Count values incremented: the step, episodes,max-Steps counts have increaded
+    env = Metrics(env=make_env)
+    obs = env.reset()
+    agent_name = next(iter(obs.keys()))
+    for _ in range(env.agent_specs[agent_name].interface.max_episode_steps):
+        actions = {
+            agent_name: np.append(agent_obs.ego_vehicle_state.position[:2], [0, 0.1])
+            for agent_name, agent_obs in obs.items()
+        }
+        obs, _, _, _ = env.step(actions)
 
 
 @pytest.mark.parametrize("get_agent_spec", [{}], indirect=True)
-@pytest.mark.parametrize(
-    "get_scenario", [("smarts/scenarios/intersection/1_to_1lane_left_turn_c", 1)]
-)
+@pytest.mark.parametrize("get_scenario", ["multi_agent_merge"], indirect=True)
 def test_records_scores(make_env):
-    # Verify that records and scores are accessible and functional
+
+    # Verify that records and scores are accessible and functional.
+    # env.score() is only callable after >=1 episode. Hence step through 1 episode.
     env = Metrics(env=make_env)
     obs = env.reset()
-    actions = {
-        agent_name: np.append(agent_obs.ego_vehicle_state.position[:2], [0, 0.1])
-        for agent_name, agent_obs in obs.items()
-    }
-    agent_name = next(iter(actions.keys()))
+    agent_name = next(iter(obs.keys()))
     for _ in range(env.agent_specs[agent_name].interface.max_episode_steps):
-        env.step(actions)
+        actions = {
+            agent_name: np.append(agent_obs.ego_vehicle_state.position[:2], [0, 0.1])
+            for agent_name, agent_obs in obs.items()
+        }
+        obs, _, _, _ = env.step(actions)
     env.records()
     env.score()
