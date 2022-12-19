@@ -239,13 +239,9 @@ def test_end_in_junction(make_env):
             "Expected vehicle to be inside junction, but it is at lane: "
             f"{obs[agent_name].ego_vehicle_state.lane_id}."
         )
-        assert obs[agent_name].events.reached_max_episode_steps, (
-            "Expected vehicle to reach max episode steps, "
-            f"but it did not. Events: {obs[agent_name].events}."
-        )
-        assert dones["__all__"], (
-            "Expected vehicle to be done, but it is not done. "
-            f"Dones: {dones}. Events: {obs[agent_name].events}."
+        assert obs[agent_name].events.reached_max_episode_steps and dones["__all__"], (
+            "Expected vehicle to reach max episode steps and become done, but " 
+            f"it did not. Dones: {dones}. Events: {obs[agent_name].events}."
         )
         env.score()
 
