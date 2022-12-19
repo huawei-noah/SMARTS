@@ -903,8 +903,11 @@ class SumoTrafficSimulation(TrafficProvider):
         return route[-1] if route else None
 
     def route_for_vehicle(self, vehicle_id: str) -> Optional[RoadMap.Route]:
+        sim = self._sim()
+        if sim is None or not isinstance(sim.road_map, SumoRoadNetwork):
+            return None
         route = self._route_for_vehicle(vehicle_id)
-        return self.route_from_road_ids(route) if route else None
+        return sim.road_map.route_from_road_ids(route) if route else None
 
     def reserve_traffic_location_for_vehicle(
         self,
