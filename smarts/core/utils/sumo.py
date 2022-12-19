@@ -102,43 +102,48 @@ class TraciConn:
             close_fds=True,
         )
 
+    def __del__(self) -> None:
+        self.close_traci_and_pipes()
+
     def connect(
         self,
         timeout: float = 5,
         minimum_version=20,
     ):
         """Attempt a connection with the SUMO process."""
+        # Ensure there has been enough time for sumo to start
         time.sleep(0.05)
-        with suppress_output(stdout=False):
-            self._traci_conn = traci.connect(
-                self._sumo_port,
-                numRetries=max(0, int(20 * timeout)),
-                proc=self._sumo_proc,
-                waitBetweenRetries=0.05,
-            )  # SUMO must be ready within timeout seconds
-
         try:
-            vers, vers_str = self._traci_conn.getVersion()
+            with suppress_output(stdout=False):
+                self._traci_conn = traci.connect(
+                    self._sumo_port,
+                    numRetries=max(0, int(20 * timeout)),
+                    proc=self._sumo_proc,
+                    waitBetweenRetries=0.05,
+                )  # SUMO must be ready within timeout seconds
         # We will retry since this is our first sumo command
         except traci.exceptions.FatalTraCIError:
             logging.debug("TraCI could not connect in time.")
-            self.close_traci_and_pipes()
             raise
         except traci.exceptions.TraCIException:
             logging.error("SUMO process died.")
-            self.close_traci_and_pipes()
             raise
         except ConnectionRefusedError:
             logging.error(
                 "Connection refused. Tried to connect to unpaired TraCI client."
             )
-            self.close_traci_and_pipes()
             raise
 
         try:
+            vers, vers_str = self._traci_conn.getVersion()
             assert (
                 vers >= minimum_version
             ), f"TraCI API version must be >= {minimum_version} ({vers_str})"
+        except traci.exceptions.FatalTraCIError as err:
+            logging.debug("TraCI could not connect in time.")
+            # XXX: the error type is changed to TraCIException to make it consistent with the 
+            # process died case of `traci.connect`.
+            raise traci.exceptions.TraCIException(err)
         except AssertionError:
             self.close_traci_and_pipes()
             raise
@@ -149,7 +154,10 @@ class TraciConn:
         return self._sumo_proc is not None and self._sumo_proc.poll() is None
 
     def __getattr__(self, name: str) -> Any:
-        attribute = getattr(self._traci_conn, name)
+        attribute = getattr(self._traci_conn, name, None)
+        
+        if attribute is None:
+            return attribute
 
         if inspect.isbuiltin(attribute) or inspect.ismethod(attribute):
             attribute = functools.partial(
@@ -192,8 +200,10 @@ def _wrap_traci_method(*args, method, sumo_process: TraciConn, **kwargs):
     try:
         return method(*args, **kwargs)
     except traci.exceptions.FatalTraCIError:
+        # Traci cannot continue
         sumo_process.close_traci_and_pipes()
         raise
     except traci.exceptions.TraCIException:
+        # Case where SUMO can continue
         sumo_process.close_traci_and_pipes()
         raise
