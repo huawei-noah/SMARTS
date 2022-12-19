@@ -151,7 +151,7 @@ def test_init(request, make_env):
             getattr(env, elem)
 
 
-def mock_mission(start: Start, goal: Goal):
+def _mock_mission(start: Start, goal: Goal):
     def func(scenario_root, agents_to_be_briefed):
         return [Mission(start=start, goal=goal)]
 
@@ -165,7 +165,7 @@ def test_reset(make_env):
     # Verify a scenario without PositionalGoal fails suitability check.
     with mock.patch(
         "smarts.core.scenario.Scenario.discover_agent_missions",
-        side_effect=mock_mission(
+        side_effect=_mock_mission(
             start=Start(position=np.array([0, 0, 0]), heading=Heading(0)),
             goal=EndlessGoal(),
         ),
@@ -221,7 +221,7 @@ def test_step_junction(make_env):
     #   Point(-1.76, 2.05, 0) lies on :junction-intersection_1_0, i.e., inside the junction.
     with mock.patch(
         "smarts.core.scenario.Scenario.discover_agent_missions",
-        side_effect=mock_mission(
+        side_effect=_mock_mission(
             start=Start(position=np.array([-1.86, 1.95, 0]), heading=Heading(-1.00)),
             goal=PositionalGoal(position=Point(x=1.5, y=30.5, z=0), radius=3),
         ),
