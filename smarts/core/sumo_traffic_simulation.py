@@ -234,7 +234,7 @@ class SumoTrafficSimulation(TrafficProvider):
                 once and we were not able to assign unique port
                 numbers to all SUMO processes.
                 Check %s for hints""",
-                self._log_file
+                self._log_file,
             )
             self._handle_traci_disconnect(err)
             raise err
@@ -344,8 +344,11 @@ class SumoTrafficSimulation(TrafficProvider):
             # XXX: Needs further investigation whenever this happens.
             self._log.warning("TraCI has provided a warning %s", e)
             return
-        self._log.error(f"TraCI has disconnected with: {e}")
-        self._close_traci_and_pipes()
+        logging.error(
+            "TraCI has disconnected with: `%s`. Please check the logging file `%s`.",
+            e,
+            self._log_file,
+        )
         sim = self._sim()
         if (
             sim
@@ -400,7 +403,7 @@ class SumoTrafficSimulation(TrafficProvider):
 
     @property
     def connected(self):
-        return self._traci_conn is not None
+        return self._traci_conn is not None and self._traci_conn.sumo_alive
 
     @property
     def action_spaces(self):
