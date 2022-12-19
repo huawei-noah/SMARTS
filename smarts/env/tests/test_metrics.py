@@ -198,7 +198,7 @@ def test_step_off_road(make_env):
             break
     assert obs[agent_name].events.off_road, (
         "Expected vehicle to go off road, but it did not. "
-        f"Events {obs[agent_name].events}."
+        f"Events: {obs[agent_name].events}."
     )
     env.score()
 
@@ -210,6 +210,44 @@ def test_step_off_road(make_env):
     assert counts.episodes == 1
     assert counts.steps == 3
     assert counts.max_steps == max_episode_steps
+
+
+@pytest.mark.parametrize("get_agent_spec", [{"max_episode_steps": 1}], indirect=True)
+@pytest.mark.parametrize("get_scenario", ["single_agent_intersection"], indirect=True)
+def test_step_junction(make_env):
+
+    # Verify that env.score() can be computed when vehicle ends in a junction.
+    # Note:
+    #   Point(-1.76, 2.05, 0) lies on :junction-intersection_1_0, i.e., inside the junction.
+    with mock.patch(
+        "smarts.core.scenario.Scenario.discover_agent_missions",
+        side_effect=mock_mission(
+            start=Start(position=np.array([-1.86, 1.95, 0]), heading=Heading(-1.00)),
+            goal=PositionalGoal(position=Point(x=1.5, y=30.5, z=0), radius=3),
+        ),
+    ):
+        env = Metrics(env=make_env)
+        obs = env.reset()
+        agent_name = next(iter(obs.keys()))
+        actions = {
+            agent_id: np.array([-1.76, 2.05, -0.91, 0.1]) for agent_id in obs.keys()
+        }
+        obs, _, dones, _ = env.step(actions)
+        assert (
+            obs[agent_name].ego_vehicle_state.lane_id == ":junction-intersection_1_0"
+        ), (
+            "Expected vehicle to be inside junction, but it is at lane: "
+            f"{obs[agent_name].ego_vehicle_state.lane_id}."
+        )
+        assert obs[agent_name].events.reached_max_episode_steps, (
+            "Expected vehicle to reach max episode steps, "
+            f"but it did not. Events: {obs[agent_name].events}."
+        )
+        assert dones["__all__"], (
+            "Expected vehicle to be done, but it is not done. "
+            f"Dones: {dones}. Events: {obs[agent_name].events}."
+        )
+        env.score()
 
 
 @pytest.mark.parametrize("get_agent_spec", [{}], indirect=True)
