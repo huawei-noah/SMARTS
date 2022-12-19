@@ -129,7 +129,9 @@ class _Metrics(gym.Wrapper):
                     or agent_obs.events.reached_max_episode_steps
                 ):
                     raise MetricsError(
-                        f"Unsupported agent done reason. Events: {agent_obs.events}."
+                        "Expected reached_goal, collisions, off_road, or " 
+                        "max_episode_steps to be true on agent done, but got "
+                        f"events: {agent_obs.events}."
                     )
 
                 # Update stored counts.
