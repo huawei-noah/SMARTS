@@ -29,7 +29,8 @@ import pytest
 
 from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.plan import EndlessGoal
+from smarts.core.coordinates import Heading, Point
+from smarts.core.plan import EndlessGoal, Goal, Mission, PositionalGoal, Start
 from smarts.env.wrappers.metrics import Metrics
 from smarts.zoo.agent_spec import AgentSpec
 
@@ -70,7 +71,7 @@ def get_agent_spec(request):
             not_moving=False,
             agents_alive=None,
         ),
-        max_episode_steps=3,
+        max_episode_steps=5,
         neighborhood_vehicles=True,
         waypoints=True,
         road_waypoints=True,
@@ -116,8 +117,6 @@ def make_env(get_agent_spec, get_scenario):
         },
         headless=True,
         sumo_headless=True,
-        visdom=False,
-        fixed_timestep_sec=0.01,
     )
     yield env
     env.close()
@@ -152,18 +151,11 @@ def test_init(request, make_env):
             getattr(env, elem)
 
 
-def mock_mission(scenario_root, agents_to_be_briefed):
-    import numpy as np
+def mock_mission(start: Start, goal: Goal):
+    def func(scenario_root, agents_to_be_briefed):
+        return [Mission(start=start, goal=goal)]
 
-    from smarts.core.coordinates import Heading
-    from smarts.core.plan import Mission, Start
-
-    return [
-        Mission(
-            start=Start(position=np.array([0, 0, 0]), heading=Heading(0)),
-            goal=EndlessGoal(),
-        )
-    ]
+    return func
 
 
 @pytest.mark.parametrize("get_agent_spec", [{}], indirect=True)
@@ -173,7 +165,10 @@ def test_reset(make_env):
     # Verify a scenario without PositionalGoal fails suitability check.
     with mock.patch(
         "smarts.core.scenario.Scenario.discover_agent_missions",
-        side_effect=mock_mission,
+        side_effect=mock_mission(
+            start=Start(position=np.array([0, 0, 0]), heading=Heading(0)),
+            goal=EndlessGoal(),
+        ),
     ):
         with pytest.raises(AttributeError):
             env = Metrics(env=make_env)
@@ -183,17 +178,38 @@ def test_reset(make_env):
 
 @pytest.mark.parametrize("get_agent_spec", [{}], indirect=True)
 @pytest.mark.parametrize("get_scenario", ["single_agent_intersection"], indirect=True)
-def test_step(make_env):
-    # Verify whether Count values incremented: the step, episodes,max-Steps counts have increaded
+def test_step_off_road(make_env):
+
+    # Verify that env.score() can be computed when vehicle goes off road.
     env = Metrics(env=make_env)
     obs = env.reset()
     agent_name = next(iter(obs.keys()))
-    for _ in range(env.agent_specs[agent_name].interface.max_episode_steps):
+    max_episode_steps = env.agent_specs[agent_name].interface.max_episode_steps
+    for _ in range(max_episode_steps):
         actions = {
-            agent_name: np.append(agent_obs.ego_vehicle_state.position[:2], [0, 0.1])
+            agent_name: np.append(
+                agent_obs.ego_vehicle_state.position[:2] + np.array([0.5, -0.8]),
+                [agent_obs.ego_vehicle_state.heading, 0.1],
+            )
             for agent_name, agent_obs in obs.items()
         }
-        obs, _, _, _ = env.step(actions)
+        obs, _, dones, _ = env.step(actions)
+        if dones["__all__"]:
+            break
+    assert obs[agent_name].events.off_road, (
+        "Expected vehicle to go off road, but it did not. "
+        f"Events {obs[agent_name].events}."
+    )
+    env.score()
+
+    # Verify that Count values increase with episode.
+    records = env.records()
+    scen_name = next(iter(records.keys()))
+    counts = records[scen_name][agent_name].counts
+    assert counts.goals == 0
+    assert counts.episodes == 1
+    assert counts.steps == 3
+    assert counts.max_steps == max_episode_steps
 
 
 @pytest.mark.parametrize("get_agent_spec", [{}], indirect=True)
