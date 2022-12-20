@@ -66,6 +66,11 @@ class AgentSpec:
     agent_params: Optional[Any] = None
     """Parameters to be given to `AgentSpec.agent_builder` (default None)"""
 
+    observation_adapter: Callable = lambda obs: obs
+    action_adapter: Callable = lambda act: act
+    reward_adapter: Callable = lambda obs, reward: reward
+    info_adapter: Callable = lambda obs, reward, info: info
+
     def __post_init__(self):
         # make sure we can pickle ourselves
         cloudpickle.dumps(self)
