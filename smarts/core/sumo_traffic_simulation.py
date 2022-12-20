@@ -19,10 +19,7 @@
 # THE SOFTWARE.
 
 import logging
-import os
 import random
-import subprocess
-import time
 import weakref
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
@@ -49,7 +46,7 @@ from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils.logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
-from smarts.core.utils.sumo import SUMO_PATH, traci, TraciConn  # isort:skip
+from smarts.core.utils.sumo import traci, TraciConn  # isort:skip
 import traci.constants as tc  # isort:skip
 
 
@@ -187,6 +184,7 @@ class SumoTrafficSimulation(TrafficProvider):
         while current_retries < num_retries:
             if self._traci_conn is not None:
                 self._traci_conn.close_traci_and_pipes()
+                self._traci_conn = None
 
             sumo_port = self._sumo_port
             sumo_binary = "sumo" if self._headless else "sumo-gui"
@@ -226,7 +224,7 @@ class SumoTrafficSimulation(TrafficProvider):
             # It is mandatory to set order when using multiple clients.
             self._traci_conn.setOrder(0)
             self._traci_conn.getVersion()
-        except Exception as err:
+        except traci.exceptions.FatalTraCIError as err:
             logging.error(
                 """Failed to initialize SUMO
                 Your scenario might not be configured correctly or
@@ -237,7 +235,7 @@ class SumoTrafficSimulation(TrafficProvider):
                 self._log_file,
             )
             self._handle_traci_disconnect(err)
-            raise err
+            raise
 
         self._log.debug("Finished starting sumo process")
 
@@ -286,9 +284,9 @@ class SumoTrafficSimulation(TrafficProvider):
     def setup(self, scenario) -> ProviderState:
         """Initialize the simulation with a new scenario."""
         self._log.debug("Setting up SumoTrafficSim %s", self)
-        assert not self._is_setup, (
-            "Can't setup twice, %s, see teardown()" % self._is_setup
-        )
+        assert (
+            not self._is_setup
+        ), f"Can't setup twice, {self._is_setup}, see teardown()"
 
         # restart sumo process only when map file changes
         restart_sumo = (
@@ -336,7 +334,7 @@ class SumoTrafficSimulation(TrafficProvider):
 
     def _handle_traci_disconnect(
         self,
-        e,
+        err,
         actors_relinquishable: bool = True,
         removed_actor_id: Optional[str] = None,
     ):
@@ -346,7 +344,7 @@ class SumoTrafficSimulation(TrafficProvider):
             return
         logging.error(
             "TraCI has disconnected with: `%s`. Please check the logging file `%s`.",
-            e,
+            err,
             self._log_file,
         )
         sim = self._sim()
@@ -423,10 +421,8 @@ class SumoTrafficSimulation(TrafficProvider):
             raise error
         return self._last_provider_state, False
 
-    def step(
-        self, provider_actions, dt: float, elapsed_sim_time: float
-    ) -> ProviderState:
-        assert not provider_actions
+    def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
+        assert not actions
         if not self.connected:
             self._last_provider_state = ProviderState()
         else:
@@ -449,7 +445,7 @@ class SumoTrafficSimulation(TrafficProvider):
 
     def sync(self, provider_state: ProviderState):
         if not self.connected:
-            return
+            return None
         return self._sync(provider_state)
 
     def _sync(self, provider_state: ProviderState):
@@ -545,13 +541,14 @@ class SumoTrafficSimulation(TrafficProvider):
                     vehicle_id,
                     SumoTrafficSimulation._color_for_role(provider_vehicle.role),
                 )
-            except traci.exceptions.TraCIException as e:
+            except traci.exceptions.TraCIException:
                 # Likely as a result of https://github.com/eclipse/sumo/issues/3993
                 # the vehicle got removed because we skipped a moveToXY call between
                 # internal stepSimulations, so we add the vehicle back here.
                 self._log.warning(
                     "Attempted to (TraCI) SUMO.moveToXY(...) on missing "
-                    f"vehicle(id={vehicle_id})"
+                    "vehicle(id=%s)",
+                    vehicle_id,
                 )
                 self._create_vehicle(
                     vehicle_id, provider_vehicle.dimensions, provider_vehicle.role
@@ -589,9 +586,9 @@ class SumoTrafficSimulation(TrafficProvider):
     def _color_for_role(role: ActorRole) -> np.ndarray:
         if role == ActorRole.EgoAgent:
             return np.array(SceneColors.Agent.value[:3]) * 255
-        elif role == ActorRole.SocialAgent:
+        if role == ActorRole.SocialAgent:
             return np.array(SceneColors.SocialAgent.value[:3]) * 255
-        elif role == ActorRole.Social:
+        if role == ActorRole.Social:
             return np.array(SceneColors.SocialVehicle.value[:3]) * 255
         return np.array(SceneColors.SocialVehicle.value[:3]) * 255
 
@@ -629,8 +626,8 @@ class SumoTrafficSimulation(TrafficProvider):
             self._handle_traci_disconnect(err)
 
     def _create_vehicle(self, vehicle_id, dimensions, role: ActorRole):
-        assert (
-            type(vehicle_id) == str
+        assert isinstance(
+            vehicle_id, str
         ), f"SUMO expects string ids: {vehicle_id} is a {type(vehicle_id)}"
 
         self._log.debug("Non SUMO vehicle %s joined simulation", vehicle_id)
@@ -858,7 +855,7 @@ class SumoTrafficSimulation(TrafficProvider):
 
     def _teleport_vehicle(self, vehicle_id, route, lane_offset, type_id):
         self._log.debug(
-            f"Teleporting {vehicle_id} to lane_offset={lane_offset} route={route}"
+            "Teleporting %s to lane_offset=%s route=%s", vehicle_id, lane_offset, route
         )
         spawn_road = self._scenario.road_map.road_by_id(route[0])
         lane_index = random.randint(0, len(spawn_road.lanes) - 1)
@@ -992,5 +989,7 @@ class SumoTrafficSimulation(TrafficProvider):
         # no need to get the route from from_provider because this vehicle
         # is one that we used to manage, and Sumo/Traci should remember it.
         self._log.info(
-            f"traffic actor {provider_actor.actor_id} transferred to {self.source_str}."
+            "traffic actor %s transferred to %s.",
+            provider_actor.actor_id,
+            self.source_str,
         )
