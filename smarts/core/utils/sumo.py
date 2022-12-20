@@ -83,6 +83,7 @@ class TraciConn:
         self._sumo_proc = None
         self._traci_conn = None
         self._sumo_port = None
+        self._sumo_version = ()
 
         if sumo_port is None:
             sumo_port = networking.find_free_port()
@@ -138,7 +139,15 @@ class TraciConn:
             vers, vers_str = self._traci_conn.getVersion()
             assert (
                 vers >= minimum_version
-            ), f"TraCI API version must be >= {minimum_version} ({vers_str})"
+            ), f"TraCI API version must be >= {minimum_version} ({vers})"
+            self._sumo_version = tuple(
+                int(v) for v in vers_str.split(" ")[1].split(".")
+            )  # e.g. "SUMO 1.11.0" -> (1, 11, 0)
+            assert self._sumo_version >= (
+                1,
+                10,
+                0,
+            ), "SUMO version must be >= SUMO 1.10.0"
         except traci.exceptions.FatalTraCIError as err:
             logging.debug("TraCI could not connect in time.")
             # XXX: the error type is changed to TraCIException to make it consistent with the
@@ -154,7 +163,7 @@ class TraciConn:
         return self._sumo_proc is not None and self._sumo_proc.poll() is None
 
     def __getattr__(self, name: str) -> Any:
-        if self.sumo_alive:
+        if not self.sumo_alive:
             return None
 
         attribute = getattr(self._traci_conn, name)
@@ -168,6 +177,10 @@ class TraciConn:
             attribute = DomainWrapper(sumo_proc=self, domain=attribute)
 
         return attribute
+
+    def must_reset(self):
+        """If the version of sumo will have errors if just reloading such that it must be reset."""
+        return self._sumo_version > (1, 12, 0)
 
     def close_traci_and_pipes(self):
         """Safely closes all connections. We should expect this method to always work without throwing"""
@@ -205,5 +218,5 @@ def _wrap_traci_method(*args, method, sumo_process: TraciConn, **kwargs):
         raise
     except traci.exceptions.TraCIException:
         # Case where SUMO can continue
-        sumo_process.close_traci_and_pipes()
-        raise
+        # TAI: consider closing the process even with a non fatal error
+        pass
