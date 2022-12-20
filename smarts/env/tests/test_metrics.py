@@ -183,19 +183,16 @@ def test_end_in_off_road(make_env):
     # Verify that env.score() can be computed when vehicle goes off road.
     env = Metrics(env=make_env)
     obs = env.reset()
-    agent_name = next(iter(obs.keys()))
-    max_episode_steps = env.agent_specs[agent_name].interface.max_episode_steps
-    for _ in range(max_episode_steps):
+    agent_name = next(iter(env.agent_specs.keys()))
+    dones = {"__all__": False}
+    while not dones["__all__"]:
         actions = {
             agent_name: np.append(
-                agent_obs.ego_vehicle_state.position[:2] + np.array([0.5, -0.8]),
-                [agent_obs.ego_vehicle_state.heading, 0.1],
+                obs[agent_name].ego_vehicle_state.position[:2] + np.array([0.5, -0.8]),
+                [obs[agent_name].ego_vehicle_state.heading, 0.1],
             )
-            for agent_name, agent_obs in obs.items()
         }
         obs, _, dones, _ = env.step(actions)
-        if dones["__all__"]:
-            break
     assert obs[agent_name].events.off_road, (
         "Expected vehicle to go off road, but it did not. "
         f"Events: {obs[agent_name].events}."
@@ -209,7 +206,50 @@ def test_end_in_off_road(make_env):
     assert counts.goals == 0
     assert counts.episodes == 1
     assert counts.steps == 3
-    assert counts.max_steps == max_episode_steps
+    assert counts.max_steps == env.agent_specs[agent_name].interface.max_episode_steps
+
+
+@pytest.mark.parametrize(
+    "get_agent_spec",
+    [{"max_episode_steps": 27, "done_criteria": DoneCriteria(off_route=True)}],
+    indirect=True,
+)
+@pytest.mark.parametrize("get_scenario", ["single_agent_intersection"], indirect=True)
+def test_end_in_off_route(make_env):
+
+    # Verify that env.score() can be computed when vehicle ends in off route.
+    # Note:
+    #   Point(-12, -1.6, 0) lies on edge-west-WE_0, i.e., to the left of the junction.
+    #   Point( 12, -1.6, 0) lies on edge-east-WE_0, i.e., to the right of the junction.
+    #   Point(1.5, 30.5, 0) lies on edge-north-SN_0, i.e., to the top of the junction.
+    with mock.patch(
+        "smarts.core.scenario.Scenario.discover_agent_missions",
+        side_effect=_mock_mission(
+            start=Start(position=np.array([-12, -1.6, 0]), heading=Heading(-1.57)),
+            goal=PositionalGoal(position=Point(x=1.5, y=30.5, z=0), radius=3),
+        ),
+    ):
+        env = Metrics(env=make_env)
+        obs = env.reset()
+        agent_name = next(iter(env.agent_specs.keys()))
+        dones = {"__all__": False}
+        while not dones["__all__"]:
+            actions = {
+                agent_name: np.append(
+                    obs[agent_name].ego_vehicle_state.position[:2] + np.array([1, 0]),
+                    [obs[agent_name].ego_vehicle_state.heading, 0.1],
+                )
+            }
+            obs, _, dones, _ = env.step(actions)
+        assert obs[agent_name].ego_vehicle_state.lane_id == "edge-east-WE_0", (
+            "Expected vehicle to drive off route, but it is at lane: "
+            f"{obs[agent_name].ego_vehicle_state.lane_id}."
+        )
+        assert obs[agent_name].events.off_route, (
+            "Expected vehicle to go off route, but it did not. "
+            f"Events: {obs[agent_name].events}."
+        )
+        env.score()
 
 
 @pytest.mark.parametrize("get_agent_spec", [{"max_episode_steps": 1}], indirect=True)
@@ -240,7 +280,7 @@ def test_end_in_junction(make_env):
             f"{obs[agent_name].ego_vehicle_state.lane_id}."
         )
         assert obs[agent_name].events.reached_max_episode_steps and dones["__all__"], (
-            "Expected vehicle to reach max episode steps and become done, but " 
+            "Expected vehicle to reach max episode steps and become done, but "
             f"it did not. Dones: {dones}. Events: {obs[agent_name].events}."
         )
         env.score()
@@ -248,10 +288,11 @@ def test_end_in_junction(make_env):
 
 @pytest.mark.parametrize("get_agent_spec", [{}], indirect=True)
 @pytest.mark.parametrize("get_scenario", ["multi_agent_merge"], indirect=True)
-def test_records_scores(make_env):
+def test_records_and_scores(make_env):
 
     # Verify that records and scores are accessible and functional.
-    # env.score() is only callable after >=1 episode. Hence step through 1 episode.
+    # Note:
+    #   env.score() is only callable after >=1 episode. Hence step through 1 episode.
     env = Metrics(env=make_env)
     obs = env.reset()
     agent_name = next(iter(obs.keys()))

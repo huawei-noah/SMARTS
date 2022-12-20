@@ -99,11 +99,10 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
         dist_tot = _get_dist(point_a, point_b)
     except PlanningError as e:
         if e.args[0].startswith("Unable to find a route"):
-            # Vehicle might end (i) in a dead-end, (ii) in a one-way road, or
-            # (iii) in a road without u-turn, causing the route planner to fail.
-            # When there is no legal route, the road distance in the reverse
-            # direction is returned as the distance between point_a and point_b.
-            # Thus, proceed to find a walkable route in the reverse direction.
+            # Vehicle might end (i) in a one-way road, or (ii) in a road without
+            # u-turn, causing the route planner to fail. When there is no legal
+            # route, the walkable road distance in the reverse direction is
+            # returned as the distance between point_a and point_b.
             dist_tot = _get_dist(point_b, point_a)
             logger.info(
                 "completion.get dist(): Did not find a route from "
