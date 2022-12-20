@@ -21,6 +21,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Extracted `TraciConn` to the SMARTS utilities as a simplified utility to help with connecting to `TraCI`.
 ### Deprecated
 ### Changed
+- Minimum `SUMO` version allowed by `SumoTrafficSimulation` is now `1.10.0`.
 ### Removed
 - Removed all of PyMarl contents, including related interface adapter, environments, and tests.
 - Removed ray usage example.
@@ -34,6 +35,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an issue where `sumo_traffic_simulation` would disconnect on a non-terminal exception.
 - SMARTS now aggressively attempts to connect to a SUMO process as long as the SUMO process remains alive.
 - SUMO traffic simulation `route_for_vehicle` works again.
+- SUMO is now supported up to version `1.15.0`. Versions `sumo>=1.12.0` are set to reset rather than reload because of errors with reset. 
 ### Security
 
 ## [0.7.0rc0]
