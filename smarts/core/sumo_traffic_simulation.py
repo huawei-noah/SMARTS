@@ -294,6 +294,7 @@ class SumoTrafficSimulation(TrafficProvider):
             or not self.connected
             or self._scenario.road_map_hash != scenario.road_map_hash
             or self._current_reload_count >= self._reload_count
+            or self._traci_conn.must_reset()
         )
         self._current_reload_count = self._current_reload_count % self._reload_count + 1
 
