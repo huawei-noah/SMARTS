@@ -190,23 +190,6 @@ def competition_entry(**kwargs):
 
         return env
 
-    # callback function used in CompetitionAgent to delete all related path, modules and dependencies
-    def at_exit(policy_dir, all_env_dir, sub_env_dir, remove_all_env=False):
-        shutil.rmtree(str(sub_env_dir))
-        while sub_env_dir in sys.path:
-            sys.path.remove(sub_env_dir)
-        while policy_dir in sys.path:
-            sys.path.remove(policy_dir)
-        for key, module in list(sys.modules.items()):
-            if "__file__" in dir(module):
-                module_path = module.__file__
-                if module_path and (
-                    policy_dir in module_path or sub_env_dir in module_path
-                ):
-                    sys.modules.pop(key)
-        if remove_all_env:
-            shutil.rmtree(str(all_env_dir), ignore_errors=True)
-
     config = load_config(Path(os.path.join(policy_path, "config.yaml")))
 
     spec = AgentSpec(
@@ -218,7 +201,6 @@ def competition_entry(**kwargs):
         agent_params={
             "policy_path": policy_path,
             "policy": policy,
-            "at_exit": at_exit,
         },
         adapt_env=env_wrapper,
         agent_builder=CompetitionAgent,
