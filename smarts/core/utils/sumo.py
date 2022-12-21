@@ -109,7 +109,12 @@ class TraciConn:
     def connect(
         self,
         timeout: float = 5,
-        minimum_version=20,
+        minimum_traci_version=20,
+        minimum_sumo_version=(
+            1,
+            10,
+            0,
+        ),
     ):
         """Attempt a connection with the SUMO process."""
         # Ensure there has been enough time for sumo to start
@@ -138,15 +143,13 @@ class TraciConn:
         try:
             vers, vers_str = self._traci_conn.getVersion()
             assert (
-                vers >= minimum_version
-            ), f"TraCI API version must be >= {minimum_version} ({vers})"
+                vers >= minimum_traci_version
+            ), f"TraCI API version must be >= {minimum_traci_version}. Got version ({vers})"
             self._sumo_version = tuple(
                 int(v) for v in vers_str.split(" ")[1].split(".")
             )  # e.g. "SUMO 1.11.0" -> (1, 11, 0)
-            assert self._sumo_version >= (
-                1,
-                10,
-                0,
+            assert (
+                self._sumo_version >= minimum_sumo_version
             ), "SUMO version must be >= SUMO 1.10.0"
         except traci.exceptions.FatalTraCIError as err:
             logging.debug("TraCI could not connect in time.")
