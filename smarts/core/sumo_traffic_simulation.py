@@ -188,17 +188,19 @@ class SumoTrafficSimulation(TrafficProvider):
 
             sumo_port = self._sumo_port
             sumo_binary = "sumo" if self._headless else "sumo-gui"
+
+            self._traci_conn = TraciConn(
+                sumo_port=sumo_port,
+                base_params=self._base_sumo_load_params(),
+                sumo_binary=sumo_binary,
+            )
             try:
-                self._traci_conn = TraciConn(
-                    sumo_port=sumo_port,
-                    base_params=self._base_sumo_load_params(),
-                    sumo_binary=sumo_binary,
-                )
                 while self._traci_conn.sumo_alive:
                     try:
                         self._traci_conn.connect(
                             timeout=5,
-                            minimum_version=20,  # version 1.5.0
+                            minimum_traci_version=20,
+                            minimum_sumo_version=(1, 15, 0),
                         )
                     except traci.exceptions.FatalTraCIError:
                         # Could not connect in time just retry connection
@@ -208,6 +210,7 @@ class SumoTrafficSimulation(TrafficProvider):
             except traci.exceptions.TraCIException:
                 # SUMO process died... unsure why this is not a fatal traci error
                 current_retries += 1
+
                 self._traci_conn.close_traci_and_pipes()
                 continue
             except ConnectionRefusedError:
@@ -221,10 +224,11 @@ class SumoTrafficSimulation(TrafficProvider):
             break
 
         try:
+            assert self._traci_conn is not None
             # It is mandatory to set order when using multiple clients.
             self._traci_conn.setOrder(0)
             self._traci_conn.getVersion()
-        except traci.exceptions.FatalTraCIError as err:
+        except (traci.exceptions.FatalTraCIError, AssertionError) as err:
             logging.error(
                 """Failed to initialize SUMO
                 Your scenario might not be configured correctly or
@@ -294,7 +298,7 @@ class SumoTrafficSimulation(TrafficProvider):
             or not self.connected
             or self._scenario.road_map_hash != scenario.road_map_hash
             or self._current_reload_count >= self._reload_count
-            or self._traci_conn.must_reset()
+            or self._traci_conn.must_reset()  # Some versions of sumo crash when reloading
         )
         self._current_reload_count = self._current_reload_count % self._reload_count + 1
 
