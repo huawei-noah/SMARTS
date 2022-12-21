@@ -200,7 +200,7 @@ class SumoTrafficSimulation(TrafficProvider):
                         self._traci_conn.connect(
                             timeout=5,
                             minimum_traci_version=20,
-                            minimum_sumo_version=(1, 15, 0),
+                            minimum_sumo_version=(1, 10, 0),
                         )
                     except traci.exceptions.FatalTraCIError:
                         # Could not connect in time just retry connection

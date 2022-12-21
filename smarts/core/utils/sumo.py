@@ -150,7 +150,7 @@ class TraciConn:
             )  # e.g. "SUMO 1.11.0" -> (1, 11, 0)
             assert (
                 self._sumo_version >= minimum_sumo_version
-            ), "SUMO version must be >= SUMO 1.10.0"
+            ), f"SUMO version must be >= SUMO {minimum_sumo_version}"
         except traci.exceptions.FatalTraCIError as err:
             logging.debug("TraCI could not connect in time.")
             # XXX: the error type is changed to TraCIException to make it consistent with the
