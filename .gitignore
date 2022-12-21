@@ -106,7 +106,7 @@ shifted_map-AUTOGEN.net.xml
 *flamegraph.html
 **/social_agents/*
 *.pkl
-.shf
+*.shf
 *.tfrecord*
 build.db
 
