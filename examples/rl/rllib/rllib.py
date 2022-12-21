@@ -93,7 +93,7 @@ def explore(config):
 
 def main(
     scenario,
-    head,
+    envision,
     time_total_s,
     rollout_fragment_length,
     train_batch_size,
@@ -147,7 +147,7 @@ def main(
         "env_config": {
             "seed": tune.sample_from(lambda spec: random.randint(0, 300)),
             "scenarios": [str(Path(scenario).expanduser().resolve().absolute())],
-            "headless": not head,
+            "headless": not envision,
             "agent_specs": {
                 f"AGENT-{i}": rllib_agent["agent_spec"] for i in range(num_agents)
             },
@@ -200,9 +200,9 @@ if __name__ == "__main__":
         help="Scenario to run (see scenarios/ for some samples you can use)",
     )
     parser.add_argument(
-        "--head",
+        "--envision",
         action="store_true",
-        help="Run simulation with display",
+        help="Run simulation with Envision display.",
     )
     parser.add_argument(
         "--num_samples",
@@ -271,7 +271,7 @@ if __name__ == "__main__":
 
     main(
         scenario=args.scenario,
-        head=args.head,
+        envision=args.envision,
         time_total_s=args.time_total_s,
         rollout_fragment_length=args.rollout_fragment_length,
         train_batch_size=args.train_batch_size,
