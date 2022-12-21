@@ -145,4 +145,4 @@ collected_observations/
 .pytype
 
 # Benchmark
-**/benchmark/reports/*
+**/diagnostic/reports/*
