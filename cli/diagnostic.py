@@ -22,19 +22,19 @@ import click
 
 
 @click.group(
-    name="benchmark",
-    help="Utilities for benchmarking the simulation performance. See `scl benchmark COMMAND --help` for further options.",
+    name="diagnostic",
+    help="Utilities for diagnosing the simulation performance. See `scl diagnostic COMMAND --help` for further options.",
 )
-def benchmark_cli():
+def diagnostic_cli():
     pass
 
 
-@click.command("run", help="Run all benchmarks.")
+@click.command("run", help="Run all diagnostics.")
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
 def run(scenarios):
-    from smarts.benchmark import run as _run
+    from smarts.diagnostic import run as _run
 
     _run.main(scenarios)
 
 
-benchmark_cli.add_command(run)
+diagnostic_cli.add_command(run)
