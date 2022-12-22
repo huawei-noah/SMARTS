@@ -894,6 +894,10 @@ class Sensor:
         """Clean up internal resources"""
         raise NotImplementedError
 
+    @property
+    def mutable(self) -> bool:
+        return True
+
 
 class SensorState:
     """Sensor state information"""
@@ -1417,6 +1421,10 @@ class NeighborhoodVehiclesSensor(Sensor):
     def teardown(self, **kwargs):
         pass
 
+    @property
+    def mutable(self) -> bool:
+        return False
+
 
 class WaypointsSensor(Sensor):
     """Detects waypoints leading forward along the vehicle plan."""
@@ -1433,6 +1441,10 @@ class WaypointsSensor(Sensor):
 
     def teardown(self, **kwargs):
         pass
+
+    @property
+    def mutable(self) -> bool:
+        return False
 
 
 class RoadWaypointsSensor(Sensor):
@@ -1490,6 +1502,10 @@ class RoadWaypointsSensor(Sensor):
     def teardown(self, **kwargs):
         pass
 
+    @property
+    def mutable(self) -> bool:
+        return False
+
 
 class AccelerometerSensor(Sensor):
     """Tracks motion changes within the vehicle equipped with this sensor."""
@@ -1546,6 +1562,10 @@ class LanePositionSensor(Sensor):
 
     def teardown(self, **kwargs):
         pass
+
+    @property
+    def mutable(self) -> bool:
+        return False
 
 
 class ViaSensor(Sensor):
@@ -1611,7 +1631,6 @@ class SignalsSensor(Sensor):
     """Reports state of traffic signals (lights) in the lanes ahead of vehicle."""
 
     def __init__(self, lookahead: float):
-        self._logger = logging.getLogger(self.__class__.__name__)
         self._lookahead = lookahead
 
     @staticmethod
@@ -1652,7 +1671,8 @@ class SignalsSensor(Sensor):
                     signal_state = actor_state
                     break
             else:
-                self._logger.warning(
+                logger = logging.getLogger(self.__class__.__name__)
+                logger.warning(
                     "could not find signal state corresponding with feature_id=%s}",
                     signal.feature_id,
                 )
