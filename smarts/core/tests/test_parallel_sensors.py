@@ -41,7 +41,7 @@ from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.logging import match_unpackable
+from smarts.core.utils.logging import diff_unpackable
 
 SimulationState = SimulationFrame
 SensorState = Any
@@ -183,4 +183,4 @@ def test_sensor_worker(
     assert isinstance(other_dones, dict)
     assert all([isinstance(obs, bool) for obs in other_dones.values()])
     assert observations.keys() == other_dones.keys()
-    assert match_unpackable(other_observations, observations)
+    assert diff_unpackable(other_observations, observations) == ""

@@ -33,7 +33,7 @@ from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.utils.episodes import episodes
-from smarts.core.utils.logging import match_unpackable
+from smarts.core.utils.logging import diff_unpackable
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -114,7 +114,7 @@ def determinism(agent_spec, scenarios, episode_count, capture_step):
         assert len(dones) == len(dones_capture[index])
         assert all([ds == ds2 for (ds, ds2) in zip(dones, dones_capture[index])])
 
-        assert match_unpackable(agent_obs, orig_agent_obs)
+        assert diff_unpackable(agent_obs, orig_agent_obs) == ""
 
     run(agent_spec, capture_callback, scenarios, episode_count, capture_step)
     run(agent_spec, check_callback, scenarios, episode_count, capture_step)
