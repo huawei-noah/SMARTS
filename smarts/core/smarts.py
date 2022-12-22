@@ -1656,15 +1656,16 @@ class SMARTS(ProviderManager):
     def cached_frame(self):
         """Generate a frozen frame state of the simulation."""
         self._check_valid()
-        actor_ids = self.vehicle_index.agent_vehicle_ids()
+        agent_actor_ids = self.vehicle_index.agent_vehicle_ids()
         actor_states = self._last_provider_state
         vehicles = dict(self.vehicle_index.vehicleitems())
+        vehicle_ids = set(vid for vid in vehicles)
         return SimulationFrame(
             actor_states=getattr(actor_states, "actors", {}),
             agent_interfaces=self.agent_manager.agent_interfaces.copy(),
             agent_vehicle_controls={
                 a_id: self.vehicle_index.actor_id_from_vehicle_id(a_id)
-                for a_id in actor_ids
+                for a_id in agent_actor_ids
             },
             ego_ids=self.agent_manager.ego_agent_ids,
             pending_agent_ids=self.agent_manager.pending_agent_ids,
@@ -1686,8 +1687,8 @@ class SMARTS(ProviderManager):
                 )
                 for agent_id in self.agent_manager.active_agents
             },
-            vehicle_ids=set(vid for vid in vehicles),
-            vehicle_sensors={vid: v.sensors for vid, v in vehicles.items()},
+            vehicle_ids=vehicle_ids,
+            vehicle_sensors=self.sensor_manager.sensors_for_actor_ids(vehicle_ids),
             sensor_states=dict(self.sensor_manager.sensor_states_items()),
             _ground_bullet_id=self._ground_bullet_id,
             # renderer_type=self._renderer.__class__

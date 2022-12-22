@@ -110,21 +110,41 @@ class SensorManager:
         """Gets all actor to sensor state associations."""
         return self._sensor_states.items()
 
-    def sensors_for_actor_id(self, actor_id: str):
+    def sensors_for_actor_id(self, actor_id: str) -> List[Sensor]:
         """Gets all sensors associated with the given actor."""
         return [
             self._sensors[s_id]
             for s_id in self._sensors_by_actor_id.get(actor_id, set())
         ]
 
+    def sensors_for_actor_ids(
+        self, actor_ids: Set[str]
+    ) -> Dict[str, Dict[str, Sensor]]:
+        """Gets all sensors for the given actors."""
+        return {
+            actor_id: {
+                SensorManager._actor_sid_to_sname(s_id): self._sensors[s_id]
+                for s_id in self._sensors_by_actor_id.get(actor_id, set())
+            }
+            for actor_id in actor_ids
+        }
+
     def sensor_state_for_actor_id(self, actor_id: str):
         """Gets the sensor state for the given actor."""
         return self._sensor_states.get(actor_id)
 
-    def add_sensor_for_actor(self, actor_id: str, sensor: Sensor) -> str:
+    @staticmethod
+    def _actor_sid_to_sname(sensor_id: str):
+        return sensor_id.partition("-")[0]
+
+    @staticmethod
+    def _actor_and_sname_to_sid(sensor_name, actor_id):
+        return f"{sensor_name}-{actor_id}"
+
+    def add_sensor_for_actor(self, actor_id: str, name: str, sensor: Sensor) -> str:
         """Adds a sensor association for a specific actor."""
         # TAI: Allow multiple sensors of the same type on the same actor
-        s_id = f"{type(sensor).__qualname__}-{actor_id}"
+        s_id = SensorManager._actor_and_sname_to_sid(name, actor_id)
         actor_sensors = self._sensors_by_actor_id.setdefault(actor_id, set())
         if s_id in actor_sensors:
             logger.warning(
