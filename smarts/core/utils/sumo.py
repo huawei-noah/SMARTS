@@ -146,7 +146,7 @@ class TraciConn:
                 vers >= minimum_traci_version
             ), f"TraCI API version must be >= {minimum_traci_version}. Got version ({vers})"
             self._sumo_version = tuple(
-                int(v) for v in vers_str.split(" ")[1].split(".")
+                int(v) for v in vers_str.partition(" ")[2].split(".")
             )  # e.g. "SUMO 1.11.0" -> (1, 11, 0)
             assert (
                 self._sumo_version >= minimum_sumo_version
