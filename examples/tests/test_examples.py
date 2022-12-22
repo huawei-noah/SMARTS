@@ -24,9 +24,9 @@ def test_examples(example):
     if example == "egoless":
         from examples import egoless as current_example
     if example == "single_agent":
-        from examples import single_agent as current_example
+        from examples.control import single_agent as current_example
     if example == "multi_agent":
-        from examples import multi_agent as current_example
+        from examples.control import multi_agent as current_example
     main = current_example.main
     main(
         scenarios=["scenarios/sumo/loop"],
