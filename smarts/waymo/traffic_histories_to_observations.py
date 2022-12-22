@@ -51,7 +51,13 @@ from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.vehicle import VEHICLE_CONFIGS
 from smarts.sstudio.scenario_construction import build_scenario
 
+
 class ObservationRecorder:
+    """
+    Generate SMARTS observations from the perspective of one or more
+    social/history vehicles within a SMARTS scenario.
+    """
+
     def __init__(
         self,
         scenario: str,
@@ -61,9 +67,7 @@ class ObservationRecorder:
         start_time: Optional[float] = None,
         end_time: Optional[float] = None,
     ):
-        """Generate Observations from the perspective of one or more
-        social/history vehicles within a SMARTS scenario.
-
+        """
         Args:
             scenario (str):
                 A path to a scenario to run.
@@ -155,8 +159,7 @@ class ObservationRecorder:
     def collect(
         self, vehicles_with_sensors: Optional[Sequence[int]], headless: bool = True
     ):
-        """Generate Observations from the perspective of one or more
-        social/history vehicles within a SMARTS scenario.
+        """Records SMARTS observations for selected vehicles.
 
         Args:
             vehicles_with_sensors (Sequence[int], optional):
