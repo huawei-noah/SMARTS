@@ -79,22 +79,21 @@ def scenario(agents_to_be_briefed: List[str]) -> Scenario:
     return s
 
 
-@pytest.fixture(params=[
-    AgentInterface.from_type(
-        AgentType.Laner,
-        action=ActionSpaceType.Continuous,
-    ),
-    AgentInterface.from_type(
-        AgentType.Full,
-        action=ActionSpaceType.Continuous,
-    ),
-])
+@pytest.fixture(
+    params=[
+        AgentInterface.from_type(
+            AgentType.Laner,
+            action=ActionSpaceType.Continuous,
+        ),
+        AgentInterface.from_type(
+            AgentType.Full,
+            action=ActionSpaceType.Continuous,
+        ),
+    ]
+)
 def sim(scenario, request) -> SMARTS:
     a_interface = getattr(request, "param")
-    agents = {
-        aid: a_interface
-        for aid in AGENT_IDS
-    }
+    agents = {aid: a_interface for aid in AGENT_IDS}
     smarts = SMARTS(
         agents,
         traffic_sims=[SumoTrafficSimulation(headless=True)],
