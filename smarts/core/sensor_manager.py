@@ -21,9 +21,11 @@
 # THE SOFTWARE.
 import logging
 from collections import Counter
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set, Tuple
 
-from .sensors import Sensor, Sensors, SensorState
+from smarts.core.sensors import Observation, Sensor, Sensors, SensorState
+from smarts.core.simulation_frame import SimulationFrame
+from smarts.core.simulation_local_constants import SimulationLocalConstants
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,69 @@ class SensorManager:
 
         for sensor in self._sensors.values():
             sensor.step(sim_frame=sim_frame, renderer=renderer)
+
+    def observe(
+        self,
+        sim_frame,
+        sim_local_constants,
+        agent_ids,
+        renderer_ref,
+        physics_ref,
+        process_count_override: Optional[int] = None,
+    ):
+        observations, dones, updated_sensors = Sensors.observe_parallel(
+            sim_frame,
+            sim_local_constants,
+            agent_ids,
+            renderer_ref,
+            physics_ref,
+            process_count_override,
+        )
+        for actor_id, sensors in updated_sensors.items():
+            for sensor_name, sensor in sensors.items():
+                self._sensors[
+                    SensorManager._actor_and_sname_to_sid(sensor_name, actor_id)
+                ] = sensor
+
+        return observations, dones
+
+    def observe_batch(
+        self,
+        sim_frame: SimulationFrame,
+        sim_local_constants: SimulationLocalConstants,
+        agent_id,
+        sensor_states,
+        vehicles,
+        renderer,
+        bullet_client,
+    ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
+        """Operates all sensors on a batch of vehicles for a single agent."""
+        # TODO: Replace this with a more efficient implementation that _actually_
+        #       does batching
+        assert sensor_states.keys() == vehicles.keys()
+
+        observations, dones = {}, {}
+        for vehicle_id, vehicle in vehicles.items():
+            sensor_state = sensor_states[vehicle_id]
+            (
+                observations[vehicle_id],
+                dones[vehicle_id],
+                updated_sensors,
+            ) = Sensors.observe(
+                sim_frame,
+                sim_local_constants,
+                agent_id,
+                sensor_state,
+                vehicle,
+                renderer,
+                bullet_client,
+            )
+            for sensor_name, sensor in updated_sensors.items():
+                self._sensors[
+                    SensorManager._actor_and_sname_to_sid(sensor_name, vehicle_id)
+                ] = sensor
+
+        return observations, dones
 
     def teardown(self, renderer):
         """Tear down the current sensors and clean up any internal resources."""

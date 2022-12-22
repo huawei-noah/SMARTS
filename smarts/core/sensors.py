@@ -155,7 +155,7 @@ class Sensors:
         agent_ids_for_group,
     ):
         """Run the serializable sensors in a batch."""
-        observations, dones = {}, {}
+        observations, dones, updated_sensors = {}, {}, {}
         for agent_id in agent_ids_for_group:
             vehicle_ids = sim_frame.vehicles_for_agents.get(agent_id)
             if not vehicle_ids:
@@ -164,14 +164,15 @@ class Sensors:
                 (
                     observations[agent_id],
                     dones[agent_id],
-                ) = cls.process_serialize_safe_sensors(
+                    updated_sensors[vehicle_id],
+                ) = cls.process_serialization_safe_sensors(
                     sim_frame,
                     sim_local_constants,
                     agent_id,
                     sim_frame.sensor_states[vehicle_id],
                     vehicle_id,
                 )
-        return observations, dones
+        return observations, dones, updated_sensors
 
     @staticmethod
     def serialize_for_observation(v):
@@ -216,7 +217,7 @@ class Sensors:
             process_count_override (Optional[int]):
                 Overrides the number of processes that should be used.
         """
-        observations, dones = {}, {}
+        observations, dones, updated_sensors = {}, {}, {}
 
         num_spare_cpus = max(0, psutil.cpu_count(logical=False) - 1)
         used_processes = (
@@ -251,7 +252,11 @@ class Sensors:
                         used_workers.append(workers[i])
             else:
                 with timeit("serial run", logger.info):
-                    observations, dones = cls.observe_serializable_sensor_batch(
+                    (
+                        observations,
+                        dones,
+                        updated_sensors,
+                    ) = cls.observe_serializable_sensor_batch(
                         sim_frame,
                         sim_local_constants,
                         agent_ids,
@@ -282,7 +287,7 @@ class Sensors:
                         for result in mp.connection.wait(
                             [worker.connection for worker in used_workers], timeout=5
                         ):
-                            obs, ds = result.recv()
+                            obs, ds, updated_sens = result.recv()
                             observations.update(obs)
                             dones.update(ds)
 
@@ -293,37 +298,7 @@ class Sensors:
                         observations[agent_id], **r_obs
                     )
 
-        return observations, dones
-
-    @staticmethod
-    def observe_batch(
-        sim_frame: SimulationFrame,
-        sim_local_constants: SimulationLocalConstants,
-        agent_id,
-        sensor_states,
-        vehicles,
-        renderer,
-        bullet_client,
-    ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
-        """Operates all sensors on a batch of vehicles for a single agent."""
-        # TODO: Replace this with a more efficient implementation that _actually_
-        #       does batching
-        assert sensor_states.keys() == vehicles.keys()
-
-        observations, dones = {}, {}
-        for vehicle_id, vehicle in vehicles.items():
-            sensor_state = sensor_states[vehicle_id]
-            observations[vehicle_id], dones[vehicle_id] = Sensors.observe(
-                sim_frame,
-                sim_local_constants,
-                agent_id,
-                sensor_state,
-                vehicle,
-                renderer,
-                bullet_client,
-            )
-
-        return observations, dones
+        return observations, dones, updated_sensors
 
     @staticmethod
     def process_serialize_unsafe_sensors(
@@ -366,7 +341,7 @@ class Sensors:
         )
 
     @staticmethod
-    def process_serialize_safe_sensors(
+    def process_serialization_safe_sensors(
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         agent_id,
@@ -543,6 +518,11 @@ class Sensors:
         agent_controls = agent_id == sim_frame.agent_vehicle_controls.get(
             vehicle_state.actor_id
         )
+        updated_sensors = {
+            sensor_name: sensor
+            for sensor_name, sensor in vehicle_sensors.items()
+            if sensor.mutable
+        }
 
         # TODO MTA: Return updated sensors or make sensors stateless
         return (
@@ -562,6 +542,7 @@ class Sensors:
                 signals=signals,
             ),
             done,
+            updated_sensors,
         )
 
     @classmethod
@@ -577,12 +558,12 @@ class Sensors:
     ) -> Tuple[Observation, bool]:
         """Generate observations for the given agent around the given vehicle."""
         args = [sim_frame, sim_local_constants, agent_id, sensor_state, vehicle.id]
-        base_obs, dones = cls.process_serialize_safe_sensors(*args)
+        base_obs, dones, updated_sensors = cls.process_serialization_safe_sensors(*args)
         complete_obs = dataclasses.replace(
             base_obs,
             **cls.process_serialize_unsafe_sensors(*args, renderer, bullet_client),
         )
-        return (complete_obs, dones)
+        return (complete_obs, dones, updated_sensors)
 
     @staticmethod
     def step(sim_frame, sensor_state):
@@ -1273,22 +1254,26 @@ class LidarSensor(Sensor):
         pass
 
 
+@dataclass
+class DrivenPathSensorEntry:
+    timestamp: float
+    position: Tuple[float, float]
+
+
 class DrivenPathSensor(Sensor):
     """Tracks the driven path as a series of positions (regardless if the vehicle is
     following the route or not). For performance reasons it only keeps the last
     N=max_path_length path segments.
     """
 
-    Entry = namedtuple("TimeAndPos", ["timestamp", "position"])
-
     def __init__(self, max_path_length: int = 500):
         self._driven_path = deque(maxlen=max_path_length)
 
     def track_latest_driven_path(self, elapsed_sim_time, vehicle_state):
         """Records the current location of the tracked vehicle."""
-        pos = vehicle_state.pose.position[:2]
+        position = vehicle_state.pose.position[:2]
         self._driven_path.append(
-            DrivenPathSensor.Entry(timestamp=elapsed_sim_time, position=pos)
+            DrivenPathSensorEntry(timestamp=elapsed_sim_time, position=position)
         )
 
     def __call__(self, count=sys.maxsize):

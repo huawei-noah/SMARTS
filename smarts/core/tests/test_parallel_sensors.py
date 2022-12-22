@@ -46,7 +46,7 @@ from smarts.core.utils.logging import diff_unpackable
 SimulationState = SimulationFrame
 SensorState = Any
 
-AGENT_IDS = [f"agent-00{i}" for i in range(30)]
+AGENT_IDS = [f"agent-00{i}" for i in range(100)]
 
 
 @pytest.fixture
@@ -79,14 +79,20 @@ def scenario(agents_to_be_briefed: List[str]) -> Scenario:
     return s
 
 
-@pytest.fixture()
-def sim(scenario) -> SMARTS:
-    # agents = {aid: AgentInterface.from_type(AgentType.Full) for aid in AGENT_IDS},
+@pytest.fixture(params=[
+    AgentInterface.from_type(
+        AgentType.Laner,
+        action=ActionSpaceType.Continuous,
+    ),
+    AgentInterface.from_type(
+        AgentType.Full,
+        action=ActionSpaceType.Continuous,
+    ),
+])
+def sim(scenario, request) -> SMARTS:
+    a_interface = getattr(request, "param")
     agents = {
-        aid: AgentInterface.from_type(
-            AgentType.Full,
-            action=ActionSpaceType.Continuous,
-        )
+        aid: a_interface
         for aid in AGENT_IDS
     }
     smarts = SMARTS(
@@ -127,12 +133,12 @@ def test_sensor_parallelization(
 
     def observe_with_processes(processes):
         start_time = time.monotonic()
-        obs, dones = Sensors.observe_parallel(
+        obs, dones = sim.sensor_manager.observe(
             sim_frame=simulation_frame,
             sim_local_constants=simulation_local_constants,
             agent_ids=simulation_frame.agent_ids,
-            renderer=sim.renderer,
-            bullet_client=sim.bc,
+            renderer_ref=sim.renderer,
+            physics_ref=sim.bc,
             process_count_override=processes,
         )
         assert len(obs) > 0
@@ -147,12 +153,13 @@ def test_sensor_parallelization(
     parallel_1_total = observe_with_processes(1)
     parallel_2_total = observe_with_processes(2)
     parallel_3_total = observe_with_processes(3)
-    parallel_4_total = observe_with_processes(4)
+    parallel_4_total = observe_with_processes(5)
 
     assert (
         serial_total > parallel_1_total
         or serial_total > parallel_2_total
         or serial_total > parallel_3_total
+        or serial_total > parallel_4_total
     ), f"{serial_total}, {parallel_1_total}, {parallel_2_total}, {parallel_3_total} {parallel_4_total}"
 
 
@@ -167,10 +174,10 @@ def test_sensor_worker(
     assert worker.running
     worker_args = WorkerKwargs(sim_frame=simulation_frame)
     worker.send_to_process(worker_args=worker_args, agent_ids=agent_ids)
-    observations, dones = SensorsWorker.local(
+    observations, dones, updated_sensors = SensorsWorker.local(
         simulation_frame, sim.local_constants, agent_ids
     )
-    other_observations, other_dones = worker.result(timeout=5)
+    other_observations, other_dones, updated_sensors = worker.result(timeout=5)
 
     assert isinstance(observations, dict)
     assert all(

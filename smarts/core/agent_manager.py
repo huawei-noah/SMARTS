@@ -252,8 +252,7 @@ class AgentManager:
             if self._vehicle_has_agent(a_id, v)
             # and self._sensor_manager.sensor_state_exists(v.id)
         }
-        # TODO MTA: find way to pass renderer
-        observations, new_dones = Sensors.observe_parallel(
+        observations, new_dones = sim.sensor_manager.observe(
             sim_frame,
             sim.local_constants,
             agent_ids,
