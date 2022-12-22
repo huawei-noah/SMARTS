@@ -38,7 +38,7 @@ from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
 
 from . import config, models
-from .actor import ActorRole, ActorState
+from .actor import ActorState, OwnerRole
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
 from .agents_provider import (
@@ -377,7 +377,8 @@ class SMARTS(ProviderManager):
                 if self._agent_manager.is_boid_agent(agent_id):
                     vehicle_ids.update(id_ for id_ in done if done[id_])
                 elif done:
-                    ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
+                    ids = self._vehicle_index.vehicle_ids_by_owner_id(agent_id)
+                    # 0 if shadowing, 1 if active
                     assert len(ids) <= 1, f"{len(ids)} <= 1"
                     vehicle_ids.update(ids)
 
@@ -454,7 +455,7 @@ class SMARTS(ProviderManager):
             agent_ids = self._agent_manager.teardown_ego_agents()
             agent_ids |= self.agent_manager.teardown_social_agents()
             for agent_id in agent_ids:
-                ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
+                ids = self._vehicle_index.vehicle_ids_by_owner_id(agent_id)
                 vehicle_ids_to_teardown |= set(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
             self._reset_providers()
@@ -675,7 +676,7 @@ class SMARTS(ProviderManager):
         one of which should assume management of it."""
         self._check_valid()
         self._stop_managing_with_providers(vehicle.id)
-        role = ActorRole.EgoAgent if is_ego else ActorRole.SocialAgent
+        role = OwnerRole.EgoAgent if is_ego else OwnerRole.SocialAgent
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         prev_provider = self._provider_for_actor(vehicle.id)
         for provider in self.providers:
@@ -708,13 +709,11 @@ class SMARTS(ProviderManager):
         original_agent_id = agent_id
         agent_id = None
         # FIXME: This only gets the first shadow agent and this shadow agent is not specific to a bubble!!!!!!
-        shadow_agent_id = self._vehicle_index.shadow_actor_id_from_vehicle_id(
-            vehicle_id
-        )
+        shadow_agent_id = self._vehicle_index.shadower_id_from_vehicle_id(vehicle_id)
         if shadow_agent_id is not None:
             assert original_agent_id == shadow_agent_id
         if self._vehicle_index.vehicle_is_hijacked(vehicle_id):
-            agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
+            agent_id = self._vehicle_index.owner_id_from_vehicle_id(vehicle_id)
             assert agent_id == original_agent_id
             self._log.debug(
                 "agent=%s relinquishing vehicle=%s (shadow_agent=%s)",
@@ -741,7 +740,7 @@ class SMARTS(ProviderManager):
             self._vehicle_index.stop_shadowing(shadow_agent_id, vehicle_id)
             if teardown_agent:
                 self.teardown_social_agents([shadow_agent_id])
-        if self._vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id) is None:
+        if self._vehicle_index.shadower_id_from_vehicle_id(vehicle_id) is None:
             self._sensor_manager.remove_sensors_by_actor_id(vehicle_id)
 
     def _agent_relinquishing_actor(
@@ -767,7 +766,7 @@ class SMARTS(ProviderManager):
 
         # now try to find one who will take it...
         if isinstance(state, VehicleState):
-            state.role = ActorRole.Social  # XXX ASSUMPTION: might use Unknown instead?
+            state.role = OwnerRole.Social  # XXX ASSUMPTION: might use Unknown instead?
         for new_provider in self.providers:
             if new_provider == provider:
                 continue
@@ -1086,7 +1085,7 @@ class SMARTS(ProviderManager):
             for agent_id in original_agents
             # Only clean-up when there is no actor association left
             if len(
-                self._vehicle_index.vehicles_by_actor_id(
+                self._vehicle_index.vehicles_by_owner_id(
                     agent_id, include_shadowers=True
                 )
             )
@@ -1105,11 +1104,11 @@ class SMARTS(ProviderManager):
     def _teardown_vehicles_and_agents(self, vehicle_ids):
         shadow_and_controlling_agents = set()
         for vehicle_id in vehicle_ids:
-            agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
+            agent_id = self._vehicle_index.owner_id_from_vehicle_id(vehicle_id)
             if agent_id:
                 shadow_and_controlling_agents.add(agent_id)
 
-            shadow_agent_id = self._vehicle_index.shadow_actor_id_from_vehicle_id(
+            shadow_agent_id = self._vehicle_index.shadower_id_from_vehicle_id(
                 vehicle_id
             )
             if shadow_agent_id:
@@ -1147,7 +1146,7 @@ class SMARTS(ProviderManager):
                     social_vehicle = self._vehicle_index.build_social_vehicle(
                         sim=self,
                         vehicle_state=vehicle,
-                        actor_id="",
+                        owner_id="",
                         vehicle_id=vehicle_id,
                     )
 
@@ -1271,7 +1270,7 @@ class SMARTS(ProviderManager):
         vehicle_actions = dict()
         for agent_id, action in actions.items():
             # TAI:  reconsider include_shadowers = True
-            vehicles = self._vehicle_index.vehicles_by_actor_id(
+            vehicles = self._vehicle_index.vehicles_by_owner_id(
                 agent_id, include_shadowers=True
             )
             if not vehicles:
@@ -1417,7 +1416,7 @@ class SMARTS(ProviderManager):
             vehicle_collisions = self._vehicle_collisions.setdefault(vehicle_id, [])
             for bullet_id in collidee_bullet_ids:
                 collidee = self._bullet_id_to_vehicle(bullet_id)
-                actor_id = self._vehicle_index.actor_id_from_vehicle_id(collidee.id)
+                actor_id = self._vehicle_index.owner_id_from_vehicle_id(collidee.id)
                 # TODO: Should we specify the collidee as the vehicle ID instead of
                 #       the agent/social ID?
                 collision = Collision(collidee_id=actor_id)
@@ -1511,7 +1510,7 @@ class SMARTS(ProviderManager):
                 continue
             if v.actor_id in agent_vehicle_ids:
                 # this is an agent controlled vehicle
-                agent_id = self._vehicle_index.actor_id_from_vehicle_id(v.actor_id)
+                agent_id = self._vehicle_index.owner_id_from_vehicle_id(v.actor_id)
                 is_boid_agent = self._agent_manager.is_boid_agent(agent_id)
                 agent_obs = obs[agent_id]
                 vehicle_obs = agent_obs[v.actor_id] if is_boid_agent else agent_obs
@@ -1664,7 +1663,7 @@ class SMARTS(ProviderManager):
             actor_states=getattr(actor_states, "actors", {}),
             agent_interfaces=self.agent_manager.agent_interfaces.copy(),
             agent_vehicle_controls={
-                a_id: self.vehicle_index.actor_id_from_vehicle_id(a_id)
+                a_id: self.vehicle_index.owner_id_from_vehicle_id(a_id)
                 for a_id in agent_actor_ids
             },
             ego_ids=self.agent_manager.ego_agent_ids,
@@ -1682,7 +1681,7 @@ class SMARTS(ProviderManager):
                 vehicle_id: vehicle.state for vehicle_id, vehicle in vehicles.items()
             },
             vehicles_for_agents={
-                agent_id: self.vehicle_index.vehicle_ids_by_actor_id(
+                agent_id: self.vehicle_index.vehicle_ids_by_owner_id(
                     agent_id, include_shadowers=True
                 )
                 for agent_id in self.agent_manager.active_agents

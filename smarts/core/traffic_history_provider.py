@@ -26,7 +26,7 @@ from typing import Iterable, Optional, Set
 from cached_property import cached_property
 from shapely.geometry import Polygon
 
-from .actor import ActorRole, ActorState
+from .actor import ActorState, OwnerRole
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose
 from .provider import ProviderManager, ProviderRecoveryFlags, ProviderState
@@ -155,7 +155,7 @@ class TrafficHistoryProvider(TrafficProvider):
                 VehicleState(
                     actor_id=v_id,
                     source=self.source_str,
-                    role=ActorRole.Social,
+                    role=OwnerRole.Social,
                     vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_center(
                         (hr.position_x, hr.position_y, 0), Heading(hr.heading_rad)
@@ -201,7 +201,7 @@ class TrafficHistoryProvider(TrafficProvider):
                         actor_id=actor_id,
                         actor_type="signal",
                         source=self.source_str,
-                        role=ActorRole.Signal,
+                        role=OwnerRole.Signal,
                         state=SignalLightState(tls.state),
                         stopping_pos=stop_pt,
                         controlled_lanes=controlled_lanes,

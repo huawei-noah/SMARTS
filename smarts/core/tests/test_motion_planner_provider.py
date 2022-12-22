@@ -24,7 +24,6 @@ import math
 import numpy as np
 import pytest
 
-from smarts.core.actor import ActorRole
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface, DoneCriteria
 from smarts.core.coordinates import Heading
 from smarts.core.plan import EndlessGoal, Mission, Start

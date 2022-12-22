@@ -31,7 +31,7 @@ from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
 from smarts.core import gen_id
-from smarts.core.actor import ActorRole, ActorState
+from smarts.core.actor import ActorState, OwnerRole
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
 from smarts.core.provider import (
@@ -602,13 +602,13 @@ class SumoTrafficSimulation(TrafficProvider):
             no_checks = 0b00000
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
             self._traci_conn.vehicle.setColor(
-                vehicle_id, SumoTrafficSimulation._color_for_role(ActorRole.SocialAgent)
+                vehicle_id, SumoTrafficSimulation._color_for_role(OwnerRole.SocialAgent)
             )
             self._non_sumo_vehicle_ids.add(vehicle_id)
 
         for vehicle_id in vehicles_that_have_become_internal:
             self._traci_conn.vehicle.setColor(
-                vehicle_id, SumoTrafficSimulation._color_for_role(ActorRole.Social)
+                vehicle_id, SumoTrafficSimulation._color_for_role(OwnerRole.Social)
             )
             self._non_sumo_vehicle_ids.remove(vehicle_id)
             # Let sumo take over speed again
@@ -621,12 +621,12 @@ class SumoTrafficSimulation(TrafficProvider):
         self._teleport_exited_vehicles()
 
     @staticmethod
-    def _color_for_role(role: ActorRole) -> np.ndarray:
-        if role == ActorRole.EgoAgent:
+    def _color_for_role(role: OwnerRole) -> np.ndarray:
+        if role == OwnerRole.EgoAgent:
             return np.array(SceneColors.Agent.value[:3]) * 255
-        if role == ActorRole.SocialAgent:
+        elif role == OwnerRole.SocialAgent:
             return np.array(SceneColors.SocialAgent.value[:3]) * 255
-        if role == ActorRole.Social:
+        elif role == OwnerRole.Social:
             return np.array(SceneColors.SocialVehicle.value[:3]) * 255
         return np.array(SceneColors.SocialVehicle.value[:3]) * 255
 
@@ -663,7 +663,7 @@ class SumoTrafficSimulation(TrafficProvider):
         except self._traci_exceptions as err:
             self._handle_traci_exception(err)
 
-    def _create_vehicle(self, vehicle_id, dimensions, role: ActorRole):
+    def _create_vehicle(self, vehicle_id, dimensions, role: OwnerRole):
         assert isinstance(
             vehicle_id, str
         ), f"SUMO expects string ids: {vehicle_id} is a {type(vehicle_id)}"
@@ -723,7 +723,7 @@ class SumoTrafficSimulation(TrafficProvider):
             actor_id=sig_id,
             actor_type="signal",
             source=self.source_str,
-            role=ActorRole.Signal,
+            role=OwnerRole.Signal,
             state=SignalLightState.UNKNOWN,
             stopping_pos=loc,
             controlled_lanes=controlled_lanes,
@@ -859,7 +859,7 @@ class SumoTrafficSimulation(TrafficProvider):
                     #      the sumo ID is the actor ID.
                     actor_id=sumo_id,
                     source=self.source_str,
-                    role=ActorRole.Social,
+                    role=OwnerRole.Social,
                     vehicle_config_type=vehicle_config_type,
                     pose=Pose.from_front_bumper(
                         front_bumper_pos, heading, dimensions.length
@@ -1012,7 +1012,7 @@ class SumoTrafficSimulation(TrafficProvider):
         return (
             self.connected
             and isinstance(state, VehicleState)
-            and state.role == ActorRole.Social
+            and state.role == OwnerRole.Social
             and state.actor_id in self._hijacked
         )
 
@@ -1023,7 +1023,7 @@ class SumoTrafficSimulation(TrafficProvider):
         assert provider_actor.actor_id in self._hijacked
         self._hijacked.remove(provider_actor.actor_id)
         provider_actor.source = self.source_str
-        provider_actor.role = ActorRole.Social
+        provider_actor.role = OwnerRole.Social
         # no need to get the route from from_provider because this vehicle
         # is one that we used to manage, and Sumo/Traci should remember it.
         self._log.info(

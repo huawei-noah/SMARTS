@@ -179,7 +179,7 @@ def diff_unpackable(obj, other_obj):
 
     def sort(orig_value):
         value = orig_value
-        if isinstance(value, dict):
+        if isinstance(value, (dict, defaultdict)):
             return dict(sorted(value.items(), key=lambda item: item[0]))
         try:
             s = sorted(value, key=lambda item: item[0])
@@ -193,7 +193,9 @@ def diff_unpackable(obj, other_obj):
         nonlocal obj
         if isinstance(o, (dict, defaultdict)):
             t_o = sort(o)
+            assert isinstance(t_o, dict)
             t_oo = sort(oo)
+            assert isinstance(t_oo, dict)
             comps.append((t_o.keys(), t_oo.keys()))
             comps.append((t_o.values(), t_oo.values()))
         elif isinstance(o, Sequence) and not isinstance(o, (str)):

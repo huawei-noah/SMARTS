@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from enum import IntFlag
 from typing import List, Optional
 
-from .actor import ActorRole, ActorState
+from .actor import ActorState
 from .coordinates import Point
 from .road_map import RoadMap
 

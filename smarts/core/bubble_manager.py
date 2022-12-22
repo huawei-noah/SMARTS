@@ -444,7 +444,7 @@ class BubbleManager:
 
             vehicles = []
             if bubble.follow_actor_id is not None:
-                vehicles += self._last_vehicle_index.vehicles_by_actor_id(
+                vehicles += self._last_vehicle_index.vehicles_by_owner_id(
                     bubble.follow_actor_id
                 )
             if bubble.follow_vehicle_id is not None:
@@ -497,7 +497,7 @@ class BubbleManager:
         for bc in bubble_cursors:
             if bc.state != BubbleState.InBubble:
                 continue
-            agent_id = sim.vehicle_index.actor_id_from_vehicle_id(bc.vehicle_id)
+            agent_id = sim.vehicle_index.owner_id_from_vehicle_id(bc.vehicle_id)
             if agent_id is not None:
                 agent_ids.add(agent_id)
         return agent_ids
@@ -579,7 +579,7 @@ class BubbleManager:
     def _handle_transitions(self, sim, cursors: Set[Cursor]):
         social_agent_vehicles = []
         for agent_id in sim.agent_manager.social_agent_ids:
-            social_agent_vehicles += sim.vehicle_index.vehicles_by_actor_id(agent_id)
+            social_agent_vehicles += sim.vehicle_index.vehicles_by_owner_id(agent_id)
 
         transitioned = [c for c in cursors if c.transition is not None]
         for cursor in transitioned:
@@ -608,7 +608,7 @@ class BubbleManager:
             # XXX: Using a vehicle reference through the `_last_vehicle_index` is a
             # XXX clear error since it can reference out of date vehicles.
             if bubble.follow_actor_id is not None:
-                vehicles += self._last_vehicle_index.vehicles_by_actor_id(
+                vehicles += self._last_vehicle_index.vehicles_by_owner_id(
                     bubble.follow_actor_id
                 )
             if bubble.follow_vehicle_id is not None:

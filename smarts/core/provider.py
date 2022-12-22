@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from enum import IntFlag
 from typing import Iterable, List, Optional, Set, Tuple
 
-from .actor import ActorRole, ActorState
+from .actor import ActorState
 from .controllers import ActionSpaceType
 from .scenario import Scenario
 

@@ -115,6 +115,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `HiWayEnvV1` derived environments now allow an explicit simulation start time through `reset(options["start_time"])`.
 - Exposed `smarts` as a property on `HiWayEnvV1`.
 - Made the heading input relative to the current heading in `RelativeTargetPose` action space.
+- Renamed all terminology relating to actor to owner in `VehicleIndex`.
+- Renamed all terminology relating to shadow actor to shadower in `VehicleIndex`.
 ### Deprecated
 ### Fixed
 - Issue where a 0 length lane caused `envision` to crash.

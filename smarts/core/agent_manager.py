@@ -24,7 +24,7 @@ from concurrent import futures
 from typing import Any, Callable, Dict, Optional, Set, Tuple, Union
 
 from envision.types import format_actor_id
-from smarts.core.actor import ActorRole
+from smarts.core.actor import OwnerRole
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
@@ -134,7 +134,7 @@ class AgentManager:
     @property
     def shadowing_agent_ids(self) -> Set[str]:
         """Get all agents that currently observe, but not control, a vehicle."""
-        return self._vehicle_index.shadow_actor_ids()
+        return self._vehicle_index.shadower_ids()
 
     def is_ego(self, agent_id) -> bool:
         """Test if the agent is an ego agent."""
@@ -147,7 +147,7 @@ class AgentManager:
 
     def agent_for_vehicle(self, vehicle_id) -> str:
         """Get the controlling agent for the given vehicle."""
-        return self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
+        return self._vehicle_index.owner_id_from_vehicle_id(vehicle_id)
 
     def agent_has_vehicle(self, agent_id) -> bool:
         """Test if an agent has an actor associated with it."""
@@ -155,7 +155,7 @@ class AgentManager:
 
     def vehicles_for_agent(self, agent_id):
         """Get the vehicles associated with an agent."""
-        return self._vehicle_index.vehicle_ids_by_actor_id(
+        return self._vehicle_index.vehicle_ids_by_owner_id(
             agent_id, include_shadowers=True
         )
 
@@ -269,7 +269,7 @@ class AgentManager:
         ## TODO MTA, support boid agents with parallel observations
         for agent_id in active_boid_agents:
             # An agent may be pointing to its own vehicle or observing a social vehicle
-            vehicle_ids = self._vehicle_index.vehicle_ids_by_actor_id(
+            vehicle_ids = self._vehicle_index.vehicle_ids_by_owner_id(
                 agent_id, include_shadowers=True
             )
 
@@ -404,7 +404,7 @@ class AgentManager:
         vehicle_ids_controlled_by_agents = self._vehicle_index.agent_vehicle_ids()
         controlling_agent_ids = set(
             [
-                self._vehicle_index.actor_id_from_vehicle_id(v_id)
+                self._vehicle_index.owner_id_from_vehicle_id(v_id)
                 for v_id in vehicle_ids_controlled_by_agents
             ]
         )
@@ -418,7 +418,7 @@ class AgentManager:
         # Handle boids where some vehicles are hijacked and some have not yet been
         for agent_id, actions in social_agent_actions.items():
             if self.is_boid_agent(agent_id):
-                controlled_vehicle_ids = self._vehicle_index.vehicle_ids_by_actor_id(
+                controlled_vehicle_ids = self._vehicle_index.vehicle_ids_by_owner_id(
                     agent_id, include_shadowers=False
                 )
                 social_agent_actions[agent_id] = {
@@ -612,7 +612,7 @@ class AgentManager:
             agent_model.initial_speed,
             boid=boid,
         )
-        role = ActorRole.EgoAgent if trainable else ActorRole.SocialAgent
+        role = OwnerRole.EgoAgent if trainable else OwnerRole.SocialAgent
         for provider in sim.providers:
             if agent_interface.action not in provider.actions:
                 continue

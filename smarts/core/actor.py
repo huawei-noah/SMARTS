@@ -23,7 +23,7 @@ from enum import IntEnum
 from typing import Optional
 
 
-class ActorRole(IntEnum):
+class OwnerRole(IntEnum):
     """Used to specify the role an actor (e.g. vehicle) is currently playing in the simulation."""
 
     Unknown = 0
@@ -48,7 +48,7 @@ class ActorState:
     actor_id: str  # must be unique within the simulation
     actor_type: Optional[str] = None
     source: Optional[str] = None  # the source of truth for this Actor's state
-    role: ActorRole = ActorRole.Unknown
+    role: OwnerRole = OwnerRole.Unknown
     updated: bool = False
 
     def __lt__(self, other) -> bool:

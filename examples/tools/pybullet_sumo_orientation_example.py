@@ -4,7 +4,7 @@ from typing import Dict
 
 import numpy as np
 
-from smarts.core.actor_role import ActorRole
+from smarts.core.actor import OwnerRole
 from smarts.core.chassis import BoxChassis
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
@@ -102,7 +102,7 @@ def run(
                 dimensions=passenger_dimen,
                 speed=0,
                 source="TESTS",
-                role=ActorRole.EgoAgent,
+                role=OwnerRole.EgoAgent,
             )
             current_provider_state.vehicles.append(converted_to_provider)
         traffic_sim.sync(current_provider_state)

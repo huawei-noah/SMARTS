@@ -174,7 +174,7 @@ def test_capture_vehicle(smarts: SMARTS, scenarios, traffic_sim):
         assert vehicle_id.startswith(vehicle_prefix)
     assert smarts.elapsed_sim_time < 1
     assert len(smarts.vehicle_index.agent_vehicle_ids()) == 1
-    assert smarts.vehicle_index.actor_id_from_vehicle_id(vehicle_id).startswith(
+    assert smarts.vehicle_index.owner_id_from_vehicle_id(vehicle_id).startswith(
         AGENT_ID
     )
 
@@ -184,7 +184,7 @@ def test_emit_on_default(smarts: SMARTS, empty_scenarios):
     smarts.reset(next(empty_scenarios))
     assert round(smarts.elapsed_sim_time, 2) == 3.1
     assert len(smarts.vehicle_index.agent_vehicle_ids()) == 1
-    assert len(smarts.vehicle_index.vehicle_ids_by_actor_id(AGENT_ID)) == 1
+    assert len(smarts.vehicle_index.vehicle_ids_by_owner_id(AGENT_ID)) == 1
 
 
 def test_no_recapture_agent(
