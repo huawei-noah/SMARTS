@@ -22,9 +22,11 @@ import logging
 import os
 import sys
 import warnings
+from collections import defaultdict
 from contextlib import contextmanager
 from io import UnsupportedOperation
 from time import time
+from typing import Sequence
 
 from .file import unpack
 
