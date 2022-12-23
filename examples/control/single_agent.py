@@ -1,8 +1,9 @@
-import logging
-import pathlib
-
 import gym
-from argument_parser import default_argument_parser
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from tools.argument_parser import default_argument_parser
 
 from smarts import sstudio
 from smarts.core.agent import Agent
@@ -11,8 +12,6 @@ from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
 from smarts.env.wrappers.single_agent import SingleAgent
 from smarts.zoo.agent_spec import AgentSpec
-
-logging.basicConfig(level=logging.INFO)
 
 
 class ChaseViaPointsAgent(Agent):
@@ -74,7 +73,7 @@ if __name__ == "__main__":
     if not args.scenarios:
         args.scenarios = [
             str(
-                pathlib.Path(__file__).absolute().parents[1]
+                Path(__file__).absolute().parents[1]
                 / "scenarios"
                 / "sumo"
                 / "loop"

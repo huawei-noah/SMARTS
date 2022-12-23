@@ -1,15 +1,14 @@
-import pathlib
-
 import gym
-
-from smarts import sstudio
 
 gym.logger.set_level(40)
 
+import sys
 from functools import partial
+from pathlib import Path
 from typing import Dict, Sequence, Tuple
 
-from argument_parser import default_argument_parser
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from tools.argument_parser import default_argument_parser
 
 from smarts import sstudio
 from smarts.core.agent import Agent
@@ -223,7 +222,7 @@ if __name__ == "__main__":
     if not args.scenarios:
         args.scenarios = [
             str(
-                pathlib.Path(__file__).absolute().parents[1]
+                Path(__file__).absolute().parents[1]
                 / "scenarios"
                 / "sumo"
                 / "figure_eight"
