@@ -8,10 +8,4 @@ Since we make use of Rust code-generation and compilation at run-time, you'll ne
 
 The easiest way to get up and running is to follow the instructions at https://rustup.rs/
 
-## Precompiled Binaries
-
-The open_agent-X.XXX.whl files contained here are precompiled agent policies, these policy wheels can be rebuilt using `./setup.py` located in this same folder.
-
-The purpose is for `./tests/test_open_agent.py` to have static policy binaries to test with.
-
-Build the docs and see `docs/readme.rst:4.3.2 RLlib Example`.
+After that you may need to call `pip install . # with -e if preferred` up to 2 times. The first time will get the base dependencies, the second time will rebuild the solver. The solver will be output to the `../python-bindings-open-agent-solver` directory.
