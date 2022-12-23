@@ -1,10 +1,11 @@
-import gym
 import logging
 import os
 import shutil
 import stat
 import sys
 from pathlib import Path
+
+import gym
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from tools.argument_parser import default_argument_parser

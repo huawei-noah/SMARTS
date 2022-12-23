@@ -6,10 +6,14 @@ NOTE: You will need to install Rust to run this example. See https://rustup.rs/ 
 
 import importlib
 import logging
+import sys
+from pathlib import Path
 
 import gym
 
 from smarts.core.utils.episodes import episodes
+
+sys.path.insert(0, str(Path(__file__).parents[1]))
 from tools.argument_parser import default_argument_parser
 
 try:

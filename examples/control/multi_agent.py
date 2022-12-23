@@ -1,6 +1,7 @@
-import gym
 import sys
 from pathlib import Path
+
+import gym
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from tools.argument_parser import default_argument_parser
@@ -66,12 +67,7 @@ if __name__ == "__main__":
 
     if not args.scenarios:
         args.scenarios = [
-            str(
-                Path(__file__).absolute().parents[1]
-                / "scenarios"
-                / "sumo"
-                / "loop"
-            )
+            str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop")
         ]
 
     sstudio.build_scenario(scenario=args.scenarios)
