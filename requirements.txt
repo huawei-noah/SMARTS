@@ -21,7 +21,7 @@ colorama==0.4.6
 colorful==0.5.5
 commonmark==0.9.1
 constantly==15.1.0
-coverage==7.0.0
+coverage==7.0.1
 cycler==0.11.0
 dm-tree==0.1.8
 eclipse-sumo==1.12.0
