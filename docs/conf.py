@@ -35,7 +35,6 @@ release = VERSION
 extensions = [
     "sphinx_rtd_theme",  # Read The Docs theme
     "sphinx.ext.autodoc",  # Automatically extract docs from docstrings
-    "sphinx.ext.autosummary",
     "sphinx.ext.coverage",  # make coverage generates documentation coverage reports
     "sphinx.ext.napoleon",  # support Numpy and Google doc style
     "sphinx.ext.viewcode",  # link to sourcecode from docs
