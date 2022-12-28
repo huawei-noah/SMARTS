@@ -16,12 +16,12 @@ Options:
   --help  Show this message and exit.
 
 Commands:
-  envision  Commands to utilize an Envision server.
-  run       Run an experiment on a scenario
-  scenario  Generate, replay or clean scenarios.
-  ultra     Utilities for working with the ULTRA benchmark.
-  waymo     Utilities for using the Waymo Motion Dataset with SMARTS.
-  zoo       Build, install, or instantiate workers.
+  diagnostic  Utilities for diagnosing the simulation performance.
+  envision    Commands to utilize an Envision server.
+  run         Run an experiment on a scenario
+  scenario    Generate, replay or clean scenarios.
+  waymo       Utilities for using the Waymo Motion Dataset with SMARTS.
+  zoo         Build, install, or instantiate workers.
 
 --------
 envision
@@ -80,11 +80,9 @@ Usage: scl scenario build [OPTIONS] <scenario>
   Generate a single scenario
 
 Options:
-  --clean             Clean previously generated artifacts first
-  --allow-offset-map  Allows road network to be offset from the origin. If not
-                      specified, creates a new network file if necessary.
-  --seed INTEGER      Set the base seed of the scenario.
-  --help              Show this message and exit.
+  --clean         Clean previously generated artifacts first
+  --seed INTEGER  Set the base seed of the scenario.
+  --help          Show this message and exit.
 
 build-all
 ^^^^^^^^^
@@ -94,13 +92,9 @@ Usage: scl scenario build-all [OPTIONS] <scenarios>
   Generate all scenarios under the given directories
 
 Options:
-  --clean              Clean previously generated artifacts first
-  --allow-offset-maps  Allows road networks (maps) to be offset from the
-                       origin. If not specified, a new network file is created
-                       if necessary.  Defaults to False except when there's
-                       Traffic History data associated with the scenario.
-  --seed INTEGER       Set the base seed of the scenarios.
-  --help               Show this message and exit.
+  --clean         Clean previously generated artifacts first
+  --seed INTEGER  Set the base seed of the scenarios.
+  --help          Show this message and exit.
 
 clean
 ^^^^^
@@ -124,30 +118,6 @@ Options:
   -t, --timestep FLOAT  Timestep in seconds
   --endpoint TEXT
   --help                Show this message and exit.
-
------
-ultra
------
-
-Usage: scl ultra [OPTIONS] COMMAND [ARGS]...
-
-  Utilities for working with the ULTRA benchmark.
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  build  Build a policy
-
-build
-^^^^^
-
-Usage: scl ultra build [OPTIONS] <policy>
-
-  Build a policy
-
-Options:
-  --help  Show this message and exit.
 
 ---
 zoo
@@ -256,6 +226,31 @@ Usage: scl waymo export [OPTIONS] <tfrecord_file> <scenario_id>
                         <export_folder>
 
   Export the Waymo scenario to a SMARTS scenario.
+
+Options:
+  --help  Show this message and exit.
+
+----------
+diagnostic
+----------
+
+Usage: scl diagnostic [OPTIONS] COMMAND [ARGS]...
+
+  Utilities for diagnosing the simulation performance. See `scl diagnostic
+  COMMAND --help` for further options.
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  run  Run all diagnostics.
+
+run
+^^^
+
+Usage: scl diagnostic run [OPTIONS] <scenarios>
+
+  Run all diagnostics.
 
 Options:
   --help  Show this message and exit.

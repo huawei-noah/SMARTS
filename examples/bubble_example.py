@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Tuple
 
-from argument_parser import default_argument_parser
+from tools.argument_parser import default_argument_parser
 
 from envision.client import Client as Envision
 from smarts.core import seed as random_seed

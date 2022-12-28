@@ -19,11 +19,11 @@
 # THE SOFTWARE.
 from dataclasses import dataclass, field, replace
 from enum import IntEnum
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 
-from .controllers import ActionSpaceType
-from .lidar_sensor_params import BasicLidar
-from .lidar_sensor_params import SensorParams as LidarSensorParams
+from smarts.core.controllers import ActionSpaceType
+from smarts.core.lidar_sensor_params import BasicLidar
+from smarts.core.lidar_sensor_params import SensorParams as LidarSensorParams
 
 
 @dataclass
@@ -340,7 +340,7 @@ class AgentInterface:
                 The total number of steps this interface will observe before expiring
         """
         if requested_type == AgentType.Buddha:  # The enlightened one
-            interface = AgentInterface()
+            interface = AgentInterface(action=ActionSpaceType.Empty)
         elif requested_type == AgentType.Full:  # Uses everything
             interface = AgentInterface(
                 neighborhood_vehicles=True,

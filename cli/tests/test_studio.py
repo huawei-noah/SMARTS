@@ -22,6 +22,7 @@
 import os
 import shutil
 import tempfile
+import time
 from xml.etree.ElementTree import ElementTree
 
 
@@ -47,16 +48,16 @@ def test_scenario_generation_unchanged():
             loc2 = temp_dir2 + "/scenarios"
             import re
 
-            from cli.studio import _build_all_scenarios
+            from cli.studio import build_scenarios
 
             _hashseed = os.getenv("PYTHONHASHSEED")
             assert _hashseed not in (None, "random"), f"PYTHONHASHSEED is {_hashseed}"
 
             shutil.copytree("scenarios/sumo", loc1)
-            _build_all_scenarios(True, True, [loc1], 42)
+            build_scenarios(True, [loc1], 42)
 
             shutil.copytree("scenarios/sumo", loc2)
-            _build_all_scenarios(True, True, [loc2], 42)
+            build_scenarios(True, [loc2], 42)
 
             for dirpath, dirnames, files in os.walk(loc1):
                 if "traffic" in dirpath:
@@ -67,3 +68,24 @@ def test_scenario_generation_unchanged():
                         number_of_comparisons_greater_than_0 = True
 
     assert number_of_comparisons_greater_than_0
+
+
+def test_scenario_build_caching():
+    from cli.studio import build_scenarios
+
+    with tempfile.TemporaryDirectory() as temp_dir1:
+        scenario_dir = temp_dir1 + "/scenario"
+        shutil.copytree("scenarios/sumo/loop", scenario_dir)
+
+        # Clean & build the scenario
+        start = time.time()
+        build_scenarios(True, [scenario_dir])
+        elapsed1 = time.time() - start
+
+        # Build again without cleaning
+        start = time.time()
+        build_scenarios(False, [scenario_dir])
+        elapsed2 = time.time() - start
+
+        # Second build should be much faster because of caching
+        assert 2 * elapsed2 < elapsed1

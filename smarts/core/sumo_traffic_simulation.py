@@ -283,9 +283,7 @@ class SumoTrafficSimulation(TrafficProvider):
             "--end=31536000",  # keep the simulation running for a year
         ]
 
-        rerouter_file = (
-            Path(self._scenario.road_map.source).parent / "traffic" / "rerouter.add.xml"
-        )
+        rerouter_file = Path(self._scenario.road_map.source).parent / "rerouter.add.xml"
         if rerouter_file.exists():
             load_params.append(f"--additional-files={rerouter_file}")
         if self._auto_start:
@@ -379,7 +377,11 @@ class SumoTrafficSimulation(TrafficProvider):
         actors_relinquishable: bool = True,
         removed_actor_id: Optional[str] = None,
     ):
-        logging.error(f"TraCI has disconnected with: {e}")
+        if isinstance(e, traci.exceptions.TraCIException):
+            # XXX: Needs further investigation whenever this happens.
+            self._log.warning("TraCI has provided a warning %s", e)
+            return
+        self._log.error(f"TraCI has disconnected with: {e}")
         self._close_traci_and_pipes()
         sim = self._sim()
         if (
@@ -404,7 +406,10 @@ class SumoTrafficSimulation(TrafficProvider):
             )
 
         for vehicle_id in vehicles_to_remove:
-            self._traci_conn.vehicle.remove(vehicle_id)
+            try:
+                self._traci_conn.vehicle.remove(vehicle_id)
+            except self._traci_exceptions as e:
+                self._handle_traci_disconnect(e, actors_relinquishable=False)
 
     def teardown(self):
         self._log.debug("Tearing down SUMO traffic sim %s" % self)
@@ -415,10 +420,7 @@ class SumoTrafficSimulation(TrafficProvider):
         assert self._is_setup
 
         if self.connected:
-            try:
-                self._remove_vehicles()
-            except self._traci_exceptions as e:
-                self._handle_traci_disconnect(e, actors_relinquishable=False)
+            self._remove_vehicles()
 
         if self._allow_reload:
             self._cumulative_sim_seconds = 0
@@ -466,7 +468,11 @@ class SumoTrafficSimulation(TrafficProvider):
         # we tell SUMO to step through dt more seconds of the simulation
         self._cumulative_sim_seconds += dt
         try:
-            self._traci_conn.simulationStep(self._cumulative_sim_seconds)
+            # Suppress errors here, to avoid a known (and likely benign)
+            # error related to removing vehicles.
+            # See: https://github.com/huawei-noah/SMARTS/issues/1155
+            with suppress_output(stderr=False):
+                self._traci_conn.simulationStep(self._cumulative_sim_seconds)
         except self._traci_exceptions as e:
             self._handle_traci_disconnect(e)
             return ProviderState()
@@ -729,6 +735,8 @@ class SumoTrafficSimulation(TrafficProvider):
             assert tls_control
             for s, controlled_links in enumerate(tls_control):
                 sig_id = f"tls_{tls_id}-{s}"
+                if not controlled_links:
+                    continue
                 sig_state = self._tls_cache.setdefault(
                     sig_id, self._create_signal_state(sig_id, controlled_links)
                 )
@@ -743,7 +751,6 @@ class SumoTrafficSimulation(TrafficProvider):
         return signal_states
 
     def _compute_provider_state(self) -> ProviderState:
-        self._traffic_light_states()
         return ProviderState(
             actors=self._compute_traffic_vehicles() + self._traffic_light_states()
         )

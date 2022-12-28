@@ -1,3 +1,0 @@
-VERSION = "0.1.195"
-
-SOLVER_VERSION = "0.0.9"

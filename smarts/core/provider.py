@@ -82,7 +82,7 @@ class ProviderState:
             except ValueError:
                 continue
 
-    def contains(self, actor_ids: Set[str]) -> bool:
+    def intersects(self, actor_ids: Set[str]) -> bool:
         """Returns True iff any of the actor_ids are contained in this ProviderState .
         Returns False for empty-set containment."""
         provider_actor_ids = {a.actor_id for a in self.actors}

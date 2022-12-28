@@ -18,16 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import collections.abc as collections_abc
-import hashlib
 import logging
 import math
-import pickle
 import random
-from ctypes import c_int64
 from dataclasses import dataclass, field
 from enum import IntEnum
 from sys import maxsize
-from typing import Any, Callable, Dict, NewType, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -38,6 +35,7 @@ from shapely.geometry import (
     MultiPolygon,
     Point,
     Polygon,
+    box,
 )
 from shapely.ops import split, unary_union
 
@@ -45,6 +43,7 @@ from smarts.core import gen_id
 from smarts.core.coordinates import RefLinePoint
 from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
+from smarts.core.utils.file import pickle_hash_int
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_cw_around_point
 
@@ -52,14 +51,6 @@ from smarts.core.utils.math import rotate_cw_around_point
 class _SUMO_PARAMS_MODE(IntEnum):
     TITLE_CASE = 0
     KEEP_SNAKE_CASE = 1
-
-
-def _pickle_hash(obj) -> int:
-    pickle_bytes = pickle.dumps(obj, protocol=4)
-    hasher = hashlib.md5()
-    hasher.update(pickle_bytes)
-    val = int(hasher.hexdigest(), 16)
-    return c_int64(val).value
 
 
 class _SumoParams(collections_abc.Mapping):
@@ -304,7 +295,7 @@ class TrafficActor(Actor):
     junction_model: JunctionModel = field(default_factory=JunctionModel, hash=False)
 
     def __hash__(self) -> int:
-        return _pickle_hash(self)
+        return pickle_hash_int(self)
 
     @property
     def id(self) -> str:
@@ -325,7 +316,7 @@ class SocialAgentActor(Actor):
     # prefab of a social agent.
     agent_locator: str
     """The locator reference to the zoo registration call. Expects a string in the format
-    of ‘path.to.file:locator-name’ where the path to the registration call is in the form
+    of 'path.to.file:locator-name' where the path to the registration call is in the form
     {PYTHONPATH}[n]/path/to/file.py
     """
     policy_kwargs: Dict[str, Any] = field(default_factory=dict)
@@ -426,7 +417,7 @@ class Route:
         return "route-{}-{}-{}-".format(
             "_".join(map(str, self.begin)),
             "_".join(map(str, self.end)),
-            _pickle_hash(self),
+            pickle_hash_int(self),
         )
 
     @property
@@ -435,7 +426,7 @@ class Route:
         return (self.begin[0],) + self.via + (self.end[0],)
 
     def __hash__(self):
-        return _pickle_hash(self)
+        return pickle_hash_int(self)
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
@@ -490,13 +481,49 @@ class Flow:
         """The unique id of this flow."""
         return "flow-{}-{}-".format(
             self.route.id,
-            str(_pickle_hash(sorted(self.actors.items(), key=lambda a: a[0].name))),
+            str(pickle_hash_int(sorted(self.actors.items(), key=lambda a: a[0].name))),
         )
 
     def __hash__(self):
         # Custom hash since self.actors is not hashable, here we first convert to a
         # frozenset.
-        return _pickle_hash((self.route, self.rate, frozenset(self.actors.items())))
+        return pickle_hash_int((self.route, self.rate, frozenset(self.actors.items())))
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and hash(self) == hash(other)
+
+
+@dataclass(frozen=True)
+class Trip:
+    """A route with a single actor type with name and unique id."""
+
+    vehicle_name: str
+    """The name of the vehicle. It must be unique. """
+    route: Union[RandomRoute, Route]
+    """The route for the actor to attempt to follow."""
+    vehicle_type: str = "passenger"
+    """The type of the vehicle"""
+    depart: float = 0
+    """Start time in seconds."""
+    actor: TrafficActor = field(init=False)
+    """The traffic actor model (usually vehicle) that will be used for the trip."""
+
+    def __post_init__(self):
+        object.__setattr__(
+            self,
+            "actor",
+            TrafficActor(name=self.vehicle_name, vehicle_type=self.vehicle_type),
+        )
+
+    @property
+    def id(self) -> str:
+        """The unique id of this trip."""
+        return self.vehicle_name
+
+    def __hash__(self):
+        # Custom hash since self.actors is not hashable, here we first convert to a
+        # frozenset.
+        return pickle_hash_int((self.route, self.actor))
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
@@ -547,6 +574,8 @@ class Traffic:
     """Flows are used to define a steady supply of vehicles."""
     # TODO: consider moving TrafficHistory stuff in here (and rename to Trajectory)
     # TODO:  - treat history points like Vias (no guarantee on history timesteps anyway)
+    trips: Optional[Sequence[Trip]] = None
+    """Trips are used to define a series of single vehicle trip."""
     engine: str = "SUMO"
     """The traffic-generation engine to use. Supported values include: SUMO, SMARTS.  SUMO requires using a SumoRoadNetwork for the RoadMap."""
 
@@ -653,7 +682,7 @@ class GroupedLapMission:
 class Zone:
     """The base for a descriptor that defines a capture area."""
 
-    def to_geometry(self, road_map: RoadMap) -> Polygon:
+    def to_geometry(self, road_map: Optional[RoadMap] = None) -> Polygon:
         """Generates the geometry from this zone."""
         raise NotImplementedError
 
@@ -815,6 +844,55 @@ class PositionalZone(Zone):
 
 
 @dataclass(frozen=True)
+class ConfigurableZone(Zone):
+    """A descriptor for a zone with user-defined geometry."""
+
+    ext_coordinates: List[Tuple[float, float]]
+    """external coordinates of the polygon
+    < 2 points provided: error
+    = 2 points provided: generates a box using these two points as diagonal
+    > 2 points provided: generates a polygon according to the coordinates"""
+    rotation: Optional[float] = None
+    """The heading direction of the bubble(radians, clock-wise rotation)"""
+
+    def __post_init__(self):
+        if (
+            not self.ext_coordinates
+            or len(self.ext_coordinates) < 2
+            or not isinstance(self.ext_coordinates[0], tuple)
+        ):
+            raise ValueError(
+                "Two points or more are needed to create a polygon. (less than two points are provided)"
+            )
+
+        x_set = set(point[0] for point in self.ext_coordinates)
+        y_set = set(point[1] for point in self.ext_coordinates)
+        if len(x_set) == 1 or len(y_set) == 1:
+            raise ValueError(
+                "Parallel line cannot form a polygon. (points provided form a parallel line)"
+            )
+
+    def to_geometry(self, road_map: Optional[RoadMap] = None) -> Polygon:
+        """Generate a polygon according to given coordinates"""
+        poly = None
+        if (
+            len(self.ext_coordinates) == 2
+        ):  # if user only specified two points, create a box
+            x_min = min(self.ext_coordinates[0][0], self.ext_coordinates[1][0])
+            x_max = max(self.ext_coordinates[0][0], self.ext_coordinates[1][0])
+            y_min = min(self.ext_coordinates[0][1], self.ext_coordinates[1][1])
+            y_max = max(self.ext_coordinates[0][1], self.ext_coordinates[1][1])
+            poly = box(x_min, y_min, x_max, y_max)
+
+        else:  # else create a polygon according to the coordinates
+            poly = Polygon(self.ext_coordinates)
+
+        if self.rotation is not None:
+            poly = shapely_rotate(poly, self.rotation, use_radians=True)
+        return poly
+
+
+@dataclass(frozen=True)
 class BubbleLimits:
     """Defines the capture limits of a bubble."""
 
@@ -889,6 +967,20 @@ class Bubble:
             raise ValueError(
                 "Only boids can have keep_alive enabled (for persistent boids)"
             )
+
+        if not isinstance(self.zone, MapZone):
+            poly = self.zone.to_geometry(road_map=None)
+            if not poly.is_valid:
+                follow_id = (
+                    self.follow_actor_id
+                    if self.follow_actor_id
+                    else self.follow_vehicle_id
+                )
+                raise ValueError(
+                    f"The zone polygon of {type(self.zone).__name__} of moving {self.id} which following {follow_id} is not a valid closed loop"
+                    if follow_id
+                    else f"The zone polygon of {type(self.zone).__name__} of fixed position {self.id} is not a valid closed loop"
+                )
 
     @staticmethod
     def to_actor_id(actor, mission_group):

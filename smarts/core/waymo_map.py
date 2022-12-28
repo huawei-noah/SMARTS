@@ -53,7 +53,7 @@ from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, RoadMapWithCaches, Waypoint
 from .route_cache import RouteWithCache
 from .utils.file import read_tfrecord_file
-from .utils.geometry import buffered_shape, generate_mesh_from_polygons
+from .utils.geometry import buffered_shape, generate_meshes_from_polygons
 from .utils.math import (
     inplace_unwrap,
     line_intersect_vectorized,
@@ -999,9 +999,14 @@ class WaymoMap(RoadMapWithCaches):
         polygons = []
         for lane_id in self._lanes:
             lane = self._lanes[lane_id]
-            polygons.append(lane.shape())
+            metadata = {
+                "road_id": lane.road.road_id,
+                "lane_id": lane_id,
+                "lane_index": lane.index,
+            }
+            polygons.append((lane.shape(), metadata))
 
-        mesh = generate_mesh_from_polygons(polygons)
+        meshes = generate_meshes_from_polygons(polygons)
 
         # Attach additional information for rendering as metadata in the map glb
         # <2D-BOUNDING_BOX>: four floats separated by ',' (<FLOAT>,<FLOAT>,<FLOAT>,<FLOAT>),
@@ -1019,11 +1024,17 @@ class WaymoMap(RoadMapWithCaches):
         lane_dividers = self._compute_traffic_dividers()
         metadata["lane_dividers"] = lane_dividers
 
-        mesh.visual = trimesh.visual.TextureVisuals(
-            material=trimesh.visual.material.PBRMaterial()
-        )
+        for mesh in meshes:
+            mesh.visual = trimesh.visual.TextureVisuals(
+                material=trimesh.visual.material.PBRMaterial()
+            )
 
-        scene.add_geometry(mesh)
+            road_id = mesh.metadata["road_id"]
+            lane_id = mesh.metadata.get("lane_id")
+            name = f"{road_id}"
+            if lane_id is not None:
+                name += f"-{lane_id}"
+            scene.add_geometry(mesh, name, extras=mesh.metadata)
         return _GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
 
     def _compute_traffic_dividers(self):

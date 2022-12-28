@@ -10,13 +10,27 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Exposed `.glb` file metadata through the scenario `Scenario.map_glb_metadata` attribute.
+- Added single vehicle `Trip` into type. 
+- Added new video record ultility using moviepy.
+- Added distance check between bubble and vehicle to avoid generating unnecessary cursors.
+- Added `ConfigurableZone` for `Zone` object to types which enable users to build bubble by providing coordinates of the polygon.
+- Added "SMARTS Performance Diagnostic" development tool for evaluating the simulation performance.
+- Added a "All Simulation" button on the header of Envision and made small-windowed simulation(s) in the "All Simulations" page clickable to maximize.
+- An env wrapper `Metrics` is introduced to compute agents' performance metrics.
 ### Deprecated
 ### Changed
 ### Removed
 - Removed all of PyMarl contents, including related interface adapter, environments, and tests.
 - Removed ray usage example.
-
+- Moved ULTRA from `huawei-noah/SMARTS` to `smarts-project/smarts-project.rl` repository.
+- Removed observation_adapter, reward_adapter, and info_adapter, from `hiway_env`.
 ### Fixed
+- Updated the RL example `racing` to use `smarts[camera_obs]==0.7.0rc0` and continuous flowing traffic scenario. Simplified the `racing` RL example folder structure.
+- Envision "near realtime" mode bugfix
+- Corrected an issue where traffic lights in SUMO traffic simulation could be empty and cause a termination of the simulation.
+- Fixed an issue where vehicles could cause SMARTS to terminate from being in multiple providers.
+- Fixed an issue where `sumo_traffic_simulation` would disconnect on a non-terminal exception.
 ### Security
 
 ## [0.7.0rc0]
@@ -26,6 +40,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added ego's mission details into the `FormatObs` wrapper.
 - Added `SmartsLaneChangingModel` and `SmartsJunctionModel` to types available for use with the new smarts traffic engine within Scenario Studio.
 - Added option to `AgentInterface` to include traffic signals (lights) in `EgoVehicleObservation` objects.
+- Added the ability to hover over vehicles and roadmap elements in Envision to see debug info.
 
 ### Deprecated
 - Deprecated a few things related to traffic in the `Scenario` class, including the `route` argument to the `Scenario` initializer, the `route`, `route_filepath` and `route_files_enabled` properties, and the `discover_routes()` static method.  In general, the notion of "route" (singular) here is being replaced with "`traffic_specs`" (plural) that allow for specifying traffic controlled by the SMARTS engine as well as Sumo.
@@ -40,6 +55,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Renamed `examples/history_vehicles_replacement_for_imitation_learning.py` to `examples/traffic_histories_vehicle_replacement.py`.
 - `SumoTrafficSimulation` will now try to hand-off the vehicles it controls to the new SMARTS background traffic provider by default if the Sumo provider crashes.
 - SMARTS now gives an error about a suspected lack of junction edges in sumo maps on loading of them.
+- Scenario build artifacts are now cached and built incrementally, meaning that subsequent builds (without the `clean` option) will only build the artifacts that depend on the changed DSL objects
+- All build artifacts are now in a local `build/` directory in each scenario's directory
+- The `allow_offset_map` option has been removed. This must now be set in a `MapSpec` object in the scenario.py if this option is needed
+- All scenarios must have a `scenario.py`, and must call `gen_scenario()`, rather than the individual `gen_` functions, which are now private
 
 ### Removed
 - Removed support for deprecated json-based and YAML formats for traffic histories.
@@ -58,6 +77,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed issues with Envision. The playback bar and realtime mode now work as expected.
 - Fixed a bug where traffic history vehicles would not get traffic signal observations
 - Fixed a bug where envision would not work in some versions of python due to nuances of `importlib.resource.path()`.
+- Fixed an issue with incorrect vehicle sizes in Envision.
 
 ## [0.6.1]
 ### Added

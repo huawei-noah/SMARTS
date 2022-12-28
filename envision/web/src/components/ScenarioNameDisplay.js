@@ -32,7 +32,9 @@ export default function ScenarioNameDisplay({
         </tr>
       </thead>
       <tbody>
-        <td style={{ paddingRight: "15px" }}>{data_formattter(data)}</td>
+        <tr key="data-body">
+          <td style={{ paddingRight: "15px" }}>{data_formattter(data)}</td>
+        </tr>
       </tbody>
     </table>
   );

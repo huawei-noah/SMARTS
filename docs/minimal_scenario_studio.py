@@ -1,9 +1,7 @@
 from pathlib import Path
 
 from smarts.sstudio import types as t
-from smarts.sstudio import gen_traffic, gen_bubbles, gen_missions
-
-scenario = str(Path(__file__).parent)
+from smarts.sstudio import gen_scenario
 
 # Definition of a traffic flow
 traffic = t.Traffic(
@@ -22,12 +20,11 @@ traffic = t.Traffic(
     ]
 )
 
-# The call to generate traffic
-gen_traffic(scenario, traffic, name="basic")
+missions = [
+    t.Mission(t.Route(begin=("west", 0, 0), end=("east", 0, "max"))),
+]
 
-gen_missions(
-    scenario,
-    [
-        t.Mission(t.Route(begin=("west", 0, 0), end=("east", 0, "max"))),
-    ],
+gen_scenario(
+    t.Scenario(traffic={"basic": traffic}, ego_missions=missions),
+    output_dir=Path(__file__).parent,
 )

@@ -588,8 +588,8 @@ class SMARTS(ProviderManager):
         return None
 
     def _stop_managing_with_providers(self, actor_id: str):
-        provider = self._provider_for_actor(actor_id)
-        if provider:
+        managing_providers = [p for p in self.providers if p.manages_actor(actor_id)]
+        for provider in managing_providers:
             provider.stop_managing(actor_id)
 
     def _remove_vehicle_from_providers(self, vehicle_id: str):
@@ -1235,7 +1235,7 @@ class SMARTS(ProviderManager):
             # by this point, "stop_managing()" should have been called for the hijacked vehicle on all TrafficProviders
             assert not isinstance(
                 provider, TrafficProvider
-            ) or not provider_state.contains(
+            ) or not provider_state.intersects(
                 agent_vehicle_ids
             ), f"{agent_vehicle_ids} in {provider_state.actors}"
 
@@ -1255,7 +1255,7 @@ class SMARTS(ProviderManager):
         return self._resetting
 
     @property
-    def scenario(self):
+    def scenario(self) -> Scenario:
         """The current simulation scenario."""
         return self._scenario
 
