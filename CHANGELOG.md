@@ -15,7 +15,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added new video record ultility using moviepy.
 - Added distance check between bubble and vehicle to avoid generating unnecessary cursors.
 - Added `ConfigurableZone` for `Zone` object to types which enable users to build bubble by providing coordinates of the polygon.
-- Added "SMARTS Performance Benchmark" development tool for evaluating the simulation performance.
+- Added "SMARTS Performance Diagnostic" development tool for evaluating the simulation performance.
 - Added a "All Simulation" button on the header of Envision and made small-windowed simulation(s) in the "All Simulations" page clickable to maximize.
 - An env wrapper `Metrics` is introduced to compute agents' performance metrics.
 ### Deprecated
@@ -24,9 +24,13 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Removed all of PyMarl contents, including related interface adapter, environments, and tests.
 - Removed ray usage example.
 - Moved ULTRA from `huawei-noah/SMARTS` to `smarts-project/smarts-project.rl` repository.
+- Removed observation_adapter, reward_adapter, and info_adapter, from `hiway_env`.
 ### Fixed
 - Updated the RL example `racing` to use `smarts[camera_obs]==0.7.0rc0` and continuous flowing traffic scenario. Simplified the `racing` RL example folder structure.
 - Envision "near realtime" mode bugfix
+- Corrected an issue where traffic lights in SUMO traffic simulation could be empty and cause a termination of the simulation.
+- Fixed an issue where vehicles could cause SMARTS to terminate from being in multiple providers.
+- Fixed an issue where `sumo_traffic_simulation` would disconnect on a non-terminal exception.
 ### Security
 
 ## [0.7.0rc0]

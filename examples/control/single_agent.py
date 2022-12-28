@@ -1,8 +1,10 @@
-import logging
-import pathlib
+import sys
+from pathlib import Path
 
 import gym
-from argument_parser import default_argument_parser
+
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from tools.argument_parser import default_argument_parser
 
 from smarts import sstudio
 from smarts.core.agent import Agent
@@ -71,12 +73,7 @@ if __name__ == "__main__":
 
     if not args.scenarios:
         args.scenarios = [
-            str(
-                pathlib.Path(__file__).absolute().parents[1]
-                / "scenarios"
-                / "sumo"
-                / "loop"
-            )
+            str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop")
         ]
 
     sstudio.build_scenario(scenario=args.scenarios)

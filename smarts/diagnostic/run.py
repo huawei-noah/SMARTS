@@ -57,7 +57,7 @@ def _compute(scenario_dir, ep_per_scenario=10, max_episode_steps=_MAX_EPISODE_ST
         "smarts.env:hiway-v0",
         scenarios=scenario_dir,
         shuffle_scenarios=False,
-        sim_name="Benchmark",
+        sim_name="Diagnostic",
         agent_specs={},
         headless=True,
         sumo_headless=True,
@@ -87,7 +87,7 @@ def _compute(scenario_dir, ep_per_scenario=10, max_episode_steps=_MAX_EPISODE_ST
 
     records = {}
     for k, v in results.items():
-        parsed_name = k.split("benchmark/")[1]
+        parsed_name = k.split("diagnostic/")[1]
         records[parsed_name] = _readable(func=v)
 
     return records
@@ -205,7 +205,7 @@ def _write_report(results: Dict[str, Any]):
 
 
 def main(scenarios: Sequence[str]):
-    """Run benchmark.
+    """Run diagnostic.
 
     :param scenarios: Scenarios to be timed.
     :type scenarios: Sequence[str]
@@ -214,7 +214,7 @@ def main(scenarios: Sequence[str]):
     results = {}
     for scenario in scenarios:
         path = str(Path(__file__).resolve().parent / scenario)
-        logger.info("Benchmarking: %s", path)
+        logger.info("Diagnosing: %s", path)
         results.update(_compute(scenario_dir=[path]))
 
     _write_report(results)

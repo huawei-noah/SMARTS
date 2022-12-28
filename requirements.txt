@@ -7,7 +7,7 @@ astunparse==1.6.3
 async-timeout==4.0.2
 asynctest==0.13.0
 atari-py==0.2.6
-attrs==22.1.0
+attrs==22.2.0
 Automat==22.10.0
 beautifulsoup4==4.11.1
 blessed==1.19.1
@@ -21,11 +21,11 @@ colorama==0.4.6
 colorful==0.5.5
 commonmark==0.9.1
 constantly==15.1.0
-coverage==6.5.0
+coverage==7.0.1
 cycler==0.11.0
-dm-tree==0.1.7
+dm-tree==0.1.8
 eclipse-sumo==1.12.0
-exceptiongroup==1.0.4
+exceptiongroup==1.1.0
 execnet==1.9.0
 filelock==3.8.2
 flatbuffers==22.12.6
@@ -46,7 +46,7 @@ h5py==3.7.0
 hyperlink==21.0.0
 idna==3.4
 ijson==3.1.4
-importlib-metadata==5.1.0
+importlib-metadata==5.2.0
 importlib-resources==5.10.1
 incremental==22.10.0
 iniconfig==1.1.1
@@ -97,7 +97,7 @@ pytest-cov==4.0.0
 pytest-forked==1.4.0
 pytest-xdist==3.1.0
 python-dateutil==2.8.2
-pytz==2022.6
+pytz==2022.7
 PyYAML==6.0
 ray==1.0.1.post1
 redis==3.4.1
@@ -119,7 +119,7 @@ tensorboard-plugin-wit==1.8.1
 tensorboardX==2.5.1
 tensorflow==2.11.0
 tensorflow-estimator==2.11.0
-tensorflow-io-gcs-filesystem==0.28.0
+tensorflow-io-gcs-filesystem==0.29.0
 termcolor==2.1.1
 tomli==2.0.1
 torch==1.4.0
