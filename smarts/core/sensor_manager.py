@@ -63,6 +63,21 @@ class SensorManager:
         physics_ref,
         process_count_override: Optional[int] = None,
     ):
+        """Runs observations in parallel where possible and updates sensor states afterwards.
+        Args:
+            sim_frame (SimulationFrame):
+                The current state from the simulation.
+            sim_local_constants (SimulationLocalConstants):
+                The values that should stay the same for a simulation over a reset.
+            agent_ids ({str, ...}):
+                The agent ids to process.
+            renderer (Optional[Renderer]):
+                The renderer (if any) that should be used.
+            bullet_client (bc.BulletClient):
+                The physics client.
+            process_count_override (Optional[int]):
+                Overrides the number of processes that should be used.
+        """
         observations, dones, updated_sensors = Sensors.observe_parallel(
             sim_frame,
             sim_local_constants,
@@ -238,7 +253,7 @@ class SensorManager:
             self.remove_sensors_by_actor_id(aid)
 
         for sensor_id in self._discarded_sensors:
-            if self._sensor_references.get(sensor_id) < 1:
+            if self._sensor_references.get(sensor_id, 0) < 1:
                 sensor = self.remove_sensor(sensor_id)
                 sensor.teardown(renderer=renderer)
 

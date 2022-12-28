@@ -134,7 +134,7 @@ class Sensors:
 
     def get_workers(
         self, count, sim_local_constants: SimulationLocalConstants, **worker_kwargs
-    ) -> List["ProcessWorker"]:
+    ) -> List["SensorsWorker"]:
         """Get the give number of workers."""
         if not self._validate_configuration(sim_local_constants):
             self.stop_all_workers()
@@ -287,7 +287,9 @@ class Sensors:
                         for result in mp.connection.wait(
                             [worker.connection for worker in used_workers], timeout=5
                         ):
+                            # pytype: disable=attribute-error
                             obs, ds, updated_sens = result.recv()
+                            # pytype: enable=attribute-error
                             observations.update(obs)
                             dones.update(ds)
 
@@ -555,7 +557,7 @@ class Sensors:
         vehicle,
         renderer,
         bullet_client,
-    ) -> Tuple[Observation, bool]:
+    ) -> Tuple[Observation, bool, Dict[str, "Sensor"]]:
         """Generate observations for the given agent around the given vehicle."""
         args = [sim_frame, sim_local_constants, agent_id, sensor_state, vehicle.id]
         base_obs, dones, updated_sensors = cls.process_serialization_safe_sensors(*args)
@@ -674,7 +676,7 @@ class Sensors:
         vehicle_sensors,
     ):
         vehicle_sensors = sim_frame.vehicle_sensors[vehicle_state.actor_id]
-        interface = sim_frame.agent_interfaces.get(agent_id)
+        interface = sim_frame.agent_interfaces[agent_id]
         done_criteria = interface.done_criteria
         event_config = interface.event_configuration
 
@@ -765,9 +767,11 @@ class Sensors:
         if sim.elapsed_sim_time < last_n_seconds_considered:
             return False
 
-        distance = driven_path_sensor.distance_travelled(
-            sim.elapsed_sim_time, last_n_seconds=last_n_seconds_considered
-        )
+        distance = sys.maxsize
+        if driven_path_sensor is not None:
+            distance = driven_path_sensor.distance_travelled(
+                sim.elapsed_sim_time, last_n_seconds=last_n_seconds_considered
+            )
 
         # Due to controller instabilities there may be some movement even when a
         # vehicle is "stopped".
@@ -877,6 +881,7 @@ class Sensor:
 
     @property
     def mutable(self) -> bool:
+        """If this sensor mutates on call."""
         return True
 
 
@@ -1013,7 +1018,9 @@ class ProcessWorker:
         """The most recent result from the worker."""
         with timeit("main thread blocked", logger.info):
             conn = mp.connection.wait([self._parent_connection], timeout=timeout).pop()
+            # pytype: disable=attribute-error
             result = conn.recv()
+            # pytype: enable=attribute-error
         with timeit("deserialize for main thread", logger.info):
             if self._serialize_results:
                 result = Sensors.deserialize_for_observation(result)
@@ -1255,7 +1262,7 @@ class LidarSensor(Sensor):
 
 
 @dataclass
-class DrivenPathSensorEntry:
+class _DrivenPathSensorEntry:
     timestamp: float
     position: Tuple[float, float]
 
@@ -1273,7 +1280,7 @@ class DrivenPathSensor(Sensor):
         """Records the current location of the tracked vehicle."""
         position = vehicle_state.pose.position[:2]
         self._driven_path.append(
-            DrivenPathSensorEntry(timestamp=elapsed_sim_time, position=position)
+            _DrivenPathSensorEntry(timestamp=elapsed_sim_time, position=position)
         )
 
     def __call__(self, count=sys.maxsize):
