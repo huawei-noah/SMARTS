@@ -27,7 +27,7 @@ dm-tree==0.1.8
 eclipse-sumo==1.12.0
 exceptiongroup==1.1.0
 execnet==1.9.0
-filelock==3.8.2
+filelock==3.9.0
 flatbuffers==22.12.6
 fonttools==4.38.0
 frozenlist==1.3.3
@@ -61,7 +61,7 @@ Markdown==3.4.1
 MarkupSafe==2.1.1
 matplotlib==3.5.3
 msgpack==1.0.4
-multidict==6.0.3
+multidict==6.0.4
 networkx==2.6.3
 numpy==1.21.6
 nvidia-ml-py==11.495.46
