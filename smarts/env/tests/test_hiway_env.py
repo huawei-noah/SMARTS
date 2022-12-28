@@ -68,10 +68,11 @@ def test_hiway_env(env, agent_spec):
 
             # Reward is currently the delta in distance travelled by the agent.
             # Ensure that it is infact a delta and not total distance travelled
-            # since this bug has appeared a few times. Verify by ensuring the 
+            # since this bug has appeared a few times. Verify by ensuring the
             # reward does not grow unbounded.
-            assert all([-3 < reward < 3 for reward in rewards.values()]), \
-                f"Expected bounded reward per timestep, but got {rewards}."
+            assert all(
+                [-3 < reward < 3 for reward in rewards.values()]
+            ), f"Expected bounded reward per timestep, but got {rewards}."
 
             episode.record_step(observations, rewards, dones, infos)
 

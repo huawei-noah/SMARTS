@@ -27,11 +27,7 @@ from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import register
 
 from .agent import RLAgent
-from .cross_space import (
-    action_adapter,
-    cross_interface,
-    observation_adapter,
-)
+from .cross_space import action_adapter, cross_interface, observation_adapter
 
 
 def entrypoint():

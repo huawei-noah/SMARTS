@@ -31,7 +31,7 @@ setup(
     ],
     include_package_data=True,
     install_requires=[
-        "tensorflow==2.2.1", 
+        "tensorflow==2.2.1",
         "smarts==0.7.0rc0",
     ],
 )
