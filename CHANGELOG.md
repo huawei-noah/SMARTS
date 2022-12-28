@@ -28,6 +28,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Fixed
 - Updated the RL example `racing` to use `smarts[camera_obs]==0.7.0rc0` and continuous flowing traffic scenario. Simplified the `racing` RL example folder structure.
 - Envision "near realtime" mode bugfix
+- Corrected an issue where traffic lights in SUMO traffic simulation could be empty and cause a termination of the simulation.
+- Fixed an issue where vehicles could cause SMARTS to terminate from being in multiple providers.
+- Fixed an issue where `sumo_traffic_simulation` would disconnect on a non-terminal exception.
 ### Security
 
 ## [0.7.0rc0]

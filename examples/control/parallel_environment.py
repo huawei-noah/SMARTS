@@ -1,15 +1,14 @@
-import pathlib
-
 import gym
-
-from smarts import sstudio
 
 gym.logger.set_level(40)
 
+import sys
 from functools import partial
+from pathlib import Path
 from typing import Dict, Sequence, Tuple
 
-from argument_parser import default_argument_parser
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from tools.argument_parser import default_argument_parser
 
 from smarts import sstudio
 from smarts.core.agent import Agent
@@ -223,7 +222,7 @@ if __name__ == "__main__":
     if not args.scenarios:
         args.scenarios = [
             str(
-                pathlib.Path(__file__).absolute().parents[1]
+                Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "sumo"
                 / "figure_eight"
@@ -236,7 +235,7 @@ if __name__ == "__main__":
     main(
         scenarios=args.scenarios,
         sim_name=f"{args.sim_name}_async",
-        headless=args.headless,
+        headless=True,
         seed=args.seed,
         num_agents=args.num_agents,
         num_stack=args.num_stack,
@@ -250,7 +249,7 @@ if __name__ == "__main__":
     main(
         scenarios=args.scenarios,
         sim_name=f"{args.sim_name}_sync",
-        headless=args.headless,
+        headless=True,
         seed=args.seed,
         num_agents=args.num_agents,
         num_stack=args.num_stack,
