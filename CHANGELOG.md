@@ -34,7 +34,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an issue where vehicles could cause SMARTS to terminate from being in multiple providers.
 - Fixed an issue where `sumo_traffic_simulation` would disconnect on a non-terminal exception.
 - SMARTS now aggressively attempts to connect to a SUMO process as long as the SUMO process remains alive.
-- SUMO traffic simulation `route_for_vehicle` had syntax errors and now works again.
+- SUMO traffic simulation `route_for_vehicle` had semantic errors and now works again.
 - SUMO is now supported up to version `1.15.0`. Versions of SUMO `1.13.0` and onward are forced to reset rather than reload because of errors with hot resetting versions starting with `1.13.0`. 
 ### Security
 
