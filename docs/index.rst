@@ -31,13 +31,11 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
 
    sim/cli.rst
 
-   api/modules.rst
-
    sim/bubbles.rst
 
    sim/smarts.rst
 
-   sim/adapters.rst
+   api/modules.rst
 
 Indices and Tables
 ==================
