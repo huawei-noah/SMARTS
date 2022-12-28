@@ -11,7 +11,7 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
 
 .. toctree::
    :maxdepth: 3
-   :caption: API Reference:
+   :caption: Basics
 
    quickstart
 
@@ -34,6 +34,10 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
    sim/bubbles.rst
 
    sim/smarts.rst
+
+.. toctree::
+   :maxdepth: 3
+   :caption: API Reference
 
    api/modules.rst
 
