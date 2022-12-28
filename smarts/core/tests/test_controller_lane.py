@@ -113,7 +113,6 @@ def test_lane_following_controller(smarts, agent_spec, scenarios):
     agent_obs = None
     for _ in range(500):
         agent_obs = observations[AGENT_ID]
-        agent_obs = agent_spec.observation_adapter(agent_obs)
 
         if agent_obs.ego_vehicle_state.speed > 5 / 3.6:
             detected = 1
@@ -132,8 +131,8 @@ def test_lane_following_controller(smarts, agent_spec, scenarios):
             )
         )
 
-        agent_action = agent_spec.action_adapter(agent.act(agent_obs))
-        observations, _, dones, _ = smarts.step({AGENT_ID: agent_action})
+        agent_action = agent.act(agent_obs)
+        observations, _, _, _ = smarts.step({AGENT_ID: agent_action})
 
         if agent_obs.events.reached_goal:
             break

@@ -101,7 +101,7 @@ Features
 See implementation in :class:`smarts.core.sensors`
 
 
-Then, you can choose the observations needed through :class:`smarts.core.agent_interface.AgentInterface` and process these raw observations through :class:`smarts.core.observation_adapter`.
+Then, you can choose the observations needed through :class:`smarts.core.agent_interface.AgentInterface`.
 Note: Some observations like `occupancy_grid_map`, `drivable_area_grid_map` and `top_down_rgb` requires the use of Panda3D package to render agent camera observations during simulations. So you need to install the required dependencies first using the command `pip install -e .[camera_obs]`
 
 =======

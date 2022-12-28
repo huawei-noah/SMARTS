@@ -42,7 +42,7 @@ def test_rllib_example():
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
         main(
             scenario="scenarios/sumo/loop",
-            headless=True,
+            envision=False,
             time_total_s=20,
             rollout_fragment_length=200,
             train_batch_size=200,
