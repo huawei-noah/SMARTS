@@ -54,7 +54,9 @@ class ObservationWrapper(gym.ObservationWrapper):
         super().__init__(env)
         obs_space = {}
         for agent_id, agent_spec in self.env.agent_specs.items():
-            rgb: RGB = agent_spec.interface.rgb  # pytype: disable=annotation-type-mismatch
+            rgb: RGB = (
+                agent_spec.interface.rgb
+            )  # pytype: disable=annotation-type-mismatch
             obs_space[agent_id] = gym.spaces.Box(
                 low=0,
                 high=255,
@@ -68,7 +70,10 @@ class ObservationWrapper(gym.ObservationWrapper):
         self.observation_space = gym.spaces.Dict(obs_space)
 
     def observation(self, obs):
-        return {agent_name: agent_obs.top_down_rgb.data for agent_name, agent_obs in obs.items()}
+        return {
+            agent_name: agent_obs.top_down_rgb.data
+            for agent_name, agent_obs in obs.items()
+        }
 
 
 @pytest.fixture
@@ -128,6 +133,6 @@ def test_reset_and_step(base_env):
     assert obs.shape == ma_obs_space[agent_id].shape
     assert isinstance(reward, float)
     assert type(done) is bool
-    assert set(info.keys()) == set(["score","env_obs"])
+    assert set(info.keys()) == set(["score", "env_obs"])
 
     env.close()

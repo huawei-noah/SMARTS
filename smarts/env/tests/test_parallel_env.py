@@ -137,7 +137,9 @@ def test_reset(env_constructor, num_env):
 def test_step(env_constructor, single_env_actions, num_env, auto_reset):
     single_env = env_constructor()
     single_env.reset()
-    single_observations, single_rewards, single_dones, single_infos = single_env.step(single_env_actions)
+    single_observations, single_rewards, single_dones, single_infos = single_env.step(
+        single_env_actions
+    )
     single_env.close()
 
     env = _make_parallel_env(env_constructor, num_env, auto_reset=auto_reset)
@@ -149,7 +151,7 @@ def test_step(env_constructor, single_env_actions, num_env, auto_reset):
 
     for batched_outputs, single_outputs in zip(
         [batched_observations, batched_rewards, batched_dones, batched_infos],
-        [single_observations, single_rewards, single_dones, single_infos]
+        [single_observations, single_rewards, single_dones, single_infos],
     ):
         _compare_outputs(num_env, batched_outputs, single_outputs)
 
