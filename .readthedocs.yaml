@@ -11,12 +11,17 @@ sphinx:
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
-  version: 3.7
+  version: 3.8
   install:
     - method: pip
       path: .
       extra_requirements:
+        - camera_obs
+        - diagnostics
         - doc
+        - gym
+        - remote_agent
+        - waymo
 
 sphinx:
   fail_on_warning: true
