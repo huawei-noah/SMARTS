@@ -58,7 +58,7 @@ def agents_to_be_briefed():
 def scenario(agents_to_be_briefed: List[str]) -> Scenario:
     s = Scenario(
         scenario_root="scenarios/sumo/loop",
-        traffic_specs=["scenarios/sumo/loop/traffic/basic.rou.xml"],
+        traffic_specs=["scenarios/sumo/loop/build/traffic/basic.rou.xml"],
         missions=dict(
             zip(
                 agents_to_be_briefed,
