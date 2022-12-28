@@ -16,12 +16,13 @@ python:
     - method: pip
       path: .
       extra_requirements:
+        - waymo
+        - gym
+        - doc
         - camera_obs
         - diagnostics
-        - doc
-        - gym
         - remote_agent
-        - waymo
+        - extras
 
 sphinx:
   fail_on_warning: true
