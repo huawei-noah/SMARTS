@@ -5,7 +5,7 @@ import random
 from typing import Dict, Iterable, Sequence, Tuple
 from unittest.mock import Mock
 
-from argument_parser import default_argument_parser
+from tools.argument_parser import default_argument_parser
 
 from envision.client import Client as Envision
 from smarts.core import seed as random_seed

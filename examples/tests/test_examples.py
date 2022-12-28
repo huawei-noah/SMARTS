@@ -2,12 +2,11 @@ import sys
 import tempfile
 from pathlib import Path
 
-import psutil
 import pytest
 
 from smarts.core.utils import import_utils
 
-# necessary to import default_argument_parser properly in the examples
+# Necessary to import default_argument_parser in the examples
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
 import_utils.import_module_from_file(
@@ -24,9 +23,9 @@ def test_examples(example):
     if example == "egoless":
         from examples import egoless as current_example
     if example == "single_agent":
-        from examples import single_agent as current_example
+        from examples.control import single_agent as current_example
     if example == "multi_agent":
-        from examples import multi_agent as current_example
+        from examples.control import multi_agent as current_example
     main = current_example.main
     main(
         scenarios=["scenarios/sumo/loop"],

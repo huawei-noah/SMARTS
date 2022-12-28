@@ -6,7 +6,7 @@ aiosignal==1.3.1
 astunparse==1.6.3
 async-timeout==4.0.2
 atari-py==0.2.6
-attrs==22.1.0
+attrs==22.2.0
 Automat==22.10.0
 beautifulsoup4==4.11.1
 blessed==1.19.1
@@ -21,11 +21,11 @@ colorful==0.5.5
 commonmark==0.9.1
 constantly==15.1.0
 contourpy==1.0.6
-coverage==7.0.0
+coverage==7.0.1
 cycler==0.11.0
 dm-tree==0.1.8
 eclipse-sumo==1.12.0
-exceptiongroup==1.0.4
+exceptiongroup==1.1.0
 execnet==1.9.0
 filelock==3.8.2
 flatbuffers==22.12.6
@@ -61,9 +61,9 @@ Markdown==3.4.1
 MarkupSafe==2.1.1
 matplotlib==3.6.2
 msgpack==1.0.4
-multidict==6.0.3
+multidict==6.0.4
 networkx==2.8.8
-numpy==1.24.0
+numpy==1.24.1
 nvidia-ml-py==11.495.46
 oauthlib==3.2.2
 opencensus==0.11.0
