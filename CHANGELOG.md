@@ -22,6 +22,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Deprecated
 ### Changed
 - Minimum `SUMO` version allowed by `SumoTrafficSimulation` is now `1.10.0`.
+- The `ProviderManager` interface now uses a string id for removal of an actor instead of an actor state.
 ### Removed
 - Removed all of PyMarl contents, including related interface adapter, environments, and tests.
 - Removed ray usage example.

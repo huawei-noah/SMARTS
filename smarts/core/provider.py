@@ -111,7 +111,7 @@ class ProviderManager:
         one could not be found, in which case the actor is removed."""
         raise NotImplementedError
 
-    def provider_removing_actor(self, provider: "Provider", actor_state: ActorState):
+    def provider_removing_actor(self, provider: "Provider", actor_id: str):
         """Called by a Provider when it is removing an actor from the simulation.
         This was added for convenience, but it isn't always necessary to be called."""
         raise NotImplementedError

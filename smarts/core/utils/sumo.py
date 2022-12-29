@@ -192,6 +192,13 @@ class TraciConn:
             try:
                 conn.close()
             except (subprocess.SubprocessError, multiprocessing.ProcessError):
+                # Subprocess or process failed
+                pass
+            except traci.exceptions.FatalTraCIError:
+                # TraCI connection is already dead.
+                pass
+            except AttributeError:
+                # Socket was destroyed internally by a fatal error somehow.
                 pass
 
         if self._traci_conn:
