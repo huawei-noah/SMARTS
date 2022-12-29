@@ -58,15 +58,16 @@ def multi_scenario_v0_env(
 ):
     """An environment with a mission to be completed by a single or multiple ego agents.
 
-    Observation space for each agent:
+    Observation space for each agent
         A `smarts.core.sensors.Observation` is returned as observation.
 
-    Action space for each agent:
+    Action space for each agent
         A `smarts.core.controllers.ActionSpaceType.TargetPose`, which is a
         sequence of [x-coordinate, y-coordinate, heading, and time-delta].
         Use time-delta = 0.1 .
 
-        Type: gym.spaces.Box(
+        Type 
+            gym.spaces.Box(
                 low=np.array([-1e10, -1e10, -π, 0]),
                 high=np.array([1e10, 1e10, π, 1e10]),
                 dtype=np.float32
@@ -78,16 +79,16 @@ def multi_scenario_v0_env(
         Ego's next heading with respect to the map's axes   [-π,π]
         Time delta to reach the given pose                  [0,1e10]
 
-    Reward:
+    Reward
         Reward is distance travelled (in meters) in each step, including the
         termination step.
 
-    Episode termination:
+    Episode termination
         Episode is terminated if any of the following occurs.
         + Steps per episode exceed 800.
         + Agent collides, drives off road, drives off route, or drives on wrong way.
 
-    Solved requirement:
+    Solved requirement
         If agent successfully completes the mission then `info["score"]` will
         equal 1, else it is 0. Considered solved when `info["score"] == 1` is
         achieved over 500 consecutive episodes.
