@@ -6,17 +6,13 @@ First we'll need to define what our agent looks like, we'll then place the agent
 Specifying the Agent
 --------------------
 
-The agent is defined in terms of the interface it expects from the environment and the responses an agent produces. To help bridge the gap between the environment and your agent, we also introduce adapters.
+The agent is defined in terms of the interface it expects from the environment and the responses an agent produces.
 
 :class:`smarts.core.agent_interface.AgentInterface`
    This is where you can control the interface between SMARTS and your agent.
 
 :class:`smarts.core.agent.Agent`
    This is the brains of the agent, you will need to implement the interface defined by :class:`smarts.core.agent.Agent` in order to give the agent some behaviour.
-
-Adapters:
-  Adapters bridge the gab between SMARTS and your agent. It is sometimes useful to preprocess the input and outputs of an agent, we won't be needing adapter for this little walkthrough but for a more in-depth treatment see :ref:`adapters`.
-
 
 AgentInterface :class:`smarts.core.agent_interface.AgentInterface`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -73,7 +69,7 @@ This is done by implementing the :class:`smarts.core.agent.Agent` interface:
            )
            return traj
 
-Here we are implementing a simple lane following agent using the BezierMotionPlanner. The `obs` argument to `ExampleAgent.act()` will contain the observations specified in the `AgentInterface` above, and it's expected that the return value of the `act` method matches the `ActionSpaceType` chosen as well. (This constraint is relaxed when adapters are introduced.)
+Here we are implementing a simple lane following agent using the BezierMotionPlanner. The `obs` argument to `ExampleAgent.act()` will contain the observations specified in the `AgentInterface` above, and it's expected that the return value of the `act` method matches the `ActionSpaceType` chosen as well.
 
 
 AgentSpec :class:`smarts.zoo.agent_spec.AgentSpec`

@@ -35,9 +35,6 @@ class FormatAction(gym.ActionWrapper):
             ``ActionSpaceType.TargetPose`` are supported by this wrapper now.
 
         (b) All agents should have the same action space.
-
-        (c) Action adapters should not be used inside the ``step`` method of the
-            base environment.
     """
 
     def __init__(self, env: gym.Env, space: ActionSpaceType):
