@@ -32,6 +32,7 @@ Use the `Visdom <https://github.com/facebookresearch/visdom>`_ integration to ea
 Start the visdom server before running the scenario and open the server URL in your browser `http://localhost:8097 <http://localhost:8097>`_.
 
 .. code-block:: bash
+
     # Install visdom
     $ pip install visdom
     # Start the server
