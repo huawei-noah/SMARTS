@@ -3,6 +3,6 @@
 Command Line Interface
 ======================
 
-.. click:: module:parser
+.. click:: cli.cli:scl
    :prog: scl
    :nested: full
