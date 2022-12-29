@@ -20,6 +20,7 @@
 
 import logging
 import random
+import time
 import weakref
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
@@ -191,6 +192,8 @@ class SumoTrafficSimulation(TrafficProvider):
                 base_params=self._base_sumo_load_params(),
                 sumo_binary=sumo_binary,
             )
+            # Ensure there has been enough time for sumo to start
+            time.sleep(0.05)
             try:
                 while self._traci_conn.sumo_alive:
                     try:
