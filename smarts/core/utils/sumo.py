@@ -28,7 +28,6 @@ import multiprocessing
 import os
 import subprocess
 import sys
-import time
 from typing import Any, List, Optional
 
 from smarts.core.utils import networking
@@ -117,8 +116,6 @@ class TraciConn:
         ),
     ):
         """Attempt a connection with the SUMO process."""
-        # Ensure there has been enough time for sumo to start
-        time.sleep(0.05)
         try:
             with suppress_output(stdout=False):
                 self._traci_conn = traci.connect(
