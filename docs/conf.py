@@ -40,7 +40,7 @@ extensions = [
     "sphinx.ext.viewcode",  # link to sourcecode from docs
     "sphinx.ext.graphviz",  # TODO: should we include this?
     "sphinxcontrib.apidoc",
-    "sphinx-click",
+    "sphinx_click",
 ]
 
 # configuring automated generation of api documentation
