@@ -106,7 +106,6 @@ class SumoTrafficSimulation(TrafficProvider):
         self._last_trigger_time = -1000000
         self._num_dynamic_ids_used = 0
         self._traci_conn: Optional[TraciConn] = None
-        self._sumo_proc = None
         self._num_clients = 1 + num_external_sumo_clients
         self._sumo_port = sumo_port
         self._last_traci_state = None
@@ -118,6 +117,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self._tls_cache = dict()
         self._last_provider_state = ProviderState()
         self._sim = None
+        self._handling_error = False
 
         # start with the default recovery flags...
         self._recovery_flags = super().recovery_flags
@@ -154,10 +154,7 @@ class SumoTrafficSimulation(TrafficProvider):
         """Clean up TraCI related connections."""
         if self._traci_conn:
             self._traci_conn.close_traci_and_pipes()
-        if not self._is_setup:
-            return
-        self._sumo_proc.terminate()
-        self._sumo_proc.wait()
+        self._is_setup = False
 
     @property
     def recovery_flags(self) -> ProviderRecoveryFlags:
@@ -238,7 +235,8 @@ class SumoTrafficSimulation(TrafficProvider):
                 Check %s for hints""",
                 self._log_file,
             )
-            self._handle_traci_disconnect(err)
+            self._handle_traci_exception(err, actors_relinquishable=False)
+            self.teardown()
             raise
 
         self._log.debug("Finished starting sumo process")
@@ -309,11 +307,18 @@ class SumoTrafficSimulation(TrafficProvider):
         self._log_file = scenario.unique_sumo_log_file()
 
         if restart_sumo:
-            self._initialize_traci_conn()
+            try:
+                self._initialize_traci_conn()
+            except traci.exceptions.FatalTraCIError:
+                return ProviderState()
         elif self._allow_reload:
-            self._traci_conn.load(self._base_sumo_load_params())
+            try:
+                self._traci_conn.load(self._base_sumo_load_params())
+            except traci.exceptions.FatalTraCIError as err:
+                self._handle_traci_exception(err, actors_relinquishable=False)
+                return ProviderState()
 
-        assert self._traci_conn is not None, "No active traci conn"
+        assert self._traci_conn is not None, "No active traci connection"
 
         self._traci_conn.simulation.subscribe(
             [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
@@ -333,25 +338,32 @@ class SumoTrafficSimulation(TrafficProvider):
         #      as zero will step according to a default (non-zero) step-size.
         self.step({}, 1e-6, 0)
 
+        if not self.connected:
+            self._is_setup = False
+            return ProviderState()
         self._is_setup = True
 
         return self._compute_provider_state()
 
-    def _handle_traci_disconnect(
+    def _handle_traci_exception(
         self,
-        err,
+        error,
         actors_relinquishable: bool = True,
         removed_actor_id: Optional[str] = None,
     ):
-        if isinstance(e, traci.exceptions.TraCIException):
-            # XXX: Needs further investigation whenever this happens.
-            self._log.warning("TraCI has provided a warning %s", e)
+        if self._handling_error:
             return
-        logging.error(
-            "TraCI has disconnected with: `%s`. Please check the logging file `%s`.",
-            err,
-            self._log_file,
-        )
+        self._handling_error = True
+        if isinstance(error, traci.exceptions.TraCIException):
+            # XXX: Needs further investigation whenever this happens.
+            self._log.warning("TraCI has provided a warning %s", error)
+            return
+        if isinstance(error, traci.exceptions.FatalTraCIError):
+            self._log.error(
+                "TraCI has disconnected with: `%s`. Please check the logging file `%s`.",
+                error,
+                self._log_file,
+            )
         sim = self._sim()
         if (
             sim
@@ -364,6 +376,8 @@ class SumoTrafficSimulation(TrafficProvider):
             for actor in self._last_provider_state.actors:
                 if actor.actor_id != removed_actor_id:
                     sim.provider_relinquishing_actor(self, actor)
+        self._traci_conn.close_traci_and_pipes()
+        self._handling_error = False
 
     def _remove_vehicles(self):
         vehicles_to_remove = None
@@ -373,12 +387,18 @@ class SumoTrafficSimulation(TrafficProvider):
             vehicles_to_remove = self._non_sumo_vehicle_ids.union(
                 self._sumo_vehicle_ids
             )
-
+        sim = self._sim()
         for vehicle_id in vehicles_to_remove:
+            if sim:
+                # Call for immediate removal of the vehicle
+                sim.provider_removing_actor(self, vehicle_id)
             try:
                 self._traci_conn.vehicle.remove(vehicle_id)
-            except self._traci_exceptions as e:
-                self._handle_traci_disconnect(e, actors_relinquishable=False)
+            except traci.exceptions.FatalTraCIError as err:
+                self._handle_traci_exception(err, actors_relinquishable=False)
+                raise
+            except traci.exceptions.TraCIException as err:
+                self._handle_traci_exception(err, actors_relinquishable=False)
 
     def teardown(self):
         self._log.debug("Tearing down SUMO traffic sim %s", self)
@@ -391,8 +411,8 @@ class SumoTrafficSimulation(TrafficProvider):
         if self.connected:
             try:
                 self._remove_vehicles()
-            except self._traci_exceptions as err:
-                self._handle_traci_disconnect(err, actors_relinquishable=False)
+            except traci.exceptions.FatalTraCIError:
+                pass
 
         if self._allow_reload:
             self._cumulative_sim_seconds = 0
@@ -421,7 +441,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
     ) -> Tuple[ProviderState, bool]:
         if isinstance(error, self._traci_exceptions):
-            self._handle_traci_disconnect(error)
+            self._handle_traci_exception(error)
         elif isinstance(error, Exception):
             raise error
         return self._last_provider_state, False
@@ -443,9 +463,11 @@ class SumoTrafficSimulation(TrafficProvider):
             # See: https://github.com/huawei-noah/SMARTS/issues/1155
             with suppress_output(stderr=False):
                 self._traci_conn.simulationStep(self._cumulative_sim_seconds)
-        except self._traci_exceptions as err:
-            self._handle_traci_disconnect(err)
+        except traci.exceptions.FatalTraCIError as err:
+            self._handle_traci_exception(err)
             return ProviderState()
+        except traci.exceptions.TraCIException as err:
+            self._handle_traci_exception(err)
         return self._compute_provider_state()
 
     def sync(self, provider_state: ProviderState):
@@ -628,7 +650,7 @@ class SumoTrafficSimulation(TrafficProvider):
             # Note:  the first edge of the route must be the edge we're currently on...
             self._traci_conn.vehicle.setRoute(vehicle_id, new_route.road_ids)
         except self._traci_exceptions as err:
-            self._handle_traci_disconnect(err)
+            self._handle_traci_exception(err)
 
     def _create_vehicle(self, vehicle_id, dimensions, role: ActorRole):
         assert isinstance(
@@ -903,7 +925,7 @@ class SumoTrafficSimulation(TrafficProvider):
         try:
             route = self._traci_conn.vehicle.getRoute(vehicle_id)
         except self._traci_exceptions as err:
-            self._handle_traci_disconnect(err)
+            self._handle_traci_exception(err)
             return None
         return route
 
@@ -938,7 +960,7 @@ class SumoTrafficSimulation(TrafficProvider):
         try:
             self._traci_conn.vehicle.remove(actor_id)
         except self._traci_exceptions as err:
-            self._handle_traci_disconnect(err, removed_actor_id=actor_id)
+            self._handle_traci_exception(err, removed_actor_id=actor_id)
         self._sumo_vehicle_ids.discard(actor_id)
         self._hijacked.discard(actor_id)
         self._non_sumo_vehicle_ids.discard(actor_id)
