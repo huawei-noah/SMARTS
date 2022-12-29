@@ -17,6 +17,7 @@ python:
       path: .
       extra_requirements:
         - doc
+        - waymo
         # - gym
         # - camera_obs
         # - diagnostics

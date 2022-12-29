@@ -60,9 +60,7 @@ for _ in range(1000):
 1. [Examples](#Examples)
     + [Usage](#Usage)
     + [Reinforcement Learning](#Reinforcement-Learning)
-1. [CLI Tool](#CLI-Tool)  
-    + [CLI Usage](#CLI-Usage)
-    + [CLI Examples](#CLI-Examples)
+1. [Command Line Interface](#Command-Line-Interface)  
 1. [Visualizing Observations](#Visualizing-Observations)
 1. [Containers](#Containers)
     + [Docker](#Docker)
@@ -145,37 +143,11 @@ Illustration of various ways to use SMARTS.
 ### RL Environment
 1. [ULTRA](https://github.com/smarts-project/smarts-project.rl/blob/master/ultra) provides a gym-based environment built upon SMARTS to tackle intersection navigation, specifically the unprotected left turn.
 
-# CLI Tool
-SMARTS provides a command-line tool to interact with scenario studio and Envision.
+# Command Line Interface
+A command line interface named `scl` is available to interact with SMARTS. Refer to the [document](https://smarts.readthedocs.io/en/latest/sim/cli.html) for the full `scl` command line interface.
 
-### CLI Usage
-```bash
-scl COMMAND SUBCOMMAND [OPTIONS] [ARGS]...
-```
+Examples of common usage are as follows.
 
-Commands:
-* scenario
-* envision
-* zoo
-* run
-
-Subcommands of `scenario`:
-* build: Generate a single scenario.
-* build-all: Generate all scenarios under the given directories.
-* clean: Clean generated artifacts.
-
-Subcommands of `envision`:
-* start: Start Envision server.
-
-Subcommands of `zoo`:
-* build: Build a policy, to submit to the agent zoo.
-* install: Attempt to install the specified agents from the given paths/url.
-* manager: Start the manager process which instantiates workers.
-
-Subcommands of `run`:
-* No subcommands. Use `run` directly to simulate as shown [above](#Running).
-
-### CLI Examples
 ```bash
 # Start envision and serve scenario assets out of ./scenarios
 scl envision start --scenarios ./scenarios
