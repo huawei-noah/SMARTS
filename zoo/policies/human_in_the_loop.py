@@ -10,8 +10,6 @@ except ImportError:
     raise ImportError("pynput dependency is missing, please pip install -e .[extras]")
 
 from smarts.core.agent import Agent
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.zoo.agent_spec import AgentSpec
 
 
 class HumanKeyboardAgent(Agent):
