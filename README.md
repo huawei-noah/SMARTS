@@ -61,7 +61,6 @@ for _ in range(1000):
     + [Usage](#Usage)
     + [Reinforcement Learning](#Reinforcement-Learning)
 1. [Command Line Interface](#Command-Line-Interface)  
-1. [Visualizing Observations](#Visualizing-Observations)
 1. [Containers](#Containers)
     + [Docker](#Docker)
     + [Singularity](#Singularity)
@@ -161,30 +160,6 @@ scl scenario build --clean scenarios/sumo/loop
 # Clean generated scenario artifacts
 scl scenario clean scenarios/sumo/loop
 ```
-
-# Visualizing Observations
-Use the [Visdom](https://github.com/facebookresearch/visdom) integration to easily visualize the observations. 
-
-Firstly, start the Visdom server in a terminal.
-```bash
-visdom
-# Open the printed URL in a browser.
-```
-
-Secondly, in a separate terminal, run SMARTS simulation. Enable Visdom in the environment by setting `visdom=True`. For example:
-```python
-env = gym.make(
-    "smarts.env:hiway-v0",
-    scenarios=["scenarios/sumo/loop"],
-    agent_specs=agent_specs,
-    visdom=True,
-)
-```
-Below is a sample visualization of an agent's camera sensor observations.
-<p align="center">
-<img src="docs/_static/visdom.gif" ><br/>
-(Left) Drivable area grid map. (Center) Occupancy grid map. (Right) Top-down RGB image.
-</p>
 
 # Containers
 ### Docker

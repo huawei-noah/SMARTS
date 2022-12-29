@@ -28,17 +28,16 @@ To see the front-end visualization visit `http://localhost:8081/` in your browse
 Visdom
 ======
 
-We also have built-in support for `Visdom <https://github.com/facebookresearch/visdom>`_ so you can see the image-based observation outputs in real-time. Start the visdom server before running your scenario and open the server URL in your browser `http://localhost:8097`.
+Use the `Visdom <https://github.com/facebookresearch/visdom>`_ integration to easily see the image-based observation outputs in real-time. 
+Start the visdom server before running the scenario and open the server URL in your browser `http://localhost:8097 <http://localhost:8097>`_.
 
 .. code-block:: bash
+    # Install visdom
+    $ pip install visdom
+    # Start the server
+    $ visdom
 
-    # install visdom
-    pip install visdom
-
-    # start the server
-    visdom
-
-In your `run.py` script, enable `visdom` with,
+Enable Visdom in the SMARTS environment by setting `visdom=True`. For example:
 
 .. code-block:: python
 
@@ -48,3 +47,9 @@ In your `run.py` script, enable `visdom` with,
             visdom=True, # whether or not to enable visdom visualization (see Appendix).
             ...
         )
+
+Below is a sample visualization of an agent's camera sensor observations.
+
+.. image:: ../_static/visdom.gif
+
+(Left) Drivable area grid map. (Center) Occupancy grid map. (Right) Top-down RGB image.
