@@ -16,14 +16,10 @@ python:
     - method: pip
       path: .
       extra_requirements:
+        - extras
+        - camera_obs
+        - diagnostics
         - doc
-        - waymo
-        # - gym
-        # - camera_obs
-        # - diagnostics
-        # - remote_agent
-        # - extras
-        # - waymo
 
 # # Optionally declare the Python requirements required to build your docs
 # python:

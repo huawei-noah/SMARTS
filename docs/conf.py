@@ -56,6 +56,7 @@ apidoc_extra_args = [
     "--maxdepth=2",
     "--templatedir=_templates/apidoc",
 ]
+autodoc_mock_imports = ["cv2","grpc","moviepy","pathos","ray","tabulate"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
