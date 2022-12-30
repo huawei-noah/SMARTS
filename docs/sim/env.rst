@@ -152,11 +152,6 @@ Traffic vehicles are controlled by a traffic simulator (e.g., SUMO or SMARTS).
 To see more details about generation of traffic vehicles and control of their behavior,
 see our [Scenario Studio](ScenarioStudio.md).
 
-Envision and Logging
---------------------
-
-See [Visiualization](Visualization.md).
-
 Flexible User Customation
 -------------------------
 

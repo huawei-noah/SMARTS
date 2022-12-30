@@ -12,7 +12,7 @@ SMARTS provides users the ability to customize their agents. :class:`smarts.zoo.
         agent_builder: Callable[..., Agent] = None
         agent_params: Optional[Any] = None
 
-An example of how to create an `Agent` instance is shown below.
+An example of how to create an ``Agent`` instance is shown below.
 
 .. code-block:: python
 
@@ -39,7 +39,7 @@ AgentInterface
         ...
     )
 
-SMARTS provide some interface types, and the differences between them is shown in the table below. **T** means the `AgentType` will provide this option or information. 
+SMARTS provide some interface types, and the differences between them is shown in the table below. **T** means the ``AgentType`` will provide this option or information. 
 
 .. code-block:: python
 
@@ -57,12 +57,12 @@ SMARTS provide some interface types, and the differences between them is shown i
     |         signals        |           **T**            |                                        |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |            **T**         |
     |          debug         |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                **T**               |           **T**         |              **T**              |            **T**             |            **T**             |            **T**         |
 
-`max_episode_steps` controls the max running steps allowed for the agent in an episode. The default `None` setting means agents have no such limit.
-You can move `max_episode_steps` control authority to RLlib with their config option `horizon`, but lose the ability to customize
+``max_episode_steps`` controls the max running steps allowed for the agent in an episode. The default ``None`` setting means agents have no such limit.
+You can move ``max_episode_steps`` control authority to RLlib with their config option ``horizon``, but lose the ability to customize
 different max_episode_len for each agent.
 
-`action` controls the agent action type used. There are multiple `ActionSpaceType` options: `ActionSpaceType.Continuous`, `ActionSpaceType.Lane`, `ActionSpaceType.LaneWithContinuousSpeed` 
-`ActionSpaceType.ActuatorDynamic`, `ActionSpaceType.Trajectory`, `ActionSpaceType.TrajectoryWithTime`, `ActionSpaceType.MPC`, `ActionSpaceType.TargetPose`, `ActionSpaceType.MultiTargetPose`, and `ActionSpaceType.Direct`.
+``action`` controls the agent action type used. There are multiple ``ActionSpaceType`` options: ``ActionSpaceType.Continuous``, ``ActionSpaceType.Lane``, ``ActionSpaceType.LaneWithContinuousSpeed`` 
+``ActionSpaceType.ActuatorDynamic``, ``ActionSpaceType.Trajectory``, ``ActionSpaceType.TrajectoryWithTime``, ``ActionSpaceType.MPC``, ``ActionSpaceType.TargetPose``, ``ActionSpaceType.MultiTargetPose``, and ``ActionSpaceType.Direct``.
 
 - `ActionSpaceType.Continuous`: `(float, float, float)` continuous action space with throttle, brake, absolute steering angle. 
 - `ActionSpaceType.ActuatorDynamic`: `(float, float float)` continuous action space with throttle, brake, steering rate. Steering rate means the amount of steering angle change *per second* (either positive or negative) to be applied to the current steering angle.
@@ -117,9 +117,9 @@ For further customization, you can try:
 Refer to :class:`smarts/core/agent_interface` for more details.
 
 
-IMPORTANT: The generation of a DrivableAreaGridMap (`drivable_area_grid_map=True`), OGM (`ogm=True`) and/or RGB (`rgb=True`) images may significantly slow down the environment `step()`. If your model does not consume such observations, we recommend that you set them to `False`.
+IMPORTANT: The generation of a DrivableAreaGridMap (``drivable_area_grid_map=True``), OGM (``ogm=True``) and/or RGB (``rgb=True``) images may significantly slow down the environment ``step()``. If your model does not consume such observations, we recommend that you set them to ``False``.
 
-IMPORTANT: Depending on how your agent model is set up, `ActionSpaceType.ActuatorDynamic` might allow the agent to learn faster than `ActionSpaceType.Continuous` simply because learning to correct steering could be simpler than learning a mapping to all the absolute steering angle values. But, again, it also depends on the design of your agent model. 
+IMPORTANT: Depending on how your agent model is set up, ``ActionSpaceType.ActuatorDynamic`` might allow the agent to learn faster than ``ActionSpaceType.Continuous`` simply because learning to correct steering could be simpler than learning a mapping to all the absolute steering angle values. But, again, it also depends on the design of your agent model. 
 
 ======
 Agent
@@ -134,9 +134,9 @@ An agent maps an observation to an action.
         def act(self, obs):
             return [throttle, brake, steering_rate]
 
-The observation passed in should be the observations that a given agent sees. In **continuous action space** the action is expected to produce values for `throttle` [0->1], `brake` [0->1], and `steering_rate` [-1->1].
+The observation passed in should be the observations that a given agent sees. In **continuous action space** the action is expected to produce values for ``throttle`` [0,1], ``brake`` [0,1], and ``steering_rate`` [-1,1].
 
-Otherwise, only while using **lane action space**, the agent is expected to return a lane related command: `"keep_lane"`, `"slow_down"`, `"change_lane_left"`, `"change_lane_right"`.
+Otherwise, only while using **lane action space**, the agent is expected to return a lane related command: ``"keep_lane"``, ``"slow_down"``, ``"change_lane_left"``, ``"change_lane_right"``.
 
 Another example:
 

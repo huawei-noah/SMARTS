@@ -7,10 +7,10 @@ Frequently asked questions
 This is a list of frequently asked questions.  Feel free to suggest new entries!
 
 1. Where can I find debug logs?
-    In most cases SMARTS debug logs are located at `~/.smarts`. These can be helpful to diagnose problems.
+    In most cases SMARTS debug logs are located at ``~/.smarts``. These can be helpful to diagnose problems.
 
 2. Exception: Could not open window.
-    This may be due to some old dependencies of `Panda3D`. Try the following instructions to solve it.
+    This may be due to some old dependencies of ``Panda3D``. Try the following instructions to solve it.
 
     .. code-block:: bash
 
