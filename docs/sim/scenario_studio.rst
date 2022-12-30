@@ -3,8 +3,8 @@
 Scenario Studio
 ===============
 
-The Scenario Studio of SMARTS is a stand alone package (`sstudio`) that supports flexible and expressive scenario specification.
-If you have access to `sstudio` you can use it to generate traffic with different traffic vehicle numbers and routes, and agent missions.
+The Scenario Studio of SMARTS is a stand alone package ``sstudio`` that supports flexible and expressive scenario specification.
+If you have access to ``sstudio`` you can use it to generate traffic with different traffic vehicle numbers and routes, and agent missions.
 
 Scenarios can reference remote packages or local zoo agent packages by including a requirements.txt 
 file in the root of the scenario directory. Packages will be installed during the build.
@@ -46,17 +46,17 @@ Generate traffic
       ]
   )
 
-Note that the `engine` argument to `Traffic` can either be `"SUMO"` or `"SMARTS"`, with `"SUMO"` being the default.
-As `"SUMO"` can only be used on Sumo-format "road networks", if you need
-to run SMARTS with another map type you may need to change to the `"SMARTS"` engine.
+Note that the ``engine`` argument to ``Traffic`` can either be ``"SUMO"`` or ``"SMARTS"``, with ``"SUMO"`` being the default.
+As ``"SUMO"`` can only be used on Sumo-format "road networks", if you need
+to run SMARTS with another map type you may need to change to the ``"SMARTS"`` engine.
 
-`traffic_actor` is used as a spec for traffic actors (e.g. Vehicles, Pedestrians, etc). The defaults provided are for a car.
+``traffic_actor`` is used as a spec for traffic actors (e.g. Vehicles, Pedestrians, etc). The defaults provided are for a car.
 You can specify acceleration, deceleration, speed distribution, imperfection distribution and other configs for social cars.
-See more config for `TrafficActor` in :class:`smarts.sstudio.types`.
+See more config for ``TrafficActor`` in :class:`smarts.sstudio.types`.
 
 Flow can be used to generate repeated vehicle runs on the same route, you can config vehicle route and depart rate here.
 
-After `traffic` is provided to the `gen_scenario` function, a dir named "traffic" will be created under output_dir which contains background vehicle and route definitions.
+After ``traffic`` is provided to the ``gen_scenario`` function, a dir named "traffic" will be created under output_dir which contains background vehicle and route definitions.
 
 
 This a short file example of how it works:
@@ -64,14 +64,14 @@ This a short file example of how it works:
 .. literalinclude:: ../minimal_scenario_studio.py
    :language: python
 
-We just run a `scenario.py` file as a regular Python script to generate scenarios:
+We just run a ``scenario.py`` file as a regular Python script to generate scenarios:
 
 .. code-block:: bash
 
   python3 scenario/scenario.py
 
-IMPORTANT: if you want to train model on one scenario, remember to set the `end` time of flow larger or equal to your expected
-training time, since SMARTS will continue the flow after each `reset` call. However, if there are multiple scenarios to train
+IMPORTANT: if you want to train model on one scenario, remember to set the ``end`` time of flow larger or equal to your expected
+training time, since SMARTS will continue the flow after each ``reset`` call. However, if there are multiple scenarios to train
 for one worker, you can relax this restriction since after the scenario change, the flow will also be reset to the beginning time.
 
 =================
@@ -79,7 +79,7 @@ Generate missions
 =================
 
 The Scenario Studio of SMARTS also allows generation of *missions* for ego agents and social agents. These missions are similar
-to routes for social vehicles. When we run `gen_scenario`, "missions.rou.xml" file will be created under the output dir:
+to routes for social vehicles. When we run ``gen_scenario``, "missions.rou.xml" file will be created under the output dir:
 
 .. code-block:: python
 
@@ -91,7 +91,7 @@ to routes for social vehicles. When we run `gen_scenario`, "missions.rou.xml" fi
 Generate friction map
 =====================
 
-The Scenario Studio of SMARTS also allows the generation of a *friction map* which consists of a list of *surface patches* for ego agents and social agents. These surface patches are using PositionalZone as in the case of bubbles. When we run `gen_scenario` passing in `friction_maps`, a "friction_map.pkl" file will be created under the output dir:
+The Scenario Studio of SMARTS also allows the generation of a *friction map* which consists of a list of *surface patches* for ego agents and social agents. These surface patches are using PositionalZone as in the case of bubbles. When we run ``gen_scenario`` passing in ``friction_maps``, a "friction_map.pkl" file will be created under the output dir:
 
 .. code-block:: python
 
@@ -110,15 +110,15 @@ Generate road map
 
 SMARTS was initially designed to use maps in the SUMO road network format; it supports these natively.
 However as of v0.5, SMARTS now supports other custom map formats, as
-long as a class that implements the `smarts.core.RoadMap` interface is provided to read these.
+long as a class that implements the ``smarts.core.RoadMap`` interface is provided to read these.
 An example implementation of the [OpenDRIVE map format](https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09)
-is provided as `smarts.core.OpenDriveRoadNetwork` to show how this can be done.
-Also see `smarts.core.WaymoMap` for an example of support for a format from Waymo.
+is provided as ``smarts.core.OpenDriveRoadNetwork`` to show how this can be done.
+Also see ``smarts.core.WaymoMap`` for an example of support for a format from Waymo.
 
 Create a custom map
 -------------------
 If not utilizing a built-in map type (i.e., Sumo or OpenDRIVE road networks or a Waymo map),
-define a `MapSpec` object in your `scenario.py`.
+define a ``MapSpec`` object in your ``scenario.py``.
 
 .. code-block:: python
 
@@ -132,7 +132,7 @@ define a `MapSpec` object in your `scenario.py`.
 
 Convert an existing map to SUMO
 -------------------------------
-If you have a suitable file in another format, you can turn it into a SUMO road network using the `sumo2mesh.py` conversion utility:
+If you have a suitable file in another format, you can turn it into a SUMO road network using the ``sumo2mesh.py`` conversion utility:
 
 .. code-block:: bash
 
@@ -144,7 +144,7 @@ Create a SUMO map
 -----------------
 
 You can edit your own SUMO map through [SUMO's NETEDIT](https://sumo.dlr.de/docs/NETEDIT.html) and export it in a map.net.xml format.
-First, to start `netedit`, run the following on terminal:
+First, to start ``netedit``, run the following on terminal:
 
 .. code-block:: bash
 
@@ -198,11 +198,11 @@ The first lane you select would be the source lane, highlighted in blue. Then se
 Create traffic routes
 =====================
 
-For example, using the following `Route` definition:
+For example, using the following ``Route`` definition:
 
 .. code-block:: python
 
   Route(begin=("gneE72", 0, "random"), end=("edge2", 1, "max"),)
 
-`begin=("gneE72", 0, "random")` defines the route to start on edge with id `gneE72` and at lane index `0`,
-which is the same lane as the selected lane in the figure above. `"random"` here specifies the amount of offset on the lane to start the route.
+``begin=("gneE72", 0, "random")`` defines the route to start on edge with id ``gneE72`` and at lane index ``0``,
+which is the same lane as the selected lane in the figure above. ``"random"`` here specifies the amount of offset on the lane to start the route.

@@ -36,7 +36,6 @@ from mdutils.mdutils import MdUtils
 import smarts
 from cli.studio import build_scenarios
 from smarts.core.scenario import Scenario
-from smarts.core.utils.logging import timeit
 from smarts.core.utils.math import welford
 
 _SEED = 42
@@ -207,8 +206,8 @@ def _write_report(results: Dict[str, Any]):
 def main(scenarios: Sequence[str]):
     """Run diagnostic.
 
-    :param scenarios: Scenarios to be timed.
-    :type scenarios: Sequence[str]
+    Args:
+        scenarios (Sequence[str]): Scenarios to be timed.
     """
 
     results = {}

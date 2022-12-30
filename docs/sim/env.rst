@@ -105,10 +105,10 @@ scenarios.
         ...
     }
 
-Specifically, the next scenario will be automatically loaded after each call to `env.reset()`. This is especially useful for
-training on multiple maps. Also if there are **n** routes file in `scenario1/traffic` dir, then each routes file will be combined with
+Specifically, the next scenario will be automatically loaded after each call to ``env.reset()``. This is especially useful for
+training on multiple maps. Also if there are **n** routes file in ``scenario1/traffic`` dir, then each routes file will be combined with
 the shared map to form a scenario, leading to a total of **n** concrete scenarios (traffic-map combination) that SMARTS automatically
-swaps through for just `scenario1`. See :class:`smarts.core.scenario` for implementation details.
+swaps through for just ``scenario1``. See :class:`smarts.core.scenario` for implementation details.
 
 In contrast to the above case, we can also use multiple maps for *different workers* together with RLlib as follows:
 
@@ -147,7 +147,7 @@ traffic simulator, like SUMO or SMARTS.
 
 Ego agents are controlled by our training algorithms, and are able to interact with environment directly. Like ego agents, social agents 
 also use AgentInterface to register with the environment and interact with it through standard observation and action messages, except
-that they are driven by trained models and act in separate `Ray` processes, hence they can provide behavioral characteristics we want.
+that they are driven by trained models and act in separate ``Ray`` processes, hence they can provide behavioral characteristics we want.
 Traffic vehicles are controlled by a traffic simulator (e.g., SUMO or SMARTS).
 To see more details about generation of traffic vehicles and control of their behavior,
 see our [Scenario Studio](ScenarioStudio.md).
