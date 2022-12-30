@@ -12,10 +12,10 @@ To run the default example simply build a scenario and run the following command
 
 .. code-block:: bash
     
-    # build scenarios/sumo/loop
+    # Build scenarios/sumo/loop
     scl scenario build --clean scenarios/sumo/loop
 
-    # run an experiment
+    # Run an experiment
     scl run --envision examples/single_agent.py scenarios/sumo/loop
 
 You need to add the `--envision` flag to run the Envision server where you can see the visualization of the experiment.
@@ -43,14 +43,14 @@ Enable Visdom in the SMARTS environment by setting `visdom=True`. For example:
 .. code-block:: python
 
     env = gym.make(
-            "smarts.env:hiway-v0", # env entry name
-            ...
-            visdom=True, # whether or not to enable visdom visualization (see Appendix).
-            ...
-        )
+        "smarts.env:hiway-v0", # env entry name
+        ...
+        visdom=True, # whether or not to enable visdom visualization (see Appendix).
+        ...
+    )
 
 Below is a sample visualization of an agent's camera sensor observations.
 
-.. image:: ../_static/visdom.gif
+.. figure:: ../_static/visdom.gif
 
-(Left) Drivable area grid map. (Center) Occupancy grid map. (Right) Top-down RGB image.
+    (Left) Drivable area grid map. (Center) Occupancy grid map. (Right) Top-down RGB image.

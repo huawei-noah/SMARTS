@@ -53,34 +53,41 @@ def intersection_v0_env(
     unprotected left turn in the presence of traffic and without traffic
     lights. Traffic vehicles stop before entering the junction.
 
-    Observation
-        A `smarts.env.wrappers.format_obs:StdObs` dict, containing enabled keys,
-        is returned as observation.
+    **Observation**
 
-    Actions
-        Type
-            gym.spaces.Box(
-                low=-1.0, high=1.0, shape=(3,), dtype=np.float32
-            )
+        A ``smarts.env.wrappers.format_obs:StdObs`` dict, containing enabled keys, is returned as observation.
 
-        Action     Value range
-        Throttle   [ 0, 1]
-        Brake      [ 0, 1]
-        Steering   [-1, 1]
+    **Actions**
 
-    Reward
+        Type ``gym.spaces.Box(low=-1.0, high=1.0, shape(3,), dtype=np.float32)``
+
+        +--------------+--------------+
+        | Action       | Value range  | 
+        +==============+==============+
+        | Throttle     | [ 0,  1]     |  
+        +--------------+--------------+
+        | Break        | [ 0,  1]     |  
+        +--------------+--------------+
+        | Steering     | [-1 , 1]     |   
+        +--------------+--------------+
+
+    **Reward**
+
         Reward is distance travelled (in meters) in each step, including the
         termination step.
 
-    Episode termination
+    **Episode termination**
+
         Episode is terminated if any of the following occurs.
+
         + Steps per episode exceed 3000.
         + Agent collides, drives off road, drives off route, drives on shoulder,
           or drives on wrong way.
 
-    Solved requirement
-        If agent successfully navigates the intersection then `info["score"]`
-        will equal 1, else it is 0. Considered solved when `info["score"] == 1`
+    **Solved requirement**
+
+        If agent successfully navigates the intersection then ``info["score"]``
+        will equal 1, else it is 0. Considered solved when ``info["score"] == 1``
         is achieved over 800 consecutive episodes.
 
     Args:
