@@ -3,7 +3,7 @@
 Command Line Interface
 ======================
 
-A command line interface named `scl` is available to interact with SMARTS.
+A command line interface named ``scl`` is available to interact with SMARTS.
 
 Examples of common usage are as follows.
 

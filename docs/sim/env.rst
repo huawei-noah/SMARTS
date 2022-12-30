@@ -7,15 +7,15 @@ SMARTS Environment
 Provided Environments
 =====================
 
-SMARTS Environment module is defined in `smarts/env`. Currently SMARTS provide two kinds of training 
-environments, one is `HiwayEnv` with `gym.env` style interface and another is `RLlibHiwayEnv` customized for `RLlib` training.
+SMARTS Environment module is defined in ``smarts/env``. Currently SMARTS provide two kinds of training 
+environments, one is ``HiwayEnv`` with ``gym.env`` style interface and another is ``RLlibHiwayEnv`` customized for ``RLlib`` training.
 
 .. image:: ../_static/env.png
 
 HiwayEnv
 --------
 
-`HiwayEnv` inherit class `gym.Env` and supports common APIs like `reset`, `step`, `close`. A usage example is shown below.
+``HiwayEnv`` inherit class ``gym.Env`` and supports common APIs like ``reset``, ``step``, ``close``. A usage example is shown below.
 See :class:`smarts.env.hiway_env` for more details.
 
 .. code-block:: python
@@ -79,14 +79,14 @@ Environment features
 Flexible Training
 -----------------
 
-Since SMARTS environments inherit from either `gym.Env` or `MultiAgentEnv`, they are able to provide common APIs to support single-agent 
-and multi-agent RL training. Also, by leveraging Ray and RLlib, `RLlibHiwayEnv` comes with out-of-the-box scalability and multi-instances 
+Since SMARTS environments inherit from either ``gym.Env`` or ``MultiAgentEnv``, they are able to provide common APIs to support single-agent 
+and multi-agent RL training. Also, by leveraging Ray and RLlib, ``RLlibHiwayEnv`` comes with out-of-the-box scalability and multi-instances 
 training on multi-cores.
 
 Scenario Iterator
 -----------------
 
-If a path to a folder that contains multiple scenarios is passed through the `Env` config, then SMARTS will automatically cycle these
+If a path to a folder that contains multiple scenarios is passed through the ``Env`` config, then SMARTS will automatically cycle these
 scenarios.
 
 .. code-block:: python
