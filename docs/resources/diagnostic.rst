@@ -22,7 +22,7 @@ Dump different number of actors, with different types, on a map without visualiz
 Run
 ---
 
-Run the diagnostic :module:`smarts.diagnostic.run.main` with one or multiple scenarios, from the ``SMARTS/smarts/diagnostic`` folder.
+Run the diagnostic :func:`smarts.diagnostic.run.main` with one or multiple scenarios, from the ``SMARTS/smarts/diagnostic`` folder.
 
 .. code-block:: bash
 

@@ -19,6 +19,7 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
    sim/env.rst
    sim/observations.rst
    sim/scenario_studio.rst
+   sim/scenario.rst
    sim/visualization.rst
    sim/cli.rst
 
@@ -48,6 +49,7 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
    :caption: Ecosystem
 
    ecosystem/sumo.rst
+   ecosystem/waymo.rst
 
 .. toctree::
    :maxdepth: 3
