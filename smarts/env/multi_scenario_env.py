@@ -63,21 +63,23 @@ def multi_scenario_v0_env(
 
     Action space for each agent
         A ``smarts.core.controllers.ActionSpaceType.TargetPose``, which is a
-        sequence of [x-coordinate, y-coordinate, heading, and time-delta].
-        Use time-delta = 0.1 .
+        sequence of [x-coordinate, y-coordinate, heading, and time-delta]. Use
+        time-delta = 0.1 .
 
-        Type ``gym.spaces.Box(
-            low=np.array([-1e10, -1e10, -π, 0]), 
-            high=np.array([1e10, 1e10, π, 1e10]),
-            dtype=np.float32
-        )``
+        Type is ``gym.spaces.Box(low=np.array([-1e10, -1e10, -π, 0]), high=np.array([1e10, 1e10, π, 1e10]), dtype=np.float32)``.
 
-        Action                                              Value range
-        Ego's next x-coordinate on the map                  [-1e10,1e10]
-        Ego's next y-coordinate on the map                  [-1e10,1e10]
-        Ego's next heading with respect to the map's axes   [-π,π]
-        Time delta to reach the given pose                  [0,1e10]
-
+        +------------------------------------------------------+--------------+
+        | Action                                               | Value range  | 
+        +======================================================+==============+
+        | Ego's next x-coordinate on the map                   | [-1e10,1e10] | 
+        +------------------------------------------------------+--------------+
+        | Ego's next y-coordinate on the map                   | [-1e10,1e10] |
+        +------------------------------------------------------+--------------+
+        | Ego's next heading with respect to the map's axes    | [-π,π]       |
+        +------------------------------------------------------+--------------+
+        | Time delta to reach the given pose                   | [0,1e10]     |
+        +------------------------------------------------------+--------------+
+    
     Reward
         Reward is distance travelled (in meters) in each step, including the
         termination step.
@@ -105,8 +107,8 @@ def multi_scenario_v0_env(
             RGB images in Visdom. Defaults to False.
         sumo_headless (bool, optional): If True, disables visualization in
             SUMO GUI. Defaults to True.
-        envision_record_data_replay_path (Optional[str], optional):
-            Envision's data replay output directory. Defaults to None.
+        envision_record_data_replay_path (Optional[str], optional): Envision's 
+            data replay output directory. Defaults to None.
 
     Returns:
         An environment described by the input argument `scenario`.
