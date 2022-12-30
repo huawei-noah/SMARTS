@@ -37,7 +37,8 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
    
    sim/examples.rst
    
-   ../examples/rl/intersection/README.md
+   README_copy.md
+
 
 .. toctree::
    :maxdepth: 3

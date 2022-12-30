@@ -47,7 +47,12 @@ extensions = [
 # configuring automated generation of api documentation
 # See: https://github.com/sphinx-contrib/apidoc
 apidoc_module_dir = ".."
-apidoc_excluded_paths = ["scenarios", "setup.py", "smarts/ros", "cli"]
+apidoc_excluded_paths = [
+    "scenarios", 
+    "setup.py", 
+    "smarts/ros", 
+    "cli",
+]
 apidoc_module_first = True
 apidoc_extra_args = [
     "--force",
@@ -57,7 +62,17 @@ apidoc_extra_args = [
     "--maxdepth=2",
     "--templatedir=_templates/apidoc",
 ]
-autodoc_mock_imports = ["cv2", "google", "grpc","moviepy","pathos","ray","tabulate","tools", "waymo_open_dataset"]
+autodoc_mock_imports = [
+    "cv2", 
+    "google", 
+    "grpc",
+    "moviepy",
+    "pathos",
+    "ray",
+    "tabulate",
+    "tools",
+    "waymo_open_dataset",
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
