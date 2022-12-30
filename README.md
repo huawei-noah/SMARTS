@@ -160,6 +160,11 @@ scl scenario build --clean scenarios/sumo/loop
 scl scenario clean scenarios/sumo/loop
 ```
 
+```{eval-rst}
+.. include:: ./docs/containers/containers.rst
+```
+
+
 # Troubleshooting
 ### General
 In most cases SMARTS debug logs are located at `~/.smarts`. These can be helpful to diagnose problems.
