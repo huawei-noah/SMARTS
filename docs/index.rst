@@ -41,8 +41,6 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
 
    sim/rllib.rst
 
-   README_copy.md
-
 .. toctree::
    :maxdepth: 3
    :caption: API
