@@ -64,6 +64,7 @@ apidoc_extra_args = [
 ]
 autodoc_mock_imports = [
     "cv2",
+    "grpc",
     "moviepy",
     "pathos",
     "ray",

@@ -1,9 +1,9 @@
 .. _bubbles:
 
-How to work with Bubbles
-========================
+Working with Bubbles
+====================
 
-SMARTS provides the concept of a spatial-temporal bubble which allows for focused simulation interaction. Bubbles are intended to address the problem of scaling of interaction. Using resources globally results in wasted simulation resources if the most important behavior to an automous vehicle is in the nearby vicinity of that vehicle.
+SMARTS provides the concept of a spatial-temporal bubble which allows for focused simulation interaction. Bubbles are intended to address the problem of scaling of interaction. Using resources globally results in wasted simulation resources if the most important behavior to an autonomous vehicle is in the nearby vicinity of that vehicle.
 
 A bubble covers an area and filters traffic vehicles that pass through that zone. A vehicle entering the bubble will first pass into an `airlock` buffer area of `shadowing` where an agent may begin observing from the vehicle.  The agent may then fully take over control of that vehicle when it enters the bubble proper. SMARTS will replace control of the traffic vehicles with the agents specified by the bubble definition.  The bubble agent will relinquish its control to a suitable traffic provider when its controlled vehicle exits the bubble and airlock regions.
 
@@ -17,7 +17,8 @@ If a vehicle whose trajectory is being provided from a traffic history dataset i
 Usage
 =====
 
-**Fixed bubbles**
+Fixed bubbles
+-------------
 
 Bubbles can be fixed to a static location defined either as an edge or a position.
 
@@ -39,7 +40,8 @@ Bubbles can be fixed to a static location defined either as an edge or a positio
         actor=zoo_agent_actor,
     ),
 
-**Moving bubbles**
+Moving bubbles
+--------------
 
 Bubbles that are vehicle-relative can be attached to specific actors by specifying the id of the actor in the bubble definition.
 
@@ -57,6 +59,7 @@ Bubbles that are vehicle-relative can be attached to specific actors by specifyi
 ===============
 Dynamic Bubbles
 ===============
+
 There is currently no interface for dynamically-created bubbles. However, if the `scenario` is exposed then the following is possible to define a bubble outside of `scenario studio`:
 
 .. code-block:: python

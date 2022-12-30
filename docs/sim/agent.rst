@@ -1,7 +1,7 @@
 .. _agent:
 
-How to build an Agent
-======================
+Building an Agent
+=================
 
 SMARTS provides users the ability to customize their agents. :class:`smarts.zoo.agent_spec.AgentSpec` has the following fields:
 

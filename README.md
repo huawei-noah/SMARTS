@@ -59,11 +59,8 @@ for _ in range(1000):
     + [Running](#Running)
 1. [Examples](#Examples)
     + [Usage](#Usage)
-    + [Reinforcement Learning](#Reinforcement-Learning)
+    + [Reinforcement Learning](#RL-Model)
 1. [Command Line Interface](#Command-Line-Interface)  
-1. [Containers](#Containers)
-    + [Docker](#Docker)
-    + [Singularity](#Singularity)
 1. [Troubleshooting](#Troubleshooting)
     + [General](#General)
     + [SUMO](#SUMO)
@@ -136,8 +133,10 @@ Illustration of various ways to use SMARTS.
 
 ### RL Model
 1. [MARL benchmark](baselines/marl_benchmark)
-1. [Racing](examples/rl/racing) using world model based RL.
 1. [Intersection](examples/rl/intersection) using PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3).
+![](examples/rl/intersection/docs/_static/intersection.gif)
+1. [Racing](examples/rl/racing) using world model based RL.
+![](examples/rl/racing/docs/_static/racing.gif)
 
 ### RL Environment
 1. [ULTRA](https://github.com/smarts-project/smarts-project.rl/blob/master/ultra) provides a gym-based environment built upon SMARTS to tackle intersection navigation, specifically the unprotected left turn.
@@ -159,56 +158,6 @@ scl scenario build --clean scenarios/sumo/loop
 
 # Clean generated scenario artifacts
 scl scenario clean scenarios/sumo/loop
-```
-
-# Containers
-### Docker
-SMARTS docker images are hosted at [dockerhub](https://hub.docker.com/orgs/huaweinoah).
-
-```bash
-$ cd </path/to/SMARTS>
-$ docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:<version>
-# E.g. docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:v0.5.1
-
-# If visualization is needed, run Envision server in the background.
-$ scl envision start -s ./scenarios -p 8081 &
-
-# Build the scenario. 
-# This step is required on the first time, and whenever the scenario is modified.
-$ scl scenario build scenarios/sumo/loop --clean
-
-# Run an example. 
-# Add --headless if visualisation is not needed.
-$ python examples/single_agent.py scenarios/sumo/loop
-
-# Visit http://localhost:8081 in the host machine to see the running simulation in Envision.
-```
-
-### Singularity
-```bash
-$ cd </path/to/SMARTS>
-
-# Build container from definition file.
-$ sudo singularity build ./utils/singularity/smarts.sif ./utils/singularity/smarts.def
-
-# Use the container to build the required scenarios.
-$ singularity shell --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif
-# Inside the container
-Singularity> scl scenario build /src/scenarios/sumo/loop/
-Singularity> exit
-
-# Then, run the container using one of the following methods.
-
-# 1. Run container in interactive mode.
-$ singularity shell --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif
-# Inside the container
-Singularity> python3.7 /src/examples/single_agent.py /src/scenarios/sumo/loop/ --headless
-
-# 2. Run commands within the container from the host system.
-$ singularity exec --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif python3.7 /src/examples/single_agent.py /src/scenarios/sumo/loop/ --headless
-
-# 3. Run container instance in the background.
-$ singularity instance start --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif smarts_train /src/examples/single_agent.py /src/scenarios/sumo/loop/ --headless
 ```
 
 # Troubleshooting

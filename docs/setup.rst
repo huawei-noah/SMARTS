@@ -3,73 +3,68 @@
 Setting up SMARTS
 =================
 
-===========
-First Steps
-===========
+============
+Installation
+============
 
-To setup the simulator, which is called SMARTS, run the following commands,
+Run the following commands to setup the SMARTS simulator.
 
 .. code-block:: bash
 
-    # git clone ...
-    cd <project>
+    git clone https://github.com/huawei-noah/SMARTS.git
+    cd <path/to/SMARTS>
 
-    # Follow the instructions given by prompt for installing the system requirements
-    ./install_deps.sh
+    # For Mac OS X users, ensure XQuartz is pre-installed.
+    # Install the system requirements. You may use the `-y` option to enable automatic assumption of "yes" to all prompts to avoid timeout from waiting for user input. 
+    bash utils/setup/install_deps.sh
 
-    # setup virtual environment; presently only Python 3.7.x is officially supported
+    # Setup virtual environment. Presently at least Python 3.7 and higher is officially supported.
     python3.7 -m venv .venv
 
-    # enter virtual environment to install all dependencies
+    # Enter virtual environment to install dependencies.
     source .venv/bin/activate
 
-    # upgrade pip, a recent version of pip is needed for the version of tensorflow we depend on
+    # Upgrade pip.
     pip install --upgrade pip
 
-    # install [train] version of python package with the rllib dependencies
-    pip install -e .[train]
+    # Install smarts with extras as needed. Extras include the following: 
+    # `camera_obs` - needed for rendering camera sensor observations, and for testing.
+    # `test` - needed for testing.
+    # `train` - needed for RL training and testing.
+    pip install -e '.[camera_obs,test,train]'
 
-    # OPTIONAL: install [camera_obs] version of python package with the panda3D dependencies if you want to render camera sensor observations in your simulations
-    pip install -e .[camera_obs]
-
-    # OPTIONAL: install [opendrive] version of python package with the OpenDRIVE related dependencies if you are using the any OpenDRIVE related scenarios
-    pip install -e .[opendrive]
-
-    # make sure you can run sanity-test (and verify they are passing)
-    # if tests fail, check './sanity_test_result.xml' for test report.
-    pip install -e .[test]
+    # Run sanity-test and verify they are passing.
+    # If tests fail, check './sanity_test_result.xml' for test report. 
     make sanity-test
 
-    # then you can run a scenario, see following section for more details
-
-================
+=======
 Running
-================
+=======
 
-We use the `scl` command line to run SMARTS together with it's supporting processes. To run the default example simply build a scenario and run the following command:
+Use the `scl` command to run SMARTS together with it's supporting processes. 
+
+To run the default example, firstly build the scenario `scenarios/sumo/loop`.
 
 .. code-block:: bash
 
-    # build scenarios/sumo/loop
-    scl scenario build --clean scenarios/sumo/loop
+    $ scl scenario build --clean scenarios/sumo/loop
 
-    # run an experiment
-    scl run --envision examples/single_agent.py scenarios/sumo/loop
-
-
-You need to add the `--envision` flag to run the Envision server where you can see the visualization of the experiment. See [./envision/README.md](./envision/README.md) for more information on Envision, our front-end visualization tool.
-
-After executing the above command, visit http://localhost:8081/ in your browser to view your experiment.
-
-
-Several example scripts are provided under [`SMARTS/examples`](./examples), as well as a handful of scenarios under [`SMARTS/scenarios`](./scenarios). You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
+Then, run a single-agent SMARTS simulation with Envision display and `loop` scenario.
 
 .. code-block:: bash
     
-    scl run --envision <examples/script_path> <scenarios/path>
+    $ scl run --envision examples/single_agent.py scenarios/sumo/loop 
 
+The `--envision` flag runs the Envision server which displays the simulation visualization. See Envision's README(./envision/README.md) for more information on Envision, SMARTS's front-end visualization tool.
 
-Pass in the agent example path and scenarios folder path above to run an experiment like the one mentioned above.
+After executing the above command, visit `http://localhost:8081/ <http://localhost:8081/>`_ to view the experiment.
+
+Several example scripts are provided in [examples](./examples) folder, as well as a handful of scenarios in [scenarios](./scenarios) folder. You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
+
+.. code-block:: bash
+    
+    scl run --envision <examples/path> <scenarios/path>
+
 
 ================
 Examples
@@ -110,7 +105,7 @@ This may be due to some old dependencies of Panda3D. Try the following instructi
     sudo /usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config /etc/X11/xorg.conf $DISPLAY & 0
 
 2. SUMO
-SUMO can have some problems in setup. Please look through the following for support for SUMO:
+SUMO might encounter problems during setup. Please look through the following for support for SUMO:
 
 If you are having issues see: **[SETUP](docs/setup.rst)** and **[SUMO TROUBLESHOOTING](docs/SUMO_TROUBLESHOOTING.md)**.
 

@@ -21,8 +21,13 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
    sim/scenario_studio.rst
    sim/visualization.rst
    sim/cli.rst
-   sim/bubbles.rst
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Advanced Design
+
    sim/smarts.rst
+   sim/bubbles.rst
 
 .. toctree::
    :maxdepth: 3
@@ -31,6 +36,12 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
    examples/intersection.md
    examples/racing.md
    examples/rllib.rst
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Containers
+
+   containers/containers.rst
 
 .. toctree::
    :maxdepth: 3
