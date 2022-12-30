@@ -63,9 +63,7 @@ apidoc_extra_args = [
     "--templatedir=_templates/apidoc",
 ]
 autodoc_mock_imports = [
-    "cv2", 
-    "google", 
-    "grpc",
+    "cv2",
     "moviepy",
     "pathos",
     "ray",
