@@ -18,6 +18,13 @@ I am first paragarpah ##############
 I am second paragraph @@@@@@@@@@@@@@@@@@
 
 ```{include} ../../examples/rl/intersection/README.md
-:relative-images: ../
 :relative-docs: ../
+:relative-images:
+```
+
+@ I am fourth trial attempt
+
+```{include} ../../examples/rl/intersection/README.md
+:relative-docs:
+:relative-images:
 ```
