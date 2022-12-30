@@ -4,6 +4,11 @@
 Intersection
 ============
 
+I am third paragraph trial
+
+.. include:: ../../examples/rl/intersection/README.md
+   :parser: myst_parser.sphinx_
+
 I am first paragarpah ##############
 
 .. include:: ../../examples/rl/intersection/README.md
