@@ -4,6 +4,7 @@ Diagnostic
 ==========
 
 A development tool designed to
+
 + Track the performance of each SMARTS version.
 + Test the effects of improvements or optimizations made in SMARTS.
 
@@ -11,6 +12,7 @@ Setup
 -----
 
 Dump different number of actors, with different types, on a map without visualization and show the mean & standard deviation of steps per second. Available scenarios:
+
 + n social agents: 1, 10, 20, 50
 + n data replay actors: 1, 10, 20, 50, 200
 + n sumo traffic actors: 1, 10, 20, 50, 200
@@ -20,7 +22,7 @@ Dump different number of actors, with different types, on a map without visualiz
 Run
 ---
 
-Run the diagnostic with one or multiple scenarios, from the ``SMARTS/smarts/diagnostic`` folder.
+Run the diagnostic with one or multiple scenarios, from the ``SMARTS/smarts/diagnostic`` :class:`smarts.diagnostic.run.main`   folder.
 
 .. code-block:: bash
 

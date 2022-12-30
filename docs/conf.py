@@ -34,11 +34,10 @@ release = VERSION
 # ones.
 extensions = [
     "sphinx_rtd_theme",  # Read The Docs theme
-    "sphinx.ext.autodoc",  # Automatically extract docs from docstrings
-    "sphinx.ext.coverage",  # make coverage generates documentation coverage reports
+    "sphinx.ext.autodoc",  # automatically extract docs from docstrings
+    "sphinx.ext.coverage",  # to generate documentation coverage reports
     "sphinx.ext.napoleon",  # support Numpy and Google doc style
     "sphinx.ext.viewcode",  # link to sourcecode from docs
-    "sphinx.ext.graphviz",  # TODO: should we include this?
     "sphinxcontrib.apidoc",
     "sphinx_click", # extract documentation from a `click` application
     "myst_parser", # support Markdown-based documentation
@@ -48,10 +47,10 @@ extensions = [
 # See: https://github.com/sphinx-contrib/apidoc
 apidoc_module_dir = ".."
 apidoc_excluded_paths = [
-    "scenarios", 
-    "setup.py", 
-    "smarts/ros", 
     "cli",
+    "setup.py", 
+    "scenarios", 
+    "smarts/ros", 
 ]
 apidoc_module_first = True
 apidoc_extra_args = [
@@ -64,7 +63,6 @@ apidoc_extra_args = [
 ]
 autodoc_mock_imports = [
     "cv2",
-    "grpc",
     "lxml",
     "mdutils",
     "moviepy",

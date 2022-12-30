@@ -8,34 +8,25 @@ version: 2
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
    configuration: docs/conf.py
-
-# Optionally set the version of Python and requirements required to build your docs
-python:
-  version: 3.8
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - extras
-        - camera_obs
-        - diagnostics
-        - doc
-
-# # Optionally declare the Python requirements required to build your docs
-# python:
-#    install:
-#    - requirements: ./requirements.txt
-
-# version: 2
-
-# build:
-#   os: ubuntu-22.04
-#   tools:
-#     python: "3.8"
-#   commands:
-#     - pip install pelican
-#     - pelican --settings docs/pelicanconf.py --output _readthedocs/html/ docs/
-
-sphinx:
-  builder: html
   # fail_on_warning: true
+
+# # Optionally set the version of Python and requirements required to build your docs
+# python:
+#   version: 3.8
+#   install:
+#     - method: pip
+#       path: .
+#       extra_requirements:
+#         - camera_obs
+#         - doc
+#         - train
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.8"
+  jobs:
+    pre_build:
+      - python -m sphinx -b linkcheck -D linkcheck_timeout=1 docs/ _build/linkcheck
+  commands:
+    - pip install -e .[camera_obs,doc,train]
