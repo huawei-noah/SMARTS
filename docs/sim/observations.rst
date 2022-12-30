@@ -1,10 +1,9 @@
 .. _observations:
 
-Standard Observations and Actions
-=================================
+Observations and Actions
+========================
 
-We have introduced `AgentInterface` in :ref:`agent` which allows us to choose from the standard observation and action types for communication
-between an agent and a SMARTS environment.
+We have introduced `AgentInterface` in :ref:`agent` which allows us to choose from the standard observation and action types for communication between an agent and a SMARTS environment.
 
 ============
 Observations
