@@ -195,7 +195,7 @@ class SumoTrafficSimulation(TrafficProvider):
             # Ensure there has been enough time for sumo to start
             time.sleep(0.05)
             try:
-                while self._traci_conn.sumo_alive:
+                while self._traci_conn.viable and not self._traci_conn.connected:
                     try:
                         self._traci_conn.connect(
                             timeout=5,
@@ -204,8 +204,7 @@ class SumoTrafficSimulation(TrafficProvider):
                         )
                     except traci.exceptions.FatalTraCIError:
                         # Could not connect in time just retry connection
-                        continue
-                    break
+                        pass
 
             except traci.exceptions.TraCIException:
                 # SUMO process died... unsure why this is not a fatal traci error
@@ -429,7 +428,7 @@ class SumoTrafficSimulation(TrafficProvider):
 
     @property
     def connected(self):
-        return self._traci_conn is not None and self._traci_conn.valid
+        return self._traci_conn is not None and self._traci_conn.connected
 
     @property
     def action_spaces(self):
