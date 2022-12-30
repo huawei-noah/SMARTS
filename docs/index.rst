@@ -13,8 +13,8 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
    :maxdepth: 3
    :caption: Getting Started
 
-   quickstart
    setup.rst
+   quickstart
    sim/agent.rst
    sim/env.rst
    sim/observations.rst
