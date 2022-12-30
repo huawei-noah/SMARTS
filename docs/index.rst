@@ -54,6 +54,8 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
    :caption: Resources
 
    resources/containers.rst
+   resources/diagnostic.rst
+   resources/docs.rst
    resources/faq.rst
 
 Indices and Tables
