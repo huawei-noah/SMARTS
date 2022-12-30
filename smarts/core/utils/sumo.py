@@ -226,4 +226,4 @@ def _wrap_traci_method(*args, method, sumo_process: TraciConn, **kwargs):
     except traci.exceptions.TraCIException:
         # Case where SUMO can continue
         # TAI: consider closing the process even with a non fatal error
-        pass
+        raise
