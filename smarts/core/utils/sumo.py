@@ -158,12 +158,16 @@ class TraciConn:
             raise
 
     @property
+    def valid(self):
+        return self._sumo_proc is not None
+
+    @property
     def sumo_alive(self):
-        """If the SUMO process is alive."""
+        """If the underlying SUMO process is alive."""
         return self._sumo_proc is not None and self._sumo_proc.poll() is None
 
     def __getattr__(self, name: str) -> Any:
-        if not self.sumo_alive:
+        if not self.valid:
             return None
 
         attribute = getattr(self._traci_conn, name)

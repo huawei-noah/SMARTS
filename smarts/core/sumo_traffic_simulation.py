@@ -429,7 +429,7 @@ class SumoTrafficSimulation(TrafficProvider):
 
     @property
     def connected(self):
-        return self._traci_conn is not None and self._traci_conn.sumo_alive
+        return self._traci_conn is not None and self._traci_conn.valid
 
     @property
     def action_spaces(self):
