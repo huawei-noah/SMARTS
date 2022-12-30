@@ -19,4 +19,5 @@ I am second paragraph @@@@@@@@@@@@@@@@@@
 
 ```{include} ../../examples/rl/intersection/README.md
 :relative-images: ../
+:relative-docs: ../
 ```

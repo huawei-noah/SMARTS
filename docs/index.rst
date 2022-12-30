@@ -37,7 +37,7 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
    :maxdepth: 3
    :caption: Examples
 
-   sim/intersection.rst
+   sim/intersection.md
 
    sim/rllib.rst
 
