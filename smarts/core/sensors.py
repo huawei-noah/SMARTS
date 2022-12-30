@@ -1672,7 +1672,7 @@ class SignalsSensor(Sensor):
             assert isinstance(signal_state, SignalState)
             controlled_lanes = None
             if signal_state.controlled_lanes:
-                controlled_lanes = [cl.lane_id for cl in signal_state.controlled_lanes]
+                controlled_lanes = signal_state.controlled_lanes
             result.append(
                 SignalObservation(
                     state=signal_state.state,
