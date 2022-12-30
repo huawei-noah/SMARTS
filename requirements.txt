@@ -47,7 +47,7 @@ hyperlink==21.0.0
 idna==3.4
 ijson==3.1.4
 importlib-metadata==5.2.0
-importlib-resources==5.10.1
+importlib-resources==5.10.2
 incremental==22.10.0
 iniconfig==1.1.1
 jsonpatch==1.32
@@ -56,7 +56,7 @@ jsonschema==4.17.3
 keras==2.11.0
 kiwisolver==1.4.4
 libclang==14.0.6
-lz4==4.0.2
+lz4==4.2.0
 Markdown==3.4.1
 MarkupSafe==2.1.1
 matplotlib==3.5.3
@@ -90,7 +90,7 @@ pyasn1-modules==0.2.8
 pybullet==3.0.6
 Pygments==2.13.0
 pyparsing==3.0.9
-pyrsistent==0.19.2
+pyrsistent==0.19.3
 pytest==7.2.0
 pytest-benchmark==4.0.0
 pytest-cov==4.0.0
