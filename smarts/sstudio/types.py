@@ -119,13 +119,13 @@ class SmartsLaneChangingModel(LaneChangingModel):
     """Implements the simple lane-changing model built-into SMARTS.
 
     Args:
-        cutin_prob (float, optional): Float value [0, 1] that 
+        cutin_prob (float, optional): Float value [0, 1] that
             determines the probabilty this vehicle will "arbitrarily" cut in
             front of an adjacent agent vehicle when it has a chance, even if
             there would otherwise be no reason to change lanes at that point.
             Higher values risk a situation where this vehicle ends up in a lane
-            where it cannot maintain its planned route. If that happens, this 
-            vehicle will perform whatever its default behavior is when it 
+            where it cannot maintain its planned route. If that happens, this
+            vehicle will perform whatever its default behavior is when it
             completes its route. Defaults to 0.0.
         assertive (float, optional): Willingness to accept lower front and rear
             gaps in the target lane. The required gap is divided by this value.
@@ -133,20 +133,19 @@ class SmartsLaneChangingModel(LaneChangingModel):
             lane-changing model, see: ``https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models``.
             Range: positive reals. Defaults to 1.0.
         dogmatic (bool, optional): If True, will cutin when a suitable
-            opportunity presents itself based on the above parameters, even if 
-            it means the risk of not not completing the assigned route; 
+            opportunity presents itself based on the above parameters, even if
+            it means the risk of not not completing the assigned route;
             otherwise, will forego the chance. Defaults to True.
-        hold_period (float, optional): The minimum amount of time (seconds) to 
+        hold_period (float, optional): The minimum amount of time (seconds) to
             remain in the agent's lane after cutting into it (including the
             time it takes within the lane to complete the maneuver). Must be
             non-negative. Defaults to 3.0.
         slow_down_after (float, optional): Target speed during the hold_period
             will be scaled by this value. Must be non-negative. Defaults to 1.0.
-        multi_lane_cutin (bool, optional): If True, this vehicle will consider 
-            changing across multiple lanes at once in order to cutin upon an 
+        multi_lane_cutin (bool, optional): If True, this vehicle will consider
+            changing across multiple lanes at once in order to cutin upon an
             agent vehicle when there's an opportunity. Defaults to False.
     """
-
 
     def __init__(
         self,
@@ -173,18 +172,18 @@ class SmartsJunctionModel(JunctionModel):
     Args:
         yield_to_agents (str, optional): Defaults to "normal". 3 options are
             available, namely: (1) "always" - Traffic actors will yield to Ego
-            and Social agents within junctions. (2) "never" - Traffic actors 
-            will never yield to Ego or Social agents within junctions. 
-            (3) "normal" - Traffic actors will attempt to honor normal 
-            right-of-way conventions, only yielding when an agent has the 
-            right-of-way. Examples of such conventions include (a) vehicles 
-            going straight have the right-of-way over turning vehicles; 
-            (b) vehicles on roads with more lanes have the right-of-way 
-            relative to vehicles on intersecting roads with less lanes; 
-            (c) all other things being equal, the vehicle to the right 
+            and Social agents within junctions. (2) "never" - Traffic actors
+            will never yield to Ego or Social agents within junctions.
+            (3) "normal" - Traffic actors will attempt to honor normal
+            right-of-way conventions, only yielding when an agent has the
+            right-of-way. Examples of such conventions include (a) vehicles
+            going straight have the right-of-way over turning vehicles;
+            (b) vehicles on roads with more lanes have the right-of-way
+            relative to vehicles on intersecting roads with less lanes;
+            (c) all other things being equal, the vehicle to the right
             in a counter-clockwise sense has the right-of-way.
         wait_to_restart (float, optional): The amount of time in seconds
-            after stopping at a signal or stop sign before this vehicle 
+            after stopping at a signal or stop sign before this vehicle
             will start to go again. Defaults to 0.0.
     """
 

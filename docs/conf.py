@@ -39,8 +39,8 @@ extensions = [
     "sphinx.ext.napoleon",  # support Numpy and Google doc style
     "sphinx.ext.viewcode",  # link to sourcecode from docs
     "sphinxcontrib.apidoc",
-    "sphinx_click", # extract documentation from a `click` application
-    "myst_parser", # support Markdown-based documentation
+    "sphinx_click",  # extract documentation from a `click` application
+    "myst_parser",  # support Markdown-based documentation
 ]
 
 # configuring automated generation of api documentation
@@ -48,9 +48,9 @@ extensions = [
 apidoc_module_dir = ".."
 apidoc_excluded_paths = [
     "cli",
-    "setup.py", 
-    "scenarios", 
-    "smarts/ros", 
+    "setup.py",
+    "scenarios",
+    "smarts/ros",
 ]
 apidoc_module_first = True
 apidoc_extra_args = [

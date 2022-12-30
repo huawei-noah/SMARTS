@@ -22,11 +22,10 @@ Dump different number of actors, with different types, on a map without visualiz
 Run
 ---
 
-Run the diagnostic with one or multiple scenarios, from the ``SMARTS/smarts/diagnostic`` :class:`smarts.diagnostic.run.main`   folder.
+Run the diagnostic :module:`smarts.diagnostic.run.main` with one or multiple scenarios, from the ``SMARTS/smarts/diagnostic`` folder.
 
 .. code-block:: bash
 
+    $ cd <path/to>/SMARTS
     $ scl diagnostic run <scenarios/path> [scenarios/path]
     # e.g., scl diagnostic run n_sumo_actors/1_actors
-
-
