@@ -116,9 +116,10 @@ class TraciConn:
         ),
     ):
         """Attempt a connection with the SUMO process."""
+        traci_conn = None
         try:
             with suppress_output(stdout=False):
-                self._traci_conn = traci.connect(
+                traci_conn = traci.connect(
                     self._sumo_port,
                     numRetries=max(0, int(20 * timeout)),
                     proc=self._sumo_proc,
@@ -138,7 +139,7 @@ class TraciConn:
             raise
 
         try:
-            vers, vers_str = self._traci_conn.getVersion()
+            vers, vers_str = traci_conn.getVersion()
             assert (
                 vers >= minimum_traci_version
             ), f"TraCI API version must be >= {minimum_traci_version}. Got version ({vers})"
@@ -156,18 +157,20 @@ class TraciConn:
         except AssertionError:
             self.close_traci_and_pipes()
             raise
+        self._traci_conn = traci_conn
 
     @property
-    def valid(self):
-        return self._sumo_proc is not None
+    def connected(self):
+        """Check if the connection is still valid."""
+        return self._sumo_proc is not None and self._traci_conn is not None
 
     @property
-    def sumo_alive(self):
-        """If the underlying SUMO process is alive."""
+    def viable(self):
+        """If making a connection to the sumo process is still viable."""
         return self._sumo_proc is not None and self._sumo_proc.poll() is None
 
     def __getattr__(self, name: str) -> Any:
-        if not self.valid:
+        if not self.connected:
             return None
 
         attribute = getattr(self._traci_conn, name)
