@@ -62,13 +62,13 @@ apidoc_extra_args = [
     "--templatedir=_templates/apidoc",
 ]
 autodoc_mock_imports = [
+    "cpuinfo",
     "cv2",
     "lxml",
     "mdutils",
     "moviepy",
     "opendrive2lanelet",
     "pathos",
-    "py-cpuinfo",
     "pynput",
     "ray",
     "tabulate",
