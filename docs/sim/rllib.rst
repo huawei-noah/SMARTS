@@ -1,4 +1,4 @@
-.. _rllib_in_smarts:
+.. _rllib:
 
 RLlib
 =====

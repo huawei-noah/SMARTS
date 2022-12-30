@@ -25,8 +25,6 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
 
    sim/scenario_studio.rst
 
-   sim/rllib_in_smarts.rst
-
    sim/visualization.rst
 
    sim/cli.rst
@@ -34,15 +32,20 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
    sim/bubbles.rst
 
    sim/smarts.rst
-   
-   sim/examples.rst
-   
-   README_copy.md
-
 
 .. toctree::
    :maxdepth: 3
-   :caption: API Reference
+   :caption: Examples
+
+   sim/intersection.rst
+
+   sim/rllib.rst
+
+   README_copy.md
+
+.. toctree::
+   :maxdepth: 3
+   :caption: API
 
    api/modules.rst
 

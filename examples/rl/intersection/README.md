@@ -6,7 +6,7 @@ The ego agent earns reward for the distance travelled per-step and is penalised 
 This example is only meant to demonstrate the use of SB3 library with SMARTS task environments. The trained agent does not solve the task environment.
 
 ## Trained agent making an uprotected left turn
-![](./docs/_static/intersection.gif)
+![](../../../examples/rl/intersection/docs/_static/intersection.gif)
 
 ## Observation space
 + Topdown RGB image
@@ -25,7 +25,7 @@ action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
 ```
 
 ## Colab
-1. Try it here: [![here](./docs/_static/colab-badge.svg)](https://colab.research.google.com/github/huawei-noah/SMARTS/blob/intersection-v0/examples/rl/intersection/intersection.ipynb)
+1. Try it here: [![here](../../../examples/rl/intersection/docs/_static/colab-badge.svg)](https://colab.research.google.com/github/huawei-noah/SMARTS/blob/intersection-v0/examples/rl/intersection/intersection.ipynb)
 
 ## Setup
 ```bash
