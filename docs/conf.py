@@ -65,9 +65,12 @@ apidoc_extra_args = [
 autodoc_mock_imports = [
     "cv2",
     "grpc",
+    "lxml",
+    "mdutils",
     "moviepy",
     "opendrive2lanelet",
     "pathos",
+    "py-cpuinfo",
     "pynput",
     "ray",
     "tabulate",
