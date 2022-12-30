@@ -56,6 +56,25 @@ class ObservationRecorder:
     """
     Generate SMARTS observations from the perspective of one or more
     social/history vehicles within a SMARTS scenario.
+
+    Args:
+        scenario (str):
+            A path to a scenario to run.
+            Note:  the scenario should already have been built using
+            `scl scenario build ...`.
+        output_dir (str):
+            Path to the directory for the output files.
+            Will be created if necessary.
+        seed (int):
+            Seed for random number generation.  Default:  42.
+        agent_interface (AgentInterface, optional):
+            Agent interface to be used for recorded vehicles. If not provided,
+            will use a default interface with all sensors enabled.
+        start_time (float, Optional):
+            The start time (in seconds) of the window within which observations should be recorded."
+        end_time (float, Optional):
+            The end time (in seconds) of the window within which observations should be recorded."
+
     """
 
     def __init__(
@@ -67,25 +86,6 @@ class ObservationRecorder:
         start_time: Optional[float] = None,
         end_time: Optional[float] = None,
     ):
-        """
-        Args:
-            scenario (str):
-                A path to a scenario to run.
-                Note:  the scenario should already have been built using
-                `scl scenario build ...`.
-            output_dir (str):
-                Path to the directory for the output files.
-                Will be created if necessary.
-            seed (int):
-                Seed for random number generation.  Default:  42.
-            agent_interface (AgentInterface, optional):
-                Agent interface to be used for recorded vehicles. If not provided,
-                will use a default interface with all sensors enabled.
-            start_time (float, Optional):
-                The start time (in seconds) of the window within which observations should be recorded."
-            end_time (float, Optional):
-                The end time (in seconds) of the window within which observations should be recorded."
-        """
         assert scenario, "--scenario must be used to specify a scenario"
         scenario_iter = Scenario.variations_for_all_scenario_roots([scenario], [])
         self._scenario = next(scenario_iter)
