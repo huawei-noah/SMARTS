@@ -60,10 +60,6 @@ for _ in range(1000):
 1. [Examples](#Examples)
     + [Usage](#Usage)
     + [Reinforcement Learning](#RL-Model)
-1. [Command Line Interface](#Command-Line-Interface)  
-1. [Troubleshooting](#Troubleshooting)
-    + [General](#General)
-    + [SUMO](#SUMO)
 1. [Bug Reports](#Bug-Reports)
 1. [Contributing](#Contributing)
 1. [Citing](#Citing)
@@ -141,41 +137,11 @@ Illustration of various ways to use SMARTS.
 ### RL Environment
 1. [ULTRA](https://github.com/smarts-project/smarts-project.rl/blob/master/ultra) provides a gym-based environment built upon SMARTS to tackle intersection navigation, specifically the unprotected left turn.
 
-# Command Line Interface
-A command line interface named `scl` is available to interact with SMARTS. Refer to the [document](https://smarts.readthedocs.io/en/latest/sim/cli.html) for the full `scl` command line interface.
 
-Examples of common usage are as follows.
-
-```bash
-# Start envision and serve scenario assets out of ./scenarios
-scl envision start --scenarios ./scenarios
-
-# Build all scenarios under given directories
-scl scenario build-all ./scenarios ./eval_scenarios
-
-# Rebuild a single scenario, replacing any existing generated assets
-scl scenario build --clean scenarios/sumo/loop
-
-# Clean generated scenario artifacts
-scl scenario clean scenarios/sumo/loop
-```
 
 ```{eval-rst}
 .. include:: ./docs/containers/containers.rst
 ```
-
-
-# Troubleshooting
-### General
-In most cases SMARTS debug logs are located at `~/.smarts`. These can be helpful to diagnose problems.
-
-### SUMO
-SUMO might encounter problems during setup. Please look through the following for support for SUMO:
-* If you are having issues see: [Setup](docs/setup.rst) and [SUMO TROUBLESHOOTING](docs/SUMO_TROUBLESHOOTING.md)
-* If you wish to find binaries: [SUMO Download Page](https://sumo.dlr.de/docs/Downloads.php)
-* If you wish to compile from source see: [SUMO Build Instructions](https://sumo.dlr.de/docs/Developer/Main.html#build_instructions). 
-    * Please note that building SUMO may not install other vital dependencies that SUMO requires to run.
-    * If you build from the git repository we recommend to use [SUMO version 1.7.0](https://github.com/eclipse/sumo/commits/v1_7_0) or higher
 
 # Bug Reports
 Please read [how to create a bug report](https://github.com/huawei-noah/SMARTS/wiki/How-To-Make-a-Bug-Report) and then open an issue [here](https://github.com/huawei-noah/SMARTS/issues).
