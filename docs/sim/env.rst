@@ -3,91 +3,89 @@
 Environment
 ===========
 
+Base environments
+-----------------
 
-Provided Environments
-=====================
+SMARTS environment module is defined in :mod:`smarts.env` package. Currently SMARTS provides two kinds of training 
+environments, namely:
 
-SMARTS Environment module is defined in ``smarts/env``. Currently SMARTS provide two kinds of training 
-environments, one is ``HiwayEnv`` with ``gym.env`` style interface and another is ``RLlibHiwayEnv`` customized for ``RLlib`` training.
++ ``HiwayEnv`` utilising ``gym.env`` style interface 
++ ``RLlibHiwayEnv`` customized for `RLlib <https://docs.ray.io/en/latest/rllib/index.html>`_ training
 
 .. image:: ../_static/env.png
 
 HiwayEnv
---------
+^^^^^^^^
 
-``HiwayEnv`` inherit class ``gym.Env`` and supports common APIs like ``reset``, ``step``, ``close``. A usage example is shown below.
-See :class:`smarts.env.hiway_env` for more details.
+``HiwayEnv`` inherits class ``gym.Env`` and supports gym APIs like ``reset``, ``step``, ``close``. An usage example is shown below.
+Refer to :class:`smarts.env.hiway_env.HiWayEnv` for more details.
 
 .. code-block:: python
 
-    # make env
+    # Make env
     env = gym.make(
-            "smarts.env:hiway-v0", # env entry name
-            scenarios=[scenario_path], # a list of paths to folders of scenarios
-            agent_specs={AGENT_ID: agent_spec}, # dictionary of agents to interact with the environment
-            headless=False, # headless mode. False to enable Envision visualization of the environment
-            visdom=False, # Visdom visualization of observations. False to disable. only supported in HiwayEnv.
-            seed=42, # RNG Seed, seeds are set at the start of simulation, and never automatically re-seeded.
+            "smarts.env:hiway-v0", # Env entry name.
+            scenarios=[scenario_path], # List of paths to scenario folders.
+            agent_specs={AGENT_ID: agent_spec}, # Dictionary mapping agents to agent specs.
+            headless=False, # False to enable Envision visualization of the environment.
+            visdom=False, # Visdom visualization of observations. False to disable. Only supported in HiwayEnv.
+            seed=42, # RNG seed. Seeds are set at the start of simulation, and never automatically re-seeded.
         )
 
-    # reset env and build agent
+    # Reset env and build agent.
     observations = env.reset()
     agent = agent_spec.build_agent()
 
-    # step env
+    # Step env.
     agent_obs = observations[AGENT_ID]
     agent_action = agent.act(agent_obs)
-    observations, rewards, dones, _ = env.step({AGENT_ID: agent_action})
+    observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
 
-    # close env
+    # Close env.
     env.close()
 
 RLlibHiwayEnv
--------------
+^^^^^^^^^^^^^
 
-`RLlibHiwayEnv` inherits from `MultiAgentEnv`, which is defined in RLlib. It also supports common env APIs like `reset`, 
-`step`, `close`. A usage example is shown below. See :class:`smarts.env.rllib_hiway_env` for more details.
+``RLlibHiwayEnv`` inherits class ``MultiAgentEnv``, which is defined in RLlib. It also supports common env APIs like ``reset``, 
+``step``, ``close``. An usage example is shown below. Refer to :class:`smarts.env.rllib_hiway_env.RLlibHiWayEnv` for more details.
 
 .. code-block:: python
 
     from smarts.env.rllib_hiway_env import RLlibHiWayEnv
     env = RLlibHiWayEnv(
         config={
-            "scenarios": [scenario_path], # scenarios list
-            "agent_specs": {AGENT_ID: agent_spec}, # add agent specs
-            "headless": False, # enable envision gui, set False to enable.
-            "seed": 42, # RNG Seed, seeds are set at the start of simulation, and never automatically re-seeded.
+            "scenarios": [scenario_path], # List of paths to scenario folders.
+            "agent_specs": {AGENT_ID: agent_spec}, # Dictionary mapping agents to agent specs.
+            "headless": False, # False to enable Envision visualization of the environment.
+            "seed": 42, # RNG seed. Seeds are set at the start of simulation, and never automatically re-seeded.
         }
     )
 
-    # reset env and build agent
+    # Reset env and build agent.
     observations = env.reset()
     agent = agent_spec.build_agent()
 
-    # step env
+    # Step env.
     agent_obs = observations[AGENT_ID]
     agent_action = agent.act(agent_obs)
-    observations, rewards, dones, _ = env.step({AGENT_ID: agent_action})
+    observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
 
-    # close env
+    # Close env.
     env.close()
 
-====================
-Environment features
-====================
+Features
+--------
 
 Flexible Training
------------------
+^^^^^^^^^^^^^^^^^
 
-Since SMARTS environments inherit from either ``gym.Env`` or ``MultiAgentEnv``, they are able to provide common APIs to support single-agent 
-and multi-agent RL training. Also, by leveraging Ray and RLlib, ``RLlibHiwayEnv`` comes with out-of-the-box scalability and multi-instances 
-training on multi-cores.
+Since SMARTS environments inherit from either ``gym.Env`` or ``MultiAgentEnv``, they are able to provide common APIs to support single-agent and multi-agent RL training. Also, by leveraging Ray and RLlib, ``RLlibHiwayEnv`` comes with out-of-the-box scalability and multi-instance training on multi-cores.
 
 Scenario Iterator
------------------
+^^^^^^^^^^^^^^^^^
 
-If a path to a folder that contains multiple scenarios is passed through the ``Env`` config, then SMARTS will automatically cycle these
-scenarios.
+If  to a folder that contains multiple scenarios is passed through the ``Env`` config, then SMARTS will automatically cycle these scenarios.
 
 .. code-block:: python
 
@@ -139,20 +137,13 @@ This means that in the first case, the agent will be getting experiences from th
 already get a mixture of experiences from different scenarios.
 
 Vehicle Diversity
------------------
+^^^^^^^^^^^^^^^^^
 
 SMARTS environments allow three types of vehicles to exist concurrently, which are **ego agents** under the control of RL model currently
 in training , **social agents** controlled by (trained) models from the "Agent Zoo", and **traffic vehicles** controlled by an underlying
 traffic simulator, like SUMO or SMARTS.
 
-Ego agents are controlled by our training algorithms, and are able to interact with environment directly. Like ego agents, social agents 
-also use AgentInterface to register with the environment and interact with it through standard observation and action messages, except
-that they are driven by trained models and act in separate ``Ray`` processes, hence they can provide behavioral characteristics we want.
+Ego agents are controlled by our training algorithms, and are able to interact with environment directly. Like ego agents, social agents also use AgentInterface to register with the environment and interact with it through standard observation and action messages, except that they are driven by trained models and act in separate ``Ray`` processes, hence they can provide behavioral characteristics we want.
 Traffic vehicles are controlled by a traffic simulator (e.g., SUMO or SMARTS).
 To see more details about generation of traffic vehicles and control of their behavior,
 see our [Scenario Studio](ScenarioStudio.md).
-
-Flexible User Customation
--------------------------
-
-See :ref:`agent`.

@@ -16,7 +16,7 @@ Alternative installation methods, albeit more difficult, are described below.
 Package managers
 ----------------
 
-+ Installation instructions are available at `https://sumo.dlr.de/docs/Installing/ <https://sumo.dlr.de/docs/Installing/>`_ .
+Instructions for installation from package managers are available at `https://sumo.dlr.de/docs/Installing/ <https://sumo.dlr.de/docs/Installing/>`_ .
 
 Build from source
 -----------------
