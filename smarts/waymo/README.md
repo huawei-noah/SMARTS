@@ -26,7 +26,7 @@ Note:
 
 ## TFRecord Browser
 After running the program the first browser you will see is the `TFRecord Browser` which shows all the TFRecords you loaded in and the commands you can use to browse them further:
-```cmd
+```
 Waymo tfRecords:
   Index  TfRecords
 -------  -------------------------------------------------------------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ Commands you can execute at this level:
 
 ## TFRecord Explorer
 After selecting the TFRecord to explore further, the second browser you will see is the `TFRecord Explorer` which shows the scenario info of all the scenarios in this file and the commands you can use to explore them further:
-```cmd
+```
 TfRecord Explorer
 -----------------------------------------------
 61 scenarios in uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000:
@@ -113,7 +113,7 @@ TfRecord Explorer
 .
 
 
-```cmd
+```
      58  b1b51cdb69de2d46           199              124                     199                      2  []            []
      59  7e019d5f96e54dbd           198              117                     198                      2  []            []
      60  7f625727984895a6           198              106                     198                      2  []            []
@@ -203,7 +203,7 @@ Commands you can execute at this level:
 
 ## Scenario Explorer
 After selecting the scenario to explore further, the third browser you will see is the `Scenario Explorer` which shows the total number of different map features and their IDs, and the total number of different track objects and their IDs in the scenario:
-```cmd
+```
 Scenario Explorer
 -----------------------------------------------
 Scenario c84cde79e51b087c Map Features:
