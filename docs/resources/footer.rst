@@ -4,10 +4,6 @@ Bug Reports
 ===========
 Please read [how to create a bug report](https://github.com/huawei-noah/SMARTS/wiki/How-To-Make-a-Bug-Report) and then open an issue [here](https://github.com/huawei-noah/SMARTS/issues).
 
-Contributing
-============
-Please read [contributing](CONTRIBUTING.md).
-
 Citing
 ======
 If you use SMARTS in your research, please cite the [paper](https://arxiv.org/abs/2010.09776). In BibTeX format:

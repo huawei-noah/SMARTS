@@ -61,11 +61,10 @@ for _ in range(1000):
     + [Usage](#Usage)
     + [Reinforcement Learning](#RL-Model)
 1. [Bug Reports](#Bug-Reports)
-1. [Contributing](#Contributing)
 1. [Citing](#Citing)
 
 # Documentation
-Documentation is available at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest).
+:rotating_light: :bell: Read the docs :notebook_with_decorative_cover: at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest) . :bell: :rotating_light:
 
 # Setup
 ### Installation
@@ -138,16 +137,8 @@ Illustration of various ways to use SMARTS.
 1. [ULTRA](https://github.com/smarts-project/smarts-project.rl/blob/master/ultra) provides a gym-based environment built upon SMARTS to tackle intersection navigation, specifically the unprotected left turn.
 
 
-
-```{eval-rst}
-.. include:: ./docs/containers/containers.rst
-```
-
 # Bug Reports
 Please read [how to create a bug report](https://github.com/huawei-noah/SMARTS/wiki/How-To-Make-a-Bug-Report) and then open an issue [here](https://github.com/huawei-noah/SMARTS/issues).
-
-# Contributing
-Please read [contributing](CONTRIBUTING.md).
 
 # Citing
 If you use SMARTS in your research, please cite the [paper](https://arxiv.org/abs/2010.09776). In BibTeX format:
