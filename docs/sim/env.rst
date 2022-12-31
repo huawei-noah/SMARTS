@@ -89,7 +89,7 @@ If  to a folder that contains multiple scenarios is passed through the ``Env`` c
 
 .. code-block:: python
 
-    # train each worker with different environmental setting
+    # Train each worker with different environmental setting.
     tracks_dir = [scenario1, scenario2, ...]
 
     tune_config = {
@@ -139,11 +139,13 @@ already get a mixture of experiences from different scenarios.
 Vehicle Diversity
 ^^^^^^^^^^^^^^^^^
 
-SMARTS environments allow three types of vehicles to exist concurrently, which are **ego agents** under the control of RL model currently
-in training , **social agents** controlled by (trained) models from the "Agent Zoo", and **traffic vehicles** controlled by an underlying
+SMARTS environments allow three types of vehicles to exist concurrently, which are **ego agents** under the control of RL model currently in training , **social agents** controlled by (trained) models from the "Agent Zoo", and **traffic vehicles** controlled by an underlying
 traffic simulator, like SUMO or SMARTS.
 
 Ego agents are controlled by our training algorithms, and are able to interact with environment directly. Like ego agents, social agents also use AgentInterface to register with the environment and interact with it through standard observation and action messages, except that they are driven by trained models and act in separate ``Ray`` processes, hence they can provide behavioral characteristics we want.
+
+Refer to :ref:`scenario_studio` for design of scenario, traffic, social agents, ego agents, agent missions, and maps.
+
 Traffic vehicles are controlled by a traffic simulator (e.g., SUMO or SMARTS).
 To see more details about generation of traffic vehicles and control of their behavior,
 see our [Scenario Studio](ScenarioStudio.md).
