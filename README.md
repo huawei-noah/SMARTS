@@ -118,19 +118,16 @@ Illustration of various ways to use SMARTS.
 ### RL Model
 1. [MARL benchmark](baselines/marl_benchmark)
 1. [Intersection](examples/rl/intersection) using PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3).
-![](examples/rl/intersection/docs/_static/intersection.gif)
+<img src="examples/rl/intersection/docs/_static/intersection.gif" height="450" width="600"/>
 1. [Racing](examples/rl/racing) using world model based RL.
-![](examples/rl/racing/docs/_static/racing.gif)
+<img src="examples/rl/racing/docs/_static/racing.gif" height="350" width="600"/>
 
 ### RL Environment
 1. [ULTRA](https://github.com/smarts-project/smarts-project.rl/blob/master/ultra) provides a gym-based environment built upon SMARTS to tackle intersection navigation, specifically the unprotected left turn.
 
-
-# Post Issues, Report Bugs, Request Features 
-
-First, read how to communicate issues, report bugs, and request features [here](./docs/resources/contributing.rst)
-
-Next, raise them using appropriate tags at [https://github.com/huawei-noah/SMARTS/issues](https://github.com/huawei-noah/SMARTS/issues).
+# Issues, Bugs, Feature Requests 
+1. First, read how to communicate issues, report bugs, and request features [here](./docs/resources/contributing.rst#communication).
+1. Next, raise them using appropriate tags at [https://github.com/huawei-noah/SMARTS/issues](https://github.com/huawei-noah/SMARTS/issues).
 
 # Citing
 If you use SMARTS in your research, please cite the [paper](https://arxiv.org/abs/2010.09776). In BibTeX format:
