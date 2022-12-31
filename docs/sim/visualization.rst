@@ -7,16 +7,7 @@ Visualization
 Envision
 ========
 
-SMARTS includes a visualizer called *Envision* that runs on a process separate from the main simulation process. See ./envision/README.md 
-
-:doc:`Envision <../../envision/README.md>` 
-
-
-sdsds
-
-:ref:`Envision <../../envision/README.md>`
-
-for more information on Envision, our front-end visualization tool. To manage these processes we use the ``scl run`` command line to run SMARTS together with it's supporting processes.
+SMARTS includes a visualizer called *Envision* that runs on a process separate from the main simulation process. See ./envision/README.md for more information on Envision, our front-end visualization tool. To manage these processes we use the ``scl run`` command line to run SMARTS together with it's supporting processes.
 
 To run the default example simply build a scenario and run the following command,
 

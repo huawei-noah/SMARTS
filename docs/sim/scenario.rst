@@ -3,9 +3,6 @@
 Creating Scenarios
 ------------------
 
-## Domain Specific Language
-
-The `sstudio` DSL has a simple [ontology](./types.py) to help you express your scenario needs in SMARTS. A template looks as follows,
 
 ```python
 # Custom Map Format
@@ -30,9 +27,3 @@ Traffic(
 # Missions
 Mission(Route(begin=("edge-C", 0, "base"), end=("edge-D", 0, "max")))
 ```
-
-Additionally, you can look at the provided scenarios to see how they define their traffic.
-
-## Nota Bene
-
-The "correctness" of traffic and missions is partially your responsibility. Specifically, ensuring that the start positions of ego vehicle mission routes and social vehicle traffic routes don't overlap is not handled by `sstudio`. If they were to overlap a collision will be immediately detected and the episode will end.
