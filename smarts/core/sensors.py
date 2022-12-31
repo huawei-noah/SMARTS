@@ -288,10 +288,11 @@ class Sensors:
                             [worker.connection for worker in used_workers], timeout=5
                         ):
                             # pytype: disable=attribute-error
-                            obs, ds, updated_sens = result.recv()
+                            obs, ds, u_sens = result.recv()
                             # pytype: enable=attribute-error
                             observations.update(obs)
                             dones.update(ds)
+                            updated_sensors.update(u_sens)
 
             with timeit(f"merging observations", logger.info):
                 # Merge sensor information
@@ -470,7 +471,9 @@ class Sensors:
         )
 
         distance_travelled = 0
-        trip_meter_sensor = vehicle_sensors.get("trip_meter_sensor")
+        trip_meter_sensor: Optional[TripMeterSensor] = vehicle_sensors.get(
+            "trip_meter_sensor"
+        )
         if trip_meter_sensor:
             if waypoint_paths:
                 trip_meter_sensor.update_distance_wps_record(

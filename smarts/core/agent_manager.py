@@ -262,9 +262,10 @@ class AgentManager:
         dones.update(new_dones)
         for agent_id in agent_ids:
             v_id = agent_vehicle_pairs[agent_id]
-            vehicle = self._vehicle_index.vehicle_by_id(v_id)
-            rewards[agent_id] = vehicle.trip_meter_sensor(increment=True)
-            scores[agent_id] = vehicle.trip_meter_sensor()
+            sensors = sim.sensor_manager.sensors_for_actor_ids([v_id])
+            trip_meter_sensor = sensors[v_id]["trip_meter_sensor"]
+            rewards[agent_id] = trip_meter_sensor(increment=True)
+            scores[agent_id] = trip_meter_sensor()
 
         ## TODO MTA, support boid agents with parallel observations
         for agent_id in active_boid_agents:
