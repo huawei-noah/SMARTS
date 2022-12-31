@@ -67,5 +67,5 @@ jobs:
             --ignore=./smarts/core/tests/test_renderers.py \
             --ignore=./smarts/core/tests/test_smarts.py \
             --ignore=./smarts/core/tests/test_env_frame_rate.py \
-            --ignore=./smarts/core/tests/test_parallel_sensors.py::test_sensor_parallelization \
+            --ignore=./smarts/core/tests/test_parallel_sensors.py \
             --ignore=./smarts/core/tests/test_observations.py
