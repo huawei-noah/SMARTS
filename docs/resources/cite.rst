@@ -1,12 +1,9 @@
-.. _footer:
+.. _cite:
 
-Bug Reports
-===========
-Please read [how to create a bug report](https://github.com/huawei-noah/SMARTS/wiki/How-To-Make-a-Bug-Report) and then open an issue [here](https://github.com/huawei-noah/SMARTS/issues).
+Cite
+====
 
-Citing
-======
-If you use SMARTS in your research, please cite the [paper](https://arxiv.org/abs/2010.09776). In BibTeX format:
+If you use SMARTS in your research, please cite the `paper <https://arxiv.org/abs/2010.09776>`_. In BibTeX format:
 
 ```bibtex
 @misc{zhou2020smarts,

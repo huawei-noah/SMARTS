@@ -52,17 +52,6 @@ for _ in range(1000):
     observations, _, _, _ = env.step(agent_actions)
 ```
 
-# Contents
-1. [Documentation](#Documentation)
-1. [Setup](#Setup)
-    + [Installation](#Installation)
-    + [Running](#Running)
-1. [Examples](#Examples)
-    + [Usage](#Usage)
-    + [Reinforcement Learning](#RL-Model)
-1. [Bug Reports](#Bug-Reports)
-1. [Citing](#Citing)
-
 # Documentation
 :rotating_light: :bell: Read the docs :notebook_with_decorative_cover: at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest) . :bell: :rotating_light:
 
@@ -137,8 +126,11 @@ Illustration of various ways to use SMARTS.
 1. [ULTRA](https://github.com/smarts-project/smarts-project.rl/blob/master/ultra) provides a gym-based environment built upon SMARTS to tackle intersection navigation, specifically the unprotected left turn.
 
 
-# Bug Reports
-Please read [how to create a bug report](https://github.com/huawei-noah/SMARTS/wiki/How-To-Make-a-Bug-Report) and then open an issue [here](https://github.com/huawei-noah/SMARTS/issues).
+# Post Issues, Report Bugs, Request Features 
+
+First, read how to communicate issues, report bugs, and request features [here](./docs/resources/contributing.rst)
+
+Next, raise them using appropriate tags at [https://github.com/huawei-noah/SMARTS/issues](https://github.com/huawei-noah/SMARTS/issues).
 
 # Citing
 If you use SMARTS in your research, please cite the [paper](https://arxiv.org/abs/2010.09776). In BibTeX format:

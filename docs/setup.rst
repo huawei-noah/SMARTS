@@ -7,7 +7,7 @@ Setting up SMARTS
 Prerequisites
 =============
 
-+ python3 (>=3.7)
++ python3 (3.7 and 3.8)
 + ubuntu (>=16.04)
 
 ============
