@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Tuple
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -122,7 +122,14 @@ class VehicleState(ActorState):
         return super().__eq__(__o)
 
     @property
-    def bounding_box_points(self):
+    def bounding_box_points(
+        self,
+    ) -> Tuple[
+        Tuple[float, float],
+        Tuple[float, float],
+        Tuple[float, float],
+        Tuple[float, float],
+    ]:
         """The minimum fitting heading aligned bounding box. Four 2D points representing the minimum fitting box."""
         # Assuming the position is the centre,
         # calculate the corner coordinates of the bounding_box
@@ -130,14 +137,16 @@ class VehicleState(ActorState):
         dimensions = np.array([self.dimensions.width, self.dimensions.length])
         corners = np.array([(-1, 1), (1, 1), (1, -1), (-1, -1)]) / 2
         heading = self.pose.heading
-        return [
-            rotate_cw_around_point(
-                point=origin + corner * dimensions,
-                radians=Heading.flip_clockwise(heading),
-                origin=origin,
+        return tuple(
+            tuple(
+                rotate_cw_around_point(
+                    point=origin + corner * dimensions,
+                    radians=Heading.flip_clockwise(heading),
+                    origin=origin,
+                )
             )
             for corner in corners
-        ]
+        )
 
     @property
     def bbox(self) -> Polygon:
