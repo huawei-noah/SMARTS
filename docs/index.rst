@@ -19,7 +19,6 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
    sim/env.rst
    sim/observations.rst
    sim/scenario_studio.rst
-   sim/scenario.rst
    sim/visualization.rst
    sim/cli.rst
 

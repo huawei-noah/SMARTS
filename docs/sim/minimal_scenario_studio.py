@@ -25,6 +25,9 @@ missions = [
 ]
 
 gen_scenario(
-    t.Scenario(traffic={"basic": traffic}, ego_missions=missions),
+    scenario=t.Scenario(
+        traffic={"basic": traffic}, 
+        ego_missions=missions,
+    ),
     output_dir=Path(__file__).parent,
 )

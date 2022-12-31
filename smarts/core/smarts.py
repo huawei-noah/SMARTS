@@ -89,16 +89,16 @@ class SMARTSDestroyedError(Exception):
 
 class SMARTS(ProviderManager):
     """The core SMARTS simulator. This is the direct interface to all parts of the simulation.
+
     Args:
-        agent_interfaces: The interfaces providing SMARTS with the understanding of what features each agent needs.
-        traffic_sims: An optional list of traffic simulators for providing non-agent traffic.
-        envision: An envision client for connecting to an envision visualization server.
-        visdom: A visdom client for connecting to a visdom visualization server.
-        fixed_timestep_sec: The fixed timestep that will be default if time is not otherwise specified at step.
-        reset_agents_only: When specified the simulation will continue use of the current scenario.
-        zoo_addrs: The (ip:port) values of remote agent workers for externally hosted agents.
-        external_provider: Creates a special provider `SMARTS.external_provider` that allows for inserting state.
-        config: The simulation configuration file for unexposed configuration.
+        agent_interfaces (Dict[str, AgentInterface]): The interfaces providing SMARTS with the understanding of what features each agent needs.
+        traffic_sims (Optional[List[TrafficProvider]], optional): An optional list of traffic simulators for providing non-agent traffic. Defaults to None.
+        envision (Optional[EnvisionClient], optional): An envision client for connecting to an envision visualization server. Defaults to None.
+        visdom (Optional[VisdomClient], optional): A visdom client for connecting to a visdom visualization server. Defaults to None.
+        fixed_timestep_sec (Optional[float], optional): The fixed timestep that will be default if time is not otherwise specified at step. Defaults to 0.1.
+        reset_agents_only (bool, optional): When specified the simulation will continue use of the current scenario. Defaults to False.
+        zoo_addrs (Optional[Tuple[str, int]], optional): The (ip:port) values of remote agent workers for externally hosted agents. Defaults to None.
+        external_provider (bool, optional): Creates a special provider `SMARTS.external_provider` that allows for inserting state. Defaults to False.
     """
 
     def __init__(
