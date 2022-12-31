@@ -18,15 +18,15 @@ Check out the paper at `Link SMARTS: Scalable Multi-Agent Reinforcement Learning
    sim/agent.rst
    sim/env.rst
    sim/observations.rst
-   sim/scenario_studio.rst
-   sim/visualization.rst
    sim/cli.rst
+   sim/visualization.rst
 
 .. toctree::
    :maxdepth: 3
    :caption: Next Steps
 
-   sim/smarts.rst
+   sim/simulator.rst
+   sim/scenario_studio.rst
    sim/bubbles.rst
 
 .. toctree::

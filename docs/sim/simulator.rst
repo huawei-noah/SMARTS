@@ -1,7 +1,7 @@
-.. _smarts:
+.. _simulator:
 
-SMARTS Simulator
-================
+Simulator
+=========
 
 The SMARTS class can be instantiated in the following way:
 
