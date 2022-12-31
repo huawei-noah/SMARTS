@@ -706,7 +706,7 @@ class SumoTrafficSimulation(TrafficProvider):
         return SignalLightState.UNKNOWN
 
     def _create_signal_state(
-        self, sig_id: str, controlled_links: Sequence[Tuple[str, str, int]]
+        self, sig_id: str, controlled_links: Sequence[Tuple[str, str, str]]
     ) -> SignalState:
         incoming_lane_id = None
         controlled_lanes = []

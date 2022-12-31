@@ -307,7 +307,9 @@ class AgentManager:
             for agent_id in dones:
                 if self.is_boid_agent(agent_id):
                     for v_id in dones[agent_id]:
+                        # pytype: disable=unsupported-operands
                         dones[agent_id][v_id] = True
+                        # pytype: enable=unsupported-operands
                 else:
                     dones[agent_id] = True
             dones["__sim__"] = True

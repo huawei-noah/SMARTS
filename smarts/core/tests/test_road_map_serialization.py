@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-from typing import List
+from typing import Generator, List
 
 import pytest
 from helpers.scenario import maps_dir
@@ -30,7 +30,7 @@ from smarts.sstudio.types import MapSpec
 
 
 def waymo_map() -> RoadMap:
-    pass
+    raise NotImplementedError()
 
 
 def sumo_map() -> RoadMap:
@@ -42,11 +42,11 @@ def sumo_map() -> RoadMap:
 
 
 def opendrive_map() -> RoadMap:
-    pass
+    raise NotImplementedError()
 
 
 @pytest.fixture
-def road_maps() -> List[RoadMap]:
+def road_maps():
     map_funcs = [
         # waymo_map,
         sumo_map,

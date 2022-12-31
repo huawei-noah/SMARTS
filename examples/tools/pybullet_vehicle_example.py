@@ -31,6 +31,7 @@ def look_at(client, position=(0, 0, 0), top_down=True):
         )
 
 
+# pytype: disable=name-error
 def run(client, vehicle, plane_body_id, sliders, n_steps=1e6):
     prev_friction_sum = None
 
@@ -51,7 +52,7 @@ def run(client, vehicle, plane_body_id, sliders, n_steps=1e6):
 
         client.stepSimulation()
 
-        frictions_ = frictions(sliders)
+        frictions_ = frictions(sliders, client)
 
         if prev_friction_sum is not None and not math.isclose(
             sum(frictions_.values()), prev_friction_sum
@@ -73,7 +74,10 @@ def run(client, vehicle, plane_body_id, sliders, n_steps=1e6):
         )
 
 
-def frictions(sliders):
+# pytype: enable=name-error
+
+
+def frictions(sliders, client):
     return dict(
         lateralFriction=client.readUserDebugParameter(sliders["lateral_friction"]),
         spinningFriction=client.readUserDebugParameter(sliders["spinning_friction"]),
@@ -127,7 +131,7 @@ if __name__ == "__main__":
         path = str(path.absolute())
         plane_body_id = client.loadURDF(path, useFixedBase=True)
 
-        client.changeDynamics(plane_body_id, -1, **frictions(sliders))
+        client.changeDynamics(plane_body_id, -1, **frictions(sliders, client))
 
         pose = pose = Pose.from_center((0, 0, 0), Heading(0))
         vehicle = Vehicle(

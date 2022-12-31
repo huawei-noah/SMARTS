@@ -77,7 +77,7 @@ def scenario() -> Scenario:
         ),
     ]
 )
-def sim(scenario, request) -> SMARTS:
+def sim(scenario, request):
     a_interface = getattr(request, "param")
     agents = {aid: a_interface for aid in AGENT_IDS}
     smarts = SMARTS(

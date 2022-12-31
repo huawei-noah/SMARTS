@@ -253,8 +253,6 @@ class SMARTS(ProviderManager):
             if not sgc_environ.DEBUG:
                 self.destroy()
             raise  # re-raise
-        finally:
-            pass
 
     def _check_if_acting_on_active_agents(self, agent_actions):
         for agent_id in agent_actions.keys():
