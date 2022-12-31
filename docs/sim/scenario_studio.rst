@@ -1,9 +1,35 @@
 .. _scenario_studio:
 
+===============
 Scenario Studio
 ===============
 
-The Scenario Studio of SMARTS is a stand alone package ``sstudio`` that supports flexible and expressive scenario specification.
+The Scenario Studio of SMARTS is a stand alone package ``sstudio`` that supports flexible and expressive scenario specification. 
+
+At the most basic level scenarios combine a map with a traffic description.  SMARTS interacts with such maps abstractly (polymorphically) through the ``RoadMap`` interface in order to support multiple map formats and allow for extending to support new formats.
+
+Creating Scenarios
+------------------
+
+SMARTS ships with a variety of scenarios in ``scenarios`` folder, such as ``intersection``, ``loop``, and ``figure_eight``.
+
+The workflow to create a scenario is,
+
+1. Create a new scenario folder, preferably under ``SMARTS/scenarios`` directory, and create a new ``scenario.py`` file in the new folder.
+2. Design the map.
+    - For a SUMO road network, create the map using `netedit <https://sumo.dlr.de/docs/NETEDIT.html>`_ and save it in the new folder.
+    - For other road networks, define a `MapSpec` (see below) in ``scenario.py``.
+3. To add social vehicle traffic or agent missions, define a traffic spec (see below) in ``scenario.py``.
+4. Build the scenario by running,
+
+    .. code-block:: bash
+
+      $ cd <path>/SMARTS
+      $ scl scenario build-all <path>/<new_scenario_folder>
+
+
+
+
 If you have access to ``sstudio`` you can use it to generate traffic with different traffic vehicle numbers and routes, and agent missions.
 
 Scenarios can reference remote packages or local zoo agent packages by including a requirements.txt 
@@ -28,7 +54,7 @@ Then in the scenario.py file:
     )
 
 
-================
+
 Generate traffic
 ================
 
@@ -74,12 +100,12 @@ IMPORTANT: if you want to train model on one scenario, remember to set the ``end
 training time, since SMARTS will continue the flow after each ``reset`` call. However, if there are multiple scenarios to train
 for one worker, you can relax this restriction since after the scenario change, the flow will also be reset to the beginning time.
 
-=================
+
 Generate missions
 =================
 
-The Scenario Studio of SMARTS also allows generation of *missions* for ego agents and social agents. These missions are similar
-to routes for social vehicles. When we run ``gen_scenario``, "missions.rou.xml" file will be created under the output dir:
+Scenario Studio also allows generation of *missions* for ego agents and social agents. These missions are similar
+to routes for social vehicles. When we run ``gen_scenario``, ``missions.rou.xml`` file will be created in the output dir:
 
 .. code-block:: python
 
@@ -87,7 +113,7 @@ to routes for social vehicles. When we run ``gen_scenario``, "missions.rou.xml" 
     Mission(Route(begin=("edge0", 0, "random"), end=("edge1", 0, "max"))),
   ]
 
-=====================
+
 Generate friction map
 =====================
 
@@ -104,7 +130,7 @@ The Scenario Studio of SMARTS also allows the generation of a *friction map* whi
     ),
   ]
 
-=================
+
 Generate road map
 =================
 
@@ -194,7 +220,7 @@ The first lane you select would be the source lane, highlighted in blue. Then se
 .. image:: ../_static/create_connection.png
 
 
-=====================
+
 Create traffic routes
 =====================
 

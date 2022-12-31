@@ -1,7 +1,7 @@
 .. _environment:
 
-SMARTS Environment
-==================
+Environment
+===========
 
 =====================
 Provided Environments
