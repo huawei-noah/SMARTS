@@ -4,7 +4,6 @@
   :language: python
   :class: highlight
 
-===============
 Scenario Studio
 ===============
 
@@ -17,7 +16,7 @@ The ``sstudio`` domain specific language (DSL) has a simple ontology defined by 
 SMARTS ships with a variety of pre-designed scenarios, which can be found in ``SMARTS/scenarios`` and ``SMARTS/smarts/scenarios`` directories.
 
 Creating scenarios
-==================
+------------------
 
 Workflow to create a scenario is as follows.
 
@@ -58,7 +57,7 @@ Then in the scenario.py file:
 Following sections below explain how to handle and edit traffic, social agents, agent missions, maps, and any required additional packages, in the ``scenario.py`` file.
 
 Generate traffic
-================
+----------------
 
 .. code-block:: python
 
@@ -113,7 +112,7 @@ Simply run the ``scenario.py`` file as a regular Python script to generate the s
     However, if there are multiple scenarios to train for one worker, you can relax this restriction since after the scenario change, the flow will also be reset to the beginning time.
 
 Generate missions
-=================
+-----------------
 
 Scenario Studio also allows generation of *missions* for ego agents and social agents. These missions are similar to routes for social vehicles. When we run ``gen_scenario``, ``missions.rou.xml`` file will be created in the output dir.
 
@@ -133,7 +132,7 @@ Scenario Studio also allows generation of *missions* for ego agents and social a
     The "correctness" of traffic and missions is partially the user's responsibility. Specifically, ensuring that the start positions of ego vehicle mission routes and social vehicle traffic routes don't overlap is not handled by ``sstudio``. If they were to overlap, a collision will be immediately detected and the episode will end.
 
 Generate friction map
-=====================
+---------------------
 
 The Scenario Studio of SMARTS also allows the generation of a *friction map* which consists of a list of *surface patches* for ego agents and social agents. These surface patches uses :class:`smarts.sstudio.types.PositionalZone` as in the case of bubbles. When we run ``gen_scenario`` passing in ``friction_maps``, a "friction_map.pkl" file will be created under the output dir.
 
@@ -149,7 +148,7 @@ The Scenario Studio of SMARTS also allows the generation of a *friction map* whi
     ]
 
 Generate road map
-=================
+-----------------
 
 SMARTS was initially designed to use maps in the SUMO road network format; it supports these natively.
 However, SMARTS ``>=v0.5`` supports other custom map formats, as long as a class that implements the :class:`smarts.core.road_map.RoadMap` interface is provided to read the custom map format.
@@ -159,7 +158,7 @@ Current support of custom map formats:
 + :class:`smarts.core.waymo_map.WaymoMap` supports the use of Waymo map format.
 
 Create a custom map
--------------------
+^^^^^^^^^^^^^^^^^^^
 
 If not utilizing a built-in map type (i.e., SUMO, OpenDRIVE, or Waymo map),
 define a ``MapSpec`` object in your ``scenario.py``.
@@ -175,7 +174,7 @@ define a ``MapSpec`` object in your ``scenario.py``.
 
 
 Convert an existing map to SUMO
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you have a suitable file in another format, you can turn it into a SUMO road network using the :mod:`smarts.sstudio.sumo2mesh` conversion utility.
 
@@ -186,7 +185,7 @@ If you have a suitable file in another format, you can turn it into a SUMO road 
 
 
 Create a SUMO map
------------------
+^^^^^^^^^^^^^^^^^
 
 Design map using SUMO's `netedit <https://sumo.dlr.de/docs/NETEDIT.html>`_ and export it in a ``map.net.xml`` format.
 First, start ``netedit``.
@@ -207,7 +206,7 @@ Note that SMARTS prefers to have "internal links" (connections) as part of any J
 You can enable these by going to "Processing" -> "Options", choosing the "Junctions" section, and then making sure the "no-internal-links" checkbox is *unchecked*.
 
 Edit an existing SUMO map
--------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 "file" -> "Open Network..." to open an existing map.
 
@@ -234,7 +233,3 @@ To create custom connections between edges, first click the following icon on to
 The first lane you select would be the source lane, highlighted in blue. Then select other lanes as target lanes to connect to.
 
 .. image:: ../_static/create_connection.png
-
-Additional packages
-===================
-

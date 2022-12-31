@@ -3,7 +3,7 @@
 Environment
 ===========
 
-=====================
+
 Provided Environments
 =====================
 

@@ -3,16 +3,14 @@
 Setting up SMARTS
 =================
 
-=============
 Prerequisites
-=============
+-------------
 
 + python3 (3.7 and 3.8)
 + ubuntu (>=16.04)
 
-============
 Installation
-============
+------------
 
 Run the following commands to setup the SMARTS simulator.
 
@@ -60,9 +58,8 @@ Run the following commands to setup the SMARTS simulator.
     # If tests fail, check './sanity_test_result.xml' for test report. 
     $ make sanity-test
 
-=======
 Running
-=======
+-------
 
 Use the `scl` command to run SMARTS together with it's supporting processes. 
 

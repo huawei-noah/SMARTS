@@ -1,6 +1,5 @@
 .. _sumo:
 
-====
 SUMO
 ====
 
@@ -15,12 +14,12 @@ SMARTS currently directly installs SUMO version >=1.12.0 via `pip`.
 Alternative installation methods, albeit more difficult, are described below.
 
 Package managers
-================
+----------------
 
 + Installation instructions are available at `https://sumo.dlr.de/docs/Installing/ <https://sumo.dlr.de/docs/Installing/>`_ .
 
 Build from source
-==================
+-----------------
 
 If you wish to compile SUMO by yourself from source
 

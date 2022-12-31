@@ -3,9 +3,8 @@
 Visualization
 =============
 
-========
 Envision
-========
+--------
 
 SMARTS includes a visualizer called *Envision* that runs on a process separate from the main simulation process. See ./envision/README.md for more information on Envision, our front-end visualization tool. To manage these processes we use the ``scl run`` command line to run SMARTS together with it's supporting processes.
 
@@ -25,9 +24,8 @@ Feel free to change the above commands as necessary (the first is to specify loc
 
 To see the front-end visualization visit ``http://localhost:8081/`` in your browser. Select the simulator instance in the top left dropdown. If you are using SMARTS on a remote machine you will need to port forward 8081.
 
-======
 Visdom
-======
+------
 
 Use the `Visdom <https://github.com/facebookresearch/visdom>`_ integration to easily see the image-based observation outputs in real-time. 
 Start the visdom server before running the scenario and open the server URL in your browser `http://localhost:8097 <http://localhost:8097>`_.

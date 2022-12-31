@@ -1,11 +1,10 @@
 .. _containers:
 
-==========
 Containers
 ==========
 
 Docker
-======
+------
 
 SMARTS docker images are hosted at `dockerhub <https://hub.docker.com/u/huaweinoah>`_.
 
@@ -29,7 +28,7 @@ SMARTS docker images are hosted at `dockerhub <https://hub.docker.com/u/huaweino
     # Visit http://localhost:8081 in the host machine to see the running simulation in Envision.
 
 Singularity (Apptainer)
-=======================
+-----------------------
 
 Instructions for running SMARTS within a `singularity <https://apptainer.org/>`_ container.
 
