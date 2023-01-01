@@ -104,9 +104,7 @@ If  to a folder that contains multiple scenarios is passed through the ``Env`` c
     }
 
 Specifically, the next scenario will be automatically loaded after each call to ``env.reset()``. This is especially useful for
-training on multiple maps. Also if there are **n** routes file in ``scenario1/traffic`` dir, then each routes file will be combined with
-the shared map to form a scenario, leading to a total of **n** concrete scenarios (traffic-map combination) that SMARTS automatically
-swaps through for just ``scenario1``. See :class:`smarts.core.scenario` for implementation details.
+training on multiple maps. Also if there are **n** routes file in ``scenario1/traffic`` dir, then each routes file will be combined with the shared map to form a scenario, leading to a total of **n** concrete scenarios (traffic-map combination) that SMARTS automatically swaps through for just ``scenario1``. See :class:`smarts.core.scenario` for implementation details.
 
 In contrast to the above case, we can also use multiple maps for *different workers* together with RLlib as follows:
 
