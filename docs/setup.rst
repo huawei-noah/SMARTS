@@ -57,30 +57,3 @@ Run the following commands to setup the SMARTS simulator.
     # Run sanity-test and verify they are passing.
     # If tests fail, check './sanity_test_result.xml' for test report. 
     $ make sanity-test
-
-Running
--------
-
-Use the `scl` command to run SMARTS together with it's supporting processes. 
-
-To run the default example, firstly build the scenario `scenarios/sumo/loop`.
-
-.. code-block:: bash
-
-    $ scl scenario build --clean scenarios/sumo/loop
-
-Then, run a single-agent SMARTS simulation with Envision display and `loop` scenario.
-
-.. code-block:: bash
-    
-    $ scl run --envision examples/single_agent.py scenarios/sumo/loop 
-
-The `--envision` flag runs the Envision server which displays the simulation visualization. See Envision's README(./envision/README.md) for more information on Envision, SMARTS's front-end visualization tool.
-
-After executing the above command, visit `http://localhost:8081/ <http://localhost:8081/>`_ to view the experiment.
-
-Several example scripts are provided in [examples](./examples) folder, as well as a handful of scenarios in [scenarios](./scenarios) folder. You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
-
-.. code-block:: bash
-    
-    scl run --envision <examples/path> <scenarios/path>

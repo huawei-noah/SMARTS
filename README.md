@@ -55,74 +55,27 @@ for _ in range(1000):
 # Documentation
 :rotating_light: :bell: Read the docs :notebook_with_decorative_cover: at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest) . :bell: :rotating_light:
 
-# Setup
-### Installation
-```bash
-git clone https://github.com/huawei-noah/SMARTS.git
-cd <path/to/SMARTS>
+# Setup and Quickstart
+1. Read [setting up SMARTS](https://smarts.readthedocs.io/en/latest/setup.html).
 
-# For Mac OS X users, ensure XQuartz is pre-installed.
-# Install the system requirements. You may use the `-y` option to enable automatic assumption of "yes" to all prompts to avoid timeout from waiting for user input. 
-bash utils/setup/install_deps.sh
+2. Try [designing a simple experiment](https://smarts.readthedocs.io/en/latest/quickstart.html).
 
-# Setup virtual environment. Presently at least Python 3.7 and higher is officially supported.
-python3.7 -m venv .venv
-
-# Enter virtual environment to install dependencies.
-source .venv/bin/activate
-
-# Upgrade pip.
-pip install --upgrade pip
-
-# Install smarts with extras as needed. Extras include the following: 
-# `camera_obs` - needed for rendering camera sensor observations, and for testing.
-# `test` - needed for testing.
-# `train` - needed for RL training and testing.
-pip install -e '.[camera_obs,test,train]'
-
-# Run sanity-test and verify they are passing.
-# If tests fail, check './sanity_test_result.xml' for test report. 
-make sanity-test
-```
-
-### Running
-Use the `scl` command to run SMARTS together with it's supporting processes. 
-
-To run the default example, firstly build the scenario `scenarios/sumo/loop`.
-```bash
-scl scenario build --clean scenarios/sumo/loop
-```
-
-Then, run a single-agent SMARTS simulation with Envision display and `loop` scenario.
-```bash 
-scl run --envision examples/single_agent.py scenarios/sumo/loop 
-```
-
-The `--envision` flag runs the Envision server which displays the simulation visualization. See [./envision/README.md](./envision/README.md) for more information on Envision, SMARTS's front-end visualization tool.
-
-After executing the above command, visit http://localhost:8081/ to view the experiment.
-
-Several example scripts are provided in [examples](./examples) folder, as well as a handful of scenarios in [scenarios](./scenarios) folder. You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
-
-```bash
-scl run --envision <examples/path> <scenarios/path> 
-```
 
 # Examples 
-### Usage
+## Usage
 Illustration of various ways to use SMARTS. 
 1. [Single agent](examples/control/single_agent.py) example.
 1. [Multi agent](examples/control/multi_agent.py) example.
 1. [Parallel environments](examples/control/parallel_environment.py) to run multiple SMARTS environments in parallel.
 
-### RL Model
+## RL Model
 1. [MARL benchmark](baselines/marl_benchmark)
 1. [Intersection](examples/rl/intersection) using PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3).
     <img src="examples/rl/intersection/docs/_static/intersection.gif" height="450" width="600"/>
 1. [Racing](examples/rl/racing) using world model based RL.
     <img src="examples/rl/racing/docs/_static/racing.gif" height="350" width="600"/>
 
-### RL Environment
+## RL Environment
 1. [ULTRA](https://github.com/smarts-project/smarts-project.rl/blob/master/ultra) provides a gym-based environment built upon SMARTS to tackle intersection navigation, specifically the unprotected left turn.
 
 # Issues, Bugs, Feature Requests 

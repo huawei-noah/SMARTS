@@ -29,7 +29,6 @@ Some common configurations have been packaged up under :class:`smarts.core.agent
 
 This `AgentType.Tracker` preset gives us :class:`smarts.core.agent_interface.Waypoints` and the trajectory following action space `ActionSpaceType.Trajectory`, see :class:`smarts.core.controllers.ActionSpaceType` for more available action spaces.
 
-
 Agent :class:`smarts.core.agent.Agent`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -70,7 +69,6 @@ This is done by implementing the :class:`smarts.core.agent.Agent` interface:
            return traj
 
 Here we are implementing a simple lane following agent using the BezierMotionPlanner. The `obs` argument to `ExampleAgent.act()` will contain the observations specified in the `AgentInterface` above, and it's expected that the return value of the `act` method matches the `ActionSpaceType` chosen as well.
-
 
 AgentSpec :class:`smarts.zoo.agent_spec.AgentSpec`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -164,3 +162,30 @@ We can run this agent with "scenarios/sumo/loop", one of the scenarios packaged 
 The scenario is deterministic in totality. This means that assuming all agents take the exact same 
 actions the entire scenario will play back deterministically but each episode will have different
 behaviour.
+
+Running
+-------
+
+Use the `scl` command to run SMARTS together with it's supporting processes. 
+
+To run the default example, firstly build the scenario `scenarios/sumo/loop`.
+
+.. code-block:: bash
+
+    $ scl scenario build --clean scenarios/sumo/loop
+
+Then, run a single-agent SMARTS simulation with Envision display and `loop` scenario.
+
+.. code-block:: bash
+    
+    $ scl run --envision examples/single_agent.py scenarios/sumo/loop 
+
+The `--envision` flag runs the Envision server which displays the simulation visualization. See Envision's README(./envision/README.md) for more information on Envision, SMARTS's front-end visualization tool.
+
+After executing the above command, visit `http://localhost:8081/ <http://localhost:8081/>`_ to view the experiment.
+
+Several example scripts are provided in [examples](./examples) folder, as well as a handful of scenarios in [scenarios](./scenarios) folder. You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
+
+.. code-block:: bash
+    
+    scl run --envision <examples/path> <scenarios/path>
