@@ -62,20 +62,20 @@ for _ in range(1000):
 
 
 # Examples 
-## Usage
+### Usage
 Illustration of various ways to use SMARTS. 
 1. [Single agent](examples/control/single_agent.py) example.
 1. [Multi agent](examples/control/multi_agent.py) example.
 1. [Parallel environments](examples/control/parallel_environment.py) to run multiple SMARTS environments in parallel.
 
-## RL Model
+### RL Model
 1. [MARL benchmark](baselines/marl_benchmark)
 1. [Intersection](examples/rl/intersection) using PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3).
     <img src="examples/rl/intersection/docs/_static/intersection.gif" height="450" width="600"/>
 1. [Racing](examples/rl/racing) using world model based RL.
     <img src="examples/rl/racing/docs/_static/racing.gif" height="350" width="600"/>
 
-## RL Environment
+### RL Environment
 1. [ULTRA](https://github.com/smarts-project/smarts-project.rl/blob/master/ultra) provides a gym-based environment built upon SMARTS to tackle intersection navigation, specifically the unprotected left turn.
 
 # Issues, Bugs, Feature Requests 
