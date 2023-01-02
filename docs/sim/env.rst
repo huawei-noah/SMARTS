@@ -133,4 +133,4 @@ SMARTS environments allow three types of vehicles to exist concurrently, which a
 + **social agents** - controlled by (pre-trained) models from the Agent Zoo (see :mod:`zoo.policies`). Like ego agents, social agents also use :class:`smarts.zoo.agent_spec.AgentSpec` to register with the environment. They interact by watching the observation and returning action messages. Compared to ego agents, social agents are driven by trained models, hence they can provide behavioral characteristics we want.
 + **traffic vehicles** - controlled by an underlying traffic engine, like ``SUMO`` or ``SMARTS``.
 
-Refer to :ref:`scenario_studio` for using and designing scenarios, traffic vehicles, social agents, ego agents, and maps.
+Refer to :ref:`scenario_studio` for designing scenarios, traffic vehicles, social agents, ego agents, and maps.
