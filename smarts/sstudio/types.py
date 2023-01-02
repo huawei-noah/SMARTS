@@ -1003,7 +1003,7 @@ class RoadSurfacePatch:
 
 
 @dataclass(frozen=True)
-class _ActorAndMission:
+class ActorAndMission:
     actor: Actor
     mission: Union[Mission, EndlessMission, LapMission]
 

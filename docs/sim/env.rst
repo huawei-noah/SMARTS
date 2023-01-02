@@ -77,40 +77,30 @@ RLlibHiwayEnv
 Features
 --------
 
-Flexible Training
-^^^^^^^^^^^^^^^^^
-
-Since SMARTS environments inherit from either ``gym.Env`` or ``MultiAgentEnv``, they are able to provide common APIs to support single-agent and multi-agent RL training. Also, by leveraging Ray and RLlib, ``RLlibHiwayEnv`` comes with out-of-the-box scalability and multi-instance training on multi-cores.
-
 Scenario Iterator
 ^^^^^^^^^^^^^^^^^
 
-If  to a folder that contains multiple scenarios is passed through the ``Env`` config, then SMARTS will automatically cycle these scenarios.
+If (i) a list of scenarios, or (ii) a folder containing multiple scenarios, is passed through the environment arguments, then SMARTS automatically iterates over those scenarios. The next scenario is loaded after each ``env.reset()`` call. This feature is especially useful for training on multiple maps.
+
+Moreover, if there are **n** routes file in ``scenario1/build/traffic`` dir, then each routes file will be combined with the map to form a scenario, leading to a total of **n** concrete scenarios (i.e., traffic-map combination) that SMARTS automatically iterates through for ``scenario1``. See :class:`smarts.core.scenario.Scenario` for implementation details.
 
 .. code-block:: python
-
-    # Train each worker with different environmental setting.
-    tracks_dir = [scenario1, scenario2, ...]
 
     tune_config = {
         "env": RLlibHiwayEnv,
         "env_config": {
             "seed": tune.randint(1000),
-            "scenarios": tracks_dir,
+            "scenarios": [scenario1, scenario2, ...],
             "headless": args.headless,
             "agent_specs": agent_specs,
         },
         ...
     }
 
-Specifically, the next scenario will be automatically loaded after each call to ``env.reset()``. This is especially useful for
-training on multiple maps. Also if there are **n** routes file in ``scenario1/traffic`` dir, then each routes file will be combined with the shared map to form a scenario, leading to a total of **n** concrete scenarios (traffic-map combination) that SMARTS automatically swaps through for just ``scenario1``. See :class:`smarts.core.scenario` for implementation details.
-
-In contrast to the above case, we can also use multiple maps for *different workers* together with RLlib as follows:
+In contrast to the above case, we can also use multiple maps for *different workers* in RLlib as follows.
 
 .. code-block:: python
 
-    # train each worker with different environmental setting
     tracks_dir = [scenario1, scenario2, ...]
 
     class MultiEnv(RLlibHiWayEnv):
@@ -129,16 +119,15 @@ In contrast to the above case, we can also use multiple maps for *different work
         ...
     }
 
-These two ways are different. In the first way, samples are collected from different scenarios *across time*, but in the second way
-different workers can be collecting sampels from different scenarios *simultaneously* thanks to distributed computing of multiple workers.
-This means that in the first case, the agent will be getting experiences from the same scenarios, whereas in the second case, it will
-already get a mixture of experiences from different scenarios.
+.. note::
+
+    The above two cases of scenario iteration are different. In the first case, samples are collected from different scenarios *across time*, but in the second case different workers collect samples from different scenarios *simultaneously* thanks to distributed computing of multiple workers.
+    This means that in the first case, the agents get experiences from the same scenario, whereas in the second case, the agents get a mixture of experiences from different scenarios.
 
 Vehicle Diversity
 ^^^^^^^^^^^^^^^^^
 
-SMARTS environments allow three types of vehicles to exist concurrently, which are **ego agents** under the control of RL model currently in training , **social agents** controlled by (trained) models from the "Agent Zoo", and **traffic vehicles** controlled by an underlying
-traffic simulator, like SUMO or SMARTS.
+SMARTS environments allow three types of vehicles to exist concurrently, which are **ego agents** under the control of RL model currently in training , **social agents** controlled by (trained) models from the "Agent Zoo" (see :mod:`zoo.policies`), and **traffic vehicles** controlled by an underlying traffic simulator, like ``"SUMO"`` or ``"SMARTS"``.
 
 Ego agents are controlled by our training algorithms, and are able to interact with environment directly. Like ego agents, social agents also use AgentInterface to register with the environment and interact with it through standard observation and action messages, except that they are driven by trained models and act in separate ``Ray`` processes, hence they can provide behavioral characteristics we want.
 

@@ -26,18 +26,20 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
 
 
 .. toctree::
+   :hidden:
    :maxdepth: 3
    :caption: Getting Started
 
    setup.rst
    quickstart
-   sim/agent.rst
    sim/env.rst
    sim/observations.rst
+   sim/agent.rst
    sim/cli.rst
    sim/visualization.rst
 
 .. toctree::
+   :hidden:
    :maxdepth: 3
    :caption: Next Steps
 
@@ -46,6 +48,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    sim/bubbles.rst
 
 .. toctree::
+   :hidden:
    :maxdepth: 3
    :caption: Examples
 
@@ -54,12 +57,14 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    examples/rllib.rst
 
 .. toctree::
+   :hidden:
    :maxdepth: 3
    :caption: API
 
    api/modules.rst
 
 .. toctree::
+   :hidden:
    :maxdepth: 3
    :caption: Ecosystem
 
@@ -67,6 +72,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    ecosystem/waymo.rst
 
 .. toctree::
+   :hidden:
    :maxdepth: 3
    :caption: Resources
 
@@ -74,10 +80,3 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    resources/diagnostic.rst
    resources/faq.rst
    resources/contributing.rst
-
-Indices and Tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

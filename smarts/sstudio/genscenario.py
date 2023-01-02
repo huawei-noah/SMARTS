@@ -571,7 +571,7 @@ def gen_missions(
     _validate_missions(missions)
 
     missions = [
-        types._ActorAndMission(actor=actor, mission=resolve_mission(mission))
+        types.ActorAndMission(actor=actor, mission=resolve_mission(mission))
         for actor, mission in itertools.product(actors, missions)
     ]
     with open(output_path, "wb") as f:
