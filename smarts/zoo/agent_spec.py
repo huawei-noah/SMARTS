@@ -18,7 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import inspect
-import logging
 import warnings
 from dataclasses import dataclass
 from typing import Any, Callable, Optional

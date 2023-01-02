@@ -575,6 +575,7 @@ class Traffic:
     """Traffic-generation engine to use. Supported values include "SUMO" and "SMARTS". "SUMO" requires using a SumoRoadNetwork for the RoadMap.
     """
 
+
 @dataclass(frozen=True)
 class EntryTactic:
     """The tactic that the simulation should use to acquire a vehicle for an actor."""
@@ -1004,8 +1005,8 @@ class RoadSurfacePatch:
 
 @dataclass(frozen=True)
 class ActorAndMission:
-    """Holds an Actor object and its associated Mission.
-    """
+    """Holds an Actor object and its associated Mission."""
+
     actor: Actor
     """Specification for traffic actor.
     """
@@ -1063,15 +1064,17 @@ class TrafficHistoryDataset:
 
 @dataclass(frozen=True)
 class Scenario:
-    """The sstudio scenario representation.
-    """
+    """The sstudio scenario representation."""
+
     map_spec: Optional[MapSpec] = None
     """Specifies the road map."""
     traffic: Optional[Dict[str, Traffic]] = None
     """Background traffic vehicle specification."""
     ego_missions: Optional[Sequence[Mission]] = None
     """Ego agent missions."""
-    social_agent_missions: Optional[Dict[str, Tuple[Sequence[SocialAgentActor], Sequence[Mission]]]] = None
+    social_agent_missions: Optional[
+        Dict[str, Tuple[Sequence[SocialAgentActor], Sequence[Mission]]]
+    ] = None
     """
     Every dictionary item ``{group: (actors, missions)}`` gets run simultaneously.
     If actors > 1 and missions = 0 or actors = 1 and missions > 0, we cycle

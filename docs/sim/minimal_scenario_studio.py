@@ -3,8 +3,8 @@ from pathlib import Path
 from smarts.sstudio import types as t
 from smarts.sstudio import gen_scenario
 
-actor = t.TrafficActor(
-    name="car", 
+traffic_actor = t.TrafficActor(
+    name="car",
     speed=t.Distribution(sigma=0.2, mean=0.8),
 )
 traffic = t.Traffic(
@@ -12,10 +12,10 @@ traffic = t.Traffic(
     flows=[
         t.Flow(
             route=t.RandomRoute(),
-            begin=0, 
-            end=10 * 60 * 60, # Flow lasts for 10 hours.
+            begin=0,
+            end=10 * 60 * 60,  # Flow lasts for 10 hours.
             rate=50,
-            actors={actor: 1},
+            actors={traffic_actor: 1},
         )
         for i in range(10)
     ],

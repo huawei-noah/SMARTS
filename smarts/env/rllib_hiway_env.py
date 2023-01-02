@@ -35,7 +35,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
     parallel. This environment requires a specific configuration.
 
     Args:
-        config (Dict[str,Any]): An environment configuration dictionary containing the following key value pairs. 
+        config (Dict[str,Any]): An environment configuration dictionary containing the following key value pairs.
 
             agent_specs: Dictionary mapping agent_ids to agent specs. Required.
 
