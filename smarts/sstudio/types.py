@@ -1004,8 +1004,14 @@ class RoadSurfacePatch:
 
 @dataclass(frozen=True)
 class ActorAndMission:
+    """Holds an Actor object and its associated Mission.
+    """
     actor: Actor
+    """Specification for traffic actor.
+    """
     mission: Union[Mission, EndlessMission, LapMission]
+    """Mission for traffic actor.
+    """
 
 
 @dataclass(frozen=True)

@@ -3,31 +3,27 @@ from pathlib import Path
 from smarts.sstudio import types as t
 from smarts.sstudio import gen_scenario
 
-# Definition of a traffic flow
+actor = t.TrafficActor(
+    name="car", 
+    speed=t.Distribution(sigma=0.2, mean=0.8),
+)
 traffic = t.Traffic(
+    engine="SUMO",
     flows=[
         t.Flow(
-            route=t.Route(
-                begin=("west", lane_idx, 10),
-                end=("east", lane_idx, -10),
-            ),
+            route=t.RandomRoute(),
+            begin=0, 
+            end=10 * 60 * 60, # Flow lasts for 10 hours.
             rate=50,
-            actors={
-                t.TrafficActor("car"): 1,
-            },
+            actors={actor: 1},
         )
-        for lane_idx in range(3)
-    ]
+        for i in range(10)
+    ],
 )
-
-missions = [
-    t.Mission(t.Route(begin=("west", 0, 0), end=("east", 0, "max"))),
-]
 
 gen_scenario(
     scenario=t.Scenario(
         traffic={"basic": traffic},
-        ego_missions=missions,
     ),
     output_dir=Path(__file__).parent,
 )

@@ -127,10 +127,9 @@ In contrast to the above case, we can also use multiple maps for *different work
 Vehicle Diversity
 ^^^^^^^^^^^^^^^^^
 
-SMARTS environments allow three types of vehicles to exist concurrently, which are **ego agents** under the control of RL model currently in training , **social agents** controlled by (trained) models from the "Agent Zoo" (see :mod:`zoo.policies`), and **traffic vehicles** controlled by an underlying traffic simulator, like ``"SUMO"`` or ``"SMARTS"``.
+SMARTS environments allow three types of vehicles to exist concurrently, which are **ego agents** under the control of RL model currently in training , **social agents** controlled by (trained) models from the "Agent Zoo" (see :mod:`zoo.policies`).
 
 Ego agents are controlled by our training algorithms, and are able to interact with environment directly. Like ego agents, social agents also use AgentInterface to register with the environment and interact with it through standard observation and action messages, except that they are driven by trained models and act in separate ``Ray`` processes, hence they can provide behavioral characteristics we want.
 
-Traffic vehicles are controlled by a traffic simulator (e.g., SUMO or SMARTS).
 
-Refer to :ref:`scenario_studio` for using and designing scenarios, traffic, social agents, ego agents, agent missions, and maps.
+Refer to :ref:`scenario_studio` for using and designing scenarios, traffic vehicles, social agents, ego agents, and maps.

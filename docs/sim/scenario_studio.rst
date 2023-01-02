@@ -7,32 +7,75 @@
 Scenario Studio
 ===============
 
-The Scenario Studio of SMARTS is a stand alone package ``sstudio`` that supports flexible and expressive scenario specification. 
+The Scenario Studio ``sstudio`` of SMARTS is a stand alone package :mod:`smarts.sstudio` that supports flexible and expressive scenario specification. The ``sstudio`` domain specific language (DSL) has a simple ontology defined by :mod:`smarts.sstudio.types` to help express your scenario needs in SMARTS.
 
-At the most basic level scenarios combine a map with a traffic description.  SMARTS interacts with such maps abstractly (polymorphically) through the ``RoadMap`` interface in order to support multiple map formats and allow for extending to support new formats.
+A scenario is formed by combining several inputs, such as (i) road map, (ii) traffic, (iii) social agents, (iv) ego agents, (v) bubbles, (vi) friction patches, and (vii) traffic histories. Refer to :class:`smarts.sstudio.types.Scenario`.
 
-The ``sstudio`` domain specific language (DSL) has a simple ontology defined by :mod:`smarts.sstudio.types` to help express your scenario needs in SMARTS.
+SMARTS interacts with road maps abstractly (polymorphically) through the :class:`smarts.core.road_map.RoadMap` interface in order to support multiple map formats and allow for extending to support new map formats.
 
 SMARTS ships with a variety of pre-designed scenarios, which can be found in ``SMARTS/scenarios`` and ``SMARTS/smarts/scenarios`` directories.
 
-Creating scenarios
-------------------
-
-Workflow to create a scenario is as follows.
+A typical scenario creation workflow is as follows.
 
 1. Create a new scenario folder, preferably under ``SMARTS/scenarios`` directory, and create a new ``scenario.py`` file in the new folder.
 2. Design the map.
-   
-   * For a SUMO road network, create the map using `netedit <https://sumo.dlr.de/docs/NETEDIT.html>`_ and save it in the new folder.
-   * For other road networks, define a ``MapSpec`` object in ``scenario.py``.
 
-3. To add social vehicle, traffic, or agent missions, define a traffic spec in ``scenario.py``.
-4. Finally, build the scenario by running
+   * For a SUMO road network, create the map using `netedit <https://sumo.dlr.de/docs/NETEDIT.html>`_ and save it in the new scenario folder.
+   * For other road networks, define and instantiate a :class:`smarts.sstudio.types.MapSpec` object in ``scenario.py``. Pass the ``MapSpec`` object to :class:`smarts.sstudio.types.Scenario` in ``scenario.py``.
+
+3. Add traffic, social agents, ego agents, etc, to :class:`smarts.sstudio.types.Scenario` in ``scenario.py``.
+4. Feed the created :class:`smarts.sstudio.types.Scenario` object to :func:`smarts.sstudio.genscenario.gen_scenario` in ``scenario.py`` to generate the scenario. 
+
+   .. code:: python
+        
+      gen_scenario(
+        scenario=Scenario(...),
+        output_dir=Path(__file__).parent,
+      )
+
+5. Finally, build the scenario by running
 
    .. code-block:: bash
 
       $ cd <path>/SMARTS
       $ scl scenario build-all <path>/<new_scenario_folder>
+
+Following sections below explain how to handle and edit (i) traffic, (ii) social agents, (iii) ego agents, (iv) friction patches, and (v) road maps, in ``scenario.py`` file. Bubbles are explained at :ref:`bubbles`.
+
+Generate traffic
+----------------
+
+A minimal ``scenario.py`` defining :class:`smarts.sstudio.types.Traffic`.
+
+.. literalinclude:: ./minimal_scenario_studio.py
+   :language: python
+
+Simply run the ``scenario.py`` file as a regular Python script to generate the scenario.
+
+.. code-block:: bash
+
+    $ python3.8 scenarios/scenario.py
+
+Traffic vehicles are controlled by either ``SUMO`` or ``SMARTS`` engine. Defaults to ``engine="SUMO"``. ``engine="SUMO"`` can only be used on SUMO road networks. For other map types use ``engine="SMARTS"``.
+
+:class:`smarts.sstudio.types.Flow` is used to generate repeated vehicle runs on the same route. Vehicle route, departure rate, and behaviour, can be configured here.
+
+The example above simply uses a random route ``route=RandomRoute()``. A more specific route may be used such as :python:`Route(begin=("gneE72", 0, "random"), end=("edge2", 1, "max"),)` which defines the edge id, lane id, and offset into the lane, to designate the start and end vehicle positions.
+
+:class:`smarts.sstudio.types.TrafficActor` is used to specify a spec for traffic actors (e.g. Vehicles, Pedestrians, etc). The defaults provided are for a car.
+Acceleration, deceleration, speed distribution, imperfection distribution, and other configurations, can be specified for the traffic.
+
+When :func:`smarts.sstudio.genscenario.gen_scenario` is executed, a dir named "traffic" will be created under ``output_dir`` which contains background vehicle and route definitions.
+
+.. important::
+    If you want to train a model on one scenario, remember to set the ``end`` time of :class:`smarts.sstudio.types.Flow` larger or equal to your expected training time, since SMARTS will continue the flow after each ``reset`` call. 
+    
+    However, if there are multiple scenarios to train for one worker, you can relax this restriction since after the scenario change, the flow will also be reset to the beginning time.
+
+Generate social agents
+----------------------
+
+**social agents** controlled by (trained) models from the "Agent Zoo" (see :mod:`zoo.policies`)
 
 Scenarios can reference remote packages or local zoo agent packages by including a ``requirements.txt`` file in the root of the scenario folder. These additional packages will be installed when the scenario is built.
 
@@ -45,7 +88,7 @@ In the requirements.txt file:
     rl-agent==1.0.0
     ...
 
-Then in the scenario.py file:
+Then in the ``scenario.py`` file:
 
 .. code-block:: python
 
@@ -53,68 +96,13 @@ Then in the scenario.py file:
         name="my-rl-agent",
         agent_locator="rl_agent:rl_agent-v1"
     )
+    social vehicle, 
 
-Following sections below explain how to handle and edit traffic, social agents, agent missions, maps, and any required additional packages, in the ``scenario.py`` file.
 
-Generate traffic
-----------------
+Generate ego missions
+---------------------
 
-.. code-block:: python
-
-    traffic_actor = TrafficActor(
-        name="car", 
-        speed=Distribution(sigma=0.2, mean=0.8),
-    )
-
-    # Add 10 social vehicles with random routes.
-    traffic = Traffic(
-        engine="SUMO",
-        flows=[
-            Flow(
-                route=RandomRoute(),
-                begin=0, 
-                end=10 * 60 * 60, # Flow lasts for 10 hours.
-                rate=25, 
-                actors={traffic_actor: 1},
-            )
-            for i in range(10)
-        ]
-    )
-
-The ``engine`` argument to ``Traffic`` can either be ``"SUMO"`` or ``"SMARTS"``. 
-Defaults to ``engine="SUMO"``. 
-``engine="SUMO"`` can only be used on SUMO road networks. For other map types use ``engine="SMARTS"``.
-
-``Flow`` is used to generate repeated vehicle runs on the same route. Vehicle route, departure rate, and behaviour, can be configured here.
-
-The example above simply uses a random route ``route=RandomRoute()``. A more specific route may be used such as :python:`Route(begin=("gneE72", 0, "random"), end=("edge2", 1, "max"),)` which defines the edge id, lane id, and offset into the lane, for the start and end vehicle positions.
-
-``traffic_actor`` is used as a spec for traffic actors (e.g. Vehicles, Pedestrians, etc). The defaults provided are for a car.
-Acceleration, deceleration, speed distribution, imperfection distribution, and other configurations, can be specified for the traffic.
-For more ``TrafficActor`` config see :mod:`smarts.sstudio.types`.
-
-After ``traffic`` is supplied to the ``gen_scenario`` function, a dir named "traffic" will be created under ``output_dir`` which contains background vehicle and route definitions.
-
-This a short ``scenario.py`` example of how it works.
-
-.. literalinclude:: ./minimal_scenario_studio.py
-   :language: python
-
-Simply run the ``scenario.py`` file as a regular Python script to generate the scenario.
-
-.. code-block:: bash
-
-    $ python3.8 scenarios/scenario.py
-
-.. important::
-    If you want to train a model on one scenario, remember to set the ``end`` time of ``Flow`` larger or equal to your expected training time, since SMARTS will continue the flow after each ``reset`` call. 
-    
-    However, if there are multiple scenarios to train for one worker, you can relax this restriction since after the scenario change, the flow will also be reset to the beginning time.
-
-Generate missions
------------------
-
-Scenario Studio also allows generation of *missions* for ego agents and social agents. These missions are similar to routes for social vehicles. When we run ``gen_scenario``, ``missions.rou.xml`` file will be created in the output dir.
+Scenario Studio also allows generation of *missions* for ego agents and social agents. These missions are similar to routes for social vehicles. When :func:`smarts.sstudio.genscenario.gen_scenario` is executed, ``missions.rou.xml`` file will be created in the output dir.
 
 .. code-block:: python
 
@@ -131,10 +119,10 @@ Scenario Studio also allows generation of *missions* for ego agents and social a
 
     The "correctness" of traffic and missions is partially the user's responsibility. Specifically, ensuring that the start positions of ego vehicle mission routes and social vehicle traffic routes don't overlap is not handled by ``sstudio``. If they were to overlap, a collision will be immediately detected and the episode will end.
 
-Generate friction map
----------------------
+Generate friction patches
+-------------------------
 
-The Scenario Studio of SMARTS also allows the generation of a *friction map* which consists of a list of *surface patches* for ego agents and social agents. These surface patches uses :class:`smarts.sstudio.types.PositionalZone` as in the case of bubbles. When we run ``gen_scenario`` passing in ``friction_maps``, a "friction_map.pkl" file will be created under the output dir.
+The Scenario Studio of SMARTS also allows the generation of *friction patches* which consists of a list of *surface patches* for ego agents and social agents. These surface patches uses :class:`smarts.sstudio.types.PositionalZone` as in the case of bubbles. When we run :func:`smarts.sstudio.genscenario.gen_scenario` passing in ``friction_maps``, a "friction_map.pkl" file will be created under the output dir.
 
 .. code-block:: python
 
