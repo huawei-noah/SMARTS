@@ -572,8 +572,8 @@ class Traffic:
     trips: Optional[Sequence[Trip]] = None
     """Trips are used to define a series of single vehicle trip."""
     engine: str = "SUMO"
-    """The traffic-generation engine to use. Supported values include: SUMO, SMARTS.  SUMO requires using a SumoRoadNetwork for the RoadMap."""
-
+    """Traffic-generation engine to use. Supported values include "SUMO" and "SMARTS". "SUMO" requires using a SumoRoadNetwork for the RoadMap.
+    """
 
 @dataclass(frozen=True)
 class EntryTactic:
@@ -1057,19 +1057,24 @@ class TrafficHistoryDataset:
 
 @dataclass(frozen=True)
 class Scenario:
-    """The sstudio scenario representation."""
-
+    """The sstudio scenario representation.
+    """
     map_spec: Optional[MapSpec] = None
+    """Specifies the road map."""
     traffic: Optional[Dict[str, Traffic]] = None
+    """Background traffic vehicle specification."""
     ego_missions: Optional[Sequence[Mission]] = None
-    # e.g. { "turning_agents": ([actors], [missions]), ... }
-    social_agent_missions: Optional[
-        Dict[str, Tuple[Sequence[SocialAgentActor], Sequence[Mission]]]
-    ] = None
-    """Every dictionary item {group: (actors, missions)} gets run simultaneously. If
-    actors > 1 and missions = 0 or actors = 1 and missions > 0 we cycle through them
-    every episode. Otherwise actors must be the same length as missions.
+    """Ego agent missions."""
+    social_agent_missions: Optional[Dict[str, Tuple[Sequence[SocialAgentActor], Sequence[Mission]]]] = None
+    """
+    Every dictionary item ``{group: (actors, missions)}`` gets run simultaneously.
+    If actors > 1 and missions = 0 or actors = 1 and missions > 0, we cycle
+    through them every episode. Otherwise actors must be the same length as 
+    missions.
     """
     bubbles: Optional[Sequence[Bubble]] = None
+    """Capture bubbles for focused social agent simulation."""
     friction_maps: Optional[Sequence[RoadSurfacePatch]] = None
+    """Friction coefficient of patches of road surface."""
     traffic_histories: Optional[Sequence[Union[TrafficHistoryDataset, str]]] = None
+    """Traffic vehicles trajectory dataset to be replayed."""
