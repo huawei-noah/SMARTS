@@ -429,12 +429,12 @@ class SMARTS(ProviderManager):
             try:
                 self._resetting = True
                 return self._reset(scenario, start_time)
-            except Exception as e:
+            except Exception as err:
                 if not first_exception:
-                    first_exception = e
+                    first_exception = err
             finally:
                 self._resetting = False
-        self._log.error(f"Failed to successfully reset after {tries} times.")
+        self._log.error("Failed to successfully reset after %i tries.", tries)
         raise first_exception
 
     def _reset(self, scenario: Scenario, start_time: float):
