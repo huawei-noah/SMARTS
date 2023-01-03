@@ -1031,7 +1031,7 @@ class ProcessWorker:
 
     def stop(self):
         """Sends a stop signal to the worker."""
-        self._parent_connection.send(self.WorkerDone)
+        self._parent_connection.send(self.WorkerDone())
 
     @property
     def running(self) -> bool:
