@@ -25,9 +25,9 @@ An example of how to create an ``Agent`` instance is shown below.
 
 We will further explain the fields of the `Agent` class later on this page. You can also read the source code at :class:`smarts.env.agent`.
 
-==============
+
 AgentInterface
-==============
+--------------
 
 :class:`smarts.core.agent_interface.AgentInterface` regulates the flow of information between the agent and a SMARTS environment. It specifies the observations the agent expects to receive from the environment and the action the agent does to the environment. To create an agent interface, you can try
 
@@ -41,21 +41,36 @@ AgentInterface
 
 SMARTS provide some interface types, and the differences between them is shown in the table below. **T** means the ``AgentType`` will provide this option or information. 
 
-.. code-block:: python
++------------------------+----------------------------+----------------------------------------+---------------------------------+------------------------+-----------------------------------------+------------------------------+------------------------------------+-------------------------+---------------------------------+------------------------------+------------------------------+--------------------------+
+|                        |       AgentType.Full       | AgentType.StandardWithAbsoluteSteering |       AgentType.Standard        |    AgentType.Laner     |          AgentType.LanerWithSpeed       |      AgentType.Tracker       |  AgentType.TrajectoryInterpolator  |   AgentType.MPCTracker  |          AgentType.Boid         |        AgentType.Loner       |       AgentType.Tagger       |     AgentType.Direct     |
++========================+============================+========================================+=================================+========================+=========================================+==============================+====================================+=========================+=================================+==============================+==============================+==========================+
+|         action         | ActionSpaceType.Continuous |       ActionSpaceType.Continuous       | ActionSpaceType.ActuatorDynamic |  ActionSpaceType.Lane  | ActionSpaceType.LaneWithContinuousSpeed |  ActionSpaceType.Trajectory  | ActionSpaceType.TrajectoryWithTime |   ActionSpaceType.MPC   | ActionSpaceType.MultiTargetPose |  ActionSpaceType.Continuous  |  ActionSpaceType.Continuous  |  ActionSpaceType.Direct  |
+|    max_episode_steps   |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                **T**               |           **T**         |              **T**              |            **T**             |            **T**             |            **T**         |
+|  neighborhood_vehicles |           **T**            |                 **T**                  |              **T**              |                        |                                         |                              |                                    |                         |              **T**              |                              |            **T**             |            **T**         |
+|        waypoints       |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                                    |           **T**         |              **T**              |            **T**             |            **T**             |                          |
+| drivable_area_grid_map |           **T**            |                 **F**                  |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |                          |
+|           ogm          |           **T**            |                 **F**                       |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |                          |
+|           rgb          |           **T**            |                 **F**                       |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |                          |
+|          lidar         |           **T**            |                 **F**                       |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |                          |
+|      accelerometer     |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                **T**               |           **T**         |              **T**              |            **T**             |            **T**             |            **T**         |
+|         signals        |           **T**            |                 **F**                       |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |            **T**         |
+|          debug         |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                **T**               |           **T**         |              **T**              |            **T**             |            **T**             |            **T**         |
++------------------------+----------------------------+----------------------------------------+---------------------------------+------------------------+-----------------------------------------+------------------------------+------------------------------------+-------------------------+---------------------------------+------------------------------+------------------------------+--------------------------+
 
-    |                        |       AgentType.Full       | AgentType.StandardWithAbsoluteSteering |       AgentType.Standard        |    AgentType.Laner     |          AgentType.LanerWithSpeed       |      AgentType.Tracker       |  AgentType.TrajectoryInterpolator  |   AgentType.MPCTracker  |          AgentType.Boid         |        AgentType.Loner       |       AgentType.Tagger       |     AgentType.Direct     |
-    | :--------------------: | :------------------------: | :------------------------------------: | :-----------------------------: | :--------------------: | :-------------------------------------: | :--------------------------: | :--------------------------------: | :---------------------: | :-----------------------------: | :--------------------------: | :--------------------------: | :----------------------: |
-    |         action         | ActionSpaceType.Continuous |       ActionSpaceType.Continuous       | ActionSpaceType.ActuatorDynamic |  ActionSpaceType.Lane  | ActionSpaceType.LaneWithContinuousSpeed |  ActionSpaceType.Trajectory  | ActionSpaceType.TrajectoryWithTime |   ActionSpaceType.MPC   | ActionSpaceType.MultiTargetPose |  ActionSpaceType.Continuous  |  ActionSpaceType.Continuous  |  ActionSpaceType.Direct  |
-    |    max_episode_steps   |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                **T**               |           **T**         |              **T**              |            **T**             |            **T**             |            **T**         |
-    |  neighborhood_vehicles |           **T**            |                 **T**                  |              **T**              |                        |                                         |                              |                                    |                         |              **T**              |                              |            **T**             |            **T**         |
-    |        waypoints       |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                                    |           **T**         |              **T**              |            **T**             |            **T**             |                          |
-    | drivable_area_grid_map |           **T**            |                                        |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |                          |
-    |           ogm          |           **T**            |                                        |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |                          |
-    |           rgb          |           **T**            |                                        |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |                          |
-    |          lidar         |           **T**            |                                        |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |                          |
-    |      accelerometer     |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                **T**               |           **T**         |              **T**              |            **T**             |            **T**             |            **T**         |
-    |         signals        |           **T**            |                                        |                                 |                        |                                         |                              |                                    |                         |                                 |                              |                              |            **T**         |
-    |          debug         |           **T**            |                 **T**                  |              **T**              |         **T**          |                   **T**                 |            **T**             |                **T**               |           **T**         |              **T**              |            **T**             |            **T**             |            **T**         |
++--------------------+----+-----+---+---+---+---+---+---+---+
+|                    | 2  | 33  |   |   |   |   |   |   |   |
++====================+====+=====+===+===+===+===+===+===+===+
+| action             |    |     |   |   |   |   |   |   |   |
+| max_episode_steps  | 5  |     |   |   |   |   |   |   |   |
+| 44                 |    | 5   |   |   |   |   |   |   |   |
+|                    |    |     |   |   |   |   |   |   |   |
+|                    |    |     |   |   |   |   |   |   |   |
+|                    |    |     |   |   |   |   |   |   |   |
+|                    |    |     |   |   |   |   |   |   |   |
+|                    |    |     |   |   |   |   |   |   |   |
+|                    |    |     |   |   |   |   |   |   |   |
++--------------------+----+-----+---+---+---+---+---+---+---+
+
 
 ``max_episode_steps`` controls the max running steps allowed for the agent in an episode. The default ``None`` setting means agents have no such limit.
 You can move ``max_episode_steps`` control authority to RLlib with their config option ``horizon``, but lose the ability to customize
@@ -116,14 +131,14 @@ For further customization, you can try:
 
 Refer to :class:`smarts/core/agent_interface` for more details.
 
+.. important::
 
-IMPORTANT: The generation of a DrivableAreaGridMap (``drivable_area_grid_map=True``), OGM (``ogm=True``) and/or RGB (``rgb=True``) images may significantly slow down the environment ``step()``. If your model does not consume such observations, we recommend that you set them to ``False``.
+    IMPORTANT: The generation of a DrivableAreaGridMap (``drivable_area_grid_map=True``), OGM (``ogm=True``) and/or RGB (``rgb=True``) images may significantly slow down the environment ``step()``. If your model does not consume such observations, we recommend that you set them to ``False``.
 
 IMPORTANT: Depending on how your agent model is set up, ``ActionSpaceType.ActuatorDynamic`` might allow the agent to learn faster than ``ActionSpaceType.Continuous`` simply because learning to correct steering could be simpler than learning a mapping to all the absolute steering angle values. But, again, it also depends on the design of your agent model. 
 
-======
 Agent
-======
+-----
 
 An agent maps an observation to an action.
 
@@ -143,9 +158,8 @@ Another example:
 .. literalinclude:: ../minimal_agent.py
    :language: python
 
-===================
 Spaces
-===================
+------
 
 Spaces provide samples for variation. For reference, see https://gymnasium.farama.org/api/spaces/ .
 
