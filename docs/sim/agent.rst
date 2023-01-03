@@ -162,11 +162,4 @@ Spaces provide samples for variation. For reference, see https://gymnasium.faram
     }
 
 Observations can be customized. Some example customizations are provided in 
-:class:`smarts.env.custom_observations`, with the following meanings:
-
-- "distance_from_center": distance to lane center 
-- "angle_error": ego heading relative to the closest waypoint
-- "speed": ego speed
-- "steering": ego steering
-- "ego_ttc": time to collision in each lane
-- "ego_lane_dist": closest cars' distance to ego in each lane
+:class:`smarts.env.custom_observations`.

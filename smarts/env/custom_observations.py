@@ -155,9 +155,14 @@ def lane_ttc(obs: Observation) -> Dict[str, np.ndarray]:
         obs (Observation): Agent observation.
 
     Returns:
-        Dict[str, np.ndarray]: Returns agent's distance from center
-            (shape=(1,)), angle_error (shape=(1,), speed (shape=(1,)), steering
-            (shape=(1,)), TTC (shape=(3,)), and DTC (shape=(3,)).
+        Returns a dictionary with the following key value mapping.
+        
+        + distance_from_center: Distance to lane center. Shape=(1,).
+        + angle_error: Ego heading relative to the closest waypoint. Shape=(1,).
+        + speed: Ego speed. Shape=(1,).
+        + steering: Ego steering. Shape=(1,).
+        + ego_ttc: Time to collision in each lane. Shape=(3,).
+        + ego_lane_dist: Closest cars’ distance to ego in each lane. Shape=(3,).
     """
     ego = obs.ego_vehicle_state
     waypoint_paths = obs.waypoint_paths

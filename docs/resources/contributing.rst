@@ -97,8 +97,8 @@ Execute the following to build the docs locally.
     $ cd <path>/SMARTS
     $ pip install -e .[doc]
     $ make docs
-    $ python -m http.server -d docs/_build/html
-    # Open http://localhost:8000 in your browser
+    $ python3.8 -m http.server 8000 --bind 127.0.0.1 -d docs/_build/html
+    # Open http://127.0.0.1:8000 in your browser
 
 Communication
 -------------
