@@ -63,7 +63,6 @@ def scan_for_vehicle(
             The vehicle to test for.
     Returns:
         If the tested for vehicle is within the semi-circle range of the base vehicle.
-
     """
     if target_prefix and not other_vehicle_state.id.startswith(target_prefix):
         return False
@@ -107,7 +106,6 @@ def scan_for_vehicles(
             The set of vehicles to test for.
     Returns:
         If the tested for vehicle is within the semi-circle range of the base vehicle.
-
     """
     if target_prefix:
         other_vehicle_states = filter(
