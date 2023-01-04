@@ -927,6 +927,7 @@ class WorkerKwargs:
         self.kwargs = self._serialize(kwargs)
 
     def merged(self, o_worker_kwargs: "WorkerKwargs") -> "WorkerKwargs":
+        """Merge two worker arguments and return a new copy."""
         new = type(self)()
         new.kwargs = {**self.kwargs, **o_worker_kwargs.kwargs}
         return new
@@ -938,6 +939,7 @@ class WorkerKwargs:
         }
 
     def deserialize(self):
+        """Deserialize all objects in the arguments and return a dictionary copy."""
         return {
             k: serializer.loads(a) if a is not None else a
             for k, a in self.kwargs.items()
