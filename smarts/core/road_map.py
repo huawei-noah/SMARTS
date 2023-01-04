@@ -76,20 +76,6 @@ class RoadMap:
         """All dynamic features associated with this road map."""
         return []
 
-    @staticmethod
-    def serialize(road_map: "RoadMap") -> Any:
-        """The default serialization for the road map."""
-        import cloudpickle
-
-        return cloudpickle.dumps(road_map)
-
-    @staticmethod
-    def deserialize(serialized_road_map) -> RoadMap:
-        """The default deserialization for the road map."""
-        import cloudpickle
-
-        return cloudpickle.loads(serialized_road_map)
-
     def is_same_map(self, map_spec) -> bool:
         """Check if the MapSpec Object source points to the same RoadMap instance as the current"""
         raise NotImplementedError

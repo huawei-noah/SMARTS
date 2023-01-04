@@ -33,6 +33,7 @@ import psutil
 from scipy.spatial.distance import cdist
 
 import smarts.core.simulation_global_constants as sgc
+import smarts.core.serialization.default as serializer
 from smarts.core.agent_interface import ActorsAliveDoneCriteria, AgentsAliveDoneCriteria
 from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
@@ -174,23 +175,6 @@ class Sensors:
                 )
         return observations, dones, updated_sensors
 
-    @staticmethod
-    def serialize_for_observation(v):
-        """Serializes the values."""
-        import cloudpickle
-
-        if hasattr(v, "serialize"):
-            return v.serialize(v)
-        return cloudpickle.dumps(v)
-
-    @staticmethod
-    def deserialize_for_observation(v, type_=None):
-        """Deserializes the values."""
-        import cloudpickle
-
-        if type_ and hasattr(type_, "deserialize"):
-            return type_.deserialize(v)
-        return cloudpickle.loads(v)
 
     @classmethod
     def observe_parallel(
@@ -933,7 +917,7 @@ class WorkerKwargs:
 
     def __init__(self, **kwargs) -> None:
         self.kwargs = {
-            k: Sensors.serialize_for_observation(a) if a is not None else a
+            k: serializer.dumps(a) if a is not None else a
             for k, a in kwargs.items()
         }
 
@@ -972,11 +956,11 @@ class ProcessWorker:
                 args, kwargs = work
                 with timeit("deserializing for worker", logger.info):
                     args = [
-                        Sensors.deserialize_for_observation(a) if a is not None else a
+                        serializer.loads(a) if a is not None else a
                         for a in args
                     ]
                     kwargs = {
-                        k: Sensors.deserialize_for_observation(a)
+                        k: serializer.loads(a)
                         if a is not None
                         else a
                         for k, a in kwargs.items()
@@ -984,7 +968,7 @@ class ProcessWorker:
                 result = cls._do_work(*args, **worker_kwargs, **kwargs)
                 with timeit("reserialize", logger.info):
                     if serialize_results:
-                        result = Sensors.serialize_for_observation(result)
+                        result = serializer.dumps(result)
                 with timeit("put back to main thread", logger.info):
                     connection.send(result)
 
@@ -1006,10 +990,10 @@ class ProcessWorker:
     ):
         """Sends data to the worker."""
         args = [
-            Sensors.serialize_for_observation(a) if a is not None else a for a in args
+            serializer.dumps(a) if a is not None else a for a in args
         ]
         kwargs = {
-            k: Sensors.serialize_for_observation(a) if a is not None else a
+            k: serializer.dumps(a) if a is not None else a
             for k, a in kwargs.items()
         }
         if worker_args:
@@ -1026,7 +1010,7 @@ class ProcessWorker:
             # pytype: enable=attribute-error
         with timeit("deserialize for main thread", logger.info):
             if self._serialize_results:
-                result = Sensors.deserialize_for_observation(result)
+                result = serializer.loads(result)
         return result
 
     def stop(self):

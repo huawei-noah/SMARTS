@@ -23,9 +23,9 @@ from typing import List
 
 import pytest
 
-from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
+import smarts.core.serialization.default as serializer
+from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Sensors
 from smarts.core.smarts import SMARTS, SimulationFrame
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
@@ -96,8 +96,8 @@ def test_state_serialization(sim: SMARTS, scenario: Scenario):
     frame: SimulationFrame = sim.cached_frame
 
     # Check if serialization will work
-    serialized = Sensors.serialize_for_observation(frame)
-    deserialized: SimulationFrame = Sensors.deserialize_for_observation(serialized)
+    serialized = serializer.dumps(frame)
+    deserialized: SimulationFrame = serializer.loads(serialized)
 
     # dataclass allows comparison
     assert frame == deserialized
