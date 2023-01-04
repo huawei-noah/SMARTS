@@ -35,7 +35,7 @@ class SimulationGlobalConstants:
     _FEATURES = {
         ("DEBUG", bool, False),
         ("RESET_RETRIES", int, 0),
-        ("OBSERVATION_WORKERS", int, 4), # TODO: default is 0
+        ("OBSERVATION_WORKERS", int, 4),  # TODO: default is 0
     }
     """{(constant_name, type, default), ...}"""
 
