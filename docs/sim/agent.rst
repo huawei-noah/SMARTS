@@ -5,7 +5,7 @@ Building an Agent
 
 An agent is built by specifying its desired `interface` and its `policy`. 
 The `interface` and `policy` are contained inside a :class:`~smarts.zoo.agent_spec.AgentSpec` class. 
-A snippet of ``AgentSpec`` class is shown here.
+A snippet of :class:`~smarts.zoo.agent_spec.AgentSpec` class is shown here.
 
 .. code-block:: python
 
@@ -14,7 +14,7 @@ A snippet of ``AgentSpec`` class is shown here.
         agent_builder: Callable[..., Agent] = None
         agent_params: Optional[Any] = None
 
-Next, a minimal example of how to create and register an ``Agent`` instance is illustrated.
+Next, a minimal example of how to create and register an agent is illustrated.
 
 .. _follow_waypoints_policy:
 .. code-block:: python
@@ -27,7 +27,6 @@ Next, a minimal example of how to create and register an ``Agent`` instance is i
 
     # A policy which simply follows the waypoints and drives at the road's
     # speed limit.
-
     class FollowWaypoints(Agent):
         def __init__(self):
             """Any policy initialization matters, including loading of model,
@@ -77,11 +76,11 @@ It specifies the
 + Expected observation from the environment to the agent. 
 + Expected action from the agent to the environment. Attribute :attr:`~smarts.core.agent_interface.AgentInterface.action` controls the action type used. There are multiple action types to choose from :class:`~smarts.core.controllers.ActionSpaceType`.
 
-Pre-designed interface
-^^^^^^^^^^^^^^^^^^^^^^
+Pre-configured interface
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-SMARTS provides several pre-designed agent interfaces from :attr:`~smarts.core.agent_interface.AgentType` for ease of use.
-The interfaces enabled|values for each pre-designed `AgentType` is shown in the table below.
+SMARTS provides several pre-configured interfaces from :attr:`~smarts.core.agent_interface.AgentType` for ease of use.
+The interfaces enabled for each pre-configured interface is shown in the table below.
 
 +----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
 | **Interface**              | :attr:`~smarts.core.agent_interface.AgentType.Full`         | :attr:`~smarts.core.agent_interface.AgentType.StandardWithAbsoluteSteering` | :attr:`~smarts.core.agent_interface.AgentType.Standard`          | :attr:`~smarts.core.agent_interface.AgentType.Laner`  | :attr:`~smarts.core.agent_interface.AgentType.LanerWithSpeed`            | :attr:`~smarts.core.agent_interface.AgentType.Tracker`      | :attr:`~smarts.core.agent_interface.AgentType.TrajectoryInterpolator` | :attr:`~smarts.core.agent_interface.AgentType.MPCTracker` | :attr:`~smarts.core.agent_interface.AgentType.Boid`              | :attr:`~smarts.core.agent_interface.AgentType.Loner`        | :attr:`~smarts.core.agent_interface.AgentType.Tagger`       | :attr:`~smarts.core.agent_interface.AgentType.Direct`   |
@@ -116,7 +115,7 @@ Here, ``max_episode_steps`` controls the max steps allowed for the agent in an e
     While using RLlib, the ``max_episode_steps`` control authority may be ceded to RLlib through their config option ``horizon``, but doing so 
     removes the ability to customize different max episode steps for each agent.
 
-A pre-designed interface can be extended by supplying extra `kwargs`. For example the following extends `AgentType.Standard` interface to include lidar observation.
+A pre-configured interface can be extended by supplying extra `kwargs`. For example the following extends `AgentType.Standard` pre-configured interface to include lidar observation.
 
 .. code-block:: python
 

@@ -13,7 +13,7 @@ A scenario is formed by combining several inputs, such as (i) road map, (ii) tra
 
 SMARTS interacts with road maps abstractly (polymorphically) through the :class:`~smarts.core.road_map.RoadMap` interface in order to support multiple map formats and allow for extending to support new map formats.
 
-SMARTS ships with a variety of pre-designed scenarios, which can be found in ``SMARTS/scenarios`` and ``SMARTS/smarts/scenarios`` directories.
+SMARTS ships with a variety of pre-configured scenarios, which can be found in ``SMARTS/scenarios`` and ``SMARTS/smarts/scenarios`` directories.
 
 A typical scenario creation workflow is as follows.
 
