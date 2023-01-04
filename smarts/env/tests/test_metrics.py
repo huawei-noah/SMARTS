@@ -122,28 +122,21 @@ def make_env(get_agent_spec, get_scenario):
     env.close()
 
 
-@pytest.mark.parametrize(
-    "get_agent_spec",
-    [{}] + _intrfc_improper(),
-    indirect=True,
-    ids=["properIntrfc"] + ["improperIntrfc"] * 7,
-)
-@pytest.mark.parametrize(
-    "get_scenario",
-    ["single_agent_intersection"],
-    indirect=True,
-    ids=["intersection"],
-)
-def test_init(request, make_env):
+@pytest.mark.parametrize("get_agent_spec", _intrfc_improper(), indirect=True)
+@pytest.mark.parametrize("get_scenario", ["single_agent_intersection"], indirect=True)
+def test_improper_interface(make_env):
 
     # Verify proper agent interface enabled.
-    param_id = request.node.callspec.id
-    if param_id == "intersection-properIntrfc":
+    with pytest.raises(AttributeError):
         env = Metrics(env=make_env)
-    else:
-        with pytest.raises(AttributeError):
-            env = Metrics(env=make_env)
-        return
+
+
+@pytest.mark.parametrize("get_agent_spec", [{}], indirect=True)
+@pytest.mark.parametrize("get_scenario", ["single_agent_intersection"], indirect=True)
+def test_init(make_env):
+
+    # Verify instantiation of Metrics wrapper.
+    env = Metrics(env=make_env)
 
     # Verify blocked access to underlying private variables.
     for elem in ["_scen", "_road_map", "_records"]:
@@ -290,7 +283,7 @@ def test_end_in_junction(make_env):
 @pytest.mark.parametrize("get_scenario", ["multi_agent_merge"], indirect=True)
 def test_records_and_scores(make_env):
 
-    # Verify that records and scores are accessible and functional.
+    # Verify that records and scores are functional in multi-agent environment.
     # Note:
     #   env.score() is only callable after >=1 episode. Hence step through 1 episode.
     env = Metrics(env=make_env)
