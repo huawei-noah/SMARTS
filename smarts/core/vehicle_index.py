@@ -198,7 +198,7 @@ class VehicleIndex:
         return bool(vehicle["is_hijacked"]), bool(vehicle["shadower_id"])
 
     @cache
-    def vehicle_ids_by_owner_id(self, owner_id, include_shadowers=False):
+    def vehicle_ids_by_owner_id(self, owner_id, include_shadowers=False) -> List[str]:
         """Returns all vehicles for the given owner ID as a list. This is most
         applicable when an agent is controlling multiple vehicles (e.g. with boids).
         """

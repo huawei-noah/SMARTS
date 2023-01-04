@@ -21,7 +21,7 @@
 import logging
 import weakref
 from concurrent import futures
-from typing import Any, Callable, Dict, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from envision.types import format_actor_id
 from smarts.core.actor import OwnerRole
@@ -153,7 +153,7 @@ class AgentManager:
         """Test if an agent has an actor associated with it."""
         return len(self.vehicles_for_agent(agent_id)) > 0
 
-    def vehicles_for_agent(self, agent_id):
+    def vehicles_for_agent(self, agent_id) -> List[str]:
         """Get the vehicles associated with an agent."""
         return self._vehicle_index.vehicle_ids_by_owner_id(
             agent_id, include_shadowers=True
@@ -250,7 +250,7 @@ class AgentManager:
             a_id
             for a_id, v in agent_vehicle_pairs.items()
             if self._vehicle_has_agent(a_id, v)
-            # and self._sensor_manager.sensor_state_exists(v.id)
+            and self._sensor_manager.sensor_state_exists(v)
         }
         observations, new_dones = sim.sensor_manager.observe(
             sim_frame,

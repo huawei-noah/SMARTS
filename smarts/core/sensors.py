@@ -1054,6 +1054,7 @@ class ProcessWorker:
 
 class SensorsWorkerRequestId(IntEnum):
     """Options for update requests to a sensor worker."""
+
     SIMULATION_FRAME = 1
     SIMULATION_LOCAL_CONSTANTS = 2
 

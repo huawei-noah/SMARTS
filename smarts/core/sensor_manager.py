@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import logging
 from collections import Counter
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 from smarts.core.sensors import Observation, Sensor, Sensors, SensorState
 from smarts.core.simulation_frame import SimulationFrame
@@ -46,7 +46,7 @@ class SensorManager:
         # {sensor_id, ...}
         self._discarded_sensors: Set[str] = set()
 
-    def step(self, sim_frame, renderer):
+    def step(self, sim_frame: SimulationFrame, renderer):
         """Update sensor values based on the new simulation state."""
         for sensor_state in self._sensor_states.values():
             Sensors.step(sim_frame, sensor_state)
@@ -146,7 +146,7 @@ class SensorManager:
         """Add a sensor state associated with a given actor."""
         self._sensor_states[actor_id] = sensor_state
 
-    def remove_sensors_by_actor_id(self, actor_id: str):
+    def remove_sensors_by_actor_id(self, actor_id: str) -> FrozenSet[str]:
         """Remove association of an actor to sensors. If the sensor is no longer associated the
         sensor is scheduled to be removed."""
         sensor_states = self._sensor_states.get(actor_id)
