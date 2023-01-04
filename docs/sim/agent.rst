@@ -39,7 +39,7 @@ AgentInterface
         ...
     )
 
-SMARTS provide some interface types, and the differences between them is shown in the table below. **T** means the ``AgentType`` will provide this option or information. 
+SMARTS provides several pre-designed agent interfaces. Their interface options are shown in the table below.
 
 +-------------------------+-----------------------------+----------------------------------------+----------------------------------+-----------------------+------------------------------------------+-----------------------------+-------------------------------------+----------------------+----------------------------------+-----------------------------+-----------------------------+-------------------------+
 |                         | AgentType.Full              | AgentType.StandardWithAbsoluteSteering | AgentType.Standard               | AgentType.Laner       | AgentType.LanerWithSpeed                 | AgentType.Tracker           | AgentType.TrajectoryInterpolator    | AgentType.MPCTracker | AgentType.Boid                   | AgentType.Loner             | AgentType.Tagger            | AgentType.Direct        |
@@ -62,19 +62,7 @@ SMARTS provide some interface types, and the differences between them is shown i
 You can move ``max_episode_steps`` control authority to RLlib with their config option ``horizon``, but lose the ability to customize
 different max_episode_len for each agent.
 
-``action`` controls the agent action type used. There are multiple ``ActionSpaceType`` options: ``ActionSpaceType.Continuous``, ``ActionSpaceType.Lane``, ``ActionSpaceType.LaneWithContinuousSpeed`` 
-``ActionSpaceType.ActuatorDynamic``, ``ActionSpaceType.Trajectory``, ``ActionSpaceType.TrajectoryWithTime``, ``ActionSpaceType.MPC``, ``ActionSpaceType.TargetPose``, ``ActionSpaceType.MultiTargetPose``, and ``ActionSpaceType.Direct``.
-
-- `ActionSpaceType.Continuous`: `(float, float, float)` continuous action space with throttle, brake, absolute steering angle. 
-- `ActionSpaceType.ActuatorDynamic`: `(float, float float)` continuous action space with throttle, brake, steering rate. Steering rate means the amount of steering angle change *per second* (either positive or negative) to be applied to the current steering angle.
-- `ActionSpaceType.Lane`: `str` discrete lane action space of strings including "keep_lane",  "slow_down", "change_lane_left", "change_lane_right".
-- `ActionSpaceType.LaneWithContinuousSpeed`: `(int, float)` mixed action space of discrete lane change values `{-1,0,1}` corresponding to `{right_lane,current_lane,left_lane}`, and continuous target speed.
-- `ActionSpaceType.Trajectory`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space using trajectory as x coordinates, y coordinates, headings, and speeds to directly move a vehicle.
-- `ActionSpaceType.TrajectoryWithTime`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space using trajectory as times, x coordinates, y coordinates, headings, and speeds to interpolate the vehicle along the trajectory.
-- `ActionSpaceType.MPC`: `(Sequence[float], Sequence[float], Sequence[float], Sequence[float])` continuous action space using trajectory as x coordinates, y coordinates, headings, and speeds to adaptively perform controls on the vehicle model in an attempt to match the given trajectory. 
-- `ActionSpaceType.TargetPose`: `Sequence[float, float, float, float]` continuous action space with a single vehicle x coordinate, y coordinate, heading, and time delta to reach the given pose.
-- `ActionSpaceType.MultiTargetPose`: `Dict[str, (float, float, float, float)]` continuous action space that provides actions for multiple vehicles with each vehicle id mapped to pose as x coordinate, y coordinate, heading, and time delta to reach the given pose. 
-- `ActionSpaceType.Direct`: `Union[float, (float,float)]` continuous action space where you can pass either (a) initial speed upon reset or (b) linear acceleration and angular velocity for other steps.
+``action`` controls the agent action type used. There are multiple ``ActionSpaceType`` options:
 
 
 For other observation options, see :ref:`observations` for details.

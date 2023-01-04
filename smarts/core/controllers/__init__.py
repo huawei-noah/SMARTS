@@ -50,15 +50,64 @@ class ActionSpaceType(Enum):
     """Available vehicle action spaces."""
 
     Continuous = 0
+    """
+    Action= ``(float, float, float)``. Continuous action space with throttle,
+    brake, and absolute steering angle.
+    """
     Lane = 1
+    """
+    Action= ``str``. Discrete lane action space of strings including "keep_lane",
+    "slow_down", "change_lane_left", and "change_lane_right".
+    """
     ActuatorDynamic = 2
+    """
+    Action= ``(float, float float)``. Continuous action space with throttle, 
+    brake, and steering rate. Steering rate means the amount of steering angle 
+    change *persecond* (either positive or negative) to be applied to the 
+    current steering angle.
+    """
     LaneWithContinuousSpeed = 3
+    """
+    Action= ``(int, float)``. Mixed action space of discrete lane change value
+    and continuous target speed. Discrete lane change values include ``{-1,0,1}``
+    corresponding to change to right lane, keep to current lane, 
+    and change to left lane.
+    """
     TargetPose = 4
+    """
+    Action= ``Sequence[float, float, float, float]``. Continuous action space 
+    of vehicle's next x coordinate, y coordinate, heading, and time delta to
+    reach the given pose. 
+    """
     Trajectory = 5
+    """
+    Action= ``(Sequence[float], Sequence[float], Sequence[float], Sequence[float])``.
+    Continuous action space using trajectory comprising of x coordinates, 
+    y coordinates, headings, and speeds, to directly move a vehicle.
+    """
     MultiTargetPose = 6  # for boid control
+    """
+    Action= ``Dict[str, (float, float, float, float)]``. Continuous action space
+    that provides ``TargetPose`` actions for multiple vehicles.
+    """
     MPC = 7
+    """
+    Action= ``(Sequence[float], Sequence[float], Sequence[float], Sequence[float])``.
+    Adaptive control performed on the vehicle model to match the given trajectory
+    comprising of vehicle's x coordinates, y coordinates, headings, and speeds.
+    """
     TrajectoryWithTime = 8  # for pure interpolation provider
+    """
+    Action= ``(Sequence[float], Sequence[float], Sequence[float], Sequence[float],
+    Sequence[float])``. Interpolates vehicle along the given trajectory 
+    comprising of times, x coordinates, y coordinates, headings, and speeds.
+    """
     Direct = 9
+    """
+    Action= ``Union[float, (float,float)]``. Continuous action space where we
+    can pass either (a) an initial speed upon reset, or (b) linear acceleration
+    and angular velocity for other steps.
+    """
     Empty = 10
 
 

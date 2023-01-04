@@ -57,9 +57,7 @@ for _ in range(1000):
 
 # Setup and Quickstart
 1. Read [setting up SMARTS](https://smarts.readthedocs.io/en/latest/setup.html).
-
 2. Try [designing a simple experiment](https://smarts.readthedocs.io/en/latest/quickstart.html).
-
 
 # Examples 
 ### Usage
