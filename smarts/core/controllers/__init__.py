@@ -51,8 +51,11 @@ class ActionSpaceType(Enum):
 
     Continuous = 0
     """
-    Action= ``(float, float, float)``. Continuous action space with throttle,
-    brake, and absolute steering angle.
+    Action= ``(float, float, float)``. Consists of 
+
+    + :math:`throttle ∈ ℝ, 0 \leq throttle \leq 1`,
+    + :math:`brake ∈ ℝ, 0 \leq brake \leq 1`, and
+    + :math:`absolute\_steering\_angle ∈ ℝ, -1 \leq absolute\_steering\_angle \leq 1`.
     """
     Lane = 1
     """
@@ -61,10 +64,14 @@ class ActionSpaceType(Enum):
     """
     ActuatorDynamic = 2
     """
-    Action= ``(float, float float)``. Continuous action space with throttle, 
-    brake, and steering rate. Steering rate means the amount of steering angle 
-    change *per second* (either positive or negative) to be applied to the 
-    current steering angle.
+    Action= ``(float, float float)``. Consists of 
+    
+    + :math:`throttle ∈ ℝ, 0 \leq throttle \leq 1`, 
+    + :math:`brake ∈ ℝ, 0 \leq brake \leq 1`, and 
+    + :math: `steering rate ∈ ℝ`.
+    
+    Steering rate means the amount of steering angle change *per second* 
+    (either positive or negative) to be applied to the current steering angle.
     """
     LaneWithContinuousSpeed = 3
     """
