@@ -21,7 +21,6 @@
 # THE SOFTWARE.
 
 
-@staticmethod
 def dumps(v):
     """Serializes the values."""
     import cloudpickle
@@ -31,7 +30,6 @@ def dumps(v):
     return cloudpickle.dumps(v)
 
 
-@staticmethod
 def loads(v, type_=None):
     """Deserializes the values."""
     import cloudpickle
