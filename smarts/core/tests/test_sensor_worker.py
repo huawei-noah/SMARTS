@@ -27,7 +27,12 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.plan import Mission
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation, SensorsWorker, WorkerKwargs
+from smarts.core.sensors import (
+    Observation,
+    SensorsWorker,
+    SensorsWorkerRequestId,
+    WorkerKwargs,
+)
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -94,16 +99,27 @@ def test_sensor_worker(
     sim: SMARTS,
 ):
     del sim.cached_frame
-    simulation_frame: SimulationFrame = sim.cached_frame
+    sim_frame: SimulationFrame = sim.cached_frame
     agent_ids = set(AGENT_IDS)
     worker = SensorsWorker()
-    worker.run(sim_local_constants=sim.local_constants)
-    assert worker.running
-    worker_args = WorkerKwargs(sim_frame=simulation_frame)
-    worker.send_to_process(worker_args=worker_args, agent_ids=agent_ids)
-    observations, dones, updated_sensors = SensorsWorker.local(
-        simulation_frame, sim.local_constants, agent_ids
+    worker.run()
+    worker.send(
+        request=SensorsWorker.Request(
+            SensorsWorkerRequestId.SIMULATION_LOCAL_CONSTANTS,
+            WorkerKwargs(sim_local_constants=sim.local_constants),
+        )
     )
+    assert worker.running
+    worker_args = WorkerKwargs(sim_frame=sim_frame, agent_ids=agent_ids)
+    worker.send(
+        SensorsWorker.Request(SensorsWorkerRequestId.SIMULATION_FRAME, worker_args)
+    )
+    state = dict(
+        sim_frame=sim_frame,
+        sim_local_constants=sim.local_constants,
+        agent_ids=agent_ids,
+    )
+    observations, dones, updated_sensors = SensorsWorker.local(state=state)
     other_observations, other_dones, updated_sensors = worker.result(timeout=5)
 
     assert isinstance(observations, dict)

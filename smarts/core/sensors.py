@@ -136,7 +136,7 @@ class Sensors:
             new_worker.run()
             new_worker.send(
                 request=SensorsWorker.Request(
-                    _RequestId.SIMULATION_LOCAL_CONSTANTS, worker_kwargs
+                    SensorsWorkerRequestId.SIMULATION_LOCAL_CONSTANTS, worker_kwargs
                 )
             )
 
@@ -237,7 +237,7 @@ class Sensors:
                     with timeit(f"submitting {len(agent_group)} agents", logger.info):
                         workers[i].send(
                             SensorsWorker.Request(
-                                _RequestId.SIMULATION_FRAME,
+                                SensorsWorkerRequestId.SIMULATION_FRAME,
                                 worker_args.merged(WorkerKwargs(agent_ids=agent_group)),
                             )
                         )
@@ -946,7 +946,7 @@ class WorkerKwargs:
         }
 
 
-class _RequestId(IntEnum):
+class SensorsWorkerRequestId(IntEnum):
     SIMULATION_FRAME = 1
     SIMULATION_LOCAL_CONSTANTS = 2
 
@@ -1070,10 +1070,10 @@ class SensorsWorker(ProcessWorker):
     @classmethod
     def _on_request(cls, state: Dict, request: ProcessWorker.Request) -> bool:
         assert request.data is None or isinstance(request.data, WorkerKwargs)
-        if request.id == _RequestId.SIMULATION_FRAME:
+        if request.id == SensorsWorkerRequestId.SIMULATION_FRAME:
             state.update(request.data.deserialize())
             return True
-        if request.id == _RequestId.SIMULATION_LOCAL_CONSTANTS:
+        if request.id == SensorsWorkerRequestId.SIMULATION_LOCAL_CONSTANTS:
             state.update(request.data.deserialize())
 
         return False
