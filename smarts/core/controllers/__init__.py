@@ -51,11 +51,11 @@ class ActionSpaceType(Enum):
 
     Continuous = 0
     """
-    Action= ``(float, float, float)``. Consists of 
+    Action=(throttle, brake, steering_angle)
 
-    + :math:`throttle ∈ ℝ, 0 \leq throttle \leq 1`,
-    + :math:`brake ∈ ℝ, 0 \leq brake \leq 1`, and
-    + :math:`absolute\_steering\_angle ∈ ℝ, -1 \leq absolute\_steering\_angle \leq 1`.
+    + throttle: Range=[0, 1]. Type=float.
+    + brake: Range=[0, 1]. Type=float.
+    + steering_angle: Range=[-1, 1]. Type=float.
     """
     Lane = 1
     """
@@ -64,21 +64,26 @@ class ActionSpaceType(Enum):
     """
     ActuatorDynamic = 2
     """
-    Action= ``(float, float float)``. Consists of 
-    
-    + :math:`throttle ∈ ℝ, 0 \leq throttle \leq 1`, 
-    + :math:`brake ∈ ℝ, 0 \leq brake \leq 1`, and 
-    + :math: `steering rate ∈ ℝ`.
+    Action=(throttle, brake, steering_rate)
+        
+    + throttle: Range=[0, 1]. Type=float. 
+    + brake: Range=[0, 1]. Type=float.
+    + steering_rate: Type=float.
     
     Steering rate means the amount of steering angle change *per second* 
     (either positive or negative) to be applied to the current steering angle.
     """
     LaneWithContinuousSpeed = 3
     """
-    Action= ``(int, float)``. Mixed action space of discrete lane change value
-    and continuous target speed. Discrete lane change values include ``{-1,0,1}``
-    corresponding to change to right lane, keep to current lane, 
-    and change to left lane.
+    Action=(target_speed, lane_change). 
+
+    + target_speed: Baseline target speed (controller may give more or less
+      regardless). Type=float.
+    + lane_change: Discrete lane change value. Can be one of 
+
+        + -1 : change to right lane
+        + 0 : keep to current lane
+        + 1 : change to left lane
     """
     TargetPose = 4
     """

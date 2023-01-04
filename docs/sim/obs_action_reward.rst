@@ -97,10 +97,10 @@ Features
     * `lanes` - The representation of each lane represented by `Waypoint`. Each item is list of `Waypoint`.
 * `via_data` - A `Vias` describing collectable points the agent can visit.
 
-See implementation in :class:`smarts.core.sensors`
+See implementation in :class:`~smarts.core.sensors`
 
 
-Then, you can choose the observations needed through :class:`smarts.core.agent_interface.AgentInterface`.
+Then, you can choose the observations needed through :class:`~smarts.core.agent_interface.AgentInterface`.
 Note: Some observations like `occupancy_grid_map`, `drivable_area_grid_map` and `top_down_rgb` requires the use of Panda3D package to render agent camera observations during simulations. So you need to install the required dependencies first using the command `pip install -e .[camera_obs]`
 
 =======
@@ -112,8 +112,8 @@ The reward from smarts environments is given by a calculation within smarts; `en
 Actions
 =======
 
-There are multiple action types to choose from :class:`smarts.core.controllers.ActionSpaceType`.
+There are multiple action types to choose from :class:`~smarts.core.controllers.ActionSpaceType`.
 
 .. important::
 
-    Depending on how your agent policy is set up, :attr:`smarts.core.controllers.ActionSpaceType.ActuatorDynamic` might allow the agent to learn faster than ``ActionSpaceType.Continuous`` simply because learning to correct steering could be simpler than learning a mapping to all the absolute steering angle values. But, again, it also depends on the design of your agent model. 
+    Depending on how your agent policy is set up, :attr:`~smarts.core.controllers.ActionSpaceType.ActuatorDynamic` might allow the agent to learn faster than ``ActionSpaceType.Continuous`` simply because learning to correct steering could be simpler than learning a mapping to all the absolute steering angle values. But, again, it also depends on the design of your agent model. 

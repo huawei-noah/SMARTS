@@ -6,7 +6,7 @@ Environment
 Base environments
 -----------------
 
-SMARTS environment module is defined in :mod:`smarts.env` package. Currently SMARTS provides two kinds of training 
+SMARTS environment module is defined in :mod:`~smarts.env` package. Currently SMARTS provides two kinds of training 
 environments, namely:
 
 + ``HiwayEnv`` utilising ``gym.env`` style interface 
@@ -18,7 +18,7 @@ HiwayEnv
 ^^^^^^^^
 
 ``HiwayEnv`` inherits class ``gym.Env`` and supports gym APIs like ``reset``, ``step``, ``close``. An usage example is shown below.
-Refer to :class:`smarts.env.hiway_env.HiWayEnv` for more details.
+Refer to :class:`~smarts.env.hiway_env.HiWayEnv` for more details.
 
 .. code-block:: python
 
@@ -48,7 +48,7 @@ RLlibHiwayEnv
 ^^^^^^^^^^^^^
 
 ``RLlibHiwayEnv`` inherits class ``MultiAgentEnv``, which is defined in RLlib. It also supports common env APIs like ``reset``, 
-``step``, ``close``. An usage example is shown below. Refer to :class:`smarts.env.rllib_hiway_env.RLlibHiWayEnv` for more details.
+``step``, ``close``. An usage example is shown below. Refer to :class:`~smarts.env.rllib_hiway_env.RLlibHiWayEnv` for more details.
 
 .. code-block:: python
 
@@ -82,7 +82,7 @@ Scenario Iterator
 
 If (i) a list of scenarios, or (ii) a folder containing multiple scenarios, is passed through the environment arguments, then SMARTS automatically iterates over those scenarios. The next scenario is loaded after each ``env.reset()`` call. This feature is especially useful for training on multiple maps.
 
-Moreover, if there are **n** routes file in ``scenario1/build/traffic`` dir, then each routes file will be combined with the map to form a scenario, leading to a total of **n** concrete scenarios (i.e., traffic-map combination) that SMARTS automatically iterates through for ``scenario1``. See :class:`smarts.core.scenario.Scenario` for implementation details.
+Moreover, if there are **n** routes file in ``scenario1/build/traffic`` dir, then each routes file will be combined with the map to form a scenario, leading to a total of **n** concrete scenarios (i.e., traffic-map combination) that SMARTS automatically iterates through for ``scenario1``. See :class:`~smarts.core.scenario.Scenario` for implementation details.
 
 .. code-block:: python
 
@@ -129,8 +129,8 @@ Vehicle Diversity
 
 SMARTS environments allow three types of vehicles to exist concurrently, which are:
 
-+ **ego agents** - controlled by RL model currently in training.
-+ **social agents** - controlled by (pre-trained) models from the Agent Zoo (see :mod:`zoo.policies`). Like ego agents, social agents also use :class:`smarts.zoo.agent_spec.AgentSpec` to register with the environment. They interact by watching the observation and returning action messages. Compared to ego agents, social agents are driven by trained models, hence they can provide behavioral characteristics we want.
++ **ego agents** - controlled by RL policy currently in training.
++ **social agents** - controlled by (pre-trained) policies from the Agent Zoo (see :mod:`~zoo.policies`). Like ego agents, social agents also use :class:`~smarts.zoo.agent_spec.AgentSpec` to register with the environment. They interact by watching the observation and returning action messages. Compared to ego agents, social agents are driven by trained models, hence they can provide behavioral characteristics we want.
 + **traffic vehicles** - controlled by an underlying traffic engine, like ``SUMO`` or ``SMARTS``.
 
 Refer to :ref:`scenario_studio` for designing scenarios, traffic vehicles, social agents, ego agents, and maps.

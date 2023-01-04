@@ -7,11 +7,11 @@
 Scenario Studio
 ===============
 
-The Scenario Studio ``sstudio`` of SMARTS is a stand alone package :mod:`smarts.sstudio` that supports flexible and expressive scenario specification. The ``sstudio`` domain specific language (DSL) has a simple ontology defined by :mod:`smarts.sstudio.types` to help express your scenario needs in SMARTS.
+The Scenario Studio ``sstudio`` of SMARTS is a stand alone package :mod:`~smarts.sstudio` that supports flexible and expressive scenario specification. The ``sstudio`` domain specific language (DSL) has a simple ontology defined by :mod:`~smarts.sstudio.types` to help express your scenario needs in SMARTS.
 
-A scenario is formed by combining several inputs, such as (i) road map, (ii) traffic, (iii) social agents, (iv) ego agents, (v) bubbles, (vi) friction patches, and (vii) traffic histories. Refer to :class:`smarts.sstudio.types.Scenario`.
+A scenario is formed by combining several inputs, such as (i) road map, (ii) traffic, (iii) social agents, (iv) ego agents, (v) bubbles, (vi) friction patches, and (vii) traffic histories. Refer to :class:`~smarts.sstudio.types.Scenario`.
 
-SMARTS interacts with road maps abstractly (polymorphically) through the :class:`smarts.core.road_map.RoadMap` interface in order to support multiple map formats and allow for extending to support new map formats.
+SMARTS interacts with road maps abstractly (polymorphically) through the :class:`~smarts.core.road_map.RoadMap` interface in order to support multiple map formats and allow for extending to support new map formats.
 
 SMARTS ships with a variety of pre-designed scenarios, which can be found in ``SMARTS/scenarios`` and ``SMARTS/smarts/scenarios`` directories.
 
@@ -21,10 +21,10 @@ A typical scenario creation workflow is as follows.
 2. Design the map.
 
    * For a SUMO road network, create the map using `netedit <https://sumo.dlr.de/docs/NETEDIT.html>`_ and save it in the new scenario folder.
-   * For other road networks, define and instantiate a :class:`smarts.sstudio.types.MapSpec` object in ``scenario.py``. Pass the ``MapSpec`` object to :class:`smarts.sstudio.types.Scenario` in ``scenario.py``.
+   * For other road networks, define and instantiate a :class:`~smarts.sstudio.types.MapSpec` object in ``scenario.py``. Pass the ``MapSpec`` object to :class:`~smarts.sstudio.types.Scenario` in ``scenario.py``.
 
-3. Add traffic, social agents, ego agents, etc, to :class:`smarts.sstudio.types.Scenario` in ``scenario.py``.
-4. Feed the created :class:`smarts.sstudio.types.Scenario` object to :func:`smarts.sstudio.genscenario.gen_scenario` in ``scenario.py`` to generate the scenario. 
+3. Add traffic, social agents, ego agents, etc, to :class:`~smarts.sstudio.types.Scenario` in ``scenario.py``.
+4. Feed the created :class:`~smarts.sstudio.types.Scenario` object to :func:`~smarts.sstudio.genscenario.gen_scenario` in ``scenario.py`` to generate the scenario. 
 
    .. code:: python
 
@@ -48,7 +48,7 @@ Following sections below explain how to handle and edit (i) traffic, (ii) social
 Traffic
 -------
 
-A minimal ``scenario.py`` instantiating a :class:`smarts.sstudio.types.Traffic` object.
+A minimal ``scenario.py`` instantiating a :class:`~smarts.sstudio.types.Traffic` object.
 
 .. literalinclude:: ./minimal_scenario_studio.py
    :language: python
@@ -61,24 +61,24 @@ Simply run the ``scenario.py`` file as a regular Python script to generate the s
 
 Traffic vehicles are controlled by either ``SUMO`` or ``SMARTS`` engine. Defaults to ``engine="SUMO"``. ``engine="SUMO"`` can only be used on SUMO road networks. For other map types use ``engine="SMARTS"``.
 
-:class:`smarts.sstudio.types.Flow` is used to generate repeated vehicle runs on the same route. Vehicle route, departure rate, and behaviour, can be configured here.
+:class:`~smarts.sstudio.types.Flow` is used to generate repeated vehicle runs on the same route. Vehicle route, departure rate, and behaviour, can be configured here.
 
 The example above simply uses a random route ``route=RandomRoute()``. A more specific route may be used such as :python:`Route(begin=("gneE72", 0, "random"), end=("edge2", 1, "max"))` which defines the edge id, lane id, and offset into the lane, to designate the start and end vehicle positions.
 
-:class:`smarts.sstudio.types.TrafficActor` is used to specify a spec for traffic actors (e.g. Vehicles, Pedestrians, etc). The defaults provided are for a car.
+:class:`~smarts.sstudio.types.TrafficActor` is used to specify a spec for traffic actors (e.g. Vehicles, Pedestrians, etc). The defaults provided are for a car.
 Acceleration, deceleration, speed distribution, imperfection distribution, and other configurations, can be specified for the traffic.
 
-When :func:`smarts.sstudio.genscenario.gen_scenario` is executed, a dir named "traffic" will be created under ``output_dir`` which contains background vehicle and route definitions.
+When :func:`~smarts.sstudio.genscenario.gen_scenario` is executed, a dir named "traffic" will be created under ``output_dir`` which contains background vehicle and route definitions.
 
 .. important::
-    If you want to train a model on one scenario, remember to set the ``end`` time of :class:`smarts.sstudio.types.Flow` larger or equal to your expected training time, since SMARTS will continue the flow after each ``reset`` call. 
+    If you want to train a policy on one scenario, remember to set the ``end`` time of :class:`~smarts.sstudio.types.Flow` larger or equal to your expected training time, since SMARTS will continue the flow after each ``reset`` call. 
     
     However, if there are multiple scenarios to train for one worker, you can relax this restriction since after the scenario change, the flow will also be reset to the beginning time.
 
 Social agents
 -------------
 
-Social agents are controlled by (pre-trained) models from the Agent Zoo (see :mod:`zoo.policies`).
+Social agents are controlled by (pre-trained) policies from the agent zoo (see :mod:`~zoo.policies`).
 
 Scenarios can reference remote packages or local zoo agent packages by including a ``requirements.txt`` file in the root of the scenario folder. These additional packages will be installed when the scenario is built.
 
@@ -113,7 +113,7 @@ Then in the ``scenario.py`` file:
 Ego missions
 ------------
 
-Scenario Studio also allows generation of *missions* for ego agents to complete. When :func:`smarts.sstudio.genscenario.gen_scenario` is executed, ``missions.rou.xml`` file will be created in the output dir.
+Scenario Studio also allows generation of *missions* for ego agents to complete. When :func:`~smarts.sstudio.genscenario.gen_scenario` is executed, ``missions.rou.xml`` file will be created in the output dir.
 
 .. code-block:: python
 
@@ -141,7 +141,7 @@ Scenario Studio also allows generation of *missions* for ego agents to complete.
 Friction patches
 ----------------
 
-The Scenario Studio of SMARTS also allows the generation of *friction patches* which consists of a list of *surface patches* for ego agents and social agents. These surface patches uses :class:`smarts.sstudio.types.PositionalZone` as in the case of bubbles. When we run :func:`smarts.sstudio.genscenario.gen_scenario` passing in ``friction_maps``, a "friction_map.pkl" file will be created under the output dir.
+The Scenario Studio of SMARTS also allows the generation of *friction patches* which consists of a list of *surface patches* for ego agents and social agents. These surface patches uses :class:`~smarts.sstudio.types.PositionalZone` as in the case of bubbles. When we run :func:`~smarts.sstudio.genscenario.gen_scenario` passing in ``friction_maps``, a "friction_map.pkl" file will be created under the output dir.
 
 .. code-block:: python
 
@@ -165,11 +165,11 @@ Road map
 --------
 
 SMARTS was initially designed to use maps in the SUMO road network format; it supports these natively.
-However, SMARTS ``>=v0.5`` supports other custom map formats, as long as a class that implements the :class:`smarts.core.road_map.RoadMap` interface is provided to read the custom map format.
+However, SMARTS ``>=v0.5`` supports other custom map formats, as long as a class that implements the :class:`~smarts.core.road_map.RoadMap` interface is provided to read the custom map format.
 Current support of custom map formats:
 
-+ :class:`smarts.core.opendrive_road_network.OpenDriveRoadNetwork` supports the use of `OpenDRIVE map format <https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09>`_.
-+ :class:`smarts.core.waymo_map.WaymoMap` supports the use of Waymo map format.
++ :class:`~smarts.core.opendrive_road_network.OpenDriveRoadNetwork` supports the use of `OpenDRIVE map format <https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09>`_.
++ :class:`~smarts.core.waymo_map.WaymoMap` supports the use of Waymo map format.
 
 Create a custom map
 ^^^^^^^^^^^^^^^^^^^
@@ -190,7 +190,7 @@ define a ``MapSpec`` object in your ``scenario.py``.
 Convert an existing map to SUMO
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you have a suitable file in another format, you can turn it into a SUMO road network using the :mod:`smarts.sstudio.sumo2mesh` conversion utility.
+If you have a suitable file in another format, you can turn it into a SUMO road network using the :mod:`~smarts.sstudio.sumo2mesh` conversion utility.
 
 .. code-block:: bash
 

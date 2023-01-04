@@ -8,18 +8,20 @@ Specifying the Agent
 
 The agent is defined in terms of the interface it expects from the environment and the responses an agent produces.
 
-:class:`smarts.core.agent_interface.AgentInterface`
+:class:`~smarts.core.agent_interface.AgentInterface`
    This is where you can control the interface between SMARTS and your agent.
 
-:class:`smarts.core.agent.Agent`
-   This is the brains of the agent, you will need to implement the interface defined by :class:`smarts.core.agent.Agent` in order to give the agent some behaviour.
+:class:`~smarts.core.agent.Agent`
+   This is the brains of the agent, you will need to implement the interface defined by :class:`~smarts.core.agent.Agent` in order to give the agent some behaviour.
 
-AgentInterface :class:`smarts.core.agent_interface.AgentInterface`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AgentInterface 
+^^^^^^^^^^^^^^
+
+:class:`~smarts.core.agent_interface.AgentInterface`
 
 Here we choose the interface between SMARTS and your agent. Select which sensors to enable on your vehicle and the action space for you agent.
 
-Some common configurations have been packaged up under :class:`smarts.core.agent_interface.AgentType` and can be instantiated via
+Some common configurations have been packaged up under :class:`~smarts.core.agent_interface.AgentType` and can be instantiated via
 
 .. code-block:: python
 
@@ -27,14 +29,16 @@ Some common configurations have been packaged up under :class:`smarts.core.agent
 
    AgentInterface.from_type(AgentType.Tracker)
 
-This `AgentType.Tracker` preset gives us :class:`smarts.core.agent_interface.Waypoints` and the trajectory following action space `ActionSpaceType.Trajectory`, see :class:`smarts.core.controllers.ActionSpaceType` for more available action spaces.
+This `AgentType.Tracker` preset gives us :class:`~smarts.core.agent_interface.Waypoints` and the trajectory following action space `ActionSpaceType.Trajectory`, see :class:`~smarts.core.controllers.ActionSpaceType` for more available action spaces.
 
-Agent :class:`smarts.core.agent.Agent`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Agent 
+^^^^^
+
+:class:`~smarts.core.agent.Agent`
 
 Next up, we need to define the behaviour of the agent. That is to say, we want to map the observations from the sensors we configured above to the action space we chose.
 
-This is done by implementing the :class:`smarts.core.agent.Agent` interface:
+This is done by implementing the :class:`~smarts.core.agent.Agent` interface:
 
 .. code-block:: python
 
@@ -70,10 +74,12 @@ This is done by implementing the :class:`smarts.core.agent.Agent` interface:
 
 Here we are implementing a simple lane following agent using the BezierMotionPlanner. The `obs` argument to `ExampleAgent.act()` will contain the observations specified in the `AgentInterface` above, and it's expected that the return value of the `act` method matches the `ActionSpaceType` chosen as well.
 
-AgentSpec :class:`smarts.zoo.agent_spec.AgentSpec`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AgentSpec 
+^^^^^^^^^
 
-These pieces are brought together by the :class:`smarts.zoo.agent_spec.AgentSpec`:
+:class:`~smarts.zoo.agent_spec.AgentSpec`
+
+These pieces are brought together by the :class:`~smarts.zoo.agent_spec.AgentSpec`:
 
 .. code-block:: python
 
@@ -84,7 +90,7 @@ These pieces are brought together by the :class:`smarts.zoo.agent_spec.AgentSpec
        agent_builder=ExampleAgent
    )
 
-The :class:`smarts.zoo.agent_spec.AgentSpec` acts as a container to store the information we need to build an agent, we can distribute this spec safely between process' to aid in parallelism and once we have it in the right spot, we can instantiate the :class:`smarts.core.agent.Agent` with
+The :class:`~smarts.zoo.agent_spec.AgentSpec` acts as a container to store the information we need to build an agent, we can distribute this spec safely between process' to aid in parallelism and once we have it in the right spot, we can instantiate the :class:`~smarts.core.agent.Agent` with
 
 .. code-block:: python
 
