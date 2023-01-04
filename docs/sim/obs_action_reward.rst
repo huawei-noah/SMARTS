@@ -1,7 +1,7 @@
 .. _obs_action_reward:
 
-Observations and Actions
-========================
+Observation, Action, and Reward
+===============================
 
 We have introduced `AgentInterface` in :ref:`agent` which allows us to choose from the standard observation and action types for communication between an agent and a SMARTS environment.
 

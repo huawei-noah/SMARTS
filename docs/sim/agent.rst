@@ -79,7 +79,18 @@ It specifies the
 Pre-configured interface
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-SMARTS provides several pre-configured interfaces from :attr:`~smarts.core.agent_interface.AgentType` for ease of use.
+SMARTS provides several pre-configured interfaces for ease of use. Namely,
+
++ `AgentType.Full`
++ `AgentType.StandardWithAbsoluteSteering`
++ `AgentType.Standard`
++ `AgentType.Laner`
++ `AgentType.LanerWithSpeed`
++ `AgentType.Tracker`
++ `AgentType.TrajectoryInterpolator`
++ `AgentType.MPCTracker`
++ `AgentType.Boid`
+
 The interfaces enabled for each pre-configured interface is shown in the table below.
 
 +----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
