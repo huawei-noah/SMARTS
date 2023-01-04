@@ -65,7 +65,7 @@ class _SimulationLocalConstantsProxy(Proxy):
     def __eq__(self, __o: object) -> bool:
         if __o is None:
             return False
-        return self.road_map_hash == __o.road_map_hash
+        return self.road_map_hash == getattr(__o, "road_map_hash")
 
     def deproxy(self):
         import smarts.sstudio.types
