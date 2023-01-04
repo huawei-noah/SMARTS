@@ -63,7 +63,7 @@ class ActionSpaceType(Enum):
     """
     Action= ``(float, float float)``. Continuous action space with throttle, 
     brake, and steering rate. Steering rate means the amount of steering angle 
-    change *persecond* (either positive or negative) to be applied to the 
+    change *per second* (either positive or negative) to be applied to the 
     current steering angle.
     """
     LaneWithContinuousSpeed = 3

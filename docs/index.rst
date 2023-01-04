@@ -33,7 +33,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    setup.rst
    quickstart
    sim/env.rst
-   sim/observations.rst
+   sim/obs_action_reward.rst
    sim/agent.rst
    sim/cli.rst
    sim/visualization.rst
