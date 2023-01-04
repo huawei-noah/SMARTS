@@ -20,8 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
+from multiprocessing import current_process
 
 
 @dataclass(frozen=True)
@@ -31,6 +32,7 @@ class SimulationGlobalConstants:
     DEBUG: bool
     RESET_RETRIES: int
     OBSERVATION_WORKERS: int
+    DAEMON: bool = False
 
     _FEATURES = {
         ("DEBUG", bool, False),
@@ -53,6 +55,12 @@ class SimulationGlobalConstants:
         return f"{cls._SMARTS_ENVIRONMENT_PREFIX}{name}"
 
     @classmethod
+    def _limit_processes_on_daemon(cls, sgc: "SimulationGlobalConstants"):
+        if current_process().daemon:
+            return replace(sgc, OBSERVATION_WORKERS=0, DAEMON=True)
+        return sgc
+
+    @classmethod
     def from_environment(cls, environ):
         """This is intended to be used in the following way:
         >>> sgc = SimulationGlobalConstants.from_environment(os.environ)
@@ -68,7 +76,8 @@ class SimulationGlobalConstants:
                 for name, type, default in features
             }
 
-        return cls(**environ_get_features(cls._FEATURES))
+        sgc = cls(**environ_get_features(cls._FEATURES))
+        return cls._limit_processes_on_daemon(sgc)
 
 
 # The default constants built from the environment

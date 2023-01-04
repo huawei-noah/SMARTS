@@ -53,6 +53,7 @@ class Proxy:
     """Defines a proxy object used to facilitate serialization of a non-serializable object."""
 
     def deproxy(self):
+        """Convert the proxy back into the original object."""
         raise NotImplementedError()
 
 
