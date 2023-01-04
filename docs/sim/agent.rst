@@ -29,7 +29,7 @@ We will further explain the fields of the `Agent` class later on this page. You 
 AgentInterface
 --------------
 
-:class:`smarts.core.agent_interface.AgentInterface` regulates the flow of information between the agent and a SMARTS environment. 
+:class:`smarts.core.agent_interface.AgentInterface` regulates information flow between the agent and a SMARTS environment. 
 It specifies the observations the agent expects to receive from the environment and the action the agent provides to the environment.
 To create an agent interface:
 
@@ -70,7 +70,7 @@ SMARTS provides several pre-designed agent interfaces. Their interface options a
 +------------------------+------------------------------------------------------------+----------------------------------------------------------------------------+-----------------------------------------------------------------+------------------------------------------------------+-------------------------------------------------------------------------+------------------------------------------------------------+----------------------------------------------------------------------+----------------------------------------------------------+-----------------------------------------------------------------+------------------------------------------------------------+------------------------------------------------------------+--------------------------------------------------------+
 
 
-``max_episode_steps`` controls the max running steps allowed for the agent in an episode. The default ``None`` setting means agents have no such limit.
+``max_episode_steps`` controls the max steps allowed for the agent in an episode. The default ``None`` setting means agents have no such limit.
 You can move ``max_episode_steps`` control authority to RLlib with their config option ``horizon``, but lose the ability to customize
 different max_episode_len for each agent.
 
