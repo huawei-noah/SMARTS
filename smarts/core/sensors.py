@@ -946,11 +946,6 @@ class WorkerKwargs:
         }
 
 
-class SensorsWorkerRequestId(IntEnum):
-    SIMULATION_FRAME = 1
-    SIMULATION_LOCAL_CONSTANTS = 2
-
-
 class ProcessWorker:
     """A utility class that defines a persistant worker which will continue to operate in the background."""
 
@@ -1055,6 +1050,12 @@ class ProcessWorker:
     def connection(self):
         """The underlying connection to send data to the worker."""
         return self._parent_connection
+
+
+class SensorsWorkerRequestId(IntEnum):
+    """Options for update requests to a sensor worker."""
+    SIMULATION_FRAME = 1
+    SIMULATION_LOCAL_CONSTANTS = 2
 
 
 class SensorsWorker(ProcessWorker):
