@@ -22,9 +22,9 @@ import logging
 import re
 import multiprocessing as mp
 import sys
-import time
-from collections import deque, namedtuple
+from collections import deque
 from dataclasses import dataclass
+from enum import IntEnum
 from functools import lru_cache
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 
@@ -32,8 +32,8 @@ import numpy as np
 import psutil
 from scipy.spatial.distance import cdist
 
-import smarts.core.simulation_global_constants as sgc
 import smarts.core.serialization.default as serializer
+import smarts.core.simulation_global_constants as sgc
 from smarts.core.agent_interface import ActorsAliveDoneCriteria, AgentsAliveDoneCriteria
 from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
@@ -62,7 +62,7 @@ from .observations import (
     ViaPoint,
     Vias,
 )
-from .plan import Mission, PlanFrame, Via
+from .plan import Mission, PlanFrame
 from .vehicle_state import VehicleState
 
 logger = logging.getLogger(__name__)
@@ -126,26 +126,32 @@ class Sensors:
         """Check that constants have not changed which might indicate that the workers need to be updated."""
         return local_constants == self._sim_local_constants
 
-    def generate_workers(self, count, workers_list: List[Any], **worker_kwargs):
+    def generate_workers(
+        self, count, workers_list: List[Any], worker_kwargs: "WorkerKwargs"
+    ):
         """Generate the given number of workers requested."""
         while len(workers_list) < count:
             new_worker = SensorsWorker()
             workers_list.append(new_worker)
-            new_worker.run(**worker_kwargs)
+            new_worker.run()
+            new_worker.send(
+                request=SensorsWorker.Request(
+                    _RequestId.SIMULATION_LOCAL_CONSTANTS, worker_kwargs
+                )
+            )
 
     def get_workers(
-        self, count, sim_local_constants: SimulationLocalConstants, **worker_kwargs
+        self, count, sim_local_constants: SimulationLocalConstants, **kwargs
     ) -> List["SensorsWorker"]:
         """Get the give number of workers."""
         if not self._validate_configuration(sim_local_constants):
             self.stop_all_workers()
             self._sim_local_constants = sim_local_constants
-        self.generate_workers(
-            count,
-            self._workers,
-            **worker_kwargs,
-            sim_local_constants=self._sim_local_constants,
-        )
+        if len(self._workers) < count:
+            worker_kwargs = WorkerKwargs(
+                **kwargs, sim_local_constants=sim_local_constants
+            )
+            self.generate_workers(count, self._workers, worker_kwargs)
         return self._workers[:count]
 
     @classmethod
@@ -174,7 +180,6 @@ class Sensors:
                     vehicle_id,
                 )
         return observations, dones, updated_sensors
-
 
     @classmethod
     def observe_parallel(
@@ -230,8 +235,11 @@ class Sensors:
                     if not agent_group:
                         break
                     with timeit(f"submitting {len(agent_group)} agents", logger.info):
-                        workers[i].send_to_process(
-                            worker_args=worker_args, agent_ids=agent_group
+                        workers[i].send(
+                            SensorsWorker.Request(
+                                _RequestId.SIMULATION_FRAME,
+                                worker_args.merged(WorkerKwargs(agent_ids=agent_group)),
+                            )
                         )
                         used_workers.append(workers[i])
             else:
@@ -916,10 +924,29 @@ class WorkerKwargs:
     """Used to serialize arguments for a worker upfront."""
 
     def __init__(self, **kwargs) -> None:
-        self.kwargs = {
-            k: serializer.dumps(a) if a is not None else a
-            for k, a in kwargs.items()
+        self.kwargs = self._serialize(kwargs)
+
+    def merged(self, o_worker_kwargs: "WorkerKwargs") -> "WorkerKwargs":
+        new = type(self)()
+        new.kwargs = {**self.kwargs, **o_worker_kwargs.kwargs}
+        return new
+
+    @staticmethod
+    def _serialize(kwargs: Dict):
+        return {
+            k: serializer.dumps(a) if a is not None else a for k, a in kwargs.items()
         }
+
+    def deserialize(self):
+        return {
+            k: serializer.loads(a) if a is not None else a
+            for k, a in self.kwargs.items()
+        }
+
+
+class _RequestId(IntEnum):
+    SIMULATION_FRAME = 1
+    SIMULATION_LOCAL_CONSTANTS = 2
 
 
 class ProcessWorker:
@@ -930,6 +957,13 @@ class ProcessWorker:
 
         pass
 
+    @dataclass
+    class Request:
+        """A request to made to the process worker"""
+
+        id: Any
+        data: WorkerKwargs
+
     def __init__(self, serialize_results=False) -> None:
         parent_connection, child_connection = mp.Pipe()
         self._parent_connection = parent_connection
@@ -938,44 +972,48 @@ class ProcessWorker:
         self._proc: Optional[mp.Process] = None
 
     @classmethod
-    def _do_work(cls, *args, **kwargs):
-        raise NotImplementedError
+    def _do_work(cls, state):
+        raise NotImplementedError()
+
+    @classmethod
+    def _on_request(cls, state: Dict, request: Request) -> bool:
+        """
+        Args:
+            state: The persistant state on the worker
+            request: A request made to the worker.
+
+        Returns:
+            bool: If the worker method `_do_work` should be called.
+        """
+        raise NotImplementedError()
 
     @classmethod
     def _run(
         cls: "ProcessWorker",
         connection: mp.connection.Connection,
         serialize_results,
-        **worker_kwargs,
     ):
+        state: Dict[Any, Any] = {}
         while True:
+            run_work = False
             work = connection.recv()
             if isinstance(work, cls.WorkerDone):
                 break
+            if isinstance(work, cls.Request):
+                run_work = cls._on_request(state, request=work)
             with timeit("do work", logger.info):
-                args, kwargs = work
-                with timeit("deserializing for worker", logger.info):
-                    args = [
-                        serializer.loads(a) if a is not None else a
-                        for a in args
-                    ]
-                    kwargs = {
-                        k: serializer.loads(a)
-                        if a is not None
-                        else a
-                        for k, a in kwargs.items()
-                    }
-                result = cls._do_work(*args, **worker_kwargs, **kwargs)
+                if not run_work:
+                    continue
+                result = cls._do_work(state=state.copy())
                 with timeit("reserialize", logger.info):
                     if serialize_results:
                         result = serializer.dumps(result)
                 with timeit("put back to main thread", logger.info):
                     connection.send(result)
 
-    def run(self, **worker_kwargs):
+    def run(self):
         """Start the worker seeded with the given data."""
         kwargs = dict(serialize_results=self._serialize_results)
-        kwargs.update(worker_kwargs)
         self._proc = mp.Process(
             target=self._run,
             args=(self._child_connection,),
@@ -985,21 +1023,10 @@ class ProcessWorker:
         self._proc.start()
         return self._parent_connection
 
-    def send_to_process(
-        self, *args, worker_args: Optional[WorkerKwargs] = None, **kwargs
-    ):
-        """Sends data to the worker."""
-        args = [
-            serializer.dumps(a) if a is not None else a for a in args
-        ]
-        kwargs = {
-            k: serializer.dumps(a) if a is not None else a
-            for k, a in kwargs.items()
-        }
-        if worker_args:
-            kwargs.update(worker_args.kwargs)
-        with timeit("put to worker", logger.info):
-            self._parent_connection.send((args, kwargs))
+    def send(self, request: Request):
+        """Sends a request to the worker."""
+        assert isinstance(request, self.Request)
+        self._parent_connection.send(request)
 
     def result(self, timeout=None):
         """The most recent result from the worker."""
@@ -1035,12 +1062,26 @@ class SensorsWorker(ProcessWorker):
         super().__init__()
 
     @classmethod
-    def _do_work(cls, *args, **kwargs):
-        return cls.local(*args, **kwargs)
+    def _do_work(cls, state):
+        return cls.local(state=state)
+
+    @classmethod
+    def _on_request(cls, state: Dict, request: ProcessWorker.Request) -> bool:
+        assert request.data is None or isinstance(request.data, WorkerKwargs)
+        if request.id == _RequestId.SIMULATION_FRAME:
+            state.update(request.data.deserialize())
+            return True
+        if request.id == _RequestId.SIMULATION_LOCAL_CONSTANTS:
+            state.update(request.data.deserialize())
+
+        return False
 
     @staticmethod
-    def local(sim_frame: SimulationFrame, sim_local_constants, agent_ids):
+    def local(state: Dict):
         """The work method on the local thread."""
+        sim_local_constants = state["sim_local_constants"]
+        sim_frame = state["sim_frame"]
+        agent_ids = state["agent_ids"]
         return Sensors.observe_serializable_sensor_batch(
             sim_frame, sim_local_constants, agent_ids
         )

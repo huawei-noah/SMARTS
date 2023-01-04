@@ -99,17 +99,3 @@ class SimulationFrame:
             assert self.agent_ids.union(self.vehicles_for_agents) == self.agent_ids
             assert len(self.agent_ids - set(self.agent_interfaces)) == 0
             assert not len(self.vehicle_ids.symmetric_difference(self.vehicle_states))
-
-    @staticmethod
-    def serialize(simulation_frame: "SimulationFrame") -> Any:
-        """Default serialization for this class."""
-        import cloudpickle
-
-        return cloudpickle.dumps(simulation_frame)
-
-    @staticmethod
-    def deserialize(serialized_simulation_frame) -> "SimulationFrame":
-        """Default deserialization for this class."""
-        import cloudpickle
-
-        return cloudpickle.loads(serialized_simulation_frame)
