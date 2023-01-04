@@ -28,8 +28,8 @@ An example of how to create an ``Agent`` instance is shown below.
 
 The fields of :class:`smarts.core.agent.Agent` class is further explained later on this page.
 
-AgentInterface
---------------
+Agent Interface
+---------------
 
 :class:`smarts.core.agent_interface.AgentInterface` regulates information flow between the agent and a SMARTS environment. 
 It specifies (a) the expected observation from the environment to the agent, and (b) the expected action from the agent to the environment.
@@ -72,7 +72,7 @@ Here,
     While using RLlib, the ``max_episode_steps`` control authority may be ceded to RLlib through their config option ``horizon``, but doing so 
     removes the ability to customize different max episode steps for each agent.
 
-Do the following to create an agent interface using a pre-designed interface.
+Do the following to create and extend an agent interface using a pre-designed interface.
 
 .. code-block:: python
 
@@ -82,7 +82,7 @@ Do the following to create an agent interface using a pre-designed interface.
         ...
     )
 
-Alternatively, users may customize their `agent_interface` on their own, like:
+Alternatively, users may customize their ``agent_interface`` from scratch, like:
 
 .. code-block:: python
 
@@ -135,7 +135,9 @@ An agent maps an observation to an action.
         def act(self, obs):
             return [throttle, brake, steering_rate]
 
-The observation passed in should be the observations that a given agent sees. In **continuous action space** the action is expected to produce values for ``throttle`` [0,1], ``brake`` [0,1], and ``steering_rate`` [-1,1].
+The observation passed in is the observations that a given agent sees. 
+In **continuous action space** the action is expected to produce values for 
+:math:`throttle ∈ [0,1]`, :math:`brake ∈ [0,1]`, and :math:`steering\_rate ∈ [-1,1]`.
 
 Otherwise, only while using **lane action space**, the agent is expected to return a lane related command: ``"keep_lane"``, ``"slow_down"``, ``"change_lane_left"``, ``"change_lane_right"``.
 
@@ -148,7 +150,6 @@ Spaces
 ------
 
 Spaces provide samples for variation. For reference, see `gymnasium <https://gymnasium.farama.org/api/spaces/>`_ .
-
 
 .. code-block:: python
 

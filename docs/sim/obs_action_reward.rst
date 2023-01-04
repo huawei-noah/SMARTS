@@ -112,7 +112,7 @@ The reward from smarts environments is given by a calculation within smarts; `en
 Actions
 =======
 
-See action space types.
+There are multiple action types to choose from :class:`smarts.core.controllers.ActionSpaceType`.
 
 .. important::
 
