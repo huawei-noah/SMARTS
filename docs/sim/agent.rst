@@ -3,7 +3,7 @@
 Agent
 =====
 
-An agent is built by specifying its desired `interface` and its `policy`. 
+An agent is built by specifying its desired (i) `interface` and (ii) `policy`. 
 The `interface` and `policy` are contained inside a :class:`~smarts.zoo.agent_spec.AgentSpec` class. 
 A snippet of :class:`~smarts.zoo.agent_spec.AgentSpec` class is shown here.
 
@@ -41,14 +41,16 @@ Next, a minimal example of how to create and register an agent is illustrated.
 
     # AgentSpec specifying the agent's interface and policy.
     agent_spec = AgentSpec(
+        # Agent's interface.
         interface=AgentInterface.from_type(
             requested_type = AgentType.LanerWithSpeed,
             max_episode_steps=500,
         ),
+        # Agent's policy.
         agent_builder=FollowWaypoints,
     )
 
-    # Builds the agent.
+    # Builds the agent, by instantiatng the agent's policy.
     agent = agent_spec.build_agent()
 
     # Registers the agent.
@@ -194,4 +196,4 @@ A policy dictates the actions that the agent takes as a function of the observat
 
 All policies must inherit the base class of :class:`~~smarts.core.agent.Agent` and must contain a ``def act(self, obs)`` method.
 The ``act()`` method should return an action complying to the agent's chosen action type in its agent interface. 
-For example, if action type :attr:`~smarts.core.controllers.ActionSpaceType.LaneWithContinuousSpeed` was chosen, then ``act()`` should return an action ``(speed_float, lane_change_int)``. See the :ref:`example <minimal_agent>` above.
+For example, if action type :attr:`~smarts.core.controllers.ActionSpaceType.LaneWithContinuousSpeed` was chosen, then ``act()`` should return an action ``(speed, lane_change)`` with type ``(float, int)``. See the :ref:`example <minimal_agent>` above.

@@ -90,9 +90,6 @@ Features
 * `top_down_rgb` (Optional) - contains an observation image with its metadata
     * `metadata` - `GridMapMetadata`
     * `data` - A RGB image (default 256x256) with the ego vehicle at the center
-
-.. image:: ../_static/rgb.png
-
 * `road_waypoints` (Optional) - A collection of `Waypoint` near the ego vehicle representing a `Waypoint` approximation of nearby lane centers.
     * `lanes` - The representation of each lane represented by `Waypoint`. Each item is list of `Waypoint`.
 * `via_data` - A `Vias` describing collectable points the agent can visit.
