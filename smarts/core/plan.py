@@ -320,11 +320,15 @@ class Plan:
         """The road map this plan is relative to."""
         return self._road_map
 
-    def create_route(self, mission: Mission):
+    def create_route(self, mission: Mission, radius: Optional[float] = None):
         """Generates a route that conforms to a mission.
         Args:
             mission (Mission):
                 A mission the agent should follow. Defaults to endless if `None`.
+            radius (Optional[float]):
+                Radius (meter) to find the nearest starting lane for the given
+                mission. Defaults to `_default_lane_width` of the underlying
+                road_map.
         """
         assert not self._route, "already called create_route()"
         self._mission = mission or Mission.random_endless_mission(self._road_map)
@@ -335,45 +339,42 @@ class Plan:
 
         assert isinstance(self._mission.goal, PositionalGoal)
 
-        start_lane = self._road_map.nearest_lane(
+        start_lanes = self._road_map.nearest_lanes(
             self._mission.start.point,
-            include_junctions=False,
+            include_junctions=True,
+            radius=radius,
         )
-
-        if not start_lane:
-            # it's possible that the Mission's start point wasn't explicitly
-            # specified by a user, but rather determined during the scenario run
-            # from the current position of a vehicle, in which case it may be
-            # in a junction.  But we only allow this if the previous query fails.
-            start_lane = self._road_map.nearest_lane(
-                self._mission.start.point,
-                include_junctions=True,
-            )
-        if start_lane is None:
+        if not start_lanes:
             self._mission = Mission.endless_mission(Pose.origin())
-            raise PlanningError("Cannot find start lane. Route must start in a lane.")
-        start_road = start_lane.road
+            raise PlanningError("Starting lane not found. Route must start in a lane.")
+
+        via_roads = [self._road_map.road_by_id(via) for via in self._mission.route_vias]
 
         end_lane = self._road_map.nearest_lane(
             self._mission.goal.position,
             include_junctions=False,
         )
         assert end_lane is not None, "route must end in a lane"
-        end_road = end_lane.road
 
-        via_roads = [self._road_map.road_by_id(via) for via in self._mission.route_vias]
-
-        self._route = self._road_map.generate_routes(
-            start_road, end_road, via_roads, 1
-        )[0]
+        # When an agent is in an intersection, the `nearest_lanes` method might
+        # not return the correct road as the first choice. Hence, nearest
+        # starting lanes are tried in sequence until a route is found or until
+        # all nearby starting lane options are exhausted.
+        for start_lane, _ in start_lanes:
+            self._route = self._road_map.generate_routes(
+                start_lane.road, end_lane.road, via_roads, 1
+            )[0]
+            if self._route.road_length > 0:
+                break
 
         if len(self._route.roads) == 0:
             self._mission = Mission.endless_mission(Pose.origin())
+            start_road_ids = [start_lane.road.road_id for start_lane, _ in start_lanes]
             raise PlanningError(
                 "Unable to find a route between start={} and end={}. If either of "
                 "these are junctions (not well supported today) please switch to "
                 "roads and ensure there is a > 0 offset into the road if it is "
-                "after a junction.".format(start_road.road_id, end_road.road_id)
+                "after a junction.".format(start_road_ids, end_lane.road.road_id)
             )
 
         return
