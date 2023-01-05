@@ -126,10 +126,11 @@ def _readable(func: _Funcs) -> _Result:
 
 
 def git_revision_short_hash() -> str:
-    """Returns Git commit short hash.
+    """
+    Returns Git commit short hash.
 
-    :return: Commit hash.
-    :rtype: str
+    Returns:
+        str: Commit hash.
     """
     return (
         subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
@@ -139,10 +140,11 @@ def git_revision_short_hash() -> str:
 
 
 def git_branch() -> str:
-    """Returns Git branch.
+    """
+    Returns Git branch name.
 
-    :return: Branch name.
-    :rtype: str
+    Returns:
+        str: Branch name.
     """
     return (
         subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])

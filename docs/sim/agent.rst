@@ -1,7 +1,7 @@
 .. _agent:
 
-Building an Agent
-=================
+Agent
+=====
 
 An agent is built by specifying its desired `interface` and its `policy`. 
 The `interface` and `policy` are contained inside a :class:`~smarts.zoo.agent_spec.AgentSpec` class. 

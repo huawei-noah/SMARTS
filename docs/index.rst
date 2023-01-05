@@ -31,7 +31,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    :caption: Getting Started
 
    setup.rst
-   quickstart
+   quickstart.rst
    sim/env.rst
    sim/obs_action_reward.rst
    sim/agent.rst

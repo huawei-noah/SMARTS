@@ -1,7 +1,7 @@
-.. _set_up_smarts:
+.. _setup:
 
-Setting up SMARTS
-=================
+Setup
+=====
 
 Prerequisites
 -------------

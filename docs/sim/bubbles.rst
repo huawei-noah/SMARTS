@@ -1,7 +1,7 @@
 .. _bubbles:
 
-Working with Bubbles
-====================
+Bubbles
+=======
 
 SMARTS provides the concept of a spatial-temporal bubble which allows for focused simulation interaction. Bubbles are intended to address the problem of scaling of interaction. Using resources globally results in wasted simulation resources if the most important behavior to an autonomous vehicle is in the nearby vicinity of that vehicle.
 

@@ -184,7 +184,8 @@ Then, run a single-agent SMARTS simulation with Envision display and `loop` scen
 
 .. code-block:: bash
     
-    $ scl run --envision examples/single_agent.py scenarios/sumo/loop 
+    $ cd <path>/SMARTS
+    $ scl run --envision examples/control/single_agent.py scenarios/sumo/loop 
 
 The `--envision` flag runs the Envision server which displays the simulation visualization. See Envision's README(./envision/README.md) for more information on Envision, SMARTS's front-end visualization tool.
 

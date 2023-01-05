@@ -26,7 +26,7 @@ We encourage all forms of contributions to SMARTS, not limited to:
 Setting up your dev environment
 -------------------------------
 
-In addition to following the :ref:`set_up_smarts` steps, you will need to install the ``[dev]`` dependencies.
+In addition to following the :ref:`setup` steps, you will need to install the ``[dev]`` dependencies.
 
 .. code-block:: bash
 
