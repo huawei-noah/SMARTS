@@ -53,7 +53,6 @@ def main(scenarios, sim_name, headless, num_episodes, seed):
         fixed_timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,
-        # envision_record_data_replay_path="./data_replay",
     )
 
     for episode in episodes(n=num_episodes):

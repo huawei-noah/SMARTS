@@ -103,14 +103,41 @@ Note: Some observations like `occupancy_grid_map`, `drivable_area_grid_map` and 
 =======
 Rewards
 =======
-The reward from smarts environments is given by a calculation within smarts; `env_reward` from smarts environments directly uses the reward from smarts. The given reward is 0 or `reward < -0.5` or `reward > 0.5` relating to distance travelled in meters on the step that a vehicle has gone at least 0.5 meters since the last given non-zero reward.
+
+The default reward from SMARTS environments is 
+
+reward 
+
+simply the distance travelled by the agent within the most recent single time step.
+ given by a calculation within smarts; `env_reward` 
+from smarts environments directly uses the reward from smarts. 
+
+The given reward is 0 or `reward < -0.5` or `reward > 0.5` relating to distance travelled in meters 
+on the step that a vehicle has gone at least 0.5 meters since the last given non-zero reward.
 
 =======
 Actions
 =======
 
-There are multiple action types to choose from :class:`~smarts.core.controllers.ActionSpaceType`.
+Prior to a simulation, an agent's action type and its policy to provide compliant actions, can be configured via its agent specification instance of :class:`~smarts.zoo.agent_spec.AgentSpec`. 
+Refer to :ref:`agent` for details.
 
-.. important::
+An agent can be configured to emit any one of the following action types from :class:`~smarts.core.controllers.ActionSpaceType`.
 
-    Depending on how your agent policy is set up, :attr:`~smarts.core.controllers.ActionSpaceType.ActuatorDynamic` might allow the agent to learn faster than ``ActionSpaceType.Continuous`` simply because learning to correct steering could be simpler than learning a mapping to all the absolute steering angle values. But, again, it also depends on the design of your agent model. 
++ :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
++ :attr:`~smarts.core.controllers.ActionSpaceType.Lane`
++ :attr:`~smarts.core.controllers.ActionSpaceType.ActuatorDynamic`
++ :attr:`~smarts.core.controllers.ActionSpaceType.LaneWithContinuousSpeed`
++ :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
++ :attr:`~smarts.core.controllers.ActionSpaceType.Trajectory`
++ :attr:`~smarts.core.controllers.ActionSpaceType.MultiTargetPose`
++ :attr:`~smarts.core.controllers.ActionSpaceType.MPC`
++ :attr:`~smarts.core.controllers.ActionSpaceType.TrajectoryWithTime`
++ :attr:`~smarts.core.controllers.ActionSpaceType.Direct`
++ :attr:`~smarts.core.controllers.ActionSpaceType.Empty`
+
+.. tip::
+
+    Depending on the agent's policy, :attr:`~smarts.core.controllers.ActionSpaceType.ActuatorDynamic` action type might 
+    allow the agent to learn faster than :attr:`~smarts.core.controllers.ActionSpaceType.Continous` action type because 
+    learning to correct steering could be simpler than learning a mapping to all the absolute steering angle values. 

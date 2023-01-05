@@ -1,12 +1,27 @@
-Quickstart: Designing a Simple Experiment
-=========================================
+.. _quickstart:
 
-First we'll need to define what our agent looks like, we'll then place the agent in a scenario and run through a few episodes of simulation.
+Quickstart
+==========
+
+A typical workflow would look like this.
+
+1. Design a scenario. 
+   
+   + Detailed explanation available at :ref:`scenario_studio`. 
+2. Build an agent.
+   
+   + Detailed explanation available at :ref:`agent`. 
+3. Instantiate and run a SMARTS environment.
+
+In this quickstart guide, a pre-designed scenario ``scenarios/sumo/loop`` will be used.
+An
+
+
+ Here, we will 
+
 
 Specifying the Agent
 --------------------
-
-The agent is defined in terms of the interface it expects from the environment and the responses an agent produces.
 
 :class:`~smarts.core.agent_interface.AgentInterface`
    This is where you can control the interface between SMARTS and your agent.
@@ -14,14 +29,18 @@ The agent is defined in terms of the interface it expects from the environment a
 :class:`~smarts.core.agent.Agent`
    This is the brains of the agent, you will need to implement the interface defined by :class:`~smarts.core.agent.Agent` in order to give the agent some behaviour.
 
-AgentInterface 
+AgentInterface
 ^^^^^^^^^^^^^^
 
 :class:`~smarts.core.agent_interface.AgentInterface`
 
-Here we choose the interface between SMARTS and your agent. Select which sensors to enable on your vehicle and the action space for you agent.
+Here we choose the interface between SMARTS and your agent. 
+Select which sensors to enable on your vehicle and the action 
+space for you agent.
 
-Some common configurations have been packaged up under :class:`~smarts.core.agent_interface.AgentType` and can be instantiated via
+Some common configurations have been packaged up 
+under :class:`~smarts.core.agent_interface.AgentType` and 
+can be instantiated via
 
 .. code-block:: python
 
@@ -29,7 +48,12 @@ Some common configurations have been packaged up under :class:`~smarts.core.agen
 
    AgentInterface.from_type(AgentType.Tracker)
 
-This `AgentType.Tracker` preset gives us :class:`~smarts.core.agent_interface.Waypoints` and the trajectory following action space `ActionSpaceType.Trajectory`, see :class:`~smarts.core.controllers.ActionSpaceType` for more available action spaces.
+This `AgentType.Tracker` preset gives us 
+:class:`~smarts.core.agent_interface.Waypoints`
+and the trajectory following action space 
+`ActionSpaceType.Trajectory`, 
+see :class:`~smarts.core.controllers.ActionSpaceType` 
+for more available action spaces.
 
 Agent 
 ^^^^^
@@ -54,7 +78,7 @@ This is done by implementing the :class:`~smarts.core.agent.Agent` interface:
            ego = obs.ego_vehicle_state
            current_pose = np.array([*ego.position[:2], ego.heading])
 
-           # lookahead (at most) 10 waypoints
+           # Lookahead (at most) 10 waypoints
            target_wp = obs.waypoint_paths[0][:10][-1]
            dist_to_wp = target_wp.dist_to(obs.ego_vehicle_state.position)
            target_time = dist_to_wp / self.target_speed
@@ -77,9 +101,8 @@ Here we are implementing a simple lane following agent using the BezierMotionPla
 AgentSpec 
 ^^^^^^^^^
 
-:class:`~smarts.zoo.agent_spec.AgentSpec`
-
-These pieces are brought together by the :class:`~smarts.zoo.agent_spec.AgentSpec`:
+These pieces are brought together by the 
+:class:`~smarts.zoo.agent_spec.AgentSpec`:
 
 .. code-block:: python
 
@@ -90,7 +113,11 @@ These pieces are brought together by the :class:`~smarts.zoo.agent_spec.AgentSpe
        agent_builder=ExampleAgent
    )
 
-The :class:`~smarts.zoo.agent_spec.AgentSpec` acts as a container to store the information we need to build an agent, we can distribute this spec safely between process' to aid in parallelism and once we have it in the right spot, we can instantiate the :class:`~smarts.core.agent.Agent` with
+The :class:`~smarts.zoo.agent_spec.AgentSpec` acts as 
+a container to store the information we need to build an agent, 
+we can distribute this spec safely between process' 
+to aid in parallelism and once we have it in the right spot, 
+we can instantiate the :class:`~smarts.core.agent.Agent` with
 
 .. code-block:: python
 
@@ -148,7 +175,8 @@ We can run this agent with "scenarios/sumo/loop", one of the scenarios packaged 
    env = gym.make(
        "smarts.env:hiway-v0",
        scenarios=["scenarios/sumo/loop"],
-       agent_specs={AGENT_ID: agent_spec},
+       agent_specs={
+        AGENT_ID: agent_spec},
    )
 
    for episode in episodes(n=100):
