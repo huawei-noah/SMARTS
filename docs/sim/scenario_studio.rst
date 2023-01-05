@@ -23,7 +23,7 @@ A typical scenario creation workflow is as follows.
    * For a SUMO road network, create the map using `netedit <https://sumo.dlr.de/docs/NETEDIT.html>`_ and save it in the new scenario folder.
    * For other road networks, define and instantiate a :class:`~smarts.sstudio.types.MapSpec` object in ``scenario.py``. Pass the ``MapSpec`` object to :class:`~smarts.sstudio.types.Scenario` in ``scenario.py``.
 
-3. Add traffic, social agents, ego agents, etc, to :class:`~smarts.sstudio.types.Scenario` in ``scenario.py``.
+3. Add traffic, social agents, ego agents, friction patches, map spec, etc, to :class:`~smarts.sstudio.types.Scenario` in ``scenario.py``.
 4. Feed the created :class:`~smarts.sstudio.types.Scenario` object to :func:`~smarts.sstudio.genscenario.gen_scenario` in ``scenario.py`` to generate the scenario. 
 
    .. code:: python
@@ -107,6 +107,7 @@ Then in the ``scenario.py`` file:
             social_agent_missions={
                 "general": ([social_actor], [social_mission])
             },
+            ...
         )
     )
 
@@ -131,6 +132,7 @@ Scenario Studio also allows generation of *missions* for ego agents to complete.
     gen_scenario(
         scenario=t.Scenario(
             ego_missions=ego_missions,
+            ...
         )
     )
 
@@ -145,9 +147,12 @@ The Scenario Studio of SMARTS also allows the generation of *friction patches* w
 
 .. code-block:: python
 
-    friction_maps = [
-        RoadSurfacePatch(
-            zone=PositionalZone(pos=(153, -100), size=(2000, 6000)),
+    from smarts.sstudio import types as t
+    from smarts.sstudio import gen_scenario
+
+    friction_patches = [
+        t.RoadSurfacePatch(
+            zone=t.PositionalZone(pos=(153, -100), size=(2000, 6000)),
             begin_time=0,
             end_time=20,
             friction_coefficient=0.5,
@@ -155,9 +160,8 @@ The Scenario Studio of SMARTS also allows the generation of *friction patches* w
     ]
     gen_scenario(
         scenario=t.Scenario(
-            social_agent_missions={
-                "general": ([social_actor], [social_mission])
-            },
+            friction_maps = friction_patches,
+            ...
         )
     )
 
