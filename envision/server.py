@@ -430,7 +430,7 @@ class MapFileHandler(FileHandler):
         for dir_ in scenario_dirs:
             path_map.update(
                 {
-                    f"{path2hash(str(glb.parent.parent.parent.resolve()))}.glb": glb
+                    f"{path2hash(str(glb.parents[2].resolve()))}.glb": glb
                     for glb in Path(dir_).rglob("build/map/*.glb")
                 }
             )
