@@ -16,7 +16,7 @@ A snippet of :class:`~smarts.zoo.agent_spec.AgentSpec` class is shown here.
 
 Next, a minimal example of how to create and register an agent is illustrated.
 
-.. _follow_waypoints_policy:
+.. _minimal_agent:
 .. code-block:: python
 
     from smarts.core.agent import Agent
@@ -70,11 +70,11 @@ Sections below elaborate on the agent's `interface` and `policy` design.
 Interface
 ---------
 
-The :class:`~smarts.core.agent_interface.AgentInterface` regulates information flow between the agent and a SMARTS environment. 
+The :class:`~smarts.core.agent_interface.AgentInterface` regulates information flow between the agent and SMARTS environment. 
 It specifies the
 
-+ Expected observation from the environment to the agent. 
-+ Expected action from the agent to the environment. Attribute :attr:`~smarts.core.agent_interface.AgentInterface.action` controls the action type used. There are multiple action types to choose from :class:`~smarts.core.controllers.ActionSpaceType`.
++ observation from the environment to the agent. 
++ action from the agent to the environment. Attribute :attr:`~smarts.core.agent_interface.AgentInterface.action` controls the action type used. There are multiple action types to choose from :class:`~smarts.core.controllers.ActionSpaceType`.
 
 Pre-configured interface
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -91,7 +91,7 @@ SMARTS provides several pre-configured interfaces for ease of use. Namely,
 + `AgentType.MPCTracker`
 + `AgentType.Boid`
 
-The interfaces enabled for each pre-configured interface is shown in the table below.
+The attributes enabled for each pre-configured interface is shown in the table below.
 
 +----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
 | **Interface**              | :attr:`~smarts.core.agent_interface.AgentType.Full`         | :attr:`~smarts.core.agent_interface.AgentType.StandardWithAbsoluteSteering` | :attr:`~smarts.core.agent_interface.AgentType.Standard`          | :attr:`~smarts.core.agent_interface.AgentType.Laner`  | :attr:`~smarts.core.agent_interface.AgentType.LanerWithSpeed`            | :attr:`~smarts.core.agent_interface.AgentType.Tracker`      | :attr:`~smarts.core.agent_interface.AgentType.TrajectoryInterpolator` | :attr:`~smarts.core.agent_interface.AgentType.MPCTracker` | :attr:`~smarts.core.agent_interface.AgentType.Boid`              | :attr:`~smarts.core.agent_interface.AgentType.Loner`        | :attr:`~smarts.core.agent_interface.AgentType.Tagger`       | :attr:`~smarts.core.agent_interface.AgentType.Direct`   |
@@ -138,7 +138,7 @@ A pre-configured interface can be extended by supplying extra `kwargs`. For exam
 Custom interface
 ^^^^^^^^^^^^^^^^
 
-Alternatively, users may customize their ``agent_interface`` from scratch, like:
+Alternatively, users may customize their agent interface from scratch, like:
 
 .. code-block:: python
 
@@ -194,4 +194,4 @@ A policy dictates the actions that the agent takes as a function of the observat
 
 All policies must inherit the base class of :class:`~~smarts.core.agent.Agent` and must contain a ``def act(self, obs)`` method.
 The ``act()`` method should return an action complying to the agent's chosen action type in its agent interface. 
-For example, if action type :attr:`~smarts.core.controllers.ActionSpaceType.LaneWithContinuousSpeed` was chosen, then ``act()`` should return an action ``(speed_float, lane_change_int)``. See the :ref:`example <follow_waypoints_policy>` above.
+For example, if action type :attr:`~smarts.core.controllers.ActionSpaceType.LaneWithContinuousSpeed` was chosen, then ``act()`` should return an action ``(speed_float, lane_change_int)``. See the :ref:`example <minimal_agent>` above.
