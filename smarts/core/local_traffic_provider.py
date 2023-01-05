@@ -299,7 +299,7 @@ class LocalTrafficProvider(TrafficProvider):
         for actor_id in dones - removed:
             actor = self._my_actors.get(actor_id)
             if actor:
-                sim.provider_removing_actor(self, actor.state)
+                sim.provider_removing_actor(self, actor_id)
             # The following is not really necessary due to the above calling teardown(),
             # but it doesn't hurt...
             if actor_id in self._my_actors:

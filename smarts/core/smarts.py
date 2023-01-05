@@ -715,14 +715,13 @@ class SMARTS(ProviderManager):
         self._log.warning(
             f"could not find a provider to assume control of vehicle {state.actor_id} with role={state.role.name} after being relinquished.  removing it."
         )
-        self.provider_removing_actor(provider, state)
+        self.provider_removing_actor(provider, state.actor_id)
         return None
 
-    def provider_removing_actor(self, provider: Provider, actor_state: ActorState):
+    def provider_removing_actor(self, provider: Provider, actor_id: str):
         # Note: for vehicles, pybullet_provider_sync() will also call teardown
         # when it notices a social vehicle has exited the simulation.
-        if isinstance(actor_state, VehicleState):
-            self._teardown_vehicles([actor_state.actor_id])
+        self._teardown_vehicles([actor_id])
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()

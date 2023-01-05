@@ -24,25 +24,35 @@ from dataclasses import dataclass, fields
 from typing import Any, Dict, Set, TypeVar
 
 import gym
+import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
+from smarts.core.coordinates import Point
+from smarts.core.plan import PositionalGoal
+from smarts.core.road_map import RoadMap
+from smarts.core.scenario import Scenario
+from smarts.env.wrappers.metric.completion import Completion, CompletionFuncs, get_dist
 from smarts.env.wrappers.metric.costs import CostFuncs, Costs
 from smarts.env.wrappers.metric.counts import Counts
 
 
 @dataclass
 class Record:
-    """Stores an agent's performance count and cost values."""
+    """Stores an agent's scenario-completion, performance-count, and
+    performance-cost values."""
 
-    counts: Counts
+    completion: Completion
     costs: Costs
+    counts: Counts
 
 
 @dataclass
 class Data:
-    """Stores an agent's performance record and cost functions."""
+    """Stores an agent's performance-record, completion-functions, and
+    cost-functions."""
 
     record: Record
+    completion_funcs: CompletionFuncs
     cost_funcs: CostFuncs
 
 
@@ -80,7 +90,9 @@ class _Metrics(gym.Wrapper):
     def __init__(self, env: gym.Env):
         super().__init__(env)
         _check_env(env)
-        self._cur_scen: str
+        self._scen: Scenario
+        self._scen_name: str
+        self._road_map: RoadMap
         self._cur_agents: Set[str]
         self._steps: Dict[str, int]
         self._done_agents: Set[str]
@@ -100,27 +112,22 @@ class _Metrics(gym.Wrapper):
 
             # Compute all cost functions.
             costs = Costs()
-            for field in fields(self._records[self._cur_scen][agent_name].cost_funcs):
-                cost_func = getattr(self._records[self._cur_scen][agent_name].cost_funcs, field.name)
-                new_costs = cost_func(agent_obs)
+            for field in fields(self._records[self._scen_name][agent_name].cost_funcs):
+                cost_func = getattr(self._records[self._scen_name][agent_name].cost_funcs, field.name)
+                new_costs = cost_func(road_map=self._road_map, obs=agent_obs)
                 costs = _add_dataclass(new_costs, costs)
 
             # Update stored costs.
-            self._records[self._cur_scen][agent_name].record.costs = costs
+            self._records[self._scen_name][agent_name].record.costs = costs
 
             if dones[agent_name]:
                 self._done_agents.add(agent_name)
-                steps_adjusted, goals = 0, 0
-                if agent_obs.events.reached_goal:
-                    steps_adjusted = self._steps[agent_name]
-                    goals = 1
-                elif (
-                    len(agent_obs.events.collisions) > 0
+                if not (
+                    agent_obs.events.reached_goal
+                    or len(agent_obs.events.collisions) > 0
                     or agent_obs.events.off_road
                     or agent_obs.events.reached_max_episode_steps
                 ):
-                    steps_adjusted = self.env.agent_specs[agent_name].interface.max_episode_steps
-                else:
                     raise MetricsError(
                         f"Unsupported agent done reason. Events: {agent_obs.events}."
                     )
@@ -129,15 +136,34 @@ class _Metrics(gym.Wrapper):
                 counts = Counts(
                     episodes=1,
                     steps=self._steps[agent_name],
-                    steps_adjusted=steps_adjusted,
-                    goals=goals,
+                    steps_adjusted=min(
+                        self._steps[agent_name],
+                        self.env.agent_specs[agent_name].interface.max_episode_steps
+                    ),
+                    goals=agent_obs.events.reached_goal,
+                    max_steps=self.env.agent_specs[agent_name].interface.max_episode_steps
                 )
-                self._records[self._cur_scen][agent_name].record.counts = _add_dataclass(
+                self._records[self._scen_name][agent_name].record.counts = _add_dataclass(
                     counts, 
-                    self._records[self._cur_scen][agent_name].record.counts
+                    self._records[self._scen_name][agent_name].record.counts
                 )
-        # fmt: on
 
+                # Update percentage of scenario tasks completed.
+                completion = Completion(dist_tot=self._records[self._scen_name][agent_name].record.completion.dist_tot)
+                for field in fields(self._records[self._scen_name][agent_name].completion_funcs):
+                    completion_func = getattr(
+                        self._records[self._scen_name][agent_name].completion_funcs,
+                        field.name,
+                    )
+                    new_completion = completion_func(
+                        road_map=self._road_map,
+                        obs=agent_obs,
+                        initial_compl=completion,
+                    )
+                    completion = _add_dataclass(new_completion, completion)
+                self._records[self._scen_name][agent_name].record.completion = completion
+
+        # fmt: on
         if dones["__all__"] == True:
             assert (
                 self._done_agents == self._cur_agents
@@ -148,21 +174,35 @@ class _Metrics(gym.Wrapper):
     def reset(self, **kwargs):
         """Resets the environment."""
         obs = super().reset(**kwargs)
-        self._cur_scen = self.env.scenario_log["scenario_map"]
         self._cur_agents = set(self.env.agent_specs.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_agents = set()
-        if self._cur_scen not in self._records:
-            self._records[self._cur_scen] = {
+        self._scen = self.env.scenario
+        self._scen_name = self.env.scenario.name
+        self._road_map = self.env.scenario.road_map
+
+        # fmt: off
+        if self._scen_name not in self._records:
+            _check_scen(self._scen)
+            self._records[self._scen_name] = {
                 agent_name: Data(
                     record=Record(
-                        counts=Counts(),
+                        completion=Completion(
+                            dist_tot=get_dist(
+                                road_map=self._road_map,
+                                point_a=Point(*self._scen.missions[agent_name].start.position),
+                                point_b=self._scen.missions[agent_name].goal.position,    
+                            )
+                        ),
                         costs=Costs(),
+                        counts=Counts(),
                     ),
                     cost_funcs=CostFuncs(),
+                    completion_funcs=CompletionFuncs(),
                 )
                 for agent_name in self._cur_agents
             }
+        # fmt: on
 
         return obs
 
@@ -179,11 +219,11 @@ class _Metrics(gym.Wrapper):
         >> records()
         >> {
                 scen1: {
-                    agent1: Record(counts, costs),
-                    agent2: Record(counts, costs),
+                    agent1: Record(completion, costs, counts),
+                    agent2: Record(completion, costs, counts),
                 },
                 scen2: {
-                    agent1: Record(counts, costs),
+                    agent1: Record(completion, costs, counts),
                 },
             }
         """
@@ -200,21 +240,26 @@ class _Metrics(gym.Wrapper):
         """
         An overall performance score achieved on the wrapped environment.
         """
-        counts_list, costs_list = zip(
+        # fmt: off
+        counts_list, costs_list, completion_list = zip(
             *[
-                (data.record.counts, data.record.costs)
+                (data.record.counts, data.record.costs, data.record.completion)
                 for agents in self._records.values()
                 for data in agents.values()
             ]
         )
-        counts_tot = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
-        costs_tot = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
+        agents_tot: int = len(counts_list)  # Total number of agents over all scenarios
+        counts_tot: Counts = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
+        costs_tot: Costs = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
+        completion_tot: Completion = functools.reduce(lambda a, b: _add_dataclass(a, b), completion_list)
 
         _score: Dict[str, float] = {}
-        _score["completion"] = _completion(counts=counts_tot)
-        _score["humanness"] = _humanness(counts=counts_tot, costs=costs_tot)
-        _score["rules"] = _rules(counts=counts_tot, costs=costs_tot)
-        _score["time"] = _time(counts=counts_tot, costs=costs_tot)
+        _score["completion"] = _completion(completion=completion_tot)
+        _score["humanness"] = _humanness(costs=costs_tot, agents_tot=agents_tot)
+        _score["rules"] = _rules(costs=costs_tot, agents_tot=agents_tot)
+        _score["time"] = _time(counts=counts_tot)
+        _score["overall"] = _score["completion"]*(1-_score["time"])*(1-_score["humanness"])*(1-_score["rules"])
+        # fmt: on
 
         return _score
 
@@ -236,6 +281,8 @@ def _check_env(env: gym.Env):
             "neighborhood_vehicles": bool(agent_intrfc.neighborhood_vehicles),
             "road_waypoints": bool(agent_intrfc.road_waypoints),
             "waypoints": bool(agent_intrfc.waypoints),
+            "done_criteria.collision": agent_intrfc.done_criteria.collision,
+            "done_criteria.off_road": agent_intrfc.done_criteria.off_road,
         }
         return intrfc
 
@@ -249,7 +296,27 @@ def _check_env(env: gym.Env):
             )
 
 
-T = TypeVar("T", Costs, Counts)
+def _check_scen(scen: Scenario):
+    """Checks scenario suitability to compute performance metrics.
+
+    Args:
+        scen (Scenario): A ``smarts.core.scenario.Scenario`` class.
+
+    Raises:
+        AttributeError: If any agent's mission is not of type PositionGoal.
+    """
+    goal_types = {
+        agent_name: type(agent_mission.goal)
+        for agent_name, agent_mission in scen.missions.items()
+    }
+    if not all([goal_type == PositionalGoal for goal_type in goal_types.values()]):
+        raise AttributeError(
+            "Expected all agents to have PositionalGoal, but agents have goal type "
+            "{0}".format(goal_types)
+        )
+
+
+T = TypeVar("T", Completion, Costs, Counts)
 
 
 def _add_dataclass(first: T, second: T) -> T:
@@ -263,22 +330,63 @@ def _add_dataclass(first: T, second: T) -> T:
     return output
 
 
-def _completion(counts: Counts) -> float:
-    return counts.goals / counts.episodes
+def _completion(completion: Completion) -> float:
+    """
+    Proportion of scenarios tasks completed.
+
+    Args:
+        completion (Completion): Scenario tasks completed.
+
+    Returns:
+        float: Normalised completion value = [0, 1]. Completion value should be
+            maximised. The higher the value, the better it is.
+    """
+    return (completion.dist_tot - completion.dist_remainder) / completion.dist_tot
 
 
-def _humanness(counts: Counts, costs: Costs) -> float:
-    return (
-        costs.dist_to_obstacles
-        + costs.jerk_angular
-        + costs.jerk_linear
-        + costs.lane_center_offset
-    ) / counts.episodes
+def _humanness(costs: Costs, agents_tot: int) -> float:
+    """
+    Humanness indicator.
+
+    Args:
+        costs (Costs): Performance cost values.
+        agents_tot (int): Number of agents simulated.
+
+    Returns:
+        float: Normalised humanness value = [0, 1]. Humanness value should be
+            minimised. The lower the value, the better it is.
+    """
+    humanness = np.array(
+        [costs.dist_to_obstacles, costs.jerk_linear, costs.lane_center_offset]
+    )
+    return np.mean(humanness, dtype=float) / agents_tot
 
 
-def _rules(counts: Counts, costs: Costs) -> float:
-    return (costs.speed_limit + costs.wrong_way) / counts.episodes
+def _rules(costs: Costs, agents_tot: int) -> float:
+    """
+    Traffic rules compliance.
+
+    Args:
+        costs (Costs): Performance cost values.
+        agents_tot (int): Number of agents simulated.
+
+    Returns:
+        float: Normalised rules value = [0, 1]. Rules value should be minimised.
+            The lower the value, the better it is.
+    """
+    rules = np.array([costs.speed_limit, costs.wrong_way])
+    return np.mean(rules, dtype=float) / agents_tot
 
 
-def _time(counts: Counts, costs: Costs) -> float:
-    return (counts.steps_adjusted + costs.dist_to_goal) / counts.episodes
+def _time(counts: Counts) -> float:
+    """
+    Time taken to complete scenario.
+
+    Args:
+        counts (Counts): Performance count values.
+
+    Returns:
+        float: Normalised time value = (0, 1]. Time value should be minimised.
+            The lower the value, the better it is.
+    """
+    return counts.steps_adjusted / counts.max_steps

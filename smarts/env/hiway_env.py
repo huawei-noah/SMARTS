@@ -194,6 +194,15 @@ class HiWayEnv(gym.Env):
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 
+    @property
+    def scenario(self) -> Scenario:
+        """Returns underlying scenario.
+
+        Returns:
+            Scenario: Current simulated scenario.
+        """
+        return self._smarts.scenario
+
     def seed(self, seed: int) -> int:
         """Sets random number generator seed number.
 
@@ -272,4 +281,3 @@ class HiWayEnv(gym.Env):
         """Closes the environment and releases all resources."""
         if self._smarts is not None:
             self._smarts.destroy()
-            self._smarts = None
