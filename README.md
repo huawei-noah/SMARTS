@@ -61,10 +61,19 @@ for _ in range(1000):
 
 # Examples 
 ### Usage
-Illustration of various ways to use SMARTS. 
-1. [Single agent](examples/control/single_agent.py) example.
+Illustration of various agent action types and agent control policies. 
+1. [Chase Via Points](examples/control/chase_via_points.py) example.
+    + Single agent
+    + ActionSpaceType = [LaneWithContinuousSpeed](smarts/core/controllers/__init__.py#AcionSpaceType)
+1. [Trajectory Tracking](examples/control/trajectory_tracking.py) example.
+    + Single agent
+    + ActionSpaceType = Trajectory
 1. [Multi agent](examples/control/multi_agent.py) example.
+    + Multi agent
+    + ActionSpaceType = Lane
 1. [Parallel environments](examples/control/parallel_environment.py) to run multiple SMARTS environments in parallel.
+    + Multiple environments
+    + ActionSpaceType = LaneWithContinuousSpeed
 
 ### RL Model
 1. [MARL benchmark](baselines/marl_benchmark)

@@ -68,7 +68,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("single-agent-example")
+    parser = default_argument_parser("chase-via-points")
     args = parser.parse_args()
 
     if not args.scenarios:

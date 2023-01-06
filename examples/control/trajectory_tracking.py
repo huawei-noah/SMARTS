@@ -1,6 +1,9 @@
+import sys
 from pathlib import Path
 
 import gym
+
+sys.path.insert(0, str(Path(__file__).parents[1]))
 from tools.argument_parser import default_argument_parser
 
 from cli.studio import build_scenarios
@@ -66,7 +69,7 @@ def main(scenarios, headless, num_episodes):
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("trajectory-tracking-agent-example")
+    parser = default_argument_parser("trajectory-tracking")
     args = parser.parse_args()
 
     if not args.scenarios:
