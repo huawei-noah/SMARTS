@@ -79,7 +79,8 @@ class Goal:
 
 @dataclass(unsafe_hash=True)
 class EndlessGoal(Goal):
-    """A goal that can never be completed."""
+    """A goal that can never be completed.
+    """
 
     pass
 
@@ -322,6 +323,7 @@ class Plan:
 
     def create_route(self, mission: Mission, radius: Optional[float] = None):
         """Generates a route that conforms to a mission.
+
         Args:
             mission (Mission):
                 A mission the agent should follow. Defaults to endless if `None`.

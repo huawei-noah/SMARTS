@@ -81,7 +81,7 @@ It specifies the
 Pre-configured interface
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-SMARTS provides several pre-configured interfaces for ease of use. Namely,
+SMARTS provides several pre-configured `interfaces` for ease of use. Namely,
 
 + `AgentType.Full`
 + `AgentType.StandardWithAbsoluteSteering`
@@ -93,7 +93,7 @@ SMARTS provides several pre-configured interfaces for ease of use. Namely,
 + `AgentType.MPCTracker`
 + `AgentType.Boid`
 
-The attributes enabled for each pre-configured interface is shown in the table below.
+The attributes enabled for each pre-configured `interface` is shown in the table below.
 
 +----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
 | **Interface**              | :attr:`~smarts.core.agent_interface.AgentType.Full`         | :attr:`~smarts.core.agent_interface.AgentType.StandardWithAbsoluteSteering` | :attr:`~smarts.core.agent_interface.AgentType.Standard`          | :attr:`~smarts.core.agent_interface.AgentType.Laner`  | :attr:`~smarts.core.agent_interface.AgentType.LanerWithSpeed`            | :attr:`~smarts.core.agent_interface.AgentType.Tracker`      | :attr:`~smarts.core.agent_interface.AgentType.TrajectoryInterpolator` | :attr:`~smarts.core.agent_interface.AgentType.MPCTracker` | :attr:`~smarts.core.agent_interface.AgentType.Boid`              | :attr:`~smarts.core.agent_interface.AgentType.Loner`        | :attr:`~smarts.core.agent_interface.AgentType.Tagger`       | :attr:`~smarts.core.agent_interface.AgentType.Direct`   |
@@ -128,7 +128,7 @@ Here, ``max_episode_steps`` controls the max steps allowed for the agent in an e
     While using RLlib, the ``max_episode_steps`` control authority may be ceded to RLlib through their config option ``horizon``, but doing so 
     removes the ability to customize different max episode steps for each agent.
 
-A pre-configured interface can be extended by supplying extra `kwargs`. For example the following extends `AgentType.Standard` pre-configured interface to include lidar observation.
+A pre-configured `interface` can be extended by supplying extra `kwargs`. For example the following extends `AgentType.Standard` pre-configured interface to include lidar observation.
 
 .. code-block:: python
 
@@ -140,7 +140,7 @@ A pre-configured interface can be extended by supplying extra `kwargs`. For exam
 Custom interface
 ^^^^^^^^^^^^^^^^
 
-Alternatively, users may customize their agent interface from scratch, like:
+Alternatively, users may customize their agent `interface` from scratch, like:
 
 .. code-block:: python
 
@@ -158,7 +158,7 @@ Alternatively, users may customize their agent interface from scratch, like:
         action=ActionSpaceType.Continuous,
     )
 
-Further customization of individual interface options of :class:`~smarts.core.agent_interface` is also possible.
+Further customization of individual `interface` options of :class:`~smarts.core.agent_interface` is also possible.
 
 .. code-block:: python
 
@@ -179,7 +179,7 @@ Further customization of individual interface options of :class:`~smarts.core.ag
 .. important::
 
     Generation of a drivable area grid map (``drivable_area_grid_map=True``), occupancy grid map (``ogm=True``), and RGB (``rgb=True``) images, may significantly slow down the environment ``step()``. 
-    It is recommended to set these image renderings to ``False`` if the agent policy does not require such observations.
+    It is recommended to set these image renderings to ``False`` if the agent `policy` does not require such observations.
 
 Spaces
 ^^^^^^
@@ -187,13 +187,13 @@ Spaces
 Spaces provide samples for variation. For reference on spaces, see `gymnasium <https://gymnasium.farama.org/api/spaces/>`_ .
 SMARTS environments contains (i) ``observation_space`` and (ii) ``action_space`` attributes, which are dictionaries mapping agent ids to their corresponding observation or action spaces, respectively.
 
-Consider a SMARTS env with an agent named `Agent_001`. If `Agent_001`'s interface is customised, then the agent's corresponding observation space (i.e., ``env.observation_space["Agent_001"]``) and action space (i.e., ``env.action_space["Agent_001"]``) from the environment would be changed accordingly. 
+Consider a SMARTS env with an agent named `Agent_001`. If `Agent_001`'s `interface` is customised, then the agent's corresponding observation space (i.e., ``env.observation_space["Agent_001"]``) and action space (i.e., ``env.action_space["Agent_001"]``) from the environment would be changed accordingly. 
 
 Policy
 ------
 
-A policy dictates the actions that the agent takes as a function of the observation received from the environment.
+A `policy` dictates the actions that the agent takes as a function of the observation received from the environment.
 
 All policies must inherit the base class of :class:`~~smarts.core.agent.Agent` and must contain a ``def act(self, obs)`` method.
-The ``act()`` method should return an action complying to the agent's chosen action type in its agent interface. 
+The ``act()`` method should return an action complying to the agent's chosen action type in its agent `interface`. 
 For example, if action type :attr:`~smarts.core.controllers.ActionSpaceType.LaneWithContinuousSpeed` was chosen, then ``act()`` should return an action ``(speed, lane_change)`` with type ``(float, int)``. See the :ref:`example <minimal_agent>` above.
