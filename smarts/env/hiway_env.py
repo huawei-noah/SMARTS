@@ -33,7 +33,6 @@ from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.logging import timeit
 from smarts.core.utils.visdom_client import VisdomClient
 from smarts.zoo.agent_spec import AgentSpec
 
@@ -180,10 +179,11 @@ class HiWayEnv(gym.Env):
 
         Returns:
             Dict[str, Union[float,str]]: A dictionary with the following keys.
-                fixed_timestep_sec - Simulation timestep.
-                scenario_map - Name of the current scenario.
-                scenario_traffic - Traffic spec(s) used.
-                mission_hash - Hash identifier for the current scenario.
+                
+                + fixed_timestep_sec: Simulation timestep.
+                + scenario_map: Name of the current scenario.
+                + scenario_traffic: Traffic spec(s) used.
+                + mission_hash: Hash identifier for the current scenario.
         """
 
         scenario = self._smarts.scenario
@@ -199,7 +199,7 @@ class HiWayEnv(gym.Env):
         """Returns underlying scenario.
 
         Returns:
-            Scenario: Current simulated scenario.
+            Current simulated scenario.
         """
         return self._smarts.scenario
 
