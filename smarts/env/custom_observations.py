@@ -154,7 +154,7 @@ def lane_ttc(obs: Observation) -> Dict[str, np.ndarray]:
 
     Returns:
         Returns a dictionary with the following key value mapping.
-        
+
         + distance_from_center: Distance to lane center. Shape=(1,).
         + angle_error: Ego heading relative to the closest waypoint. Shape=(1,).
         + speed: Ego speed. Shape=(1,).

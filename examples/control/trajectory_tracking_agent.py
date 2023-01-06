@@ -1,14 +1,13 @@
-import logging
+from pathlib import Path
 
 import gym
 from tools.argument_parser import default_argument_parser
 
+from cli.studio import build_scenarios
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
 from smarts.zoo.agent_spec import AgentSpec
-
-logging.basicConfig(level=logging.INFO)
 
 AGENT_ID = "Agent-007"
 
@@ -37,7 +36,7 @@ class TrackingAgent(Agent):
         return trajectory
 
 
-def main(scenarios, sim_name, headless, num_episodes, seed):
+def main(scenarios, headless, num_episodes):
     agent_spec = AgentSpec(
         interface=AgentInterface.from_type(AgentType.Tracker, max_episode_steps=None),
         agent_builder=TrackingAgent,
@@ -47,12 +46,8 @@ def main(scenarios, sim_name, headless, num_episodes, seed):
         "smarts.env:hiway-v0",
         scenarios=scenarios,
         agent_specs={AGENT_ID: agent_spec},
-        sim_name=sim_name,
         headless=headless,
-        visdom=False,
-        fixed_timestep_sec=0.1,
         sumo_headless=True,
-        seed=seed,
     )
 
     for episode in episodes(n=num_episodes):
@@ -74,10 +69,19 @@ if __name__ == "__main__":
     parser = default_argument_parser("trajectory-tracking-agent-example")
     args = parser.parse_args()
 
+    if not args.scenarios:
+        args.scenarios = [
+            str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop")
+        ]
+
+    build_scenarios(
+        clean=False,
+        scenarios=args.scenarios,
+        seed=42,
+    )
+
     main(
         scenarios=args.scenarios,
-        sim_name=args.sim_name,
         headless=args.headless,
         num_episodes=args.episodes,
-        seed=args.seed,
     )

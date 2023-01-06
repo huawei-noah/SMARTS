@@ -138,7 +138,7 @@ class Controllers:
         vehicle_type,
     ):
         """Calls control for the given vehicle based on a given action space and action.
-    
+
         Args:
             sim:
                 A simulation instance.

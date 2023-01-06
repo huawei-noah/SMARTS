@@ -79,8 +79,7 @@ class Goal:
 
 @dataclass(unsafe_hash=True)
 class EndlessGoal(Goal):
-    """A goal that can never be completed.
-    """
+    """A goal that can never be completed."""
 
     pass
 

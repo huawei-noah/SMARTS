@@ -179,7 +179,7 @@ class HiWayEnv(gym.Env):
 
         Returns:
             Dict[str, Union[float,str]]: A dictionary with the following keys.
-                
+
                 + fixed_timestep_sec: Simulation timestep.
                 + scenario_map: Name of the current scenario.
                 + scenario_traffic: Traffic spec(s) used.
