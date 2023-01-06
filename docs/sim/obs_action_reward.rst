@@ -109,7 +109,8 @@ The default reward from SMARTS environments is
 reward 
 
 simply the distance travelled by the agent within the most recent single time step.
- given by a calculation within smarts; `env_reward` 
+given by a calculation within smarts; `env_reward` 
+
 from smarts environments directly uses the reward from smarts. 
 
 The given reward is 0 or `reward < -0.5` or `reward > 0.5` relating to distance travelled in meters 

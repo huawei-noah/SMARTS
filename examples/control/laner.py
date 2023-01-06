@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 
 import gym
+import random
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from tools.argument_parser import default_argument_parser
@@ -18,7 +19,8 @@ AGENT_IDS = ["Agent %i" % i for i in range(N_AGENTS)]
 
 class KeepLaneAgent(Agent):
     def act(self, obs):
-        return "keep_lane"
+        val = ["keep_lane", "slow_down", "change_lane_left", "change_lane_right"]
+        return random.choice(val)
 
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):

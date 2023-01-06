@@ -60,6 +60,10 @@ for _ in range(1000):
 2. Try [designing a simple experiment](https://smarts.readthedocs.io/en/latest/quickstart.html).
 
 # Examples 
+### Egoless
+Simulate a SMARTS environment without any ego agents, but with only background traffic.
+1. [Egoless](examples/egoless.py) example.
+
 ### Usage
 Illustration of several agent [action types](smarts/core/controllers/__init__.py) and agent control policies. 
 1. [Chase Via Points](examples/control/chase_via_points.py) example.
@@ -68,7 +72,7 @@ Illustration of several agent [action types](smarts/core/controllers/__init__.py
     + ActionSpaceType = Trajectory
 1. [OpEn Adaptive Control](examples/control/ego_open_agent.py) example.
     + ActionSpaceType = MPC
-1. [Multi agent](examples/control/multi_agent.py) example.
+1. [Laner](examples/control/laner.py) example.
     + Multi agent
     + ActionSpaceType = Lane
 1. [Parallel environments](examples/control/parallel_environment.py) to run multiple SMARTS environments in parallel.
