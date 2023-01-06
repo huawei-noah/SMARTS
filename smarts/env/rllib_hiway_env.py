@@ -29,7 +29,6 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.logging import timeit
 
 
 class RLlibHiWayEnv(MultiAgentEnv):
@@ -86,7 +85,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         )
 
         self._sim_name = config.get("sim_name", None)
-        self._headless = config.get("headless", False)
+        self._headless = config.get("headless", True)
         self._num_external_sumo_clients = config.get("num_external_sumo_clients", 0)
         self._sumo_headless = config.get("sumo_headless", True)
         self._sumo_port = config.get("sumo_port")

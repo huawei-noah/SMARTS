@@ -15,18 +15,28 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added new video record ultility using moviepy.
 - Added distance check between bubble and vehicle to avoid generating unnecessary cursors.
 - Added `ConfigurableZone` for `Zone` object to types which enable users to build bubble by providing coordinates of the polygon.
-- Added "SMARTS Performance Benchmark" development tool for evaluating the simulation performance.
+- Added "SMARTS Performance Diagnostic" development tool for evaluating the simulation performance.
 - Added a "All Simulation" button on the header of Envision and made small-windowed simulation(s) in the "All Simulations" page clickable to maximize.
 - An env wrapper `Metrics` is introduced to compute agents' performance metrics.
+- Extracted `TraciConn` to the SMARTS utilities as a simplified utility to help with connecting to `TraCI`.
 ### Deprecated
 ### Changed
+- Minimum `SUMO` version allowed by `SumoTrafficSimulation` is now `1.10.0`.
+- The `ProviderManager` interface now uses a string id for removal of an actor instead of an actor state.
 ### Removed
 - Removed all of PyMarl contents, including related interface adapter, environments, and tests.
 - Removed ray usage example.
 - Moved ULTRA from `huawei-noah/SMARTS` to `smarts-project/smarts-project.rl` repository.
+- Removed observation_adapter, reward_adapter, and info_adapter, from `hiway_env`.
 ### Fixed
 - Updated the RL example `racing` to use `smarts[camera_obs]==0.7.0rc0` and continuous flowing traffic scenario. Simplified the `racing` RL example folder structure.
 - Envision "near realtime" mode bugfix
+- Corrected an issue where traffic lights in SUMO traffic simulation could be empty and cause a termination of the simulation.
+- Fixed an issue where vehicles could cause SMARTS to terminate from being in multiple providers.
+- Fixed an issue where `sumo_traffic_simulation` would disconnect on a non-terminal exception.
+- SMARTS now aggressively attempts to connect to a SUMO process as long as the SUMO process remains alive.
+- SUMO traffic simulation `route_for_vehicle` had semantic errors and now works again.
+- SUMO is now supported up to version `1.15.0`. Versions of SUMO `1.13.0` and onward are forced to reset rather than reload because of errors with hot resetting versions starting with `1.13.0`. 
 ### Security
 
 ## [0.7.0rc0]

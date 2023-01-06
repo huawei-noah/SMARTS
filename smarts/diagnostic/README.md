@@ -1,4 +1,4 @@
-Performance Benchmark
+Performance Diagnostic
 =====================
 A development tool designed to
 - Track the performance of each SMARTS version.
@@ -13,10 +13,10 @@ Dump different number of actors, with different types, on a map without visualiz
 - 10 agent to n roads: 1, 10, 20, 50
 
 ## Run
-Run the benchmark with one or multiple scenarios, from the `./smarts/benchmark` folder.
+Run the diagnostic with one or multiple scenarios, from the `./smarts/diagnostic` folder.
 
 ```bash
-$ scl benchmark run <scenarios/path> [scenarios/path]
-# e.g., scl benchmark run n_sumo_actors/1_actors
+$ scl diagnostic run <scenarios/path> [scenarios/path]
+# e.g., scl diagnostic run n_sumo_actors/1_actors
 ```
 
