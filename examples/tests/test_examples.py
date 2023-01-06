@@ -19,7 +19,7 @@ import_utils.import_module_from_file(
         "egoless", 
         "chase_via_points", 
         "trajectory_tracking",
-        "multi_agent",
+        "laner",
     ],
     # TODO: "ego_open_agent" and "human_in_the_loop" are causing aborts, fix later
 )

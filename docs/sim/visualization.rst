@@ -20,8 +20,8 @@ An example is shown below to run SMARTS with Envision.
     $ cd <path>/SMARTS
     # Build scenarios/sumo/loop
     $ scl scenario build --clean scenarios/sumo/loop
-    # Run the single_agent.py example with the loop scenario
-    $ scl run --envision examples/control/single_agent.py scenarios/sumo/loop
+    # Run the chase_via_points.py example with the loop scenario
+    $ scl run --envision examples/control/chase_via_points.py scenarios/sumo/loop
 
 ``--envision`` flag is added to ``scl run`` to enable the Envision server. Visit `http://localhost:8081/ <http://localhost:8081/>`_ in your browser to see the environment visualization. Select the simulator instance in the top left dropdown. If you are using SMARTS on a remote machine you will need to forward port 8081.
 

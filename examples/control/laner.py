@@ -56,7 +56,6 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
                 agent_id: agents[agent_id].act(agent_obs)
                 for agent_id, agent_obs in observations.items()
             }
-
             observations, rewards, dones, infos = env.step(actions)
             episode.record_step(observations, rewards, dones, infos)
 
@@ -64,7 +63,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("multi-agent-example")
+    parser = default_argument_parser("laner")
     args = parser.parse_args()
 
     if not args.scenarios:

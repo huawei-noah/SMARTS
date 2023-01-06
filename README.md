@@ -56,8 +56,8 @@ for _ in range(1000):
 :rotating_light: :bell: Read the docs :notebook_with_decorative_cover: at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest) . :bell: :rotating_light:
 
 # Setup and Quickstart
-1. Read [setting up SMARTS](https://smarts.readthedocs.io/en/latest/setup.html).
-2. Try [designing a simple experiment](https://smarts.readthedocs.io/en/latest/quickstart.html).
+1. [Set up SMARTS](https://smarts.readthedocs.io/en/latest/setup.html).
+2. [Run a simple experiment](https://smarts.readthedocs.io/en/latest/quickstart.html).
 
 # Examples 
 ### Egoless

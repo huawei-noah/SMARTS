@@ -7,17 +7,16 @@ A typical workflow would look like this.
 
 1. Design a scenario. 
    
-   + Detailed explanation available at :ref:`scenario_studio`. 
-2. Build an agent.
-   
-   + Detailed explanation available at :ref:`agent`. 
+   + :ref:`scenario_studio` details the scenario design process. 
+2. Build an agent by specifying its `interface` and `policy`.
+
+   + :ref:`agent` details the agent build process. 
 3. Instantiate and run a SMARTS environment.
 
-In this quickstart guide, a pre-designed scenario ``scenarios/sumo/loop`` will be used.
-An
-
-
- Here, we will 
+In this quickstart guide, 
+1. a pre-designed scenario ``SMARTS/scenarios/sumo/loop`` is used.
+2. a simple agent with `interface`==:ref:`AgentType.LanerWithSpeed` and `policy`==`Chase Via Points` is demonstrated.
+The agent chases via points or follows nearby waypoints if via point is not available.
 
 
 Specifying the Agent
@@ -213,7 +212,7 @@ Then, run a single-agent SMARTS simulation with Envision display and `loop` scen
 .. code-block:: bash
     
     $ cd <path>/SMARTS
-    $ scl run --envision examples/control/single_agent.py scenarios/sumo/loop 
+    $ scl run --envision examples/control/chase_via_points.py scenarios/sumo/loop 
 
 The `--envision` flag runs the Envision server which displays the simulation visualization. See Envision's README(./envision/README.md) for more information on Envision, SMARTS's front-end visualization tool.
 
