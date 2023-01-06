@@ -61,12 +61,10 @@ for _ in range(1000):
 
 # Examples 
 ### Usage
-Illustration of various agent action types and agent control policies. 
+Illustration of various agent [action types](smarts/core/controllers/__init__.py) and agent control policies. 
 1. [Chase Via Points](examples/control/chase_via_points.py) example.
-    + Single agent
-    + ActionSpaceType = [LaneWithContinuousSpeed](smarts/core/controllers/__init__.py#AcionSpaceType)
+    + ActionSpaceType = LaneWithContinuousSpeed
 1. [Trajectory Tracking](examples/control/trajectory_tracking.py) example.
-    + Single agent
     + ActionSpaceType = Trajectory
 1. [Multi agent](examples/control/multi_agent.py) example.
     + Multi agent
