@@ -19,19 +19,19 @@ import_utils.import_module_from_file(
         "egoless", 
         "chase_via_points", 
         "trajectory_tracking",
-        "multi_agent"
+        "multi_agent",
     ],
     # TODO: "ego_open_agent" and "human_in_the_loop" are causing aborts, fix later
 )
 def test_examples(example):
     if example == "egoless":
         from examples import egoless as current_example
-    if example == "chase_via_points":
+    elif example == "chase_via_points":
         from examples.control import chase_via_points as current_example
-    if example == "trajectory_tracking":
+    elif example == "trajectory_tracking":
         from examples.control import trajectory_tracking as current_example
-    if example == "multi_agent":
-        from examples.control import multi_agent as current_example
+    elif example == "laner":
+        from examples.control import laner as current_example
     main = current_example.main
     main(
         scenarios=["scenarios/sumo/loop"],
