@@ -134,3 +134,8 @@ SMARTS environments allow three types of vehicles to exist concurrently, which a
 + **traffic vehicles** - controlled by an underlying traffic engine, like ``SUMO`` or ``SMARTS``.
 
 Refer to :ref:`scenario_studio` for designing scenarios, traffic vehicles, social agents, ego agents, and maps.
+
+Determinism
+^^^^^^^^^^^
+
+SMARTS simulation is deterministic. Assuming all ego and social agents produce deterministic action, then the entire simulation will play back deterministically when repeated.

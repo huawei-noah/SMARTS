@@ -59,8 +59,12 @@ class ActionSpaceType(Enum):
     """
     Lane = 1
     """
-    Action= ``str``. Discrete lane action space of strings including "keep_lane",
-    "slow_down", "change_lane_left", and "change_lane_right".
+    Action= ``str``. Discrete lane action from one of
+    
+    + "keep_lane",
+    + "slow_down", 
+    + "change_lane_left", and 
+    + "change_lane_right".
     """
     ActuatorDynamic = 2
     """

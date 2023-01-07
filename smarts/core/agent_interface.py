@@ -125,27 +125,27 @@ class AgentType(IntEnum):
     """Used to select preconfigured agent interfaces."""
 
     Buddha = 0
-    """Agent sees nothing and does nothing"""
+    """Agent sees nothing and does nothing."""
     Full = 1
-    """All observations and continuous action space"""
+    """All observations and continuous action space."""
     Standard = 2
     """Minimal observations for dealing with waypoints and other vehicles and
     continuous action space.
     """
     Laner = 3
-    """Agent sees waypoints and performs lane actions"""
+    """Agent sees waypoints and performs lane actions."""
     Loner = 4
-    """Agent sees waypoints and performs continuous actions"""
+    """Agent sees waypoints and performs continuous actions."""
     Tagger = 5
-    """Agent sees waypoints, other vehicles, and performs continuous actions"""
+    """Agent sees waypoints, other vehicles, and performs continuous actions."""
     StandardWithAbsoluteSteering = 6
-    """Agent sees waypoints, neighbor vehicles and performs continuous action"""
+    """Agent sees waypoints, neighbor vehicles and performs continuous action."""
     LanerWithSpeed = 7
-    """Agent sees waypoints and performs speed and lane action"""
+    """Agent sees waypoints and performs speed and lane action."""
     Tracker = 8
-    """Agent sees waypoints and performs target position action"""
+    """Agent sees waypoints and performs target position action."""
     Boid = 9
-    """Controls multiple vehicles"""
+    """Controls multiple vehicles."""
     MPCTracker = 10
     """Agent performs trajectory tracking using model predictive control."""
     TrajectoryInterpolator = 11

@@ -5,28 +5,54 @@ Quickstart
 
 A typical workflow would look like this.
 
-1. Design a scenario. 
+1. Design and build a scenario. 
    
-   + :ref:`scenario_studio` details the scenario design process. 
+   + Further reading: :ref:`scenario_studio` details the scenario design process. 
 2. Build an agent by specifying its `interface` and `policy`.
 
-   + :ref:`agent` details the agent build process. 
+   + Further reading: :ref:`agent` details the agent build process. 
 3. Instantiate and run a SMARTS environment.
 
-In this quickstart guide, 
+In this quickstart guide, we will run the ``chase_via_points.py`` example. Here,
+
 1. a pre-designed scenario ``SMARTS/scenarios/sumo/loop`` is used.
-2. a simple agent with `interface`==:ref:`AgentType.LanerWithSpeed` and `policy`==`Chase Via Points` is demonstrated.
-The agent chases via points or follows nearby waypoints if via point is not available.
+2. a simple agent with `interface` == :attr:`~smarts.core.agent_interface.AgentType.LanerWithSpeed` and `policy` == `Chase Via Points` is demonstrated. The agent chases via points or follows nearby waypoints if a via point is unavailable.
+
+Example
+-------
+
+File: ``SMARTS/examples/control/chase_via_points.py``
+
+.. literalinclude:: ../examples/control/chase_via_points.py
+    :language: python
+
+Use the `scl` command to run SMARTS together with it's supporting processes. 
+
+.. code-block:: bash
+
+    $ cd <path>/SMARTS
+    # Build the scenario `scenarios/sumo/loop`.
+    $ scl scenario build --clean scenarios/sumo/loop
+    # Run SMARTS simulation with Envision display and `loop` scenario.
+    $ scl run --envision examples/control/chase_via_points.py scenarios/sumo/loop 
+
+Visit `http://localhost:8081/ <http://localhost:8081/>`_ to view the experiment.
+
+The ``--envision`` flag runs the Envision server which displays the simulation. Refer to :ref:`visualization` for more information on Envision.
+
+Other examples
+^^^^^^^^^^^^^^
+
+Several example scripts are provided in :ref:`examples <../examples/control>` folder, 
+as well as a handful of scenarios in [scenarios](./scenarios) folder. 
+You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). 
+Below is the generic command to run and visualize one of the example scripts with a scenario.
+
+.. code-block:: bash
+    
+    scl run --envision <examples/path> <scenarios/path>
 
 
-Specifying the Agent
---------------------
-
-:class:`~smarts.core.agent_interface.AgentInterface`
-   This is where you can control the interface between SMARTS and your agent.
-
-:class:`~smarts.core.agent.Agent`
-   This is the brains of the agent, you will need to implement the interface defined by :class:`~smarts.core.agent.Agent` in order to give the agent some behaviour.
 
 AgentInterface
 ^^^^^^^^^^^^^^
@@ -191,35 +217,3 @@ We can run this agent with "scenarios/sumo/loop", one of the scenarios packaged 
            episode.record_step(observations, rewards, dones, infos)
 
    env.close()
-
-The scenario is deterministic in totality. This means that assuming all agents take the exact same 
-actions the entire scenario will play back deterministically but each episode will have different
-behaviour.
-
-Running
--------
-
-Use the `scl` command to run SMARTS together with it's supporting processes. 
-
-To run the default example, firstly build the scenario `scenarios/sumo/loop`.
-
-.. code-block:: bash
-
-    $ scl scenario build --clean scenarios/sumo/loop
-
-Then, run a single-agent SMARTS simulation with Envision display and `loop` scenario.
-
-.. code-block:: bash
-    
-    $ cd <path>/SMARTS
-    $ scl run --envision examples/control/chase_via_points.py scenarios/sumo/loop 
-
-The `--envision` flag runs the Envision server which displays the simulation visualization. See Envision's README(./envision/README.md) for more information on Envision, SMARTS's front-end visualization tool.
-
-After executing the above command, visit `http://localhost:8081/ <http://localhost:8081/>`_ to view the experiment.
-
-Several example scripts are provided in [examples](./examples) folder, as well as a handful of scenarios in [scenarios](./scenarios) folder. You can create your own scenarios using the [Scenario Studio](./smarts/sstudio). Below is the generic command to run and visualize one of the example scripts with a scenario.
-
-.. code-block:: bash
-    
-    scl run --envision <examples/path> <scenarios/path>
