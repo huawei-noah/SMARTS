@@ -2,11 +2,12 @@ import sys
 from pathlib import Path
 
 import gym
+import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from tools.argument_parser import default_argument_parser
 
-from smarts import sstudio
+from cli.studio import build_scenarios
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
@@ -76,7 +77,11 @@ if __name__ == "__main__":
             str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop")
         ]
 
-    sstudio.build_scenario(scenario=args.scenarios)
+    build_scenarios(
+        clean=False,
+        scenarios=args.scenarios,
+        seed=42,
+    )
 
     main(
         scenarios=args.scenarios,

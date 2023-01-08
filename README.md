@@ -65,23 +65,37 @@ Simulate a SMARTS environment without any ego agents, but with only background t
 1. [Egoless](examples/egoless.py) example.
 
 ### Usage
-Illustration of several agent [action types](smarts/core/controllers/__init__.py) and agent control policies. 
-1. [Chase Via Points](examples/control/chase_via_points.py)
-    + Multi agent
-    + ActionSpaceType = LaneWithContinuousSpeed
-1. [Trajectory Tracking](examples/control/trajectory_tracking.py)
-    + ActionSpaceType = Trajectory
-1. [OpEn Adaptive Control](examples/control/ego_open_agent.py)
-    + ActionSpaceType = MPC
-1. [Laner](examples/control/laner.py)
-    + Multi agent
-    + ActionSpaceType = Lane
-1. [Parallel environments](examples/control/parallel_environment.py)
-    + Multiple SMARTS environments in parallel
-    + ActionSpaceType = LaneWithContinuousSpeed
+Several agent [action types](smarts/core/controllers/__init__.py) and agent control policies are demonstrated in the [examples](./examples) folder. Run the examples as follows.
+
+```bash
+$ cd <path>/SMARTS
+# Build the scenario `scenarios/sumo/loop`.
+$ scl scenario build scenarios/sumo/loop
+# Run SMARTS simulation with Envision display and `loop` scenario.
+$ scl run --envision examples/<script_name>.py scenarios/sumo/loop
+# Visit http://localhost:8081/ to view the experiment.
+```
+
+1. Chase Via Points
+   + script: [control/chase_via_points.py](examples/control/chase_via_points.py)
+   + Multi agent
+   + ActionSpaceType: LaneWithContinuousSpeed
+1. Trajectory Tracking
+   + script: [control/trajectory_tracking.py](examples/control/trajectory_tracking.py)
+   + ActionSpaceType: Trajectory
+1. OpEn Adaptive Control
+   + script: [control/ego_open_agent.py](examples/control/ego_open_agent.py)
+   + ActionSpaceType: MPC
+1. Laner
+   + script: [control/laner.py](examples/control/laner.py)
+   + Multi agent
+   + ActionSpaceType: Lane
+1. Parallel environments
+   + script: [control/parallel_environment.py](examples/control/parallel_environment.py)
+   + Multiple SMARTS environments in parallel
+   + ActionSpaceType: LaneWithContinuousSpeed
 
 ### RL Model
-1. [MARL benchmark](baselines/marl_benchmark)
 1. [Intersection](examples/rl/intersection) using PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3).
     <img src="examples/rl/intersection/docs/_static/intersection.gif" height="450" width="600"/>
 1. [Racing](examples/rl/racing) using world model based RL.
