@@ -52,9 +52,8 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    :maxdepth: 3
    :caption: Examples
 
-   examples/intersection.md
-   examples/racing.md
-   examples/rllib.rst
+   examples/usage.rst
+   examples/rl_model.rst
 
 .. toctree::
    :hidden:
@@ -70,6 +69,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
 
    ecosystem/sumo.rst
    ecosystem/waymo.rst
+   ecosystem/rllib.rst
 
 .. toctree::
    :hidden:

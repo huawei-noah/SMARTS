@@ -55,7 +55,7 @@ try:
 
 except ImportError:
     print(
-        "WARNING: missing depencencies caused us to fail to compile the solver, rerun once the dependencies have installed"
+        "WARNING: Missing dependencies caused us to fail to compile the solver, rerun once the dependencies have installed."
     )
 
 setup(

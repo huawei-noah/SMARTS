@@ -41,7 +41,9 @@ class TrackingAgent(Agent):
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
     agent_spec = AgentSpec(
-        interface=AgentInterface.from_type(AgentType.Tracker, max_episode_steps=max_episode_steps),
+        interface=AgentInterface.from_type(
+            AgentType.Tracker, max_episode_steps=max_episode_steps
+        ),
         agent_builder=TrackingAgent,
     )
 

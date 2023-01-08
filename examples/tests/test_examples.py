@@ -15,9 +15,10 @@ import_utils.import_module_from_file(
 
 
 @pytest.mark.parametrize(
-    "example",[
-        "egoless", 
-        "chase_via_points", 
+    "example",
+    [
+        "egoless",
+        "chase_via_points",
         "trajectory_tracking",
         "laner",
     ],

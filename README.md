@@ -66,17 +66,18 @@ Simulate a SMARTS environment without any ego agents, but with only background t
 
 ### Usage
 Illustration of several agent [action types](smarts/core/controllers/__init__.py) and agent control policies. 
-1. [Chase Via Points](examples/control/chase_via_points.py) example.
+1. [Chase Via Points](examples/control/chase_via_points.py)
+    + Multi agent
     + ActionSpaceType = LaneWithContinuousSpeed
-1. [Trajectory Tracking](examples/control/trajectory_tracking.py) example.
+1. [Trajectory Tracking](examples/control/trajectory_tracking.py)
     + ActionSpaceType = Trajectory
-1. [OpEn Adaptive Control](examples/control/ego_open_agent.py) example.
+1. [OpEn Adaptive Control](examples/control/ego_open_agent.py)
     + ActionSpaceType = MPC
-1. [Laner](examples/control/laner.py) example.
+1. [Laner](examples/control/laner.py)
     + Multi agent
     + ActionSpaceType = Lane
-1. [Parallel environments](examples/control/parallel_environment.py) to run multiple SMARTS environments in parallel.
-    + Multiple environments
+1. [Parallel environments](examples/control/parallel_environment.py)
+    + Multiple SMARTS environments in parallel
     + ActionSpaceType = LaneWithContinuousSpeed
 
 ### RL Model

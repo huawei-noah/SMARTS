@@ -38,10 +38,15 @@ extensions = [
     "sphinx.ext.coverage",  # to generate documentation coverage reports
     "sphinx.ext.napoleon",  # support Numpy and Google doc style
     "sphinx.ext.viewcode",  # link to sourcecode from docs
+    "sphinx.ext.extlinks",  # shorten external links
     "sphinxcontrib.apidoc",
     "sphinx_click",  # extract documentation from a `click` application
     "myst_parser",  # support Markdown-based documentation
 ]
+
+extlinks = {
+    "examples": ("https://github.com/huawei-noah/SMARTS/blob/rtd/examples/%s", "%s"),
+}
 
 # configuring automated generation of api documentation
 # See: https://github.com/sphinx-contrib/apidoc

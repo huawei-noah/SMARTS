@@ -2,8 +2,10 @@ from pathlib import Path
 
 import gym
 from tools.argument_parser import default_argument_parser
+
 from cli.studio import build_scenarios
 from smarts.core.utils.episodes import episodes
+
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
     env = gym.make(

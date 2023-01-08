@@ -32,7 +32,7 @@ Use the `scl` command to run SMARTS together with it's supporting processes.
 
     $ cd <path>/SMARTS
     # Build the scenario `scenarios/sumo/loop`.
-    $ scl scenario build --clean scenarios/sumo/loop
+    $ scl scenario build scenarios/sumo/loop
     # Run SMARTS simulation with Envision display and `loop` scenario.
     $ scl run --envision examples/control/chase_via_points.py scenarios/sumo/loop 
 
