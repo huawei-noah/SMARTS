@@ -65,16 +65,7 @@ Simulate a SMARTS environment without any ego agents, but with only background t
 1. [Egoless](examples/egoless.py) example.
 
 ### Usage
-Several agent [action types](smarts/core/controllers/__init__.py) and agent control policies are demonstrated in the [examples](./examples) folder. Run the examples as follows.
-
-```bash
-$ cd <path>/SMARTS
-# Build the scenario `scenarios/sumo/loop`.
-$ scl scenario build scenarios/sumo/loop
-# Run SMARTS simulation with Envision display and `loop` scenario.
-$ scl run --envision examples/<script_name>.py scenarios/sumo/loop
-# Visit http://localhost:8081/ to view the experiment.
-```
+Several agent [action types](smarts/core/controllers/__init__.py) and agent control policies are demonstrated.
 
 1. Chase Via Points
    + script: [control/chase_via_points.py](examples/control/chase_via_points.py)
