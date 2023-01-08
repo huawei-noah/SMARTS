@@ -54,6 +54,7 @@ extlinks = {
 apidoc_module_dir = ".."
 apidoc_excluded_paths = [
     "cli",
+    "examples",
     "setup.py",
     "scenarios",
     "smarts/ros",
