@@ -194,5 +194,8 @@ Policy
 A `policy` dictates the actions that the agent takes as a function of the observation received from the environment.
 
 All policies must inherit the base class of :class:`~~smarts.core.agent.Agent` and must contain a ``def act(self, obs)`` method.
+
+The received ``obs`` argument in ``def act(self, obs)`` is controlled by the selected agent `interface`.
+
 The ``act()`` method should return an action complying to the agent's chosen action type in its agent `interface`. 
 For example, if action type :attr:`~smarts.core.controllers.ActionSpaceType.LaneWithContinuousSpeed` was chosen, then ``act()`` should return an action ``(speed, lane_change)`` with type ``(float, int)``. See the :ref:`example <minimal_agent>` above.

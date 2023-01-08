@@ -13,15 +13,15 @@ A typical workflow would look like this.
    + Further reading: :ref:`agent` details the agent build process. 
 3. Instantiate and run a SMARTS environment.
 
-In this quickstart guide, we will run the ``chase_via_points.py`` example. Here,
-
-1. a pre-designed scenario ``SMARTS/scenarios/sumo/loop`` is used.
-2. a simple agent with `interface` == :attr:`~smarts.core.agent_interface.AgentType.LanerWithSpeed` and `policy` == `Chase Via Points` is demonstrated. The agent chases via points or follows nearby waypoints if a via point is unavailable.
-
 Example
 -------
 
-File: ``SMARTS/examples/control/chase_via_points.py``
+In this quickstart guide, we will run the `Chase Via Points` example. Here,
+
+1. a pre-designed scenario :scenarios:`scenarios/sumo/loop <sumo/loop>` is used.
+2. a simple agent with `interface` == :attr:`~smarts.core.agent_interface.AgentType.LanerWithSpeed` and `policy` == `Chase Via Points` is demonstrated. The agent chases via points or follows nearby waypoints if a via point is unavailable.
+
+File: :examples:`examples/control/chase_via_points.py <control/chase_via_points.py>`
 
 .. literalinclude:: ../examples/control/chase_via_points.py
     :language: python
@@ -40,13 +40,13 @@ Visit `http://localhost:8081/ <http://localhost:8081/>`_ to view the experiment.
 
 The ``--envision`` flag runs the Envision server which displays the simulation. Refer to :ref:`visualization` for more information on Envision.
 
-Other examples
-^^^^^^^^^^^^^^
+Explore
+-------
 
-More examples on running an 
-(i) egoless script, 
-(ii) control  
-are provided in the :ref:`examples <examples>` folder. Refer 
-A handful of pre-built scenarios are available at :scenarios:`scenarios <>` folder. 
+Explore more examples.
 
-The `obs` argument to `ExampleAgent.act()` will contain the observations specified in the `AgentInterface` above, and it's expected that the return value of the `act` method matches the `ActionSpaceType` chosen as well.
+(i) :ref:`Egoless <egoless>`
+(ii) :ref:`Control theory <control>`
+(iii) :ref:`RL model <rl_model>`
+
+A handful of pre-built scenarios are available at :scenarios:`scenarios <>` folder.

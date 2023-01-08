@@ -22,8 +22,8 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 Simulate a SMARTS environment without any ego agents, but with only background traffic.
 1. [Egoless](examples/egoless.py) example.
 
-### Usage
-Several agent [action types](smarts/core/controllers/__init__.py) and agent control policies are demonstrated.
+### Control Theory
+Several agent control policies and agent [action types](smarts/core/controllers/__init__.py) are demonstrated.
 
 1. Chase Via Points
    + script: [control/chase_via_points.py](examples/control/chase_via_points.py)

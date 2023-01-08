@@ -1,9 +1,9 @@
-.. _usage:
+.. _control:
 
-Usage
-=====
+Control Theory
+==============
 
-Several agent :class:`~smarts.core.controllers.ActionSpaceType` and agent control policies are demonstrated. Run these examples as follows.
+Several agent control policies and agent :class:`~smarts.core.controllers.ActionSpaceType` are demonstrated. Run these examples as follows.
 
 .. code-block:: bash
 
