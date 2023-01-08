@@ -3,7 +3,7 @@
 Usage
 =====
 
-Several agent :class:`~smarts.core.controllers.ActionSpaceType` and agent control policies are demonstrated in the :examples:`examples <>` folder. Run the examples as follows.
+Several agent :class:`~smarts.core.controllers.ActionSpaceType` and agent control policies are demonstrated. Run these examples as follows.
 
 .. code-block:: bash
 

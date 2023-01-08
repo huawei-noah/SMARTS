@@ -46,6 +46,7 @@ extensions = [
 
 extlinks = {
     "examples": ("https://github.com/huawei-noah/SMARTS/blob/rtd/examples/%s", "%s"),
+    "scenarios": ("https://github.com/huawei-noah/SMARTS/blob/rtd/scenarios/%s", "%s"),
 }
 
 # configuring automated generation of api documentation

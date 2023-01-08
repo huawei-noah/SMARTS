@@ -3,7 +3,7 @@
 Egoless
 =======
 
-Simulate a SMARTS environment without any ego agents, but with only background traffic. Run the examples as follows.
+Simulate a SMARTS environment without any ego agents, but with only background traffic. Run these examples as follows.
 
 .. code-block:: bash
 

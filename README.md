@@ -10,48 +10,6 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 
 ![](docs/_static/smarts_envision.gif)
 
-# Multi-agent experiment as simple as ...
-```python
-import gym
-
-from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.agent import Agent
-from smarts.zoo.agent_spec import AgentSpec
-
-class SimpleAgent(Agent):
-    def act(self, obs):
-        return "keep_lane"
-
-agent_spec = AgentSpec(
-    interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=None),
-    agent_builder=SimpleAgent,
-)
-
-agent_specs = {
-    "Agent-007": agent_spec,
-    "Agent-008": agent_spec,
-}
-
-env = gym.make(
-    "smarts.env:hiway-v0",
-    scenarios=["scenarios/sumo/loop"],
-    agent_specs=agent_specs,
-)
-
-agents = {
-    agent_id: agent_spec.build_agent()
-    for agent_id, agent_spec in agent_specs.items()
-}
-observations = env.reset()
-
-for _ in range(1000):
-    agent_actions = {
-        agent_id: agents[agent_id].act(agent_obs)
-        for agent_id, agent_obs in observations.items()
-    }
-    observations, _, _, _ = env.step(agent_actions)
-```
-
 # Documentation
 :rotating_light: :bell: Read the docs :notebook_with_decorative_cover: at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest) . :bell: :rotating_light:
 

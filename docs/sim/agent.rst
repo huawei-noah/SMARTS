@@ -73,10 +73,9 @@ Interface
 ---------
 
 The :class:`~smarts.core.agent_interface.AgentInterface` regulates information flow between the agent and SMARTS environment. 
-It specifies the
 
-+ observation from the environment to the agent. 
-+ action from the agent to the environment. Attribute :attr:`~smarts.core.agent_interface.AgentInterface.action` controls the action type used. There are multiple action types to choose from :class:`~smarts.core.controllers.ActionSpaceType`.
++ It specifies the observation from the environment to the agent, by selecting the sensors to enable in the vehicle. 
++ It specifies the action from the agent to the environment. Attribute :attr:`~smarts.core.agent_interface.AgentInterface.action` controls the action type used. There are multiple action types to choose from :class:`~smarts.core.controllers.ActionSpaceType`.
 
 Pre-configured interface
 ^^^^^^^^^^^^^^^^^^^^^^^^
