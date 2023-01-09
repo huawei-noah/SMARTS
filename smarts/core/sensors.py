@@ -118,7 +118,7 @@ class RoadWaypoints(NamedTuple):
     """Per-road waypoint information."""
 
     lanes: Dict[str, List[List[Waypoint]]]
-
+    """Mapping of road ids to their lane waypoints."""
 
 class GridMapMetadata(NamedTuple):
     """Map grid metadata."""
@@ -143,7 +143,7 @@ class TopDownRGB(NamedTuple):
     metadata: GridMapMetadata
     """Map metadata."""
     data: np.ndarray
-    """A RGB image (default 256x256) with the ego vehicle at the center."""
+    """A RGB image with the ego vehicle at the center."""
 
 
 class OccupancyGridMap(NamedTuple):
@@ -152,7 +152,7 @@ class OccupancyGridMap(NamedTuple):
     metadata: GridMapMetadata
     """Map metadata."""
     data: np.ndarray
-    """An ``OGM <https://en.wikipedia.org/wiki/Occupancy_grid_mapping>`` (default 256x256) around the ego vehicle"""
+    """An `OGM <https://en.wikipedia.org/wiki/Occupancy_grid_mapping>`_ around the ego vehicle."""
 
 
 class DrivableAreaGridMap(NamedTuple):
@@ -161,7 +161,7 @@ class DrivableAreaGridMap(NamedTuple):
     metadata: GridMapMetadata
     """Map metadata."""
     data: np.ndarray
-    """A grid map (default 256x256) that shows the static drivable area around the ego vehicle."""
+    """A grid map that shows the static drivable area around the ego vehicle."""
 
 
 @dataclass
@@ -180,7 +180,7 @@ class ViaPoint:
 
 @dataclass(frozen=True)
 class Vias:
-    """A listing of nearby ViaPoints and ViaPoints collected in the last step."""
+    """Listing of nearby collectable ViaPoints and ViaPoints collected in the last step."""
 
     near_via_points: List[ViaPoint]
     """Ordered list of nearby points that have not been hit."""
@@ -221,7 +221,7 @@ class Observation:
     ego_vehicle_state: EgoVehicleObservation
     """Ego vehicle status."""
     under_this_agent_control: bool
-    """If this agent currently has control of the vehicle."""
+    """Whether this agent currently has control of the vehicle."""
     neighborhood_vehicle_states: Optional[List[VehicleObservation]]
     """List of neighbourhood vehicle states."""
     waypoint_paths: Optional[List[List[Waypoint]]]
@@ -240,9 +240,9 @@ class Observation:
     top_down_rgb: Optional[TopDownRGB]
     """RGB camera observation."""
     road_waypoints: Optional[RoadWaypoints]
-    """Per-road waypoint information."""
+    """Per-road waypoints information."""
     via_data: Vias
-    """A listing of nearby via points and via points collected in the last step."""
+    """Listing of nearby collectable ViaPoints and ViaPoints collected in the last step."""
     signals: Optional[List[SignalObservation]] = None
     """List of nearby traffic signal (light) states on this timestep."""
 

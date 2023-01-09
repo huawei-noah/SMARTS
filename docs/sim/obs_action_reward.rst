@@ -8,43 +8,43 @@ Observation
 
 The complete set of possible :class:`~smarts.core.sensors.Observation` returned by SMARTS environment is shown below.  
 
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| Observation                  | Type                                                              | Remarks                                                                    |
-+==============================+===================================================================+============================================================================+
-| dt                           | float                                                             | Amount of simulation time the last step took.                              |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| step_count                   | int                                                               | Number of steps taken by SMARTS thus far for the current scenario.         |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| steps_completed              | int                                                               | Number of steps this agent has taken within SMARTS.                        |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| elapsed_sim_time             | float                                                             | Amout of simulation time elapsed for the current scenario.                 |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| events                       | :class:`~smarts.core.events.Events`                               | Classified observations that can trigger agent done status.                |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| ego_vehicle_state            | :class:`~smarts.core.sensors.EgoVehicleObservation`               | Ego vehicle status information.                                            |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| under_this_agent_control     | bool                                                              | Whether this agent currently has control of the vehicle.                   |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| neighborhood_vehicle_states  | Optional[List[:class:`~smarts.core.sensors.VehicleObservation`]]  | List of neighbourhood vehicle states.                                      |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| waypoint_paths               | Optional[List[List[:class:`~smarts.core.road_map.Waypoint`]]]     | Dynamic evenly-spaced points on the road ahead of the vehicle.             |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| distance_travelled           | float                                                             | Road distance driven by the vehicle.                                       |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| lidar_point_cloud            |                                                                   | Lidar point cloud consists of [points, hits, (ray_origin, ray_vector)].    |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| drivable_area_grid_map       | Optional[:class:`~smarts.core.sensors.DrivableAreaGridMap`]       | Drivable area map.                                                         |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| occupancy_grid_map           | Optional[:class:`~smarts.core.sensors.OccupancyGridMap`]          | Occupancy map.                                                             |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| top_down_rgb                 | Optional[:class:`~smarts.core.sensors.TopDownRGB`]                | RGB camera observation.                                                    |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| road_waypoints               | Optional[:class:`~smarts.core.sensors.RoadWaypoints`]             | Per-road waypoint information.                                             |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| via_data                     | :class:`~smarts.core.sensors.Vias`                                | A listing of nearby via points and via points collected in the last step.  |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
-| signals                      | Optional[List[:class:`~smarts.core.sensors.SignalObservation`]]   | List of nearby traffic signal (light) states on this timestep.             |
-+------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| Observation                  | Type                                                              | Remarks                                                                            |
++==============================+===================================================================+====================================================================================+
+| dt                           | float                                                             | Amount of simulation time the last step took.                                      |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| step_count                   | int                                                               | Number of steps taken by SMARTS thus far in the current scenario.                  |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| steps_completed              | int                                                               | Number of steps this agent has taken within SMARTS.                                |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| elapsed_sim_time             | float                                                             | Amout of simulation time elapsed for the current scenario.                         |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| events                       | :class:`~smarts.core.events.Events`                               | Classified observations that can trigger agent done status.                        |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| ego_vehicle_state            | :class:`~smarts.core.sensors.EgoVehicleObservation`               | Ego vehicle status.                                                                |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| under_this_agent_control     | bool                                                              | Whether this agent currently has control of the vehicle.                           |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| neighborhood_vehicle_states  | Optional[List[:class:`~smarts.core.sensors.VehicleObservation`]]  | List of neighbourhood vehicle states.                                              |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| waypoint_paths               | Optional[List[List[:class:`~smarts.core.road_map.Waypoint`]]]     | Dynamic evenly-spaced points on the road ahead of the vehicle.                     |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| distance_travelled           | float                                                             | Road distance driven by the vehicle.                                               |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| lidar_point_cloud            |                                                                   | Lidar point cloud consists of [points, hits, (ray_origin, ray_vector)].            |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| drivable_area_grid_map       | Optional[:class:`~smarts.core.sensors.DrivableAreaGridMap`]       | Drivable area map.                                                                 |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| occupancy_grid_map           | Optional[:class:`~smarts.core.sensors.OccupancyGridMap`]          | Occupancy map.                                                                     |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| top_down_rgb                 | Optional[:class:`~smarts.core.sensors.TopDownRGB`]                | RGB camera observation.                                                            |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| road_waypoints               | Optional[:class:`~smarts.core.sensors.RoadWaypoints`]             | Per-road waypoints information.                                                    |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| via_data                     | :class:`~smarts.core.sensors.Vias`                                | Listing of nearby collectable ViaPoints and ViaPoints collected in the last step.  |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| signals                      | Optional[List[:class:`~smarts.core.sensors.SignalObservation`]]   | List of nearby traffic signal (light) states on this timestep.                     |
++------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
 
 .. note::
 
@@ -55,18 +55,10 @@ The complete set of possible :class:`~smarts.core.sensors.Observation` returned 
 
 * `lidar_point_cloud` 
 The result of a simulated lidar array sourced from the ego vehicle's center.
-Each item contains: a collection of hit points(or misses as an inf value), a collection of if the lidar point hit, and a collection of lines from emission point to hit(or inf).
+Each item contains: a collection of hit points(or misses as an inf value), 
+a collection of if the lidar point hit, and a collection of lines from 
+emission point to hit(or inf).
 
-* `occupancy_grid_map` 
-contains an observation image with its metadata
-    * `data` - An `OGM <https://en.wikipedia.org/wiki/Occupancy_grid_mapping>`_ (default 256x256) around the ego vehicle
-* `top_down_rgb`
-contains an observation image with its metadata
-    * `data` - A RGB image (default 256x256) with the ego vehicle at the center
-* `road_waypoints`
-A collection of `Waypoint` near the ego vehicle representing a `Waypoint` approximation of nearby lane centers.
-    * `lanes` - The representation of each lane represented by `Waypoint`. Each item is list of `Waypoint`.
-* `via_data` - A `Vias` describing collectable points the agent can visit.
 
 
 Reward
