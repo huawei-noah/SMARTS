@@ -153,7 +153,9 @@ class OccupancyGridMap(NamedTuple):
     metadata: GridMapMetadata
     """Map metadata."""
     data: np.ndarray
-    """An `OGM <https://en.wikipedia.org/wiki/Occupancy_grid_mapping>`_ around the ego vehicle."""
+    """An occupancy grid map around the ego vehicle. 
+    
+    See https://en.wikipedia.org/wiki/Occupancy_grid_mapping."""
 
 
 class DrivableAreaGridMap(NamedTuple):
