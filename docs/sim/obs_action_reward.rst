@@ -55,18 +55,18 @@ The complete set of possible :class:`~smarts.core.sensors.Observation` returned 
 Reward
 ------
 
-The default reward from SMARTS environments is 
+The default reward from SMARTS environment is a function of the distance travelled.
+Here, ``x`` is the distance travelled in meters from the last time step where a non-zero reward was given.
 
-reward 
+.. math::
 
-simply the distance travelled by the agent within the most recent single time step.
-given by a calculation within smarts; `env_reward` 
-
-from smarts environments directly uses the reward from smarts. 
-
-The given reward is 0 or `reward < -0.5` or `reward > 0.5` relating to distance travelled in meters 
-on the step that a vehicle has gone at least 0.5 meters since the last given non-zero reward.
-
+    \begin{equation}
+    reward(x)=
+        \begin{cases}
+            x, & \text{if $\|x\|>0.5$}\\
+            0, & \text{otherwise}
+        \end{cases}
+    \end{equation}
 
 Action
 ------
