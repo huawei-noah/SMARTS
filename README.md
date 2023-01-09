@@ -11,7 +11,7 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 ![](docs/_static/smarts_envision.gif)
 
 # Documentation
-:rotating_light: :bell: Read the docs :notebook_with_decorative_cover: at [smarts.readthedocs.io](https://smarts.readthedocs.io/en/latest) . :bell: :rotating_light:
+:rotating_light: :bell: Read the docs :notebook_with_decorative_cover: at [smarts.readthedocs.io](https://smarts.readthedocs.io/) . :bell: :rotating_light:
 
 # Setup and Quickstart
 1. [Set up SMARTS](https://smarts.readthedocs.io/en/latest/setup.html).

@@ -33,15 +33,16 @@ release = VERSION
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "sphinx_rtd_theme",  # Read The Docs theme
+    "myst_parser",  # support Markdown-based documentation
     "sphinx.ext.autodoc",  # automatically extract docs from docstrings
     "sphinx.ext.coverage",  # to generate documentation coverage reports
+    "sphinx.ext.extlinks",  # shorten external links
+    "sphinx.ext.mathbase",  # math support
     "sphinx.ext.napoleon",  # support Numpy and Google doc style
     "sphinx.ext.viewcode",  # link to sourcecode from docs
-    "sphinx.ext.extlinks",  # shorten external links
-    "sphinxcontrib.apidoc",
+    "sphinx_rtd_theme",  # Read The Docs theme
     "sphinx_click",  # extract documentation from a `click` application
-    "myst_parser",  # support Markdown-based documentation
+    "sphinxcontrib.apidoc",
 ]
 
 extlinks = {
@@ -49,9 +50,10 @@ extlinks = {
     "scenarios": ("https://github.com/huawei-noah/SMARTS/blob/rtd/scenarios/%s", "%s"),
 }
 
-# configuring automated generation of api documentation
+# Configuring automated generation of api documentation.
 # See: https://github.com/sphinx-contrib/apidoc
 apidoc_module_dir = ".."
+apidoc_module_first = True
 apidoc_excluded_paths = [
     "cli",
     "examples",
@@ -59,7 +61,6 @@ apidoc_excluded_paths = [
     "scenarios",
     "smarts/ros",
 ]
-apidoc_module_first = True
 apidoc_extra_args = [
     "--force",
     "--separate",

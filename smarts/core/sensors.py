@@ -120,6 +120,7 @@ class RoadWaypoints(NamedTuple):
     lanes: Dict[str, List[List[Waypoint]]]
     """Mapping of road ids to their lane waypoints."""
 
+
 class GridMapMetadata(NamedTuple):
     """Map grid metadata."""
 
@@ -246,6 +247,7 @@ class Observation:
     """Listing of nearby collectable ViaPoints and ViaPoints collected in the last step."""
     signals: Optional[List[SignalObservation]] = None
     """List of nearby traffic signal (light) states on this timestep."""
+
 
 @dataclass
 class Collision:

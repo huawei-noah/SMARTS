@@ -708,17 +708,17 @@ class Waypoint:
     #      to nearest_lane_id, nearest_lane_index, nearest_lane_width
     pos: np.ndarray
     """Point positioned on lane center."""
-    heading: Heading  
+    heading: Heading
     """Heading angle of lane at this point. Units: rad"""
-    lane_id: str  
+    lane_id: str
     """Globally unique identifier of lane under waypoint."""
-    lane_width: float 
+    lane_width: float
     """Width of lane at this point. Units: meters"""
-    speed_limit: float 
+    speed_limit: float
     """Lane speed. Units: m/s"""
-    lane_index: int  
+    lane_index: int
     """Index of the lane under this waypoint. Right most lane has index 0 and index increases to the left."""
-    lane_offset: float  
+    lane_offset: float
     """Longitudinal distance along lane centerline of this waypoint."""
 
     def __eq__(self, other) -> bool:
