@@ -709,13 +709,13 @@ class Waypoint:
     pos: np.ndarray
     """Point positioned on lane center."""
     heading: Heading
-    """Heading angle of lane at this point. Units: rad"""
+    """Heading angle of lane at this point. Units=rad"""
     lane_id: str
     """Globally unique identifier of lane under waypoint."""
     lane_width: float
-    """Width of lane at this point. Units: meters"""
+    """Width of lane at this point. Units=meters"""
     speed_limit: float
-    """Lane speed. Units: m/s"""
+    """Lane speed. Units=m/s"""
     lane_index: int
     """Index of the lane under this waypoint. Right most lane has index 0 and index increases to the left."""
     lane_offset: float

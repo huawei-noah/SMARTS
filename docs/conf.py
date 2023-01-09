@@ -37,7 +37,6 @@ extensions = [
     "sphinx.ext.autodoc",  # automatically extract docs from docstrings
     "sphinx.ext.coverage",  # to generate documentation coverage reports
     "sphinx.ext.extlinks",  # shorten external links
-    "sphinx.ext.mathbase",  # math support
     "sphinx.ext.napoleon",  # support Numpy and Google doc style
     "sphinx.ext.viewcode",  # link to sourcecode from docs
     "sphinx_rtd_theme",  # Read The Docs theme
