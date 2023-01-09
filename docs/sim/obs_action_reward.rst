@@ -3,106 +3,74 @@
 Observation, Action, and Reward
 ===============================
 
-We have introduced `AgentInterface` in :ref:`agent` which allows us to choose from the standard observation and action types for communication between an agent and a SMARTS environment.
+Observation
+-----------
 
-============
-Observations
-============
+The complete set of possible :class:`~smarts.core.sensors.Observation` returned by SMARTS environment is shown below.  
 
-Here we will introduce details of available observation types.
-For `AgentType.Full`, which contains the most concrete observation details, the raw observation returned
-is a Python `NamedTuple` with the following fields:
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| Observation                  | Type                                                              | Remarks                                                                    |
++==============================+===================================================================+============================================================================+
+| dt                           | float                                                             | Amount of simulation time the last step took.                              |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| step_count                   | int                                                               | Number of steps taken by SMARTS thus far for the current scenario.         |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| steps_completed              | int                                                               | Number of steps this agent has taken within SMARTS.                        |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| elapsed_sim_time             | float                                                             | Amout of simulation time elapsed for the current scenario.                 |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| events                       | :class:`~smarts.core.events.Events`                               | Classified observations that can trigger agent done status.                |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| ego_vehicle_state            | :class:`~smarts.core.sensors.EgoVehicleObservation`               | Ego vehicle status information.                                            |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| under_this_agent_control     | bool                                                              | Whether this agent currently has control of the vehicle.                   |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| neighborhood_vehicle_states  | Optional[List[:class:`~smarts.core.sensors.VehicleObservation`]]  | List of neighbourhood vehicle states.                                      |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| waypoint_paths               | Optional[List[List[:class:`~smarts.core.road_map.Waypoint`]]]     | Dynamic evenly-spaced points on the road ahead of the vehicle.             |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| distance_travelled           | float                                                             | Road distance driven by the vehicle.                                       |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| lidar_point_cloud            |                                                                   | Lidar point cloud consists of [points, hits, (ray_origin, ray_vector)].    |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| drivable_area_grid_map       | Optional[:class:`~smarts.core.sensors.DrivableAreaGridMap`]       | Drivable area map.                                                         |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| occupancy_grid_map           | Optional[:class:`~smarts.core.sensors.OccupancyGridMap`]          | Occupancy map.                                                             |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| top_down_rgb                 | Optional[:class:`~smarts.core.sensors.TopDownRGB`]                | RGB camera observation.                                                    |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| road_waypoints               | Optional[:class:`~smarts.core.sensors.RoadWaypoints`]             | Per-road waypoint information.                                             |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| via_data                     | :class:`~smarts.core.sensors.Vias`                                | A listing of nearby via points and via points collected in the last step.  |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
+| signals                      | Optional[List[:class:`~smarts.core.sensors.SignalObservation`]]   | List of nearby traffic signal (light) states on this timestep.             |
++------------------------------+-------------------------------------------------------------------+----------------------------------------------------------------------------+
 
------
-Types
------
+.. note::
 
-* `GridMapMetadata` - Metadata for the observation maps with the following information,
-    * `created_at` - time at which the map was loaded
-    * `resolution` - map resolution in world-space-distance/cell
-    * `width` - map width in # of cells
-    * `height` - map height in # of cells
-    * `camera_pos` - camera position when project onto the map
-    * `camera_heading_in_degrees` - camera rotation angle along z-axis when project onto the map
-* `Waypoint` - Metadata for the observation maps with the following information,
-    * `id` - an integer identifier for this waypoint
-    * `pos` - a numpy array (x, y) center point along the lane
-    * `heading` - heading angle of lane at this point (radians)
-    * `lane_width` - width of lane at this point (meters)
-    * `speed_limit` - lane speed in m/s
-    * `lane_id` - a globally unique identifier of lane under waypoint
-    * `right_of_way` - `True` if this waypoint has right of way, `False` otherwise
-    * `lane_index` - index of the lane under this waypoint, right most lane has index 0 and the index increments to the left
-* `EgoVehicleObservation` - a `NamedTuple` describing the ego vehicle:
-    * `id` - a string identifier for this vehicle
-    * `position` - Coordinate of the center of the vehicle bounding box's bottom plane. shape=(3,). dtype=np.float64.
-    * `bounding_box` - `Dimensions` data class for the `length`, `width`, `height` of the vehicle
-    * `heading` - vehicle heading in radians
-    * `speed` - agent speed in m/s
-    * `steering` - angle of front wheels in radians
-    * `yaw_rate` - rotational speed in radian per second
-    * `road_id` - the identifier for the road nearest to this vehicle
-    * `lane_id` - a globally unique identifier of the lane under this vehicle 
-    * `lane_index` - index of the lane under this vehicle, right most lane has index 0 and the index increments to the left
-    * `mission` - a field describing the vehicle plotted route
-    * `linear_velocity` - Vehicle velocity along body coordinate axes. A numpy array of shape=(3,) and dtype=np.float64.
-    * `angular_velocity` - Angular velocity vector. A numpy array of shape=(3,) and dtype=np.float64.
-    * `linear_acceleration` (Optional) - Linear acceleration vector. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor.
-    * `angular_acceleration` (Optional) - Angular acceleration vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor. 
-    * `linear_jerk` (Optional) - Linear jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor.
-    * `angular_jerk` (Optional) - Angular jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor.
-* `VehicleObservation` - a subset of `EgoVehicleObservation` describing a vehicle:
-    * `position`, `bounding_box`, `heading`, `speed`, `lane_id`, `lane_index` - the same as with `EgoVehicleObservation`
-* `ViaPoint` - 'Collectable' locations that can be placed within the simulation.
-    * `position` - The `[x, y]` location of this `ViaPoint`.
-    * `lane_index` - The lane index on the road this `ViaPoint` is associated with
-    * `road_id` - The road id this `ViaPoint` is associated with
-    * `required_speed` - The rough minimum speed required to collect this `ViaPoint`
-* `Vias` - A listing of nearby `ViaPoint` and `ViaPoint` collected in the last step
+    Some observations like :attr:`~smarts.core.sensors.Observation.occupancy_grid_map`, :attr:`~smarts.core.sensors.Observation.drivable_area_grid_map`,
+    and :attr:`~smarts.core.sensors.Observation.top_down_rgb`, require the installation of optional packages for image rendering, so install them via 
+    ``pip install -e .[camera_obs]``.
 
---------
-Features
---------
 
-* `dt` - the amount of simulation time since the last step
-* `step_count` - Number of steps taken by SMARTS thus far for the current scenario
-* `elapsed_sim_time` - The amount of simulation time elapsed in SMARTS thus far for the current scenario
-* `events` - a `NamedTuple` with the following fields:
-    * `collisions` - collisions the vehicle has been involved with other vehicles (if any)
-    * `off_road` - `True` if the vehicle is off the road
-    * `wrong_way` - `True` if the vehicle is heading against the legal driving direction of the lane
-    * `not_moving` - `True` if the vehicle has not moved for the configured amount of time
-    * `reached_goal` - `True` if the vehicle has reached the ego agent's mission goal
-    * `reached_max_episode_steps` - `True` if the vehicle has reached its max episode steps
-    * `agents_alive_done` - `True` if all configured co-simulating agents are done (if any). This is useful for cases the ego has dependence on other agents
-* `ego_vehicle_state` - A `EgoVehicleObservation` describing state information about the ego vehicle.
-* `neighborhood_vehicle_states` - a list of `VehicleObservation` within the configured distance of the vehicle.
-* `waypoint_paths` - A collection of `Waypoint` in front of the ego vehicle showing the potential routes ahead. Each item is a `Waypoint` instance.
-* `distance_travelled` - The amount of distance that the ego vehicle has travelled along its mission route (or forward along road if no mission.)
-* `lidar_point_cloud` (Optional) - The result of a simulated lidar array sourced from the ego vehicle's center.
-  * Each item contains: a collection of hit points(or misses as an inf value), a collection of if the lidar point hit, and a collection of lines from emission point to hit(or inf).
-* `drivable_area_grid_map` (Optional) - contains an observation image with its metadata
-    * `metadata` - `GridMapMetadata`
-    * `data` - A grid map (default 256x256) that shows the static drivable area around the ego vehicle
-* `occupancy_grid_map` (Optional) - contains an observation image with its metadata
-    * `metadata` - `GridMapMetadata`
+* `lidar_point_cloud` 
+The result of a simulated lidar array sourced from the ego vehicle's center.
+Each item contains: a collection of hit points(or misses as an inf value), a collection of if the lidar point hit, and a collection of lines from emission point to hit(or inf).
+
+* `occupancy_grid_map` 
+contains an observation image with its metadata
     * `data` - An `OGM <https://en.wikipedia.org/wiki/Occupancy_grid_mapping>`_ (default 256x256) around the ego vehicle
-* `top_down_rgb` (Optional) - contains an observation image with its metadata
-    * `metadata` - `GridMapMetadata`
+* `top_down_rgb`
+contains an observation image with its metadata
     * `data` - A RGB image (default 256x256) with the ego vehicle at the center
-* `road_waypoints` (Optional) - A collection of `Waypoint` near the ego vehicle representing a `Waypoint` approximation of nearby lane centers.
+* `road_waypoints`
+A collection of `Waypoint` near the ego vehicle representing a `Waypoint` approximation of nearby lane centers.
     * `lanes` - The representation of each lane represented by `Waypoint`. Each item is list of `Waypoint`.
 * `via_data` - A `Vias` describing collectable points the agent can visit.
 
-See implementation in :class:`~smarts.core.sensors`
 
-
-Then, you can choose the observations needed through :class:`~smarts.core.agent_interface.AgentInterface`.
-Note: Some observations like `occupancy_grid_map`, `drivable_area_grid_map` and `top_down_rgb` requires the use of Panda3D package to render agent camera observations during simulations. So you need to install the required dependencies first using the command `pip install -e .[camera_obs]`
-
-=======
-Rewards
-=======
+Reward
+------
 
 The default reward from SMARTS environments is 
 
@@ -116,9 +84,9 @@ from smarts environments directly uses the reward from smarts.
 The given reward is 0 or `reward < -0.5` or `reward > 0.5` relating to distance travelled in meters 
 on the step that a vehicle has gone at least 0.5 meters since the last given non-zero reward.
 
-=======
-Actions
-=======
+
+Action
+------
 
 Prior to a simulation, an agent's action type and its policy to provide compliant actions, can be configured via its agent specification instance of :class:`~smarts.zoo.agent_spec.AgentSpec`. 
 Refer to :ref:`agent` for details.

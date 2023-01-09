@@ -193,7 +193,7 @@ Policy
 
 A `policy` dictates the actions that the agent takes as a function of the observation received from the environment.
 
-All policies must inherit the base class of :class:`~~smarts.core.agent.Agent` and must contain a ``def act(self, obs)`` method.
+All `policies` must inherit the base class of :class:`~~smarts.core.agent.Agent` and must contain a ``def act(self, obs)`` method.
 
 The received ``obs`` argument in ``def act(self, obs)`` is controlled by the selected agent `interface`.
 
