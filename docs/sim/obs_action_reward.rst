@@ -31,7 +31,7 @@ The complete set of possible :class:`~smarts.core.sensors.Observation` returned 
 +------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | distance_travelled           | float                                                             | Road distance driven by the vehicle.                                               |
 +------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
-| lidar_point_cloud            |                                                                   | Lidar point cloud consists of [points, hits, (ray_origin, ray_vector)].            |
+| lidar_point_cloud            |                                                                   | Lidar point cloud consisting of [points, hits, (ray_origin, ray_vector)].          |
 +------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | drivable_area_grid_map       | Optional[:class:`~smarts.core.sensors.DrivableAreaGridMap`]       | Drivable area map.                                                                 |
 +------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
@@ -51,15 +51,6 @@ The complete set of possible :class:`~smarts.core.sensors.Observation` returned 
     Some observations like :attr:`~smarts.core.sensors.Observation.occupancy_grid_map`, :attr:`~smarts.core.sensors.Observation.drivable_area_grid_map`,
     and :attr:`~smarts.core.sensors.Observation.top_down_rgb`, require the installation of optional packages for image rendering, so install them via 
     ``pip install -e .[camera_obs]``.
-
-
-* `lidar_point_cloud` 
-The result of a simulated lidar array sourced from the ego vehicle's center.
-Each item contains: a collection of hit points(or misses as an inf value), 
-a collection of if the lidar point hit, and a collection of lines from 
-emission point to hit(or inf).
-
-
 
 Reward
 ------

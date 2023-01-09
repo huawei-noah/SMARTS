@@ -232,7 +232,8 @@ class Observation:
     lidar_point_cloud: Optional[
         Tuple[List[np.ndarray], List[bool], List[Tuple[np.ndarray, np.ndarray]]]
     ]
-    """Lidar point cloud consists of [points, hits, (ray_origin, ray_vector)]."""
+    """Lidar point cloud consisting of [points, hits, (ray_origin, ray_vector)]. 
+    Points missed (i.e., not hit) have `inf` value."""
     drivable_area_grid_map: Optional[DrivableAreaGridMap]
     """Drivable area map."""
     occupancy_grid_map: Optional[OccupancyGridMap]
