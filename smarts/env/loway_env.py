@@ -24,7 +24,7 @@ import os
 from dataclasses import dataclass
 from enum import Enum
 from functools import partial
-from typing import Any, Dict, List, Optional, Sequence, SupportsFloat, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Sequence, SupportsFloat, Tuple, Union
 
 import gymnasium as gym
 import numpy as np
@@ -57,7 +57,7 @@ class SumoOptions:
     port: Optional[str] = None
 
 
-DEFAULT_VISUALIZATION_CLIENT_BUILDER = client_builder = partial(
+DEFAULT_VISUALIZATION_CLIENT_BUILDER = partial(
     Envision,
     endpoint=None,
     output_dir=None,
@@ -331,6 +331,14 @@ class LoWayEnv(gym.Env):
         self.close()
         # propagate exception
         return False
+
+    @property
+    def agent_ids(self) -> Set[str]:
+        """Agent ids of all agents that potentially will be in the environment.
+        Returns:
+            (Set[str]): Agent ids.
+        """
+        return set(self._agent_interfaces)
 
     @property
     def agent_interfaces(self) -> Dict[str, AgentInterface]:

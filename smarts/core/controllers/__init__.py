@@ -129,6 +129,7 @@ class ActionSpaceType(Enum):
     for other steps.
     """
     Empty = 10
+    RelativeTargetPose = 11
 
 
 class Controllers:
@@ -225,7 +226,16 @@ class Controllers:
         elif action_space in (
             ActionSpaceType.TargetPose,
             ActionSpaceType.MultiTargetPose,
+            ActionSpaceType.RelativeTargetPose,
         ):
+            if action_space is ActionSpaceType.RelativeTargetPose:
+                position, heading = vehicle.pose.position, vehicle.pose.heading
+                action = [
+                    action[0] - position[0],
+                    action[1] - position[1],
+                    action[2] - heading,
+                    0.1,
+                ]
             MotionPlannerController.perform_action(
                 controller_state, sim.last_dt, vehicle, action
             )
@@ -277,6 +287,7 @@ class ControllerState:
         if action_space in (
             ActionSpaceType.TargetPose,
             ActionSpaceType.MultiTargetPose,
+            ActionSpaceType.RelativeTargetPose,
         ):
             return MotionPlannerControllerState()
 

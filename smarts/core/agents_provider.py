@@ -254,7 +254,7 @@ class MotionPlannerProvider(AgentsProvider):
 
     @property
     def action_spaces(self) -> Set[ActionSpaceType]:
-        return {ActionSpaceType.TargetPose, ActionSpaceType.MultiTargetPose}
+        return {ActionSpaceType.TargetPose, ActionSpaceType.RelativeTargetPose, ActionSpaceType.MultiTargetPose}
 
 
 class TrajectoryInterpolationProvider(AgentsProvider):

@@ -34,3 +34,10 @@ register(
     id="multi-scenario-v0",
     entry_point="smarts.env.multi_scenario_env:multi_scenario_v0_env",
 )
+
+from gymnasium.envs.registration import register as gymnasium_register
+
+gymnasium_register(
+    id="driving-smarts-competition-v0",
+    entry_point="smarts.env.driving_smarts_competition_env:driving_smarts_competition_v0_env",
+)

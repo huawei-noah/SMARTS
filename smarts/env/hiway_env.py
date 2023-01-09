@@ -21,7 +21,7 @@
 import logging
 import os
 import warnings
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Optional, Set, Sequence, Tuple, Union
 
 import gym
 
@@ -32,6 +32,7 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
+from smarts.core.agent_interface import AgentInterface
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
 from smarts.zoo.agent_spec import AgentSpec
@@ -163,6 +164,23 @@ class HiWayEnv(gym.Env):
             fixed_timestep_sec=fixed_timestep_sec,
             zoo_addrs=zoo_addrs,
         )
+
+    @property
+    def agent_ids(self) -> Set[str]:
+        """Agent ids of all agents that potentially will be in the environment.
+        Returns:
+            (Set[str]): Agent ids.
+        """
+        return set(self._agent_specs)
+
+    @property
+    def agent_interfaces(self) -> Dict[str, AgentInterface]:
+        """Agents' interfaces used in this simulation.
+
+        Returns:
+            (Dict[str, AgentInterface]): Agents' interfaces.
+        """
+        return {k: v.agent_interface for k, v in self._agent_specs.items()}
 
     @property
     def agent_specs(self) -> Dict[str, AgentSpec]:

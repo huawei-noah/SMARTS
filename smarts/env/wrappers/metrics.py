@@ -23,7 +23,7 @@ import functools
 from dataclasses import dataclass, fields
 from typing import Any, Dict, Set, TypeVar
 
-import gym
+import gymnasium as gym
 import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
@@ -100,11 +100,12 @@ class MetricsBase(gym.Wrapper):
 
     def step(self, action: Dict[str, Any]):
         """Steps the environment by one step."""
-        obs, rewards, dones, info = super().step(action)
+        obs, rewards, dones, _, info = super().step(action)
+        
 
         # Only count steps in which an ego agent is present.
         if len(obs) == 0:
-            return obs, rewards, dones, info
+            return obs, rewards, dones, dones, info
 
         # fmt: off
         for agent_name, agent_obs in obs.items():
@@ -175,8 +176,8 @@ class MetricsBase(gym.Wrapper):
 
     def reset(self, **kwargs):
         """Resets the environment."""
-        obs = super().reset(**kwargs)
-        self._cur_agents = set(self.env.agent_specs.keys())
+        obs, info = super().reset(**kwargs)
+        self._cur_agents = set(self.env.agent_ids)
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_agents = set()
         self._scen = self.env.scenario
@@ -206,7 +207,7 @@ class MetricsBase(gym.Wrapper):
             }
         # fmt: on
 
-        return obs
+        return obs, info
 
     def records(self) -> Dict[str, Dict[str, Record]]:
         """
@@ -309,8 +310,8 @@ def _check_env(env: gym.Env):
         }
         return intrfc
 
-    for agent_name, agent_spec in env.agent_specs.items():
-        intrfc = check_intrfc(agent_spec.interface)
+    for agent_name, interface in env.agent_interfaces.items():
+        intrfc = check_intrfc(interface)
         if not all(intrfc.values()):
             raise AttributeError(
                 "Enable {0}'s disabled interface to "
