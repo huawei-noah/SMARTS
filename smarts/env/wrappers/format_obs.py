@@ -649,5 +649,27 @@ def _std_signals(
     }
 
 
-FormatObs = gen_format_obs(gym)
-FormatObsGymnasium = gen_format_obs(gymnasium)
+class FormatObs(gen_format_obs(gym)):
+    """Converts SMARTS observations to gym-compliant vectorized observations
+    and returns `StdObs`. The observation set returned depends on the features
+    enabled via AgentInterface.
+
+    Note:
+        (a) FormatObs wrapper requires all agents must have the same
+            AgentInterface attributes.
+        (b) Observation adapters should not be used inside the `step` and
+            `reset` methods of the base environment.
+    """
+
+
+class FormatObsGymnasium(gen_format_obs(gymnasium)):
+    """Converts SMARTS observations to gym-compliant vectorized observations
+    and returns `StdObs`. The observation set returned depends on the features
+    enabled via AgentInterface.
+
+    Note:
+        (a) FormatObs wrapper requires all agents must have the same
+            AgentInterface attributes.
+        (b) Observation adapters should not be used inside the `step` and
+            `reset` methods of the base environment.
+    """
