@@ -23,7 +23,9 @@ import functools
 from dataclasses import dataclass, fields
 from typing import Any, Dict, Set, TypeVar
 
-import gymnasium as gym
+import gym
+
+# import gymnasium as gym
 import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
@@ -100,11 +102,21 @@ class MetricsBase(gym.Wrapper):
 
     def step(self, action: Dict[str, Any]):
         """Steps the environment by one step."""
-        obs, rewards, dones, _, info = super().step(action)
+        result = super().step(action)
+
+        terminated, truncated, dones = False, False, None
+        if len(result) == 5:
+            obs, _, terminated, truncated, info = result
+        else:
+            obs, _, dones, info = result
 
         # Only count steps in which an ego agent is present.
         if len(obs) == 0:
-            return obs, rewards, dones, dones, info
+            return result
+
+        done = False
+        if terminated or truncated or isinstance(dones, dict) and dones["__all__"]:
+            done = True
 
         # fmt: off
         for agent_name, agent_obs in obs.items():
@@ -120,7 +132,7 @@ class MetricsBase(gym.Wrapper):
             # Update stored costs.
             self._records[self._scen_name][agent_name].record.costs = costs
 
-            if dones[agent_name]:
+            if info[agent_name]["done"]:
                 self._done_agents.add(agent_name)
                 if not (
                     agent_obs.events.reached_goal
@@ -140,10 +152,10 @@ class MetricsBase(gym.Wrapper):
                     steps=self._steps[agent_name],
                     steps_adjusted=min(
                         self._steps[agent_name],
-                        self.env.agent_specs[agent_name].interface.max_episode_steps
+                        self.env.agent_interfaces[agent_name].max_episode_steps
                     ),
                     goals=agent_obs.events.reached_goal,
-                    max_steps=self.env.agent_specs[agent_name].interface.max_episode_steps
+                    max_steps=self.env.agent_interfaces[agent_name].max_episode_steps
                 )
                 self._records[self._scen_name][agent_name].record.counts = _add_dataclass(
                     counts, 
@@ -166,16 +178,16 @@ class MetricsBase(gym.Wrapper):
                 self._records[self._scen_name][agent_name].record.completion = completion
 
         # fmt: on
-        if dones["__all__"] == True:
+        if done:
             assert (
                 self._done_agents == self._cur_agents
             ), f'done["__all__"]==True but not all agents are done. Current agents = {self._cur_agents}. Agents done = {self._done_agents}.'
 
-        return obs, rewards, dones, info
+        return result
 
     def reset(self, **kwargs):
         """Resets the environment."""
-        obs, info = super().reset(**kwargs)
+        result = super().reset(**kwargs)
         self._cur_agents = set(self.env.agent_ids)
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_agents = set()
@@ -206,7 +218,7 @@ class MetricsBase(gym.Wrapper):
             }
         # fmt: on
 
-        return obs, info
+        return result
 
     def records(self) -> Dict[str, Dict[str, Record]]:
         """

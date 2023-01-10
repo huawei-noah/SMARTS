@@ -139,6 +139,16 @@ def multi_scenario_v0_env(
         sumo_headless=sumo_headless,
         envision_record_data_replay_path=envision_record_data_replay_path,
     )
+    env.action_space = gym.spaces.Dict(
+        {
+            f"Agent_{i}": gym.spaces.Box(
+                low=np.array([-1e10, -1e10, -math.pi, 0.1]),
+                high=np.array([1e10, 1e10, math.pi, 0.1]),
+                dtype=np.float32,
+            )
+            for i in range(env_specs["num_agent"])
+        }
+    )
     env = _LimitTargetPose(env=env)
     env = _InfoScore(env=env)
 
@@ -330,6 +340,8 @@ class _LimitTargetPose(gym.Wrapper):
 
         limited_actions: Dict[str, np.ndarray] = {}
         for agent_name, agent_action in action.items():
+            if not agent_name in self._prev_obs:
+                continue
             limited_actions[agent_name] = self._limit(
                 name=agent_name,
                 action=agent_action,

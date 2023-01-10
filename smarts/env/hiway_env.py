@@ -83,7 +83,7 @@ class HiWayEnv(gym.Env):
     def __init__(
         self,
         scenarios: Sequence[str],
-        agent_specs: Dict[str, AgentSpec],
+        agent_specs: Optional[Dict[str, AgentSpec]] = None,  # (deprecated)
         sim_name: Optional[str] = None,
         shuffle_scenarios: bool = True,
         headless: bool = True,
@@ -97,6 +97,7 @@ class HiWayEnv(gym.Env):
         envision_endpoint: Optional[str] = None,
         envision_record_data_replay_path: Optional[str] = None,
         zoo_addrs: Optional[str] = None,
+        agent_interfaces: Optional[Dict[str, AgentInterface]] = None,
         timestep_sec: Optional[
             float
         ] = None,  # for backwards compatibility (deprecated)
@@ -109,21 +110,45 @@ class HiWayEnv(gym.Env):
                 "timestep_sec has been deprecated in favor of fixed_timestep_sec.  Please update your code.",
                 category=DeprecationWarning,
             )
+        if agent_specs is not None:
+            warnings.warn(
+                "agent_specs has been deprecated in favor of agent_interfaces.  Please update your code.",
+                category=DeprecationWarning,
+            )
         if not fixed_timestep_sec:
             fixed_timestep_sec = timestep_sec or 0.1
 
-        self._agent_specs = agent_specs
+        def assert_type_and_return(v, types, target):
+            if not isinstance(v, types):
+                raise TypeError(
+                    f"{target}must be supplied with only {target} in values."
+                )
+            return v
+
+        self._agent_interfaces = None
+        if isinstance(agent_interfaces, dict):
+            self._agent_specs = {
+                a_id: AgentSpec(a_inter) for a_id, a_inter in agent_interfaces.items()
+            }
+        elif isinstance(agent_specs, dict):
+            self._agent_specs = agent_specs
+            self._agent_interfaces = {
+                agent_id: assert_type_and_return(
+                    agent.interface, AgentInterface, "agent_interface"
+                )
+                for agent_id, agent in agent_specs.items()
+            }
+        else:
+            raise TypeError(
+                f"agent_interface must be supplied as `{Dict[str, AgentInterface]}`."
+            )
         self._dones_registered = 0
 
         self._scenarios_iterator = Scenario.scenario_variations(
             scenarios,
-            list(agent_specs.keys()),
+            list(self._agent_interfaces.keys()),
             shuffle_scenarios,
         )
-
-        agent_interfaces = {
-            agent_id: agent.interface for agent_id, agent in agent_specs.items()
-        }
 
         envision_client = None
         if not headless or envision_record_data_replay_path:
@@ -157,7 +182,7 @@ class HiWayEnv(gym.Env):
         traffic_sims += [smarts_traffic]
 
         self._smarts = SMARTS(
-            agent_interfaces=agent_interfaces,
+            agent_interfaces=self._agent_interfaces,
             traffic_sims=traffic_sims,
             envision=envision_client,
             visdom=visdom_client,
@@ -171,7 +196,7 @@ class HiWayEnv(gym.Env):
         Returns:
             (Set[str]): Agent ids.
         """
-        return set(self._agent_specs)
+        return set(self._agent_interfaces)
 
     @property
     def agent_interfaces(self) -> Dict[str, AgentInterface]:
@@ -180,7 +205,7 @@ class HiWayEnv(gym.Env):
         Returns:
             (Dict[str, AgentInterface]): Agents' interfaces.
         """
-        return {k: v.agent_interface for k, v in self._agent_specs.items()}
+        return self._agent_interfaces
 
     @property
     def agent_specs(self) -> Dict[str, AgentSpec]:
@@ -254,7 +279,11 @@ class HiWayEnv(gym.Env):
         observations, rewards, dones, extras = self._smarts.step(agent_actions)
 
         infos = {
-            agent_id: {"score": value, "env_obs": observations[agent_id]}
+            agent_id: {
+                "score": value,
+                "env_obs": observations[agent_id],
+                "done": dones[agent_id],
+            }
             for agent_id, value in extras["scores"].items()
         }
 

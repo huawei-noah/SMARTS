@@ -112,6 +112,8 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
                 point_b,
                 point_a,
             )
+        else:
+            raise
 
     return dist_tot
 
