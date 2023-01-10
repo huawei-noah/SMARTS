@@ -1,7 +1,9 @@
 import gymnasium as gym
 from smarts.env.wrappers.metrics import Metrics
 
-env = gym.make("smarts.env:driving-smarts-competition-v0", scenario="1_to_2lane_left_turn_c")
+env = gym.make(
+    "smarts.env:driving-smarts-competition-v0", scenario="1_to_2lane_left_turn_c"
+)
 # TODO: this should be made to work
 # env = Metrics(env)
 

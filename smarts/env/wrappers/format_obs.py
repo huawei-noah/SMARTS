@@ -200,8 +200,8 @@ StdObs = dict({
 """
 
 
-def gen_format_obs(base_type, box_, dict_, discrete_, multi_binary_, space_, env_):
-    class _FormatObs(base_type):
+def gen_format_obs(gym):
+    class _FormatObs(gym.ObservationWrapper):
         """Converts SMARTS observations to gym-compliant vectorized observations
         and returns `StdObs`. The observation set returned depends on the features
         enabled via AgentInterface.
@@ -211,7 +211,7 @@ def gen_format_obs(base_type, box_, dict_, discrete_, multi_binary_, space_, env
             attributes.
         """
 
-        def __init__(self, env: env_):
+        def __init__(self, env: gym.Env):
             """
             Args:
                 env (E): SMARTS environment to be wrapped.
@@ -239,8 +239,8 @@ def gen_format_obs(base_type, box_, dict_, discrete_, multi_binary_, space_, env
                     intrfcs.update({intrfc: val})
 
             self._space = _make_space(intrfcs)
-            self.observation_space = dict_(
-                {agent_id: dict_(self._space) for agent_id in self.agent_ids}
+            self.observation_space = gym.spaces.Dict(
+                {agent_id: gym.spaces.Dict(self._space) for agent_id in self.agent_ids}
             )
 
             self._stdob_to_ob = {
@@ -309,8 +309,7 @@ def gen_format_obs(base_type, box_, dict_, discrete_, multi_binary_, space_, env
             "signals": "signals",
         }.get(intrfc, None)
 
-
-    def get_spaces() -> Dict[str, Callable[[Any], space_]]:
+    def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
         """Returns the available gym spaces of a `StdObs`.
 
         Returns:
@@ -319,74 +318,73 @@ def gen_format_obs(base_type, box_, dict_, discrete_, multi_binary_, space_, env
         """
         # fmt: off
         ego_basic = {
-            "angular_velocity": box_(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "box": box_(low=0, high=1e10, shape=(3,), dtype=np.float32),
-            "heading": box_(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
-            "lane_index": box_(low=0, high=127, shape=(), dtype=np.int8),
-            "linear_velocity": box_(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "pos": box_(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
-            "speed": box_(low=0, high=1e10, shape=(), dtype=np.float32),
-            "steering": box_(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
-            "yaw_rate": box_(low=0, high=2*math.pi, shape=(), dtype=np.float32),
+            "angular_velocity": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+            "box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
+            "lane_index": gym.spaces.Box(low=0, high=127, shape=(), dtype=np.int8),
+            "linear_velocity": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+            "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
+            "speed": gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
+            "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
+            "yaw_rate": gym.spaces.Box(low=0, high=2*math.pi, shape=(), dtype=np.float32),
         }
         ego_opt = {
-            "angular_acceleration": box_(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "angular_jerk": box_(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "linear_acceleration": box_(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "linear_jerk": box_(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+            "angular_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+            "angular_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+            "linear_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+            "linear_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
         }
         spaces = {
-            "dist": lambda _: box_(low=0, high=1e10, shape=(), dtype=np.float32),
-            "ego": lambda val: dict_(dict(ego_basic, **ego_opt)) if val else dict_(ego_basic),
-            "events": lambda _: dict_({
-                "agents_alive_done": discrete_(n=2),
-                "collisions": discrete_(n=2),
-                "not_moving": discrete_(n=2),
-                "off_road": discrete_(n=2),
-                "off_route": discrete_(n=2),
-                "on_shoulder": discrete_(n=2),
-                "reached_goal": discrete_(n=2),
-                "reached_max_episode_steps": discrete_(n=2),
-                "wrong_way": discrete_(n=2),
+            "dist": lambda _: gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
+            "ego": lambda val: gym.spaces.Dict(dict(ego_basic, **ego_opt)) if val else gym.spaces.Dict(ego_basic),
+            "events": lambda _: gym.spaces.Dict({
+                "agents_alive_done": gym.spaces.Discrete(n=2),
+                "collisions": gym.spaces.Discrete(n=2),
+                "not_moving": gym.spaces.Discrete(n=2),
+                "off_road": gym.spaces.Discrete(n=2),
+                "off_route": gym.spaces.Discrete(n=2),
+                "on_shoulder": gym.spaces.Discrete(n=2),
+                "reached_goal": gym.spaces.Discrete(n=2),
+                "reached_max_episode_steps": gym.spaces.Discrete(n=2),
+                "wrong_way": gym.spaces.Discrete(n=2),
             }),
-            "dagm": lambda val: box_(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
-            "lidar": lambda _: dict_({
-                "hit": multi_binary_(_LIDAR_SHP),
-                "point_cloud": box_(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
-                "ray_origin": box_(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
-                "ray_vector": box_(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
+            "dagm": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
+            "lidar": lambda _: gym.spaces.Dict({
+                "hit": gym.spaces.MultiBinary(_LIDAR_SHP),
+                "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
+                "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
+                "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
             }),
-            "mission": lambda _: dict_({
-                "goal_pos": box_(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
+            "mission": lambda _: gym.spaces.Dict({
+                "goal_pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
             }),
-            "neighbors": lambda _: dict_({
-                "box": box_(low=0, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),
-                "heading": box_(low=-math.pi, high=math.pi, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
-                "lane_index": box_(low=0, high=127, shape=(_NEIGHBOR_SHP,), dtype=np.int8),
-                "pos": box_(low=-1e10, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float64),    
-                "speed": box_(low=0, high=1e10, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
+            "neighbors": lambda _: gym.spaces.Dict({
+                "box": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),
+                "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
+                "lane_index": gym.spaces.Box(low=0, high=127, shape=(_NEIGHBOR_SHP,), dtype=np.int8),
+                "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float64),    
+                "speed": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
             }),
-            "ogm": lambda val: box_(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
-            "rgb": lambda val: box_(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
-            "waypoints": lambda _: dict_({
-                "heading": box_(low=-math.pi, high=math.pi, shape=_WAYPOINT_SHP, dtype=np.float32),
-                "lane_index": box_(low=0, high=127, shape=_WAYPOINT_SHP, dtype=np.int8),
-                "lane_width": box_(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
-                "pos": box_(low=-1e10, high=1e10, shape=_WAYPOINT_SHP + (3,), dtype=np.float64),
-                "speed_limit": box_(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
+            "ogm": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
+            "rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
+            "waypoints": lambda _: gym.spaces.Dict({
+                "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=_WAYPOINT_SHP, dtype=np.float32),
+                "lane_index": gym.spaces.Box(low=0, high=127, shape=_WAYPOINT_SHP, dtype=np.int8),
+                "lane_width": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
+                "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=_WAYPOINT_SHP + (3,), dtype=np.float64),
+                "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
             }),
-            "signals": lambda _: dict_({
-                "state": box_(low=0, high=32, shape=_SIGNALS_SHP, dtype=np.int8),
-                "stop_point": box_(low=-1e10, high=1e10, shape=_SIGNALS_SHP + (2,), dtype=np.float64),
-                "last_changed": box_(low=0, high=1e10, shape=_SIGNALS_SHP, dtype=np.float32),
+            "signals": lambda _: gym.spaces.Dict({
+                "state": gym.spaces.Box(low=0, high=32, shape=_SIGNALS_SHP, dtype=np.int8),
+                "stop_point": gym.spaces.Box(low=-1e10, high=1e10, shape=_SIGNALS_SHP + (2,), dtype=np.float64),
+                "last_changed": gym.spaces.Box(low=0, high=1e10, shape=_SIGNALS_SHP, dtype=np.float32),
             }),
         }
         # fmt: on
 
         return spaces
 
-
-    def _make_space(intrfcs: Dict[str, Any]) -> Dict[str, space_]:
+    def _make_space(intrfcs: Dict[str, Any]) -> Dict[str, gym.Space]:
         spaces = get_spaces()
         space = {}
 
@@ -407,6 +405,7 @@ def gen_format_obs(base_type, box_, dict_, discrete_, multi_binary_, space_, env
         return space
 
     return _FormatObs
+
 
 def _std_dagm(
     val: DrivableAreaGridMap,
@@ -650,21 +649,5 @@ def _std_signals(
     }
 
 
-FormatObs = gen_format_obs(
-    gym.ObservationWrapper,
-    gym.spaces.Box,
-    gym.spaces.Dict,
-    gym.spaces.Discrete,
-    gym.spaces.MultiBinary,
-    gym.Space,
-    gym.Env,
-)
-FormatObsGymnasium = gen_format_obs(
-    gymnasium.ObservationWrapper,
-    gymnasium.spaces.Box,
-    gymnasium.spaces.Dict,
-    gymnasium.spaces.Discrete,
-    gymnasium.spaces.MultiBinary,
-    gymnasium.Space,
-    gymnasium.Env,
-)
+FormatObs = gen_format_obs(gym)
+FormatObsGymnasium = gen_format_obs(gymnasium)

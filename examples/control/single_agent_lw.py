@@ -11,7 +11,7 @@ from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
-from smarts.env.loway_env import LoWayEnv
+from smarts.env.hiway_env_v1 import HiWayEnvV1
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -38,7 +38,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
         AgentType.LanerWithSpeed, max_episode_steps=max_episode_steps
     )
 
-    env = LoWayEnv(
+    env = HiWayEnvV1(
         scenarios=scenarios,
         agent_interfaces={"SingleAgent": agent_interface},
         headless=headless,

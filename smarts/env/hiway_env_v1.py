@@ -24,7 +24,7 @@ import os
 from dataclasses import dataclass
 from enum import Enum
 from functools import partial
-from typing import Any, Dict, List, Optional, Set, Sequence, SupportsFloat, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, SupportsFloat, Tuple, Union
 
 import gymnasium as gym
 import numpy as np
@@ -67,7 +67,7 @@ DEFAULT_VISUALIZATION_CLIENT_BUILDER = partial(
 
 
 # TODO: Could not help the double layer joke here: highway-lowway huawei-laowei. Add a real name.
-class LoWayEnv(gym.Env):
+class HiWayEnvV1(gym.Env):
     """A generic environment for various driving tasks simulated by SMARTS."""
 
     metadata = {"render.modes": ["human"]}

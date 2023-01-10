@@ -101,7 +101,6 @@ class MetricsBase(gym.Wrapper):
     def step(self, action: Dict[str, Any]):
         """Steps the environment by one step."""
         obs, rewards, dones, _, info = super().step(action)
-        
 
         # Only count steps in which an ego agent is present.
         if len(obs) == 0:

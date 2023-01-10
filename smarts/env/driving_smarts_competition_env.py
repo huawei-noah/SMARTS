@@ -22,12 +22,13 @@ import logging
 import os
 import pathlib
 import typing
-
 from functools import partial
 
 import gymnasium as gym
 import numpy as np
 
+from envision.client import Client as Envision
+from envision.client import EnvisionDataFormatterArgs
 from smarts import sstudio
 from smarts.core.agent_interface import (
     OGM,
@@ -39,10 +40,9 @@ from smarts.core.agent_interface import (
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
-from smarts.env.wrappers.format_obs import FormatObsGymnasium
-from smarts.env.loway_env import LoWayEnv, SumoOptions
+from smarts.env.hiway_env_v1 import HiWayEnvV1, SumoOptions
 from smarts.env.multi_scenario_env import resolve_agent_interface
-from envision.client import Client as Envision, EnvisionDataFormatterArgs
+from smarts.env.wrappers.format_obs import FormatObsGymnasium
 from smarts.env.wrappers.metrics import Metrics
 
 logger = logging.getLogger(__file__)
@@ -153,10 +153,12 @@ def driving_smarts_competition_v0_env(
             endpoint=None,
             output_dir=None,
             headless=False,
-            data_formatter_args=EnvisionDataFormatterArgs("base", enable_reduction=False),
+            data_formatter_args=EnvisionDataFormatterArgs(
+                "base", enable_reduction=False
+            ),
         )
 
-    env = LoWayEnv(
+    env = HiWayEnvV1(
         scenarios=[env_specs["scenario"]],
         agent_interfaces=agent_interfaces,
         sim_name="Driving_SMARTS_v0",
@@ -289,6 +291,12 @@ def resolve_agent_action_space(agent_interface: AgentInterface):
         return gym.spaces.Box(
             low=np.array([-28, -28, -np.pi]),
             high=np.array([28, 28, np.pi]),
+            dtype=np.float32,
+        )
+    if agent_interface.action == ActionSpaceType.TargetPose:
+        return gym.spaces.Box(
+            low=np.array([-1e10, -1e10, -np.pi]),
+            high=np.array([1e10, 1e10, np.pi]),
             dtype=np.float32,
         )
 

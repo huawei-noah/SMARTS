@@ -21,18 +21,18 @@
 import logging
 import os
 import warnings
-from typing import Any, Dict, Optional, Set, Sequence, Tuple, Union
+from typing import Any, Dict, Optional, Sequence, Set, Tuple, Union
 
 import gym
 
 from envision.client import Client as Envision
 from envision.data_formatter import EnvisionDataFormatterArgs
 from smarts.core import seed as smarts_seed
+from smarts.core.agent_interface import AgentInterface
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
-from smarts.core.agent_interface import AgentInterface
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
 from smarts.zoo.agent_spec import AgentSpec
