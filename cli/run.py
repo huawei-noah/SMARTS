@@ -69,16 +69,15 @@ def kill_process_group_afterwards():
     default=None,
 )
 @click.argument(
-    "example_path", type=click.Path(exists=True), metavar="<example>", required=True
+    "script_path", type=click.Path(exists=True), metavar="<script>", required=True
 )
 @click.argument("scenario_path", nargs=-1, type=click.UNPROCESSED)
-def run_experiment(clean, envision, envision_port, example_path, scenario_path,seed):
+def run_experiment(clean, envision, envision_port, script_path, scenario_path, seed):
     with kill_process_group_afterwards():
         build_scenarios(
-        allow_offset_maps=False,
-        clean=clean,
-        scenarios=scenario_path,
-        seed=seed,
+            clean=clean,
+            scenarios=scenario_path,
+            seed=seed,
         )
         if envision:
             if envision_port is None:
@@ -105,6 +104,6 @@ def run_experiment(clean, envision, envision_port, example_path, scenario_path,s
             )
 
         script = subprocess.Popen(
-            [sys.executable, example_path, *scenario_path],
+            [sys.executable, script_path, *scenario_path],
         )
         script.communicate()
