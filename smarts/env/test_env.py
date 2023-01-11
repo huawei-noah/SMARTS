@@ -28,6 +28,7 @@ from gymnasium.spaces import Dict as gym_Dict
 
 
 class test_env(gym.Env):
+    """test environment for gymnasium"""
     def __init__(
         self,
         agent_interfaces: Dict[str, AgentSpec],
@@ -45,7 +46,8 @@ class test_env(gym.Env):
 
     def step(
         self, agent_actions: Dict
-    ) -> Dict:  # (observation, reward, terminated, truncated, info)
+    ) -> Dict:
+        """Environment step"""
         if list(agent_actions.values())[0][0] < 30:
             return (
                 {self.agent_id: 10},
@@ -64,8 +66,10 @@ class test_env(gym.Env):
             )
 
     def reset(self, seed=None, options={}) -> Dict:
+        """Environment reset"""
         super().reset(seed=seed)
         return {self.agent_id: ({self.agent_id: 10}, {self.agent_id: {}})}
 
     def render(self):
+        """Environment render"""
         return None
