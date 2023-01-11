@@ -57,11 +57,14 @@ class SingleAgent(gym.Wrapper):
         Returns:
             Tuple[Any, float, bool, Any]: Agent's observation, reward, done, and info
         """
-        obs, reward, done, info = self.env.step({self._agent_id: action})
+        obs, reward, terminated, truncated, info = self.env.step(
+            {self._agent_id: action}
+        )
         return (
             obs[self._agent_id],
             reward[self._agent_id],
-            done[self._agent_id],
+            terminated[self._agent_id],
+            truncated[self._agent_id],
             info[self._agent_id],
         )
 
