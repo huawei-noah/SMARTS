@@ -299,7 +299,7 @@ class LocalTrafficProvider(TrafficProvider):
         for actor_id in dones - removed:
             actor = self._my_actors.get(actor_id)
             if actor:
-                sim.provider_removing_actor(self, actor.state)
+                sim.provider_removing_actor(self, actor_id)
             # The following is not really necessary due to the above calling teardown(),
             # but it doesn't hurt...
             if actor_id in self._my_actors:
@@ -814,9 +814,15 @@ class _TrafficActor:
                 return _safe_division(1.0, math.sin(theta), 1e6)
             # here we correct for the local road curvature (which affects how far we must travel)...
             T = _safe_division(self.radius, self.width, 1e6)
-            assert (
-                abs(T) > 1.0
-            ), f"abnormally high curvature?  radius={self.radius}, width={self.width} at offset {self.lane_coord.s} of lane {self.lane.lane_id}"
+            # XXX: This cannot be an assertion because it could happen for map related reasons.
+            if abs(T) <= 1.0:
+                logging.debug(
+                    "abnormally high curvature?  radius=%s, width=%s at offset %s of lane %s",
+                    self.radius,
+                    self.width,
+                    self.lane_coord.s,
+                    self.lane.lane_id,
+                )
             if to_index > self.lane.index:
                 se = T * (T - 1)
                 return math.sqrt(

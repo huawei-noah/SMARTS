@@ -1,8 +1,8 @@
 import os
 import pickle
 
-from smarts.sstudio import gen_social_agent_missions
 from smarts.sstudio import types as t
+from smarts.sstudio.genscenario import gen_social_agent_missions
 
 scenario = os.path.dirname(os.path.realpath(__file__))
 

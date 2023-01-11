@@ -19,7 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from collections import defaultdict, namedtuple
+from collections import namedtuple
 
 from shapely.geometry import LineString
 from shapely.ops import split
@@ -36,7 +36,9 @@ def bubble_geometry(bubble, road_map):
     airlock_geometry = bubble_geometry_.buffer(bubble.margin)
     split_x, split_y = airlock_geometry.centroid.coords[0]
     divider = LineString([(split_x, -999), (split_x, split_y + 999)])
-    airlock_entry_geometry, airlock_exit_geometry = split(airlock_geometry, divider)
+    airlock_entry_geometry, airlock_exit_geometry = (
+        split(airlock_geometry, divider)
+    ).geoms
     return BubbleGeometry(
         bubble=bubble_geometry_,
         airlock_entry=airlock_entry_geometry,

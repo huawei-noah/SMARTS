@@ -18,23 +18,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import click
+from dataclasses import dataclass
 
 
-@click.group(
-    name="benchmark",
-    help="Utilities for benchmarking the simulation performance. See `scl benchmark COMMAND --help` for further options.",
-)
-def benchmark_cli():
-    pass
+@dataclass(frozen=True)
+class Counts:
+    """Performance count values."""
 
-
-@click.command("run", help="Run all benchmarks.")
-@click.argument("scenarios", nargs=-1, metavar="<scenarios>")
-def run(scenarios):
-    from smarts.benchmark import run as _run
-
-    _run.main(scenarios)
-
-
-benchmark_cli.add_command(run)
+    goals: int = 0
+    """ Number of episodes completed successfully by achieving the goal.
+    """
+    episodes: int = 0
+    """ Number of episodes traversed.
+    """
+    steps: int = 0
+    """ Sum of steps taken over all episodes.
+    """
+    steps_adjusted: int = 0
+    """ Sum of steps taken over all episodes. The number of steps, in an episode
+    where the agent did not achieve the goal, is replaced with the agent's  
+    max_episode_steps value.
+    """
+    max_steps: int = 0
+    """ Sum of maximum number of steps over all episodes.
+    """

@@ -132,9 +132,9 @@ scl run --envision <examples/path> <scenarios/path>
 # Examples 
 ### Usage
 Illustration of various ways to use SMARTS. 
-1. [Single agent](examples/single_agent.py) example.
-1. [Multi agent](examples/multi_agent.py) example.
-1. [Parallel environments](examples/parallel_environment.py) to run multiple SMARTS environments in parallel.
+1. [Single agent](examples/control/single_agent.py) example.
+1. [Multi agent](examples/control/multi_agent.py) example.
+1. [Parallel environments](examples/control/parallel_environment.py) to run multiple SMARTS environments in parallel.
 
 ### RL Model
 1. [MARL benchmark](baselines/marl_benchmark)

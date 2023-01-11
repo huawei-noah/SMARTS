@@ -15,14 +15,28 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added new video record ultility using moviepy.
 - Added distance check between bubble and vehicle to avoid generating unnecessary cursors.
 - Added `ConfigurableZone` for `Zone` object to types which enable users to build bubble by providing coordinates of the polygon.
+- Added "SMARTS Performance Diagnostic" development tool for evaluating the simulation performance.
+- Added a "All Simulation" button on the header of Envision and made small-windowed simulation(s) in the "All Simulations" page clickable to maximize.
+- An env wrapper `Metrics` is introduced to compute agents' performance metrics.
+- Extracted `TraciConn` to the SMARTS utilities as a simplified utility to help with connecting to `TraCI`.
 ### Deprecated
 ### Changed
+- Minimum `SUMO` version allowed by `SumoTrafficSimulation` is now `1.10.0`.
+- The `ProviderManager` interface now uses a string id for removal of an actor instead of an actor state.
 ### Removed
 - Removed all of PyMarl contents, including related interface adapter, environments, and tests.
 - Removed ray usage example.
 - Moved ULTRA from `huawei-noah/SMARTS` to `smarts-project/smarts-project.rl` repository.
+- Removed observation_adapter, reward_adapter, and info_adapter, from `hiway_env`.
 ### Fixed
 - Updated the RL example `racing` to use `smarts[camera_obs]==0.7.0rc0` and continuous flowing traffic scenario. Simplified the `racing` RL example folder structure.
+- Envision "near realtime" mode bugfix
+- Corrected an issue where traffic lights in SUMO traffic simulation could be empty and cause a termination of the simulation.
+- Fixed an issue where vehicles could cause SMARTS to terminate from being in multiple providers.
+- Fixed an issue where `sumo_traffic_simulation` would disconnect on a non-terminal exception.
+- SMARTS now aggressively attempts to connect to a SUMO process as long as the SUMO process remains alive.
+- SUMO traffic simulation `route_for_vehicle` had semantic errors and now works again.
+- SUMO is now supported up to version `1.15.0`. Versions of SUMO `1.13.0` and onward are forced to reset rather than reload because of errors with hot resetting versions starting with `1.13.0`. 
 ### Security
 
 ## [0.7.0rc0]
@@ -47,6 +61,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Renamed `examples/history_vehicles_replacement_for_imitation_learning.py` to `examples/traffic_histories_vehicle_replacement.py`.
 - `SumoTrafficSimulation` will now try to hand-off the vehicles it controls to the new SMARTS background traffic provider by default if the Sumo provider crashes.
 - SMARTS now gives an error about a suspected lack of junction edges in sumo maps on loading of them.
+- Scenario build artifacts are now cached and built incrementally, meaning that subsequent builds (without the `clean` option) will only build the artifacts that depend on the changed DSL objects
+- All build artifacts are now in a local `build/` directory in each scenario's directory
+- The `allow_offset_map` option has been removed. This must now be set in a `MapSpec` object in the scenario.py if this option is needed
+- All scenarios must have a `scenario.py`, and must call `gen_scenario()`, rather than the individual `gen_` functions, which are now private
 
 ### Removed
 - Removed support for deprecated json-based and YAML formats for traffic histories.

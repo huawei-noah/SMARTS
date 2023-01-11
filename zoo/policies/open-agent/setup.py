@@ -1,7 +1,15 @@
+import json
 from pathlib import Path
 
-from open_agent.version import VERSION
 from setuptools import setup
+
+with open(
+    Path(__file__).parent.absolute() / "open_agent/metadata.json",
+    mode="rt",
+    encoding="ascii",
+) as f:
+    meta = json.load(f)
+    VERSION = meta.get("VERSION")
 
 try:
     import glob

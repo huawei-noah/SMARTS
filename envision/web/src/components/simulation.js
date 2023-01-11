@@ -185,10 +185,11 @@ export default function Simulation({
           // React to trigger update, 0.1 millisecond
           await sleep(0.1);
         } else if (playingMode == PLAYMODES.near_real_time) {
-          await sleep(
-            msInSec * (elapsed_times[0] - prevElapsedTime) -
-              (Date.now() - waitStartTime)
-          );
+          let deltaElapsedMs = msInSec * (elapsed_times[0] - prevElapsedTime);
+          if (deltaElapsedMs > 100) {
+            deltaElapsedMs = 100;
+          }
+          await sleep(deltaElapsedMs - (Date.now() - waitStartTime));
         }
         prevElapsedTime = elapsed_times[0];
         let unpacked_wstate = unpack_worldstate(wstate);

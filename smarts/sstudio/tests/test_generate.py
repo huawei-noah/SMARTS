@@ -27,7 +27,7 @@ from xml.etree.ElementTree import ElementTree
 import pytest
 
 from smarts.core.scenario import Scenario
-from smarts.sstudio import gen_map, gen_traffic
+from smarts.sstudio.genscenario import gen_map, gen_traffic
 from smarts.sstudio.types import (
     Distribution,
     Flow,

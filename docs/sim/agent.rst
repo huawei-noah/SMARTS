@@ -11,10 +11,6 @@ SMARTS provides users the ability to customize their agents. :class:`smarts.zoo.
         interface: AgentInterface
         agent_builder: Callable[..., Agent] = None
         agent_params: Optional[Any] = None
-        observation_adapter: Callable = default_obs_adapter
-        action_adapter: Callable = default_action_adapter
-        reward_adapter: Callable = default_reward_adapter
-        info_adapter: Callable = default_info_adapter
 
 An example of how to create an `Agent` instance is shown below.
 
@@ -23,10 +19,6 @@ An example of how to create an `Agent` instance is shown below.
     AgentSpec(
         interface=AgentInterface.from_type(AgentType.Standard, max_episode_steps=500),
         agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
-        observation_adapter=observation_adapter,
-        reward_adapter=reward_adapter,
-        action_adapter=action_adapter,
-        info_adapter=info_adapter,
     )
 
     agent = agent_spec.build_agent()
@@ -152,34 +144,25 @@ Another example:
    :language: python
 
 ===================
-Adapters and Spaces
+Spaces
 ===================
 
-Adapters convert the data such as an agent's raw sensor observations to a more useful form. And spaces provide samples for variation.
- Adapters and spaces are particularly relevant to the :class:`rllib_example.agent` example. Also check out :class:`smarts.env.custom_observations` for some processing examples.
+Spaces provide samples for variation. For reference, see https://gymnasium.farama.org/api/spaces/ .
+
 
 .. code-block:: python
 
-    # Adapter
-    def observation_adapter(env_observation):
-        ego = env_observation.ego_vehicle_state
-
-        return {
-            "speed": [ego.speed],
-            "steering": [ego.steering],
-        }
-
-    # Associated Space
-    # You want to match the space to the adapter
+    # Observation space should match the observation. An example observation
+    # space is as follows, if the observation only consists of speed and 
+    # steering values.
     OBSERVATION_SPACE = gym.spaces.Dict(
     {
-        ## see http://gym.openai.com/docs/#spaces
         "speed": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),
         "steering": gym.spaces.Box(low=-1e10, high=1e10, shape=(1,)),        
     }
 
-You can customize your metrics and design your own observations like :class:`smarts.env.custom_observations`.
-In :class:`smarts.env.custom_observations`, the custom observation's meaning is:
+Observations can be customized. Some example customizations are provided in 
+:class:`smarts.env.custom_observations`, with the following meanings:
 
 - "distance_from_center": distance to lane center 
 - "angle_error": ego heading relative to the closest waypoint
@@ -189,33 +172,6 @@ In :class:`smarts.env.custom_observations`, the custom observation's meaning is:
 - "ego_lane_dist": closest cars' distance to ego in each lane
 
 
-Likewise with the action adapter
-
-.. code-block:: python
-
-    # this comes in from the output of the Agent
-    def action_adapter(model_action):
-        throttle, brake, steering = model_action
-        return np.array([throttle, brake, steering])
-
-    ACTION_SPACE = gym.spaces.Box(
-        low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32
-    )
-
-Because the reward is just a scalar value, no explicit specification of space is needed to go with the reward adapter. But the reward adapter is very important because it  allows further shaping of the reward to your liking:
-
-.. code-block:: python
-
-    def reward_adapter(env_obs, env_reward):
-        return env_reward
-
-Similarly, the info adapter allows further processing on the extra info, if you somehow need that.
-
-.. code-block:: python
-
-    def info_adapter(env_obs, env_reward, env_info):
-        env_info[INFO_EXTRA_KEY] = "item"
-        return env_info
 
 ==================
 Agent Observations

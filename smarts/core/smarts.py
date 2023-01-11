@@ -588,8 +588,8 @@ class SMARTS(ProviderManager):
         return None
 
     def _stop_managing_with_providers(self, actor_id: str):
-        provider = self._provider_for_actor(actor_id)
-        if provider:
+        managing_providers = [p for p in self.providers if p.manages_actor(actor_id)]
+        for provider in managing_providers:
             provider.stop_managing(actor_id)
 
     def _remove_vehicle_from_providers(self, vehicle_id: str):
@@ -715,14 +715,13 @@ class SMARTS(ProviderManager):
         self._log.warning(
             f"could not find a provider to assume control of vehicle {state.actor_id} with role={state.role.name} after being relinquished.  removing it."
         )
-        self.provider_removing_actor(provider, state)
+        self.provider_removing_actor(provider, state.actor_id)
         return None
 
-    def provider_removing_actor(self, provider: Provider, actor_state: ActorState):
+    def provider_removing_actor(self, provider: Provider, actor_id: str):
         # Note: for vehicles, pybullet_provider_sync() will also call teardown
         # when it notices a social vehicle has exited the simulation.
-        if isinstance(actor_state, VehicleState):
-            self._teardown_vehicles([actor_state.actor_id])
+        self._teardown_vehicles([actor_id])
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()
@@ -1235,7 +1234,7 @@ class SMARTS(ProviderManager):
             # by this point, "stop_managing()" should have been called for the hijacked vehicle on all TrafficProviders
             assert not isinstance(
                 provider, TrafficProvider
-            ) or not provider_state.contains(
+            ) or not provider_state.intersects(
                 agent_vehicle_ids
             ), f"{agent_vehicle_ids} in {provider_state.actors}"
 
@@ -1255,7 +1254,7 @@ class SMARTS(ProviderManager):
         return self._resetting
 
     @property
-    def scenario(self):
+    def scenario(self) -> Scenario:
         """The current simulation scenario."""
         return self._scenario
 

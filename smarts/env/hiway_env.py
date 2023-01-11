@@ -195,6 +195,15 @@ class HiWayEnv(gym.Env):
             "mission_hash": str(hash(frozenset(scenario.missions.items()))),
         }
 
+    @property
+    def scenario(self) -> Scenario:
+        """Returns underlying scenario.
+
+        Returns:
+            Scenario: Current simulated scenario.
+        """
+        return self._smarts.scenario
+
     def seed(self, seed: int) -> int:
         """Sets random number generator seed number.
 
@@ -221,11 +230,6 @@ class HiWayEnv(gym.Env):
             Tuple[ Dict[str, Observation], Dict[str, float], Dict[str, bool], Dict[str, Any] ]:
                 Observations, rewards, dones, and infos for active agents.
         """
-        agent_actions = {
-            agent_id: self._agent_specs[agent_id].action_adapter(action)
-            for agent_id, action in agent_actions.items()
-        }
-
         assert isinstance(agent_actions, dict) and all(
             isinstance(key, str) for key in agent_actions.keys()
         ), "Expected Dict[str, any]"
@@ -236,16 +240,6 @@ class HiWayEnv(gym.Env):
             agent_id: {"score": value, "env_obs": observations[agent_id]}
             for agent_id, value in extras["scores"].items()
         }
-
-        for agent_id in observations:
-            agent_spec = self._agent_specs[agent_id]
-            observation = observations[agent_id]
-            reward = rewards[agent_id]
-            info = infos[agent_id]
-
-            rewards[agent_id] = agent_spec.reward_adapter(observation, reward)
-            observations[agent_id] = agent_spec.observation_adapter(observation)
-            infos[agent_id] = agent_spec.info_adapter(observation, reward, info)
 
         if self._env_renderer is not None:
             self._env_renderer.step(observations, rewards, dones, infos)
@@ -266,12 +260,8 @@ class HiWayEnv(gym.Env):
         scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
-        env_observations = self._smarts.reset(scenario)
+        observations = self._smarts.reset(scenario)
 
-        observations = {
-            agent_id: self._agent_specs[agent_id].observation_adapter(obs)
-            for agent_id, obs in env_observations.items()
-        }
         if self._env_renderer is not None:
             self._env_renderer.reset(observations)
 
@@ -292,4 +282,3 @@ class HiWayEnv(gym.Env):
         """Closes the environment and releases all resources."""
         if self._smarts is not None:
             self._smarts.destroy()
-            self._smarts = None

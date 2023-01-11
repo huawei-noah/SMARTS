@@ -1,3 +1,23 @@
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 import argparse
 import logging
 import math
@@ -10,7 +30,6 @@ import numpy as np
 from PIL import Image
 
 from envision.client import Client as Envision
-from smarts import sstudio
 from smarts.core import seed as smarts_seed
 from smarts.core.agent_interface import (
     OGM,
@@ -30,9 +49,15 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.vehicle import VEHICLE_CONFIGS
+from smarts.sstudio.scenario_construction import build_scenario
 
 
 class ObservationRecorder:
+    """
+    Generate SMARTS observations from the perspective of one or more
+    social/history vehicles within a SMARTS scenario.
+    """
+
     def __init__(
         self,
         scenario: str,
@@ -42,9 +67,7 @@ class ObservationRecorder:
         start_time: Optional[float] = None,
         end_time: Optional[float] = None,
     ):
-        """Generate Observations from the perspective of one or more
-        social/history vehicles within a SMARTS scenario.
-
+        """
         Args:
             scenario (str):
                 A path to a scenario to run.
@@ -136,8 +159,7 @@ class ObservationRecorder:
     def collect(
         self, vehicles_with_sensors: Optional[Sequence[int]], headless: bool = True
     ):
-        """Generate Observations from the perspective of one or more
-        social/history vehicles within a SMARTS scenario.
+        """Records SMARTS observations for selected vehicles.
 
         Args:
             vehicles_with_sensors (Sequence[int], optional):
@@ -391,7 +413,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.no_build:
-        sstudio.build_scenario([args.scenario])
+        build_scenario(clean=False, scenario=args.scenario, seed=args.seed)
 
     recorder = ObservationRecorder(
         scenario=args.scenario,
