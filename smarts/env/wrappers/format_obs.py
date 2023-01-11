@@ -262,8 +262,8 @@ def gen_format_obs(gym):
             assert all(
                 getattr(self.agent_interfaces[agent_id], intrfc) == val
                 for agent_id in self.agent_ids
-            ), f"To use FormatObs wrapper, all agents must have the same "
-            f"AgentInterface.{intrfc} attribute."
+            ), f"""To use FormatObs wrapper, all agents must have the same
+            AgentInterface.{intrfc} attribute."""
 
         def observation(self, obs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
             """Converts SMARTS observations to gym-compliant vectorized
