@@ -36,13 +36,13 @@ def _make_agent_specs(topdown_rgb):
     if topdown_rgb == "rgb":
         rgb = RGB()
     elif topdown_rgb == "false":
-        rgb = False
+        gb = False
 
     return {
         "AGENT_"
         + agent_id: AgentSpec(
             interface=AgentInterface(
-                rgb=rgb,
+                top_down_rgb=rgb,
                 action=ActionSpaceType.Lane,
             ),
             agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
@@ -79,7 +79,7 @@ def test_init(base_env, num_stack):
 
     # Test wrapping an env with and without RGB functionality
     agent_id = next(iter(base_env.agent_specs.keys()))
-    if base_env.agent_specs[agent_id].interface.rgb == False:
+    if not base_env.agent_specs[agent_id].interface.top_down_rgb:
         with pytest.raises(AssertionError):
             env = RGBImage(base_env, num_stack)
             env.close()
@@ -90,10 +90,10 @@ def test_init(base_env, num_stack):
     # Test wrapped env observation space
     assert isinstance(env.observation_space, gym.spaces.Dict)
     for agent_id in base_env.agent_specs.keys():
-        rgb = base_env.agent_specs[agent_id].interface.rgb
+        top_down_rgb = base_env.agent_specs[agent_id].interface.top_down_rgb
         assert env.observation_space[agent_id].shape == (
-            rgb.width,
-            rgb.height,
+            top_down_rgb.width,
+            top_down_rgb.height,
             3 * num_stack,
         )
         assert env.observation_space[agent_id].dtype == np.uint8
@@ -103,13 +103,17 @@ def test_init(base_env, num_stack):
 
 def _check_observation(base_env, obs, num_stack):
     for agent_id in base_env.agent_specs.keys():
-        rgb = base_env.agent_specs[agent_id].interface.rgb
-        assert obs[agent_id].shape == (rgb.width, rgb.height, 3 * num_stack)
+        top_down_rgb = base_env.agent_specs[agent_id].interface.top_down_rgb
+        assert obs[agent_id].shape == (
+            top_down_rgb.width,
+            top_down_rgb.height,
+            3 * num_stack,
+        )
         assert obs[agent_id].dtype == np.uint8
 
 
 @pytest.mark.parametrize("num_stack", [1, 2])
-@pytest.mark.parametrize("base_env", ["rgb"], indirect=True)
+@pytest.mark.parametrize("base_env", ["top_down_rgb"], indirect=True)
 def test_observation(base_env, num_stack):
     base_env = _frame_stack(base_env, num_stack)
     env = RGBImage(base_env, num_stack)

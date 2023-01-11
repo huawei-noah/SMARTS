@@ -49,7 +49,7 @@ register(
     entry_point=lambda **kwargs: AgentSpec(
         interface=AgentInterface(
             action=ActionSpaceType.TargetPose,
-            waypoints=True,
+            waypoint_paths=True,
             done_criteria=DoneCriteria(collision=False),
         ),
         agent_builder=PoseBoidAgent,
@@ -61,7 +61,7 @@ register(
     entry_point=lambda **kwargs: AgentSpec(
         interface=AgentInterface(
             action=ActionSpaceType.Trajectory,
-            waypoints=True,
+            waypoint_paths=True,
             done_criteria=DoneCriteria(collision=False),
         ),
         agent_builder=TrajectoryBoidAgent,

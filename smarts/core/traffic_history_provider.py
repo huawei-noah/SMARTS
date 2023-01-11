@@ -123,7 +123,7 @@ class TrafficHistoryProvider(TrafficProvider):
         pass
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
+    def actions(self) -> Set[ActionSpaceType]:
         return set()
 
     def sync(self, provider_state):

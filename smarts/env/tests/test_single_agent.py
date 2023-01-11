@@ -38,7 +38,7 @@ def _make_agent_specs(num_agent):
         "AGENT_"
         + str(agent_id): AgentSpec(
             interface=AgentInterface(
-                rgb=RGB(),
+                top_down_rgb=RGB(),
                 action=ActionSpaceType.Lane,
             ),
             agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),

@@ -476,12 +476,12 @@ class Vehicle:
         # done criteria
         vehicle.attach_driven_path_sensor(DrivenPathSensor(vehicle=vehicle))
 
-        if agent_interface.neighborhood_vehicles:
-            vehicle.attach_neighborhood_vehicles_sensor(
+        if agent_interface.neighborhood_vehicle_states:
+            vehicle.attach_neighborhood_vehicle_states_sensor(
                 NeighborhoodVehiclesSensor(
                     vehicle=vehicle,
                     sim=sim,
-                    radius=agent_interface.neighborhood_vehicles.radius,
+                    radius=agent_interface.neighborhood_vehicle_states.radius,
                 )
             )
 
@@ -491,12 +491,12 @@ class Vehicle:
         if agent_interface.lane_positions:
             vehicle.attach_lane_position_sensor(LanePositionSensor(vehicle=vehicle))
 
-        if agent_interface.waypoints:
+        if agent_interface.waypoint_paths:
             vehicle.attach_waypoints_sensor(
                 WaypointsSensor(
                     vehicle=vehicle,
                     plan=plan,
-                    lookahead=agent_interface.waypoints.lookahead,
+                    lookahead=agent_interface.waypoint_paths.lookahead,
                 )
             )
 
@@ -534,24 +534,24 @@ class Vehicle:
                     renderer=sim.renderer,
                 )
             )
-        if agent_interface.rgb:
+        if agent_interface.top_down_rgb:
             if not sim.renderer:
                 raise RendererException.required_to("add an RGB camera")
             vehicle.attach_rgb_sensor(
                 RGBSensor(
                     vehicle=vehicle,
-                    width=agent_interface.rgb.width,
-                    height=agent_interface.rgb.height,
-                    resolution=agent_interface.rgb.resolution,
+                    width=agent_interface.top_down_rgb.width,
+                    height=agent_interface.top_down_rgb.height,
+                    resolution=agent_interface.top_down_rgb.resolution,
                     renderer=sim.renderer,
                 )
             )
-        if agent_interface.lidar:
+        if agent_interface.lidar_point_cloud:
             vehicle.attach_lidar_sensor(
                 LidarSensor(
                     vehicle=vehicle,
                     bullet_client=sim.bc,
-                    sensor_params=agent_interface.lidar.sensor_params,
+                    sensor_params=agent_interface.lidar_point_cloud.sensor_params,
                 )
             )
 
@@ -676,7 +676,7 @@ class Vehicle:
             "driven_path_sensor",
             "trip_meter_sensor",
             "drivable_area_grid_map_sensor",
-            "neighborhood_vehicles_sensor",
+            "neighborhood_vehicle_states_sensor",
             "waypoints_sensor",
             "road_waypoints_sensor",
             "accelerometer_sensor",

@@ -14,7 +14,7 @@ register(
     locator="buddha-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
         interface=AgentInterface(
-            waypoints=True,
+            waypoint_paths=True,
             action=ActionSpaceType.LaneWithContinuousSpeed,
             done_criteria=DoneCriteria(not_moving=True),
         ),

@@ -70,7 +70,7 @@ class MockProvider(Provider):
         pass
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
+    def actions(self) -> Set[ActionSpaceType]:
         return {ActionSpaceType.TargetPose}
 
     def sync(self, provider_state):

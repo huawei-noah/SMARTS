@@ -140,7 +140,7 @@ class Provider:
         raise NotImplementedError
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
+    def actions(self) -> Set[ActionSpaceType]:
         """The action spaces of the provider."""
         raise NotImplementedError
 

@@ -10,8 +10,8 @@ agent_spec = AgentSpec(
     interface=AgentInterface.from_type(
         AgentType.Laner,
         max_episode_steps=150,
-        rgb=True,
-        ogm=True,
+        top_down_rgb=True,
+        occupancy_grid_map=True,
         drivable_area_grid_map=True,
     ),
     agent_builder=None,

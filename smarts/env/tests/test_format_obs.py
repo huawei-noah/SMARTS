@@ -40,12 +40,18 @@ def _intrfcs_init():
         [{"accelerometer": True}, {"accelerometer": False}],
         [{"accelerometer": True}] * 2,
         [{"drivable_area_grid_map": True}] * 2,
-        [{"lidar": True}] * 2,
-        [{"neighborhood_vehicles": True}] * 2,
-        [{"ogm": True}] * 2,
-        [{"rgb": True}] * 2,
-        [{"waypoints": Waypoints(lookahead=1)}] * 2,
-        [{"neighborhood_vehicles": True, "waypoints": Waypoints(lookahead=1)}] * 2,
+        [{"lidar_point_cloud": True}] * 2,
+        [{"neighborhood_vehicle_states": True}] * 2,
+        [{"occupancy_grid_map": True}] * 2,
+        [{"top_down_rgb": True}] * 2,
+        [{"waypoint_paths": Waypoints(lookahead=1)}] * 2,
+        [
+            {
+                "neighborhood_vehicle_states": True,
+                "waypoint_paths": Waypoints(lookahead=1),
+            }
+        ]
+        * 2,
         [{"signals": Signals(lookahead=100.0)}] * 2,
     ]
 
@@ -54,20 +60,25 @@ def _intrfcs_obs():
     base_intrfc = {
         "accelerometer": True,
         "drivable_area_grid_map": True,
-        "lidar": True,
-        "neighborhood_vehicles": True,
-        "ogm": True,
-        "rgb": True,
-        "waypoints": Waypoints(lookahead=1),
+        "lidar_point_cloud": True,
+        "neighborhood_vehicle_states": True,
+        "occupancy_grid_map": True,
+        "top_down_rgb": True,
+        "waypoint_paths": Waypoints(lookahead=1),
         "signals": Signals(lookahead=100),
     }
 
     return [
         [base_intrfc] * 2,
-        [dict(base_intrfc, **{"neighborhood_vehicles": NeighborhoodVehicles(radius=0)})]
+        [
+            dict(
+                base_intrfc,
+                **{"neighborhood_vehicle_states": NeighborhoodVehicles(radius=0)}
+            )
+        ]
         * 2,
         [dict(base_intrfc, **{"accelerometer": False})] * 2,
-        [dict(base_intrfc, **{"waypoints": Waypoints(lookahead=50)})] * 2,
+        [dict(base_intrfc, **{"waypoint_paths": Waypoints(lookahead=50)})] * 2,
         [dict(base_intrfc, **{"signals": Signals(lookahead=50)})] * 2,
     ]
 
@@ -77,11 +88,11 @@ def _make_agent_specs(intrfcs):
         action=ActionSpaceType.Lane,
         accelerometer=False,
         drivable_area_grid_map=False,
-        lidar=False,
-        neighborhood_vehicles=False,
-        ogm=False,
-        rgb=False,
-        waypoints=False,
+        lidar_point_cloud=False,
+        neighborhood_vehicle_states=False,
+        occupancy_grid_map=False,
+        top_down_rgb=False,
+        waypoint_paths=False,
         signals=False,
     )
 

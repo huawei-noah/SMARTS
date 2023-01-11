@@ -46,10 +46,10 @@ Observations in numpy array format, suitable for vectorized processing.
 
 StdObs = dict({
     Total distance travelled in meters.
-    "dist": np.float32
+    "distance_travelled": np.float32
     
     Ego vehicle state, with the following attributes.
-    "ego": dict({
+    "ego_vehicle_state": dict({
         "angular_acceleration": 
             Angular acceleration vector. Requires `accelerometer` attribute 
             enabled in AgentInterface, else absent. shape=(3,). dtype=np.float32.
@@ -111,10 +111,10 @@ StdObs = dict({
 
     Drivable area grid map. Map is binary, with 255 if a cell contains a road,
     else 0. dtype=np.uint8.
-    "dagm": np.ndarray
+    "drivable_area_grid_map": np.ndarray
 
     Lidar point cloud, with the following attributes.
-    "lidar": dict({
+    "lidar_point_cloud": dict({
         "hit":
             Binary array. 1 if an object is hit, else 0. shape(300,).
         "point_cloud":
@@ -134,7 +134,7 @@ StdObs = dict({
 
     Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
     vehicles are insufficient, default feature values are padded.
-    "neighbors": dict({
+    "neighborhood_vehicle_states": dict({
         "box":
             Bounding box of neighbor vehicles. Defaults to np.array([0,0,0]) per
             vehicle. shape=(10,3). dtype=np.float32.
@@ -155,16 +155,16 @@ StdObs = dict({
 
     Occupancy grid map. Map is binary, with 255 if a cell is occupied, else 0.
     dtype=np.uint8.
-    "ogm": np.ndarray
+    "occupancy_grid_map": np.ndarray
 
     RGB image, from the top view, with ego vehicle at the center.
     shape=(height, width, 3). dtype=np.uint8.
-    "rgb": np.ndarray
+    "top_down_rgb": np.ndarray
 
     Feature array of 20 waypoints ahead or in the mission route, from the 
     nearest 4 lanes. If lanes or waypoints ahead are insufficient, default 
     values are padded.
-    "waypoints": dict({
+    "waypoint_paths": dict({
         "heading":
             Lane heading angle at a waypoint in radians [-pi, pi]. Defaults to
             np.array([0]) per waypoint. shape=(4,20). dtype=np.float32.
@@ -226,11 +226,11 @@ def gen_format_obs(gym):
             for intrfc in {
                 "accelerometer",
                 "drivable_area_grid_map",
-                "lidar",
-                "neighborhood_vehicles",
-                "ogm",
-                "rgb",
-                "waypoints",
+                "lidar_point_cloud",
+                "neighborhood_vehicle_states",
+                "occupancy_grid_map",
+                "top_down_rgb",
+                "waypoint_paths",
                 "signals",
             }:
                 val = getattr(self.agent_interfaces[agent_id], intrfc)
@@ -244,16 +244,16 @@ def gen_format_obs(gym):
             )
 
             self._stdob_to_ob = {
-                "dagm": "drivable_area_grid_map",
-                "dist": "distance_travelled",
-                "ego": "ego_vehicle_state",
+                "drivable_area_grid_map": "drivable_area_grid_map",
+                "distance_travelled": "distance_travelled",
+                "ego_vehicle_state": "ego_vehicle_state",
                 "events": "events",
-                "lidar": "lidar_point_cloud",
+                "lidar_point_cloud": "lidar_point_cloud",
                 "mission": "mission",
-                "neighbors": "neighborhood_vehicle_states",
-                "ogm": "occupancy_grid_map",
-                "rgb": "top_down_rgb",
-                "waypoints": "waypoint_paths",
+                "neighborhood_vehicle_states": "neighborhood_vehicle_states",
+                "occupancy_grid_map": "occupancy_grid_map",
+                "top_down_rgb": "top_down_rgb",
+                "waypoint_paths": "waypoint_paths",
                 "signals": "signals",
             }
             self._accelerometer = "accelerometer" in intrfcs.keys()
@@ -276,7 +276,7 @@ def gen_format_obs(gym):
                 wrapped_ob = {}
                 for stdob in self._space.keys():
                     func = globals()[f"_std_{stdob}"]
-                    if stdob == "ego":
+                    if stdob == "ego_vehicle_state":
                         val = func(
                             getattr(agent_obs, self._stdob_to_ob[stdob]),
                             self._accelerometer,
@@ -300,12 +300,12 @@ def gen_format_obs(gym):
             unavailable.
         """
         return {
-            "drivable_area_grid_map": "dagm",
-            "lidar": "lidar",
-            "neighborhood_vehicles": "neighbors",
-            "ogm": "ogm",
-            "rgb": "rgb",
-            "waypoints": "waypoints",
+            "drivable_area_grid_map": "drivable_area_grid_map",
+            "lidar_point_cloud": "lidar_point_cloud",
+            "neighborhood_vehicle_states": "neighborhood_vehicle_states",
+            "occupancy_grid_map": "occupancy_grid_map",
+            "top_down_rgb": "top_down_rgb",
+            "waypoint_paths": "waypoint_paths",
             "signals": "signals",
         }.get(intrfc, None)
 
@@ -335,8 +335,8 @@ def gen_format_obs(gym):
             "linear_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
         }
         spaces = {
-            "dist": lambda _: gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
-            "ego": lambda val: gym.spaces.Dict(dict(ego_basic, **ego_opt)) if val else gym.spaces.Dict(ego_basic),
+            "distance_travelled": lambda _: gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
+            "ego_vehicle_state": lambda val: gym.spaces.Dict(dict(ego_basic, **ego_opt)) if val else gym.spaces.Dict(ego_basic),
             "events": lambda _: gym.spaces.Dict({
                 "agents_alive_done": gym.spaces.Discrete(n=2),
                 "collisions": gym.spaces.Discrete(n=2),
@@ -348,8 +348,8 @@ def gen_format_obs(gym):
                 "reached_max_episode_steps": gym.spaces.Discrete(n=2),
                 "wrong_way": gym.spaces.Discrete(n=2),
             }),
-            "dagm": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
-            "lidar": lambda _: gym.spaces.Dict({
+            "drivable_area_grid_map": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
+            "lidar_point_cloud": lambda _: gym.spaces.Dict({
                 "hit": gym.spaces.MultiBinary(_LIDAR_SHP),
                 "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
                 "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
@@ -358,16 +358,16 @@ def gen_format_obs(gym):
             "mission": lambda _: gym.spaces.Dict({
                 "goal_pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
             }),
-            "neighbors": lambda _: gym.spaces.Dict({
+            "neighborhood_vehicle_states": lambda _: gym.spaces.Dict({
                 "box": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),
                 "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
                 "lane_index": gym.spaces.Box(low=0, high=127, shape=(_NEIGHBOR_SHP,), dtype=np.int8),
                 "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float64),    
                 "speed": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
             }),
-            "ogm": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
-            "rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
-            "waypoints": lambda _: gym.spaces.Dict({
+            "occupancy_grid_map": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
+            "top_down_rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
+            "waypoint_paths": lambda _: gym.spaces.Dict({
                 "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=_WAYPOINT_SHP, dtype=np.float32),
                 "lane_index": gym.spaces.Box(low=0, high=127, shape=_WAYPOINT_SHP, dtype=np.int8),
                 "lane_width": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
@@ -390,8 +390,10 @@ def gen_format_obs(gym):
 
         space.update(
             {
-                "dist": spaces["dist"](None),
-                "ego": spaces["ego"]("accelerometer" in intrfcs.keys()),
+                "distance_travelled": spaces["distance_travelled"](None),
+                "ego_vehicle_state": spaces["ego_vehicle_state"](
+                    "accelerometer" in intrfcs.keys()
+                ),
                 "events": spaces["events"](None),
                 "mission": spaces["mission"](None),
             }
@@ -407,17 +409,17 @@ def gen_format_obs(gym):
     return _FormatObs
 
 
-def _std_dagm(
+def _std_drivable_area_grid_map(
     val: DrivableAreaGridMap,
 ) -> np.ndarray:
     return val.data.astype(np.uint8)
 
 
-def _std_dist(val: float) -> float:
+def _std_distance_travelled(val: float) -> float:
     return np.float32(val)
 
 
-def _std_ego(
+def _std_ego_vehicle_state(
     val: EgoVehicleObservation, accelerometer: bool
 ) -> Dict[str, Union[np.int8, np.float32, np.ndarray]]:
 
@@ -460,7 +462,7 @@ def _std_events(val: Events) -> Dict[str, int]:
     }
 
 
-def _std_lidar(
+def _std_lidar_point_cloud(
     val: Tuple[List[np.ndarray], List[np.ndarray], List[Tuple[np.ndarray, np.ndarray]]]
 ) -> Dict[str, np.ndarray]:
 
@@ -504,7 +506,7 @@ def _std_mission(val: EgoVehicleObservation) -> Dict[str, np.ndarray]:
     return {"goal_pos": goal_pos}
 
 
-def _std_neighbors(
+def _std_neighborhood_vehicle_states(
     nghbs: List[VehicleObservation],
 ) -> Dict[str, np.ndarray]:
 
@@ -556,15 +558,15 @@ def _std_neighbors(
     }
 
 
-def _std_ogm(val: OccupancyGridMap) -> np.ndarray:
+def _std_occupancy_grid_map(val: OccupancyGridMap) -> np.ndarray:
     return val.data.astype(np.uint8)
 
 
-def _std_rgb(val: TopDownRGB) -> np.ndarray:
+def _std_top_down_rgb(val: TopDownRGB) -> np.ndarray:
     return val.data.astype(np.uint8)
 
 
-def _std_waypoints(
+def _std_waypoint_paths(
     rcv_paths: List[List[Waypoint]],
 ) -> Dict[str, np.ndarray]:
 

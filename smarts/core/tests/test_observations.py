@@ -66,14 +66,16 @@ ROAD_COLOR = np.array(SceneColors.Road.value[0:3]) * 255
 def agent_interface():
     return AgentInterface(
         road_waypoints=RoadWaypoints(40),
-        neighborhood_vehicles=NeighborhoodVehicles(
+        neighborhood_vehicle_states=NeighborhoodVehicles(
             radius=max(MAP_WIDTH * MAP_RESOLUTION, MAP_HEIGHT * MAP_RESOLUTION) * 0.5
         ),
         drivable_area_grid_map=DrivableAreaGridMap(
             width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION
         ),
-        ogm=OGM(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
-        rgb=RGB(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
+        occupancy_grid_map=OGM(
+            width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION
+        ),
+        top_down_rgb=RGB(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
         action=ActionSpaceType.Lane,
         signals=Signals(100.0),
     )

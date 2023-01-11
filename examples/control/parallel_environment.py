@@ -50,8 +50,8 @@ def main(
     agent_specs = {
         agent_id: AgentSpec(
             interface=AgentInterface(
-                rgb=True,
-                waypoints=True,
+                top_down_rgb=True,
+                waypoint_paths=True,
                 action=ActionSpaceType.LaneWithContinuousSpeed,
                 max_episode_steps=max_episode_steps,
             ),

@@ -610,7 +610,7 @@ class SMARTS(ProviderManager):
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         prev_provider = self._provider_for_actor(vehicle.id)
         for provider in self.providers:
-            if interface.action_space in provider.action_spaces:
+            if interface.action in provider.actions:
                 state = VehicleState(
                     actor_id=vehicle.id,
                     source=provider.source_str,
@@ -915,7 +915,7 @@ class SMARTS(ProviderManager):
     @property
     def dynamic_action_spaces(self) -> Set[ActionSpaceType]:
         """The set of vehicle action spaces that use dynamics (physics)."""
-        return self._agent_physics_provider.action_spaces
+        return self._agent_physics_provider.actions
 
     @property
     def traffic_sim(self) -> Optional[TrafficProvider]:
@@ -1188,7 +1188,7 @@ class SMARTS(ProviderManager):
 
             interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
             assert interface, f"agent {agent_id} has no interface"
-            if interface.action_space not in provider.action_spaces:
+            if interface.action not in provider.actions:
                 continue
             assert isinstance(provider, AgentsProvider)
 

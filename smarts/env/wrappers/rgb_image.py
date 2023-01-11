@@ -48,7 +48,7 @@ class RGBImage(gym.ObservationWrapper):
         agent_specs = env.agent_specs
 
         for agent_id in agent_specs.keys():
-            assert agent_specs[agent_id].interface.rgb, (
+            assert agent_specs[agent_id].interface.top_down_rgb, (
                 f"To use RGBImage wrapper, enable RGB "
                 f"functionality in {agent_id}'s AgentInterface."
             )
@@ -61,8 +61,8 @@ class RGBImage(gym.ObservationWrapper):
                     low=0,
                     high=255,
                     shape=(
-                        agent_specs[agent_id].interface.rgb.width,
-                        agent_specs[agent_id].interface.rgb.height,
+                        agent_specs[agent_id].interface.top_down_rgb.width,
+                        agent_specs[agent_id].interface.top_down_rgb.height,
                         3 * self._num_stack,
                     ),
                     dtype=np.uint8,
@@ -95,7 +95,7 @@ class RGBImage(gym.ObservationWrapper):
                 try:
                     image = agent_ob.top_down_rgb.data
                 except AttributeError:
-                    image = agent_ob.rgb
+                    image = agent_ob.top_down_rgb
                 images.append(image.astype(np.uint8))
 
             stacked_images = np.dstack(images)

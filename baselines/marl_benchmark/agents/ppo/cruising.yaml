@@ -17,7 +17,7 @@ agent:
 
 interface:
   max_episode_steps: 1000
-  neighborhood_vehicles:
+  neighborhood_vehicle_states:
     radius: 50
   waypoints:
     lookahead: 50  # larger than size of heading errors

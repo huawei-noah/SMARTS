@@ -309,10 +309,10 @@ class Sensors:
     @staticmethod
     def observe(sim, agent_id, sensor_state, vehicle) -> Tuple[Observation, bool]:
         """Generate observations for the given agent around the given vehicle."""
-        neighborhood_vehicles = None
-        if vehicle.subscribed_to_neighborhood_vehicles_sensor:
-            neighborhood_vehicles = []
-            for nv in vehicle.neighborhood_vehicles_sensor():
+        neighborhood_vehicle_states = None
+        if vehicle.subscribed_to_neighborhood_vehicle_states_sensor:
+            neighborhood_vehicle_states = []
+            for nv in vehicle.neighborhood_vehicle_states_sensor():
                 veh_obs = _make_vehicle_observation(sim.road_map, nv)
                 nv_lane_pos = None
                 if (
@@ -322,7 +322,7 @@ class Sensors:
                     nv_lane_pos = vehicle.lane_position_sensor(
                         sim.road_map.lane_by_id(veh_obs.lane_id), nv
                     )
-                neighborhood_vehicles.append(
+                neighborhood_vehicle_states.append(
                     veh_obs._replace(lane_position=nv_lane_pos)
                 )
 
@@ -425,9 +425,15 @@ class Sensors:
             if vehicle.subscribed_to_drivable_area_grid_map_sensor
             else None
         )
-        ogm = vehicle.ogm_sensor() if vehicle.subscribed_to_ogm_sensor else None
-        rgb = vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None
-        lidar = vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
+        occupancy_grid_map = (
+            vehicle.ogm_sensor() if vehicle.subscribed_to_ogm_sensor else None
+        )
+        top_down_rgb = (
+            vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None
+        )
+        lidar_point_cloud = (
+            vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
+        )
 
         done, events = Sensors._is_done_with_events(
             sim, agent_id, vehicle, sensor_state
@@ -465,13 +471,13 @@ class Sensors:
                 events=events,
                 ego_vehicle_state=ego_vehicle,
                 under_this_agent_control=agent_controls,
-                neighborhood_vehicle_states=neighborhood_vehicles,
+                neighborhood_vehicle_states=neighborhood_vehicle_states,
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
-                top_down_rgb=rgb,
-                occupancy_grid_map=ogm,
+                top_down_rgb=top_down_rgb,
+                occupancy_grid_map=occupancy_grid_map,
                 drivable_area_grid_map=drivable_area_grid_map,
-                lidar_point_cloud=lidar,
+                lidar_point_cloud=lidar_point_cloud,
                 road_waypoints=road_waypoints,
                 via_data=via_data,
                 signals=signals,
@@ -868,7 +874,13 @@ class RGBSensor(CameraSensor):
         renderer,  # type Renderer or None
     ):
         super().__init__(
-            vehicle, renderer, "rgb", RenderMasks.RGB_HIDE, width, height, resolution
+            vehicle,
+            renderer,
+            "top_down_rgb",
+            RenderMasks.RGB_HIDE,
+            width,
+            height,
+            resolution,
         )
         self._resolution = resolution
 

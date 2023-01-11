@@ -90,7 +90,7 @@ class ExternalProvider(Provider):
         self._last_step_delta = step_delta
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
+    def actions(self) -> Set[ActionSpaceType]:
         return set()
 
     @property

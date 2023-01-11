@@ -87,19 +87,23 @@ def _make_rllib_config(config, mode="training"):
     )
 
     """ Parse agent interface configuration """
-    if interface_config.get("neighborhood_vehicles"):
-        interface_config["neighborhood_vehicles"] = NeighborhoodVehicles(
-            **interface_config["neighborhood_vehicles"]
+    if interface_config.get("neighborhood_vehicle_states"):
+        interface_config["neighborhood_vehicle_states"] = NeighborhoodVehicles(
+            **interface_config["neighborhood_vehicle_states"]
         )
 
-    if interface_config.get("waypoints"):
-        interface_config["waypoints"] = Waypoints(**interface_config["waypoints"])
+    if interface_config.get("waypoint_paths"):
+        interface_config["waypoint_paths"] = Waypoints(
+            **interface_config["waypoint_paths"]
+        )
 
-    if interface_config.get("rgb"):
-        interface_config["rgb"] = RGB(**interface_config["rgb"])
+    if interface_config.get("top_down_rgb"):
+        interface_config["top_down_rgb"] = RGB(**interface_config["top_down_rgb"])
 
-    if interface_config.get("ogm"):
-        interface_config["ogm"] = OGM(**interface_config["ogm"])
+    if interface_config.get("occupancy_grid_map"):
+        interface_config["occupancy_grid_map"] = OGM(
+            **interface_config["occupancy_grid_map"]
+        )
 
     interface_config["action"] = ActionSpaceType(action_type)
 

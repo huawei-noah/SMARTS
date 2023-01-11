@@ -139,21 +139,21 @@ def intersection_v0_env(
                     height=img_pixels,
                     resolution=img_meters / img_pixels,
                 ),
-                lidar=True,
+                lidar_point_cloud=True,
                 max_episode_steps=max_episode_steps,
-                neighborhood_vehicles=NeighborhoodVehicles(img_meters),
-                ogm=OGM(
+                neighborhood_vehicle_states=NeighborhoodVehicles(img_meters),
+                occupancy_grid_map=OGM(
                     width=img_pixels,
                     height=img_pixels,
                     resolution=img_meters / img_pixels,
                 ),
-                rgb=RGB(
+                top_down_rgb=RGB(
                     width=img_pixels,
                     height=img_pixels,
                     resolution=img_meters / img_pixels,
                 ),
                 road_waypoints=False,
-                waypoints=Waypoints(lookahead=img_meters),
+                waypoint_paths=Waypoints(lookahead=img_meters),
             ),
         )
     }

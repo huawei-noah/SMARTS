@@ -24,7 +24,6 @@ from dataclasses import dataclass, fields
 from typing import Any, Dict, Set, TypeVar
 
 import gym
-
 import gymnasium
 import numpy as np
 
@@ -64,9 +63,9 @@ class MetricsError(Exception):
     pass
 
 
-
 def _make_metrics(module):
     """Generate the metrics wrapper type."""
+
     class _Metrics(module.Wrapper):
         """Computes agents' performance metrics in a SMARTS environment."""
 
@@ -277,7 +276,6 @@ def _make_metrics(module):
 
             return _score
 
-
     def _check_env(env: module.Env):
         """Checks environment suitability to compute performance metrics.
 
@@ -292,9 +290,11 @@ def _make_metrics(module):
             intrfc = {
                 "accelerometer": bool(agent_intrfc.accelerometer),
                 "max_episode_steps": bool(agent_intrfc.max_episode_steps),
-                "neighborhood_vehicles": bool(agent_intrfc.neighborhood_vehicles),
+                "neighborhood_vehicle_states": bool(
+                    agent_intrfc.neighborhood_vehicle_states
+                ),
                 "road_waypoints": bool(agent_intrfc.road_waypoints),
-                "waypoints": bool(agent_intrfc.waypoints),
+                "waypoint_paths": bool(agent_intrfc.waypoint_paths),
                 "done_criteria.collision": agent_intrfc.done_criteria.collision,
                 "done_criteria.off_road": agent_intrfc.done_criteria.off_road,
             }
@@ -308,6 +308,7 @@ def _make_metrics(module):
                     "compute its metrics. Current interface is "
                     "{1}.".format(agent_name, intrfc)
                 )
+
     return _Metrics
 
 
@@ -331,6 +332,7 @@ class Metrics(gym.Wrapper):
     def __init__(self, env: gym.Env):
         env = _make_metrics(gym)(env)
         super().__init__(env)
+
 
 class CompetitionMetrics(gymnasium.Wrapper):
     """Metrics class wraps an underlying _Metrics class. The underlying

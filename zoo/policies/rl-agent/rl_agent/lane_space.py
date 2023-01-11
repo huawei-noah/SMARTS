@@ -605,11 +605,11 @@ def get_action_adapter(target_speed, lane_change_speed):
 
 agent_interface = AgentInterface(
     max_episode_steps=None,
-    waypoints=True,
+    waypoint_paths=True,
     # neighborhood < 60m
-    neighborhood_vehicles=NeighborhoodVehicles(radius=60),
+    neighborhood_vehicle_states=NeighborhoodVehicles(radius=60),
     # OGM within 64 * 0.25 = 16
-    ogm=OGM(64, 64, 0.25),
+    occupancy_grid_map=OGM(64, 64, 0.25),
     action=ActionSpaceType.LaneWithContinuousSpeed,
 )
 
