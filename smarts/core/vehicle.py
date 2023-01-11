@@ -522,15 +522,15 @@ class Vehicle:
                     renderer=sim.renderer,
                 )
             )
-        if agent_interface.ogm:
+        if agent_interface.occupancy_grid_map:
             if not sim.renderer:
                 raise RendererException.required_to("add an OGM")
             vehicle.attach_ogm_sensor(
                 OGMSensor(
                     vehicle=vehicle,
-                    width=agent_interface.ogm.width,
-                    height=agent_interface.ogm.height,
-                    resolution=agent_interface.ogm.resolution,
+                    width=agent_interface.occupancy_grid_map.width,
+                    height=agent_interface.occupancy_grid_map.height,
+                    resolution=agent_interface.occupancy_grid_map.resolution,
                     renderer=sim.renderer,
                 )
             )
