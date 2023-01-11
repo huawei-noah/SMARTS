@@ -249,7 +249,7 @@ def gen_format_obs(gym):
                 "ego_vehicle_state": "ego_vehicle_state",
                 "events": "events",
                 "lidar_point_cloud": "lidar_point_cloud",
-                "mission": "mission",
+                "mission": "ego_vehicle_state",
                 "neighborhood_vehicle_states": "neighborhood_vehicle_states",
                 "occupancy_grid_map": "occupancy_grid_map",
                 "top_down_rgb": "top_down_rgb",
