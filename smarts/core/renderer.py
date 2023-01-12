@@ -43,6 +43,12 @@ from panda3d.core import (
     Texture,
     WindowProperties,
     loadPrcFileData,
+    GeomVertexFormat,
+    Geom,
+    GeomNode,
+    GeomVertexData,
+    GeomVertexWriter,
+    GeomLinestrips,
 )
 
 from . import glsl, models
@@ -154,7 +160,7 @@ class _ShowBaseInstance(ShowBase):
                 vertex=str(vshader_path.absolute()),
                 fragment=str(fshader_path.absolute()),
             )
-            root_np.setShader(unlit_shader)
+            root_np.setShader(unlit_shader, priority=10)
         return root_np
 
     def render_node(self, sim_root: NodePath):
@@ -224,6 +230,78 @@ class Renderer:
         np.hide(RenderMasks.OCCUPANCY_HIDE)
         np.setColor(SceneColors.Road.value)
         self._road_map_np = np
+
+        # Road lines
+
+        # TODO: make these separate glb nodes or glb files
+        from trimesh.exchange import gltf
+
+        with open(map_path, "rb") as f:
+            glb = gltf.load_glb(f)
+        lane_dividers = glb["metadata"]["extras"]["lane_dividers"]
+        edge_dividers = glb["metadata"]["extras"]["edge_dividers"]
+
+        # Solid lines
+        format = GeomVertexFormat.getV3()
+        vdata = GeomVertexData("RoadLines", format, Geom.UHStatic)
+        vertex = GeomVertexWriter(vdata, "vertex")
+
+        solid_lines = GeomLinestrips(Geom.UHStatic)
+        for pts in edge_dividers:
+            for x, y in pts:
+                vertex.addData3(x, y, 0.1)
+            solid_lines.add_next_vertices(len(pts))
+            assert solid_lines.closePrimitive()
+
+        geom = Geom(vdata)
+        geom.addPrimitive(solid_lines)
+
+        node = GeomNode("solid_lines")
+        node.addGeom(geom)
+
+        solid_lines_np = self._root_np.attachNewNode(node)
+        solid_lines_np.setColor(SceneColors.EdgeDivider.value)
+        solid_lines_np.hide(RenderMasks.OCCUPANCY_HIDE)
+        solid_lines_np.setRenderModeThickness(2)
+
+        # Dashed lines
+        format = GeomVertexFormat.getV3()
+        vdata = GeomVertexData("LaneLines", format, Geom.UHStatic)
+        vertex = GeomVertexWriter(vdata, "vertex")
+
+        dashed_lines = GeomLinestrips(Geom.UHStatic)
+        for pts in lane_dividers:
+            for x, y in pts:
+                vertex.addData3(x, y, 0.1)
+            dashed_lines.add_next_vertices(len(pts))
+            assert dashed_lines.closePrimitive()
+
+        dashed_lines_geom = Geom(vdata)
+        dashed_lines_geom.addPrimitive(dashed_lines)
+
+        dashed_lines_node = GeomNode("dashed_lines")
+        dashed_lines_node.addGeom(dashed_lines_geom)
+
+        dashed_lines_np = self._root_np.attachNewNode(dashed_lines_node)
+        dashed_lines_np.setColor(SceneColors.LaneDivider.value)
+        dashed_lines_np.hide(RenderMasks.OCCUPANCY_HIDE)
+        dashed_lines_np.setRenderModeThickness(2)
+
+        with pkg_resources.path(
+            glsl, "dashed_line_shader.vert"
+        ) as vshader_path, pkg_resources.path(
+            glsl, "dashed_line_shader.frag"
+        ) as fshader_path:
+            dashed_line_shader = Shader.load(
+                Shader.SL_GLSL,
+                vertex=str(vshader_path.absolute()),
+                fragment=str(fshader_path.absolute()),
+            )
+            dashed_lines_np.setShader(dashed_line_shader, priority=20)
+            dashed_lines_np.setShaderInput(
+                "resolution", self._showbase_instance.getSize()
+            )
+        self._dashed_lines_np = dashed_lines_np
 
         self._is_setup = True
 
@@ -373,6 +451,11 @@ class Renderer:
             self._showbase_instance.win,
         )
         buffer.setClearColor((0, 0, 0, 0))  # Set background color to black
+
+        # Necessary for the lane lines to be in the proper proportions
+        self._dashed_lines_np.setShaderInput(
+            "resolution", (buffer.size.x, buffer.size.y)
+        )
 
         # setup texture
         tex = Texture()
