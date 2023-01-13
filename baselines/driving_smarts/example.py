@@ -1,6 +1,7 @@
 import gymnasium as gym
-from smarts.env.gymnasium.wrappers.metrics import CompetitionMetrics
+
 from smarts.env.gymnasium.wrappers.episode_limit import EpisodeLimit
+from smarts.env.gymnasium.wrappers.metrics import CompetitionMetrics
 
 env = gym.make(
     "smarts.env:driving-smarts-competition-v0",

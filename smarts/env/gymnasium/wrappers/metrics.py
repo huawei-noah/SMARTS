@@ -84,20 +84,18 @@ class _Metrics(gym.Wrapper):
         """Steps the environment by one step."""
         result = super().step(action)
 
-        terminated, truncated, dones = False, False, None
-        if len(result) == 5:
-            obs, _, terminated, truncated, info = result
-        else:
-            obs, _, dones, info = result
+        terminated, truncated = False, False
+        obs, _, terminated, truncated, info = result
 
         # Only count steps in which an ego agent is present.
         if len(obs) == 0:
             return result
 
         done = False
-        if terminated or truncated or isinstance(dones, dict) and dones["__all__"]:
+        if terminated or truncated:
             done = True
 
+        obs = {agent_id: o for agent_id, o in obs.items() if o["active"]}
         # fmt: off
         for agent_name, agent_obs in obs.items():
             self._steps[agent_name] += 1

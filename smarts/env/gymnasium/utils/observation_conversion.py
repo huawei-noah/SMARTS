@@ -942,9 +942,22 @@ class SignalsSpaceFormat(ConfigurableSpaceFormat):
         )
 
 
+class EnabledSpaceFormat(_Discrete2Space, BaseSpaceFormat):
+    def format(self, obs: Observation):
+        return np.int64(True)
+
+    def active(self, agent_interface: AgentInterface) -> bool:
+        return True
+
+    @property
+    def name(self):
+        return "active"
+
+
 class ObservationSpaceFormat(DictSpaceFormat):
     def __init__(self, agent_interface) -> None:
         spaces = [
+            EnabledSpaceFormat(),
             EgoVehicleStateSpaceFormat(agent_interface),
             EventsSpaceFormat(agent_interface),
             DrivableAreaGridMapSpaceFormat(agent_interface),
@@ -977,10 +990,21 @@ class ObservationsSpaceFormat:
 
     def format(self, observations: Dict[str, Observation]):
         # TODO MTA: Parallelize the conversion if possible
-        return {
+        base_spaces = {
             agent_id: self.space_formats[agent_id].format(obs)
             for agent_id, obs in observations.items()
         }
+        missing_ids = set(self.space_formats.keys()) - set(base_spaces.keys())
+        spaces = base_spaces
+        inactive_obs = {
+            agent_id: space_format.space.sample()
+            for agent_id, space_format in self.space_formats.items()
+            if agent_id in missing_ids
+        }
+        for obs in inactive_obs.values():
+            obs["active"] = np.int64(False)
+        spaces.update(inactive_obs)
+        return spaces
 
     @property
     def space(self):

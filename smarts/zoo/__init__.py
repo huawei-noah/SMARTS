@@ -17,3 +17,32 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import math
+import random
+
+from smarts.core.agent import Agent
+from smarts.core.agent_interface import ActionSpaceType, AgentInterface
+
+from .agent_spec import AgentSpec
+from .registry import register
+
+
+class TestAgent(Agent):
+    def act(self, obs, **configs):
+        return [
+            random.random() - 0.5,
+            random.random() - 0.5,
+            random.random() * 2 * math.pi - math.pi,
+        ]
+
+
+def entry_point(speed=10, **kwargs):
+    return AgentSpec(
+        AgentInterface(
+            action=ActionSpaceType.RelativeTargetPose,
+        ),
+        agent_builder=TestAgent,
+    )
+
+
+register("competition-baseline-v0", entry_point)
