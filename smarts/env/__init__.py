@@ -35,14 +35,5 @@ register(
     entry_point="smarts.env.multi_scenario_env:multi_scenario_v0_env",
 )
 
-from gymnasium.envs.registration import register as gymnasium_register
-
-gymnasium_register(
-    id="hiway-v1",
-    entry_point="smarts.env.gymnasium.hiway_env_v1:HiWayEnvV1",
-)
-
-gymnasium_register(
-    id="driving-smarts-competition-v0",
-    entry_point="smarts.env.gymnasium.driving_smarts_competition_env:driving_smarts_competition_v0_env",
-)
+# Do NOT remove.
+import smarts.env.gymnasium

@@ -63,19 +63,19 @@ class _Vec3SignedFloat64Space:
 class _SignedFloat32Space:
     @property
     def space(self):
-        return gym.spaces.Box(low=-1e10, high=1e10, dtype=np.float32)
+        return gym.spaces.Box(low=-1e10, high=1e10, shape=(), dtype=np.float32)
 
 
 class _UnsignedFloat32Space:
     @property
     def space(self):
-        return gym.spaces.Box(low=0, high=1e10, dtype=np.float32)
+        return gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32)
 
 
 class _SignedRadiansFloat32Space:
     @property
     def space(self):
-        return gym.spaces.Box(low=-math.pi, high=math.pi, dtype=np.float32)
+        return gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32)
 
 
 class _UnsignedRadiansFloat32Space:
