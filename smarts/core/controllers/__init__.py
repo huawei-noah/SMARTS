@@ -228,16 +228,17 @@ class Controllers:
             ActionSpaceType.MultiTargetPose,
             ActionSpaceType.RelativeTargetPose,
         ):
+            motion_action = action
             if action_space is ActionSpaceType.RelativeTargetPose:
                 position, heading = vehicle.pose.position, vehicle.pose.heading
-                action = [
-                    action[0] - position[0],
-                    action[1] - position[1],
-                    action[2] - heading,
+                motion_action = [
+                    action[0] + position[0],
+                    action[1] + position[1],
+                    action[2],
                     0.1,
                 ]
             MotionPlannerController.perform_action(
-                controller_state, sim.last_dt, vehicle, action
+                controller_state, sim.last_dt, vehicle, motion_action
             )
         elif action_space == ActionSpaceType.TrajectoryWithTime:
             TrajectoryInterpolationController.perform_action(
