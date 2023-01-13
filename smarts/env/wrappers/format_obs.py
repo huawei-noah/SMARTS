@@ -22,7 +22,6 @@ import math
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import gym
-import gymnasium
 import numpy as np
 
 from smarts.core.events import Events
@@ -200,213 +199,213 @@ StdObs = dict({
 """
 
 
-def gen_format_obs(gym):
-    class _FormatObs(gym.ObservationWrapper):
-        """Converts SMARTS observations to gym-compliant vectorized observations
-        and returns `StdObs`. The observation set returned depends on the features
-        enabled via AgentInterface.
+class FormatObs(gym.ObservationWrapper):
+    """Converts SMARTS observations to gym-compliant vectorized observations
+    and returns `StdObs`. The observation set returned depends on the features
+    enabled via AgentInterface.
 
-        Note:
-            FormatObs wrapper requires all agents must have the same AgentInterface
-            attributes.
+    Note:
+        FormatObs wrapper requires all agents must have the same AgentInterface
+        attributes.
+    """
+
+    def __init__(self, env: gym.Env):
         """
-
-        def __init__(self, env: gym.Env):
-            """
-            Args:
-                env (E): SMARTS environment to be wrapped.
-
-            Raises:
-                AssertionError: If all agents do not have the same AgentInterface.
-            """
-            super().__init__(env)
-
-            agent_id = next(iter(self.agent_ids))
-            intrfcs = {}
-            for intrfc in {
-                "accelerometer",
-                "drivable_area_grid_map",
-                "lidar_point_cloud",
-                "neighborhood_vehicle_states",
-                "occupancy_grid_map",
-                "top_down_rgb",
-                "waypoint_paths",
-                "signals",
-            }:
-                val = getattr(self.agent_interfaces[agent_id], intrfc)
-                if val:
-                    self._cmp_intrfc(intrfc, val)
-                    intrfcs.update({intrfc: val})
-
-            self._space = _make_space(intrfcs)
-            self.observation_space = gym.spaces.Dict(
-                {agent_id: gym.spaces.Dict(self._space) for agent_id in self.agent_ids}
-            )
-
-            self._stdob_to_ob = {
-                "drivable_area_grid_map": "drivable_area_grid_map",
-                "distance_travelled": "distance_travelled",
-                "ego_vehicle_state": "ego_vehicle_state",
-                "events": "events",
-                "lidar_point_cloud": "lidar_point_cloud",
-                "mission": "ego_vehicle_state",
-                "neighborhood_vehicle_states": "neighborhood_vehicle_states",
-                "occupancy_grid_map": "occupancy_grid_map",
-                "top_down_rgb": "top_down_rgb",
-                "waypoint_paths": "waypoint_paths",
-                "signals": "signals",
-            }
-            self._accelerometer = "accelerometer" in intrfcs.keys()
-
-        def _cmp_intrfc(self, intrfc: str, val: Any):
-            assert all(
-                getattr(self.agent_interfaces[agent_id], intrfc) == val
-                for agent_id in self.agent_ids
-            ), f"""To use FormatObs wrapper, all agents must have the same
-            AgentInterface.{intrfc} attribute."""
-
-        def observation(self, obs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
-            """Converts SMARTS observations to gym-compliant vectorized
-            observations.
-
-            Note: Users should not directly call this method.
-            """
-            wrapped_obs = {}
-            for agent_id, agent_obs in obs.items():
-                wrapped_ob = {}
-                for stdob in self._space.keys():
-                    func = globals()[f"_std_{stdob}"]
-                    if stdob == "ego_vehicle_state":
-                        val = func(
-                            getattr(agent_obs, self._stdob_to_ob[stdob]),
-                            self._accelerometer,
-                        )
-                    else:
-                        val = func(getattr(agent_obs, self._stdob_to_ob[stdob]))
-                    wrapped_ob.update({stdob: val})
-                wrapped_obs.update({agent_id: wrapped_ob})
-
-            return wrapped_obs
-
-    def intrfc_to_stdobs(intrfc: str) -> Optional[str]:
-        """Returns formatted observation name corresponding to the
-        AgentInterface attribute name.
-
         Args:
-            intrfc (str): AgentInterface attribute name.
+            env (E): SMARTS environment to be wrapped.
 
-        Returns:
-            Optional[str]: Corresponding formatted observation name. None, if
-            unavailable.
+        Raises:
+            AssertionError: If all agents do not have the same AgentInterface.
         """
-        return {
+        super().__init__(env)
+
+        agent_id = next(iter(self.agent_ids))
+        intrfcs = {}
+        for intrfc in {
+            "accelerometer",
+            "drivable_area_grid_map",
+            "lidar_point_cloud",
+            "neighborhood_vehicle_states",
+            "occupancy_grid_map",
+            "top_down_rgb",
+            "waypoint_paths",
+            "signals",
+        }:
+            val = getattr(self.agent_interfaces[agent_id], intrfc)
+            if val:
+                self._cmp_intrfc(intrfc, val)
+                intrfcs.update({intrfc: val})
+
+        self._space = _make_space(intrfcs)
+        self.observation_space = gym.spaces.Dict(
+            {agent_id: gym.spaces.Dict(self._space) for agent_id in self.agent_ids}
+        )
+
+        self._stdob_to_ob = {
             "drivable_area_grid_map": "drivable_area_grid_map",
+            "distance_travelled": "distance_travelled",
+            "ego_vehicle_state": "ego_vehicle_state",
+            "events": "events",
             "lidar_point_cloud": "lidar_point_cloud",
+            "mission": "ego_vehicle_state",
             "neighborhood_vehicle_states": "neighborhood_vehicle_states",
             "occupancy_grid_map": "occupancy_grid_map",
             "top_down_rgb": "top_down_rgb",
             "waypoint_paths": "waypoint_paths",
             "signals": "signals",
-        }.get(intrfc, None)
+        }
+        self._accelerometer = "accelerometer" in intrfcs.keys()
 
-    def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
-        """Returns the available gym spaces of a `StdObs`.
+    def _cmp_intrfc(self, intrfc: str, val: Any):
+        assert all(
+            getattr(self.agent_interfaces[agent_id], intrfc) == val
+            for agent_id in self.agent_ids
+        ), f"""To use FormatObs wrapper, all agents must have the same
+        AgentInterface.{intrfc} attribute."""
 
-        Returns:
-            Dict[str, Callable[[Any], S]]:
-                Available gym spaces of a `StdObs`.
+    def observation(self, observation: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+        """Converts SMARTS observations to gym-compliant vectorized
+        observations.
+
+        Note: Users should not directly call this method.
         """
-        # fmt: off
-        ego_basic = {
-            "angular_velocity": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
-            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
-            "lane_index": gym.spaces.Box(low=0, high=127, shape=(), dtype=np.int8),
-            "linear_velocity": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
-            "speed": gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
-            "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
-            "yaw_rate": gym.spaces.Box(low=0, high=2*math.pi, shape=(), dtype=np.float32),
+        wrapped_obs = {}
+        for agent_id, agent_obs in observation.items():
+            wrapped_ob = {}
+            for stdob in self._space.keys():
+                func = globals()[f"_std_{stdob}"]
+                if stdob == "ego_vehicle_state":
+                    val = func(
+                        getattr(agent_obs, self._stdob_to_ob[stdob]),
+                        self._accelerometer,
+                    )
+                else:
+                    val = func(getattr(agent_obs, self._stdob_to_ob[stdob]))
+                wrapped_ob.update({stdob: val})
+            wrapped_obs.update({agent_id: wrapped_ob})
+
+        return wrapped_obs
+
+
+def intrfc_to_stdobs(intrfc: str) -> Optional[str]:
+    """Returns formatted observation name corresponding to the
+    AgentInterface attribute name.
+
+    Args:
+        intrfc (str): AgentInterface attribute name.
+
+    Returns:
+        Optional[str]: Corresponding formatted observation name. None, if
+        unavailable.
+    """
+    return {
+        "drivable_area_grid_map": "drivable_area_grid_map",
+        "lidar_point_cloud": "lidar_point_cloud",
+        "neighborhood_vehicle_states": "neighborhood_vehicle_states",
+        "occupancy_grid_map": "occupancy_grid_map",
+        "top_down_rgb": "top_down_rgb",
+        "waypoint_paths": "waypoint_paths",
+        "signals": "signals",
+    }.get(intrfc, None)
+
+
+def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
+    """Returns the available gym spaces of a `StdObs`.
+
+    Returns:
+        Dict[str, Callable[[Any], S]]:
+            Available gym spaces of a `StdObs`.
+    """
+    # fmt: off
+    ego_basic = {
+        "angular_velocity": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+        "box": gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32),
+        "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
+        "lane_index": gym.spaces.Box(low=0, high=127, shape=(), dtype=np.int8),
+        "linear_velocity": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+        "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
+        "speed": gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
+        "steering": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32),
+        "yaw_rate": gym.spaces.Box(low=0, high=2*math.pi, shape=(), dtype=np.float32),
+    }
+    ego_opt = {
+        "angular_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+        "angular_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+        "linear_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+        "linear_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
+    }
+    spaces = {
+        "distance_travelled": lambda _: gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
+        "ego_vehicle_state": lambda val: gym.spaces.Dict(dict(ego_basic, **ego_opt)) if val else gym.spaces.Dict(ego_basic),
+        "events": lambda _: gym.spaces.Dict({
+            "agents_alive_done": gym.spaces.Discrete(n=2),
+            "collisions": gym.spaces.Discrete(n=2),
+            "not_moving": gym.spaces.Discrete(n=2),
+            "off_road": gym.spaces.Discrete(n=2),
+            "off_route": gym.spaces.Discrete(n=2),
+            "on_shoulder": gym.spaces.Discrete(n=2),
+            "reached_goal": gym.spaces.Discrete(n=2),
+            "reached_max_episode_steps": gym.spaces.Discrete(n=2),
+            "wrong_way": gym.spaces.Discrete(n=2),
+        }),
+        "drivable_area_grid_map": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
+        "lidar_point_cloud": lambda _: gym.spaces.Dict({
+            "hit": gym.spaces.MultiBinary(_LIDAR_SHP),
+            "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
+            "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
+            "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
+        }),
+        "mission": lambda _: gym.spaces.Dict({
+            "goal_pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
+        }),
+        "neighborhood_vehicle_states": lambda _: gym.spaces.Dict({
+            "box": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),
+            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
+            "lane_index": gym.spaces.Box(low=0, high=127, shape=(_NEIGHBOR_SHP,), dtype=np.int8),
+            "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float64),    
+            "speed": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
+        }),
+        "occupancy_grid_map": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
+        "top_down_rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
+        "waypoint_paths": lambda _: gym.spaces.Dict({
+            "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=_WAYPOINT_SHP, dtype=np.float32),
+            "lane_index": gym.spaces.Box(low=0, high=127, shape=_WAYPOINT_SHP, dtype=np.int8),
+            "lane_width": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
+            "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=_WAYPOINT_SHP + (3,), dtype=np.float64),
+            "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
+        }),
+        "signals": lambda _: gym.spaces.Dict({
+            "state": gym.spaces.Box(low=0, high=32, shape=_SIGNALS_SHP, dtype=np.int8),
+            "stop_point": gym.spaces.Box(low=-1e10, high=1e10, shape=_SIGNALS_SHP + (2,), dtype=np.float64),
+            "last_changed": gym.spaces.Box(low=0, high=1e10, shape=_SIGNALS_SHP, dtype=np.float32),
+        }),
+    }
+    # fmt: on
+
+    return spaces
+
+
+def _make_space(intrfcs: Dict[str, Any]) -> Dict[str, gym.Space]:
+    spaces = get_spaces()
+    space = {}
+
+    space.update(
+        {
+            "distance_travelled": spaces["distance_travelled"](None),
+            "ego_vehicle_state": spaces["ego_vehicle_state"](
+                "accelerometer" in intrfcs.keys()
+            ),
+            "events": spaces["events"](None),
+            "mission": spaces["mission"](None),
         }
-        ego_opt = {
-            "angular_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "angular_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "linear_acceleration": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-            "linear_jerk": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32),
-        }
-        spaces = {
-            "distance_travelled": lambda _: gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32),
-            "ego_vehicle_state": lambda val: gym.spaces.Dict(dict(ego_basic, **ego_opt)) if val else gym.spaces.Dict(ego_basic),
-            "events": lambda _: gym.spaces.Dict({
-                "agents_alive_done": gym.spaces.Discrete(n=2),
-                "collisions": gym.spaces.Discrete(n=2),
-                "not_moving": gym.spaces.Discrete(n=2),
-                "off_road": gym.spaces.Discrete(n=2),
-                "off_route": gym.spaces.Discrete(n=2),
-                "on_shoulder": gym.spaces.Discrete(n=2),
-                "reached_goal": gym.spaces.Discrete(n=2),
-                "reached_max_episode_steps": gym.spaces.Discrete(n=2),
-                "wrong_way": gym.spaces.Discrete(n=2),
-            }),
-            "drivable_area_grid_map": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 1), dtype=np.uint8),
-            "lidar_point_cloud": lambda _: gym.spaces.Dict({
-                "hit": gym.spaces.MultiBinary(_LIDAR_SHP),
-                "point_cloud": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
-                "ray_origin": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
-                "ray_vector": gym.spaces.Box(low=-1e10, high=1e10, shape=(_LIDAR_SHP,3), dtype=np.float64),
-            }),
-            "mission": lambda _: gym.spaces.Dict({
-                "goal_pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64),
-            }),
-            "neighborhood_vehicle_states": lambda _: gym.spaces.Dict({
-                "box": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float32),
-                "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
-                "lane_index": gym.spaces.Box(low=0, high=127, shape=(_NEIGHBOR_SHP,), dtype=np.int8),
-                "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float64),    
-                "speed": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
-            }),
-            "occupancy_grid_map": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
-            "top_down_rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
-            "waypoint_paths": lambda _: gym.spaces.Dict({
-                "heading": gym.spaces.Box(low=-math.pi, high=math.pi, shape=_WAYPOINT_SHP, dtype=np.float32),
-                "lane_index": gym.spaces.Box(low=0, high=127, shape=_WAYPOINT_SHP, dtype=np.int8),
-                "lane_width": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
-                "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=_WAYPOINT_SHP + (3,), dtype=np.float64),
-                "speed_limit": gym.spaces.Box(low=0, high=1e10, shape=_WAYPOINT_SHP, dtype=np.float32),
-            }),
-            "signals": lambda _: gym.spaces.Dict({
-                "state": gym.spaces.Box(low=0, high=32, shape=_SIGNALS_SHP, dtype=np.int8),
-                "stop_point": gym.spaces.Box(low=-1e10, high=1e10, shape=_SIGNALS_SHP + (2,), dtype=np.float64),
-                "last_changed": gym.spaces.Box(low=0, high=1e10, shape=_SIGNALS_SHP, dtype=np.float32),
-            }),
-        }
-        # fmt: on
+    )
 
-        return spaces
+    for intrfc, val in intrfcs.items():
+        opt_ob = intrfc_to_stdobs(intrfc)
+        if opt_ob:
+            space.update({opt_ob: spaces[opt_ob](val)})
 
-    def _make_space(intrfcs: Dict[str, Any]) -> Dict[str, gym.Space]:
-        spaces = get_spaces()
-        space = {}
-
-        space.update(
-            {
-                "distance_travelled": spaces["distance_travelled"](None),
-                "ego_vehicle_state": spaces["ego_vehicle_state"](
-                    "accelerometer" in intrfcs.keys()
-                ),
-                "events": spaces["events"](None),
-                "mission": spaces["mission"](None),
-            }
-        )
-
-        for intrfc, val in intrfcs.items():
-            opt_ob = intrfc_to_stdobs(intrfc)
-            if opt_ob:
-                space.update({opt_ob: spaces[opt_ob](val)})
-
-        return space
-
-    return _FormatObs
+    return space
 
 
 def _std_drivable_area_grid_map(
@@ -649,29 +648,3 @@ def _std_signals(
         "stop_point": stop_point,
         "last_changed": last_changed,
     }
-
-
-class FormatObs(gen_format_obs(gym)):
-    """Converts SMARTS observations to gym-compliant vectorized observations
-    and returns `StdObs`. The observation set returned depends on the features
-    enabled via AgentInterface.
-
-    Note:
-        (a) FormatObs wrapper requires all agents must have the same
-            AgentInterface attributes.
-        (b) Observation adapters should not be used inside the `step` and
-            `reset` methods of the base environment.
-    """
-
-
-class FormatObsGymnasium(gen_format_obs(gymnasium)):
-    """Converts SMARTS observations to gym-compliant vectorized observations
-    and returns `StdObs`. The observation set returned depends on the features
-    enabled via AgentInterface.
-
-    Note:
-        (a) FormatObs wrapper requires all agents must have the same
-            AgentInterface attributes.
-        (b) Observation adapters should not be used inside the `step` and
-            `reset` methods of the base environment.
-    """
