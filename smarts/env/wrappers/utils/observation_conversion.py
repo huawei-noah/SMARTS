@@ -1,17 +1,17 @@
 # MIT License
-# 
+#
 # Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
@@ -41,7 +41,7 @@ _WAYPOINT_CHAR_SET = frozenset(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=+.,;\"' "
 )
 
-
+## TODO MTA: use constants instead these classes
 class _Vec3SignedFloat32Space:
     @property
     def space(self):
@@ -96,7 +96,7 @@ class _Discrete2Space:
         return gym.spaces.Discrete(n=2)
 
 
-class BasicSpaceFormat:
+class BaseSpaceFormat:
     def format(self, obs: Observation):
         raise NotImplementedError()
 
@@ -112,7 +112,7 @@ class BasicSpaceFormat:
         raise NotImplementedError()
 
 
-class HeadingSpaceFormat(_SignedRadiansFloat32Space, BasicSpaceFormat):
+class HeadingSpaceFormat(_SignedRadiansFloat32Space, BaseSpaceFormat):
     @property
     def name(self):
         return "heading"
@@ -122,7 +122,7 @@ class HeadingSpaceFormat(_SignedRadiansFloat32Space, BasicSpaceFormat):
         return gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32)
 
 
-class SpeedSpaceFormat(_UnsignedFloat32Space, BasicSpaceFormat):
+class SpeedSpaceFormat(_UnsignedFloat32Space, BaseSpaceFormat):
     @property
     def name(self):
         return "speed"
@@ -132,7 +132,7 @@ class SpeedSpaceFormat(_UnsignedFloat32Space, BasicSpaceFormat):
         return gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32)
 
 
-class PositionSpaceFormat(_Vec3SignedFloat64Space, BasicSpaceFormat):
+class PositionSpaceFormat(_Vec3SignedFloat64Space, BaseSpaceFormat):
     @property
     def name(self):
         return "position"
@@ -142,19 +142,19 @@ class PositionSpaceFormat(_Vec3SignedFloat64Space, BasicSpaceFormat):
         return gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64)
 
 
-class VelocitySpaceFormat(_Vec3SignedFloat32Space, BasicSpaceFormat):
+class VelocitySpaceFormat(_Vec3SignedFloat32Space, BaseSpaceFormat):
     pass
 
 
-class AccelerationSpaceFormat(_Vec3SignedFloat32Space, BasicSpaceFormat):
+class AccelerationSpaceFormat(_Vec3SignedFloat32Space, BaseSpaceFormat):
     pass
 
 
-class JerkSpaceFormat(_Vec3SignedFloat32Space, BasicSpaceFormat):
+class JerkSpaceFormat(_Vec3SignedFloat32Space, BaseSpaceFormat):
     pass
 
 
-class ComplexSpaceFormat(BasicSpaceFormat):
+class ConfigurableSpaceFormat(BaseSpaceFormat):
     def __init__(self, agent_interface: AgentInterface) -> None:
         self._agent_interface = agent_interface
 
@@ -170,7 +170,7 @@ class ComplexSpaceFormat(BasicSpaceFormat):
         raise NotImplementedError()
 
 
-class Image8BSpaceFormat(ComplexSpaceFormat):
+class Image8BSpaceFormat(ConfigurableSpaceFormat):
     def __init__(
         self, agent_interface: AgentInterface, dimensions, colors: int
     ) -> None:
@@ -188,8 +188,8 @@ class Image8BSpaceFormat(ComplexSpaceFormat):
         )
 
 
-class DictSpaceFormat(ComplexSpaceFormat):
-    def __init__(self, agent_interface, spaces: List[BasicSpaceFormat]) -> None:
+class DictSpaceFormat(ConfigurableSpaceFormat):
+    def __init__(self, agent_interface, spaces: List[BaseSpaceFormat]) -> None:
         self._spaces = [space for space in spaces if space.active(agent_interface)]
         super().__init__(agent_interface)
 
@@ -208,7 +208,7 @@ class DictSpaceFormat(ComplexSpaceFormat):
         return gym.spaces.Dict({s.name: s.space for s in self._spaces})
 
 
-class EgoBoxSpace(_Vec3UnsignedFloat32Space, BasicSpaceFormat):
+class EgoBoxSpaceFormat(_Vec3UnsignedFloat32Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.array(obs.ego_vehicle_state.bounding_box.as_lwh).astype(np.float32)
 
@@ -220,7 +220,7 @@ class EgoBoxSpace(_Vec3UnsignedFloat32Space, BasicSpaceFormat):
         return "box"
 
 
-class EgoHeadingSpace(HeadingSpaceFormat):
+class EgoHeadingSpaceFormat(HeadingSpaceFormat):
     def format(self, obs: Observation):
         return np.float32(obs.ego_vehicle_state.heading)
 
@@ -228,7 +228,7 @@ class EgoHeadingSpace(HeadingSpaceFormat):
         return True
 
 
-class EgoLaneIndexSpace(_UnsignedInt8Space, BasicSpaceFormat):
+class EgoLaneIndexSpaceFormat(_UnsignedInt8Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int8(obs.ego_vehicle_state.lane_index)
 
@@ -240,7 +240,7 @@ class EgoLaneIndexSpace(_UnsignedInt8Space, BasicSpaceFormat):
         return "lane_index"
 
 
-class EgoLinearVelocitySpace(VelocitySpaceFormat):
+class EgoLinearVelocitySpaceFormat(VelocitySpaceFormat):
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.linear_velocity.astype(np.float32)
 
@@ -252,7 +252,7 @@ class EgoLinearVelocitySpace(VelocitySpaceFormat):
         return "linear_velocity"
 
 
-class EgoAngularVelocitySpace(VelocitySpaceFormat):
+class EgoAngularVelocitySpaceFormat(VelocitySpaceFormat):
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.angular_velocity.astype(np.float32)
 
@@ -264,7 +264,7 @@ class EgoAngularVelocitySpace(VelocitySpaceFormat):
         return "angular_velocity"
 
 
-class EgoPositionSpace(PositionSpaceFormat):
+class EgoPositionSpaceFormat(PositionSpaceFormat):
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.position.astype(np.float64)
 
@@ -272,7 +272,7 @@ class EgoPositionSpace(PositionSpaceFormat):
         return True
 
 
-class EgoSpeedSpace(SpeedSpaceFormat):
+class EgoSpeedSpaceFormat(SpeedSpaceFormat):
     def format(self, obs: Observation):
         return np.float32(obs.ego_vehicle_state.speed)
 
@@ -280,7 +280,7 @@ class EgoSpeedSpace(SpeedSpaceFormat):
         return True
 
 
-class EgoLaneIDSpace(BasicSpaceFormat):
+class EgoLaneIDSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.lane_id.ljust(
             _WAYPOINT_NAME_LIMIT, _TEXT_PAD_CHAR
@@ -298,7 +298,7 @@ class EgoLaneIDSpace(BasicSpaceFormat):
         return gym.spaces.Text(_WAYPOINT_NAME_LIMIT, charset=_WAYPOINT_CHAR_SET)
 
 
-class EgoSteeringSpace(_SignedRadiansFloat32Space, BasicSpaceFormat):
+class EgoSteeringSpaceFormat(_SignedRadiansFloat32Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.float32(obs.ego_vehicle_state.steering)
 
@@ -310,7 +310,7 @@ class EgoSteeringSpace(_SignedRadiansFloat32Space, BasicSpaceFormat):
         return "steering"
 
 
-class EgoYawRateSpace(_UnsignedRadiansFloat32Space, BasicSpaceFormat):
+class EgoYawRateSpaceFormat(_UnsignedRadiansFloat32Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.float32(obs.ego_vehicle_state.yaw_rate)
 
@@ -322,7 +322,7 @@ class EgoYawRateSpace(_UnsignedRadiansFloat32Space, BasicSpaceFormat):
         return "yaw_rate"
 
 
-class EgoAngularAccelerationSpace(AccelerationSpaceFormat):
+class EgoAngularAccelerationSpaceFormat(AccelerationSpaceFormat):
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.angular_acceleration.astype(np.float32)
 
@@ -334,7 +334,7 @@ class EgoAngularAccelerationSpace(AccelerationSpaceFormat):
         return "angular_acceleration"
 
 
-class EgoAngularJerkSpace(JerkSpaceFormat):
+class EgoAngularJerkSpaceFormat(JerkSpaceFormat):
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.angular_jerk.astype(np.float32)
 
@@ -346,7 +346,7 @@ class EgoAngularJerkSpace(JerkSpaceFormat):
         return "angular_jerk"
 
 
-class EgoLinearAccelerationSpace(AccelerationSpaceFormat):
+class EgoLinearAccelerationSpaceFormat(AccelerationSpaceFormat):
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.linear_acceleration.astype(np.float32)
 
@@ -358,7 +358,7 @@ class EgoLinearAccelerationSpace(AccelerationSpaceFormat):
         return "linear_acceleration"
 
 
-class EgoLinearJerkSpace(JerkSpaceFormat):
+class EgoLinearJerkSpaceFormat(JerkSpaceFormat):
     def format(self, obs: Observation):
         return np.float32(obs.ego_vehicle_state.yaw_rate)
 
@@ -370,7 +370,7 @@ class EgoLinearJerkSpace(JerkSpaceFormat):
         return "linear_jerk"
 
 
-class DistanceTravelledSpace(_UnsignedFloat32Space, BasicSpaceFormat):
+class DistanceTravelledSpace(_UnsignedFloat32Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.float32(obs.distance_travelled)
 
@@ -386,21 +386,21 @@ class EgoVehicleStateSpaceFormat(DictSpaceFormat):
     def __init__(self, agent_interface) -> None:
         spaces = [
             # required
-            EgoAngularVelocitySpace(),
-            EgoBoxSpace(),
-            EgoHeadingSpace(),
-            EgoLaneIDSpace(),
-            EgoLaneIndexSpace(),
-            EgoLinearVelocitySpace(),
-            EgoPositionSpace(),
-            EgoSpeedSpace(),
-            EgoSteeringSpace(),
-            EgoYawRateSpace(),
+            EgoAngularVelocitySpaceFormat(),
+            EgoBoxSpaceFormat(),
+            EgoHeadingSpaceFormat(),
+            EgoLaneIDSpaceFormat(),
+            EgoLaneIndexSpaceFormat(),
+            EgoLinearVelocitySpaceFormat(),
+            EgoPositionSpaceFormat(),
+            EgoSpeedSpaceFormat(),
+            EgoSteeringSpaceFormat(),
+            EgoYawRateSpaceFormat(),
             # optional
-            EgoAngularAccelerationSpace(),
-            EgoAngularJerkSpace(),
-            EgoLinearAccelerationSpace(),
-            EgoLinearJerkSpace(),
+            EgoAngularAccelerationSpaceFormat(),
+            EgoAngularJerkSpaceFormat(),
+            EgoLinearAccelerationSpaceFormat(),
+            EgoLinearJerkSpaceFormat(),
         ]
 
         super().__init__(agent_interface, spaces)
@@ -413,7 +413,7 @@ class EgoVehicleStateSpaceFormat(DictSpaceFormat):
         return "ego_vehicle_state"
 
 
-class EventsAgentsAliveDoneSpace(_Discrete2Space, BasicSpaceFormat):
+class EventsAgentsAliveDoneSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.agents_alive_done)
 
@@ -425,7 +425,7 @@ class EventsAgentsAliveDoneSpace(_Discrete2Space, BasicSpaceFormat):
         return "agents_alive_done"
 
 
-class EventsCollisionsSpace(_Discrete2Space, BasicSpaceFormat):
+class EventsCollisionsSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(len(obs.events.collisions) > 0)
 
@@ -437,7 +437,7 @@ class EventsCollisionsSpace(_Discrete2Space, BasicSpaceFormat):
         return "collisions"
 
 
-class EventsNotMovingSpace(_Discrete2Space, BasicSpaceFormat):
+class EventsNotMovingSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.not_moving)
 
@@ -449,7 +449,7 @@ class EventsNotMovingSpace(_Discrete2Space, BasicSpaceFormat):
         return "not_moving"
 
 
-class EventsOffRoadSpace(_Discrete2Space, BasicSpaceFormat):
+class EventsOffRoadSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.off_road)
 
@@ -461,7 +461,7 @@ class EventsOffRoadSpace(_Discrete2Space, BasicSpaceFormat):
         return "off_road"
 
 
-class EventsOffRouteSpace(_Discrete2Space, BasicSpaceFormat):
+class EventsOffRouteSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.off_route)
 
@@ -473,7 +473,7 @@ class EventsOffRouteSpace(_Discrete2Space, BasicSpaceFormat):
         return "off_route"
 
 
-class EventsOnShoulderSpace(_Discrete2Space, BasicSpaceFormat):
+class EventsOnShoulderSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.on_shoulder)
 
@@ -485,7 +485,7 @@ class EventsOnShoulderSpace(_Discrete2Space, BasicSpaceFormat):
         return "on_shoulder"
 
 
-class EventsReachedGoalSpace(_Discrete2Space, BasicSpaceFormat):
+class EventsReachedGoalSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.reached_goal)
 
@@ -497,7 +497,7 @@ class EventsReachedGoalSpace(_Discrete2Space, BasicSpaceFormat):
         return "reached_goal"
 
 
-class EventsReachedMaxEpisodeStepsSpace(_Discrete2Space, BasicSpaceFormat):
+class EventsReachedMaxEpisodeStepsSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.reached_max_episode_steps)
 
@@ -509,7 +509,7 @@ class EventsReachedMaxEpisodeStepsSpace(_Discrete2Space, BasicSpaceFormat):
         return "reached_max_episode_steps"
 
 
-class EventsWrongWaySpace(_Discrete2Space, BasicSpaceFormat):
+class EventsWrongWaySpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.wrong_way)
 
@@ -521,18 +521,18 @@ class EventsWrongWaySpace(_Discrete2Space, BasicSpaceFormat):
         return "wrong_way"
 
 
-class EventsSpace(DictSpaceFormat):
+class EventsSpaceFormat(DictSpaceFormat):
     def __init__(self, agent_interface) -> None:
         spaces = [
-            EventsAgentsAliveDoneSpace(),
-            EventsCollisionsSpace(),
-            EventsNotMovingSpace(),
-            EventsOffRoadSpace(),
-            EventsOffRouteSpace(),
-            EventsOnShoulderSpace(),
-            EventsReachedGoalSpace(),
-            EventsReachedMaxEpisodeStepsSpace(),
-            EventsWrongWaySpace(),
+            EventsAgentsAliveDoneSpaceFormat(),
+            EventsCollisionsSpaceFormat(),
+            EventsNotMovingSpaceFormat(),
+            EventsOffRoadSpaceFormat(),
+            EventsOffRouteSpaceFormat(),
+            EventsOnShoulderSpaceFormat(),
+            EventsReachedGoalSpaceFormat(),
+            EventsReachedMaxEpisodeStepsSpaceFormat(),
+            EventsWrongWaySpaceFormat(),
         ]
 
         super().__init__(agent_interface, spaces)
@@ -545,7 +545,7 @@ class EventsSpace(DictSpaceFormat):
         return "events"
 
 
-class DrivableAreaGridMapSpace(Image8BSpaceFormat):
+class DrivableAreaGridMapSpaceFormat(Image8BSpaceFormat):
     def __init__(self, agent_interface: AgentInterface) -> None:
         super().__init__(
             agent_interface, dimensions=agent_interface.drivable_area_grid_map, colors=1
@@ -562,7 +562,7 @@ class DrivableAreaGridMapSpace(Image8BSpaceFormat):
         return "drivable_area_grid_map"
 
 
-class LidarPointCloudSpace(ComplexSpaceFormat):
+class LidarPointCloudSpaceFormat(ConfigurableSpaceFormat):
     def format(self, obs: Observation):
         lidar_point_cloud = obs.lidar_point_cloud
         # # MTA TODO: add lidar configuration like following:
@@ -628,7 +628,7 @@ class LidarPointCloudSpace(ComplexSpaceFormat):
         )
 
 
-class MissionSpace(BasicSpaceFormat):
+class MissionSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         ego_vehicle_obs = obs.ego_vehicle_state
         if hasattr(ego_vehicle_obs.mission.goal, "position"):
@@ -656,7 +656,7 @@ class MissionSpace(BasicSpaceFormat):
         )
 
 
-class NeighborhoodVehicleStatesSpace(ComplexSpaceFormat):
+class NeighborhoodVehicleStatesSpaceFormat(ConfigurableSpaceFormat):
     def format(self, obs: Observation):
         neighborhood_vehicle_states = obs.neighborhood_vehicle_states
         ## TODO MTA: Add in the vehicle ids
@@ -739,7 +739,7 @@ class NeighborhoodVehicleStatesSpace(ComplexSpaceFormat):
         )
 
 
-class OccupancyGridMapSpace(Image8BSpaceFormat):
+class OccupancyGridMapSpaceFormat(Image8BSpaceFormat):
     def __init__(self, agent_interface: AgentInterface) -> None:
         super().__init__(
             agent_interface, dimensions=agent_interface.occupancy_grid_map, colors=1
@@ -756,7 +756,7 @@ class OccupancyGridMapSpace(Image8BSpaceFormat):
         return "occupancy_grid_map"
 
 
-class TopDownRGBSpace(Image8BSpaceFormat):
+class TopDownRGBSpaceFormat(Image8BSpaceFormat):
     def __init__(self, agent_interface: AgentInterface) -> None:
         super().__init__(
             agent_interface, dimensions=agent_interface.top_down_rgb, colors=3
@@ -773,7 +773,7 @@ class TopDownRGBSpace(Image8BSpaceFormat):
         return "top_down_rgb"
 
 
-class WaypointPathsSpace(BasicSpaceFormat):
+class WaypointPathsSpaceFormat(BaseSpaceFormat):
     @property
     def name(self):
         return "waypoint_paths"
@@ -846,6 +846,7 @@ class WaypointPathsSpace(BasicSpaceFormat):
     def space(self):
         return gym.spaces.Dict(
             {
+                # # TODO MTA: Add padded lane id
                 # "lane_id": gym.spaces.Tuple(
                 #     (
                 #         gym.spaces.Tuple(
@@ -881,7 +882,7 @@ class WaypointPathsSpace(BasicSpaceFormat):
         )
 
 
-class SignalsSpace(ComplexSpaceFormat):
+class SignalsSpaceFormat(ConfigurableSpaceFormat):
     def __init__(self, agent_interface, count) -> None:
         self.count = count
         super().__init__(agent_interface)
@@ -945,15 +946,15 @@ class ObservationSpaceFormat(DictSpaceFormat):
     def __init__(self, agent_interface) -> None:
         spaces = [
             EgoVehicleStateSpaceFormat(agent_interface),
-            EventsSpace(agent_interface),
-            DrivableAreaGridMapSpace(agent_interface),
-            LidarPointCloudSpace(agent_interface),
-            MissionSpace(),
-            NeighborhoodVehicleStatesSpace(agent_interface),
-            OccupancyGridMapSpace(agent_interface),
-            TopDownRGBSpace(agent_interface),
-            WaypointPathsSpace(),
-            SignalsSpace(agent_interface, 3),
+            EventsSpaceFormat(agent_interface),
+            DrivableAreaGridMapSpaceFormat(agent_interface),
+            LidarPointCloudSpaceFormat(agent_interface),
+            MissionSpaceFormat(),
+            NeighborhoodVehicleStatesSpaceFormat(agent_interface),
+            OccupancyGridMapSpaceFormat(agent_interface),
+            TopDownRGBSpaceFormat(agent_interface),
+            WaypointPathsSpaceFormat(),
+            SignalsSpaceFormat(agent_interface, 3),
         ]
 
         super().__init__(agent_interface, spaces)
