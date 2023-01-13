@@ -203,6 +203,7 @@ class HiWayEnvV1(gym.Env):
                 "score": value,
                 "env_obs": observations[agent_id],
                 "done": dones[agent_id],
+                "reward": rewards[agent_id]
             }
             for agent_id, value in extras["scores"].items()
         }
@@ -218,7 +219,7 @@ class HiWayEnvV1(gym.Env):
         assert all("score" in v for v in infos.values())
         return (
             self.observations_formatter.format(observations),
-            rewards,
+            sum(r for r in rewards.values()),
             dones["__all__"],
             dones["__all__"],
             infos,
