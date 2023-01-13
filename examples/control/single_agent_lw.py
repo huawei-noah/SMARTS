@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from typing import Any, Dict, Union
 
 import gym
 
@@ -9,28 +10,14 @@ from tools.argument_parser import default_argument_parser
 from smarts import sstudio
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.sensors import Observation
 from smarts.core.utils.episodes import episodes
 from smarts.env.hiway_env_v1 import HiWayEnvV1
 from smarts.zoo.agent_spec import AgentSpec
 
 
 class ChaseViaPointsAgent(Agent):
-    def act(self, obs: Observation):
-        if (
-            len(obs.via_data.near_via_points) < 1
-            or obs.ego_vehicle_state.road_id != obs.via_data.near_via_points[0].road_id
-        ):
-            return (obs.waypoint_paths[0][0].speed_limit, 0)
-
-        nearest = obs.via_data.near_via_points[0]
-        if nearest.lane_index == obs.ego_vehicle_state.lane_index:
-            return (nearest.required_speed, 0)
-
-        return (
-            nearest.required_speed,
-            1 if nearest.lane_index > obs.ego_vehicle_state.lane_index else -1,
-        )
+    def act(self, obs: Dict[Any, Union[Any, Dict]]):
+        return (obs["waypoint_paths"]["speed_limit"][0][0], 0)
 
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
