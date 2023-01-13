@@ -1,5 +1,6 @@
 import gymnasium as gym
-from smarts.env.wrappers.metrics import CompetitionMetrics, CompetitionMetrics
+from smarts.env.gymnasium.wrappers.metrics import CompetitionMetrics
+from smarts.env.gymnasium.wrappers.episode_limit import EpisodeLimit
 
 env = gym.make(
     "smarts.env:driving-smarts-competition-v0",
@@ -7,9 +8,10 @@ env = gym.make(
     sumo_headless=False,
 )
 env = CompetitionMetrics(env)
+env = EpisodeLimit(env, 5)
 
 observation, info = env.reset(seed=42)
-for _ in range(30):
+while not info.get("reached_episode_limit"):
     # Generally [x-coordinate, y-coordinate, heading]
     action = env.action_space.sample()
     observation, reward, terminated, truncated, info = env.step(action)
@@ -18,5 +20,5 @@ for _ in range(30):
     if terminated or truncated:
         observation, info = env.reset()
 
-print(env.score())
+print("\n".join(f"- {k}: {v}" for k, v in env.score().items()))
 env.close()

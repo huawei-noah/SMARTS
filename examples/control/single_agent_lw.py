@@ -2,8 +2,6 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Union
 
-import gym
-
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from tools.argument_parser import default_argument_parser
 
@@ -11,11 +9,10 @@ from smarts import sstudio
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
-from smarts.env.hiway_env_v1 import HiWayEnvV1
-from smarts.zoo.agent_spec import AgentSpec
+from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
 
 
-class ChaseViaPointsAgent(Agent):
+class LaneFollowAgent(Agent):
     def act(self, obs: Dict[Any, Union[Any, Dict]]):
         return (obs["waypoint_paths"]["speed_limit"][0][0], 0)
 
@@ -32,7 +29,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     )
 
     for episode in episodes(n=num_episodes):
-        agent = ChaseViaPointsAgent()
+        agent = LaneFollowAgent()
         observation, info = env.reset()
         episode.record_scenario(env.scenario_log)
 
