@@ -385,6 +385,7 @@ def _humanness(costs: Costs, agents_tot: int) -> float:
     humanness_to_minimize = np.mean(humanness_to_minimize, dtype=float) / agents_tot
     return 1 - humanness_to_minimize
 
+
 def _rules(costs: Costs, agents_tot: int) -> float:
     """
     Traffic rules compliance.
@@ -400,6 +401,7 @@ def _rules(costs: Costs, agents_tot: int) -> float:
     rules_to_minimize = np.array([costs.speed_limit, costs.wrong_way])
     rules_to_minimize = np.mean(rules_to_minimize, dtype=float) / agents_tot
     return 1 - rules_to_minimize
+
 
 def _time(counts: Counts) -> float:
     """
