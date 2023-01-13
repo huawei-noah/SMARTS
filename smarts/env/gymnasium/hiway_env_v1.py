@@ -203,7 +203,7 @@ class HiWayEnvV1(gym.Env):
                 "score": value,
                 "env_obs": observations[agent_id],
                 "done": dones[agent_id],
-                "reward": rewards[agent_id]
+                "reward": rewards[agent_id],
             }
             for agent_id, value in extras["scores"].items()
         }
