@@ -1,4 +1,6 @@
-# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,32 +19,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import importlib.resources as pkg_resources
-import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import yaml
+from smarts.core.utils.resources import load_yaml_config as _load_config
 
-from .. import models
+DEFAULT_CONFIG = str((Path(__file__).parent / "default_config.yaml").absolute())
 
+def load_config(path: Path) -> Optional[Dict[str, Any]]:
+    """Load in a benchmark config."""
+    return _load_config(path)
 
-def load_controller_params(controller_filepath: str):
-    """Load a controller parameters file."""
-    if (controller_filepath is None) or not os.path.exists(controller_filepath):
-        with pkg_resources.path(
-            models, "controller_parameters.yaml"
-        ) as controller_path:
-            controller_filepath = str(controller_path.absolute())
-    with open(controller_filepath, "r", encoding="utf-8") as controller_file:
-        return yaml.safe_load(controller_file)
-
-
-def load_yaml_config(path: Path) -> Optional[Dict[str, Any]]:
-    """Read in a yaml configuration to dictionary format."""
-    config = None
-    if path.exists():
-        assert path.suffix in (".yaml", ".yml"), f"`{str(path)}` is not a YAML file."
-        with open(path, "r", encoding="utf-8") as file:
-            config = yaml.safe_load(file)
-    return config
