@@ -63,8 +63,8 @@ class MetricsError(Exception):
 
 
 class Metrics(gym.Wrapper):
-    """Metrics class wraps an underlying _Metrics class. The underlying
-    _Metrics class computes agents' performance metrics in a SMARTS
+    """Metrics class wraps an underlying MetricsBase class. The underlying
+    MetricsBase class computes agents' performance metrics in a SMARTS
     environment. Whereas, this Metrics class is a basic gym.Wrapper class
     which prevents external users from accessing or modifying attributes
     beginning with an underscore, to ensure security of the metrics computed.
@@ -80,11 +80,11 @@ class Metrics(gym.Wrapper):
     """
 
     def __init__(self, env: gym.Env):
-        env = _Metrics(env)
+        env = MetricsBase(env)
         super().__init__(env)
 
 
-class _Metrics(gym.Wrapper):
+class MetricsBase(gym.Wrapper):
     """Computes agents' performance metrics in a SMARTS environment."""
 
     def __init__(self, env: gym.Env):
@@ -129,7 +129,9 @@ class _Metrics(gym.Wrapper):
                     or agent_obs.events.reached_max_episode_steps
                 ):
                     raise MetricsError(
-                        f"Unsupported agent done reason. Events: {agent_obs.events}."
+                        "Expected reached_goal, collisions, off_road, or " 
+                        "max_episode_steps to be true on agent done, but got "
+                        f"events: {agent_obs.events}."
                     )
 
                 # Update stored counts.
@@ -210,22 +212,22 @@ class _Metrics(gym.Wrapper):
         """
         Fine grained performance metric for each agent in each scenario.
 
+        .. code-block:: bash
+
+            $ env.records()
+            $ {
+                  scen1: {
+                      agent1: Record(completion, costs, counts),
+                      agent2: Record(completion, costs, counts),
+                  },
+                  scen2: {
+                      agent1: Record(completion, costs, counts),
+                  },
+              }
+
         Returns:
             Dict[str, Dict[str, Record]]: Performance record in a nested
-                dictionary for each agent in each scenario.
-
-        Example::
-
-        >> records()
-        >> {
-                scen1: {
-                    agent1: Record(completion, costs, counts),
-                    agent2: Record(completion, costs, counts),
-                },
-                scen2: {
-                    agent1: Record(completion, costs, counts),
-                },
-            }
+            dictionary for each agent in each scenario.
         """
 
         records = {}
@@ -238,8 +240,29 @@ class _Metrics(gym.Wrapper):
 
     def score(self) -> Dict[str, float]:
         """
-        An overall performance score achieved on the wrapped environment.
+        Computes four sub-component scores, namely, "Completion", "Time",
+        "Humanness", "Rules", and one total combined score named "Overall"
+        on the wrapped environment.
+
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        |             | Range  | Remarks                                                                                             |
+        +=============+========+=====================================================================================================+
+        | Overall     | [0, 1] | Total score which combines "Completion", "Time", "Humanness", and "Rules". The higher, the better.  |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        | Completion  | [0, 1] | Proportion of scenarios tasks completed. The higher, the better.                                    |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        | Time        | [0, 1] | Time taken to complete scenario. The lower, the better.                                             |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        | Humanness   | [0, 1] | Humanness indicator. The higher, the better.                                                        |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        | Rules       | [0, 1] | Traffic rules compliance. The higher, the better.                                                   |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+
+        Returns:
+            Dict[str, float]: Contains "Overall", "Completion", "Time",
+            "Humanness", and "Rules" scores.
         """
+
         # fmt: off
         counts_list, costs_list, completion_list = zip(
             *[
@@ -258,7 +281,7 @@ class _Metrics(gym.Wrapper):
         _score["humanness"] = _humanness(costs=costs_tot, agents_tot=agents_tot)
         _score["rules"] = _rules(costs=costs_tot, agents_tot=agents_tot)
         _score["time"] = _time(counts=counts_tot)
-        _score["overall"] = _score["completion"]*(1-_score["time"])*(1-_score["humanness"])*(1-_score["rules"])
+        _score["overall"] = _score["completion"]*(1-_score["time"])*(_score["humanness"])*(_score["rules"])
         # fmt: on
 
         return _score
@@ -354,13 +377,13 @@ def _humanness(costs: Costs, agents_tot: int) -> float:
 
     Returns:
         float: Normalised humanness value = [0, 1]. Humanness value should be
-            minimised. The lower the value, the better it is.
+            maximized. The higher the value, the better it is.
     """
-    humanness = np.array(
+    humanness_to_minimize = np.array(
         [costs.dist_to_obstacles, costs.jerk_linear, costs.lane_center_offset]
     )
-    return np.mean(humanness, dtype=float) / agents_tot
-
+    humanness_to_minimize = np.mean(humanness_to_minimize, dtype=float) / agents_tot
+    return 1 - humanness_to_minimize
 
 def _rules(costs: Costs, agents_tot: int) -> float:
     """
@@ -371,12 +394,12 @@ def _rules(costs: Costs, agents_tot: int) -> float:
         agents_tot (int): Number of agents simulated.
 
     Returns:
-        float: Normalised rules value = [0, 1]. Rules value should be minimised.
-            The lower the value, the better it is.
+        float: Normalised rules value = [0, 1]. Rules value should be maximized.
+            The higher the value, the better it is.
     """
-    rules = np.array([costs.speed_limit, costs.wrong_way])
-    return np.mean(rules, dtype=float) / agents_tot
-
+    rules_to_minimize = np.array([costs.speed_limit, costs.wrong_way])
+    rules_to_minimize = np.mean(rules_to_minimize, dtype=float) / agents_tot
+    return 1 - rules_to_minimize
 
 def _time(counts: Counts) -> float:
     """

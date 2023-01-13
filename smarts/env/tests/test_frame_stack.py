@@ -53,8 +53,6 @@ def env(agent_specs):
         scenarios=["scenarios/sumo/figure_eight"],
         agent_specs=agent_specs,
         headless=True,
-        visdom=False,
-        fixed_timestep_sec=0.01,
     )
 
     yield env
