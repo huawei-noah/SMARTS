@@ -31,19 +31,11 @@ from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
 from smarts import sstudio
 from smarts.core.agent_interface import (
-    OGM,
-    RGB,
     AgentInterface,
-    DoneCriteria,
-    DrivableAreaGridMap,
-    RoadWaypoints,
-    Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
 from smarts.env.multi_scenario_env import resolve_agent_interface
-from smarts.env.wrappers.format_obs import FormatObsGymnasium
-from smarts.env.gymnasium.wrappers.metrics import CompetitionMetrics
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
