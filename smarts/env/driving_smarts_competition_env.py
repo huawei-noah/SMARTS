@@ -43,7 +43,7 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.env.hiway_env_v1 import HiWayEnvV1, SumoOptions
 from smarts.env.multi_scenario_env import resolve_agent_interface
 from smarts.env.wrappers.format_obs import FormatObsGymnasium
-from smarts.env.wrappers.metrics import Metrics
+from smarts.env.wrappers.metrics import CompetitionMetrics
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
@@ -144,15 +144,14 @@ def driving_smarts_competition_v0_env(
         for i in range(env_specs["num_agent"])
     }
     action_space = resolve_env_action_space(agent_interfaces)
-    observation_space = resolve_env_observation_space(agent_interfaces)
 
     visualization_client_builder = None
     if not headless:
         visualization_client_builder = partial(
             Envision,
             endpoint=None,
-            output_dir=None,
-            headless=False,
+            output_dir=envision_record_data_replay_path,
+            headless=headless,
             data_formatter_args=EnvisionDataFormatterArgs(
                 "base", enable_reduction=False
             ),
@@ -168,11 +167,6 @@ def driving_smarts_competition_v0_env(
         visualization_client_builder=visualization_client_builder,
     )
     env.action_space = action_space
-    env.observation_space = observation_space
-
-    ## TODO: Remove metrics from here
-    env = Metrics(env)
-    env = FormatObsGymnasium(env)
     return env
 
 
@@ -295,8 +289,8 @@ def resolve_agent_action_space(agent_interface: AgentInterface):
         )
     if agent_interface.action == ActionSpaceType.TargetPose:
         return gym.spaces.Box(
-            low=np.array([-1e10, -1e10, -np.pi]),
-            high=np.array([1e10, 1e10, np.pi]),
+            low=np.array([-1e10, -1e10, -np.pi, 0.1]),
+            high=np.array([1e10, 1e10, np.pi, 0.1]),
             dtype=np.float32,
         )
 
@@ -309,19 +303,6 @@ def resolve_env_action_space(agent_interfaces: typing.Dict[str, AgentInterface])
     return gym.spaces.Dict(
         {
             a_id: resolve_agent_action_space(a_inter)
-            for a_id, a_inter in agent_interfaces.items()
-        }
-    )
-
-
-def resolve_agent_observation_space(agent_interfae: AgentInterface):
-    return gym.spaces.Dict()
-
-
-def resolve_env_observation_space(agent_interfaces: typing.Dict[str, AgentInterface]):
-    return gym.spaces.Dict(
-        {
-            a_id: resolve_agent_observation_space(a_inter)
             for a_id, a_inter in agent_interfaces.items()
         }
     )

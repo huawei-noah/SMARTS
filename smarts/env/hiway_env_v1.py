@@ -40,6 +40,7 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
+from smarts.env.wrappers.utils.observation_conversion import ObservationsSpaceFormat
 
 DEFAULT_TIMESTEP = 0.1
 
@@ -142,6 +143,8 @@ class HiWayEnvV1(gym.Env):
         # TODO: set action space
 
         # TODO: set observation space
+        self.observations_formatter = ObservationsSpaceFormat(agent_interfaces)
+        self.observation_space = self.observations_formatter.space
 
         from smarts.core.smarts import SMARTS
 
@@ -211,7 +214,13 @@ class HiWayEnvV1(gym.Env):
         dones["__all__"] = self._dones_registered >= len(self._agent_interfaces)
 
         assert all("score" in v for v in infos.values())
-        return observations, rewards, dones["__all__"], dones["__all__"], infos
+        return (
+            self.observations_formatter.format(observations),
+            rewards,
+            dones["__all__"],
+            dones["__all__"],
+            infos,
+        )
 
     def reset(
         self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
@@ -254,7 +263,7 @@ class HiWayEnvV1(gym.Env):
 
         if seed is not None:
             smarts_seed(seed)
-        return observations, info
+        return self.observations_formatter.format(observations), info
 
     def render(
         self,
