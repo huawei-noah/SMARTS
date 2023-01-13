@@ -23,8 +23,7 @@ import functools
 from dataclasses import dataclass, fields
 from typing import Any, Dict, Set, TypeVar
 
-import gym
-import gymnasium
+import gymnasium as gym
 import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
@@ -63,140 +62,79 @@ class MetricsError(Exception):
     pass
 
 
-def _make_metrics(module):
-    """Generate the metrics wrapper type."""
+class _Metrics(gym.Wrapper):
+    """Computes agents' performance metrics in a SMARTS environment."""
 
-    class _Metrics(module.Wrapper):
-        """Computes agents' performance metrics in a SMARTS environment."""
+    def __init__(self, env: gym.Env):
+        super().__init__(env)
+        _check_env(env)
+        self._scen: Scenario
+        self._scen_name: str
+        self._road_map: RoadMap
+        self._cur_agents: Set[str]
+        self._steps: Dict[str, int]
+        self._done_agents: Set[str]
+        self._records = {}
 
-        def __init__(self, env: module.Env):
-            super().__init__(env)
-            _check_env(env)
-            self._scen: Scenario
-            self._scen_name: str
-            self._road_map: RoadMap
-            self._cur_agents: Set[str]
-            self._steps: Dict[str, int]
-            self._done_agents: Set[str]
-            self._records = {}
+    def step(self, action: Dict[str, Any]):
+        """Steps the environment by one step."""
+        result = super().step(action)
 
-        def step(self, action: Dict[str, Any]):
-            """Steps the environment by one step."""
-            result = super().step(action)
+        terminated, truncated, dones = False, False, None
+        if len(result) == 5:
+            obs, _, terminated, truncated, info = result
+        else:
+            obs, _, dones, info = result
 
-            terminated, truncated, dones = False, False, None
-            if len(result) == 5:
-                obs, _, terminated, truncated, info = result
-            else:
-                obs, _, dones, info = result
-
-            # Only count steps in which an ego agent is present.
-            if len(obs) == 0:
-                return result
-
-            done = False
-            if terminated or truncated or isinstance(dones, dict) and dones["__all__"]:
-                done = True
-
-            # fmt: off
-            for agent_name, agent_obs in obs.items():
-                self._steps[agent_name] += 1
-
-                # Compute all cost functions.
-                costs = Costs()
-                for field in fields(self._records[self._scen_name][agent_name].cost_funcs):
-                    cost_func = getattr(self._records[self._scen_name][agent_name].cost_funcs, field.name)
-                    new_costs = cost_func(road_map=self._road_map, obs=agent_obs)
-                    costs = _add_dataclass(new_costs, costs)
-
-                # Update stored costs.
-                self._records[self._scen_name][agent_name].record.costs = costs
-
-                if info[agent_name]["done"]:
-                    self._done_agents.add(agent_name)
-                    if not (
-                        agent_obs.events.reached_goal
-                        or len(agent_obs.events.collisions) > 0
-                        or agent_obs.events.off_road
-                        or agent_obs.events.reached_max_episode_steps
-                    ):
-                        raise MetricsError(
-                            f"Unsupported agent done reason. Events: {agent_obs.events}."
-                        )
-
-                    # Update stored counts.
-                    counts = Counts(
-                        episodes=1,
-                        steps=self._steps[agent_name],
-                        steps_adjusted=min(
-                            self._steps[agent_name],
-                            self.env.agent_interfaces[agent_name].max_episode_steps
-                        ),
-                        goals=agent_obs.events.reached_goal,
-                        max_steps=self.env.agent_interfaces[agent_name].max_episode_steps
-                    )
-                    self._records[self._scen_name][agent_name].record.counts = _add_dataclass(
-                        counts,
-                        self._records[self._scen_name][agent_name].record.counts
-                    )
-
-                    # Update percentage of scenario tasks completed.
-                    completion = Completion(dist_tot=self._records[self._scen_name][agent_name].record.completion.dist_tot)
-                    for field in fields(self._records[self._scen_name][agent_name].completion_funcs):
-                        completion_func = getattr(
-                            self._records[self._scen_name][agent_name].completion_funcs,
-                            field.name,
-                        )
-                        new_completion = completion_func(
-                            road_map=self._road_map,
-                            obs=agent_obs,
-                            initial_compl=completion,
-                        )
-                        completion = _add_dataclass(new_completion, completion)
-                    self._records[self._scen_name][agent_name].record.completion = completion
-
-            # fmt: on
-            if done:
-                assert (
-                    self._done_agents == self._cur_agents
-                ), f'done["__all__"]==True but not all agents are done. Current agents = {self._cur_agents}. Agents done = {self._done_agents}.'
-
+        # Only count steps in which an ego agent is present.
+        if len(obs) == 0:
             return result
 
-        def reset(self, **kwargs):
-            """Resets the environment."""
-            result = super().reset(**kwargs)
-            self._cur_agents = set(self.env.agent_ids)
-            self._steps = dict.fromkeys(self._cur_agents, 0)
-            self._done_agents = set()
-            self._scen = self.env.scenario
-            self._scen_name = self.env.scenario.name
-            self._road_map = self.env.scenario.road_map
+        done = False
+        if terminated or truncated or isinstance(dones, dict) and dones["__all__"]:
+            done = True
 
-            # fmt: off
-            if self._scen_name not in self._records:
-                _check_scen(self._scen)
-                self._records[self._scen_name] = {
-                    agent_name: Data(
-                        record=Record(
-                            completion=Completion(
-                                dist_tot=get_dist(
-                                    road_map=self._road_map,
-                                    point_a=Point(*self._scen.missions[agent_name].start.position),
-                                    point_b=self._scen.missions[agent_name].goal.position,
-                                )
-                            ),
-                            costs=Costs(),
-                            counts=Counts(),
-                        ),
-                        cost_funcs=CostFuncs(),
-                        completion_funcs=CompletionFuncs(),
+        # fmt: off
+        for agent_name, agent_obs in obs.items():
+            self._steps[agent_name] += 1
+
+            # Compute all cost functions.
+            costs = Costs()
+            for field in fields(self._records[self._scen_name][agent_name].cost_funcs):
+                cost_func = getattr(self._records[self._scen_name][agent_name].cost_funcs, field.name)
+                new_costs = cost_func(road_map=self._road_map, obs=agent_obs)
+                costs = _add_dataclass(new_costs, costs)
+
+            # Update stored costs.
+            self._records[self._scen_name][agent_name].record.costs = costs
+
+            if info[agent_name]["done"]:
+                self._done_agents.add(agent_name)
+                if not (
+                    agent_obs["events"]["reached_goal"]
+                    or agent_obs["events"]["collisions"]
+                    or agent_obs["events"]["off_road"]
+                    or agent_obs["events"]["reached_max_episode_steps"]
+                ):
+                    raise MetricsError(
+                        f"Unsupported agent done reason. Events: {agent_obs['events']}."
                     )
-                    for agent_name in self._cur_agents
-                }
-            # fmt: on
 
-            return result
+                # Update stored counts.
+                counts = Counts(
+                    episodes=1,
+                    steps=self._steps[agent_name],
+                    steps_adjusted=min(
+                        self._steps[agent_name],
+                        self.env.agent_interfaces[agent_name].max_episode_steps
+                    ),
+                    goals=agent_obs["events"]["reached_goal"],
+                    max_steps=self.env.agent_interfaces[agent_name].max_episode_steps
+                )
+                self._records[self._scen_name][agent_name].record.counts = _add_dataclass(
+                    counts,
+                    self._records[self._scen_name][agent_name].record.counts
+                )
 
         def records(self) -> Dict[str, Dict[str, Record]]:
             """
@@ -266,75 +204,67 @@ def _make_metrics(module):
             costs_tot: Costs = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
             completion_tot: Completion = functools.reduce(lambda a, b: _add_dataclass(a, b), completion_list)
 
-            _score: Dict[str, float] = {}
-            _score["completion"] = _completion(completion=completion_tot)
-            _score["humanness"] = _humanness(costs=costs_tot, agents_tot=agents_tot)
-            _score["rules"] = _rules(costs=costs_tot, agents_tot=agents_tot)
-            _score["time"] = _time(counts=counts_tot)
-            _score["overall"] = _score["completion"]*(1-_score["time"])*(1-_score["humanness"])*(1-_score["rules"])
-            # fmt: on
+        return result
 
-            return _score
+    def records(self) -> Dict[str, Dict[str, Record]]:
+        """
+        Fine grained performance metric for each agent in each scenario.
 
-    def _check_env(env: module.Env):
-        """Checks environment suitability to compute performance metrics.
+        Returns:
+            Dict[str, Dict[str, Record]]: Performance record in a nested
+                dictionary for each agent in each scenario.
 
-        Args:
-            env (gym.Env): A gym environment
+        Example::
 
-        Raises:
-            AttributeError: If any required agent interface is disabled.
+        >> records()
+        >> {
+                scen1: {
+                    agent1: Record(completion, costs, counts),
+                    agent2: Record(completion, costs, counts),
+                },
+                scen2: {
+                    agent1: Record(completion, costs, counts),
+                },
+            }
         """
 
-        def check_intrfc(agent_intrfc: AgentInterface):
-            intrfc = {
-                "accelerometer": bool(agent_intrfc.accelerometer),
-                "max_episode_steps": bool(agent_intrfc.max_episode_steps),
-                "neighborhood_vehicle_states": bool(
-                    agent_intrfc.neighborhood_vehicle_states
-                ),
-                "road_waypoints": bool(agent_intrfc.road_waypoints),
-                "waypoint_paths": bool(agent_intrfc.waypoint_paths),
-                "done_criteria.collision": agent_intrfc.done_criteria.collision,
-                "done_criteria.off_road": agent_intrfc.done_criteria.off_road,
-            }
-            return intrfc
+        records = {}
+        for scen, agents in self._records.items():
+            records[scen] = {}
+            for agent, data in agents.items():
+                records[scen][agent] = copy.deepcopy(data.record)
 
-        for agent_name, interface in env.agent_interfaces.items():
-            intrfc = check_intrfc(interface)
-            if not all(intrfc.values()):
-                raise AttributeError(
-                    "Enable {0}'s disabled interface to "
-                    "compute its metrics. Current interface is "
-                    "{1}.".format(agent_name, intrfc)
-                )
+        return records
 
-    return _Metrics
+    def score(self) -> Dict[str, float]:
+        """
+        An overall performance score achieved on the wrapped environment.
+        """
+        # fmt: off
+        counts_list, costs_list, completion_list = zip(
+            *[
+                (data.record.counts, data.record.costs, data.record.completion)
+                for agents in self._records.values()
+                for data in agents.values()
+            ]
+        )
+        agents_tot: int = len(counts_list)  # Total number of agents over all scenarios
+        counts_tot: Counts = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
+        costs_tot: Costs = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
+        completion_tot: Completion = functools.reduce(lambda a, b: _add_dataclass(a, b), completion_list)
 
+        _score: Dict[str, float] = {}
+        _score["completion"] = _completion(completion=completion_tot)
+        _score["humanness"] = _humanness(costs=costs_tot, agents_tot=agents_tot)
+        _score["rules"] = _rules(costs=costs_tot, agents_tot=agents_tot)
+        _score["time"] = _time(counts=counts_tot)
+        _score["overall"] = _score["completion"]*(1-_score["time"])*(1-_score["humanness"])*(1-_score["rules"])
+        # fmt: on
 
-class Metrics(gym.Wrapper):
-    """Metrics class wraps an underlying MetricsBase class. The underlying
-    MetricsBase class computes agents' performance metrics in a SMARTS
-    environment. Whereas, this Metrics class is a basic gym.Wrapper class
-    which prevents external users from accessing or modifying attributes
-    beginning with an underscore, to ensure security of the metrics computed.
-
-    Args:
-        env (gym.Env): A gym.Env to be wrapped.
-
-    Raises:
-        AttributeError: Upon accessing an attribute beginning with an underscore.
-
-    Returns:
-        gym.Env: A wrapped gym.Env which computes agents' performance metrics.
-    """
-
-    def __init__(self, env: gym.Env):
-        env = _make_metrics(gym)(env)
-        super().__init__(env)
+        return _score
 
 
-class CompetitionMetrics(gymnasium.Wrapper):
+class CompetitionMetrics(gym.Wrapper):
     """Metrics class wraps an underlying _Metrics class. The underlying
     _Metrics class computes agents' performance metrics in a SMARTS
     environment. Whereas, this Metrics class is a basic gym.Wrapper class
@@ -351,8 +281,8 @@ class CompetitionMetrics(gymnasium.Wrapper):
         gym.Env: A wrapped gym.Env which computes agents' performance metrics.
     """
 
-    def __init__(self, env: gymnasium.Env):
-        env = _make_metrics(gymnasium)(env)
+    def __init__(self, env: gym.Env):
+        env = _Metrics(env)
         super().__init__(env)
 
 

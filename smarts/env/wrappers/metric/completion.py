@@ -20,7 +20,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Callable
+from typing import Any, Callable, Dict
 
 from smarts.core.coordinates import Heading, Point
 from smarts.core.plan import Mission, Plan, PlanningError, PositionalGoal, Start
@@ -78,7 +78,7 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
             ),
         )
         plan = Plan(road_map=road_map, mission=mission, find_route=False)
-        plan.create_route(mission=mission, radius=5)
+        plan.create_route(mission=mission, radius=300)
         from_route_point = RoadMap.Route.RoutePoint(pt=start)
         to_route_point = RoadMap.Route.RoutePoint(pt=end)
 
@@ -114,7 +114,14 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
             )
         else:
             raise
-
+    except CompletionError:
+        dist_tot = 1e10
+        logger.info(
+            "completion.get dist(): Did not find a route from "
+            "%s to %s, because too far off road. Score set to minimum.",
+            point_a,
+            point_b,
+        )
     return dist_tot
 
 
@@ -123,16 +130,16 @@ def _dist_remainder():
     step: int = 0
 
     def func(
-        road_map: RoadMap, obs: Observation, initial_compl: Completion
+        road_map: RoadMap, obs: Dict[str, Any], initial_compl: Completion
     ) -> Completion:
         nonlocal mean, step
 
-        if obs.events.reached_goal:
+        if obs["events"]["reached_goal"]:
             dist = 0
         else:
-            cur_pos = Point(*obs.ego_vehicle_state.position)
+            cur_pos = Point(*obs["ego_vehicle_state"]["position"])
             # pytype: disable=attribute-error
-            goal_pos = obs.ego_vehicle_state.mission.goal.position
+            goal_pos = Point(*obs["mission"]["goal_position"])
             # pytype: enable=attribute-error
             dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
 
