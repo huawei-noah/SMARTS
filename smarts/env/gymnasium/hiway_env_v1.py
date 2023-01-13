@@ -40,7 +40,7 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
-from smarts.env.wrappers.utils.observation_conversion import ObservationsSpaceFormat
+from smarts.env.gymnasium.utils.observation_conversion import ObservationsSpaceFormat
 
 DEFAULT_TIMESTEP = 0.1
 
@@ -95,11 +95,13 @@ class HiWayEnvV1(gym.Env):
         visdom: bool = False,
         headless: bool = False,
         fixed_timestep_sec: Optional[float] = None,
+        seed: int = 42,
         sumo_options: SumoOptions = SumoOptions(),
         visualization_client_builder: partial = DEFAULT_VISUALIZATION_CLIENT_BUILDER,
         zoo_addrs: Optional[str] = None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
+        smarts_seed(seed)
         self._agent_interfaces = agent_interfaces
         self._dones_registered = 0
         if not fixed_timestep_sec:

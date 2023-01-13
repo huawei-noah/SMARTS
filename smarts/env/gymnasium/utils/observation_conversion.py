@@ -360,7 +360,7 @@ class EgoLinearAccelerationSpaceFormat(AccelerationSpaceFormat):
 
 class EgoLinearJerkSpaceFormat(JerkSpaceFormat):
     def format(self, obs: Observation):
-        return np.float32(obs.ego_vehicle_state.yaw_rate)
+        return obs.ego_vehicle_state.linear_jerk.astype(np.float32)
 
     def active(self, agent_interface: AgentInterface) -> bool:
         return bool(agent_interface.accelerometer)

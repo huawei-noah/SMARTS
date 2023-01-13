@@ -40,10 +40,10 @@ from smarts.core.agent_interface import (
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
-from smarts.env.hiway_env_v1 import HiWayEnvV1, SumoOptions
+from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
 from smarts.env.multi_scenario_env import resolve_agent_interface
 from smarts.env.wrappers.format_obs import FormatObsGymnasium
-from smarts.env.wrappers.metrics import CompetitionMetrics
+from smarts.env.gymnasium.wrappers.metrics import CompetitionMetrics
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
@@ -57,6 +57,7 @@ def driving_smarts_competition_v0_env(
     img_pixels: int = 256,
     action_space="RelativeTargetPose",
     headless: bool = True,
+    seed: int = 42,
     visdom: bool = False,
     sumo_headless: bool = True,
     envision_record_data_replay_path: typing.Optional[str] = None,
@@ -137,7 +138,7 @@ def driving_smarts_competition_v0_env(
     """
 
     env_specs = _get_env_specs(scenario)
-    # sstudio.build_scenario(scenario=[env_specs["scenario"]])
+    sstudio.build_scenario(scenario=[env_specs["scenario"]])
 
     agent_interfaces = {
         f"Agent_{i}": resolve_agent_interface(img_meters, img_pixels, action_space)
@@ -183,7 +184,7 @@ def _get_env_specs(scenario: str):
     if scenario == "1_to_2lane_left_turn_c":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "intersection"
                 / "1_to_2lane_left_turn_c"
@@ -193,7 +194,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "1_to_2lane_left_turn_t":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "intersection"
                 / "1_to_2lane_left_turn_t"
@@ -203,7 +204,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "3lane_merge_multi_agent":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "merge"
                 / "3lane_multi_agent"
@@ -213,7 +214,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "3lane_merge_single_agent":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "merge"
                 / "3lane_single_agent"
@@ -223,7 +224,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "3lane_cruise_multi_agent":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "straight"
                 / "3lane_cruise_multi_agent"
@@ -233,7 +234,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "3lane_cruise_single_agent":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "straight"
                 / "3lane_cruise_single_agent"
@@ -243,7 +244,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "3lane_cut_in":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "straight"
                 / "3lane_cut_in"
@@ -253,7 +254,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "3lane_overtake":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "straight"
                 / "3lane_overtake"

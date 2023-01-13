@@ -1,4 +1,6 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,32 +19,3 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
-from gym.envs.registration import register
-
-register(
-    id="hiway-v0",
-    entry_point="smarts.env.hiway_env:HiWayEnv",
-)
-
-register(
-    id="intersection-v0",
-    entry_point="smarts.env.intersection_env:intersection_v0_env",
-)
-
-register(
-    id="multi-scenario-v0",
-    entry_point="smarts.env.multi_scenario_env:multi_scenario_v0_env",
-)
-
-from gymnasium.envs.registration import register as gymnasium_register
-
-gymnasium_register(
-    id="hiway-v1",
-    entry_point="smarts.env.gymnasium.hiway_env_v1:HiWayEnvV1",
-)
-
-gymnasium_register(
-    id="driving-smarts-competition-v0",
-    entry_point="smarts.env.gymnasium.driving_smarts_competition_env:driving_smarts_competition_v0_env",
-)
