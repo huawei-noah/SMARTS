@@ -24,8 +24,8 @@ from typing import Any, Callable, Dict
 import numpy as np
 
 from smarts.core.coordinates import Heading, Point
+from smarts.core.observations import Observation
 from smarts.core.road_map import RoadMap
-from smarts.core.sensors import Observation
 from smarts.core.utils.math import running_mean
 
 

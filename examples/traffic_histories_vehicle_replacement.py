@@ -11,8 +11,8 @@ from envision.client import Client as Envision
 from smarts.core import seed as random_seed
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.observations import Observation
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.traffic_history_provider import TrafficHistoryProvider

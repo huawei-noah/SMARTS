@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 
-from smarts.core.sensors import Observation
+from smarts.core.observations import Observation
 
 
 class Reward(gym.Wrapper):

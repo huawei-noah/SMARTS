@@ -30,8 +30,8 @@ from envision.data_formatter import EnvisionDataFormatterArgs
 from smarts.core import seed as smarts_seed
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.local_traffic_provider import LocalTrafficProvider
+from smarts.core.observations import Observation
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient

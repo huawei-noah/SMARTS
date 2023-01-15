@@ -18,7 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import weakref
-from dataclasses import dataclass, field, replace
 from typing import List, Sequence, Set
 
 import numpy as np
@@ -28,6 +27,7 @@ from .controllers import ActionSpaceType
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Scenario
+from .utils.file import replace
 from .vehicle import VehicleState
 
 

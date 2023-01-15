@@ -25,8 +25,7 @@ import gym
 import numpy as np
 
 from smarts.core.events import Events
-from smarts.core.road_map import Waypoint
-from smarts.core.sensors import (
+from smarts.core.observations import (
     DrivableAreaGridMap,
     EgoVehicleObservation,
     OccupancyGridMap,
@@ -34,6 +33,7 @@ from smarts.core.sensors import (
     TopDownRGB,
     VehicleObservation,
 )
+from smarts.core.road_map import Waypoint
 
 _LIDAR_SHP = 300
 _NEIGHBOR_SHP = 10

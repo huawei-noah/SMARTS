@@ -28,9 +28,7 @@ import smarts.sstudio.types as t
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Dimensions, Heading, RefLinePoint
 from smarts.core.events import Events
-from smarts.core.plan import EndlessGoal, Mission, Start
-from smarts.core.road_map import Waypoint
-from smarts.core.sensors import (
+from smarts.core.observations import (
     DrivableAreaGridMap,
     EgoVehicleObservation,
     GridMapMetadata,
@@ -41,6 +39,8 @@ from smarts.core.sensors import (
     VehicleObservation,
     Vias,
 )
+from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.road_map import Waypoint
 
 
 @pytest.fixture

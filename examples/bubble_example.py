@@ -12,8 +12,8 @@ from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 from smarts.core.agent_manager import AgentManager
 from smarts.core.local_traffic_provider import LocalTrafficProvider
+from smarts.core.observations import Observation
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.logging import timeit
 from smarts.sstudio.types import Bubble, PositionalZone, SocialAgentActor

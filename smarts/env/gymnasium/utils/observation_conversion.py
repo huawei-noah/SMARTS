@@ -27,8 +27,8 @@ import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.events import Events
+from smarts.core.observations import Observation
 from smarts.core.road_map import Waypoint
-from smarts.core.sensors import Observation
 
 _LIDAR_SHP = 300
 _NEIGHBOR_SHP = 10

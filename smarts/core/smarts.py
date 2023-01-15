@@ -48,10 +48,10 @@ from .bubble_manager import BubbleManager
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
+from .observations import Collision, Observation
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
-from .sensors import Collision, Observation
 from .signal_provider import SignalProvider
 from .signals import SignalLightState, SignalState
 from .sumo_traffic_simulation import SumoTrafficSimulation

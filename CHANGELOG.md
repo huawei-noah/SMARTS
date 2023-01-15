@@ -25,6 +25,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The `ProviderManager` interface now uses a string id for removal of an actor instead of an actor state.
 - Renamed many fields of the `smarts.core.agent_interface.AgentInterface` dataclass: `lidar` -> `lidar_point_cloud`, `waypoints` -> `waypoint_paths`, `rgb` -> `top_down_rgb`, `neighborhood_vehicles` -> `neighborhood_vehicle_states`, and `ogm` -> `occupancy_grid_map`.
 - Renamed `smarts.core.provider.Provider`'s `action_spaces` to `actions`.
+- Moved `VehicleObservation`, `EgoVehicleObservation`, `Observation`, `RoadWaypoints`, `GridMapMetadata`, `TopDownRGB`, `OccupancyGridMap`, `DrivableAreaGridMap`, `ViaPoint`, `Vias`, `SignalObservation` from `smarts.core.sensors` to `smarts.core.observations`. They are now all typed `NamedTuples`.
 ### Removed
 - Removed all of PyMarl contents, including related interface adapter, environments, and tests.
 - Removed ray usage example.
