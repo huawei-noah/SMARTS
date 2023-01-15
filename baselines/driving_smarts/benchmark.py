@@ -12,6 +12,8 @@ from smarts.env.gymnasium.wrappers.episode_limit import EpisodeLimit
 from smarts.env.gymnasium.wrappers.metrics import CompetitionMetrics
 from smarts.zoo import registry as agent_registry
 
+LOG_WORKERS = False
+
 
 @ray.remote(num_returns=1)
 def _eval_worker(name, env_config, episodes, agent_config):
@@ -54,7 +56,7 @@ def _eval_worker(name, env_config, episodes, agent_config):
 
 
 def task_iterator(env_configs, benchmark_config):
-    ray.init(num_cpus=4)
+    ray.init(num_cpus=4, log_to_driver=LOG_WORKERS)
     try:
         max_queued_tasks = 20
         unfinished_refs = []
@@ -122,8 +124,15 @@ if __name__ == "__main__":
         default=DEFAULT_CONFIG,
         type=str,
     )
+    parser.add_argument(
+        "--log-workers",
+        help="If the workers should log",
+        default=False,
+        type=bool,
+    )
     args = parser.parse_args()
 
+    LOG_WORKERS = args.log_workers
     base_config = load_config(args.config)
     auto_install(base_config)
     benchmark(
