@@ -64,7 +64,7 @@ class Start:
         )
 
 
-@dataclass(unsafe_hash=True)
+@dataclass(frozen=True, unsafe_hash=True)
 class Goal:
     """Describes an expected end state for a route or mission."""
 
@@ -77,14 +77,14 @@ class Goal:
         return False
 
 
-@dataclass(unsafe_hash=True)
+@dataclass(frozen=True, unsafe_hash=True)
 class EndlessGoal(Goal):
     """A goal that can never be completed."""
 
     pass
 
 
-@dataclass(unsafe_hash=True)
+@dataclass(frozen=True, unsafe_hash=True)
 class PositionalGoal(Goal):
     """A goal that can be completed by reaching an end area."""
 
@@ -123,6 +123,7 @@ class PositionalGoal(Goal):
         return sqr_dist <= self.radius**2
 
 
+@dataclass(frozen=True, unsafe_hash=True)
 class TraverseGoal(Goal):
     """A TraverseGoal is satisfied whenever an Agent-driven vehicle
     successfully finishes traversing a non-closed (acyclic) map
