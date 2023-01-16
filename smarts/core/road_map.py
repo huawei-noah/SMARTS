@@ -80,7 +80,7 @@ class RoadMap:
         """Check if the MapSpec Object source points to the same RoadMap instance as the current"""
         raise NotImplementedError
 
-    def to_glb(self, at_path: str):
+    def to_glb(self, glb_dir: str):
         """Build a glb file for camera rendering and envision"""
         raise NotImplementedError()
 

@@ -4,13 +4,13 @@ uniform mat4 p3d_ModelViewProjectionMatrix;
 
 in vec4 p3d_Vertex;
 
-flat out vec3 startPos;
-out vec3 vertPos;
+flat out vec3 StartPos;
+out vec3 VertPos;
 
 void main()
 {
     vec4 pos = p3d_ModelViewProjectionMatrix * p3d_Vertex;
     gl_Position = pos;
-    vertPos = pos.xyz / pos.w;
-    startPos = vertPos;
+    VertPos = pos.xyz / pos.w;
+    StartPos = VertPos;
 }
