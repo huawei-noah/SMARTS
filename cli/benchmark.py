@@ -48,7 +48,7 @@ def run(benchmark_id: str, agent_config: str):
 @click.command("list", help="Show available benchmarks.")
 def list_benchmarks():
     from smarts.benchmark import BENCHMARK_LISTING_FILE
-    from smarts.benchmark import list_bechmarks as l_benchmarks
+    from smarts.benchmark import list_benchmarks as l_benchmarks
 
     benchmarks = l_benchmarks(BENCHMARK_LISTING_FILE)["benchmarks"]
 

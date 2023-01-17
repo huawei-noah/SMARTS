@@ -77,7 +77,7 @@ def run_benchmark(benchmark_name, benchmark_version, agent_config, benchmark_lis
     entrypoint(**benchmark.get("params", {}), agent_config=agent_config)
 
 
-def list_bechmarks(benchmark_listing):
+def list_benchmarks(benchmark_listing):
     from smarts.core.utils.resources import load_yaml_config_with_substitution
 
     return load_yaml_config_with_substitution(Path(benchmark_listing))
