@@ -1,4 +1,4 @@
-# smarts/benchmark/config.yaml
+# smarts/benchmark/benchmark_listing.yaml
 ---
 benchmarks:
   driving_smarts:
