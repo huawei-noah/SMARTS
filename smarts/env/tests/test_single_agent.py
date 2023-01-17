@@ -133,6 +133,6 @@ def test_reset_and_step(base_env):
     assert obs.shape == ma_obs_space[agent_id].shape
     assert isinstance(reward, float)
     assert type(done) is bool
-    assert set(info.keys()) == set(["score", "env_obs"])
+    assert set(info.keys()) == set(["score", "env_obs", "done"])
 
     env.close()
