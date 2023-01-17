@@ -64,7 +64,7 @@ def _eval_worker(name, env_config, episodes, agent_config):
             except Exception:
                 logging.error("Policy robustness failed.")
                 # env.mark_policy_failure()
-                terminated, truncated = True, True
+                terminated, truncated = False, True
             else:
                 observation, reward, terminated, truncated, info = env.step(action)
             if terminated or truncated:
