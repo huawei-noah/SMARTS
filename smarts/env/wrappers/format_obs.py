@@ -212,7 +212,7 @@ class FormatObs(gym.ObservationWrapper):
     def __init__(self, env: gym.Env):
         """
         Args:
-            env (E): SMARTS environment to be wrapped.
+            env (gym.Env): SMARTS environment to be wrapped.
 
         Raises:
             AssertionError: If all agents do not have the same AgentInterface.
@@ -313,7 +313,7 @@ def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
     """Returns the available gym spaces of a `StdObs`.
 
     Returns:
-        Dict[str, Callable[[Any], S]]:
+        Dict[str, Callable[[Any], gym.Space]]:
             Available gym spaces of a `StdObs`.
     """
     # fmt: off
