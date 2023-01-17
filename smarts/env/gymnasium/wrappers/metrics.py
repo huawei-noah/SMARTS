@@ -21,7 +21,7 @@
 import copy
 import functools
 from dataclasses import dataclass, fields
-from typing import Any, Dict, Set, TypeVar
+from typing import Any, Dict, NamedTuple, Set, TypeVar
 
 import gymnasium as gym
 import numpy as np
@@ -58,6 +58,16 @@ class Data:
     record: Record
     completion_funcs: CompletionFuncs
     cost_funcs: CostFuncs
+
+
+class Score(NamedTuple):
+    """This describes the final score given by processing observations through the metrics."""
+
+    completion: float
+    humanness: float
+    rules: float
+    time: float
+    overall: float
 
 
 class MetricsError(Exception):
@@ -255,15 +265,21 @@ class _Metrics(gym.Wrapper):
         costs_tot: Costs = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
         completion_tot: Completion = functools.reduce(lambda a, b: _add_dataclass(a, b), completion_list)
 
-        _score: Dict[str, float] = {}
-        _score["completion"] = _completion(completion=completion_tot)
-        _score["humanness"] = _humanness(costs=costs_tot, agents_tot=agents_tot)
-        _score["rules"] = _rules(costs=costs_tot, agents_tot=agents_tot)
-        _score["time"] = _time(counts=counts_tot)
-        _score["overall"] = _score["completion"]*(1-_score["time"])*(1-_score["humanness"])*(1-_score["rules"])
+        
+        completion = _completion(completion=completion_tot)
+        humanness = _humanness(costs=costs_tot, agents_tot=agents_tot)
+        rules = _rules(costs=costs_tot, agents_tot=agents_tot)
+        time = _time(counts=counts_tot)
+        overall = completion*(1-time)*(1-humanness)*(1-rules)
         # fmt: on
 
-        return _score
+        return Score(
+            completion=completion,
+            humanness=humanness,
+            rules=rules,
+            time=time,
+            overall=overall,
+        )
 
 
 class CompetitionMetrics(gym.Wrapper):

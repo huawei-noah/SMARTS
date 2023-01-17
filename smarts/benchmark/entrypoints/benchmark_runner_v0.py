@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import argparse
 import logging
+from typing import List, Tuple
 
 import gymnasium as gym
 import ray
@@ -29,7 +30,7 @@ from smarts.benchmark import auto_install
 from smarts.benchmark.driving_smarts import load_config
 from smarts.benchmark.driving_smarts.v0 import DEFAULT_CONFIG
 from smarts.env.gymnasium.wrappers.episode_limit import EpisodeLimit
-from smarts.env.gymnasium.wrappers.metrics import CompetitionMetrics
+from smarts.env.gymnasium.wrappers.metrics import CompetitionMetrics, Score
 from smarts.zoo import registry as agent_registry
 
 LOG_WORKERS = False
@@ -117,23 +118,40 @@ def benchmark(benchmark_args, agent_args):
     #         shared_params=config["shared_env_params"],
     #     )
     # TODO MTA: naturalistic environments
-    total_score = {}
-
-    def sum_scores(scores, other_scores):
-        return {k: scores.get(k, 0) + other_scores.get(k, 0) for k in set(other_scores)}
+    named_scores = []
 
     for name, score in task_iterator(
         env_args=env_args,
         benchmark_args=benchmark_args,
         agent_args=agent_args,
     ):
-        total_score = sum_scores(total_score, score)
+        named_scores.append((name, score))
         print(f"Scoring {name}...")
+
+    def format_one_line_scores(named_scores: List[Tuple[str, Score]]):
+        name_just = 30
+        headers = "SCENARIO".ljust(name_just) + "SCORE"
+        return (
+            headers
+            + "\n"
+            + "\n".join(
+                f"- {name}:".ljust(name_just) + f"{score}"
+                for name, score in named_scores
+            )
+        )
+
+    def format_scores_total(named_scores: List[Tuple[str, Score]], scenario_count):
+        score_sum = Score(*[sum(f) for f in zip(*[score for _, score in named_scores])])
+        return "\n".join(
+            f"- {k}: {v/scenario_count}" for k, v in score_sum._asdict().items()
+        )
 
     print("Evaluation complete...")
     print()
-    print("`Driving SMARTS V0` result:")
-    print("\n".join(f"- {k}: {v/(len(env_args) or 1)}" for k, v in total_score.items()))
+    print(format_one_line_scores(named_scores))
+    print()
+    print("`Driving SMARTS V0` averaged result:")
+    print(format_scores_total(named_scores, len(env_args) or 1))
 
 
 def benchmark_from_configs(benchmark_config, agent_config=None, log_workers=False):
