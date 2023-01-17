@@ -1,13 +1,33 @@
-# smarts/benchmark/driving_smarts_competition_benchmark.py
+# MIT License
+#
+# Copyright (C) 2023. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 import argparse
 import logging
-from functools import partial
 
 import gymnasium as gym
 import ray
 
 from smarts.benchmark import auto_install
-from smarts.benchmark.driving_smarts import DEFAULT_CONFIG, load_config
+from smarts.benchmark.driving_smarts import load_config
+from smarts.benchmark.driving_smarts.v0 import DEFAULT_CONFIG
 from smarts.env.gymnasium.wrappers.episode_limit import EpisodeLimit
 from smarts.env.gymnasium.wrappers.metrics import CompetitionMetrics
 from smarts.zoo import registry as agent_registry
@@ -55,24 +75,23 @@ def _eval_worker(name, env_config, episodes, agent_config):
     return name, score
 
 
-def task_iterator(env_configs, benchmark_config):
+def task_iterator(env_args, benchmark_args, agent_args):
     ray.init(num_cpus=4, log_to_driver=LOG_WORKERS)
     try:
         max_queued_tasks = 20
         unfinished_refs = []
-        for name, env_config in env_configs.items():
+        for name, env_config in env_args.items():
             if len(unfinished_refs) >= max_queued_tasks:
                 ready_refs, unfinished_refs = ray.wait(unfinished_refs, num_returns=1)
                 for name, score in ray.get(ready_refs):
-                    # sum scores
                     yield name, score
             print(f"Evaluating {env_config['scenario']}...")
             unfinished_refs.append(
                 _eval_worker.remote(
                     name=name,
                     env_config=env_config,
-                    episodes=benchmark_config["eval_episodes"],
-                    agent_config=benchmark_config["agent"],
+                    episodes=benchmark_args["eval_episodes"],
+                    agent_config=agent_args,
                 )
             )
         for name, score in ray.get(unfinished_refs):
@@ -81,30 +100,32 @@ def task_iterator(env_configs, benchmark_config):
         ray.shutdown()
 
 
-def benchmark(benchmark_config):
-    print(f"Starting `{benchmark_config['name']}` benchmark.")
-    env_configs = {}
-    for scenario in benchmark_config["standard_env"]["scenarios"]:
-        env_configs[f"{scenario}"] = dict(
-            env=benchmark_config["standard_env"]["env"],
+def benchmark(benchmark_args, agent_args):
+    print(f"Starting `{benchmark_args['name']}` benchmark.")
+    env_args = {}
+    for scenario in benchmark_args["standard_env"]["scenarios"]:
+        env_args[f"{scenario}"] = dict(
+            env=benchmark_args["standard_env"]["env"],
             scenario=scenario,
-            shared_params=benchmark_config["shared_env_params"],
+            shared_params=benchmark_args["shared_env_params"],
         )
-    ## TODO MTA bubble env
+    ## TODO MTA bubble environments
     # for seed in config["bubble_env"]["scenarios"]:
     #     env_configs[f"bubble_env_{seed}"] = partial(
     #         env=config["bubble_env"]["env"],
     #         scenario=seed,
     #         shared_params=config["shared_env_params"],
     #     )
-    # TODO MTA: naturalistic
+    # TODO MTA: naturalistic environments
     total_score = {}
 
-    def sum_scores(s, o):
-        return {k: s.get(k, 0) + o.get(k, 0) for k in set(o)}
+    def sum_scores(scores, other_scores):
+        return {k: scores.get(k, 0) + other_scores.get(k, 0) for k in set(other_scores)}
 
     for name, score in task_iterator(
-        env_configs=env_configs, benchmark_config=benchmark_config
+        env_args=env_args,
+        benchmark_args=benchmark_args,
+        agent_args=agent_args,
     ):
         total_score = sum_scores(total_score, score)
         print(f"Scoring {name}...")
@@ -112,14 +133,29 @@ def benchmark(benchmark_config):
     print("Evaluation complete...")
     print()
     print("`Driving SMARTS V0` result:")
-    print("\n".join(f"- {k}: {v}" for k, v in total_score.items()))
+    print("\n".join(f"- {k}: {v/(len(env_args) or 1)}" for k, v in total_score.items()))
+
+
+def benchmark_from_configs(benchmark_config, agent_config=None, log_workers=False):
+    global LOG_WORKERS
+    benchmark_args = load_config(benchmark_config)
+    agent_args = {}
+    if agent_config:
+        agent_args = load_config(agent_config)
+    print(agent_config)
+    print(agent_args)
+    auto_install(benchmark_args)
+    LOG_WORKERS = log_workers
+    benchmark(
+        benchmark_args=benchmark_args["benchmark"],
+        agent_args={**benchmark_args["agent"], **agent_args},
+    )
 
 
 if __name__ == "__main__":
-    print(DEFAULT_CONFIG)
-    parser = argparse.ArgumentParser("driving_smarts_competition")
+    parser = argparse.ArgumentParser("Driving SMARTS Competition")
     parser.add_argument(
-        "--config",
+        "--benchmark-config",
         help="The benchmark configuration file",
         default=DEFAULT_CONFIG,
         type=str,
@@ -132,9 +168,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    LOG_WORKERS = args.log_workers
-    base_config = load_config(args.config)
-    auto_install(base_config)
-    benchmark(
-        benchmark_config=base_config["benchmark"],
-    )
+    benchmark_from_configs(args.config, log_workers=args.log_workers)

@@ -65,7 +65,7 @@ def _replace_with_module_path(base: str, module_str: str):
 
 def load_yaml_config_with_substitution(path: Path) -> Optional[Dict[str, Any]]:
     """Read in a yaml configuration to dictionary format replacing instances of ${{module}} with
-     module's file path."""
+    module's file path."""
     config = None
     if path.exists():
         assert path.suffix in (".yaml", ".yml"), f"`{str(path)}` is not a YAML file."

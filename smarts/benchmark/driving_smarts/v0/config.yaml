@@ -1,4 +1,4 @@
-# smarts/benchmark/competition_v0/config.yaml
+# smarts/benchmark/driving_smarts_v0/config.yaml
 ---
 benchmark:
   name: "Driving SMARTS V0"
@@ -29,11 +29,11 @@ benchmark:
     scenario_dirs:
       - "./scenarios/naturalistic/waymo"
       - "./scenarios/naturalistic/ngsim"
-  agent:
-    interface:
-      max_episode_steps: 1000
-      img_meters: 50 # Observation image area size in meters.
-      img_pixels: 112 # Observation image size in pixels.
-    locator: "smarts.zoo:competition-baseline-v0"
-    params:
-      speed: 20 # Provided to the agent
+agent:
+  interface:
+    max_episode_steps: 1000
+    img_meters: 50 # Observation image area size in meters.
+    img_pixels: 112 # Observation image size in pixels.
+  locator: "smarts.zoo:competition-baseline-v0"
+  params:
+    speed: 20 # Provided to the agent

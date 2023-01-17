@@ -1,0 +1,12 @@
+# smarts/benchmark/config.yaml
+---
+benchmarks:
+  driving_smarts:
+    name: "Driving SMARTS"
+    versions:
+      -
+        version: 0.0
+        entrypoint: "smarts.benchmark.entrypoints.benchmark_runner_v0.benchmark_from_configs"
+        params: 
+          benchmark_config: ${{smarts.benchmark.driving_smarts.v0}}/config.yaml
+      

@@ -19,7 +19,8 @@
 # THE SOFTWARE.
 
 
-import pkg_resources
+# import pkg_resources
 
 # The full version, including alpha/beta/rc tags
-VERSION = pkg_resources.get_distribution("smarts").version
+# VERSION = pkg_resources.get_distribution("smarts").version
+VERSION = "1.0.0"
