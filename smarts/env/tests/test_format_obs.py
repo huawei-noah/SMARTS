@@ -141,7 +141,7 @@ def test_init(make_env):
     rcv_space = env.observation_space
     rcv_space_keys = set([key for key in rcv_space[agent_id]])
 
-    des_space_keys = set(["dist", "ego", "events", "mission"])
+    des_space_keys = set(["distance_travelled", "ego_vehicle_state", "events", "mission"])
     opt_space_keys = [
         intrfc_to_stdobs(intrfc)
         for intrfc, val in cur_intrfcs[0].items()
