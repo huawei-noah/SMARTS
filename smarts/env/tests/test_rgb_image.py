@@ -36,7 +36,7 @@ def _make_agent_specs(topdown_rgb):
     if topdown_rgb == "rgb":
         rgb = RGB()
     elif topdown_rgb == "false":
-        gb = False
+        rgb = False
 
     return {
         "AGENT_"
