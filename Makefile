@@ -140,7 +140,7 @@ clean:
 .PHONY: format
 format:
 	echo "isort, version `isort --version-number`"
-	isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines/marl_benchmark/ ./baselines/driving_smarts ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./zoo
+	isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./zoo
 	black --version
 	black .
 	# npm install prettier
