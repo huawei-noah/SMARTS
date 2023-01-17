@@ -138,9 +138,7 @@ def _dist_remainder():
             dist = 0
         else:
             cur_pos = Point(*obs["ego_vehicle_state"]["position"])
-            # pytype: disable=attribute-error
             goal_pos = Point(*obs["mission"]["goal_position"])
-            # pytype: enable=attribute-error
             dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
 
         # Cap remainder distance
