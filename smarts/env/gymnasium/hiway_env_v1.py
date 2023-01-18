@@ -21,10 +21,20 @@
 # THE SOFTWARE.
 import logging
 import os
-from dataclasses import dataclass
-from enum import Enum
+from enum import IntEnum
 from functools import partial
-from typing import Any, Dict, List, Optional, Sequence, Set, SupportsFloat, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Set,
+    SupportsFloat,
+    Tuple,
+    Union,
+)
 
 import gymnasium as gym
 import numpy as np
@@ -40,18 +50,20 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
-from smarts.env.gymnasium.utils.observation_conversion import ObservationsSpaceFormat
+from smarts.env.gymnasium.utils.observation_conversion import (
+    ObservationOptions,
+    ObservationsSpaceFormat,
+)
 
 DEFAULT_TIMESTEP = 0.1
 
 
-class ScenarioOrder(Enum):
+class ScenarioOrder(IntEnum):
     Sequential = 0
     Scrambled = 1
 
 
-@dataclass
-class SumoOptions:
+class SumoOptions(NamedTuple):
     num_external_clients: int = 0
     auto_start: bool = True
     headless: bool = True
@@ -99,6 +111,7 @@ class HiWayEnvV1(gym.Env):
         sumo_options: SumoOptions = SumoOptions(),
         visualization_client_builder: partial = DEFAULT_VISUALIZATION_CLIENT_BUILDER,
         zoo_addrs: Optional[str] = None,
+        observation_options: ObservationOptions = ObservationOptions.default,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
@@ -145,7 +158,9 @@ class HiWayEnvV1(gym.Env):
         # TODO: set action space
 
         # TODO: set observation space
-        self.observations_formatter = ObservationsSpaceFormat(agent_interfaces)
+        self.observations_formatter = ObservationsSpaceFormat(
+            agent_interfaces, observation_options
+        )
         self.observation_space = self.observations_formatter.space
 
         from smarts.core.smarts import SMARTS

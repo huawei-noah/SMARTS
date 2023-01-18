@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+from enum import IntEnum
 from typing import Dict, List
 
 import gymnasium as gym
@@ -61,6 +62,12 @@ _UNSIGNED_RADIANS_FLOAT32_SPACE = gym.spaces.Box(
 )
 _UNSIGNED_INT8_SPACE = gym.spaces.Box(low=0, high=127, shape=(), dtype=np.int8)
 _DISCRETE2_SPACE = gym.spaces.Discrete(n=2)
+
+
+class ObservationOptions(IntEnum):
+    multi_agent = 0
+    full = 1
+    default = 0
 
 
 class BaseSpaceFormat:
@@ -1015,11 +1022,16 @@ class ObservationSpaceFormat(DictSpaceFormat):
 
 
 class ObservationsSpaceFormat:
-    def __init__(self, agent_interfaces: Dict[str, AgentInterface]) -> None:
+    def __init__(
+        self,
+        agent_interfaces: Dict[str, AgentInterface],
+        observation_options: ObservationOptions,
+    ) -> None:
         self.space_formats = {
             agent_id: ObservationSpaceFormat(agent_interface)
             for agent_id, agent_interface in agent_interfaces.items()
         }
+        self.observation_options = observation_options
         super().__init__()
 
     def format(self, observations: Dict[str, Observation]):
@@ -1028,16 +1040,17 @@ class ObservationsSpaceFormat:
             agent_id: self.space_formats[agent_id].format(obs)
             for agent_id, obs in observations.items()
         }
-        missing_ids = set(self.space_formats.keys()) - set(active_obs.keys())
         out_obs = active_obs
-        padded_obs = {
-            agent_id: space_format.space.sample()
-            for agent_id, space_format in self.space_formats.items()
-            if agent_id in missing_ids
-        }
-        for obs in padded_obs.values():
-            obs["active"] = np.int64(False)
-        out_obs.update(padded_obs)
+        if self.observation_options == ObservationOptions.full:
+            missing_ids = set(self.space_formats.keys()) - set(active_obs.keys())
+            padded_obs = {
+                agent_id: space_format.space.sample()
+                for agent_id, space_format in self.space_formats.items()
+                if agent_id in missing_ids
+            }
+            for obs in padded_obs.values():
+                obs["active"] = np.int64(False)
+            out_obs.update(padded_obs)
         return out_obs
 
     @property
