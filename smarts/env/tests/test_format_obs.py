@@ -157,7 +157,7 @@ def test_init(make_env):
     des_ego_keys = set(
         ["angular_acceleration", "angular_jerk", "linear_acceleration", "linear_jerk"]
     )
-    rcv_ego_keys = set([key for key in rcv_space[agent_id]["ego"]])
+    rcv_ego_keys = set([key for key in rcv_space[agent_id]["ego_vehicle_state"]])
     if cur_intrfcs[0].get("accelerometer", None):
         assert des_ego_keys.issubset(rcv_ego_keys)
     else:
