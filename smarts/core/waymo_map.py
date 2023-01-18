@@ -21,6 +21,7 @@
 import heapq
 import logging
 import math
+from pathlib import Path
 import random
 import time
 from collections import defaultdict, deque
@@ -989,10 +990,10 @@ class WaymoMap(RoadMapWithCaches):
     def scale_factor(self) -> float:
         return 1.0  # TODO
 
-    def to_glb(self, at_path):
+    def to_glb(self, glb_dir):
         """Build a glb file for camera rendering and envision."""
         glb = self._make_glb_from_polys()
-        glb.write_glb(at_path)
+        glb.write_glb(Path(glb_dir) / "map.glb")
 
     def _make_glb_from_polys(self):
         scene = trimesh.Scene()

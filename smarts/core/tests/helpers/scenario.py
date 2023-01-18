@@ -35,8 +35,6 @@ def temp_scenario(name: str, map: str):
 
         test_maps_dir = Path(__file__).parent.parent
         shutil.copyfile(test_maps_dir / map, scenario / "map.net.xml")
-        generate_glb_from_sumo_file(
-            str(scenario / "map.net.xml"), str(scenario / "map.glb")
-        )
+        generate_glb_from_sumo_file(str(scenario / "map.net.xml"), str(scenario))
 
         yield scenario

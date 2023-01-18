@@ -22,6 +22,7 @@ import heapq
 import logging
 import math
 import os
+from pathlib import Path
 import random
 import time
 from bisect import bisect
@@ -761,11 +762,29 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             max_pt=Point(x=max(x_maxs), y=max(y_maxs)),
         )
 
-    def to_glb(self, at_path):
-        glb = self._make_glb_from_polys()
-        glb.write_glb(at_path)
+    def to_glb(self, glb_dir):
+        lane_dividers, edge_dividers = self._compute_traffic_dividers()
+        map_glb = self._make_glb_from_polys(lane_dividers, edge_dividers)
+        map_glb.write_glb(Path(glb_dir) / "map.glb")
 
-    def _make_glb_from_polys(self):
+        road_lines_glb = self._make_road_line_glb(edge_dividers)
+        road_lines_glb.write_glb(Path(glb_dir) / "road_lines.glb")
+
+        lane_lines_glb = self._make_road_line_glb(lane_dividers)
+        lane_lines_glb.write_glb(Path(glb_dir) / "lane_lines.glb")
+
+    def _make_road_line_glb(self, lines: List[List[Tuple[float, float]]]):
+        scene = trimesh.Scene()
+        for line_pts in lines:
+            vertices = [(*pt, 0.1) for pt in line_pts]
+            point_cloud = trimesh.PointCloud(vertices=vertices)
+            point_cloud.apply_transform(
+                trimesh.transformations.rotation_matrix(math.pi / 2, [-1, 0, 0])
+            )
+            scene.add_geometry(point_cloud)
+        return _GLBData(gltf.export_glb(scene))
+
+    def _make_glb_from_polys(self, lane_dividers, edge_dividers):
         scene = trimesh.Scene()
         polygons = []
         for lane_id in self._lanes:
@@ -792,9 +811,8 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         }
 
         # lane markings information
-        lane_dividers, road_dividers = self._compute_traffic_dividers()
         metadata["lane_dividers"] = lane_dividers
-        metadata["edge_dividers"] = road_dividers
+        metadata["edge_dividers"] = edge_dividers
 
         for mesh in meshes:
             mesh.visual = trimesh.visual.TextureVisuals(

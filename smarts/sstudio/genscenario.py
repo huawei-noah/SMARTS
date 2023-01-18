@@ -213,7 +213,7 @@ def gen_scenario(
 
             map_dir = os.path.join(build_dir, "map")
             os.makedirs(map_dir, exist_ok=True)
-            road_map.to_glb(os.path.join(map_dir, "map.glb"))
+            road_map.to_glb(map_dir)
             _update_artifacts(db_conn, artifact_paths, map_hash)
 
     # Traffic
