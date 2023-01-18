@@ -36,6 +36,13 @@ from direct.showbase.ShowBase import ShowBase
 # pytype: disable=import-error
 from panda3d.core import (
     FrameBufferProperties,
+    Geom,
+    GeomLinestrips,
+    GeomNode,
+    GeomVertexData,
+    GeomVertexFormat,
+    GeomVertexReader,
+    GeomVertexWriter,
     GraphicsOutput,
     GraphicsPipe,
     NodePath,
@@ -44,13 +51,6 @@ from panda3d.core import (
     Texture,
     WindowProperties,
     loadPrcFileData,
-    GeomVertexFormat,
-    Geom,
-    GeomNode,
-    GeomVertexData,
-    GeomVertexWriter,
-    GeomLinestrips,
-    GeomVertexReader,
 )
 
 from . import glsl, models

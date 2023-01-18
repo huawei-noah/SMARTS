@@ -20,9 +20,9 @@
 import logging
 import math
 import os
-from pathlib import Path
 import random
 from functools import lru_cache
+from pathlib import Path
 from subprocess import check_output
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
