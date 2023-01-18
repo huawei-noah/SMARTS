@@ -42,58 +42,25 @@ _WAYPOINT_CHAR_SET = frozenset(
 )
 
 ## TODO MTA: use constants instead these classes
-class _Vec3SignedFloat32Space:
-    @property
-    def space(self):
-        return gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float32)
 
-
-class _Vec3UnsignedFloat32Space:
-    @property
-    def space(self):
-        return gym.spaces.Box(low=0, high=1e10, shape=(3,), dtype=np.float32)
-
-
-class _Vec3SignedFloat64Space:
-    @property
-    def space(self):
-        return gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64)
-
-
-class _SignedFloat32Space:
-    @property
-    def space(self):
-        return gym.spaces.Box(low=-1e10, high=1e10, shape=(), dtype=np.float32)
-
-
-class _UnsignedFloat32Space:
-    @property
-    def space(self):
-        return gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32)
-
-
-class _SignedRadiansFloat32Space:
-    @property
-    def space(self):
-        return gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32)
-
-
-class _UnsignedRadiansFloat32Space:
-    @property
-    def space(self):
-        return gym.spaces.Box(low=0, high=2 * math.pi, shape=(), dtype=np.float32)
-
-
-class _UnsignedInt8Space:
-    @property
-    def space(self):
-        return gym.spaces.Box(low=0, high=127, shape=(), dtype=np.int8)
-
-
-class _Discrete2Space:
-    @property
-    def space(self):
-        return gym.spaces.Discrete(n=2)
+_VEC3_SIGNED_FLOAT32_SPACE = gym.spaces.Box(
+    low=-1e10, high=1e10, shape=(3,), dtype=np.float32
+)
+_VEC3_UNSIGNED_FLOAT32_SPACE = gym.spaces.Box(
+    low=0, high=1e10, shape=(3,), dtype=np.float32
+)
+_VEC3_SIGNED_FLOAT64_SPACE = gym.spaces.Box(
+    low=-1e10, high=1e10, shape=(3,), dtype=np.float64
+)
+_UNSIGNED_FLOAT32_SPACE = gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32)
+_SIGNED_RADIANS_FLOAT32_SPACE = gym.spaces.Box(
+    low=-math.pi, high=math.pi, shape=(), dtype=np.float32
+)
+_UNSIGNED_RADIANS_FLOAT32_SPACE = gym.spaces.Box(
+    low=0, high=2 * math.pi, shape=(), dtype=np.float32
+)
+_UNSIGNED_INT8_SPACE = gym.spaces.Box(low=0, high=127, shape=(), dtype=np.int8)
+_DISCRETE2_SPACE = gym.spaces.Discrete(n=2)
 
 
 class BaseSpaceFormat:
@@ -112,46 +79,52 @@ class BaseSpaceFormat:
         raise NotImplementedError()
 
 
-class HeadingSpaceFormat(_SignedRadiansFloat32Space, BaseSpaceFormat):
+class HeadingSpaceFormat(BaseSpaceFormat):
     @property
     def name(self):
         return "heading"
 
     @property
     def space(self):
-        return gym.spaces.Box(low=-math.pi, high=math.pi, shape=(), dtype=np.float32)
+        return _SIGNED_RADIANS_FLOAT32_SPACE
 
 
-class SpeedSpaceFormat(_UnsignedFloat32Space, BaseSpaceFormat):
+class SpeedSpaceFormat(BaseSpaceFormat):
     @property
     def name(self):
         return "speed"
 
     @property
     def space(self):
-        return gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.float32)
+        return _UNSIGNED_FLOAT32_SPACE
 
 
-class PositionSpaceFormat(_Vec3SignedFloat64Space, BaseSpaceFormat):
+class PositionSpaceFormat(BaseSpaceFormat):
     @property
     def name(self):
         return "position"
 
     @property
     def space(self):
-        return gym.spaces.Box(low=-1e10, high=1e10, shape=(3,), dtype=np.float64)
+        return _VEC3_SIGNED_FLOAT64_SPACE
 
 
-class VelocitySpaceFormat(_Vec3SignedFloat32Space, BaseSpaceFormat):
-    pass
+class VelocitySpaceFormat(BaseSpaceFormat):
+    @property
+    def space(self):
+        return _VEC3_SIGNED_FLOAT32_SPACE
 
 
-class AccelerationSpaceFormat(_Vec3SignedFloat32Space, BaseSpaceFormat):
-    pass
+class AccelerationSpaceFormat(BaseSpaceFormat):
+    @property
+    def space(self):
+        return _VEC3_SIGNED_FLOAT32_SPACE
 
 
-class JerkSpaceFormat(_Vec3SignedFloat32Space, BaseSpaceFormat):
-    pass
+class JerkSpaceFormat(BaseSpaceFormat):
+    @property
+    def space(self):
+        return _VEC3_SIGNED_FLOAT32_SPACE
 
 
 class ConfigurableSpaceFormat(BaseSpaceFormat):
@@ -208,7 +181,7 @@ class DictSpaceFormat(ConfigurableSpaceFormat):
         return gym.spaces.Dict({s.name: s.space for s in self._spaces})
 
 
-class EgoBoxSpaceFormat(_Vec3UnsignedFloat32Space, BaseSpaceFormat):
+class EgoBoxSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.array(obs.ego_vehicle_state.bounding_box.as_lwh).astype(np.float32)
 
@@ -219,6 +192,10 @@ class EgoBoxSpaceFormat(_Vec3UnsignedFloat32Space, BaseSpaceFormat):
     def name(self):
         return "box"
 
+    @property
+    def space(self):
+        return _VEC3_UNSIGNED_FLOAT32_SPACE
+
 
 class EgoHeadingSpaceFormat(HeadingSpaceFormat):
     def format(self, obs: Observation):
@@ -228,7 +205,7 @@ class EgoHeadingSpaceFormat(HeadingSpaceFormat):
         return True
 
 
-class EgoLaneIndexSpaceFormat(_UnsignedInt8Space, BaseSpaceFormat):
+class EgoLaneIndexSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int8(obs.ego_vehicle_state.lane_index)
 
@@ -238,6 +215,10 @@ class EgoLaneIndexSpaceFormat(_UnsignedInt8Space, BaseSpaceFormat):
     @property
     def name(self):
         return "lane_index"
+
+    @property
+    def space(self):
+        return _UNSIGNED_INT8_SPACE
 
 
 class EgoLinearVelocitySpaceFormat(VelocitySpaceFormat):
@@ -299,7 +280,7 @@ class EgoLaneIDSpaceFormat(BaseSpaceFormat):
         return gym.spaces.Text(_WAYPOINT_NAME_LIMIT, charset=_WAYPOINT_CHAR_SET)
 
 
-class EgoSteeringSpaceFormat(_SignedRadiansFloat32Space, BaseSpaceFormat):
+class EgoSteeringSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.float32(obs.ego_vehicle_state.steering)
 
@@ -310,8 +291,12 @@ class EgoSteeringSpaceFormat(_SignedRadiansFloat32Space, BaseSpaceFormat):
     def name(self):
         return "steering"
 
+    @property
+    def space(self):
+        return _SIGNED_RADIANS_FLOAT32_SPACE
 
-class EgoYawRateSpaceFormat(_UnsignedRadiansFloat32Space, BaseSpaceFormat):
+
+class EgoYawRateSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.float32(obs.ego_vehicle_state.yaw_rate)
 
@@ -321,6 +306,10 @@ class EgoYawRateSpaceFormat(_UnsignedRadiansFloat32Space, BaseSpaceFormat):
     @property
     def name(self):
         return "yaw_rate"
+
+    @property
+    def space(self):
+        return _UNSIGNED_RADIANS_FLOAT32_SPACE
 
 
 class EgoAngularAccelerationSpaceFormat(AccelerationSpaceFormat):
@@ -371,7 +360,7 @@ class EgoLinearJerkSpaceFormat(JerkSpaceFormat):
         return "linear_jerk"
 
 
-class DistanceTravelledSpace(_UnsignedFloat32Space, BaseSpaceFormat):
+class DistanceTravelledSpace(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.float32(obs.distance_travelled)
 
@@ -381,6 +370,10 @@ class DistanceTravelledSpace(_UnsignedFloat32Space, BaseSpaceFormat):
     @property
     def name(self):
         return "distance_travelled"
+
+    @property
+    def space(self):
+        return _UNSIGNED_FLOAT32_SPACE
 
 
 class EgoVehicleStateSpaceFormat(DictSpaceFormat):
@@ -414,7 +407,7 @@ class EgoVehicleStateSpaceFormat(DictSpaceFormat):
         return "ego_vehicle_state"
 
 
-class EventsAgentsAliveDoneSpaceFormat(_Discrete2Space, BaseSpaceFormat):
+class EventsAgentsAliveDoneSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.agents_alive_done)
 
@@ -425,8 +418,12 @@ class EventsAgentsAliveDoneSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def name(self):
         return "agents_alive_done"
 
+    @property
+    def space(self):
+        return _DISCRETE2_SPACE
 
-class EventsCollisionsSpaceFormat(_Discrete2Space, BaseSpaceFormat):
+
+class EventsCollisionsSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(len(obs.events.collisions) > 0)
 
@@ -437,8 +434,12 @@ class EventsCollisionsSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def name(self):
         return "collisions"
 
+    @property
+    def space(self):
+        return _DISCRETE2_SPACE
 
-class EventsNotMovingSpaceFormat(_Discrete2Space, BaseSpaceFormat):
+
+class EventsNotMovingSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.not_moving)
 
@@ -449,8 +450,12 @@ class EventsNotMovingSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def name(self):
         return "not_moving"
 
+    @property
+    def space(self):
+        return _DISCRETE2_SPACE
 
-class EventsOffRoadSpaceFormat(_Discrete2Space, BaseSpaceFormat):
+
+class EventsOffRoadSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.off_road)
 
@@ -461,8 +466,12 @@ class EventsOffRoadSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def name(self):
         return "off_road"
 
+    @property
+    def space(self):
+        return _DISCRETE2_SPACE
 
-class EventsOffRouteSpaceFormat(_Discrete2Space, BaseSpaceFormat):
+
+class EventsOffRouteSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.off_route)
 
@@ -473,8 +482,12 @@ class EventsOffRouteSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def name(self):
         return "off_route"
 
+    @property
+    def space(self):
+        return _DISCRETE2_SPACE
 
-class EventsOnShoulderSpaceFormat(_Discrete2Space, BaseSpaceFormat):
+
+class EventsOnShoulderSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.on_shoulder)
 
@@ -485,8 +498,12 @@ class EventsOnShoulderSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def name(self):
         return "on_shoulder"
 
+    @property
+    def space(self):
+        return _DISCRETE2_SPACE
 
-class EventsReachedGoalSpaceFormat(_Discrete2Space, BaseSpaceFormat):
+
+class EventsReachedGoalSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.reached_goal)
 
@@ -497,8 +514,12 @@ class EventsReachedGoalSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def name(self):
         return "reached_goal"
 
+    @property
+    def space(self):
+        return _DISCRETE2_SPACE
 
-class EventsReachedMaxEpisodeStepsSpaceFormat(_Discrete2Space, BaseSpaceFormat):
+
+class EventsReachedMaxEpisodeStepsSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.reached_max_episode_steps)
 
@@ -509,8 +530,12 @@ class EventsReachedMaxEpisodeStepsSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     def name(self):
         return "reached_max_episode_steps"
 
+    @property
+    def space(self):
+        return _DISCRETE2_SPACE
 
-class EventsWrongWaySpaceFormat(_Discrete2Space, BaseSpaceFormat):
+
+class EventsWrongWaySpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(obs.events.wrong_way)
 
@@ -520,6 +545,10 @@ class EventsWrongWaySpaceFormat(_Discrete2Space, BaseSpaceFormat):
     @property
     def name(self):
         return "wrong_way"
+
+    @property
+    def space(self):
+        return _DISCRETE2_SPACE
 
 
 class EventsSpaceFormat(DictSpaceFormat):
@@ -943,7 +972,7 @@ class SignalsSpaceFormat(ConfigurableSpaceFormat):
         )
 
 
-class EnabledSpaceFormat(_Discrete2Space, BaseSpaceFormat):
+class EnabledSpaceFormat(BaseSpaceFormat):
     def format(self, obs: Observation):
         return np.int64(True)
 
@@ -953,6 +982,10 @@ class EnabledSpaceFormat(_Discrete2Space, BaseSpaceFormat):
     @property
     def name(self):
         return "active"
+
+    @property
+    def space(self):
+        return _DISCRETE2_SPACE
 
 
 class ObservationSpaceFormat(DictSpaceFormat):
