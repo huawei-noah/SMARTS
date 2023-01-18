@@ -45,6 +45,7 @@ def _eval_worker(name, env_config, episodes, agent_config):
         env_config["env"],
         scenario=env_config["scenario"],
         **env_config["shared_params"],
+        **agent_config["interface"],
     )
     env = EpisodeLimit(env, episodes)
     env = CompetitionMetrics(env)
@@ -154,16 +155,14 @@ def benchmark(benchmark_args, agent_args):
     print(format_scores_total(named_scores, len(env_args) or 1))
 
 
-def benchmark_from_configs(benchmark_config, agent_config=None, log_workers=False):
+def benchmark_from_configs(benchmark_config, agent_config=None, log=False):
     global LOG_WORKERS
     benchmark_args = load_config(benchmark_config)
     agent_args = {}
     if agent_config:
         agent_args = load_config(agent_config)
-    print(agent_config)
-    print(agent_args)
     auto_install(benchmark_args)
-    LOG_WORKERS = log_workers
+    LOG_WORKERS = log
     benchmark(
         benchmark_args=benchmark_args["benchmark"],
         agent_args={**benchmark_args["agent"], **agent_args},
@@ -186,4 +185,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    benchmark_from_configs(args.config, log_workers=args.log_workers)
+    benchmark_from_configs(args.config, log=args.log_workers)

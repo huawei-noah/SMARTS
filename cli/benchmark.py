@@ -35,13 +35,23 @@ def benchmark_cli():
 )
 @click.argument("benchmark_id", nargs=1, metavar="<benchmark_id>")
 @click.argument("agent_config", nargs=1, metavar="<agent_config>")
-def run(benchmark_id: str, agent_config: str):
+@click.option(
+    "--debug-log",
+    is_flag=True,
+    default=False,
+    help="Log the benchmark.",
+)
+def run(benchmark_id: str, agent_config: str, debug_log: bool):
     from smarts.benchmark import BENCHMARK_LISTING_FILE, run_benchmark
 
     benchmark_id, _, benchmark_version = benchmark_id.partition("==")
 
     run_benchmark(
-        benchmark_id, float(benchmark_version), agent_config, BENCHMARK_LISTING_FILE
+        benchmark_id,
+        float(benchmark_version),
+        agent_config,
+        BENCHMARK_LISTING_FILE,
+        debug_log=debug_log,
     )
 
 

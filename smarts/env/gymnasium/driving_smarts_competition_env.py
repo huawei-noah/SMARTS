@@ -1,4 +1,4 @@
-# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2023. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,18 +18,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import copy
 import logging
+import math
 import os
 import pathlib
 import typing
 from functools import partial
+from typing import Any, Dict, Tuple
 
 import gymnasium as gym
 import numpy as np
 
 from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
-from smarts import sstudio
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
@@ -134,7 +136,7 @@ def driving_smarts_competition_v0_env(
         f"Agent_{i}": resolve_agent_interface(img_meters, img_pixels, action_space)
         for i in range(env_specs["num_agent"])
     }
-    action_space = resolve_env_action_space(agent_interfaces)
+    env_action_space = resolve_env_action_space(agent_interfaces)
 
     visualization_client_builder = None
     if not headless:
@@ -157,7 +159,9 @@ def driving_smarts_competition_v0_env(
         sumo_options=SumoOptions(headless=sumo_headless),
         visualization_client_builder=visualization_client_builder,
     )
-    env.action_space = action_space
+    env.action_space = env_action_space
+    if ActionSpaceType[action_space] == ActionSpaceType.TargetPose:
+        env = _LimitTargetPose(env)
     return env
 
 
@@ -297,3 +301,118 @@ def resolve_env_action_space(agent_interfaces: typing.Dict[str, AgentInterface])
             for a_id, a_inter in agent_interfaces.items()
         }
     )
+
+
+class _LimitTargetPose(gym.Wrapper):
+    """Uses previous observation to limit the next TargetPose action range."""
+
+    def __init__(self, env: gym.Env):
+        """
+        Args:
+            env (gym.Env): Environment to be wrapped.
+        """
+        super().__init__(env)
+        self._prev_obs: Dict[str, Dict[str, Any]]
+
+    def step(
+        self, action: Dict[str, np.ndarray]
+    ) -> Tuple[
+        Dict[str, Any],
+        Dict[str, float],
+        Dict[str, bool],
+        Dict[str, Dict[str, Any]],
+    ]:
+        """Steps the environment.
+
+        Args:
+            action (Dict[str, Any]): Action for each agent.
+
+        Returns:
+            Tuple[ Dict[str, Any], Dict[str, float], Dict[str, bool], Dict[str, Dict[str, Any]] ]:
+                Observation, reward, done, and info, for each agent is returned.
+        """
+
+        limited_actions: Dict[str, np.ndarray] = {}
+        for agent_name, agent_action in action.items():
+            if not agent_name in self._prev_obs:
+                continue
+            limited_actions[agent_name] = self._limit(
+                name=agent_name,
+                action=agent_action,
+                prev_coord=self._prev_obs[agent_name]["position"],
+            )
+
+        out = self.env.step(limited_actions)
+        self._prev_obs = self._store(obs=out[0])
+        return out
+
+    def reset(self, **kwargs) -> Dict[str, Any]:
+        """Resets the environment.
+
+        Returns:
+            Dict[str, Any]: A dictionary of observation for each agent.
+        """
+        obs, info = self.env.reset(**kwargs)
+        self._prev_obs = self._store(obs=obs)
+        return obs, info
+
+    def _store(self, obs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+        filtered_obs: Dict[str, Dict[str, Any]] = {}
+        for agent_name, agent_obs in obs.items():
+            filtered_obs[agent_name] = {
+                "position": copy.deepcopy(
+                    agent_obs["ego_vehicle_state"]["position"][:2]
+                )
+            }
+        return filtered_obs
+
+    def _limit(
+        self, name: str, action: np.ndarray, prev_coord: np.ndarray
+    ) -> np.ndarray:
+        """Set time delta and limit Euclidean distance travelled in TargetPose action space.
+
+        Args:
+            name (str): Agent's name.
+            action (np.ndarray): Agent's action.
+            prev_coord (np.ndarray): Agent's previous xy coordinate on the map.
+
+        Returns:
+            np.ndarray: Agent's TargetPose action which has fixed time-delta and constrained next xy coordinate.
+        """
+
+        time_delta = 0.1
+        limited_action = np.array(
+            [action[0], action[1], action[2], time_delta], dtype=np.float32
+        )
+        speed_max = 28  # 28m/s = 100.8 km/h. Maximum speed should be >0.
+        dist_max = speed_max * time_delta
+
+        # Set time-delta
+        if not math.isclose(action[3], time_delta, abs_tol=1e-3):
+            logger.warning(
+                "%s: Expected time-delta=%s, but got time-delta=%s. "
+                "Action time-delta automatically changed to %s.",
+                name,
+                time_delta,
+                action[3],
+                time_delta,
+            )
+
+        # Limit Euclidean distance travelled
+        next_coord = action[:2]
+        vector = next_coord - prev_coord
+        dist = np.linalg.norm(vector)
+        if dist > dist_max:
+            unit_vector = vector / dist
+            limited_action[0], limited_action[1] = prev_coord + dist_max * unit_vector
+            logger.warning(
+                "%s: Allowed max speed=%s, but got speed=%s. Next x-coordinate "
+                "and y-coordinate automatically changed from %s to %s.",
+                name,
+                speed_max,
+                dist / time_delta,
+                next_coord,
+                limited_action[:2],
+            )
+
+        return limited_action

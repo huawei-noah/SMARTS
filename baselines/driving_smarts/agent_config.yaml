@@ -1,6 +1,6 @@
 agent:
   interface:
-    max_episode_steps: 1000
+    action_space: "RelativeTargetPose" # we can only allow `RelativeTargetPose` and `TargetPose`
     img_meters: 50 # Observation image area size in meters.
     img_pixels: 112 # Observation image size in pixels.
   locator: "smarts.zoo:competition-baseline-v0"

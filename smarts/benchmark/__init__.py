@@ -56,7 +56,9 @@ def _get_entrypoint(path, name):
     return entrypoint
 
 
-def run_benchmark(benchmark_name, benchmark_version, agent_config, benchmark_listing):
+def run_benchmark(
+    benchmark_name, benchmark_version, agent_config, benchmark_listing, debug_log=False
+):
     from smarts.core.utils.resources import load_yaml_config_with_substitution
 
     listing_dict = load_yaml_config_with_substitution(Path(benchmark_listing))
@@ -74,7 +76,7 @@ def run_benchmark(benchmark_name, benchmark_version, agent_config, benchmark_lis
 
     module, _, name = benchmark["entrypoint"].rpartition(".")
     entrypoint = _get_entrypoint(module, name)
-    entrypoint(**benchmark.get("params", {}), agent_config=agent_config)
+    entrypoint(**benchmark.get("params", {}), agent_config=agent_config, log=debug_log)
 
 
 def list_benchmarks(benchmark_listing):
