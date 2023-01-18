@@ -58,7 +58,7 @@ kiwisolver==1.4.4
 libclang==15.0.6.1
 lz4==4.3.2
 Markdown==3.4.1
-MarkupSafe==2.1.1
+MarkupSafe==2.1.2
 matplotlib==3.5.3
 msgpack==1.0.4
 multidict==6.0.4
