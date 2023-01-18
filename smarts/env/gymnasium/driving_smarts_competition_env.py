@@ -32,10 +32,17 @@ import numpy as np
 
 from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
-from smarts.core.agent_interface import AgentInterface
+from smarts.core.agent_interface import (
+    OGM,
+    RGB,
+    AgentInterface,
+    DoneCriteria,
+    DrivableAreaGridMap,
+    RoadWaypoints,
+    Waypoints,
+)
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
-from smarts.env.multi_scenario_env import resolve_agent_interface
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
@@ -156,6 +163,7 @@ def driving_smarts_competition_v0_env(
         sim_name="Driving_SMARTS_v0",
         headless=headless,
         visdom=visdom,
+        seed=seed,
         sumo_options=SumoOptions(headless=sumo_headless),
         visualization_client_builder=visualization_client_builder,
     )
