@@ -311,6 +311,50 @@ def resolve_env_action_space(agent_interfaces: typing.Dict[str, AgentInterface])
     )
 
 
+def resolve_agent_interface(
+    img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose", **kwargs
+):
+    """Resolve an agent interface for the environments in this module."""
+
+    done_criteria = DoneCriteria(
+        collision=True,
+        off_road=True,
+        off_route=False,
+        on_shoulder=False,
+        wrong_way=False,
+        not_moving=False,
+        agents_alive=None,
+    )
+    max_episode_steps = 800
+    road_waypoint_horizon = 50
+    waypoints_lookahead = 50
+    return AgentInterface(
+        accelerometer=True,
+        action=ActionSpaceType[action_space],
+        done_criteria=done_criteria,
+        drivable_area_grid_map=DrivableAreaGridMap(
+            width=img_pixels,
+            height=img_pixels,
+            resolution=img_meters / img_pixels,
+        ),
+        lidar_point_cloud=True,
+        max_episode_steps=max_episode_steps,
+        neighborhood_vehicle_states=True,
+        occupancy_grid_map=OGM(
+            width=img_pixels,
+            height=img_pixels,
+            resolution=img_meters / img_pixels,
+        ),
+        top_down_rgb=RGB(
+            width=img_pixels,
+            height=img_pixels,
+            resolution=img_meters / img_pixels,
+        ),
+        road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
+        waypoint_paths=Waypoints(lookahead=waypoints_lookahead),
+    )
+
+
 class _LimitTargetPose(gym.Wrapper):
     """Uses previous observation to limit the next TargetPose action range."""
 
