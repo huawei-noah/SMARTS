@@ -37,6 +37,8 @@ def _make_agent_specs(topdown_rgb):
         rgb = RGB()
     elif topdown_rgb == "false":
         rgb = False
+    else:
+        raise RuntimeError(f"{topdown_rgb} not parameterized.")
 
     return {
         "AGENT_"
@@ -113,7 +115,7 @@ def _check_observation(base_env, obs, num_stack):
 
 
 @pytest.mark.parametrize("num_stack", [1, 2])
-@pytest.mark.parametrize("base_env", ["top_down_rgb"], indirect=True)
+@pytest.mark.parametrize("base_env", ["rgb"], indirect=True)
 def test_observation(base_env, num_stack):
     base_env = _frame_stack(base_env, num_stack)
     env = RGBImage(base_env, num_stack)
