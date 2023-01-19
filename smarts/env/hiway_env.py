@@ -118,13 +118,6 @@ class HiWayEnv(gym.Env):
         if not fixed_timestep_sec:
             fixed_timestep_sec = timestep_sec or 0.1
 
-        def assert_type_and_return(v, types, target):
-            if not isinstance(v, types):
-                raise TypeError(
-                    f"{target}must be supplied with only {target} in values."
-                )
-            return v
-
         self._agent_interfaces = None
         if isinstance(agent_interfaces, dict):
             self._agent_specs = {
@@ -133,10 +126,7 @@ class HiWayEnv(gym.Env):
         elif isinstance(agent_specs, dict):
             self._agent_specs = agent_specs
             self._agent_interfaces = {
-                agent_id: assert_type_and_return(
-                    agent.interface, AgentInterface, "agent_interface"
-                )
-                for agent_id, agent in agent_specs.items()
+                agent_id: agent.interface for agent_id, agent in agent_specs.items()
             }
         else:
             raise TypeError(
