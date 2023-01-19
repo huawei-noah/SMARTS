@@ -94,7 +94,6 @@ class _Metrics(gym.Wrapper):
         """Steps the environment by one step."""
         result = super().step(action)
 
-        terminated, truncated = False, False
         obs, _, terminated, truncated, info = result
 
         # Only count steps in which an ego agent is present.
