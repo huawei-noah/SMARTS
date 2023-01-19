@@ -29,7 +29,6 @@ import ray
 from smarts.benchmark import auto_install
 from smarts.benchmark.driving_smarts import load_config
 from smarts.benchmark.driving_smarts.v0 import DEFAULT_CONFIG
-from smarts.env.gymnasium.wrappers.episode_limit import EpisodeLimit
 from smarts.env.gymnasium.wrappers.metrics import CompetitionMetrics, Score
 from smarts.zoo import registry as agent_registry
 
@@ -47,7 +46,6 @@ def _eval_worker(name, env_config, episodes, agent_config):
         **env_config["shared_params"],
         **agent_config["interface"],
     )
-    env = EpisodeLimit(env, episodes)
     env = CompetitionMetrics(env)
     agent = agent_registry.make_agent(
         locator=agent_config["locator"],
@@ -55,8 +53,9 @@ def _eval_worker(name, env_config, episodes, agent_config):
     )
 
     observation, info = env.reset()
+    current_resets = 0
     try:
-        while not info.get("reached_episode_limit"):
+        while current_resets < episodes:
             try:
                 # action: [global x-coordinate, global y-coordinate]
                 action = {
@@ -70,6 +69,7 @@ def _eval_worker(name, env_config, episodes, agent_config):
             else:
                 observation, reward, terminated, truncated, info = env.step(action)
             if terminated["__all__"] or truncated["__all__"]:
+                current_resets += 1
                 observation, info = env.reset()
     finally:
         score = env.score()
