@@ -12,7 +12,7 @@ from smarts.core.utils.episodes import episodes
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
 
 
-class LaneFollowAgent(Agent):
+class LaneFollowerAgent(Agent):
     def act(self, obs: Dict[Any, Union[Any, Dict]]):
         return (obs["waypoint_paths"]["speed_limit"][0][0], 0)
 
@@ -29,18 +29,17 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     )
 
     for episode in episodes(n=num_episodes):
-        agent = LaneFollowAgent()
+        agent = LaneFollowerAgent()
         observation, info = env.reset()
         episode.record_scenario(env.scenario_log)
 
-        done = False
-        while not done:
+        done = {"__all__": False}
+        while not done["__all__"]:
             agent_action = agent.act(observation["SingleAgent"])
             observation, reward, terminated, truncated, info = env.step(
                 {"SingleAgent": agent_action}
             )
-            done = truncated or terminated
-            episode.record_step(observation, reward, {"__all__": done}, info)
+            episode.record_step(observation, reward, terminated, info)
 
     env.close()
 
