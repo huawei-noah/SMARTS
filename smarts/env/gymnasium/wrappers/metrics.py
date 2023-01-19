@@ -102,7 +102,7 @@ class _Metrics(gym.Wrapper):
 
         dones = {"__all__": False}
         if isinstance(terminated, dict):
-            dones = {k: v or truncated[k] for k, v in terminated.values()}
+            dones = {k: v or truncated[k] for k, v in terminated.items()}
         elif isinstance(terminated, bool):
             if terminated or truncated:
                 dones["__all__"] = True
