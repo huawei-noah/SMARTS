@@ -141,7 +141,7 @@ def _dist_remainder():
             dist = 0
         else:
             cur_pos = Point(*obs["ego_vehicle_state"]["position"])
-            goal_pos = Point(*obs["mission"]["goal_position"])
+            goal_pos = Point(*obs["ego_vehicle_state"]["mission"]["goal_position"])
             dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
 
         # Cap remainder distance

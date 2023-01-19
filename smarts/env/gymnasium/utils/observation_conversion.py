@@ -398,6 +398,7 @@ class EgoVehicleStateSpaceFormat(DictSpaceFormat):
             EgoSpeedSpaceFormat(),
             EgoSteeringSpaceFormat(),
             EgoYawRateSpaceFormat(),
+            MissionSpaceFormat(),
             # optional
             EgoAngularAccelerationSpaceFormat(),
             EgoAngularJerkSpaceFormat(),
@@ -1004,7 +1005,6 @@ class ObservationSpaceFormat(DictSpaceFormat):
             EventsSpaceFormat(agent_interface),
             DrivableAreaGridMapSpaceFormat(agent_interface),
             LidarPointCloudSpaceFormat(agent_interface),
-            MissionSpaceFormat(),
             NeighborhoodVehicleStatesSpaceFormat(agent_interface),
             OccupancyGridMapSpaceFormat(agent_interface),
             TopDownRGBSpaceFormat(agent_interface),

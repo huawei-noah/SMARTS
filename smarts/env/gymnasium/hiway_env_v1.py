@@ -138,9 +138,7 @@ class HiWayEnvV1(gym.Env):
 
         self._env_renderer = None
 
-        visdom_client = None
-        if visdom:
-            visdom_client = VisdomClient()
+        visdom_client = VisdomClient() if visdom else None
 
         traffic_sims = []
         if Scenario.any_support_sumo_traffic(scenarios):
@@ -326,7 +324,13 @@ class HiWayEnvV1(gym.Env):
             The render function was changed to no longer accept parameters, rather these parameters should be specified
             in the environment initialised, i.e., ``gymnasium.make("CartPole-v1", render_mode="human")``
         """
-        raise NotImplementedError
+        if "rgb_array" in self.metadata["render.modes"]:
+            if self._env_renderer is None:
+                from smarts.env.utils.record import AgentCameraRGBRender
+
+                self._env_renderer = AgentCameraRGBRender(self)
+
+            return self._env_renderer.render(env=self)
 
     def close(self):
         """After the user has finished using the environment, close contains the code necessary to "clean up" the environment.
