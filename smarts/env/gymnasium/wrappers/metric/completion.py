@@ -31,6 +31,8 @@ from smarts.core.utils.math import running_mean
 
 logger = logging.getLogger(__file__)
 
+MAXIMUM_OFFROAD_DIST = 5
+
 
 @dataclass(frozen=True)
 class Completion:
@@ -79,7 +81,7 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
             ),
         )
         plan = Plan(road_map=road_map, mission=mission, find_route=False)
-        plan.create_route(mission=mission, radius=5)
+        plan.create_route(mission=mission, radius=MAXIMUM_OFFROAD_DIST)
         from_route_point = RoadMap.Route.RoutePoint(pt=start)
         to_route_point = RoadMap.Route.RoutePoint(pt=end)
 
@@ -119,7 +121,8 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
         dist_tot = 1e10
         warnings.warn(
             "completion.get dist(): Did not find a route from "
-            f"{point_a} to {point_b}, because too far off road. Score set to minimum."
+            f"{point_a} to {point_b}, because too far off road. "
+            f"Agent vehicle is more than {MAXIMUM_OFFROAD_DIST}m off road."
             "This will cause a large penalty in completion score.",
         )
     return dist_tot
