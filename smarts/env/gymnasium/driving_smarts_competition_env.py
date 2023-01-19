@@ -320,10 +320,10 @@ def resolve_agent_action_space(agent_interface: AgentInterface):
     ), f"Unsupported action type `{agent_interface.action}` not in supported actions `{SUPPORTED_ACTION_TYPES}`"
 
     if agent_interface.action == ActionSpaceType.RelativeTargetPose:
-        max_speed = MAXIMUM_SPEED_MPS / 0.1  # assumes 0.1 timestep
+        max_dist = MAXIMUM_SPEED_MPS * 0.1  # assumes 0.1 timestep
         return gym.spaces.Box(
-            low=np.array([-max_speed, -max_speed, -np.pi]),
-            high=np.array([max_speed, max_speed, np.pi]),
+            low=np.array([-max_dist, -max_dist, -np.pi]),
+            high=np.array([max_dist, max_dist, np.pi]),
             dtype=np.float32,
         )
     if agent_interface.action == ActionSpaceType.TargetPose:
