@@ -50,6 +50,7 @@ SUPPORTED_ACTION_TYPES = (
     ActionSpaceType.RelativeTargetPose,
     ActionSpaceType.TargetPose,
 )
+MAXIMUM_SPEED_MPS = 28  # 28m/s = 100.8 km/h. This is a safe maximum speed.
 
 
 def driving_smarts_competition_v0_env(
@@ -291,9 +292,10 @@ def resolve_agent_action_space(agent_interface: AgentInterface):
     ), f"Unsupported action type `{agent_interface.action}` not in supported actions `{SUPPORTED_ACTION_TYPES}`"
 
     if agent_interface.action == ActionSpaceType.RelativeTargetPose:
+        max_speed = MAXIMUM_SPEED_MPS / 0.1  # assumes 0.1 timestep
         return gym.spaces.Box(
-            low=np.array([-28, -28, -np.pi]),
-            high=np.array([28, 28, np.pi]),
+            low=np.array([-max_speed, -max_speed, -np.pi]),
+            high=np.array([max_speed, max_speed, np.pi]),
             dtype=np.float32,
         )
     if agent_interface.action == ActionSpaceType.TargetPose:
@@ -438,7 +440,7 @@ class _LimitTargetPose(gym.Wrapper):
         limited_action = np.array(
             [action[0], action[1], action[2], time_delta], dtype=np.float32
         )
-        speed_max = 28  # 28m/s = 100.8 km/h. Maximum speed should be >0.
+        speed_max = MAXIMUM_SPEED_MPS
         dist_max = speed_max * time_delta
 
         # Set time-delta
