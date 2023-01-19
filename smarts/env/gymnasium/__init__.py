@@ -23,9 +23,11 @@ from gymnasium.envs.registration import register
 register(
     id="hiway-v1",
     entry_point="smarts.env.gymnasium.hiway_env_v1:HiWayEnvV1",
+    disable_env_checker=True,
 )
 
 register(
     id="driving-smarts-competition-v0",
     entry_point="smarts.env.gymnasium.driving_smarts_competition_env:driving_smarts_competition_v0_env",
+    disable_env_checker=True,
 )
