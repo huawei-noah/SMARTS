@@ -43,8 +43,6 @@ _WAYPOINT_CHAR_SET = frozenset(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=+.,;\"' "
 )
 
-## TODO MTA: use constants instead these classes
-
 _VEC3_SIGNED_FLOAT32_SPACE = gym.spaces.Box(
     low=-1e10, high=1e10, shape=(3,), dtype=np.float32
 )

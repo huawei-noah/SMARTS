@@ -57,13 +57,13 @@ def _eval_worker(name, env_config, episodes, agent_config):
     try:
         while current_resets < episodes:
             try:
-                # action: [global x-coordinate, global y-coordinate]
                 action = {
                     agent_id: agent.act(obs) for agent_id, obs in observation.items()
                 }
                 # assert env.action_space.contains(action)
             except Exception:
                 logging.error("Policy robustness failed.")
+                # # TODO MTA: mark policy failures
                 # env.mark_policy_failure()
                 terminated, truncated = False, True
             else:
