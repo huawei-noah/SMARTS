@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import logging
+import warnings
 from dataclasses import dataclass
 from typing import Any, Callable, Dict
 
@@ -78,7 +79,7 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
             ),
         )
         plan = Plan(road_map=road_map, mission=mission, find_route=False)
-        plan.create_route(mission=mission, radius=300)
+        plan.create_route(mission=mission, radius=5)
         from_route_point = RoadMap.Route.RoutePoint(pt=start)
         to_route_point = RoadMap.Route.RoutePoint(pt=end)
 
@@ -116,11 +117,10 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
             raise
     except CompletionError:
         dist_tot = 1e10
-        logger.info(
+        warnings.warn(
             "completion.get dist(): Did not find a route from "
-            "%s to %s, because too far off road. Score set to minimum.",
-            point_a,
-            point_b,
+            f"{point_a} to {point_b}, because too far off road. Score set to minimum."
+            "This will cause a large penalty in completion score.",
         )
     return dist_tot
 
