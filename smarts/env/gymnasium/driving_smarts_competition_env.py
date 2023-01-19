@@ -317,7 +317,10 @@ def resolve_env_action_space(agent_interfaces: Dict[str, AgentInterface]):
 
 
 def resolve_agent_interface(
-    img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose", **kwargs
+    img_meters: int = 64,
+    img_pixels: int = 256,
+    action_space="RelativeTargetPose",
+    **kwargs,
 ):
     """Resolve an agent interface for the environments in this module."""
 
