@@ -101,9 +101,13 @@ class _Metrics(gym.Wrapper):
         if len(obs) == 0:
             return result
 
-        done = False
-        if terminated or truncated:
-            done = True
+        dones = {"__all__": False}
+        if isinstance(terminated, dict):
+            dones = {k: v or truncated[k] for k, v in terminated.values()}
+        elif isinstance(terminated, bool):
+            if terminated or truncated:
+                dones["__all__"] = True
+            dones.update({a: d["done"] for a, d in info.items()})
 
         obs = {agent_id: o for agent_id, o in obs.items() if o["active"]}
         # fmt: off
@@ -120,7 +124,7 @@ class _Metrics(gym.Wrapper):
             # Update stored costs.
             self._records[self._scen_name][agent_name].record.costs = costs
 
-            if info[agent_name]["done"]:
+            if dones[agent_name]:
                 self._done_agents.add(agent_name)
                 if not (
                     agent_obs["events"]["reached_goal"]
@@ -147,74 +151,6 @@ class _Metrics(gym.Wrapper):
                     counts,
                     self._records[self._scen_name][agent_name].record.counts
                 )
-
-        def records(self) -> Dict[str, Dict[str, Record]]:
-            """
-            Fine grained performance metric for each agent in each scenario.
-
-            Returns:
-                Dict[str, Dict[str, Record]]: Performance record in a nested
-                    dictionary for each agent in each scenario.
-
-            Example::
-
-            >> records()
-            >> {
-                    scen1: {
-                        agent1: Record(completion, costs, counts),
-                        agent2: Record(completion, costs, counts),
-                    },
-                    scen2: {
-                        agent1: Record(completion, costs, counts),
-                    },
-                }
-            """
-
-            records = {}
-            for scen, agents in self._records.items():
-                records[scen] = {}
-                for agent, data in agents.items():
-                    records[scen][agent] = copy.deepcopy(data.record)
-
-            return records
-
-        def score(self) -> Dict[str, float]:
-            """
-            Computes four sub-component scores, namely, "Completion", "Time",
-            "Humanness", "Rules", and one total combined score named "Overall"
-            on the wrapped environment.
-
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            |             | Range  | Remarks                                                                                             |
-            +=============+========+=====================================================================================================+
-            | Overall     | [0, 1] | Total score which combines "Completion", "Time", "Humanness", and "Rules". The higher, the better.  |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            | Completion  | [0, 1] | Proportion of scenarios tasks completed. The higher, the better.                                    |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            | Time        | [0, 1] | Time taken to complete scenario. The lower, the better.                                             |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            | Humanness   | [0, 1] | Humanness indicator. The higher, the better.                                                        |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            | Rules       | [0, 1] | Traffic rules compliance. The higher, the better.                                                   |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-
-            Returns:
-                Dict[str, float]: Contains "Overall", "Completion", "Time",
-                "Humanness", and "Rules" scores.
-            """
-
-            # fmt: off
-            counts_list, costs_list, completion_list = zip(
-                *[
-                    (data.record.counts, data.record.costs, data.record.completion)
-                    for agents in self._records.values()
-                    for data in agents.values()
-                ]
-            )
-            agents_tot: int = len(counts_list)  # Total number of agents over all scenarios
-            counts_tot: Counts = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
-            costs_tot: Costs = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
-            completion_tot: Completion = functools.reduce(lambda a, b: _add_dataclass(a, b), completion_list)
 
         return result
 
@@ -250,7 +186,27 @@ class _Metrics(gym.Wrapper):
 
     def score(self) -> Dict[str, float]:
         """
-        An overall performance score achieved on the wrapped environment.
+        Computes four sub-component scores, namely, "Completion", "Time",
+        "Humanness", "Rules", and one total combined score named "Overall"
+        on the wrapped environment.
+
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        |             | Range  | Remarks                                                                                             |
+        +=============+========+=====================================================================================================+
+        | Overall     | [0, 1] | Total score which combines "Completion", "Time", "Humanness", and "Rules". The higher, the better.  |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        | Completion  | [0, 1] | Proportion of scenarios tasks completed. The higher, the better.                                    |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        | Time        | [0, 1] | Time taken to complete scenario. The lower, the better.                                             |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        | Humanness   | [0, 1] | Humanness indicator. The higher, the better.                                                        |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        | Rules       | [0, 1] | Traffic rules compliance. The higher, the better.                                                   |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+
+        Returns:
+            Dict[str, float]: Contains "Overall", "Completion", "Time",
+            "Humanness", and "Rules" scores.
         """
         # fmt: off
         counts_list, costs_list, completion_list = zip(

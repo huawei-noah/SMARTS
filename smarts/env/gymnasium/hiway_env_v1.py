@@ -158,10 +158,10 @@ class HiWayEnvV1(gym.Env):
         # TODO: set action space
 
         # TODO: set observation space
-        self.observations_formatter = ObservationsSpaceFormat(
+        self._observations_formatter = ObservationsSpaceFormat(
             agent_interfaces, observation_options
         )
-        self.observation_space = self.observations_formatter.space
+        self.observation_space = self._observations_formatter.space
 
         from smarts.core.smarts import SMARTS
 
@@ -213,7 +213,7 @@ class HiWayEnvV1(gym.Env):
 
         observations, rewards, dones, extras = self._smarts.step(action)
 
-        infos = {
+        info = {
             agent_id: {
                 "score": value,
                 "env_obs": observations[agent_id],
@@ -224,20 +224,36 @@ class HiWayEnvV1(gym.Env):
         }
 
         if self._env_renderer is not None:
-            self._env_renderer.step(observations, rewards, dones, infos)
+            self._env_renderer.step(observations, rewards, dones, info)
 
         for done in dones.values():
             self._dones_registered += 1 if done else 0
 
         dones["__all__"] = self._dones_registered >= len(self._agent_interfaces)
 
-        assert all("score" in v for v in infos.values())
-        return (
-            self.observations_formatter.format(observations),
-            sum(r for r in rewards.values()),
-            dones["__all__"],
-            dones["__all__"],
-            infos,
+        assert all("score" in v for v in info.values())
+
+        if self._observations_formatter.observation_options == ObservationOptions.full:
+            return (
+                self._observations_formatter.format(observations),
+                sum(r for r in rewards.values()),
+                dones["__all__"],
+                dones["__all__"],
+                info,
+            )
+        elif (
+            self._observations_formatter.observation_options
+            == ObservationOptions.multi_agent
+        ):
+            return (
+                self._observations_formatter.format(observations),
+                rewards,
+                dones,
+                dones,
+                info,
+            )
+        raise RuntimeError(
+            f"Invalid observation configuration using {self._observations_formatter.observation_options}"
         )
 
     def reset(
@@ -281,7 +297,7 @@ class HiWayEnvV1(gym.Env):
 
         if seed is not None:
             smarts_seed(seed)
-        return self.observations_formatter.format(observations), info
+        return self._observations_formatter.format(observations), info
 
     def render(
         self,

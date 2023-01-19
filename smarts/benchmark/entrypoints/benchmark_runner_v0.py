@@ -69,7 +69,7 @@ def _eval_worker(name, env_config, episodes, agent_config):
                 terminated, truncated = False, True
             else:
                 observation, reward, terminated, truncated, info = env.step(action)
-            if terminated or truncated:
+            if terminated["__all__"] or truncated["__all__"]:
                 observation, info = env.reset()
     finally:
         score = env.score()
