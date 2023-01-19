@@ -75,9 +75,11 @@ def driving_smarts_competition_v0_env(
     .. note::
 
         A ``smarts.core.controllers.ActionSpaceType.RelativeTargetPose``, which is a
-        sequence of [x-coordinate, y-coordinate, heading].
+        sequence of [Δx, Δy, heading] or a
+        ``smarts.core.controllers.ActionSpaceType.TargetPose``, which is a
+            sequence of [x-coordinate, y-coordinate, heading, 0.1].
 
-        Type:
+        Type(RelativeTargetPose):
 
         .. code-block:: python
 
@@ -94,11 +96,36 @@ def driving_smarts_competition_v0_env(
             * - Action
               - Value range
             * - Ego's next x-coordinate on the map
-              - [-28,28]
+              - [-2.8m/s,2.8m/s]
             * - Ego's next y-coordinate on the map
-              - [-28,28]
+              - [-2.8m/s,2.8m/s]
             * - Ego's next heading with respect to the map's axes
               - [-π,π]
+
+        Type(TargetPose):
+
+        .. code-block:: python
+
+            gym.spaces.Box(
+                    low=np.array([-1e10, -1e10, -π, 0.1]),
+                    high=np.array([1e10, 1e10, π], 0.1),
+                    dtype=np.float32
+                    )
+
+        .. list-table:: Table
+            :widths: 25 25
+            :header-rows: 1
+
+            * - Action
+              - Value range
+            * - Ego's next x-coordinate on the map
+              - [-1e10m,1e10m]
+            * - Ego's next y-coordinate on the map
+              - [-1e10m,1e10m]
+            * - Ego's next heading with respect to the map's axes
+              - [-π,π]
+            * - The time delta snapped to 0.1 seconds.
+              - [0.1,0.1]
 
     Reward:
 
