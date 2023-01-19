@@ -31,6 +31,7 @@ import numpy as np
 
 from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
+from smarts import sstudio
 from smarts.core.agent_interface import (
     OGM,
     RGB,
