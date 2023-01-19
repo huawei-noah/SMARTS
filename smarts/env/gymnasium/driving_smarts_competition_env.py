@@ -23,9 +23,8 @@ import logging
 import math
 import os
 import pathlib
-import typing
 from functools import partial
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import gymnasium as gym
 import numpy as np
@@ -47,7 +46,10 @@ from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
 
-SUPPORTED_ACTION_TYPES = (ActionSpaceType.RelativeTargetPose,)
+SUPPORTED_ACTION_TYPES = (
+    ActionSpaceType.RelativeTargetPose,
+    ActionSpaceType.TargetPose,
+)
 
 
 def driving_smarts_competition_v0_env(
@@ -59,7 +61,7 @@ def driving_smarts_competition_v0_env(
     seed: int = 42,
     visdom: bool = False,
     sumo_headless: bool = True,
-    envision_record_data_replay_path: typing.Optional[str] = None,
+    envision_record_data_replay_path: Optional[str] = None,
 ):
     """An environment with a mission to be completed by a single or multiple ego agents.
 
@@ -284,6 +286,10 @@ def _get_env_specs(scenario: str):
 
 
 def resolve_agent_action_space(agent_interface: AgentInterface):
+    assert (
+        agent_interface.action in SUPPORTED_ACTION_TYPES
+    ), f"Unsupported action type `{agent_interface.action}` not in supported actions `{SUPPORTED_ACTION_TYPES}`"
+
     if agent_interface.action == ActionSpaceType.RelativeTargetPose:
         return gym.spaces.Box(
             low=np.array([-28, -28, -np.pi]),
@@ -297,12 +303,8 @@ def resolve_agent_action_space(agent_interface: AgentInterface):
             dtype=np.float32,
         )
 
-    assert (
-        agent_interface.action in SUPPORTED_ACTION_TYPES
-    ), f"Unsupported action type `{agent_interface.action}` not in supported actions `{SUPPORTED_ACTION_TYPES}`"
 
-
-def resolve_env_action_space(agent_interfaces: typing.Dict[str, AgentInterface]):
+def resolve_env_action_space(agent_interfaces: Dict[str, AgentInterface]):
     return gym.spaces.Dict(
         {
             a_id: resolve_agent_action_space(a_inter)
