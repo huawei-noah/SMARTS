@@ -45,10 +45,10 @@ class RGBImage(gym.ObservationWrapper):
                 else use the number of stacked frames in base env's observation.
         """
         super().__init__(env)
-        agent_specs = env.agent_specs
+        agent_interfaces = env.agent_interfaces
 
-        for agent_id in agent_specs.keys():
-            assert agent_specs[agent_id].interface.top_down_rgb, (
+        for agent_id in agent_interfaces.keys():
+            assert agent_interfaces[agent_id].top_down_rgb, (
                 f"To use RGBImage wrapper, enable RGB "
                 f"functionality in {agent_id}'s AgentInterface."
             )
@@ -61,13 +61,13 @@ class RGBImage(gym.ObservationWrapper):
                     low=0,
                     high=255,
                     shape=(
-                        agent_specs[agent_id].interface.top_down_rgb.width,
-                        agent_specs[agent_id].interface.top_down_rgb.height,
+                        agent_interfaces[agent_id].top_down_rgb.width,
+                        agent_interfaces[agent_id].top_down_rgb.height,
                         3 * self._num_stack,
                     ),
                     dtype=np.uint8,
                 )
-                for agent_id in agent_specs.keys()
+                for agent_id in agent_interfaces.keys()
             }
         )
 
