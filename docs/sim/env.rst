@@ -26,7 +26,7 @@ Refer to :class:`~smarts.env.hiway_env.HiWayEnv` for more details.
     env = gym.make(
             "smarts.env:hiway-v0", # Env entry name.
             scenarios=[scenario_path], # List of paths to scenario folders.
-            agent_specs={AGENT_ID: agent_spec}, # Dictionary mapping agents to agent specs.
+            agent_interfaces={AGENT_ID: agent_spec.interface}, # Dictionary mapping agents to agent interfaces.
             headless=False, # False to enable Envision visualization of the environment.
             visdom=False, # Visdom visualization of observations. False to disable. Only supported in HiwayEnv.
             seed=42, # RNG seed. Seeds are set at the start of simulation, and never automatically re-seeded.
@@ -43,6 +43,51 @@ Refer to :class:`~smarts.env.hiway_env.HiWayEnv` for more details.
 
     # Close env.
     env.close()
+
+HiwayEnvV1
+^^^^^^^^^^
+
+``HiwayEnvV1`` inherits class ``gymnasium.Env`` and supports gym APIs like ``reset``, ``step``, ``close``. An usage example is shown below.
+This version has two configurations of observation output: `ObservationOptions.full` which provides padded agents in the observations which
+exactly matches the `env.observation_space`, and `ObservationOptions.multi_agent` which provides only agents as are currently active. Refer to
+ :class:`~smarts.env.gymnasium.hiway_env_v1.HiWayEnvV1` for more details. 
+
+.. code-block:: python
+
+    # Make env
+    env = gym.make(
+            "smarts.env:hiway-v1", # Env entry name.
+            scenarios=[scenario_path], # List of paths to scenario folders.
+            agent_interfaces={AGENT_ID: agent_spec.interface}, # Dictionary mapping agents to agent interfaces.
+            headless=False, # False to enable Envision visualization of the environment.
+            visdom=False, # Visdom visualization of observations. False to disable. Only supported in HiwayEnv.
+            seed=42, # RNG seed. Seeds are set at the start of simulation, and never automatically re-seeded.
+            observation_options=ObservationOptions.multi_agent, # Configures between padded and un-padded agents in observations.
+        )
+
+    # Reset env and build agent.
+    observations, infos = env.reset()
+    agent = agent_spec.build_agent()
+
+    # Step env.
+    agent_obs = observations[AGENT_ID]
+    agent_action = agent.act(agent_obs)
+    observations, rewards, terminated, truncated, infos = env.step({AGENT_ID: agent_action})
+
+    # Close env.
+    env.close()
+
+To use this environment with certain frameworks you may want to convert the environment back into a 0.21 api version of gym.
+This can be done with :class:`~smarts.env.gymnasium.wrappers.api_reversion.Api021Reversion`.
+
+.. code-block:: python
+
+    # Make env
+    env = gym.make(
+        "smarts.env:hiway-v1", # Env entry name.
+        scenarios=[scenario_path], # List of paths to scenario folders.
+    )
+    env = Api021Reversion(env) # Turns the environment into roughly a 0.21 gym environment
 
 RLlibHiwayEnv
 ^^^^^^^^^^^^^
