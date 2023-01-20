@@ -42,7 +42,7 @@ from smarts.core.colors import SceneColors
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Point
 from smarts.core.observations import (
-    DrivableAreaGridMap,
+    DrivableAreaGridMap as ObsDrivableAreaGridMap,
     GridMapMetadata,
     Observation,
     OccupancyGridMap,
@@ -157,7 +157,7 @@ def sample_vehicle_pos(
     lens,
     rgb: TopDownRGB,
     ogm: OccupancyGridMap,
-    drivable_area: DrivableAreaGridMap,
+    drivable_area: ObsDrivableAreaGridMap,
     vehicle_pos,
 ):
     rgb_x, rgb_y = project_2d(lens, rgb.metadata, vehicle_pos)
