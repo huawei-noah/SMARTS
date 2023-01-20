@@ -27,11 +27,15 @@ from .agent_spec import AgentSpec
 from .registry import register
 
 
-class TestAgent(Agent):
+class RandomRelativeTargetPoseAgent(Agent):
+    def __init__(self, speed=28, timestep=0.1) -> None:
+        super().__init__()
+        self._speed_per_step = speed / timestep
+
     def act(self, obs, **configs):
         return [
-            random.random() - 0.5,
-            random.random() - 0.5,
+            (random.random() - 0.5) * self._speed_per_step,
+            (random.random() - 0.5) * self._speed_per_step,
             random.random() * 2 * math.pi - math.pi,
         ]
 
@@ -41,8 +45,8 @@ def entry_point(speed=10, **kwargs):
         AgentInterface(
             action=ActionSpaceType.RelativeTargetPose,
         ),
-        agent_builder=TestAgent,
+        agent_builder=RandomRelativeTargetPoseAgent,
     )
 
 
-register("competition-baseline-v0", entry_point)
+register("random-relative-target-pose-agent-v0", entry_point)

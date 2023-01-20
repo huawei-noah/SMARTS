@@ -3,6 +3,6 @@ agent:
     action_space: "RelativeTargetPose" # we can only allow `RelativeTargetPose` and `TargetPose`
     img_meters: 50 # Observation image area size in meters.
     img_pixels: 112 # Observation image size in pixels.
-  locator: "smarts.zoo:competition-baseline-v0"
+  locator: "smarts.zoo:random-relative-target-pose-agent-v0"
   params:
     speed: 20 # Provided to the agent
