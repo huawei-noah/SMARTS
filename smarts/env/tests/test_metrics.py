@@ -31,7 +31,7 @@ from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Point
 from smarts.core.plan import EndlessGoal, Goal, Mission, PositionalGoal, Start
-from smarts.env.wrappers.metrics import Metrics
+from smarts.env.gymnasium.wrappers.metrics import CompetitionMetrics
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -39,9 +39,9 @@ def _intrfc_improper():
     return [
         {"accelerometer": False},
         {"max_episode_steps": None},
-        {"neighborhood_vehicles": False},
+        {"neighborhood_vehicle_states": False},
         {"road_waypoints": False},
-        {"waypoints": False},
+        {"waypoint_paths": False},
         {
             "done_criteria": DoneCriteria(
                 collision=False,
@@ -72,8 +72,8 @@ def get_agent_spec(request):
             agents_alive=None,
         ),
         max_episode_steps=5,
-        neighborhood_vehicles=True,
-        waypoints=True,
+        neighborhood_vehicle_states=True,
+        waypoint_paths=True,
         road_waypoints=True,
     )
     return AgentSpec(interface=dataclasses.replace(base_intrfc, **request.param))
@@ -128,7 +128,7 @@ def test_improper_interface(make_env):
 
     # Verify proper agent interface enabled.
     with pytest.raises(AttributeError):
-        env = Metrics(env=make_env)
+        env = CompetitionMetrics(env=make_env)
 
 
 @pytest.mark.parametrize("get_agent_spec", [{}], indirect=True)
@@ -136,7 +136,7 @@ def test_improper_interface(make_env):
 def test_init(make_env):
 
     # Verify instantiation of Metrics wrapper.
-    env = Metrics(env=make_env)
+    env = CompetitionMetrics(env=make_env)
 
     # Verify blocked access to underlying private variables.
     for elem in ["_scen", "_road_map", "_records"]:
@@ -164,7 +164,7 @@ def test_reset(make_env):
         ),
     ):
         with pytest.raises(AttributeError):
-            env = Metrics(env=make_env)
+            env = CompetitionMetrics(env=make_env)
             env.reset()
         return
 
@@ -174,7 +174,7 @@ def test_reset(make_env):
 def test_end_in_off_road(make_env):
 
     # Verify that env.score() can be computed when vehicle goes off road.
-    env = Metrics(env=make_env)
+    env = CompetitionMetrics(env=make_env)
     obs = env.reset()
     agent_name = next(iter(env.agent_specs.keys()))
     dones = {"__all__": False}
@@ -222,7 +222,7 @@ def test_end_in_off_route(make_env):
             goal=PositionalGoal(position=Point(x=1.5, y=30.5, z=0), radius=3),
         ),
     ):
-        env = Metrics(env=make_env)
+        env = CompetitionMetrics(env=make_env)
         obs = env.reset()
         agent_name = next(iter(env.agent_specs.keys()))
         dones = {"__all__": False}
@@ -259,7 +259,7 @@ def test_end_in_junction(make_env):
             goal=PositionalGoal(position=Point(x=1.5, y=30.5, z=0), radius=3),
         ),
     ):
-        env = Metrics(env=make_env)
+        env = CompetitionMetrics(env=make_env)
         obs = env.reset()
         agent_name = next(iter(obs.keys()))
         actions = {
@@ -286,7 +286,7 @@ def test_records_and_scores(make_env):
     # Verify that records and scores are functional in multi-agent environment.
     # Note:
     #   env.score() is only callable after >=1 episode. Hence step through 1 episode.
-    env = Metrics(env=make_env)
+    env = CompetitionMetrics(env=make_env)
     obs = env.reset()
     agent_name = next(iter(obs.keys()))
     for _ in range(env.agent_specs[agent_name].interface.max_episode_steps):

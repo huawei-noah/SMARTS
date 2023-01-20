@@ -76,7 +76,7 @@ class MetricsError(Exception):
     pass
 
 
-class _Metrics(gym.Wrapper):
+class MetricsBase(gym.Wrapper):
     """Computes agents' performance metrics in a SMARTS environment."""
 
     def __init__(self, env: gym.Env):
@@ -132,7 +132,9 @@ class _Metrics(gym.Wrapper):
                     or agent_obs["events"]["reached_max_episode_steps"]
                 ):
                     raise MetricsError(
-                        f"Unsupported agent done reason. Events: {agent_obs['events']}."
+                        "Expected reached_goal, collisions, off_road, or " 
+                        "max_episode_steps to be true on agent done, but got "
+                        f"events: {agent_obs.events}."
                     )
 
                 # Update stored counts.
@@ -147,32 +149,85 @@ class _Metrics(gym.Wrapper):
                     max_steps=self.env.agent_interfaces[agent_name].max_episode_steps
                 )
                 self._records[self._scen_name][agent_name].record.counts = _add_dataclass(
-                    counts,
+                    counts, 
                     self._records[self._scen_name][agent_name].record.counts
                 )
+
+                # Update percentage of scenario tasks completed.
+                completion = Completion(dist_tot=self._records[self._scen_name][agent_name].record.completion.dist_tot)
+                for field in fields(self._records[self._scen_name][agent_name].completion_funcs):
+                    completion_func = getattr(
+                        self._records[self._scen_name][agent_name].completion_funcs,
+                        field.name,
+                    )
+                    new_completion = completion_func(
+                        road_map=self._road_map,
+                        obs=agent_obs,
+                        initial_compl=completion,
+                    )
+                    completion = _add_dataclass(new_completion, completion)
+                self._records[self._scen_name][agent_name].record.completion = completion
+
+        # fmt: on
+        if dones["__all__"] == True:
+            assert (
+                self._done_agents == self._cur_agents
+            ), f'done["__all__"]==True but not all agents are done. Current agents = {self._cur_agents}. Agents done = {self._done_agents}.'
+
+        return result
+
+    def reset(self, **kwargs):
+        """Resets the environment."""
+        result = super().reset(**kwargs)
+        self._cur_agents = set(self.env.agent_specs.keys())
+        self._steps = dict.fromkeys(self._cur_agents, 0)
+        self._done_agents = set()
+        self._scen = self.env.scenario
+        self._scen_name = self.env.scenario.name
+        self._road_map = self.env.scenario.road_map
+
+        # fmt: off
+        if self._scen_name not in self._records:
+            _check_scen(self._scen)
+            self._records[self._scen_name] = {
+                agent_name: Data(
+                    record=Record(
+                        completion=Completion(
+                            dist_tot=get_dist(
+                                road_map=self._road_map,
+                                point_a=Point(*self._scen.missions[agent_name].start.position),
+                                point_b=self._scen.missions[agent_name].goal.position,    
+                            )
+                        ),
+                        costs=Costs(),
+                        counts=Counts(),
+                    ),
+                    cost_funcs=CostFuncs(),
+                    completion_funcs=CompletionFuncs(),
+                )
+                for agent_name in self._cur_agents
+            }
+        # fmt: on
 
         return result
 
     def records(self) -> Dict[str, Dict[str, Record]]:
         """
         Fine grained performance metric for each agent in each scenario.
-
+        .. code-block:: bash
+            $ env.records()
+            $ {
+                  scen1: {
+                      agent1: Record(completion, costs, counts),
+                      agent2: Record(completion, costs, counts),
+                  },
+                  scen2: {
+                      agent1: Record(completion, costs, counts),
+                  },
+              }
         Returns:
             Dict[str, Dict[str, Record]]: Performance record in a nested
-                dictionary for each agent in each scenario.
-
-        Example::
-
-        >> records()
-        >> {
-                scen1: {
-                    agent1: Record(completion, costs, counts),
-                    agent2: Record(completion, costs, counts),
-                },
-                scen2: {
-                    agent1: Record(completion, costs, counts),
-                },
-            }
+            dictionary for each agent in each scenario.
         """
 
         records = {}
@@ -207,6 +262,7 @@ class _Metrics(gym.Wrapper):
             Dict[str, float]: Contains "Overall", "Completion", "Time",
             "Humanness", and "Rules" scores.
         """
+
         # fmt: off
         counts_list, costs_list, completion_list = zip(
             *[
@@ -220,21 +276,15 @@ class _Metrics(gym.Wrapper):
         costs_tot: Costs = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
         completion_tot: Completion = functools.reduce(lambda a, b: _add_dataclass(a, b), completion_list)
 
-        
-        completion = _completion(completion=completion_tot)
-        humanness = _humanness(costs=costs_tot, agents_tot=agents_tot)
-        rules = _rules(costs=costs_tot, agents_tot=agents_tot)
-        time = _time(counts=counts_tot)
-        overall = completion*(1-time)*(1-humanness)*(1-rules)
+        _score: Dict[str, float] = {}
+        _score["completion"] = _completion(completion=completion_tot)
+        _score["humanness"] = _humanness(costs=costs_tot, agents_tot=agents_tot)
+        _score["rules"] = _rules(costs=costs_tot, agents_tot=agents_tot)
+        _score["time"] = _time(counts=counts_tot)
+        _score["overall"] = _score["completion"]*(1-_score["time"])*(_score["humanness"])*(_score["rules"])
         # fmt: on
 
-        return Score(
-            completion=completion,
-            humanness=humanness,
-            rules=rules,
-            time=time,
-            overall=overall,
-        )
+        return _score
 
 
 class CompetitionMetrics(gym.Wrapper):
@@ -255,8 +305,38 @@ class CompetitionMetrics(gym.Wrapper):
     """
 
     def __init__(self, env: gym.Env):
-        env = _Metrics(env)
+        env = MetricsBase(env)
         super().__init__(env)
+
+
+def _check_env(env: gym.Env):
+    """Checks environment suitability to compute performance metrics.
+    Args:
+        env (gym.Env): A gym environment
+    Raises:
+        AttributeError: If any required agent interface is disabled.
+    """
+
+    def check_intrfc(agent_intrfc: AgentInterface):
+        intrfc = {
+            "accelerometer": bool(agent_intrfc.accelerometer),
+            "max_episode_steps": bool(agent_intrfc.max_episode_steps),
+            "neighborhood_vehicle_states": bool(agent_intrfc.neighborhood_vehicles),
+            "road_waypoints": bool(agent_intrfc.road_waypoints),
+            "waypoint_paths": bool(agent_intrfc.waypoints),
+            "done_criteria.collision": agent_intrfc.done_criteria.collision,
+            "done_criteria.off_road": agent_intrfc.done_criteria.off_road,
+        }
+        return intrfc
+
+    for agent_name, agent_spec in env.agent_specs.items():
+        intrfc = check_intrfc(agent_spec.interface)
+        if not all(intrfc.values()):
+            raise AttributeError(
+                "Enable {0}'s disabled interface to "
+                "compute its metrics. Current interface is "
+                "{1}.".format(agent_name, intrfc)
+            )
 
 
 def _check_scen(scen: Scenario):
@@ -301,8 +381,8 @@ def _completion(completion: Completion) -> float:
         completion (Completion): Scenario tasks completed.
 
     Returns:
-        float: Normalised completion value = [0, 1]. Completion value should be
-            maximised. The higher the value, the better it is.
+        float: Normalized completion value = [0, 1]. Completion value should be
+            maximized. The higher the value, the better it is.
     """
     return (completion.dist_tot - completion.dist_remainder) / completion.dist_tot
 
@@ -316,7 +396,7 @@ def _humanness(costs: Costs, agents_tot: int) -> float:
         agents_tot (int): Number of agents simulated.
 
     Returns:
-        float: Normalised humanness value = [0, 1]. Humanness value should be
+        float: Normalized humanness value = [0, 1]. Humanness value should be
             maximized. The higher the value, the better it is.
     """
     humanness_to_minimize = np.array(
@@ -335,7 +415,7 @@ def _rules(costs: Costs, agents_tot: int) -> float:
         agents_tot (int): Number of agents simulated.
 
     Returns:
-        float: Normalised rules value = [0, 1]. Rules value should be maximized.
+        float: Normalized rules value = [0, 1]. Rules value should be maximized.
             The higher the value, the better it is.
     """
     rules_to_minimize = np.array([costs.speed_limit, costs.wrong_way])
@@ -351,7 +431,7 @@ def _time(counts: Counts) -> float:
         counts (Counts): Performance count values.
 
     Returns:
-        float: Normalised time value = (0, 1]. Time value should be minimised.
+        float: Normalized time value = (0, 1]. Time value should be minimized.
             The lower the value, the better it is.
     """
     return counts.steps_adjusted / counts.max_steps
