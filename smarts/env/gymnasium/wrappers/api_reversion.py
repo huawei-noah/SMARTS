@@ -21,11 +21,11 @@
 # THE SOFTWARE.
 from typing import Any, Dict, SupportsFloat, Tuple
 
-import gymnasium as gym
+import gym
 
 
 class Api021Reversion(gym.Wrapper):
-    """This wrapper reverts the API of the environment to v0.21 of gym."""
+    """This wrapper reverts the API of a gym/gymnasium environment to v0.21 of gym."""
 
     def step(self, action) -> Tuple[Dict, SupportsFloat, bool, Dict[str, Any]]:
         obs, reward, terminated, _, info = super().step(action)
@@ -35,6 +35,6 @@ class Api021Reversion(gym.Wrapper):
         obs, _ = super().reset()
         return obs
 
-    def render(self, **kwargs) -> Any:
+    def render(self, mode="human", **kwargs) -> Any:
         """Uses the :meth:`render` of the :attr:`env` that can be overwritten to change the returned data."""
         return self.env.render()
