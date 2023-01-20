@@ -17,7 +17,7 @@ agent:
 
 interface:
   max_episode_steps: 1000
-  neighborhood_vehicle_states:
+  neighborhood_vehicles:
     radius: 50
   waypoints:
     lookahead: 50

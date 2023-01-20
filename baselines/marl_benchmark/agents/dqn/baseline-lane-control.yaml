@@ -20,10 +20,10 @@ agent:
 # agent interface
 interface:
   max_episode_steps: 1000
-  # top_down_rgb:
+  # rgb:
   #   width: 50
   #   height: 50
-  neighborhood_vehicle_states:
+  neighborhood_vehicles:
     radius: 50
   waypoints:
     lookahead: 50   # larger than size of heading errors
