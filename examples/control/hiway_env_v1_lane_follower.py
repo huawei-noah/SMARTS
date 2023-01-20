@@ -33,8 +33,8 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
         observation, info = env.reset()
         episode.record_scenario(env.scenario_log)
 
-        done = {"__all__": False}
-        while not done["__all__"]:
+        terminated = {"__all__": False}
+        while not terminated["__all__"]:
             agent_action = agent.act(observation["SingleAgent"])
             observation, reward, terminated, truncated, info = env.step(
                 {"SingleAgent": agent_action}
