@@ -617,7 +617,7 @@ class DrivableAreaGridMapSensor(CameraSensor):
             resolution=self._resolution,
             height=image.shape[0],
             width=image.shape[1],
-            camera_pos=self._camera.camera_np.getPos(),
+            camera_position=self._camera.camera_np.getPos(),
             camera_heading_in_degrees=self._camera.camera_np.getH(),
         )
         return DrivableAreaGridMap(data=image, metadata=metadata)
@@ -659,7 +659,7 @@ class OGMSensor(CameraSensor):
             resolution=self._resolution,
             height=grid.shape[0],
             width=grid.shape[1],
-            camera_pos=self._camera.camera_np.getPos(),
+            camera_position=self._camera.camera_np.getPos(),
             camera_heading_in_degrees=self._camera.camera_np.getH(),
         )
         return OccupancyGridMap(data=grid, metadata=metadata)
@@ -701,7 +701,7 @@ class RGBSensor(CameraSensor):
             resolution=self._resolution,
             height=image.shape[0],
             width=image.shape[1],
-            camera_pos=self._camera.camera_np.getPos(),
+            camera_position=self._camera.camera_np.getPos(),
             camera_heading_in_degrees=self._camera.camera_np.getH(),
         )
         return TopDownRGB(data=image, metadata=metadata)

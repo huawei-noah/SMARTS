@@ -203,7 +203,7 @@ def large_observation():
                 resolution=0.1953125,
                 width=256,
                 height=256,
-                camera_pos=(161.235, 3.2, 73.6),
+                camera_position=(161.235, 3.2, 73.6),
                 camera_heading_in_degrees=-90.0,
             ),
             data=np.array(
@@ -224,7 +224,7 @@ def large_observation():
                 resolution=0.1953125,
                 width=256,
                 height=256,
-                camera_pos=(161.235, 3.2, 73.6),
+                camera_position=(161.235, 3.2, 73.6),
                 camera_heading_in_degrees=-90.0,
             ),
             data=np.array(
@@ -245,7 +245,7 @@ def large_observation():
                 resolution=0.1953125,
                 width=256,
                 height=256,
-                camera_pos=(161.235, 3.2, 73.6),
+                camera_position=(161.235, 3.2, 73.6),
                 camera_heading_in_degrees=-90.0,
             ),
             data=np.array(
