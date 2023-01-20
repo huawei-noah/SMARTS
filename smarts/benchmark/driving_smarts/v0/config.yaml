@@ -3,7 +3,7 @@
 benchmark:
   name: "Driving SMARTS V0"
   auto_install: true
-  eval_episodes: 2
+  eval_episodes: 50
   shared_env_params:
     seed: 42
     headless: true

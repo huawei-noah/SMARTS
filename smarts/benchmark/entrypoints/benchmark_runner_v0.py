@@ -161,7 +161,6 @@ def benchmark_from_configs(benchmark_config, agent_config=None, log=False):
     agent_args = {}
     if agent_config:
         agent_args = load_config(agent_config)
-    auto_install(benchmark_args)
     LOG_WORKERS = log
     benchmark(
         benchmark_args=benchmark_args["benchmark"],

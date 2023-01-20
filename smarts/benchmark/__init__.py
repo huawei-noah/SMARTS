@@ -20,17 +20,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import importlib
+import subprocess
+import sys
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict, List
 
 BENCHMARK_LISTING_FILE = str(
     Path(__file__).parent.absolute() / "benchmark_listing.yaml"
 )
 
 
-def auto_install(config: Dict[str, str]):
+def auto_install(benchmark_spec: Dict[str, Any]):
     """Install dependencies as specified by the configuration given."""
-    pass
+    # TODO MTA: add configuration to configuration file
+    requirements: List[str] = benchmark_spec.get("requirements", [])
+    if len(requirements) > 0:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                *requirements,
+            ]
+        )
 
 
 def _benchmark_at_version(target, version):
@@ -66,17 +79,20 @@ def run_benchmark(
     benchmarks = listing_dict["benchmarks"]
 
     try:
-        target = benchmarks[benchmark_name]
+        benchmark_group = benchmarks[benchmark_name]
     except KeyError as err:
         raise RuntimeError(
             f"`{benchmark_name}` not found in config `{BENCHMARK_LISTING_FILE}`."
         ) from err
 
-    benchmark = _benchmark_at_version(target, benchmark_version)
+    benchmark_spec = _benchmark_at_version(benchmark_group, benchmark_version)
+    auto_install(benchmark_spec)
 
-    module, _, name = benchmark["entrypoint"].rpartition(".")
+    module, _, name = benchmark_spec["entrypoint"].rpartition(".")
     entrypoint = _get_entrypoint(module, name)
-    entrypoint(**benchmark.get("params", {}), agent_config=agent_config, log=debug_log)
+    entrypoint(
+        **benchmark_spec.get("params", {}), agent_config=agent_config, log=debug_log
+    )
 
 
 def list_benchmarks(benchmark_listing):
