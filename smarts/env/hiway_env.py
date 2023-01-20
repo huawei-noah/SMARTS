@@ -45,7 +45,8 @@ class HiWayEnv(gym.Env):
         scenarios (Sequence[str]):  A list of scenario directories that
             will be simulated.
         agent_specs (Dict[str, AgentSpec]): Specification of the agents
-            that will run in the environment.
+            that will run in the environment. (Deprecated in favor of
+            agent_interfaces)
         sim_name (Optional[str], optional): Simulation name. Defaults to
             None.
         shuffle_scenarios (bool, optional): If true, order of scenarios
@@ -75,6 +76,8 @@ class HiWayEnv(gym.Env):
             to None.
         timestep_sec (Optional[float], optional): [description]. Defaults
             to None.
+        agent_interfaces (Dict[str, AgentInterface]): Specification of the agents
+            needs that will be used to configure the environment.
     """
 
     metadata = {"render.modes": ["human"]}

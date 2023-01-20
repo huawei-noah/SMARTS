@@ -60,14 +60,20 @@ DEFAULT_TIMESTEP = 0.1
 
 class ScenarioOrder(IntEnum):
     Sequential = 0
+    """Scenarios are served in order intially provided."""
     Scrambled = 1
+    """Scenarios are served in random order."""
 
 
 class SumoOptions(NamedTuple):
     num_external_clients: int = 0
+    """Number of SUMO clients beyond SMARTS. Defaults to 0."""
     auto_start: bool = True
+    """Automatic starting of SUMO. Defaults to True."""
     headless: bool = True
+    """If True, disables visualization in SUMO GUI. Defaults to True."""
     port: Optional[str] = None
+    """SUMO port. Defaults to None."""
 
 
 DEFAULT_VISUALIZATION_CLIENT_BUILDER = partial(
@@ -81,7 +87,32 @@ DEFAULT_VISUALIZATION_CLIENT_BUILDER = partial(
 
 # TODO: Could not help the double layer joke here: highway-lowway huawei-laowei. Add a real name.
 class HiWayEnvV1(gym.Env):
-    """A generic environment for various driving tasks simulated by SMARTS."""
+    """A generic environment for various driving tasks simulated by SMARTS.
+
+    Args:
+        scenarios (Sequence[str]):  A list of scenario directories that
+            will be simulated.
+        agent_interfaces (Dict[str, AgentInterface]): Specification of the agents
+            needs that will be used to configure the environment.
+        sim_name (Optional[str], optional): Simulation name. Defaults to
+            None.
+        scenarios_order (ScenarioOrder, optional): Configures the order that
+            scenarios will provided over successive resets.
+        headless (bool, optional): If True, disables visualization in
+            Envision. Defaults to False.
+        visdom (bool, optional): If True, enables visualization of observed
+            RGB images in Visdom. Defaults to False.
+        fixed_timestep_sec (Optional[float], optional): Step duration for
+            all components of the simulation. May be None if time deltas
+            are externally-driven. Defaults to None.
+        seed (int, optional): Random number generator seed. Defaults to 42.
+        visualization_client_builder: A method that must must construct an
+            object that follows the Envision interface. Allows tapping into a
+            direct data stream from the simulation.
+        zoo_addrs (Optional[str], optional): List of (ip, port) tuples of
+            zoo server, used to instantiate remote social agents. Defaults
+            to None.
+    """
 
     metadata = {"render.modes": ["human"]}
     """Metadata for gym's use"""
@@ -104,8 +135,8 @@ class HiWayEnvV1(gym.Env):
         agent_interfaces: Dict[str, AgentInterface],
         sim_name: Optional[str] = None,
         scenarios_order: bool = True,
-        visdom: bool = False,
         headless: bool = False,
+        visdom: bool = False,
         fixed_timestep_sec: Optional[float] = None,
         seed: int = 42,
         sumo_options: SumoOptions = SumoOptions(),
@@ -174,19 +205,16 @@ class HiWayEnvV1(gym.Env):
 
     def step(
         self, action: ActType
-    ) -> Tuple[ObsType, SupportsFloat, bool, bool, Dict[str, Any]]:
+    ) -> Tuple[Dict[str, Any], SupportsFloat, bool, bool, Dict[str, Any]]:
         """Run one timestep of the environment's dynamics using the agent actions.
         When the end of an episode is reached (``terminated or truncated``), it is necessary to call :meth:`reset` to
         reset this environment's state for the next episode.
-        .. versionchanged:: 0.26
-            The Step API was changed removing ``done`` in favor of ``terminated`` and ``truncated`` to make it clearer
-            to users when the environment had terminated or truncated which is critical for reinforcement learning
-            bootstrapping algorithms.
+
         Args:
             action (ActType): an action provided by the agent to update the environment state.
         Returns:
-            observation (ObsType): An element of the environment's :attr:`observation_space` as the next observation due to the agent actions.
-                An example is a numpy array containing the positions and velocities of the pole in CartPole.
+            observation (dict): An element of the environment's :attr:`observation_space` as the next observation due to the agent actions.
+                This observation will change based on the provided :attr:`agent_interfaces`. Check :attr:`observation_space after initialization.
             reward (SupportsFloat): The reward as a result of taking the action.
             terminated (bool): Whether the agent reaches the terminal state (as defined under the MDP of the task)
                 which can be positive or negative. An example is reaching the goal state or moving into the lava from
@@ -198,12 +226,6 @@ class HiWayEnvV1(gym.Env):
             info (dict): Contains auxiliary diagnostic information (helpful for debugging, learning, and logging).
                 This might, for instance, contain: metrics that describe the agent's performance state, variables that are
                 hidden from observations, or individual reward terms that are combined to produce the total reward.
-                In OpenAI Gym <v26, it contains "TimeLimit.truncated" to distinguish truncation and termination,
-                however this is deprecated in favour of returning terminated and truncated variables.
-            done (bool): (Deprecated) A boolean value for if the episode has ended, in which case further :meth:`step` calls will
-                return undefined results. This was removed in OpenAI Gym v26 in favor of terminated and truncated attributes.
-                A done signal may be emitted for different reasons: Maybe the task underlying the environment was solved successfully,
-                a certain timelimit was exceeded, or the physics simulation has entered an invalid state.
         """
         assert isinstance(action, dict) and all(
             isinstance(key, str) for key in action.keys()
@@ -259,14 +281,11 @@ class HiWayEnvV1(gym.Env):
     ) -> Tuple[ObsType, Dict[str, Any]]:
         """Resets the environment to an initial internal state, returning an initial observation and info.
         This method generates a new starting state often with some randomness to ensure that the agent explores the
-        state space and learns a generalised policy about the environment. This randomness can be controlled
+        state space and learns a generalized policy about the environment. This randomness can be controlled
         with the ``seed`` parameter otherwise if the environment already has a random number generator and
         :meth:`reset` is called with ``seed=None``, the RNG is not reset.
         Therefore, :meth:`reset` should (in the typical use case) be called with a seed right after initialization and then never again.
-        For Custom environments, the first line of :meth:`reset` should be ``super().reset(seed=seed)`` which implements
-        the seeding correctly.
-        .. versionchanged:: v0.25
-            The ``return_info`` parameter was removed and now info is expected to be returned.
+
         Args:
             seed (optional int): The seed that is used to initialize the environment's PRNG (`np_random`).
                 If the environment does not already have a PRNG and ``seed=None`` (the default option) is passed,
@@ -274,12 +293,11 @@ class HiWayEnvV1(gym.Env):
                 However, if the environment already has a PRNG and ``seed=None`` is passed, the PRNG will *not* be reset.
                 If you pass an integer, the PRNG will be reset even if it already exists.
                 Usually, you want to pass an integer *right after the environment has been initialized and then never again*.
-                Please refer to the minimal example above to see this paradigm in action.
             options (optional dict): Additional information to specify how the environment is reset (optional,
                 depending on the specific environment)
         Returns:
-            observation (ObsType): Observation of the initial state. This will be an element of :attr:`observation_space`
-                (typically a numpy array) and is analogous to the observation returned by :meth:`step`.
+            observation (dict): Observation of the initial state. This will be an element of :attr:`observation_space`
+                 and is analogous to the observation returned by :meth:`step`.
             info (dictionary):  This dictionary contains auxiliary information complementing ``observation``. It should be analogous to
                 the ``info`` returned by :meth:`step`.
         """
@@ -320,9 +338,6 @@ class HiWayEnvV1(gym.Env):
           The frames collected are popped after :meth:`render` is called or :meth:`reset`.
         Note:
             Make sure that your class's :attr:`metadata` ``"render_modes"`` key includes the list of supported modes.
-        .. versionchanged:: 0.25.0
-            The render function was changed to no longer accept parameters, rather these parameters should be specified
-            in the environment initialised, i.e., ``gymnasium.make("CartPole-v1", render_mode="human")``
         """
         if "rgb_array" in self.metadata["render.modes"]:
             if self._env_renderer is None:
