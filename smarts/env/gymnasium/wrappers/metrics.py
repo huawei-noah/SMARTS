@@ -179,7 +179,7 @@ class MetricsBase(gym.Wrapper):
     def reset(self, **kwargs):
         """Resets the environment."""
         result = super().reset(**kwargs)
-        self._cur_agents = set(self.env.agent_specs.keys())
+        self._cur_agents = set(self.env.agent_interfaces.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_agents = set()
         self._scen = self.env.scenario
@@ -263,7 +263,6 @@ class MetricsBase(gym.Wrapper):
             "Humanness", and "Rules" scores.
         """
 
-        # fmt: off
         counts_list, costs_list, completion_list = zip(
             *[
                 (data.record.counts, data.record.costs, data.record.completion)
@@ -272,19 +271,29 @@ class MetricsBase(gym.Wrapper):
             ]
         )
         agents_tot: int = len(counts_list)  # Total number of agents over all scenarios
-        counts_tot: Counts = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
-        costs_tot: Costs = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
-        completion_tot: Completion = functools.reduce(lambda a, b: _add_dataclass(a, b), completion_list)
+        counts_tot: Counts = functools.reduce(
+            lambda a, b: _add_dataclass(a, b), counts_list
+        )
+        costs_tot: Costs = functools.reduce(
+            lambda a, b: _add_dataclass(a, b), costs_list
+        )
+        completion_tot: Completion = functools.reduce(
+            lambda a, b: _add_dataclass(a, b), completion_list
+        )
 
-        _score: Dict[str, float] = {}
-        _score["completion"] = _completion(completion=completion_tot)
-        _score["humanness"] = _humanness(costs=costs_tot, agents_tot=agents_tot)
-        _score["rules"] = _rules(costs=costs_tot, agents_tot=agents_tot)
-        _score["time"] = _time(counts=counts_tot)
-        _score["overall"] = _score["completion"]*(1-_score["time"])*(_score["humanness"])*(_score["rules"])
-        # fmt: on
+        completion = _completion(completion=completion_tot)
+        humanness = _humanness(costs=costs_tot, agents_tot=agents_tot)
+        rules = _rules(costs=costs_tot, agents_tot=agents_tot)
+        time = _time(counts=counts_tot)
+        overall = completion * (1 - time) * (1 - humanness) * (1 - rules)
 
-        return _score
+        return Score(
+            completion=completion,
+            humanness=humanness,
+            rules=rules,
+            time=time,
+            overall=overall,
+        )
 
 
 class CompetitionMetrics(gym.Wrapper):
@@ -329,8 +338,8 @@ def _check_env(env: gym.Env):
         }
         return intrfc
 
-    for agent_name, agent_spec in env.agent_specs.items():
-        intrfc = check_intrfc(agent_spec.interface)
+    for agent_name, agent_interface in env.agent_interfaces.items():
+        intrfc = check_intrfc(agent_interface)
         if not all(intrfc.values()):
             raise AttributeError(
                 "Enable {0}'s disabled interface to "
