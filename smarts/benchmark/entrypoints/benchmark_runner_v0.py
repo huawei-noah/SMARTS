@@ -28,17 +28,17 @@ import gymnasium as gym
 import psutil
 import ray
 
-from smarts.benchmark import auto_install
 from smarts.benchmark.driving_smarts import load_config
 from smarts.benchmark.driving_smarts.v0 import DEFAULT_CONFIG
 from smarts.env.gymnasium.wrappers.metrics import Metrics, Score
 from smarts.zoo import registry as agent_registry
 
 LOG_WORKERS = False
+ERROR_TOLERANT = False
 
 
 @ray.remote(num_returns=1)
-def _eval_worker(name, env_config, episodes, agent_config):
+def _eval_worker(name, env_config, episodes, agent_config, error_tolerant=False):
     import warnings
 
     warnings.filterwarnings("ignore")
@@ -67,6 +67,8 @@ def _eval_worker(name, env_config, episodes, agent_config):
                 logging.error("Policy robustness failed.")
                 # # TODO MTA: mark policy failures
                 # env.mark_policy_failure()
+                if not error_tolerant:
+                    raise
                 terminated, truncated = False, True
             else:
                 observation, reward, terminated, truncated, info = env.step(action)
@@ -80,6 +82,7 @@ def _eval_worker(name, env_config, episodes, agent_config):
 
 
 def task_iterator(env_args, benchmark_args, agent_args):
+    global ERROR_TOLERANT
     num_cpus = max(1, min(os.sched_getaffinity(0)), psutil.cpu_count(False) or 4)
     ray.init(num_cpus=num_cpus, log_to_driver=LOG_WORKERS)
     try:
@@ -97,6 +100,7 @@ def task_iterator(env_args, benchmark_args, agent_args):
                     env_config=env_config,
                     episodes=benchmark_args["eval_episodes"],
                     agent_config=agent_args,
+                    error_tolerant=ERROR_TOLERANT,
                 )
             )
         for name, score in ray.get(unfinished_refs):
