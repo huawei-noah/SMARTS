@@ -41,8 +41,8 @@ from smarts.core.agent_interface import (
 from smarts.core.colors import SceneColors
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Point
+from smarts.core.observations import DrivableAreaGridMap as ObsDrivableAreaGridMap
 from smarts.core.observations import (
-    DrivableAreaGridMap as ObsDrivableAreaGridMap,
     GridMapMetadata,
     Observation,
     OccupancyGridMap,

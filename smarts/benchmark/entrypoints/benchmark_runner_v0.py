@@ -29,7 +29,7 @@ import ray
 from smarts.benchmark import auto_install
 from smarts.benchmark.driving_smarts import load_config
 from smarts.benchmark.driving_smarts.v0 import DEFAULT_CONFIG
-from smarts.env.gymnasium.wrappers.metrics import CompetitionMetrics, Score
+from smarts.env.gymnasium.wrappers.metrics import Metrics, Score
 from smarts.zoo import registry as agent_registry
 
 LOG_WORKERS = False
@@ -46,7 +46,7 @@ def _eval_worker(name, env_config, episodes, agent_config):
         **env_config["shared_params"],
         **agent_config["interface"],
     )
-    env = CompetitionMetrics(env)
+    env = Metrics(env)
     agent = agent_registry.make_agent(
         locator=agent_config["locator"],
         **agent_config["params"],

@@ -296,7 +296,7 @@ class MetricsBase(gym.Wrapper):
         )
 
 
-class CompetitionMetrics(gym.Wrapper):
+class Metrics(gym.Wrapper):
     """Metrics class wraps an underlying _Metrics class. The underlying
     _Metrics class computes agents' performance metrics in a SMARTS
     environment. Whereas, this Metrics class is a basic gym.Wrapper class
@@ -342,9 +342,11 @@ def _check_env(env: gym.Env):
         intrfc = check_intrfc(agent_interface)
         if not all(intrfc.values()):
             raise AttributeError(
-                "Enable {0}'s disabled interface to "
-                "compute its metrics. Current interface is "
-                "{1}.".format(agent_name, intrfc)
+                (
+                    "Enable {0}'s disabled interface to "
+                    "compute its metrics. Current interface is "
+                    "{1}."
+                ).format(agent_name, intrfc)
             )
 
 
