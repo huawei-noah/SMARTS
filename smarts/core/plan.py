@@ -322,6 +322,7 @@ class Plan:
 
     def create_route(self, mission: Mission, radius: Optional[float] = None):
         """Generates a route that conforms to a mission.
+
         Args:
             mission (Mission):
                 A mission the agent should follow. Defaults to endless if `None`.

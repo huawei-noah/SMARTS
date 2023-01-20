@@ -50,15 +50,84 @@ class ActionSpaceType(Enum):
     """Available vehicle action spaces."""
 
     Continuous = 0
+    """
+    Action=(throttle, brake, steering_angle)
+
+    + throttle: Range=[0, 1]. Type=float.
+    + brake: Range=[0, 1]. Type=float.
+    + steering_angle: Range=[-1, 1]. Type=float.
+    """
     Lane = 1
+    """
+    Action= ``str``. Discrete lane action from one of
+    
+    + "keep_lane",
+    + "slow_down", 
+    + "change_lane_left", and 
+    + "change_lane_right".
+    """
     ActuatorDynamic = 2
+    """
+    Action=(throttle, brake, steering_rate)
+        
+    + throttle: Range=[0, 1]. Type=float. 
+    + brake: Range=[0, 1]. Type=float.
+    + steering_rate: Type=float.
+    
+    Steering rate means the amount of steering angle change *per second* 
+    (either positive or negative) to be applied to the current steering angle.
+    """
     LaneWithContinuousSpeed = 3
+    """
+    Action=(target_speed, lane_change). 
+
+    + target_speed: Baseline target speed (controller may give more or less
+      regardless). Type=float.
+    + lane_change: Discrete lane change value. Can be one of 
+
+        + -1 : change to right lane
+        + 0 : keep to current lane
+        + 1 : change to left lane
+    """
     TargetPose = 4
+    """
+    Action=(x_coord, y_coord, heading, time_delta). Type= ``Sequence[float,
+    float, float, float]``. Continuous action space of vehicle's next x 
+    coordinate, y coordinate, heading, and time delta to reach the given pose. 
+    """
     Trajectory = 5
-    MultiTargetPose = 6  # for boid control
+    """
+    Action=([x_coord],[y_coord],[heading],[speed]). Type= ``(Sequence[float],
+    Sequence[float], Sequence[float], Sequence[float])``. Continuous action 
+    space using trajectory comprising of x coordinates, y coordinates, headings,
+    and speeds, to directly move a vehicle.
+    """
+    MultiTargetPose = 6  # For boid control.
+    """
+    Action= ``Dict[str, (float, float, float, float)]``. Continuous action space
+    that provides ``TargetPose`` actions for multiple vehicles.
+    """
     MPC = 7
-    TrajectoryWithTime = 8  # for pure interpolation provider
+    """
+    Action=([x_coord],[y_coord],[heading],[speed]). Type= ``(Sequence[float], 
+    Sequence[float], Sequence[float], Sequence[float])``. Adaptive control 
+    performed on the vehicle model to match the given trajectory comprising 
+    of vehicle's x coordinates, y coordinates, headings, and speeds.
+    """
+    TrajectoryWithTime = 8  # For pure interpolation provider.
+    """
+    Action=([time],[x_coord],[y_coord],[heading],[speed]). 
+    Type= ``(Sequence[float], Sequence[float], Sequence[float], Sequence[float],
+    Sequence[float])``. Interpolates vehicle along the given trajectory 
+    comprising of times, x coordinates, y coordinates, headings, and speeds.
+    """
     Direct = 9
+    """
+    Action=(speed) OR (acceleration, angular_velocity). Type= ``Union[float, 
+    (float,float)]``. Continuous action space where we can pass either (a) an 
+    initial speed upon reset, or (b) linear acceleration and angular velocity 
+    for other steps.
+    """
     Empty = 10
 
 
@@ -77,6 +146,7 @@ class Controllers:
         vehicle_type,
     ):
         """Calls control for the given vehicle based on a given action space and action.
+
         Args:
             sim:
                 A simulation instance.

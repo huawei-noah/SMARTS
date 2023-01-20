@@ -20,7 +20,6 @@
 import logging
 import warnings
 
-import numpy as np
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 import smarts
@@ -32,36 +31,35 @@ from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
 
 class RLlibHiWayEnv(MultiAgentEnv):
-    """See MultiAgentEnv
+    """This environment serves as a format to run multiple environments in
+    parallel. This environment requires a specific configuration.
 
-    The purpose of this environment is as a format to run multiple environments in parallel.
+    Args:
+        config (Dict[str,Any]): An environment configuration dictionary containing the following key value pairs.
 
-    This environment will want a specific configuration:
-        config: a dictionary with the environment configuration
-            agent_specs:
-                a dictionary of agent_ids to agents that run in the environment (required)
-            scenarios:
-                a list of directories of the scenarios that will be run (required)
-            sim_name:
-                a string that gives this simulation a name (default None)
-            envision_record_data_replay_path:
-                specify envision's data replay output directory (default None)
-            envision_endpoint:
-                used to specify envision's uri (default None)
-            headless:
-                true|false envision disabled (default True)
-            num_external_sumo_clients:
-                the number of SUMO clients beyond SMARTS (default 0)
-            seed:
-                the seed for random number generation (default 42)
-            sumo_auto_start:
-                true|false sumo will start automatically (default False)
-            sumo_headless:
-                true|false for sumo|sumo-gui (default False)
-            sumo_port:
-                used to specify a specific sumo port (default None)
-            fixed_timestep_sec:
-                the step length for all components of the simulation (default 0.1)
+            agent_specs: Dictionary mapping agent_ids to agent specs. Required.
+
+            scenarios: List of scenario directories that will be run. Required.
+
+            sim_name: A string to name this simulation. Defaults to None.
+
+            envision_record_data_replay_path: Specifies Envision's data replay output directory. Defaults to None.
+
+            envision_endpoint: Specifies Envision's uri. Defaults to None.
+
+            headless: True|False envision disabled|enabled. Defaults to True.
+
+            num_external_sumo_clients: Number of SUMO clients beyond SMARTS. Defaults to 0.
+
+            seed: Random number generation seed. Defaults to 42.
+
+            sumo_auto_start: True|False sumo will start automatically. Defaults to False.
+
+            sumo_headless: True|False for sumo|sumo-gui. Defaults to False.
+
+            sumo_port: Specifies sumo port. Defaults to None.
+
+            fixed_timestep_sec: Step length for all components of the simulation. Defaults to 0.1 .
     """
 
     def __init__(self, config):

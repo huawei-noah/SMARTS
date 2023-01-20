@@ -76,39 +76,39 @@ class EgoVehicleObservation(NamedTuple):
     """Perceived ego vehicle information."""
 
     id: str
-    """The vehicle identifier."""
+    """Vehicle identifier."""
     position: np.ndarray
-    """The position of the vehicle within the simulation."""
+    """Center coordinate of the vehicle bounding box's bottom plane. shape=(3,). dtype=np.float64."""
     bounding_box: Dimensions
-    """A bounding box describing the extents of the vehicle."""
+    """Bounding box describing the length, width, and height, of the vehicle."""
     heading: Heading
-    """The facing direction of the vehicle."""
+    """Facing direction of the vehicle. Units=rad."""
     speed: float
-    """The travel m/s in the direction of the vehicle."""
+    """Travel speed in the direction of the vehicle. Units=m/s."""
     steering: float
     """Angle of front wheels in radians between [-pi, pi]."""
     yaw_rate: float
-    """Speed of vehicle-heading rotation about the z-axis. Equivalent scalar representation of angular_velocity. Units: rad/s."""
+    """Speed of vehicle-heading rotation about the z-axis. Equivalent scalar representation of angular_velocity. Units=rad/s."""
     road_id: str
-    """The identifier for the road nearest to this vehicle."""
+    """Identifier for the road nearest to this vehicle."""
     lane_id: str
-    """The identifier for the lane nearest to this vehicle."""
+    """Identifier for the lane nearest to this vehicle."""
     lane_index: int
-    """The index of the nearest lane on the road nearest to this vehicle."""
+    """Index of the nearest lane on the road nearest to this vehicle. Right most lane has index 0 and index increments to the left."""
     mission: Mission
-    """A field describing the vehicle plotted route"""
+    """Vehicle's desired destination."""
     linear_velocity: np.ndarray
-    """Velocity of vehicle along the global coordinate axes. Units: m/s. A numpy array of shape=(3,) and dtype=np.float64."""
+    """Velocity of vehicle along the global coordinate axes. Units=m/s. A numpy array of shape=(3,) and dtype=np.float64."""
     angular_velocity: np.ndarray
-    """Velocity of vehicle-heading rotation about the z-axis. Equivalent vector representation of yaw_rate. Units: rad/s. A numpy array of shape=(3,) and dtype=np.float64."""
+    """Velocity of vehicle-heading rotation about the z-axis. Equivalent vector representation of yaw_rate. Units=rad/s. A numpy array of shape=(3,) and dtype=np.float64."""
     linear_acceleration: Optional[np.ndarray]
-    """Acceleration of vehicle along the global coordinate axes. Units: m/s^2. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
+    """Acceleration of vehicle along the global coordinate axes. Units=m/s^2. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
     angular_acceleration: Optional[np.ndarray]
-    """Acceleration of vehicle-heading rotation about the z-axis. Units: rad/s^2. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    """Acceleration of vehicle-heading rotation about the z-axis. Units=rad/s^2. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     linear_jerk: Optional[np.ndarray]
-    """Jerk of vehicle along the global coordinate axes. Units: m/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    """Jerk of vehicle along the global coordinate axes. Units=m/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     angular_jerk: Optional[np.ndarray]
-    """Jerk of vehicle-heading rotation about the z-axis. Units: rad/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    """Jerk of vehicle-heading rotation about the z-axis. Units=rad/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
     lane_position: Optional[RefLinePoint] = None
     """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
     See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
@@ -118,74 +118,77 @@ class RoadWaypoints(NamedTuple):
     """Per-road waypoint information."""
 
     lanes: Dict[str, List[List[Waypoint]]]
+    """Mapping of road ids to their lane waypoints."""
 
 
 class GridMapMetadata(NamedTuple):
     """Map grid metadata."""
 
     created_at: int
-    """The time at which the map was loaded."""
+    """Time at which the map was loaded."""
     resolution: float
-    """The map resolution in world-space-distance/cell."""
+    """Map resolution in world-space-distance/cell."""
     width: int
-    """The map width in # of cells."""
+    """Map width in # of cells."""
     height: int
-    """The map height in # of cells."""
+    """Map height in # of cells."""
     camera_pos: Tuple[float, float, float]
-    """The camera position when project onto the map."""
+    """Camera position when projected onto the map."""
     camera_heading_in_degrees: float
-    """The camera rotation angle along z-axis when projected onto the map."""
+    """Camera rotation angle along z-axis when projected onto the map."""
 
 
 class TopDownRGB(NamedTuple):
-    """RGB camera observation"""
+    """RGB camera observation."""
 
     metadata: GridMapMetadata
-    """Map metadata"""
+    """Map metadata."""
     data: np.ndarray
-    """A RGB image (default 256x256) with the ego vehicle at the center"""
+    """A RGB image with the ego vehicle at the center."""
 
 
 class OccupancyGridMap(NamedTuple):
-    """Occupancy camera observation"""
+    """Occupancy map."""
 
     metadata: GridMapMetadata
-    """Map metadata"""
+    """Map metadata."""
     data: np.ndarray
-    """An ``OGM <https://en.wikipedia.org/wiki/Occupancy_grid_mapping>`` (default 256x256) around the ego vehicle"""
+    """An occupancy grid map around the ego vehicle. 
+    
+    See https://en.wikipedia.org/wiki/Occupancy_grid_mapping."""
 
 
 class DrivableAreaGridMap(NamedTuple):
-    """Drivable area observation"""
+    """Drivable area map."""
 
     metadata: GridMapMetadata
-    """Map metadata"""
+    """Map metadata."""
     data: np.ndarray
-    """A grid map (default 256x256) that shows the static drivable area around the ego vehicle"""
+    """A grid map that shows the static drivable area around the ego vehicle."""
 
 
 @dataclass
 class ViaPoint:
-    """Describes 'collectable' locations that can be placed within the simulation."""
+    """'Collectables' that can be placed within the simulation."""
 
     position: Tuple[float, float]
-    """The location of this collectable"""
+    """Location (x,y) of this collectable."""
     lane_index: float
-    """The lane index on the road this collectable is associated with"""
+    """Lane index on the road this collectable is associated with."""
     road_id: str
-    """The road id this collectable is associated with"""
+    """Road id this collectable is associated with."""
     required_speed: float
-    """The rough speed required to collect this collectable"""
+    """Approximate speed required to collect this collectable."""
 
 
 @dataclass(frozen=True)
 class Vias:
-    """A listing of nearby via points and points collected in the last step"""
+    """Listing of nearby collectable ViaPoints and ViaPoints collected in the last step."""
 
     near_via_points: List[ViaPoint]
-    """Ordered list of nearby points that have not been hit"""
+    """Ordered list of nearby points that have not been hit."""
     hit_via_points: List[ViaPoint]
-    """List of points that were hit in the previous step"""
+    """List of points that were hit in the previous step."""
 
 
 @dataclass(frozen=True)
@@ -211,30 +214,41 @@ class Observation:
     dt: float
     """Amount of simulation time the last step took."""
     step_count: int
-    """Number of steps taken by SMARTS thus far."""
+    """Number of steps taken by SMARTS thus far in the current scenario."""
     steps_completed: int
-    """The number of steps this agent has taken within SMARTS."""
+    """Number of steps this agent has taken within SMARTS."""
     elapsed_sim_time: float
-    """Amout of simulation time elapsed. Average step_time can be computed as 
-    elapsed_sim_time/step_count."""
+    """Amout of simulation time elapsed for the current scenario."""
     events: Events
+    """Classified observations that can trigger agent done status."""
     ego_vehicle_state: EgoVehicleObservation
+    """Ego vehicle status."""
     under_this_agent_control: bool
-    """If this agent currently has control of the vehicle."""
+    """Whether this agent currently has control of the vehicle."""
     neighborhood_vehicle_states: Optional[List[VehicleObservation]]
+    """List of neighbourhood vehicle states."""
     waypoint_paths: Optional[List[List[Waypoint]]]
+    """Dynamic evenly-spaced points on the road ahead of the vehicle, showing potential routes ahead."""
     distance_travelled: float
+    """Road distance driven by the vehicle."""
     # TODO: Convert to `NamedTuple` or only return point cloud.
     lidar_point_cloud: Optional[
         Tuple[List[np.ndarray], List[bool], List[Tuple[np.ndarray, np.ndarray]]]
     ]
-    """Lidar point cloud consists of [points, hits, (ray_origin, ray_vector)]."""
+    """Lidar point cloud consisting of [points, hits, (ray_origin, ray_vector)]. 
+    Points missed (i.e., not hit) have `inf` value."""
     drivable_area_grid_map: Optional[DrivableAreaGridMap]
+    """Drivable area map."""
     occupancy_grid_map: Optional[OccupancyGridMap]
+    """Occupancy map."""
     top_down_rgb: Optional[TopDownRGB]
+    """RGB camera observation."""
     road_waypoints: Optional[RoadWaypoints]
+    """Per-road waypoints information."""
     via_data: Vias
+    """Listing of nearby collectable ViaPoints and ViaPoints collected in the last step."""
     signals: Optional[List[SignalObservation]] = None
+    """List of nearby traffic signal (light) states on this timestep."""
 
 
 @dataclass

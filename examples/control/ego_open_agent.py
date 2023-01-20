@@ -1,16 +1,15 @@
 """
 This examples runs the OpEn Agent, a classical, MPC based agent using [OpEn](https://alphaville.github.io/optimization-engine/).
-
-NOTE: You will need to install Rust to run this example. See https://rustup.rs/ for instructions.
+For further reading, see zoo policy [open-agent](../../smarts/zoo/policies/open-agent/).
 """
 
 import importlib
-import logging
 import sys
 from pathlib import Path
 
 import gym
 
+from cli.studio import build_scenarios
 from smarts.core.utils.episodes import episodes
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
@@ -23,24 +22,19 @@ except ModuleNotFoundError as e:
         f"Ensure that the open-agent has been installed with `pip install open-agent"
     )
 
-logging.basicConfig(level=logging.INFO)
 
 AGENT_ID = "Agent-007"
 
 
-def main(scenarios, sim_name, headless, num_episodes, seed):
+def main(scenarios, headless, num_episodes):
     open_agent_spec = open_agent.entrypoint(debug=False, aggressiveness=3)
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
         agent_specs={AGENT_ID: open_agent_spec},
-        sim_name=sim_name,
         headless=headless,
         visdom=False,
-        fixed_timestep_sec=0.1,
         sumo_headless=True,
-        seed=seed,
-        # envision_record_data_replay_path="./data_replay",
     )
 
     for episode in episodes(n=num_episodes):
@@ -62,13 +56,22 @@ def main(scenarios, sim_name, headless, num_episodes, seed):
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("OpEn-trajectory-optimizer-example")
+    parser = default_argument_parser("OpEn-trajectory-optimizer")
     args = parser.parse_args()
+
+    if not args.scenarios:
+        args.scenarios = [
+            str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop")
+        ]
+
+    build_scenarios(
+        clean=False,
+        scenarios=args.scenarios,
+        seed=42,
+    )
 
     main(
         scenarios=args.scenarios,
-        sim_name=args.sim_name,
         headless=args.headless,
         num_episodes=args.episodes,
-        seed=args.seed,
     )

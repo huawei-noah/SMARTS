@@ -57,9 +57,9 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
     points should lie on a road in the road map.
 
     Args:
-        road_map (RoadMap): Scenario road map.
-        point_a (Point): A point, in world-map coordinates, which lies on a road.
-        point_b (Point): A point, in world-map coordinates, which lies on a road.
+        road_map: Scenario road map.
+        point_a: A point, in world-map coordinates, which lies on a road.
+        point_b: A point, in world-map coordinates, which lies on a road.
 
     Returns:
         float: Shortest road distance between two points in the road map.

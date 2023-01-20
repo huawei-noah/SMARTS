@@ -1,7 +1,7 @@
-.. _smarts:
+.. _simulator:
 
-SMARTS Simulator
-================
+Simulator
+=========
 
 The SMARTS class can be instantiated in the following way:
 
@@ -32,7 +32,7 @@ The step interface is similar to gym but with a few notable differences mainly d
     )
 
 
-The SMARTS simulator has the explict requirement to call `destroy()` before deleting the instance.
+The SMARTS simulator has the explict requirement to call ``destroy()`` before deleting the instance.
 
 .. code-block:: python
 

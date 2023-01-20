@@ -10,7 +10,7 @@ from typing import Dict, Sequence, Tuple
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from tools.argument_parser import default_argument_parser
 
-from smarts import sstudio
+from cli.studio import build_scenarios
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
@@ -229,7 +229,11 @@ if __name__ == "__main__":
             )
         ]
 
-    sstudio.build_scenario(args.scenarios)
+    build_scenarios(
+        clean=False,
+        scenarios=args.scenarios,
+        seed=42,
+    )
 
     print("\nParallel environments with asynchronous episodes.")
     main(

@@ -1,4 +1,4 @@
-.. _rllib_in_smarts:
+.. _rllib:
 
 RLlib
 =====
@@ -7,9 +7,8 @@ RLlib
 of applications. RLlib natively supports TensorFlow, TensorFlow Eager, and PyTorch. Most of its internals are agnostic to such
 deep learning frameworks.
 
-====================
-Recommend Read First
-====================
+Recommended reads
+-----------------
 
 RLlib is implemented on top of Ray. Ray is a distributed computing framework specifically designed with RL in mind. There are
 many docs about Ray and RLlib. We recommend to read the following pages first,
@@ -24,14 +23,11 @@ many docs about Ray and RLlib. We recommend to read the following pages first,
 - `PopulationBasedTraining <https://docs.ray.io/en/latest/tune/api_docs/schedulers.html#populationbasedtraining>`_: Population Based Training algorithm and examples.
 - `RLlib Examples <https://docs.ray.io/en/latest/rllib-examples.html>`_: Get to know RLlib quickly through examples.
 
-=================
-SMARTS RLlib Tips
-=================
 
-Resume or continue training
----------------------------
+Resume training
+---------------
 
-With respect to `examples/rl/rllib` example, if you want to continue an aborted experiment, you can set `resume=True` in `tune.run`. But note that `resume=True` will continue to use the same configuration as was set in the original experiment.
-To make changes to a started experiment, you can edit the latest experiment file in `./results`.
+With respect to ``SMARTS/examples/rl/rllib`` example, if you want to continue an aborted experiment, you can set ``resume=True`` in ``tune.run``. But note that ``resume=True`` will continue to use the same configuration as was set in the original experiment.
+To make changes to a started experiment, you can edit the latest experiment file in ``./results``.
 
-Or if you want to start a new experiment but train from an existing checkpoint, you can set `restore=checkpoint_path` in `tune.run`.
+Or if you want to start a new experiment but train from an existing checkpoint, you can set ``restore=checkpoint_path`` in ``tune.run``.

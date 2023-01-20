@@ -1,3 +1,4 @@
+import random
 import sys
 from pathlib import Path
 
@@ -6,7 +7,7 @@ import gym
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from tools.argument_parser import default_argument_parser
 
-from smarts import sstudio
+from cli.studio import build_scenarios
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
@@ -18,7 +19,8 @@ AGENT_IDS = ["Agent %i" % i for i in range(N_AGENTS)]
 
 class KeepLaneAgent(Agent):
     def act(self, obs):
-        return "keep_lane"
+        val = ["keep_lane", "slow_down", "change_lane_left", "change_lane_right"]
+        return random.choice(val)
 
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
@@ -54,7 +56,6 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
                 agent_id: agents[agent_id].act(agent_obs)
                 for agent_id, agent_obs in observations.items()
             }
-
             observations, rewards, dones, infos = env.step(actions)
             episode.record_step(observations, rewards, dones, infos)
 
@@ -62,7 +63,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("multi-agent-example")
+    parser = default_argument_parser("laner")
     args = parser.parse_args()
 
     if not args.scenarios:
@@ -70,7 +71,11 @@ if __name__ == "__main__":
             str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop")
         ]
 
-    sstudio.build_scenario(scenario=args.scenarios)
+    build_scenarios(
+        clean=False,
+        scenarios=args.scenarios,
+        seed=42,
+    )
 
     main(
         scenarios=args.scenarios,

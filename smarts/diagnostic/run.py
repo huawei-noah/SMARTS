@@ -36,7 +36,6 @@ from mdutils.mdutils import MdUtils
 import smarts
 from cli.studio import build_scenarios
 from smarts.core.scenario import Scenario
-from smarts.core.utils.logging import timeit
 from smarts.core.utils.math import welford
 
 _SEED = 42
@@ -127,10 +126,11 @@ def _readable(func: _Funcs) -> _Result:
 
 
 def git_revision_short_hash() -> str:
-    """Returns Git commit short hash.
+    """
+    Returns Git commit short hash.
 
-    :return: Commit hash.
-    :rtype: str
+    Returns:
+        str: Commit hash.
     """
     return (
         subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
@@ -140,10 +140,11 @@ def git_revision_short_hash() -> str:
 
 
 def git_branch() -> str:
-    """Returns Git branch.
+    """
+    Returns Git branch name.
 
-    :return: Branch name.
-    :rtype: str
+    Returns:
+        str: Branch name.
     """
     return (
         subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
@@ -207,8 +208,8 @@ def _write_report(results: Dict[str, Any]):
 def main(scenarios: Sequence[str]):
     """Run diagnostic.
 
-    :param scenarios: Scenarios to be timed.
-    :type scenarios: Sequence[str]
+    Args:
+        scenarios (Sequence[str]): Scenarios to be timed.
     """
 
     results = {}

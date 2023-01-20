@@ -205,10 +205,8 @@ class FormatObs(gym.ObservationWrapper):
     enabled via AgentInterface.
 
     Note:
-        (a) FormatObs wrapper requires all agents must have the same
-            AgentInterface attributes.
-        (b) Observation adapters should not be used inside the `step` and
-            `reset` methods of the base environment.
+        FormatObs wrapper requires all agents must have the same AgentInterface
+        attributes.
     """
 
     def __init__(self, env: gym.Env):

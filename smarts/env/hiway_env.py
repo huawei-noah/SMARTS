@@ -33,13 +33,48 @@ from smarts.core.scenario import Scenario
 from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.logging import timeit
 from smarts.core.utils.visdom_client import VisdomClient
 from smarts.zoo.agent_spec import AgentSpec
 
 
 class HiWayEnv(gym.Env):
-    """A generic environment for various driving tasks simulated by SMARTS."""
+    """A generic environment for various driving tasks simulated by SMARTS.
+
+    Args:
+        scenarios (Sequence[str]):  A list of scenario directories that
+            will be simulated.
+        agent_specs (Dict[str, AgentSpec]): Specification of the agents
+            that will run in the environment.
+        sim_name (Optional[str], optional): Simulation name. Defaults to
+            None.
+        shuffle_scenarios (bool, optional): If true, order of scenarios
+            will be randomized, else it will be maintained. Defaults to
+            True.
+        headless (bool, optional): If True, disables visualization in
+            Envision. Defaults to False.
+        visdom (bool, optional): If True, enables visualization of observed
+            RGB images in Visdom. Defaults to False.
+        fixed_timestep_sec (Optional[float], optional): Step duration for
+            all components of the simulation. May be None if time deltas
+            are externally-driven. Defaults to None.
+        seed (int, optional): Random number generator seed. Defaults to 42.
+        num_external_sumo_clients (int, optional): Number of SUMO clients
+            beyond SMARTS. Defaults to 0.
+        sumo_headless (bool, optional): If True, disables visualization in
+            SUMO GUI. Defaults to True.
+        sumo_port (Optional[str], optional): SUMO port. Defaults to None.
+        sumo_auto_start (bool, optional): Automatic starting of SUMO.
+            Defaults to True.
+        envision_endpoint (Optional[str], optional): Envision's uri.
+            Defaults to None.
+        envision_record_data_replay_path (Optional[str], optional):
+            Envision's data replay output directory. Defaults to None.
+        zoo_addrs (Optional[str], optional): List of (ip, port) tuples of
+            zoo server, used to instantiate remote social agents. Defaults
+            to None.
+        timestep_sec (Optional[float], optional): [description]. Defaults
+            to None.
+    """
 
     metadata = {"render.modes": ["human"]}
     """Metadata for gym's use"""
@@ -65,43 +100,6 @@ class HiWayEnv(gym.Env):
             float
         ] = None,  # for backwards compatibility (deprecated)
     ):
-        """
-        Args:
-            scenarios (Sequence[str]):  A list of scenario directories that
-                will be simulated.
-            agent_specs (Dict[str, AgentSpec]): Specification of the agents
-                that will run in the environment.
-            sim_name (Optional[str], optional): Simulation name. Defaults to
-                None.
-            shuffle_scenarios (bool, optional): If true, order of scenarios
-                will be randomized, else it will be maintained. Defaults to
-                True.
-            headless (bool, optional): If True, disables visualization in
-                Envision. Defaults to False.
-            visdom (bool, optional): If True, enables visualization of observed
-                RGB images in Visdom. Defaults to False.
-            fixed_timestep_sec (Optional[float], optional): Step duration for
-                all components of the simulation. May be None if time deltas
-                are externally-driven. Defaults to None.
-            seed (int, optional): Random number generator seed. Defaults to 42.
-            num_external_sumo_clients (int, optional): Number of SUMO clients
-                beyond SMARTS. Defaults to 0.
-            sumo_headless (bool, optional): If True, disables visualization in
-                SUMO GUI. Defaults to True.
-            sumo_port (Optional[str], optional): SUMO port. Defaults to None.
-            sumo_auto_start (bool, optional): Automatic starting of SUMO.
-                Defaults to True.
-            envision_endpoint (Optional[str], optional): Envision's uri.
-                Defaults to None.
-            envision_record_data_replay_path (Optional[str], optional):
-                Envision's data replay output directory. Defaults to None.
-            zoo_addrs (Optional[str], optional): List of (ip, port) tuples of
-                zoo server, used to instantiate remote social agents. Defaults
-                to None.
-            timestep_sec (Optional[float], optional): [description]. Defaults
-                to None.
-        """
-
         self._log = logging.getLogger(self.__class__.__name__)
         self.seed(seed)
 
@@ -181,10 +179,11 @@ class HiWayEnv(gym.Env):
 
         Returns:
             Dict[str, Union[float,str]]: A dictionary with the following keys.
-                fixed_timestep_sec - Simulation timestep.
-                scenario_map - Name of the current scenario.
-                scenario_traffic - Traffic spec(s) used.
-                mission_hash - Hash identifier for the current scenario.
+
+                + fixed_timestep_sec: Simulation timestep.
+                + scenario_map: Name of the current scenario.
+                + scenario_traffic: Traffic spec(s) used.
+                + mission_hash: Hash identifier for the current scenario.
         """
 
         scenario = self._smarts.scenario
@@ -200,7 +199,7 @@ class HiWayEnv(gym.Env):
         """Returns underlying scenario.
 
         Returns:
-            Scenario: Current simulated scenario.
+            Current simulated scenario.
         """
         return self._smarts.scenario
 
