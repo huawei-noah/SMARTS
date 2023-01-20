@@ -217,8 +217,7 @@ class HiWayEnvV1(gym.Env):
                 This observation will change based on the provided :attr:`agent_interfaces`. Check :attr:`observation_space after initialization.
             reward (SupportsFloat): The reward as a result of taking the action.
             terminated (bool): Whether the agent reaches the terminal state (as defined under the MDP of the task)
-                which can be positive or negative. An example is reaching the goal state or moving into the lava from
-                the Sutton and Barton, Gridworld. If true, the user needs to call :meth:`reset`.
+                which can be positive or negative. An example is reaching the goal state. If true, the user needs to call :meth:`reset`.
             truncated (bool): Whether the truncation condition outside the scope of the MDP is satisfied.
                 Typically, this is a timelimit, but could also be used to indicate an agent physically going out of bounds.
                 Can be used to end the episode prematurely before a terminal state is reached.
