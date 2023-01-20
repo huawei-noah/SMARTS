@@ -21,9 +21,11 @@
 # THE SOFTWARE.
 import argparse
 import logging
+import os
 from typing import List, Tuple
 
 import gymnasium as gym
+import psutil
 import ray
 
 from smarts.benchmark import auto_install
@@ -78,7 +80,8 @@ def _eval_worker(name, env_config, episodes, agent_config):
 
 
 def task_iterator(env_args, benchmark_args, agent_args):
-    ray.init(num_cpus=4, log_to_driver=LOG_WORKERS)
+    num_cpus = max(1, min(os.sched_getaffinity(0)), psutil.cpu_count(False) or 4)
+    ray.init(num_cpus=num_cpus, log_to_driver=LOG_WORKERS)
     try:
         max_queued_tasks = 20
         unfinished_refs = []
