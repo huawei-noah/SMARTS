@@ -21,6 +21,7 @@ import_utils.import_module_from_file(
         "chase_via_points",
         "trajectory_tracking",
         "laner",
+        "hiway_v1"
     ],
     # TODO: "ego_open_agent" and "human_in_the_loop" are causing aborts, fix later
 )
@@ -33,6 +34,8 @@ def test_examples(example):
         from examples.control import trajectory_tracking as current_example
     elif example == "laner":
         from examples.control import laner as current_example
+    elif example == "hiway_v1":
+        from examples.control import hiway_env_v1_lane_follower as current_example
     main = current_example.main
     main(
         scenarios=["scenarios/sumo/loop"],
