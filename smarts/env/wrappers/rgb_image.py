@@ -21,10 +21,12 @@
 # THE SOFTWARE.
 
 
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, NamedTuple, Sequence
 
 import gym
 import numpy as np
+
+from smarts.core.utils.file import isnamedtupleinstance
 
 
 class RGBImage(gym.ObservationWrapper):
@@ -78,11 +80,15 @@ class RGBImage(gym.ObservationWrapper):
         """
         wrapped_obs = {}
         for agent_id, agent_obs in obs.items():
-            if isinstance(agent_obs, Sequence):
+            if isinstance(agent_obs, tuple) and not isnamedtupleinstance(agent_obs):
                 true_num_stack = len(agent_obs)
             else:
                 true_num_stack = 1
                 agent_obs = [agent_obs]
+
+            if self._num_stack != true_num_stack:
+                print(agent_obs)
+                print(self._num_stack, true_num_stack)
 
             assert self._num_stack == true_num_stack, (
                 f"User supplied `num_stack` (={self._num_stack}) argument to "
