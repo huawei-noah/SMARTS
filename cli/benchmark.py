@@ -68,8 +68,7 @@ def run(benchmark_id: str, agent_config: str, debug_log: bool):
 
 @click.command("list")
 def list_benchmarks():
-    """Lists available benchmarks that can be used for `scl benchmark run`.
-    """
+    """Lists available benchmarks that can be used for `scl benchmark run`."""
     from smarts.benchmark import BENCHMARK_LISTING_FILE
     from smarts.benchmark import list_benchmarks as l_benchmarks
 

@@ -23,11 +23,9 @@ import importlib
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-BENCHMARK_LISTING_FILE = str(
-    Path(__file__).parent.absolute() / "benchmark_listing.yaml"
-)
+BENCHMARK_LISTING_FILE = Path(__file__).parent.absolute() / "benchmark_listing.yaml"
 
 
 def auto_install(benchmark_spec: Dict[str, Any]):
@@ -70,11 +68,26 @@ def _get_entrypoint(path, name):
 
 
 def run_benchmark(
-    benchmark_name, benchmark_version, agent_config, benchmark_listing, debug_log=False
+    benchmark_name: str,
+    benchmark_version: Optional[float],
+    agent_config: Path,
+    benchmark_listing: Path,
+    debug_log: bool = False,
 ):
+    """Runs a benchmark with the given configuration. Use `scl benchmark list` to see the available
+    benchmarks.
+
+    Args:
+        benchmark_name(str): The name of the benchmark to run.
+        benchmark_version(float|None): The version of the benchmark.
+        agent_config(Path): An agent configuration file.
+        benchmark_listing(Path): A configuration file that lists benchmark metadata and must list
+            the target benchmark.
+        debug_log: Debug to stdout.
+    """
     from smarts.core.utils.resources import load_yaml_config_with_substitution
 
-    listing_dict = load_yaml_config_with_substitution(Path(benchmark_listing))
+    listing_dict = load_yaml_config_with_substitution(benchmark_listing)
 
     benchmarks = listing_dict["benchmarks"]
 
@@ -92,12 +105,13 @@ def run_benchmark(
     entrypoint = _get_entrypoint(module, name)
     entrypoint(
         **benchmark_spec.get("params", {}),
-        agent_config=agent_config,
+        agent_config=str(agent_config),
         debug_log=debug_log,
     )
 
 
 def list_benchmarks(benchmark_listing):
+    """Lists details of the currently available benchmarks."""
     from smarts.core.utils.resources import load_yaml_config_with_substitution
 
     return load_yaml_config_with_substitution(Path(benchmark_listing))
