@@ -59,6 +59,8 @@ DEFAULT_TIMESTEP = 0.1
 
 
 class ScenarioOrder(IntEnum):
+    """Determines the order in which scenarios are served over successive resets."""
+
     Sequential = 0
     """Scenarios are served in order intially provided."""
     Scrambled = 1
@@ -66,6 +68,8 @@ class ScenarioOrder(IntEnum):
 
 
 class SumoOptions(NamedTuple):
+    """Contains options used to configure sumo."""
+
     num_external_clients: int = 0
     """Number of SUMO clients beyond SMARTS. Defaults to 0."""
     auto_start: bool = True

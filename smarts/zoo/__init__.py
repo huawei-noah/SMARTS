@@ -28,6 +28,8 @@ from .registry import register
 
 
 class RandomRelativeTargetPoseAgent(Agent):
+    """A simple agent that can move a random distance."""
+
     def __init__(self, speed=28, timestep=0.1) -> None:
         super().__init__()
         self._speed_per_step = speed / timestep
@@ -41,6 +43,9 @@ class RandomRelativeTargetPoseAgent(Agent):
 
 
 def entry_point(speed=10, **kwargs):
+    """An example entrypoint for a simple agent.
+    This can have any number of arguments similar to the gym environment standard.
+    """
     return AgentSpec(
         AgentInterface(
             action=ActionSpaceType.RelativeTargetPose,

@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+import warnings
 from enum import IntEnum
 from typing import Dict, List
 
@@ -64,28 +65,37 @@ _DISCRETE2_SPACE = gym.spaces.Discrete(n=2)
 
 
 class ObservationOptions(IntEnum):
+    """Defines the options for how the formatting matches the observation space."""
     multi_agent = 0
+    """Observation partially matches observation space. Only active agents are included."""
     full = 1
+    """Observation fully matches observation space. Inactive and active agents are included."""
     default = 0
-
+    """Defaults to :attr:`multi_agent`."""
 
 class BaseSpaceFormat:
+    """Defines the base interface for an observation formatter."""
     def format(self, obs: Observation):
+        """Selects and formats the given observation to get a value that matches :attr:`space`."""
         raise NotImplementedError()
 
     def active(self, agent_interface: AgentInterface) -> bool:
+        """If this formatting is active and should be included in the output."""
         raise NotImplementedError()
 
     @property
     def name(self):
+        """The name that should represent this observation space in heirachy."""
         raise NotImplementedError()
 
     @property
     def space(self):
+        """The observation space this should format the smarts observation to match."""
         raise NotImplementedError()
 
 
 class HeadingSpaceFormat(BaseSpaceFormat):
+    """Defines a formatter which relates to heading in radians."""
     @property
     def name(self):
         return "heading"
@@ -96,6 +106,7 @@ class HeadingSpaceFormat(BaseSpaceFormat):
 
 
 class SpeedSpaceFormat(BaseSpaceFormat):
+    """Defines a formatter which relates to a speed scalar."""
     @property
     def name(self):
         return "speed"
@@ -106,6 +117,7 @@ class SpeedSpaceFormat(BaseSpaceFormat):
 
 
 class PositionSpaceFormat(BaseSpaceFormat):
+    """Defines a formatter which relates to physical position."""
     @property
     def name(self):
         return "position"
@@ -116,24 +128,28 @@ class PositionSpaceFormat(BaseSpaceFormat):
 
 
 class VelocitySpaceFormat(BaseSpaceFormat):
+    """Defines a formatter which relates to physical velocity."""
     @property
     def space(self):
         return _VEC3_SIGNED_FLOAT32_SPACE
 
 
 class AccelerationSpaceFormat(BaseSpaceFormat):
+    """Defines a formatter which relates to physical acceleration."""
     @property
     def space(self):
         return _VEC3_SIGNED_FLOAT32_SPACE
 
 
 class JerkSpaceFormat(BaseSpaceFormat):
+    """Defines a formatter which relates to physical jerk."""
     @property
     def space(self):
         return _VEC3_SIGNED_FLOAT32_SPACE
 
 
 class ConfigurableSpaceFormat(BaseSpaceFormat):
+    """Defines a formatter which is dynamic."""
     def __init__(self, agent_interface: AgentInterface) -> None:
         self._agent_interface = agent_interface
 
@@ -150,6 +166,7 @@ class ConfigurableSpaceFormat(BaseSpaceFormat):
 
 
 class Image8BSpaceFormat(ConfigurableSpaceFormat):
+    """Defines a observation formatter which is an 8-bit image."""
     def __init__(
         self, agent_interface: AgentInterface, dimensions, colors: int
     ) -> None:
@@ -168,6 +185,7 @@ class Image8BSpaceFormat(ConfigurableSpaceFormat):
 
 
 class DictSpaceFormat(ConfigurableSpaceFormat):
+    """Defines a observation formatter that contains other formatters."""
     def __init__(self, agent_interface, spaces: List[BaseSpaceFormat]) -> None:
         self._spaces = [space for space in spaces if space.active(agent_interface)]
         super().__init__(agent_interface)
@@ -188,6 +206,7 @@ class DictSpaceFormat(ConfigurableSpaceFormat):
 
 
 class EgoBoxSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.bounding_box`."""
     def format(self, obs: Observation):
         return np.array(obs.ego_vehicle_state.bounding_box.as_lwh).astype(np.float32)
 
@@ -204,6 +223,7 @@ class EgoBoxSpaceFormat(BaseSpaceFormat):
 
 
 class EgoHeadingSpaceFormat(HeadingSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.heading`."""
     def format(self, obs: Observation):
         return np.float32(obs.ego_vehicle_state.heading)
 
@@ -212,6 +232,7 @@ class EgoHeadingSpaceFormat(HeadingSpaceFormat):
 
 
 class EgoLaneIndexSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.lane_index`."""
     def format(self, obs: Observation):
         return np.int8(obs.ego_vehicle_state.lane_index)
 
@@ -228,6 +249,7 @@ class EgoLaneIndexSpaceFormat(BaseSpaceFormat):
 
 
 class EgoLinearVelocitySpaceFormat(VelocitySpaceFormat):
+    """Formats for `obs.ego_vehicle_state.linear_velocity`."""
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.linear_velocity.astype(np.float32)
 
@@ -240,6 +262,7 @@ class EgoLinearVelocitySpaceFormat(VelocitySpaceFormat):
 
 
 class EgoAngularVelocitySpaceFormat(VelocitySpaceFormat):
+    """Formats for `obs.ego_vehicle_state.angular_velocity`."""
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.angular_velocity.astype(np.float32)
 
@@ -252,6 +275,7 @@ class EgoAngularVelocitySpaceFormat(VelocitySpaceFormat):
 
 
 class EgoPositionSpaceFormat(PositionSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.position`."""
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.position.astype(np.float64)
 
@@ -260,6 +284,7 @@ class EgoPositionSpaceFormat(PositionSpaceFormat):
 
 
 class EgoSpeedSpaceFormat(SpeedSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.speed`."""
     def format(self, obs: Observation):
         return np.float32(obs.ego_vehicle_state.speed)
 
@@ -268,11 +293,18 @@ class EgoSpeedSpaceFormat(SpeedSpaceFormat):
 
 
 class EgoLaneIDSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.lane_id`."""
     def format(self, obs: Observation):
-        ## TODO MTA: warn when lane ids are clipped
-        return obs.ego_vehicle_state.lane_id.ljust(
+        lane_name = obs.ego_vehicle_state.lane_id.ljust(
             _WAYPOINT_NAME_LIMIT, _TEXT_PAD_CHAR
-        )[:_WAYPOINT_NAME_LIMIT]
+        )
+        if len(lane_name) > _WAYPOINT_NAME_LIMIT:
+            warnings.warn(
+                f"Lane named `{lane_name}` is more than "
+                f"`{_WAYPOINT_NAME_LIMIT}` characters long. It will be truncated "
+                "and may cause unintended issues with navigation and lane identification."
+            )
+        return lane_name[:_WAYPOINT_NAME_LIMIT]
 
     def active(self, agent_interface: AgentInterface) -> bool:
         return True
@@ -287,6 +319,7 @@ class EgoLaneIDSpaceFormat(BaseSpaceFormat):
 
 
 class EgoSteeringSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.steering`."""
     def format(self, obs: Observation):
         return np.float32(obs.ego_vehicle_state.steering)
 
@@ -303,6 +336,7 @@ class EgoSteeringSpaceFormat(BaseSpaceFormat):
 
 
 class EgoYawRateSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.yaw_rate`."""
     def format(self, obs: Observation):
         return np.float32(obs.ego_vehicle_state.yaw_rate)
 
@@ -319,6 +353,7 @@ class EgoYawRateSpaceFormat(BaseSpaceFormat):
 
 
 class EgoAngularAccelerationSpaceFormat(AccelerationSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.angular_acceleration`."""
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.angular_acceleration.astype(np.float32)
 
@@ -331,6 +366,7 @@ class EgoAngularAccelerationSpaceFormat(AccelerationSpaceFormat):
 
 
 class EgoAngularJerkSpaceFormat(JerkSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.angular_jerk`."""
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.angular_jerk.astype(np.float32)
 
@@ -343,6 +379,7 @@ class EgoAngularJerkSpaceFormat(JerkSpaceFormat):
 
 
 class EgoLinearAccelerationSpaceFormat(AccelerationSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.linear_acceleration`."""
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.linear_acceleration.astype(np.float32)
 
@@ -355,6 +392,7 @@ class EgoLinearAccelerationSpaceFormat(AccelerationSpaceFormat):
 
 
 class EgoLinearJerkSpaceFormat(JerkSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.linear_jerk`."""
     def format(self, obs: Observation):
         return obs.ego_vehicle_state.linear_jerk.astype(np.float32)
 
@@ -367,6 +405,7 @@ class EgoLinearJerkSpaceFormat(JerkSpaceFormat):
 
 
 class DistanceTravelledSpace(BaseSpaceFormat):
+    """Formats for `obs.distance_travelled`."""
     def format(self, obs: Observation):
         return np.float32(obs.distance_travelled)
 
@@ -383,6 +422,7 @@ class DistanceTravelledSpace(BaseSpaceFormat):
 
 
 class EgoVehicleStateSpaceFormat(DictSpaceFormat):
+    """Formats for `obs.ego_vehicle_state`."""
     def __init__(self, agent_interface) -> None:
         spaces = [
             # required
@@ -415,6 +455,7 @@ class EgoVehicleStateSpaceFormat(DictSpaceFormat):
 
 
 class EventsAgentsAliveDoneSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.events.agents_alive_done`."""
     def format(self, obs: Observation):
         return np.int64(obs.events.agents_alive_done)
 
@@ -431,6 +472,7 @@ class EventsAgentsAliveDoneSpaceFormat(BaseSpaceFormat):
 
 
 class EventsCollisionsSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.events.collisions`."""
     def format(self, obs: Observation):
         return np.int64(len(obs.events.collisions) > 0)
 
@@ -447,6 +489,7 @@ class EventsCollisionsSpaceFormat(BaseSpaceFormat):
 
 
 class EventsNotMovingSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.events.not_moving`."""
     def format(self, obs: Observation):
         return np.int64(obs.events.not_moving)
 
@@ -463,6 +506,7 @@ class EventsNotMovingSpaceFormat(BaseSpaceFormat):
 
 
 class EventsOffRoadSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.events.off_road`."""
     def format(self, obs: Observation):
         return np.int64(obs.events.off_road)
 
@@ -479,6 +523,7 @@ class EventsOffRoadSpaceFormat(BaseSpaceFormat):
 
 
 class EventsOffRouteSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.events.off_route`."""
     def format(self, obs: Observation):
         return np.int64(obs.events.off_route)
 
@@ -495,6 +540,7 @@ class EventsOffRouteSpaceFormat(BaseSpaceFormat):
 
 
 class EventsOnShoulderSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.events.on_shoulder`."""
     def format(self, obs: Observation):
         return np.int64(obs.events.on_shoulder)
 
@@ -511,6 +557,7 @@ class EventsOnShoulderSpaceFormat(BaseSpaceFormat):
 
 
 class EventsReachedGoalSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.events.reached_goal`."""
     def format(self, obs: Observation):
         return np.int64(obs.events.reached_goal)
 
@@ -527,6 +574,7 @@ class EventsReachedGoalSpaceFormat(BaseSpaceFormat):
 
 
 class EventsReachedMaxEpisodeStepsSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.events.reached_max_episode_steps`."""
     def format(self, obs: Observation):
         return np.int64(obs.events.reached_max_episode_steps)
 
@@ -543,6 +591,7 @@ class EventsReachedMaxEpisodeStepsSpaceFormat(BaseSpaceFormat):
 
 
 class EventsWrongWaySpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.events.wrong_way`."""
     def format(self, obs: Observation):
         return np.int64(obs.events.wrong_way)
 
@@ -559,6 +608,7 @@ class EventsWrongWaySpaceFormat(BaseSpaceFormat):
 
 
 class EventsSpaceFormat(DictSpaceFormat):
+    """Formats for `obs.events`."""
     def __init__(self, agent_interface) -> None:
         spaces = [
             EventsAgentsAliveDoneSpaceFormat(),
@@ -583,6 +633,7 @@ class EventsSpaceFormat(DictSpaceFormat):
 
 
 class DrivableAreaGridMapSpaceFormat(Image8BSpaceFormat):
+    """Formats for `obs.drivable_area_grid_map`."""
     def __init__(self, agent_interface: AgentInterface) -> None:
         super().__init__(
             agent_interface, dimensions=agent_interface.drivable_area_grid_map, colors=1
@@ -600,6 +651,7 @@ class DrivableAreaGridMapSpaceFormat(Image8BSpaceFormat):
 
 
 class LidarPointCloudSpaceFormat(ConfigurableSpaceFormat):
+    """Formats for `obs.lidar_point_cloud`."""
     def format(self, obs: Observation):
         lidar_point_cloud = obs.lidar_point_cloud
         # # MTA TODO: add lidar configuration like following:
@@ -666,6 +718,7 @@ class LidarPointCloudSpaceFormat(ConfigurableSpaceFormat):
 
 
 class MissionSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.ego_vehicle_state.mission`."""
     def format(self, obs: Observation):
         ego_vehicle_obs = obs.ego_vehicle_state
         if hasattr(ego_vehicle_obs.mission.goal, "position"):
@@ -694,6 +747,7 @@ class MissionSpaceFormat(BaseSpaceFormat):
 
 
 class NeighborhoodVehicleStatesSpaceFormat(ConfigurableSpaceFormat):
+    """Formats for `obs.neighborhood_vehicle_states`."""
     def format(self, obs: Observation):
         neighborhood_vehicle_states = obs.neighborhood_vehicle_states
         ## TODO MTA: Add in the vehicle ids
@@ -777,6 +831,7 @@ class NeighborhoodVehicleStatesSpaceFormat(ConfigurableSpaceFormat):
 
 
 class OccupancyGridMapSpaceFormat(Image8BSpaceFormat):
+    """Formats for `obs.occupancy_grid_map`."""
     def __init__(self, agent_interface: AgentInterface) -> None:
         super().__init__(
             agent_interface, dimensions=agent_interface.occupancy_grid_map, colors=1
@@ -794,6 +849,7 @@ class OccupancyGridMapSpaceFormat(Image8BSpaceFormat):
 
 
 class TopDownRGBSpaceFormat(Image8BSpaceFormat):
+    """Formats for `obs.top_down_rgb`."""
     def __init__(self, agent_interface: AgentInterface) -> None:
         super().__init__(
             agent_interface, dimensions=agent_interface.top_down_rgb, colors=3
@@ -811,6 +867,7 @@ class TopDownRGBSpaceFormat(Image8BSpaceFormat):
 
 
 class WaypointPathsSpaceFormat(BaseSpaceFormat):
+    """Formats for `obs.waypoint_paths`."""
     @property
     def name(self):
         return "waypoint_paths"
@@ -920,6 +977,7 @@ class WaypointPathsSpaceFormat(BaseSpaceFormat):
 
 
 class SignalsSpaceFormat(ConfigurableSpaceFormat):
+    """Formats for `obs.signals`."""
     def __init__(self, agent_interface, count) -> None:
         self.count = count
         super().__init__(agent_interface)
@@ -980,6 +1038,8 @@ class SignalsSpaceFormat(ConfigurableSpaceFormat):
 
 
 class EnabledSpaceFormat(BaseSpaceFormat):
+    """Formats to show if the agent is active in the environment."""
+
     def format(self, obs: Observation):
         return np.int64(True)
 
@@ -996,6 +1056,8 @@ class EnabledSpaceFormat(BaseSpaceFormat):
 
 
 class ObservationSpaceFormat(DictSpaceFormat):
+    """Formats a smarts observation to fixed sized object."""
+
     def __init__(self, agent_interface) -> None:
         spaces = [
             EnabledSpaceFormat(),
@@ -1021,6 +1083,168 @@ class ObservationSpaceFormat(DictSpaceFormat):
 
 
 class ObservationsSpaceFormat:
+    """Formats a smarts observation to fixed sized object.
+    Observations in numpy array format, suitable for vectorized processing.
+
+    For each agent id:
+    obs = dict({
+        If the agent is active.
+        "active": 1 if agent is active in smarts, else 0
+
+        Total distance travelled in meters.
+        "distance_travelled": np.float32
+
+        Ego vehicle state, with the following attributes.
+        "ego_vehicle_state": dict({
+            "angular_acceleration":
+                Angular acceleration vector. Requires `accelerometer` attribute
+                enabled in AgentInterface, else absent. shape=(3,). dtype=np.float32.
+            "angular_jerk":
+                Angular jerk vector. Requires `accelerometer` attribute enabled in
+                AgentInterface, else absent. shape=(3,). dtype=np.float32.
+            "angular_velocity":
+                Angular velocity vector. shape=(3,). dtype=np.float32).
+            "box":
+                Length, width, and height of the vehicle bounding box. shape=(3,).
+                dtype=np.float32.
+            "heading":
+                Vehicle heading in radians [-pi, pi]. dtype=np.float32.
+            "lane_index":
+                Vehicle's lane number. Rightmost lane has index 0 and increases
+                towards left. dtype=np.int8.
+            "linear_acceleration":
+                Vehicle acceleration in x, y, and z axes. Requires `accelerometer`
+                attribute enabled in AgentInterface, else absent. shape=(3,).
+                dtype=np.float32.
+            "linear_jerk":
+                Linear jerk vector. Requires `accelerometer` attribute enabled in
+                AgentInterface, else absent. shape=(3,). dtype=np.float32.
+            "linear_velocity":
+                Vehicle velocity in x, y, and z axes. shape=(3,). dtype=np.float32.
+            "pos":
+                Coordinate of the center of the vehicle bounding box's bottom plane.
+                shape=(3,). dtype=np.float64.
+            "speed":
+                Vehicle speed in m/s. dtype=np.float32.
+            "steering":
+                Angle of front wheels in radians [-pi, pi]. dtype=np.float32.
+            "yaw_rate":
+                Rotation speed around vertical axis in rad/s [0, 2pi].
+                dtype=np.float32.
+        )}
+
+        A dictionary of event markers.
+        "events": dict({
+            "agents_alive_done":
+                1 if `DoneCriteria.agents_alive` is triggered, else 0.
+            "collisions":
+                1 if any collisions occurred with ego vehicle, else 0.
+            "not_moving":
+                1 if `DoneCriteria.not_moving` is triggered, else 0.
+            "off_road":
+                1 if ego vehicle drives off road, else 0.
+            "off_route":
+                1 if ego vehicle drives off mission route, else 0.
+            "on_shoulder":
+                1 if ego vehicle drives on road shoulder, else 0.
+            "reached_goal":
+                1 if ego vehicle reaches its goal, else 0.
+            "reached_max_episode_steps":
+                1 if maximum episode steps reached, else 0.
+            "wrong_way":
+                1 if ego vehicle drives in the wrong traffic direction, else 0.
+        })
+
+        Drivable area grid map. Map is binary, with 255 if a cell contains a road,
+        else 0. dtype=np.uint8.
+        "drivable_area_grid_map": np.ndarray
+
+        Lidar point cloud, with the following attributes.
+        "lidar_point_cloud": dict({
+            "hit":
+                Binary array. 1 if an object is hit, else 0. shape(300,).
+            "point_cloud":
+                Coordinates of lidar point cloud. shape=(300,3). dtype=np.float64.
+            "ray_origin":
+                Ray origin coordinates. shape=(300,3). dtype=np.float64.
+            "ray_vector":
+                Ray vectors. shape=(300,3). dtype=np.float64.
+        })
+
+        Mission details for the ego agent.
+        "mission": dict({
+            "goal_pos":
+                Achieve goal by reaching the end position. Defaults to np.array([0,0,0])
+                for no mission. shape=(3,). dtype=np.float64.
+        })
+
+        Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
+        vehicles are insufficient, default feature values are padded.
+        "neighborhood_vehicle_states": dict({
+            "box":
+                Bounding box of neighbor vehicles. Defaults to np.array([0,0,0]) per
+                vehicle. shape=(10,3). dtype=np.float32.
+            "heading":
+                Heading of neighbor vehicles in radians [-pi, pi]. Defaults to
+                np.array([0]) per vehicle. shape=(10,). dtype=np.float32.
+            "lane_index":
+                Lane number of neighbor vehicles. Defaults to np.array([0]) per
+                vehicle. shape=(10,). dtype=np.int8.
+            "pos":
+                Coordinate of the center of neighbor vehicles' bounding box's bottom
+                plane. Defaults to np.array([0,0,0]) per vehicle. shape=(10,3).
+                dtype=np.float64.
+            "speed":
+                Speed of neighbor vehicles in m/s. Defaults to np.array([0]) per
+                vehicle. shape=(10,). dtype=np.float32.
+        })
+
+        Occupancy grid map. Map is binary, with 255 if a cell is occupied, else 0.
+        dtype=np.uint8.
+        "occupancy_grid_map": np.ndarray
+
+        RGB image, from the top view, with ego vehicle at the center.
+        shape=(height, width, 3). dtype=np.uint8.
+        "top_down_rgb": np.ndarray
+
+        Feature array of 20 waypoints ahead or in the mission route, from the
+        nearest 4 lanes. If lanes or waypoints ahead are insufficient, default
+        values are padded.
+        "waypoint_paths": dict({
+            "heading":
+                Lane heading angle at a waypoint in radians [-pi, pi]. Defaults to
+                np.array([0]) per waypoint. shape=(4,20). dtype=np.float32.
+            "lane_index":
+                Lane number at a waypoint. Defaults to np.array([0]) per waypoint.
+                shape=(4,20). dtype=np.int8.
+            "lane_width":
+                Lane width at a waypoint in meters. Defaults to np.array([0]) per
+                waypoint. shape=(4,20). dtype=np.float32.
+            "pos":
+                Coordinate of a waypoint. Defaults to np.array([0,0,0]).
+                shape=(4,20,3). dtype=np.float64.
+            "speed_limit":
+                Lane speed limit at a waypoint in m/s. shape=(4,20). dtype=np.float32.
+        })
+
+        Feature array of 3 upcoming signals.  If there aren't this many signals ahead,
+        default values are padded.
+        "signals": dict({
+            "state":
+                The state of the traffic signal.
+                See smarts.core.signal_provider.SignalLightState for interpretation.
+                Defaults to np.array([0]) per signal.  shape=(3,), dtype=np.int8.
+            "stop_point":
+                The stopping point for traffic controlled by the signal, i.e., the
+                point where actors should stop when the signal is in a stop state.
+                Defaults to np.array([0, 0]) per signal.  shape=(3,2), dtype=np.float64.
+            "last_changed":
+                If known, the simulation time this signal last changed its state.
+                Defaults to np.array([0]) per signal.  shape=(3,), dtype=np.float32.
+        })
+    })
+    """
+
     def __init__(
         self,
         agent_interfaces: Dict[str, AgentInterface],
@@ -1034,6 +1258,7 @@ class ObservationsSpaceFormat:
         super().__init__()
 
     def format(self, observations: Dict[str, Observation]):
+        """Formats smarts observations fixed sized containers."""
         # TODO MTA: Parallelize the conversion if possible
         active_obs = {
             agent_id: self._space_formats[agent_id].format(obs)
@@ -1054,6 +1279,7 @@ class ObservationsSpaceFormat:
 
     @cached_property
     def space(self):
+        """The observation space this should format the smarts observations to match."""
         return gym.spaces.Dict(
             {
                 agent_id: space_format.space

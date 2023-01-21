@@ -81,7 +81,7 @@ def _eval_worker(name, env_config, episodes, agent_config, error_tolerant=False)
     return name, score
 
 
-def task_iterator(env_args, benchmark_args, agent_args, log_workers):
+def _task_iterator(env_args, benchmark_args, agent_args, log_workers):
     num_cpus = max(1, min(len(os.sched_getaffinity(0)), psutil.cpu_count(False) or 4))
     ray.init(num_cpus=num_cpus, log_to_driver=log_workers)
     try:
@@ -109,6 +109,12 @@ def task_iterator(env_args, benchmark_args, agent_args, log_workers):
 
 
 def benchmark(benchmark_args, agent_args, log_workers=False):
+    """Runs the benchmark using the following:
+    Args:
+        benchmark_args(dict): Arguments configuring the benchmark.
+        agent_args(dict): Arguments configuring the agent running in the benchmark.
+        debug_log(bool): Whether the benchmark should log to stdout.
+    """
     print(f"Starting `{benchmark_args['name']}` benchmark.")
     env_args = {}
     for scenario in benchmark_args["standard_env"]["scenarios"]:
@@ -127,7 +133,7 @@ def benchmark(benchmark_args, agent_args, log_workers=False):
     # TODO MTA: naturalistic environments
     named_scores = []
 
-    for name, score in task_iterator(
+    for name, score in _task_iterator(
         env_args=env_args,
         benchmark_args=benchmark_args,
         agent_args=agent_args,
@@ -163,6 +169,13 @@ def benchmark(benchmark_args, agent_args, log_workers=False):
 
 
 def benchmark_from_configs(benchmark_config, agent_config=None, debug_log=False):
+    """Runs a benchmark given the following.
+
+    Args:
+        benchmark_config(file path): The file path to the benchmark configuration.
+        agent_config(file path): The file path to the agent configuration.
+        debug_log(bool): Whether the benchmark should log to stdout.
+    """
     benchmark_args = load_config(benchmark_config)
     agent_args = {}
     if agent_config:

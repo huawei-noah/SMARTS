@@ -315,6 +315,7 @@ def _get_env_specs(scenario: str):
 
 
 def resolve_agent_action_space(agent_interface: AgentInterface):
+    """Get the competition action space for the given agent interface."""
     assert (
         agent_interface.action in SUPPORTED_ACTION_TYPES
     ), f"Unsupported action type `{agent_interface.action}` not in supported actions `{SUPPORTED_ACTION_TYPES}`"
@@ -335,6 +336,7 @@ def resolve_agent_action_space(agent_interface: AgentInterface):
 
 
 def resolve_env_action_space(agent_interfaces: Dict[str, AgentInterface]):
+    """Get the environment action space for the given set of agent interfaces."""
     return gym.spaces.Dict(
         {
             a_id: resolve_agent_action_space(a_inter)

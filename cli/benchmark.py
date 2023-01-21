@@ -18,6 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from pathlib import Path
+
 import click
 
 
@@ -31,7 +33,6 @@ def benchmark_cli():
 
 @click.command(
     "run",
-    help="Run the given benchmark. Like `scl benchmark run driving_smarts==0.0 ./baselines/driving_smarts/agent_config.yaml",
 )
 @click.argument("benchmark_id", nargs=1, metavar="<benchmark_id>")
 @click.argument("agent_config", nargs=1, metavar="<agent_config>")
@@ -42,6 +43,16 @@ def benchmark_cli():
     help="Log the benchmark.",
 )
 def run(benchmark_id: str, agent_config: str, debug_log: bool):
+    """This runs a given benchmark.
+
+    Use `scl benchmark list` to see the available benchmarks.
+
+    \b
+    <benchmark_id> is formatted like BENCHMARK_NAME==BENCHMARK_VERSION.
+    <agent_config> is the path to an agent configuration file.
+
+    An example use: `scl benchmark run driving_smarts==0.0 ./baselines/driving_smarts/v0/agent_config.yaml`
+    """
     from smarts.benchmark import BENCHMARK_LISTING_FILE, run_benchmark
 
     benchmark_id, _, benchmark_version = benchmark_id.partition("==")
@@ -49,14 +60,16 @@ def run(benchmark_id: str, agent_config: str, debug_log: bool):
     run_benchmark(
         benchmark_id,
         float(benchmark_version),
-        agent_config,
+        Path(agent_config),
         BENCHMARK_LISTING_FILE,
-        debug_log=debug_log,
+        debug_log,
     )
 
 
-@click.command("list", help="Show available benchmarks.")
+@click.command("list")
 def list_benchmarks():
+    """Lists available benchmarks that can be used for `scl benchmark run`.
+    """
     from smarts.benchmark import BENCHMARK_LISTING_FILE
     from smarts.benchmark import list_benchmarks as l_benchmarks
 
@@ -65,7 +78,7 @@ def list_benchmarks():
     print("BENCHMARK_NAME".ljust(29) + "BENCHMARK_ID".ljust(25) + "VERSIONS")
 
     def _format_versions(versions):
-        return ", ".join(f"vers.{d['version']}" for d in versions)
+        return ", ".join(f"{d['version']}" for d in versions)
 
     print(
         "\n".join(
