@@ -232,8 +232,8 @@ class FormatObs(gym.ObservationWrapper):
             "signals",
         }:
             val = getattr(self.agent_interfaces[agent_id], intrfc)
+            self._cmp_intrfc(intrfc, val)
             if val:
-                self._cmp_intrfc(intrfc, val)
                 intrfcs.update({intrfc: val})
 
         self._space = _make_space(intrfcs)

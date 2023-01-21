@@ -125,9 +125,7 @@ def test_init(make_env):
     base_env, cur_intrfcs = make_env
 
     # Test wrapping an env with non-identical agent interfaces
-    base_intrfcs = [
-        agent_spec.interface for agent_spec in base_env.agent_specs.values()
-    ]
+    base_intrfcs = [interface for interface in base_env.agent_interfaces.values()]
     if not all(intrfc == base_intrfcs[0] for intrfc in base_intrfcs):
         with pytest.raises(AssertionError):
             env = FormatObs(env=base_env)

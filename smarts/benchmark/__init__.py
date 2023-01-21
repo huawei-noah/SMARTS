@@ -91,7 +91,9 @@ def run_benchmark(
     module, _, name = benchmark_spec["entrypoint"].rpartition(".")
     entrypoint = _get_entrypoint(module, name)
     entrypoint(
-        **benchmark_spec.get("params", {}), agent_config=agent_config, debug_log=debug_log
+        **benchmark_spec.get("params", {}),
+        agent_config=agent_config,
+        debug_log=debug_log,
     )
 
 

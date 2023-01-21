@@ -16,13 +16,7 @@ import_utils.import_module_from_file(
 
 @pytest.mark.parametrize(
     "example",
-    [
-        "egoless",
-        "chase_via_points",
-        "trajectory_tracking",
-        "laner",
-        "hiway_v1"
-    ],
+    ["egoless", "chase_via_points", "trajectory_tracking", "laner", "hiway_v1"],
     # TODO: "ego_open_agent" and "human_in_the_loop" are causing aborts, fix later
 )
 def test_examples(example):
