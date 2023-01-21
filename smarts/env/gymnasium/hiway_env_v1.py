@@ -209,7 +209,16 @@ class HiWayEnvV1(gym.Env):
 
     def step(
         self, action: ActType
-    ) -> Tuple[Dict[str, Any], SupportsFloat, bool, bool, Dict[str, Any]]:
+    ) -> Union[
+        Tuple[Dict[str, Any], SupportsFloat, bool, bool, Dict[str, Any]],
+        Tuple[
+            Dict[str, Any],
+            Dict[str, float],
+            Dict[str, bool],
+            Dict[str, bool],
+            Dict[str, Any],
+        ],
+    ]:
         """Run one timestep of the environment's dynamics using the agent actions.
         When the end of an episode is reached (``terminated or truncated``), it is necessary to call :meth:`reset` to
         reset this environment's state for the next episode.

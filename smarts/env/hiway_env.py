@@ -121,7 +121,7 @@ class HiWayEnv(gym.Env):
         if not fixed_timestep_sec:
             fixed_timestep_sec = timestep_sec or 0.1
 
-        self._agent_interfaces = None
+        self._agent_interfaces = {}
         if isinstance(agent_interfaces, dict):
             self._agent_specs = {
                 a_id: AgentSpec(a_inter) for a_id, a_inter in agent_interfaces.items()

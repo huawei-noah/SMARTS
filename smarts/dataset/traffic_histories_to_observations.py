@@ -141,7 +141,7 @@ class ObservationRecorder:
             ),
             lidar_point_cloud=True,
             max_episode_steps=max_episode_steps,
-            neighborhood_vehicles=True,
+            neighborhood_vehicle_states=True,
             occupancy_grid_map=OGM(
                 width=img_pixels,
                 height=img_pixels,

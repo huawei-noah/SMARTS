@@ -123,10 +123,10 @@ class TrapManager:
         if not isinstance(mission.entry_tactic, TrapEntryTactic):
             return False
 
+        entry_tactic = mission.entry_tactic
+        assert isinstance(entry_tactic, TrapEntryTactic)
         # Do not add trap if simulation time is specified and patience already expired
-        patience_expired = (
-            mission.start_time + mission.entry_tactic.wait_to_hijack_limit_s
-        )
+        patience_expired = mission.start_time + entry_tactic.wait_to_hijack_limit_s
         if reject_expired and patience_expired < sim_time:
             self._log.warning(
                 f"Trap skipped for `{agent_id}` scheduled to start between "

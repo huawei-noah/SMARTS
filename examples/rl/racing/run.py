@@ -20,7 +20,7 @@ import tensorflow as tf
 from ruamel.yaml import YAML
 
 import utils
-from cli.studio import _build_all_scenarios
+from cli.studio import build_scenarios
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=PendingDeprecationWarning)
@@ -51,7 +51,7 @@ def main(args: argparse.Namespace):
     )
 
     # Build the scenarios.
-    _build_all_scenarios(
+    build_scenarios(
         clean=True,
         scenarios=[config_env["scenarios_dir"]],
         seed=_SEED,
@@ -177,13 +177,13 @@ def run(
     print("Create envs.")
     train_envs = []
     if mode == "train":
-        train_envs = [_wrap_env(next(gen_env)("train"), config)]
+        train_envs = [_wrap_env(next(gen_env)(env_name="train"), config)]
         train_driver = dv2.common.Driver(train_envs)
         train_driver.on_episode(lambda ep: per_episode(ep, mode="train"))
         train_driver.on_step(lambda tran, worker: step.increment())
         train_driver.on_step(train_replay.add_step)
         train_driver.on_reset(train_replay.add_step)
-    eval_envs = [_wrap_env(next(gen_env)("eval"), config)]
+    eval_envs = [_wrap_env(next(gen_env)(env_name="eval"), config)]
     act_space = eval_envs[0].act_space
     obs_space = eval_envs[0].obs_space
     eval_driver = dv2.common.Driver(eval_envs)
