@@ -81,10 +81,9 @@ def _eval_worker(name, env_config, episodes, agent_config, error_tolerant=False)
     return name, score
 
 
-def task_iterator(env_args, benchmark_args, agent_args):
-    global ERROR_TOLERANT
+def task_iterator(env_args, benchmark_args, agent_args, log_workers):
     num_cpus = max(1, min(os.sched_getaffinity(0)), psutil.cpu_count(False) or 4)
-    ray.init(num_cpus=num_cpus, log_to_driver=LOG_WORKERS)
+    ray.init(num_cpus=num_cpus, log_to_driver=log_workers)
     try:
         max_queued_tasks = 20
         unfinished_refs = []
@@ -109,7 +108,7 @@ def task_iterator(env_args, benchmark_args, agent_args):
         ray.shutdown()
 
 
-def benchmark(benchmark_args, agent_args):
+def benchmark(benchmark_args, agent_args, log_workers=False):
     print(f"Starting `{benchmark_args['name']}` benchmark.")
     env_args = {}
     for scenario in benchmark_args["standard_env"]["scenarios"]:
@@ -132,6 +131,7 @@ def benchmark(benchmark_args, agent_args):
         env_args=env_args,
         benchmark_args=benchmark_args,
         agent_args=agent_args,
+        log_workers=log_workers,
     ):
         named_scores.append((name, score))
         print(f"Scoring {name}...")
@@ -162,16 +162,15 @@ def benchmark(benchmark_args, agent_args):
     print(format_scores_total(named_scores, len(env_args) or 1))
 
 
-def benchmark_from_configs(benchmark_config, agent_config=None, log=False):
-    global LOG_WORKERS
+def benchmark_from_configs(benchmark_config, agent_config=None, debug_log=False):
     benchmark_args = load_config(benchmark_config)
     agent_args = {}
     if agent_config:
         agent_args = load_config(agent_config)
-    LOG_WORKERS = log
     benchmark(
         benchmark_args=benchmark_args["benchmark"],
         agent_args={**benchmark_args["agent"], **agent_args},
+        log_workers=debug_log,
     )
 
 
@@ -191,4 +190,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    benchmark_from_configs(args.config, log=args.log_workers)
+    benchmark_from_configs(args.config, debug_log=args.log_workers)

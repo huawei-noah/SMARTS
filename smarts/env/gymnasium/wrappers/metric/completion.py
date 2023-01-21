@@ -31,7 +31,7 @@ from smarts.core.utils.math import running_mean
 
 logger = logging.getLogger(__file__)
 
-MAXIMUM_OFFROAD_DIST = 5
+MAXIMUM_OFFROAD_DIST = 300
 
 
 @dataclass(frozen=True)
@@ -100,8 +100,8 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
 
     try:
         dist_tot = _get_dist(point_a, point_b)
-    except PlanningError as e:
-        if e.args[0].startswith("Unable to find a route"):
+    except PlanningError as err:
+        if err.args[0].startswith("Unable to find a route"):
             # Vehicle might end (i) in a one-way road, or (ii) in a road without
             # u-turn, causing the route planner to fail. When there is no legal
             # route, the walkable road distance in the reverse direction is
