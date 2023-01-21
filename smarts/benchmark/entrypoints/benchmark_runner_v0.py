@@ -82,7 +82,7 @@ def _eval_worker(name, env_config, episodes, agent_config, error_tolerant=False)
 
 
 def task_iterator(env_args, benchmark_args, agent_args, log_workers):
-    num_cpus = max(1, min(os.sched_getaffinity(0)), psutil.cpu_count(False) or 4)
+    num_cpus = max(1, min(len(os.sched_getaffinity(0)), psutil.cpu_count(False) or 4))
     ray.init(num_cpus=num_cpus, log_to_driver=log_workers)
     try:
         max_queued_tasks = 20
