@@ -22,7 +22,7 @@ def generate(
         base_seed += 1
 
 
-def make(config: Dict[str, Any], seed: int, env_name: Optional[str] = None) -> gym.Env:
+def make(env_name: Optional[str], config: Dict[str, Any], seed: int) -> gym.Env:
 
     vehicle_interface = smarts_agent_interface.AgentInterface(
         max_episode_steps=config["max_episode_steps"],
