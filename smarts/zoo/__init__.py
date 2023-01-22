@@ -22,9 +22,8 @@ import random
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface
-
-from .agent_spec import AgentSpec
-from .registry import register
+from smarts.zoo.agent_spec import AgentSpec
+from smarts.zoo.registry import register
 
 
 class RandomRelativeTargetPoseAgent(Agent):
@@ -42,6 +41,7 @@ class RandomRelativeTargetPoseAgent(Agent):
         ]
 
 
+# Note `speed` from configuration file maps here.
 def entry_point(speed=10, **kwargs):
     """An example entrypoint for a simple agent.
     This can have any number of arguments similar to the gym environment standard.
@@ -51,7 +51,9 @@ def entry_point(speed=10, **kwargs):
             action=ActionSpaceType.RelativeTargetPose,
         ),
         agent_builder=RandomRelativeTargetPoseAgent,
+        agent_params=dict(speed=speed),
     )
 
 
+# Where the agent is registered.
 register("random-relative-target-pose-agent-v0", entry_point)

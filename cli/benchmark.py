@@ -89,12 +89,22 @@ def run(
 
 
 @click.command("list")
-def list_benchmarks():
+@click.option(
+    "--benchmark-listing",
+    type=str,
+    default=None,
+    help="Directs to a different listing file.",
+)
+def list_benchmarks(benchmark_listing: Optional[str]):
     """Lists available benchmarks that can be used for `scl benchmark run`."""
     from smarts.benchmark import BENCHMARK_LISTING_FILE
-    from smarts.benchmark import list_benchmarks as l_benchmarks
+    from smarts.benchmark import list_benchmarks as _list_benchmarks
 
-    benchmarks = l_benchmarks(BENCHMARK_LISTING_FILE)["benchmarks"]
+    benchmarks = _list_benchmarks(
+        Path(benchmark_listing)
+        if benchmark_listing is not None
+        else BENCHMARK_LISTING_FILE,
+    )["benchmarks"]
 
     print("BENCHMARK_NAME".ljust(29) + "BENCHMARK_ID".ljust(25) + "VERSIONS")
 

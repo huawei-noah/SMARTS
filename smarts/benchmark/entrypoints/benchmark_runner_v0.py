@@ -50,7 +50,7 @@ def _eval_worker(name, env_config, episodes, agent_config, error_tolerant=False)
     env = Metrics(env)
     agent = agent_registry.make_agent(
         locator=agent_config["locator"],
-        **agent_config["params"],
+        **agent_config["kwargs"],
     )
 
     observation, info = env.reset()
