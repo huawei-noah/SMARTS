@@ -78,7 +78,7 @@ def run(
 
     run_benchmark(
         benchmark_id,
-        float(benchmark_version),
+        float(benchmark_version) if benchmark_version else None,
         Path(agent_config),
         Path(benchmark_listing)
         if benchmark_listing is not None
