@@ -28,10 +28,12 @@ class Api021Reversion(gym.Wrapper):
     """This wrapper reverts the API of a gym/gymnasium environment to v0.21 of gym."""
 
     def step(self, action) -> Tuple[Dict, SupportsFloat, bool, Dict[str, Any]]:
+        """Converts :meth:`step` return from `obs, reward, term, trunc, info` to `obs, reward, done, info`."""
         obs, reward, terminated, _, info = super().step(action)
         return obs, reward, terminated, info
 
     def reset(self, **kwargs) -> Dict[str, Tuple[Any]]:
+        """Converts :meth:`reset` return from `obs, info` to `obs`."""
         obs, _ = super().reset()
         return obs
 
