@@ -42,7 +42,7 @@ def scenarios():
     )
     scenario = Scenario(
         scenario_root="scenarios/sumo/loop",
-        traffic_specs=["scenarios/sumo/loop/traffic/basic.rou.xml"],
+        traffic_specs=["scenarios/sumo/loop/build/traffic/basic.rou.xml"],
         missions={"Agent-007": mission},
     )
     return cycle([scenario])
@@ -52,7 +52,7 @@ def scenarios():
 def smarts():
     buddha = AgentInterface(
         max_episode_steps=1000,
-        neighborhood_vehicles=True,
+        neighborhood_vehicle_states=True,
         action=ActionSpaceType.Lane,
     )
     smarts = SMARTS(
@@ -77,8 +77,8 @@ def test_only_agents_reset_if_scenario_does_not_change(smarts, scenarios):
         return np.array(start)
 
     def neighborhood_vehicle_poses(agent_obs):
-        neighborhood_vehicles = agent_obs.neighborhood_vehicle_states
-        states = sorted(neighborhood_vehicles, key=lambda s: s.id)
+        neighborhood_vehicle_states = agent_obs.neighborhood_vehicle_states
+        states = sorted(neighborhood_vehicle_states, key=lambda s: s.id)
         starts = [tuple(s.position) + (s.heading,) for s in states]
         if not starts:
             return np.array([])

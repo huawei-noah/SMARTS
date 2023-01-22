@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from smarts.sstudio.genscenario import gen_scenario
@@ -6,6 +5,7 @@ from smarts.sstudio.types import (
     EndlessMission,
     Flow,
     JunctionEdgeIDResolver,
+    MapSpec,
     Mission,
     RandomRoute,
     Route,
@@ -88,6 +88,10 @@ scenario = Scenario(
         )
     },
     ego_missions=ego_missions,
+    map_spec=MapSpec(
+        source=Path(__file__).parent,
+        shift_to_origin=True,
+    ),
 )
 
 gen_scenario(

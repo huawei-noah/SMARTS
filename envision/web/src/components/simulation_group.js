@@ -19,6 +19,7 @@
 // THE SOFTWARE.
 import React from "react";
 import Simulation from "./simulation.js";
+import { Button } from "antd";
 
 const SimulationGroup = ({
   simulationIds,
@@ -26,11 +27,14 @@ const SimulationGroup = ({
   controlModes,
   playingMode,
   egoView,
+  onSelectSimulation,
 }) => {
   return (
     <div style={{ padding: "10px" }}>
       {simulationIds.map((simId) => (
-        <div
+        <Button
+          title="click the simulation to maximize"
+          onClick={(value) => onSelectSimulation((value = simId))}
           key={simId}
           style={{
             float: "left",
@@ -46,7 +50,7 @@ const SimulationGroup = ({
             controlModes={controlModes}
             playingMode={playingMode}
           />
-        </div>
+        </Button>
       ))}
     </div>
   );

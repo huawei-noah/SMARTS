@@ -108,6 +108,7 @@ shifted_map-AUTOGEN.net.xml
 *.pkl
 *.shf
 *.tfrecord*
+build.db
 
 # Manually generated sumo route files
 !zoo/evaluation/scenarios/**/traffic/*.rou.xml
@@ -131,9 +132,6 @@ xdummy.log
 # Optimization Engine build directory
 OpEn_build/
 
-# Ignore generated ULTRA tasks
-ultra/ultra/scenarios/task*/*/
-
 # Singularity
 *.sif
 
@@ -145,3 +143,6 @@ collected_observations/
 
 # Static type check
 .pytype
+
+# Benchmark
+**/diagnostic/reports/*

@@ -42,6 +42,7 @@ from smarts_ros.srv import SmartsInfo, SmartsInfoRequest, SmartsInfoResponse
 
 from envision.client import Client as Envision
 from smarts.core.coordinates import Dimensions, Heading, Point, Pose
+from smarts.core.observations import Observation
 from smarts.core.plan import (
     EndlessGoal,
     Mission,
@@ -51,7 +52,6 @@ from smarts.core.plan import (
     default_entry_tactic,
 )
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.math import fast_quaternion_from_angle, vec_to_radians
 from smarts.core.vehicle import VehicleState

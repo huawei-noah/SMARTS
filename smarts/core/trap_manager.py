@@ -21,13 +21,14 @@ import logging
 import math
 import random as rand
 from collections import defaultdict
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Dict, List, Sequence, Set
 
 from shapely.geometry import Polygon
 
 from smarts.core.coordinates import Point as MapPoint
 from smarts.core.plan import Mission, Plan, Start, default_entry_tactic
+from smarts.core.utils.file import replace
 from smarts.core.utils.math import clip, squared_dist
 from smarts.core.vehicle import Vehicle
 from smarts.sstudio.types import MapZone, PositionalZone, TrapEntryTactic
@@ -122,10 +123,10 @@ class TrapManager:
         if not isinstance(mission.entry_tactic, TrapEntryTactic):
             return False
 
+        entry_tactic = mission.entry_tactic
+        assert isinstance(entry_tactic, TrapEntryTactic)
         # Do not add trap if simulation time is specified and patience already expired
-        patience_expired = (
-            mission.start_time + mission.entry_tactic.wait_to_hijack_limit_s
-        )
+        patience_expired = mission.start_time + entry_tactic.wait_to_hijack_limit_s
         if reject_expired and patience_expired < sim_time:
             self._log.warning(
                 f"Trap skipped for `{agent_id}` scheduled to start between "

@@ -40,13 +40,13 @@ def agent_spec(max_steps_per_episode):
     return AgentSpec(
         interface=AgentInterface(
             drivable_area_grid_map=True,
-            ogm=True,
-            rgb=True,
-            lidar=True,
-            waypoints=True,
+            occupancy_grid_map=True,
+            top_down_rgb=True,
+            lidar_point_cloud=True,
+            waypoint_paths=True,
             max_episode_steps=max_steps_per_episode,
             debug=True,
-            neighborhood_vehicles=True,
+            neighborhood_vehicle_states=True,
             action=ActionSpaceType.Lane,
         ),
         agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),

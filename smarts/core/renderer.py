@@ -26,6 +26,7 @@ import importlib.resources as pkg_resources
 import logging
 import os
 from enum import IntEnum
+from pathlib import Path
 from threading import Lock
 from typing import NamedTuple
 
@@ -35,6 +36,13 @@ from direct.showbase.ShowBase import ShowBase
 # pytype: disable=import-error
 from panda3d.core import (
     FrameBufferProperties,
+    Geom,
+    GeomLinestrips,
+    GeomNode,
+    GeomVertexData,
+    GeomVertexFormat,
+    GeomVertexReader,
+    GeomVertexWriter,
     GraphicsOutput,
     GraphicsPipe,
     NodePath,
@@ -154,7 +162,7 @@ class _ShowBaseInstance(ShowBase):
                 vertex=str(vshader_path.absolute()),
                 fragment=str(fshader_path.absolute()),
             )
-            root_np.setShader(unlit_shader)
+            root_np.setShader(unlit_shader, priority=10)
         return root_np
 
     def render_node(self, sim_root: NodePath):
@@ -182,6 +190,7 @@ class Renderer:
         self._root_np = None
         self._vehicles_np = None
         self._road_map_np = None
+        self._dashed_lines_np = None
         self._vehicle_nodes = {}
         _ShowBaseInstance.set_rendering_verbosity(debug_mode=debug_mode)
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
@@ -207,12 +216,50 @@ class Renderer:
         """Remove the rendering buffer."""
         self._showbase_instance.graphicsEngine.removeWindow(buffer)
 
+    def _load_line_data(self, path: Path, name: str) -> GeomNode:
+        # Extract geometry from model
+        lines = []
+        road_lines_np = self._showbase_instance.loader.loadModel(path, noCache=True)
+        geomNodeCollection = road_lines_np.findAllMatches("**/+GeomNode")
+        for nodePath in geomNodeCollection:
+            geomNode = nodePath.node()
+            geom = geomNode.getGeom(0)
+            vdata = geom.getVertexData()
+            vreader = GeomVertexReader(vdata, "vertex")
+            pts = []
+            while not vreader.isAtEnd():
+                v = vreader.getData3()
+                pts.append((v.x, v.y, v.z))
+            lines.append(pts)
+
+        # Create geometry node
+        format = GeomVertexFormat.getV3()
+        vdata = GeomVertexData(name, format, Geom.UHStatic)
+        vertex = GeomVertexWriter(vdata, "vertex")
+
+        prim = GeomLinestrips(Geom.UHStatic)
+        for pts in lines:
+            for x, y, z in pts:
+                vertex.addData3(x, y, z)
+            prim.add_next_vertices(len(pts))
+            assert prim.closePrimitive()
+
+        geom = Geom(vdata)
+        geom.addPrimitive(prim)
+
+        np = GeomNode(name)
+        np.addGeom(geom)
+        return np
+
     def setup(self, scenario: Scenario):
         """Initialize this renderer."""
         self._root_np = self._showbase_instance.setup_sim_root(self._simid)
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
 
         map_path = scenario.map_glb_filepath
+        map_dir = Path(map_path).parent
+
+        # Load map
         if self._road_map_np:
             self._log.debug(
                 "road_map={} already exists. Removing and adding a new "
@@ -224,6 +271,39 @@ class Renderer:
         np.hide(RenderMasks.OCCUPANCY_HIDE)
         np.setColor(SceneColors.Road.value)
         self._road_map_np = np
+
+        # Road lines (solid, yellow)
+        road_lines_path = map_dir / "road_lines.glb"
+        if road_lines_path.exists():
+            road_lines_np = self._load_line_data(road_lines_path, "road_lines")
+            solid_lines_np = self._root_np.attachNewNode(road_lines_np)
+            solid_lines_np.setColor(SceneColors.EdgeDivider.value)
+            solid_lines_np.hide(RenderMasks.OCCUPANCY_HIDE)
+            solid_lines_np.setRenderModeThickness(2)
+
+        # Lane lines (dashed, white)
+        lane_lines_path = map_dir / "lane_lines.glb"
+        if lane_lines_path.exists():
+            lane_lines_np = self._load_line_data(lane_lines_path, "lane_lines")
+            dashed_lines_np = self._root_np.attachNewNode(lane_lines_np)
+            dashed_lines_np.setColor(SceneColors.LaneDivider.value)
+            dashed_lines_np.hide(RenderMasks.OCCUPANCY_HIDE)
+            dashed_lines_np.setRenderModeThickness(2)
+            with pkg_resources.path(
+                glsl, "dashed_line_shader.vert"
+            ) as vshader_path, pkg_resources.path(
+                glsl, "dashed_line_shader.frag"
+            ) as fshader_path:
+                dashed_line_shader = Shader.load(
+                    Shader.SL_GLSL,
+                    vertex=str(vshader_path.absolute()),
+                    fragment=str(fshader_path.absolute()),
+                )
+                dashed_lines_np.setShader(dashed_line_shader, priority=20)
+                dashed_lines_np.setShaderInput(
+                    "Resolution", self._showbase_instance.getSize()
+                )
+            self._dashed_lines_np = dashed_lines_np
 
         self._is_setup = True
 
@@ -244,6 +324,7 @@ class Renderer:
             self._root_np = None
         self._vehicles_np = None
         self._road_map_np = None
+        self._dashed_lines_np = None
         self._is_setup = False
 
     def destroy(self):
@@ -373,6 +454,12 @@ class Renderer:
             self._showbase_instance.win,
         )
         buffer.setClearColor((0, 0, 0, 0))  # Set background color to black
+
+        # Necessary for the lane lines to be in the proper proportions
+        if self._dashed_lines_np is not None:
+            self._dashed_lines_np.setShaderInput(
+                "Resolution", (buffer.size.x, buffer.size.y)
+            )
 
         # setup texture
         tex = Texture()

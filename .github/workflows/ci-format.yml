@@ -59,7 +59,7 @@ jobs:
           python3.7 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
-          pip install -e .[dev,camera-obs,train,test] 
+          pip install -e .[dev,camera_obs,train,test] 
       - name: Get changed files on branch since branching
         id: changed-files
         shell: bash

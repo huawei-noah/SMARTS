@@ -36,7 +36,7 @@ class SingleAgent(gym.Wrapper):
         """
         super(SingleAgent, self).__init__(env)
 
-        agent_ids = list(env.agent_specs.keys())
+        agent_ids = list(env.agent_interfaces.keys())
         assert (
             len(agent_ids) == 1
         ), f"Expected env to have a single agent, but got {len(agent_ids)} agents."

@@ -9,8 +9,8 @@
     </input>
 
     <output>
-        <output-file value="smarts/sstudio/tests/traffic/generated.rou.xml"/>
-        <alternatives-output value="smarts/sstudio/tests/traffic/generated.rou.alt.xml"/>
+        <output-file value="smarts/sstudio/tests/build/traffic/generated.rou.xml"/>
+        <alternatives-output value="smarts/sstudio/tests/build/traffic/generated.rou.alt.xml"/>
     </output>
 
     <processing>
@@ -19,7 +19,7 @@
     </processing>
 
     <report>
-        <error-log value="/tmp/smarts/_duarouter_routing/traffic/generated.log"/>
+        <error-log value="/tmp/smarts/_duarouter_routing/build/traffic/generated.log"/>
         <no-step-log value="true"/>
     </report>
 

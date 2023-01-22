@@ -82,7 +82,7 @@ class ProviderState:
             except ValueError:
                 continue
 
-    def contains(self, actor_ids: Set[str]) -> bool:
+    def intersects(self, actor_ids: Set[str]) -> bool:
         """Returns True iff any of the actor_ids are contained in this ProviderState .
         Returns False for empty-set containment."""
         provider_actor_ids = {a.actor_id for a in self.actors}
@@ -111,7 +111,7 @@ class ProviderManager:
         one could not be found, in which case the actor is removed."""
         raise NotImplementedError
 
-    def provider_removing_actor(self, provider: "Provider", actor_state: ActorState):
+    def provider_removing_actor(self, provider: "Provider", actor_id: str):
         """Called by a Provider when it is removing an actor from the simulation.
         This was added for convenience, but it isn't always necessary to be called."""
         raise NotImplementedError
@@ -140,7 +140,7 @@ class Provider:
         raise NotImplementedError
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
+    def actions(self) -> Set[ActionSpaceType]:
         """The action spaces of the provider."""
         raise NotImplementedError
 

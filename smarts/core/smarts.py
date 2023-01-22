@@ -48,10 +48,10 @@ from .bubble_manager import BubbleManager
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
+from .observations import Collision, Observation
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
-from .sensors import Collision, Observation
 from .signal_provider import SignalProvider
 from .signals import SignalLightState, SignalState
 from .sumo_traffic_simulation import SumoTrafficSimulation
@@ -89,16 +89,16 @@ class SMARTSDestroyedError(Exception):
 
 class SMARTS(ProviderManager):
     """The core SMARTS simulator. This is the direct interface to all parts of the simulation.
+
     Args:
-        agent_interfaces: The interfaces providing SMARTS with the understanding of what features each agent needs.
-        traffic_sims: An optional list of traffic simulators for providing non-agent traffic.
-        envision: An envision client for connecting to an envision visualization server.
-        visdom: A visdom client for connecting to a visdom visualization server.
-        fixed_timestep_sec: The fixed timestep that will be default if time is not otherwise specified at step.
-        reset_agents_only: When specified the simulation will continue use of the current scenario.
-        zoo_addrs: The (ip:port) values of remote agent workers for externally hosted agents.
-        external_provider: Creates a special provider `SMARTS.external_provider` that allows for inserting state.
-        config: The simulation configuration file for unexposed configuration.
+        agent_interfaces (Dict[str, AgentInterface]): The interfaces providing SMARTS with the understanding of what features each agent needs.
+        traffic_sims (Optional[List[TrafficProvider]], optional): An optional list of traffic simulators for providing non-agent traffic. Defaults to None.
+        envision (Optional[EnvisionClient], optional): An envision client for connecting to an envision visualization server. Defaults to None.
+        visdom (Optional[VisdomClient], optional): A visdom client for connecting to a visdom visualization server. Defaults to None.
+        fixed_timestep_sec (Optional[float], optional): The fixed timestep that will be default if time is not otherwise specified at step. Defaults to 0.1.
+        reset_agents_only (bool, optional): When specified the simulation will continue use of the current scenario. Defaults to False.
+        zoo_addrs (Optional[Tuple[str, int]], optional): The (ip:port) values of remote agent workers for externally hosted agents. Defaults to None.
+        external_provider (bool, optional): Creates a special provider `SMARTS.external_provider` that allows for inserting state. Defaults to False.
     """
 
     def __init__(
@@ -115,6 +115,7 @@ class SMARTS(ProviderManager):
         external_provider: bool = False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
+        self._log.setLevel(level=logging.ERROR)
         self._sim_id = Id.new("smarts")
         self._is_setup = False
         self._is_destroyed = False
@@ -588,8 +589,8 @@ class SMARTS(ProviderManager):
         return None
 
     def _stop_managing_with_providers(self, actor_id: str):
-        provider = self._provider_for_actor(actor_id)
-        if provider:
+        managing_providers = [p for p in self.providers if p.manages_actor(actor_id)]
+        for provider in managing_providers:
             provider.stop_managing(actor_id)
 
     def _remove_vehicle_from_providers(self, vehicle_id: str):
@@ -610,7 +611,7 @@ class SMARTS(ProviderManager):
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         prev_provider = self._provider_for_actor(vehicle.id)
         for provider in self.providers:
-            if interface.action_space in provider.action_spaces:
+            if interface.action in provider.actions:
                 state = VehicleState(
                     actor_id=vehicle.id,
                     source=provider.source_str,
@@ -715,14 +716,13 @@ class SMARTS(ProviderManager):
         self._log.warning(
             f"could not find a provider to assume control of vehicle {state.actor_id} with role={state.role.name} after being relinquished.  removing it."
         )
-        self.provider_removing_actor(provider, state)
+        self.provider_removing_actor(provider, state.actor_id)
         return None
 
-    def provider_removing_actor(self, provider: Provider, actor_state: ActorState):
+    def provider_removing_actor(self, provider: Provider, actor_id: str):
         # Note: for vehicles, pybullet_provider_sync() will also call teardown
         # when it notices a social vehicle has exited the simulation.
-        if isinstance(actor_state, VehicleState):
-            self._teardown_vehicles([actor_state.actor_id])
+        self._teardown_vehicles([actor_id])
 
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()
@@ -916,7 +916,7 @@ class SMARTS(ProviderManager):
     @property
     def dynamic_action_spaces(self) -> Set[ActionSpaceType]:
         """The set of vehicle action spaces that use dynamics (physics)."""
-        return self._agent_physics_provider.action_spaces
+        return self._agent_physics_provider.actions
 
     @property
     def traffic_sim(self) -> Optional[TrafficProvider]:
@@ -1189,7 +1189,7 @@ class SMARTS(ProviderManager):
 
             interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
             assert interface, f"agent {agent_id} has no interface"
-            if interface.action_space not in provider.action_spaces:
+            if interface.action not in provider.actions:
                 continue
             assert isinstance(provider, AgentsProvider)
 
@@ -1235,7 +1235,7 @@ class SMARTS(ProviderManager):
             # by this point, "stop_managing()" should have been called for the hijacked vehicle on all TrafficProviders
             assert not isinstance(
                 provider, TrafficProvider
-            ) or not provider_state.contains(
+            ) or not provider_state.intersects(
                 agent_vehicle_ids
             ), f"{agent_vehicle_ids} in {provider_state.actors}"
 
@@ -1255,7 +1255,7 @@ class SMARTS(ProviderManager):
         return self._resetting
 
     @property
-    def scenario(self):
+    def scenario(self) -> Scenario:
         """The current simulation scenario."""
         return self._scenario
 

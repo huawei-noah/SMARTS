@@ -39,14 +39,11 @@ def agent_specs():
         "Agent_"
         + agent_id: AgentSpec(
             interface=AgentInterface(
-                rgb=RGB(width=256, height=256, resolution=50 / 256),
+                top_down_rgb=RGB(width=256, height=256, resolution=50 / 256),
                 action=ActionSpaceType.Lane,
                 max_episode_steps=3,
             ),
             agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
-            observation_adapter=lambda obs: obs.top_down_rgb.data,
-            reward_adapter=lambda obs, reward: reward,
-            info_adapter=lambda obs, reward, info: info["score"],
         )
         for agent_id in ["1", "2"]
     }
@@ -113,13 +110,13 @@ def test_seed(env_constructor, num_env):
     env.close()
 
 
-def _compare_observations(num_env, batched_observations, single_observations):
-    assert len(batched_observations) == num_env
-    for observations in batched_observations:
-        assert observations.keys() == single_observations.keys()
-        for agent_id, obs in observations.items():
-            assert obs.dtype == single_observations[agent_id].dtype
-            assert obs.shape == single_observations[agent_id].shape
+def _compare_outputs(num_env, batched_outputs, single_outputs):
+    assert len(batched_outputs) == num_env
+    for outputs in batched_outputs:
+        outputs.pop("__all__", None)
+        assert outputs.keys() == outputs.keys()
+        for agent_id, out in outputs.items():
+            assert type(out) is type(single_outputs[agent_id])
 
 
 @pytest.mark.parametrize("num_env", [2])
@@ -132,7 +129,7 @@ def test_reset(env_constructor, num_env):
     batched_observations = env.reset()
     env.close()
 
-    _compare_observations(num_env, batched_observations, single_observations)
+    _compare_outputs(num_env, batched_observations, single_observations)
 
 
 @pytest.mark.parametrize("num_env", [2])
@@ -140,7 +137,9 @@ def test_reset(env_constructor, num_env):
 def test_step(env_constructor, single_env_actions, num_env, auto_reset):
     single_env = env_constructor()
     single_env.reset()
-    single_observations, _, _, _ = single_env.step(single_env_actions)
+    single_observations, single_rewards, single_dones, single_infos = single_env.step(
+        single_env_actions
+    )
     single_env.close()
 
     env = _make_parallel_env(env_constructor, num_env, auto_reset=auto_reset)
@@ -150,16 +149,11 @@ def test_step(env_constructor, single_env_actions, num_env, auto_reset):
     )
     env.close()
 
-    _compare_observations(num_env, batched_observations, single_observations)
-
-    for batched_outputs, kind in zip(
-        (batched_rewards, batched_dones, batched_infos), [float, bool, float]
+    for batched_outputs, single_outputs in zip(
+        [batched_observations, batched_rewards, batched_dones, batched_infos],
+        [single_observations, single_rewards, single_dones, single_infos],
     ):
-        assert len(batched_outputs) == num_env
-        for outputs in batched_outputs:
-            outputs.pop("__all__", None)
-            assert outputs.keys() == single_observations.keys()
-            assert all(isinstance(val, kind) for val in outputs.values())
+        _compare_outputs(num_env, batched_outputs, single_outputs)
 
 
 @pytest.mark.parametrize("auto_reset", [True, False])

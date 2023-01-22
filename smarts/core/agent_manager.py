@@ -29,8 +29,9 @@ from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.heterogenous_agent_buffer import HeterogenousAgentBuffer
+from smarts.core.observations import Observation
 from smarts.core.plan import Plan
-from smarts.core.sensors import Observation, Sensors
+from smarts.core.sensors import Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState
 from smarts.zoo.registry import make as make_social_agent
@@ -545,7 +546,7 @@ class AgentManager:
         )
         role = ActorRole.EgoAgent if trainable else ActorRole.SocialAgent
         for provider in sim.providers:
-            if agent_interface.action_space not in provider.action_spaces:
+            if agent_interface.action not in provider.actions:
                 continue
             state = VehicleState(
                 actor_id=vehicle.id,
@@ -567,7 +568,7 @@ class AgentManager:
             provider = None
             assert (
                 False
-            ), f"could not find suitable provider supporting role={role} for action space {agent_interface.action_space}"
+            ), f"could not find suitable provider supporting role={role} for action space {agent_interface.action}"
 
         self._agent_interfaces[agent_id] = agent_interface
         self._social_agent_data_models[agent_id] = agent_model

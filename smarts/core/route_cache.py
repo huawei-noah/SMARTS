@@ -60,6 +60,9 @@ class RouteWithCache(RoadMap.Route):
     def __eq__(self, other) -> bool:
         return self.__class__ == other.__class__ and hash(self) == hash(other)
 
+    def _add_road(self, road: RoadMap.Road):
+        raise NotImplementedError()
+
     @cached_property
     def road_ids(self) -> List[str]:
         """Retruns a list of the road_ids for the Roads in this Route."""
@@ -159,7 +162,7 @@ class RouteWithCache(RoadMap.Route):
                     return RoadMap.Route.RouteLane(cand_lane, rind)
             except ValueError:
                 pass
-        self._logger.warning(f"unable to find road on route near point {rpt}")
+        self._logger.warning("Unable to find road on route near point %s", rpt)
         return None
 
     @lru_cache(maxsize=8)

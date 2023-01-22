@@ -38,38 +38,47 @@ def _make_agent_specs(num_agent):
         "AGENT_"
         + str(agent_id): AgentSpec(
             interface=AgentInterface(
-                rgb=RGB(),
+                top_down_rgb=RGB(),
                 action=ActionSpaceType.Lane,
             ),
             agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
-            observation_adapter=lambda obs: obs.top_down_rgb.data,
-            reward_adapter=lambda obs, reward: reward,
-            info_adapter=lambda obs, reward, info: info["score"],
         )
         for agent_id in range(num_agent)
     }
 
-    obs_space = {}
-    for agent_id, agent_spec in agent_specs.items():
-        rgb: RGB = agent_spec.interface.rgb  # pytype: disable=annotation-type-mismatch
-        obs_space[agent_id] = gym.spaces.Box(
-            low=0,
-            high=255,
-            shape=(
-                rgb.width,
-                rgb.height,
-                3,
-            ),
-            dtype=np.uint8,
-        )
-    obs_space = gym.spaces.Dict(obs_space)
+    return agent_specs
 
-    return agent_specs, obs_space
+
+class ObservationWrapper(gym.ObservationWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+        obs_space = {}
+        for agent_id, agent_spec in self.env.agent_specs.items():
+            rgb: RGB = (
+                agent_spec.interface.rgb
+            )  # pytype: disable=annotation-type-mismatch
+            obs_space[agent_id] = gym.spaces.Box(
+                low=0,
+                high=255,
+                shape=(
+                    rgb.width,
+                    rgb.height,
+                    3,
+                ),
+                dtype=np.uint8,
+            )
+        self.observation_space = gym.spaces.Dict(obs_space)
+
+    def observation(self, obs):
+        return {
+            agent_name: agent_obs.top_down_rgb.data
+            for agent_name, agent_obs in obs.items()
+        }
 
 
 @pytest.fixture
 def base_env(request):
-    agent_specs, obs_space = _make_agent_specs(request.param)
+    agent_specs = _make_agent_specs(request.param)
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=["scenarios/sumo/figure_eight"],
@@ -78,7 +87,7 @@ def base_env(request):
         visdom=False,
         fixed_timestep_sec=0.01,
     )
-    env.observation_space = obs_space
+    env = ObservationWrapper(env)
 
     yield env
     env.close()
@@ -86,11 +95,12 @@ def base_env(request):
 
 @pytest.mark.parametrize("base_env", [1, 2], indirect=True)
 def test_init(base_env):
-    agent_specs = base_env.agent_specs
-    obs_space = base_env.observation_space
+    # Compute multiagent specs and space, i.e., ma_*
+    ma_agent_specs = base_env.agent_specs
+    ma_obs_space = base_env.observation_space
 
     # Test wrapping an env containing one and more than one agent
-    if len(agent_specs) > 1:
+    if len(ma_agent_specs) > 1:
         with pytest.raises(AssertionError):
             env = SingleAgent(base_env)
             env.close()
@@ -99,32 +109,30 @@ def test_init(base_env):
         env = SingleAgent(base_env)
 
     # Test env observation space
-    agent_id = next(iter(agent_specs.keys()))
-    assert isinstance(env.observation_space, type(obs_space[agent_id]))
-    assert env.observation_space.shape == obs_space[agent_id].shape
-    assert env.observation_space.dtype == obs_space[agent_id].dtype
+    agent_id = next(iter(ma_agent_specs.keys()))
+    assert env.observation_space == ma_obs_space[agent_id]
 
     env.close()
 
 
 @pytest.mark.parametrize("base_env", [1], indirect=True)
 def test_reset_and_step(base_env):
-    agent_specs = base_env.agent_specs
-    obs_space = base_env.observation_space
+    ma_agent_specs = base_env.agent_specs
+    ma_obs_space = base_env.observation_space
     env = SingleAgent(base_env)
 
     # Test resetting the env
     obs = env.reset()
     assert isinstance(obs, np.ndarray)
-    agent_id = next(iter(agent_specs.keys()))
-    assert obs.shape == obs_space[agent_id].shape
+    agent_id = next(iter(ma_agent_specs.keys()))
+    assert obs.shape == ma_obs_space[agent_id].shape
 
     # Test stepping the env
     obs, reward, done, info = env.step("keep_lane")
     assert isinstance(obs, np.ndarray)
-    assert obs.shape == obs_space[agent_id].shape
+    assert obs.shape == ma_obs_space[agent_id].shape
     assert isinstance(reward, float)
-    assert isinstance(done, bool)
-    assert isinstance(info, float)
+    assert type(done) is bool
+    assert set(info.keys()) == set(["score", "env_obs", "done"])
 
     env.close()

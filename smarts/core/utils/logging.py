@@ -33,9 +33,10 @@ def timeit(name: str, log):
 
     .. code-block:: python
 
-        import logging
-        with timeit(n,logging.log):
+       import logging
+       with timeit(n,logging.log):
             a = a * b
+
     """
     start = time()
     yield

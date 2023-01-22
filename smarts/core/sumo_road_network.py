@@ -18,11 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import math
 import os
 import random
 from functools import lru_cache
+from pathlib import Path
 from subprocess import check_output
-from typing import Any, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import trimesh
@@ -39,7 +41,7 @@ from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
 from .route_cache import RouteWithCache
-from .utils.geometry import buffered_shape, generate_mesh_from_polygons
+from .utils.geometry import buffered_shape, generate_meshes_from_polygons
 from .utils.math import inplace_unwrap, radians_to_vec, vec_2d
 
 from smarts.core.utils.sumo import sumolib  # isort:skip
@@ -279,10 +281,17 @@ class SumoRoadNetwork(RoadMap):
         # map units per meter
         return self._default_lane_width / SumoRoadNetwork.DEFAULT_LANE_WIDTH
 
-    def to_glb(self, at_path):
+    def to_glb(self, glb_dir):
+        lane_dividers, edge_dividers = self._compute_traffic_dividers()
         polys = self._compute_road_polygons()
-        glb = self._make_glb_from_polys(polys)
-        glb.write_glb(at_path)
+        map_glb = self._make_glb_from_polys(polys, lane_dividers, edge_dividers)
+        map_glb.write_glb(Path(glb_dir) / "map.glb")
+
+        road_lines_glb = self._make_road_line_glb(edge_dividers)
+        road_lines_glb.write_glb(Path(glb_dir) / "road_lines.glb")
+
+        lane_lines_glb = self._make_road_line_glb(lane_dividers)
+        lane_lines_glb.write_glb(Path(glb_dir) / "lane_lines.glb")
 
     class Surface(RoadMap.Surface):
         """Describes a Sumo surface."""
@@ -1105,7 +1114,7 @@ class SumoRoadNetwork(RoadMap):
                 for road in self.roads
             ]
 
-    def _compute_road_polygons(self):
+    def _compute_road_polygons(self) -> List[Tuple[Polygon, Dict[str, Any]]]:
         lane_to_poly = {}
         for edge in self._graph.getEdges():
             for lane in edge.getLanes():
@@ -1117,7 +1126,12 @@ class SumoRoadNetwork(RoadMap):
                     )
                     continue
 
-                lane_to_poly[lane.getID()] = shape
+                metadata = {
+                    "road_id": edge.getID(),
+                    "lane_id": lane.getID(),
+                    "lane_index": lane.getIndex(),
+                }
+                lane_to_poly[lane.getID()] = (shape, metadata)
 
         # Remove holes created at tight junctions due to crude map geometry
         self._snap_internal_holes(lane_to_poly)
@@ -1136,7 +1150,8 @@ class SumoRoadNetwork(RoadMap):
                 )
                 continue
 
-            polys.append(Polygon(line))
+            metadata = {"road_id": node.getID()}
+            polys.append((Polygon(line), metadata))
 
         return polys
 
@@ -1151,18 +1166,22 @@ class SumoRoadNetwork(RoadMap):
             if not lane.getEdge().isSpecial():
                 continue
 
-            lane_shape = lane_to_poly[lane_id]
+            lane_shape, metadata = lane_to_poly[lane_id]
             incoming = self._graph.getLane(lane_id).getIncoming()[0]
             incoming_shape = lane_to_poly.get(incoming.getID())
             if incoming_shape:
-                lane_shape = Polygon(snap(lane_shape, incoming_shape, snap_threshold))
-                lane_to_poly[lane_id] = lane_shape
+                lane_shape = Polygon(
+                    snap(lane_shape, incoming_shape[0], snap_threshold)
+                )
+                lane_to_poly[lane_id] = (Polygon(lane_shape), metadata)
 
             outgoing = self._graph.getLane(lane_id).getOutgoing()[0].getToLane()
             outgoing_shape = lane_to_poly.get(outgoing.getID())
             if outgoing_shape:
-                lane_shape = Polygon(snap(lane_shape, outgoing_shape, snap_threshold))
-                lane_to_poly[lane_id] = lane_shape
+                lane_shape = Polygon(
+                    snap(lane_shape, outgoing_shape[0], snap_threshold)
+                )
+                lane_to_poly[lane_id] = (Polygon(lane_shape), metadata)
 
     def _snap_internal_holes(self, lane_to_poly, snap_threshold=2):
         for lane_id in lane_to_poly:
@@ -1171,7 +1190,7 @@ class SumoRoadNetwork(RoadMap):
             # Only do snapping for internal edge lane holes
             if not lane.getEdge().isSpecial():
                 continue
-            lane_shape = lane_to_poly[lane_id]
+            lane_shape, metadata = lane_to_poly[lane_id]
             new_coords = []
             last_added = None
             for x, y in lane_shape.exterior.coords:
@@ -1189,7 +1208,7 @@ class SumoRoadNetwork(RoadMap):
                             continue
                         nl_shape = lane_to_poly.get(nl.lane_id)
                         if nl_shape:
-                            _, npt = nearest_points(p, nl_shape)
+                            _, npt = nearest_points(p, nl_shape[0])
                             if p.distance(npt) < thresh:
                                 p = npt
                                 # allow vertices to snap to more than one thing, but
@@ -1199,10 +1218,10 @@ class SumoRoadNetwork(RoadMap):
                                 snapped_to.add(nl)
                                 thresh *= 0.75
                 if p != last_added:
-                    new_coords.append(p)
+                    new_coords.append((p.x, p.y))
                     last_added = p
             if new_coords:
-                lane_to_poly[lane_id] = Polygon(new_coords)
+                lane_to_poly[lane_id] = (Polygon(new_coords), metadata)
 
     def _snap_external_holes(self, lane_to_poly, snap_threshold=2):
         for lane_id in lane_to_poly:
@@ -1222,7 +1241,7 @@ class SumoRoadNetwork(RoadMap):
                 if outgoing_lane.getEdge().isSpecial():
                     continue
 
-            lane_shape = lane_to_poly[lane_id]
+            lane_shape, metadata = lane_to_poly[lane_id]
             new_coords = []
             last_added = None
             for x, y in lane_shape.exterior.coords:
@@ -1245,7 +1264,7 @@ class SumoRoadNetwork(RoadMap):
                             continue
                         nl_shape = lane_to_poly.get(nl.lane_id)
                         if nl_shape:
-                            _, npt = nearest_points(p, nl_shape)
+                            _, npt = nearest_points(p, nl_shape[0])
                             if p.distance(npt) < thresh:
                                 p = npt
                                 # allow vertices to snap to more than one thing, but
@@ -1255,14 +1274,25 @@ class SumoRoadNetwork(RoadMap):
                                 snapped_to.add(nl)
                                 thresh *= 0.75
                 if p != last_added:
-                    new_coords.append(p)
+                    new_coords.append((p.x, p.y))
                     last_added = p
             if new_coords:
-                lane_to_poly[lane_id] = Polygon(new_coords)
+                lane_to_poly[lane_id] = (Polygon(new_coords), metadata)
 
-    def _make_glb_from_polys(self, polygons):
+    def _make_road_line_glb(self, lines: List[List[Tuple[float, float]]]):
         scene = trimesh.Scene()
-        mesh = generate_mesh_from_polygons(polygons)
+        for line_pts in lines:
+            vertices = [(*pt, 0.1) for pt in line_pts]
+            point_cloud = trimesh.PointCloud(vertices=vertices)
+            point_cloud.apply_transform(
+                trimesh.transformations.rotation_matrix(math.pi / 2, [-1, 0, 0])
+            )
+            scene.add_geometry(point_cloud)
+        return _GLBData(gltf.export_glb(scene))
+
+    def _make_glb_from_polys(self, polygons, lane_dividers, edge_dividers):
+        scene = trimesh.Scene()
+        meshes = generate_meshes_from_polygons(polygons)
         # Attach additional information for rendering as metadata in the map glb
         metadata = {}
 
@@ -1271,15 +1301,20 @@ class SumoRoadNetwork(RoadMap):
         metadata["bounding_box"] = self._graph.getBoundary()
 
         # lane markings information
-        lane_dividers, edge_dividers = self._compute_traffic_dividers()
         metadata["lane_dividers"] = lane_dividers
         metadata["edge_dividers"] = edge_dividers
 
-        mesh.visual = trimesh.visual.TextureVisuals(
-            material=trimesh.visual.material.PBRMaterial()
-        )
+        for mesh in meshes:
+            mesh.visual = trimesh.visual.TextureVisuals(
+                material=trimesh.visual.material.PBRMaterial()
+            )
 
-        scene.add_geometry(mesh)
+            road_id = mesh.metadata["road_id"]
+            lane_id = mesh.metadata.get("lane_id")
+            name = f"{road_id}"
+            if lane_id is not None:
+                name += f"-{lane_id}"
+            scene.add_geometry(mesh, name, extras=mesh.metadata)
         return _GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
 
     def _compute_traffic_dividers(self, threshold=1):

@@ -17,7 +17,12 @@ from smarts.core.controllers.trajectory_tracking_controller import (
 )
 from smarts.core.coordinates import Heading
 
-from .version import SOLVER_VERSION, VERSION
+with open(
+    Path(__file__).parent.absolute() / "metadata.json", mode="r", encoding="ascii"
+) as f:
+    meta = json.load(f)
+    VERSION = meta.get("VERSION")
+    SOLVER_VERSION = meta.get("SOLVER_VERSION")
 
 CONFIG_PATH = Path(__file__).parent / "config.json"
 

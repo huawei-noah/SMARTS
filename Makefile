@@ -9,7 +9,7 @@ test: build-all-scenarios
 		--dist=loadscope \
 		-n `expr \( \`nproc\` \/ 2 \& \`nproc\` \> 3 \) \| 2` \
 		--nb-exec-timeout 65536 \
-		./examples/tests ./smarts/env ./envision ./smarts/contrib ./smarts/core ./smarts/sstudio ./tests \
+		./examples/tests ./smarts/env ./envision ./smarts/core ./smarts/sstudio ./tests \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
 		--ignore=./smarts/core/tests/test_env_frame_rate.py \
 		--ignore=./smarts/env/tests/test_benchmark.py \
@@ -20,7 +20,6 @@ test: build-all-scenarios
 
 .PHONY: sanity-test
 sanity-test: build-sanity-scenarios
-	./tests/test_setup.py
 	PYTHONPATH=$(PWD) PYTHONHASHSEED=42 pytest -v \
 		--doctest-modules \
 		--forked \
@@ -32,7 +31,7 @@ sanity-test: build-sanity-scenarios
 		./smarts/core/tests/test_dynamics_backend.py::test_set_pose \
 		./smarts/core/tests/test_sensors.py::test_waypoints_sensor \
 		./smarts/core/tests/test_smarts.py::test_smarts_doesnt_leak_tasks_after_reset \
-		./examples/tests/test_examples.py::test_examples[multi_agent] \
+		./examples/tests/test_examples.py::test_examples[laner] \
 		./smarts/env/tests/test_social_agent.py::test_social_agents
 
 .PHONY: test-learning
@@ -141,7 +140,7 @@ clean:
 .PHONY: format
 format:
 	echo "isort, version `isort --version-number`"
-	isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines/marl_benchmark/ ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./ultra ./zoo
+	isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./zoo
 	black --version
 	black .
 	# npm install prettier
@@ -150,7 +149,7 @@ format:
 
 .PHONY: docs
 docs:
-	(cd docs; make clean html)
+	cd docs && make clean html
 
 .PHONY: wheel
 wheel: docs

@@ -1,170 +1,52 @@
-Quickstart: Designing a Simple Experiment
-=========================================
+.. _quickstart:
 
-First we'll need to define what our agent looks like, we'll then place the agent in a scenario and run through a few episodes of simulation.
+Quickstart
+==========
 
-Specifying the Agent
---------------------
+A typical workflow would look like this.
 
-The agent is defined in terms of the interface it expects from the environment and the responses an agent produces. To help bridge the gap between the environment and your agent, we also introduce adapters.
+1. Design and build a scenario. 
+   
+   + Further reading: :ref:`scenario_studio` details the scenario design process. 
+2. Build an agent by specifying its `interface` and `policy`.
 
-:class:`smarts.core.agent_interface.AgentInterface`
-   This is where you can control the interface between SMARTS and your agent.
+   + Further reading: :ref:`agent` details the agent build process. 
+3. Instantiate and run a SMARTS environment.
 
-:class:`smarts.core.agent.Agent`
-   This is the brains of the agent, you will need to implement the interface defined by :class:`smarts.core.agent.Agent` in order to give the agent some behaviour.
+Example
+-------
 
-Adapters:
-  Adapters bridge the gab between SMARTS and your agent. It is sometimes useful to preprocess the input and outputs of an agent, we won't be needing adapter for this little walkthrough but for a more in-depth treatment see :ref:`adapters`.
+In this quickstart guide, we will run the `Chase Via Points` example. Here,
 
+1. a pre-designed scenario :scenarios:`scenarios/sumo/loop <sumo/loop>` is used.
+2. a simple agent with `interface` == :attr:`~smarts.core.agent_interface.AgentType.LanerWithSpeed` and `policy` == `Chase Via Points` is demonstrated. The agent chases via points or follows nearby waypoints if a via point is unavailable.
 
-AgentInterface :class:`smarts.core.agent_interface.AgentInterface`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File: :examples:`examples/control/chase_via_points.py <control/chase_via_points.py>`
 
-Here we choose the interface between SMARTS and your agent. Select which sensors to enable on your vehicle and the action space for you agent.
+.. literalinclude:: ../examples/control/chase_via_points.py
+    :language: python
 
-Some common configurations have been packaged up under :class:`smarts.core.agent_interface.AgentType` and can be instantiated via
+Use the `scl` command to run SMARTS together with it's supporting processes. 
 
-.. code-block:: python
+.. code-block:: bash
 
-   from smarts.core.agent_interface import AgentInterface, AgentType
+    $ cd <path>/SMARTS
+    # Build the scenario `scenarios/sumo/loop`.
+    $ scl scenario build scenarios/sumo/loop
+    # Run SMARTS simulation with Envision display and `loop` scenario.
+    $ scl run --envision examples/control/chase_via_points.py scenarios/sumo/loop 
 
-   AgentInterface.from_type(AgentType.Tracker)
+Visit `http://localhost:8081/ <http://localhost:8081/>`_ to view the experiment.
 
-This `AgentType.Tracker` preset gives us :class:`smarts.core.agent_interface.Waypoints` and the trajectory following action space `ActionSpaceType.Trajectory`, see :class:`smarts.core.controllers.ActionSpaceType` for more available action spaces.
+The ``--envision`` flag runs the Envision server which displays the simulation. Refer to :ref:`visualization` for more information on Envision.
 
+Explore
+-------
 
-Agent :class:`smarts.core.agent.Agent`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Explore more examples.
 
-Next up, we need to define the behaviour of the agent. That is to say, we want to map the observations from the sensors we configured above to the action space we chose.
+(i) :ref:`Egoless <egoless>`
+(ii) :ref:`Control theory <control>`
+(iii) :ref:`RL model <rl_model>`
 
-This is done by implementing the :class:`smarts.core.agent.Agent` interface:
-
-.. code-block:: python
-
-   from smarts.core.bezier_motion_planner import BezierMotionPlanner
-   from smarts.core.agent import Agent
-
-   class ExampleAgent(Agent):
-       def __init__(self, target_speed = 10):
-           self.motion_planner = BezierMotionPlanner()
-           self.target_speed = target_speed
-
-       def act(self, obs):
-           ego = obs.ego_vehicle_state
-           current_pose = np.array([*ego.position[:2], ego.heading])
-
-           # lookahead (at most) 10 waypoints
-           target_wp = obs.waypoint_paths[0][:10][-1]
-           dist_to_wp = target_wp.dist_to(obs.ego_vehicle_state.position)
-           target_time = dist_to_wp / self.target_speed
-
-           # Here we've computed the pose we want to hold given our target
-           # speed and the distance to the target waypoint.
-           target_pose_at_t = np.array(
-               [*target_wp.pos, target_wp.heading, target_time]
-           )
-
-           # The generated motion planner trajectory is compatible
-           # with the `ActionSpaceType.Trajectory`
-           traj = self.motion_planner.trajectory(
-               current_pose, target_pose_at_t, n=10, dt=0.5
-           )
-           return traj
-
-Here we are implementing a simple lane following agent using the BezierMotionPlanner. The `obs` argument to `ExampleAgent.act()` will contain the observations specified in the `AgentInterface` above, and it's expected that the return value of the `act` method matches the `ActionSpaceType` chosen as well. (This constraint is relaxed when adapters are introduced.)
-
-
-AgentSpec :class:`smarts.zoo.agent_spec.AgentSpec`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-These pieces are brought together by the :class:`smarts.zoo.agent_spec.AgentSpec`:
-
-.. code-block:: python
-
-   agent_spec = AgentSpec(
-       interface=AgentInterface.from_type(AgentType.Tracker)
-       # params are passed to the agent_builder when we build the agent
-       agent_params={"target_speed": 5},
-       agent_builder=ExampleAgent
-   )
-
-The :class:`smarts.zoo.agent_spec.AgentSpec` acts as a container to store the information we need to build an agent, we can distribute this spec safely between process' to aid in parallelism and once we have it in the right spot, we can instantiate the :class:`smarts.core.agent.Agent` with
-
-.. code-block:: python
-
-   agent = agent_spec.build_agent()
-
-Putting it all together
------------------------
-
-We can run this agent with "scenarios/sumo/loop", one of the scenarios packaged with SMARTS using the familiar gym interface:
-
-.. code-block:: python
-
-   import gym
-   import numpy as np
-   from smarts.core.agent import Agent
-   from smarts.core.agent_interface import AgentInterface, AgentType
-   from smarts.core.bezier_motion_planner import BezierMotionPlanner
-   from smarts.core.utils.episodes import episodes
-   from smarts.zoo.agent_spec import AgentSpec
-
-   class ExampleAgent(Agent):
-       def __init__(self, target_speed = 10):
-           self.motion_planner = BezierMotionPlanner()
-           self.target_speed = target_speed
-
-       def act(self, obs):
-           ego = obs.ego_vehicle_state
-           current_pose = np.array([*ego.position[:2], ego.heading])
-
-           # lookahead (at most) 10 waypoints
-           target_wp = obs.waypoint_paths[0][:10][-1]
-           dist_to_wp = target_wp.dist_to(obs.ego_vehicle_state.position)
-           target_time = dist_to_wp / self.target_speed
-
-           # Here we've computed the pose we want to hold given our target
-           # speed and the distance to the target waypoint.
-           target_pose_at_t = np.array(
-               [*target_wp.pos, target_wp.heading, target_time]
-           )
-
-           # The generated motion planner trajectory is compatible
-           # with the `ActionSpaceType.Trajectory`
-           traj = self.motion_planner.trajectory(
-               current_pose, target_pose_at_t, n=10, dt=0.5
-           )
-           return traj
-
-   AGENT_ID = "Agent-007"
-   agent_spec = AgentSpec(
-       interface=AgentInterface.from_type(AgentType.Tracker),
-       agent_params={"target_speed": 5},
-       agent_builder=ExampleAgent
-   )
-
-   env = gym.make(
-       "smarts.env:hiway-v0",
-       scenarios=["scenarios/sumo/loop"],
-       agent_specs={AGENT_ID: agent_spec},
-   )
-
-   for episode in episodes(n=100):
-       agent = agent_spec.build_agent()
-       observations = env.reset()
-       episode.record_scenario(env.scenario_log)
-
-       dones = {"__all__": False}
-       while not dones["__all__"]:
-           agent_obs = observations[AGENT_ID]
-           action = agent.act(agent_obs)
-           observations, rewards, dones, infos = env.step({AGENT_ID: action})
-           episode.record_step(observations, rewards, dones, infos)
-
-   env.close()
-
-The scenario is deterministic in totality. This means that assuming all agents take the exact same 
-actions the entire scenario will play back deterministically but each episode will have different
-behaviour.
+A handful of pre-built scenarios are available at :scenarios:`scenarios <>` folder.

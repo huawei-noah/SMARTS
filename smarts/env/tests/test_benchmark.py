@@ -37,9 +37,9 @@ def agent_interface(request):
     if request.param == "laner":
         return AgentInterface.from_type(AgentType.Laner)
     if request.param == "rgb":
-        return AgentInterface(rgb=True, action=ActionSpaceType.Lane)
+        return AgentInterface(top_down_rgb=True, action=ActionSpaceType.Lane)
     if request.param == "lidar":
-        return AgentInterface(lidar=True, action=ActionSpaceType.Lane)
+        return AgentInterface(lidar_point_cloud=True, action=ActionSpaceType.Lane)
 
 
 @pytest.fixture

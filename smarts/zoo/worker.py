@@ -69,7 +69,7 @@ for mod in modules:
     except ImportError:
         if mod == "panda3d":
             print(
-                "You need to install the panda3d dependency using pip install -e .[camera-obs] first"
+                "You need to install the panda3d dependency using pip install -e .[camera_obs] first"
             )
         pass
 

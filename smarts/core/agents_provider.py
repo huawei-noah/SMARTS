@@ -71,7 +71,7 @@ class AgentsProvider(Provider):
         # pytype: enable=attribute-error
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
+    def actions(self) -> Set[ActionSpaceType]:
         # must be implemented by derived classes
         raise NotImplementedError
 
@@ -161,7 +161,7 @@ class AgentsProvider(Provider):
                     vehicle_action,
                     controller_state,
                     sensor_state,
-                    agent_interface.action_space,
+                    agent_interface.action,
                     agent_interface.vehicle_type,
                 )
 
@@ -222,7 +222,7 @@ class AgentPhysicsProvider(AgentsProvider):
         super().__init__(sim)
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
+    def actions(self) -> Set[ActionSpaceType]:
         return {
             ActionSpaceType.Continuous,
             ActionSpaceType.Lane,
@@ -230,6 +230,7 @@ class AgentPhysicsProvider(AgentsProvider):
             ActionSpaceType.LaneWithContinuousSpeed,
             ActionSpaceType.Trajectory,
             ActionSpaceType.MPC,
+            ActionSpaceType.Empty,
         }
 
 
@@ -241,7 +242,7 @@ class DirectControlProvider(AgentsProvider):
         super().__init__(sim)
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
+    def actions(self) -> Set[ActionSpaceType]:
         return {ActionSpaceType.Direct}
 
 
@@ -252,8 +253,12 @@ class MotionPlannerProvider(AgentsProvider):
         super().__init__(sim)
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
-        return {ActionSpaceType.TargetPose, ActionSpaceType.MultiTargetPose}
+    def actions(self) -> Set[ActionSpaceType]:
+        return {
+            ActionSpaceType.TargetPose,
+            ActionSpaceType.RelativeTargetPose,
+            ActionSpaceType.MultiTargetPose,
+        }
 
 
 class TrajectoryInterpolationProvider(AgentsProvider):
@@ -263,5 +268,5 @@ class TrajectoryInterpolationProvider(AgentsProvider):
         super().__init__(sim)
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
+    def actions(self) -> Set[ActionSpaceType]:
         return {ActionSpaceType.TrajectoryWithTime}

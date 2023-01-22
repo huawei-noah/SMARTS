@@ -24,225 +24,42 @@ import weakref
 from collections import deque, namedtuple
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Dict, Iterable, List, NamedTuple, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as np
 
 from smarts.core.agent_interface import AgentsAliveDoneCriteria
 from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
-from smarts.core.signals import SignalLightState, SignalState
-from smarts.core.utils.math import squared_dist, vec_2d, yaw_from_quaternion
+from smarts.core.signals import SignalState
+from smarts.core.utils.math import squared_dist
 
-from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
+from .coordinates import Heading, Point, Pose, RefLinePoint
 from .events import Events
 from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
-from .plan import Mission, Via
+from .observations import (
+    Collision,
+    DrivableAreaGridMap,
+    EgoVehicleObservation,
+    GridMapMetadata,
+    Observation,
+    OccupancyGridMap,
+    RoadWaypoints,
+    SignalObservation,
+    TopDownRGB,
+    VehicleObservation,
+    ViaPoint,
+    Vias,
+)
+from .plan import Via
 
 logger = logging.getLogger(__name__)
 
 LANE_ID_CONSTANT = "off_lane"
 ROAD_ID_CONSTANT = "off_road"
 LANE_INDEX_CONSTANT = -1
-
-
-class VehicleObservation(NamedTuple):
-    """Perceived vehicle information."""
-
-    id: str
-    """The vehicle identifier."""
-    position: Tuple[float, float, float]
-    """The position of the vehicle within the simulation."""
-    bounding_box: Dimensions
-    """A bounding box describing the extents of the vehicle."""
-    heading: Heading
-    """The facing direction of the vehicle."""
-    speed: float
-    """The travel m/s in the direction of the vehicle."""
-    road_id: str
-    """The identifier for the road nearest to this vehicle."""
-    lane_id: str
-    """The identifier for the lane nearest to this vehicle."""
-    lane_index: int
-    """The index of the nearest lane on the road nearest to this vehicle."""
-    lane_position: Optional[RefLinePoint] = None
-    """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
-    See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
-
-
-class EgoVehicleObservation(NamedTuple):
-    """Perceived ego vehicle information."""
-
-    id: str
-    """The vehicle identifier."""
-    position: np.ndarray
-    """The position of the vehicle within the simulation."""
-    bounding_box: Dimensions
-    """A bounding box describing the extents of the vehicle."""
-    heading: Heading
-    """The facing direction of the vehicle."""
-    speed: float
-    """The travel m/s in the direction of the vehicle."""
-    steering: float
-    """Angle of front wheels in radians between [-pi, pi]."""
-    yaw_rate: float
-    """Rotational speed in radians per second"""
-    road_id: str
-    """The identifier for the road nearest to this vehicle."""
-    lane_id: str
-    """The identifier for the lane nearest to this vehicle."""
-    lane_index: int
-    """The index of the nearest lane on the road nearest to this vehicle."""
-    mission: Mission
-    """A field describing the vehicle plotted route"""
-    linear_velocity: np.ndarray
-    """Vehicle velocity along body coordinate axes. A numpy array of shape=(3,) and dtype=np.float64."""
-    angular_velocity: np.ndarray
-    """Angular velocity vector. A numpy array of shape=(3,) and dtype=np.float64."""
-    linear_acceleration: Optional[np.ndarray]
-    """Linear acceleration vector. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
-    angular_acceleration: Optional[np.ndarray]
-    """Angular acceleration vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
-    linear_jerk: Optional[np.ndarray]
-    """Linear jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
-    angular_jerk: Optional[np.ndarray]
-    """Angular jerk vector. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
-    lane_position: Optional[RefLinePoint] = None
-    """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
-    See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
-
-
-class RoadWaypoints(NamedTuple):
-    """Per-road waypoint information."""
-
-    lanes: Dict[str, List[List[Waypoint]]]
-
-
-class GridMapMetadata(NamedTuple):
-    """Map grid metadata."""
-
-    created_at: int
-    """The time at which the map was loaded."""
-    resolution: float
-    """The map resolution in world-space-distance/cell."""
-    width: int
-    """The map width in # of cells."""
-    height: int
-    """The map height in # of cells."""
-    camera_pos: Tuple[float, float, float]
-    """The camera position when project onto the map."""
-    camera_heading_in_degrees: float
-    """The camera rotation angle along z-axis when projected onto the map."""
-
-
-class TopDownRGB(NamedTuple):
-    """RGB camera observation"""
-
-    metadata: GridMapMetadata
-    """Map metadata"""
-    data: np.ndarray
-    """A RGB image (default 256x256) with the ego vehicle at the center"""
-
-
-class OccupancyGridMap(NamedTuple):
-    """Occupancy camera observation"""
-
-    metadata: GridMapMetadata
-    """Map metadata"""
-    data: np.ndarray
-    """An ``OGM <https://en.wikipedia.org/wiki/Occupancy_grid_mapping>`` (default 256x256) around the ego vehicle"""
-
-
-class DrivableAreaGridMap(NamedTuple):
-    """Drivable area observation"""
-
-    metadata: GridMapMetadata
-    """Map metadata"""
-    data: np.ndarray
-    """A grid map (default 256x256) that shows the static drivable area around the ego vehicle"""
-
-
-@dataclass
-class ViaPoint:
-    """Describes 'collectable' locations that can be placed within the simulation."""
-
-    position: Tuple[float, float]
-    """The location of this collectable"""
-    lane_index: float
-    """The lane index on the road this collectable is associated with"""
-    road_id: str
-    """The road id this collectable is associated with"""
-    required_speed: float
-    """The rough speed required to collect this collectable"""
-
-
-@dataclass(frozen=True)
-class Vias:
-    """A listing of nearby via points and points collected in the last step"""
-
-    near_via_points: List[ViaPoint]
-    """Ordered list of nearby points that have not been hit"""
-    hit_via_points: List[ViaPoint]
-    """List of points that were hit in the previous step"""
-
-
-@dataclass(frozen=True)
-class SignalObservation:
-    """Describes an observation of a traffic signal (light) on this timestep."""
-
-    state: SignalLightState
-    """The state of the traffic signal."""
-    stop_point: Point
-    """The stopping point for traffic controlled by the signal, i.e., the
-    point where actors should stop when the signal is in a stop state."""
-    controlled_lanes: List[str]
-    """If known, the lane_ids of all lanes controlled-by this signal.
-    May be empty if this is not easy to determine."""
-    last_changed: Optional[float]
-    """If known, the simulation time this signal last changed its state."""
-
-
-@dataclass
-class Observation:
-    """The simulation observation."""
-
-    dt: float
-    """Amount of simulation time the last step took."""
-    step_count: int
-    """Number of steps taken by SMARTS thus far."""
-    steps_completed: int
-    """The number of steps this agent has taken within SMARTS."""
-    elapsed_sim_time: float
-    """Amout of simulation time elapsed. Average step_time can be computed as 
-    elapsed_sim_time/step_count."""
-    events: Events
-    ego_vehicle_state: EgoVehicleObservation
-    under_this_agent_control: bool
-    """If this agent currently has control of the vehicle."""
-    neighborhood_vehicle_states: Optional[List[VehicleObservation]]
-    waypoint_paths: Optional[List[List[Waypoint]]]
-    distance_travelled: float
-    # TODO: Convert to `NamedTuple` or only return point cloud.
-    lidar_point_cloud: Optional[
-        Tuple[List[np.ndarray], List[bool], List[Tuple[np.ndarray, np.ndarray]]]
-    ]
-    """Lidar point cloud consists of [points, hits, (ray_origin, ray_vector)]."""
-    drivable_area_grid_map: Optional[DrivableAreaGridMap]
-    occupancy_grid_map: Optional[OccupancyGridMap]
-    top_down_rgb: Optional[TopDownRGB]
-    road_waypoints: Optional[RoadWaypoints]
-    via_data: Vias
-    signals: Optional[List[SignalObservation]] = None
-
-
-@dataclass
-class Collision:
-    """Represents a collision by an ego vehicle with another vehicle."""
-
-    # XXX: This might not work for boid agents
-    collidee_id: str
 
 
 def _make_vehicle_observation(road_map, neighborhood_vehicle):
@@ -295,10 +112,10 @@ class Sensors:
     @staticmethod
     def observe(sim, agent_id, sensor_state, vehicle) -> Tuple[Observation, bool]:
         """Generate observations for the given agent around the given vehicle."""
-        neighborhood_vehicles = None
-        if vehicle.subscribed_to_neighborhood_vehicles_sensor:
-            neighborhood_vehicles = []
-            for nv in vehicle.neighborhood_vehicles_sensor():
+        neighborhood_vehicle_states = None
+        if vehicle.subscribed_to_neighborhood_vehicle_states_sensor:
+            neighborhood_vehicle_states = []
+            for nv in vehicle.neighborhood_vehicle_states_sensor():
                 veh_obs = _make_vehicle_observation(sim.road_map, nv)
                 nv_lane_pos = None
                 if (
@@ -308,7 +125,7 @@ class Sensors:
                     nv_lane_pos = vehicle.lane_position_sensor(
                         sim.road_map.lane_by_id(veh_obs.lane_id), nv
                     )
-                neighborhood_vehicles.append(
+                neighborhood_vehicle_states.append(
                     veh_obs._replace(lane_position=nv_lane_pos)
                 )
 
@@ -411,9 +228,15 @@ class Sensors:
             if vehicle.subscribed_to_drivable_area_grid_map_sensor
             else None
         )
-        ogm = vehicle.ogm_sensor() if vehicle.subscribed_to_ogm_sensor else None
-        rgb = vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None
-        lidar = vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
+        occupancy_grid_map = (
+            vehicle.ogm_sensor() if vehicle.subscribed_to_ogm_sensor else None
+        )
+        top_down_rgb = (
+            vehicle.rgb_sensor() if vehicle.subscribed_to_rgb_sensor else None
+        )
+        lidar_point_cloud = (
+            vehicle.lidar_sensor() if vehicle.subscribed_to_lidar_sensor else None
+        )
 
         done, events = Sensors._is_done_with_events(
             sim, agent_id, vehicle, sensor_state
@@ -451,13 +274,13 @@ class Sensors:
                 events=events,
                 ego_vehicle_state=ego_vehicle,
                 under_this_agent_control=agent_controls,
-                neighborhood_vehicle_states=neighborhood_vehicles,
+                neighborhood_vehicle_states=neighborhood_vehicle_states,
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
-                top_down_rgb=rgb,
-                occupancy_grid_map=ogm,
+                top_down_rgb=top_down_rgb,
+                occupancy_grid_map=occupancy_grid_map,
                 drivable_area_grid_map=drivable_area_grid_map,
-                lidar_point_cloud=lidar,
+                lidar_point_cloud=lidar_point_cloud,
                 road_waypoints=road_waypoints,
                 via_data=via_data,
                 signals=signals,
@@ -650,7 +473,7 @@ class Sensors:
             # See if the lane leads into the current route
             for lane in nearest_lane.outgoing_lanes:
                 if lane.road in route_roads:
-                    (False, is_wrong_way)
+                    return (False, is_wrong_way)
                 # If outgoing lane is in a junction see if the junction lane leads into current route.
                 if lane.in_junction:
                     for out_lane in lane.outgoing_lanes:
@@ -794,7 +617,7 @@ class DrivableAreaGridMapSensor(CameraSensor):
             resolution=self._resolution,
             height=image.shape[0],
             width=image.shape[1],
-            camera_pos=self._camera.camera_np.getPos(),
+            camera_position=self._camera.camera_np.getPos(),
             camera_heading_in_degrees=self._camera.camera_np.getH(),
         )
         return DrivableAreaGridMap(data=image, metadata=metadata)
@@ -836,7 +659,7 @@ class OGMSensor(CameraSensor):
             resolution=self._resolution,
             height=grid.shape[0],
             width=grid.shape[1],
-            camera_pos=self._camera.camera_np.getPos(),
+            camera_position=self._camera.camera_np.getPos(),
             camera_heading_in_degrees=self._camera.camera_np.getH(),
         )
         return OccupancyGridMap(data=grid, metadata=metadata)
@@ -854,7 +677,13 @@ class RGBSensor(CameraSensor):
         renderer,  # type Renderer or None
     ):
         super().__init__(
-            vehicle, renderer, "rgb", RenderMasks.RGB_HIDE, width, height, resolution
+            vehicle,
+            renderer,
+            "top_down_rgb",
+            RenderMasks.RGB_HIDE,
+            width,
+            height,
+            resolution,
         )
         self._resolution = resolution
 
@@ -872,7 +701,7 @@ class RGBSensor(CameraSensor):
             resolution=self._resolution,
             height=image.shape[0],
             width=image.shape[1],
-            camera_pos=self._camera.camera_np.getPos(),
+            camera_position=self._camera.camera_np.getPos(),
             camera_heading_in_degrees=self._camera.camera_np.getH(),
         )
         return TopDownRGB(data=image, metadata=metadata)

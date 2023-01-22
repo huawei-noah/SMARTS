@@ -17,13 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import warnings
 from dataclasses import dataclass, field, replace
 from enum import IntEnum
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 
-from .controllers import ActionSpaceType
-from .lidar_sensor_params import BasicLidar
-from .lidar_sensor_params import SensorParams as LidarSensorParams
+from smarts.core.controllers import ActionSpaceType
+from smarts.core.lidar_sensor_params import BasicLidar
+from smarts.core.lidar_sensor_params import SensorParams as LidarSensorParams
 
 
 @dataclass
@@ -125,27 +126,27 @@ class AgentType(IntEnum):
     """Used to select preconfigured agent interfaces."""
 
     Buddha = 0
-    """Agent sees nothing and does nothing"""
+    """Agent sees nothing and does nothing."""
     Full = 1
-    """All observations and continuous action space"""
+    """All observations and continuous action space."""
     Standard = 2
     """Minimal observations for dealing with waypoints and other vehicles and
     continuous action space.
     """
     Laner = 3
-    """Agent sees waypoints and performs lane actions"""
+    """Agent sees waypoints and performs lane actions."""
     Loner = 4
-    """Agent sees waypoints and performs continuous actions"""
+    """Agent sees waypoints and performs continuous actions."""
     Tagger = 5
-    """Agent sees waypoints, other vehicles, and performs continuous actions"""
+    """Agent sees waypoints, other vehicles, and performs continuous actions."""
     StandardWithAbsoluteSteering = 6
-    """Agent sees waypoints, neighbor vehicles and performs continuous action"""
+    """Agent sees waypoints, neighbor vehicles and performs continuous action."""
     LanerWithSpeed = 7
-    """Agent sees waypoints and performs speed and lane action"""
+    """Agent sees waypoints and performs speed and lane action."""
     Tracker = 8
-    """Agent sees waypoints and performs target position action"""
+    """Agent sees waypoints and performs target position action."""
     Boid = 9
-    """Controls multiple vehicles"""
+    """Controls multiple vehicles."""
     MPCTracker = 10
     """Agent performs trajectory tracking using model predictive control."""
     TrajectoryInterpolator = 11
@@ -246,10 +247,10 @@ class AgentInterface:
     max_episode_steps: Optional[int] = None
     """If set, agents will become "done" after this many steps. set to None to disable."""
 
-    neighborhood_vehicles: Union[NeighborhoodVehicles, bool] = False
+    neighborhood_vehicle_states: Union[NeighborhoodVehicles, bool] = False
     """Enable the Neighborhood Vehicle States sensor, vehicles around the ego vehicle will be provided."""
 
-    waypoints: Union[Waypoints, bool] = False
+    waypoint_paths: Union[Waypoints, bool] = False
     """Enable the Waypoint Paths sensor, a list of valid waypoint paths along the current mission."""
 
     # XXX: consider making this return LanePoints instead?
@@ -265,18 +266,18 @@ class AgentInterface:
     corresponding area of the map is a drivable surface.
     """
 
-    ogm: Union[OGM, bool] = False
+    occupancy_grid_map: Union[OGM, bool] = False
     """
     Enable the OGM (Occupancy Grid Map) sensor, a grid is provided where each cell signals whether
     that area in space is occupied.
     """
 
-    rgb: Union[RGB, bool] = False
+    top_down_rgb: Union[RGB, bool] = False
     """
     Enable the RGB camera sensor, a top down color image is provided.
     """
 
-    lidar: Union[Lidar, bool] = False
+    lidar_point_cloud: Union[Lidar, bool] = False
     """
     Enable the LIDAR point cloud sensor.
     """
@@ -307,19 +308,25 @@ class AgentInterface:
     """
 
     def __post_init__(self):
-        self.neighborhood_vehicles = AgentInterface._resolve_config(
-            self.neighborhood_vehicles, NeighborhoodVehicles
+        self.neighborhood_vehicle_states = AgentInterface._resolve_config(
+            self.neighborhood_vehicle_states, NeighborhoodVehicles
         )
-        self.waypoints = AgentInterface._resolve_config(self.waypoints, Waypoints)
+        self.waypoint_paths = AgentInterface._resolve_config(
+            self.waypoint_paths, Waypoints
+        )
         self.road_waypoints = AgentInterface._resolve_config(
             self.road_waypoints, RoadWaypoints
         )
         self.drivable_area_grid_map = AgentInterface._resolve_config(
             self.drivable_area_grid_map, DrivableAreaGridMap
         )
-        self.ogm = AgentInterface._resolve_config(self.ogm, OGM)
-        self.rgb = AgentInterface._resolve_config(self.rgb, RGB)
-        self.lidar = AgentInterface._resolve_config(self.lidar, Lidar)
+        self.occupancy_grid_map = AgentInterface._resolve_config(
+            self.occupancy_grid_map, OGM
+        )
+        self.top_down_rgb = AgentInterface._resolve_config(self.top_down_rgb, RGB)
+        self.lidar_point_cloud = AgentInterface._resolve_config(
+            self.lidar_point_cloud, Lidar
+        )
         self.accelerometer = AgentInterface._resolve_config(
             self.accelerometer, Accelerometer
         )
@@ -340,47 +347,47 @@ class AgentInterface:
                 The total number of steps this interface will observe before expiring
         """
         if requested_type == AgentType.Buddha:  # The enlightened one
-            interface = AgentInterface()
+            interface = AgentInterface(action=ActionSpaceType.Empty)
         elif requested_type == AgentType.Full:  # Uses everything
             interface = AgentInterface(
-                neighborhood_vehicles=True,
-                waypoints=True,
+                neighborhood_vehicle_states=True,
+                waypoint_paths=True,
                 drivable_area_grid_map=True,
-                ogm=True,
-                rgb=True,
-                lidar=True,
+                occupancy_grid_map=True,
+                top_down_rgb=True,
+                lidar_point_cloud=True,
                 signals=True,
                 action=ActionSpaceType.Continuous,
             )
         # Uses low dimensional observations
         elif requested_type == AgentType.StandardWithAbsoluteSteering:
             interface = AgentInterface(
-                waypoints=True,
-                neighborhood_vehicles=True,
+                waypoint_paths=True,
+                neighborhood_vehicle_states=True,
                 action=ActionSpaceType.Continuous,
             )
         elif requested_type == AgentType.Standard:
             interface = AgentInterface(
-                waypoints=True,
-                neighborhood_vehicles=True,
+                waypoint_paths=True,
+                neighborhood_vehicle_states=True,
                 action=ActionSpaceType.ActuatorDynamic,
             )
         elif requested_type == AgentType.Laner:  # The lane-following agent
             interface = AgentInterface(
-                waypoints=True,
+                waypoint_paths=True,
                 action=ActionSpaceType.Lane,
             )
         # The lane-following agent with speed and relative lane change direction
         elif requested_type == AgentType.LanerWithSpeed:
             interface = AgentInterface(
-                waypoints=True,
+                waypoint_paths=True,
                 action=ActionSpaceType.LaneWithContinuousSpeed,
             )
         # The trajectory tracking agent which receives a series of reference trajectory
         # points and speeds to follow
         elif requested_type == AgentType.Tracker:
             interface = AgentInterface(
-                waypoints=True,
+                waypoint_paths=True,
                 action=ActionSpaceType.Trajectory,
             )
         # The trajectory interpolation agent which receives a with-time-trajectory and move vehicle
@@ -392,33 +399,33 @@ class AgentInterface:
         # steering action.
         elif requested_type == AgentType.MPCTracker:
             interface = AgentInterface(
-                waypoints=True,
+                waypoint_paths=True,
                 action=ActionSpaceType.MPC,
             )
         # For boid control (controlling multiple vehicles)
         elif requested_type == AgentType.Boid:
             interface = AgentInterface(
-                waypoints=True,
-                neighborhood_vehicles=True,
+                waypoint_paths=True,
+                neighborhood_vehicle_states=True,
                 action=ActionSpaceType.MultiTargetPose,
             )
         # For empty environment, good for testing control
         elif requested_type == AgentType.Loner:
             interface = AgentInterface(
-                waypoints=True,
+                waypoint_paths=True,
                 action=ActionSpaceType.Continuous,
             )
         # Plays tag _two vehicles in the env only_
         elif requested_type == AgentType.Tagger:
             interface = AgentInterface(
-                waypoints=True,
-                neighborhood_vehicles=True,
+                waypoint_paths=True,
+                neighborhood_vehicle_states=True,
                 action=ActionSpaceType.Continuous,
             )
         # Has been useful for testing imitation learners
         elif requested_type == AgentType.Direct:
             interface = AgentInterface(
-                neighborhood_vehicles=True,
+                neighborhood_vehicle_states=True,
                 signals=True,
                 action=ActionSpaceType.Direct,
             )
@@ -430,17 +437,60 @@ class AgentInterface:
     def replace(self, **kwargs):
         """Clone this AgentInterface with the given fields updated
         >>> interface = AgentInterface(action=ActionSpaceType.Continuous) \
-                            .replace(waypoints=True)
-        >>> interface.waypoints
+                            .replace(waypoint_paths=True)
+        >>> interface.waypoint_paths
         Waypoints(...)
         """
         return replace(self, **kwargs)
 
     @property
-    def action_space(self):
-        """Deprecated. Use `action` instead."""
+    def ogm(self):
+        """Deprecated. Use `occupancy_grid_map` instead."""
+        warnings.warn(
+            "ogm property has been deprecated in favor of occupancy_grid_map.  Please update your code.",
+            category=DeprecationWarning,
+        )
+        return self.occupancy_grid_map
+
+    @property
+    def rgb(self):
+        """Deprecated. Use `top_down_rgb` instead."""
+        warnings.warn(
+            "rgb property has been deprecated in favor of top_down_rgb.  Please update your code.",
+            category=DeprecationWarning,
+        )
         # for backwards compatibility
-        return self.action
+        return self.top_down_rgb
+
+    @property
+    def lidar(self):
+        """Deprecated. Use `lidar_point_cloud` instead."""
+        warnings.warn(
+            "lidar property has been deprecated in favor of lidar_point_cloud.  Please update your code.",
+            category=DeprecationWarning,
+        )
+        # for backwards compatibility
+        return self.lidar_point_cloud
+
+    @property
+    def waypoints(self):
+        """Deprecated. Use `waypoint_paths` instead."""
+        warnings.warn(
+            "waypoints property has been deprecated in favor of waypoint_paths.  Please update your code.",
+            category=DeprecationWarning,
+        )
+        # for backwards compatibility
+        return self.waypoint_paths
+
+    @property
+    def neighborhood_vehicles(self):
+        """Deprecated. Use `neighborhood_vehicle_states` instead."""
+        warnings.warn(
+            "neighborhood_vehicles property has been deprecated in favor of neighborhood_vehicle_states.  Please update your code.",
+            category=DeprecationWarning,
+        )
+        # for backwards compatibility
+        return self.neighborhood_vehicle_states
 
     @staticmethod
     def _resolve_config(config, type_):
