@@ -45,7 +45,7 @@ def _eval_worker(name, env_config, episodes, agent_config, error_tolerant=False)
     env = gym.make(
         env_config["env"],
         scenario=env_config["scenario"],
-        **env_config["shared_params"],
+        **env_config["kwargs"],
         **agent_config["interface"],
     )
     env = Metrics(env)
@@ -92,7 +92,7 @@ def _task_iterator(env_args, benchmark_args, agent_args, log_workers):
                 ready_refs, unfinished_refs = ray.wait(unfinished_refs, num_returns=1)
                 for name, score in ray.get(ready_refs):
                     yield name, score
-            print(f"Evaluating {env_config['scenario']}...")
+            print(f"Evaluating {name}...")
             unfinished_refs.append(
                 _eval_worker.remote(
                     name=name,
@@ -116,21 +116,19 @@ def benchmark(benchmark_args, agent_args, log_workers=False):
         debug_log(bool): Whether the benchmark should log to stdout.
     """
     print(f"Starting `{benchmark_args['name']}` benchmark.")
+    message = benchmark_args.get("message")
+    if message is not None:
+        print(message)
     env_args = {}
-    for scenario in benchmark_args["standard_env"]["scenarios"]:
-        env_args[f"{scenario}"] = dict(
-            env=benchmark_args["standard_env"]["env"],
-            scenario=scenario,
-            shared_params=benchmark_args["shared_env_params"],
-        )
-    ## TODO MTA bubble environments
-    # for seed in config["bubble_env"]["scenarios"]:
-    #     env_configs[f"bubble_env_{seed}"] = partial(
-    #         env=config["bubble_env"]["env"],
-    #         scenario=seed,
-    #         shared_params=config["shared_env_params"],
-    #     )
-    # TODO MTA: naturalistic environments
+    for env_name, env_config in benchmark_args["envs"].items():
+        for scenario in env_config["scenarios"]:
+            kwargs = dict(benchmark_args.get("shared_env_kwargs", {}))
+            kwargs.update(env_config.get("kwargs", {}))
+            env_args[f"{env_name}-{scenario}"] = dict(
+                env=env_config["loc"],
+                scenario=scenario,
+                kwargs=kwargs,
+            )
     named_scores = []
 
     for name, score in _task_iterator(
@@ -168,7 +166,7 @@ def benchmark(benchmark_args, agent_args, log_workers=False):
     print(format_scores_total(named_scores, len(env_args) or 1))
 
 
-def benchmark_from_configs(benchmark_config, agent_config=None, debug_log=False):
+def benchmark_from_configs(benchmark_config, agent_config, debug_log=False):
     """Runs a benchmark given the following.
 
     Args:
@@ -180,27 +178,20 @@ def benchmark_from_configs(benchmark_config, agent_config=None, debug_log=False)
     agent_args = {}
     if agent_config:
         agent_args = load_config(agent_config)
+
+    assert agent_args, f"""
+    Cannot resolve `{agent_config}`. This should be in a location that can be resolved by python
+    in python's `sys.path`.  (e.g. `<path>/custom/__init__.py` or`<path>/custom.py`) 
+    
+    Please ensure agent configuration:
+      - file exists
+      - file path is correct
+      - contains correct data
+
+    The benchmark cannot continue."""
+
     benchmark(
         benchmark_args=benchmark_args["benchmark"],
-        agent_args={**benchmark_args["agent"], **agent_args},
+        agent_args=agent_args["agent"],
         log_workers=debug_log,
     )
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser("Driving SMARTS Competition")
-    parser.add_argument(
-        "--benchmark-config",
-        help="The benchmark configuration file",
-        default=DEFAULT_CONFIG,
-        type=str,
-    )
-    parser.add_argument(
-        "--log-workers",
-        help="If the workers should log",
-        default=False,
-        type=bool,
-    )
-    args = parser.parse_args()
-
-    benchmark_from_configs(args.config, debug_log=args.log_workers)

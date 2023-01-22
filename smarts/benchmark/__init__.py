@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional
 BENCHMARK_LISTING_FILE = Path(__file__).parent.absolute() / "benchmark_listing.yaml"
 
 
-def auto_install(benchmark_spec: Dict[str, Any]):
+def auto_install_requirements(benchmark_spec: Dict[str, Any]):
     """Install dependencies as specified by the configuration given."""
     # TODO MTA: add configuration to configuration file
     requirements: List[str] = benchmark_spec.get("requirements", [])
@@ -73,6 +73,7 @@ def run_benchmark(
     agent_config: Path,
     benchmark_listing: Path,
     debug_log: bool = False,
+    auto_install: bool = False,
 ):
     """Runs a benchmark with the given configuration. Use `scl benchmark list` to see the available
     benchmarks.
@@ -99,7 +100,9 @@ def run_benchmark(
         ) from err
 
     benchmark_spec = _benchmark_at_version(benchmark_group, benchmark_version)
-    auto_install(benchmark_spec)
+
+    if auto_install:
+        auto_install_requirements(benchmark_spec)
 
     module, _, name = benchmark_spec["entrypoint"].rpartition(".")
     entrypoint = _get_entrypoint(module, name)

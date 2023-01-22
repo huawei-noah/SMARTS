@@ -34,6 +34,7 @@ try:
     )
 except ModuleNotFoundError:
     import warnings
+
     warnings.warn(
         "Gymnasium cannot be imported likely due to numpy version compatibility `numpy>=1.21.0`. "
         "Gymnasium environments will be unavailable. Gymnasium imports may cause a crash."

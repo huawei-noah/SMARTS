@@ -98,7 +98,7 @@ class HiWayEnvV1(gym.Env):
             will be simulated.
         agent_interfaces (Dict[str, AgentInterface]): Specification of the agents
             needs that will be used to configure the environment.
-        sim_name (Optional[str], optional): Simulation name. Defaults to
+        sim_name (str, optional): Simulation name. Defaults to
             None.
         scenarios_order (ScenarioOrder, optional): Configures the order that
             scenarios will provided over successive resets.
@@ -106,16 +106,23 @@ class HiWayEnvV1(gym.Env):
             Envision. Defaults to False.
         visdom (bool, optional): If True, enables visualization of observed
             RGB images in Visdom. Defaults to False.
-        fixed_timestep_sec (Optional[float], optional): Step duration for
+        fixed_timestep_sec (float, optional): Step duration for
             all components of the simulation. May be None if time deltas
             are externally-driven. Defaults to None.
         seed (int, optional): Random number generator seed. Defaults to 42.
+        sumo_options (SumoOptions, Dict[str, any]): The configuration for the
+            sumo instance. A dictionary with the fields can be used instead.
+            See :class:`SumoOptions`.
         visualization_client_builder: A method that must must construct an
             object that follows the Envision interface. Allows tapping into a
             direct data stream from the simulation.
-        zoo_addrs (Optional[str], optional): List of (ip, port) tuples of
+        zoo_addrs (str, optional): List of (ip, port) tuples of
             zoo server, used to instantiate remote social agents. Defaults
             to None.
+        observation_options (ObservationOptions | string): Defines the options
+            for how the formatting matches the observation space. String version
+            can be used instead. See :class:`ObservationOptions`. Defaults to
+            `ObservationOptions.default`.
     """
 
     metadata = {"render.modes": ["human"]}
@@ -143,10 +150,12 @@ class HiWayEnvV1(gym.Env):
         visdom: bool = False,
         fixed_timestep_sec: Optional[float] = None,
         seed: int = 42,
-        sumo_options: SumoOptions = SumoOptions(),
+        sumo_options: Union[Dict[str, Any], SumoOptions] = SumoOptions(),
         visualization_client_builder: partial = DEFAULT_VISUALIZATION_CLIENT_BUILDER,
         zoo_addrs: Optional[str] = None,
-        observation_options: ObservationOptions = ObservationOptions.default,
+        observation_options: Union[
+            ObservationOptions, str
+        ] = ObservationOptions.default,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
@@ -177,12 +186,14 @@ class HiWayEnvV1(gym.Env):
 
         traffic_sims = []
         if Scenario.any_support_sumo_traffic(scenarios):
+            if isinstance(sumo_options, tuple):
+                sumo_options = sumo_options._asdict()
             sumo_traffic = SumoTrafficSimulation(
-                headless=sumo_options.headless,
+                headless=sumo_options["headless"],
                 time_resolution=fixed_timestep_sec,
-                num_external_sumo_clients=sumo_options.num_external_clients,
-                sumo_port=sumo_options.port,
-                auto_start=sumo_options.auto_start,
+                num_external_sumo_clients=sumo_options["num_external_clients"],
+                sumo_port=sumo_options["port"],
+                auto_start=sumo_options["auto_start"],
             )
             traffic_sims += [sumo_traffic]
         smarts_traffic = LocalTrafficProvider()
@@ -191,6 +202,8 @@ class HiWayEnvV1(gym.Env):
         # TODO: set action space
 
         # TODO: set observation space
+        if isinstance(observation_options, str):
+            observation_options = ObservationOptions[observation_options]
         self._observations_formatter = ObservationsSpaceFormat(
             agent_interfaces, observation_options
         )

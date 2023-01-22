@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 from pathlib import Path
+from typing import Optional
 
 import click
 
@@ -40,9 +41,27 @@ def benchmark_cli():
     "--debug-log",
     is_flag=True,
     default=False,
-    help="Log the benchmark.",
+    help="Log the benchmark in stdout.",
 )
-def run(benchmark_id: str, agent_config: str, debug_log: bool):
+@click.option(
+    "--benchmark-listing",
+    type=str,
+    default=None,
+    help="Directs to a different listing file.",
+)
+@click.option(
+    "--auto-install",
+    is_flag=True,
+    default=False,
+    help="Attempt to auto install requirements.",
+)
+def run(
+    benchmark_id: str,
+    agent_config: str,
+    debug_log: bool,
+    benchmark_listing: Optional[str],
+    auto_install: bool,
+):
     """This runs a given benchmark.
 
     Use `scl benchmark list` to see the available benchmarks.
@@ -51,7 +70,7 @@ def run(benchmark_id: str, agent_config: str, debug_log: bool):
     <benchmark_id> is formatted like BENCHMARK_NAME==BENCHMARK_VERSION.
     <agent_config> is the path to an agent configuration file.
 
-    An example use: `scl benchmark run driving_smarts==0.0 ./baselines/driving_smarts/v0/agent_config.yaml`
+    An example use: `scl benchmark run --auto-install driving_smarts==0.0 ./baselines/driving_smarts/v0/agent_config.yaml`
     """
     from smarts.benchmark import BENCHMARK_LISTING_FILE, run_benchmark
 
@@ -61,8 +80,11 @@ def run(benchmark_id: str, agent_config: str, debug_log: bool):
         benchmark_id,
         float(benchmark_version),
         Path(agent_config),
-        BENCHMARK_LISTING_FILE,
+        Path(benchmark_listing)
+        if benchmark_listing is not None
+        else BENCHMARK_LISTING_FILE,
         debug_log,
+        auto_install=auto_install,
     )
 
 
