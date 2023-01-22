@@ -10,6 +10,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [1.0.0] 2023-01-22
+### Added
 - Exposed `.glb` file metadata through the scenario `Scenario.map_glb_metadata` attribute.
 - Added single vehicle `Trip` into type. 
 - Added new video record ultility using moviepy.
@@ -50,7 +58,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - SUMO is now supported up to version `1.15.0`. Versions of SUMO `1.13.0` and onward are forced to reset rather than reload because of errors with hot resetting versions starting with `1.13.0`. 
 ### Security
 
-## [0.7.0rc0]
+## [0.7.0rc0] 2022-10-31
 ### Added
 - Added a basic background traffic ("social vehicle") provider as an alternative to the SUMO traffic simulator.  This can be selected using the new `"engine"` argument to `Traffic` in Scenario Studio.
 - Added a `multi-scenario-v0` environment which can build any of the following scenario, namely, `1_to_2lane_left_turn_c`, `1_to_2lane_left_turn_t`, `3lane_merge_multi_agent`, `3lane_merge_single_agent`, `3lane_cruise_multi_agent`, `3lane_cruise_single_agent`, `3lane_cut_in`, and `3lane_overtake`. Additional scenarios can also be built by supplying the paths to the scenario directories.
@@ -96,7 +104,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed a bug where envision would not work in some versions of python due to nuances of `importlib.resource.path()`.
 - Fixed an issue with incorrect vehicle sizes in Envision.
 
-## [0.6.1]
+## [0.6.1] 2022-08-02
 ### Added
 - Added standard intersection environment, `intersection-v0`, for reinforcement learning where agents have to make an unprotected left turn in the presence of traffic.
 - Added an online RL example for solving the `intersection-v0` environment, using PPO algorithm from Stable Baselines3 library. An accompanying Colab example is also provided.
@@ -114,7 +122,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Unpack utility now unpacks dataclass attributes.
 - Trap manager now uses elapsed sim time rather than step delta to associate with time.
 
-## [0.6.1rc1] 15-04-18
+## [0.6.1rc1] 2022-04-18
 ### Added
 - Added example scenario for importing the NGSIM `peachtree` dataset.
 - Added example scenario for importing the INTERACTION `merging` dataset
@@ -128,7 +136,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed Issue #1321 such that numpy's `sliding_window_view()` is no longer needed for NGSIM traffic histories.
 - Fixed NGSIM traffic history import bugs (see Issues #1354 and #1402).
 
-## [0.6.1rc0] 15-04-16
+## [0.6.1rc0] 2022-04-16
 ### Added
 - Added `smarts/waymo/waymo_browser.py`, a text-based utility to explore and export scenarios from the Waymo Motion dataset to SMARTS scenarios. 
 - Added `get_vehicle_start_time()` method for scenarios with traffic history data.  See Issue #1210.
