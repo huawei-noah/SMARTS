@@ -12,7 +12,9 @@ from .waypoint_tracking_agent import WaypointTrackingAgent
 register(
     locator="non-interactive-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
-        interface=AgentInterface(waypoints=True, action=ActionSpaceType.TargetPose),
+        interface=AgentInterface(
+            waypoint_paths=True, action=ActionSpaceType.TargetPose
+        ),
         agent_builder=NonInteractiveAgent,
         agent_params=kwargs,
     ),

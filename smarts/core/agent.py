@@ -21,7 +21,7 @@ import logging
 import warnings
 from typing import Any, Callable
 
-from smarts.core.sensors import Observation
+from smarts.core.observations import Observation
 
 warnings.simplefilter("once")
 

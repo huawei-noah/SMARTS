@@ -21,16 +21,17 @@
 import logging
 import os
 import warnings
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Optional, Sequence, Set, Tuple, Union
 
 import gym
 
 from envision.client import Client as Envision
 from envision.data_formatter import EnvisionDataFormatterArgs
 from smarts.core import seed as smarts_seed
+from smarts.core.agent_interface import AgentInterface
 from smarts.core.local_traffic_provider import LocalTrafficProvider
+from smarts.core.observations import Observation
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
@@ -44,7 +45,8 @@ class HiWayEnv(gym.Env):
         scenarios (Sequence[str]):  A list of scenario directories that
             will be simulated.
         agent_specs (Dict[str, AgentSpec]): Specification of the agents
-            that will run in the environment.
+            that will run in the environment. (Deprecated in favor of
+            agent_interfaces)
         sim_name (Optional[str], optional): Simulation name. Defaults to
             None.
         shuffle_scenarios (bool, optional): If true, order of scenarios
@@ -74,6 +76,8 @@ class HiWayEnv(gym.Env):
             to None.
         timestep_sec (Optional[float], optional): [description]. Defaults
             to None.
+        agent_interfaces (Dict[str, AgentInterface]): Specification of the agents
+            needs that will be used to configure the environment.
     """
 
     metadata = {"render.modes": ["human"]}
@@ -82,7 +86,7 @@ class HiWayEnv(gym.Env):
     def __init__(
         self,
         scenarios: Sequence[str],
-        agent_specs: Dict[str, AgentSpec],
+        agent_specs: Optional[Dict[str, AgentSpec]] = None,  # (deprecated)
         sim_name: Optional[str] = None,
         shuffle_scenarios: bool = True,
         headless: bool = True,
@@ -96,6 +100,7 @@ class HiWayEnv(gym.Env):
         envision_endpoint: Optional[str] = None,
         envision_record_data_replay_path: Optional[str] = None,
         zoo_addrs: Optional[str] = None,
+        agent_interfaces: Optional[Dict[str, AgentInterface]] = None,
         timestep_sec: Optional[
             float
         ] = None,  # for backwards compatibility (deprecated)
@@ -108,21 +113,35 @@ class HiWayEnv(gym.Env):
                 "timestep_sec has been deprecated in favor of fixed_timestep_sec.  Please update your code.",
                 category=DeprecationWarning,
             )
+        if agent_specs is not None:
+            warnings.warn(
+                "agent_specs has been deprecated in favor of agent_interfaces.  Please update your code.",
+                category=DeprecationWarning,
+            )
         if not fixed_timestep_sec:
             fixed_timestep_sec = timestep_sec or 0.1
 
-        self._agent_specs = agent_specs
+        self._agent_interfaces = {}
+        if isinstance(agent_interfaces, dict):
+            self._agent_specs = {
+                a_id: AgentSpec(a_inter) for a_id, a_inter in agent_interfaces.items()
+            }
+        elif isinstance(agent_specs, dict):
+            self._agent_specs = agent_specs
+            self._agent_interfaces = {
+                agent_id: agent.interface for agent_id, agent in agent_specs.items()
+            }
+        else:
+            raise TypeError(
+                f"agent_interface must be supplied as `{Dict[str, AgentInterface]}`."
+            )
         self._dones_registered = 0
 
         self._scenarios_iterator = Scenario.scenario_variations(
             scenarios,
-            list(agent_specs.keys()),
+            list(self._agent_interfaces.keys()),
             shuffle_scenarios,
         )
-
-        agent_interfaces = {
-            agent_id: agent.interface for agent_id, agent in agent_specs.items()
-        }
 
         envision_client = None
         if not headless or envision_record_data_replay_path:
@@ -156,13 +175,30 @@ class HiWayEnv(gym.Env):
         traffic_sims += [smarts_traffic]
 
         self._smarts = SMARTS(
-            agent_interfaces=agent_interfaces,
+            agent_interfaces=self._agent_interfaces,
             traffic_sims=traffic_sims,
             envision=envision_client,
             visdom=visdom_client,
             fixed_timestep_sec=fixed_timestep_sec,
             zoo_addrs=zoo_addrs,
         )
+
+    @property
+    def agent_ids(self) -> Set[str]:
+        """Agent ids of all agents that potentially will be in the environment.
+        Returns:
+            (Set[str]): Agent ids.
+        """
+        return set(self._agent_interfaces)
+
+    @property
+    def agent_interfaces(self) -> Dict[str, AgentInterface]:
+        """Agents' interfaces used in this simulation.
+
+        Returns:
+            (Dict[str, AgentInterface]): Agents' interfaces.
+        """
+        return self._agent_interfaces
 
     @property
     def agent_specs(self) -> Dict[str, AgentSpec]:
@@ -236,7 +272,11 @@ class HiWayEnv(gym.Env):
         observations, rewards, dones, extras = self._smarts.step(agent_actions)
 
         infos = {
-            agent_id: {"score": value, "env_obs": observations[agent_id]}
+            agent_id: {
+                "score": value,
+                "env_obs": observations[agent_id],
+                "done": dones[agent_id],
+            }
             for agent_id, value in extras["scores"].items()
         }
 

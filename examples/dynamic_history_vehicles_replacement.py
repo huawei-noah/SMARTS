@@ -78,7 +78,9 @@ def main(
         def on_trigger(ctx: Dict[str, Any]):
             # Define agent specs to be assigned
             agent_spec = AgentSpec(
-                interface=AgentInterface(waypoints=True, action=ActionSpaceType.Lane),
+                interface=AgentInterface(
+                    waypoint_paths=True, action=ActionSpaceType.Lane
+                ),
                 agent_builder=BasicAgent,
             )
 

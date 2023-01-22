@@ -148,12 +148,12 @@ Alternatively, users may customize their agent `interface` from scratch, like:
 
     agent_interface = AgentInterface(
         max_episode_steps=1000,
-        waypoints=True,
-        neighborhood_vehicles=True,
+        waypoint_paths=True,
+        neighborhood_vehicle_states=True,
         drivable_area_grid_map=True,
-        ogm=True,
-        rgb=True,
-        lidar=False,
+        occupancy_grid_map=True,
+        top_down_rgb=True,
+        lidar_point_cloud=False,
         action=ActionSpaceType.Continuous,
     )
 
@@ -166,12 +166,12 @@ Further customization of individual `interface` options of :class:`~smarts.core.
 
     agent_interface = AgentInterface(
         max_episode_steps=1000,
-        waypoints=Waypoints(lookahead=50), # Lookahead 50 meters.
-        neighborhood_vehicles=NeighborhoodVehicles(radius=50), # Get neighborhood vehicles within 50 meters.
+        waypoint_paths=Waypoints(lookahead=50), # lookahead 50 meters
+        neighborhood_vehicle_states=NeighborhoodVehicles(radius=50), # only get neighborhood info with 50 meters.
         drivable_area_grid_map=True,
-        ogm=True,
-        rgb=RGB(height=128,width=128,resolution=100/128), # 128x128 pixels RGB image representing a 100x100 meters area.
-        lidar=False,
+        occupancy_grid_map=True,
+        top_down_rgb=RGB(height=128,width=128,resolution=100/128), # 128x128 pixels RGB image representing a 100x100 meters area.
+        lidar_point_cloud=False,
         action=ActionSpaceType.Continuous,
     )
 

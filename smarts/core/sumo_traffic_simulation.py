@@ -431,7 +431,7 @@ class SumoTrafficSimulation(TrafficProvider):
         return self._traci_conn is not None and self._traci_conn.connected
 
     @property
-    def action_spaces(self):
+    def actions(self):
         # Unify interfaces with other providers
         return {}
 

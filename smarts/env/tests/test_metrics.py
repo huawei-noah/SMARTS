@@ -23,7 +23,7 @@
 import dataclasses
 from unittest import mock
 
-import gym
+import gymnasium as gym
 import numpy as np
 import pytest
 
@@ -31,7 +31,7 @@ from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Point
 from smarts.core.plan import EndlessGoal, Goal, Mission, PositionalGoal, Start
-from smarts.env.wrappers.metrics import Metrics
+from smarts.env.gymnasium.wrappers.metrics import Metrics
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -39,9 +39,9 @@ def _intrfc_improper():
     return [
         {"accelerometer": False},
         {"max_episode_steps": None},
-        {"neighborhood_vehicles": False},
+        {"neighborhood_vehicle_states": False},
         {"road_waypoints": False},
-        {"waypoints": False},
+        {"waypoint_paths": False},
         {
             "done_criteria": DoneCriteria(
                 collision=False,
@@ -72,8 +72,8 @@ def get_agent_spec(request):
             agents_alive=None,
         ),
         max_episode_steps=5,
-        neighborhood_vehicles=True,
-        waypoints=True,
+        neighborhood_vehicle_states=True,
+        waypoint_paths=True,
         road_waypoints=True,
     )
     return AgentSpec(interface=dataclasses.replace(base_intrfc, **request.param))
@@ -110,13 +110,13 @@ def get_scenario(request):
 @pytest.fixture
 def make_env(get_agent_spec, get_scenario):
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=[get_scenario[0]],
-        agent_specs={
-            f"AGENT_{agent_id}": get_agent_spec for agent_id in range(get_scenario[1])
+        agent_interfaces={
+            f"AGENT_{agent_id}": get_agent_spec.interface
+            for agent_id in range(get_scenario[1])
         },
         headless=True,
-        sumo_headless=True,
     )
     yield env
     env.close()
@@ -175,20 +175,21 @@ def test_end_in_off_road(make_env):
 
     # Verify that env.score() can be computed when vehicle goes off road.
     env = Metrics(env=make_env)
-    obs = env.reset()
-    agent_name = next(iter(env.agent_specs.keys()))
+    obs, _ = env.reset()
+    agent_name = next(iter(env.agent_interfaces.keys()))
     dones = {"__all__": False}
     while not dones["__all__"]:
         actions = {
             agent_name: np.append(
-                obs[agent_name].ego_vehicle_state.position[:2] + np.array([0.5, -0.8]),
-                [obs[agent_name].ego_vehicle_state.heading, 0.1],
+                obs[agent_name]["ego_vehicle_state"]["position"][:2]
+                + np.array([0.5, -0.8]),
+                [obs[agent_name]["ego_vehicle_state"]["heading"], 0.1],
             )
         }
-        obs, _, dones, _ = env.step(actions)
-    assert obs[agent_name].events.off_road, (
+        obs, _, dones, _, _ = env.step(actions)
+    assert obs[agent_name]["events"]["off_road"], (
         "Expected vehicle to go off road, but it did not. "
-        f"Events: {obs[agent_name].events}."
+        f"Events: {obs[agent_name]['events']}."
     )
     env.score()
 
@@ -199,7 +200,7 @@ def test_end_in_off_road(make_env):
     assert counts.goals == 0
     assert counts.episodes == 1
     assert counts.steps == 3
-    assert counts.max_steps == env.agent_specs[agent_name].interface.max_episode_steps
+    assert counts.max_steps == env.agent_interfaces[agent_name].max_episode_steps
 
 
 @pytest.mark.parametrize(
@@ -223,24 +224,27 @@ def test_end_in_off_route(make_env):
         ),
     ):
         env = Metrics(env=make_env)
-        obs = env.reset()
-        agent_name = next(iter(env.agent_specs.keys()))
+        obs, _ = env.reset()
+        agent_name = next(iter(env.agent_interfaces.keys()))
         dones = {"__all__": False}
         while not dones["__all__"]:
             actions = {
                 agent_name: np.append(
-                    obs[agent_name].ego_vehicle_state.position[:2] + np.array([1, 0]),
-                    [obs[agent_name].ego_vehicle_state.heading, 0.1],
+                    obs[agent_name]["ego_vehicle_state"]["position"][:2]
+                    + np.array([1, 0]),
+                    [obs[agent_name]["ego_vehicle_state"]["heading"], 0.1],
                 )
             }
-            obs, _, dones, _ = env.step(actions)
-        assert obs[agent_name].ego_vehicle_state.lane_id == "edge-east-WE_0", (
+            obs, _, dones, _, _ = env.step(actions)
+        assert (
+            obs[agent_name]["ego_vehicle_state"]["lane_id"].rstrip() == "edge-east-WE_0"
+        ), (
             "Expected vehicle to drive off route, but it is at lane: "
-            f"{obs[agent_name].ego_vehicle_state.lane_id}."
+            f"{obs[agent_name]['ego_vehicle_state']['lane_id']}."
         )
-        assert obs[agent_name].events.off_route, (
+        assert obs[agent_name]["events"]["off_route"], (
             "Expected vehicle to go off route, but it did not. "
-            f"Events: {obs[agent_name].events}."
+            f"Events: {obs[agent_name]['events']}."
         )
         env.score()
 
@@ -260,21 +264,24 @@ def test_end_in_junction(make_env):
         ),
     ):
         env = Metrics(env=make_env)
-        obs = env.reset()
+        obs, _ = env.reset()
         agent_name = next(iter(obs.keys()))
         actions = {
             agent_id: np.array([-1.76, 2.05, -0.91, 0.1]) for agent_id in obs.keys()
         }
-        obs, _, dones, _ = env.step(actions)
+        obs, _, dones, _, _ = env.step(actions)
         assert (
-            obs[agent_name].ego_vehicle_state.lane_id == ":junction-intersection_1_0"
+            obs[agent_name]["ego_vehicle_state"]["lane_id"].rstrip()
+            == ":junction-intersection_1_0"
         ), (
             "Expected vehicle to be inside junction, but it is at lane: "
-            f"{obs[agent_name].ego_vehicle_state.lane_id}."
+            f"{obs[agent_name]['ego_vehicle_state']['lane_id']}."
         )
-        assert obs[agent_name].events.reached_max_episode_steps and dones["__all__"], (
+        assert (
+            obs[agent_name]["events"]["reached_max_episode_steps"] and dones["__all__"]
+        ), (
             "Expected vehicle to reach max episode steps and become done, but "
-            f"it did not. Dones: {dones}. Events: {obs[agent_name].events}."
+            f"it did not. Dones: {dones}. Events: {obs[agent_name]['events']}."
         )
         env.score()
 
@@ -287,13 +294,15 @@ def test_records_and_scores(make_env):
     # Note:
     #   env.score() is only callable after >=1 episode. Hence step through 1 episode.
     env = Metrics(env=make_env)
-    obs = env.reset()
+    obs, _ = env.reset()
     agent_name = next(iter(obs.keys()))
-    for _ in range(env.agent_specs[agent_name].interface.max_episode_steps):
+    for _ in range(env.agent_interfaces[agent_name].max_episode_steps):
         actions = {
-            agent_name: np.append(agent_obs.ego_vehicle_state.position[:2], [0, 0.1])
+            agent_name: np.append(
+                agent_obs["ego_vehicle_state"]["position"][:2], [0, 0.1]
+            )
             for agent_name, agent_obs in obs.items()
         }
-        obs, _, _, _ = env.step(actions)
+        obs, _, _, _, _ = env.step(actions)
     env.records()
     env.score()

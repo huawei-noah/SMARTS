@@ -19,8 +19,9 @@ import smarts_env
 import tensorflow as tf
 from ruamel.yaml import YAML
 
-import utils
-from cli.studio import _build_all_scenarios
+from cli.studio import build_scenarios
+
+from . import utils
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=PendingDeprecationWarning)
@@ -51,7 +52,7 @@ def main(args: argparse.Namespace):
     )
 
     # Build the scenarios.
-    _build_all_scenarios(
+    build_scenarios(
         clean=True,
         scenarios=[config_env["scenarios_dir"]],
         seed=_SEED,

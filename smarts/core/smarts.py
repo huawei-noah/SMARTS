@@ -48,10 +48,10 @@ from .bubble_manager import BubbleManager
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
+from .observations import Collision, Observation
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
-from .sensors import Collision, Observation
 from .signal_provider import SignalProvider
 from .signals import SignalLightState, SignalState
 from .sumo_traffic_simulation import SumoTrafficSimulation
@@ -115,6 +115,7 @@ class SMARTS(ProviderManager):
         external_provider: bool = False,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
+        self._log.setLevel(level=logging.ERROR)
         self._sim_id = Id.new("smarts")
         self._is_setup = False
         self._is_destroyed = False
@@ -610,7 +611,7 @@ class SMARTS(ProviderManager):
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         prev_provider = self._provider_for_actor(vehicle.id)
         for provider in self.providers:
-            if interface.action_space in provider.action_spaces:
+            if interface.action in provider.actions:
                 state = VehicleState(
                     actor_id=vehicle.id,
                     source=provider.source_str,
@@ -915,7 +916,7 @@ class SMARTS(ProviderManager):
     @property
     def dynamic_action_spaces(self) -> Set[ActionSpaceType]:
         """The set of vehicle action spaces that use dynamics (physics)."""
-        return self._agent_physics_provider.action_spaces
+        return self._agent_physics_provider.actions
 
     @property
     def traffic_sim(self) -> Optional[TrafficProvider]:
@@ -1188,7 +1189,7 @@ class SMARTS(ProviderManager):
 
             interface = self._agent_manager.agent_interface_for_agent_id(agent_id)
             assert interface, f"agent {agent_id} has no interface"
-            if interface.action_space not in provider.action_spaces:
+            if interface.action not in provider.actions:
                 continue
             assert isinstance(provider, AgentsProvider)
 

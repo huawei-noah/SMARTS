@@ -97,7 +97,7 @@ class LocalTrafficProvider(TrafficProvider):
         self._sim = weakref.ref(manager)
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
+    def actions(self) -> Set[ActionSpaceType]:
         return set()
 
     def manages_actor(self, actor_id: str) -> bool:

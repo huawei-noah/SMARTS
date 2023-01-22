@@ -38,7 +38,7 @@ def _make_agent_specs(num_agent):
         "AGENT_"
         + str(agent_id): AgentSpec(
             interface=AgentInterface(
-                rgb=RGB(),
+                top_down_rgb=RGB(),
                 action=ActionSpaceType.Lane,
             ),
             agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
@@ -133,6 +133,6 @@ def test_reset_and_step(base_env):
     assert obs.shape == ma_obs_space[agent_id].shape
     assert isinstance(reward, float)
     assert type(done) is bool
-    assert set(info.keys()) == set(["score", "env_obs"])
+    assert set(info.keys()) == set(["score", "env_obs", "done"])
 
     env.close()

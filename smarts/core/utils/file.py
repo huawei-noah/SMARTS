@@ -25,7 +25,7 @@ import shutil
 import struct
 from contextlib import contextmanager
 from ctypes import c_int64
-from typing import Generator
+from typing import Any, Generator
 
 import smarts
 
@@ -52,6 +52,16 @@ def isnamedtupleinstance(x):
     if not isinstance(f, tuple):
         return False
     return all(type(n) == str for n in f)
+
+
+def replace(obj: Any, **kwargs):
+    """Replace dataclasses and named tuples with the same interface."""
+    if isnamedtupleinstance(obj):
+        return obj._replace(**kwargs)
+    elif dataclasses.is_dataclass(obj):
+        return dataclasses.replace(obj, **kwargs)
+
+    raise ValueError("Must be a namedtuple or dataclass.")
 
 
 def isdataclass(x):

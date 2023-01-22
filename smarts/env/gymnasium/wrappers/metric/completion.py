@@ -19,16 +19,19 @@
 # THE SOFTWARE.
 
 import logging
+import warnings
 from dataclasses import dataclass
-from typing import Callable
+from typing import Any, Callable, Dict
 
 from smarts.core.coordinates import Heading, Point
+from smarts.core.observations import Observation
 from smarts.core.plan import Mission, Plan, PlanningError, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
-from smarts.core.sensors import Observation
 from smarts.core.utils.math import running_mean
 
 logger = logging.getLogger(__file__)
+
+MAXIMUM_OFFROAD_DIST = 300
 
 
 @dataclass(frozen=True)
@@ -78,7 +81,7 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
             ),
         )
         plan = Plan(road_map=road_map, mission=mission, find_route=False)
-        plan.create_route(mission=mission, radius=5)
+        plan.create_route(mission=mission, radius=MAXIMUM_OFFROAD_DIST)
         from_route_point = RoadMap.Route.RoutePoint(pt=start)
         to_route_point = RoadMap.Route.RoutePoint(pt=end)
 
@@ -97,8 +100,8 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
 
     try:
         dist_tot = _get_dist(point_a, point_b)
-    except PlanningError as e:
-        if e.args[0].startswith("Unable to find a route"):
+    except PlanningError as err:
+        if err.args[0].startswith("Unable to find a route"):
             # Vehicle might end (i) in a one-way road, or (ii) in a road without
             # u-turn, causing the route planner to fail. When there is no legal
             # route, the walkable road distance in the reverse direction is
@@ -112,7 +115,16 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
                 point_b,
                 point_a,
             )
-
+        else:
+            raise
+    except CompletionError:
+        dist_tot = 1e10
+        warnings.warn(
+            "completion.get dist(): Did not find a route from "
+            f"{point_a} to {point_b}, because too far off road. "
+            f"Agent vehicle is more than {MAXIMUM_OFFROAD_DIST}m off road."
+            "This will cause a large penalty in completion score.",
+        )
     return dist_tot
 
 
@@ -121,17 +133,15 @@ def _dist_remainder():
     step: int = 0
 
     def func(
-        road_map: RoadMap, obs: Observation, initial_compl: Completion
+        road_map: RoadMap, obs: Dict[str, Any], initial_compl: Completion
     ) -> Completion:
         nonlocal mean, step
 
-        if obs.events.reached_goal:
+        if obs["events"]["reached_goal"]:
             dist = 0
         else:
-            cur_pos = Point(*obs.ego_vehicle_state.position)
-            # pytype: disable=attribute-error
-            goal_pos = obs.ego_vehicle_state.mission.goal.position
-            # pytype: enable=attribute-error
+            cur_pos = Point(*obs["ego_vehicle_state"]["position"])
+            goal_pos = Point(*obs["ego_vehicle_state"]["mission"]["goal_position"])
             dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
 
         # Cap remainder distance

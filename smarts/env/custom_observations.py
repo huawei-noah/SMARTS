@@ -24,7 +24,7 @@ import gym
 import numpy as np
 
 from smarts.core.coordinates import Heading
-from smarts.core.sensors import Observation
+from smarts.core.observations import Observation
 from smarts.core.utils.math import squared_dist, vec_2d, vec_to_radians
 
 

@@ -55,7 +55,7 @@ class FormatAction(gym.ActionWrapper):
         self._wrapper, action_space = space_map.get(space.name)()
 
         self.action_space = gym.spaces.Dict(
-            {agent_id: action_space for agent_id in self.agent_specs.keys()}
+            {agent_id: action_space for agent_id in self.agent_interfaces.keys()}
         )
 
     def action(self, action):

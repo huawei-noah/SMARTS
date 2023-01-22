@@ -1,4 +1,4 @@
-# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2023. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +23,14 @@ import logging
 import math
 import os
 import pathlib
+from functools import partial
 from typing import Any, Dict, Optional, Tuple
 
-import gym
+import gymnasium as gym
 import numpy as np
 
+from envision.client import Client as Envision
+from envision.client import EnvisionDataFormatterArgs
 from smarts import sstudio
 from smarts.core.agent_interface import (
     OGM,
@@ -39,109 +42,165 @@ from smarts.core.agent_interface import (
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
-from smarts.env.hiway_env import HiWayEnv
-from smarts.zoo.agent_spec import AgentSpec
+from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
 
+SUPPORTED_ACTION_TYPES = (
+    ActionSpaceType.RelativeTargetPose,
+    ActionSpaceType.TargetPose,
+)
+MAXIMUM_SPEED_MPS = 28  # 28m/s = 100.8 km/h. This is a safe maximum speed.
 
-def multi_scenario_v0_env(
+
+def driving_smarts_competition_v0_env(
     scenario: str,
     img_meters: int = 64,
     img_pixels: int = 256,
-    action_space="TargetPose",
+    action_space="RelativeTargetPose",
     headless: bool = True,
+    seed: int = 42,
     visdom: bool = False,
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
 ):
     """An environment with a mission to be completed by a single or multiple ego agents.
 
-    **Observation space for each agent**
+    Observation space for each agent:
 
         A ``smarts.core.sensors.Observation`` is returned as observation.
 
-    **Action space for each agent**
+    Action space for each agent:
+    .. note::
 
-        A ``smarts.core.controllers.ActionSpaceType.TargetPose``, which is a
-        sequence of [x-coordinate, y-coordinate, heading, and time-delta]. Use
-        time-delta = 0.1 .
+        A ``smarts.core.controllers.ActionSpaceType.RelativeTargetPose``, which is a
+        sequence of [Δx, Δy, heading] or a
+        ``smarts.core.controllers.ActionSpaceType.TargetPose``, which is a
+            sequence of [x-coordinate, y-coordinate, heading, 0.1].
 
-        Type is ``gym.spaces.Box(low=np.array([-1e10, -1e10, -π, 0]), high=np.array([1e10, 1e10, π, 1e10]), dtype=np.float32)``.
+        Type(RelativeTargetPose):
 
-        +------------------------------------------------------+---------------+
-        | Action                                               | Value range   |
-        +======================================================+===============+
-        | Ego's next x-coordinate on the map                   | [-1e10, 1e10] |
-        +------------------------------------------------------+---------------+
-        | Ego's next y-coordinate on the map                   | [-1e10, 1e10] |
-        +------------------------------------------------------+---------------+
-        | Ego's next heading with respect to the map's axes    | [-π, π]       |
-        +------------------------------------------------------+---------------+
-        | Time delta to reach the given pose                   | [0, 1e10]     |
-        +------------------------------------------------------+---------------+
+        .. code-block:: python
 
-    **Reward**
+            gym.spaces.Box(
+                    low=np.array([-28, -28, -π]),
+                    high=np.array([28, 28, π]),
+                    dtype=np.float32
+                    )
 
-        Reward is distance travelled (in meters) in each step, including the
-        termination step.
+        .. list-table:: Table
+            :widths: 25 25
+            :header-rows: 1
 
-    **Episode termination**
+            * - Action
+              - Value range
+            * - Ego's next x-coordinate on the map
+              - [-2.8m/s,2.8m/s]
+            * - Ego's next y-coordinate on the map
+              - [-2.8m/s,2.8m/s]
+            * - Ego's next heading with respect to the map's axes
+              - [-π,π]
+
+        Type(TargetPose):
+
+        .. code-block:: python
+
+            gym.spaces.Box(
+                    low=np.array([-1e10, -1e10, -π, 0.1]),
+                    high=np.array([1e10, 1e10, π], 0.1),
+                    dtype=np.float32
+                    )
+
+        .. list-table:: Table
+            :widths: 25 25
+            :header-rows: 1
+
+            * - Action
+              - Value range
+            * - Ego's next x-coordinate on the map
+              - [-1e10m,1e10m]
+            * - Ego's next y-coordinate on the map
+              - [-1e10m,1e10m]
+            * - Ego's next heading with respect to the map's axes
+              - [-π,π]
+            * - The time delta snapped to 0.1 seconds.
+              - [0.1,0.1]
+
+    Reward:
+
+        Reward is distance travelled (in meters) in each step, including the termination step.
+
+    Episode termination:
+
+    .. note::
 
         Episode is terminated if any of the following occurs.
 
-        + Steps per episode exceed 800.
-        + Agent collides, drives off road, drives off route, or drives on wrong way.
+            1. Steps per episode exceed 800.
 
-    **Solved requirement**
+            2. Agent collides, drives off road, drives off route, or drives on wrong way.
+
+    Solved requirement:
+
+    .. note::
 
         If agent successfully completes the mission then ``info["score"]`` will
         equal 1, else it is 0. Considered solved when ``info["score"] == 1`` is
         achieved over 500 consecutive episodes.
 
-    Args:
-        scenario (str): Scenario name or path to scenario folder.
-        img_meters (int): Ground square size covered by image observations.
-            Defaults to 64 x 64 meter (height x width) square.
-        img_pixels (int): Pixels representing the square image observations.
-            Defaults to 256 x 256 pixels (height x width) square.
-        action_space: Action space used. Defaults to "Continuous".
-        headless (bool, optional): If True, disables visualization in
-            Envision. Defaults to False.
-        visdom (bool, optional): If True, enables visualization of observed
-            RGB images in Visdom. Defaults to False.
-        sumo_headless (bool, optional): If True, disables visualization in
-            SUMO GUI. Defaults to True.
-        envision_record_data_replay_path (Optional[str], optional): Envision's
-            data replay output directory. Defaults to None.
-
-    Returns:
-        An environment described by the input argument ``scenario``.
+    :param scenario: Scenario name or path to scenario folder.
+    :type scenario: str
+    :param img_meters: Ground square size covered by image observations. Defaults to 64 x 64 meter (height x width) square.
+    :type img_meters: int
+    :param img_pixels: Pixels representing the square image observations. Defaults to 256 x 256 pixels (height x width) square.
+    :type img_pixels: int
+    :param action_space: Action space used. Defaults to ``Continuous``.
+    :param headless: If True, disables visualization in Envision. Defaults to False.
+    :type headless: bool, optional
+    :param visdom: If True, enables visualization of observed RGB images in Visdom. Defaults to False.
+    :type visdom: bool, optional
+    :param sumo_headless: If True, disables visualization in SUMO GUI. Defaults to True.
+    :type sumo_headless: bool, optional
+    :param envision_record_data_replay_path: Envision's data replay output directory. Defaults to None.
+    :type envision_record_data_replay_path: Optional[str], optional
+    :return: An environment described by the input argument ``scenario``.
     """
 
     env_specs = _get_env_specs(scenario)
     sstudio.build_scenario(scenario=[env_specs["scenario"]])
 
-    agent_specs = {
-        f"Agent_{i}": AgentSpec(
-            interface=resolve_agent_interface(img_meters, img_pixels, action_space)
-        )
+    agent_interfaces = {
+        f"Agent_{i}": resolve_agent_interface(img_meters, img_pixels, action_space)
         for i in range(env_specs["num_agent"])
     }
+    env_action_space = resolve_env_action_space(agent_interfaces)
 
-    env = HiWayEnv(
+    visualization_client_builder = None
+    if not headless:
+        visualization_client_builder = partial(
+            Envision,
+            endpoint=None,
+            output_dir=envision_record_data_replay_path,
+            headless=headless,
+            data_formatter_args=EnvisionDataFormatterArgs(
+                "base", enable_reduction=False
+            ),
+        )
+
+    env = HiWayEnvV1(
         scenarios=[env_specs["scenario"]],
-        agent_specs=agent_specs,
-        sim_name="MultiScenario",
+        agent_interfaces=agent_interfaces,
+        sim_name="Driving_SMARTS_v0",
         headless=headless,
         visdom=visdom,
-        sumo_headless=sumo_headless,
-        envision_record_data_replay_path=envision_record_data_replay_path,
+        seed=seed,
+        sumo_options=SumoOptions(headless=sumo_headless),
+        visualization_client_builder=visualization_client_builder,
     )
-    env = _LimitTargetPose(env=env)
-    env = _InfoScore(env=env)
-
+    env.action_space = env_action_space
+    if ActionSpaceType[action_space] == ActionSpaceType.TargetPose:
+        env = _LimitTargetPose(env)
     return env
 
 
@@ -158,7 +217,7 @@ def _get_env_specs(scenario: str):
     if scenario == "1_to_2lane_left_turn_c":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "intersection"
                 / "1_to_2lane_left_turn_c"
@@ -168,7 +227,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "1_to_2lane_left_turn_t":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "intersection"
                 / "1_to_2lane_left_turn_t"
@@ -178,7 +237,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "3lane_merge_multi_agent":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "merge"
                 / "3lane_multi_agent"
@@ -188,7 +247,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "3lane_merge_single_agent":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "merge"
                 / "3lane_single_agent"
@@ -198,7 +257,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "3lane_cruise_multi_agent":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "straight"
                 / "3lane_cruise_multi_agent"
@@ -208,7 +267,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "3lane_cruise_single_agent":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "straight"
                 / "3lane_cruise_single_agent"
@@ -218,7 +277,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "3lane_cut_in":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "straight"
                 / "3lane_cut_in"
@@ -228,7 +287,7 @@ def _get_env_specs(scenario: str):
     elif scenario == "3lane_overtake":
         return {
             "scenario": str(
-                pathlib.Path(__file__).absolute().parents[1]
+                pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "straight"
                 / "3lane_overtake"
@@ -243,7 +302,7 @@ def _get_env_specs(scenario: str):
         matches_agent = regexp_agent.search(scenario)
         if not matches_agent:
             raise Exception(
-                f"Scenario path should match regexp of 'agents_\d+', but got {scenario}"
+                f"Scenario path should match regexp of 'agents_\\d+', but got {scenario}"
             )
         num_agent = regexp_num.search(matches_agent.group(0))
 
@@ -255,8 +314,42 @@ def _get_env_specs(scenario: str):
         raise Exception(f"Unknown scenario {scenario}.")
 
 
+def resolve_agent_action_space(agent_interface: AgentInterface):
+    """Get the competition action space for the given agent interface."""
+    assert (
+        agent_interface.action in SUPPORTED_ACTION_TYPES
+    ), f"Unsupported action type `{agent_interface.action}` not in supported actions `{SUPPORTED_ACTION_TYPES}`"
+
+    if agent_interface.action == ActionSpaceType.RelativeTargetPose:
+        max_dist = MAXIMUM_SPEED_MPS * 0.1  # assumes 0.1 timestep
+        return gym.spaces.Box(
+            low=np.array([-max_dist, -max_dist, -np.pi]),
+            high=np.array([max_dist, max_dist, np.pi]),
+            dtype=np.float32,
+        )
+    if agent_interface.action == ActionSpaceType.TargetPose:
+        return gym.spaces.Box(
+            low=np.array([-1e10, -1e10, -np.pi, 0.1]),
+            high=np.array([1e10, 1e10, np.pi, 0.1]),
+            dtype=np.float32,
+        )
+
+
+def resolve_env_action_space(agent_interfaces: Dict[str, AgentInterface]):
+    """Get the environment action space for the given set of agent interfaces."""
+    return gym.spaces.Dict(
+        {
+            a_id: resolve_agent_action_space(a_inter)
+            for a_id, a_inter in agent_interfaces.items()
+        }
+    )
+
+
 def resolve_agent_interface(
-    img_meters: int = 64, img_pixels: int = 256, action_space="TargetPose", **kwargs
+    img_meters: int = 64,
+    img_pixels: int = 256,
+    action_space="RelativeTargetPose",
+    **kwargs,
 ):
     """Resolve an agent interface for the environments in this module."""
 
@@ -281,21 +374,21 @@ def resolve_agent_interface(
             height=img_pixels,
             resolution=img_meters / img_pixels,
         ),
-        lidar=True,
+        lidar_point_cloud=True,
         max_episode_steps=max_episode_steps,
-        neighborhood_vehicles=True,
-        ogm=OGM(
+        neighborhood_vehicle_states=True,
+        occupancy_grid_map=OGM(
             width=img_pixels,
             height=img_pixels,
             resolution=img_meters / img_pixels,
         ),
-        rgb=RGB(
+        top_down_rgb=RGB(
             width=img_pixels,
             height=img_pixels,
             resolution=img_meters / img_pixels,
         ),
         road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
-        waypoints=Waypoints(lookahead=waypoints_lookahead),
+        waypoint_paths=Waypoints(lookahead=waypoints_lookahead),
     )
 
 
@@ -330,10 +423,12 @@ class _LimitTargetPose(gym.Wrapper):
 
         limited_actions: Dict[str, np.ndarray] = {}
         for agent_name, agent_action in action.items():
+            if not agent_name in self._prev_obs:
+                continue
             limited_actions[agent_name] = self._limit(
                 name=agent_name,
                 action=agent_action,
-                prev_coord=self._prev_obs[agent_name]["pos"],
+                prev_coord=self._prev_obs[agent_name]["position"],
             )
 
         out = self.env.step(limited_actions)
@@ -346,15 +441,17 @@ class _LimitTargetPose(gym.Wrapper):
         Returns:
             Dict[str, Any]: A dictionary of observation for each agent.
         """
-        obs = self.env.reset(**kwargs)
+        obs, info = self.env.reset(**kwargs)
         self._prev_obs = self._store(obs=obs)
-        return obs
+        return obs, info
 
     def _store(self, obs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         filtered_obs: Dict[str, Dict[str, Any]] = {}
         for agent_name, agent_obs in obs.items():
             filtered_obs[agent_name] = {
-                "pos": copy.deepcopy(agent_obs.ego_vehicle_state.position[:2])
+                "position": copy.deepcopy(
+                    agent_obs["ego_vehicle_state"]["position"][:2]
+                )
             }
         return filtered_obs
 
@@ -376,7 +473,7 @@ class _LimitTargetPose(gym.Wrapper):
         limited_action = np.array(
             [action[0], action[1], action[2], time_delta], dtype=np.float32
         )
-        speed_max = 28  # 28m/s = 100.8 km/h. Maximum speed should be >0.
+        speed_max = MAXIMUM_SPEED_MPS
         dist_max = speed_max * time_delta
 
         # Set time-delta
@@ -398,45 +495,13 @@ class _LimitTargetPose(gym.Wrapper):
             unit_vector = vector / dist
             limited_action[0], limited_action[1] = prev_coord + dist_max * unit_vector
             logger.warning(
-                "%s: Allowed max speed=%s, but got speed=%s. Next x-coordinate "
-                "and y-coordinate automatically changed from %s to %s.",
+                "Action out of bounds. `%s`: Allowed max speed=%sm/s, but got speed=%sm/s. "
+                "Action has be corrected from %s to %s.",
                 name,
                 speed_max,
                 dist / time_delta,
-                next_coord,
-                limited_action[:2],
+                action,
+                limited_action,
             )
 
         return limited_action
-
-
-class _InfoScore(gym.Wrapper):
-    def __init__(self, env: gym.Env):
-        super(_InfoScore, self).__init__(env)
-
-    def step(
-        self, action: Dict[str, Any]
-    ) -> Tuple[
-        Dict[str, Any],
-        Dict[str, float],
-        Dict[str, bool],
-        Dict[str, Dict[str, Any]],
-    ]:
-        """Steps the environment. A modified `score` is added to the returned
-        `info` of each agent.
-
-        Args:
-            action (Dict[str, Any]): Action for each agent.
-
-        Returns:
-            Tuple[ Dict[str, Any], Dict[str, float], Dict[str, bool], Dict[str, Dict[str, Any]] ]:
-                Observation, reward, done, and info, for each agent is returned.
-        """
-        obs, reward, done, info = self.env.step(action)
-
-        for agent_id in obs.keys():
-            reached_goal = obs[agent_id].events.reached_goal
-            # Set `score=1` if ego agent successfully completes mission, else `score=0`.
-            info[agent_id]["score"] = reached_goal
-
-        return obs, reward, done, info

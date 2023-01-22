@@ -625,6 +625,9 @@ class RoadMap:
             """Required for set usage; derived classes may override this."""
             return self.__class__ == other.__class__ and hash(self) == hash(other)
 
+        def _add_road(self, road: RoadMap.Road):
+            raise NotImplementedError()
+
         @property
         def roads(self) -> List[RoadMap.Road]:
             """A possibly-unordered list of roads that this route covers"""

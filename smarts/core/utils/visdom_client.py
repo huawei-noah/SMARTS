@@ -100,9 +100,9 @@ class VisdomClient:
                 image = (image.astype(np.float32) / 100) * 255
                 vis_images[f"{agent_id}-OGM"].append(image)
 
-            rgb = getattr(agent_obs, "top_down_rgb", None)
-            if rgb is not None:
-                image = rgb.data
+            top_down_rgb = getattr(agent_obs, "top_down_rgb", None)
+            if top_down_rgb is not None:
+                image = top_down_rgb.data
                 image = image.transpose(2, 0, 1)
                 image = image.astype(np.float32)
                 vis_images[f"{agent_id}-Top-Down RGB"].append(image)

@@ -37,7 +37,7 @@ def agent_specs():
         "AGENT_"
         + agent_id: AgentSpec(
             interface=AgentInterface(
-                rgb=RGB(),
+                top_down_rgb=RGB(),
                 action=ActionSpaceType.Lane,
             ),
             agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
@@ -79,9 +79,14 @@ def test_frame_stack(env, agent_specs, num_stack):
     assert len(obs) == len(agents)
     for agent_id, agent_obs in obs.items():
         agent_obs = _filter_obs(agent_obs)
-        rgb = agent_specs[agent_id].interface.rgb
+        top_down_rgb = agent_specs[agent_id].interface.top_down_rgb
         agent_obs = np.asarray(agent_obs)
-        assert agent_obs.shape == (num_stack, rgb.width, rgb.height, 3)
+        assert agent_obs.shape == (
+            num_stack,
+            top_down_rgb.width,
+            top_down_rgb.height,
+            3,
+        )
         for i in range(1, num_stack):
             assert np.allclose(agent_obs[i - 1], agent_obs[i])
 
@@ -93,9 +98,14 @@ def test_frame_stack(env, agent_specs, num_stack):
     assert len(obs) == len(agents)
     for agent_id, agent_obs in obs.items():
         agent_obs = _filter_obs(agent_obs)
-        rgb = agent_specs[agent_id].interface.rgb
+        top_down_rgb = agent_specs[agent_id].interface.top_down_rgb
         agent_obs = np.asarray(agent_obs)
-        assert agent_obs.shape == (num_stack, rgb.width, rgb.height, 3)
+        assert agent_obs.shape == (
+            num_stack,
+            top_down_rgb.width,
+            top_down_rgb.height,
+            3,
+        )
         for i in range(1, num_stack - 1):
             assert np.allclose(agent_obs[i - 1], agent_obs[i])
         if num_stack > 1:

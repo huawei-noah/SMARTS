@@ -45,7 +45,7 @@ class SignalProvider(Provider):
         self._recovery_flags = flags
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
+    def actions(self) -> Set[ActionSpaceType]:
         # TAI: could allow for agents to hijack things like signals as well.
         # (Then the action spcae could just be the desired SignalLightState.)
         return set()

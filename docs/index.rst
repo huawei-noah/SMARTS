@@ -50,6 +50,13 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
 .. toctree::
    :hidden:
    :maxdepth: 3
+   :caption: Benchmarks
+
+   benchmarks/benchmark.rst
+
+.. toctree::
+   :hidden:
+   :maxdepth: 3
    :caption: Examples
 
    examples/egoless.rst

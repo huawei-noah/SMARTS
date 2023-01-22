@@ -19,15 +19,26 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added a "All Simulation" button on the header of Envision and made small-windowed simulation(s) in the "All Simulations" page clickable to maximize.
 - An env wrapper `Metrics` is introduced to compute agents' performance metrics.
 - Extracted `TraciConn` to the SMARTS utilities as a simplified utility to help with connecting to `TraCI`.
+- Added `HiWayV1` `gymansium` environment to smarts. This can be referenced through gymnasium as `smarts.env:hiway-v1`.
+- Added `scl benchmark run` and `scl benchmark list` for running and listing benchmarks.
+- Added the "driving_smarts" benchmark as a feature of the new `scl benchmark` suite.
+- Added `smarts.benchmark` module which deals with running benchmarks.
+  - Added `smarts.core.entrypoints.benchmark_runner_v0` which is the initial benchmark fully integrated into `smarts`.
+- Added documentation with benchmark information.
 ### Deprecated
 ### Changed
 - Minimum `SUMO` version allowed by `SumoTrafficSimulation` is now `1.10.0`.
 - The `ProviderManager` interface now uses a string id for removal of an actor instead of an actor state.
+- Renamed many fields of the `smarts.core.agent_interface.AgentInterface` dataclass: `lidar` -> `lidar_point_cloud`, `waypoints` -> `waypoint_paths`, `rgb` -> `top_down_rgb`, `neighborhood_vehicles` -> `neighborhood_vehicle_states`, and `ogm` -> `occupancy_grid_map`.
+- Renamed `smarts.core.provider.Provider`'s `action_spaces` to `actions`.
+- Moved `VehicleObservation`, `EgoVehicleObservation`, `Observation`, `RoadWaypoints`, `GridMapMetadata`, `TopDownRGB`, `OccupancyGridMap`, `DrivableAreaGridMap`, `ViaPoint`, `Vias`, `SignalObservation`, and `Collision` from `smarts.core.sensors` to `smarts.core.observations`. They are now all typed `NamedTuples`.
+- Renamed `GridMapMetadata` field `camera_pos` to `camera_position`.
 ### Removed
 - Removed all of PyMarl contents, including related interface adapter, environments, and tests.
 - Removed ray usage example.
 - Moved ULTRA from `huawei-noah/SMARTS` to `smarts-project/smarts-project.rl` repository.
 - Removed observation_adapter, reward_adapter, and info_adapter, from `hiway_env`.
+- Removed `action_space` field from the `smarts.core.agent_interface.AgentInterface` dataclass.
 ### Fixed
 - Updated the RL example `racing` to use `smarts[camera_obs]==0.7.0rc0` and continuous flowing traffic scenario. Simplified the `racing` RL example folder structure.
 - Envision "near realtime" mode bugfix

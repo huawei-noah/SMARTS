@@ -68,7 +68,7 @@ def smarts_traffic_sim():
 def smarts(sumo_traffic_sim, smarts_traffic_sim):
     buddha = AgentInterface(
         max_episode_steps=1000,
-        neighborhood_vehicles=True,
+        neighborhood_vehicle_states=True,
         action=ActionSpaceType.Lane,
     )
     agents = {"Agent-007": buddha}

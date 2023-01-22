@@ -39,7 +39,7 @@ def agent_specs():
         "Agent_"
         + agent_id: AgentSpec(
             interface=AgentInterface(
-                rgb=RGB(width=256, height=256, resolution=50 / 256),
+                top_down_rgb=RGB(width=256, height=256, resolution=50 / 256),
                 action=ActionSpaceType.Lane,
                 max_episode_steps=3,
             ),

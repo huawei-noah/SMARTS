@@ -1,26 +1,22 @@
 import gym
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.zoo.agent_spec import AgentSpec
 
 agent_id = "Agent-007"
-agent_spec = AgentSpec(
-    interface=AgentInterface.from_type(AgentType.Laner),
-    agent_params={"agent_function": lambda _: "keep_lane"},
-    agent_builder=Agent.from_function,
-)
+agent_interface = AgentInterface.from_type(AgentType.Laner)
 
 env = gym.make(
-    "smarts.env:hiway-v0",
+    "smarts.env:hiway-v1",
     scenarios=["scenarios/sumo/loop"],
-    agent_specs={agent_id: agent_spec},
+    agent_interfaces={agent_id: agent_interface},
 )
 
-agent = agent_spec.build_agent()
+agent = Agent.from_function(agent_function=lambda _: "keep_lane")
 observations = env.reset()
-dones = {"__all__": False}
-while not dones["__all__"]:
+done = False
+while not done:
     action = agent.act(observations[agent_id])
-    observations, _, dones, _ = env.step({agent_id: action})
+    observations, _, terminated, truncated, _ = env.step({agent_id: action})
+    done = terminated or truncated
 
 env.close()

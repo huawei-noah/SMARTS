@@ -1,0 +1,13 @@
+# smarts/benchmark/benchmark_listing.yaml
+---
+benchmarks:
+  driving_smarts:
+    name: "Driving SMARTS"
+    versions:
+      -
+        version: 0.0
+        entrypoint: "smarts.benchmark.entrypoints.benchmark_runner_v0.benchmark_from_configs"
+        requirements: ["ray<=2.2.0,>2.0"]
+        params: 
+          benchmark_config: ${{smarts.benchmark.driving_smarts.v0}}/config.yaml
+      

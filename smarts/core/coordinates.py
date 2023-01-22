@@ -33,8 +33,7 @@ from smarts.core.utils.math import (
 )
 
 
-@dataclass(frozen=True)
-class Dimensions:
+class Dimensions(NamedTuple):
     """Representation of the size of a 3-dimensional form."""
 
     length: float

@@ -21,14 +21,13 @@ import logging
 import os
 import random
 import tempfile
-from dataclasses import replace
 from typing import Optional
 
 import sh
 from yattag import Doc, indent
 
 from smarts.core.road_map import RoadMap
-from smarts.core.utils.file import make_dir_in_smarts_log_dir
+from smarts.core.utils.file import make_dir_in_smarts_log_dir, replace
 
 from . import types
 

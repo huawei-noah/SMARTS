@@ -9,7 +9,7 @@ from tools.argument_parser import default_argument_parser
 from cli.studio import build_scenarios
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.sensors import Observation
+from smarts.core.observations import Observation
 from smarts.core.utils.episodes import episodes
 from smarts.zoo.agent_spec import AgentSpec
 

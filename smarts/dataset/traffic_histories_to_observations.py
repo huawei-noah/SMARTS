@@ -139,21 +139,21 @@ class ObservationRecorder:
                 height=img_pixels,
                 resolution=img_meters / img_pixels,
             ),
-            lidar=True,
+            lidar_point_cloud=True,
             max_episode_steps=max_episode_steps,
-            neighborhood_vehicles=True,
-            ogm=OGM(
+            neighborhood_vehicle_states=True,
+            occupancy_grid_map=OGM(
                 width=img_pixels,
                 height=img_pixels,
                 resolution=img_meters / img_pixels,
             ),
-            rgb=RGB(
+            top_down_rgb=RGB(
                 width=img_pixels,
                 height=img_pixels,
                 resolution=img_meters / img_pixels,
             ),
             road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
-            waypoints=Waypoints(lookahead=waypoints_lookahead),
+            waypoint_paths=Waypoints(lookahead=waypoints_lookahead),
         )
 
     def collect(

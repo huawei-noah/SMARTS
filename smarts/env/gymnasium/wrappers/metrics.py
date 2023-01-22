@@ -21,9 +21,9 @@
 import copy
 import functools
 from dataclasses import dataclass, fields
-from typing import Any, Dict, Set, TypeVar
+from typing import Any, Dict, NamedTuple, Set, TypeVar
 
-import gym
+import gymnasium as gym
 import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
@@ -31,9 +31,13 @@ from smarts.core.coordinates import Point
 from smarts.core.plan import PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
-from smarts.env.wrappers.metric.completion import Completion, CompletionFuncs, get_dist
-from smarts.env.wrappers.metric.costs import CostFuncs, Costs
-from smarts.env.wrappers.metric.counts import Counts
+from smarts.env.gymnasium.wrappers.metric.completion import (
+    Completion,
+    CompletionFuncs,
+    get_dist,
+)
+from smarts.env.gymnasium.wrappers.metric.costs import CostFuncs, Costs
+from smarts.env.gymnasium.wrappers.metric.counts import Counts
 
 
 @dataclass
@@ -56,32 +60,20 @@ class Data:
     cost_funcs: CostFuncs
 
 
+class Score(NamedTuple):
+    """This describes the final score given by processing observations through the metrics."""
+
+    completion: float
+    humanness: float
+    rules: float
+    time: float
+    overall: float
+
+
 class MetricsError(Exception):
     """Raised when Metrics env wrapper fails."""
 
     pass
-
-
-class Metrics(gym.Wrapper):
-    """Metrics class wraps an underlying MetricsBase class. The underlying
-    MetricsBase class computes agents' performance metrics in a SMARTS
-    environment. Whereas, this Metrics class is a basic gym.Wrapper class
-    which prevents external users from accessing or modifying attributes
-    beginning with an underscore, to ensure security of the metrics computed.
-
-    Args:
-        env (gym.Env): A gym.Env to be wrapped.
-
-    Raises:
-        AttributeError: Upon accessing an attribute beginning with an underscore.
-
-    Returns:
-        gym.Env: A wrapped gym.Env which computes agents' performance metrics.
-    """
-
-    def __init__(self, env: gym.Env):
-        env = MetricsBase(env)
-        super().__init__(env)
 
 
 class MetricsBase(gym.Wrapper):
@@ -100,12 +92,23 @@ class MetricsBase(gym.Wrapper):
 
     def step(self, action: Dict[str, Any]):
         """Steps the environment by one step."""
-        obs, rewards, dones, info = super().step(action)
+        result = super().step(action)
+
+        obs, _, terminated, truncated, info = result
 
         # Only count steps in which an ego agent is present.
         if len(obs) == 0:
-            return obs, rewards, dones, info
+            return result
 
+        dones = {"__all__": False}
+        if isinstance(terminated, dict):
+            dones = {k: v or truncated[k] for k, v in terminated.items()}
+        elif isinstance(terminated, bool):
+            if terminated or truncated:
+                dones["__all__"] = True
+            dones.update({a: d["done"] for a, d in info.items()})
+
+        obs = {agent_id: o for agent_id, o in obs.items() if o["active"]}
         # fmt: off
         for agent_name, agent_obs in obs.items():
             self._steps[agent_name] += 1
@@ -123,10 +126,10 @@ class MetricsBase(gym.Wrapper):
             if dones[agent_name]:
                 self._done_agents.add(agent_name)
                 if not (
-                    agent_obs.events.reached_goal
-                    or len(agent_obs.events.collisions) > 0
-                    or agent_obs.events.off_road
-                    or agent_obs.events.reached_max_episode_steps
+                    agent_obs["events"]["reached_goal"]
+                    or agent_obs["events"]["collisions"]
+                    or agent_obs["events"]["off_road"]
+                    or agent_obs["events"]["reached_max_episode_steps"]
                 ):
                     raise MetricsError(
                         "Expected reached_goal, collisions, off_road, or " 
@@ -140,10 +143,10 @@ class MetricsBase(gym.Wrapper):
                     steps=self._steps[agent_name],
                     steps_adjusted=min(
                         self._steps[agent_name],
-                        self.env.agent_specs[agent_name].interface.max_episode_steps
+                        self.env.agent_interfaces[agent_name].max_episode_steps
                     ),
-                    goals=agent_obs.events.reached_goal,
-                    max_steps=self.env.agent_specs[agent_name].interface.max_episode_steps
+                    goals=agent_obs["events"]["reached_goal"],
+                    max_steps=self.env.agent_interfaces[agent_name].max_episode_steps
                 )
                 self._records[self._scen_name][agent_name].record.counts = _add_dataclass(
                     counts, 
@@ -171,12 +174,12 @@ class MetricsBase(gym.Wrapper):
                 self._done_agents == self._cur_agents
             ), f'done["__all__"]==True but not all agents are done. Current agents = {self._cur_agents}. Agents done = {self._done_agents}.'
 
-        return obs, rewards, dones, info
+        return result
 
     def reset(self, **kwargs):
         """Resets the environment."""
-        obs = super().reset(**kwargs)
-        self._cur_agents = set(self.env.agent_specs.keys())
+        result = super().reset(**kwargs)
+        self._cur_agents = set(self.env.agent_interfaces.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_agents = set()
         self._scen = self.env.scenario
@@ -206,14 +209,12 @@ class MetricsBase(gym.Wrapper):
             }
         # fmt: on
 
-        return obs
+        return result
 
     def records(self) -> Dict[str, Dict[str, Record]]:
         """
         Fine grained performance metric for each agent in each scenario.
-
         .. code-block:: bash
-
             $ env.records()
             $ {
                   scen1: {
@@ -224,7 +225,6 @@ class MetricsBase(gym.Wrapper):
                       agent1: Record(completion, costs, counts),
                   },
               }
-
         Returns:
             Dict[str, Dict[str, Record]]: Performance record in a nested
             dictionary for each agent in each scenario.
@@ -263,7 +263,6 @@ class MetricsBase(gym.Wrapper):
             "Humanness", and "Rules" scores.
         """
 
-        # fmt: off
         counts_list, costs_list, completion_list = zip(
             *[
                 (data.record.counts, data.record.costs, data.record.completion)
@@ -272,27 +271,57 @@ class MetricsBase(gym.Wrapper):
             ]
         )
         agents_tot: int = len(counts_list)  # Total number of agents over all scenarios
-        counts_tot: Counts = functools.reduce(lambda a, b: _add_dataclass(a, b), counts_list)
-        costs_tot: Costs = functools.reduce(lambda a, b: _add_dataclass(a, b), costs_list)
-        completion_tot: Completion = functools.reduce(lambda a, b: _add_dataclass(a, b), completion_list)
+        counts_tot: Counts = functools.reduce(
+            lambda a, b: _add_dataclass(a, b), counts_list
+        )
+        costs_tot: Costs = functools.reduce(
+            lambda a, b: _add_dataclass(a, b), costs_list
+        )
+        completion_tot: Completion = functools.reduce(
+            lambda a, b: _add_dataclass(a, b), completion_list
+        )
 
-        _score: Dict[str, float] = {}
-        _score["completion"] = _completion(completion=completion_tot)
-        _score["humanness"] = _humanness(costs=costs_tot, agents_tot=agents_tot)
-        _score["rules"] = _rules(costs=costs_tot, agents_tot=agents_tot)
-        _score["time"] = _time(counts=counts_tot)
-        _score["overall"] = _score["completion"]*(1-_score["time"])*(_score["humanness"])*(_score["rules"])
-        # fmt: on
+        completion = _completion(completion=completion_tot)
+        humanness = _humanness(costs=costs_tot, agents_tot=agents_tot)
+        rules = _rules(costs=costs_tot, agents_tot=agents_tot)
+        time = _time(counts=counts_tot)
+        overall = completion * (1 - time) * (1 - humanness) * (1 - rules)
 
-        return _score
+        return Score(
+            completion=completion,
+            humanness=humanness,
+            rules=rules,
+            time=time,
+            overall=overall,
+        )
+
+
+class Metrics(gym.Wrapper):
+    """Metrics class wraps an underlying _Metrics class. The underlying
+    _Metrics class computes agents' performance metrics in a SMARTS
+    environment. Whereas, this Metrics class is a basic gym.Wrapper class
+    which prevents external users from accessing or modifying attributes
+    beginning with an underscore, to ensure security of the metrics computed.
+
+    Args:
+        env (gym.Env): A gym.Env to be wrapped.
+
+    Raises:
+        AttributeError: Upon accessing an attribute beginning with an underscore.
+
+    Returns:
+        gym.Env: A wrapped gym.Env which computes agents' performance metrics.
+    """
+
+    def __init__(self, env: gym.Env):
+        env = MetricsBase(env)
+        super().__init__(env)
 
 
 def _check_env(env: gym.Env):
     """Checks environment suitability to compute performance metrics.
-
     Args:
         env (gym.Env): A gym environment
-
     Raises:
         AttributeError: If any required agent interface is disabled.
     """
@@ -301,21 +330,23 @@ def _check_env(env: gym.Env):
         intrfc = {
             "accelerometer": bool(agent_intrfc.accelerometer),
             "max_episode_steps": bool(agent_intrfc.max_episode_steps),
-            "neighborhood_vehicles": bool(agent_intrfc.neighborhood_vehicles),
+            "neighborhood_vehicle_states": bool(agent_intrfc.neighborhood_vehicles),
             "road_waypoints": bool(agent_intrfc.road_waypoints),
-            "waypoints": bool(agent_intrfc.waypoints),
+            "waypoint_paths": bool(agent_intrfc.waypoints),
             "done_criteria.collision": agent_intrfc.done_criteria.collision,
             "done_criteria.off_road": agent_intrfc.done_criteria.off_road,
         }
         return intrfc
 
-    for agent_name, agent_spec in env.agent_specs.items():
-        intrfc = check_intrfc(agent_spec.interface)
+    for agent_name, agent_interface in env.agent_interfaces.items():
+        intrfc = check_intrfc(agent_interface)
         if not all(intrfc.values()):
             raise AttributeError(
-                "Enable {0}'s disabled interface to "
-                "compute its metrics. Current interface is "
-                "{1}.".format(agent_name, intrfc)
+                (
+                    "Enable {0}'s disabled interface to "
+                    "compute its metrics. Current interface is "
+                    "{1}."
+                ).format(agent_name, intrfc)
             )
 
 
@@ -361,8 +392,8 @@ def _completion(completion: Completion) -> float:
         completion (Completion): Scenario tasks completed.
 
     Returns:
-        float: Normalised completion value = [0, 1]. Completion value should be
-            maximised. The higher the value, the better it is.
+        float: Normalized completion value = [0, 1]. Completion value should be
+            maximized. The higher the value, the better it is.
     """
     return (completion.dist_tot - completion.dist_remainder) / completion.dist_tot
 
@@ -376,7 +407,7 @@ def _humanness(costs: Costs, agents_tot: int) -> float:
         agents_tot (int): Number of agents simulated.
 
     Returns:
-        float: Normalised humanness value = [0, 1]. Humanness value should be
+        float: Normalized humanness value = [0, 1]. Humanness value should be
             maximized. The higher the value, the better it is.
     """
     humanness_to_minimize = np.array(
@@ -395,7 +426,7 @@ def _rules(costs: Costs, agents_tot: int) -> float:
         agents_tot (int): Number of agents simulated.
 
     Returns:
-        float: Normalised rules value = [0, 1]. Rules value should be maximized.
+        float: Normalized rules value = [0, 1]. Rules value should be maximized.
             The higher the value, the better it is.
     """
     rules_to_minimize = np.array([costs.speed_limit, costs.wrong_way])
@@ -411,7 +442,7 @@ def _time(counts: Counts) -> float:
         counts (Counts): Performance count values.
 
     Returns:
-        float: Normalised time value = (0, 1]. Time value should be minimised.
+        float: Normalized time value = (0, 1]. Time value should be minimized.
             The lower the value, the better it is.
     """
     return counts.steps_adjusted / counts.max_steps

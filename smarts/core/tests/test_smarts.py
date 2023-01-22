@@ -56,7 +56,7 @@ def scenarios():
 def smarts():
     buddha = AgentInterface(
         max_episode_steps=1000,
-        neighborhood_vehicles=NeighborhoodVehicles(radius=20),
+        neighborhood_vehicle_states=NeighborhoodVehicles(radius=20),
         action=ActionSpaceType.Lane,
     )
     agents = {"Agent-007": buddha}
