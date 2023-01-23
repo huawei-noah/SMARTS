@@ -42,7 +42,6 @@ import tornado.websocket
 from tornado.websocket import WebSocketClosedError
 
 import smarts.core.models
-from envision.types import State
 from envision.web import dist as web_dist
 from smarts.core.utils.file import path2hash
 
@@ -348,7 +347,7 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
     async def open(self, simulation_id):
         """Open this socket to  listen for webclient playback requests."""
         if simulation_id not in WEB_CLIENT_RUN_LOOPS:
-            raise tornado.web.HTTPError(404, f"Simuation `{simulation_id}` not found.")
+            raise tornado.web.HTTPError(404, f"Simulation `{simulation_id}` not found.")
 
         frequency = 10
         message_frame_volume = 100
@@ -397,6 +396,9 @@ class FileHandler(AllowCORSMixin, tornado.web.RequestHandler):
             raise tornado.web.HTTPError(
                 404, f"Map file `{self._path_map[id_]}` not found."
             )
+
+        print(self._path_map,"self._path_map")
+        print(id_,"id_ ssssssssssssssssssss")
 
         await self.serve_chunked(Path(self._path_map[id_]))
 

@@ -218,6 +218,7 @@ class Client:
             data_formatter = EnvisionDataFormatter(data_formatter_args)
 
         def optionally_serialize_and_write(state: Union[types.State, str], ws):
+            print(state.scenario_name,"NOWNOWNOW")
             # if not already serialized
             if not isinstance(state, str):
                 if data_formatter:
