@@ -214,7 +214,9 @@ class MetricsBase(gym.Wrapper):
     def records(self) -> Dict[str, Dict[str, Record]]:
         """
         Fine grained performance metric for each agent in each scenario.
+
         .. code-block:: bash
+
             $ env.records()
             $ {
                   scen1: {
@@ -225,6 +227,7 @@ class MetricsBase(gym.Wrapper):
                       agent1: Record(completion, costs, counts),
                   },
               }
+
         Returns:
             Dict[str, Dict[str, Record]]: Performance record in a nested
             dictionary for each agent in each scenario.

@@ -89,17 +89,15 @@ DEFAULT_VISUALIZATION_CLIENT_BUILDER = partial(
 )
 
 
-# TODO: Could not help the double layer joke here: highway-lowway huawei-laowei. Add a real name.
 class HiWayEnvV1(gym.Env):
     """A generic environment for various driving tasks simulated by SMARTS.
 
     Args:
-        scenarios (Sequence[str]):  A list of scenario directories that
+        scenarios (Sequence[str]): A list of scenario directories that
             will be simulated.
         agent_interfaces (Dict[str, AgentInterface]): Specification of the agents
             needs that will be used to configure the environment.
-        sim_name (str, optional): Simulation name. Defaults to
-            None.
+        sim_name (str, optional): Simulation name. Defaults to None.
         scenarios_order (ScenarioOrder, optional): Configures the order that
             scenarios will provided over successive resets.
         headless (bool, optional): If True, disables visualization in
@@ -119,14 +117,14 @@ class HiWayEnvV1(gym.Env):
         zoo_addrs (str, optional): List of (ip, port) tuples of
             zoo server, used to instantiate remote social agents. Defaults
             to None.
-        observation_options (ObservationOptions | string): Defines the options
+        observation_options (ObservationOptions, string): Defines the options
             for how the formatting matches the observation space. String version
             can be used instead. See :class:`ObservationOptions`. Defaults to
-            `ObservationOptions.default`.
+            :attr:`ObservationOptions.default`.
     """
 
     metadata = {"render.modes": ["human"]}
-    """Metadata for gym's use"""
+    """Metadata for gym's use."""
 
     # define render_mode if your environment supports rendering
     render_mode: Optional[str] = None
@@ -233,15 +231,20 @@ class HiWayEnvV1(gym.Env):
         ],
     ]:
         """Run one timestep of the environment's dynamics using the agent actions.
+
         When the end of an episode is reached (``terminated or truncated``), it is necessary to call :meth:`reset` to
         reset this environment's state for the next episode.
 
         Args:
             action (ActType): an action provided by the agent to update the environment state.
+
         Returns:
-            observation (dict): An element of the environment's :attr:`observation_space` as the next observation due to the agent actions.
-                This observation will change based on the provided :attr:`agent_interfaces`. Check :attr:`observation_space after initialization.
-            reward (SupportsFloat): The reward as a result of taking the action.
+            observation (dict): An element of the environment's :attr:`observation_space` as the
+                next observation due to the agent actions. This observation will change based on
+                the provided :attr:`agent_interfaces`. Check :attr:` observation_space after
+                initialization.
+            reward (SupportsFloat): The reward as a result of taking the
+                action.
             terminated (bool): Whether the agent reaches the terminal state (as defined under the MDP of the task)
                 which can be positive or negative. An example is reaching the goal state. If true, the user needs to call :meth:`reset`.
             truncated (bool): Whether the truncation condition outside the scope of the MDP is satisfied.
@@ -320,10 +323,11 @@ class HiWayEnvV1(gym.Env):
                 Usually, you want to pass an integer *right after the environment has been initialized and then never again*.
             options (optional dict): Additional information to specify how the environment is reset (optional,
                 depending on the specific environment)
+
         Returns:
             observation (dict): Observation of the initial state. This will be an element of :attr:`observation_space`
                  and is analogous to the observation returned by :meth:`step`.
-            info (dictionary):  This dictionary contains auxiliary information complementing ``observation``. It should be analogous to
+            info (dict):  This dictionary contains auxiliary information complementing ``observation``. It should be analogous to
                 the ``info`` returned by :meth:`step`.
         """
         super().reset(seed=seed, options=options)
@@ -347,20 +351,27 @@ class HiWayEnvV1(gym.Env):
         The environment's :attr:`metadata` render modes (`env.metadata["render_modes"]`) should contain the possible
         ways to implement the render modes. In addition, list versions for most render modes is achieved through
         `gymnasium.make` which automatically applies a wrapper to collect rendered frames.
+
         Note:
             As the :attr:`render_mode` is known during ``__init__``, the objects used to render the environment state
             should be initialised in ``__init__``.
+
         By convention, if the :attr:`render_mode` is:
-        - None (default): no render is computed.
-        - "human": The environment is continuously rendered in the current display or terminal, usually for human consumption.
-          This rendering should occur during :meth:`step` and :meth:`render` doesn't need to be called. Returns ``None``.
-        - "rgb_array": Return a single frame representing the current state of the environment.
-          A frame is a ``np.ndarray`` with shape ``(x, y, 3)`` representing RGB values for an x-by-y pixel image.
-        - "ansi": Return a strings (``str``) or ``StringIO.StringIO`` containing a terminal-style text representation
-          for each time step. The text can include newlines and ANSI escape sequences (e.g. for colors).
-        - "rgb_array_list" and "ansi_list": List based version of render modes are possible (except Human) through the
-          wrapper, :py:class:`gymnasium.wrappers.RenderCollection` that is automatically applied during ``gymnasium.make(..., render_mode="rgb_array_list")``.
-          The frames collected are popped after :meth:`render` is called or :meth:`reset`.
+            - None (default): no render is computed.
+            - "human": The environment is continuously rendered in the current display or terminal,
+                usually for human consumption. This rendering should occur during :meth:`step` and
+                :meth:`render` doesn't need to be called. Returns ``None``.
+            - "rgb_array": Return a single frame representing the current state of the environment.
+                A frame is a ``np.ndarray`` with shape ``(x, y, 3)`` representing RGB values for
+                an x-by-y pixel image.
+            - "ansi": Return a strings (``str``) or ``StringIO.StringIO`` containing a
+                terminal-style text representation for each time step. The text can include
+                newlines and ANSI escape sequences (e.g. for colors).
+            - "rgb_array_list" and "ansi_list": List based version of render modes are possible
+                (except Human) through the wrapper, :py:class:`gymnasium.wrappers.RenderCollection`
+                that is automatically applied during ``gymnasium.make(..., render_mode="rgb_array_list")``.
+                The frames collected are popped after :meth:`render` is called or :meth:`reset`.
+
         Note:
             Make sure that your class's :attr:`metadata` ``"render_modes"`` key includes the list of supported modes.
         """
@@ -382,6 +393,7 @@ class HiWayEnvV1(gym.Env):
     @property
     def unwrapped(self) -> gym.Env[ObsType, ActType]:
         """Returns the base non-wrapped environment.
+
         Returns:
             Env: The base non-wrapped :class:`gymnasium.Env` instance
         """
@@ -390,8 +402,9 @@ class HiWayEnvV1(gym.Env):
     @property
     def np_random(self) -> np.random.Generator:
         """Returns the environment's internal :attr:`_np_random` that if not set will initialise with a random seed.
+
         Returns:
-            Instances of `np.random.Generator`
+            Instances of `np.random.Generator`.
         """
         return super().np_random
 
@@ -400,9 +413,10 @@ class HiWayEnvV1(gym.Env):
         self._np_random = value
 
     def __str__(self):
-        """Returns a string of the environment with :attr:`spec` id's if :attr:`spec.
+        """Returns a string of the environment with :attr:`spec` id's if :attr:`spec`.
+
         Returns:
-            A string identifying the environment
+            A string identifying the environment.
         """
         if self.spec is None:
             return f"<{type(self).__name__} instance>"
@@ -422,6 +436,7 @@ class HiWayEnvV1(gym.Env):
     @property
     def agent_ids(self) -> Set[str]:
         """Agent ids of all agents that potentially will be in the environment.
+
         Returns:
             (Set[str]): Agent ids.
         """
@@ -430,6 +445,7 @@ class HiWayEnvV1(gym.Env):
     @property
     def agent_interfaces(self) -> Dict[str, AgentInterface]:
         """Agent interfaces used for the environment.
+
         Returns:
             (Dict[str, AgentInterface]):
                 Agent interface defining the agents affect on the observation and action spaces
@@ -440,8 +456,9 @@ class HiWayEnvV1(gym.Env):
     @property
     def scenario_log(self) -> Dict[str, Union[float, str]]:
         """Simulation steps log.
+
         Returns:
-            Dict[str, Union[float,str]]: A dictionary with the following keys.
+            (Dict[str, Union[float,str]]): A dictionary with the following keys.
                 fixed_timestep_sec - Simulation timestep.
                 scenario_map - Name of the current scenario.
                 scenario_traffic - Traffic spec(s) used.
@@ -459,7 +476,8 @@ class HiWayEnvV1(gym.Env):
     @property
     def scenario(self) -> Scenario:
         """Returns underlying scenario.
+
         Returns:
-            Scenario: Current simulated scenario.
+            scenario.Scenario: Current simulated scenario.
         """
         return self._smarts.scenario

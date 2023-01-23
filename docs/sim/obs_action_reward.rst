@@ -17,7 +17,7 @@ The complete set of possible :class:`~smarts.core.sensors.Observation` returned 
 +------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | steps_completed              | int                                                               | Number of steps this agent has taken within SMARTS.                                |
 +------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
-| elapsed_sim_time             | float                                                             | Amount of simulation time elapsed for the current scenario.                         |
+| elapsed_sim_time             | float                                                             | Amount of simulation time elapsed for the current scenario.                        |
 +------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | events                       | :class:`~smarts.core.events.Events`                               | Classified observations that can trigger agent done status.                        |
 +------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
@@ -25,7 +25,7 @@ The complete set of possible :class:`~smarts.core.sensors.Observation` returned 
 +------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | under_this_agent_control     | bool                                                              | Whether this agent currently has control of the vehicle.                           |
 +------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
-| neighborhood_vehicle_states  | Optional[List[:class:`~smarts.core.sensors.VehicleObservation`]]  | List of neighborhood vehicle states.                                              |
+| neighborhood_vehicle_states  | Optional[List[:class:`~smarts.core.sensors.VehicleObservation`]]  | List of neighborhood vehicle states.                                               |
 +------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | waypoint_paths               | Optional[List[List[:class:`~smarts.core.road_map.Waypoint`]]]     | Dynamic evenly-spaced points on the road ahead of the vehicle.                     |
 +------------------------------+-------------------------------------------------------------------+------------------------------------------------------------------------------------+
