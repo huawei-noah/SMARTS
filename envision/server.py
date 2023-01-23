@@ -317,14 +317,18 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
     async def on_message(self, message):
         """Asynchronously receive messages from the Envision client."""
         it = ijson.parse(message)
-        frame_time = None
-        # Find the first number value, which will be the frame time.
-        for prefix, event, value in it:
-            if prefix and event == "number":
-                frame_time = float(value)
-                break
-        assert isinstance(frame_time, float)
-        self._frames.append(Frame(timestamp=frame_time, data=message))
+        next(it) # Discard generic first entry: prefix="", event="start_array", value=None
+        prefix, event, value = next(it)
+        if prefix == "item" and event == "number":
+            # If the second event is a number, it is a payload message.
+            frame_time = float(value)
+            assert isinstance(frame_time, float)
+            self._frames.append(Frame(timestamp=frame_time, data=message))
+        elif prefix == "item" and event == "start_map":
+            # If the second event is a start_map, it is a preamble. 
+            scenarios = [value for prefix, event, value in it if prefix=="item.scenarios.item" and event=="string"]
+        else:
+            raise tornado.web.HTTPError(400, f"Bad request message.")
 
 
 class StateWebSocket(tornado.websocket.WebSocketHandler):
@@ -345,7 +349,7 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
         return {"compression_level": 6, "mem_level": 5}
 
     async def open(self, simulation_id):
-        """Open this socket to  listen for webclient playback requests."""
+        """Open this socket to listen for webclient playback requests."""
         if simulation_id not in WEB_CLIENT_RUN_LOOPS:
             raise tornado.web.HTTPError(404, f"Simulation `{simulation_id}` not found.")
 
@@ -397,9 +401,6 @@ class FileHandler(AllowCORSMixin, tornado.web.RequestHandler):
                 404, f"Map file `{self._path_map[id_]}` not found."
             )
 
-        print(self._path_map,"self._path_map")
-        print(id_,"id_ ssssssssssssssssssss")
-
         await self.serve_chunked(Path(self._path_map[id_]))
 
     async def serve_chunked(self, path: Path, chunk_size: int = 1024 * 1024):
@@ -424,7 +425,7 @@ class FileHandler(AllowCORSMixin, tornado.web.RequestHandler):
 class MapFileHandler(FileHandler):
     """This handler serves map geometry to the given endpoint."""
 
-    def initialize(self, scenario_dirs: Sequence):
+    def initialize(self, scenario_dirs: Optional[Sequence[str]]):
         """Setup this handler. Finds and indexes all map geometry files in the given scenario
         directories.
         """

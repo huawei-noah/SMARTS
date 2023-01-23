@@ -69,7 +69,12 @@ if __name__ == "__main__":
     if not args.scenarios:
         args.scenarios = [
             str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop"),
-            str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "figure_eight")
+            str(
+                Path(__file__).absolute().parents[2]
+                / "scenarios"
+                / "sumo"
+                / "figure_eight"
+            ),
         ]
 
     build_scenarios(
