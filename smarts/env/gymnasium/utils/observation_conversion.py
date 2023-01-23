@@ -79,7 +79,7 @@ class BaseSpaceFormat:
     """Defines the base interface for an observation formatter."""
 
     def format(self, obs: Observation):
-        """Selects and formats the given observation to get a value that matches :attr:`space`."""
+        """Selects and formats the given observation to get a value that matches the :attr:`space`."""
         raise NotImplementedError()
 
     def active(self, agent_interface: AgentInterface) -> bool:
@@ -1130,165 +1130,170 @@ class ObservationSpaceFormat(DictSpaceFormat):
 
 class ObservationsSpaceFormat:
     """Formats a smarts observation to fixed sized object.
+
     Observations in numpy array format, suitable for vectorized processing.
 
-    For each agent id:
-    obs = dict({
-        If the agent is active.
-        "active": 1 if agent is active in smarts, else 0
+    For each agent id::
 
-        Total distance travelled in meters.
-        "distance_travelled": np.float32
+        obs = dict({
 
-        Ego vehicle state, with the following attributes.
-        "ego_vehicle_state": dict({
-            "angular_acceleration":
-                Angular acceleration vector. Requires `accelerometer` attribute
-                enabled in AgentInterface, else absent. shape=(3,). dtype=np.float32.
-            "angular_jerk":
-                Angular jerk vector. Requires `accelerometer` attribute enabled in
-                AgentInterface, else absent. shape=(3,). dtype=np.float32.
-            "angular_velocity":
-                Angular velocity vector. shape=(3,). dtype=np.float32).
-            "box":
-                Length, width, and height of the vehicle bounding box. shape=(3,).
-                dtype=np.float32.
-            "heading":
-                Vehicle heading in radians [-pi, pi]. dtype=np.float32.
-            "lane_index":
-                Vehicle's lane number. Rightmost lane has index 0 and increases
-                towards left. dtype=np.int8.
-            "linear_acceleration":
-                Vehicle acceleration in x, y, and z axes. Requires `accelerometer`
-                attribute enabled in AgentInterface, else absent. shape=(3,).
-                dtype=np.float32.
-            "linear_jerk":
-                Linear jerk vector. Requires `accelerometer` attribute enabled in
-                AgentInterface, else absent. shape=(3,). dtype=np.float32.
-            "linear_velocity":
-                Vehicle velocity in x, y, and z axes. shape=(3,). dtype=np.float32.
-            "pos":
-                Coordinate of the center of the vehicle bounding box's bottom plane.
-                shape=(3,). dtype=np.float64.
-            "speed":
-                Vehicle speed in m/s. dtype=np.float32.
-            "steering":
-                Angle of front wheels in radians [-pi, pi]. dtype=np.float32.
-            "yaw_rate":
-                Rotation speed around vertical axis in rad/s [0, 2pi].
-                dtype=np.float32.
-        )}
+            If the agent is active.
+            "active": 1 if agent is active in smarts, else 0
 
-        A dictionary of event markers.
-        "events": dict({
-            "agents_alive_done":
-                1 if `DoneCriteria.agents_alive` is triggered, else 0.
-            "collisions":
-                1 if any collisions occurred with ego vehicle, else 0.
-            "not_moving":
-                1 if `DoneCriteria.not_moving` is triggered, else 0.
-            "off_road":
-                1 if ego vehicle drives off road, else 0.
-            "off_route":
-                1 if ego vehicle drives off mission route, else 0.
-            "on_shoulder":
-                1 if ego vehicle drives on road shoulder, else 0.
-            "reached_goal":
-                1 if ego vehicle reaches its goal, else 0.
-            "reached_max_episode_steps":
-                1 if maximum episode steps reached, else 0.
-            "wrong_way":
-                1 if ego vehicle drives in the wrong traffic direction, else 0.
+            Total distance travelled in meters.
+            "distance_travelled": np.float32
+
+            Ego vehicle state, with the following attributes.
+            "ego_vehicle_state": dict({
+                "angular_acceleration":
+                    Angular acceleration vector. Requires `accelerometer` attribute
+                    enabled in AgentInterface, else absent. shape=(3,). dtype=np.float32.
+                "angular_jerk":
+                    Angular jerk vector. Requires `accelerometer` attribute enabled in
+                    AgentInterface, else absent. shape=(3,). dtype=np.float32.
+                "angular_velocity":
+                    Angular velocity vector. shape=(3,). dtype=np.float32).
+                "box":
+                    Length, width, and height of the vehicle bounding box. shape=(3,).
+                    dtype=np.float32.
+                "heading":
+                    Vehicle heading in radians [-pi, pi]. dtype=np.float32.
+                "lane_index":
+                    Vehicle's lane number. Rightmost lane has index 0 and increases
+                    towards left. dtype=np.int8.
+                "linear_acceleration":
+                    Vehicle acceleration in x, y, and z axes. Requires `accelerometer`
+                    attribute enabled in AgentInterface, else absent. shape=(3,).
+                    dtype=np.float32.
+                "linear_jerk":
+                    Linear jerk vector. Requires `accelerometer` attribute enabled in
+                    AgentInterface, else absent. shape=(3,). dtype=np.float32.
+                "linear_velocity":
+                    Vehicle velocity in x, y, and z axes. shape=(3,). dtype=np.float32.
+                "pos":
+                    Coordinate of the center of the vehicle bounding box's bottom plane.
+                    shape=(3,). dtype=np.float64.
+                "speed":
+                    Vehicle speed in m/s. dtype=np.float32.
+                "steering":
+                    Angle of front wheels in radians [-pi, pi]. dtype=np.float32.
+                "yaw_rate":
+                    Rotation speed around vertical axis in rad/s [0, 2pi].
+                    dtype=np.float32.
+            )}
+
+            A dictionary of event markers.
+            "events": dict({
+                "agents_alive_done":
+                    1 if `DoneCriteria.agents_alive` is triggered, else 0.
+                "collisions":
+                    1 if any collisions occurred with ego vehicle, else 0.
+                "not_moving":
+                    1 if `DoneCriteria.not_moving` is triggered, else 0.
+                "off_road":
+                    1 if ego vehicle drives off road, else 0.
+                "off_route":
+                    1 if ego vehicle drives off mission route, else 0.
+                "on_shoulder":
+                    1 if ego vehicle drives on road shoulder, else 0.
+                "reached_goal":
+                    1 if ego vehicle reaches its goal, else 0.
+                "reached_max_episode_steps":
+                    1 if maximum episode steps reached, else 0.
+                "wrong_way":
+                    1 if ego vehicle drives in the wrong traffic direction, else 0.
+            })
+
+            Drivable area grid map. Map is binary, with 255 if a cell contains a road,
+            else 0. dtype=np.uint8.
+            "drivable_area_grid_map": np.ndarray
+
+            Lidar point cloud, with the following attributes.
+            "lidar_point_cloud": dict({
+                "hit":
+                    Binary array. 1 if an object is hit, else 0. shape(300,).
+                "point_cloud":
+                    Coordinates of lidar point cloud. shape=(300,3). dtype=np.float64.
+                "ray_origin":
+                    Ray origin coordinates. shape=(300,3). dtype=np.float64.
+                "ray_vector":
+                    Ray vectors. shape=(300,3). dtype=np.float64.
+            })
+
+            Mission details for the ego agent.
+            "mission": dict({
+                "goal_pos":
+                    Achieve goal by reaching the end position. Defaults to np.array([0,0,0])
+                    for no mission. shape=(3,). dtype=np.float64.
+            })
+
+            Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
+            vehicles are insufficient, default feature values are padded.
+            "neighborhood_vehicle_states": dict({
+                "box":
+                    Bounding box of neighbor vehicles. Defaults to np.array([0,0,0]) per
+                    vehicle. shape=(10,3). dtype=np.float32.
+                "heading":
+                    Heading of neighbor vehicles in radians [-pi, pi]. Defaults to
+                    np.array([0]) per vehicle. shape=(10,). dtype=np.float32.
+                "lane_index":
+                    Lane number of neighbor vehicles. Defaults to np.array([0]) per
+                    vehicle. shape=(10,). dtype=np.int8.
+                "pos":
+                    Coordinate of the center of neighbor vehicles' bounding box's bottom
+                    plane. Defaults to np.array([0,0,0]) per vehicle. shape=(10,3).
+                    dtype=np.float64.
+                "speed":
+                    Speed of neighbor vehicles in m/s. Defaults to np.array([0]) per
+                    vehicle. shape=(10,). dtype=np.float32.
+            })
+
+            Occupancy grid map. Map is binary, with 255 if a cell is occupied, else 0.
+            dtype=np.uint8.
+            "occupancy_grid_map": np.ndarray
+
+            RGB image, from the top view, with ego vehicle at the center.
+            shape=(height, width, 3). dtype=np.uint8.
+            "top_down_rgb": np.ndarray
+
+            Feature array of 20 waypoints ahead or in the mission route, from the
+            nearest 4 lanes. If lanes or waypoints ahead are insufficient, default
+            values are padded.
+            "waypoint_paths": dict({
+                "heading":
+                    Lane heading angle at a waypoint in radians [-pi, pi]. Defaults to
+                    np.array([0]) per waypoint. shape=(4,20). dtype=np.float32.
+                "lane_index":
+                    Lane number at a waypoint. Defaults to np.array([0]) per waypoint.
+                    shape=(4,20). dtype=np.int8.
+                "lane_width":
+                    Lane width at a waypoint in meters. Defaults to np.array([0]) per
+                    waypoint. shape=(4,20). dtype=np.float32.
+                "pos":
+                    Coordinate of a waypoint. Defaults to np.array([0,0,0]).
+                    shape=(4,20,3). dtype=np.float64.
+                "speed_limit":
+                    Lane speed limit at a waypoint in m/s. shape=(4,20). dtype=np.float32.
+            })
+
+            Feature array of 3 upcoming signals.  If there aren't this many signals ahead,
+            default values are padded.
+            "signals": dict({
+                "state":
+                    The state of the traffic signal.
+                    See smarts.core.signal_provider.SignalLightState for interpretation.
+                    Defaults to np.array([0]) per signal.  shape=(3,), dtype=np.int8.
+                "stop_point":
+                    The stopping point for traffic controlled by the signal, i.e., the
+                    point where actors should stop when the signal is in a stop state.
+                    Defaults to np.array([0, 0]) per signal.  shape=(3,2), dtype=np.float64.
+                "last_changed":
+                    If known, the simulation time this signal last changed its state.
+                    Defaults to np.array([0]) per signal.  shape=(3,), dtype=np.float32.
+            })
+
         })
 
-        Drivable area grid map. Map is binary, with 255 if a cell contains a road,
-        else 0. dtype=np.uint8.
-        "drivable_area_grid_map": np.ndarray
-
-        Lidar point cloud, with the following attributes.
-        "lidar_point_cloud": dict({
-            "hit":
-                Binary array. 1 if an object is hit, else 0. shape(300,).
-            "point_cloud":
-                Coordinates of lidar point cloud. shape=(300,3). dtype=np.float64.
-            "ray_origin":
-                Ray origin coordinates. shape=(300,3). dtype=np.float64.
-            "ray_vector":
-                Ray vectors. shape=(300,3). dtype=np.float64.
-        })
-
-        Mission details for the ego agent.
-        "mission": dict({
-            "goal_pos":
-                Achieve goal by reaching the end position. Defaults to np.array([0,0,0])
-                for no mission. shape=(3,). dtype=np.float64.
-        })
-
-        Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
-        vehicles are insufficient, default feature values are padded.
-        "neighborhood_vehicle_states": dict({
-            "box":
-                Bounding box of neighbor vehicles. Defaults to np.array([0,0,0]) per
-                vehicle. shape=(10,3). dtype=np.float32.
-            "heading":
-                Heading of neighbor vehicles in radians [-pi, pi]. Defaults to
-                np.array([0]) per vehicle. shape=(10,). dtype=np.float32.
-            "lane_index":
-                Lane number of neighbor vehicles. Defaults to np.array([0]) per
-                vehicle. shape=(10,). dtype=np.int8.
-            "pos":
-                Coordinate of the center of neighbor vehicles' bounding box's bottom
-                plane. Defaults to np.array([0,0,0]) per vehicle. shape=(10,3).
-                dtype=np.float64.
-            "speed":
-                Speed of neighbor vehicles in m/s. Defaults to np.array([0]) per
-                vehicle. shape=(10,). dtype=np.float32.
-        })
-
-        Occupancy grid map. Map is binary, with 255 if a cell is occupied, else 0.
-        dtype=np.uint8.
-        "occupancy_grid_map": np.ndarray
-
-        RGB image, from the top view, with ego vehicle at the center.
-        shape=(height, width, 3). dtype=np.uint8.
-        "top_down_rgb": np.ndarray
-
-        Feature array of 20 waypoints ahead or in the mission route, from the
-        nearest 4 lanes. If lanes or waypoints ahead are insufficient, default
-        values are padded.
-        "waypoint_paths": dict({
-            "heading":
-                Lane heading angle at a waypoint in radians [-pi, pi]. Defaults to
-                np.array([0]) per waypoint. shape=(4,20). dtype=np.float32.
-            "lane_index":
-                Lane number at a waypoint. Defaults to np.array([0]) per waypoint.
-                shape=(4,20). dtype=np.int8.
-            "lane_width":
-                Lane width at a waypoint in meters. Defaults to np.array([0]) per
-                waypoint. shape=(4,20). dtype=np.float32.
-            "pos":
-                Coordinate of a waypoint. Defaults to np.array([0,0,0]).
-                shape=(4,20,3). dtype=np.float64.
-            "speed_limit":
-                Lane speed limit at a waypoint in m/s. shape=(4,20). dtype=np.float32.
-        })
-
-        Feature array of 3 upcoming signals.  If there aren't this many signals ahead,
-        default values are padded.
-        "signals": dict({
-            "state":
-                The state of the traffic signal.
-                See smarts.core.signal_provider.SignalLightState for interpretation.
-                Defaults to np.array([0]) per signal.  shape=(3,), dtype=np.int8.
-            "stop_point":
-                The stopping point for traffic controlled by the signal, i.e., the
-                point where actors should stop when the signal is in a stop state.
-                Defaults to np.array([0, 0]) per signal.  shape=(3,2), dtype=np.float64.
-            "last_changed":
-                If known, the simulation time this signal last changed its state.
-                Defaults to np.array([0]) per signal.  shape=(3,), dtype=np.float32.
-        })
-    })
     """
 
     def __init__(

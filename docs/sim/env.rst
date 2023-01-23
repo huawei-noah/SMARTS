@@ -50,7 +50,7 @@ HiwayEnvV1
 ``HiwayEnvV1`` inherits class ``gymnasium.Env`` and supports gym APIs like ``reset``, ``step``, ``close``. An usage example is shown below.
 This version has two configurations of observation output: `ObservationOptions.full` which provides padded agents in the observations which
 exactly matches the `env.observation_space`, and `ObservationOptions.multi_agent` which provides only agents as are currently active. Refer to
- :class:`~smarts.env.gymnasium.hiway_env_v1.HiWayEnvV1` for more details. 
+:class:`~smarts.env.gymnasium.hiway_env_v1.HiWayEnvV1` for more details.
 
 .. code-block:: python
 
