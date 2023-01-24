@@ -29,6 +29,7 @@ import ray
 
 from smarts.benchmark.driving_smarts import load_config
 from smarts.benchmark.driving_smarts.v0 import DEFAULT_CONFIG
+from smarts.core.utils.logging import suppress_output
 from smarts.env.gymnasium.wrappers.metrics import Metrics, Score
 from smarts.zoo import registry as agent_registry
 
@@ -82,7 +83,9 @@ def _eval_worker(name, env_config, episodes, agent_config, error_tolerant=False)
 
 def _task_iterator(env_args, benchmark_args, agent_args, log_workers):
     num_cpus = max(1, min(len(os.sched_getaffinity(0)), psutil.cpu_count(False) or 4))
-    ray.init(num_cpus=num_cpus, log_to_driver=log_workers)
+
+    with suppress_output(stdout=True):
+        ray.init(num_cpus=num_cpus, log_to_driver=log_workers)
     try:
         max_queued_tasks = 20
         unfinished_refs = []
