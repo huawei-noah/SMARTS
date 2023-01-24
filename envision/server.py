@@ -431,7 +431,7 @@ class MapFileHandler(FileHandler):
             path_map.update(
                 {
                     f"{path2hash(str(glb.parents[2].resolve()))}.glb": glb
-                    for glb in Path(dir_).rglob("build/map/*.glb")
+                    for glb in Path(dir_).rglob("build/map/map.glb")
                 }
             )
 
