@@ -23,6 +23,7 @@
 import click
 
 from cli.benchmark import benchmark_cli
+from cli.diagnostic import diagnostic_cli
 from cli.envision import envision_cli
 from cli.run import run_experiment
 from cli.studio import scenario_cli
@@ -39,6 +40,7 @@ def scl():
 
 
 scl.add_command(envision_cli)
+scl.add_command(benchmark_cli)
 scl.add_command(scenario_cli)
 scl.add_command(zoo_cli)
 scl.add_command(run_experiment)
@@ -61,7 +63,7 @@ except (ModuleNotFoundError, ImportError):
 
 
 scl.add_command(waymo_cli)
-scl.add_command(benchmark_cli)
+scl.add_command(diagnostic_cli)
 
 if __name__ == "__main__":
     scl()

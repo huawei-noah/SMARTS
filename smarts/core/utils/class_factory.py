@@ -113,10 +113,13 @@ class ClassRegister:
             # Import the module so that the agent may register it self in our self.index
             module = importlib.import_module(mod_name)
         except ImportError:
+            import sys
+
             raise ImportError(
                 f"Ensure that `{mod_name}` module can be found from your "
                 f"PYTHONPATH and name=`{locator}` exists (e.g. was registered "
-                "manually or downloaded."
+                "manually or downloaded.\n"
+                f"`PYTHONPATH`: `{sys.path}`"
             )
 
         try:

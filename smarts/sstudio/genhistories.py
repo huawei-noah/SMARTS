@@ -992,7 +992,6 @@ class Waymo(_TrajectoryDataset):
 def import_dataset(
     dataset_spec: types.TrafficHistoryDataset,
     output_path: str,
-    overwrite: bool,
     map_bbox: Optional[BoundingBox] = None,
 ):
     """called to pre-process (import) a TrafficHistoryDataset for use by SMARTS"""
@@ -1001,9 +1000,6 @@ def import_dataset(
         return
     output = os.path.join(output_path, f"{dataset_spec.name}.shf")
     if os.path.exists(output):
-        if not overwrite:
-            print(f"file already exists at {output}.  skipping...")
-            return
         os.remove(output)
     source = dataset_spec.source_type
     dataset_dict = dataset_spec.__dict__

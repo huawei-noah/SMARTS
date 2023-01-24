@@ -28,9 +28,7 @@ import smarts.sstudio.types as t
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Dimensions, Heading, RefLinePoint
 from smarts.core.events import Events
-from smarts.core.plan import EndlessGoal, Mission, Start
-from smarts.core.road_map import Waypoint
-from smarts.core.sensors import (
+from smarts.core.observations import (
     DrivableAreaGridMap,
     EgoVehicleObservation,
     GridMapMetadata,
@@ -41,6 +39,8 @@ from smarts.core.sensors import (
     VehicleObservation,
     Vias,
 )
+from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.road_map import Waypoint
 
 
 @pytest.fixture
@@ -203,7 +203,7 @@ def large_observation():
                 resolution=0.1953125,
                 width=256,
                 height=256,
-                camera_pos=(161.235, 3.2, 73.6),
+                camera_position=(161.235, 3.2, 73.6),
                 camera_heading_in_degrees=-90.0,
             ),
             data=np.array(
@@ -224,7 +224,7 @@ def large_observation():
                 resolution=0.1953125,
                 width=256,
                 height=256,
-                camera_pos=(161.235, 3.2, 73.6),
+                camera_position=(161.235, 3.2, 73.6),
                 camera_heading_in_degrees=-90.0,
             ),
             data=np.array(
@@ -245,7 +245,7 @@ def large_observation():
                 resolution=0.1953125,
                 width=256,
                 height=256,
-                camera_pos=(161.235, 3.2, 73.6),
+                camera_position=(161.235, 3.2, 73.6),
                 camera_heading_in_degrees=-90.0,
             ),
             data=np.array(

@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import logging
 import math
+from typing import Dict
 
 import gym
 import numpy as np
@@ -40,6 +41,13 @@ from smarts.core.agent_interface import (
 from smarts.core.colors import SceneColors
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Point
+from smarts.core.observations import DrivableAreaGridMap as ObsDrivableAreaGridMap
+from smarts.core.observations import (
+    GridMapMetadata,
+    Observation,
+    OccupancyGridMap,
+    TopDownRGB,
+)
 from smarts.core.plan import Mission, PositionalGoal, Start, default_entry_tactic
 from smarts.core.scenario import Scenario
 from smarts.core.signals import SignalLightState
@@ -66,14 +74,16 @@ ROAD_COLOR = np.array(SceneColors.Road.value[0:3]) * 255
 def agent_interface():
     return AgentInterface(
         road_waypoints=RoadWaypoints(40),
-        neighborhood_vehicles=NeighborhoodVehicles(
+        neighborhood_vehicle_states=NeighborhoodVehicles(
             radius=max(MAP_WIDTH * MAP_RESOLUTION, MAP_HEIGHT * MAP_RESOLUTION) * 0.5
         ),
         drivable_area_grid_map=DrivableAreaGridMap(
             width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION
         ),
-        ogm=OGM(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
-        rgb=RGB(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
+        occupancy_grid_map=OGM(
+            width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION
+        ),
+        top_down_rgb=RGB(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
         action=ActionSpaceType.Lane,
         signals=Signals(100.0),
     )
@@ -103,8 +113,8 @@ def env(agent_spec):
     env.close()
 
 
-def project_2d(lens, img_metadata, pos):
-    center = np.array(img_metadata.camera_pos)
+def project_2d(lens, img_metadata: GridMapMetadata, pos):
+    center = np.array(img_metadata.camera_position)
     heading = np.radians(img_metadata.camera_heading_in_degrees)
 
     # Translate according to the camera center
@@ -143,7 +153,13 @@ def apply_tolerance(arr, x, y, tolerance):
     return arr[x - tolerance : x + tolerance, y - tolerance : y + tolerance, :]
 
 
-def sample_vehicle_pos(lens, rgb, ogm, drivable_area, vehicle_pos):
+def sample_vehicle_pos(
+    lens,
+    rgb: TopDownRGB,
+    ogm: OccupancyGridMap,
+    drivable_area: ObsDrivableAreaGridMap,
+    vehicle_pos,
+):
     rgb_x, rgb_y = project_2d(lens, rgb.metadata, vehicle_pos)
     ogm_x, ogm_y = project_2d(lens, ogm.metadata, vehicle_pos)
     drivable_area_x, drivable_area_y = project_2d(
@@ -169,7 +185,7 @@ def sample_vehicle_pos(lens, rgb, ogm, drivable_area, vehicle_pos):
 
 def test_observations(env, agent_spec):
     agent = agent_spec.build_agent()
-    observations = env.reset()
+    observations: Dict[str, Observation] = env.reset()
 
     # Let the agent step for a while
     for _ in range(NUM_STEPS):
@@ -257,7 +273,9 @@ def scenario():
     )
     return Scenario(
         scenario_root="scenarios/sumo/intersections/2lane",
-        traffic_specs=["scenarios/sumo/intersections/2lane/traffic/vertical.rou.xml"],
+        traffic_specs=[
+            "scenarios/sumo/intersections/2lane/build/traffic/vertical.rou.xml"
+        ],
         missions={AGENT_ID: mission},
     )
 
@@ -276,7 +294,7 @@ def smarts(agent_interface):
 
 
 def test_signal_observations(smarts, scenario):
-    observations = smarts.reset(scenario)
+    observations: Dict[str, Observation] = smarts.reset(scenario)
 
     # go REAL SLOW so the light can change...
     agent = Agent.from_function(lambda _: (1.0, 0))

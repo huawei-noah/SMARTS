@@ -10,8 +10,8 @@ agent_spec = AgentSpec(
     interface=AgentInterface.from_type(
         AgentType.Laner,
         max_episode_steps=150,
-        rgb=True,
-        ogm=True,
+        top_down_rgb=True,
+        occupancy_grid_map=True,
         drivable_area_grid_map=True,
     ),
     agent_builder=None,
@@ -21,11 +21,13 @@ agent_spec = AgentSpec(
 def entry_point(*args, **kwargs):
     from smarts.env.hiway_env import HiWayEnv
 
-    scenario = str((Path(__file__).parent / "../../scenarios/figure_eight").resolve())
+    scenario = str(
+        (Path(__file__).parent / "../../scenarios/sumo/figure_eight").resolve()
+    )
     ## Note: can build the scenario here
     from smarts.sstudio.scenario_construction import build_scenario
 
-    build_scenario(clean=True, allow_offset_map=True, scenario=scenario)
+    build_scenario(clean=True, scenario=scenario)
     hiwayenv = HiWayEnv(
         agent_specs={"agent-007": agent_spec},
         scenarios=[scenario],

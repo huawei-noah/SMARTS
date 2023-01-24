@@ -20,7 +20,6 @@
 import os
 
 import click
-from tabulate import tabulate
 
 
 @click.group(
@@ -38,6 +37,8 @@ def waymo_cli():
     "tfrecord_file", type=click.Path(exists=True), metavar="<tfrecord_file>"
 )
 def overview(tfrecord_file: str):
+    from tabulate import tabulate
+
     from smarts.waymo import waymo_utils
 
     scenarios = waymo_utils.get_tfrecord_info(tfrecord_file)

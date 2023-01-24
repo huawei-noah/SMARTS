@@ -46,7 +46,8 @@ class FrameStack(gym.Wrapper):
         super(FrameStack, self).__init__(env)
         self._num_stack = num_stack
         self._frames = {
-            key: deque(maxlen=self._num_stack) for key in self.env.agent_specs.keys()
+            key: deque(maxlen=self._num_stack)
+            for key in self.env.agent_interfaces.keys()
         }
 
         if self.observation_space:

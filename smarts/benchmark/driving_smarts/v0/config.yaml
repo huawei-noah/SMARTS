@@ -1,0 +1,44 @@
+# smarts/benchmark/driving_smarts_v0/config.yaml
+---
+benchmark:
+  name: "Driving SMARTS V0"
+  message: | # A useful message given at the start of the benchmark.
+    This is a cleaned up version of the Driving SMARTS benchmark.
+
+      Using `TargetPose` agent action has an applied 28m/s cap for agent motion.
+      Using `RelativeTargetPose` agent action, the constraint is inbuilt into the action space.
+
+      For history see: 
+        - https://codalab.lisn.upsaclay.fr/competitions/6618
+        - https://smarts-project.github.io/archive/2022_nips_driving_smarts/
+  eval_episodes: 50
+  shared_env_kwargs:
+    seed: 42
+    headless: true
+  envs:
+    standard:
+      loc: "smarts.env:driving-smarts-competition-v0"
+      scenarios:
+        - 1_to_2lane_left_turn_c
+        - 1_to_2lane_left_turn_t
+        - 3lane_merge_multi_agent
+        - 3lane_merge_single_agent
+        - 3lane_cruise_multi_agent
+        - 3lane_cruise_single_agent
+        - 3lane_cut_in
+        - 3lane_overtake
+      kwargs:
+        seed: 42
+    # bubble: # reserved for bubble env
+    #   loc: "smarts.env:driving-smarts-competition-bubble-env-v0"
+      # scenarios:
+      #   - 6
+      #   - 4
+      #   - 42
+    #   kwargs:
+    # naturalistic: # reserved for driving_smarts_competition_naturalistic-v0
+    #   loc: "smarts.env:driving_smarts_competition_naturalistic-v0"
+    #   kwargs:
+    #     scenario_dirs:
+    #       - "./scenarios/naturalistic/waymo"
+    #       - "./scenarios/naturalistic/ngsim"

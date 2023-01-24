@@ -219,7 +219,7 @@ def get_aux_info(env_obs):
 
 cross_interface = AgentInterface(
     max_episode_steps=500,
-    neighborhood_vehicles=True,
-    waypoints=True,
+    neighborhood_vehicle_states=True,
+    waypoint_paths=True,
     action=ActionSpaceType.LaneWithContinuousSpeed,
 )

@@ -20,10 +20,14 @@
 import dataclasses
 import hashlib
 import os
+import pickle
 import shutil
 import struct
 from contextlib import contextmanager
-from typing import Generator
+from ctypes import c_int64
+from typing import Any, Generator
+
+import smarts
 
 
 def file_in_folder(filename: str, path: str) -> bool:
@@ -48,6 +52,16 @@ def isnamedtupleinstance(x):
     if not isinstance(f, tuple):
         return False
     return all(type(n) == str for n in f)
+
+
+def replace(obj: Any, **kwargs):
+    """Replace dataclasses and named tuples with the same interface."""
+    if isnamedtupleinstance(obj):
+        return obj._replace(**kwargs)
+    elif dataclasses.is_dataclass(obj):
+        return dataclasses.replace(obj, **kwargs)
+
+    raise ValueError("Must be a namedtuple or dataclass.")
 
 
 def isdataclass(x):
@@ -107,6 +121,25 @@ def file_md5_hash(file_path: str) -> str:
         hasher.update(f.read().encode())
 
     return str(hasher.hexdigest())
+
+
+def pickle_hash(obj, include_version=False) -> str:
+    """Converts a Python object to a hash value. NOTE: NOT stable across different Python versions."""
+    pickle_bytes = pickle.dumps(obj, protocol=4)
+    hasher = hashlib.md5()
+    hasher.update(pickle_bytes)
+
+    if include_version:
+        hasher.update(smarts.VERSION.encode())
+
+    return hasher.hexdigest()
+
+
+def pickle_hash_int(obj) -> int:
+    """Converts a Python object to a hash value. NOTE: NOT stable across different Python versions."""
+    hash_str = pickle_hash(obj)
+    val = int(hash_str, 16)
+    return c_int64(val).value
 
 
 def smarts_log_dir() -> str:

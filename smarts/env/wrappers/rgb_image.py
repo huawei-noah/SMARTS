@@ -21,10 +21,12 @@
 # THE SOFTWARE.
 
 
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, NamedTuple, Sequence
 
 import gym
 import numpy as np
+
+from smarts.core.utils.file import isnamedtupleinstance
 
 
 class RGBImage(gym.ObservationWrapper):
@@ -45,10 +47,10 @@ class RGBImage(gym.ObservationWrapper):
                 else use the number of stacked frames in base env's observation.
         """
         super().__init__(env)
-        agent_specs = env.agent_specs
+        agent_interfaces = env.agent_interfaces
 
-        for agent_id in agent_specs.keys():
-            assert agent_specs[agent_id].interface.rgb, (
+        for agent_id in agent_interfaces.keys():
+            assert agent_interfaces[agent_id].top_down_rgb, (
                 f"To use RGBImage wrapper, enable RGB "
                 f"functionality in {agent_id}'s AgentInterface."
             )
@@ -61,13 +63,13 @@ class RGBImage(gym.ObservationWrapper):
                     low=0,
                     high=255,
                     shape=(
-                        agent_specs[agent_id].interface.rgb.width,
-                        agent_specs[agent_id].interface.rgb.height,
+                        agent_interfaces[agent_id].top_down_rgb.width,
+                        agent_interfaces[agent_id].top_down_rgb.height,
                         3 * self._num_stack,
                     ),
                     dtype=np.uint8,
                 )
-                for agent_id in agent_specs.keys()
+                for agent_id in agent_interfaces.keys()
             }
         )
 
@@ -78,11 +80,15 @@ class RGBImage(gym.ObservationWrapper):
         """
         wrapped_obs = {}
         for agent_id, agent_obs in obs.items():
-            if isinstance(agent_obs, Sequence):
+            if isinstance(agent_obs, tuple) and not isnamedtupleinstance(agent_obs):
                 true_num_stack = len(agent_obs)
             else:
                 true_num_stack = 1
                 agent_obs = [agent_obs]
+
+            if self._num_stack != true_num_stack:
+                print(agent_obs)
+                print(self._num_stack, true_num_stack)
 
             assert self._num_stack == true_num_stack, (
                 f"User supplied `num_stack` (={self._num_stack}) argument to "
@@ -95,7 +101,7 @@ class RGBImage(gym.ObservationWrapper):
                 try:
                     image = agent_ob.top_down_rgb.data
                 except AttributeError:
-                    image = agent_ob.rgb
+                    image = agent_ob.top_down_rgb
                 images.append(image.astype(np.uint8))
 
             stacked_images = np.dstack(images)

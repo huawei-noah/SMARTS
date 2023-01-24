@@ -46,7 +46,7 @@ def scenarios():
     )
     scenario = Scenario(
         scenario_root="scenarios/sumo/loop",
-        traffic_specs=["scenarios/sumo/loop/traffic/basic.rou.xml"],
+        traffic_specs=["scenarios/sumo/loop/build/traffic/basic.rou.xml"],
         missions={"Agent-007": mission},
     )
     return cycle([scenario])
@@ -68,7 +68,7 @@ def smarts_traffic_sim():
 def smarts(sumo_traffic_sim, smarts_traffic_sim):
     buddha = AgentInterface(
         max_episode_steps=1000,
-        neighborhood_vehicles=True,
+        neighborhood_vehicle_states=True,
         action=ActionSpaceType.Lane,
     )
     agents = {"Agent-007": buddha}

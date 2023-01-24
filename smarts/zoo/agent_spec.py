@@ -18,7 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import inspect
-import logging
 import warnings
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
@@ -30,11 +29,9 @@ from smarts.core.agent_interface import AgentInterface
 
 warnings.simplefilter("once")
 
-logger = logging.getLogger(__name__)
-
 
 @dataclass
-class AgentSpec:
+class AgentSpec(object):
     """A configuration that is used by SMARTS environments.
 
     .. code-block:: python
@@ -67,13 +64,32 @@ class AgentSpec:
     """Parameters to be given to `AgentSpec.agent_builder` (default None)"""
 
     observation_adapter: Callable = lambda obs: obs
-    """An adaptor that allows shaping of the observations (default lambda obs: obs)"""
+    """Deprecated. Do not use. An adaptor that allows shaping of the 
+    observations. Defaults to `lambda obs: obs`."""
     action_adapter: Callable = lambda act: act
-    """An adaptor that allows shaping of the action (default lambda act: act)"""
+    """Deprecated. Do not use. An adaptor that allows shaping of the action. 
+    Defaults to `lambda act: act`."""
     reward_adapter: Callable = lambda obs, reward: reward
-    """An adaptor that allows shaping of the reward (default lambda obs, reward: reward)"""
+    """Deprecated. Do not use. An adaptor that allows shaping of the reward. 
+    Defaults to `lambda obs, reward: reward`."""
     info_adapter: Callable = lambda obs, reward, info: info
-    """An adaptor that allows shaping of info (default lambda obs, reward, info: info)"""
+    """Deprecated. Do not use. An adaptor that allows shaping of info. Defaults
+    to `lambda obs, reward, info: info`."""
+
+    def __getattribute__(self, item):
+        if (
+            item == "observation_adapter"
+            or item == "action_adapter"
+            or item == "reward_adapter"
+            or item == "info_adapter"
+        ):
+            warnings.warn(
+                "Observation_adapter, action_adapter, reward_adapter, "
+                "and info_adapter, are deprecated. Do not use them.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return object.__getattribute__(self, item)
 
     def __post_init__(self):
         # make sure we can pickle ourselves

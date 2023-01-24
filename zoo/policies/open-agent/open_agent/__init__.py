@@ -25,8 +25,8 @@ def entrypoint(
     return AgentSpec(
         interface=AgentInterface(
             action=ActionSpaceType.Trajectory,
-            waypoints=True,
-            neighborhood_vehicles=True,
+            waypoint_paths=True,
+            neighborhood_vehicle_states=True,
             max_episode_steps=max_episode_steps,
         ),
         agent_params={

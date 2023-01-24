@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Any, Callable, Dict, Generator
+from typing import Any, Callable, Dict, Generator, Optional
 
 import action
 import gym
@@ -22,11 +22,11 @@ def generate(
         base_seed += 1
 
 
-def make(config: Dict[str, Any], seed: int, env_name: str = None) -> gym.Env:
+def make(env_name: Optional[str], config: Dict[str, Any], seed: int) -> gym.Env:
 
     vehicle_interface = smarts_agent_interface.AgentInterface(
         max_episode_steps=config["max_episode_steps"],
-        rgb=smarts_agent_interface.RGB(
+        top_down_rgb=smarts_agent_interface.RGB(
             width=config["rgb_pixels"],
             height=config["rgb_pixels"],
             resolution=config["rgb_meters"] / config["rgb_pixels"],

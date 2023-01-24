@@ -57,10 +57,10 @@ def smarts():
     buddha = AgentInterface(
         debug=True,
         done_criteria=DoneCriteria(collision=False, off_road=False, off_route=False),
-        rgb=True,
-        ogm=True,
+        top_down_rgb=True,
+        occupancy_grid_map=True,
         drivable_area_grid_map=True,
-        neighborhood_vehicles=NeighborhoodVehicles(radius=20),
+        neighborhood_vehicle_states=NeighborhoodVehicles(radius=20),
         action=ActionSpaceType.Lane,
     )
     smarts = _smarts_with_agent(buddha)
@@ -73,7 +73,7 @@ def smarts_wo_renderer():
     buddha = AgentInterface(
         debug=True,
         done_criteria=DoneCriteria(collision=False, off_road=False, off_route=False),
-        neighborhood_vehicles=NeighborhoodVehicles(radius=20),
+        neighborhood_vehicle_states=NeighborhoodVehicles(radius=20),
         action=ActionSpaceType.Lane,
     )
     smarts = _smarts_with_agent(buddha)
@@ -89,7 +89,7 @@ def scenario():
     )
     scenario = Scenario(
         scenario_root="scenarios/sumo/loop",
-        traffic_specs=["scenarios/sumo/loop/traffic/basic.rou.xml"],
+        traffic_specs=["scenarios/sumo/loop/build/traffic/basic.rou.xml"],
         missions={AGENT_ID: mission},
     )
     return scenario

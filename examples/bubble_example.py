@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Tuple
 
-from argument_parser import default_argument_parser
+from tools.argument_parser import default_argument_parser
 
 from envision.client import Client as Envision
 from smarts.core import seed as random_seed
@@ -12,8 +12,8 @@ from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 from smarts.core.agent_manager import AgentManager
 from smarts.core.local_traffic_provider import LocalTrafficProvider
+from smarts.core.observations import Observation
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Observation
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.logging import timeit
 from smarts.sstudio.types import Bubble, PositionalZone, SocialAgentActor

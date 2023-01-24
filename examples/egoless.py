@@ -1,11 +1,10 @@
-import logging
+from pathlib import Path
 
 import gym
-from argument_parser import default_argument_parser
+from tools.argument_parser import default_argument_parser
 
+from cli.studio import build_scenarios
 from smarts.core.utils.episodes import episodes
-
-logging.basicConfig(level=logging.WARNING)
 
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
@@ -18,7 +17,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     )
 
     if max_episode_steps is None:
-        max_episode_steps = 1000
+        max_episode_steps = 300
 
     for episode in episodes(n=num_episodes):
         env.reset()
@@ -32,8 +31,19 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("egoless-example")
+    parser = default_argument_parser("egoless")
     args = parser.parse_args()
+
+    if not args.scenarios:
+        args.scenarios = [
+            str(Path(__file__).absolute().parents[1] / "scenarios" / "sumo" / "loop")
+        ]
+
+    build_scenarios(
+        clean=False,
+        scenarios=args.scenarios,
+        seed=42,
+    )
 
     main(
         scenarios=args.scenarios,

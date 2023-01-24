@@ -18,9 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import math
 import os
 import random
 from functools import lru_cache
+from pathlib import Path
 from subprocess import check_output
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
@@ -279,10 +281,17 @@ class SumoRoadNetwork(RoadMap):
         # map units per meter
         return self._default_lane_width / SumoRoadNetwork.DEFAULT_LANE_WIDTH
 
-    def to_glb(self, at_path):
+    def to_glb(self, glb_dir):
+        lane_dividers, edge_dividers = self._compute_traffic_dividers()
         polys = self._compute_road_polygons()
-        glb = self._make_glb_from_polys(polys)
-        glb.write_glb(at_path)
+        map_glb = self._make_glb_from_polys(polys, lane_dividers, edge_dividers)
+        map_glb.write_glb(Path(glb_dir) / "map.glb")
+
+        road_lines_glb = self._make_road_line_glb(edge_dividers)
+        road_lines_glb.write_glb(Path(glb_dir) / "road_lines.glb")
+
+        lane_lines_glb = self._make_road_line_glb(lane_dividers)
+        lane_lines_glb.write_glb(Path(glb_dir) / "lane_lines.glb")
 
     class Surface(RoadMap.Surface):
         """Describes a Sumo surface."""
@@ -1270,7 +1279,18 @@ class SumoRoadNetwork(RoadMap):
             if new_coords:
                 lane_to_poly[lane_id] = (Polygon(new_coords), metadata)
 
-    def _make_glb_from_polys(self, polygons):
+    def _make_road_line_glb(self, lines: List[List[Tuple[float, float]]]):
+        scene = trimesh.Scene()
+        for line_pts in lines:
+            vertices = [(*pt, 0.1) for pt in line_pts]
+            point_cloud = trimesh.PointCloud(vertices=vertices)
+            point_cloud.apply_transform(
+                trimesh.transformations.rotation_matrix(math.pi / 2, [-1, 0, 0])
+            )
+            scene.add_geometry(point_cloud)
+        return _GLBData(gltf.export_glb(scene))
+
+    def _make_glb_from_polys(self, polygons, lane_dividers, edge_dividers):
         scene = trimesh.Scene()
         meshes = generate_meshes_from_polygons(polygons)
         # Attach additional information for rendering as metadata in the map glb
@@ -1281,7 +1301,6 @@ class SumoRoadNetwork(RoadMap):
         metadata["bounding_box"] = self._graph.getBoundary()
 
         # lane markings information
-        lane_dividers, edge_dividers = self._compute_traffic_dividers()
         metadata["lane_dividers"] = lane_dividers
         metadata["edge_dividers"] = edge_dividers
 

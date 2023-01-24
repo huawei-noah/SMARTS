@@ -18,7 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import weakref
-from dataclasses import dataclass, field, replace
 from typing import List, Sequence, Set
 
 import numpy as np
@@ -28,6 +27,7 @@ from .controllers import ActionSpaceType
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Scenario
+from .utils.file import replace
 from .vehicle import VehicleState
 
 
@@ -90,7 +90,7 @@ class ExternalProvider(Provider):
         self._last_step_delta = step_delta
 
     @property
-    def action_spaces(self) -> Set[ActionSpaceType]:
+    def actions(self) -> Set[ActionSpaceType]:
         return set()
 
     @property

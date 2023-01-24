@@ -18,16 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import collections.abc as collections_abc
-import hashlib
 import logging
 import math
-import pickle
 import random
-from ctypes import c_int64
 from dataclasses import dataclass, field
 from enum import IntEnum
 from sys import maxsize
-from typing import Any, Callable, Dict, List, NewType, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -46,6 +43,7 @@ from smarts.core import gen_id
 from smarts.core.coordinates import RefLinePoint
 from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
+from smarts.core.utils.file import pickle_hash_int
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_cw_around_point
 
@@ -53,14 +51,6 @@ from smarts.core.utils.math import rotate_cw_around_point
 class _SUMO_PARAMS_MODE(IntEnum):
     TITLE_CASE = 0
     KEEP_SNAKE_CASE = 1
-
-
-def _pickle_hash(obj) -> int:
-    pickle_bytes = pickle.dumps(obj, protocol=4)
-    hasher = hashlib.md5()
-    hasher.update(pickle_bytes)
-    val = int(hasher.hexdigest(), 16)
-    return c_int64(val).value
 
 
 class _SumoParams(collections_abc.Mapping):
@@ -128,32 +118,33 @@ class JunctionModel(_SumoParams):
 class SmartsLaneChangingModel(LaneChangingModel):
     """Implements the simple lane-changing model built-into SMARTS.
 
-    :param cutin_prob:
-        Float value between 0 and 1 that determines the probabilty this vehicle will
-        "arbitrarily" cut in front of an adjacent (Agent) vehicle when it has a chance,
-        even if there would otherwise be no reason to change lanes at that point.  Higher
-        values risk a situation where this vehicle ends up in a lane where it cannot
-        maintain its planned route.  If that happens, this vehicle will perform whatever
-        its default behavior is when it completes its route.  default: 0.0.
-    :param assertive:
-        Willingness to accept lower front and rear gaps in the target lane.
-        The required gap is divided by this value. default: 1.0, range: positive floats.
-        Attempts to match the semantics of the attribute in SUMO's default lane-changing model,
-        see: ``https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models``
-    :param dogmatic:
-        If True, will cutin when a suitable opportunity presents itself based on the above parameters,
-        even if it means the risk of not not completing the assigned route; otherwise, will forego
-        the chance.
-    :param hold_period:
-        The minimum amount of time (in seconds) to remain in the agent's lane after cutting into it
-        (including the time it takes within the lane to complete the maneuver). Must be non-negative.
-        default: 3.0.
-    :param slow_down_after:
-        Target speed during the hold_period will be scaled by this value.
-        Must be non-negative.  default: 1.0.
-    :param multi_lane_cutin:
-        If True, this vehicle will consider changing across multiple lanes at once in order
-        to cutin upon an agent vehicle when there's an opportunity.  default: False.
+    Args:
+        cutin_prob (float, optional): Float value [0, 1] that
+            determines the probabilty this vehicle will "arbitrarily" cut in
+            front of an adjacent agent vehicle when it has a chance, even if
+            there would otherwise be no reason to change lanes at that point.
+            Higher values risk a situation where this vehicle ends up in a lane
+            where it cannot maintain its planned route. If that happens, this
+            vehicle will perform whatever its default behavior is when it
+            completes its route. Defaults to 0.0.
+        assertive (float, optional): Willingness to accept lower front and rear
+            gaps in the target lane. The required gap is divided by this value.
+            Attempts to match the semantics of the attribute in SUMO's default
+            lane-changing model, see: ``https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models``.
+            Range: positive reals. Defaults to 1.0.
+        dogmatic (bool, optional): If True, will cutin when a suitable
+            opportunity presents itself based on the above parameters, even if
+            it means the risk of not not completing the assigned route;
+            otherwise, will forego the chance. Defaults to True.
+        hold_period (float, optional): The minimum amount of time (seconds) to
+            remain in the agent's lane after cutting into it (including the
+            time it takes within the lane to complete the maneuver). Must be
+            non-negative. Defaults to 3.0.
+        slow_down_after (float, optional): Target speed during the hold_period
+            will be scaled by this value. Must be non-negative. Defaults to 1.0.
+        multi_lane_cutin (bool, optional): If True, this vehicle will consider
+            changing across multiple lanes at once in order to cutin upon an
+            agent vehicle when there's an opportunity. Defaults to False.
     """
 
     def __init__(
@@ -178,28 +169,22 @@ class SmartsLaneChangingModel(LaneChangingModel):
 class SmartsJunctionModel(JunctionModel):
     """Implements the simple junction model built-into SMARTS.
 
-    :param yield_to_agents:
-
-        There are 3 possible values for this:
-
-            - "always" - traffic actors will yield to Ego and Social
-                agents within junctions;
-            - "never" - traffic actors will never yield to Ego or Social
-                agents within junctions;
-            - "normal" - traffic actors will attempt to honor normal
-                right-of-way conventions, only yielding when an agent
-                has the right-of-way.  Examples of such conventions include:
-
-                - Vehicles going straight have the right-of-way over
-                    turning vehicles;
-                - Vehicles on roads with more lanes have the right-of-way
-                    relative to vehicles on intersecting roads with less lanes;
-                - All other things being equal, the vehicle to the right
-                    (in the counter-clockwise direction) has the right-of-way.
-
-    :param wait_to_restart:
-        The amount of time in seconds after stopping at a signal or stop sign
-        before this vehicle will start to go again.  Default:  0.0
+    Args:
+        yield_to_agents (str, optional): Defaults to "normal". 3 options are
+            available, namely: (1) "always" - Traffic actors will yield to Ego
+            and Social agents within junctions. (2) "never" - Traffic actors
+            will never yield to Ego or Social agents within junctions.
+            (3) "normal" - Traffic actors will attempt to honor normal
+            right-of-way conventions, only yielding when an agent has the
+            right-of-way. Examples of such conventions include (a) vehicles
+            going straight have the right-of-way over turning vehicles;
+            (b) vehicles on roads with more lanes have the right-of-way
+            relative to vehicles on intersecting roads with less lanes;
+            (c) all other things being equal, the vehicle to the right
+            in a counter-clockwise sense has the right-of-way.
+        wait_to_restart (float, optional): The amount of time in seconds
+            after stopping at a signal or stop sign before this vehicle
+            will start to go again. Defaults to 0.0.
     """
 
     def __init__(self, yield_to_agents: str = "normal", wait_to_restart: float = 0.0):
@@ -305,7 +290,7 @@ class TrafficActor(Actor):
     junction_model: JunctionModel = field(default_factory=JunctionModel, hash=False)
 
     def __hash__(self) -> int:
-        return _pickle_hash(self)
+        return pickle_hash_int(self)
 
     @property
     def id(self) -> str:
@@ -427,7 +412,7 @@ class Route:
         return "route-{}-{}-{}-".format(
             "_".join(map(str, self.begin)),
             "_".join(map(str, self.end)),
-            _pickle_hash(self),
+            pickle_hash_int(self),
         )
 
     @property
@@ -436,7 +421,7 @@ class Route:
         return (self.begin[0],) + self.via + (self.end[0],)
 
     def __hash__(self):
-        return _pickle_hash(self)
+        return pickle_hash_int(self)
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
@@ -491,13 +476,13 @@ class Flow:
         """The unique id of this flow."""
         return "flow-{}-{}-".format(
             self.route.id,
-            str(_pickle_hash(sorted(self.actors.items(), key=lambda a: a[0].name))),
+            str(pickle_hash_int(sorted(self.actors.items(), key=lambda a: a[0].name))),
         )
 
     def __hash__(self):
         # Custom hash since self.actors is not hashable, here we first convert to a
         # frozenset.
-        return _pickle_hash((self.route, self.rate, frozenset(self.actors.items())))
+        return pickle_hash_int((self.route, self.rate, frozenset(self.actors.items())))
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
@@ -533,7 +518,7 @@ class Trip:
     def __hash__(self):
         # Custom hash since self.actors is not hashable, here we first convert to a
         # frozenset.
-        return _pickle_hash((self.route, self.actor))
+        return pickle_hash_int((self.route, self.actor))
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and hash(self) == hash(other)
@@ -587,7 +572,8 @@ class Traffic:
     trips: Optional[Sequence[Trip]] = None
     """Trips are used to define a series of single vehicle trip."""
     engine: str = "SUMO"
-    """The traffic-generation engine to use. Supported values include: SUMO, SMARTS.  SUMO requires using a SumoRoadNetwork for the RoadMap."""
+    """Traffic-generation engine to use. Supported values include "SUMO" and "SMARTS". "SUMO" requires using a SumoRoadNetwork for the RoadMap.
+    """
 
 
 @dataclass(frozen=True)
@@ -1018,9 +1004,15 @@ class RoadSurfacePatch:
 
 
 @dataclass(frozen=True)
-class _ActorAndMission:
+class ActorAndMission:
+    """Holds an Actor object and its associated Mission."""
+
     actor: Actor
+    """Specification for traffic actor.
+    """
     mission: Union[Mission, EndlessMission, LapMission]
+    """Mission for traffic actor.
+    """
 
 
 @dataclass(frozen=True)
@@ -1075,16 +1067,23 @@ class Scenario:
     """The sstudio scenario representation."""
 
     map_spec: Optional[MapSpec] = None
+    """Specifies the road map."""
     traffic: Optional[Dict[str, Traffic]] = None
+    """Background traffic vehicle specification."""
     ego_missions: Optional[Sequence[Mission]] = None
-    # e.g. { "turning_agents": ([actors], [missions]), ... }
+    """Ego agent missions."""
     social_agent_missions: Optional[
         Dict[str, Tuple[Sequence[SocialAgentActor], Sequence[Mission]]]
     ] = None
-    """Every dictionary item {group: (actors, missions)} gets run simultaneously. If
-    actors > 1 and missions = 0 or actors = 1 and missions > 0 we cycle through them
-    every episode. Otherwise actors must be the same length as missions.
+    """
+    Every dictionary item ``{group: (actors, missions)}`` gets run simultaneously.
+    If actors > 1 and missions = 0 or actors = 1 and missions > 0, we cycle
+    through them every episode. Otherwise actors must be the same length as 
+    missions.
     """
     bubbles: Optional[Sequence[Bubble]] = None
+    """Capture bubbles for focused social agent simulation."""
     friction_maps: Optional[Sequence[RoadSurfacePatch]] = None
+    """Friction coefficient of patches of road surface."""
     traffic_histories: Optional[Sequence[Union[TrafficHistoryDataset, str]]] = None
+    """Traffic vehicles trajectory dataset to be replayed."""

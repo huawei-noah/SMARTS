@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.sensors import Observation
+from smarts.core.observations import Observation
 from smarts.core.utils.adapters.ego_centric_adapters import (
     ego_centric_observation_adapter,
     get_egocentric_adapters,

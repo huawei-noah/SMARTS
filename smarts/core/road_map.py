@@ -34,8 +34,8 @@ from shapely.geometry import LineString
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 
-from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
-from .utils.math import (
+from smarts.core.coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
+from smarts.core.utils.math import (
     fast_quaternion_from_angle,
     min_angles_difference_signed,
     signed_dist_to_line,
@@ -80,7 +80,7 @@ class RoadMap:
         """Check if the MapSpec Object source points to the same RoadMap instance as the current"""
         raise NotImplementedError
 
-    def to_glb(self, at_path: str):
+    def to_glb(self, glb_dir: str):
         """Build a glb file for camera rendering and envision"""
         raise NotImplementedError()
 
@@ -625,6 +625,9 @@ class RoadMap:
             """Required for set usage; derived classes may override this."""
             return self.__class__ == other.__class__ and hash(self) == hash(other)
 
+        def _add_road(self, road: RoadMap.Road):
+            raise NotImplementedError()
+
         @property
         def roads(self) -> List[RoadMap.Road]:
             """A possibly-unordered list of roads that this route covers"""
@@ -706,13 +709,20 @@ class Waypoint:
 
     # XXX: consider renaming lane_id, lane_index, lane_width
     #      to nearest_lane_id, nearest_lane_index, nearest_lane_width
-    pos: np.ndarray  # Point positioned on center of lane
-    heading: Heading  # Heading angle of lane at this point (radians)
-    lane_id: str  # ID of lane under waypoint
-    lane_width: float  # Width of lane at this point (meters)
-    speed_limit: float  # Lane speed in m/s
-    lane_index: int  # Index of the lane this waypoint is over. 0 is the outer(right) most lane
-    lane_offset: float  # longitudinal distance along lane centerline of this waypoint
+    pos: np.ndarray
+    """Point positioned on lane center."""
+    heading: Heading
+    """Heading angle of lane at this point. Units=rad"""
+    lane_id: str
+    """Globally unique identifier of lane under waypoint."""
+    lane_width: float
+    """Width of lane at this point. Units=meters"""
+    speed_limit: float
+    """Lane speed. Units=m/s"""
+    lane_index: int
+    """Index of the lane under this waypoint. Right most lane has index 0 and index increases to the left."""
+    lane_offset: float
+    """Longitudinal distance along lane centerline of this waypoint."""
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Waypoint):
@@ -744,7 +754,7 @@ class Waypoint:
         """Computes relative heading between the given angle and the waypoint heading
 
         Returns:
-            relative_heading: [-pi..pi]
+            float: Relative heading in [-pi, pi].
         """
         assert isinstance(
             h, Heading

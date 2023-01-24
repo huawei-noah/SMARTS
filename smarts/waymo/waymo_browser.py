@@ -18,8 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# pytype: disable=import-error
-
 # Text based Waymo Dataset Browser.
 import argparse
 import copy
