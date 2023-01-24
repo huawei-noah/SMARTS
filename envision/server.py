@@ -54,6 +54,24 @@ WEB_CLIENT_RUN_LOOPS = {}
 # Mapping of simulation ID to the Frames data store
 FRAMES = {}
 
+# Mapping of map files
+MAPS = {}
+
+
+def postmap(scenario_dirs: Optional[Sequence[str]]):
+    """Setup this handler. Finds and indexes all map geometry files in the given scenario
+    directories.
+    """
+    path_map = {}
+    for dir_ in scenario_dirs:
+        path_map.update(
+            {
+                f"{path2hash(str(glb.parents[2].resolve()))}.glb": glb
+                for glb in Path(dir_).rglob("build/map/*.glb")
+            }
+        )
+
+    return path_map
 
 class AllowCORSMixin:
     """A mixin that adds CORS headers to the page."""
@@ -326,7 +344,13 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
             self._frames.append(Frame(timestamp=frame_time, data=message))
         elif prefix == "item" and event == "start_map":
             # If the second event is a start_map, it is a preamble. 
+            print("Sent preamble ++++++++++++++++++++++++++")
             scenarios = [value for prefix, event, value in it if prefix=="item.scenarios.item" and event=="string"]
+            out = postmap(scenarios)
+            MAPS.update(out)
+            # MapFileHandler(self.application,MAPS.update({secanrios)
+            print("CONTENTS OF MAPS ++++====", MAPS)
+
         else:
             raise tornado.web.HTTPError(400, f"Bad request message.")
 
@@ -401,6 +425,8 @@ class FileHandler(AllowCORSMixin, tornado.web.RequestHandler):
                 404, f"Map file `{self._path_map[id_]}` not found."
             )
 
+        print(f"GETTING FILEHANDLER {id_}")
+
         await self.serve_chunked(Path(self._path_map[id_]))
 
     async def serve_chunked(self, path: Path, chunk_size: int = 1024 * 1024):
@@ -425,19 +451,11 @@ class FileHandler(AllowCORSMixin, tornado.web.RequestHandler):
 class MapFileHandler(FileHandler):
     """This handler serves map geometry to the given endpoint."""
 
-    def initialize(self, scenario_dirs: Optional[Sequence[str]]):
+    def initialize(self):
         """Setup this handler. Finds and indexes all map geometry files in the given scenario
         directories.
         """
-        path_map = {}
-        for dir_ in scenario_dirs:
-            path_map.update(
-                {
-                    f"{path2hash(str(glb.parents[2].resolve()))}.glb": glb
-                    for glb in Path(dir_).rglob("build/map/*.glb")
-                }
-            )
-
+        path_map = MAPS
         super().initialize(path_map)
 
 
@@ -490,7 +508,7 @@ class MainHandler(tornado.web.RequestHandler):
             self.render(str(index_path))
 
 
-def make_app(scenario_dirs: Sequence, max_capacity_mb: float, debug: bool):
+def make_app(max_capacity_mb: float, debug: bool):
     """Create the envision web server application through composition of services."""
 
     dist_path = Path(os.path.dirname(web_dist.__file__)).absolute()
@@ -508,7 +526,6 @@ def make_app(scenario_dirs: Sequence, max_capacity_mb: float, debug: bool):
             (
                 r"/assets/maps/(.*)",
                 MapFileHandler,
-                dict(scenario_dirs=scenario_dirs),
             ),
             (r"/assets/models/(.*)", ModelFileHandler),
             (r"/(.*)", tornado.web.StaticFileHandler, dict(path=str(dist_path))),
@@ -524,13 +541,12 @@ def on_shutdown():
 
 
 def run(
-    scenario_dirs: List[str],
     max_capacity_mb: int = 500,
     port: int = 8081,
     debug: bool = False,
 ):
     """Create and run an envision web server."""
-    app = make_app(scenario_dirs, max_capacity_mb, debug=debug)
+    app = make_app(max_capacity_mb, debug=debug)
     app.listen(port)
     logging.debug("Envision listening on port=%s", port)
 
@@ -550,13 +566,6 @@ def main():
         prog="Envision Server",
         description="The Envision server broadcasts SMARTS state to Envision web "
         "clients for visualization.",
-    )
-    parser.add_argument(
-        "--scenarios",
-        help="A list of directories where scenarios are stored.",
-        default=["./scenarios"],
-        type=str,
-        nargs="+",
     )
     parser.add_argument(
         "--port",
@@ -579,7 +588,6 @@ def main():
     args = parser.parse_args()
 
     run(
-        scenario_dirs=args.scenarios,
         max_capacity_mb=args.max_capacity,
         port=args.port,
         debug=args.debug,
