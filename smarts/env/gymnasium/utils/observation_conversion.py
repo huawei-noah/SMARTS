@@ -894,6 +894,8 @@ class ObservationSpacesFormatter:
                     dtype=np.float32.
                 "heading":
                     Vehicle heading in radians [-pi, pi]. dtype=np.float32.
+                "lane_id":
+                    The ID of the lane that the vehicle is on.
                 "lane_index":
                     Vehicle's lane number. Rightmost lane has index 0 and increases
                     towards left. dtype=np.int8.
@@ -975,7 +977,7 @@ class ObservationSpacesFormatter:
                 "lane_index":
                     Lane number of neighbor vehicles. Defaults to np.array([0]) per
                     vehicle. shape=(10,). dtype=np.int8.
-                "pos":
+                "position":
                     Coordinate of the center of neighbor vehicles' bounding box's bottom
                     plane. Defaults to np.array([0,0,0]) per vehicle. shape=(10,3).
                     dtype=np.float64.
@@ -1005,7 +1007,7 @@ class ObservationSpacesFormatter:
                 "lane_width":
                     Lane width at a waypoint in meters. Defaults to np.array([0]) per
                     waypoint. shape=(4,20). dtype=np.float32.
-                "pos":
+                "position":
                     Coordinate of a waypoint. Defaults to np.array([0,0,0]).
                     shape=(4,20,3). dtype=np.float64.
                 "speed_limit":
