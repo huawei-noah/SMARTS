@@ -16,6 +16,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Removed
 ### Security
 
+## [1.0.1] 2023-01-24
+### Fixed
+- Fixed issue where Driving SMARTS benchmark only did 2 evaluations per scenario instead of 50.
+- Removed unclosed file warnings from benchmark output.
+
 ## [1.0.0] 2023-01-22
 ### Added
 - Exposed `.glb` file metadata through the scenario `Scenario.map_glb_metadata` attribute.
