@@ -17,6 +17,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Fixed
 - Fixed an issue where a sensor detach call when a bubble vehicle exits a bubble could cause a program crash.
 - Fixed issue with "hiway-v0" where "agent_interfaces" was not populated.
+- Add missing `distance_travelled` to the `hiway-v1` observations.
 ### Removed
 ### Security
 
