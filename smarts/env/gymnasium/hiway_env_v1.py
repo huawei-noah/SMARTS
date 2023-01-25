@@ -52,10 +52,13 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
-from smarts.env.gymnasium.utils.action_conversion import ActionsSpaceFormatter
+from smarts.env.gymnasium.utils.action_conversion import (
+    ActionOptions,
+    ActionSpacesFormatter,
+)
 from smarts.env.gymnasium.utils.observation_conversion import (
     ObservationOptions,
-    ObservationsSpaceFormatter,
+    ObservationSpacesFormatter,
 )
 
 DEFAULT_TIMESTEP = 0.1
@@ -213,7 +216,7 @@ class HiWayEnvV1(gym.Env):
 
         if isinstance(observation_options, str):
             observation_options = ObservationOptions[observation_options]
-        self._observations_formatter = ObservationsSpaceFormat(
+        self._observations_formatter = ObservationSpacesFormatter(
             agent_interfaces, observation_options
         )
         self.observation_space = self._observations_formatter.space
