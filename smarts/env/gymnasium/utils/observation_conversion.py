@@ -1128,7 +1128,7 @@ class ObservationSpaceFormat(DictSpaceFormat):
         return "observation"
 
 
-class ObservationsSpaceFormat:
+class ObservationSpacesFormatter:
     """Formats a smarts observation to fixed sized object.
 
     Observations in numpy array format, suitable for vectorized processing.
