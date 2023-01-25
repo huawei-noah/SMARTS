@@ -576,7 +576,7 @@ class Scenario:
             speed,
         )
 
-    def _get_vehicle_goal(self, vehicle_id: str) -> Point:
+    def get_vehicle_goal(self, vehicle_id: str) -> Point:
         final_exit_time = self._traffic_history.vehicle_final_exit_time(vehicle_id)
         final_pose = self._traffic_history.vehicle_pose_at_time(
             vehicle_id, final_exit_time
@@ -625,7 +625,7 @@ class Scenario:
              vehicle leaves the map.
         """
         start, speed = self.get_vehicle_start_at_time(veh_id, trigger_time)
-        veh_goal = self._get_vehicle_goal(veh_id)
+        veh_goal = self.get_vehicle_goal(veh_id)
         entry_tactic = default_entry_tactic(speed)
         # create a positional mission and a traverse mission
         positional_mission = Mission(

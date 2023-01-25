@@ -81,8 +81,9 @@ gen_scenario(
     scenario=Scenario(
         traffic=traffic,
         map_spec=MapSpec(
-            source=Path(__file__).parent,
+            source=Path(__file__).parent.absolute(),
             shift_to_origin=True,
+            lanepoint_spacing=1.0,
         ),
     ),
     output_dir=Path(__file__).parent,

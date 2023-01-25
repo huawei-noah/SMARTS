@@ -660,11 +660,11 @@ class AgentManager:
             # If this is a history vehicle, assign a mission based on its final position.
             # This is necessary so that the observations have waypoints that lead to the goal.
             mission = None
-            if sv_id in sim.traffic_history_provider._history_vehicle_ids:
+            if sv_id in sim.traffic_history_provider.history_vehicle_ids:
                 v_id = sv_id.split("-")[-1]
                 start_time = sim.scenario.traffic_history.vehicle_initial_time(v_id)
                 start, _ = sim.scenario.get_vehicle_start_at_time(v_id, start_time)
-                veh_goal = sim.scenario._get_vehicle_goal(v_id)
+                veh_goal = sim.scenario.get_vehicle_goal(v_id)
                 mission = Mission(
                     start=start,
                     goal=PositionalGoal(veh_goal, radius=5),
