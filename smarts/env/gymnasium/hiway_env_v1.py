@@ -52,6 +52,7 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
+from smarts.env.gymnasium.utils.action_conversion import ActionsSpaceFormatter
 from smarts.env.gymnasium.utils.observation_conversion import (
     ObservationOptions,
     ObservationsSpaceFormat,
@@ -203,6 +204,8 @@ class HiWayEnvV1(gym.Env):
         traffic_sims += [smarts_traffic]
 
         # TODO: set action space
+        self._action_formatter = ActionsSpaceFormatter(agent_interfaces)
+        self.action_space = self._action_formatter.space
 
         # TODO: set observation space
         if isinstance(observation_options, str):
