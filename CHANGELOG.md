@@ -12,6 +12,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 ### Changed
 - Scenario paths is no longer manually supplied to Envision server while setup. Scenario paths are automatically sent to Envision server from SMARTS during simulation startup phase.
+- Updated "hiway-v1" with `gymnasium` action spaces using new `ActionsSpaceFormatter` utility.
 ### Deprecated
 ### Fixed
 - Fixed an issue where a sensor detach call when a bubble vehicle exits a bubble could cause a program crash.
