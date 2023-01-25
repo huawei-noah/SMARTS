@@ -54,24 +54,9 @@ WEB_CLIENT_RUN_LOOPS = {}
 # Mapping of simulation ID to the Frames data store
 FRAMES = {}
 
-# Mapping of map files
+# Mapping of path to map geometry files
 MAPS = {}
 
-
-def postmap(scenario_dirs: Optional[Sequence[str]]):
-    """Setup this handler. Finds and indexes all map geometry files in the given scenario
-    directories.
-    """
-    path_map = {}
-    for dir_ in scenario_dirs:
-        path_map.update(
-            {
-                f"{path2hash(str(glb.parents[2].resolve()))}.glb": glb
-                for glb in Path(dir_).rglob("build/map/map.glb")
-            }
-        )
-
-    return path_map
 
 class AllowCORSMixin:
     """A mixin that adds CORS headers to the page."""
@@ -335,22 +320,22 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
     async def on_message(self, message):
         """Asynchronously receive messages from the Envision client."""
         it = ijson.parse(message)
-        next(it) # Discard generic first entry: prefix="", event="start_array", value=None
+        next(it)  # Discard first entry: prefix="", event="start_array", value=None
         prefix, event, value = next(it)
         if prefix == "item" and event == "number":
-            # If the second event is a number, it is a payload message.
+            # If the second event is a `number`, it is a payload message.
             frame_time = float(value)
             assert isinstance(frame_time, float)
             self._frames.append(Frame(timestamp=frame_time, data=message))
         elif prefix == "item" and event == "start_map":
-            # If the second event is a start_map, it is a preamble. 
-            print("Sent preamble ++++++++++++++++++++++++++")
-            scenarios = [value for prefix, event, value in it if prefix=="item.scenarios.item" and event=="string"]
-            out = postmap(scenarios)
-            MAPS.update(out)
-            # MapFileHandler(self.application,MAPS.update({secanrios)
-            print("CONTENTS OF MAPS ++++====", MAPS)
-
+            # If the second event is a `start_map`, it is a preamble.
+            scenarios = [
+                value
+                for prefix, event, value in it
+                if prefix == "item.scenarios.item" and event == "string"
+            ]
+            path_map = _index_map(scenarios)
+            MAPS.update(path_map)
         else:
             raise tornado.web.HTTPError(400, f"Bad request message.")
 
@@ -452,11 +437,8 @@ class MapFileHandler(FileHandler):
     """This handler serves map geometry to the given endpoint."""
 
     def initialize(self):
-        """Setup this handler. Finds and indexes all map geometry files in the given scenario
-        directories.
-        """
-        path_map = MAPS
-        super().initialize(path_map)
+        """Setup this handler."""
+        super().initialize(path_map=MAPS)
 
 
 class SimulationListHandler(AllowCORSMixin, tornado.web.RequestHandler):
@@ -532,6 +514,20 @@ def make_app(max_capacity_mb: float, debug: bool):
         ],
         debug=debug,
     )
+
+
+def _index_map(scenario_dirs: Sequence[str]) -> Dict[str, str]:
+    """Finds and indexes all map geometry files in the given scenario directories."""
+    path_map = {}
+    for dir_ in scenario_dirs:
+        path_map.update(
+            {
+                f"{path2hash(str(glb.parents[2].resolve()))}.glb": glb
+                for glb in Path(dir_).rglob("build/map/map.glb")
+            }
+        )
+
+    return path_map
 
 
 def on_shutdown():
