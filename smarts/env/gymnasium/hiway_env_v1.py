@@ -55,7 +55,7 @@ from smarts.core.utils.visdom_client import VisdomClient
 from smarts.env.gymnasium.utils.action_conversion import ActionsSpaceFormatter
 from smarts.env.gymnasium.utils.observation_conversion import (
     ObservationOptions,
-    ObservationsSpaceFormat,
+    ObservationsSpaceFormatter,
 )
 
 DEFAULT_TIMESTEP = 0.1
@@ -157,6 +157,7 @@ class HiWayEnvV1(gym.Env):
         observation_options: Union[
             ObservationOptions, str
         ] = ObservationOptions.default,
+        action_options: Union[ActionOptions, str] = ActionOptions.default,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
@@ -203,11 +204,13 @@ class HiWayEnvV1(gym.Env):
         smarts_traffic = LocalTrafficProvider()
         traffic_sims += [smarts_traffic]
 
-        # TODO: set action space
-        self._action_formatter = ActionsSpaceFormatter(agent_interfaces)
+        if isinstance(action_options, str):
+            action_options = ActionOptions[action_options]
+        self._action_formatter = ActionSpacesFormatter(
+            agent_interfaces, action_options=action_options
+        )
         self.action_space = self._action_formatter.space
 
-        # TODO: set observation space
         if isinstance(observation_options, str):
             observation_options = ObservationOptions[observation_options]
         self._observations_formatter = ObservationsSpaceFormat(
@@ -267,7 +270,8 @@ class HiWayEnvV1(gym.Env):
             isinstance(key, str) for key in action.keys()
         ), "Expected Dict[str, any]"
 
-        observations, rewards, dones, extras = self._smarts.step(action)
+        formatted_action = self._action_formatter.format(action)
+        observations, rewards, dones, extras = self._smarts.step(formatted_action)
 
         info = {
             agent_id: {

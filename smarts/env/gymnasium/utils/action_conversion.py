@@ -1,5 +1,7 @@
+import json
 import math
 from dataclasses import dataclass, field
+from enum import IntEnum
 from functools import lru_cache
 from typing import Any, Callable, Dict
 
@@ -15,8 +17,8 @@ ANGULAR_VELOCITY_MINIMUM = -1e10
 ANGULAR_VELOCITY_MAXIMUM = 1e10
 SPEED_MINIMUM = -1e10
 SPEED_MAXIMUM = 1e10
-POSITION_MINIMUM = 1e10
-POSITION_MAXIMUM = 1e10
+POSITION_COORDINATE_MINIMUM = -1e10
+POSITION_COORDINATE_MAXIMUM = 1e10
 DT_MINIMUM = 1e-10
 DT_MAXIMUM = 60.0
 
@@ -58,14 +60,14 @@ _lane_with_continuous_speed_space = gym.spaces.Tuple(
         gym.spaces.Box(
             low=SPEED_MINIMUM, high=SPEED_MAXIMUM, shape=(), dtype=np.float32
         ),
-        gym.spaces.Box(low=100, high=100, shape=(), dtype=np.int8),
+        gym.spaces.Box(low=-100, high=100, shape=(), dtype=np.int8),
     ]
 )
 
 _base_trajectory_space = gym.spaces.Tuple(
     gym.spaces.Box(
-        low=np.array([POSITION_MINIMUM] * TRAJECTORY_LENGTH),
-        high=np.array([POSITION_MAXIMUM] * TRAJECTORY_LENGTH),
+        low=np.array([POSITION_COORDINATE_MINIMUM] * TRAJECTORY_LENGTH),
+        high=np.array([POSITION_COORDINATE_MAXIMUM] * TRAJECTORY_LENGTH),
         dtype=np.float64,
     )
     for _ in range(MPC_ARRAY_COUNT)
@@ -73,8 +75,12 @@ _base_trajectory_space = gym.spaces.Tuple(
 _mpc_space = _base_trajectory_space
 
 _base_target_pose_space = gym.spaces.Box(
-    low=np.array([POSITION_MINIMUM, POSITION_MINIMUM, -math.pi, DT_MINIMUM]),
-    high=np.array([POSITION_MAXIMUM, POSITION_MAXIMUM, math.pi, DT_MAXIMUM]),
+    low=np.array(
+        [POSITION_COORDINATE_MINIMUM, POSITION_COORDINATE_MINIMUM, -math.pi, DT_MINIMUM]
+    ),
+    high=np.array(
+        [POSITION_COORDINATE_MAXIMUM, POSITION_COORDINATE_MAXIMUM, math.pi, DT_MAXIMUM]
+    ),
     dtype=np.float64,
 )
 _multi_target_pose_space = _base_target_pose_space
@@ -82,8 +88,8 @@ _multi_target_pose_space = _base_target_pose_space
 _target_pose_space = _base_target_pose_space
 
 _relative_target_pose_space = gym.spaces.Box(
-    low=np.array([POSITION_MINIMUM, POSITION_MINIMUM, -math.pi]),
-    high=np.array([POSITION_MAXIMUM, POSITION_MAXIMUM, math.pi]),
+    low=np.array([POSITION_COORDINATE_MINIMUM, POSITION_COORDINATE_MINIMUM, -math.pi]),
+    high=np.array([POSITION_COORDINATE_MAXIMUM, POSITION_COORDINATE_MAXIMUM, math.pi]),
     dtype=np.float64,
 )
 
@@ -92,8 +98,8 @@ _trajectory_space = _base_trajectory_space
 _trajectory_with_time_space = gym.spaces.Tuple(
     [
         gym.spaces.Box(
-            low=np.array([POSITION_MINIMUM] * TRAJECTORY_LENGTH),
-            high=np.array([POSITION_MAXIMUM] * TRAJECTORY_LENGTH),
+            low=np.array([POSITION_COORDINATE_MINIMUM] * TRAJECTORY_LENGTH),
+            high=np.array([POSITION_COORDINATE_MAXIMUM] * TRAJECTORY_LENGTH),
             dtype=np.float64,
         )
         for _ in range(MPC_ARRAY_COUNT)
@@ -108,7 +114,7 @@ _trajectory_with_time_space = gym.spaces.Tuple(
 )
 
 
-@dataclass()
+@dataclass(frozen=True)
 class _FormattingGroup:
     space: gym.Space
     formatting_func: Callable[[Any], Any] = field(default=_DEFAULT_PASSTHROUGH)
@@ -158,23 +164,66 @@ def get_formats() -> Dict[ActionSpaceType, _FormattingGroup]:
     }
 
 
-class ActionsSpaceFormatter:
-    def __init__(self, agent_interfaces: Dict[str, AgentInterface]) -> None:
+class ActionOptions(IntEnum):
+    """Defines the options for how the formatting matches the action space."""
+
+    multi_agent = 0
+    """Action must map to partial action space. Only active agents are included."""
+    full = 1
+    """Action must map to full action space. Inactive and active agents are included."""
+    unformatted = 2
+    """Actions are not reformatted or constrained to action space. Actions must directly map to
+    underling SMARTS actions."""
+    default = 0
+    """Defaults to :attr:`multi_agent`."""
+
+
+class ActionSpacesFormatter:
+    """Formats actions to adapt SMARTS to `gym` environment requirements."""
+
+    def __init__(
+        self, agent_interfaces: Dict[str, AgentInterface], action_options: ActionOptions
+    ) -> None:
         self._agent_interfaces = agent_interfaces
+        self._action_options = action_options
+
+        for agent_id, agent_interface in agent_interfaces.items():
+            assert self.supported(agent_interface.action), (
+                f"Agent `{agent_id}` is using an "
+                f"unsupported `{agent_interface.action}`."
+                f"Available actions:\n{json.dumps(set(agent_interfaces.keys()), indent=2)}"
+            )
 
     def format(self, actions: Dict[str, Any]):
+        """Format the action to a format that SMARTS can use."""
+
+        if self._action_options == ActionOptions.unformatted:
+            return actions
+
         out_actions = {}
+        formatting_groups = get_formats()
         for agent_id, action in actions.items():
             agent_interface = self._agent_interfaces[agent_id]
-            format_ = get_formats()[agent_interface]
+            format_ = formatting_groups[agent_interface.action]
             assert format_.space.contains(
                 action
             ), f"Action {action} does not match space {format_.space}!"
+            formatted_action = format_.formatting_func(action)
+            out_actions[agent_id] = formatted_action
+
+        if self._action_options == ActionOptions.full:
+            assert self.space.contains(out_actions)
 
         return out_actions
 
+    @staticmethod
+    def supported(action_type: ActionSpaceType):
+        """Test if the action is in the supported int"""
+        return action_type in get_formats()
+
     @cached_property
-    def space(self):
+    def space(self) -> gym.spaces.Dict:
+        """The action space given the current configuration."""
         return gym.spaces.Dict(
             {
                 agent_id: get_formats()[agent_interface.action].space
