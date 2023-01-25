@@ -21,6 +21,7 @@
 import logging
 import os
 import warnings
+from pathlib import Path
 from typing import Any, Dict, Optional, Sequence, Set, Tuple, Union
 
 import gym
@@ -138,6 +139,7 @@ class HiWayEnv(gym.Env):
             )
         self._dones_registered = 0
 
+        scenarios = [str(Path(scenario).resolve()) for scenario in scenarios]
         self._scenarios_iterator = Scenario.scenario_variations(
             scenarios,
             list(self._agent_interfaces.keys()),

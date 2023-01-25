@@ -76,6 +76,8 @@ class CustomJSONEncoder(json.JSONEncoder):
             return bool(obj)
         elif isinstance(obj, np.ndarray):
             return [self.default(x) for x in obj]
+        elif isinstance(obj, Path):
+            return str(obj)
 
         return super().default(obj)
 

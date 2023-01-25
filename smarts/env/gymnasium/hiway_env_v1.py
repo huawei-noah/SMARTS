@@ -23,6 +23,7 @@ import logging
 import os
 from enum import IntEnum
 from functools import partial
+from pathlib import Path
 from typing import (
     Any,
     Dict,
@@ -166,6 +167,7 @@ class HiWayEnvV1(gym.Env):
             )
             fixed_timestep_sec = DEFAULT_TIMESTEP
 
+        scenarios = [str(Path(scenario).resolve()) for scenario in scenarios]
         self._scenarios_iterator = Scenario.scenario_variations(
             scenarios,
             list(agent_interfaces.keys()),

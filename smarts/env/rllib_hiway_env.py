@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 import logging
 import warnings
-
+from pathlib import Path
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 import smarts
@@ -78,7 +78,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
         smarts.core.seed(seed + c)
 
         self._agent_specs = config["agent_specs"]
-        self._scenarios = config["scenarios"]
+        self._scenarios = [str(Path(scenario).resolve()) for scenario in config["scenarios"]]
         self._scenarios_iterator = Scenario.scenario_variations(
             self._scenarios,
             list(self._agent_specs.keys()),
