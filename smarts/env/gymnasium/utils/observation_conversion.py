@@ -866,6 +866,9 @@ class ObservationOptions(IntEnum):
     """Observation partially matches observation space. Only active agents are included."""
     full = 1
     """Observation fully matches observation space. Inactive and active agents are included."""
+    unformatted = 2
+    """Observation is the original unformatted observation. The observation will not match the
+    observation space."""
     default = 0
     """Defaults to :attr:`multi_agent`."""
 
@@ -1054,6 +1057,8 @@ class ObservationSpacesFormatter:
 
     def format(self, observations: Dict[str, Observation]):
         """Formats smarts observations fixed sized containers."""
+        if self.observation_options == ObservationOptions.unformatted:
+            return observations
         # TODO MTA: Parallelize the conversion if possible
         active_obs = {
             agent_id: self._space_formats[agent_id].format(obs)
