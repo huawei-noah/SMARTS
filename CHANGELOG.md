@@ -10,6 +10,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- The `hiway-v1` environment can now be configured to provide an "unformatted" observation. 
 ### Changed
 - Scenario paths is no longer manually supplied to Envision server while setup. Scenario paths are automatically sent to Envision server from SMARTS during simulation startup phase.
 - Updated "hiway-v1" with `gymnasium` action spaces using new `ActionsSpaceFormatter` utility.
