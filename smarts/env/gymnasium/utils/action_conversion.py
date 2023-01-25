@@ -143,6 +143,7 @@ class _FormattingGroup:
 
 @lru_cache(maxsize=1)
 def get_formats() -> Dict[ActionSpaceType, _FormattingGroup]:
+    """Returns the formatting groups for each of the avaliable action types."""
     return {
         ActionSpaceType.ActuatorDynamic: _FormattingGroup(
             space=_actuator_dynamic_space,
