@@ -215,6 +215,7 @@ class TrafficHistoryProvider(TrafficProvider):
 
     @cached_property
     def history_vehicle_ids(self) -> Set[str]:
+        """Actor IDs for all history vehicles."""
         if not self._histories:
             return set()
         return {

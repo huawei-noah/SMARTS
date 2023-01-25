@@ -577,6 +577,7 @@ class Scenario:
         )
 
     def get_vehicle_goal(self, vehicle_id: str) -> Point:
+        """Get the final position for a history vehicle."""
         final_exit_time = self._traffic_history.vehicle_final_exit_time(vehicle_id)
         final_pose = self._traffic_history.vehicle_pose_at_time(
             vehicle_id, final_exit_time
