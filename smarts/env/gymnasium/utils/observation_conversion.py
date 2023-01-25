@@ -343,6 +343,7 @@ class StandardConfigurableSpaceFormat(BaseSpaceFormat):
         active_func: Callable[[AgentInterface], bool],
         name: str,
         space_func: Callable[[AgentInterface], gym.Space],
+        *,
         _agent_interface: Optional[AgentInterface] = None,
     ) -> None:
         self._formatting_func = formatting_func
@@ -378,7 +379,7 @@ class StandardConfigurableSpaceFormat(BaseSpaceFormat):
             self._active_func,
             self._name,
             self._space_func,
-            agent_interface,
+            _agent_interface=agent_interface,
         )
 
 
