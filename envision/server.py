@@ -514,7 +514,7 @@ def make_app(max_capacity_mb: float, debug: bool):
     )
 
 
-def _index_map(scenario_dirs: Sequence[str]) -> Dict[str, str]:
+def _index_map(scenario_dirs: Sequence[str]) -> Dict[str, Path]:
     """Finds and indexes all map geometry files in the given scenario directories."""
     path_map = {}
     for dir_ in scenario_dirs:
