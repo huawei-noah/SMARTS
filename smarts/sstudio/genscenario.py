@@ -177,7 +177,10 @@ def gen_scenario(
             _update_artifacts(db_conn, artifact_paths, obj_hash)
         map_spec = scenario.map_spec
     else:
-        map_spec = types.MapSpec(source=scenario_dir)
+        if scenario.map_spec is not None:
+            map_spec = scenario.map_spec
+        else:
+            map_spec = types.MapSpec(source=scenario_dir)
 
     if map_spec.shift_to_origin and scenario.traffic_histories:
         logger.warning(

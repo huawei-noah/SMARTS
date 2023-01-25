@@ -490,7 +490,7 @@ class Scenario:
         Returns:
             A new map spec.
         """
-        path = os.path.join(scenario_root, "build", "map_spec.pkl")
+        path = os.path.join(scenario_root, "build", "map", "map_spec.pkl")
         if not os.path.exists(path):
             # Use our default map builder if none specified by scenario...
             return MapSpec(
@@ -706,9 +706,10 @@ class Scenario:
     @staticmethod
     def discover_traffic_histories(scenario_root: str):
         """Finds all existing traffic history files in the specific scenario."""
+        build_dir = Path(scenario_root) / "build"
         return [
             entry
-            for entry in os.scandir(scenario_root)
+            for entry in os.scandir(str(build_dir))
             if entry.is_file() and entry.path.endswith(".shf")
         ]
 
