@@ -23,6 +23,7 @@ import warnings
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 import smarts
+from envision import types as envision_types
 from envision.client import Client as Envision
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
@@ -77,8 +78,9 @@ class RLlibHiWayEnv(MultiAgentEnv):
         smarts.core.seed(seed + c)
 
         self._agent_specs = config["agent_specs"]
+        self._scenarios = config["scenarios"]
         self._scenarios_iterator = Scenario.scenario_variations(
-            config["scenarios"],
+            self._scenarios,
             list(self._agent_specs.keys()),
         )
 
@@ -206,6 +208,8 @@ class RLlibHiWayEnv(MultiAgentEnv):
                 output_dir=self._envision_record_data_replay_path,
                 headless=self._headless,
             )
+            preamble = envision_types.Preamble(scenarios=self._scenarios)
+            envision.send(preamble)
 
         sumo_traffic = SumoTrafficSimulation(
             headless=self._sumo_headless,
