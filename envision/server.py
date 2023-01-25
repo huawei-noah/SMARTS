@@ -410,8 +410,6 @@ class FileHandler(AllowCORSMixin, tornado.web.RequestHandler):
                 404, f"Map file `{self._path_map[id_]}` not found."
             )
 
-        print(f"GETTING FILEHANDLER {id_}")
-
         await self.serve_chunked(Path(self._path_map[id_]))
 
     async def serve_chunked(self, path: Path, chunk_size: int = 1024 * 1024):

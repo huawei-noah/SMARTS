@@ -86,6 +86,6 @@ if __name__ == "__main__":
     main(
         scenarios=args.scenarios,
         headless=args.headless,
-        num_episodes=50,
-        max_episode_steps=100,
+        num_episodes=args.episodes,
+        max_episode_steps=args.max_episode_steps,
     )
