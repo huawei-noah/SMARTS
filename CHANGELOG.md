@@ -11,6 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Added
 ### Changed
+- Scenario paths need not be supplied manually to Envision server while setup. Scenario paths are automatically sent to Envision server from SMARTS during simulation startup phase.
 ### Deprecated
 ### Fixed
 ### Removed
