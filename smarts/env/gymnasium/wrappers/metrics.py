@@ -28,6 +28,7 @@ import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.coordinates import Point
+from smarts.core.observations import Observation
 from smarts.core.plan import PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
@@ -38,7 +39,6 @@ from smarts.env.gymnasium.wrappers.metric.completion import (
 )
 from smarts.env.gymnasium.wrappers.metric.costs import CostFuncs, Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
-from smarts.core.observations import Observation
 
 
 @dataclass

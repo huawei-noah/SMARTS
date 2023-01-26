@@ -141,7 +141,9 @@ def _dist_remainder():
             dist = 0
         else:
             cur_pos = Point(*obs.ego_vehicle_state.position)
-            goal_pos = Point(*getattr(obs.ego_vehicle_state.mission.goal, "position", None))
+            goal_pos = Point(
+                *getattr(obs.ego_vehicle_state.mission.goal, "position", None)
+            )
             if goal_pos is not None:
                 dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
             else:
