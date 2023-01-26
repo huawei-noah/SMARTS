@@ -133,16 +133,19 @@ def _dist_remainder():
     step: int = 0
 
     def func(
-        road_map: RoadMap, obs: Dict[str, Any], initial_compl: Completion
+        road_map: RoadMap, obs: Observation, initial_compl: Completion
     ) -> Completion:
         nonlocal mean, step
 
-        if obs["events"]["reached_goal"]:
+        if obs.events.reached_goal:
             dist = 0
         else:
-            cur_pos = Point(*obs["ego_vehicle_state"]["position"])
-            goal_pos = Point(*obs["ego_vehicle_state"]["mission"]["goal_position"])
-            dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
+            cur_pos = Point(*obs.ego_vehicle_state.position)
+            goal_pos = Point(*getattr(obs.ego_vehicle_state.mission.goal, "position", None))
+            if goal_pos is not None:
+                dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
+            else:
+                dist = 0
 
         # Cap remainder distance
         c_dist = min(dist, initial_compl.dist_tot)
