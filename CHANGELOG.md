@@ -14,6 +14,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Scenario paths is no longer manually supplied to Envision server while setup. Scenario paths are automatically sent to Envision server from SMARTS during simulation startup phase.
 ### Deprecated
 ### Fixed
+- Fix sensor detach call when a bubble vehicle exits a bubble at same time it is done.
 ### Removed
 ### Security
 

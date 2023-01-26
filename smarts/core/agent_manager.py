@@ -681,6 +681,7 @@ class AgentManager:
 
     def detach_sensors_from_vehicle(self, vehicle_id: str):
         """Called when agent observation is finished and sensors should be removed from a vehicle"""
+        if not vehicle_id in self._vehicle_with_sensors:
+            return
         self._vehicle_index.stop_agent_observation(vehicle_id)
-        if vehicle_id in self._vehicle_with_sensors:
-            del self._vehicle_with_sensors[vehicle_id]
+        del self._vehicle_with_sensors[vehicle_id]
