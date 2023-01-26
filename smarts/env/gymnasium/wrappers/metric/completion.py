@@ -144,7 +144,7 @@ def _dist_remainder():
             goal_position = getattr(obs.ego_vehicle_state.mission.goal, "position")
             assert (
                 goal_position is not None
-            ), f"Ego using `{obs.ego_vehicle_state.id}` cannot use cost func without a positional goal."
+            ), f"Ego `{obs.ego_vehicle_state.id}` cannot use cost func without a positional goal."
             goal_point = Point(*goal_position)
             dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_point)
 
