@@ -243,7 +243,7 @@ class MetricsBase(gym.Wrapper):
 
         return records
 
-    def score(self) -> Dict[str, float]:
+    def score(self) -> Score:
         """
         Computes four sub-component scores, namely, "Completion", "Time",
         "Humanness", "Rules", and one total combined score named "Overall"
