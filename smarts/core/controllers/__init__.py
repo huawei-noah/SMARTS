@@ -135,8 +135,8 @@ class ActionSpaceType(Enum):
     RelativeTargetPose = 11
     """
     Action=(delta_x, delta_y, heading). Type= ``Sequence[float,
-    float, float]``. Continuous action space of vehicle's next x 
-    coordinate, y coordinate, heading, and time delta to reach the given pose. 
+    float, float]``. Continuous action space of vehicle's next pose in terms of delta x 
+    coordinate, delta y coordinate, and heading, to be reached in 0.1 seconds.
     """
 
 
