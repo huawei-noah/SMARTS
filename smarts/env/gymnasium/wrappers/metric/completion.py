@@ -141,13 +141,12 @@ def _dist_remainder():
             dist = 0
         else:
             cur_pos = Point(*obs.ego_vehicle_state.position)
-            goal_pos = Point(
-                *getattr(obs.ego_vehicle_state.mission.goal, "position", None)
-            )
-            if goal_pos is not None:
-                dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_pos)
-            else:
-                dist = 0
+            goal_position = getattr(obs.ego_vehicle_state.mission.goal, "position")
+            assert (
+                goal_position is not None
+            ), f"Ego using `{obs.ego_vehicle_state.id}` cannot use cost func without a positional goal."
+            goal_point = Point(*goal_position)
+            dist = get_dist(road_map=road_map, point_a=cur_pos, point_b=goal_point)
 
         # Cap remainder distance
         c_dist = min(dist, initial_compl.dist_tot)
