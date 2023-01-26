@@ -131,6 +131,12 @@ class TrafficHistory:
         return ego_id
 
     @lru_cache(maxsize=32)
+    def vehicle_initial_time(self, vehicle_id: str) -> float:
+        """Returns the initial time the specified vehicle is seen in the history data."""
+        query = "SELECT MIN(sim_time) FROM Trajectory WHERE vehicle_id = ?"
+        return self._query_val(float, query, params=(vehicle_id,))
+
+    @lru_cache(maxsize=32)
     def vehicle_final_exit_time(self, vehicle_id: str) -> float:
         """Returns the final time the specified vehicle is seen in the history data."""
         query = "SELECT MAX(sim_time) FROM Trajectory WHERE vehicle_id = ?"
