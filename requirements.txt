@@ -20,7 +20,7 @@ cloudpickle==1.6.0
 colorama==0.4.6
 colorful==0.5.5
 constantly==15.1.0
-coverage==7.0.5
+coverage==7.1.0
 cycler==0.11.0
 dm-tree==0.1.8
 eclipse-sumo==1.15.0
