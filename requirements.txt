@@ -136,7 +136,7 @@ typing_extensions==4.4.0
 urllib3==1.26.14
 visdom==0.2.3
 wcwidth==0.2.6
-websocket-client==1.4.2
+websocket-client==1.5.0
 Werkzeug==2.2.2
 wrapt==1.14.1
 yarl==1.8.2
