@@ -29,7 +29,6 @@ from scipy.spatial.distance import cdist
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
 from smarts import VERSION
-from smarts.core.chassis import BoxChassis
 from smarts.core.plan import Plan
 from smarts.core.utils.logging import timeit
 

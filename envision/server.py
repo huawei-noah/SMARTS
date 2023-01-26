@@ -42,7 +42,6 @@ import tornado.websocket
 from tornado.websocket import WebSocketClosedError
 
 import smarts.core.models
-from envision.types import State
 from envision.web import dist as web_dist
 from smarts.core.utils.file import path2hash
 
@@ -54,6 +53,9 @@ WEB_CLIENT_RUN_LOOPS = {}
 
 # Mapping of simulation ID to the Frames data store
 FRAMES = {}
+
+# Mapping of path to map geometry files
+MAPS = {}
 
 
 class AllowCORSMixin:
@@ -318,14 +320,24 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
     async def on_message(self, message):
         """Asynchronously receive messages from the Envision client."""
         it = ijson.parse(message)
-        frame_time = None
-        # Find the first number value, which will be the frame time.
-        for prefix, event, value in it:
-            if prefix and event == "number":
-                frame_time = float(value)
-                break
-        assert isinstance(frame_time, float)
-        self._frames.append(Frame(timestamp=frame_time, data=message))
+        next(it)  # Discard first entry: prefix="", event="start_array", value=None
+        prefix, event, value = next(it)
+        if prefix == "item" and event == "number":
+            # If the second event is a `number`, it is a payload message.
+            frame_time = float(value)
+            assert isinstance(frame_time, float)
+            self._frames.append(Frame(timestamp=frame_time, data=message))
+        elif prefix == "item" and event == "start_map":
+            # If the second event is a `start_map`, it is a preamble.
+            scenarios = [
+                value
+                for prefix, event, value in it
+                if prefix == "item.scenarios.item" and event == "string"
+            ]
+            path_map = _index_map(scenarios)
+            MAPS.update(path_map)
+        else:
+            raise tornado.web.HTTPError(400, f"Bad request message.")
 
 
 class StateWebSocket(tornado.websocket.WebSocketHandler):
@@ -346,9 +358,9 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
         return {"compression_level": 6, "mem_level": 5}
 
     async def open(self, simulation_id):
-        """Open this socket to  listen for webclient playback requests."""
+        """Open this socket to listen for webclient playback requests."""
         if simulation_id not in WEB_CLIENT_RUN_LOOPS:
-            raise tornado.web.HTTPError(404, f"Simuation `{simulation_id}` not found.")
+            raise tornado.web.HTTPError(404, f"Simulation `{simulation_id}` not found.")
 
         frequency = 10
         message_frame_volume = 100
@@ -422,20 +434,9 @@ class FileHandler(AllowCORSMixin, tornado.web.RequestHandler):
 class MapFileHandler(FileHandler):
     """This handler serves map geometry to the given endpoint."""
 
-    def initialize(self, scenario_dirs: Sequence):
-        """Setup this handler. Finds and indexes all map geometry files in the given scenario
-        directories.
-        """
-        path_map = {}
-        for dir_ in scenario_dirs:
-            path_map.update(
-                {
-                    f"{path2hash(str(glb.parents[2].resolve()))}.glb": glb
-                    for glb in Path(dir_).rglob("build/map/map.glb")
-                }
-            )
-
-        super().initialize(path_map)
+    def initialize(self):
+        """Setup this handler."""
+        super().initialize(path_map=MAPS)
 
 
 class SimulationListHandler(AllowCORSMixin, tornado.web.RequestHandler):
@@ -487,7 +488,7 @@ class MainHandler(tornado.web.RequestHandler):
             self.render(str(index_path))
 
 
-def make_app(scenario_dirs: Sequence, max_capacity_mb: float, debug: bool):
+def make_app(max_capacity_mb: float, debug: bool):
     """Create the envision web server application through composition of services."""
 
     dist_path = Path(os.path.dirname(web_dist.__file__)).absolute()
@@ -505,13 +506,26 @@ def make_app(scenario_dirs: Sequence, max_capacity_mb: float, debug: bool):
             (
                 r"/assets/maps/(.*)",
                 MapFileHandler,
-                dict(scenario_dirs=scenario_dirs),
             ),
             (r"/assets/models/(.*)", ModelFileHandler),
             (r"/(.*)", tornado.web.StaticFileHandler, dict(path=str(dist_path))),
         ],
         debug=debug,
     )
+
+
+def _index_map(scenario_dirs: Sequence[str]) -> Dict[str, Path]:
+    """Finds and indexes all map geometry files in the given scenario directories."""
+    path_map = {}
+    for dir_ in scenario_dirs:
+        path_map.update(
+            {
+                f"{path2hash(str(glb.parents[2].resolve()))}.glb": glb
+                for glb in Path(dir_).rglob("build/map/map.glb")
+            }
+        )
+
+    return path_map
 
 
 def on_shutdown():
@@ -521,13 +535,12 @@ def on_shutdown():
 
 
 def run(
-    scenario_dirs: List[str],
     max_capacity_mb: int = 500,
     port: int = 8081,
     debug: bool = False,
 ):
     """Create and run an envision web server."""
-    app = make_app(scenario_dirs, max_capacity_mb, debug=debug)
+    app = make_app(max_capacity_mb, debug=debug)
     app.listen(port)
     logging.debug("Envision listening on port=%s", port)
 
@@ -547,13 +560,6 @@ def main():
         prog="Envision Server",
         description="The Envision server broadcasts SMARTS state to Envision web "
         "clients for visualization.",
-    )
-    parser.add_argument(
-        "--scenarios",
-        help="A list of directories where scenarios are stored.",
-        default=["./scenarios"],
-        type=str,
-        nargs="+",
     )
     parser.add_argument(
         "--port",
@@ -576,7 +582,6 @@ def main():
     args = parser.parse_args()
 
     run(
-        scenario_dirs=args.scenarios,
         max_capacity_mb=args.max_capacity,
         port=args.port,
         debug=args.debug,

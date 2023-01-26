@@ -32,6 +32,12 @@ def default_argument_parser(program: Optional[str] = None):
     parser.add_argument(
         "--headless", help="Run the simulation in headless mode.", action="store_true"
     )
+    parser.add_argument(
+        "--max_episode_steps",
+        help="Maximum number of steps to run each episode for.",
+        type=int,
+        default=100,
+    )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
         "--sim-name",

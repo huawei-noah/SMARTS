@@ -9,7 +9,7 @@ $ scl scenario build-all scenarios
 To start the envision server run the following:
 ```bash
 # cd zoo/policies/cross-rl-agent/cross_rl_agent/train
-$ scl envision start -s scenarios
+$ scl envision start
 ```
 and open `localhost:8081` in your local browser.
 

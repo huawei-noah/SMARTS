@@ -15,7 +15,7 @@ SMARTS docker images are hosted at `dockerhub <https://hub.docker.com/u/huaweino
     # E.g. docker run --rm -it -v $PWD:/src -p 8081:8081 huaweinoah/smarts:v0.5.1
 
     # If visualization is needed, run Envision server in the background.
-    $ scl envision start -s ./scenarios -p 8081 &
+    $ scl envision start -p 8081 &
 
     # Build the scenario. 
     # This step is required on the first time, and whenever the scenario is modified.

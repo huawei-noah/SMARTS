@@ -33,13 +33,6 @@ def envision_cli():
 @envision_cli.command(name="start", help="Start an Envision server.")
 @click.option("-p", "--port", help="Port Envision will run on.", default=8081)
 @click.option(
-    "-s",
-    "--scenarios",
-    help="A list of directories where scenarios are stored.",
-    multiple=True,
-    default=["scenarios"],
-)
-@click.option(
     "-c",
     "--max_capacity",
     help=(
@@ -49,8 +42,8 @@ def envision_cli():
     default=500,
     type=float,
 )
-def start_server(port, scenarios, max_capacity):
-    run(scenario_dirs=scenarios, max_capacity_mb=max_capacity, port=port)
+def start_server(port, max_capacity):
+    run(max_capacity_mb=max_capacity, port=port)
 
 
 envision_cli.add_command(start_server)

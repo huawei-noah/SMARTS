@@ -23,6 +23,7 @@ import logging
 import os
 from enum import IntEnum
 from functools import partial
+from pathlib import Path
 from typing import (
     Any,
     Dict,
@@ -42,6 +43,7 @@ from gym import spaces
 from gymnasium.core import ActType, ObsType
 from gymnasium.envs.registration import EnvSpec
 
+from envision import types as envision_types
 from envision.client import Client as Envision
 from envision.data_formatter import EnvisionDataFormatterArgs
 from smarts.core import seed as smarts_seed
@@ -165,6 +167,7 @@ class HiWayEnvV1(gym.Env):
             )
             fixed_timestep_sec = DEFAULT_TIMESTEP
 
+        scenarios = [str(Path(scenario).resolve()) for scenario in scenarios]
         self._scenarios_iterator = Scenario.scenario_variations(
             scenarios,
             list(agent_interfaces.keys()),
@@ -177,6 +180,8 @@ class HiWayEnvV1(gym.Env):
                 headless=headless,
                 sim_name=sim_name,
             )
+            preamble = envision_types.Preamble(scenarios=scenarios)
+            visualization_client.send(preamble)
 
         self._env_renderer = None
 

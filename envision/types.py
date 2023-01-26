@@ -93,6 +93,13 @@ class State(NamedTuple):
     frame_time: float
 
 
+class Preamble(NamedTuple):
+    """Information for startup and synchronisation between client and server."""
+
+    scenarios: Sequence[str]
+    """Directories of simulated scenarios."""
+
+
 def format_actor_id(actor_id: str, vehicle_id: str, is_multi: bool):
     """A conversion utility to ensure that an actor id conforms to envision's actor id standard.
     Args:

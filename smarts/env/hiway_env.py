@@ -21,10 +21,12 @@
 import logging
 import os
 import warnings
+from pathlib import Path
 from typing import Any, Dict, Optional, Sequence, Set, Tuple, Union
 
 import gym
 
+from envision import types as envision_types
 from envision.client import Client as Envision
 from envision.data_formatter import EnvisionDataFormatterArgs
 from smarts.core import seed as smarts_seed
@@ -137,6 +139,7 @@ class HiWayEnv(gym.Env):
             )
         self._dones_registered = 0
 
+        scenarios = [str(Path(scenario).resolve()) for scenario in scenarios]
         self._scenarios_iterator = Scenario.scenario_variations(
             scenarios,
             list(self._agent_interfaces.keys()),
@@ -154,6 +157,8 @@ class HiWayEnv(gym.Env):
                     "base", enable_reduction=False
                 ),
             )
+            preamble = envision_types.Preamble(scenarios=scenarios)
+            envision_client.send(preamble)
 
         self._env_renderer = None
 

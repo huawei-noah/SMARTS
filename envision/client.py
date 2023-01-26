@@ -76,6 +76,8 @@ class CustomJSONEncoder(json.JSONEncoder):
             return bool(obj)
         elif isinstance(obj, np.ndarray):
             return [self.default(x) for x in obj]
+        elif isinstance(obj, Path):
+            return str(obj)
 
         return super().default(obj)
 
@@ -292,7 +294,7 @@ class Client:
 
         run_socket(endpoint, wait_between_retries)
 
-    def send(self, state: types.State):
+    def send(self, state: Union[types.State, types.Preamble]):
         """Send the given envision state to the remote as the most recent state."""
         if not self._headless and self._process.is_alive():
             self._state_queue.put(state)
