@@ -44,7 +44,7 @@ def build_scenario(
         if seed is not None:
             with tempfile.NamedTemporaryFile("w", suffix=".py", dir=scenario_root) as c:
                 with open(scenario_py, "r") as o:
-                    c.write(f"import smarts.core; smarts.core.seed({seed});\n")
+                    c.write(f"from smarts.core import seed as smarts_seed; smarts_seed({seed});\n")
                     c.write(o.read())
 
                 c.flush()
