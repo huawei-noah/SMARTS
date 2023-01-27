@@ -435,11 +435,15 @@ class _LimitTargetPose(gym.Wrapper):
         self._prev_obs = self._store(obs=out[0])
         return out
 
-    def reset(self, **kwargs) -> Dict[str, Any]:
+    def reset(self, **kwargs):
         """Resets the environment.
 
         Returns:
-            Dict[str, Any]: A dictionary of observation for each agent.
+            observation (dict): Dictionary of initial-state observation for
+                each agent.
+            info (dict): This dictionary contains auxiliary information
+                complementing ``observation``. It is analogous to the ``info`` 
+                returned by :meth:`step`.
         """
         obs, info = self.env.reset(**kwargs)
         self._prev_obs = self._store(obs=obs)
