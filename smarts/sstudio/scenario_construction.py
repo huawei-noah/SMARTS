@@ -88,11 +88,11 @@ def build_scenarios(
                 proc = Process(
                     target=_build_scenario_proc,
                     kwargs={
-                        "scenario":scenario, 
-                        "semaphore":sema, 
-                        "clean":clean,
-                        "seed":seed, 
-                        "log":log,
+                        "scenario": scenario,
+                        "semaphore": sema,
+                        "clean": clean,
+                        "seed": seed,
+                        "log": log,
                     },
                 )
                 all_processes.append(proc)

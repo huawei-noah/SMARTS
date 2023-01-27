@@ -31,7 +31,6 @@ import numpy as np
 
 from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
-from smarts.sstudio.scenario_construction import build_scenario
 from smarts.core.agent_interface import (
     OGM,
     RGB,
@@ -43,6 +42,7 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
+from smarts.sstudio.scenario_construction import build_scenario
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)

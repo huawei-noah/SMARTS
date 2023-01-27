@@ -5,11 +5,11 @@ from typing import Any, Dict, Union
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from tools.argument_parser import default_argument_parser
 
-from smarts.sstudio.scenario_construction import build_scenarios
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
+from smarts.sstudio.scenario_construction import build_scenarios
 
 
 class LaneFollowerAgent(Agent):
