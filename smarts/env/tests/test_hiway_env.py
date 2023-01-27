@@ -25,6 +25,7 @@ import pytest
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
+from smarts.env.hiway_env import HiWayEnv
 from smarts.zoo.agent_spec import AgentSpec
 
 AGENT_ID = "Agent-007"
@@ -40,21 +41,32 @@ def agent_spec():
 
 
 @pytest.fixture
-def env(agent_spec):
-    env = gym.make(
+def env(agent_spec: AgentSpec):
+    agent_interfaces = {AGENT_ID: agent_spec.interface}
+    agent_ids = set(agent_interfaces)
+    env: HiWayEnv = gym.make(
         "smarts.env:hiway-v0",
         scenarios=["scenarios/sumo/loop"],
-        agent_specs={AGENT_ID: agent_spec},
+        agent_interfaces=agent_interfaces,
         headless=True,
         visdom=False,
         fixed_timestep_sec=0.01,
     )
-
+    assert isinstance(env, HiWayEnv)
+    assert not (agent_ids - set(env.agent_interfaces))
+    matching_items = [
+        env.agent_interfaces[k] == agent_interfaces[k]
+        for k in env.agent_interfaces
+        if k in agent_interfaces
+    ]
+    assert all(matching_items)
+    assert len(env.agent_specs) == len(agent_interfaces)
+    assert not (agent_ids - env.agent_ids)
     yield env
     env.close()
 
 
-def test_hiway_env(env, agent_spec):
+def test_hiway_env(env: HiWayEnv, agent_spec: AgentSpec):
     episode = None
     for episode in episodes(n=MAX_EPISODES):
         agent = agent_spec.build_agent()
