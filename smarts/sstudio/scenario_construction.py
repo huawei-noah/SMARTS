@@ -40,6 +40,7 @@ def build_scenario(
     log: Callable[[Any], None] = LOG_DEFAULT,
 ):
     """Build a scenario."""
+
     log(f"Building: {scenario}")
 
     if clean:
@@ -72,6 +73,8 @@ def build_scenarios(
     seed: Optional[int] = None,
     log: Callable[[Any], None] = LOG_DEFAULT,
 ):
+    """Build a list of scenarios."""
+
     if not scenarios:
         # nargs=-1 in combination with a default value is not supported
         # if scenarios is not given, set /scenarios as default
