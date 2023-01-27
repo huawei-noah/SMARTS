@@ -40,6 +40,7 @@ def build_scenario(
     log: Callable[[Any], None] = LOG_DEFAULT,
 ):
     """Build a scenario."""
+    log(f"Building: {scenario}")
 
     if clean:
         clean_scenario(scenario)
@@ -88,11 +89,10 @@ def build_scenarios(
                     target=_build_scenario_proc,
                     args=(clean, scenario, sema, seed, log),
                 )
-                all_processes.append((scenario, proc))
+                all_processes.append(proc)
                 proc.start()
 
-    for scenario_path, proc in all_processes:
-        log(f"Waiting on {scenario_path} ...")
+    for proc in all_processes:
         proc.join()
 
 
