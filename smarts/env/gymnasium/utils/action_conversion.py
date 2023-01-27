@@ -195,7 +195,7 @@ class ActionOptions(IntEnum):
     """Action must map to full action space. Inactive and active agents are included."""
     unformatted = 2
     """Actions are not reformatted or constrained to action space. Actions must directly map to
-    underling SMARTS actions."""
+    underlying SMARTS actions."""
     default = 0
     """Defaults to :attr:`multi_agent`."""
 
