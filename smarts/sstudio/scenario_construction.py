@@ -34,9 +34,9 @@ LOG_DEFAULT = logger.info
 
 
 def build_scenario(
-    clean: bool,
     scenario: str,
-    seed: Optional[int] = None,
+    clean: bool = False,
+    seed: int = 42,
     log: Callable[[Any], None] = LOG_DEFAULT,
 ):
     """Build a scenario."""
@@ -51,26 +51,23 @@ def build_scenario(
     scenario_py = scenario_root / "scenario.py"
     if scenario_py.exists():
         _install_requirements(scenario_root, log)
-        if seed is not None:
-            with tempfile.NamedTemporaryFile("w", suffix=".py", dir=scenario_root) as c:
-                with open(scenario_py, "r") as o:
-                    c.write(
-                        f"from smarts.core import seed as smarts_seed; smarts_seed({seed});\n"
-                    )
-                    c.write(o.read())
-
-                c.flush()
-                subprocess.check_call(
-                    [sys.executable, Path(c.name).name], cwd=scenario_root
+        with tempfile.NamedTemporaryFile("w", suffix=".py", dir=scenario_root) as c:
+            with open(scenario_py, "r") as o:
+                c.write(
+                    f"from smarts.core import seed as smarts_seed; smarts_seed({seed});\n"
                 )
-        else:
-            subprocess.check_call([sys.executable, "scenario.py"], cwd=scenario_root)
+                c.write(o.read())
+
+            c.flush()
+            subprocess.check_call(
+                [sys.executable, Path(c.name).name], cwd=scenario_root
+            )
 
 
 def build_scenarios(
-    clean: bool,
     scenarios: List[str],
-    seed: Optional[int] = None,
+    clean: bool = False,
+    seed: int = 42,
     log: Callable[[Any], None] = LOG_DEFAULT,
 ):
     """Build a list of scenarios."""
@@ -90,7 +87,13 @@ def build_scenarios(
                 scenario = f"{scenarios_path}/{p.relative_to(scenarios_path)}"
                 proc = Process(
                     target=_build_scenario_proc,
-                    args=(clean, scenario, sema, seed, log),
+                    kwargs={
+                        "scenario":scenario, 
+                        "semaphore":sema, 
+                        "clean":clean,
+                        "seed":seed, 
+                        "log":log,
+                    },
                 )
                 all_processes.append(proc)
                 proc.start()
@@ -100,16 +103,16 @@ def build_scenarios(
 
 
 def _build_scenario_proc(
-    clean: bool,
     scenario: str,
     semaphore: synchronize.Semaphore,
+    clean: bool,
     seed: int,
     log: Callable[[Any], None] = LOG_DEFAULT,
 ):
 
     semaphore.acquire()
     try:
-        build_scenario(clean, scenario, seed, log)
+        build_scenario(scenario=scenario, clean=clean, seed=seed, log=log)
     finally:
         semaphore.release()
 

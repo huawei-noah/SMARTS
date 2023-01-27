@@ -52,7 +52,7 @@ def build(clean: bool, scenario: str, seed: int):
 
     assert seed == None or isinstance(seed, (int))
 
-    build_scenario(clean, scenario, seed, click.echo)
+    build_scenario(scenario=scenario, clean=clean, seed=seed, log=click.echo)
 
 
 @scenario_cli.command(
@@ -75,7 +75,7 @@ def build(clean: bool, scenario: str, seed: int):
 def build_all(clean: bool, scenarios: List[str], seed: int):
     from smarts.sstudio.scenario_construction import build_scenarios
 
-    build_scenarios(clean, scenarios, seed, click.echo)
+    build_scenarios(scenarios=scenarios, clean=clean, seed=seed, log=click.echo)
 
 
 @scenario_cli.command(

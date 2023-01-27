@@ -5,7 +5,7 @@ from typing import Any, Dict, Union
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from tools.argument_parser import default_argument_parser
 
-from smarts import sstudio
+from smarts.sstudio.scenario_construction import build_scenarios
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
@@ -53,7 +53,7 @@ if __name__ == "__main__":
             str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop")
         ]
 
-    sstudio.build_scenario(scenario=args.scenarios)
+    build_scenarios(scenarios=args.scenarios)
 
     main(
         scenarios=args.scenarios,

@@ -77,11 +77,7 @@ if __name__ == "__main__":
             ),
         ]
 
-    build_scenarios(
-        clean=False,
-        scenarios=args.scenarios,
-        seed=42,
-    )
+    build_scenarios(scenarios=args.scenarios)
 
     main(
         scenarios=args.scenarios,

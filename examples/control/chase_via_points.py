@@ -84,11 +84,7 @@ if __name__ == "__main__":
             str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop")
         ]
 
-    build_scenarios(
-        clean=False,
-        scenarios=args.scenarios,
-        seed=42,
-    )
+    build_scenarios(scenarios=args.scenarios)
 
     main(
         scenarios=args.scenarios,

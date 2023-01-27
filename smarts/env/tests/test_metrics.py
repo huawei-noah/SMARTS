@@ -102,7 +102,7 @@ def get_scenario(request):
         )
         num_agents = 2
 
-    build_scenario(clean=False, scenario=scenario, seed=42)
+    build_scenario(scenario=scenario)
 
     return (scenario, num_agents)
 

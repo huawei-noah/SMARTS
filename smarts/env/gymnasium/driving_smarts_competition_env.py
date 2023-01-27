@@ -31,7 +31,7 @@ import numpy as np
 
 from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
-from smarts import sstudio
+from smarts.sstudio.scenario_construction import build_scenario
 from smarts.core.agent_interface import (
     OGM,
     RGB,
@@ -168,7 +168,7 @@ def driving_smarts_competition_v0_env(
     """
 
     env_specs = _get_env_specs(scenario)
-    sstudio.build_scenario(scenario=[env_specs["scenario"]])
+    build_scenario(scenario=env_specs["scenario"])
 
     agent_interfaces = {
         f"Agent_{i}": resolve_agent_interface(img_meters, img_pixels, action_space)

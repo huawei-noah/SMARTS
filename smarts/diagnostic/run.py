@@ -47,11 +47,7 @@ logger.setLevel(logging.INFO)
 
 
 def _compute(scenario_dir, ep_per_scenario=10, max_episode_steps=_MAX_EPISODE_STEPS):
-    build_scenarios(
-        clean=False,
-        scenarios=scenario_dir,
-        seed=_SEED,
-    )
+    build_scenarios(scenarios=scenario_dir, seed=_SEED)
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenario_dir,
