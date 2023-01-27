@@ -254,7 +254,7 @@ class ActionSpacesFormatter:
             out_actions[agent_id] = formatted_action
 
         if self._action_options == ActionOptions.full:
-            assert set(actions) == set(self.space.spaces)
+            assert actions.keys() == self.space.spaces.keys()
 
         return out_actions
 
