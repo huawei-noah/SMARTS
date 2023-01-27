@@ -19,9 +19,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from textwrap import dedent
-from typing import Optional
-
 import gymnasium as gym
 
 
@@ -34,7 +31,27 @@ def checked_bubble_env_v0(
     seed: int = 42,
     **kwargs,
 ):
+    """Imports and generates the `bubble_env` environment which converts nearby replay
+    traffic (non-reactive) into model based traffic (reactive). This uses the NGSIM i80
+    dataset as a basis.
 
+    Args:
+        traffic_mode (Literal["traffic_A"]): The version of bubble traffic to use.
+        action_space (ActionSpaceType): The action space the agent should use.
+        img_meters (float): The square side dimensions of the surface the top-down rgb image
+            portrays. This affects resolution.
+        img_pixels (float): The total number of pixels in the top-down rgb image. This affects
+            resolution.
+        headless (bool): If the environment should display sumo-gui.
+        seed (int): The seed of the environment.
+
+
+    Returns:
+        (gymnasium.Env): The bubble_env environment.
+
+    Raises:
+        ImportError: If `bubble_env` is not installed.
+    """
     try:
         import bubble_env_contrib
     except ImportError as err:
