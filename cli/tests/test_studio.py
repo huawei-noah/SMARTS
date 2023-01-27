@@ -48,7 +48,7 @@ def test_scenario_generation_unchanged():
             loc2 = temp_dir2 + "/scenarios"
             import re
 
-            from cli.studio import build_scenarios
+            from smarts.sstudio.scenario_construction import build_scenarios
 
             _hashseed = os.getenv("PYTHONHASHSEED")
             assert _hashseed not in (None, "random"), f"PYTHONHASHSEED is {_hashseed}"
@@ -71,7 +71,7 @@ def test_scenario_generation_unchanged():
 
 
 def test_scenario_build_caching():
-    from cli.studio import build_scenarios
+    from smarts.sstudio.scenario_construction import build_scenarios
 
     with tempfile.TemporaryDirectory() as temp_dir1:
         scenario_dir = temp_dir1 + "/scenario"

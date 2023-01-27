@@ -34,9 +34,9 @@ import psutil
 from mdutils.mdutils import MdUtils
 
 import smarts
-from cli.studio import build_scenarios
 from smarts.core.scenario import Scenario
 from smarts.core.utils.math import welford
+from smarts.sstudio.scenario_construction import build_scenarios
 
 _SEED = 42
 _MAX_REPLAY_EPISODE_STEPS = 100
