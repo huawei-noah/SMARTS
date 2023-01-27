@@ -245,14 +245,16 @@ class ActionSpacesFormatter:
         for agent_id, action in actions.items():
             agent_interface = self._agent_interfaces[agent_id]
             format_ = formatting_groups[agent_interface.action]
-            assert format_.space.contains(
+            space: gym.Space = self.space[agent_id]
+            assert space is format_.space
+            assert space.contains(
                 action
-            ), f"Action {action} does not match space {format_.space}!"
+            ), f"Action {action} does not match space {space}!"
             formatted_action = format_.formatting_func(action)
             out_actions[agent_id] = formatted_action
 
         if self._action_options == ActionOptions.full:
-            assert self.space.contains(out_actions)
+            assert set(actions) == set(self.space.spaces)
 
         return out_actions
 
