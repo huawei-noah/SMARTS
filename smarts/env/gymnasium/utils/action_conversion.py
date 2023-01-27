@@ -143,7 +143,12 @@ class _FormattingGroup:
 
 @lru_cache(maxsize=1)
 def get_formats() -> Dict[ActionSpaceType, _FormattingGroup]:
-    """Returns the formatting groups for each of the avaliable action types."""
+    """Get the currently available formatting groups for converting actions from `gym` space
+    standard to SMARTS accepted observations.
+
+    Returns:
+        Dict[ActionSpaceType, _FormattingGroup]: The currently available formatting groups.
+    """
     return {
         ActionSpaceType.ActuatorDynamic: _FormattingGroup(
             space=_actuator_dynamic_space,
@@ -201,7 +206,13 @@ class ActionOptions(IntEnum):
 
 
 class ActionSpacesFormatter:
-    """Formats actions to adapt SMARTS to `gym` environment requirements."""
+    """Formats actions to adapt SMARTS to `gym` environment requirements.
+
+    Args:
+        agent_interfaces (Dict[str, AgentInterface]): The agent interfaces needed to determine the
+            shape of the actions.
+        action_options (ActionOptions): Options to configure the end formatting of the actions.
+    """
 
     def __init__(
         self, agent_interfaces: Dict[str, AgentInterface], action_options: ActionOptions
@@ -217,7 +228,14 @@ class ActionSpacesFormatter:
             )
 
     def format(self, actions: Dict[str, Any]):
-        """Format the action to a format that SMARTS can use."""
+        """Format the action to a form that SMARTS can use.
+
+        Args:
+            actions (Dict[str, Any]): The actions to format.
+
+        Returns:
+            (Observation, Dict[str, Any]): The formatted actions.
+        """
 
         if self._action_options == ActionOptions.unformatted:
             return actions
@@ -240,12 +258,23 @@ class ActionSpacesFormatter:
 
     @staticmethod
     def supported(action_type: ActionSpaceType):
-        """Test if the action is in the supported int"""
+        """Test if the action is in the supported int
+
+        Args:
+            action_type (ActionSpaceType): The action type to check.
+
+        Returns:
+            bool: If the action type is supported by the formatter.
+        """
         return action_type in get_formats()
 
     @cached_property
     def space(self) -> gym.spaces.Dict:
-        """The action space given the current configuration."""
+        """The action space given the current configuration.
+
+        Returns:
+            gym.spaces.Dict: A description of the action space that this formatter requires.
+        """
         return gym.spaces.Dict(
             {
                 agent_id: get_formats()[agent_interface.action].space
