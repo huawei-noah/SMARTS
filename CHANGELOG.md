@@ -10,17 +10,22 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [1.0.2] 2023-01-27
+### Added
 - The `hiway-v1` environment can now be configured to provide an "unformatted" observation. 
 ### Changed
 - Scenario paths is no longer manually supplied to Envision server while setup. Scenario paths are automatically sent to Envision server from SMARTS during simulation startup phase.
 - Updated "hiway-v1" with `gymnasium` action spaces using new `ActionsSpaceFormatter` utility.
-### Deprecated
 ### Fixed
 - Fixed an issue where a sensor detach call when a bubble vehicle exits a bubble could cause a program crash.
 - Fixed issue with "hiway-v0" where "agent_interfaces" was not populated.
 - Add missing `distance_travelled` to the `hiway-v1` observations.
-### Removed
-### Security
 
 ## [1.0.1] 2023-01-24
 ### Fixed
