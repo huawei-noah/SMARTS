@@ -442,7 +442,7 @@ class _LimitTargetPose(gym.Wrapper):
             observation (dict): Dictionary of initial-state observation for
                 each agent.
             info (dict): This dictionary contains auxiliary information
-                complementing ``observation``. It is analogous to the ``info`` 
+                complementing ``observation``. It is analogous to the ``info``
                 returned by :meth:`step`.
         """
         obs, info = self.env.reset(**kwargs)
