@@ -413,7 +413,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.no_build:
-        build_scenario(clean=False, scenario=args.scenario, seed=args.seed)
+        build_scenario(scenario=args.scenario, clean=False, seed=args.seed)
 
     recorder = ObservationRecorder(
         scenario=args.scenario,

@@ -19,8 +19,6 @@
 # THE SOFTWARE.
 
 import os
-import subprocess
-from typing import List
 
 from .genscenario import gen_scenario
 
@@ -36,13 +34,3 @@ elif _hashseed == "random":
     logging.warning(
         "PYTHONHASHSEED is 'random'. Simulation and generation may be unpredictable."
     )
-
-
-def build_scenario(scenario: List[str]):
-    """Build the given scenarios.
-
-    Args:
-        scenario (List[str]): Scenarios to build.
-    """
-    scenario_build_command = " ".join(["scl scenario build-all --clean"] + scenario)
-    subprocess.call(scenario_build_command, shell=True)

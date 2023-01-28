@@ -17,21 +17,31 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+import logging
+import multiprocessing
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
+from multiprocessing import Process, Semaphore, synchronize
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, List, Optional
+
+logger = logging.getLogger(__name__)
+LOG_DEFAULT = logger.info
 
 
 def build_scenario(
-    clean: bool,
     scenario: str,
-    seed: Optional[int] = None,
-    log: Optional[Callable[[Any], None]] = None,
+    clean: bool = False,
+    seed: int = 42,
+    log: Callable[[Any], None] = LOG_DEFAULT,
 ):
     """Build a scenario."""
+
+    log(f"Building: {scenario}")
 
     if clean:
         clean_scenario(scenario)
@@ -41,20 +51,83 @@ def build_scenario(
     scenario_py = scenario_root / "scenario.py"
     if scenario_py.exists():
         _install_requirements(scenario_root, log)
-        if seed is not None:
-            with tempfile.NamedTemporaryFile("w", suffix=".py", dir=scenario_root) as c:
-                with open(scenario_py, "r") as o:
-                    c.write(
-                        f"from smarts.core import seed as smarts_seed; smarts_seed({seed});\n"
-                    )
-                    c.write(o.read())
-
-                c.flush()
-                subprocess.check_call(
-                    [sys.executable, Path(c.name).name], cwd=scenario_root
+        with tempfile.NamedTemporaryFile("w", suffix=".py", dir=scenario_root) as c:
+            with open(scenario_py, "r") as o:
+                c.write(
+                    f"from smarts.core import seed as smarts_seed; smarts_seed({seed});\n"
                 )
-        else:
-            subprocess.check_call([sys.executable, "scenario.py"], cwd=scenario_root)
+                c.write(o.read())
+
+            c.flush()
+            subprocess.check_call(
+                [sys.executable, Path(c.name).name], cwd=scenario_root
+            )
+
+
+def build_scenarios(
+    scenarios: List[str],
+    clean: bool = False,
+    seed: int = 42,
+    log: Callable[[Any], None] = LOG_DEFAULT,
+):
+    """Build a list of scenarios."""
+
+    if not scenarios:
+        # nargs=-1 in combination with a default value is not supported
+        # if scenarios is not given, set /scenarios as default
+        scenarios = ["scenarios"]
+
+    concurrency = max(1, multiprocessing.cpu_count() - 1)
+    sema = Semaphore(concurrency)
+    all_processes = []
+    for scenarios_path in scenarios:
+        for subdir, _, _ in os.walk(scenarios_path):
+            if _is_scenario_folder_to_build(subdir):
+                p = Path(subdir)
+                scenario = f"{scenarios_path}/{p.relative_to(scenarios_path)}"
+                proc = Process(
+                    target=_build_scenario_proc,
+                    kwargs={
+                        "scenario": scenario,
+                        "semaphore": sema,
+                        "clean": clean,
+                        "seed": seed,
+                        "log": log,
+                    },
+                )
+                all_processes.append(proc)
+                proc.start()
+
+    for proc in all_processes:
+        proc.join()
+
+
+def _build_scenario_proc(
+    scenario: str,
+    semaphore: synchronize.Semaphore,
+    clean: bool,
+    seed: int,
+    log: Callable[[Any], None] = LOG_DEFAULT,
+):
+
+    semaphore.acquire()
+    try:
+        build_scenario(scenario=scenario, clean=clean, seed=seed, log=log)
+    finally:
+        semaphore.release()
+
+
+def _is_scenario_folder_to_build(path: str) -> bool:
+    if os.path.exists(os.path.join(path, "waymo.yaml")):
+        # for now, don't try to build Waymo scenarios...
+        return False
+    if os.path.exists(os.path.join(path, "scenario.py")):
+        return True
+    from smarts.sstudio.types import MapSpec
+
+    map_spec = MapSpec(path)
+    road_map, _ = map_spec.builder_fn(map_spec)
+    return road_map is not None
 
 
 def clean_scenario(scenario: str):
@@ -90,7 +163,7 @@ def clean_scenario(scenario: str):
             f.unlink()
 
 
-def _install_requirements(scenario_root, log: Optional[Callable[[Any], None]] = None):
+def _install_requirements(scenario_root, log: Callable[[Any], None] = LOG_DEFAULT):
     import os
 
     requirements_txt = scenario_root / "requirements.txt"
@@ -116,8 +189,7 @@ def _install_requirements(scenario_root, log: Optional[Callable[[Any], None]] = 
             str(requirements_txt),
         ]
 
-        if log is not None:
-            log(f"Installing scenario dependencies via '{' '.join(pip_install_cmd)}'")
+        log(f"Installing scenario dependencies via '{' '.join(pip_install_cmd)}'")
 
         try:
             subprocess.check_call(pip_install_cmd, stdout=subprocess.DEVNULL)

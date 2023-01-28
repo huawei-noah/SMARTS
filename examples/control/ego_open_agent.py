@@ -9,8 +9,8 @@ from pathlib import Path
 
 import gym
 
-from cli.studio import build_scenarios
 from smarts.core.utils.episodes import episodes
+from smarts.sstudio.scenario_construction import build_scenarios
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from tools.argument_parser import default_argument_parser
@@ -64,11 +64,7 @@ if __name__ == "__main__":
             str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop")
         ]
 
-    build_scenarios(
-        clean=False,
-        scenarios=args.scenarios,
-        seed=42,
-    )
+    build_scenarios(scenarios=args.scenarios)
 
     main(
         scenarios=args.scenarios,

@@ -48,16 +48,16 @@ def test_scenario_generation_unchanged():
             loc2 = temp_dir2 + "/scenarios"
             import re
 
-            from cli.studio import build_scenarios
+            from smarts.sstudio.scenario_construction import build_scenarios
 
             _hashseed = os.getenv("PYTHONHASHSEED")
             assert _hashseed not in (None, "random"), f"PYTHONHASHSEED is {_hashseed}"
 
             shutil.copytree("scenarios/sumo", loc1)
-            build_scenarios(True, [loc1], 42)
+            build_scenarios(scenarios=[loc1], clean=True, seed=42)
 
             shutil.copytree("scenarios/sumo", loc2)
-            build_scenarios(True, [loc2], 42)
+            build_scenarios(scenarios=[loc2], clean=True, seed=42)
 
             for dirpath, dirnames, files in os.walk(loc1):
                 if "traffic" in dirpath:
@@ -71,7 +71,7 @@ def test_scenario_generation_unchanged():
 
 
 def test_scenario_build_caching():
-    from cli.studio import build_scenarios
+    from smarts.sstudio.scenario_construction import build_scenarios
 
     with tempfile.TemporaryDirectory() as temp_dir1:
         scenario_dir = temp_dir1 + "/scenario"
@@ -79,12 +79,12 @@ def test_scenario_build_caching():
 
         # Clean & build the scenario
         start = time.time()
-        build_scenarios(True, [scenario_dir])
+        build_scenarios(scenarios=[scenario_dir], clean=True)
         elapsed1 = time.time() - start
 
         # Build again without cleaning
         start = time.time()
-        build_scenarios(False, [scenario_dir])
+        build_scenarios(scenarios=[scenario_dir], clean=False)
         elapsed2 = time.time() - start
 
         # Second build should be much faster because of caching
