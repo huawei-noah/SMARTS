@@ -89,8 +89,9 @@ scenario = Scenario(
     },
     ego_missions=ego_missions,
     map_spec=MapSpec(
-        source=Path(__file__).parent,
+        source=Path(__file__).parent.absolute(),
         shift_to_origin=True,
+        lanepoint_spacing=1.0,
     ),
 )
 

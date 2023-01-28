@@ -23,6 +23,7 @@ import logging
 import os
 from enum import IntEnum
 from functools import partial
+from pathlib import Path
 from typing import (
     Any,
     Dict,
@@ -42,6 +43,7 @@ from gym import spaces
 from gymnasium.core import ActType, ObsType
 from gymnasium.envs.registration import EnvSpec
 
+from envision import types as envision_types
 from envision.client import Client as Envision
 from envision.data_formatter import EnvisionDataFormatterArgs
 from smarts.core import seed as smarts_seed
@@ -50,9 +52,13 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
+from smarts.env.gymnasium.utils.action_conversion import (
+    ActionOptions,
+    ActionSpacesFormatter,
+)
 from smarts.env.gymnasium.utils.observation_conversion import (
     ObservationOptions,
-    ObservationsSpaceFormat,
+    ObservationSpacesFormatter,
 )
 
 DEFAULT_TIMESTEP = 0.1
@@ -154,6 +160,7 @@ class HiWayEnvV1(gym.Env):
         observation_options: Union[
             ObservationOptions, str
         ] = ObservationOptions.default,
+        action_options: Union[ActionOptions, str] = ActionOptions.default,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
@@ -165,6 +172,7 @@ class HiWayEnvV1(gym.Env):
             )
             fixed_timestep_sec = DEFAULT_TIMESTEP
 
+        scenarios = [str(Path(scenario).resolve()) for scenario in scenarios]
         self._scenarios_iterator = Scenario.scenario_variations(
             scenarios,
             list(agent_interfaces.keys()),
@@ -177,6 +185,8 @@ class HiWayEnvV1(gym.Env):
                 headless=headless,
                 sim_name=sim_name,
             )
+            preamble = envision_types.Preamble(scenarios=scenarios)
+            visualization_client.send(preamble)
 
         self._env_renderer = None
 
@@ -197,12 +207,16 @@ class HiWayEnvV1(gym.Env):
         smarts_traffic = LocalTrafficProvider()
         traffic_sims += [smarts_traffic]
 
-        # TODO: set action space
+        if isinstance(action_options, str):
+            action_options = ActionOptions[action_options]
+        self._action_formatter = ActionSpacesFormatter(
+            agent_interfaces, action_options=action_options
+        )
+        self.action_space = self._action_formatter.space
 
-        # TODO: set observation space
         if isinstance(observation_options, str):
             observation_options = ObservationOptions[observation_options]
-        self._observations_formatter = ObservationsSpaceFormat(
+        self._observations_formatter = ObservationSpacesFormatter(
             agent_interfaces, observation_options
         )
         self.observation_space = self._observations_formatter.space
@@ -259,7 +273,8 @@ class HiWayEnvV1(gym.Env):
             isinstance(key, str) for key in action.keys()
         ), "Expected Dict[str, any]"
 
-        observations, rewards, dones, extras = self._smarts.step(action)
+        formatted_action = self._action_formatter.format(action)
+        observations, rewards, dones, extras = self._smarts.step(formatted_action)
 
         info = {
             agent_id: {

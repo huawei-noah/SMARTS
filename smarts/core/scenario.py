@@ -490,7 +490,7 @@ class Scenario:
         Returns:
             A new map spec.
         """
-        path = os.path.join(scenario_root, "build", "map_spec.pkl")
+        path = os.path.join(scenario_root, "build", "map", "map_spec.pkl")
         if not os.path.exists(path):
             # Use our default map builder if none specified by scenario...
             return MapSpec(
@@ -576,7 +576,8 @@ class Scenario:
             speed,
         )
 
-    def _get_vehicle_goal(self, vehicle_id: str) -> Point:
+    def get_vehicle_goal(self, vehicle_id: str) -> Point:
+        """Get the final position for a history vehicle."""
         final_exit_time = self._traffic_history.vehicle_final_exit_time(vehicle_id)
         final_pose = self._traffic_history.vehicle_pose_at_time(
             vehicle_id, final_exit_time
@@ -625,7 +626,7 @@ class Scenario:
              vehicle leaves the map.
         """
         start, speed = self.get_vehicle_start_at_time(veh_id, trigger_time)
-        veh_goal = self._get_vehicle_goal(veh_id)
+        veh_goal = self.get_vehicle_goal(veh_id)
         entry_tactic = default_entry_tactic(speed)
         # create a positional mission and a traverse mission
         positional_mission = Mission(
@@ -706,9 +707,10 @@ class Scenario:
     @staticmethod
     def discover_traffic_histories(scenario_root: str):
         """Finds all existing traffic history files in the specific scenario."""
+        build_dir = Path(scenario_root) / "build"
         return [
             entry
-            for entry in os.scandir(scenario_root)
+            for entry in os.scandir(str(build_dir))
             if entry.is_file() and entry.path.endswith(".shf")
         ]
 

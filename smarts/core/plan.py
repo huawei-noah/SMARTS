@@ -134,9 +134,7 @@ class TraverseGoal(Goal):
     the vehicle must be going the correct direction in its lane
     just prior to doing so."""
 
-    def __init__(self, road_map: RoadMap):
-        super().__init__()
-        self._road_map = road_map
+    road_map: RoadMap
 
     def is_specific(self) -> bool:
         return False
@@ -147,7 +145,7 @@ class TraverseGoal(Goal):
 
     def _drove_off_map(self, veh_pos: Point, veh_heading: float) -> bool:
         # try to determine if the vehicle "exited" the map by driving beyond the end of a dead-end lane.
-        nearest_lanes = self._road_map.nearest_lanes(veh_pos)
+        nearest_lanes = self.road_map.nearest_lanes(veh_pos)
         if not nearest_lanes:
             return False  # we can't tell anything here
         nl, dist = nearest_lanes[0]

@@ -129,7 +129,15 @@ class ActionSpaceType(Enum):
     for other steps.
     """
     Empty = 10
+    """
+    Action=(). Type= ``Tuple[]. This action is empty.``
+    """
     RelativeTargetPose = 11
+    """
+    Action=(delta_x, delta_y, heading). Type= ``Sequence[float,
+    float, float]``. Continuous action space of vehicle's next pose in terms of delta x 
+    coordinate, delta y coordinate, and heading, to be reached in 0.1 seconds.
+    """
 
 
 class Controllers:

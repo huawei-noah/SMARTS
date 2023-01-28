@@ -299,6 +299,7 @@ def get_egocentric_adapters(action_space: ActionSpaceType):
         ActionSpaceType.TargetPose: _egocentric_target_pose_adapter,
         ActionSpaceType.MultiTargetPose: _egocentric_multi_target_pose_adapter,
         ActionSpaceType.Direct: _egocentric_direct_adapter,
+        ActionSpaceType.Empty: lambda _: None,
     }
 
     return _pair_adapters(ego_centric_observation_adapter, m.get(action_space))

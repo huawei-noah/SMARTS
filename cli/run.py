@@ -69,8 +69,6 @@ def run_experiment(envision, envision_port, script_path, script_args):
                     "scl",
                     "envision",
                     "start",
-                    "-s",
-                    "./scenarios",
                     "-p",
                     str(envision_port),
                 ],

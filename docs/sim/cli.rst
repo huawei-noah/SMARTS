@@ -9,8 +9,8 @@ Examples of common usage are as follows.
 
 .. code-block:: bash
 
-   # Start envision and serve scenario assets out of ./scenarios
-   $ scl envision start --scenarios ./scenarios
+   # Start envision server
+   $ scl envision start
 
    # Build all scenarios under given directories
    $ scl scenario build-all ./scenarios

@@ -211,8 +211,8 @@ Subcommands of `zoo`:
 If you make a directory where you keep all your scenarios, you can:
 
 ```bash
-# Start envision, serve scenarios assets out of ./scenarios
-scl envision start --scenarios ./scenarios
+# Start envision server
+scl envision start
 
 # Build all scenario under given directories
 scl scenario build-all ./scenarios ./eval_scenarios

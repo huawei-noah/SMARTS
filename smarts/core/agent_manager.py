@@ -30,7 +30,7 @@ from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.heterogenous_agent_buffer import HeterogenousAgentBuffer
 from smarts.core.observations import Observation
-from smarts.core.plan import Plan
+from smarts.core.plan import Mission, Plan, PositionalGoal
 from smarts.core.sensors import Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle import VehicleState
@@ -657,7 +657,19 @@ class AgentManager:
             if sv_id in self._vehicle_with_sensors:
                 continue
 
-            plan = Plan(sim.road_map, None)
+            # If this is a history vehicle, assign a mission based on its final position.
+            # This is necessary so that the observations have waypoints that lead to the goal.
+            mission = None
+            if sv_id in sim.traffic_history_provider.history_vehicle_ids:
+                v_id = sv_id.split("-")[-1]
+                start_time = sim.scenario.traffic_history.vehicle_initial_time(v_id)
+                start, _ = sim.scenario.get_vehicle_start_at_time(v_id, start_time)
+                veh_goal = sim.scenario.get_vehicle_goal(v_id)
+                mission = Mission(
+                    start=start,
+                    goal=PositionalGoal(veh_goal, radius=5),
+                )
+            plan = Plan(sim.road_map, mission)
 
             agent_id = f"Agent-{sv_id}"
             self._vehicle_with_sensors[sv_id] = agent_id
@@ -669,6 +681,7 @@ class AgentManager:
 
     def detach_sensors_from_vehicle(self, vehicle_id: str):
         """Called when agent observation is finished and sensors should be removed from a vehicle"""
+        if not vehicle_id in self._vehicle_with_sensors:
+            return
         self._vehicle_index.stop_agent_observation(vehicle_id)
-        if vehicle_id in self._vehicle_with_sensors:
-            del self._vehicle_with_sensors[vehicle_id]
+        del self._vehicle_with_sensors[vehicle_id]

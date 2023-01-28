@@ -289,12 +289,12 @@ class ObservationRecorder:
                 for t in data.keys():
                     ego_state = data[t].ego_vehicle_state
                     new_ego_state = ego_state._replace(mission=new_mission)
-                    data[t] = replace(data[t], ego_vehicle_state=new_ego_state)
+                    data[t] = data[t]._replace(ego_vehicle_state=new_ego_state)
 
                 # Create terminal state for last timestep, when the vehicle reaches the goal
                 events = data[last_t].events
                 new_events = events._replace(reached_goal=True)
-                data[last_t] = replace(data[last_t], events=new_events)
+                data[last_t] = data[last_t]._replace(events=new_events)
 
                 outfile = os.path.join(
                     self._output_dir,
@@ -356,7 +356,7 @@ class ObservationRecorder:
                 color = np.array(Colors.Red.value[0:3], ndmin=3) * 255
                 rgb[shape[0][0] : shape[0][1], shape[1][0] : shape[1][1], :] = color
                 top_down_rgb_edited = top_down_rgb._replace(data=rgb)
-                obs[id_] = replace(obs[id_], top_down_rgb=top_down_rgb_edited)
+                obs[id_] = obs[id_]._replace(top_down_rgb=top_down_rgb_edited)
 
                 if self._output_dir:
                     img = Image.fromarray(rgb, "RGB")

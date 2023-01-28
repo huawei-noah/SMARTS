@@ -28,6 +28,7 @@ import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.coordinates import Point
+from smarts.core.observations import Observation
 from smarts.core.plan import PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
@@ -110,14 +111,15 @@ class MetricsBase(gym.Wrapper):
 
         obs = {agent_id: o for agent_id, o in obs.items() if o["active"]}
         # fmt: off
-        for agent_name, agent_obs in obs.items():
+        for agent_name in obs:
+            base_obs: Observation = info[agent_name]["env_obs"]
             self._steps[agent_name] += 1
 
             # Compute all cost functions.
             costs = Costs()
             for field in fields(self._records[self._scen_name][agent_name].cost_funcs):
                 cost_func = getattr(self._records[self._scen_name][agent_name].cost_funcs, field.name)
-                new_costs = cost_func(road_map=self._road_map, obs=agent_obs)
+                new_costs = cost_func(road_map=self._road_map, obs=base_obs)
                 costs = _add_dataclass(new_costs, costs)
 
             # Update stored costs.
@@ -126,15 +128,15 @@ class MetricsBase(gym.Wrapper):
             if dones[agent_name]:
                 self._done_agents.add(agent_name)
                 if not (
-                    agent_obs["events"]["reached_goal"]
-                    or agent_obs["events"]["collisions"]
-                    or agent_obs["events"]["off_road"]
-                    or agent_obs["events"]["reached_max_episode_steps"]
+                    base_obs.events.reached_goal
+                    or len(base_obs.events.collisions)
+                    or base_obs.events.off_road
+                    or base_obs.events.reached_max_episode_steps
                 ):
                     raise MetricsError(
                         "Expected reached_goal, collisions, off_road, or " 
                         "max_episode_steps to be true on agent done, but got "
-                        f"events: {agent_obs.events}."
+                        f"events: {base_obs.events}."
                     )
 
                 # Update stored counts.
@@ -145,7 +147,7 @@ class MetricsBase(gym.Wrapper):
                         self._steps[agent_name],
                         self.env.agent_interfaces[agent_name].max_episode_steps
                     ),
-                    goals=agent_obs["events"]["reached_goal"],
+                    goals=base_obs.events.reached_goal,
                     max_steps=self.env.agent_interfaces[agent_name].max_episode_steps
                 )
                 self._records[self._scen_name][agent_name].record.counts = _add_dataclass(
@@ -162,7 +164,7 @@ class MetricsBase(gym.Wrapper):
                     )
                     new_completion = completion_func(
                         road_map=self._road_map,
-                        obs=agent_obs,
+                        obs=base_obs,
                         initial_compl=completion,
                     )
                     completion = _add_dataclass(new_completion, completion)
@@ -241,7 +243,7 @@ class MetricsBase(gym.Wrapper):
 
         return records
 
-    def score(self) -> Dict[str, float]:
+    def score(self) -> Score:
         """
         Computes four sub-component scores, namely, "Completion", "Time",
         "Humanness", "Rules", and one total combined score named "Overall"
