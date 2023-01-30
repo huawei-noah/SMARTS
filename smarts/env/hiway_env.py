@@ -150,7 +150,7 @@ class HiWayEnv(gym.Env):
             shuffle_scenarios,
         )
         self._action_space_formatter = ActionSpacesFormatter(
-            agent_interfaces=agent_interfaces,
+            agent_interfaces=self.agent_interfaces,
             action_options=action_options,
         )
 
