@@ -109,7 +109,7 @@ class MetricsBase(gym.Wrapper):
                 dones["__all__"] = True
             dones.update({a: d["done"] for a, d in info.items()})
 
-        if len(obs) > 0 and isinstance(next(iter(obs.values())), dict):
+        if isinstance(next(iter(obs.values())), dict):
             obs = {agent_id: o for agent_id, o in obs.items() if o["active"]}
         # fmt: off
         for agent_name in obs:
