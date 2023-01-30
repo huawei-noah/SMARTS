@@ -13,6 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- Fixed an issue where metrics break down with unformatted observations.
 ### Removed
 ### Security
 
