@@ -103,7 +103,11 @@ class TraciConn:
         )
 
     def __del__(self) -> None:
-        self.close_traci_and_pipes()
+        # We should not raise in delete.
+        try:
+            self.close_traci_and_pipes()
+        except Exception:
+            pass
 
     def connect(
         self,

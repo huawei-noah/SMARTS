@@ -1080,6 +1080,8 @@ class ObservationSpacesFormatter:
     @cached_property
     def space(self):
         """The observation space this should format the smarts observations to match."""
+        if self.observation_options is ObservationOptions.unformatted:
+            return None
         return gym.spaces.Dict(
             {
                 agent_id: space_format.space

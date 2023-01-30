@@ -37,6 +37,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
+from smarts.env.utils.action_conversion import ActionOptions, ActionSpacesFormatter
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -80,6 +81,8 @@ class HiWayEnv(gym.Env):
             to None.
         agent_interfaces (Dict[str, AgentInterface]): Specification of the agents
             needs that will be used to configure the environment.
+        action_options (ActionOptions, str): Specifies format of the action space
+            of the environment.
     """
 
     metadata = {"render.modes": ["human"]}
@@ -106,6 +109,7 @@ class HiWayEnv(gym.Env):
         timestep_sec: Optional[
             float
         ] = None,  # for backwards compatibility (deprecated)
+        action_options: Union[ActionOptions, str] = ActionOptions.unformatted,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         self.seed(seed)
@@ -144,6 +148,10 @@ class HiWayEnv(gym.Env):
             scenarios,
             list(self._agent_interfaces.keys()),
             shuffle_scenarios,
+        )
+        self._action_space_formatter = ActionSpacesFormatter(
+            agent_interfaces=agent_interfaces,
+            action_options=action_options,
         )
 
         envision_client = None
@@ -274,7 +282,9 @@ class HiWayEnv(gym.Env):
             isinstance(key, str) for key in agent_actions.keys()
         ), "Expected Dict[str, any]"
 
-        observations, rewards, dones, extras = self._smarts.step(agent_actions)
+        observations, rewards, dones, extras = self._smarts.step(
+            self._action_space_formatter.format(agent_actions)
+        )
 
         infos = {
             agent_id: {
