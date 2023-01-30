@@ -109,7 +109,8 @@ class MetricsBase(gym.Wrapper):
                 dones["__all__"] = True
             dones.update({a: d["done"] for a, d in info.items()})
 
-        obs = {agent_id: o for agent_id, o in obs.items() if o["active"]}
+        if len(obs) > 0 and isinstance(next(iter(obs.values())), dict):
+            obs = {agent_id: o for agent_id, o in obs.items() if o["active"]}
         # fmt: off
         for agent_name in obs:
             base_obs: Observation = info[agent_name]["env_obs"]
@@ -171,7 +172,7 @@ class MetricsBase(gym.Wrapper):
                 self._records[self._scen_name][agent_name].record.completion = completion
 
         # fmt: on
-        if dones["__all__"] == True:
+        if dones["__all__"] is True:
             assert (
                 self._done_agents == self._cur_agents
             ), f'done["__all__"]==True but not all agents are done. Current agents = {self._cur_agents}. Agents done = {self._done_agents}.'
