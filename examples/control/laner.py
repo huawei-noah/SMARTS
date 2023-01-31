@@ -45,7 +45,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     for episode in episodes(n=num_episodes):
         agents = {
             agent_id: agent_spec.build_agent()
-            for agent_id, agent_spec in agent_specs.items()
+            for agent_id, agent_spec in agent_interface.items()
         }
         observations = env.reset()
         episode.record_scenario(env.scenario_log)
