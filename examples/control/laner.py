@@ -4,8 +4,8 @@ from pathlib import Path
 
 import gym
 
-sys.path.insert(0, str(Path(__file__).parents[1]))
-from tools.argument_parser import default_argument_parser
+sys.path.insert(0, str(Path(__file__).parents[2].absolute()))
+from examples.tools.argument_parser import default_argument_parser
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
@@ -24,7 +24,7 @@ class KeepLaneAgent(Agent):
 
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
-    agent_specs = {
+    agent_interface = {
         agent_id: AgentSpec(
             interface=AgentInterface.from_type(
                 AgentType.Laner, max_episode_steps=max_episode_steps
@@ -37,7 +37,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
-        agent_specs=agent_specs,
+        agent_specs=agent_interface,
         headless=headless,
         sumo_headless=True,
     )

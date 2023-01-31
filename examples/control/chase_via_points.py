@@ -3,8 +3,8 @@ from pathlib import Path
 
 import gym
 
-sys.path.insert(0, str(Path(__file__).parents[1]))
-from tools.argument_parser import default_argument_parser
+sys.path.insert(0, str(Path(__file__).parents[2].absolute()))
+from examples.tools.argument_parser import default_argument_parser
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
@@ -36,7 +36,7 @@ class ChaseViaPointsAgent(Agent):
 
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
-    agent_specs = {
+    agent_interfaces = {
         agent_id: AgentSpec(
             interface=AgentInterface.from_type(
                 AgentType.LanerWithSpeed,
@@ -50,7 +50,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
-        agent_specs=agent_specs,
+        agent_specs=agent_interfaces,
         headless=headless,
         sumo_headless=True,
     )
@@ -58,7 +58,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     for episode in episodes(n=num_episodes):
         agents = {
             agent_id: agent_spec.build_agent()
-            for agent_id, agent_spec in agent_specs.items()
+            for agent_id, agent_spec in agent_interfaces.items()
         }
         observations = env.reset()
         episode.record_scenario(env.scenario_log)
