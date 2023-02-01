@@ -17,7 +17,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Fixed
 - Fixed an issue where metrics break down with unformatted observations.
 - Fixed an issue where `hiway-v1` would cause an exception when using "unformatted" observations.
-- Unformatted actions an observations in `hiway-v0` provide `None` rather than an incorrect space.
+- Unformatted actions and observations in `hiway-v0` provide `None` rather than an incorrect space.
 ### Removed
 ### Security
 
