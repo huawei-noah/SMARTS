@@ -13,6 +13,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- Fixed an issue where termination while envision is enabled but not connected would cause a flurry of broken pipe errors.
+- Fixed an issue where activating visdom would cause errors.
 ### Removed
 ### Security
 
