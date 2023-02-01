@@ -31,6 +31,12 @@ except ImportError:
     raise ImportError("Visdom is required for visualizations.")
 
 
+class QueueDone:
+    """A termination signal for the queue."""
+
+    pass
+
+
 class VisdomClient:
     """A client for handling connection to a Visdom server."""
 
@@ -49,7 +55,9 @@ class VisdomClient:
 
     def teardown(self):
         """Clean up unmanaged resources."""
-        pass
+        if not self._visdom_obs_queue:
+            return
+        self._visdom_obs_queue.put(QueueDone())
 
     def _build_visdom_watcher_queue(self):
         # Set queue size to 1 so that we don't hang on too old observations
@@ -64,21 +72,26 @@ class VisdomClient:
         queue_watcher.start()
         return obs_queue
 
-    def _watcher_loop(self, obs_queue):
+    def _watcher_loop(self, obs_queue: multiprocessing.Queue):
         vis = visdom.Visdom(port=self._port, server=self._hostname)
 
-        while True:
-            obs = obs_queue.get()
+        try:
+            while True:
+                obs = obs_queue.get()
+                if isinstance(obs, QueueDone):
+                    return
 
-            for key, images in self._vis_sim_obs(obs).items():
-                title = json.dumps({"Type:": key})
-                images = np.stack(images, axis=0)
-                vis.images(images, win=key, opts={"title": title})
-                vis.images(images[0], win=key, opts={"title": title})
+                for key, images in self._vis_sim_obs(obs).items():
+                    title = json.dumps({"Type:": key})
+                    images = np.stack(images, axis=0)
+                    vis.images(images, win=key, opts={"title": title})
+                    vis.images(images[0], win=key, opts={"title": title})
 
-            for key, readings in self._vis_sim_text(obs).items():
-                title = json.dumps({"Type:": key})
-                vis.text(readings, win=key, opts={"title": title})
+                for key, readings in self._vis_sim_text(obs).items():
+                    title = json.dumps({"Type:": key})
+                    vis.text(readings, win=key, opts={"title": title})
+        except (BrokenPipeError, KeyboardInterrupt, EOFError):
+            return
 
     def _vis_sim_obs(self, sim_obs):
         vis_images = defaultdict(list)
