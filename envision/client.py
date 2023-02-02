@@ -274,7 +274,7 @@ class Client:
                 ws = websocket.WebSocketApp(
                     endpoint, on_error=on_error, on_close=on_close, on_open=on_open
                 )
-
+                
                 with suppress_websocket():
                     ws.run_forever()
 
@@ -298,7 +298,7 @@ class Client:
         try:
             run_socket(endpoint, wait_between_retries)
         except (BrokenPipeError, KeyboardInterrupt, EOFError):
-            state_queue = None
+            pass
 
     def send(self, state: Union[types.State, types.Preamble]):
         """Send the given envision state to the remote as the most recent state."""
