@@ -1,17 +1,17 @@
 # MIT License
-# 
+#
 # Copyright (C) 2023. Huawei Technologies Co., Ltd. All rights reserved.
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
@@ -42,14 +42,15 @@ class Config:
     def __init__(
         self, config_file: Union[str, Path], environment_prefix: str = ""
     ) -> None:
-        config_file = str(config_file)
-        if not Path(config_file).is_file():
+        if isinstance(config_file, str):
+            config_file = Path(config_file)
+        if not config_file.is_file():
             raise FileNotFoundError(f"Configuration file not found at {config_file}")
 
         self._config = configparser.ConfigParser(
-            interpolation=configparser.ExtendedInterpolation
+            interpolation=configparser.ExtendedInterpolation()
         )
-        self._config.read(config_file)
+        self._config.read(str(config_file.absolute()))
         self._environment_prefix = environment_prefix.upper()
         self._format_string = self._environment_prefix + "_{}_{}"
 
