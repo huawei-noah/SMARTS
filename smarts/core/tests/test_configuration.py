@@ -31,7 +31,7 @@ from smarts.core.configuration import Config
 
 
 @pytest.fixture
-def config_path() -> str:
+def config_path():
     config = configparser.ConfigParser()
     config["section_1"] = {"string_option": "value", "option_2": "value_2"}
     config["section_2"] = {"bool_option": "True", "float_option": "3.14"}
