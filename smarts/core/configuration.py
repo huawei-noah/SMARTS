@@ -36,7 +36,7 @@ class Config:
         environment_prefix (str, optional): The prefix given to the environment variables. Defaults to "".
 
     Raises:
-
+        FileNotFoundError: If the configuration file cannot be found at the given file location.
     """
 
     def __init__(
