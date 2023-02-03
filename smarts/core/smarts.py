@@ -849,7 +849,6 @@ class SMARTS(ProviderManager):
         try:
             self.destroy()
         except (TypeError, AttributeError) as e:
-            # This is a print statement because the logging module may be deleted at program exit.
             raise SMARTSDestroyedError(
                 "ERROR: A SMARTS instance may have been deleted by gc before a call to destroy."
                 " Please explicitly call `del obj` or `SMARTS.destroy()` to make this error"
