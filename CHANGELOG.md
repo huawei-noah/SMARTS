@@ -10,6 +10,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Added map source as `map_source` inside of `hiway-v1` reset info.
 ### Changed
 ### Deprecated
 ### Fixed
