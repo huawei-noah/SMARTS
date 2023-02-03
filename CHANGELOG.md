@@ -11,6 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Added
 - Added action formatting option to `hiway-v0`.
+- Introduced `debug: serial: bool` option to driving smarts benchmark config.
 ### Changed
 - Moved action and observation conversions from `smarts.env.gymnasium.utils` to `smarts.env.utils`.
 ### Deprecated

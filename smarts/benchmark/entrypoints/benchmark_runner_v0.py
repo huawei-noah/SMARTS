@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import logging
 import os
-from typing import List, Tuple
+from typing import Generator, List, Tuple
 
 import gymnasium as gym
 import psutil
@@ -39,6 +39,10 @@ ERROR_TOLERANT = False
 
 @ray.remote(num_returns=1)
 def _eval_worker(name, env_config, episodes, agent_config, error_tolerant=False):
+    return _eval_worker_local(name, env_config, episodes, agent_config, error_tolerant)
+
+
+def _eval_worker_local(name, env_config, episodes, agent_config, error_tolerant=False):
     import warnings
 
     warnings.filterwarnings("ignore")
@@ -81,7 +85,7 @@ def _eval_worker(name, env_config, episodes, agent_config, error_tolerant=False)
     return name, score
 
 
-def _task_iterator(env_args, benchmark_args, agent_args, log_workers):
+def _parallel_task_iterator(env_args, benchmark_args, agent_args, log_workers):
     num_cpus = max(1, min(len(os.sched_getaffinity(0)), psutil.cpu_count(False) or 4))
 
     with suppress_output(stdout=True):
@@ -110,6 +114,19 @@ def _task_iterator(env_args, benchmark_args, agent_args, log_workers):
         ray.shutdown()
 
 
+def _serial_task_iterator(env_args, benchmark_args, agent_args, *args, **_):
+    for name, env_config in env_args.items():
+        print(f"Evaluating {name}...")
+        name, score = _eval_worker_local(
+            name=name,
+            env_config=env_config,
+            episodes=benchmark_args["eval_episodes"],
+            agent_config=agent_args,
+            error_tolerant=ERROR_TOLERANT,
+        )
+        yield name, score
+
+
 def benchmark(benchmark_args, agent_args, log_workers=False):
     """Runs the benchmark using the following:
     Args:
@@ -118,6 +135,7 @@ def benchmark(benchmark_args, agent_args, log_workers=False):
         debug_log(bool): Whether the benchmark should log to stdout.
     """
     print(f"Starting `{benchmark_args['name']}` benchmark.")
+    debug = benchmark_args.get("debug", {})
     message = benchmark_args.get("message")
     if message is not None:
         print(message)
@@ -133,7 +151,11 @@ def benchmark(benchmark_args, agent_args, log_workers=False):
             )
     named_scores = []
 
-    for name, score in _task_iterator(
+    iterator: Generator[tuple, None, None] = (
+        _serial_task_iterator if debug.get("serial") else _parallel_task_iterator
+    )
+
+    for name, score in iterator(
         env_args=env_args,
         benchmark_args=benchmark_args,
         agent_args=agent_args,
