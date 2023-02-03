@@ -274,7 +274,7 @@ class Client:
                 ws = websocket.WebSocketApp(
                     endpoint, on_error=on_error, on_close=on_close, on_open=on_open
                 )
-                
+
                 with suppress_websocket():
                     ws.run_forever()
 

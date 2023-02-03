@@ -75,23 +75,23 @@ class VisdomClient:
     def _watcher_loop(self, obs_queue: multiprocessing.Queue):
         vis = visdom.Visdom(port=self._port, server=self._hostname)
 
-        try:
-            while True:
+        while True:
+            try:
                 obs = obs_queue.get()
-                if isinstance(obs, QueueDone):
-                    return
+            except (BrokenPipeError, ValueError, KeyboardInterrupt, EOFError, OSError):
+                return
+            if isinstance(obs, QueueDone):
+                return
 
-                for key, images in self._vis_sim_obs(obs).items():
-                    title = json.dumps({"Type:": key})
-                    images = np.stack(images, axis=0)
-                    vis.images(images, win=key, opts={"title": title})
-                    vis.images(images[0], win=key, opts={"title": title})
+            for key, images in self._vis_sim_obs(obs).items():
+                title = json.dumps({"Type:": key})
+                images = np.stack(images, axis=0)
+                vis.images(images, win=key, opts={"title": title})
+                vis.images(images[0], win=key, opts={"title": title})
 
-                for key, readings in self._vis_sim_text(obs).items():
-                    title = json.dumps({"Type:": key})
-                    vis.text(readings, win=key, opts={"title": title})
-        except (BrokenPipeError, KeyboardInterrupt, EOFError):
-            return
+            for key, readings in self._vis_sim_text(obs).items():
+                title = json.dumps({"Type:": key})
+                vis.text(readings, win=key, opts={"title": title})
 
     def _vis_sim_obs(self, sim_obs):
         vis_images = defaultdict(list)
