@@ -481,16 +481,10 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
             assert lane.speed_limit == 16.67
 
     # Nonexistent road/lane tests
-    try:
+    with pytest.raises(AssertionError):
         bad_road = road_map.road_by_id("")
-        assert False, "should not get to here."
-    except:
-        pass
-    try:
+    with pytest.raises(AssertionError):
         bad_lane = road_map.lane_by_id("")
-        assert False, "should not get to here."
-    except:
-        pass
 
     # Surface tests
     surface = road_map.surface_by_id("1_1_R")
