@@ -277,6 +277,8 @@ class ActionSpacesFormatter:
         Returns:
             gym.spaces.Dict: A description of the action space that this formatter requires.
         """
+        if self._action_options is ActionOptions.unformatted:
+            return None
         return gym.spaces.Dict(
             {
                 agent_id: get_formats()[agent_interface.action].space

@@ -12,6 +12,8 @@ benchmark:
         - https://codalab.lisn.upsaclay.fr/competitions/6618
         - https://smarts-project.github.io/archive/2022_nips_driving_smarts/
   eval_episodes: 50
+  debug:
+    serial: False
   shared_env_kwargs:
     seed: 42
     headless: true
