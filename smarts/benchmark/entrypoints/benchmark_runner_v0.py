@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import logging
 import os
-from typing import Generator, List, Tuple
+from typing import Callable, Dict, Generator, List, Tuple
 
 import gymnasium as gym
 import psutil
@@ -151,9 +151,7 @@ def benchmark(benchmark_args, agent_args, log_workers=False):
             )
     named_scores = []
 
-    iterator: Generator[tuple, None, None] = (
-        _serial_task_iterator if debug.get("serial") else _parallel_task_iterator
-    )
+    iterator = _serial_task_iterator if debug.get("serial") else _parallel_task_iterator
 
     for name, score in iterator(
         env_args=env_args,
